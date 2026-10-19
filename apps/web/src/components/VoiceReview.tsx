@@ -67,7 +67,7 @@ const quantityText = (action: VoiceReviewAction) =>
  */
 export function VoiceReview() {
   const { t } = useTranslation(['voice', 'common']);
-  const { note } = useVoiceNoteState();
+  const { proposal: note } = useVoiceNoteState();
   const { locale } = useScanLanguage();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -139,7 +139,7 @@ export function VoiceReview() {
   return (
     <>
       <Sheet
-        open={note !== null}
+        open={note !== undefined}
         onClose={close}
         label={t('voice:review.title')}
         size="content"

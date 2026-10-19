@@ -1,0 +1,943 @@
+<title>Voice Notes Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,500;9..144,600;9..144,700,50&family=Instrument+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&family=Sora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: toolbar (variant + theme), then a workbench: notes and controls on the left, the phone on the right.
+   Page chrome uses --pg-*; inside the phone everything is painted by the selected app theme (docs/themes/themes.ts), set on .skin by JS. */
+:root{
+  --pg-bg:#ECEDE9; --pg-fg:#1A1D1B; --pg-muted:#5F665F; --pg-line:#D5D9D3; --pg-surface:#F7F8F5; --pg-accent:#2E6A4D; --pg-accent-ink:#fff;
+  --pg-font:'DM Sans',ui-sans-serif,system-ui,sans-serif;
+  --pg-mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--pg-bg:#131614;--pg-fg:#E8ECE7;--pg-muted:#9AA69C;--pg-line:#2A302B;--pg-surface:#1B1F1C;--pg-accent:#8BD4A6;--pg-accent-ink:#0B1A10;color-scheme:dark}}
+:root[data-theme="dark"]{--pg-bg:#131614;--pg-fg:#E8ECE7;--pg-muted:#9AA69C;--pg-line:#2A302B;--pg-surface:#1B1F1C;--pg-accent:#8BD4A6;--pg-accent-ink:#0B1A10;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--pg-bg);color:var(--pg-fg);font-family:var(--pg-font);font-size:14px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:2px solid var(--pg-accent);outline-offset:2px}
+.page{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 60px;max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between}
+.bar h1{font-size:18px;font-weight:700;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.bar h1 small{display:block;font-weight:500;color:var(--pg-muted);font-size:13px;margin-top:2px;max-width:72ch}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.segc{display:flex;flex-wrap:wrap;background:var(--pg-surface);border:1px solid var(--pg-line);border-radius:12px;padding:3px;gap:2px}
+.segc button{border:0;background:transparent;border-radius:9px;height:34px;padding:0 12px;font-weight:600;font-size:13px;color:var(--pg-muted);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.segc button .dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+.segc button[aria-selected="true"]{background:var(--pg-accent);color:var(--pg-accent-ink)}
+.segc button .rec{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.8}
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:28px;align-items:start}
+.left{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{border:1px solid var(--pg-line);background:var(--pg-surface);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.panel h2{margin:0;font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--pg-muted)}
+.panel p{margin:0;color:var(--pg-muted);font-size:13.5px;max-width:66ch}
+.panel p b{color:var(--pg-fg)}
+.cues{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.cues li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:13.5px}
+.cues.t li{grid-template-columns:64px minmax(0,1fr)}
+.cues li i{font-style:normal;font-weight:700;font-family:var(--pg-mono);font-size:12px;color:var(--pg-accent);padding-top:1px;font-variant-numeric:tabular-nums}
+.cues li span{color:var(--pg-muted)}
+.cues li b{color:var(--pg-fg)}
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pc div{font-size:13px;color:var(--pg-muted)}
+.pc div b{display:block;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--pg-fg);margin-bottom:3px}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px}
+.opt>label,.opt>.lb{font-size:13.5px;font-weight:600}
+.opt small{display:block;font-weight:500;color:var(--pg-muted);font-size:12px}
+.segc.sm button{height:30px;padding:0 10px;font-size:12.5px}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.wbtn{border:1px solid var(--pg-line);background:var(--pg-bg);border-radius:9px;height:30px;padding:0 11px;font-size:12.5px;font-weight:600}
+.wbtn:active{transform:scale(.97)}
+.phonecol{position:sticky;top:16px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.phonecol .note{font-size:12.5px;color:var(--pg-muted);text-align:center;max-width:360px}
+@media (max-width:900px){.bench{grid-template-columns:minmax(0,1fr)}.phonecol{position:static}.pc{grid-template-columns:1fr}}
+
+/* ===== Skin-scoped (app theme tokens) ===== */
+.skin{color:var(--ink);font-family:var(--body);font-size:15px;max-width:100%;--rec:var(--urgent-fg)}
+.phone{width:390px;max-width:100%;height:800px;background:var(--bg);border-radius:44px;border:10px solid var(--bezel);position:relative;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.25);user-select:none;-webkit-user-select:none}
+.scr{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;padding:14px 16px 190px;scrollbar-width:none;display:flex;flex-direction:column;gap:16px}
+.scr::-webkit-scrollbar{display:none}
+.scr>*{flex-shrink:0}
+.stat{display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:2px 6px 0}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 4px 0}
+.hdr h1{margin:0;font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:30px;line-height:1}
+.hdr .sub{font-size:13px;color:var(--muted);margin-top:4px}
+.hdr .rt{display:flex;align-items:center;gap:8px}
+.av{width:34px;height:34px;border-radius:50%;background:var(--butter);color:var(--butter-ink);display:grid;place-items:center;font-weight:800;font-size:13px;font-family:var(--display)}
+.ipill{height:40px;border-radius:999px;background:var(--surface);border:1px solid var(--line);padding:0 14px 0 11px;display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:14px;color:var(--ink)}
+.ipill svg{width:18px;height:18px;color:var(--accent)}
+.sec{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted);padding:0 6px 6px}
+.card{background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-card);overflow:hidden}
+.sum{padding:14px 14px 14px 16px;display:flex;align-items:center;gap:14px}
+.sum .big{font-family:var(--display);font-weight:var(--display-w);font-size:26px;line-height:1;letter-spacing:var(--display-ls)}
+.sum .mt{font-size:13px;color:var(--muted);margin-top:4px}
+.sum .prog{height:6px;border-radius:3px;background:var(--chip);margin-top:10px;overflow:hidden}
+.sum .prog i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .4s}
+.sum .tx{flex:1;min-width:0}
+.plus{width:52px;height:52px;border-radius:16px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;border:0;flex:none}
+.plus svg{width:24px;height:24px}
+.srow{display:flex;align-items:center;gap:12px;min-height:54px;padding:8px 14px}
+.srow+.srow,.prow+.prow{border-top:1px solid var(--divider)}
+.box{width:24px;height:24px;border-radius:7px;border:2px solid var(--box);display:grid;place-items:center;flex:none}
+.box svg{width:16px;height:16px}
+.srow.on .box{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.srow .nm{font-weight:600;font-size:15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow.on .nm{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line-strong)}
+.srow .q{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.um{font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:2px 7px;border-radius:999px;border:1px dashed var(--line-strong);color:var(--muted);white-space:nowrap}
+.prow{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 12px}
+.tile{width:38px;height:38px;border-radius:calc(var(--r-ctl) - 2px);display:grid;place-items:center;font-weight:700;font-size:13px;font-family:var(--display);flex:0 0 auto;background:var(--tint-bg);color:var(--tint-fg)}
+.prow.multi .tile{box-shadow:3px -3px 0 -1px var(--card-bg),3px -3px 0 0 var(--tint-edge),6px -6px 0 -1px var(--card-bg),6px -6px 0 0 var(--tint-edge2);margin:4px 6px 0 0}
+.prow .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.nmrow{display:flex;align-items:center;gap:6px;min-width:0}
+.prow .nm{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mk{display:inline-flex;color:var(--star)}
+.mk svg{width:14px;height:14px}
+.lowp{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--butter);color:var(--butter-ink);line-height:1.4}
+.qt{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qt b{font-weight:600;color:var(--ink)}
+.cnt{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:999px;background:var(--chip);color:var(--ink);font-size:11px;font-weight:700;margin-left:4px;vertical-align:1px}
+.tag{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:4px;flex:0 0 auto}
+.tag.urgent{background:var(--urgent-bg);color:var(--urgent-fg)}
+.tag.soon{background:var(--soon-bg);color:var(--soon-fg)}
+.tag.ok{background:var(--ok-bg);color:var(--ok-fg)}
+.tag.none{background:var(--card-bg);border:1px dashed var(--line-strong);color:var(--muted);padding:3px 9px}
+.flash{animation:flash 1.8s ease-out}
+@keyframes flash{0%,30%{background:var(--accent-tint)}100%{background:transparent}}
+
+.dock{position:absolute;left:12px;right:12px;bottom:12px;height:72px;background:var(--dock-bg);backdrop-filter:blur(12px);border:var(--bw) solid var(--line);border-radius:var(--r-dock);box-shadow:var(--shadow-float);display:grid;grid-template-columns:repeat(4,1fr);align-items:center;padding:0 6px;z-index:5}
+.dock button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted);height:56px;justify-content:center;border-radius:14px}
+.dock svg{width:22px;height:22px}
+.dock .on{color:var(--accent-on-tint);background:var(--accent-tint)}
+
+/* ===== Voice button: three placements ===== */
+.vwrap{display:flex;align-items:center;gap:8px;z-index:8}
+.vbtn{border:0;touch-action:none;-webkit-touch-callout:none;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .18s cubic-bezier(.2,.8,.2,1),background .15s,color .15s}
+.vbtn svg{width:24px;height:24px;flex:none}
+.vbtn .bdg{position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:var(--soon-fg);border:2px solid var(--card-bg)}
+.langc{height:30px;min-width:40px;padding:0 9px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font-size:12px;font-weight:800;letter-spacing:.06em;display:inline-flex;align-items:center;justify-content:center;gap:3px;box-shadow:var(--shadow-card)}
+.langc svg{width:12px;height:12px;color:var(--muted)}
+.vbtn.off{opacity:.55}
+/* A · header pill */
+.vA{position:relative;display:inline-flex;height:40px;border-radius:999px;background:var(--accent);color:var(--accent-ink);padding:0}
+.vA .vbtn{height:40px;padding:0 10px 0 12px;background:none;color:inherit;font-weight:700;font-size:14px;border-radius:999px 0 0 999px}
+.vA .vbtn svg{width:19px;height:19px}
+.vA .langc{height:40px;border:0;border-left:1px solid color-mix(in srgb,var(--accent-ink) 30%,transparent);border-radius:0 999px 999px 0;background:none;color:var(--accent-ink);box-shadow:none;padding:0 11px 0 9px}
+.vA .langc svg{color:inherit;opacity:.75}
+.vA.rec{background:var(--rec);color:var(--card-bg)}
+/* B · thumb button */
+.vB{position:absolute;right:18px;bottom:100px}
+.vB .vbtn{width:62px;height:62px;border-radius:50%;background:var(--accent);color:var(--accent-ink);box-shadow:var(--shadow-float)}
+.vB .vbtn svg{width:27px;height:27px}
+.vB .vbtn::before{content:"";position:absolute;inset:-7px;border-radius:50%;background:conic-gradient(var(--rec) calc(var(--pr,0)*360deg),color-mix(in srgb,var(--rec) 18%,transparent) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));opacity:0;transition:opacity .15s}
+.vB.rec .vbtn{background:var(--rec);color:var(--card-bg);transform:scale(1.14)}
+.vB.rec .vbtn::before{opacity:1}
+.vB.cx .vbtn{transform:scale(.9);background:color-mix(in srgb,var(--ink) 55%,var(--card-bg))}
+/* C · hold strip */
+.vC{position:absolute;left:12px;right:12px;bottom:94px;height:54px;border-radius:var(--r-dock);background:var(--accent);color:var(--accent-ink);box-shadow:var(--shadow-float);padding:0 6px;overflow:hidden}
+.vC .langc{height:38px;border:0;background:color-mix(in srgb,var(--accent-ink) 18%,transparent);color:var(--accent-ink);box-shadow:none;flex:none}
+.vC .langc svg{color:inherit;opacity:.75}
+.vC .vbtn{flex:1;height:100%;background:none;color:inherit;font-weight:700;font-size:15px;padding-right:48px}
+.vC::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:calc(var(--pr,0)*100%);background:var(--card-bg);opacity:0;transition:opacity .15s}
+.vC.rec{background:var(--rec);color:var(--card-bg)}
+.vC.rec::after{opacity:.85}
+.vC.rec .langc{color:var(--card-bg)}
+.vC.cx{background:color-mix(in srgb,var(--ink) 55%,var(--card-bg))}
+.vA.cx{background:color-mix(in srgb,var(--ink) 55%,var(--card-bg))}
+
+/* Listening card */
+.vscrim{position:absolute;inset:0;background:color-mix(in srgb,var(--ink) 16%,transparent);z-index:7;opacity:0;pointer-events:none;transition:opacity .18s}
+.vscrim.on{opacity:1}
+.listen{position:absolute;left:16px;right:16px;z-index:9;background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-float);padding:14px 16px 13px;display:flex;flex-direction:column;gap:10px;animation:pop .2s cubic-bezier(.2,.8,.2,1);transition:background .15s}
+.pA .listen{top:122px}
+.pB .listen{bottom:184px}
+.pC .listen{bottom:160px;left:12px;right:12px}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}}
+.lt{display:flex;align-items:center;gap:9px}
+.recdot{width:10px;height:10px;border-radius:50%;background:var(--rec);animation:blink 1.1s ease-in-out infinite;flex:none}
+@keyframes blink{50%{opacity:.25}}
+.lt .ls{font-weight:700;font-size:15px;flex:1}
+.lt .tm{font-family:var(--display);font-weight:var(--display-w);font-size:22px;font-variant-numeric:tabular-nums;line-height:1}
+.lt .tm small{font-family:var(--body);font-size:12px;color:var(--muted);font-weight:600}
+.wave{display:flex;align-items:center;gap:3px;height:38px}
+.wave i{flex:1;border-radius:2px;background:var(--rec);min-height:3px;transition:height .09s linear}
+.lb{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.lb .lg{font-weight:700;color:var(--ink);background:var(--chip);border-radius:999px;padding:2px 8px;font-size:11.5px}
+.lb .to{flex-basis:100%}
+.listen.late .tm{color:var(--soon-fg)}
+.listen.late .tm small{color:var(--soon-fg)}
+.listen.cancel{background:var(--subtle)}
+.listen.cancel .recdot{animation:none;background:var(--muted)}
+.listen.cancel .wave i{background:var(--line-strong)}
+.listen.cancel .ls{color:var(--ink)}
+.xmark{display:none;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--card-bg);place-items:center;flex:none}
+.xmark svg{width:13px;height:13px}
+.listen.cancel .xmark{display:grid}
+.listen.cancel .recdot{display:none}
+
+/* Status pill (reading, failed, nothing heard, cap) */
+.vpill{position:absolute;left:16px;right:16px;z-index:9;background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-ctl);box-shadow:var(--shadow-float);padding:11px 12px 11px 14px;display:flex;align-items:center;gap:11px;animation:pop .2s cubic-bezier(.2,.8,.2,1)}
+.pA .vpill{top:122px}
+.pB .vpill{bottom:178px}
+.pC .vpill{bottom:160px;left:12px;right:12px}
+.vpill .ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--accent-tint);color:var(--accent-on-tint)}
+.vpill .ic svg{width:17px;height:17px}
+.vpill.warn .ic{background:var(--soon-bg);color:var(--soon-fg)}
+.vpill.bad .ic{background:var(--urgent-bg);color:var(--urgent-fg)}
+.vpill .tx{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.3}
+.vpill .tx small{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-top:2px}
+.vpill .acts{display:flex;gap:6px;flex:none}
+.sbtn{height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);font-size:13px;font-weight:700;color:var(--ink)}
+.sbtn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.spin{width:18px;height:18px;border-radius:50%;border:2.5px solid color-mix(in srgb,currentColor 25%,transparent);border-top-color:currentColor;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.tip{position:absolute;z-index:9;background:var(--toast-bg);color:var(--toast-ink);font-size:13px;font-weight:600;padding:8px 12px;border-radius:10px;box-shadow:var(--shadow-float);animation:pop .18s;white-space:nowrap}
+.pA .tip{top:122px;right:16px}
+.pB .tip{bottom:180px;right:16px}
+.pC .tip{bottom:160px;left:50%;transform:translateX(-50%)}
+
+/* Language popover */
+.lpop{position:absolute;z-index:12;background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-ctl);box-shadow:var(--shadow-float);padding:6px;width:220px;animation:pop .16s}
+.pA .lpop{top:122px;right:16px}
+.pB .lpop{bottom:172px;right:16px}
+.pC .lpop{bottom:156px;left:12px}
+.lpop .h{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:6px 10px 4px}
+.lpop button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:8px;font-size:14.5px;font-weight:600}
+.lpop button:hover,.lpop button:focus-visible{background:var(--subtle)}
+.lpop button small{color:var(--muted);font-weight:600;font-size:12px;margin-left:auto}
+.lpop button svg{width:16px;height:16px;color:var(--accent)}
+.lpop button .sp{width:16px}
+
+/* Sheets */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.38);z-index:19;animation:fd .2s}
+@keyframes fd{from{opacity:0}}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:20;background:var(--bg);border-radius:28px 28px 0 0;box-shadow:var(--shadow-float);display:flex;flex-direction:column;animation:up .3s cubic-bezier(.2,.8,.2,1);max-height:92%}
+.sheet.tall{top:7%}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--line-strong);margin:8px auto 4px;flex:none}
+.sh-h{display:flex;align-items:flex-start;gap:10px;padding:6px 20px 10px;flex:none}
+.sh-h .ttl{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:22px;line-height:1.15}
+.sh-h .st{font-size:13px;color:var(--muted);margin-top:3px}
+.sh-b{overflow-y:auto;padding:2px 16px 14px;display:flex;flex-direction:column;gap:14px;scrollbar-width:none;flex:1;min-height:0}
+.sh-b::-webkit-scrollbar{display:none}
+.sh-b>*{flex:none}
+.sh-f{flex:none;display:flex;gap:10px;padding:12px 16px 20px;border-top:1px solid var(--line);background:var(--bg)}
+.btn{height:48px;border-radius:var(--r-ctl);border:0;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 16px}
+.btn svg{width:18px;height:18px}
+.btn.pri{background:var(--accent);color:var(--accent-ink);flex:1}
+.btn.pri:disabled{background:var(--chip);color:var(--muted);cursor:default}
+.btn.gh{background:transparent;color:var(--ink);border:1px solid var(--line-strong)}
+.btn.dng{background:var(--urgent-fg);color:var(--card-bg)}
+.btn:active:not(:disabled){transform:scale(.98)}
+.prose{font-size:14px;color:var(--muted);line-height:1.5;padding:0 4px}
+.prose b{color:var(--ink)}
+.hero{display:flex;flex-direction:column;align-items:center;gap:12px;padding:6px 0 4px;text-align:center}
+.hero .orb{width:76px;height:76px;border-radius:50%;background:var(--accent-tint);color:var(--accent-on-tint);display:grid;place-items:center}
+.hero .orb svg{width:34px;height:34px}
+.hero .orb.bad{background:var(--urgent-bg);color:var(--urgent-fg)}
+.hero h3{margin:0;font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:22px;text-wrap:balance}
+.says{display:flex;flex-direction:column;gap:6px}
+.says div{background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-ctl);padding:9px 12px;font-size:14px;font-weight:600}
+.says div small{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-top:1px}
+.steps{margin:0;padding:0 4px 0 22px;font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.steps b{color:var(--ink)}
+.sysp{position:absolute;left:24px;right:24px;top:58px;z-index:30;background:#F2F2F2;color:#111;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:14px 16px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;animation:pop .2s}
+.sysp .o{font-size:12.5px;color:#555;margin-bottom:6px}
+.sysp .r{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.sysp button{border:0;border-radius:8px;height:34px;padding:0 14px;font-weight:600;background:#DADADA;color:#111}
+.sysp button.y{background:#1A73E8;color:#fff}
+
+/* Review */
+.heard{background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-card);overflow:hidden}
+.heard>button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:11px;width:100%;padding:11px 12px 11px 14px}
+.heard>button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.heard .qi{width:30px;height:30px;border-radius:9px;background:var(--chip);display:grid;place-items:center;color:var(--muted);flex:none}
+.heard .qi svg{width:16px;height:16px}
+.heard .tx{flex:1;min-width:0}
+.heard .tx b{display:block;font-size:14px}
+.heard .tx span{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chv{width:18px;height:18px;color:var(--muted);transition:transform .22s;flex:none}
+.heard.open .chv,.act.open .chv{transform:rotate(180deg)}
+.heard .full{display:none;padding:0 16px 14px 55px;font-family:var(--display);font-size:16px;line-height:1.45;font-weight:500}
+.heard .full small{display:block;font-family:var(--body);font-size:12px;color:var(--muted);margin-top:8px;font-weight:600}
+.heard.open .full{display:block}
+.heard.open .tx span{display:none}
+.grp{display:flex;flex-direction:column;gap:0}
+.gl{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted);padding:0 6px 6px}
+.gl svg{width:15px;height:15px}
+.gl .n{margin-left:auto;font-variant-numeric:tabular-nums}
+.gl .dft{text-transform:none;letter-spacing:0;font-weight:600;font-size:11.5px;background:var(--chip);border-radius:999px;padding:1px 7px;color:var(--ink)}
+.act{position:relative}
+.act+.act{border-top:1px solid var(--divider)}
+.act-h{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:11px;width:100%;min-height:60px;padding:9px 52px 9px 12px}
+.act-h:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.opi{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none}
+.opi svg{width:18px;height:18px}
+.op-check{background:var(--accent-tint);color:var(--accent-on-tint)}
+.op-add{background:var(--ok-bg);color:var(--ok-fg)}
+.op-rm{background:var(--urgent-bg);color:var(--urgent-fg)}
+.op-qty{background:var(--chip);color:var(--ink)}
+.op-low{background:var(--butter);color:var(--butter-ink)}
+.op-ro{background:transparent;border:1.5px dashed var(--line-strong);color:var(--muted)}
+.act .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.l1{font-size:15px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l1 .verb{color:var(--muted);font-weight:600}
+.l1 b{font-weight:700}
+.l2{font-size:12.5px;color:var(--muted);line-height:1.35;font-variant-numeric:tabular-nums}
+.l2 b{color:var(--ink);font-weight:600}
+.dfl{border-bottom:1px dotted var(--line-strong)}
+.dfl::after{content:" · usual";color:var(--muted)}
+.dfe::after{content:" · default"}
+.act .rm{position:absolute;right:8px;top:12px;width:36px;height:36px;border-radius:50%;border:0;background:transparent;color:var(--muted);display:grid;place-items:center}
+.act .rm:hover{background:var(--subtle)}
+.act .rm svg{width:17px;height:17px}
+.act .chvw{display:none}
+.act.warn .opi{box-shadow:0 0 0 2px var(--soon-fg)}
+.act.warn .l2{color:var(--soon-fg);font-weight:600}
+.act.ro .act-h{cursor:default}
+.act.ro .l1{white-space:normal}
+.act.ro .l1 b{font-weight:600}
+.act.ro .l2{font-style:normal}
+.ed{display:none;padding:2px 14px 14px 57px;flex-direction:column;gap:12px}
+.act.open .ed{display:flex}
+.act.open{background:var(--subtle)}
+.ed .hd{font-size:12.5px;color:var(--muted)}
+.ed .hd q{color:var(--ink);font-weight:600}
+.fl{display:flex;flex-direction:column;gap:6px}
+.fl>span{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.amt{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.amt input{width:80px;height:40px;border-radius:var(--r-ctl);border:var(--bw) solid var(--line);background:var(--field-bg,var(--card-bg));color:var(--ink);font:inherit;font-weight:700;font-size:16px;padding:0 10px;font-variant-numeric:tabular-nums}
+.amt input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{height:34px;padding:0 11px;border-radius:var(--r-chip);border:1px solid var(--line-strong);background:var(--card-bg);color:var(--ink);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ed .when{font-size:12.5px;color:var(--muted)}
+.ed .when b{color:var(--ink)}
+.bpick{display:flex;flex-direction:column;background:var(--card-bg);border:1px solid var(--line);border-radius:var(--r-ctl);overflow:hidden}
+.bpick button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;min-height:46px}
+.bpick button+button{border-top:1px solid var(--divider)}
+.bpick .rd{width:20px;height:20px;border-radius:50%;border:2px solid var(--box);flex:none;display:grid;place-items:center}
+.bpick button[aria-checked="true"] .rd{border-color:var(--accent)}
+.bpick button[aria-checked="true"] .rd::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.bpick .ix{width:22px;height:22px;border-radius:50%;background:var(--chip);font-size:11px;font-weight:700;display:grid;place-items:center;flex:none}
+.bpick .bt{flex:1;min-width:0;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.bpick .bt small{font-weight:500;color:var(--muted)}
+.ingr{display:flex;align-items:center;gap:10px;font-size:14px}
+.ingr b{flex:1;min-width:0}
+.lnk{all:unset;cursor:pointer;color:var(--accent);font-weight:700;font-size:13.5px;display:inline-flex;align-items:center;gap:5px}
+.lnk svg{width:15px;height:15px}
+.srch{display:flex;flex-direction:column;gap:0;background:var(--card-bg);border:1px solid var(--line);border-radius:var(--r-ctl);overflow:hidden}
+.srch .f{display:flex;align-items:center;gap:8px;padding:0 10px;height:42px;border-bottom:1px solid var(--divider)}
+.srch .f svg{width:17px;height:17px;color:var(--muted)}
+.srch input{flex:1;border:0;background:none;outline:none;font:inherit;color:var(--ink);min-width:0}
+.srch .r button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;width:100%;padding:9px 12px;font-size:14px;font-weight:600;gap:8px}
+.srch .r button small{color:var(--muted);font-weight:500;margin-left:auto}
+.srch .r button+button{border-top:1px solid var(--divider)}
+.srch .r button:hover{background:var(--subtle)}
+.doneb{align-self:flex-start}
+.cfm{display:flex;flex-direction:column;gap:10px;flex:1}
+.cfm p{margin:0;font-size:14px;font-weight:600}
+.cfm p small{display:block;font-weight:500;color:var(--muted);font-size:12.5px}
+.cfm .r{display:flex;gap:8px}
+.cfm .r .btn{flex:1;height:44px}
+
+.toastp{position:absolute;left:20px;right:20px;bottom:98px;background:var(--toast-bg);color:var(--toast-ink);border-radius:var(--r-ctl);padding:12px 16px;font-weight:600;font-size:14px;box-shadow:var(--shadow-float);opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:25;line-height:1.35}
+.pB .toastp{bottom:178px}
+.pC .toastp{bottom:160px}
+.toastp.show{opacity:1;transform:none}
+.toastp small{display:block;font-weight:500;opacity:.8;font-size:12.5px;margin-top:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion: reduce){.listen,.vpill,.sheet,.scrim,.tip,.lpop,.flash{animation:none!important}.recdot{animation:none}.vbtn{transition:none}}
+</style>
+
+<div class="page">
+  <div class="bar">
+    <h1>Voice Notes · hold to speak<small>Spec #378. Hold the voice button on the Shopping List or the Pantry, say what you did, let go. The app turns it into changes you check in Review, then one Apply writes them all.</small></h1>
+    <div class="ctl">
+      <div class="segc" role="tablist" aria-label="Variant" id="varSeg">
+        <button role="tab" data-v="A">A · Header pill</button>
+        <button role="tab" data-v="B">B · Thumb button <span class="rec">approved</span></button>
+        <button role="tab" data-v="C">C · Hold strip</button>
+      </div>
+      <div class="segc" role="tablist" aria-label="Theme" id="themeSeg"></div>
+    </div>
+  </div>
+
+  <div class="bench">
+    <div class="left">
+      <section class="panel">
+        <h2 id="vTitle">Variant</h2>
+        <p id="vDesc"></p>
+        <div class="pc"><div id="vPro"></div><div id="vCon"></div></div>
+      </section>
+      <section class="panel">
+        <h2>Try it</h2>
+        <div class="opts">
+          <div class="opt"><span class="lb">Page<small>Sets the list Voice Actions go to by default</small></span>
+            <div class="segc sm" role="radiogroup" id="pageSeg"><button role="radio" data-v="shop">Shopping List</button><button role="radio" data-v="pantry">Pantry</button></div></div>
+          <div class="opt"><span class="lb">Microphone<small>Not asked shows the first-use explainer</small></span>
+            <div class="segc sm" role="radiogroup" id="micSeg"><button role="radio" data-v="unknown">Not asked</button><button role="radio" data-v="granted">Allowed</button><button role="radio" data-v="denied">Blocked</button></div></div>
+          <div class="opt"><span class="lb">Next send<small>What the server answers when you let go</small></span>
+            <div class="segc sm" role="radiogroup" id="nextSeg"><button role="radio" data-v="heard">Heard</button><button role="radio" data-v="silent">Silent</button><button role="radio" data-v="fail">No signal</button><button role="radio" data-v="cap">Cap reached</button></div></div>
+          <div class="opt"><span class="lb">On Apply<small>Someone in the Family changed things meanwhile</small></span>
+            <div class="segc sm" role="radiogroup" id="clashSeg"><button role="radio" data-v="0">Clean</button><button role="radio" data-v="1">Someone else changed it</button></div></div>
+          <div class="opt"><span class="lb">Jump to<small>Scripted, no holding needed</small></span>
+            <div class="btns">
+              <button class="wbtn" type="button" data-j="first">First use</button>
+              <button class="wbtn" type="button" data-j="denied">Blocked</button>
+              <button class="wbtn" type="button" data-j="rec">Recording</button>
+              <button class="wbtn" type="button" data-j="cancel">Slide to cancel</button>
+              <button class="wbtn" type="button" data-j="late">Last 10 s</button>
+              <button class="wbtn" type="button" data-j="fail">Failed send</button>
+              <button class="wbtn" type="button" data-j="review">Review</button>
+              <button class="wbtn" type="button" data-j="reset">Reset</button>
+            </div></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>The flow, step by step</h2>
+        <ul class="cues t">
+          <li><i>press</i><span><b>Recording starts on pointer down</b>, no hold delay, so the first word isn't clipped. Haptic 10 ms. The button grows to 1.14 and turns the recording colour; the Listening card opens next to it with a live level meter, elapsed time, the Scan Language and which list it goes to.</span></li>
+          <li><i>&lt; 0.3 s</i><span><b>A quick tap is not a Voice Note.</b> Nothing is sent or charged; a tip says “Hold to talk, let go to send”.</span></li>
+          <li><i>slide off</i><span><b>72 pt outside the button arms cancel.</b> The card goes grey with “Let go to cancel”, haptic 6 ms. Sliding back re-arms recording. Letting go there drops the audio: toast “Cancelled. Nothing was sent.”</span></li>
+          <li><i>50 s</i><span><b>Timer turns amber</b> with “10 s left”. The progress ring around the button fills over the full minute.</span></li>
+          <li><i>60 s</i><span><b>Stops itself and sends</b> what was recorded. Toast “Stopped at 1 minute. Sending what you said.”</span></li>
+          <li><i>let go</i><span><b>Reading pill</b>: spinner, “Reading your note”, length and language, Cancel. The page stays usable underneath. Haptic 14 ms.</span></li>
+          <li><i>result</i><span><b>Review sheet slides up</b> over the page you were on. Failed send keeps the recording with Retry / Discard; silence shows “Didn't catch anything” and isn't charged; Voice Cap names tomorrow and says Scans still work.</span></li>
+          <li><i>Review</i><span><b>“What I heard” first</b> (collapsed), then changes grouped by list, default list first. Tap a change to fix amount, unit, expiry, Location, the Batch or the Ingredient. × drops one. Not found and Didn't understand sit at the bottom, read-only.</span></li>
+          <li><i>Apply</i><span><b>One button writes everything.</b> Disabled while a change still needs a Batch. Sheet closes, changed rows flash on the page, toast with the count and anything skipped. No Undo (ADR 0017).</span></li>
+        </ul>
+      </section>
+      <section class="panel">
+        <h2>Decisions</h2>
+        <ul class="cues">
+          <li><i>1</i><span><b>Language chip is its own tap target</b> beside the button, never part of the hold area. Tap opens English / Română / Dansk; the pick is remembered and shared with the camera chip. While recording it's shown read-only in the card.</span></li>
+          <li><i>2</i><span><b>Defaults are visible but quiet.</b> On Pantry adds, a Location or expiry the app filled in carries “usual” or “default” after it, with a dotted underline, so a Member sees what they didn't say.</span></li>
+          <li><i>3</i><span><b>Discard asks once</b> inside the sheet (“You'll have to say it again”). The scrim doesn't close Review, so a stray tap with full hands can't lose the note.</span></li>
+          <li><i>4</i><span><b>Apply waits for Batch picks</b> (decided 18 Oct): the button stays off with “Pick a batch first” until every change that needs a Batch has one.</span></li>
+          <li><i>5</i><span><b>Accessibility:</b> holding isn't possible with VoiceOver / TalkBack, so with a screen reader the button toggles (double-tap to start, double-tap to send, Escape or two-finger scrub to cancel). Keyboard: hold Space, Esc cancels.</span></li>
+          <li><i>6</i><span><b>Hidden, not disabled,</b> when voice isn't configured. After a Voice Cap error the button stays but dims and shows the cap message on press instead of recording.</span></li>
+          <li><i>7</i><span><b>Only “Didn't understand”:</b> Review still opens with the transcript expanded, Apply reads “Nothing to apply” and Discard becomes the main button.</span></li>
+        </ul>
+      </section>
+    </div>
+    <div class="phonecol">
+      <div class="skin" id="skin"></div>
+      <div class="note">Press and hold the voice button with the mouse or a finger, then let go. Drag away from it to cancel. Space works too when it has focus.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const THEMES={
+  warm:{name:'Warm editorial',dot:'#5F6F2E',t:{bg:'#F3EDE1',surface:'#FBF8F1',subtle:'#F6F1E6',ink:'#2B2418',muted:'#766A58',line:'#E6DCCB','line-strong':'#D6C9B2',divider:'#EFE7D8',chip:'#EAE1CF',accent:'#5F6F2E','accent-ink':'#FFFFFF','accent-tint':'#E6EAD2','accent-on-tint':'#4A5722',butter:'#F0C96B','butter-ink':'#4A3608','urgent-bg':'#F8DED1','urgent-fg':'#A8431C','soon-bg':'#F6E5BE','soon-fg':'#704E00','ok-bg':'#E6EAD2','ok-fg':'#4A5722',star:'#C9962A',box:'#C2B49A','card-bg':'#FBF8F1','card-line':'#E9E0CF','field-bg':'#FFFDF8','toast-bg':'#2B2418','toast-ink':'#FBF8F1','toast-action':'#F0C96B','dock-bg':'rgba(251,248,241,.94)',bezel:'#2B2418',bw:'1px','r-card':'16px','r-ctl':'12px','r-chip':'999px','r-dock':'22px','shadow-card':'0 1px 2px rgba(60,40,10,.06), 0 8px 24px -12px rgba(60,40,10,.18)','shadow-float':'0 14px 34px -10px rgba(60,40,10,.28)',display:"'Fraunces',Georgia,serif",body:"'Instrument Sans',ui-sans-serif,system-ui,sans-serif",'display-w':'600','display-ls':'-0.015em'}},
+  minimal:{name:'Minimal crisp',dot:'#141614',t:{bg:'#FAFAF8',surface:'#FFFFFF',subtle:'#F3F4F1',ink:'#141614',muted:'#6B716B',line:'#E7E9E4','line-strong':'#CDD1CA',divider:'#EEF0EB',chip:'#EEF0EB',accent:'#1E7A4E','accent-ink':'#FFFFFF','accent-tint':'#E1F2E8','accent-on-tint':'#176040',butter:'#F5E1A4','butter-ink':'#5A4200','urgent-bg':'#FDE8E2','urgent-fg':'#B33A1E','soon-bg':'#FBF0CC','soon-fg':'#7A5600','ok-bg':'#EEF0EB','ok-fg':'#4D534D',star:'#D29B1E',box:'#B9BEB8','card-bg':'#FFFFFF','card-line':'#E7E9E4','field-bg':'#FFFFFF','toast-bg':'#141614','toast-ink':'#FFFFFF','toast-action':'#9BE0B8','dock-bg':'rgba(255,255,255,.96)',bezel:'#141614',bw:'1px','r-card':'12px','r-ctl':'10px','r-chip':'8px','r-dock':'16px','shadow-card':'none','shadow-float':'0 8px 24px rgba(20,22,20,.10)',display:"'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif",body:"'Figtree',ui-sans-serif,system-ui,sans-serif",'display-w':'700','display-ls':'-0.025em'}},
+  dark:{name:'Dark-first',dot:'#8FE0A8',t:{bg:'#0F1512',surface:'#19211C',subtle:'#141B17',ink:'#ECF2EC',muted:'#97A69B',line:'#26312A','line-strong':'#36433A',divider:'#27322B',chip:'#26312A',accent:'#8FE0A8','accent-ink':'#0B1A10','accent-tint':'#1F3A2A','accent-on-tint':'#A9EDBD',butter:'#4A3E17','butter-ink':'#F2CF72','urgent-bg':'#3F241B','urgent-fg':'#FFA27E','soon-bg':'#3A3118','soon-fg':'#F2CF72','ok-bg':'#26312A','ok-fg':'#B9C7BC',star:'#F2CF72',box:'#4A574E','card-bg':'#19211C','card-line':'transparent','field-bg':'#141B17','toast-bg':'#ECF2EC','toast-ink':'#0F1512','toast-action':'#1E7A4E','dock-bg':'rgba(25,33,28,.9)',bezel:'#050807',bw:'1px','r-card':'18px','r-ctl':'14px','r-chip':'999px','r-dock':'24px','shadow-card':'0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px -12px rgba(0,0,0,.6)','shadow-float':'0 16px 40px rgba(0,0,0,.55)',display:"'Sora',ui-sans-serif,system-ui,sans-serif",body:"'Albert Sans',ui-sans-serif,system-ui,sans-serif",'display-w':'600','display-ls':'-0.02em'}}
+};
+const VARS={
+  A:{title:'A · Header pill',desc:'A “Speak” pill in the page header, next to Import on the Shopping List and the avatar on the Pantry. The language sits in the same pill behind a divider. The Listening card drops down under the header.',
+     pro:'Nothing new floats over the list. Reads as one more page action, like Import. Same spot on both pages.',
+     con:'Top of the screen is the hardest place to hold with one thumb, and it scrolls away with the header. Small hold target (40 pt).'},
+  B:{title:'B · Thumb button',desc:'A 62 pt round mic button floating bottom-right above the Dock, where the thumb rests with the phone in one hand. The language chip sits to its left. Holding grows it and draws a one-minute progress ring; the Listening card opens just above it.',
+     pro:'Built for the basket-in-one-hand case. Always in reach while the list scrolls. The ring shows the 60 s limit without reading the timer.',
+     con:'A floating button covers the right end of the last rows (the list gets 190 pt bottom padding). Could be confused with an Add button, so it never shows “+”.'},
+  C:{title:'C · Hold strip',desc:'A full-width “Hold to speak” bar docked above the Dock, with the language chip at its left end. The whole bar is the hold target; a thin bar along its bottom fills over the minute.',
+     pro:'Biggest target, works with either thumb, says what to do in words. Hard to miss on first use.',
+     con:'Costs 66 pt of height on every visit, even when you never speak. Feels heavier than the rest of the app\'s chrome.'}
+};
+const ORDER=['warm','minimal','dark'];
+const AIS={bakery:'#B9852A',produce:'#3F9A4A',dairy:'#3D7DCA',meat:'#C2453A',dry:'#9A7B3B',eggs:'#C9A227',drinks:'#8E5BA8',other:'#7A7A72'};
+const AISLE_ORDER=['Produce','Bakery','Meat & fish','Dairy & eggs','Pantry','Drinks','Not in the catalog'];
+const LANGS={en:{code:'EN',name:'English',own:'English'},ro:{code:'RO',name:'Romanian',own:'Română'},da:{code:'DA',name:'Danish',own:'Dansk'}};
+
+const I={
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>',
+  micOff:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7M3.5 3.5l17 17"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  eq:'<path d="M5 9h14M5 15h14"/>',chev:'<path d="M6 9l6 6 6-6"/>',search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>',
+  quote:'<path d="M7 7h4v4c0 3-1.5 5-4 6M15 7h4v4c0 3-1.5 5-4 6"/>',alert:'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/>',
+  low:'<rect x="2.5" y="7" width="17" height="10" rx="2.5"/><path d="M22 10.5v3"/><path d="M6.5 10.5v3" stroke-width="3.2"/>',
+  wifiOff:'<path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 4.2-2.4M19 12.5a10 10 0 0 0-2.6-1.8M2 8.8a15 15 0 0 1 4.6-2.8M22 8.8A15 15 0 0 0 11 5"/><path d="M12 20h.01"/>',
+  ear:'<path d="M6 9a6 6 0 1 1 12 0c0 3.5-3 4.5-3 7.5a3.5 3.5 0 0 1-6.6 1.6"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  cart:'<path d="M4 10h16l-1.5 9h-13z"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',box:'<path d="M4 7h16v13H4z"/><path d="M4 12h16M9 7V4h6v3"/>',
+  book:'<path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>',scan:'<path d="M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3"/><path d="M8 12h8"/>',
+  imp:'<path d="M4 14v5h16v-5"/><path d="M12 4v10M8 10l4 4 4-4"/>',starF:'<path fill="currentColor" stroke="none" d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
+};
+const svg=(n,sw)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[n]+'</svg>';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const TODAY=new Date(2026,9,16); // Fri 16 Oct 2026
+function dateOf(d){ const x=new Date(TODAY); x.setDate(x.getDate()+d); let s=x.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}).replace(',',''); if(d>200) s+=' '+x.getFullYear(); return s; }
+function tag(d){
+  if(d==null) return '<span class="tag none">No expiry</span>';
+  if(d<0) return '<span class="tag urgent">Expired</span>';
+  if(d===0) return '<span class="tag urgent">Today</span>';
+  if(d===1) return '<span class="tag soon">Tomorrow</span>';
+  if(d<=3) return '<span class="tag soon">'+d+' d left</span>';
+  return '<span class="tag ok">'+(d>60?Math.round(d/30)+' mo':d+' d')+'</span>';
+}
+const fq=(q,u)=>q==null?'':(u==='pcs'?q+' pcs':q+' '+u);
+const tint=a=>{const t=AIS[a]||AIS.other;return '--tint-bg:color-mix(in srgb,'+t+' 18%,var(--card-bg));--tint-fg:color-mix(in srgb,'+t+' 75%,var(--ink));--tint-edge:color-mix(in srgb,'+t+' 45%,var(--card-bg));--tint-edge2:color-mix(in srgb,'+t+' 28%,var(--card-bg))';};
+
+/* ---------- data ---------- */
+function seedShop(){ return [
+  {id:'s-tom',name:'Tomatoes',a:'produce',aisle:'Produce',q:1,u:'kg',on:false},
+  {id:'s-spin',name:'Spinach',a:'produce',aisle:'Produce',q:200,u:'g',on:false},
+  {id:'s-bread',name:'Sourdough bread',a:'bakery',aisle:'Bakery',q:1,u:'pcs',on:false},
+  {id:'s-milk',name:'Milk',a:'dairy',aisle:'Dairy & eggs',q:3,u:'l',on:false},
+  {id:'s-ched',name:'Cheddar',a:'dairy',aisle:'Dairy & eggs',q:200,u:'g',on:true},
+  {id:'s-pasta',name:'Pasta',a:'dry',aisle:'Pantry',q:500,u:'g',on:true},
+  {id:'s-tea',name:'Green tea',a:'drinks',aisle:'Drinks',q:1,u:'pcs',on:false}
+];}
+function seedPantry(){ return [
+  {id:'p-yog',name:'Greek yogurt',a:'dairy',loc:'Fridge',staple:true,b:[{id:'y1',q:1,u:'pcs',d:1},{id:'y2',q:1,u:'pcs',d:4},{id:'y3',q:1,u:'pcs',d:8}]},
+  {id:'p-milk',name:'Milk',a:'dairy',loc:'Fridge',staple:true,b:[{id:'m1',q:1,u:'l',d:1,desc:'Zuzu 3.5%'},{id:'m2',q:1,u:'l',d:5}]},
+  {id:'p-egg',name:'Eggs',a:'eggs',loc:'Fridge',b:[{id:'e1',q:6,u:'pcs',d:2},{id:'e2',q:10,u:'pcs',d:9}]},
+  {id:'p-spin',name:'Spinach',a:'produce',loc:'Fridge',b:[{id:'sp1',q:200,u:'g',d:2,desc:'Baby spinach bag'}]},
+  {id:'p-rice',name:'Basmati rice',a:'dry',loc:'Cupboard',b:[{id:'r1',q:1,u:'kg',d:200,desc:'Tilda'}]},
+  {id:'p-oil',name:'Olive oil',a:'dry',loc:'Cupboard',staple:true,b:[{id:'o1',q:750,u:'ml',d:300,desc:'Extra virgin'}]},
+  {id:'p-pasta',name:'Pasta',a:'dry',loc:'Cupboard',b:[{id:'pa1',q:1,u:'kg',d:null}]}
+];}
+const CATALOG=[['Bread','Bakery'],['Sourdough bread','Bakery'],['Bran flakes','Pantry'],['Sausages','Meat & fish'],['Milk','Dairy & eggs'],['Oat milk','Drinks'],['Greek yogurt','Dairy & eggs'],['Plain yogurt','Dairy & eggs'],['Spinach','Produce'],['Basmati rice','Pantry'],['Brown rice','Pantry'],['Olive oil','Pantry'],['Eggs','Dairy & eggs'],['Butter','Dairy & eggs'],['Ground coffee','Drinks'],['Coffee beans','Drinks'],['Crackers','Pantry'],['Quinoa','Pantry'],['Cheddar','Dairy & eggs']];
+
+const TRANSCRIPTS={
+  shop:{en:'Got the bread and sausages, got two milks, take the spinach off, add quinoa crackers. Put two yogurts straight in the pantry, they expire Friday. And make milk a staple.',
+        ro:'Am luat pâinea și cârnații, am luat două lapte, scoate spanacul, adaugă biscuiți de quinoa. Pune două iaurturi direct în cămară, expiră vineri. Și fă laptele de bază.',
+        da:'Har taget brødet og pølserne, to mælk, tag spinaten af, tilføj quinoa-kiks. Læg to yoghurter direkte i spisekammeret, de udløber fredag. Og gør mælk til en basisvare.'},
+  pantry:{en:'We finished the milk, used 300 grams of the yogurt, half a kilo of rice in the cupboard, good for a year. Running low on olive oil and butter, we\'re out of eggs, add coffee to the list, and take the cheddar out.',
+        ro:'Am terminat laptele, am folosit 300 de grame de iaurt, jumătate de kilogram de orez în dulap, e bun un an. Se termină uleiul de măsline și untul, nu mai avem ouă, adaugă cafea pe listă și scoate cheddarul.',
+        da:'Vi har drukket mælken, brugt 300 gram af yoghurten, et halvt kilo ris i skabet, holder et år. Olivenolien og smørret er ved at slippe op, vi er løbet tør for æg, sæt kaffe på listen, og tag cheddaren ud.'}
+};
+function scenario(page){
+  if(page==='shop') return [
+    {id:'a1',list:'shop',op:'check',name:'Sourdough bread',ref:'s-bread',q:1,u:'pcs',spoken:'got the bread'},
+    {id:'a2',list:'shop',op:'addChecked',name:'Sausages',a:'meat',aisle:'Meat & fish',q:null,u:'pcs',spoken:'got the sausages'},
+    {id:'a3',list:'shop',op:'check',name:'Milk',ref:'s-milk',q:2,u:'l',was:3,spoken:'got two milks'},
+    {id:'a4',list:'shop',op:'remove',name:'Spinach',ref:'s-spin',q:200,u:'g',spoken:'take the spinach off'},
+    {id:'a5',list:'shop',op:'add',name:'Quinoa crackers',unmatched:true,a:'other',aisle:'Not in the catalog',q:null,u:'pcs',spoken:'add quinoa crackers'},
+    {id:'a6',list:'pantry',op:'add',name:'Greek yogurt',ref:'p-yog',a:'dairy',q:2,u:'pcs',loc:'Fridge',locDef:true,exp:7,expDef:false,spoken:'put two yogurts straight in the pantry, they expire Friday'},
+    {id:'a7',status:'notUnderstood',spoken:'make milk a staple',reason:'Voice can\'t change Staples. Do it from the Pantry.'}
+  ];
+  return [
+    {id:'b1',list:'pantry',op:'remove',name:'Milk',ref:'p-milk',take:['m1'],spoken:'we finished the milk'},
+    {id:'b2',list:'pantry',op:'use',name:'Greek yogurt',ref:'p-yog',q:300,u:'g',take:[],status:'needsBatch',spoken:'used 300 grams of the yogurt'},
+    {id:'b3',list:'pantry',op:'add',name:'Basmati rice',ref:'p-rice',a:'dry',q:500,u:'g',loc:'Cupboard',locDef:false,exp:365,expDef:false,spoken:'half a kilo of rice in the cupboard, good for a year'},
+    {id:'b4',list:'pantry',op:'low',name:'Olive oil',ref:'p-oil',spoken:'running low on olive oil'},
+    {id:'b5',list:'pantry',op:'removeAll',name:'Eggs',ref:'p-egg',take:['e1','e2'],spoken:'we\'re out of eggs'},
+    {id:'b6',list:'shop',op:'add',name:'Butter',a:'dairy',aisle:'Dairy & eggs',q:null,u:'pcs',fromLow:true,spoken:'running low on butter'},
+    {id:'b7',list:'shop',op:'add',name:'Ground coffee',a:'drinks',aisle:'Drinks',q:null,u:'pcs',spoken:'add coffee to the list'},
+    {id:'b8',status:'notFound',spoken:'take the cheddar out',reason:'No cheddar in your Pantry.'}
+  ];
+}
+
+/* ---------- state ---------- */
+const S={variant:'B',theme:'warm',page:'shop',mic:'unknown',next:'heard',clash:'0',lang:'en',
+  phase:'idle',cancelArm:false,t0:0,off:0,elapsed:0,levels:[],scripted:false,capHit:false,failedKeep:false,
+  shop:seedShop(),pantry:seedPantry(),acts:[],heardOpen:false,openId:null,searchFor:null,confirmDiscard:false,flash:new Set(),noteLen:0};
+try{ const l=localStorage.getItem('pp-scan-lang'); if(LANGS[l]) S.lang=l; }catch(_){}
+const RM=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const tick=ms=>{ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(_){} };
+const $=s=>document.querySelector('#skin '+s);
+const host=document.getElementById('skin');
+let timers=[]; const later=(fn,ms)=>{const t=setTimeout(fn,ms);timers.push(t);return t;};
+function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
+
+/* ---------- page rendering ---------- */
+function totals(it){ const by={}; it.b.forEach(b=>{by[b.u]=(by[b.u]||0)+b.q;}); return Object.keys(by).map(u=>fq(+by[u].toFixed(3),u)).join(' + '); }
+function pantryHTML(){
+  const n=S.pantry.length; const soon=S.pantry.filter(i=>i.b.some(b=>b.d!=null&&b.d<=3)).length;
+  let h='<div class="hdr"><div><h1>Pantry</h1><div class="sub">'+n+' ingredients · '+soon+' expiring soon</div></div><div class="rt">'+(S.variant==='A'?voiceHTML():'')+'<div class="av">GV</div></div></div>';
+  ['Fridge','Freezer','Cupboard','Spices'].forEach(loc=>{
+    const items=S.pantry.filter(i=>i.loc===loc&&i.b.length); if(!items.length) return;
+    h+='<div><div class="sec"><span>'+loc+'</span><span>'+items.length+'</span></div><div class="card">';
+    items.forEach(it=>{
+      const multi=it.b.length>1; const bs=[...it.b].sort((x,y)=>(x.d==null?1e9:x.d)-(y.d==null?1e9:y.d)); const one=bs[0];
+      h+='<div class="prow'+(multi?' multi':'')+(S.flash.has(it.id)?' flash':'')+'" style="'+tint(it.a)+'"><span class="tile" aria-hidden="true">'+esc(it.name.slice(0,2))+'</span><span class="tx"><span class="nmrow"><span class="nm">'+esc(it.name)+'</span>'+(it.staple?'<span class="mk" title="Staple">'+svg('starF')+'</span>':'')+(it.low?'<span class="lowp">Low</span>':'')+'</span><span class="qt">'+(multi?'<b>'+totals(it)+'</b><span class="cnt">'+it.b.length+'</span>':esc(fq(one.q,one.u))+(one.desc?' · '+esc(one.desc):''))+'</span></span>'+tag(one.d)+'</div>';
+    });
+    h+='</div></div>';
+  });
+  return h;
+}
+function shopHTML(){
+  const all=S.shop, done=all.filter(i=>i.on).length, left=all.length-done;
+  let h='<div class="hdr"><h1>Shopping</h1><div class="rt">'+(S.variant==='A'?voiceHTML():'')+'<span class="ipill">'+svg('imp')+'Import</span></div></div>';
+  h+='<div class="card sum"><div class="tx"><div class="big">'+left+' to buy</div><div class="mt">'+done+' of '+all.length+' in the basket</div><div class="prog"><i style="width:'+(all.length?done/all.length*100:0)+'%"></i></div></div><button class="plus" type="button" aria-label="Add items" data-noop>'+svg('plus',2.4)+'</button></div>';
+  AISLE_ORDER.forEach(a=>{
+    const items=all.filter(i=>i.aisle===a); if(!items.length) return;
+    h+='<div><div class="sec"><span>'+a+'</span><span>'+items.length+'</span></div><div class="card">';
+    items.forEach(i=>{ h+='<div class="srow'+(i.on?' on':'')+(S.flash.has(i.id)?' flash':'')+'"><span class="box">'+(i.on?svg('check',3):'')+'</span><span class="nm">'+esc(i.name)+'</span>'+(i.unmatched?'<span class="um">Not in catalog</span>':'')+'<span class="q">'+esc(fq(i.q,i.u))+'</span></div>'; });
+    h+='</div></div>';
+  });
+  return h;
+}
+function voiceHTML(){
+  const L=LANGS[S.lang], rec=S.phase==='rec', off=S.capHit||S.mic==='denied';
+  const cls='vwrap v'+S.variant+(rec?' rec':'')+(rec&&S.cancelArm?' cx':'');
+  const icon=S.mic==='denied'?'micOff':'mic';
+  const bdg=S.phase==='failed'?'<span class="bdg" aria-hidden="true"></span>':'';
+  const label=S.variant==='A'?'<span>Speak</span>':S.variant==='C'?'<span>'+(rec?(S.cancelArm?'Let go to cancel':'Let go to send'):'Hold to speak')+'</span>':'';
+  const lang='<button class="langc" type="button" data-lang aria-label="Scan Language: '+L.name+'. Change">'+L.code+(S.variant!=='B'?svg('chev',2.6):'')+'</button>';
+  const btn='<button class="vbtn'+(off?' off':'')+'" type="button" data-voice aria-label="Hold to record a Voice Note" aria-pressed="'+rec+'">'+svg(icon,S.variant==='B'?2.1:2.2)+label+bdg+'</button>';
+  if(S.variant==='A') return '<span class="'+cls+'">'+btn+lang+'</span>';
+  if(S.variant==='C') return '<div class="'+cls+'">'+lang+btn+'</div>';
+  return '<div class="'+cls+'">'+lang+btn+'</div>';
+}
+function render(){
+  const t=THEMES[S.theme].t; for(const k in t) host.style.setProperty('--'+k,t[k]);
+  const keep=host.querySelector('.scr'); const st=keep?keep.scrollTop:0;
+  let h='<div class="phone p'+S.variant+'"><div class="scr" style="padding-bottom:'+(S.variant==='C'?200:S.variant==='B'?190:110)+'px"><div class="stat"><span>9:41</span><span>●●●</span></div>';
+  h+=S.page==='shop'?shopHTML():pantryHTML();
+  h+='</div>';
+  h+='<div class="vscrim'+(S.phase==='rec'?' on':'')+'"></div>';
+  if(S.variant!=='A') h+=voiceHTML();
+  h+='<div id="vlayer"></div><div id="shlayer"></div><div class="toastp" role="status" aria-live="polite"></div>';
+  h+='<div class="dock"><button type="button" data-pg="pantry" class="'+(S.page==='pantry'?'on':'')+'">'+svg('box')+'Pantry</button><button type="button" data-pg="shop" class="'+(S.page==='shop'?'on':'')+'">'+svg('cart')+'Shopping</button><button type="button" data-noop>'+svg('book')+'Recipes</button><button type="button" data-noop>'+svg('scan')+'Scan</button></div></div>';
+  host.innerHTML=h; host.querySelector('.scr').scrollTop=st;
+  renderLayer(); renderSheet();
+  const v=VARS[S.variant];
+  document.getElementById('vTitle').textContent=v.title;
+  document.getElementById('vDesc').textContent=v.desc;
+  document.getElementById('vPro').innerHTML='<b>Good</b>'+esc(v.pro);
+  document.getElementById('vCon').innerHTML='<b>Watch</b>'+esc(v.con);
+  syncSegs();
+}
+/* Update the voice button in place during recording (keeps pointer capture) */
+function updateButton(){
+  const w=host.querySelector('.vwrap'); if(!w) return;
+  w.classList.toggle('rec',S.phase==='rec'); w.classList.toggle('cx',S.phase==='rec'&&S.cancelArm);
+  const b=w.querySelector('.vbtn'); b.setAttribute('aria-pressed',String(S.phase==='rec'));
+  if(S.variant==='C'){ const sp=b.querySelector('span:not(.bdg)'); if(sp) sp.textContent=S.phase==='rec'?(S.cancelArm?'Let go to cancel':'Let go to send'):'Hold to speak'; }
+  const sc=host.querySelector('.vscrim'); if(sc) sc.classList.toggle('on',S.phase==='rec');
+}
+
+/* ---------- voice layer: listening card, status pill, tip, language popover ---------- */
+let layerExtra='';
+function fmtT(s){ s=Math.min(60,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function renderLayer(){
+  const el=document.getElementById('vlayer'); if(!el) return; const L=LANGS[S.lang];
+  const target=S.page==='shop'?'Goes to your Shopping List. Say “in the pantry” to add stock.':'Goes to your Pantry. Say “on the list” for the Shopping List.';
+  let h='';
+  if(S.phase==='rec'){
+    const late=S.elapsed>=50;
+    h='<div class="listen'+(S.cancelArm?' cancel':'')+(late&&!S.cancelArm?' late':'')+'" role="status" aria-live="polite"><div class="lt"><span class="recdot"></span><span class="xmark">'+svg('x',3)+'</span><span class="ls">'+(S.cancelArm?'Let go to cancel':'Listening')+'</span><span class="tm">'+fmtT(S.elapsed)+' <small>'+(late?(60-Math.floor(S.elapsed))+' s left':'/ 1:00')+'</small></span></div><div class="wave" aria-hidden="true">'+S.levels.map(v=>'<i style="height:'+Math.round(3+v*35)+'px"></i>').join('')+'</div><div class="lb"><span class="lg">'+L.name+'</span><span>'+(S.cancelArm?'Slide back to keep recording':'Let go to send · slide off to cancel')+'</span>'+(S.cancelArm?'':'<span class="to">'+target+'</span>')+'</div></div>';
+  } else if(S.phase==='reading'){
+    h='<div class="vpill" role="status"><span class="ic"><span class="spin"></span></span><span class="tx">Reading your note<small>'+fmtT(S.noteLen)+' of speech · '+L.name+'</small></span><span class="acts"><button class="sbtn" type="button" data-x="cancelRead">Cancel</button></span></div>';
+  } else if(S.phase==='failed'){
+    h='<div class="vpill warn" role="alert"><span class="ic">'+svg('wifiOff')+'</span><span class="tx">Couldn\'t send<small>No connection. Your recording is kept.</small></span><span class="acts"><button class="sbtn" type="button" data-x="discardFail">Discard</button><button class="sbtn pri" type="button" data-x="retry">Retry</button></span></div>';
+  } else if(S.phase==='nothing'){
+    h='<div class="vpill" role="status"><span class="ic">'+svg('ear')+'</span><span class="tx">Didn\'t catch anything, try again<small>Hold the button and speak close to the phone. This one doesn\'t count.</small></span></div>';
+  } else if(S.phase==='cap'){
+    h='<div class="vpill bad" role="alert"><span class="ic">'+svg('clock')+'</span><span class="tx">That\'s today\'s 50 Voice Notes<small>Voice is back tomorrow. Scans still work.</small></span><span class="acts"><button class="sbtn" type="button" data-x="okCap">OK</button></span></div>';
+  }
+  el.innerHTML=h+layerExtra;
+}
+function setPhase(p){ S.phase=p; updateButton(); renderLayer(); }
+let tipT=null;
+function showTip(txt){ layerExtra='<div class="tip" role="status">'+esc(txt)+'</div>'; renderLayer(); clearTimeout(tipT); tipT=setTimeout(()=>{layerExtra='';renderLayer();},1800); }
+function openLang(){
+  layerExtra='<div class="lpop" role="menu" aria-label="Scan Language"><div class="h">Scan Language</div>'+Object.keys(LANGS).map(k=>'<button role="menuitemradio" aria-checked="'+(k===S.lang)+'" data-setlang="'+k+'" lang="'+k+'">'+(k===S.lang?svg('check',2.6):'<span class="sp"></span>')+LANGS[k].own+'<small>'+LANGS[k].code+'</small></button>').join('')+'</div>';
+  renderLayer(); const b=host.querySelector('.lpop button[aria-checked="true"]'); if(b) b.focus();
+}
+let toastT=null;
+function toast(m,sub,ms){ const t=host.querySelector('.toastp'); if(!t) return; t.innerHTML=esc(m)+(sub?'<small>'+esc(sub)+'</small>':''); t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),ms||3200); }
+
+/* ---------- recording ---------- */
+let recIv=null, env=0, envT=0;
+function startRec(opts){
+  opts=opts||{}; clearTimers(); layerExtra='';
+  S.phase='rec'; S.cancelArm=false; S.off=opts.from||0; S.t0=performance.now(); S.elapsed=S.off; S.levels=new Array(30).fill(0); S.scripted=!!opts.scripted;
+  tick(10); updateButton(); renderLayer();
+  clearInterval(recIv);
+  recIv=setInterval(()=>{
+    S.elapsed=S.off+(performance.now()-S.t0)/1000;
+    // speech-like envelope: words and short pauses
+    if(--envT<=0){ env=Math.random()<.22?0.05:0.35+Math.random()*.6; envT=2+Math.floor(Math.random()*6); }
+    const v=S.cancelArm?0.05:Math.max(0.03,Math.min(1,env*(0.55+Math.random()*.6)));
+    S.levels.push(v); S.levels.shift();
+    const w=host.querySelector('.vwrap'); if(w) w.style.setProperty('--pr',Math.min(1,S.elapsed/60).toFixed(4));
+    const card=host.querySelector('.listen');
+    if(card){
+      const late=S.elapsed>=50; card.classList.toggle('late',late&&!S.cancelArm);
+      card.querySelector('.tm').innerHTML=fmtT(S.elapsed)+' <small>'+(late?(60-Math.floor(S.elapsed))+' s left':'/ 1:00')+'</small>';
+      const bars=card.querySelectorAll('.wave i'); S.levels.forEach((x,i)=>{ if(bars[i]) bars[i].style.height=Math.round(3+x*35)+'px'; });
+    }
+    if(S.elapsed>=60){ stopRec('auto'); }
+  },90);
+}
+function setCancel(v){ if(S.phase!=='rec'||S.cancelArm===v) return; S.cancelArm=v; tick(6); updateButton(); renderLayer(); }
+function stopRec(how){
+  if(S.phase!=='rec') return; clearInterval(recIv);
+  const len=S.elapsed; const w=host.querySelector('.vwrap'); if(w) w.style.setProperty('--pr',0);
+  if(how==='cancel'||S.cancelArm){ S.phase='idle'; S.cancelArm=false; updateButton(); renderLayer(); toast('Cancelled. Nothing was sent.'); return; }
+  if(how!=='auto'&&len-S.off<0.3&&!S.scripted){ S.phase='idle'; updateButton(); renderLayer(); showTip('Hold to talk, let go to send'); return; }
+  S.noteLen=Math.max(1,len); tick(14);
+  if(how==='auto') toast('Stopped at 1 minute','Sending what you said.');
+  send();
+}
+function send(){
+  S.cancelArm=false; setPhase('reading');
+  const outcome=S.next;
+  later(()=>{
+    if(S.phase!=='reading') return;
+    if(outcome==='silent'){ setPhase('nothing'); later(()=>{ if(S.phase==='nothing') setPhase('idle'); },3600); return; }
+    if(outcome==='fail'){ setPhase('failed'); return; }
+    if(outcome==='cap'){ S.capHit=true; setPhase('cap'); render(); return; }
+    openReview();
+  },1700);
+}
+function pressVoice(){
+  if(S.phase==='reading'){ showTip('Still reading your last note'); return false; }
+  if(S.phase==='failed'){ showTip('Retry or discard the last note first'); return false; }
+  if(S.mic==='unknown'){ openFirst(); return false; }
+  if(S.mic==='denied'){ openDenied(); return false; }
+  if(S.capHit){ setPhase('cap'); return false; }
+  startRec(); return true;
+}
+
+/* ---------- sheets ---------- */
+let sheet=null; // 'first' | 'perm' | 'denied' | 'review'
+function renderSheet(){
+  const el=document.getElementById('shlayer'); if(!el) return;
+  if(!sheet){ el.innerHTML=''; return; }
+  const keep=el.querySelector('.sh-b'); const st=keep?keep.scrollTop:0;
+  let h='';
+  if(sheet==='first'||sheet==='perm'){
+    const ex=S.page==='shop'?[['“Got the bread, take milk off”','Ticks bread, removes milk'],['“Add two litres of milk”','Adds milk, 2 l'],['“Put two yogurts in the fridge, they expire Friday”','Goes straight to the Pantry']]:[['“Two yogurts in the fridge, they expire Friday”','Adds a batch of 2 pcs'],['“We finished the milk”','Removes the milk expiring soonest'],['“Running low on rice”','Marks rice running low']];
+    h='<div class="scrim" data-x="closeFirst"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fuT"><div class="grab"></div><div class="sh-b" style="padding-top:8px"><div class="hero"><div class="orb">'+svg('mic')+'</div><h3 id="fuT">Say what you did</h3></div><p class="prose" style="text-align:center">Hold the button, speak, let go. You check every change before anything is saved.</p><div class="says">'+ex.map(e=>'<div>'+esc(e[0])+'<small>'+esc(e[1])+'</small></div>').join('')+'</div><p class="prose"><b>Pocket Pantry needs your microphone</b> to hear Voice Notes. Your browser will ask next. The recording is turned into text to read your changes, then deleted; nothing is kept.</p></div><div class="sh-f"><button class="btn gh" type="button" data-x="closeFirst">Not now</button><button class="btn pri" type="button" data-x="allow">'+svg('mic')+'Allow microphone</button></div></div>';
+    if(sheet==='perm') h+='<div class="sysp" role="dialog" aria-label="Browser permission (mock)"><div class="o">pocketpantry.app wants to</div><b>Use your microphone</b><div class="r"><button type="button" data-x="permBlock">Block</button><button class="y" type="button" data-x="permAllow">Allow</button></div></div>';
+  } else if(sheet==='denied'){
+    h='<div class="scrim" data-x="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dnT"><div class="grab"></div><div class="sh-b" style="padding-top:8px"><div class="hero"><div class="orb bad">'+svg('micOff')+'</div><h3 id="dnT">The microphone is blocked</h3></div><p class="prose" style="text-align:center">Voice Notes need it. Allow it for Pocket Pantry in your browser, then come back and hold the button again.</p><div class="card" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px"><div style="font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">iPhone, Safari</div><ol class="steps"><li>Tap <b>aA</b> in the address bar</li><li><b>Website Settings</b> → <b>Microphone</b> → <b>Allow</b></li></ol><div style="font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--divider);padding-top:10px">Android, Chrome</div><ol class="steps"><li>Tap '+svg('lock').replace('<svg','<svg style="width:14px;height:14px;vertical-align:-2px"')+' next to the address</li><li><b>Permissions</b> → <b>Microphone</b> → <b>Allow</b></li></ol></div></div><div class="sh-f"><button class="btn gh" type="button" data-x="close">Close</button><button class="btn pri" type="button" data-x="tryAgain">I\'ve allowed it</button></div></div>';
+  } else if(sheet==='review'){
+    h='<div class="scrim"></div><div class="sheet tall" role="dialog" aria-modal="true" aria-labelledby="rvT">'+reviewHTML()+'</div>';
+  }
+  el.innerHTML=h; const b=el.querySelector('.sh-b'); if(b) b.scrollTop=st;
+}
+function openFirst(){ sheet='first'; renderSheet(); }
+function openDenied(){ sheet='denied'; renderSheet(); }
+function closeSheet(){ sheet=null; renderSheet(); }
+
+/* ---------- Review ---------- */
+function findShop(id){ return S.shop.find(i=>i.id===id); }
+function findPan(id){ return S.pantry.find(i=>i.id===id); }
+function batchesOf(a){ const it=findPan(a.ref); return it?[...it.b].sort((x,y)=>(x.d==null?1e9:x.d)-(y.d==null?1e9:y.d)):[]; }
+const VERB={check:'Tick',addChecked:'Add, ticked',add:'Add',remove:'Remove',removeAll:'Remove all',use:'Use',setQty:'Change',low:'Running low'};
+function opIcon(a){
+  if(a.status==='notFound'||a.status==='notUnderstood') return '<span class="opi op-ro">'+svg(a.status==='notFound'?'search':'alert')+'</span>';
+  const m={check:['op-check','check'],addChecked:['op-check','check'],add:['op-add','plus'],remove:['op-rm','minus'],removeAll:['op-rm','minus'],use:['op-rm','minus'],setQty:['op-qty','eq'],low:['op-low','low']}[a.op];
+  return '<span class="opi '+m[0]+'">'+svg(m[1],2.4)+'</span>';
+}
+function l2(a){
+  const q=a.q!=null?'<b>'+esc(fq(a.q,a.u))+'</b>':'';
+  if(a.list==='shop'){
+    if(a.op==='check') return a.was!=null&&a.was!==a.q?q+', list said '+esc(fq(a.was,a.u)):'On your list'+(q?' · '+q:'');
+    if(a.op==='addChecked') return 'Not on your list, so it\'s added ticked'+(q?' · '+q:'');
+    if(a.op==='remove') return 'Comes off your list'+(q?' · '+esc(fq(a.q,a.u)):'');
+    if(a.op==='add'){ const parts=[]; if(q) parts.push(q); else parts.push('No amount'); if(a.unmatched) parts.push('not in the catalog, saved as said'); if(a.fromLow) parts.push('no butter in the Pantry, so it goes on the list'); return parts.join(' · '); }
+  } else {
+    if(a.op==='add'){ const exp=a.exp==='none'?'<span'+(a.expDef?' class="dfl dfe"':'')+'>no expiry</span>':'<span'+(a.expDef?' class="dfl dfe"':'')+'>expires '+dateOf(a.exp)+'</span>'; return q+' · <span'+(a.locDef?' class="dfl"':'')+'>'+esc(a.loc)+'</span> · '+exp; }
+    if(a.op==='remove'){ const b=batchesOf(a).find(x=>x.id===a.take[0]); return b?'Takes <b>'+esc(fq(b.q,b.u))+'</b> · '+(b.d==null?'no date':dateOf(b.d))+(batchesOf(a)[0].id===b.id?', expiring soonest':''):''; }
+    if(a.op==='removeAll'){ const bs=batchesOf(a); return 'Takes all '+bs.length+' batches · <b>'+esc(totals({b:bs}))+'</b>'; }
+    if(a.op==='use'){ if(a.status==='needsBatch') return esc(fq(a.q,a.u))+' doesn\'t fit batches counted in pcs · pick one'; const b=batchesOf(a).find(x=>x.id===a.take[0]); return b?'Takes <b>'+esc(fq(b.q,b.u))+'</b> · '+(b.d==null?'no date':dateOf(b.d)):''; }
+    if(a.op==='low') return 'Shows in Suggestions until a new batch arrives';
+  }
+  return '';
+}
+function editorHTML(a){
+  let h='<div class="ed"><div class="hd">Heard: <q>'+esc(a.spoken)+'</q></div>';
+  const hasAmt=(a.op==='check'||a.op==='addChecked'||a.op==='add'||a.op==='setQty');
+  if(hasAmt){
+    h+='<div class="fl"><span>Amount</span><div class="amt"><input id="amt-'+a.id+'" type="number" inputmode="decimal" min="0" step="any" value="'+(a.q==null?'':a.q)+'" placeholder="–" data-amt="'+a.id+'" aria-label="Amount"><div class="chips" role="radiogroup" aria-label="Unit">'+['g','kg','ml','l','pcs'].map(u=>'<button type="button" role="radio" aria-pressed="'+(a.u===u)+'" data-unit="'+u+'" data-id="'+a.id+'">'+u+'</button>').join('')+'</div></div></div>';
+  }
+  if(a.list==='pantry'&&a.op==='add'){
+    const picks=[[1,'Tomorrow'],[3,'3 d'],[7,'1 wk'],[14,'2 wk'],[365,'1 yr'],['none','No expiry']];
+    h+='<div class="fl"><span>Expires</span><div class="chips">'+picks.map(p=>'<button type="button" aria-pressed="'+(a.exp===p[0])+'" data-exp="'+p[0]+'" data-id="'+a.id+'">'+p[1]+'</button>').join('')+'</div><div class="when">'+(a.exp==='none'?'No expiry date':'<b>'+dateOf(a.exp)+'</b>'+(a.expDef?' · Default Expiry for this Ingredient':' · from what you said'))+'</div></div>';
+    h+='<div class="fl"><span>Location</span><div class="chips">'+['Fridge','Freezer','Cupboard','Spices'].map(l=>'<button type="button" aria-pressed="'+(a.loc===l)+'" data-loc="'+l+'" data-id="'+a.id+'">'+l+'</button>').join('')+'</div>'+(a.locDef?'<div class="when">Not said, so the usual place for this Ingredient</div>':'')+'</div>';
+  }
+  if(a.op==='remove'||a.op==='use'){
+    const bs=batchesOf(a);
+    h+='<div class="fl"><span>'+(a.status==='needsBatch'?'Which batch did you use up?':'Batch to remove')+'</span><div class="bpick" role="radiogroup">'+bs.map((b,i)=>'<button type="button" role="radio" aria-checked="'+(a.take[0]===b.id)+'" data-batch="'+b.id+'" data-id="'+a.id+'"><span class="rd"></span><span class="ix">'+(i+1)+'</span><span class="bt">'+esc(fq(b.q,b.u))+' <small>· '+(b.d==null?'no date':dateOf(b.d))+(b.desc?' · '+esc(b.desc):'')+'</small></span>'+tag(b.d)+'</button>').join('')+'</div></div>';
+  }
+  if(S.searchFor===a.id){
+    h+='<div class="srch"><div class="f">'+svg('search')+'<input id="srch-'+a.id+'" type="search" placeholder="Search the catalog" value="'+esc(a.name)+'" data-srch="'+a.id+'" aria-label="Search the catalog"></div><div class="r" id="sr-'+a.id+'">'+searchRows(a.id,a.name)+'</div></div>';
+  } else {
+    h+='<div class="ingr"><span style="color:var(--muted);font-size:12.5px">Ingredient</span><b>'+esc(a.name)+(a.unmatched?' <span class="um">Not in catalog</span>':'')+'</b><button class="lnk" type="button" data-chg="'+a.id+'">'+svg('search')+'Change</button></div>';
+  }
+  h+='<button class="sbtn doneb" type="button" data-toggle="'+a.id+'">Done</button></div>';
+  return h;
+}
+function searchRows(id,q){
+  q=(q||'').trim().toLowerCase();
+  const r=CATALOG.filter(c=>!q||c[0].toLowerCase().includes(q)||q.split(' ').some(w=>w.length>2&&c[0].toLowerCase().includes(w))).slice(0,5);
+  return r.length?r.map(c=>'<button type="button" data-pick="'+esc(c[0])+'" data-id="'+id+'">'+esc(c[0])+'<small>'+esc(c[1])+'</small></button>').join(''):'<div style="padding:10px 12px;font-size:13px;color:var(--muted)">No match. It will be saved as said.</div>';
+}
+function actHTML(a){
+  if(a.status==='notFound'||a.status==='notUnderstood'){
+    return '<div class="act ro"><div class="act-h">'+opIcon(a)+'<span class="tx"><span class="l1"><span class="verb">'+(a.status==='notFound'?'Not found: ':'Didn\'t understand: ')+'</span><b>“'+esc(a.spoken)+'”</b></span><span class="l2">'+esc(a.reason)+'</span></span></div><button class="rm" type="button" data-rm="'+a.id+'" aria-label="Dismiss">'+svg('x',2.2)+'</button></div>';
+  }
+  const open=S.openId===a.id;
+  return '<div class="act'+(open?' open':'')+(a.status==='needsBatch'?' warn':'')+'"><button class="act-h" type="button" data-toggle="'+a.id+'" aria-expanded="'+open+'">'+opIcon(a)+'<span class="tx"><span class="l1"><span class="verb">'+VERB[a.op]+'</span> <b>'+esc(a.name)+'</b></span><span class="l2">'+l2(a)+'</span></span></button><button class="rm" type="button" data-rm="'+a.id+'" aria-label="Drop this change">'+svg('x',2.2)+'</button>'+(open?editorHTML(a):'')+'</div>';
+}
+function actionable(){ return S.acts.filter(a=>a.status!=='notFound'&&a.status!=='notUnderstood'); }
+function reviewHTML(){
+  const L=LANGS[S.lang]; const tr=TRANSCRIPTS[S.page][S.lang];
+  const acts=actionable(); const ro=S.acts.filter(a=>!acts.includes(a));
+  const lists=S.page==='shop'?['shop','pantry']:['pantry','shop'];
+  const need=acts.filter(a=>a.status==='needsBatch');
+  const nList=new Set(acts.map(a=>a.list)).size;
+  let h='<div class="grab"></div><div class="sh-h"><div style="flex:1;min-width:0"><div class="ttl" id="rvT">Review</div><div class="st">'+(acts.length?acts.length+' change'+(acts.length>1?'s':'')+(nList>1?' on both lists':''):'Nothing to apply')+' · nothing is saved until you Apply</div></div></div><div class="sh-b">';
+  h+='<div class="heard'+(S.heardOpen?' open':'')+'"><button type="button" data-x="heard" aria-expanded="'+S.heardOpen+'"><span class="qi">'+svg('quote')+'</span><span class="tx"><b>What I heard</b><span>'+esc(tr)+'</span></span>'+svg('chev').replace('<svg','<svg class="chv"')+'</button><div class="full" lang="'+S.lang+'">'+esc(tr)+'<small>'+L.name+' · '+fmtT(S.noteLen||9)+'</small></div></div>';
+  lists.forEach(l=>{
+    const g=acts.filter(a=>a.list===l); if(!g.length) return;
+    const isDef=l===S.page;
+    h+='<div class="grp"><div class="gl">'+svg(l==='shop'?'cart':'box')+(l==='shop'?'Shopping List':'Pantry')+(isDef?'':' <span class="dft">you named it</span>')+'<span class="n">'+g.length+'</span></div><div class="card">'+g.map(actHTML).join('')+'</div></div>';
+  });
+  if(ro.length) h+='<div class="grp"><div class="gl">Couldn\'t apply<span class="n">'+ro.length+'</span></div><div class="card">'+ro.map(actHTML).join('')+'</div></div>';
+  h+='</div><div class="sh-f">';
+  if(S.confirmDiscard){
+    h+='<div class="cfm"><p>Discard this Voice Note?<small>Nothing changes, and you\'ll have to say it again.</small></p><div class="r"><button class="btn gh" type="button" data-x="keep">Keep reviewing</button><button class="btn dng" type="button" data-x="discard">Discard</button></div></div>';
+  } else if(S.applying){
+    h+='<button class="btn gh" type="button" disabled>Discard</button><button class="btn pri" type="button" disabled><span class="spin"></span>Applying</button>';
+  } else {
+    let lbl='Apply '+acts.length+' change'+(acts.length===1?'':'s'), dis=false;
+    if(!acts.length){ lbl='Nothing to apply'; dis=true; }
+    else if(need.length){ lbl='Pick a batch first'; dis=true; }
+    h+='<button class="btn '+(acts.length?'gh':'pri')+'" type="button" data-x="askDiscard"'+(acts.length?'':' style="flex:1"')+'>Discard</button>'+(acts.length?'<button class="btn pri" type="button" data-x="apply"'+(dis?' disabled':'')+'>'+(dis?'':svg('check',2.6))+esc(lbl)+'</button>':'');
+  }
+  h+='</div>';
+  return h;
+}
+function openReview(){
+  S.acts=scenario(S.page); S.openId=null; S.searchFor=null; S.confirmDiscard=false; S.applying=false; S.heardOpen=false;
+  const need=S.acts.find(a=>a.status==='needsBatch'); if(need) S.openId=need.id;
+  S.phase='idle'; updateButton(); renderLayer();
+  sheet='review'; renderSheet();
+}
+function apply(){
+  S.applying=true; renderSheet();
+  setTimeout(()=>{
+    const acts=actionable(); const clash=S.clash==='1'; let skipped=null; let alreadyTicked=false;
+    S.flash=new Set(); let nShop=0,nPan=0;
+    acts.forEach(a=>{
+      if(a.list==='shop'){
+        nShop++;
+        if(a.op==='check'){ const it=findShop(a.ref); if(it){ if(clash&&a.ref==='s-bread'){ alreadyTicked=true; } it.on=true; if(a.q!=null) it.q=a.q; it.u=a.u||it.u; S.flash.add(it.id);} }
+        else if(a.op==='addChecked'||a.op==='add'){ const id='s-'+a.id; S.shop.push({id,name:a.name,a:a.a,aisle:a.aisle||'Not in the catalog',q:a.q,u:a.q!=null?a.u:null,on:a.op==='addChecked',unmatched:a.unmatched}); S.flash.add(id); }
+        else if(a.op==='remove'){ S.shop=S.shop.filter(i=>i.id!==a.ref); }
+      } else {
+        if(clash&&a.id==='b1'){ skipped='milk no longer in Pantry'; return; }
+        nPan++;
+        const it=findPan(a.ref);
+        if(a.op==='add'){ const b={id:'n'+a.id,q:a.q,u:a.u,d:a.exp==='none'?null:a.exp}; if(it&&a.loc===it.loc){ it.b.push(b); it.low=false; S.flash.add(it.id);} else { const nid='p-'+a.id; S.pantry.push({id:nid,name:a.name,a:a.a,loc:a.loc,b:[b]}); S.flash.add(nid);} }
+        else if((a.op==='remove'||a.op==='use')&&it){ it.b=it.b.filter(b=>!a.take.includes(b.id)); S.flash.add(it.id); }
+        else if(a.op==='removeAll'&&it){ it.b=[]; }
+        else if(a.op==='low'&&it){ it.low=true; S.flash.add(it.id); }
+      }
+    });
+    S.applying=false; sheet=null; S.acts=[]; render();
+    const n=nShop+nPan; const other=S.page==='shop'?nPan:nShop;
+    if(skipped) toast(n+' applied, 1 skipped: '+skipped,null,5200);
+    else toast(n+' applied'+(other?': '+(S.page==='shop'?(n-other)+' on the list, '+other+' in the Pantry':(n-other)+' in the Pantry, '+other+' on the list'):''),alreadyTicked?'Bread was already ticked by Ana, so that one counts as done.':null,5200);
+    setTimeout(()=>{ S.flash=new Set(); },2000);
+  },900);
+}
+
+/* ---------- events inside the phone ---------- */
+let P=null;
+host.addEventListener('pointerdown',e=>{
+  const vb=e.target.closest('[data-voice]'); if(!vb||e.button>0) return;
+  e.preventDefault();
+  if(host.querySelector('.lpop')){ layerExtra=''; renderLayer(); }
+  if(!pressVoice()) return;
+  P={id:e.pointerId,el:vb};
+  try{ vb.setPointerCapture(e.pointerId); }catch(_){}
+});
+host.addEventListener('pointermove',e=>{
+  if(!P||e.pointerId!==P.id||S.phase!=='rec') return;
+  const r=P.el.getBoundingClientRect(), m=72;
+  const out=e.clientX<r.left-m||e.clientX>r.right+m||e.clientY<r.top-m||e.clientY>r.bottom+m;
+  setCancel(out);
+});
+const endP=e=>{ if(!P||e.pointerId!==P.id) return; P=null; if(S.phase==='rec') stopRec(e.type==='pointercancel'?'cancel':'up'); };
+host.addEventListener('pointerup',endP); host.addEventListener('pointercancel',endP);
+host.addEventListener('contextmenu',e=>{ if(e.target.closest('[data-voice]')) e.preventDefault(); });
+host.addEventListener('keydown',e=>{
+  const vb=e.target.closest('[data-voice]');
+  if(vb&&(e.key===' '||e.key==='Enter')&&!e.repeat){ e.preventDefault(); if(S.phase!=='rec') pressVoice(); }
+  if(e.key==='Escape'){ if(S.phase==='rec'){ stopRec('cancel'); } else if(host.querySelector('.lpop')){ layerExtra=''; renderLayer(); } else if(sheet&&sheet!=='review'){ closeSheet(); } }
+});
+host.addEventListener('keyup',e=>{ const vb=e.target.closest('[data-voice]'); if(vb&&(e.key===' '||e.key==='Enter')&&S.phase==='rec'&&!P){ e.preventDefault(); stopRec('up'); } });
+host.addEventListener('click',e=>{
+  const t=e.target;
+  if(t.closest('[data-voice]')) return;
+  const lg=t.closest('[data-lang]'); if(lg){ if(host.querySelector('.lpop')){ layerExtra=''; renderLayer(); } else openLang(); return; }
+  const sl=t.closest('[data-setlang]'); if(sl){ S.lang=sl.dataset.setlang; try{localStorage.setItem('pp-scan-lang',S.lang);}catch(_){} layerExtra=''; render(); toast('Scan Language: '+LANGS[S.lang].name,'Used for Voice Notes and the camera.'); return; }
+  if(host.querySelector('.lpop')&&!t.closest('.lpop')){ layerExtra=''; renderLayer(); }
+  const pg=t.closest('[data-pg]'); if(pg){ S.page=pg.dataset.pg; render(); return; }
+  if(t.closest('[data-noop]')) return;
+  const x=t.closest('[data-x]');
+  if(x){ const k=x.dataset.x;
+    if(k==='closeFirst'||k==='close'){ closeSheet(); return; }
+    if(k==='allow'){ sheet='perm'; renderSheet(); return; }
+    if(k==='permAllow'){ S.mic='granted'; closeSheet(); render(); toast('Microphone on','Now hold the button and speak.'); return; }
+    if(k==='permBlock'){ S.mic='denied'; sheet='denied'; render(); return; }
+    if(k==='tryAgain'){ S.mic='granted'; closeSheet(); render(); toast('Microphone on','Hold the button and speak.'); return; }
+    if(k==='cancelRead'){ clearTimers(); setPhase('idle'); toast('Cancelled. Nothing was saved.'); return; }
+    if(k==='retry'){ S.next=S.next==='fail'?'heard':S.next; syncSegs(); send(); return; }
+    if(k==='discardFail'){ setPhase('idle'); render(); toast('Recording discarded'); return; }
+    if(k==='okCap'){ setPhase('idle'); return; }
+    if(k==='heard'){ S.heardOpen=!S.heardOpen; renderSheet(); return; }
+    if(k==='askDiscard'){ S.confirmDiscard=true; renderSheet(); return; }
+    if(k==='keep'){ S.confirmDiscard=false; renderSheet(); return; }
+    if(k==='discard'){ S.confirmDiscard=false; S.acts=[]; closeSheet(); toast('Voice Note discarded','Nothing was changed.'); return; }
+    if(k==='apply'){ apply(); return; }
+  }
+  const tg=t.closest('[data-toggle]'); if(tg){ const id=tg.dataset.toggle; S.openId=S.openId===id?null:id; S.searchFor=null; renderSheet(); return; }
+  const rm=t.closest('[data-rm]'); if(rm){ S.acts=S.acts.filter(a=>a.id!==rm.dataset.rm); if(S.openId===rm.dataset.rm) S.openId=null; renderSheet(); return; }
+  const A=id=>S.acts.find(a=>a.id===id);
+  const un=t.closest('[data-unit]'); if(un){ A(un.dataset.id).u=un.dataset.unit; renderSheet(); return; }
+  const ex=t.closest('[data-exp]'); if(ex){ const a=A(ex.dataset.id); a.exp=ex.dataset.exp==='none'?'none':+ex.dataset.exp; a.expDef=false; renderSheet(); return; }
+  const lc=t.closest('[data-loc]'); if(lc){ const a=A(lc.dataset.id); a.loc=lc.dataset.loc; a.locDef=false; renderSheet(); return; }
+  const bt=t.closest('[data-batch]'); if(bt){ const a=A(bt.dataset.id); a.take=[bt.dataset.batch]; if(a.status==='needsBatch'){ a.status='ready'; } renderSheet(); return; }
+  const ch=t.closest('[data-chg]'); if(ch){ S.searchFor=ch.dataset.chg; renderSheet(); const i=document.getElementById('srch-'+ch.dataset.chg); if(i){ i.focus(); i.select(); } return; }
+  const pk=t.closest('[data-pick]'); if(pk){ const a=A(pk.dataset.id); a.name=pk.dataset.pick; a.unmatched=false; S.searchFor=null; renderSheet(); return; }
+});
+host.addEventListener('input',e=>{ const s=e.target.closest('[data-srch]'); if(s){ const r=document.getElementById('sr-'+s.dataset.srch); if(r) r.innerHTML=searchRows(s.dataset.srch,s.value); } });
+host.addEventListener('change',e=>{ const m=e.target.closest('[data-amt]'); if(m){ const a=S.acts.find(x=>x.id===m.dataset.amt); const v=parseFloat(m.value); a.q=isNaN(v)||v<=0?null:v; renderSheet(); } });
+
+/* ---------- workbench ---------- */
+function setSeg(id,val){ document.querySelectorAll('#'+id+' button').forEach(b=>b.setAttribute('aria-selected',String((b.dataset.v||b.dataset.key)===val))); }
+function syncSegs(){ setSeg('varSeg',S.variant); setSeg('themeSeg',S.theme); setSeg('pageSeg',S.page); setSeg('micSeg',S.mic); setSeg('nextSeg',S.next); setSeg('clashSeg',S.clash); }
+function seg(id,fn){ document.querySelectorAll('#'+id+' button').forEach(b=>b.addEventListener('click',()=>{ fn(b.dataset.v||b.dataset.key); syncSegs(); })); }
+const themeSeg=document.getElementById('themeSeg');
+ORDER.forEach(k=>{ const b=document.createElement('button'); b.setAttribute('role','tab'); b.dataset.key=k; b.innerHTML='<span class="dot" style="background:'+THEMES[k].dot+'"></span>'+THEMES[k].name; themeSeg.appendChild(b); });
+function resetFlow(){ clearTimers(); clearInterval(recIv); P=null; S.phase='idle'; S.cancelArm=false; sheet=null; layerExtra=''; S.capHit=false; }
+seg('themeSeg',k=>{ S.theme=k; render(); try{localStorage.setItem('pp-look',k)}catch(_){} });
+seg('varSeg',v=>{ resetFlow(); S.variant=v; render(); });
+seg('pageSeg',v=>{ resetFlow(); S.page=v; render(); });
+seg('micSeg',v=>{ resetFlow(); S.mic=v; render(); });
+seg('nextSeg',v=>{ S.next=v; if(v!=='cap'&&S.capHit){ S.capHit=false; render(); } });
+seg('clashSeg',v=>{ S.clash=v; });
+document.querySelectorAll('[data-j]').forEach(b=>b.addEventListener('click',()=>{
+  const j=b.dataset.j; resetFlow();
+  if(j==='reset'){ S.shop=seedShop(); S.pantry=seedPantry(); S.mic='granted'; S.next='heard'; render(); return; }
+  if(j==='first'){ S.mic='unknown'; render(); openFirst(); return; }
+  if(j==='denied'){ S.mic='denied'; render(); openDenied(); return; }
+  if(S.mic!=='granted'){ S.mic='granted'; }
+  if(j==='review'){ S.next='heard'; render(); S.noteLen=9; openReview(); return; }
+  if(j==='fail'){ S.next='fail'; render(); S.noteLen=11; send(); syncSegs(); return; }
+  render();
+  if(j==='rec'){ startRec({scripted:true}); later(()=>stopRec('up'),4200); }
+  if(j==='cancel'){ startRec({scripted:true}); later(()=>setCancel(true),1600); later(()=>stopRec('cancel'),3400); }
+  if(j==='late'){ startRec({scripted:true,from:51.5}); }
+  syncSegs();
+}));
+
+try{ const s=localStorage.getItem('pp-look'); if(s&&THEMES[s]) S.theme=s; }catch(_){}
+const hash=location.hash.replace('#',''); if(VARS[hash]) S.variant=hash; if(THEMES[hash]) S.theme=hash;
+render();
+})();
+</script>

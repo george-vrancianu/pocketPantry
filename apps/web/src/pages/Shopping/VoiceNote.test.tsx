@@ -16,6 +16,8 @@ import { ShoppingPage } from './ShoppingPage';
 const mic = vi.hoisted(() => ({ start: vi.fn() }));
 vi.mock('../../lib/microphone', () => ({
   startRecording: mic.start,
+  permissionState: vi.fn(async () => 'granted'),
+  requestPermission: vi.fn(async () => undefined),
   MicrophoneError: class MicrophoneError extends Error {
     constructor(readonly reason: string) {
       super(reason);
@@ -34,6 +36,7 @@ function fakeSession() {
   return {
     stop: vi.fn(() => Promise.resolve(recording)),
     cancel: vi.fn(),
+    level: vi.fn(() => 0),
   };
 }
 
