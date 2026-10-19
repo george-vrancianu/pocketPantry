@@ -7,7 +7,7 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { VoiceReview } from './VoiceReview';
+import { VoiceReview } from './voice/VoiceReview';
 import { VoiceButton } from './voice/VoiceButton';
 import { useVoiceConfigured, type VoiceList } from '../lib/voice';
 import { useVoiceNote } from '../lib/useVoiceNote';
