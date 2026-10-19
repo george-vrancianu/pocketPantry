@@ -272,7 +272,7 @@ describe('Voice Note microphone sheets', () => {
 
       const again = await screen.findByRole('dialog');
       expect(again).toHaveTextContent('The microphone is blocked');
-      expect(within(again).queryByRole('status')).toBeNull();
+      expect(within(again).getByRole('status')).toBeEmptyDOMElement();
       expect(within(again).queryByText(/Still blocked/)).toBeNull();
       expect(within(again).getByTestId('mic-hero')).not.toHaveAttribute(
         'data-shaking',
