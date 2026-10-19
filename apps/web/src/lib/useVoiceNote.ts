@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
@@ -18,11 +19,11 @@ import {
   micExplained,
   MIN_VOICE_NOTE_MS,
   QUICK_TAP_MS,
-  NOT_RETRYABLE,
   rememberMicExplained,
   sendVoiceNote,
   type VoiceList,
 } from './voice';
+import type { ScanLanguage } from '../i18n/resources';
 import {
   getVoiceNoteState,
   voiceNote,
@@ -30,6 +31,12 @@ import {
   type VoiceErrorCode,
 } from './voiceNoteStore';
 import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
+
+/** Cancel aborts this request; module-level so the pill on either page can reach it. */
+let reading: AbortController | undefined;
+
+/** The pill for a note nothing came of closes itself after this long. */
+export const NOTHING_HEARD_MS = 3600;
 
 /**
  * Hold-to-talk Voice Note: `press` starts recording, `release` stops and sends,
@@ -40,46 +47,51 @@ import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 export function useVoiceNote(defaultTarget: VoiceList) {
   const { t } = useTranslation(['errors', 'voice']);
   const toast = useToast();
+  const queryClient = useQueryClient();
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
   const [elapsedMs, setElapsedMs] = useState(0);
   // The Voice Note itself lives in the shared store, so Review and the button on any page see it.
   const {
     phase,
-    recording: kept,
+    recording: keptRecording,
     proposal,
     error,
-    errorMessage,
+    voiceCap,
   } = useVoiceNoteState();
   const recording = phase === 'recording';
   const sending = phase === 'reading';
   const note = proposal ?? null;
-  const notice = useMemo(
-    () =>
-      phase === 'failed' && error
-        ? error === 'failed'
-          ? {
-              kind: 'failed' as const,
-              message: errorMessage ?? '',
-              canRetry: kept !== undefined,
-            }
-          : { kind: error }
-        : null,
-    [phase, error, errorMessage, kept],
-  );
+  // Only what the pill does not show: the microphone's own problems keep the inline notice.
+  const notice =
+    phase === 'failed' && (error === 'denied' || error === 'unavailable')
+      ? { kind: error }
+      : null;
+  // The Voice Cap lifts by itself at `resetsAt`: render again then (the store alone would not).
+  const [, wake] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => {
+    if (!voiceCap) return;
+    const wait = voiceCap.resetsAt - Date.now();
+    if (wait <= 0) return;
+    const id = setTimeout(wake, wait);
+    return () => clearTimeout(id);
+  }, [voiceCap]);
+  const capped = voiceCap !== undefined && Date.now() < voiceCap.resetsAt;
+  // A failed note is waiting for Retry or Discard.
+  const kept = phase === 'failed' && keptRecording !== undefined;
   const [explaining, setExplaining] = useState(false);
   // The pointer is down and the stream is not live yet ("Starting…").
   const [pressing, setPressing] = useState(false);
-  // The "Hold to talk" tip after a press too quick to be a Voice Note.
-  const [tip, setTip] = useState(false);
+  // A tip above the button: how a press works, or why this one did nothing.
+  const [tip, setTip] = useState<'hold' | 'busy' | 'failed' | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pressedAt = useRef(0);
   // Let go after 0.3 s but before the stream was live: say how it works once it arrives.
   const tipOnArrival = useRef(false);
 
-  const showTip = useCallback(() => {
-    setTip(true);
+  const showTip = useCallback((which: 'hold' | 'busy' | 'failed' = 'hold') => {
+    setTip(which);
     clearTimeout(tipTimer.current);
-    tipTimer.current = setTimeout(() => setTip(false), TIP_MS);
+    tipTimer.current = setTimeout(() => setTip(null), TIP_MS);
   }, []);
 
   const session = useRef<MicrophoneSession | null>(null);
@@ -112,36 +124,78 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     timers.current = {};
   };
 
-  const send = useCallback(async (audio: Recording) => {
-    const { locale, scanLanguage, defaultTarget, t } = options.current;
-    voiceNote.read(audio, scanLanguage, defaultTarget);
-    try {
-      const result = await sendVoiceNote({
-        recording: audio,
-        scanLanguage,
-        locale,
-        defaultTarget,
-        today: localIso(new Date()),
-      });
-      if (result.transcript.trim() === '') {
-        voiceNote.fail('nothingHeard');
-      } else voiceNote.review(result);
-    } catch (error) {
-      if (error instanceof ApiError && error.code === 'voice.nothing_heard') {
-        voiceNote.fail('nothingHeard');
-        return;
+  const send = useCallback(
+    async (audio: Recording, scanLanguage: ScanLanguage, page: VoiceList) => {
+      const { locale, t } = options.current;
+      const request = new AbortController();
+      reading = request;
+      voiceNote.read(audio, scanLanguage, page);
+      try {
+        const result = await sendVoiceNote({
+          recording: audio,
+          scanLanguage,
+          locale,
+          defaultTarget: page,
+          today: localIso(new Date()),
+          signal: request.signal,
+        });
+        if (request.signal.aborted) return;
+        if (result.transcript.trim() === '') {
+          voiceNote.fail('nothingHeard');
+        } else voiceNote.review(result);
+      } catch (error) {
+        // Cancelled: the pill is already gone and the late answer is ignored.
+        if (request.signal.aborted) return;
+        if (error instanceof ApiError) {
+          if (error.code === 'voice.nothing_heard') {
+            voiceNote.fail('nothingHeard');
+            return;
+          }
+          if (error.code === 'voice.cap_reached') {
+            voiceNote.setCap({
+              cap: Number(error.params.cap) || 0,
+              resetsAt:
+                typeof error.params.resetsAt === 'string'
+                  ? error.params.resetsAt
+                  : undefined,
+            });
+            voiceNote.fail('capReached');
+            return;
+          }
+          if (error.code === 'voice.too_long') {
+            voiceNote.fail('tooLong');
+            return;
+          }
+          if (error.code === 'voice.unsupported_audio') {
+            console.error('Voice Note format not supported', audio.mimeType);
+            voiceNote.fail('unsupported');
+            return;
+          }
+          if (error.code === 'voice.not_configured') {
+            // Voice went away on the server: hide the button and drop the note without a word.
+            voiceNote.dismiss();
+            queryClient.setQueryData(['voice', 'config'], {
+              configured: false,
+            });
+            return;
+          }
+        }
+        // No signal and a provider that is down share the pill's own wording; anything else says what it was.
+        const offline =
+          error instanceof ApiError &&
+          (error.code === 'network_error' ||
+            error.code === 'voice.provider_unavailable');
+        voiceNote.fail('failed', {
+          message: offline ? undefined : translateApiError(t, error),
+          keepRecording: true,
+        });
+      } finally {
+        if (reading === request) reading = undefined;
+        settle();
       }
-      const canRetry = !(
-        error instanceof ApiError && NOT_RETRYABLE.has(error.code)
-      );
-      voiceNote.fail('failed', {
-        message: translateApiError(t, error),
-        keepRecording: canRetry,
-      });
-    } finally {
-      settle();
-    }
-  }, []);
+    },
+    [queryClient],
+  );
 
   const finish = useCallback(async () => {
     const active = session.current;
@@ -167,7 +221,11 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       showTip();
       return;
     }
-    await send(audio);
+    await send(
+      audio,
+      options.current.scanLanguage,
+      options.current.defaultTarget,
+    );
   }, [send, showTip]);
 
   /** Throw the recording away without a word (a tap too quick to be a note). */
@@ -194,13 +252,16 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   }, [discardRecording]);
 
   const press = useCallback(async () => {
-    if (session.current || starting.current || stopping.current || sending)
-      return;
+    if (session.current || starting.current || stopping.current) return;
+    // Nothing starts while the last note is being read, waits for Retry, or the Voice Cap is used up.
+    if (sending) return showTip('busy');
+    if (kept) return showTip('failed');
+    if (capped) return voiceNote.fail('capReached');
     held.current = true;
     pressedAt.current = Date.now();
     tipOnArrival.current = false;
     clearTimeout(tipTimer.current);
-    setTip(false);
+    setTip(null);
     voiceNote.dismiss();
     if (!micExplained()) {
       held.current = false;
@@ -251,7 +312,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       );
       void finish();
     }, MAX_VOICE_NOTE_MS);
-  }, [finish, sending, showTip]);
+  }, [finish, sending, kept, capped, showTip]);
 
   const release = useCallback(() => {
     if (!held.current) return;
@@ -282,19 +343,39 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     }
   }, []);
 
+  /** Sends the kept recording again: the same audio, in the language it was recorded in. */
   const retry = useCallback(() => {
-    const { recording: kept } = getVoiceNoteState();
-    if (kept) {
-      void send({
-        blob: kept.blob,
-        mimeType: kept.mimeType,
-        durationMs: kept.seconds * 1000,
-      });
-    }
+    const { phase, recording: audio, page } = getVoiceNoteState();
+    if (phase !== 'failed' || !audio) return;
+    stayAwake();
+    void send(
+      {
+        blob: audio.blob,
+        mimeType: audio.mimeType,
+        durationMs: audio.seconds * 1000,
+      },
+      audio.scanLanguage,
+      page,
+    );
   }, [send]);
 
   const dismiss = useCallback(() => {
     voiceNote.dismiss();
+  }, []);
+
+  /** Drops the kept recording (the pill's Discard). */
+  const discardFailed = useCallback(() => {
+    voiceNote.dismiss();
+    say(options.current.t('voice:send.discarded'));
+  }, []);
+
+  /** Gives up waiting for the read. The server is not told, so the Voice Cap charge stands. */
+  const cancelReading = useCallback(() => {
+    reading?.abort();
+    reading = undefined;
+    voiceNote.dismiss();
+    settle();
+    say(options.current.t('voice:send.cancelled'));
   }, []);
 
   // Leaving the page drops a recording in progress.
@@ -325,6 +406,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     tip,
     level,
     sending,
+    kept,
+    capped,
     notice,
     note,
     explaining,
@@ -335,6 +418,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     dismissExplainer: () => setExplaining(false),
     retry,
     dismiss,
+    discardFailed,
+    cancelReading,
     discard: voiceNote.discard,
   };
 }

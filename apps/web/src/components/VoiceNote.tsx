@@ -9,6 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { VoiceReview } from './voice/VoiceReview';
 import { VoiceButton } from './voice/VoiceButton';
+import { StatusPill } from './voice/StatusPill';
 import { useVoiceConfigured, type VoiceList } from '../lib/voice';
 import { useVoiceNote } from '../lib/useVoiceNote';
 
@@ -36,24 +37,17 @@ function VoiceNoteControls({ defaultTarget }: { defaultTarget: VoiceList }) {
     <>
       <VoiceButton voice={voice} target={defaultTarget} />
 
+      <StatusPill voice={voice} />
+
       {voice.notice ? (
         <Alert>
           <Stack spacing={1}>
             <span>
-              {voice.notice.kind === 'failed'
-                ? voice.notice.message
-                : voice.notice.kind === 'denied'
-                  ? `${t('voice:denied.title')} ${t('voice:denied.body')}`
-                  : voice.notice.kind === 'unavailable'
-                    ? t('voice:unavailable')
-                    : voice.notice.kind === 'tooShort'
-                      ? t('voice:tooShort')
-                      : t('voice:nothingHeard')}
+              {voice.notice.kind === 'denied'
+                ? `${t('voice:denied.title')} ${t('voice:denied.body')}`
+                : t('voice:unavailable')}
             </span>
             <Box sx={{ display: 'flex', gap: '8px' }}>
-              {voice.notice.kind === 'failed' && voice.notice.canRetry ? (
-                <Button onClick={voice.retry}>{t('voice:retry')}</Button>
-              ) : null}
               <Button onClick={voice.dismiss}>{t('voice:dismiss')}</Button>
             </Box>
           </Stack>

@@ -16,7 +16,15 @@ export type VoicePhase =
 
 /** Why the last Voice Note did not reach Review. */
 export type VoiceErrorCode =
-  'denied' | 'unavailable' | 'tooShort' | 'nothingHeard' | 'failed';
+  | 'denied'
+  | 'unavailable'
+  | 'nothingHeard'
+  /** The send failed (no signal, provider down): the recording is kept for Retry. */
+  | 'failed'
+  | 'tooLong'
+  | 'unsupported'
+  /** The Voice Cap is used up; the number is in `voiceCap`. */
+  | 'capReached';
 
 /** A Voice Action as Review edits it. */
 export type VoiceActionDraft = VoiceReviewAction;
@@ -157,14 +165,31 @@ export const voiceNote = {
     };
     for (const listener of listeners) listener();
   },
-  /** The server refused for the Voice Cap; `resetsAt` is an ISO timestamp. */
-  setCap(cap: { cap: number; resetsAt: string }) {
+  /**
+   * The server refused for the Voice Cap; `resetsAt` is an ISO timestamp. One that is missing or
+   * unreadable counts as the next UTC midnight (the Voice Cap's day is a UTC day), so the button
+   * is never stuck capped for good nor wrongly free at once.
+   */
+  setCap(cap: { cap: number; resetsAt?: string }) {
+    const parsed = Date.parse(cap.resetsAt ?? '');
     state = {
       ...state,
-      voiceCap: { cap: cap.cap, resetsAt: Date.parse(cap.resetsAt) },
+      voiceCap: {
+        cap: cap.cap,
+        resetsAt: Number.isNaN(parsed) ? nextUtcMidnight(Date.now()) : parsed,
+      },
     };
     for (const listener of listeners) listener();
   },
+};
+
+const nextUtcMidnight = (now: number) => {
+  const day = new Date(now);
+  return Date.UTC(
+    day.getUTCFullYear(),
+    day.getUTCMonth(),
+    day.getUTCDate() + 1,
+  );
 };
 
 /** Whether the Voice Cap is still in force at `now` (ms). It lifts at the server's reset time. */

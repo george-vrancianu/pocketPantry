@@ -5,6 +5,7 @@ import {
   palette,
   radius,
   shadow,
+  tokens,
   visuallyHidden,
 } from '@pocket-pantry/ui';
 import { useId } from 'react';
@@ -32,7 +33,6 @@ export function VoiceButton({
   target: VoiceList;
 }) {
   const { t } = useTranslation('voice');
-  const busy = voice.sending;
   const active = voice.recording || voice.pressing;
   const progress = Math.min(1, voice.elapsedMs / MAX_VOICE_NOTE_MS);
 
@@ -76,7 +76,11 @@ export function VoiceButton({
             fontWeight: 600,
           }}
         >
-          {t('listening.tip')}
+          {voice.tip === 'busy'
+            ? t('send.tipBusy')
+            : voice.tip === 'failed'
+              ? t('send.tipFailed')
+              : t('listening.tip')}
         </Box>
       ) : null}
       {active ? (
@@ -102,7 +106,7 @@ export function VoiceButton({
       >
         <LanguageMenu
           value={voice.scanLanguage}
-          disabled={active || busy}
+          disabled={active || voice.sending}
           onChange={voice.setScanLanguage}
         />
         <Box component="span" id={destinationId} hidden sx={visuallyHidden}>
@@ -117,7 +121,6 @@ export function VoiceButton({
           data-voice-button=""
           aria-pressed={voice.recording}
           aria-describedby={destinationId}
-          disabled={busy}
           {...buttonProps}
           sx={{
             position: 'relative',
@@ -136,8 +139,9 @@ export function VoiceButton({
                 : 'pp.accent',
             color: active ? 'pp.cardBg' : 'pp.accentInk',
             boxShadow: shadow.float,
-            cursor: busy ? 'default' : 'pointer',
-            opacity: busy ? 0.6 : 1,
+            cursor: 'pointer',
+            // The Voice Cap is used up: the press shows why instead of recording.
+            opacity: voice.capped ? 0.55 : 1,
             transform: armed ? 'scale(.9)' : active ? 'scale(1.14)' : 'none',
             transition:
               'transform 180ms cubic-bezier(.2,.8,.2,1), background-color 180ms cubic-bezier(.2,.8,.2,1)',
@@ -169,6 +173,24 @@ export function VoiceButton({
             />
           ) : null}
           <MicIcon size={27} />
+          {voice.kept ? (
+            <Box
+              aria-hidden
+              data-testid="failed-dot"
+              component="span"
+              sx={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                backgroundColor: tokens.color.soonFg,
+                border: `2px solid ${color.cardBg}`,
+                boxSizing: 'content-box',
+              }}
+            />
+          ) : null}
         </Box>
       </Box>
     </>,
