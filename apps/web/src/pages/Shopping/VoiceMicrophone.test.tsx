@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { holdFor, pressDown, useVoiceTimers } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { fakeSession, talkButton } from '../../test/voice';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import { ShoppingPage } from './ShoppingPage';
 
@@ -44,21 +45,12 @@ function setup() {
   vi.stubGlobal('fetch', fetchMock);
 }
 
-const talkButton = () =>
-  screen.findByRole('button', { name: /hold to record a voice note/i });
-
-const session = () => ({
-  stop: vi.fn(),
-  cancel: vi.fn(),
-  level: vi.fn(() => 0),
-});
-
 describe('Voice Note microphone sheets', () => {
   beforeEach(() => {
     useVoiceTimers();
     resetVoiceNote();
     mic.start.mockReset();
-    mic.start.mockImplementation(() => Promise.resolve(session()));
+    mic.start.mockImplementation(() => Promise.resolve(fakeSession()));
     mic.permission.mockReset();
     mic.permission.mockResolvedValue('prompt');
     mic.request.mockReset();

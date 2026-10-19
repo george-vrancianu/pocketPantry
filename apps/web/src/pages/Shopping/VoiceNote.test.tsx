@@ -1,5 +1,6 @@
 import {
   act,
+  cleanup,
   fireEvent,
   screen,
   waitFor,
@@ -7,7 +8,6 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Recording } from '../../lib/microphone';
 import { MicrophoneError } from '../../lib/microphone';
 import {
   holdFor,
@@ -16,6 +16,14 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
+import {
+  fakeSession,
+  hold,
+  recording,
+  talkButton,
+  voiceAction,
+  voiceIngredient,
+} from '../../test/voice';
 import { stubMotion } from '../../test/viewport';
 import { resetRowFlash } from '../../lib/rowFlash';
 import { getVoiceNoteState, resetVoiceNote } from '../../lib/voiceNoteStore';
@@ -37,20 +45,6 @@ vi.mock('../../lib/microphone', () => ({
 
 const wake = vi.hoisted(() => ({ keep: vi.fn() }));
 vi.mock('../../lib/wakeLock', () => ({ keepScreenAwake: wake.keep }));
-
-const recording: Recording = {
-  blob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
-  mimeType: 'audio/webm;codecs=opus',
-  durationMs: 3000,
-};
-
-function fakeSession() {
-  return {
-    stop: vi.fn(() => Promise.resolve(recording)),
-    cancel: vi.fn(),
-    level: vi.fn(() => 0),
-  };
-}
 
 const emptyList = {
   id: 'l1',
@@ -81,17 +75,6 @@ function setup({ configured = true, note }: Setup = {}) {
     return fetchMock(input, init);
   });
   return { sent, signals };
-}
-
-const talkButton = () =>
-  screen.findByRole('button', { name: /hold to record a voice note/i });
-
-async function hold() {
-  const button = await talkButton();
-  pressDown(button);
-  await screen.findByText('Listening');
-  await holdLongEnough();
-  return button;
 }
 
 describe('Voice Note on the Shopping List', () => {
@@ -401,6 +384,125 @@ describe('Voice Note on the Shopping List', () => {
       },
     );
 
+    /** jsdom ignores responsive rules in computed style, so the injected rule text is where `bottom` shows. */
+    const cssText = () =>
+      Array.from(document.styleSheets)
+        .flatMap((sheet) => Array.from(sheet.cssRules))
+        .map((rule) => rule.cssText)
+        .join('\n');
+    // 62 px button + 22 px gap + 60 px pill + 8 px air.
+    const clearOfPill = /bottom: calc\(152px \+/;
+
+    it('lets taps through the tip and lifts it clear of the pill while reading', async () => {
+      setup({ note: never });
+      renderWithProviders(<ShoppingPage />);
+      fireEvent.pointerUp(await hold());
+      await screen.findByText('Reading your note');
+
+      pressDown(await talkButton());
+
+      const tip = await screen.findByText(/still reading your last note/i);
+      expect(tip).toHaveStyle({ pointerEvents: 'none' });
+      const own = tip.className.split(' ').pop() as string;
+      const rules = cssText()
+        .split('\n')
+        .filter((line) => line.includes(own))
+        .join('\n');
+      expect(rules).toMatch(clearOfPill);
+    });
+
+    it('puts the 60 second stop toast clear of the Reading pill and its Cancel', async () => {
+      setup({ note: never });
+      renderWithProviders(<ShoppingPage />);
+      await hold();
+      await act(() => vi.advanceTimersByTimeAsync(60_000));
+
+      await screen.findByText('Reading your note');
+      const toast = await screen.findByText(/Stopped at 1 minute/);
+      expect(toast).toBeVisible();
+      const rule = cssText()
+        .split('\n')
+        .filter((line) => line.includes('MuiSnackbar-root'))
+        .join('\n');
+      expect(rule).toMatch(clearOfPill);
+    });
+
+    it('keeps the screen awake across a page switch while the note is still being read', async () => {
+      let answer!: (response: Response) => void;
+      setup({ note: () => new Promise<Response>((r) => (answer = r)) });
+      const release = vi.fn();
+      wake.keep.mockReturnValue(release);
+      const page = renderWithProviders(<ShoppingPage />);
+      fireEvent.pointerUp(await hold());
+      await screen.findByText('Reading your note');
+
+      // The Member moves to another page: this one unmounts, the read carries on.
+      page.unmount();
+      expect(release).not.toHaveBeenCalled();
+
+      answer(Response.json({ transcript: 'bread', actions: [] }));
+      await act(() => vi.advanceTimersByTimeAsync(50));
+      expect(release).toHaveBeenCalledTimes(1);
+    });
+
+    it('puts focus back on the voice button when Cancel, Discard or OK closes the pill', async () => {
+      let attempt = 0;
+      setup({
+        note: () =>
+          ++attempt === 1
+            ? error('voice.provider_unavailable', 502)
+            : error('voice.too_long', 413),
+      });
+      renderWithProviders(<ShoppingPage />);
+      fireEvent.pointerUp(await hold());
+      const button = await talkButton();
+
+      // Discard closes a failed send.
+      await userEvent.click(
+        within(await screen.findByRole('alert')).getByRole('button', {
+          name: 'Discard',
+        }),
+      );
+      await waitFor(() => expect(button).toHaveFocus());
+
+      // Too long: only OK.
+      fireEvent.pointerUp(await hold());
+      await userEvent.click(
+        within(await screen.findByRole('alert')).getByRole('button', {
+          name: 'OK',
+        }),
+      );
+      expect(screen.queryByRole('alert')).toBeNull();
+      await waitFor(() => expect(button).toHaveFocus());
+    });
+
+    it('puts focus back on the voice button when Cancel ends a read', async () => {
+      setup({ note: never });
+      renderWithProviders(<ShoppingPage />);
+      fireEvent.pointerUp(await hold());
+      const button = await talkButton();
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Cancel' }),
+      );
+
+      await waitFor(() => expect(button).toHaveFocus());
+    });
+
+    it('closes the plain-dismiss pills without a "discarded" toast, under their own title', async () => {
+      setup({ note: () => error('voice.too_long', 413) });
+      renderWithProviders(<ShoppingPage />);
+      fireEvent.pointerUp(await hold());
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent('Recording too long');
+      expect(
+        within(alert).queryByRole('button', { name: 'Discard' }),
+      ).toBeNull();
+      await userEvent.click(within(alert).getByRole('button', { name: 'OK' }));
+      expect(screen.queryByText('Recording discarded')).toBeNull();
+    });
+
     it('tells a press while reading that the last note is still being read', async () => {
       setup({ note: never });
       renderWithProviders(<ShoppingPage />);
@@ -642,7 +744,7 @@ describe('Voice Note on the Shopping List', () => {
       });
     });
 
-    it('offers only Discard when the recording was too long', async () => {
+    it('offers only OK when the recording was too long', async () => {
       setup({ note: () => error('voice.too_long', 413) });
       renderWithProviders(<ShoppingPage />);
       fireEvent.pointerUp(await hold());
@@ -652,13 +754,14 @@ describe('Voice Note on the Shopping List', () => {
         'That recording was too long. Try a shorter one.',
       );
       expect(within(alert).queryByRole('button', { name: 'Retry' })).toBeNull();
-      await userEvent.click(
-        within(alert).getByRole('button', { name: 'Discard' }),
-      );
+      expect(
+        within(alert).queryByRole('button', { name: 'Discard' }),
+      ).toBeNull();
+      await userEvent.click(within(alert).getByRole('button', { name: 'OK' }));
       expect(screen.queryByRole('alert')).toBeNull();
     });
 
-    it('offers only Discard, and logs, when the recording format is not supported', async () => {
+    it('offers only OK, and logs, when the recording format is not supported', async () => {
       const log = vi
         .spyOn(console, 'error')
         .mockImplementation(() => undefined);
@@ -729,12 +832,12 @@ describe('Voice Note on the Shopping List', () => {
 
     expect(
       await screen.findByText(
-        'Scan Language: Danish · Used for Voice Notes and the camera.',
+        'Scan Language: Dansk · Used for Voice Notes and the camera.',
       ),
     ).toBeVisible();
     expect(screen.queryByRole('menu')).toBeNull();
     const changed = screen.getByRole('button', {
-      name: 'Scan Language: Danish. Change',
+      name: 'Scan Language: Dansk. Change',
     });
     expect(changed).toHaveFocus();
     // The camera reads the same stored value.
@@ -764,7 +867,7 @@ describe('Voice Note on the Shopping List', () => {
     renderWithProviders(<ShoppingPage />);
 
     const chip = await screen.findByRole('button', {
-      name: 'Scan Language: Romanian. Change',
+      name: 'Scan Language: Română. Change',
     });
     expect(chip).toHaveTextContent('ro');
     fireEvent.pointerUp(await hold());
@@ -773,41 +876,27 @@ describe('Voice Note on the Shopping List', () => {
   });
 });
 
-const catalogItem = (id: string, name: string) => ({
-  id,
-  name,
-  owner: 'catalog',
-  defaultUnit: 'pcs',
-  amountScale: 'medium',
-  leafCategory: { id: 'leaf', name: 'Dairy' },
-  parentCategory: {
-    id: 'parent',
-    name: 'Dairy and eggs',
-    aisle: { id: 'aisle', name: 'Dairy' },
-  },
-  defaults: { expiryDays: null, location: null },
-});
+const catalogItem = (id: string, name: string) =>
+  voiceIngredient(id, name, {
+    leafCategory: { id: 'leaf', name: 'Dairy' },
+    parentCategory: {
+      id: 'parent',
+      name: 'Dairy and eggs',
+      aisle: { id: 'aisle', name: 'Dairy' },
+    },
+    defaults: { expiryDays: null, location: null },
+  });
 const eggs = catalogItem('ing-eggs', 'Eggs');
 const milk = catalogItem('ing-milk', 'Milk');
 
-const action = (overrides: Record<string, unknown>) => ({
-  id: 'a1',
-  status: 'ready',
-  target: 'shopping',
-  op: 'add',
-  text: 'eggs',
-  ingredient: eggs,
-  name: null,
-  quantity: null,
-  unit: null,
-  scope: null,
-  expiresOn: null,
-  noExpiry: false,
-  location: null,
-  rows: { shoppingItem: null },
-  defaults: {},
-  ...overrides,
-});
+const action = (overrides: Record<string, unknown> = {}) =>
+  voiceAction({
+    target: 'shopping',
+    text: 'eggs',
+    ingredient: eggs,
+    rows: { shoppingItem: null },
+    ...overrides,
+  });
 const didntUnderstand = (id: string, text: string) =>
   action({
     id,
@@ -1362,22 +1451,26 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
 
   it('scrolls the alert into view when Apply fails', async () => {
     const scrolled = vi.fn();
+    // jsdom has no scrollIntoView: stub it for this test only.
     Element.prototype.scrollIntoView = scrolled;
-    setupReview(threeAdds, () =>
-      Response.json(
-        { code: 'internal_error', message: 'boom' },
-        { status: 500 },
-      ),
-    );
-    const dialog = within(await openReview());
-    scrolled.mockClear();
-    await userEvent.click(
-      dialog.getByRole('button', { name: 'Apply 3 changes' }),
-    );
-    const alert = await dialog.findByRole('alert');
-    await waitFor(() => expect(scrolled.mock.contexts).toContain(alert));
-    // @ts-expect-error test cleanup
-    delete Element.prototype.scrollIntoView;
+    try {
+      setupReview(threeAdds, () =>
+        Response.json(
+          { code: 'internal_error', message: 'boom' },
+          { status: 500 },
+        ),
+      );
+      const dialog = within(await openReview());
+      scrolled.mockClear();
+      await userEvent.click(
+        dialog.getByRole('button', { name: 'Apply 3 changes' }),
+      );
+      const alert = await dialog.findByRole('alert');
+      await waitFor(() => expect(scrolled.mock.contexts).toContain(alert));
+    } finally {
+      // @ts-expect-error test cleanup
+      delete Element.prototype.scrollIntoView;
+    }
   });
 
   it('keeps the sheet and every edit when Apply fails, with an alert at the top', async () => {
@@ -1526,11 +1619,13 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     const button = await talkButton();
     await waitFor(() => expect(button).toHaveFocus());
 
+    // openReview renders the page again: take the first one away so there is one voice button.
+    cleanup();
     const dialog = within(await openReview());
     await userEvent.click(dialog.getByRole('button', { name: 'Discard' }));
     await userEvent.click(dialog.getByRole('button', { name: 'Discard' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    await waitFor(() => expect(button).toHaveFocus());
+    await waitFor(async () => expect(await talkButton()).toHaveFocus());
   });
 
   describe('flashing the rows that changed', () => {

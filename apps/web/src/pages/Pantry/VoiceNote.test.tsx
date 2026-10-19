@@ -1,7 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Recording } from '../../lib/microphone';
 import { resetRowFlash } from '../../lib/rowFlash';
 import { resetVoiceNote, voiceNote } from '../../lib/voiceNoteStore';
 import {
@@ -10,6 +9,12 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
+import {
+  fakeSession,
+  recording,
+  voiceAction,
+  voiceIngredient as ingredient,
+} from '../../test/voice';
 import { PantryPage } from './PantryPage';
 
 // jsdom has no getUserMedia or MediaRecorder: the microphone module is the seam.
@@ -25,47 +30,11 @@ vi.mock('../../lib/microphone', () => ({
   MicrophoneError: class MicrophoneError extends Error {},
 }));
 
-const recording: Recording = {
-  blob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
-  mimeType: 'audio/webm;codecs=opus',
-  durationMs: 3000,
-};
-
-const ingredient = (id: string, name: string) => ({
-  owner: 'catalog',
-  amountScale: 'medium',
-  id,
-  name,
-  defaultUnit: 'pcs',
-  leafCategory: { id: 'leaf', name: 'Leaf' },
-  parentCategory: {
-    id: 'parent',
-    name: 'Parent',
-    aisle: { id: 'aisle', name: 'Aisle' },
-  },
-  defaults: { expiryDays: 7, location: 'fridge' },
-});
 const yogurt = ingredient('ing-yogurt', 'Yogurt');
 const rice = ingredient('ing-rice', 'Rice');
 
-const action = (overrides: Record<string, unknown>) => ({
-  id: 'a1',
-  status: 'ready',
-  target: 'pantry',
-  op: 'add',
-  text: 'yogurt',
-  ingredient: yogurt,
-  name: null,
-  quantity: null,
-  unit: null,
-  scope: null,
-  expiresOn: null,
-  noExpiry: false,
-  location: null,
-  rows: {},
-  defaults: {},
-  ...overrides,
-});
+const action = (overrides: Record<string, unknown>) =>
+  voiceAction({ text: 'yogurt', ingredient: yogurt, ...overrides });
 
 const riceBatch = (id: string, quantity: number, expiresOn: string | null) => ({
   id,
@@ -141,17 +110,13 @@ describe('Voice Notes on the Pantry page', () => {
 
   beforeEach(() => {
     useVoiceTimers();
+    // `inDays` and the app both read today: pin it so the dates do not depend on the day the suite runs.
+    vi.setSystemTime(new Date(2026, 9, 19, 12));
     resetVoiceNote();
     mic.permission.mockResolvedValue('granted');
     resetRowFlash();
     mic.start.mockReset();
-    mic.start.mockImplementation(() =>
-      Promise.resolve({
-        stop: vi.fn(() => Promise.resolve(recording)),
-        cancel: vi.fn(),
-        level: vi.fn(() => 0),
-      }),
-    );
+    mic.start.mockImplementation(() => Promise.resolve(fakeSession()));
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -174,6 +139,24 @@ describe('Voice Notes on the Pantry page', () => {
     expect(await screen.findByRole('dialog')).toBeVisible();
     expect(sent[0].get('scanLanguage')).toBe('ro');
     expect(sent[0].get('defaultTarget')).toBe('shopping');
+  });
+
+  it('keeps the voice button, the pill and a read going while a Batch is added', async () => {
+    setup([]);
+    voiceNote.read(recording, 'en', 'pantry');
+    renderWithProviders(<PantryPage />);
+    await screen.findByText('Reading your note');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add batch' }));
+
+    // The form took the list's place (the header's Add button is gone).
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Add batch' })).toBeNull(),
+    );
+    expect(
+      screen.getByRole('button', { name: /hold to record a voice note/i }),
+    ).toBeVisible();
+    expect(screen.getByText('Reading your note')).toBeVisible();
   });
 
   it('puts the voice button on the Pantry page and records for the Pantry', async () => {

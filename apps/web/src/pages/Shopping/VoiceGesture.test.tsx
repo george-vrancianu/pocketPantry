@@ -9,7 +9,6 @@ import {
   vi,
   type Mock,
 } from 'vitest';
-import type { Recording } from '../../lib/microphone';
 import {
   holdFor,
   holdLongEnough,
@@ -17,6 +16,7 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { fakeSession, hold as holdOn, talkButton } from '../../test/voice';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import { Route, Routes } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
@@ -35,20 +35,6 @@ vi.mock('../../lib/microphone', () => ({
     }
   },
 }));
-
-const recording: Recording = {
-  blob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
-  mimeType: 'audio/webm;codecs=opus',
-  durationMs: 3000,
-};
-
-function fakeSession() {
-  return {
-    stop: vi.fn(() => Promise.resolve(recording)),
-    cancel: vi.fn(),
-    level: vi.fn(() => 0),
-  };
-}
 
 function setup() {
   const sent: FormData[] = [];
@@ -70,9 +56,6 @@ function setup() {
   return { sent };
 }
 
-const talkButton = () =>
-  screen.findByRole('button', { name: /hold to record a voice note/i });
-
 /** jsdom has no layout: the button sits at 100..162 x 500..562. */
 function place(button: HTMLElement) {
   button.getBoundingClientRect = () =>
@@ -86,14 +69,8 @@ function place(button: HTMLElement) {
     }) as DOMRect;
 }
 
-async function hold() {
-  const button = await talkButton();
-  place(button);
-  pressDown(button, { clientX: 130, clientY: 530 });
-  await screen.findByText('Listening');
-  await holdLongEnough();
-  return button;
-}
+const hold = () =>
+  holdOn({ prepare: place, init: { clientX: 130, clientY: 530 } });
 
 const cancelledToast = 'Cancelled. Nothing was sent.';
 
