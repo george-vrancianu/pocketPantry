@@ -2,6 +2,7 @@ import {
   Box,
   color,
   MicIcon,
+  MicOffIcon,
   palette,
   radius,
   shadow,
@@ -38,6 +39,7 @@ export function VoiceButton({
 
   const host = useVoiceHost();
   const destinationId = useId();
+  const blockedId = useId();
   const { armed, buttonProps } = usePressGesture({
     active,
     start: () => void voice.press(),
@@ -114,13 +116,18 @@ export function VoiceButton({
             ? t('listening.toPantry')
             : t('listening.toShopping')}
         </Box>
+        <Box component="span" id={blockedId} hidden sx={visuallyHidden}>
+          {t('voiceButton.blocked')}
+        </Box>
         <Box
           component="button"
           type="button"
           aria-label={t('voiceButton.label')}
           data-voice-button=""
           aria-pressed={voice.recording}
-          aria-describedby={destinationId}
+          aria-describedby={
+            voice.mic.blocked ? `${destinationId} ${blockedId}` : destinationId
+          }
           {...buttonProps}
           sx={{
             position: 'relative',
@@ -140,8 +147,8 @@ export function VoiceButton({
             color: active ? 'pp.cardBg' : 'pp.accentInk',
             boxShadow: shadow.float,
             cursor: 'pointer',
-            // The Voice Cap is used up: the press shows why instead of recording.
-            opacity: voice.capped ? 0.55 : 1,
+            // The Voice Cap is used up, or the microphone is blocked: the press shows why.
+            opacity: voice.capped || voice.mic.blocked ? 0.55 : 1,
             transform: armed ? 'scale(.9)' : active ? 'scale(1.14)' : 'none',
             transition:
               'transform 180ms cubic-bezier(.2,.8,.2,1), background-color 180ms cubic-bezier(.2,.8,.2,1)',
@@ -172,7 +179,7 @@ export function VoiceButton({
               }}
             />
           ) : null}
-          <MicIcon size={27} />
+          {voice.mic.blocked ? <MicOffIcon size={27} /> : <MicIcon size={27} />}
           {voice.kept ? (
             <Box
               aria-hidden

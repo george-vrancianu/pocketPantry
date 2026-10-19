@@ -7,6 +7,7 @@ import {
   shadow,
   Spinner,
   tokens,
+  MicOffIcon,
   WifiOffIcon,
 } from '@pocket-pantry/ui';
 import { useEffect, type ReactNode } from 'react';
@@ -121,6 +122,23 @@ export function StatusPill({ voice }: { voice: Voice }) {
     switch (error) {
       case 'failed':
         return failed(errorMessage ?? t('send.failedHint'), voice.kept);
+      case 'unavailable':
+        // This browser cannot record at all: nothing to retry, only to close.
+        return {
+          ...failed(t('unavailable'), false),
+          icon: <MicOffIcon size={17} />,
+          title: t('send.noRecording'),
+          actions: (
+            <Button
+              variant="primary"
+              size="sm"
+              shape="pill"
+              onClick={voice.dismiss}
+            >
+              {t('send.ok')}
+            </Button>
+          ),
+        };
       case 'tooLong':
         return failed(t('send.tooLong'), false);
       case 'unsupported':

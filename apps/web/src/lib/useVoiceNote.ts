@@ -16,10 +16,8 @@ import { haptic } from './haptic';
 import { keepScreenAwake } from './wakeLock';
 import {
   MAX_VOICE_NOTE_MS,
-  micExplained,
   MIN_VOICE_NOTE_MS,
   QUICK_TAP_MS,
-  rememberMicExplained,
   sendVoiceNote,
   type VoiceList,
 } from './voice';
@@ -29,8 +27,9 @@ import {
   isVoiceCapReached,
   voiceNote,
   useVoiceNoteState,
-  type VoiceErrorCode,
 } from './voiceNoteStore';
+import { useMicPermission } from './useMicPermission';
+import { micExplained } from './micExplained';
 import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 
 /** Cancel aborts this request; module-level so the pill on either page can reach it. */
@@ -56,17 +55,11 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     phase,
     recording: keptRecording,
     proposal,
-    error,
     voiceCap,
   } = useVoiceNoteState();
   const recording = phase === 'recording';
   const sending = phase === 'reading';
   const note = proposal ?? null;
-  // Only what the pill does not show: the microphone's own problems keep the inline notice.
-  const notice =
-    phase === 'failed' && (error === 'denied' || error === 'unavailable')
-      ? { kind: error }
-      : null;
   // The Voice Cap lifts by itself at `resetsAt`: render again then (the store alone would not).
   const [, wake] = useReducer((n: number) => n + 1, 0);
   useEffect(() => {
@@ -79,7 +72,6 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   const capped = isVoiceCapReached();
   // A failed note is waiting for Retry or Discard.
   const kept = phase === 'failed' && keptRecording !== undefined;
-  const [explaining, setExplaining] = useState(false);
   // The pointer is down and the stream is not live yet ("Starting…").
   const [pressing, setPressing] = useState(false);
   // A tip above the button: how a press works, or why this one did nothing.
@@ -99,6 +91,9 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   // The pointer is still down: a release before the microphone is ready cancels the start.
   const held = useRef(false);
   const starting = useRef(false);
+  // The press was cancelled (not merely let go) while the permission was being read.
+  const cancelled = useRef(false);
+  const unmounted = useRef(false);
   // The recording was let go and is being finalised: no new note until it is read or has failed.
   const stopping = useRef(false);
   const timers = useRef<{
@@ -118,6 +113,16 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   };
   const say = (message: string) =>
     options.current.toast.show(message, { polite: true, bottom: toastBottom });
+
+  const mic = useMicPermission({
+    onGranted: () => {
+      const { t } = options.current;
+      say(`${t('voice:mic.on')} · ${t('voice:mic.onHint')}`);
+    },
+    onUnavailable: () => voiceNote.fail('unavailable'),
+  });
+
+  const { refresh, showBlocked, showIntro } = mic;
 
   const clearTimers = () => {
     clearInterval(timers.current.tick);
@@ -249,6 +254,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   const cancel = useCallback(() => {
     // Pressed counts even before the stream is live.
     const pressed = held.current || starting.current || !!session.current;
+    cancelled.current = true;
     discardRecording();
     if (pressed) say(options.current.t('voice:listening.cancelled'));
   }, [discardRecording]);
@@ -260,17 +266,40 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (kept) return showTip('failed');
     if (capped) return voiceNote.fail('capReached');
     held.current = true;
+    cancelled.current = false;
     pressedAt.current = Date.now();
     tipOnArrival.current = false;
     clearTimeout(tipTimer.current);
     setTip(null);
     voiceNote.dismiss();
-    if (!micExplained()) {
-      held.current = false;
-      setExplaining(true);
+    starting.current = true;
+    // The microphone sheets stand in for the hold until it is allowed; nothing records and the press resets.
+    const permission = await refresh();
+    // Cancelled (Escape, a system gesture) or the page left while asking: nothing more happens.
+    if (cancelled.current || unmounted.current) {
+      starting.current = false;
       return;
     }
-    starting.current = true;
+    // iOS Safari often forgets a grant between sessions and reports `prompt` again: a device that has
+    // allowed the microphone before goes straight to the hold, and the browser asks as it does.
+    const needsSheet =
+      permission === 'denied' || (permission === 'prompt' && !micExplained());
+    if (needsSheet) {
+      held.current = false;
+      starting.current = false;
+      if (permission === 'denied') showBlocked();
+      else showIntro();
+      return;
+    }
+    // Let go while the permission was being read: no recording to start.
+    if (!held.current) {
+      starting.current = false;
+      if (tipOnArrival.current) {
+        tipOnArrival.current = false;
+        showTip();
+      }
+      return;
+    }
     setPressing(true);
     stayAwake();
     haptic(10);
@@ -281,7 +310,9 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       held.current = false;
       setPressing(false);
       settle();
-      voiceNote.fail(failureCode(error));
+      // A browser with no Permissions API only says "blocked" when a hold meets the refusal.
+      if (isDenied(error)) showBlocked();
+      else voiceNote.fail('unavailable');
       return;
     } finally {
       starting.current = false;
@@ -314,7 +345,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       );
       void finish();
     }, MAX_VOICE_NOTE_MS);
-  }, [finish, sending, kept, capped, showTip]);
+  }, [finish, refresh, showBlocked, showIntro, sending, kept, capped, showTip]);
 
   const release = useCallback(() => {
     if (!held.current) return;
@@ -333,17 +364,6 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
   /** The input loudness, 0 to 1, for the Listening card's meter. */
   const level = useCallback(() => session.current?.level() ?? 0, []);
-
-  /** The explanation was accepted: ask for the microphone now, so the browser's prompt does not interrupt a hold. */
-  const allowMicrophone = useCallback(async () => {
-    rememberMicExplained();
-    setExplaining(false);
-    try {
-      (await startRecording()).cancel();
-    } catch (error) {
-      voiceNote.fail(failureCode(error));
-    }
-  }, []);
 
   /** Sends the kept recording again: the same audio, in the language it was recorded in. */
   const retry = useCallback(() => {
@@ -381,8 +401,10 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   }, []);
 
   // Leaving the page drops a recording in progress.
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    unmounted.current = false;
+    return () => {
+      unmounted.current = true;
       clearTimers();
       clearTimeout(tipTimer.current);
       settle();
@@ -394,9 +416,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
         session.current = null;
         voiceNote.cancelRecording();
       }
-    },
-    [],
-  );
+    };
+  }, []);
 
   return {
     scanLanguage,
@@ -410,14 +431,11 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     sending,
     kept,
     capped,
-    notice,
     note,
-    explaining,
+    mic,
     press,
     release,
     cancel,
-    allowMicrophone,
-    dismissExplainer: () => setExplaining(false),
     retry,
     dismiss,
     discardFailed,
@@ -428,6 +446,6 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
 const TIP_MS = 1800;
 
-function failureCode(error: unknown): VoiceErrorCode {
-  return error instanceof MicrophoneError ? error.reason : 'unavailable';
+function isDenied(error: unknown) {
+  return error instanceof MicrophoneError && error.reason === 'denied';
 }

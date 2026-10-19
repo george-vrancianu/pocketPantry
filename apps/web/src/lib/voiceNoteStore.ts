@@ -16,7 +16,6 @@ export type VoicePhase =
 
 /** Why the last Voice Note did not reach Review. */
 export type VoiceErrorCode =
-  | 'denied'
   | 'unavailable'
   | 'nothingHeard'
   /** The send failed (no signal, provider down): the recording is kept for Retry. */

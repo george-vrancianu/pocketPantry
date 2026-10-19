@@ -1,13 +1,5 @@
-import {
-  Alert,
-  Box,
-  Button,
-  Sheet,
-  Stack,
-  Typography,
-} from '@pocket-pantry/ui';
-import { useTranslation } from 'react-i18next';
 import { VoiceReview } from './voice/VoiceReview';
+import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
 import { StatusPill } from './voice/StatusPill';
 import { useVoiceConfigured, type VoiceList } from '../lib/voice';
@@ -30,7 +22,6 @@ export function VoiceNote({
 }
 
 function VoiceNoteControls({ defaultTarget }: { defaultTarget: VoiceList }) {
-  const { t } = useTranslation(['voice', 'scan', 'common']);
   const voice = useVoiceNote(defaultTarget);
 
   return (
@@ -39,38 +30,15 @@ function VoiceNoteControls({ defaultTarget }: { defaultTarget: VoiceList }) {
 
       <StatusPill voice={voice} />
 
-      {voice.notice ? (
-        <Alert>
-          <Stack spacing={1}>
-            <span>
-              {voice.notice.kind === 'denied'
-                ? `${t('voice:denied.title')} ${t('voice:denied.body')}`
-                : t('voice:unavailable')}
-            </span>
-            <Box sx={{ display: 'flex', gap: '8px' }}>
-              <Button onClick={voice.dismiss}>{t('voice:dismiss')}</Button>
-            </Box>
-          </Stack>
-        </Alert>
-      ) : null}
-
-      <Sheet
-        open={voice.explaining}
-        onClose={voice.dismissExplainer}
-        label={t('voice:explainer.title')}
-        size="content"
-      >
-        <Stack spacing={2}>
-          <Typography variant="h2">{t('voice:explainer.title')}</Typography>
-          <Typography>{t('voice:explainer.body')}</Typography>
-          <Button onClick={() => void voice.allowMicrophone()}>
-            {t('voice:explainer.allow')}
-          </Button>
-          <Button onClick={voice.dismissExplainer}>
-            {t('voice:explainer.notNow')}
-          </Button>
-        </Stack>
-      </Sheet>
+      <MicSheets
+        sheet={voice.mic.sheet}
+        target={defaultTarget}
+        stillBlocked={voice.mic.stillBlocked}
+        requesting={voice.mic.requesting}
+        onClose={voice.mic.close}
+        onAllow={() => void voice.mic.allow()}
+        onRecheck={() => void voice.mic.recheck()}
+      />
 
       <VoiceReview />
     </>

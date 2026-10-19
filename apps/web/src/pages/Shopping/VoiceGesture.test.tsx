@@ -28,6 +28,7 @@ vi.mock('../../lib/microphone', () => ({
   startRecording: mic.start,
   permissionState: vi.fn(async () => 'granted'),
   requestPermission: vi.fn(async () => undefined),
+  watchPermission: () => () => {},
   MicrophoneError: class MicrophoneError extends Error {
     constructor(readonly reason: string) {
       super(reason);
@@ -50,7 +51,6 @@ function fakeSession() {
 }
 
 function setup() {
-  localStorage.setItem('pp.voice.micExplained', '1');
   const sent: FormData[] = [];
   const { fetchMock } = stubApi({
     'GET /api/shopping-list': () =>
@@ -554,7 +554,6 @@ describe('the recording gesture on the Shopping List', () => {
     });
 
     it('is released when the read fails', async () => {
-      localStorage.setItem('pp.voice.micExplained', '1');
       const { fetchMock } = stubApi({
         'GET /api/shopping-list': () =>
           Response.json({
