@@ -10,6 +10,7 @@ import {
   PlusIcon,
   tokens,
   focusRing,
+  radius,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -112,7 +113,7 @@ export function VoiceActionRow({
         backgroundColor: open ? color.subtle : 'transparent',
         outline: blocked ? `2px solid ${color.soonBorder}` : 'none',
         outlineOffset: '-2px',
-        borderRadius: blocked ? '12px' : 0,
+        borderRadius: radius.control,
         '& + &': { borderTop: `1px solid ${color.divider}` },
       }}
     >
@@ -145,7 +146,7 @@ export function VoiceActionRow({
             width: 34,
             height: 34,
             flexShrink: 0,
-            borderRadius: '10px',
+            borderRadius: radius.control,
             display: 'grid',
             placeItems: 'center',
             backgroundColor: tile.bg,

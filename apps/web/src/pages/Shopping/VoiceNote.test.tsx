@@ -848,4 +848,34 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     const toast = await screen.findByText(/Applied 2 voice actions/);
     expect(toast).toHaveTextContent(/Skipped: Quinoa crackers/);
   });
+
+  it('puts the Shopping List first on its own page, with the Pantry tagged "you named it"', async () => {
+    setupReview([
+      ...threeAdds.slice(0, 1),
+      action({
+        id: 'p1',
+        target: 'pantry',
+        op: 'add',
+        text: 'yogurt in the pantry',
+        ingredient: catalogItem('ing-yogurt', 'Yogurt'),
+        location: 'fridge',
+        rows: {},
+      }),
+    ]);
+    const dialog = within(await openReview());
+    await dialog.findByText('Yogurt', { selector: 'b' });
+
+    expect(
+      dialog.getByText(
+        '2 changes on both lists · nothing is saved until you Apply',
+      ),
+    ).toBeVisible();
+    const regions = dialog.getAllByRole('region');
+    expect(regions.map((r) => r.getAttribute('aria-label'))).toEqual([
+      'Shopping List',
+      'Pantry',
+    ]);
+    expect(within(regions[0]).queryByText('you named it')).toBeNull();
+    expect(within(regions[1]).getByText('you named it')).toBeVisible();
+  });
 });

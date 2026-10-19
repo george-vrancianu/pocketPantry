@@ -78,7 +78,7 @@ export function HeardCard({
             width: 30,
             height: 30,
             flexShrink: 0,
-            borderRadius: '9px',
+            borderRadius: radius.control,
             display: 'grid',
             placeItems: 'center',
             backgroundColor: color.chipNeutral,

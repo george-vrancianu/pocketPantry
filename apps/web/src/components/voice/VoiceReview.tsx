@@ -11,12 +11,12 @@ import {
   CloseIcon,
   IconButton,
   radius,
+  useToast,
   shadow,
 } from '@pocket-pantry/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '@pocket-pantry/ui';
 import { HeardCard } from './HeardCard';
 import { ReviewFooter } from './ReviewFooter';
 import { VoiceActionRow } from './VoiceActionRow';
@@ -383,7 +383,7 @@ function CouldntRow({ action }: { action: VoiceReviewAction }) {
           width: 34,
           height: 34,
           flexShrink: 0,
-          borderRadius: '10px',
+          borderRadius: radius.control,
           display: 'grid',
           placeItems: 'center',
           border: `1.5px dashed ${tokens.color.line}`,

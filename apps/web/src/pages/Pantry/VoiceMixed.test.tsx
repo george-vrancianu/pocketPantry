@@ -126,25 +126,35 @@ describe('A Voice Note across both lists', () => {
     return { ...view, dialog: await screen.findByRole('dialog') };
   }
 
-  it('groups the Voice Actions under Shopping List and Pantry headings', async () => {
+  it('puts the Pantry first on the Pantry page, with the Shopping List tagged "you named it"', async () => {
     const { dialog } = await openReview();
-    const shopping = within(
-      await within(dialog).findByRole('region', { name: 'Shopping List' }),
-    );
-    const pantry = within(
-      within(dialog).getByRole('region', { name: 'Pantry' }),
-    );
+    const review = within(dialog);
+    expect(
+      await review.findByText(
+        '3 changes on both lists · nothing is saved until you Apply',
+      ),
+    ).toBeVisible();
+
+    const regions = review.getAllByRole('region');
+    expect(regions.map((r) => r.getAttribute('aria-label'))).toEqual([
+      'Pantry',
+      'Shopping List',
+    ]);
+    const pantry = within(regions[0]);
+    const shopping = within(regions[1]);
+    expect(pantry.getByText('Yogurt')).toBeVisible();
+    expect(pantry.queryByText('you named it')).toBeNull();
     expect(shopping.getByText('Bread')).toBeVisible();
     expect(shopping.getByText('Milk')).toBeVisible();
+    expect(shopping.getByText('you named it')).toBeVisible();
     expect(shopping.queryByText('Yogurt')).toBeNull();
-    expect(pantry.getByText('Yogurt')).toBeVisible();
   });
 
   it('names every skipped Voice Action across both lists and refreshes both lists', async () => {
     const { dialog, queryClient } = await openReview();
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
     await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Apply' }),
+      await within(dialog).findByRole('button', { name: 'Apply 3 changes' }),
     );
 
     const toast = await screen.findByText(/Applied 1 voice action\./);
