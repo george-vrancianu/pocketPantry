@@ -226,6 +226,8 @@ describe('Voice Note on the Shopping List', () => {
     expect(sent).toHaveLength(0);
     await holdFor(2000);
 
+    // A fast microphone: the audio is exactly as long as the hold.
+    session.stop.mockResolvedValue({ ...recording, durationMs: 300 });
     fireEvent.pointerDown(button);
     await holdFor(300);
     fireEvent.pointerUp(button);

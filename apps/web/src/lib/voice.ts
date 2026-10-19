@@ -9,8 +9,8 @@ import type { Locale, ScanLanguage } from '../i18n/resources';
 export const MAX_VOICE_NOTE_MS = 60_000;
 /** A press shorter than this is a tap, not a Voice Note (the gesture). */
 export const QUICK_TAP_MS = 300;
-/** Recorded audio shorter than this is too little to read. */
-export const MIN_VOICE_NOTE_MS = 400;
+/** Recorded audio shorter than this is too little to read. Audio never outlasts the hold, so this equals the tap threshold. */
+export const MIN_VOICE_NOTE_MS = QUICK_TAP_MS;
 
 /** The list the page a Voice Note is recorded on acts on (ADR 0017). */
 export type VoiceList = 'shopping' | 'pantry';

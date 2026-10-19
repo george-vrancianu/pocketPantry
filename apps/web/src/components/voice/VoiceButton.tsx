@@ -1,4 +1,11 @@
-import { Box, color, MicIcon, radius, shadow } from '@pocket-pantry/ui';
+import {
+  Box,
+  color,
+  MicIcon,
+  palette,
+  radius,
+  shadow,
+} from '@pocket-pantry/ui';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -59,8 +66,7 @@ export function VoiceButton({
             inset: 0,
             zIndex: 1100,
             pointerEvents: 'none',
-            backgroundColor:
-              'color-mix(in srgb, var(--mui-palette-text-primary) 16%, transparent)',
+            backgroundColor: `color-mix(in srgb, ${palette('text-primary')} 16%, transparent)`,
           }}
         />
       ) : null}
