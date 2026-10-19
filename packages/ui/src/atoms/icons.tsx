@@ -20,6 +20,13 @@ import {
   Users,
   GitBranch,
   BatteryLow,
+  Mic,
+  MicOff,
+  WifiOff,
+  Ear,
+  Quote,
+  Equal,
+  Lock,
   type LucideProps,
 } from 'lucide-react';
 
@@ -295,3 +302,18 @@ export const SwapIcon = lucide(ArrowLeftRight);
 export const PeopleIcon = lucide(Users);
 export const BranchIcon = lucide(GitBranch);
 export const RunningLowIcon = lucide(BatteryLow);
+
+/** Voice Notes: the voice button, the intro sheet hero and its Allow button. */
+export const MicIcon = lucide(Mic);
+/** Voice Notes: microphone permission denied. */
+export const MicOffIcon = lucide(MicOff);
+/** Voice Notes status pill: "Couldn't send". */
+export const WifiOffIcon = lucide(WifiOff);
+/** Voice Notes status pill: "Didn't catch anything". */
+export const EarIcon = lucide(Ear);
+/** Voice Notes Review: the "What I heard" tile. */
+export const QuoteIcon = lucide(Quote);
+/** Voice Notes Review: the Set quantity op tile. */
+export const EqualIcon = lucide(Equal);
+/** Locked / unavailable marker. */
+export const LockIcon = lucide(Lock);
