@@ -246,7 +246,19 @@ describe('Voice Note (integration)', () => {
     await note(cookie).expect(201);
     await note(cookie).expect(201);
     const response = await note(cookie).expect(429);
-    expect((response.body as { code: string }).code).toBe('voice.cap_reached');
+    const body = response.body as {
+      code: string;
+      params: { cap: number; resetsAt: string };
+    };
+    expect(body.code).toBe('voice.cap_reached');
+    expect(body.params.cap).toBe(2);
+    // The Voice Cap's day is a UTC day: it resets at the next UTC midnight.
+    const resetsAt = new Date(body.params.resetsAt);
+    const today = new Date().toISOString().slice(0, 10);
+    const tomorrow = new Date(
+      Date.parse(`${today}T00:00:00.000Z`) + 86_400_000,
+    );
+    expect(resetsAt.toISOString()).toBe(tomorrow.toISOString());
     expect(calls).toHaveLength(2);
     expect(await usage(memberId, 'voice')).toBe(2);
     expect(await usage(memberId, 'scan')).toBe(0);
