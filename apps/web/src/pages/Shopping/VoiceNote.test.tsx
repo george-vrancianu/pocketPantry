@@ -586,6 +586,63 @@ describe('Voice Note on the Shopping List', () => {
       expect(mic.start).toHaveBeenCalledTimes(1);
     });
 
+    it("moves focus to the Reading pill's Cancel when Retry starts the read", async () => {
+      let attempt = 0;
+      setup({
+        note: () =>
+          ++attempt === 1 ? error('voice.provider_unavailable', 502) : never(),
+      });
+      renderWithProviders(<ShoppingPage />);
+      fireEvent.pointerUp(await hold());
+
+      await userEvent.click(
+        within(await screen.findByRole('alert')).getByRole('button', {
+          name: 'Retry',
+        }),
+      );
+
+      const cancel = await screen.findByRole('button', { name: 'Cancel' });
+      await waitFor(() => expect(cancel).toHaveFocus());
+    });
+
+    it('puts a language-change toast clear of a failed pill and its Retry', async () => {
+      setup({ note: () => error('voice.provider_unavailable', 502) });
+      renderWithProviders(<ShoppingPage />);
+      fireEvent.pointerUp(await hold());
+      await screen.findByRole('alert');
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /Scan Language: English/ }),
+      );
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', { name: /Dansk/ }),
+      );
+
+      const snackbar = (
+        await screen.findByText(/Scan Language: Dansk/)
+      ).closest('.MuiSnackbar-root') as HTMLElement;
+      const own = snackbar.className.split(' ').pop() as string;
+      const rule = cssText()
+        .split('\n')
+        .filter((line) => line.includes(own))
+        .join('\n');
+      expect(rule).toMatch(clearOfPill);
+    });
+
+    it('leaves focus alone when the pill closes with focus outside it', async () => {
+      setup({ note: () => error('voice.nothing_heard', 422) });
+      renderWithProviders(<ShoppingPage />);
+      fireEvent.pointerUp(await hold());
+      await screen.findByText("Didn't catch anything, try again");
+      const chip = screen.getByRole('button', { name: /Scan Language/ });
+      chip.focus();
+
+      await holdFor(3700);
+
+      expect(screen.queryByText("Didn't catch anything, try again")).toBeNull();
+      expect(chip).toHaveFocus();
+    });
+
     it('keeps the screen awake while a retry is read', async () => {
       let attempt = 0;
       setup({

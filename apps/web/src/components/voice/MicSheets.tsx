@@ -14,17 +14,7 @@ import type { ReactNode } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { detectMobileBrowser } from '../../lib/browserKind';
 import type { VoiceList } from '../../lib/voice';
-import type { MicSheet, useMicPermission } from '../../lib/useMicPermission';
-
-type MicSheetsProps = {
-  sheet: MicSheet;
-  target: VoiceList;
-  stillBlocked: number;
-  requesting: boolean;
-  onClose: () => void;
-  onAllow: () => void;
-  onRecheck: () => void;
-};
+import type { useMicPermission } from '../../lib/useMicPermission';
 
 const bold = { b: <b /> };
 
@@ -89,7 +79,11 @@ function Intro({
   onClose,
   onAllow,
   open,
-}: Pick<MicSheetsProps, 'target' | 'requesting' | 'onClose' | 'onAllow'> & {
+}: {
+  target: VoiceList;
+  requesting: boolean;
+  onClose: () => void;
+  onAllow: () => void;
   open: boolean;
 }) {
   const { t } = useTranslation('voice');
@@ -196,10 +190,11 @@ function Blocked({
   onRecheck,
   open,
   requesting,
-}: Pick<
-  MicSheetsProps,
-  'stillBlocked' | 'requesting' | 'onClose' | 'onRecheck'
-> & {
+}: {
+  stillBlocked: number;
+  requesting: boolean;
+  onClose: () => void;
+  onRecheck: () => void;
   open: boolean;
 }) {
   const { t } = useTranslation('voice');

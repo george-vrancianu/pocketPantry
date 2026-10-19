@@ -157,6 +157,13 @@ describe('Voice Notes on the Pantry page', () => {
       screen.getByRole('button', { name: /hold to record a voice note/i }),
     ).toBeVisible();
     expect(screen.getByText('Reading your note')).toBeVisible();
+
+    // Its Cancel still works over the form.
+    const pill = screen
+      .getByText('Reading your note')
+      .closest('[role="status"]') as HTMLElement;
+    await userEvent.click(within(pill).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByText('Reading your note')).toBeNull();
   });
 
   it('puts the voice button on the Pantry page and records for the Pantry', async () => {
