@@ -50,8 +50,15 @@ export function shoppingCheckHandler(
             id,
             true,
           );
-          return { applied: true };
+          return {
+            applied: true,
+            list: 'shopping',
+            rowId: id,
+            alreadyDone: false,
+          };
         }
+        const wasChecked = target.checked;
+        let changedAmount = false;
         if (!target.checked) {
           await shopping.setCheckedInTransaction(
             ctx.tx,
@@ -65,6 +72,7 @@ export function shoppingCheckHandler(
           quantity !== null &&
           (target.quantity !== quantity || target.unit !== keptUnit)
         ) {
+          changedAmount = true;
           await shopping.setAmountInTransaction(
             ctx.tx,
             ctx.memberId,
@@ -75,7 +83,12 @@ export function shoppingCheckHandler(
             },
           );
         }
-        return { applied: true };
+        return {
+          applied: true,
+          list: 'shopping',
+          rowId: target.id,
+          alreadyDone: wasChecked && !changedAmount,
+        };
       }),
   };
 }

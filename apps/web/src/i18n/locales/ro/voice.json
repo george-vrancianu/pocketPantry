@@ -146,26 +146,48 @@
     }
   },
   "toast": {
-    "applied_one": "S-a aplicat {{count}} acțiune vocală.",
-    "applied_few": "S-au aplicat {{count}} acțiuni vocale.",
-    "applied_other": "S-au aplicat {{count}} de acțiuni vocale.",
-    "skipped": "Omise: {{names}}."
+    "applied_one": "{{count}} aplicată",
+    "applied_few": "{{count}} aplicate",
+    "applied_other": "{{count}} de aplicate",
+    "split": "{{applied}}: {{here}} {{hereList}}, {{there}} {{thereList}}",
+    "where": {
+      "shopping": "pe listă",
+      "pantry": "în cămară"
+    },
+    "skipped": "{{applied}}, {{skippedCount}}: {{reasons}}",
+    "skippedCount_one": "{{count}} omisă",
+    "skippedCount_few": "{{count}} omise",
+    "skippedCount_other": "{{count}} de omise",
+    "skippedItem": "{{name}} {{reason}}",
+    "more": "+{{count}}",
+    "already": "{{name}} era deja {{state}}, așa că se numără ca făcut.",
+    "alreadyMany_one": "{{name}} și încă {{count}} erau deja făcute, așa că se numără ca făcute.",
+    "alreadyMany_few": "{{name}} și încă {{count}} erau deja făcute, așa că se numără ca făcute.",
+    "alreadyMany_other": "{{name}} și încă {{count}} de acțiuni erau deja făcute, așa că se numără ca făcute.",
+    "alreadyState": {
+      "check": "bifat",
+      "uncheck": "debifat",
+      "remove": "scos de pe listă",
+      "setQuantity": "la cantitatea aceea",
+      "runningLow": "marcat ca pe terminate",
+      "other": "făcut"
+    }
   },
   "skipReason": {
     "shopping.quantity_too_large": "cantitate prea mare",
-    "shopping.ingredient_not_found": "ingredientul nu mai este disponibil",
+    "shopping.ingredient_not_found": "nu mai este disponibil",
     "voice.not_supported": "încă nesuportat",
-    "voice.invalid_action": "incompletă",
-    "pantry.batch_not_found": "lotul nu mai există",
-    "voice.batch_required": "niciun lot ales",
-    "pantry.location_required": "nicio locație aleasă",
-    "pantry.unit_required": "unitate necesară",
-    "pantry.ingredient_not_found": "ingredientul nu mai este disponibil",
+    "voice.invalid_action": "era incompletă",
+    "pantry.batch_not_found": "nu mai este în cămară",
+    "voice.batch_required": "avea nevoie de un lot ales",
+    "pantry.location_required": "avea nevoie de o locație",
+    "pantry.unit_required": "avea nevoie de o unitate",
+    "pantry.ingredient_not_found": "nu mai este disponibil",
     "shopping.item_not_found": "nu mai este pe listă",
     "shopping.list_changed": "lista s-a schimbat",
     "pantry.category_not_found": "categoria nu mai este disponibilă",
-    "pantry.other_leaf_missing": "nicio categorie potrivită disponibilă",
+    "pantry.other_leaf_missing": "nu avea o categorie potrivită",
     "voice.item_not_found": "nu mai este pe listă",
-    "other": "nu a putut fi aplicată"
+    "other": "nu a putut fi aplicat"
   }
 }

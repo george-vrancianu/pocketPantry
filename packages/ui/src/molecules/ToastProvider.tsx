@@ -1,6 +1,8 @@
+import Box from '@mui/material/Box';
 import MuiButton from '@mui/material/Button';
 import MuiSnackbar from '@mui/material/Snackbar';
 import MuiSnackbarContent from '@mui/material/SnackbarContent';
+import Typography from '@mui/material/Typography';
 import {
   createContext,
   useCallback,
@@ -28,6 +30,8 @@ export type ToastOptions = {
    * Defaults to just above the Dock.
    */
   bottom?: number | string | { xs: number | string; md: number | string };
+  /** A second, smaller line under the message. */
+  detail?: string;
   /** How long the toast stays, in ms. Defaults to 2600. */
   duration?: number;
   /** Announce without interrupting (a status) instead of as an alert. */
@@ -158,7 +162,27 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           >
             <MuiSnackbarContent
               role={current.polite ? 'status' : 'alert'}
-              message={current.message}
+              message={
+                current.detail ? (
+                  <>
+                    <Box component="span" sx={{ display: 'block' }}>
+                      {current.message}
+                    </Box>
+                    <Typography
+                      component="span"
+                      sx={{
+                        display: 'block',
+                        fontSize: 13,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {current.detail}
+                    </Typography>
+                  </>
+                ) : (
+                  current.message
+                )
+              }
               action={
                 current.action ? (
                   <MuiButton

@@ -230,20 +230,37 @@ describe('Shopping List Voice Actions (integration)', () => {
     });
   });
 
+  const done = (
+    actionId: string,
+    rowId: string | undefined,
+    alreadyDone = false,
+  ) => ({
+    actionId,
+    list: 'shopping',
+    ...(rowId === undefined ? {} : { rowId }),
+    alreadyDone,
+  });
+
   describe('applying', () => {
     it('sets the quantity of a matched item', async () => {
       const cookie = await signUp();
       await addItem(cookie, { ...EGGS, quantity: 6, unit: 'pcs' });
+      const [item] = await list(cookie);
       const res = await apply(cookie, [
         action('setQuantity', { ...EGGS, quantity: 12, unit: 'pcs' }),
+        action('setQuantity', { ...EGGS, quantity: 12, unit: 'pcs' }, 'again'),
       ]).expect(201);
-      expect(res.body).toEqual({ applied: ['a1'], skipped: [] });
+      expect(res.body).toEqual({
+        applied: [done('a1', item.id), done('again', item.id, true)],
+        skipped: [],
+      });
       expect(await list(cookie)).toMatchObject([{ quantity: 12, unit: 'pcs' }]);
     });
 
     it('checks and unchecks an Unmatched item by the same normalised name', async () => {
       const cookie = await signUp();
       await addItem(cookie, { name: 'Quinoa Crackers' });
+      const [item] = await list(cookie);
       await apply(cookie, [
         action('check', { name: ' quinoa  crackers ' }),
       ]).expect(201);
@@ -251,7 +268,10 @@ describe('Shopping List Voice Actions (integration)', () => {
       const res = await apply(cookie, [
         action('uncheck', { name: 'QUINOA CRACKERS' }),
       ]).expect(201);
-      expect(res.body).toEqual({ applied: ['a1'], skipped: [] });
+      expect(res.body).toEqual({
+        applied: [done('a1', item.id)],
+        skipped: [],
+      });
       expect(await list(cookie)).toMatchObject([{ checked: false }]);
     });
 
@@ -272,8 +292,14 @@ describe('Shopping List Voice Actions (integration)', () => {
         action('check', { ...MILK, quantity: 2, unit: 'pcs' }, 'm'),
         action('check', { name: 'Brand X rolls' }, 'u'),
       ]).expect(201);
-      expect(res.body).toEqual({ applied: ['m', 'u'], skipped: [] });
       const items = await list(cookie);
+      expect(res.body).toEqual({
+        applied: [
+          done('m', items.find((i) => i.quantity === 2)?.id),
+          done('u', items.find((i) => i.name === 'Brand X rolls')?.id),
+        ],
+        skipped: [],
+      });
       expect(items).toHaveLength(2);
       expect(items.every((i) => i.checked)).toBe(true);
       expect(items.find((i) => i.name === 'Brand X rolls')?.unmatched).toBe(
@@ -285,8 +311,12 @@ describe('Shopping List Voice Actions (integration)', () => {
     it('removes the item from the list', async () => {
       const cookie = await signUp();
       await addItem(cookie, EGGS);
+      const [item] = await list(cookie);
       const res = await apply(cookie, [action('remove', EGGS)]).expect(201);
-      expect(res.body).toEqual({ applied: ['a1'], skipped: [] });
+      expect(res.body).toEqual({
+        applied: [done('a1', item.id)],
+        skipped: [],
+      });
       expect(await list(cookie)).toEqual([]);
       const view = await request(app.getHttpServer())
         .get('/api/shopping-list?locale=en')
@@ -299,6 +329,7 @@ describe('Shopping List Voice Actions (integration)', () => {
     it('counts an action already satisfied as applied', async () => {
       const cookie = await signUp();
       await addItem(cookie, EGGS);
+      const [item] = await list(cookie);
       await apply(cookie, [action('check', EGGS)]).expect(201);
       const res = await apply(cookie, [
         action('check', EGGS, 'checked-already'),
@@ -309,11 +340,12 @@ describe('Shopping List Voice Actions (integration)', () => {
       ]).expect(201);
       expect(res.body).toEqual({
         applied: [
-          'checked-already',
-          'u1',
-          'unchecked-already',
-          'r1',
-          'removed-already',
+          done('checked-already', item.id, true),
+          done('u1', item.id),
+          done('unchecked-already', item.id, true),
+          done('r1', item.id),
+          // Already gone: nothing left to point at.
+          done('removed-already', undefined, true),
         ],
         skipped: [],
       });
@@ -323,6 +355,7 @@ describe('Shopping List Voice Actions (integration)', () => {
     it('skips what can no longer happen with a reason and still applies the rest', async () => {
       const cookie = await signUp();
       await addItem(cookie, MILK);
+      const [milk] = await list(cookie);
       const res = await apply(cookie, [
         action('setQuantity', { ...EGGS, quantity: 12, unit: 'pcs' }, 'gone-q'),
         action('uncheck', EGGS, 'gone-u'),
@@ -330,7 +363,7 @@ describe('Shopping List Voice Actions (integration)', () => {
         action('check', MILK, 'ok'),
       ]).expect(201);
       expect(res.body).toEqual({
-        applied: ['ok'],
+        applied: [done('ok', milk.id)],
         skipped: [
           { id: 'gone-q', reason: 'voice.item_not_found' },
           { id: 'gone-u', reason: 'voice.item_not_found' },
@@ -392,8 +425,12 @@ describe('Shopping List Voice Actions (integration)', () => {
         .set('cookie', cookie)
         .expect(200);
       const res = await apply(cookie, [action('check', EGGS)]).expect(201);
-      expect(res.body).toEqual({ applied: ['a1'], skipped: [] });
-      expect(await list(cookie)).toMatchObject([{ checked: true }]);
+      const [added] = await list(cookie);
+      expect(res.body).toEqual({
+        applied: [done('a1', added.id)],
+        skipped: [],
+      });
+      expect(added).toMatchObject({ checked: true });
     });
 
     it("never touches another Family's list", async () => {
@@ -401,7 +438,10 @@ describe('Shopping List Voice Actions (integration)', () => {
       const b = await signUp();
       await addItem(a, EGGS);
       const res = await apply(b, [action('remove', EGGS)]).expect(201);
-      expect(res.body).toEqual({ applied: ['a1'], skipped: [] });
+      expect(res.body).toEqual({
+        applied: [done('a1', undefined, true)],
+        skipped: [],
+      });
       expect(await list(a)).toHaveLength(1);
     });
   });

@@ -509,6 +509,7 @@ describe('Voice Note (integration)', () => {
         ).body as {
           groups: {
             items: {
+              id: string;
               name: string;
               quantity: number | null;
               unit: string | null;
@@ -551,11 +552,30 @@ describe('Voice Note (integration)', () => {
         ),
         add({ name }, 'a3'),
       ]).expect(201);
+      const items = await list(cookie);
       expect(response.body).toEqual({
-        applied: ['a1', 'a2', 'a3'],
+        applied: [
+          {
+            actionId: 'a1',
+            list: 'shopping',
+            rowId: items.find((i) => i.name === 'Eggs')?.id,
+            alreadyDone: false,
+          },
+          {
+            actionId: 'a2',
+            list: 'shopping',
+            rowId: items.find((i) => i.quantity === 2)?.id,
+            alreadyDone: false,
+          },
+          {
+            actionId: 'a3',
+            list: 'shopping',
+            rowId: items.find((i) => i.name === name)?.id,
+            alreadyDone: false,
+          },
+        ],
         skipped: [],
       });
-      const items = await list(cookie);
       expect(items).toHaveLength(3);
       expect(items.find((i) => i.name === name)).toMatchObject({
         unmatched: true,
@@ -607,7 +627,20 @@ describe('Voice Note (integration)', () => {
         { ...add({ name: 'Bread' }, 'pantry'), target: 'pantry', op: 'check' },
       ]).expect(201);
       expect(response.body).toEqual({
-        applied: ['ok', 'big'],
+        applied: [
+          {
+            actionId: 'ok',
+            list: 'shopping',
+            rowId: expect.any(String) as string,
+            alreadyDone: false,
+          },
+          {
+            actionId: 'big',
+            list: 'shopping',
+            rowId: expect.any(String) as string,
+            alreadyDone: false,
+          },
+        ],
         skipped: [
           { id: 'gone', reason: 'shopping.ingredient_not_found' },
           { id: 'empty', reason: 'voice.invalid_action' },

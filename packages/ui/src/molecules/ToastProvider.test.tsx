@@ -52,6 +52,33 @@ describe('Toasts', () => {
     expect(paintedColour(action, 'color')).toBe('#1E7A4E');
   });
 
+  it('shows a second line under the message when given a detail', () => {
+    function Detailed() {
+      const toast = useToast();
+      return (
+        <button
+          onClick={() =>
+            toast.show('2 applied', {
+              detail: 'Bread was already ticked, so that one counts as done.',
+              polite: true,
+            })
+          }
+        >
+          show
+        </button>
+      );
+    }
+    render(<Detailed />);
+    act(() => fireEvent.click(screen.getByText('show')));
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe(
+      '2 appliedBread was already ticked, so that one counts as done.',
+    );
+    expect(screen.getByText('2 applied')).not.toBe(
+      screen.getByText(/Bread was already ticked/),
+    );
+  });
+
   it('takes the Theme control radius and float shadow', () => {
     const { toast } = showIn('minimal');
     expect(getComputedStyle(toast).borderRadius).toBe('var(--pp-r-ctl)');

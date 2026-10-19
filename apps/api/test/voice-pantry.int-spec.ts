@@ -35,7 +35,12 @@ type Action = {
   defaults: { location?: string; expiresOn?: string };
 };
 type Applied = {
-  applied: string[];
+  applied: {
+    actionId: string;
+    list: 'shopping' | 'pantry';
+    rowId?: string;
+    alreadyDone: boolean;
+  }[];
   skipped: { id: string; reason: string }[];
 };
 
@@ -191,14 +196,23 @@ describe('Voice Notes on the Pantry (integration)', () => {
         location: 'fridge',
         expiresOn: '2026-10-23',
       });
-      await apply(cookie, [asSent(action)]);
-      expect((await pantry(cookie)).batches).toMatchObject([
+      const result = await apply(cookie, [asSent(action)]);
+      const { batches } = await pantry(cookie);
+      expect(batches).toMatchObject([
         {
           ingredientId: yogurt,
           quantity: 2,
           unit: 'pcs',
           location: 'fridge',
           expiryDate: '2026-10-23',
+        },
+      ]);
+      expect(result.applied).toEqual([
+        {
+          actionId: action.id,
+          list: 'pantry',
+          rowId: batches[0].id,
+          alreadyDone: false,
         },
       ]);
     });
@@ -534,6 +548,56 @@ describe('Voice Notes on the Pantry (integration)', () => {
       expect(await inPantry(cookie, rice)).toBe(true);
     });
 
+    it('reports the Batch it subtracted from', async () => {
+      const cookie = await signUp();
+      const bag = await stock(cookie, {
+        ingredientId: rice,
+        quantity: 500,
+        unit: 'g',
+      });
+      const [action] = await readNote(cookie, [
+        spoken(rice, { op: 'remove', scope: 'one', quantity: 100, unit: 'g' }),
+      ]);
+      const result = await apply(cookie, [asSent(action)]);
+      expect(result.applied).toEqual([
+        {
+          actionId: action.id,
+          list: 'pantry',
+          rowId: bag.id,
+          alreadyDone: false,
+        },
+      ]);
+    });
+
+    it('points a whole-Batch removal at a Batch of the Ingredient that is left', async () => {
+      const cookie = await signUp();
+      await stockMilk(cookie, { expiryDate: '2026-10-20' });
+      const later = await stockMilk(cookie, { expiryDate: '2026-11-20' });
+      const [action] = await readNote(cookie, [remove()]);
+      const result = await apply(cookie, [asSent(action)]);
+      expect(result.applied).toEqual([
+        {
+          actionId: action.id,
+          list: 'pantry',
+          rowId: later.id,
+          alreadyDone: false,
+        },
+      ]);
+      expect((await pantry(cookie)).batches.map((x) => x.id)).toEqual([
+        later.id,
+      ]);
+    });
+
+    it('reports no row when the removal empties the Ingredient', async () => {
+      const cookie = await signUp();
+      await stockMilk(cookie, {});
+      const [action] = await readNote(cookie, [remove()]);
+      const result = await apply(cookie, [asSent(action)]);
+      expect(result.applied).toEqual([
+        { actionId: action.id, list: 'pantry', alreadyDone: false },
+      ]);
+    });
+
     it('skips a Batch that is already gone and still applies the rest', async () => {
       const cookie = await signUp();
       const gone = await stockMilk(cookie, {});
@@ -550,7 +614,14 @@ describe('Voice Notes on the Pantry (integration)', () => {
         actions.map((a) => asSent(a)),
       );
       expect(result).toEqual({
-        applied: [actions[1].id],
+        applied: [
+          {
+            actionId: actions[1].id,
+            list: 'pantry',
+            rowId: (await pantry(cookie)).batches[0].id,
+            alreadyDone: false,
+          },
+        ],
         skipped: [{ id: actions[0].id, reason: 'pantry.batch_not_found' }],
       });
       expect((await pantry(cookie)).batches[0].quantity).toBe(400);
@@ -603,9 +674,22 @@ describe('Voice Notes on the Pantry (integration)', () => {
       const [action] = await readNote(cookie, [low(rice)]);
       expect(action.status).toBe('ready');
       expect(action.rows.batches).toHaveLength(1);
-      await apply(cookie, [asSent(action)]);
-      expect((await pantry(cookie)).runningLow).toEqual([rice]);
+      const result = await apply(cookie, [asSent(action)]);
+      const { batches, runningLow } = await pantry(cookie);
+      expect(runningLow).toEqual([rice]);
       expect(await shopping(cookie)).toEqual([]);
+      expect(result.applied).toEqual([
+        {
+          actionId: action.id,
+          list: 'pantry',
+          rowId: batches[0].id,
+          alreadyDone: false,
+        },
+      ]);
+      const again = await apply(cookie, [asSent(action)]);
+      expect(again.applied).toMatchObject([
+        { list: 'pantry', rowId: batches[0].id, alreadyDone: true },
+      ]);
     });
 
     it('is Not found for an Unmatched name', async () => {
@@ -625,9 +709,14 @@ describe('Voice Notes on the Pantry (integration)', () => {
         status: 'ready',
         rows: { shoppingFallback: true },
       });
-      await apply(cookie, [asSent(action)]);
+      const result = await apply(cookie, [asSent(action)]);
       expect((await pantry(cookie)).runningLow).toEqual([]);
       expect(await shopping(cookie)).toEqual(['Rice']);
+      // The fallback lands on the Shopping List, so it is reported there.
+      expect(result.applied).toMatchObject([
+        { actionId: action.id, list: 'shopping', alreadyDone: false },
+      ]);
+      expect(result.applied[0].rowId).toEqual(expect.any(String));
     });
   });
 });

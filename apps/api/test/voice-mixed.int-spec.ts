@@ -24,7 +24,12 @@ type Action = {
   rows: { batches?: { id: string }[] };
 };
 type Applied = {
-  applied: string[];
+  applied: {
+    actionId: string;
+    list: 'shopping' | 'pantry';
+    rowId?: string;
+    alreadyDone: boolean;
+  }[];
   skipped: { id: string; reason: string }[];
 };
 type Item = { id: string; name: string; checked: boolean };
@@ -216,11 +221,23 @@ describe('Voice Notes across both lists (integration)', () => {
       ]);
       const result = await apply(cookie, actions.map(asSent));
       expect(result.skipped).toEqual([]);
-      expect(result.applied).toHaveLength(2);
-      expect(await shoppingItems(cookie)).toMatchObject([
-        { name: 'Bread', checked: true },
-      ]);
+      const [bought] = await shoppingItems(cookie);
+      expect(bought).toMatchObject({ name: 'Bread', checked: true });
       expect(await batchNames(cookie)).toEqual(['Yogurt']);
+      expect(result.applied).toEqual([
+        {
+          actionId: actions[0].id,
+          list: 'shopping',
+          rowId: bought.id,
+          alreadyDone: false,
+        },
+        {
+          actionId: actions[1].id,
+          list: 'pantry',
+          rowId: expect.any(String) as string,
+          alreadyDone: false,
+        },
+      ]);
     });
 
     it('from the Pantry page: stocks yogurt and adds bread to the Shopping List', async () => {
@@ -236,7 +253,8 @@ describe('Voice Notes across both lists (integration)', () => {
       ]);
       const result = await apply(cookie, actions.map(asSent));
       expect(result.skipped).toEqual([]);
-      expect(result.applied).toHaveLength(2);
+      expect(result.applied.map((a) => a.list)).toEqual(['pantry', 'shopping']);
+      expect(result.applied.map((a) => a.alreadyDone)).toEqual([false, false]);
       expect(await shoppingItems(cookie)).toMatchObject([{ name: 'Bread' }]);
       expect(await batchNames(cookie)).toEqual(['Yogurt']);
     });
@@ -339,7 +357,10 @@ describe('Voice Notes across both lists (integration)', () => {
       await finishShopping(cookie);
 
       const result = await apply(cookie, actions.map(asSent));
-      expect(result.applied).toEqual([actions[1].id, actions[2].id]);
+      expect(result.applied).toMatchObject([
+        { actionId: actions[1].id, list: 'shopping', alreadyDone: false },
+        { actionId: actions[2].id, list: 'pantry', alreadyDone: false },
+      ]);
       expect(result.skipped).toEqual([
         { id: actions[0].id, reason: 'voice.item_not_found' },
       ]);
@@ -349,6 +370,42 @@ describe('Voice Notes across both lists (integration)', () => {
       expect(await batchNames(cookie)).toEqual(
         expect.arrayContaining(['Yogurt', 'Bread']),
       );
+    });
+
+    it('reports a check as a fresh add and a remove as already done once the item has been finished', async () => {
+      const { cookie } = await signUp();
+      const first = (await addToList(cookie, { ingredientId: bread })).body as {
+        groups: { items: Item[] }[];
+      };
+      await api(
+        'patch',
+        cookie,
+        `/shopping-list/items/${first.groups[0].items[0].id}`,
+      )
+        .send({ checked: true })
+        .expect(200);
+      const actions = await readNote(cookie, 'shopping', [
+        spoken(bread, { op: 'check', target: 'shopping' }),
+        spoken(bread, { op: 'remove', target: 'shopping' }),
+      ]);
+      await finishShopping(cookie);
+
+      const result = await apply(cookie, [asSent(actions[0])]);
+      const [again] = await shoppingItems(cookie);
+      expect(result.applied).toEqual([
+        {
+          actionId: actions[0].id,
+          list: 'shopping',
+          rowId: again.id,
+          alreadyDone: false,
+        },
+      ]);
+
+      await finishShopping(cookie);
+      const removed = await apply(cookie, [asSent(actions[1])]);
+      expect(removed.applied).toEqual([
+        { actionId: actions[1].id, list: 'shopping', alreadyDone: true },
+      ]);
     });
   });
 });

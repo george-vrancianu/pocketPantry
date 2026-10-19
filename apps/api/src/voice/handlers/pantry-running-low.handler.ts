@@ -41,8 +41,17 @@ export function pantryRunningLowHandler(
         const ingredientId = draft.ingredientId;
         const rows = await candidatesOf(pantry, draft, ctx);
         if (rows.length > 0) {
-          await runningLow.setIn(ctx.tx, ctx.memberId, ingredientId);
-          return { applied: true };
+          const flagged = await runningLow.setIn(
+            ctx.tx,
+            ctx.memberId,
+            ingredientId,
+          );
+          return {
+            applied: true,
+            list: 'pantry',
+            rowId: rows[0].id,
+            alreadyDone: !flagged,
+          };
         }
         return shoppingAdd.apply(
           {

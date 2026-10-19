@@ -15,6 +15,8 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubMotion } from '../../test/viewport';
+import { resetRowFlash } from '../../lib/rowFlash';
 import { getVoiceNoteState, resetVoiceNote } from '../../lib/voiceNoteStore';
 import { ShoppingPage } from './ShoppingPage';
 
@@ -92,6 +94,7 @@ describe('Voice Note on the Shopping List', () => {
   beforeEach(() => {
     useVoiceTimers();
     resetVoiceNote();
+    resetRowFlash();
     session = fakeSession();
     mic.start.mockReset();
     mic.start.mockImplementation(() => Promise.resolve(session));
@@ -504,6 +507,22 @@ const didntUnderstand = (id: string, text: string) =>
     ingredient: null,
   });
 
+const done = (
+  actionId: string,
+  list: 'shopping' | 'pantry' = 'shopping',
+  extra: Record<string, unknown> = {},
+) => ({
+  actionId,
+  list,
+  rowId: `row-${actionId}`,
+  alreadyDone: false,
+  ...extra,
+});
+const appliedAll = {
+  applied: [done('a1'), done('a2'), done('a3')],
+  skipped: [],
+};
+
 const threeAdds = [
   action({ id: 'a1' }),
   action({
@@ -528,11 +547,8 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
 
   function setupReview(
     actions: unknown[],
-    apply: () => Response = () =>
-      Response.json(
-        { applied: ['a1', 'a2', 'a3'], skipped: [] },
-        { status: 201 },
-      ),
+    apply: () => Response = () => Response.json(appliedAll, { status: 201 }),
+    list: unknown = emptyList,
   ) {
     localStorage.setItem('pp.voice.micExplained', '1');
     applied = [];
@@ -540,7 +556,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list': () => {
         listFetches += 1;
-        return Response.json(emptyList);
+        return Response.json(list);
       },
       'GET /api/voice/config': () => Response.json({ configured: true }),
       'GET /api/catalog/search': () => Response.json({ results: [eggs, milk] }),
@@ -579,6 +595,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
   beforeEach(() => {
     useVoiceTimers();
     resetVoiceNote();
+    resetRowFlash();
     session = fakeSession();
     mic.start.mockReset();
     mic.start.mockImplementation(() => Promise.resolve(session));
@@ -881,7 +898,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
         { id: 'a3', ingredientId: null, name: 'Quinoa crackers' },
       ],
     });
-    expect(await screen.findByText(/Applied 3 voice actions/)).toBeVisible();
+    expect(await screen.findByText('3 applied')).toBeVisible();
     await waitFor(() => expect(listFetches).toBeGreaterThan(before));
   });
 
@@ -974,12 +991,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     expect(applying).toBeDisabled();
     expect(dialog.getByRole('button', { name: 'Discard' })).toBeDisabled();
 
-    finish(
-      Response.json(
-        { applied: ['a1', 'a2', 'a3'], skipped: [] },
-        { status: 201 },
-      ),
-    );
+    finish(Response.json(appliedAll, { status: 201 }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
@@ -1007,12 +1019,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
         .closest('[inert]'),
     ).not.toBeNull();
 
-    finish(
-      Response.json(
-        { applied: ['a1', 'a2', 'a3'], skipped: [] },
-        { status: 201 },
-      ),
-    );
+    finish(Response.json(appliedAll, { status: 201 }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.queryByText(/Voice Note discarded/)).toBeNull();
   });
@@ -1086,22 +1093,201 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     expect(getVoiceNoteState().phase).toBe('review');
   });
 
+  const applyAll = async () => {
+    const dialog = within(await openReview());
+    await userEvent.click(
+      await dialog.findByRole('button', { name: /^Apply \d+ changes?$/ }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  };
+
   it('names what was skipped in the result toast', async () => {
     setupReview(threeAdds, () =>
       Response.json(
         {
-          applied: ['a1', 'a2'],
+          applied: [done('a1'), done('a2')],
           skipped: [{ id: 'a3', reason: 'shopping.quantity_too_large' }],
         },
         { status: 201 },
       ),
     );
-    const dialog = within(await openReview());
-    await userEvent.click(
-      await dialog.findByRole('button', { name: 'Apply 3 changes' }),
+    await applyAll();
+    expect(
+      await screen.findByText(
+        '2 applied, 1 skipped: quinoa crackers amount too large',
+      ),
+    ).toBeVisible();
+  });
+
+  it('names the first two skips and counts the rest', async () => {
+    setupReview(
+      [...threeAdds, action({ id: 'a4', text: 'bread', name: 'Bread' })],
+      () =>
+        Response.json(
+          {
+            applied: [done('a1')],
+            skipped: [
+              { id: 'a2', reason: 'voice.item_not_found' },
+              { id: 'a3', reason: 'shopping.quantity_too_large' },
+              { id: 'a4', reason: 'voice.invalid_action' },
+            ],
+          },
+          { status: 201 },
+        ),
     );
-    const toast = await screen.findByText(/Applied 2 voice actions/);
-    expect(toast).toHaveTextContent(/Skipped: Quinoa crackers/);
+    await applyAll();
+    expect(
+      await screen.findByText(
+        '1 applied, 3 skipped: milk no longer on the list, quinoa crackers amount too large, +1',
+      ),
+    ).toBeVisible();
+  });
+
+  it('splits the count by list, naming the page list first', async () => {
+    setupReview(threeAdds, () =>
+      Response.json(
+        {
+          applied: [done('a1'), done('a2', 'pantry'), done('a3')],
+          skipped: [],
+        },
+        { status: 201 },
+      ),
+    );
+    await applyAll();
+    expect(
+      await screen.findByText('3 applied: 2 on the list, 1 in the Pantry'),
+    ).toBeVisible();
+  });
+
+  it('says in a second line which actions were already done', async () => {
+    setupReview(
+      [
+        action({
+          id: 'a1',
+          op: 'check',
+          text: 'got eggs',
+          rows: { shoppingItem: { id: 'row-a1', checked: true } },
+        }),
+      ],
+      () =>
+        Response.json(
+          {
+            applied: [done('a1', 'shopping', { alreadyDone: true })],
+            skipped: [],
+          },
+          { status: 201 },
+        ),
+    );
+    await applyAll();
+    expect(await screen.findByText('1 applied')).toBeVisible();
+    expect(
+      screen.getByText('Eggs was already ticked, so that one counts as done.'),
+    ).toBeVisible();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
+  it('keeps the toast for 5.2 seconds without an Undo', async () => {
+    setupReview(threeAdds);
+    await applyAll();
+    expect(await screen.findByText('3 applied')).toBeVisible();
+    expect(screen.queryByRole('button', { name: /undo/i })).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    expect(screen.getByText('3 applied')).toBeVisible();
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    await waitFor(() => expect(screen.queryByText('3 applied')).toBeNull());
+  });
+
+  it('puts the result toast clear of the voice button', async () => {
+    setupReview(threeAdds);
+    await applyAll();
+    await screen.findByText('3 applied');
+    // jsdom's getComputedStyle ignores the responsive (media query) `bottom`, so the rule text is the only
+    // place to read it; kept loose on purpose. 62 px button + 10 px gap above it, rather than just above the Dock.
+    const css = Array.from(document.styleSheets)
+      .flatMap((sheet) => Array.from(sheet.cssRules))
+      .map((rule) => rule.cssText)
+      .join('\n');
+    expect(css).toMatch(/MuiSnackbar-root \{ bottom: calc\(72px \+/);
+  });
+
+  it('puts focus on the voice button after Apply and after Discard', async () => {
+    setupReview(threeAdds);
+    await applyAll();
+    const button = await talkButton();
+    await waitFor(() => expect(button).toHaveFocus());
+
+    const dialog = within(await openReview());
+    await userEvent.click(dialog.getByRole('button', { name: 'Discard' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Discard' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(button).toHaveFocus());
+  });
+
+  describe('flashing the rows that changed', () => {
+    const rows = {
+      id: 'l1',
+      groups: [
+        {
+          aisle: { id: 'aisle', name: 'Dairy', sortOrder: 1 },
+          items: ['eggs', 'milk'].map((n) => ({
+            id: `row-${n === 'eggs' ? 'a1' : 'a2'}`,
+            ingredientId: `ing-${n}`,
+            name: n === 'eggs' ? 'Eggs' : 'Milk',
+            quantity: null,
+            unit: null,
+            checked: false,
+            unmatched: false,
+          })),
+        },
+      ],
+      summary: { remaining: 2, checked: 0 },
+    };
+    // jsdom cannot paint, so the flash overlay is found by its marker attribute (it has no role or text).
+    const flashed = () =>
+      Array.from(document.querySelectorAll('[data-row-flash]')).map((el) =>
+        el.closest('[role="group"]')?.getAttribute('aria-label'),
+      );
+
+    afterEach(() => stubMotion(false));
+
+    it('flashes the rows the result names, once', async () => {
+      setupReview(
+        threeAdds,
+        () =>
+          Response.json(
+            { applied: [done('a1')], skipped: [] },
+            { status: 201 },
+          ),
+        rows,
+      );
+      await screen.findByText('Eggs').catch(() => undefined);
+      await applyAll();
+      await waitFor(() => expect(flashed()).toEqual(['Eggs']));
+      // The tint sits behind the row's content: a negative z-index inside a host that is its own stacking
+      // context (so it still lands above the opaque swipe surface, not behind it).
+      const tint = document.querySelector('[data-row-flash]') as HTMLElement;
+      expect(getComputedStyle(tint).zIndex).toBe('-1');
+      expect(getComputedStyle(tint.parentElement!).isolation).toBe('isolate');
+      expect(getComputedStyle(tint.parentElement!).position).toBe('relative');
+      await act(() => vi.advanceTimersByTimeAsync(5000));
+      expect(flashed()).toEqual([]);
+    });
+
+    it('flashes no row under reduced motion', async () => {
+      stubMotion(true);
+      setupReview(
+        threeAdds,
+        () =>
+          Response.json(
+            { applied: [done('a1'), done('a2')], skipped: [] },
+            { status: 201 },
+          ),
+        rows,
+      );
+      await applyAll();
+      await screen.findByRole('group', { name: 'Eggs' });
+      expect(flashed()).toEqual([]);
+    });
   });
 
   it('puts the Shopping List first on its own page, with the Pantry tagged "you named it"', async () => {

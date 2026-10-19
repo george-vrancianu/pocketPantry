@@ -166,8 +166,18 @@ export const voiceApplyBody = z.object({
 });
 export type VoiceApplyBody = z.infer<typeof voiceApplyBody>;
 
+/** One applied Voice Action: which list it landed on and the row it touched. */
+export type VoiceAppliedEntry = {
+  actionId: string;
+  list: VoiceTarget;
+  /** The Shopping Item or Batch touched (for a removal, the row just removed, or a surviving Batch of the Ingredient). */
+  rowId?: string;
+  /** Already satisfied when applied; still counts as applied. */
+  alreadyDone: boolean;
+};
+
 export type VoiceApplyResult = {
-  applied: string[];
+  applied: VoiceAppliedEntry[];
   skipped: { id: string; reason: string }[];
 };
 
