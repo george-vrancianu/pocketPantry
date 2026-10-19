@@ -23,6 +23,8 @@ export class ApiError extends Error {
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  /** Aborting it abandons the request on this side only; the server is not told. */
+  signal?: AbortSignal;
 };
 
 function isErrorBody(
@@ -37,13 +39,14 @@ function isErrorBody(
 
 export async function apiRequest<T>(
   path: string,
-  { method = 'GET', body }: RequestOptions = {},
+  { method = 'GET', body, signal }: RequestOptions = {},
 ): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${apiOrigin}/api${path}`, {
       method,
       credentials: 'include',
+      ...(signal ? { signal } : {}),
       // A FormData body sets its own multipart content type (with the boundary).
       headers:
         body === undefined || body instanceof FormData

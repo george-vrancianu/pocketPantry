@@ -54,10 +54,6 @@
     "still": "Still blocked. Allow the microphone in your browser, then try again."
   },
   "unavailable": "This browser cannot record audio, so voice notes are not available here.",
-  "tooShort": "Hold the button while you speak.",
-  "nothingHeard": "Didn't catch anything, try again",
-  "retry": "Retry",
-  "dismiss": "Dismiss",
   "voiceButton": {
     "label": "Hold to record a Voice Note",
     "blocked": "Microphone blocked"
@@ -226,5 +222,26 @@
     "pantry.other_leaf_missing": "had no matching category",
     "voice.item_not_found": "no longer on the list",
     "other": "could not be applied"
+  },
+  "send": {
+    "reading": "Reading your note",
+    "readingMeta": "{{duration}} of speech · {{language}}",
+    "cancel": "Cancel",
+    "cancelled": "Cancelled. Nothing was saved.",
+    "failed": "Couldn't send",
+    "failedHint": "No connection. Your recording is kept.",
+    "retry": "Retry",
+    "discard": "Discard",
+    "discarded": "Recording discarded",
+    "nothing": "Didn't catch anything, try again",
+    "nothingHint": "Hold the button and speak close to the phone. This one doesn't count.",
+    "cap": "That's today's {{cap}} Voice Notes",
+    "capHint": "Voice is back tomorrow. Scans still work.",
+    "ok": "OK",
+    "tooLong": "That recording was too long. Try a shorter one.",
+    "unsupported": "This browser's recording format isn't supported",
+    "tipBusy": "Still reading your last note",
+    "tipFailed": "Retry or discard the last note first",
+    "noRecording": "Can't record here"
   }
 }

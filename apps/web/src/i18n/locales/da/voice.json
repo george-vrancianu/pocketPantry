@@ -54,10 +54,6 @@
     "still": "Stadig blokeret. Tillad mikrofonen i din browser, og prøv igen."
   },
   "unavailable": "Denne browser kan ikke optage lyd, så stemmenoter er ikke tilgængelige her.",
-  "tooShort": "Hold knappen nede, mens du taler.",
-  "nothingHeard": "Jeg opfangede ikke noget, prøv igen",
-  "retry": "Prøv igen",
-  "dismiss": "Luk",
   "voiceButton": {
     "label": "Hold for at optage en stemmenote",
     "blocked": "Mikrofon blokeret"
@@ -226,5 +222,26 @@
     "pantry.other_leaf_missing": "havde ingen passende kategori",
     "voice.item_not_found": "er ikke længere på listen",
     "other": "kunne ikke anvendes"
+  },
+  "send": {
+    "reading": "Læser din note",
+    "readingMeta": "{{duration}} tale · {{language}}",
+    "cancel": "Annuller",
+    "cancelled": "Annulleret. Intet blev gemt.",
+    "failed": "Kunne ikke sende",
+    "failedHint": "Ingen forbindelse. Din optagelse er gemt.",
+    "retry": "Prøv igen",
+    "discard": "Kassér",
+    "discarded": "Optagelse kasseret",
+    "nothing": "Jeg hørte ikke noget, prøv igen",
+    "nothingHint": "Hold knappen nede og tal tæt på telefonen. Denne tæller ikke med.",
+    "cap": "Det er dagens {{cap}} stemmenoter",
+    "capHint": "Stemmen er tilbage i morgen. Scanninger virker stadig.",
+    "ok": "OK",
+    "tooLong": "Optagelsen var for lang. Prøv en kortere.",
+    "unsupported": "Denne browsers optageformat understøttes ikke",
+    "tipBusy": "Læser stadig din sidste note",
+    "tipFailed": "Prøv igen eller kassér den sidste note først",
+    "noRecording": "Kan ikke optage her"
   }
 }

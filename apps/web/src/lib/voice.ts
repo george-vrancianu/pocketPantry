@@ -152,6 +152,8 @@ export type VoiceNoteRequest = {
   defaultTarget: VoiceList;
   /** The Member's local date, `YYYY-MM-DD`. */
   today: string;
+  /** Aborting it abandons the request on this side only; the Voice Cap charge stands. */
+  signal?: AbortSignal;
 };
 
 export function sendVoiceNote({
@@ -160,6 +162,7 @@ export function sendVoiceNote({
   locale,
   defaultTarget,
   today,
+  signal,
 }: VoiceNoteRequest): Promise<VoiceNoteResult> {
   const form = new FormData();
   form.append('scanLanguage', scanLanguage);
@@ -176,14 +179,12 @@ export function sendVoiceNote({
   return apiRequest<VoiceNoteResult>('/voice', {
     method: 'POST',
     body: form,
+    signal,
   });
 }
 
-/** Errors a second try of the same recording cannot fix: keeping it for Retry would only mislead. */
-export const NOT_RETRYABLE = new Set([
-  'voice.cap_reached',
-  'voice.too_long',
-  'voice.unsupported_audio',
-  'voice.not_configured',
-  'voice.nothing_heard',
-]);
+/** `m:ss` for a length in seconds (the reading pill and Review). */
+export function formatClock(seconds: number): string {
+  const whole = Math.round(seconds);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+}

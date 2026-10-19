@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
 import { resetRowFlash } from '../../lib/rowFlash';
-import { resetVoiceNote } from '../../lib/voiceNoteStore';
+import { resetVoiceNote, voiceNote } from '../../lib/voiceNoteStore';
 import {
   holdLongEnough,
   pressDown,
@@ -156,6 +156,24 @@ describe('Voice Notes on the Pantry page', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it('shows a note that failed on the Shopping List here too, and retries it for its own page', async () => {
+    // Recorded on the Shopping List, then the Member moved to the Pantry (not a reload).
+    voiceNote.read(recording, 'ro', 'shopping');
+    voiceNote.fail('failed', { keepRecording: true });
+    const { sent } = setup([]);
+    renderWithProviders(<PantryPage />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent("Couldn't send");
+    expect(screen.getByTestId('failed-dot')).toBeInTheDocument();
+
+    await userEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
+
+    expect(await screen.findByRole('dialog')).toBeVisible();
+    expect(sent[0].get('scanLanguage')).toBe('ro');
+    expect(sent[0].get('defaultTarget')).toBe('shopping');
   });
 
   it('puts the voice button on the Pantry page and records for the Pantry', async () => {

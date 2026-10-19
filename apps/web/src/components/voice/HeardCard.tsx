@@ -10,13 +10,9 @@ import {
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
+import { formatClock } from '../../lib/voice';
 
 const { color } = tokens;
-
-const clock = (seconds: number) => {
-  const whole = Math.round(seconds);
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
-};
 
 /**
  * "What I heard": a card that shows the first line of the transcript and opens to
@@ -39,7 +35,7 @@ export function HeardCard({
   const firstLine = transcript.split('\n')[0];
   const meta = t('voice:review.heardMeta', {
     language: t(`settings:languageNames.${language}`),
-    duration: clock(seconds ?? 0),
+    duration: formatClock(seconds ?? 0),
   });
 
   return (

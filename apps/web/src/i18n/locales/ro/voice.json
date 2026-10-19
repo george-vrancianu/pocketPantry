@@ -54,10 +54,6 @@
     "still": "Încă blocat. Permite microfonul în browser, apoi încearcă din nou."
   },
   "unavailable": "Acest browser nu poate înregistra sunet, deci notele vocale nu sunt disponibile aici.",
-  "tooShort": "Ține apăsat butonul cât timp vorbești.",
-  "nothingHeard": "Nu am prins nimic, încearcă din nou",
-  "retry": "Reîncearcă",
-  "dismiss": "Închide",
   "voiceButton": {
     "label": "Ține apăsat pentru a înregistra o notă vocală",
     "blocked": "Microfon blocat"
@@ -234,5 +230,26 @@
     "pantry.other_leaf_missing": "nu avea o categorie potrivită",
     "voice.item_not_found": "nu mai este pe listă",
     "other": "nu a putut fi aplicat"
+  },
+  "send": {
+    "reading": "Îți citesc nota",
+    "readingMeta": "{{duration}} de vorbire · {{language}}",
+    "cancel": "Anulează",
+    "cancelled": "Anulat. Nu s-a salvat nimic.",
+    "failed": "Nu s-a putut trimite",
+    "failedHint": "Fără conexiune. Înregistrarea ta este păstrată.",
+    "retry": "Reîncearcă",
+    "discard": "Șterge",
+    "discarded": "Înregistrare ștearsă",
+    "nothing": "Nu am prins nimic, încearcă din nou",
+    "nothingHint": "Ține apăsat butonul și vorbește aproape de telefon. Aceasta nu se numără.",
+    "cap": "Ai folosit cele {{cap}} note vocale de azi",
+    "capHint": "Vocea revine mâine. Scanările merg în continuare.",
+    "ok": "OK",
+    "tooLong": "Înregistrarea a fost prea lungă. Încearcă una mai scurtă.",
+    "unsupported": "Formatul de înregistrare al acestui browser nu este acceptat",
+    "tipBusy": "Încă citesc ultima notă",
+    "tipFailed": "Reîncearcă sau șterge mai întâi ultima notă",
+    "noRecording": "Nu se poate înregistra aici"
   }
 }

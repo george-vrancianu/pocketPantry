@@ -1,8 +1,7 @@
-import { Alert, Box, Button, Stack } from '@pocket-pantry/ui';
-import { useTranslation } from 'react-i18next';
 import { VoiceReview } from './voice/VoiceReview';
 import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
+import { StatusPill } from './voice/StatusPill';
 import { useVoiceConfigured, type VoiceList } from '../lib/voice';
 import { useVoiceNote } from '../lib/useVoiceNote';
 
@@ -23,34 +22,13 @@ export function VoiceNote({
 }
 
 function VoiceNoteControls({ defaultTarget }: { defaultTarget: VoiceList }) {
-  const { t } = useTranslation(['voice', 'scan', 'common']);
   const voice = useVoiceNote(defaultTarget);
 
   return (
     <>
       <VoiceButton voice={voice} target={defaultTarget} />
 
-      {voice.notice ? (
-        <Alert>
-          <Stack spacing={1}>
-            <span>
-              {voice.notice.kind === 'failed'
-                ? voice.notice.message
-                : voice.notice.kind === 'unavailable'
-                  ? t('voice:unavailable')
-                  : voice.notice.kind === 'tooShort'
-                    ? t('voice:tooShort')
-                    : t('voice:nothingHeard')}
-            </span>
-            <Box sx={{ display: 'flex', gap: '8px' }}>
-              {voice.notice.kind === 'failed' && voice.notice.canRetry ? (
-                <Button onClick={voice.retry}>{t('voice:retry')}</Button>
-              ) : null}
-              <Button onClick={voice.dismiss}>{t('voice:dismiss')}</Button>
-            </Box>
-          </Stack>
-        </Alert>
-      ) : null}
+      <StatusPill voice={voice} />
 
       <MicSheets
         sheet={voice.mic.sheet}
