@@ -34,7 +34,12 @@ export function shoppingUncheckHandler(
             false,
           );
         }
-        return { applied: true };
+        return {
+          applied: true,
+          list: 'shopping',
+          rowId: target.id,
+          alreadyDone: !target.checked,
+        };
       }),
   };
 }

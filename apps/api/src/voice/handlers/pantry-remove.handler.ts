@@ -87,6 +87,7 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
             });
           }
         }
+        const kept = steps.find((step) => step.take !== null);
         const deleted = steps.filter((step) => step.take === null);
         if (deleted.length > 0) {
           await pantry.removeInTransaction(
@@ -95,7 +96,13 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
             deleted.map((step) => step.id),
           );
         }
-        return { applied: true };
+        return {
+          applied: true,
+          list: 'pantry',
+          // A deleted Batch is gone, so point at one that is still there.
+          ...(kept ? { rowId: kept.id } : {}),
+          alreadyDone: false,
+        };
       }),
   };
 }

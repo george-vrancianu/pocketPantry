@@ -32,7 +32,7 @@ export function shoppingAddHandler(
           return { applied: false, reason: 'voice.invalid_action' };
         }
         const { quantity, unit } = amountOf(draft);
-        await shopping.addInTransaction(
+        const { id } = await shopping.addInTransaction(
           ctx.tx,
           ctx.memberId,
           {
@@ -45,7 +45,12 @@ export function shoppingAddHandler(
           // for it), so that is the queue's source language.
           ctx.locale,
         );
-        return { applied: true };
+        return {
+          applied: true,
+          list: 'shopping',
+          rowId: id,
+          alreadyDone: false,
+        };
       }),
   };
 }
