@@ -15,6 +15,7 @@ import {
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../../components/AmountSheet';
+import { RowFlash } from '../../../components/RowFlash';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { formatRowAmount, type Amount } from '../../../lib/amount';
 import type { RowHint } from '../../../lib/useRowHint';
@@ -198,6 +199,7 @@ function ChecklistRow({
             </Box>
           }
         />
+        <RowFlash ids={[item.id]} />
       </SwipeRow>
       <AmountSheet
         open={editing}

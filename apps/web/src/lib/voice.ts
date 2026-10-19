@@ -79,8 +79,18 @@ export type VoiceNoteResult = {
   actions: VoiceReviewAction[];
 };
 
+/** One applied Voice Action: the list it landed on and the row it touched. */
+export type VoiceAppliedEntry = {
+  actionId: string;
+  list: VoiceList;
+  /** The Shopping Item or Batch touched; absent when it is gone (a removal). */
+  rowId?: string;
+  /** Already satisfied when applied; still counts as applied. */
+  alreadyDone: boolean;
+};
+
 export type VoiceApplyResult = {
-  applied: string[];
+  applied: VoiceAppliedEntry[];
   skipped: { id: string; reason: string }[];
 };
 

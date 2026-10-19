@@ -133,24 +133,43 @@
     }
   },
   "toast": {
-    "applied_one": "{{count}} stemmehandling anvendt.",
-    "applied_other": "{{count}} stemmehandlinger anvendt.",
-    "skipped": "Sprunget over: {{names}}."
+    "applied_one": "{{count}} anvendt",
+    "applied_other": "{{count}} anvendt",
+    "split": "{{count}} anvendt: {{here}} {{hereList}}, {{there}} {{thereList}}",
+    "where": {
+      "shopping": "på listen",
+      "pantry": "i spisekammeret"
+    },
+    "skipped": "{{count}} anvendt, {{skipped}} sprunget over: {{reasons}}",
+    "skippedItem": "{{name}} {{reason}}",
+    "more": "+{{count}}",
+    "already": "{{name}} var allerede {{state}}, så den tæller som udført.",
+    "alreadyMany_one": "{{name}} og {{count}} mere var allerede udført, så de tæller som udført.",
+    "alreadyMany_other": "{{name}} og {{count}} mere var allerede udført, så de tæller som udført.",
+    "alreadyState": {
+      "check": "afkrydset",
+      "uncheck": "fjernet fra afkrydsning",
+      "remove": "fjernet fra listen",
+      "setQuantity": "på den mængde",
+      "runningLow": "markeret som ved at løbe tør",
+      "add": "der",
+      "other": "udført"
+    }
   },
   "skipReason": {
     "shopping.quantity_too_large": "mængden er for stor",
-    "shopping.ingredient_not_found": "ingrediensen findes ikke længere",
+    "shopping.ingredient_not_found": "findes ikke længere",
     "voice.not_supported": "understøttes ikke endnu",
-    "voice.invalid_action": "ufuldstændig",
-    "pantry.batch_not_found": "partiet er allerede væk",
-    "voice.batch_required": "intet parti valgt",
-    "pantry.location_required": "ingen placering valgt",
-    "pantry.unit_required": "enhed påkrævet",
-    "pantry.ingredient_not_found": "ingrediensen er ikke længere tilgængelig",
+    "voice.invalid_action": "var ufuldstændig",
+    "pantry.batch_not_found": "er ikke længere i spisekammeret",
+    "voice.batch_required": "manglede et valgt parti",
+    "pantry.location_required": "manglede en placering",
+    "pantry.unit_required": "manglede en enhed",
+    "pantry.ingredient_not_found": "findes ikke længere",
     "shopping.item_not_found": "er ikke længere på listen",
     "shopping.list_changed": "listen er ændret",
-    "pantry.category_not_found": "kategorien er ikke længere tilgængelig",
-    "pantry.other_leaf_missing": "ingen passende kategori tilgængelig",
+    "pantry.category_not_found": "kategorien findes ikke længere",
+    "pantry.other_leaf_missing": "havde ingen passende kategori",
     "voice.item_not_found": "er ikke længere på listen",
     "other": "kunne ikke anvendes"
   }

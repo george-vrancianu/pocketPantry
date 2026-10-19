@@ -28,6 +28,8 @@ export type ToastOptions = {
    * Defaults to just above the Dock.
    */
   bottom?: number | string | { xs: number | string; md: number | string };
+  /** A second, smaller line under the message. */
+  detail?: string;
   /** How long the toast stays, in ms. Defaults to 2600. */
   duration?: number;
   /** Announce without interrupting (a status) instead of as an alert. */
@@ -158,7 +160,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           >
             <MuiSnackbarContent
               role={current.polite ? 'status' : 'alert'}
-              message={current.message}
+              message={
+                current.detail ? (
+                  <>
+                    <span style={{ display: 'block' }}>{current.message}</span>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: 13,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {current.detail}
+                    </span>
+                  </>
+                ) : (
+                  current.message
+                )
+              }
               action={
                 current.action ? (
                   <MuiButton

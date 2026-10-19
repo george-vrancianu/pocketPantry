@@ -119,6 +119,7 @@ export function VoiceButton({
           component="button"
           type="button"
           aria-label={t('voiceButton.label')}
+          data-voice-button=""
           aria-pressed={voice.recording}
           disabled={busy}
           onPointerDown={(event: PointerEvent<HTMLElement>) => {

@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
+import { resetRowFlash } from '../../lib/rowFlash';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import { holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -74,7 +75,16 @@ describe('Voice Notes on the Pantry page', () => {
   function setup(
     actions: unknown[],
     apply: () => Response = () =>
-      Response.json({ applied: ['a1'], skipped: [] }, { status: 201 }),
+      Response.json(
+        {
+          applied: [
+            { actionId: 'a1', list: 'pantry', rowId: 'b1', alreadyDone: false },
+          ],
+          skipped: [],
+        },
+        { status: 201 },
+      ),
+    batches: unknown[] = [],
   ) {
     localStorage.setItem('pp.voice.micExplained', '1');
     applied = [];
@@ -85,7 +95,7 @@ describe('Voice Notes on the Pantry page', () => {
         Response.json({ ingredients: [] }),
       'GET /api/pantry': () => {
         pantryFetches += 1;
-        return Response.json({ batches: [], runningLow: [] });
+        return Response.json({ batches, runningLow: [] });
       },
       'GET /api/voice/config': () => Response.json({ configured: true }),
       'GET /api/catalog/search': () =>
@@ -125,6 +135,7 @@ describe('Voice Notes on the Pantry page', () => {
   beforeEach(() => {
     useVoiceTimers();
     resetVoiceNote();
+    resetRowFlash();
     mic.start.mockReset();
     mic.start.mockImplementation(() =>
       Promise.resolve({
@@ -542,6 +553,91 @@ describe('Voice Notes on the Pantry page', () => {
       await dialog.findByRole('button', { name: 'Apply 1 change' }),
     );
     await waitFor(() => expect(pantryFetches).toBeGreaterThan(before));
-    expect(await screen.findByText(/that batch is already gone/)).toBeTruthy();
+    // The skipped name is lowercased to read after "skipped:".
+    expect(
+      await screen.findByText(
+        /^0 applied, 1 skipped: yogurt no longer in Pantry$/,
+      ),
+    ).toBeTruthy();
+  });
+
+  it('names the Pantry first on its own page when both lists changed', async () => {
+    setup(
+      [action({ defaults: { location: 'fridge', expiresOn: '2099-05-20' } })],
+      () =>
+        Response.json(
+          {
+            applied: [
+              {
+                actionId: 'a1',
+                list: 'shopping',
+                rowId: 'i1',
+                alreadyDone: false,
+              },
+              {
+                actionId: 'a2',
+                list: 'pantry',
+                rowId: 'b1',
+                alreadyDone: false,
+              },
+              {
+                actionId: 'a3',
+                list: 'pantry',
+                rowId: 'b2',
+                alreadyDone: false,
+              },
+            ],
+            skipped: [],
+          },
+          { status: 201 },
+        ),
+    );
+    const dialog = within(await openReview());
+    await userEvent.click(
+      await dialog.findByRole('button', { name: 'Apply 1 change' }),
+    );
+    expect(
+      await screen.findByText('3 applied: 2 in the Pantry, 1 on the list'),
+    ).toBeVisible();
+  });
+
+  it('flashes the Pantry row of the Batch Apply touched, and puts focus on the voice button', async () => {
+    const stocked = {
+      id: 'b1',
+      name: 'Yogurt',
+      ingredientId: 'ing-yogurt',
+      unmatched: false,
+      aisle: null,
+      amountScale: null,
+      defaultUnit: null,
+      defaultExpiryDays: null,
+      quantity: 2,
+      unit: 'pcs',
+      location: 'fridge',
+      expiryDate: null,
+      productDescription: null,
+      createdAt: '2026-10-01T00:00:00Z',
+    };
+    setup(
+      [action({ defaults: { location: 'fridge', expiresOn: '2099-05-20' } })],
+      undefined,
+      [stocked, { ...stocked, id: 'b9', name: 'Milk', ingredientId: 'm' }],
+    );
+    const dialog = within(await openReview());
+    await userEvent.click(
+      await dialog.findByRole('button', { name: 'Apply 1 change' }),
+    );
+    await waitFor(() =>
+      expect(
+        Array.from(document.querySelectorAll('[data-row-flash]')).map((el) =>
+          el.closest('li')?.textContent?.slice(0, 6),
+        ),
+      ).toEqual(['Yogurt']),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /hold to record a voice note/i }),
+      ).toHaveFocus(),
+    );
   });
 });
