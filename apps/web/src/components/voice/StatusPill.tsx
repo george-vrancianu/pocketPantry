@@ -83,6 +83,12 @@ export function StatusPill({ voice }: { voice: Voice }) {
         {t('send.ok')}
       </Button>
     );
+    // Nothing was kept (too long, unsupported): Discard only closes, with no "discarded" toast.
+    const close = (
+      <Button variant="primary" size="sm" shape="pill" onClick={voice.dismiss}>
+        {t('send.discard')}
+      </Button>
+    );
     const discard = (
       <Button
         variant="secondary"
@@ -127,18 +133,17 @@ export function StatusPill({ voice }: { voice: Voice }) {
           title: t('send.noRecording'),
           actions: ok,
         };
-      // Nothing was kept, so there is nothing to discard or retry: only to close.
       case 'tooLong':
         return {
           ...failed(t('send.tooLong'), false),
           title: t('send.tooLongTitle'),
-          actions: ok,
+          actions: close,
         };
       case 'unsupported':
         return {
           ...failed(t('send.unsupported'), false),
           title: t('send.unsupportedTitle'),
-          actions: ok,
+          actions: close,
         };
       case 'nothingHeard':
         return {

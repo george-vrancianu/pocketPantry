@@ -445,7 +445,7 @@ describe('Voice Note on the Shopping List', () => {
       expect(release).toHaveBeenCalledTimes(1);
     });
 
-    it('puts focus back on the voice button when Cancel, Discard or OK closes the pill', async () => {
+    it('puts focus back on the voice button when Cancel or Discard closes the pill', async () => {
       let attempt = 0;
       setup({
         note: () =>
@@ -465,11 +465,11 @@ describe('Voice Note on the Shopping List', () => {
       );
       await waitFor(() => expect(button).toHaveFocus());
 
-      // Too long: only OK.
+      // Too long: only Discard.
       fireEvent.pointerUp(await hold());
       await userEvent.click(
         within(await screen.findByRole('alert')).getByRole('button', {
-          name: 'OK',
+          name: 'Discard',
         }),
       );
       expect(screen.queryByRole('alert')).toBeNull();
@@ -489,17 +489,18 @@ describe('Voice Note on the Shopping List', () => {
       await waitFor(() => expect(button).toHaveFocus());
     });
 
-    it('closes the plain-dismiss pills without a "discarded" toast, under their own title', async () => {
+    it('offers Discard only on a too-long note, closing without a "discarded" toast', async () => {
       setup({ note: () => error('voice.too_long', 413) });
       renderWithProviders(<ShoppingPage />);
       fireEvent.pointerUp(await hold());
 
       const alert = await screen.findByRole('alert');
       expect(alert).toHaveTextContent('Recording too long');
-      expect(
-        within(alert).queryByRole('button', { name: 'Discard' }),
-      ).toBeNull();
-      await userEvent.click(within(alert).getByRole('button', { name: 'OK' }));
+      expect(within(alert).queryByRole('button', { name: 'OK' })).toBeNull();
+      expect(within(alert).queryByRole('button', { name: 'Retry' })).toBeNull();
+      await userEvent.click(
+        within(alert).getByRole('button', { name: 'Discard' }),
+      );
       expect(screen.queryByText('Recording discarded')).toBeNull();
     });
 
@@ -744,7 +745,7 @@ describe('Voice Note on the Shopping List', () => {
       });
     });
 
-    it('offers only OK when the recording was too long', async () => {
+    it('offers only Discard when the recording was too long', async () => {
       setup({ note: () => error('voice.too_long', 413) });
       renderWithProviders(<ShoppingPage />);
       fireEvent.pointerUp(await hold());
@@ -754,14 +755,14 @@ describe('Voice Note on the Shopping List', () => {
         'That recording was too long. Try a shorter one.',
       );
       expect(within(alert).queryByRole('button', { name: 'Retry' })).toBeNull();
-      expect(
-        within(alert).queryByRole('button', { name: 'Discard' }),
-      ).toBeNull();
-      await userEvent.click(within(alert).getByRole('button', { name: 'OK' }));
+      expect(within(alert).queryByRole('button', { name: 'OK' })).toBeNull();
+      await userEvent.click(
+        within(alert).getByRole('button', { name: 'Discard' }),
+      );
       expect(screen.queryByRole('alert')).toBeNull();
     });
 
-    it('offers only OK, and logs, when the recording format is not supported', async () => {
+    it('offers only Discard, and logs, when the recording format is not supported', async () => {
       const log = vi
         .spyOn(console, 'error')
         .mockImplementation(() => undefined);
@@ -774,6 +775,10 @@ describe('Voice Note on the Shopping List', () => {
         "This browser's recording format isn't supported",
       );
       expect(within(alert).queryByRole('button', { name: 'Retry' })).toBeNull();
+      expect(within(alert).queryByRole('button', { name: 'OK' })).toBeNull();
+      expect(
+        within(alert).getByRole('button', { name: 'Discard' }),
+      ).toBeVisible();
       expect(screen.queryByTestId('failed-dot')).toBeNull();
       expect(log).toHaveBeenCalled();
       log.mockRestore();
