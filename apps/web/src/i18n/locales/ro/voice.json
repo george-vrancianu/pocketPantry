@@ -99,17 +99,14 @@
       "defaultExpiry": "Expirarea implicită a acestui Ingredient",
       "location": "Locație",
       "locationDefault": "Nespus, deci locul obișnuit al acestui Ingredient",
-      "batch": "Lotul de scos",
       "whichBatch": "Din ce lot ai folosit?",
-      "batchLine": "{{amount}} · {{date}}",
       "ingredient": "Ingredient",
       "unmatched": "Fără potrivire",
       "change": "Schimbă",
       "changeIngredient": "Schimbă Ingredientul: {{name}}",
       "searchLabel": "Caută în catalog pentru {{name}}",
       "done": "Gata",
-      "drop": "Renunță la această modificare: {{verb}} {{name}}",
-      "row": "{{verb}} {{name}}"
+      "drop": "Renunță la această modificare: {{verb}} {{name}}"
     },
     "footer": {
       "discard": "Renunță",

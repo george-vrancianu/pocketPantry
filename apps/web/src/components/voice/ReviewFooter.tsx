@@ -71,10 +71,16 @@ export function ReviewFooter({
             onClick={onKeep}
             sx={{ flex: 1 }}
             autoFocus
+            disabled={applying}
           >
             {t('review.footer.keep')}
           </Button>
-          <Button variant="danger" onClick={onDiscard} sx={{ flex: 1 }}>
+          <Button
+            variant="danger"
+            onClick={onDiscard}
+            disabled={applying}
+            sx={{ flex: 1 }}
+          >
             {t('review.footer.discard')}
           </Button>
         </Box>
@@ -85,7 +91,7 @@ export function ReviewFooter({
   if (count === 0 && blocked === null) {
     return (
       <Box sx={box}>
-        <Button fullWidth onClick={onAsk}>
+        <Button fullWidth onClick={onAsk} data-voice-discard>
           {t('review.footer.discard')}
         </Button>
       </Box>
@@ -102,7 +108,12 @@ export function ReviewFooter({
 
   return (
     <Box sx={{ ...box, display: 'flex', gap: '10px' }}>
-      <Button variant="secondary" disabled={applying} onClick={onAsk}>
+      <Button
+        variant="secondary"
+        disabled={applying}
+        onClick={onAsk}
+        data-voice-discard
+      >
         {t('review.footer.discard')}
       </Button>
       <Button

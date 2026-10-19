@@ -411,6 +411,12 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  /** The button that opens a row: the only one with aria-expanded. */
+  const headerOf = (row: HTMLElement) =>
+    within(row)
+      .getAllByRole('button')
+      .find((b) => b.hasAttribute('aria-expanded')) as HTMLElement;
+
   /** The row of an Ingredient: its verb and name, and the line under them. */
   const rowOf = (dialog: ReturnType<typeof within>, name: string) =>
     dialog.getByText(name, { selector: 'b' }).closest('li') as HTMLElement;
@@ -657,8 +663,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
   it('opens one row at a time and shows what was heard, with line 2 following each edit', async () => {
     setupReview(threeAdds);
     const dialog = within(await openReview());
-    const header = (name: string) =>
-      within(rowOf(dialog, name)).getAllByRole('button')[0];
+    const header = (name: string) => headerOf(rowOf(dialog, name));
 
     await userEvent.click(header('Eggs'));
     expect(header('Eggs')).toHaveAttribute('aria-expanded', 'true');
@@ -682,9 +687,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     const dialog = within(await openReview());
     const before = listFetches;
 
-    await userEvent.click(
-      within(rowOf(dialog, 'Eggs')).getAllByRole('button')[0],
-    );
+    await userEvent.click(headerOf(rowOf(dialog, 'Eggs')));
     await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
     await userEvent.click(dialog.getByRole('button', { name: 'pcs' }));
     await userEvent.click(
@@ -707,9 +710,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
   it('clears the amount to mean no amount, and blocks Apply while it cannot be read', async () => {
     setupReview(threeAdds);
     const dialog = within(await openReview());
-    await userEvent.click(
-      within(rowOf(dialog, 'Milk')).getAllByRole('button')[0],
-    );
+    await userEvent.click(headerOf(rowOf(dialog, 'Milk')));
     const amount = dialog.getByLabelText('Amount of Milk');
     const apply = dialog.getByRole('button', { name: 'Apply 3 changes' });
 
@@ -732,9 +733,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
   it('swaps the shared Catalog search into the row to change the Ingredient', async () => {
     setupReview(threeAdds);
     const dialog = within(await openReview());
-    await userEvent.click(
-      within(rowOf(dialog, 'Quinoa crackers')).getAllByRole('button')[0],
-    );
+    await userEvent.click(headerOf(rowOf(dialog, 'Quinoa crackers')));
     expect(dialog.getByText('Unmatched')).toBeVisible();
 
     await userEvent.click(
@@ -806,6 +805,86 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
+  it('ignores Escape, and freezes the rows, while Apply is in flight', async () => {
+    let finish: (response: Response) => void = () => {};
+    setupReview(
+      threeAdds,
+      () =>
+        new Promise<Response>(
+          (resolve) => (finish = resolve),
+        ) as unknown as Response,
+    );
+    const dialog = within(await openReview());
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 3 changes' }),
+    );
+    await dialog.findByRole('button', { name: 'Applying' });
+
+    await userEvent.keyboard('{Escape}');
+    expect(dialog.queryByText('Discard this Voice Note?')).toBeNull();
+    expect(getVoiceNoteState().phase).toBe('applying');
+    expect(
+      dialog
+        .getByRole('button', { name: 'Drop this change: Add Eggs' })
+        .closest('[inert]'),
+    ).not.toBeNull();
+
+    finish(
+      Response.json(
+        { applied: ['a1', 'a2', 'a3'], skipped: [] },
+        { status: 201 },
+      ),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.queryByText(/Voice Note discarded/)).toBeNull();
+  });
+
+  it('closes only the Catalog search on Escape, not the Review', async () => {
+    setupReview(threeAdds);
+    const dialog = within(await openReview());
+    await userEvent.click(
+      dialog.getByRole('button', { name: /Eggs/, expanded: false }),
+    );
+    await userEvent.click(dialog.getByRole('button', { name: /Change/ }));
+    expect(await dialog.findByRole('combobox')).toBeVisible();
+
+    await userEvent.keyboard('{Escape}');
+    await userEvent.keyboard('{Escape}');
+    expect(dialog.queryByText('Discard this Voice Note?')).toBeNull();
+    expect(dialog.queryByRole('combobox')).toBeNull();
+    expect(dialog.getByRole('button', { name: /Change/ })).toHaveFocus();
+  });
+
+  it('puts focus back on Discard after Keep reviewing', async () => {
+    setupReview(threeAdds);
+    const dialog = within(await openReview());
+    await userEvent.click(dialog.getByRole('button', { name: 'Discard' }));
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Keep reviewing' }),
+    );
+    expect(dialog.getByRole('button', { name: 'Discard' })).toHaveFocus();
+  });
+
+  it('scrolls the alert into view when Apply fails', async () => {
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    setupReview(threeAdds, () =>
+      Response.json(
+        { code: 'internal_error', message: 'boom' },
+        { status: 500 },
+      ),
+    );
+    const dialog = within(await openReview());
+    scrolled.mockClear();
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 3 changes' }),
+    );
+    const alert = await dialog.findByRole('alert');
+    await waitFor(() => expect(scrolled.mock.contexts).toContain(alert));
+    // @ts-expect-error test cleanup
+    delete Element.prototype.scrollIntoView;
+  });
+
   it('keeps the sheet and every edit when Apply fails, with an alert at the top', async () => {
     setupReview(threeAdds, () =>
       Response.json(
@@ -814,9 +893,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
       ),
     );
     const dialog = within(await openReview());
-    await userEvent.click(
-      within(rowOf(dialog, 'Eggs')).getAllByRole('button')[0],
-    );
+    await userEvent.click(headerOf(rowOf(dialog, 'Eggs')));
     await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
     await userEvent.click(
       dialog.getByRole('button', { name: 'Apply 3 changes' }),

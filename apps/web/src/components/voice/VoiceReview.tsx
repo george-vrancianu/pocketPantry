@@ -79,6 +79,7 @@ function ReviewSheet() {
 
   const [openId, setOpenId] = useState<string | null>(blocking?.id ?? null);
   const [confirming, setConfirming] = useState(false);
+  const [keptReviewing, setKeptReviewing] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
   // What the Member typed in each amount field; the store only takes valid amounts.
   const [typed, setTyped] = useState<Record<string, string>>({});
@@ -91,10 +92,8 @@ function ReviewSheet() {
 
   const applying = phase === 'applying';
   const apply = useMutation({
-    mutationFn: () => {
-      voiceNote.applying();
-      return applyVoiceActions(applicable, locale);
-    },
+    onMutate: () => voiceNote.applying(),
+    mutationFn: () => applyVoiceActions(applicable, locale),
     onError: () => voiceNote.applyFailed(),
     onSuccess: (result: VoiceApplyResult) => {
       const skipped = result.skipped.flatMap(({ id, reason }) => {
@@ -107,7 +106,7 @@ function ReviewSheet() {
             ]
           : [];
       });
-      voiceNote.discard();
+      voiceNote.applied();
       toast.show(
         [
           t('voice:toast.applied', { count: result.applied.length }),
@@ -148,6 +147,19 @@ function ReviewSheet() {
     picker.focus();
     return true;
   };
+  // Declining the Discard question hands focus back to the Discard button.
+  useEffect(() => {
+    if (!keptReviewing || confirming) return;
+    document.querySelector<HTMLElement>('[data-voice-discard]')?.focus();
+    setKeptReviewing(false);
+  }, [keptReviewing, confirming]);
+  // A failed Apply puts its Alert at the top of the body; bring it into view.
+  useEffect(() => {
+    if (!apply.isError) return;
+    body.current
+      ?.querySelector('[role="alert"]')
+      ?.scrollIntoView?.({ block: 'nearest' });
+  }, [apply.isError, apply.failureCount]);
   useEffect(() => {
     if (focusId === null) return;
     if (focusPicker(focusId)) setFocusId(null);
@@ -184,7 +196,9 @@ function ReviewSheet() {
       open
       onClose={() => undefined}
       dismissable={false}
-      onEscape={() => setConfirming(true)}
+      onEscape={() => {
+        if (!applying) setConfirming(true);
+      }}
       onEntered={() => {
         if (!blocking || !focusPicker(blocking.id)) title.current?.focus();
       }}
@@ -213,7 +227,10 @@ function ReviewSheet() {
           applying={applying}
           confirming={confirming}
           onAsk={() => setConfirming(true)}
-          onKeep={() => setConfirming(false)}
+          onKeep={() => {
+            setConfirming(false);
+            setKeptReviewing(true);
+          }}
           onDiscard={discard}
           onApply={() => apply.mutate()}
           onBlockedApply={() => {
@@ -226,6 +243,7 @@ function ReviewSheet() {
     >
       <Box
         ref={body}
+        inert={applying}
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -242,7 +260,7 @@ function ReviewSheet() {
           transcript={transcript}
           language={language}
           seconds={recording?.seconds}
-          defaultOpen={changes.length === 0}
+          defaultOpen={actions.every((a) => a.status === 'notUnderstood')}
         />
 
         {groups.map((group) => (

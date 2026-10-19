@@ -95,17 +95,14 @@
       "defaultExpiry": "Standardudløb for denne Ingrediens",
       "location": "Placering",
       "locationDefault": "Ikke sagt, så det sædvanlige sted for denne Ingrediens",
-      "batch": "Parti der skal fjernes",
       "whichBatch": "Hvilket parti brugte du op?",
-      "batchLine": "{{amount}} · {{date}}",
       "ingredient": "Ingrediens",
       "unmatched": "Ikke matchet",
       "change": "Skift",
       "changeIngredient": "Skift Ingrediens: {{name}}",
       "searchLabel": "Søg i kataloget efter {{name}}",
       "done": "Færdig",
-      "drop": "Drop denne ændring: {{verb}} {{name}}",
-      "row": "{{verb}} {{name}}"
+      "drop": "Drop denne ændring: {{verb}} {{name}}"
     },
     "footer": {
       "discard": "Kassér",

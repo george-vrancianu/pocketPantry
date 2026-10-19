@@ -113,8 +113,13 @@ export const voiceNote = {
   },
   /** Drops a failure and its kept recording. */
   dismiss: () => go({ phase: 'idle', page: state.page }),
-  /** Closes Review without applying. */
-  discard: () => go({ phase: 'idle', page: state.page }),
+  /** Closes Review without applying; not while Apply is in flight. */
+  discard() {
+    if (state.phase === 'applying') return;
+    go({ phase: 'idle', page: state.page });
+  },
+  /** Closes Review once Apply has succeeded. */
+  applied: () => go({ phase: 'idle', page: state.page }),
   remove(id: string) {
     if (!state.proposal) return;
     state = {

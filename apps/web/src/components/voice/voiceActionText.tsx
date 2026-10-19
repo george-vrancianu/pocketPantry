@@ -78,7 +78,7 @@ export function useVoiceActionText() {
 
   const verb = (kind: VoiceActionKind) => t(`voice:review.op.${kind}`);
 
-  /** Whether the row's second line is a warning (it holds Apply back). */
+  /** The row's second line: what applying the Voice Action will do, or what holds Apply back. */
   const lineTwo = (action: VoiceReviewAction): ReactNode => {
     const kind = kindOf(action);
     const name = displayName(action);
@@ -247,5 +247,5 @@ export function useVoiceActionText() {
     );
   };
 
-  return { verb, lineTwo, kindOf, dateOf, amountOf };
+  return { verb, lineTwo, amountOf };
 }

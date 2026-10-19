@@ -93,6 +93,7 @@ export function HeardCard({
           </Box>
           {open ? null : (
             <Box
+              lang={language}
               sx={{
                 fontSize: 12.5,
                 color: color.muted,
@@ -105,14 +106,19 @@ export function HeardCard({
             </Box>
           )}
         </Box>
-        <ChevronDownIcon
-          size={18}
-          style={{
+        <Box
+          component="span"
+          aria-hidden
+          sx={{
+            display: 'flex',
             flexShrink: 0,
             transform: open ? 'rotate(180deg)' : 'none',
             transition: 'transform 220ms',
+            '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
           }}
-        />
+        >
+          <ChevronDownIcon size={18} />
+        </Box>
       </Box>
       <Box id={bodyId} hidden={!open} sx={{ p: '0 16px 14px 55px' }}>
         {open ? (

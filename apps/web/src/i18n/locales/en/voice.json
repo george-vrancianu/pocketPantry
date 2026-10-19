@@ -95,17 +95,14 @@
       "defaultExpiry": "Default Expiry for this Ingredient",
       "location": "Location",
       "locationDefault": "Not said, so the usual place for this Ingredient",
-      "batch": "Batch to remove",
       "whichBatch": "Which batch did you use up?",
-      "batchLine": "{{amount}} · {{date}}",
       "ingredient": "Ingredient",
       "unmatched": "Unmatched",
       "change": "Change",
       "changeIngredient": "Change Ingredient: {{name}}",
       "searchLabel": "Search the catalog for {{name}}",
       "done": "Done",
-      "drop": "Drop this change: {{verb}} {{name}}",
-      "row": "{{verb}} {{name}}"
+      "drop": "Drop this change: {{verb}} {{name}}"
     },
     "footer": {
       "discard": "Discard",

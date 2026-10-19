@@ -146,8 +146,12 @@ describe('Voice Notes on the Pantry page', () => {
   };
   const rowOf = (dialog: ReturnType<typeof within>, name: string) =>
     dialog.getByText(name, { selector: 'b' }).closest('li') as HTMLElement;
+  const headerOf = (row: HTMLElement) =>
+    within(row)
+      .getAllByRole('button')
+      .find((b) => b.hasAttribute('aria-expanded')) as HTMLElement;
   const header = (dialog: ReturnType<typeof within>, name: string) =>
-    within(rowOf(dialog, name)).getAllByRole('button')[0];
+    headerOf(rowOf(dialog, name));
 
   it('names the Location and expiry an add will use, marking the ones nobody said', async () => {
     setup([

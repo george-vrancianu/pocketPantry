@@ -182,14 +182,19 @@ export function VoiceActionRow({
             {lineTwo(action)}
           </Box>
         </Box>
-        <ChevronDownIcon
-          size={18}
-          style={{
+        <Box
+          component="span"
+          aria-hidden
+          sx={{
+            display: 'flex',
             flexShrink: 0,
             transform: open ? 'rotate(180deg)' : 'none',
             transition: 'transform 220ms',
+            '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
           }}
-        />
+        >
+          <ChevronDownIcon size={18} />
+        </Box>
       </Box>
       <Box sx={{ position: 'absolute', right: 8, top: 12 }}>
         <IconButton

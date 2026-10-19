@@ -8,7 +8,7 @@ import {
   radius,
   focusRing,
 } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpiryTag } from '../ExpiryTag';
 import { CatalogSearch } from '../catalogSearch/CatalogSearch';
@@ -55,13 +55,13 @@ const note = { fontSize: 12.5, color: tokens.color.muted, mt: '6px' } as const;
  * Expiry. Catalog search already applies the Family's expiry overrides to
  * `expiryDays`, so this agrees with the server's `addDefaults`.
  */
-function defaultsOf(ingredient: CatalogSearchResult) {
+function defaultsOf(ingredient: CatalogSearchResult, today: Date) {
   const { location, expiryDays } = ingredient.defaults;
   return {
     ...(location ? { location } : {}),
     ...(expiryDays === null
       ? {}
-      : { expiresOn: defaultExpiryDate(expiryDays, new Date()) }),
+      : { expiresOn: defaultExpiryDate(expiryDays, today) }),
   };
 }
 
@@ -265,11 +265,8 @@ function BatchEditor({ action }: { action: VoiceReviewAction }) {
   const { tagFor } = useExpiryTags(today);
   const { amountOf } = useVoiceActionText();
   const name = useId();
-  const needed = action.status === 'needsBatch';
   const batches = soonestFirst(action.rows.batches ?? []);
-  const label = needed
-    ? t('voice:review.edit.whichBatch')
-    : t('voice:review.edit.batch');
+  const label = t('voice:review.edit.whichBatch');
   const pickedIndex = batches.findIndex((batch) => batch.id === action.batchId);
 
   return (
@@ -282,7 +279,7 @@ function BatchEditor({ action }: { action: VoiceReviewAction }) {
         aria-labelledby={`${name}-label`}
         sx={{
           backgroundColor: tokens.color.surface,
-          border: `1px solid ${needed && pickedIndex < 0 ? tokens.color.soonBorder : tokens.color.line}`,
+          border: `1px solid ${pickedIndex < 0 ? tokens.color.soonBorder : tokens.color.line}`,
           borderRadius: radius.control,
           overflow: 'hidden',
         }}
@@ -356,11 +353,34 @@ function BatchEditor({ action }: { action: VoiceReviewAction }) {
 function IngredientEditor({ action }: { action: VoiceReviewAction }) {
   const { t } = useTranslation(['voice', 'common']);
   const [searching, setSearching] = useState(false);
+  const today = useToday();
+  const refocus = useRef(false);
   const name = displayName(action);
+
+  // Leaving the search with Escape puts focus back on "Change".
+  useEffect(() => {
+    if (searching || !refocus.current) return;
+    refocus.current = false;
+    document
+      .querySelector<HTMLElement>(`[data-voice-change="${action.id}"]`)
+      ?.focus();
+  }, [searching, action.id]);
 
   if (searching) {
     return (
-      <Box>
+      <Box
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') return;
+          // Escape belongs to the search, never to the Sheet behind it.
+          event.stopPropagation();
+          const open = event.currentTarget
+            .querySelector('[role="combobox"]')
+            ?.getAttribute('aria-expanded');
+          if (open === 'true') return;
+          setSearching(false);
+          refocus.current = true;
+        }}
+      >
         <Typography component="div" sx={eyebrow}>
           {t('voice:review.edit.ingredient')}
         </Typography>
@@ -375,7 +395,7 @@ function IngredientEditor({ action }: { action: VoiceReviewAction }) {
               name: null,
               // A Pantry add's Location and Default Expiry follow the new Match.
               ...(action.target === 'pantry'
-                ? { defaults: defaultsOf(ingredient) }
+                ? { defaults: defaultsOf(ingredient, today) }
                 : {}),
             });
             setSearching(false);
@@ -423,6 +443,7 @@ function IngredientEditor({ action }: { action: VoiceReviewAction }) {
         <Button
           variant="ghost"
           size="sm"
+          data-voice-change={action.id}
           startIcon={<SearchIcon size={15} />}
           aria-label={t('voice:review.edit.changeIngredient', { name })}
           onClick={() => setSearching(true)}
