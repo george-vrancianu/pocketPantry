@@ -4,7 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
 import { resetRowFlash } from '../../lib/rowFlash';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
-import { holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
+import {
+  holdLongEnough,
+  pressDown,
+  useVoiceTimers,
+} from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 
@@ -125,7 +129,7 @@ describe('Voice Notes on the Pantry page', () => {
     const button = await screen.findByRole('button', {
       name: /hold to record a voice note/i,
     });
-    fireEvent.pointerDown(button);
+    pressDown(button);
     await screen.findByText('Listening');
     await holdLongEnough();
     fireEvent.pointerUp(button);
@@ -175,7 +179,7 @@ describe('Voice Notes on the Pantry page', () => {
   it('tells the Member the note goes to the Pantry while listening', async () => {
     setup([]);
     renderWithProviders(<PantryPage />);
-    fireEvent.pointerDown(
+    pressDown(
       await screen.findByRole('button', {
         name: /hold to record a voice note/i,
       }),

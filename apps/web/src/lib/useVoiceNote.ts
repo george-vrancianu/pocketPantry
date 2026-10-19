@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
 import { ApiError } from './api';
@@ -9,6 +10,9 @@ import {
   type Recording,
 } from './microphone';
 import { localIso } from './pantry';
+import { toastBottom } from '../components/voice/placement';
+import { haptic } from './haptic';
+import { keepScreenAwake } from './wakeLock';
 import {
   MAX_VOICE_NOTE_MS,
   micExplained,
@@ -29,12 +33,13 @@ import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 
 /**
  * Hold-to-talk Voice Note: `press` starts recording, `release` stops and sends,
- * `cancel` (dragging off) throws the recording away, and 60 seconds stops and
+ * `cancel` (sliding off, Escape) throws the recording away, and 60 seconds stops and
  * sends by itself. A recording that fails to send stays in memory for `retry`
  * until the page reloads.
  */
 export function useVoiceNote(defaultTarget: VoiceList) {
-  const { t } = useTranslation(['errors']);
+  const { t } = useTranslation(['errors', 'voice']);
+  const toast = useToast();
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
   const [elapsedMs, setElapsedMs] = useState(0);
   // The Voice Note itself lives in the shared store, so Review and the button on any page see it.
@@ -87,8 +92,19 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     tick?: ReturnType<typeof setInterval>;
     limit?: ReturnType<typeof setTimeout>;
   }>({});
-  const options = useRef({ locale, scanLanguage, defaultTarget, t });
-  options.current = { locale, scanLanguage, defaultTarget, t };
+  const options = useRef({ locale, scanLanguage, defaultTarget, t, toast });
+  options.current = { locale, scanLanguage, defaultTarget, t, toast };
+  // Keeps the screen awake from the press until the note is settled (Review, a notice, cancelled).
+  const awake = useRef<(() => void) | undefined>(undefined);
+  const stayAwake = () => {
+    awake.current ??= keepScreenAwake();
+  };
+  const settle = () => {
+    awake.current?.();
+    awake.current = undefined;
+  };
+  const say = (message: string) =>
+    options.current.toast.show(message, { polite: true, bottom: toastBottom });
 
   const clearTimers = () => {
     clearInterval(timers.current.tick);
@@ -122,6 +138,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
         message: translateApiError(t, error),
         keepRecording: canRetry,
       });
+    } finally {
+      settle();
     }
   }, []);
 
@@ -137,30 +155,43 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     try {
       audio = await active.stop();
     } catch {
-      stopping.current = false;
+      settle();
       voiceNote.fail('unavailable');
       return;
+    } finally {
+      stopping.current = false;
     }
     if (audio.durationMs < MIN_VOICE_NOTE_MS) {
       // Too little audio to read (a slow microphone): the same tip as a quick tap.
-      stopping.current = false;
+      settle();
       showTip();
       return;
     }
-    stopping.current = false;
     await send(audio);
   }, [send, showTip]);
 
-  const cancel = useCallback(() => {
+  /** Throw the recording away without a word (a tap too quick to be a note). */
+  const discardRecording = useCallback(() => {
     held.current = false;
+    tipOnArrival.current = false;
     setPressing(false);
+    settle();
     const active = session.current;
-    if (!active) return;
+    if (!active) return false;
     session.current = null;
     clearTimers();
     active.cancel();
     voiceNote.cancelRecording();
+    return true;
   }, []);
+
+  /** The Member cancelled (slid off, Escape, a system gesture): discard it and say so. */
+  const cancel = useCallback(() => {
+    // Pressed counts even before the stream is live.
+    const pressed = held.current || starting.current || !!session.current;
+    discardRecording();
+    if (pressed) say(options.current.t('voice:listening.cancelled'));
+  }, [discardRecording]);
 
   const press = useCallback(async () => {
     if (session.current || starting.current || stopping.current || sending)
@@ -178,6 +209,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     }
     starting.current = true;
     setPressing(true);
+    stayAwake();
     haptic(10);
     let started: MicrophoneSession;
     try {
@@ -185,6 +217,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     } catch (error) {
       held.current = false;
       setPressing(false);
+      settle();
       voiceNote.fail(failureCode(error));
       return;
     } finally {
@@ -193,6 +226,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (!held.current) {
       started.cancel();
       setPressing(false);
+      settle();
       if (tipOnArrival.current) {
         tipOnArrival.current = false;
         showTip();
@@ -211,6 +245,10 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     timers.current.limit = setTimeout(() => {
       held.current = false;
       haptic(14);
+      const { t } = options.current;
+      say(
+        `${t('voice:listening.stopped')} · ${t('voice:listening.stoppedHint')}`,
+      );
       void finish();
     }, MAX_VOICE_NOTE_MS);
   }, [finish, sending, showTip]);
@@ -219,7 +257,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (!held.current) return;
     if (Date.now() - pressedAt.current < QUICK_TAP_MS) {
       // Too quick to be a Voice Note: send nothing and say how it works.
-      cancel();
+      discardRecording();
       showTip();
       return;
     }
@@ -228,7 +266,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (starting.current) tipOnArrival.current = true;
     haptic(14);
     void finish();
-  }, [finish, cancel, showTip]);
+  }, [finish, discardRecording, showTip]);
 
   /** The input loudness, 0 to 1, for the Listening card's meter. */
   const level = useCallback(() => session.current?.level() ?? 0, []);
@@ -264,6 +302,10 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     () => () => {
       clearTimers();
       clearTimeout(tipTimer.current);
+      settle();
+      // A stream that arrives after this page is gone must not start a note.
+      held.current = false;
+      tipOnArrival.current = false;
       if (session.current) {
         session.current.cancel();
         session.current = null;
@@ -298,15 +340,6 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 }
 
 const TIP_MS = 1800;
-
-/** A short buzz where the device has one. */
-function haptic(ms: number) {
-  try {
-    navigator.vibrate?.(ms);
-  } catch {
-    // Some browsers refuse without a user gesture: it is only a nicety.
-  }
-}
 
 function failureCode(error: unknown): VoiceErrorCode {
   return error instanceof MicrophoneError ? error.reason : 'unavailable';
