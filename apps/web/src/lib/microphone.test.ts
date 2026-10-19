@@ -147,6 +147,22 @@ describe('microphone', () => {
       stop();
       expect(listeners).toHaveLength(0);
     });
+
+    it('does not throw when the permissions query throws synchronously', async () => {
+      stubNavigator({
+        permissions: {
+          query: vi.fn(() => {
+            throw new TypeError('unsupported');
+          }),
+        },
+      });
+      const { watchPermission } = await load();
+      let stop: () => void = () => {};
+      expect(() => {
+        stop = watchPermission(() => {});
+      }).not.toThrow();
+      expect(() => stop()).not.toThrow();
+    });
   });
 
   describe('requestPermission', () => {

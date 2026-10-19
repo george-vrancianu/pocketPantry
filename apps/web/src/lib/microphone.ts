@@ -192,17 +192,18 @@ export function watchPermission(
   const handler = () => {
     if (status) onChange(status.state);
   };
-  void Promise.resolve(
-    navigator.permissions?.query({ name: 'microphone' as PermissionName }),
-  )
-    .then((found) => {
+  void (async () => {
+    try {
+      const found = await navigator.permissions?.query({
+        name: 'microphone' as PermissionName,
+      });
       if (stopped || !found) return;
       status = found;
       found.addEventListener('change', handler);
-    })
-    .catch(() => {
+    } catch {
       // Not supported for the microphone: the button reads the permission on each press instead.
-    });
+    }
+  })();
   return () => {
     stopped = true;
     status?.removeEventListener('change', handler);

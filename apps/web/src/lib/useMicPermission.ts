@@ -58,6 +58,7 @@ export function useMicPermission({
   const showIntro = useCallback(() => setSheet('intro'), []);
   const showBlocked = useCallback(() => {
     setPermission('denied');
+    setStillBlocked(0);
     setSheet('blocked');
   }, []);
   const close = useCallback(() => setSheet(null), []);

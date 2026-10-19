@@ -252,6 +252,33 @@ describe('Voice Note microphone sheets', () => {
       );
     });
 
+    it('reopens the blocked sheet fresh after a failed recheck and Close', async () => {
+      mic.request.mockRejectedValue(new MicrophoneError('denied'));
+      renderWithProviders(<ShoppingPage />);
+      pressDown(await talkButton());
+      const dialog = await screen.findByRole('dialog');
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: "I've allowed it" }),
+      );
+      expect(await within(dialog).findByRole('status')).toHaveTextContent(
+        /Still blocked/,
+      );
+
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: 'Close' }),
+      );
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      pressDown(await talkButton());
+
+      const again = await screen.findByRole('dialog');
+      expect(again).toHaveTextContent('The microphone is blocked');
+      expect(within(again).queryByRole('status')).toBeNull();
+      expect(within(again).queryByText(/Still blocked/)).toBeNull();
+      expect(within(again).getByTestId('mic-hero')).not.toHaveAttribute(
+        'data-shaking',
+      );
+    });
+
     it('says the microphone is not available when it cannot be asked for', async () => {
       mic.request.mockRejectedValue(new MicrophoneError('unavailable'));
       renderWithProviders(<ShoppingPage />);
