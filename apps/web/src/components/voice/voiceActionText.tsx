@@ -1,4 +1,4 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, palette } from '@pocket-pantry/ui';
 import { Fragment, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatAmount, formatRowAmount } from '../../lib/amount';
@@ -14,7 +14,7 @@ import {
   type VoiceActionKind,
 } from './reviewModel';
 
-const strong = { fontWeight: 600, color: tokens.color.ink } as const;
+const strong = { fontWeight: 600, color: palette('text-primary') } as const;
 
 /** `text` with each of `parts` (amounts, in the order they occur) set in the stronger ink. */
 function withStrong(text: string, parts: (string | null)[]): ReactNode {
@@ -42,12 +42,12 @@ function Marked({ text, mark }: { text: string; mark: string }) {
     <Box
       component="span"
       sx={{
-        borderBottom: `1px dotted ${tokens.color.line}`,
+        borderBottom: `1px dotted ${palette('pp-line')}`,
         pb: '1px',
       }}
     >
       {text}
-      <Box component="span" sx={{ color: tokens.color.muted }}>
+      <Box component="span" sx={{ color: palette('text-secondary') }}>
         {' · '}
         {mark}
       </Box>
@@ -163,7 +163,7 @@ export function useVoiceActionText() {
         location === null ? (
           <Box
             component="span"
-            sx={{ color: tokens.color.soonFg, fontWeight: 600 }}
+            sx={{ color: palette('warning-main'), fontWeight: 600 }}
           >
             {t('voice:review.detail.noPlace')}
           </Box>
@@ -200,7 +200,7 @@ export function useVoiceActionText() {
       return (
         <Box
           component="span"
-          sx={{ color: tokens.color.soonFg, fontWeight: 600 }}
+          sx={{ color: palette('warning-main'), fontWeight: 600 }}
         >
           {t('voice:review.detail.needsBatch', {
             amount: said,

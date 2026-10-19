@@ -30,15 +30,7 @@ function VoiceNoteControls({ defaultTarget }: { defaultTarget: VoiceList }) {
 
       <StatusPill voice={voice} />
 
-      <MicSheets
-        sheet={voice.mic.sheet}
-        target={defaultTarget}
-        stillBlocked={voice.mic.stillBlocked}
-        requesting={voice.mic.requesting}
-        onClose={voice.mic.close}
-        onAllow={() => void voice.mic.allow()}
-        onRecheck={() => void voice.mic.recheck()}
-      />
+      <MicSheets mic={voice.mic} target={defaultTarget} />
 
       <VoiceReview />
     </>

@@ -8,13 +8,13 @@ import {
   Typography,
   color,
   radius,
-  tokens,
+  palette,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { detectMobileBrowser } from '../../lib/browserKind';
 import type { VoiceList } from '../../lib/voice';
-import type { MicSheet } from '../../lib/useMicPermission';
+import type { MicSheet, useMicPermission } from '../../lib/useMicPermission';
 
 type MicSheetsProps = {
   sheet: MicSheet;
@@ -32,7 +32,7 @@ const footerSx = {
   display: 'flex',
   gap: '12px',
   p: '12px 16px calc(20px + env(safe-area-inset-bottom))',
-  borderTop: `1px solid ${tokens.color.line}`,
+  borderTop: `1px solid ${palette('pp-line')}`,
   '& > :last-child': { flex: 1 },
 };
 
@@ -61,8 +61,8 @@ function Hero({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor:
-          tone === 'accent' ? tokens.color.accentTint : tokens.color.urgentBg,
-        color: tone === 'accent' ? color.accentOnTint : tokens.color.urgentFg,
+          tone === 'accent' ? palette('pp-accentTint') : palette('error-light'),
+        color: tone === 'accent' ? color.accentOnTint : palette('error-main'),
         ...(stillBlocked > 0
           ? {
               animation: 'pp-voice-shake 420ms ease-in-out',
@@ -237,7 +237,7 @@ function Blocked({
           sx={{
             textAlign: 'center',
             fontWeight: 600,
-            color: tokens.color.urgentFg,
+            color: palette('error-main'),
           }}
         >
           {stillBlocked > 0
@@ -265,14 +265,16 @@ function Blocked({
 
 /** The two microphone sheets: the intro before the microphone is asked for, and the blocked one after a refusal. */
 export function MicSheets({
-  sheet,
+  mic,
   target,
-  stillBlocked,
-  requesting,
-  onClose,
-  onAllow,
-  onRecheck,
-}: MicSheetsProps) {
+}: {
+  mic: ReturnType<typeof useMicPermission>;
+  target: VoiceList;
+}) {
+  const { sheet, stillBlocked, requesting } = mic;
+  const onClose = mic.close;
+  const onAllow = () => void mic.allow();
+  const onRecheck = () => void mic.recheck();
   return (
     <>
       <Intro

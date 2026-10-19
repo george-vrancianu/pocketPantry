@@ -1,4 +1,4 @@
-import { Box, tokens, usePrefersReducedMotion } from '@pocket-pantry/ui';
+import { Box, usePrefersReducedMotion, palette } from '@pocket-pantry/ui';
 import { useRowFlash } from '../lib/rowFlash';
 
 /**
@@ -28,7 +28,7 @@ export function RowFlash({ ids }: { ids: readonly string[] }) {
         inset: 0,
         zIndex: -1,
         pointerEvents: 'none',
-        backgroundColor: tokens.color.accentTint,
+        backgroundColor: palette('pp-accentTint'),
         animation: 'pp-row-flash 1.8s ease-out forwards',
         '@keyframes pp-row-flash': {
           '0%, 30%': { opacity: 1 },

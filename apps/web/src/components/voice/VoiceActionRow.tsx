@@ -8,10 +8,11 @@ import {
   IconButton,
   MinusIcon,
   PlusIcon,
-  tokens,
   focusRing,
   radius,
+  palette,
 } from '@pocket-pantry/ui';
+import { soonBorder } from './soonBorder';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { VoiceReviewAction } from '../../lib/voice';
@@ -25,51 +26,53 @@ import {
 } from './reviewModel';
 import { useVoiceActionText } from './voiceActionText';
 
-const { color } = tokens;
-
 const TILE: Record<
   VoiceActionKind,
   { bg: string; fg: string; icon: ReactNode }
 > = {
   check: {
-    bg: color.accentTint,
-    fg: color.accentOnTint,
+    bg: palette('pp-accentTint'),
+    fg: palette('pp-accentOnTint'),
     icon: <CheckIcon size={18} />,
   },
   addChecked: {
-    bg: color.accentTint,
-    fg: color.accentOnTint,
+    bg: palette('pp-accentTint'),
+    fg: palette('pp-accentOnTint'),
     icon: <CheckIcon size={18} />,
   },
-  add: { bg: color.okBg, fg: color.okFg, icon: <PlusIcon size={18} /> },
+  add: {
+    bg: palette('success-light'),
+    fg: palette('success-main'),
+    icon: <PlusIcon size={18} />,
+  },
   uncheck: {
-    bg: color.chipNeutral,
-    fg: color.ink,
+    bg: palette('pp-chip'),
+    fg: palette('text-primary'),
     icon: <MinusIcon size={18} />,
   },
   remove: {
-    bg: color.urgentBg,
-    fg: color.urgentFg,
+    bg: palette('error-light'),
+    fg: palette('error-main'),
     icon: <MinusIcon size={18} />,
   },
   removeAll: {
-    bg: color.urgentBg,
-    fg: color.urgentFg,
+    bg: palette('error-light'),
+    fg: palette('error-main'),
     icon: <MinusIcon size={18} />,
   },
   use: {
-    bg: color.urgentBg,
-    fg: color.urgentFg,
+    bg: palette('error-light'),
+    fg: palette('error-main'),
     icon: <MinusIcon size={18} />,
   },
   setQuantity: {
-    bg: color.chipNeutral,
-    fg: color.ink,
+    bg: palette('pp-chip'),
+    fg: palette('text-primary'),
     icon: <EqualIcon size={18} />,
   },
   runningLow: {
-    bg: color.butter,
-    fg: color.butterInk,
+    bg: palette('secondary-main'),
+    fg: palette('secondary-contrastText'),
     icon: <BatteryLowIcon size={18} />,
   },
 };
@@ -110,11 +113,11 @@ export function VoiceActionRow({
       sx={{
         position: 'relative',
         listStyle: 'none',
-        backgroundColor: open ? color.subtle : 'transparent',
-        outline: blocked ? `2px solid ${color.soonBorder}` : 'none',
+        backgroundColor: open ? palette('pp-subtle') : 'transparent',
+        outline: blocked ? `2px solid ${soonBorder}` : 'none',
         outlineOffset: '-2px',
         borderRadius: radius.control,
-        '& + &': { borderTop: `1px solid ${color.divider}` },
+        '& + &': { borderTop: `1px solid ${palette('divider')}` },
       }}
     >
       <Box
@@ -134,7 +137,7 @@ export function VoiceActionRow({
           border: 0,
           background: 'none',
           font: 'inherit',
-          color: color.ink,
+          color: palette('text-primary'),
           textAlign: 'left',
           cursor: 'pointer',
           ...focusRing,
@@ -151,7 +154,9 @@ export function VoiceActionRow({
             placeItems: 'center',
             backgroundColor: tile.bg,
             color: tile.fg,
-            boxShadow: blocked ? `0 0 0 2px ${color.soonFg}` : 'none',
+            boxShadow: blocked
+              ? `0 0 0 2px ${palette('warning-main')}`
+              : 'none',
           }}
         >
           {tile.icon}
@@ -165,7 +170,10 @@ export function VoiceActionRow({
               textOverflow: 'ellipsis',
             }}
           >
-            <Box component="span" sx={{ color: color.muted, fontWeight: 600 }}>
+            <Box
+              component="span"
+              sx={{ color: palette('text-secondary'), fontWeight: 600 }}
+            >
               {verb(kind)}{' '}
             </Box>
             <Box component="b" sx={{ fontWeight: 700 }}>
@@ -175,7 +183,7 @@ export function VoiceActionRow({
           <Box
             sx={{
               fontSize: 12.5,
-              color: color.muted,
+              color: palette('text-secondary'),
               fontVariantNumeric: 'tabular-nums',
             }}
           >

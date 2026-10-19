@@ -1,4 +1,4 @@
-import { Box, Button, CheckIcon, Typography, tokens } from '@pocket-pantry/ui';
+import { Box, Button, CheckIcon, Typography, palette } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { keyframesSx } from '../../lib/keyframesSx';
 
@@ -61,7 +61,7 @@ export function ReviewFooter({
           {t('review.footer.confirm')}
         </Typography>
         <Typography
-          sx={{ fontSize: 12.5, color: tokens.color.muted, mb: '10px' }}
+          sx={{ fontSize: 12.5, color: palette('text-secondary'), mb: '10px' }}
         >
           {t('review.footer.confirmHint')}
         </Typography>

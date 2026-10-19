@@ -4,10 +4,11 @@ import {
   Chip,
   SearchIcon,
   Typography,
-  tokens,
   radius,
   focusRing,
+  palette,
 } from '@pocket-pantry/ui';
+import { soonBorder } from './soonBorder';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpiryTag } from '../ExpiryTag';
@@ -44,11 +45,15 @@ const eyebrow = {
   fontWeight: 700,
   letterSpacing: '.07em',
   textTransform: 'uppercase',
-  color: tokens.color.muted,
+  color: palette('text-secondary'),
   mb: '6px',
 } as const;
 
-const note = { fontSize: 12.5, color: tokens.color.muted, mt: '6px' } as const;
+const note = {
+  fontSize: 12.5,
+  color: palette('text-secondary'),
+  mt: '6px',
+} as const;
 
 /**
  * What a Pantry add falls back to for a Match: its Catalog Location and Default
@@ -127,9 +132,9 @@ function AmountEditor({
             fontSize: 16,
             fontWeight: 700,
             fontVariantNumeric: 'tabular-nums',
-            color: tokens.color.ink,
-            backgroundColor: tokens.color.surface,
-            border: `1.5px solid ${invalid ? tokens.color.urgentFg : tokens.color.line}`,
+            color: palette('text-primary'),
+            backgroundColor: palette('background-paper'),
+            border: `1.5px solid ${invalid ? palette('error-main') : palette('pp-line')}`,
             borderRadius: radius.control,
             ...focusRing,
           }}
@@ -150,7 +155,7 @@ function AmountEditor({
         </Box>
       </Box>
       {invalid ? (
-        <Typography id={errorId} sx={{ ...note, color: tokens.color.urgentFg }}>
+        <Typography id={errorId} sx={{ ...note, color: palette('error-main') }}>
           {t('common:amount.invalid')}
         </Typography>
       ) : null}
@@ -278,8 +283,8 @@ function BatchEditor({ action }: { action: VoiceReviewAction }) {
         role="radiogroup"
         aria-labelledby={`${name}-label`}
         sx={{
-          backgroundColor: tokens.color.surface,
-          border: `1px solid ${pickedIndex < 0 ? tokens.color.soonBorder : tokens.color.line}`,
+          backgroundColor: palette('background-paper'),
+          border: `1px solid ${pickedIndex < 0 ? soonBorder : palette('pp-line')}`,
           borderRadius: radius.control,
           overflow: 'hidden',
         }}
@@ -302,8 +307,7 @@ function BatchEditor({ action }: { action: VoiceReviewAction }) {
                 px: '12px',
                 py: '7px',
                 cursor: 'pointer',
-                borderTop:
-                  index === 0 ? 0 : `1px solid ${tokens.color.divider}`,
+                borderTop: index === 0 ? 0 : `1px solid ${palette('divider')}`,
               }}
             >
               <input
@@ -324,7 +328,7 @@ function BatchEditor({ action }: { action: VoiceReviewAction }) {
                   width: 22,
                   height: 22,
                   borderRadius: '50%',
-                  bgcolor: tokens.color.chipNeutral,
+                  bgcolor: palette('pp-chip'),
                   display: 'grid',
                   placeItems: 'center',
                   fontSize: 11,
@@ -336,7 +340,7 @@ function BatchEditor({ action }: { action: VoiceReviewAction }) {
               </Box>
               <Box component="span" sx={{ flex: 1, minWidth: 0, fontSize: 14 }}>
                 <Box component="b">{amount}</Box>
-                <Box component="span" sx={{ color: tokens.color.muted }}>
+                <Box component="span" sx={{ color: palette('text-secondary') }}>
                   {' · '}
                   {date}
                 </Box>
@@ -416,7 +420,7 @@ function IngredientEditor({ action }: { action: VoiceReviewAction }) {
     >
       <Typography
         component="span"
-        sx={{ fontSize: 13, color: tokens.color.muted }}
+        sx={{ fontSize: 13, color: palette('text-secondary') }}
       >
         {t('voice:review.edit.ingredient')}
       </Typography>
@@ -432,8 +436,8 @@ function IngredientEditor({ action }: { action: VoiceReviewAction }) {
             px: '8px',
             py: '2px',
             borderRadius: '999px',
-            backgroundColor: tokens.color.soonBg,
-            color: tokens.color.soonFg,
+            backgroundColor: palette('warning-light'),
+            color: palette('warning-main'),
           }}
         >
           {t('voice:review.edit.unmatched')}
@@ -489,7 +493,7 @@ export function ActionEditor({
         pl: '57px',
       }}
     >
-      <Typography sx={{ fontSize: 12.5, color: tokens.color.muted }}>
+      <Typography sx={{ fontSize: 12.5, color: palette('text-secondary') }}>
         {t('voice:review.edit.heard')} “{action.text}”
       </Typography>
       {hasAmount(action) ? (
