@@ -1,13 +1,4 @@
 {
-  "button": {
-    "label": "Hold for at tale",
-    "release": "Slip for at sende",
-    "sending": "Sender…"
-  },
-  "recording": {
-    "label": "Optager",
-    "cancelHint": "træk væk for at annullere"
-  },
   "explainer": {
     "title": "Stemmenoter bruger din mikrofon",
     "body": "Hold knappen nede og sig, hvad du har købt eller brugt op. Din stemme bliver til tekst, som du kan tjekke. Optagelsen gemmes ikke.",
@@ -23,6 +14,29 @@
   "nothingHeard": "Jeg opfangede ikke noget, prøv igen",
   "retry": "Prøv igen",
   "dismiss": "Luk",
+  "voiceButton": {
+    "label": "Hold for at optage en stemmenote"
+  },
+  "listening": {
+    "title": "Lytter",
+    "starting": "Starter…",
+    "of": "/ 1:00",
+    "hint": "Slip for at sende · træk væk for at annullere",
+    "toShopping": "Går til din indkøbsliste. Sig “i spisekammeret” for at lægge på lager.",
+    "toPantry": "Går til dit spisekammer. Sig “på listen” for indkøbslisten.",
+    "tip": "Hold for at tale, slip for at sende"
+  },
+  "languageMenu": {
+    "chipLabel": "Scansprog: {{language}}. Skift",
+    "title": "Scansprog",
+    "saved": "Scansprog: {{language}}",
+    "savedHint": "Bruges til stemmenoter og kameraet.",
+    "names": {
+      "en": "engelsk",
+      "ro": "rumænsk",
+      "da": "dansk"
+    }
+  },
   "review": {
     "title": "Stemmenote",
     "heard": "Det jeg hørte",

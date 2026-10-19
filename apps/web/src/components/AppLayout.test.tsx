@@ -6,11 +6,16 @@ import { renderWithProviders } from '../test/render';
 import { AppLayout } from './AppLayout';
 
 function renderAt(route: string) {
-  renderWithProviders(
+  renderAtView(route);
+}
+
+function renderAtView(route: string) {
+  return renderWithProviders(
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/scan" element={<p>camera</p>} />
         <Route path="/pantry" element={<p>pantry</p>} />
+        <Route path="/recipes" element={<p>recipes</p>} />
       </Route>
     </Routes>,
     { route },
@@ -32,6 +37,17 @@ describe('AppLayout Dock', () => {
   it('still renders the Dock on other screens', () => {
     renderAt('/pantry');
     expect(screen.getByRole('navigation')).toBeInTheDocument();
+  });
+
+  it('leaves 190px at the bottom of the Pantry for the Voice Note button, and 110px elsewhere', () => {
+    const bottomPadding = () =>
+      getComputedStyle(screen.getByRole('main').parentElement as HTMLElement)
+        .paddingBottom;
+    const { unmount } = renderAtView('/pantry');
+    expect(bottomPadding()).toBe('190px');
+    unmount();
+    renderAtView('/recipes');
+    expect(bottomPadding()).toBe('110px');
   });
 
   it('paints the dock and its tabs from the active Theme', () => {

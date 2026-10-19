@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
+import { holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 
@@ -111,14 +112,18 @@ describe('Voice Notes on the Pantry page', () => {
 
   async function openReview() {
     renderWithProviders(<PantryPage />);
-    const button = await screen.findByRole('button', { name: /hold to talk/i });
+    const button = await screen.findByRole('button', {
+      name: /hold to record a voice note/i,
+    });
     fireEvent.pointerDown(button);
-    await screen.findByRole('status');
+    await screen.findByText('Listening');
+    await holdLongEnough();
     fireEvent.pointerUp(button);
     return screen.findByRole('dialog');
   }
 
   beforeEach(() => {
+    useVoiceTimers();
     resetVoiceNote();
     mic.start.mockReset();
     mic.start.mockImplementation(() =>
@@ -129,12 +134,29 @@ describe('Voice Notes on the Pantry page', () => {
       }),
     );
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('puts the voice button on the Pantry page and records for the Pantry', async () => {
     const { sent } = setup([]);
     await openReview();
     expect(sent[0].get('defaultTarget')).toBe('pantry');
+  });
+
+  it('tells the Member the note goes to the Pantry while listening', async () => {
+    setup([]);
+    renderWithProviders(<PantryPage />);
+    fireEvent.pointerDown(
+      await screen.findByRole('button', {
+        name: /hold to record a voice note/i,
+      }),
+    );
+    expect(await screen.findByText('Listening')).toBeVisible();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Goes to your Pantry. Say “on the list” for the Shopping List.',
+    );
   });
 
   it('shows the Location and expiry an add will use, defaults included, and sends what was edited', async () => {

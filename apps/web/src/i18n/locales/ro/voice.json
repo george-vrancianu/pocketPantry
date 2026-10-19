@@ -1,13 +1,4 @@
 {
-  "button": {
-    "label": "Ține apăsat pentru a vorbi",
-    "release": "Eliberează pentru a trimite",
-    "sending": "Se trimite…"
-  },
-  "recording": {
-    "label": "Se înregistrează",
-    "cancelHint": "trage în afară pentru a anula"
-  },
   "explainer": {
     "title": "Notele vocale folosesc microfonul",
     "body": "Ține apăsat butonul și spune ce ai cumpărat sau ai terminat. Vocea ta este transformată în text pe care îl verifici. Înregistrarea nu este păstrată.",
@@ -23,6 +14,29 @@
   "nothingHeard": "Nu am prins nimic, încearcă din nou",
   "retry": "Reîncearcă",
   "dismiss": "Închide",
+  "voiceButton": {
+    "label": "Ține apăsat pentru a înregistra o notă vocală"
+  },
+  "listening": {
+    "title": "Ascult",
+    "starting": "Pornește…",
+    "of": "/ 1:00",
+    "hint": "Eliberează pentru a trimite · glisează în afară pentru a anula",
+    "toShopping": "Ajunge în Lista de cumpărături. Spune „în cămară” pentru a adăuga stoc.",
+    "toPantry": "Ajunge în Cămară. Spune „pe listă” pentru Lista de cumpărături.",
+    "tip": "Ține apăsat pentru a vorbi, eliberează pentru a trimite"
+  },
+  "languageMenu": {
+    "chipLabel": "Limba de scanare: {{language}}. Schimbă",
+    "title": "Limba de scanare",
+    "saved": "Limba de scanare: {{language}}",
+    "savedHint": "Folosită pentru notele vocale și pentru cameră.",
+    "names": {
+      "en": "engleză",
+      "ro": "română",
+      "da": "daneză"
+    }
+  },
   "review": {
     "title": "Notă vocală",
     "heard": "Ce am auzit",

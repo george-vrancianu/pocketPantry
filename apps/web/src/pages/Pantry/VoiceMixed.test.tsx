@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
+import { holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 
@@ -80,6 +81,7 @@ const mixed = [
 
 describe('A Voice Note across both lists', () => {
   beforeEach(() => {
+    useVoiceTimers();
     resetVoiceNote();
     localStorage.setItem('pp.voice.micExplained', '1');
     mic.start.mockReset();
@@ -115,13 +117,19 @@ describe('A Voice Note across both lists', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   async function openReview() {
     const view = renderWithProviders(<PantryPage />);
-    const button = await screen.findByRole('button', { name: /hold to talk/i });
+    const button = await screen.findByRole('button', {
+      name: /hold to record a voice note/i,
+    });
     fireEvent.pointerDown(button);
-    await screen.findByRole('status');
+    await screen.findByText('Listening');
+    await holdLongEnough();
     fireEvent.pointerUp(button);
     return { ...view, dialog: await screen.findByRole('dialog') };
   }

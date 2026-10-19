@@ -8,6 +8,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
+import { holdFor, holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import { ShoppingPage } from './ShoppingPage';
@@ -69,12 +70,14 @@ function setup({ configured = true, note, explained = true }: Setup = {}) {
   return { sent };
 }
 
-const talkButton = () => screen.findByRole('button', { name: /hold to talk/i });
+const talkButton = () =>
+  screen.findByRole('button', { name: /hold to record a voice note/i });
 
 async function hold() {
   const button = await talkButton();
   fireEvent.pointerDown(button);
-  await screen.findByRole('status');
+  await screen.findByText('Listening');
+  await holdLongEnough();
   return button;
 }
 
@@ -82,6 +85,7 @@ describe('Voice Note on the Shopping List', () => {
   let session: ReturnType<typeof fakeSession>;
 
   beforeEach(() => {
+    useVoiceTimers();
     resetVoiceNote();
     session = fakeSession();
     mic.start.mockReset();
@@ -97,18 +101,22 @@ describe('Voice Note on the Shopping List', () => {
     setup({ configured: false });
     renderWithProviders(<ShoppingPage />);
     await screen.findByText('Your list is empty');
-    expect(screen.queryByRole('button', { name: /hold to talk/i })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /hold to record a voice note/i }),
+    ).toBeNull();
   });
 
   it('records while held, shows the elapsed time, and sends on release', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     const { sent } = setup();
     renderWithProviders(<ShoppingPage />);
 
     const button = await hold();
-    expect(screen.getByRole('status')).toHaveTextContent(/Recording\s*0:00/);
+    expect(screen.getByRole('status')).toHaveTextContent(/Listening\s*0:00/);
     await act(() => vi.advanceTimersByTimeAsync(7000));
-    expect(screen.getByRole('status')).toHaveTextContent(/Recording\s*0:07/);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /Listening\s*0:07\s*\/ 1:00/,
+    );
+    expect(button).toHaveAttribute('aria-pressed', 'true');
     expect(mic.start).toHaveBeenCalledTimes(1);
     expect(sent).toHaveLength(0);
 
@@ -138,7 +146,7 @@ describe('Voice Note on the Shopping List', () => {
     await waitFor(() => expect(session.cancel).toHaveBeenCalledTimes(1));
     fireEvent.pointerUp(button);
 
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByText('Listening')).toBeNull();
     expect(session.stop).not.toHaveBeenCalled();
     expect(sent).toHaveLength(0);
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -160,11 +168,138 @@ describe('Voice Note on the Shopping List', () => {
     await waitFor(() => expect(session.cancel).toHaveBeenCalledTimes(1));
     expect(session.stop).not.toHaveBeenCalled();
     expect(sent).toHaveLength(0);
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByText('Listening')).toBeNull();
+  });
+
+  it('shows Starting… until the stream is live, then Listening', async () => {
+    setup();
+    let ready: (s: ReturnType<typeof fakeSession>) => void = () => {};
+    mic.start.mockImplementation(
+      () => new Promise((resolve) => (ready = resolve)),
+    );
+    renderWithProviders(<ShoppingPage />);
+
+    fireEvent.pointerDown(await talkButton());
+    expect(await screen.findByText('Starting…')).toBeVisible();
+    expect(screen.queryByText('Listening')).toBeNull();
+
+    await act(async () => ready(session));
+    expect(await screen.findByText('Listening')).toBeVisible();
+    expect(screen.queryByText('Starting…')).toBeNull();
+  });
+
+  it('treats a release under 0.3 s as a tap: nothing sent, and a tip', async () => {
+    const { sent } = setup();
+    renderWithProviders(<ShoppingPage />);
+
+    const button = await talkButton();
+    fireEvent.pointerDown(button);
+    await screen.findByText('Listening');
+    await act(() => vi.advanceTimersByTimeAsync(150));
+    fireEvent.pointerUp(button);
+
+    expect(
+      await screen.findByText('Hold to talk, let go to send'),
+    ).toBeVisible();
+    expect(session.stop).not.toHaveBeenCalled();
+    expect(session.cancel).toHaveBeenCalledTimes(1);
+    expect(sent).toHaveLength(0);
+    expect(screen.queryByText('Listening')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    await act(() => vi.advanceTimersByTimeAsync(1800));
+    expect(screen.queryByText('Hold to talk, let go to send')).toBeNull();
+  });
+
+  it('counts 299 ms as a tap and 300 ms as a Voice Note', async () => {
+    // A clock that only moves when told to, so the boundary is exact.
+    const { sent } = setup();
+    renderWithProviders(<ShoppingPage />);
+    const button = await talkButton();
+    vi.useFakeTimers();
+
+    fireEvent.pointerDown(button);
+    await holdFor(299);
+    fireEvent.pointerUp(button);
+    await holdFor(0);
+    expect(screen.getByText('Hold to talk, let go to send')).toBeVisible();
+    expect(sent).toHaveLength(0);
+    await holdFor(2000);
+
+    // A fast microphone: the audio is exactly as long as the hold.
+    session.stop.mockResolvedValue({ ...recording, durationMs: 300 });
+    fireEvent.pointerDown(button);
+    await holdFor(300);
+    fireEvent.pointerUp(button);
+    await holdFor(100);
+    expect(sent).toHaveLength(1);
+  });
+
+  it('ends with the tip, not an Alert, when the microphone recorded too little', async () => {
+    const { sent } = setup();
+    session.stop.mockResolvedValue({ ...recording, durationMs: 200 });
+    renderWithProviders(<ShoppingPage />);
+    const button = await talkButton();
+
+    fireEvent.pointerDown(button);
+    await screen.findByText('Listening');
+    await holdFor(350);
+    fireEvent.pointerUp(button);
+
+    expect(
+      await screen.findByText('Hold to talk, let go to send'),
+    ).toBeVisible();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(sent).toHaveLength(0);
+  });
+
+  it('ends with the tip when let go after 0.3 s but before the stream is live', async () => {
+    const { sent } = setup();
+    let ready: (s: ReturnType<typeof fakeSession>) => void = () => {};
+    mic.start.mockImplementation(
+      () => new Promise((resolve) => (ready = resolve)),
+    );
+    renderWithProviders(<ShoppingPage />);
+    const button = await talkButton();
+
+    fireEvent.pointerDown(button);
+    await screen.findByText('Starting…');
+    await holdFor(400);
+    fireEvent.pointerUp(button);
+    await act(async () => ready(session));
+
+    expect(
+      await screen.findByText('Hold to talk, let go to send'),
+    ).toBeVisible();
+    expect(session.cancel).toHaveBeenCalledTimes(1);
+    expect(session.stop).not.toHaveBeenCalled();
+    expect(screen.queryByText('Starting…')).toBeNull();
+    expect(screen.queryByText('Listening')).toBeNull();
+    expect(sent).toHaveLength(0);
+  });
+
+  it('drives the meter from the microphone level and names the target list', async () => {
+    setup();
+    session.level.mockReturnValue(1);
+    renderWithProviders(<ShoppingPage />);
+
+    await hold();
+    await act(() => vi.advanceTimersByTimeAsync(200));
+
+    const bars = screen.getByTestId('level-meter').children;
+    expect(bars).toHaveLength(30);
+    // Newest on the right; silence on the left.
+    expect((bars[29] as HTMLElement).style.height).toBe('38px');
+    expect((bars[0] as HTMLElement).style.height).toBe('3px');
+    const card = screen.getByRole('status');
+    expect(card).toHaveTextContent('Let go to send · slide off to cancel');
+    expect(card).toHaveTextContent(
+      'Goes to your Shopping List. Say “in the pantry” to add stock.',
+    );
+    expect(card).toHaveTextContent('EN');
   });
 
   it('stops itself and sends at 60 seconds', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     const { sent } = setup();
     renderWithProviders(<ShoppingPage />);
 
@@ -269,6 +404,52 @@ describe('Voice Note on the Shopping List', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
+  it('changes the stored Scan Language from the chip menu, with a toast', async () => {
+    setup();
+    renderWithProviders(<ShoppingPage />);
+
+    const chip = await screen.findByRole('button', {
+      name: 'Scan Language: English. Change',
+    });
+    await userEvent.click(chip);
+    const items = screen.getAllByRole('menuitemradio');
+    expect(items.map((item) => item.textContent)).toEqual([
+      expect.stringContaining('English'),
+      expect.stringContaining('Română'),
+      expect.stringContaining('Dansk'),
+    ]);
+    expect(items[0]).toHaveAttribute('aria-checked', 'true');
+
+    await userEvent.click(screen.getByRole('menuitemradio', { name: /Dansk/ }));
+
+    expect(
+      await screen.findByText(
+        'Scan Language: Danish · Used for Voice Notes and the camera.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('menu')).toBeNull();
+    const changed = screen.getByRole('button', {
+      name: 'Scan Language: Danish. Change',
+    });
+    expect(changed).toHaveFocus();
+    // The camera reads the same stored value.
+    expect(
+      JSON.parse(localStorage.getItem('pocket-pantry.scan-language') ?? '{}'),
+    ).toEqual({ locale: 'en', language: 'da' });
+  });
+
+  it('closes the language menu with Escape and returns focus to the chip', async () => {
+    setup();
+    renderWithProviders(<ShoppingPage />);
+    const chip = await screen.findByRole('button', {
+      name: 'Scan Language: English. Change',
+    });
+    await userEvent.click(chip);
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(chip).toHaveFocus();
+  });
+
   it('reads in the stored Scan Language and offers the chip', async () => {
     localStorage.setItem(
       'pocket-pantry.scan-language',
@@ -277,8 +458,10 @@ describe('Voice Note on the Shopping List', () => {
     const { sent } = setup();
     renderWithProviders(<ShoppingPage />);
 
-    const chip = await screen.findByRole('combobox', { name: 'Reading as' });
-    expect(chip).toHaveValue('ro');
+    const chip = await screen.findByRole('button', {
+      name: 'Scan Language: Romanian. Change',
+    });
+    expect(chip).toHaveTextContent('ro');
     fireEvent.pointerUp(await hold());
     await screen.findByRole('dialog');
     expect(sent[0].get('scanLanguage')).toBe('ro');
@@ -396,19 +579,24 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     renderWithProviders(<ShoppingPage />);
     const button = await talkButton();
     fireEvent.pointerDown(button);
-    await screen.findByRole('status');
+    await screen.findByText('Listening');
+    await holdLongEnough();
     fireEvent.pointerUp(button);
     return screen.findByRole('dialog');
   }
 
   beforeEach(() => {
+    useVoiceTimers();
     resetVoiceNote();
     session = fakeSession();
     mic.start.mockReset();
     mic.start.mockImplementation(() => Promise.resolve(session));
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('groups the Voice Actions under their list, with the transcript collapsed under What I heard', async () => {
     setupReview([...threeAdds, didntUnderstand('a4', 'do a dance')]);
