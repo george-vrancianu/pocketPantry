@@ -137,21 +137,6 @@ describe('Voice Note on the Shopping List', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it('cancels without sending when the pointer is dragged off the button', async () => {
-    const { sent } = setup();
-    renderWithProviders(<ShoppingPage />);
-
-    const button = await hold();
-    fireEvent.pointerLeave(button);
-    await waitFor(() => expect(session.cancel).toHaveBeenCalledTimes(1));
-    fireEvent.pointerUp(button);
-
-    expect(screen.queryByText('Listening')).toBeNull();
-    expect(session.stop).not.toHaveBeenCalled();
-    expect(sent).toHaveLength(0);
-    expect(screen.queryByRole('dialog')).toBeNull();
-  });
-
   it('cancels the recording and sends nothing when released before the microphone is ready', async () => {
     const { sent } = setup();
     let ready: (s: ReturnType<typeof fakeSession>) => void = () => {};

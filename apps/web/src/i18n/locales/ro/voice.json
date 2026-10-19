@@ -24,7 +24,15 @@
     "hint": "Eliberează pentru a trimite · glisează în afară pentru a anula",
     "toShopping": "Ajunge în Lista de cumpărături. Spune „în cămară” pentru a adăuga stoc.",
     "toPantry": "Ajunge în Cămară. Spune „pe listă” pentru Lista de cumpărături.",
-    "tip": "Ține apăsat pentru a vorbi, eliberează pentru a trimite"
+    "tip": "Ține apăsat pentru a vorbi, eliberează pentru a trimite",
+    "recording": "Se înregistrează",
+    "cancelArmed": "Eliberează pentru a anula",
+    "slideBack": "Glisează înapoi pentru a continua înregistrarea",
+    "left": "{{count}} s rămase",
+    "tenLeft": "Mai sunt 10 secunde",
+    "cancelled": "Anulat. Nu s-a trimis nimic.",
+    "stopped": "Oprit la 1 minut",
+    "stoppedHint": "Se trimite ce ai spus."
   },
   "languageMenu": {
     "chipLabel": "Limba de scanare: {{language}}. Schimbă",

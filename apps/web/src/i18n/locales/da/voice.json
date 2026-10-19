@@ -24,7 +24,15 @@
     "hint": "Slip for at sende · træk væk for at annullere",
     "toShopping": "Går til din indkøbsliste. Sig “i spisekammeret” for at lægge på lager.",
     "toPantry": "Går til dit spisekammer. Sig “på listen” for indkøbslisten.",
-    "tip": "Hold for at tale, slip for at sende"
+    "tip": "Hold for at tale, slip for at sende",
+    "recording": "Optager",
+    "cancelArmed": "Slip for at annullere",
+    "slideBack": "Træk tilbage for at fortsætte optagelsen",
+    "left": "{{count}} s tilbage",
+    "tenLeft": "10 sekunder tilbage",
+    "cancelled": "Annulleret. Der blev ikke sendt noget.",
+    "stopped": "Stoppet efter 1 minut",
+    "stoppedHint": "Sender det, du sagde."
   },
   "languageMenu": {
     "chipLabel": "Scansprog: {{language}}. Skift",

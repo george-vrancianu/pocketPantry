@@ -6,29 +6,17 @@ import {
   radius,
   shadow,
 } from '@pocket-pantry/ui';
-import type { KeyboardEvent, PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { VoiceList } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
+import { usePressGesture } from '../../lib/usePressGesture';
 import { LanguageMenu } from './LanguageMenu';
+import { useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
 import { aboveButton, BUTTON_SIZE, buttonBottom } from './placement';
 
 type Voice = ReturnType<typeof useVoiceNote>;
-
-/** Whether the pointer has left the button's box (a drag off), with a small allowance for the finger. */
-function outside(event: PointerEvent<HTMLElement>) {
-  const box = event.currentTarget.getBoundingClientRect();
-  if (box.width === 0 && box.height === 0) return false;
-  const slack = 12;
-  return (
-    event.clientX < box.left - slack ||
-    event.clientX > box.right + slack ||
-    event.clientY < box.top - slack ||
-    event.clientY > box.bottom + slack
-  );
-}
 
 /**
  * The round hold-to-talk button bottom-right above the Dock (handoff variant B), with the Scan
@@ -46,15 +34,13 @@ export function VoiceButton({
   const active = voice.recording || voice.pressing;
   const progress = Math.min(1, voice.elapsedMs / 60_000);
 
-  const onKeyDown = (event: KeyboardEvent) => {
-    if ((event.key === ' ' || event.key === 'Enter') && !event.repeat) {
-      event.preventDefault();
-      void voice.press();
-    }
-  };
-  const onKeyUp = (event: KeyboardEvent) => {
-    if (event.key === ' ' || event.key === 'Enter') voice.release();
-  };
+  const host = useVoiceHost();
+  const { armed, buttonProps } = usePressGesture({
+    active,
+    start: () => void voice.press(),
+    send: voice.release,
+    cancel: voice.cancel,
+  });
 
   return createPortal(
     <>
@@ -97,6 +83,7 @@ export function VoiceButton({
           target={target}
           scanLanguage={voice.scanLanguage}
           level={voice.level}
+          armed={armed}
         />
       ) : null}
       <Box
@@ -121,25 +108,7 @@ export function VoiceButton({
           aria-label={t('voiceButton.label')}
           aria-pressed={voice.recording}
           disabled={busy}
-          onPointerDown={(event: PointerEvent<HTMLElement>) => {
-            try {
-              event.currentTarget.setPointerCapture?.(event.pointerId);
-            } catch {
-              // No active pointer to capture (e.g. a synthetic event).
-            }
-            void voice.press();
-          }}
-          onPointerUp={voice.release}
-          onPointerCancel={voice.cancel}
-          onPointerLeave={voice.cancel}
-          onPointerMove={(event: PointerEvent<HTMLElement>) => {
-            if (voice.recording && outside(event)) voice.cancel();
-          }}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
-          onContextMenu={(event: { preventDefault(): void }) =>
-            event.preventDefault()
-          }
+          {...buttonProps}
           sx={{
             position: 'relative',
             width: BUTTON_SIZE,
@@ -150,12 +119,16 @@ export function VoiceButton({
             p: 0,
             border: 0,
             borderRadius: '50%',
-            backgroundColor: active ? color.rec : 'pp.accent',
+            backgroundColor: armed
+              ? `color-mix(in srgb, ${palette('text-primary')} 55%, ${color.cardBg})`
+              : active
+                ? color.rec
+                : 'pp.accent',
             color: active ? 'pp.cardBg' : 'pp.accentInk',
             boxShadow: shadow.float,
             cursor: busy ? 'default' : 'pointer',
             opacity: busy ? 0.6 : 1,
-            transform: active ? 'scale(1.14)' : 'none',
+            transform: armed ? 'scale(.9)' : active ? 'scale(1.14)' : 'none',
             transition:
               'transform 180ms cubic-bezier(.2,.8,.2,1), background-color 180ms cubic-bezier(.2,.8,.2,1)',
             // A held press must not scroll, select or open the context menu.
@@ -189,6 +162,6 @@ export function VoiceButton({
         </Box>
       </Box>
     </>,
-    document.body,
+    host,
   );
 }
