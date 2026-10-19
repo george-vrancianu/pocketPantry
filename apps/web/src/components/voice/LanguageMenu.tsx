@@ -173,7 +173,7 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
                 width: '100%',
                 p: '9px 10px',
                 border: 0,
-                borderRadius: '8px',
+                borderRadius: radius.box,
                 background: 'none',
                 color: tokens.color.ink,
                 font: 'inherit',

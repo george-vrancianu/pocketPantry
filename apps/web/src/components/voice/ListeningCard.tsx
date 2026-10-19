@@ -130,7 +130,7 @@ export function ListeningCard({
             key={index}
             sx={{
               flex: 1,
-              borderRadius: '2px',
+              borderRadius: radius.box,
               backgroundColor: tokens.color.urgentFg,
               transition: 'height 90ms linear',
             }}

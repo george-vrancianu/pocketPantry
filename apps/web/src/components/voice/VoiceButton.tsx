@@ -1,4 +1,4 @@
-import { Box, MicIcon, shadow, tokens } from '@pocket-pantry/ui';
+import { Box, MicIcon, radius, shadow, tokens } from '@pocket-pantry/ui';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { VoiceList } from '../../lib/voice';
@@ -72,7 +72,7 @@ export function VoiceButton({
             zIndex: 1250,
             px: '12px',
             py: '8px',
-            borderRadius: '10px',
+            borderRadius: radius.control,
             backgroundColor: tokens.color.ink,
             color: tokens.color.bg,
             fontSize: 13,
@@ -173,9 +173,9 @@ export function VoiceButton({
                 borderRadius: '50%',
                 pointerEvents: 'none',
                 background: `conic-gradient(${tokens.color.urgentFg} 0 ${progress * 360}deg, color-mix(in srgb, ${tokens.color.urgentFg} 18%, transparent) 0)`,
-                mask: 'radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px))',
+                mask: 'radial-gradient(farthest-side, transparent calc(100% - 4px), currentColor calc(100% - 3px))',
                 WebkitMask:
-                  'radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px))',
+                  'radial-gradient(farthest-side, transparent calc(100% - 4px), currentColor calc(100% - 3px))',
               }}
             />
           ) : null}
