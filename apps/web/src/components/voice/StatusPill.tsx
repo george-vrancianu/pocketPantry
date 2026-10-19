@@ -17,9 +17,16 @@ import { formatClock, NOTHING_HEARD_MS } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { useVoiceNoteState } from '../../lib/voiceNoteStore';
 import { useVoiceHost } from './VoiceHost';
-import { aboveButton, VOICE_LAYER } from '../../lib/voicePlacement';
+import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
 import { enter } from './enter';
-import { VOICE_PILL_ATTRIBUTE } from './focusVoiceButton';
+import { VOICE_PILL_ATTRIBUTE } from '../../lib/voiceFocus';
+
+/** One line each, so the pill holds its PILL_HEIGHT; the full text stays in the DOM and the title. */
+const oneLine = {
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const;
 
 type Voice = ReturnType<typeof useVoiceNote>;
 
@@ -181,7 +188,7 @@ export function StatusPill({ voice }: { voice: Voice }) {
         position: 'fixed',
         left: 16,
         right: 16,
-        bottom: aboveButton(22),
+        bottom: pillBottom,
         mx: 'auto',
         maxWidth: 420,
         zIndex: VOICE_LAYER.card,
@@ -219,8 +226,15 @@ export function StatusPill({ voice }: { voice: Voice }) {
         {look.icon}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ fontSize: 14, fontWeight: 600 }}>{look.title}</Box>
-        <Box sx={{ fontSize: 12, color: 'text.secondary' }}>{look.hint}</Box>
+        <Box sx={{ fontSize: 14, fontWeight: 600, ...oneLine }}>
+          {look.title}
+        </Box>
+        <Box
+          title={look.hint}
+          sx={{ fontSize: 12, color: 'text.secondary', ...oneLine }}
+        >
+          {look.hint}
+        </Box>
       </Box>
       {look.actions ? (
         <Box sx={{ display: 'flex', gap: '8px', flex: 'none' }}>

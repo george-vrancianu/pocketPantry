@@ -24,8 +24,8 @@ import {
   buttonBottom,
   VOICE_LAYER,
 } from '../../lib/voicePlacement';
-import { useVoiceNoteState } from '../../lib/voiceNoteStore';
-import { VOICE_BUTTON_ATTRIBUTE } from './focusVoiceButton';
+import { isPillUp, useVoiceNoteState } from '../../lib/voiceNoteStore';
+import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 
 type Voice = ReturnType<typeof useVoiceNote>;
 
@@ -44,7 +44,7 @@ export function VoiceButton({
   const active = voice.recording || voice.pressing;
   // While the status pill is up (reading, a failure) the tip must not cover its buttons.
   const { phase } = useVoiceNoteState();
-  const pillUp = phase === 'reading' || phase === 'failed';
+  const pillUp = isPillUp(phase);
   const progress = Math.min(1, voice.elapsedMs / MAX_VOICE_NOTE_MS);
 
   const host = useVoiceHost();

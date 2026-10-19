@@ -2,6 +2,7 @@ import { Box, CheckIcon, radius, shadow, useToast } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SCAN_LANGUAGES, type ScanLanguage } from '../../i18n/resources';
+import { isPillUp, useVoiceNoteState } from '../../lib/voiceNoteStore';
 import {
   buttonBottom,
   voiceToast,
@@ -24,6 +25,8 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
   const nameOf = (language: ScanLanguage) =>
     t(`settings:languageNames.${language}`);
   const toast = useToast();
+  const { phase } = useVoiceNoteState();
+  const pillUp = isPillUp(phase);
   const [open, setOpen] = useState(false);
   const chip = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -53,7 +56,7 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
       `${t('languageMenu.saved', {
         language: nameOf(language),
       })} · ${t('languageMenu.savedHint')}`,
-      voiceToast(),
+      voiceToast({ abovePill: pillUp }),
     );
     close();
   };

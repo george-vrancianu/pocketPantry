@@ -20,12 +20,17 @@ export const aboveButton = (gap: number) => ({
 /** Where a toast sits so it clears the button and its chip. */
 export const toastBottom = aboveButton(10);
 
-/** The status pill's height (two lines and its padding), px, plus the air kept above it. */
+/** The status pill (and the Listening card) sit this far above the button, px. */
+export const PILL_OFFSET = 22;
+/** The status pill's height (a title line, a one-line hint and its padding), px, plus the air kept above it. */
 export const PILL_HEIGHT = 60;
 export const PILL_GAP = 8;
 
-/** The pill sits 22 px above the button; this is the spot clear above the pill. */
-export const abovePill = aboveButton(22 + PILL_HEIGHT + PILL_GAP);
+/** CSS `bottom` of the status pill and the Listening card. */
+export const pillBottom = aboveButton(PILL_OFFSET);
+
+/** The spot clear above the pill. */
+export const abovePill = aboveButton(PILL_OFFSET + PILL_HEIGHT + PILL_GAP);
 
 /**
  * Options for a voice toast: polite, clear of the button, and clear of the status pill when one is up

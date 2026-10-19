@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import type { ScanLanguage } from '../i18n/resources';
 import type { Recording } from './microphone';
+import { keepScreenAwake } from './wakeLock';
 import type { VoiceList, VoiceNoteResult, VoiceReviewAction } from './voice';
 
 /** Where the Voice Note is: the hold-to-talk button, the status pill and Review all read this. */
@@ -200,16 +201,38 @@ export function isVoiceCapReached(now: number = Date.now()): boolean {
  * What outlives the page that started a Voice Note, so the pill on either page can reach it: the request
  * being read (Cancel aborts it) and the lock that keeps the screen awake until it ends.
  */
-export const inFlight: {
-  read?: AbortController;
-  release?: () => void;
-} = {};
+let read: AbortController | undefined;
+let release: (() => void) | undefined;
+
+export const beginRead = (request: AbortController) => {
+  read = request;
+};
+/** Forgets the read, unless a newer one has taken its place. */
+export const endRead = (request: AbortController) => {
+  if (read === request) read = undefined;
+};
+export const isReading = () => read !== undefined;
+/** Aborts the read in flight, if any. */
+export const abortRead = () => {
+  read?.abort();
+  read = undefined;
+};
+/** Keeps the screen awake from the press until the note is settled (Review, a notice, cancelled). */
+export const stayAwake = () => {
+  release ??= keepScreenAwake();
+};
+export const releaseAwake = () => {
+  release?.();
+  release = undefined;
+};
+
+/** Whether the status pill is up (reading, or a failure or notice) for this phase. */
+export const isPillUp = (phase: VoicePhase) =>
+  phase === 'reading' || phase === 'failed';
 
 export function resetVoiceNote() {
-  inFlight.read?.abort();
-  inFlight.read = undefined;
-  inFlight.release?.();
-  inFlight.release = undefined;
+  abortRead();
+  releaseAwake();
   state = initial;
   emit();
 }

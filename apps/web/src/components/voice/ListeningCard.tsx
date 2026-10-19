@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
 import type { VoiceList } from '../../lib/voice';
-import { aboveButton, VOICE_LAYER } from '../../lib/voicePlacement';
+import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
 import { formatClock, MAX_VOICE_NOTE_MS } from '../../lib/voice';
 import { enter } from './enter';
 
@@ -93,7 +93,7 @@ export function ListeningCard({
         position: 'fixed',
         left: 16,
         right: 16,
-        bottom: aboveButton(22),
+        bottom: pillBottom,
         mx: 'auto',
         maxWidth: 420,
         zIndex: VOICE_LAYER.card,

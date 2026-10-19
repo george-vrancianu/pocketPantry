@@ -3,6 +3,7 @@ import {
   aboveButton,
   PILL_GAP,
   PILL_HEIGHT,
+  PILL_OFFSET,
   abovePill,
   voiceToast,
   VOICE_LAYER,
@@ -10,7 +11,9 @@ import {
 
 describe('voice placement', () => {
   it('lifts the pill-aware spot clear of the status pill and the air above it', () => {
-    expect(abovePill).toEqual(aboveButton(22 + PILL_HEIGHT + PILL_GAP));
+    expect(abovePill).toEqual(
+      aboveButton(PILL_OFFSET + PILL_HEIGHT + PILL_GAP),
+    );
     expect(PILL_HEIGHT).toBeGreaterThanOrEqual(56);
   });
 

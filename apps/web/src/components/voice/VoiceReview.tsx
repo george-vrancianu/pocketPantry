@@ -18,7 +18,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { applyToast } from './applyResult';
-import { focusVoiceButton } from './focusVoiceButton';
+import { focusVoiceButton } from '../../lib/voiceFocus';
 import { voiceToast } from '../../lib/voicePlacement';
 import { HeardCard } from './HeardCard';
 import { ReviewFooter } from './ReviewFooter';
