@@ -226,7 +226,10 @@ export function StatusPill({ voice }: { voice: Voice }) {
         {look.icon}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ fontSize: 14, fontWeight: 600, ...oneLine }}>
+        <Box
+          title={look.title}
+          sx={{ fontSize: 14, fontWeight: 600, ...oneLine }}
+        >
           {look.title}
         </Box>
         <Box
