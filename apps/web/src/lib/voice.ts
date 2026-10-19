@@ -7,8 +7,10 @@ import type { Locale, ScanLanguage } from '../i18n/resources';
 
 /** A Voice Note lasts at most this long; the recording stops and sends itself here. */
 export const MAX_VOICE_NOTE_MS = 60_000;
-/** Shorter than this is an accidental tap, not a Voice Note. */
-export const MIN_VOICE_NOTE_MS = 400;
+/** A press shorter than this is a tap, not a Voice Note (the gesture). */
+export const QUICK_TAP_MS = 300;
+/** Recorded audio shorter than this is too little to read. Audio never outlasts the hold, so this equals the tap threshold. */
+export const MIN_VOICE_NOTE_MS = QUICK_TAP_MS;
 
 /** The list the page a Voice Note is recorded on acts on (ADR 0017). */
 export type VoiceList = 'shopping' | 'pantry';
@@ -77,8 +79,21 @@ export type VoiceNoteResult = {
   actions: VoiceReviewAction[];
 };
 
+/** One applied Voice Action: the list it landed on and the row it touched. */
+export type VoiceAppliedEntry = {
+  actionId: string;
+  list: VoiceList;
+  /**
+   * The Shopping Item or Batch touched. A Shopping removal names the row just removed (nothing to flash);
+   * a Batch removal names a surviving Batch of the Ingredient, and none when nothing is left.
+   */
+  rowId?: string;
+  /** Already satisfied when applied; still counts as applied. */
+  alreadyDone: boolean;
+};
+
 export type VoiceApplyResult = {
-  applied: string[];
+  applied: VoiceAppliedEntry[];
   skipped: { id: string; reason: string }[];
 };
 
@@ -137,6 +152,8 @@ export type VoiceNoteRequest = {
   defaultTarget: VoiceList;
   /** The Member's local date, `YYYY-MM-DD`. */
   today: string;
+  /** Aborting it abandons the request on this side only; the Voice Cap charge stands. */
+  signal?: AbortSignal;
 };
 
 export function sendVoiceNote({
@@ -145,6 +162,7 @@ export function sendVoiceNote({
   locale,
   defaultTarget,
   today,
+  signal,
 }: VoiceNoteRequest): Promise<VoiceNoteResult> {
   const form = new FormData();
   form.append('scanLanguage', scanLanguage);
@@ -161,33 +179,15 @@ export function sendVoiceNote({
   return apiRequest<VoiceNoteResult>('/voice', {
     method: 'POST',
     body: form,
+    signal,
   });
 }
 
-const EXPLAINED_KEY = 'pp.voice.micExplained';
+/** The pill for a note nothing came of closes itself after this long. */
+export const NOTHING_HEARD_MS = 3600;
 
-/** Whether the "why the microphone" explanation has been shown and accepted. */
-export function micExplained(): boolean {
-  try {
-    return window.localStorage.getItem(EXPLAINED_KEY) !== null;
-  } catch {
-    return false;
-  }
+/** `m:ss` for a length in ms, whole seconds floored (the Listening card, the reading pill and Review). */
+export function formatClock(ms: number): string {
+  const whole = Math.floor(ms / 1000);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
 }
-
-export function rememberMicExplained(): void {
-  try {
-    window.localStorage.setItem(EXPLAINED_KEY, '1');
-  } catch {
-    // Not persisting just shows the explanation again.
-  }
-}
-
-/** Errors a second try of the same recording cannot fix: keeping it for Retry would only mislead. */
-export const NOT_RETRYABLE = new Set([
-  'voice.cap_reached',
-  'voice.too_long',
-  'voice.unsupported_audio',
-  'voice.not_configured',
-  'voice.nothing_heard',
-]);

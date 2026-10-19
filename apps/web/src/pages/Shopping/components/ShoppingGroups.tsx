@@ -15,6 +15,7 @@ import {
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../../components/AmountSheet';
+import { RowFlash, flashHost } from '../../../components/RowFlash';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { formatRowAmount, type Amount } from '../../../lib/amount';
 import type { RowHint } from '../../../lib/useRowHint';
@@ -126,78 +127,83 @@ function ChecklistRow({
         onTap={() => onToggle(item.id, !item.checked)}
         onRemove={() => onRemove(item.id, item.name)}
       >
-        <ListRow
-          done={item.checked}
-          title={item.name}
-          meta={quantity}
-          leading={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box
-                aria-hidden="true"
-                sx={{
-                  flexShrink: 0,
-                  width: 24,
-                  height: 24,
-                  boxSizing: 'border-box',
-                  borderRadius: radius.box,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  ...(item.checked
-                    ? { bgcolor: tokens.color.accent, color: color.accentInk }
-                    : { border: `2px solid ${tokens.color.tickBorder}` }),
-                }}
-              >
-                {item.checked ? (
-                  <CheckIcon size={16} strokeWidth={2.6} />
+        <Box sx={flashHost}>
+          <ListRow
+            done={item.checked}
+            title={item.name}
+            meta={quantity}
+            leading={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  aria-hidden="true"
+                  sx={{
+                    flexShrink: 0,
+                    width: 24,
+                    height: 24,
+                    boxSizing: 'border-box',
+                    borderRadius: radius.box,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    ...(item.checked
+                      ? { bgcolor: tokens.color.accent, color: color.accentInk }
+                      : { border: `2px solid ${tokens.color.tickBorder}` }),
+                  }}
+                >
+                  {item.checked ? (
+                    <CheckIcon size={16} strokeWidth={2.6} />
+                  ) : null}
+                </Box>
+                <IngredientIconSlot
+                  ingredientId={item.ingredientId}
+                  aisleId={aisleId}
+                  color={item.checked ? CHECKED_TEXT : 'text.primary'}
+                />
+              </Box>
+            }
+            tags={
+              item.unmatched ? (
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: color.accentOnTint,
+                    bgcolor: tokens.color.accentTint,
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: radius.pill,
+                  }}
+                >
+                  {t('item.unmatched')}
+                </Typography>
+              ) : null
+            }
+            trailing={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {item.ingredientId !== null ? (
+                  <StapleToggle
+                    ingredientId={item.ingredientId}
+                    name={item.name}
+                    onToggled={(isStaple) =>
+                      toast.show(
+                        t(
+                          isStaple
+                            ? 'item.nowStaple'
+                            : 'item.removedFromStaples',
+                          {
+                            name: item.name,
+                          },
+                        ),
+                      )
+                    }
+                  />
                 ) : null}
               </Box>
-              <IngredientIconSlot
-                ingredientId={item.ingredientId}
-                aisleId={aisleId}
-                color={item.checked ? CHECKED_TEXT : 'text.primary'}
-              />
-            </Box>
-          }
-          tags={
-            item.unmatched ? (
-              <Typography
-                component="span"
-                sx={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: color.accentOnTint,
-                  bgcolor: tokens.color.accentTint,
-                  px: 1,
-                  py: 0.5,
-                  borderRadius: radius.pill,
-                }}
-              >
-                {t('item.unmatched')}
-              </Typography>
-            ) : null
-          }
-          trailing={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {item.ingredientId !== null ? (
-                <StapleToggle
-                  ingredientId={item.ingredientId}
-                  name={item.name}
-                  onToggled={(isStaple) =>
-                    toast.show(
-                      t(
-                        isStaple ? 'item.nowStaple' : 'item.removedFromStaples',
-                        {
-                          name: item.name,
-                        },
-                      ),
-                    )
-                  }
-                />
-              ) : null}
-            </Box>
-          }
-        />
+            }
+          />
+          <RowFlash ids={[item.id]} />
+        </Box>
       </SwipeRow>
       <AmountSheet
         open={editing}

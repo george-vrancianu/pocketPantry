@@ -14,6 +14,10 @@ const LIMITS = {
   voice: { setting: 'VOICE_DAILY_CAP', code: 'voice.cap_reached' },
 } as const;
 
+/** When the cap's UTC `day` ends (ISO), which is when its count starts over. */
+const nextUtcMidnight = (day: string) =>
+  new Date(Date.parse(`${day}T00:00:00.000Z`) + 86_400_000).toISOString();
+
 const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 
 /**
@@ -52,7 +56,12 @@ export class ScanCapService {
       })
       .returning({ count: scanUsage.count });
     if (rows.length === 0) {
-      throw new ApiException(429, limit.code, { cap });
+      // Only the Voice Cap says when it lifts; the web lets the Voice button wait it out.
+      throw new ApiException(
+        429,
+        limit.code,
+        kind === 'voice' ? { cap, resetsAt: nextUtcMidnight(day) } : { cap },
+      );
     }
     return day;
   }

@@ -1,88 +1,252 @@
 {
-  "button": {
-    "label": "Ține apăsat pentru a vorbi",
-    "release": "Eliberează pentru a trimite",
-    "sending": "Se trimite…"
-  },
-  "recording": {
-    "label": "Se înregistrează",
-    "cancelHint": "trage în afară pentru a anula"
-  },
-  "explainer": {
-    "title": "Notele vocale folosesc microfonul",
-    "body": "Ține apăsat butonul și spune ce ai cumpărat sau ai terminat. Vocea ta este transformată în text pe care îl verifici. Înregistrarea nu este păstrată.",
+  "intro": {
+    "title": "Spune ce ai făcut",
+    "body": "Ține apăsat butonul, vorbește, apoi dă drumul. Verifici fiecare modificare înainte să se salveze ceva.",
+    "privacy": "<b>Pocket Pantry are nevoie de microfon</b> ca să audă notele vocale. Browserul te va întreba în continuare. Înregistrarea este transformată în text pentru a citi modificările tale, apoi ștearsă; nu se păstrează nimic.",
+    "notNow": "Nu acum",
     "allow": "Permite microfonul",
-    "notNow": "Nu acum"
+    "examples": {
+      "shopping": {
+        "one": {
+          "say": "Am luat pâinea, scoate laptele",
+          "result": "Bifează pâinea, scoate laptele"
+        },
+        "two": {
+          "say": "Adaugă doi litri de lapte",
+          "result": "Adaugă lapte, 2 l"
+        },
+        "three": {
+          "say": "Pune două iaurturi în frigider, expiră vineri",
+          "result": "Merge direct în Cămară"
+        }
+      },
+      "pantry": {
+        "one": {
+          "say": "Două iaurturi în frigider, expiră vineri",
+          "result": "Adaugă un lot de 2 buc"
+        },
+        "two": {
+          "say": "Am terminat laptele",
+          "result": "Scoate laptele care expiră primul"
+        },
+        "three": {
+          "say": "Se termină orezul",
+          "result": "Marchează orezul ca fiind pe terminate"
+        }
+      }
+    }
   },
-  "denied": {
-    "title": "Microfonul este blocat.",
-    "body": "Pentru a folosi notele vocale, permite microfonul pentru acest site din setările browserului (caută pictograma cu lacăt sau setări de lângă adresă), apoi ține din nou apăsat butonul."
+  "mic": {
+    "on": "Microfon activat",
+    "onHint": "Acum ține apăsat butonul și vorbește."
+  },
+  "blocked": {
+    "title": "Microfonul este blocat",
+    "body": "Notele vocale au nevoie de el. Permite-l pentru Pocket Pantry în browser, apoi revino și ține din nou apăsat butonul.",
+    "safari": "iPhone, Safari",
+    "safariStep1": "Atinge <b>aA</b> în bara de adrese",
+    "safariStep2": "<b>Setările site-ului</b> → <b>Microfon</b> → <b>Permite</b>",
+    "chrome": "Android, Chrome",
+    "chromeStep1": "Atinge lacătul de lângă adresă",
+    "chromeStep2": "<b>Permisiuni</b> → <b>Microfon</b> → <b>Permite</b>",
+    "close": "Închide",
+    "retry": "Am permis",
+    "still": "Încă blocat. Permite microfonul în browser, apoi încearcă din nou."
   },
   "unavailable": "Acest browser nu poate înregistra sunet, deci notele vocale nu sunt disponibile aici.",
-  "tooShort": "Ține apăsat butonul cât timp vorbești.",
-  "nothingHeard": "Nu am prins nimic, încearcă din nou",
-  "retry": "Reîncearcă",
-  "dismiss": "Închide",
+  "voiceButton": {
+    "label": "Ține apăsat pentru a înregistra o notă vocală",
+    "blocked": "Microfon blocat"
+  },
+  "listening": {
+    "title": "Ascult",
+    "starting": "Pornește…",
+    "of": "/ 1:00",
+    "hint": "Eliberează pentru a trimite · glisează în afară pentru a anula",
+    "toShopping": "Ajunge în Lista de cumpărături. Spune „în cămară” pentru a adăuga stoc.",
+    "toPantry": "Ajunge în Cămară. Spune „pe listă” pentru Lista de cumpărături.",
+    "tip": "Ține apăsat pentru a vorbi, eliberează pentru a trimite",
+    "recording": "Se înregistrează",
+    "cancelArmed": "Eliberează pentru a anula",
+    "slideBack": "Glisează înapoi pentru a continua înregistrarea",
+    "left": "{{count}} s rămase",
+    "tenLeft": "Mai sunt 10 secunde",
+    "cancelled": "Anulat. Nu s-a trimis nimic.",
+    "stopped": "Oprit la 1 minut",
+    "stoppedHint": "Se trimite ce ai spus."
+  },
+  "languageMenu": {
+    "chipLabel": "Limba de scanare: {{language}}. Schimbă",
+    "title": "Limba de scanare",
+    "saved": "Limba de scanare: {{language}}",
+    "savedHint": "Folosită pentru notele vocale și pentru cameră."
+  },
   "review": {
-    "title": "Notă vocală",
+    "title": "Verificare",
+    "subline_one": "{{count}} modificare · nimic nu se salvează până nu apeși Aplică",
+    "subline_few": "{{count}} modificări · nimic nu se salvează până nu apeși Aplică",
+    "subline_other": "{{count}} de modificări · nimic nu se salvează până nu apeși Aplică",
+    "sublineBoth_one": "{{count}} modificare pe ambele liste · nimic nu se salvează până nu apeși Aplică",
+    "sublineBoth_few": "{{count}} modificări pe ambele liste · nimic nu se salvează până nu apeși Aplică",
+    "sublineBoth_other": "{{count}} de modificări pe ambele liste · nimic nu se salvează până nu apeși Aplică",
+    "sublineNothing": "Nimic de aplicat",
     "heard": "Ce am auzit",
-    "discard": "Renunță",
-    "apply": "Aplică",
+    "heardMeta": "{{language}} · {{duration}}",
     "lists": {
       "shopping": "Lista de cumpărături",
       "pantry": "Cămara"
     },
-    "notUnderstood": "Nu am înțeles",
-    "unmatched": "nu e în catalog",
-    "notFound": "Negăsit: {{name}}",
-    "ops": {
-      "setQuantity": "Setează cantitatea",
-      "check": "Bifează",
-      "addAndCheck": "Adaugă și bifează",
-      "uncheck": "Debifează",
-      "remove": "Elimină din listă"
+    "namedIt": "ai spus-o tu",
+    "couldnt": "Nu s-a putut aplica",
+    "notFound": "Negăsit:",
+    "notUnderstood": "Neînțeles:",
+    "reason": {
+      "notFoundShopping": "Nu există {{name}} pe listă.",
+      "notFoundPantry": "Nu există {{name}} în Cămară.",
+      "notUnderstood": "Încearcă să spui din nou, ca o adăugare, o bifare sau o ștergere."
     },
-    "change": "Schimbă",
-    "changeMatch": "Schimbă potrivirea pentru {{name}}",
-    "remove": "Elimină {{name}}",
-    "pantry": {
-      "location": "Locație",
-      "chooseLocation": "Alege o locație",
+    "hide": "Ascunde intrarea: {{text}}",
+    "op": {
+      "check": "Bifează",
+      "addChecked": "Adaugă, bifat",
+      "add": "Adaugă",
+      "uncheck": "Debifează",
+      "remove": "Șterge",
+      "removeAll": "Șterge tot",
+      "use": "Folosește",
+      "setQuantity": "Schimbă",
+      "runningLow": "Pe terminate"
+    },
+    "detail": {
+      "onList": "Pe lista ta",
+      "listSaid": "lista spunea {{amount}}",
+      "notOnList": "Nu e pe listă, deci se adaugă bifat",
+      "backOnList": "Revine pe listă",
+      "comesOff": "Iese de pe listă",
+      "noAmount": "Fără cantitate",
+      "unmatched": "nu e în catalog, salvat cum a fost spus",
+      "lowToList": "nu ai {{name}} în Cămară, deci ajunge pe listă",
+      "usual": "obișnuit",
+      "default": "implicit",
+      "expires": "expiră {{date}}",
+      "noExpiry": "fără expirare",
+      "noPlace": "Alege un loc",
+      "takes": "Ia {{amount}} · {{date}}",
+      "noDate": "fără dată de expirare",
+      "soonest": "expiră primul",
+      "takesAll_one": "Ia tot {{count}} lot",
+      "takesAll_few": "Ia toate cele {{count}} loturi",
+      "takesAll_other": "Ia toate cele {{count}} de loturi",
+      "takesFrom_one": "Ia {{amount}} din {{count}} lot, cel mai apropiat întâi",
+      "takesFrom_few": "Ia {{amount}} din {{count}} loturi, cel mai apropiat întâi",
+      "takesFrom_other": "Ia {{amount}} din {{count}} de loturi, cel mai apropiat întâi",
+      "takesPicked": "Ia {{amount}} din lotul ales",
+      "needsBatch": "{{amount}} nu se potrivește cu loturile numărate în {{unit}} · alege unul",
+      "lowHint": "Apare în Sugestii până sosește un lot nou"
+    },
+    "edit": {
+      "heard": "Auzit:",
+      "amount": "Cantitate",
+      "amountOf": "Cantitate de {{name}}",
+      "unitOf": "Unitate pentru {{name}}",
       "expires": "Expiră",
       "noExpiry": "Fără expirare",
-      "noDate": "fără dată de expirare",
-      "whole": "tot lotul",
-      "take": "scoate {{amount}}",
-      "batch": "{{amount}} · expiră {{date}}",
-      "noAmount": "fără cantitate",
-      "pickLabel": "Ce lot de {{name}}?",
-      "pickPrompt": "Alege un lot",
-      "pickNeeded": "Alege lotul din care se scoate.",
-      "runningLow": "Marchează {{name}} ca pe terminate",
-      "shoppingFallback": "Adaugă {{name}} pe lista de cumpărături"
+      "pickDate": "Alege o dată",
+      "expiryTitle": "Expiră",
+      "fromSpeech": "din ce ai spus",
+      "defaultExpiry": "Expirarea implicită a acestui Ingredient",
+      "location": "Locație",
+      "locationDefault": "Nespus, deci locul obișnuit al acestui Ingredient",
+      "whichBatch": "Din ce lot ai folosit?",
+      "ingredient": "Ingredient",
+      "unmatched": "Fără potrivire",
+      "change": "Schimbă",
+      "changeIngredient": "Schimbă Ingredientul: {{name}}",
+      "searchLabel": "Caută în catalog pentru {{name}}",
+      "done": "Gata",
+      "drop": "Renunță la această modificare: {{verb}} {{name}}"
+    },
+    "footer": {
+      "discard": "Renunță",
+      "apply_one": "Aplică {{count}} modificare",
+      "apply_few": "Aplică {{count}} modificări",
+      "apply_other": "Aplică {{count}} de modificări",
+      "pickBatch": "Alege întâi un lot",
+      "pickPlace": "Alege întâi un loc",
+      "applying": "Se aplică",
+      "confirm": "Renunți la această Notă vocală?",
+      "confirmHint": "Nu se schimbă nimic și va trebui să o spui din nou.",
+      "keep": "Continuă verificarea",
+      "discarded": "Nota vocală a fost eliminată",
+      "discardedHint": "Nu s-a schimbat nimic."
     }
   },
   "toast": {
-    "applied_one": "S-a aplicat {{count}} acțiune vocală.",
-    "applied_few": "S-au aplicat {{count}} acțiuni vocale.",
-    "applied_other": "S-au aplicat {{count}} de acțiuni vocale.",
-    "skipped": "Omise: {{names}}."
+    "applied_one": "{{count}} modificare aplicată",
+    "applied_few": "{{count}} modificări aplicate",
+    "applied_other": "{{count}} de modificări aplicate",
+    "split": "{{applied}}: {{here}} {{hereList}}, {{there}} {{thereList}}",
+    "where": {
+      "shopping": "pe listă",
+      "pantry": "în cămară"
+    },
+    "skipped": "{{applied}}, {{skippedCount}}: {{reasons}}",
+    "skippedCount_one": "{{count}} modificare omisă",
+    "skippedCount_few": "{{count}} modificări omise",
+    "skippedCount_other": "{{count}} de modificări omise",
+    "skippedItem": "{{name}} {{reason}}",
+    "more": "+{{count}}",
+    "already": "{{name}} era deja {{state}}, așa că se numără ca făcut.",
+    "alreadyMany_one": "{{name}} și încă {{count}} erau deja făcute, așa că se numără ca făcute.",
+    "alreadyMany_few": "{{name}} și încă {{count}} erau deja făcute, așa că se numără ca făcute.",
+    "alreadyMany_other": "{{name}} și încă {{count}} de acțiuni erau deja făcute, așa că se numără ca făcute.",
+    "alreadyState": {
+      "check": "bifat",
+      "uncheck": "debifat",
+      "remove": "scos de pe listă",
+      "setQuantity": "la cantitatea aceea",
+      "runningLow": "marcat ca pe terminate",
+      "other": "făcut"
+    }
   },
   "skipReason": {
     "shopping.quantity_too_large": "cantitate prea mare",
-    "shopping.ingredient_not_found": "ingredientul nu mai este disponibil",
+    "shopping.ingredient_not_found": "nu mai este disponibil",
     "voice.not_supported": "încă nesuportat",
-    "voice.invalid_action": "incompletă",
-    "pantry.batch_not_found": "lotul nu mai există",
-    "voice.batch_required": "niciun lot ales",
-    "pantry.location_required": "nicio locație aleasă",
-    "pantry.unit_required": "unitate necesară",
-    "pantry.ingredient_not_found": "ingredientul nu mai este disponibil",
+    "voice.invalid_action": "era incompletă",
+    "pantry.batch_not_found": "nu mai este în cămară",
+    "voice.batch_required": "avea nevoie de un lot ales",
+    "pantry.location_required": "avea nevoie de o locație",
+    "pantry.unit_required": "avea nevoie de o unitate",
+    "pantry.ingredient_not_found": "nu mai este disponibil",
     "shopping.item_not_found": "nu mai este pe listă",
     "shopping.list_changed": "lista s-a schimbat",
     "pantry.category_not_found": "categoria nu mai este disponibilă",
-    "pantry.other_leaf_missing": "nicio categorie potrivită disponibilă",
+    "pantry.other_leaf_missing": "nu avea o categorie potrivită",
     "voice.item_not_found": "nu mai este pe listă",
-    "other": "nu a putut fi aplicată"
+    "other": "nu a putut fi aplicat"
+  },
+  "send": {
+    "reading": "Îți citesc nota",
+    "readingMeta": "{{duration}} de vorbire · {{language}}",
+    "cancel": "Anulează",
+    "cancelled": "Anulat. Nu s-a salvat nimic.",
+    "failed": "Nu s-a putut trimite",
+    "failedHint": "Fără conexiune. Înregistrarea ta este păstrată.",
+    "retry": "Reîncearcă",
+    "discard": "Șterge",
+    "discarded": "Înregistrare ștearsă",
+    "nothing": "Nu am prins nimic, încearcă din nou",
+    "nothingHint": "Ține apăsat butonul și vorbește aproape de telefon. Aceasta nu se numără.",
+    "cap": "Ai folosit cele {{cap}} note vocale de azi",
+    "capHint": "Vocea revine mâine. Scanările merg în continuare.",
+    "ok": "OK",
+    "tooLongTitle": "Înregistrare prea lungă",
+    "tooLong": "Înregistrarea a fost prea lungă. Încearcă una mai scurtă.",
+    "unsupportedTitle": "Nu se poate citi înregistrarea",
+    "unsupported": "Formatul de înregistrare al acestui browser nu este acceptat",
+    "tipBusy": "Încă citesc ultima notă",
+    "tipFailed": "Reîncearcă sau șterge mai întâi ultima notă",
+    "noRecording": "Nu se poate înregistra aici"
   }
 }

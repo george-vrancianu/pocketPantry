@@ -68,6 +68,8 @@ export const color = {
   /** Text and icons on an `accentTint` fill. */
   accentOnTint: palette('pp-accentOnTint'),
   lineStrong: palette('pp-lineStrong'),
+  /** The recording colour (Voice Notes): the urgent foreground. */
+  rec: palette('error-main'),
   box: palette('pp-box'),
   cardBg: palette('pp-cardBg'),
   cardLine: palette('pp-cardLine'),

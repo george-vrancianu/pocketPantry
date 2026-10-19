@@ -1,6 +1,8 @@
+import Box from '@mui/material/Box';
 import MuiButton from '@mui/material/Button';
 import MuiSnackbar from '@mui/material/Snackbar';
 import MuiSnackbarContent from '@mui/material/SnackbarContent';
+import Typography from '@mui/material/Typography';
 import {
   createContext,
   useCallback,
@@ -22,8 +24,14 @@ const TOAST_DURATION_MS = 2600;
 export type ToastOptions = {
   /** One optional action; clicking it runs `onClick` and dismisses the toast. */
   action?: { label: string; onClick: () => void };
-  /** Distance from the bottom in px, to sit above e.g. a sheet's footer. Defaults to just above the Dock. */
-  bottom?: number;
+  /**
+   * Distance from the bottom, to sit above e.g. a sheet's footer or a floating button: px, a CSS
+   * length, or one per breakpoint (`xs` for phones, `md` from the `md` breakpoint up).
+   * Defaults to just above the Dock.
+   */
+  bottom?: number | string | { xs: number | string; md: number | string };
+  /** A second, smaller line under the message. */
+  detail?: string;
   /** How long the toast stays, in ms. Defaults to 2600. */
   duration?: number;
   /** Announce without interrupting (a status) instead of as an alert. */
@@ -134,13 +142,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             sx={{
               // MUI's own sm+ `bottom: 24` would win above sm, so set every breakpoint.
               bottom:
-                current.bottom !== undefined
-                  ? { xs: current.bottom, sm: current.bottom }
-                  : {
+                current.bottom === undefined
+                  ? {
                       xs: aboveDock(DOCK_HEIGHT.xs),
                       sm: aboveDock(DOCK_HEIGHT.xs),
                       md: aboveDock(DOCK_HEIGHT.md),
-                    },
+                    }
+                  : typeof current.bottom === 'object'
+                    ? {
+                        xs: current.bottom.xs,
+                        sm: current.bottom.xs,
+                        md: current.bottom.md,
+                      }
+                    : { xs: current.bottom, sm: current.bottom },
               // 20 px side insets on phones (handoff section 7).
               left: { xs: 20 },
               right: { xs: 20 },
@@ -148,7 +162,27 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           >
             <MuiSnackbarContent
               role={current.polite ? 'status' : 'alert'}
-              message={current.message}
+              message={
+                current.detail ? (
+                  <>
+                    <Box component="span" sx={{ display: 'block' }}>
+                      {current.message}
+                    </Box>
+                    <Typography
+                      component="span"
+                      sx={{
+                        display: 'block',
+                        fontSize: 13,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {current.detail}
+                    </Typography>
+                  </>
+                ) : (
+                  current.message
+                )
+              }
               action={
                 current.action ? (
                   <MuiButton

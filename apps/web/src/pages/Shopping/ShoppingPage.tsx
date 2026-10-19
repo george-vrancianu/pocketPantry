@@ -97,6 +97,8 @@ export function ShoppingPage() {
         }
       />
       <RowHintNote hint={hint} />
+      {/* Outside every conditional below: a read in flight must outlive the list reloading. */}
+      <VoiceNote />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
         {rowToggleErrors.message ? (
@@ -115,7 +117,6 @@ export function ShoppingPage() {
               onAddItems={(event) => openSheet(event.currentTarget)}
               addRef={addButton}
             />
-            <VoiceNote />
             {screen.list.groups.length === 0 ? (
               <Box ref={empty} tabIndex={-1} sx={{ outline: 'none' }}>
                 <EmptyListStart

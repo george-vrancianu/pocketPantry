@@ -62,7 +62,13 @@ export type ApplyContext = {
 
 /** `skipped` carries the stable error code or reason Review names. */
 export type ApplyOutcome =
-  { applied: true } | { applied: false; reason: string };
+  | {
+      applied: true;
+      list: VoiceTarget;
+      rowId?: string;
+      alreadyDone: boolean;
+    }
+  | { applied: false; reason: string };
 
 /** Converts a known service error to a skip reason; anything else is a bug and rolls back. */
 export async function skippingKnownErrors(

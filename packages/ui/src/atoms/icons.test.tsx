@@ -8,7 +8,14 @@ import {
   HourglassIcon,
   PulseIcon,
   CopyIcon,
+  EarIcon,
+  EqualIcon,
+  LockIcon,
   LogoutIcon,
+  MicIcon,
+  MicOffIcon,
+  QuoteIcon,
+  WifiOffIcon,
   MinusIcon,
   PhoneIcon,
   PlusIcon,
@@ -115,5 +122,27 @@ describe('icons', () => {
     expect(container.querySelector('path')!.getAttribute('d')).toBe(
       'M12 6v8M12 18v.01',
     );
+  });
+
+  it('render the Voice Notes glyphs as decorative lucide icons', () => {
+    const glyphs = [
+      MicIcon,
+      MicOffIcon,
+      WifiOffIcon,
+      EarIcon,
+      QuoteIcon,
+      EqualIcon,
+      LockIcon,
+    ];
+    for (const Glyph of glyphs) {
+      const { container, unmount } = render(<Glyph />);
+      const svg = container.querySelector('svg')!;
+      expect(svg.getAttribute('aria-hidden')).toBe('true');
+      expect(svg.getAttribute('stroke')).toBe('currentColor');
+      expect(
+        svg.querySelectorAll('path, rect, circle, line').length,
+      ).toBeGreaterThan(0);
+      unmount();
+    }
   });
 });

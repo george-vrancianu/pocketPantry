@@ -44,7 +44,7 @@ export {
 } from './ingredientIcon/IngredientIcon';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
-export { DOCK_BOTTOM, DOCK_HEIGHT } from './theme/dock';
+export { aboveDock, DOCK_BOTTOM, DOCK_HEIGHT } from './theme/dock';
 export { visuallyHidden } from './theme/visuallyHidden';
 
 export { Alert, type AlertProps } from './atoms/Alert';
@@ -126,6 +126,13 @@ export {
   MoreIcon,
   BranchIcon,
   RunningLowIcon,
+  MicIcon,
+  MicOffIcon,
+  WifiOffIcon,
+  EarIcon,
+  QuoteIcon,
+  EqualIcon,
+  LockIcon,
   StarIcon,
   StarFillIcon,
   UndoIcon,

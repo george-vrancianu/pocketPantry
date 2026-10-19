@@ -1,87 +1,244 @@
 {
-  "button": {
-    "label": "Hold for at tale",
-    "release": "Slip for at sende",
-    "sending": "Sender…"
-  },
-  "recording": {
-    "label": "Optager",
-    "cancelHint": "træk væk for at annullere"
-  },
-  "explainer": {
-    "title": "Stemmenoter bruger din mikrofon",
-    "body": "Hold knappen nede og sig, hvad du har købt eller brugt op. Din stemme bliver til tekst, som du kan tjekke. Optagelsen gemmes ikke.",
+  "intro": {
+    "title": "Sig, hvad du har gjort",
+    "body": "Hold knappen nede, tal, og slip. Du tjekker hver ændring, før noget bliver gemt.",
+    "privacy": "<b>Pocket Pantry har brug for din mikrofon</b> for at høre stemmenoter. Din browser spørger som det næste. Optagelsen bliver til tekst, så dine ændringer kan læses, og slettes derefter; intet bliver gemt.",
+    "notNow": "Ikke nu",
     "allow": "Tillad mikrofon",
-    "notNow": "Ikke nu"
+    "examples": {
+      "shopping": {
+        "one": {
+          "say": "Fik brødet, tag mælk af",
+          "result": "Afkrydser brød, fjerner mælk"
+        },
+        "two": {
+          "say": "Tilføj to liter mælk",
+          "result": "Tilføjer mælk, 2 l"
+        },
+        "three": {
+          "say": "Læg to yoghurter i køleskabet, de udløber fredag",
+          "result": "Går direkte til Spisekammeret"
+        }
+      },
+      "pantry": {
+        "one": {
+          "say": "To yoghurter i køleskabet, de udløber fredag",
+          "result": "Tilføjer et parti på 2 stk"
+        },
+        "two": {
+          "say": "Vi er løbet tør for mælk",
+          "result": "Fjerner den mælk, der udløber først"
+        },
+        "three": {
+          "say": "Vi er ved at løbe tør for ris",
+          "result": "Markerer ris som ved at løbe tør"
+        }
+      }
+    }
   },
-  "denied": {
-    "title": "Mikrofonen er blokeret.",
-    "body": "For at bruge stemmenoter skal du tillade mikrofonen for dette websted i browserens indstillinger (kig efter lås- eller indstillingsikonet ved adressen) og derefter holde knappen nede igen."
+  "mic": {
+    "on": "Mikrofon slået til",
+    "onHint": "Hold nu knappen nede og tal."
+  },
+  "blocked": {
+    "title": "Mikrofonen er blokeret",
+    "body": "Stemmenoter har brug for den. Tillad den for Pocket Pantry i din browser, og kom så tilbage og hold knappen nede igen.",
+    "safari": "iPhone, Safari",
+    "safariStep1": "Tryk på <b>aA</b> i adresselinjen",
+    "safariStep2": "<b>Webstedsindstillinger</b> → <b>Mikrofon</b> → <b>Tillad</b>",
+    "chrome": "Android, Chrome",
+    "chromeStep1": "Tryk på låsen ved adressen",
+    "chromeStep2": "<b>Tilladelser</b> → <b>Mikrofon</b> → <b>Tillad</b>",
+    "close": "Luk",
+    "retry": "Jeg har tilladt den",
+    "still": "Stadig blokeret. Tillad mikrofonen i din browser, og prøv igen."
   },
   "unavailable": "Denne browser kan ikke optage lyd, så stemmenoter er ikke tilgængelige her.",
-  "tooShort": "Hold knappen nede, mens du taler.",
-  "nothingHeard": "Jeg opfangede ikke noget, prøv igen",
-  "retry": "Prøv igen",
-  "dismiss": "Luk",
+  "voiceButton": {
+    "label": "Hold for at optage en stemmenote",
+    "blocked": "Mikrofon blokeret"
+  },
+  "listening": {
+    "title": "Lytter",
+    "starting": "Starter…",
+    "of": "/ 1:00",
+    "hint": "Slip for at sende · træk væk for at annullere",
+    "toShopping": "Går til din indkøbsliste. Sig “i spisekammeret” for at lægge på lager.",
+    "toPantry": "Går til dit spisekammer. Sig “på listen” for indkøbslisten.",
+    "tip": "Hold for at tale, slip for at sende",
+    "recording": "Optager",
+    "cancelArmed": "Slip for at annullere",
+    "slideBack": "Træk tilbage for at fortsætte optagelsen",
+    "left": "{{count}} s tilbage",
+    "tenLeft": "10 sekunder tilbage",
+    "cancelled": "Annulleret. Der blev ikke sendt noget.",
+    "stopped": "Stoppet efter 1 minut",
+    "stoppedHint": "Sender det, du sagde."
+  },
+  "languageMenu": {
+    "chipLabel": "Scansprog: {{language}}. Skift",
+    "title": "Scansprog",
+    "saved": "Scansprog: {{language}}",
+    "savedHint": "Bruges til stemmenoter og kameraet."
+  },
   "review": {
-    "title": "Stemmenote",
+    "title": "Gennemse",
+    "subline_one": "{{count}} ændring · intet gemmes, før du trykker Anvend",
+    "subline_other": "{{count}} ændringer · intet gemmes, før du trykker Anvend",
+    "sublineBoth_one": "{{count}} ændring på begge lister · intet gemmes, før du trykker Anvend",
+    "sublineBoth_other": "{{count}} ændringer på begge lister · intet gemmes, før du trykker Anvend",
+    "sublineNothing": "Intet at anvende",
     "heard": "Det jeg hørte",
-    "discard": "Kassér",
-    "apply": "Anvend",
+    "heardMeta": "{{language}} · {{duration}}",
     "lists": {
-      "shopping": "Indkøbslisten",
-      "pantry": "Spisekammeret"
+      "shopping": "Indkøbsliste",
+      "pantry": "Spisekammer"
     },
-    "notUnderstood": "Forstod ikke",
-    "unmatched": "ikke i kataloget",
-    "notFound": "Ikke fundet: {{name}}",
-    "ops": {
-      "setQuantity": "Sæt mængde",
+    "namedIt": "du nævnte den",
+    "couldnt": "Kunne ikke anvendes",
+    "notFound": "Ikke fundet:",
+    "notUnderstood": "Forstod ikke:",
+    "reason": {
+      "notFoundShopping": "Ingen {{name}} på din liste.",
+      "notFoundPantry": "Ingen {{name}} i dit spisekammer.",
+      "notUnderstood": "Prøv at sige det igen som en tilføjelse, et flueben eller en fjernelse."
+    },
+    "hide": "Skjul denne post: {{text}}",
+    "op": {
       "check": "Afkryds",
-      "addAndCheck": "Tilføj og afkryds",
+      "addChecked": "Tilføj, afkrydset",
+      "add": "Tilføj",
       "uncheck": "Fjern afkrydsning",
-      "remove": "Fjern fra listen"
+      "remove": "Fjern",
+      "removeAll": "Fjern alt",
+      "use": "Brug",
+      "setQuantity": "Ændr",
+      "runningLow": "Ved at løbe tør"
     },
-    "change": "Skift",
-    "changeMatch": "Skift match for {{name}}",
-    "remove": "Fjern {{name}}",
-    "pantry": {
-      "location": "Placering",
-      "chooseLocation": "Vælg en placering",
+    "detail": {
+      "onList": "På din liste",
+      "listSaid": "listen sagde {{amount}}",
+      "notOnList": "Ikke på listen, så den tilføjes afkrydset",
+      "backOnList": "Tilbage på listen",
+      "comesOff": "Kommer af listen",
+      "noAmount": "Ingen mængde",
+      "unmatched": "ikke i kataloget, gemt som sagt",
+      "lowToList": "ingen {{name}} i spisekammeret, så den kommer på listen",
+      "usual": "sædvanlig",
+      "default": "standard",
+      "expires": "udløber {{date}}",
+      "noExpiry": "ingen udløbsdato",
+      "noPlace": "Vælg et sted",
+      "takes": "Tager {{amount}} · {{date}}",
+      "noDate": "ingen udløbsdato",
+      "soonest": "udløber først",
+      "takesAll_one": "Tager hele {{count}} parti",
+      "takesAll_other": "Tager alle {{count}} partier",
+      "takesFrom_one": "Tager {{amount}} fra {{count}} parti, det tidligste først",
+      "takesFrom_other": "Tager {{amount}} fra {{count}} partier, det tidligste først",
+      "takesPicked": "Tager {{amount}} fra det valgte parti",
+      "needsBatch": "{{amount}} passer ikke til partier talt i {{unit}} · vælg et",
+      "lowHint": "Vises i Forslag, til et nyt parti kommer"
+    },
+    "edit": {
+      "heard": "Hørt:",
+      "amount": "Mængde",
+      "amountOf": "Mængde af {{name}}",
+      "unitOf": "Enhed for {{name}}",
       "expires": "Udløber",
       "noExpiry": "Ingen udløbsdato",
-      "noDate": "ingen udløbsdato",
-      "whole": "hele partiet",
-      "take": "tager {{amount}}",
-      "batch": "{{amount}} · udløber {{date}}",
-      "noAmount": "ingen mængde",
-      "pickLabel": "Hvilket parti {{name}}?",
-      "pickPrompt": "Vælg et parti",
-      "pickNeeded": "Vælg det parti, der skal tages fra.",
-      "runningLow": "Marker {{name}} som ved at slippe op",
-      "shoppingFallback": "Tilføj {{name}} til indkøbslisten"
+      "pickDate": "Vælg en dato",
+      "expiryTitle": "Udløber",
+      "fromSpeech": "fra det du sagde",
+      "defaultExpiry": "Standardudløb for denne Ingrediens",
+      "location": "Placering",
+      "locationDefault": "Ikke sagt, så det sædvanlige sted for denne Ingrediens",
+      "whichBatch": "Hvilket parti brugte du op?",
+      "ingredient": "Ingrediens",
+      "unmatched": "Ikke matchet",
+      "change": "Skift",
+      "changeIngredient": "Skift Ingrediens: {{name}}",
+      "searchLabel": "Søg i kataloget efter {{name}}",
+      "done": "Færdig",
+      "drop": "Drop denne ændring: {{verb}} {{name}}"
+    },
+    "footer": {
+      "discard": "Kassér",
+      "apply_one": "Anvend {{count}} ændring",
+      "apply_other": "Anvend {{count}} ændringer",
+      "pickBatch": "Vælg et parti først",
+      "pickPlace": "Vælg et sted først",
+      "applying": "Anvender",
+      "confirm": "Kassér denne Stemmenote?",
+      "confirmHint": "Intet ændres, og du må sige det igen.",
+      "keep": "Bliv ved at gennemse",
+      "discarded": "Stemmenote kasseret",
+      "discardedHint": "Intet blev ændret."
     }
   },
   "toast": {
-    "applied_one": "{{count}} stemmehandling anvendt.",
-    "applied_other": "{{count}} stemmehandlinger anvendt.",
-    "skipped": "Sprunget over: {{names}}."
+    "applied_one": "{{count}} anvendt",
+    "applied_other": "{{count}} anvendt",
+    "split": "{{applied}}: {{here}} {{hereList}}, {{there}} {{thereList}}",
+    "where": {
+      "shopping": "på listen",
+      "pantry": "i spisekammeret"
+    },
+    "skipped": "{{applied}}, {{skippedCount}}: {{reasons}}",
+    "skippedCount_one": "{{count}} sprunget over",
+    "skippedCount_other": "{{count}} sprunget over",
+    "skippedItem": "{{name}} {{reason}}",
+    "more": "+{{count}}",
+    "already": "{{name}} var allerede {{state}}, så den tæller som udført.",
+    "alreadyMany_one": "{{name}} og {{count}} mere var allerede udført, så de tæller som udført.",
+    "alreadyMany_other": "{{name}} og {{count}} mere var allerede udført, så de tæller som udført.",
+    "alreadyState": {
+      "check": "afkrydset",
+      "uncheck": "fjernet fra afkrydsning",
+      "remove": "fjernet fra listen",
+      "setQuantity": "på den mængde",
+      "runningLow": "markeret som ved at løbe tør",
+      "other": "udført"
+    }
   },
   "skipReason": {
     "shopping.quantity_too_large": "mængden er for stor",
-    "shopping.ingredient_not_found": "ingrediensen findes ikke længere",
+    "shopping.ingredient_not_found": "findes ikke længere",
     "voice.not_supported": "understøttes ikke endnu",
-    "voice.invalid_action": "ufuldstændig",
-    "pantry.batch_not_found": "partiet er allerede væk",
-    "voice.batch_required": "intet parti valgt",
-    "pantry.location_required": "ingen placering valgt",
-    "pantry.unit_required": "enhed påkrævet",
-    "pantry.ingredient_not_found": "ingrediensen er ikke længere tilgængelig",
+    "voice.invalid_action": "var ufuldstændig",
+    "pantry.batch_not_found": "er ikke længere i spisekammeret",
+    "voice.batch_required": "manglede et valgt parti",
+    "pantry.location_required": "manglede en placering",
+    "pantry.unit_required": "manglede en enhed",
+    "pantry.ingredient_not_found": "findes ikke længere",
     "shopping.item_not_found": "er ikke længere på listen",
     "shopping.list_changed": "listen er ændret",
-    "pantry.category_not_found": "kategorien er ikke længere tilgængelig",
-    "pantry.other_leaf_missing": "ingen passende kategori tilgængelig",
+    "pantry.category_not_found": "kategorien findes ikke længere",
+    "pantry.other_leaf_missing": "havde ingen passende kategori",
     "voice.item_not_found": "er ikke længere på listen",
     "other": "kunne ikke anvendes"
+  },
+  "send": {
+    "reading": "Læser din note",
+    "readingMeta": "{{duration}} tale · {{language}}",
+    "cancel": "Annuller",
+    "cancelled": "Annulleret. Intet blev gemt.",
+    "failed": "Kunne ikke sende",
+    "failedHint": "Ingen forbindelse. Din optagelse er gemt.",
+    "retry": "Prøv igen",
+    "discard": "Kassér",
+    "discarded": "Optagelse kasseret",
+    "nothing": "Jeg hørte ikke noget, prøv igen",
+    "nothingHint": "Hold knappen nede og tal tæt på telefonen. Denne tæller ikke med.",
+    "cap": "Det er dagens {{cap}} stemmenoter",
+    "capHint": "Stemmen er tilbage i morgen. Scanninger virker stadig.",
+    "ok": "OK",
+    "tooLongTitle": "Optagelsen er for lang",
+    "tooLong": "Optagelsen var for lang. Prøv en kortere.",
+    "unsupportedTitle": "Kan ikke læse optagelsen",
+    "unsupported": "Denne browsers optageformat understøttes ikke",
+    "tipBusy": "Læser stadig din sidste note",
+    "tipFailed": "Prøv igen eller kassér den sidste note først",
+    "noRecording": "Kan ikke optage her"
   }
 }

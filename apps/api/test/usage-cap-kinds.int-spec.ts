@@ -53,6 +53,18 @@ describe('Daily caps counted by kind (integration)', () => {
       params: { cap: 3 },
     });
 
+    // Only the Voice Cap says when it resets: the next UTC midnight of the charged day.
+    const refused = async (kind: 'voice' | 'scan') =>
+      (await cap.consume(memberId, now, kind).then(
+        () => undefined,
+        (error: { params: unknown }) => error,
+      ))!.params;
+    expect(await refused('voice')).toEqual({
+      cap: 2,
+      resetsAt: '2020-05-02T00:00:00.000Z',
+    });
+    expect(await refused('scan')).toEqual({ cap: 3 });
+
     // A refund hands back only its own kind.
     await cap.refund(memberId, '2020-05-01', 'voice');
     await cap.consume(memberId, now, 'voice');

@@ -1,87 +1,244 @@
 {
-  "button": {
-    "label": "Hold to talk",
-    "release": "Release to send",
-    "sending": "Sending…"
-  },
-  "recording": {
-    "label": "Recording",
-    "cancelHint": "slide away to cancel"
-  },
-  "explainer": {
-    "title": "Voice notes use your microphone",
-    "body": "Hold the button and say what you bought or used up. Your voice is turned into text for you to check. The recording is not stored.",
+  "intro": {
+    "title": "Say what you did",
+    "body": "Hold the button, speak, let go. You check every change before anything is saved.",
+    "privacy": "<b>Pocket Pantry needs your microphone</b> to hear Voice Notes. Your browser will ask next. The recording is turned into text to read your changes, then deleted; nothing is kept.",
+    "notNow": "Not now",
     "allow": "Allow microphone",
-    "notNow": "Not now"
+    "examples": {
+      "shopping": {
+        "one": {
+          "say": "Got the bread, take milk off",
+          "result": "Ticks bread, removes milk"
+        },
+        "two": {
+          "say": "Add two litres of milk",
+          "result": "Adds milk, 2 l"
+        },
+        "three": {
+          "say": "Put two yogurts in the fridge, they expire Friday",
+          "result": "Goes straight to the Pantry"
+        }
+      },
+      "pantry": {
+        "one": {
+          "say": "Two yogurts in the fridge, they expire Friday",
+          "result": "Adds a Batch of 2 pcs"
+        },
+        "two": {
+          "say": "We finished the milk",
+          "result": "Removes the milk expiring soonest"
+        },
+        "three": {
+          "say": "Running low on rice",
+          "result": "Marks rice running low"
+        }
+      }
+    }
   },
-  "denied": {
-    "title": "The microphone is blocked.",
-    "body": "To use voice notes, allow the microphone for this site in your browser settings (look for the lock or settings icon next to the address), then hold the button again."
+  "mic": {
+    "on": "Microphone on",
+    "onHint": "Now hold the button and speak."
   },
-  "unavailable": "This browser cannot record audio, so voice notes are not available here.",
-  "tooShort": "Hold the button while you speak.",
-  "nothingHeard": "Didn't catch anything, try again",
-  "retry": "Retry",
-  "dismiss": "Dismiss",
+  "blocked": {
+    "title": "The microphone is blocked",
+    "body": "Voice Notes need it. Allow it for Pocket Pantry in your browser, then come back and hold the button again.",
+    "safari": "iPhone, Safari",
+    "safariStep1": "Tap <b>aA</b> in the address bar",
+    "safariStep2": "<b>Website Settings</b> → <b>Microphone</b> → <b>Allow</b>",
+    "chrome": "Android, Chrome",
+    "chromeStep1": "Tap the lock next to the address",
+    "chromeStep2": "<b>Permissions</b> → <b>Microphone</b> → <b>Allow</b>",
+    "close": "Close",
+    "retry": "I've allowed it",
+    "still": "Still blocked. Allow the microphone in your browser, then try again."
+  },
+  "unavailable": "This browser cannot record audio, so Voice Notes are not available here.",
+  "voiceButton": {
+    "label": "Hold to record a Voice Note",
+    "blocked": "Microphone blocked"
+  },
+  "listening": {
+    "title": "Listening",
+    "starting": "Starting…",
+    "of": "/ 1:00",
+    "hint": "Let go to send · slide off to cancel",
+    "toShopping": "Goes to your Shopping List. Say “in the pantry” to add stock.",
+    "toPantry": "Goes to your Pantry. Say “on the list” for the Shopping List.",
+    "tip": "Hold to talk, let go to send",
+    "recording": "Recording",
+    "cancelArmed": "Let go to cancel",
+    "slideBack": "Slide back to keep recording",
+    "left": "{{count}} s left",
+    "tenLeft": "10 seconds left",
+    "cancelled": "Cancelled. Nothing was sent.",
+    "stopped": "Stopped at 1 minute",
+    "stoppedHint": "Sending what you said."
+  },
+  "languageMenu": {
+    "chipLabel": "Scan Language: {{language}}. Change",
+    "title": "Scan Language",
+    "saved": "Scan Language: {{language}}",
+    "savedHint": "Used for Voice Notes and the camera."
+  },
   "review": {
-    "title": "Voice note",
+    "title": "Review",
+    "subline_one": "{{count}} change · nothing is saved until you Apply",
+    "subline_other": "{{count}} changes · nothing is saved until you Apply",
+    "sublineBoth_one": "{{count}} change on both lists · nothing is saved until you Apply",
+    "sublineBoth_other": "{{count}} changes on both lists · nothing is saved until you Apply",
+    "sublineNothing": "Nothing to apply",
     "heard": "What I heard",
-    "discard": "Discard",
-    "apply": "Apply",
+    "heardMeta": "{{language}} · {{duration}}",
     "lists": {
       "shopping": "Shopping List",
       "pantry": "Pantry"
     },
-    "notUnderstood": "Didn't understand",
-    "unmatched": "not in the catalog",
-    "notFound": "Not found: {{name}}",
-    "ops": {
-      "setQuantity": "Set quantity",
-      "check": "Check",
-      "addAndCheck": "Add & check",
-      "uncheck": "Uncheck",
-      "remove": "Remove from list"
+    "namedIt": "you named it",
+    "couldnt": "Couldn't apply",
+    "notFound": "Not found:",
+    "notUnderstood": "Didn't understand:",
+    "reason": {
+      "notFoundShopping": "No {{name}} on your list.",
+      "notFoundPantry": "No {{name}} in your Pantry.",
+      "notUnderstood": "Try saying it again as an add, a tick or a remove."
     },
-    "change": "Change",
-    "changeMatch": "Change match for {{name}}",
-    "remove": "Remove {{name}}",
-    "pantry": {
-      "location": "Location",
-      "chooseLocation": "Choose a location",
+    "hide": "Hide this entry: {{text}}",
+    "op": {
+      "check": "Tick",
+      "addChecked": "Add, ticked",
+      "add": "Add",
+      "uncheck": "Untick",
+      "remove": "Remove",
+      "removeAll": "Remove all",
+      "use": "Use",
+      "setQuantity": "Change",
+      "runningLow": "Running low"
+    },
+    "detail": {
+      "onList": "On your list",
+      "listSaid": "list said {{amount}}",
+      "notOnList": "Not on your list, so it's added ticked",
+      "backOnList": "Back on your list",
+      "comesOff": "Comes off your list",
+      "noAmount": "No amount",
+      "unmatched": "not in the catalog, saved as said",
+      "lowToList": "no {{name}} in the Pantry, so it goes on the list",
+      "usual": "usual",
+      "default": "default",
+      "expires": "expires {{date}}",
+      "noExpiry": "no expiry",
+      "noPlace": "Pick a place",
+      "takes": "Takes {{amount}} · {{date}}",
+      "noDate": "no expiry date",
+      "soonest": "expiring soonest",
+      "takesAll_one": "Takes all {{count}} batch",
+      "takesAll_other": "Takes all {{count}} batches",
+      "takesFrom_one": "Takes {{amount}} from {{count}} batch, soonest first",
+      "takesFrom_other": "Takes {{amount}} from {{count}} batches, soonest first",
+      "takesPicked": "Takes {{amount}} from the batch you picked",
+      "needsBatch": "{{amount}} doesn't fit batches counted in {{unit}} · pick one",
+      "lowHint": "Shows in Suggestions until a new batch arrives"
+    },
+    "edit": {
+      "heard": "Heard:",
+      "amount": "Amount",
+      "amountOf": "Amount of {{name}}",
+      "unitOf": "Unit of {{name}}",
       "expires": "Expires",
       "noExpiry": "No expiry",
-      "noDate": "no expiry date",
-      "whole": "all of it",
-      "take": "takes {{amount}}",
-      "batch": "{{amount}} · expires {{date}}",
-      "noAmount": "no amount",
-      "pickLabel": "Which batch of {{name}}?",
-      "pickPrompt": "Choose a batch",
-      "pickNeeded": "Pick a batch to take it from.",
-      "runningLow": "Flag {{name}} as running low",
-      "shoppingFallback": "Add {{name}} to the Shopping List"
+      "pickDate": "Pick a date",
+      "expiryTitle": "Expires",
+      "fromSpeech": "from what you said",
+      "defaultExpiry": "Default Expiry for this Ingredient",
+      "location": "Location",
+      "locationDefault": "Not said, so the usual place for this Ingredient",
+      "whichBatch": "Which batch did you use up?",
+      "ingredient": "Ingredient",
+      "unmatched": "Unmatched",
+      "change": "Change",
+      "changeIngredient": "Change Ingredient: {{name}}",
+      "searchLabel": "Search the catalog for {{name}}",
+      "done": "Done",
+      "drop": "Drop this change: {{verb}} {{name}}"
+    },
+    "footer": {
+      "discard": "Discard",
+      "apply_one": "Apply {{count}} change",
+      "apply_other": "Apply {{count}} changes",
+      "pickBatch": "Pick a batch first",
+      "pickPlace": "Pick a place first",
+      "applying": "Applying",
+      "confirm": "Discard this Voice Note?",
+      "confirmHint": "Nothing changes, and you'll have to say it again.",
+      "keep": "Keep reviewing",
+      "discarded": "Voice Note discarded",
+      "discardedHint": "Nothing was changed."
     }
   },
   "toast": {
-    "applied_one": "Applied {{count}} voice action.",
-    "applied_other": "Applied {{count}} voice actions.",
-    "skipped": "Skipped: {{names}}."
+    "applied_one": "{{count}} applied",
+    "applied_other": "{{count}} applied",
+    "split": "{{applied}}: {{here}} {{hereList}}, {{there}} {{thereList}}",
+    "where": {
+      "shopping": "on the list",
+      "pantry": "in the Pantry"
+    },
+    "skipped": "{{applied}}, {{skippedCount}}: {{reasons}}",
+    "skippedCount_one": "{{count}} skipped",
+    "skippedCount_other": "{{count}} skipped",
+    "skippedItem": "{{name}} {{reason}}",
+    "more": "+{{count}}",
+    "already": "{{name}} was already {{state}}, so that one counts as done.",
+    "alreadyMany_one": "{{name}} and {{count}} more were already done, so those count as done.",
+    "alreadyMany_other": "{{name}} and {{count}} more were already done, so those count as done.",
+    "alreadyState": {
+      "check": "ticked",
+      "uncheck": "unticked",
+      "remove": "off the list",
+      "setQuantity": "at that amount",
+      "runningLow": "marked as running low",
+      "other": "done"
+    }
   },
   "skipReason": {
     "shopping.quantity_too_large": "amount too large",
-    "shopping.ingredient_not_found": "ingredient no longer available",
+    "shopping.ingredient_not_found": "no longer available",
     "voice.not_supported": "not supported yet",
-    "voice.invalid_action": "incomplete",
-    "pantry.batch_not_found": "that batch is already gone",
-    "voice.batch_required": "no batch picked",
-    "pantry.location_required": "no location chosen",
-    "pantry.unit_required": "unit needed",
-    "pantry.ingredient_not_found": "ingredient no longer available",
+    "voice.invalid_action": "was incomplete",
+    "pantry.batch_not_found": "no longer in Pantry",
+    "voice.batch_required": "needed a batch picked",
+    "pantry.location_required": "needed a location",
+    "pantry.unit_required": "needed a unit",
+    "pantry.ingredient_not_found": "no longer available",
     "shopping.item_not_found": "no longer on the list",
-    "shopping.list_changed": "the list changed",
+    "shopping.list_changed": "list changed",
     "pantry.category_not_found": "category no longer available",
-    "pantry.other_leaf_missing": "no matching category available",
+    "pantry.other_leaf_missing": "had no matching category",
     "voice.item_not_found": "no longer on the list",
     "other": "could not be applied"
+  },
+  "send": {
+    "reading": "Reading your note",
+    "readingMeta": "{{duration}} of speech · {{language}}",
+    "cancel": "Cancel",
+    "cancelled": "Cancelled. Nothing was saved.",
+    "failed": "Couldn't send",
+    "failedHint": "No connection. Your recording is kept.",
+    "retry": "Retry",
+    "discard": "Discard",
+    "discarded": "Recording discarded",
+    "nothing": "Didn't catch anything, try again",
+    "nothingHint": "Hold the button and speak close to the phone. This one doesn't count.",
+    "cap": "That's today's {{cap}} Voice Notes",
+    "capHint": "Voice is back tomorrow. Scans still work.",
+    "ok": "OK",
+    "tooLongTitle": "Recording too long",
+    "tooLong": "That recording was too long. Try a shorter one.",
+    "unsupportedTitle": "Can't read this recording",
+    "unsupported": "This browser's recording format isn't supported",
+    "tipBusy": "Still reading your last note",
+    "tipFailed": "Retry or discard the last note first",
+    "noRecording": "Can't record here"
   }
 }

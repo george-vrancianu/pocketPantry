@@ -29,7 +29,12 @@ export function shoppingRemoveHandler(
         if (target) {
           await shopping.removeInTransaction(ctx.tx, ctx.memberId, target.id);
         }
-        return { applied: true };
+        return {
+          applied: true,
+          list: 'shopping',
+          ...(target ? { rowId: target.id } : {}),
+          alreadyDone: !target,
+        };
       }),
   };
 }

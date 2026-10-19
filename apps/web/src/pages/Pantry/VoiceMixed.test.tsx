@@ -1,56 +1,28 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Recording } from '../../lib/microphone';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
+import {
+  holdLongEnough,
+  pressDown,
+  useVoiceTimers,
+} from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
+import {
+  recording,
+  voiceAction as action,
+  voiceIngredient as ingredient,
+} from '../../test/voice';
 import { PantryPage } from './PantryPage';
 
 const mic = vi.hoisted(() => ({ start: vi.fn() }));
 vi.mock('../../lib/microphone', () => ({
   startRecording: mic.start,
+  permissionState: vi.fn(async () => 'granted'),
+  requestPermission: vi.fn(async () => undefined),
+  watchPermission: () => () => {},
   MicrophoneError: class MicrophoneError extends Error {},
 }));
-
-const recording: Recording = {
-  blob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
-  mimeType: 'audio/webm;codecs=opus',
-  durationMs: 3000,
-};
-
-const ingredient = (id: string, name: string) => ({
-  owner: 'catalog',
-  amountScale: 'medium',
-  id,
-  name,
-  defaultUnit: 'pcs',
-  leafCategory: { id: 'leaf', name: 'Leaf' },
-  parentCategory: {
-    id: 'parent',
-    name: 'Parent',
-    aisle: { id: 'aisle', name: 'Aisle' },
-  },
-  defaults: { expiryDays: 7, location: 'fridge' },
-});
-
-const action = (overrides: Record<string, unknown>) => ({
-  id: 'a1',
-  status: 'ready',
-  target: 'pantry',
-  op: 'add',
-  text: 'x',
-  ingredient: null,
-  name: null,
-  quantity: null,
-  unit: null,
-  scope: null,
-  expiresOn: null,
-  noExpiry: false,
-  location: null,
-  rows: {},
-  defaults: {},
-  ...overrides,
-});
 
 // "put the yogurts in the pantry, got the bread, and add milk" said on the Pantry page.
 const mixed = [
@@ -78,13 +50,14 @@ const mixed = [
 
 describe('A Voice Note across both lists', () => {
   beforeEach(() => {
+    useVoiceTimers();
     resetVoiceNote();
-    localStorage.setItem('pp.voice.micExplained', '1');
     mic.start.mockReset();
     mic.start.mockImplementation(() =>
       Promise.resolve({
         stop: vi.fn(() => Promise.resolve(recording)),
         cancel: vi.fn(),
+        level: vi.fn(() => 0),
       }),
     );
     const { fetchMock } = stubApi({
@@ -101,7 +74,14 @@ describe('A Voice Note across both lists', () => {
       'POST /api/voice/apply': () =>
         Response.json(
           {
-            applied: ['m'],
+            applied: [
+              {
+                actionId: 'm',
+                list: 'shopping',
+                rowId: 'i1',
+                alreadyDone: false,
+              },
+            ],
             skipped: [
               { id: 'y', reason: 'pantry.location_required' },
               { id: 'b', reason: 'shopping.item_not_found' },
@@ -112,42 +92,59 @@ describe('A Voice Note across both lists', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   async function openReview() {
     const view = renderWithProviders(<PantryPage />);
-    const button = await screen.findByRole('button', { name: /hold to talk/i });
-    fireEvent.pointerDown(button);
-    await screen.findByRole('status');
+    const button = await screen.findByRole('button', {
+      name: /hold to record a voice note/i,
+    });
+    pressDown(button);
+    await screen.findByText('Listening');
+    await holdLongEnough();
     fireEvent.pointerUp(button);
     return { ...view, dialog: await screen.findByRole('dialog') };
   }
 
-  it('groups the Voice Actions under Shopping List and Pantry headings', async () => {
+  it('puts the Pantry first on the Pantry page, with the Shopping List tagged "you named it"', async () => {
     const { dialog } = await openReview();
-    const shopping = within(
-      await within(dialog).findByRole('region', { name: 'Shopping List' }),
-    );
-    const pantry = within(
-      within(dialog).getByRole('region', { name: 'Pantry' }),
-    );
+    const review = within(dialog);
+    expect(
+      await review.findByText(
+        '3 changes on both lists · nothing is saved until you Apply',
+      ),
+    ).toBeVisible();
+
+    const regions = review.getAllByRole('region');
+    expect(regions.map((r) => r.getAttribute('aria-label'))).toEqual([
+      'Pantry',
+      'Shopping List',
+    ]);
+    const pantry = within(regions[0]);
+    const shopping = within(regions[1]);
+    expect(pantry.getByText('Yogurt')).toBeVisible();
+    expect(pantry.queryByText('you named it')).toBeNull();
     expect(shopping.getByText('Bread')).toBeVisible();
     expect(shopping.getByText('Milk')).toBeVisible();
+    expect(shopping.getByText('you named it')).toBeVisible();
     expect(shopping.queryByText('Yogurt')).toBeNull();
-    expect(pantry.getByText('Yogurt')).toBeVisible();
   });
 
   it('names every skipped Voice Action across both lists and refreshes both lists', async () => {
     const { dialog, queryClient } = await openReview();
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
     await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Apply' }),
+      await within(dialog).findByRole('button', { name: 'Apply 3 changes' }),
     );
 
-    const toast = await screen.findByText(/Applied 1 voice action\./);
-    expect(toast).toHaveTextContent(
-      /Skipped: Yogurt \(no location chosen\), Bread \(no longer on the list\)\./,
-    );
+    expect(
+      await screen.findByText(
+        '1 applied, 2 skipped: yogurt needed a location, bread no longer on the list',
+      ),
+    ).toBeVisible();
     await waitFor(() => {
       const keys = invalidate.mock.calls.map(
         ([filters]) => filters?.queryKey?.[0],

@@ -246,7 +246,15 @@ describe('Voice Note (integration)', () => {
     await note(cookie).expect(201);
     await note(cookie).expect(201);
     const response = await note(cookie).expect(429);
-    expect((response.body as { code: string }).code).toBe('voice.cap_reached');
+    const body = response.body as {
+      code: string;
+      params: { cap: number; resetsAt: string };
+    };
+    expect(body.code).toBe('voice.cap_reached');
+    expect(body.params.cap).toBe(2);
+    // The reset is a UTC midnight in the future (the exact date is checked in usage-cap-kinds).
+    expect(body.params.resetsAt).toMatch(/T00:00:00\.000Z$/);
+    expect(Date.parse(body.params.resetsAt)).toBeGreaterThan(Date.now());
     expect(calls).toHaveLength(2);
     expect(await usage(memberId, 'voice')).toBe(2);
     expect(await usage(memberId, 'scan')).toBe(0);
@@ -509,6 +517,7 @@ describe('Voice Note (integration)', () => {
         ).body as {
           groups: {
             items: {
+              id: string;
               name: string;
               quantity: number | null;
               unit: string | null;
@@ -551,11 +560,30 @@ describe('Voice Note (integration)', () => {
         ),
         add({ name }, 'a3'),
       ]).expect(201);
+      const items = await list(cookie);
       expect(response.body).toEqual({
-        applied: ['a1', 'a2', 'a3'],
+        applied: [
+          {
+            actionId: 'a1',
+            list: 'shopping',
+            rowId: items.find((i) => i.name === 'Eggs')?.id,
+            alreadyDone: false,
+          },
+          {
+            actionId: 'a2',
+            list: 'shopping',
+            rowId: items.find((i) => i.quantity === 2)?.id,
+            alreadyDone: false,
+          },
+          {
+            actionId: 'a3',
+            list: 'shopping',
+            rowId: items.find((i) => i.name === name)?.id,
+            alreadyDone: false,
+          },
+        ],
         skipped: [],
       });
-      const items = await list(cookie);
       expect(items).toHaveLength(3);
       expect(items.find((i) => i.name === name)).toMatchObject({
         unmatched: true,
@@ -607,7 +635,20 @@ describe('Voice Note (integration)', () => {
         { ...add({ name: 'Bread' }, 'pantry'), target: 'pantry', op: 'check' },
       ]).expect(201);
       expect(response.body).toEqual({
-        applied: ['ok', 'big'],
+        applied: [
+          {
+            actionId: 'ok',
+            list: 'shopping',
+            rowId: expect.any(String) as string,
+            alreadyDone: false,
+          },
+          {
+            actionId: 'big',
+            list: 'shopping',
+            rowId: expect.any(String) as string,
+            alreadyDone: false,
+          },
+        ],
         skipped: [
           { id: 'gone', reason: 'shopping.ingredient_not_found' },
           { id: 'empty', reason: 'voice.invalid_action' },

@@ -1,45 +1,64 @@
 import { useSyncExternalStore } from 'react';
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
+import type { ScanLanguage } from '../i18n/resources';
 import type { Recording } from './microphone';
+import { keepScreenAwake } from './wakeLock';
 import type { VoiceList, VoiceNoteResult, VoiceReviewAction } from './voice';
 
+/** Where the Voice Note is: the hold-to-talk button, the status pill and Review all read this. */
+export type VoicePhase =
+  | 'idle'
+  | 'recording'
+  | 'reading'
+  | 'failed'
+  | 'review'
+  /** Review while Apply is in flight; an error sends it back to `review` with the edits kept. */
+  | 'applying';
+
 /** Why the last Voice Note did not reach Review. */
-type VoiceNotice =
-  | { kind: 'denied' }
-  | { kind: 'unavailable' }
-  | { kind: 'tooShort' }
-  | { kind: 'nothingHeard' }
-  | { kind: 'failed'; message: string; canRetry: boolean };
+export type VoiceErrorCode =
+  | 'unavailable'
+  | 'nothingHeard'
+  /** The send failed (no signal, provider down): the recording is kept for Retry. */
+  | 'failed'
+  | 'tooLong'
+  | 'unsupported'
+  /** The Voice Cap is used up; the number is in `voiceCap`. */
+  | 'capReached';
 
-/** A Voice Note being reviewed: what was said, and the Voice Actions as the Member is editing them. */
-type VoiceReviewNote = {
-  transcript: string;
-  actions: VoiceReviewAction[];
-  /** The list of the page that recorded it. */
-  defaultTarget: VoiceList;
+export type VoiceNoteState = {
+  phase: VoicePhase;
+  /** The page that recorded: the default target of the Voice Note. */
+  page: VoiceList;
+  /** The audio, kept in memory while it is read and for Retry after a failed send. */
+  recording?: {
+    blob: Blob;
+    mimeType: string;
+    durationMs: number;
+    scanLanguage: ScanLanguage;
+  };
+  /** What the server read from the recording, then as the Member edits it. */
+  proposal?: { transcript: string; actions: VoiceReviewAction[] };
+  error?: VoiceErrorCode;
+  /** The translated server message when `error` is `failed`. */
+  errorMessage?: string;
+  /** The Voice Cap, once the server reported it reached. In memory only; a reload drops it. */
+  voiceCap?: { cap: number; resetsAt: number };
 };
 
-type VoiceNoteState = {
-  sending: boolean;
-  notice: VoiceNotice | null;
-  /** A recording that failed to send, kept for Retry; never persisted, so a reload drops it. */
-  pending: Recording | null;
-  note: VoiceReviewNote | null;
-};
-
-const initial: VoiceNoteState = {
-  sending: false,
-  notice: null,
-  pending: null,
-  note: null,
-};
+const initial: VoiceNoteState = { phase: 'idle', page: 'shopping' };
 
 let state = initial;
 const listeners = new Set<() => void>();
 
-function set(patch: Partial<VoiceNoteState>) {
-  state = { ...state, ...patch };
+const emit = () => {
   for (const listener of listeners) listener();
+};
+
+/** Replaces the transient fields; the Voice Cap is only touched by `setCap`. */
+function go(next: Omit<VoiceNoteState, 'voiceCap'>) {
+  state = { ...next, voiceCap: state.voiceCap };
+  emit();
 }
 
 /**
@@ -48,27 +67,77 @@ function set(patch: Partial<VoiceNoteState>) {
  * drops the Voice Note.
  */
 export const voiceNote = {
-  setSending: (sending: boolean) => set({ sending }),
-  setNotice: (notice: VoiceNotice | null) => set({ notice }),
-  setPending: (pending: Recording | null) => set({ pending }),
-  open(result: VoiceNoteResult, defaultTarget: VoiceList) {
-    set({
-      note: {
-        transcript: result.transcript,
-        actions: result.actions,
-        defaultTarget,
+  /** The microphone is on and the Member is speaking. */
+  startRecording: (page: VoiceList) => go({ phase: 'recording', page }),
+  /** The Member let go or slid off to cancel without sending. */
+  cancelRecording: () => go({ phase: 'idle', page: state.page }),
+  /** The recording is being sent and read; `page` is the list the note is sent to. */
+  read(audio: Recording, scanLanguage: ScanLanguage, page: VoiceList) {
+    go({
+      phase: 'reading',
+      page,
+      recording: {
+        blob: audio.blob,
+        mimeType: audio.mimeType,
+        durationMs: audio.durationMs,
+        scanLanguage,
       },
     });
   },
-  discard: () => set({ note: null }),
-  remove(id: string) {
-    if (!state.note) return;
-    set({
-      note: {
-        ...state.note,
-        actions: state.note.actions.filter((a) => a.id !== id),
-      },
+  /** The Voice Note did not reach Review; `keepRecording` holds the audio for Retry. */
+  fail(
+    error: VoiceErrorCode,
+    options: { message?: string; keepRecording?: boolean } = {},
+  ) {
+    go({
+      phase: 'failed',
+      page: state.page,
+      recording: options.keepRecording ? state.recording : undefined,
+      error,
+      errorMessage: options.message,
     });
+  },
+  /** The server read the recording: open Review on the Voice Actions. */
+  review(result: VoiceNoteResult) {
+    go({
+      phase: 'review',
+      page: state.page,
+      // Kept for Review's "English · 0:09"; a discard or Apply drops it with the rest.
+      recording: state.recording,
+      proposal: { transcript: result.transcript, actions: result.actions },
+    });
+  },
+  /** Apply was sent: Review stays open, its buttons disabled. */
+  applying() {
+    if (state.phase !== 'review') return;
+    state = { ...state, phase: 'applying' };
+    emit();
+  },
+  /** Apply failed: back to Review with every edit kept. */
+  applyFailed() {
+    if (state.phase !== 'applying') return;
+    state = { ...state, phase: 'review' };
+    emit();
+  },
+  /** Drops a failure and its kept recording. */
+  dismiss: () => go({ phase: 'idle', page: state.page }),
+  /** Closes Review without applying; not while Apply is in flight. */
+  discard() {
+    if (state.phase === 'applying') return;
+    go({ phase: 'idle', page: state.page });
+  },
+  /** Closes Review once Apply has succeeded. */
+  applied: () => go({ phase: 'idle', page: state.page }),
+  remove(id: string) {
+    if (!state.proposal) return;
+    state = {
+      ...state,
+      proposal: {
+        ...state.proposal,
+        actions: state.proposal.actions.filter((a) => a.id !== id),
+      },
+    };
+    emit();
   },
   edit(
     id: string,
@@ -84,21 +153,88 @@ export const voiceNote = {
       defaults: VoiceReviewAction['defaults'];
     }>,
   ) {
-    if (!state.note) return;
-    set({
-      note: {
-        ...state.note,
-        actions: state.note.actions.map((a) =>
+    if (!state.proposal) return;
+    state = {
+      ...state,
+      proposal: {
+        ...state.proposal,
+        actions: state.proposal.actions.map((a) =>
           a.id === id ? { ...a, ...patch } : a,
         ),
       },
-    });
+    };
+    emit();
+  },
+  /**
+   * The server refused for the Voice Cap; `resetsAt` is an ISO timestamp. One that is missing or
+   * unreadable counts as the next UTC midnight (the Voice Cap's day is a UTC day), so the button
+   * is never stuck capped for good nor wrongly free at once.
+   */
+  setCap(cap: { cap: number; resetsAt?: string }) {
+    const parsed = Date.parse(cap.resetsAt ?? '');
+    state = {
+      ...state,
+      voiceCap: {
+        cap: cap.cap,
+        resetsAt: Number.isNaN(parsed) ? nextUtcMidnight(Date.now()) : parsed,
+      },
+    };
+    emit();
   },
 };
 
+const nextUtcMidnight = (now: number) => {
+  const day = new Date(now);
+  return Date.UTC(
+    day.getUTCFullYear(),
+    day.getUTCMonth(),
+    day.getUTCDate() + 1,
+  );
+};
+
+/** Whether the Voice Cap is still in force at `now` (ms). It lifts at the server's reset time. */
+export function isVoiceCapReached(now: number = Date.now()): boolean {
+  return state.voiceCap !== undefined && now < state.voiceCap.resetsAt;
+}
+
+/**
+ * What outlives the page that started a Voice Note, so the pill on either page can reach it: the request
+ * being read (Cancel aborts it) and the lock that keeps the screen awake until it ends.
+ */
+let read: AbortController | undefined;
+let release: (() => void) | undefined;
+
+export const beginRead = (request: AbortController) => {
+  read = request;
+};
+/** Forgets the read, unless a newer one has taken its place. */
+export const endRead = (request: AbortController) => {
+  if (read === request) read = undefined;
+};
+export const isReading = () => read !== undefined;
+/** Aborts the read in flight, if any. */
+export const abortRead = () => {
+  read?.abort();
+  read = undefined;
+};
+/** Keeps the screen awake from the press until the note is settled (Review, a notice, cancelled). */
+export const stayAwake = () => {
+  release ??= keepScreenAwake();
+};
+export const releaseAwake = () => {
+  release?.();
+  release = undefined;
+};
+
+/** Whether the status pill is up (reading, or a failure or notice) for this phase. */
+export const isPillUp = (phase: VoicePhase) =>
+  phase === 'reading' || phase === 'failed';
+
 export function resetVoiceNote() {
+  abortRead();
+  releaseAwake();
   state = initial;
-  for (const listener of listeners) listener();
+  emit();
 }
 
 const subscribe = (listener: () => void) => {

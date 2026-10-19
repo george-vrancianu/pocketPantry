@@ -47,6 +47,13 @@ export type SheetProps = {
    * content, up to the same 90 dvh, for short sheets such as a single field.
    */
   size?: 'tall' | 'content';
+  /**
+   * `false` makes a sheet the Member must answer, such as Review: a scrim tap and
+   * Escape do not call `onClose`. Default `true`.
+   */
+  dismissable?: boolean;
+  /** Only when not dismissable: called for Escape, so the caller can ask first ("Discard?"). */
+  onEscape?: () => void;
 };
 
 const SlideUp = forwardRef(function SlideUp(
@@ -71,6 +78,8 @@ export function Sheet({
   footer,
   children,
   size = 'tall',
+  dismissable = true,
+  onEscape,
 }: SheetProps) {
   const centred = useBreakpointUp('md');
   const reduceMotion = usePrefersReducedMotion();
@@ -83,7 +92,10 @@ export function Sheet({
   return (
     <MuiDialog
       open={open}
-      onClose={onClose}
+      onClose={(_event, reason) => {
+        if (dismissable) onClose();
+        else if (reason === 'escapeKeyDown') onEscape?.();
+      }}
       fullWidth
       maxWidth={centred ? 'sm' : false}
       slots={centred ? undefined : { transition: SlideUp }}
