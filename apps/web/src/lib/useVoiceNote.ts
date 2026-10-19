@@ -173,6 +173,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   /** Throw the recording away without a word (a tap too quick to be a note). */
   const discardRecording = useCallback(() => {
     held.current = false;
+    tipOnArrival.current = false;
     setPressing(false);
     settle();
     const active = session.current;

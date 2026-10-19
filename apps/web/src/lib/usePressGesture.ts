@@ -37,6 +37,8 @@ export function usePressGesture({ active, start, send, cancel }: Press) {
   const [armed, setArmed] = useState(false);
   const armedRef = useRef(false);
   const pointerDown = useRef(false);
+  /** The pointer that started the press: other fingers' moves, lifts and cancels are not ours. */
+  const pointerId = useRef(-1);
   const lastRelease = useRef(Number.NEGATIVE_INFINITY);
 
   const arm = useCallback((value: boolean) => {
@@ -82,15 +84,17 @@ export function usePressGesture({ active, start, send, cancel }: Press) {
         // No active pointer to capture (e.g. a synthetic event).
       }
       pointerDown.current = true;
+      pointerId.current = event.pointerId;
       disarm();
       start();
     },
     onPointerMove(event: PointerEvent<HTMLElement>) {
       if (!pointerDown.current || !active) return;
+      if (event.pointerId !== pointerId.current) return;
       arm(outsideBy(event) > CANCEL_DISTANCE);
     },
-    onPointerUp() {
-      if (!pointerDown.current) return;
+    onPointerUp(event: PointerEvent<HTMLElement>) {
+      if (!pointerDown.current || event.pointerId !== pointerId.current) return;
       pointerDown.current = false;
       lastRelease.current = Date.now();
       if (armedRef.current) {
@@ -98,10 +102,12 @@ export function usePressGesture({ active, start, send, cancel }: Press) {
         cancel();
       } else send();
     },
-    onLostPointerCapture() {
+    onLostPointerCapture(event: PointerEvent<HTMLElement>) {
+      if (event.pointerId !== pointerId.current) return;
       pointerDown.current = false;
     },
-    onPointerCancel() {
+    onPointerCancel(event: PointerEvent<HTMLElement>) {
+      if (event.pointerId !== pointerId.current) return;
       pointerDown.current = false;
       lastRelease.current = Date.now();
       disarm();

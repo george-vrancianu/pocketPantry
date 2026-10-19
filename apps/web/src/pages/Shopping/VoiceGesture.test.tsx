@@ -10,7 +10,12 @@ import {
   type Mock,
 } from 'vitest';
 import type { Recording } from '../../lib/microphone';
-import { holdFor, holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
+import {
+  holdFor,
+  holdLongEnough,
+  pressDown,
+  useVoiceTimers,
+} from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import { Route, Routes } from 'react-router-dom';
@@ -84,7 +89,7 @@ function place(button: HTMLElement) {
 async function hold() {
   const button = await talkButton();
   place(button);
-  fireEvent.pointerDown(button, { clientX: 130, clientY: 530 });
+  pressDown(button, { clientX: 130, clientY: 530 });
   await screen.findByText('Listening');
   await holdLongEnough();
   return button;
@@ -228,10 +233,51 @@ describe('the recording gesture on the Shopping List', () => {
       setup();
       renderWithProviders(<ShoppingPage />);
       const button = await talkButton();
-      fireEvent.pointerDown(button, { isPrimary: false });
-      fireEvent.pointerDown(button, { button: 2 });
+      pressDown(button, { isPrimary: false });
+      pressDown(button, { button: 2 });
       await holdFor(100);
       expect(mic.start).not.toHaveBeenCalled();
+    });
+
+    it('is not ended by a second finger lifting or being cancelled', async () => {
+      const { sent } = setup();
+      renderWithProviders(<ShoppingPage />);
+      const button = await hold();
+      fireEvent.pointerUp(button, { pointerId: 2, isPrimary: false });
+      fireEvent.pointerCancel(button, { pointerId: 2, isPrimary: false });
+      fireEvent.lostPointerCapture(button, { pointerId: 2 });
+      expect(session.cancel).not.toHaveBeenCalled();
+      expect(screen.getByText('Listening')).toBeVisible();
+      expect(sent).toHaveLength(0);
+
+      fireEvent.pointerUp(button);
+      await screen.findByRole('dialog');
+      expect(sent).toHaveLength(1);
+    });
+
+    it('has the destination as the button description', async () => {
+      setup();
+      renderWithProviders(<ShoppingPage />);
+      expect(await talkButton()).toHaveAccessibleDescription(/shopping/i);
+    });
+
+    it('shows only Cancelled, not the hold tip, after a quick release then Escape before the stream arrives', async () => {
+      let arrive: (value: ReturnType<typeof fakeSession>) => void = () => {};
+      mic.start.mockImplementation(
+        () => new Promise((resolve) => (arrive = resolve)),
+      );
+      setup();
+      renderWithProviders(<ShoppingPage />);
+      const button = await talkButton();
+      pressDown(button, { clientX: 130, clientY: 530 });
+      await screen.findByText('Starting…');
+      await holdLongEnough();
+      fireEvent.pointerUp(button);
+      await userEvent.keyboard('{Escape}');
+      expect(await screen.findByText(cancelledToast)).toBeVisible();
+      await act(async () => arrive(session));
+      await holdFor(1_000);
+      expect(screen.queryByText('Hold to talk, let go to send')).toBeNull();
     });
 
     it('says Cancelled even when the stream had not arrived yet, and then records nothing', async () => {
@@ -242,7 +288,7 @@ describe('the recording gesture on the Shopping List', () => {
       const { sent } = setup();
       renderWithProviders(<ShoppingPage />);
       const button = await talkButton();
-      fireEvent.pointerDown(button, { clientX: 130, clientY: 530 });
+      pressDown(button, { clientX: 130, clientY: 530 });
       await screen.findByText('Starting…');
       await userEvent.keyboard('{Escape}');
 
@@ -261,7 +307,7 @@ describe('the recording gesture on the Shopping List', () => {
       const { sent } = setup();
       const view = renderWithProviders(<ShoppingPage />);
       const button = await talkButton();
-      fireEvent.pointerDown(button);
+      pressDown(button);
       await screen.findByText('Starting…');
       view.unmount();
 
@@ -406,7 +452,7 @@ describe('the recording gesture on the Shopping List', () => {
       renderWithProviders(<ShoppingPage />);
       const button = await talkButton();
       place(button);
-      fireEvent.pointerDown(button, { clientX: 130, clientY: 530 });
+      pressDown(button, { clientX: 130, clientY: 530 });
       const card = (await screen.findByText('Listening')).closest(
         '[role="status"]',
       )!;
@@ -501,7 +547,7 @@ describe('the recording gesture on the Shopping List', () => {
       setup();
       renderWithProviders(<ShoppingPage />);
       const button = await talkButton();
-      fireEvent.pointerDown(button);
+      pressDown(button);
       await screen.findByText('Listening');
       fireEvent.pointerUp(button);
       await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
@@ -553,12 +599,12 @@ describe('the recording gesture on the Shopping List', () => {
       await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
 
       const button = await talkButton();
-      fireEvent.pointerDown(button);
+      pressDown(button);
       await screen.findByText('Listening');
       fireEvent.pointerCancel(button);
       await waitFor(() => expect(released).toHaveBeenCalledTimes(2));
 
-      fireEvent.pointerDown(button);
+      pressDown(button);
       await screen.findByText('Listening');
       await holdFor(60_000);
       await screen.findByRole('dialog');

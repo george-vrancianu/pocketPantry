@@ -8,7 +8,12 @@ import {
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
-import { holdFor, holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
+import {
+  holdFor,
+  holdLongEnough,
+  pressDown,
+  useVoiceTimers,
+} from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { getVoiceNoteState, resetVoiceNote } from '../../lib/voiceNoteStore';
 import { ShoppingPage } from './ShoppingPage';
@@ -75,7 +80,7 @@ const talkButton = () =>
 
 async function hold() {
   const button = await talkButton();
-  fireEvent.pointerDown(button);
+  pressDown(button);
   await screen.findByText('Listening');
   await holdLongEnough();
   return button;
@@ -147,7 +152,7 @@ describe('Voice Note on the Shopping List', () => {
     renderWithProviders(<ShoppingPage />);
 
     const button = await talkButton();
-    fireEvent.pointerDown(button);
+    pressDown(button);
     fireEvent.pointerUp(button);
     await act(async () => ready(session));
 
@@ -165,7 +170,7 @@ describe('Voice Note on the Shopping List', () => {
     );
     renderWithProviders(<ShoppingPage />);
 
-    fireEvent.pointerDown(await talkButton());
+    pressDown(await talkButton());
     expect(await screen.findByText('Starting…')).toBeVisible();
     expect(screen.queryByText('Listening')).toBeNull();
 
@@ -179,7 +184,7 @@ describe('Voice Note on the Shopping List', () => {
     renderWithProviders(<ShoppingPage />);
 
     const button = await talkButton();
-    fireEvent.pointerDown(button);
+    pressDown(button);
     await screen.findByText('Listening');
     await act(() => vi.advanceTimersByTimeAsync(150));
     fireEvent.pointerUp(button);
@@ -204,7 +209,7 @@ describe('Voice Note on the Shopping List', () => {
     const button = await talkButton();
     vi.useFakeTimers();
 
-    fireEvent.pointerDown(button);
+    pressDown(button);
     await holdFor(299);
     fireEvent.pointerUp(button);
     await holdFor(0);
@@ -214,7 +219,7 @@ describe('Voice Note on the Shopping List', () => {
 
     // A fast microphone: the audio is exactly as long as the hold.
     session.stop.mockResolvedValue({ ...recording, durationMs: 300 });
-    fireEvent.pointerDown(button);
+    pressDown(button);
     await holdFor(300);
     fireEvent.pointerUp(button);
     await holdFor(100);
@@ -227,7 +232,7 @@ describe('Voice Note on the Shopping List', () => {
     renderWithProviders(<ShoppingPage />);
     const button = await talkButton();
 
-    fireEvent.pointerDown(button);
+    pressDown(button);
     await screen.findByText('Listening');
     await holdFor(350);
     fireEvent.pointerUp(button);
@@ -248,7 +253,7 @@ describe('Voice Note on the Shopping List', () => {
     renderWithProviders(<ShoppingPage />);
     const button = await talkButton();
 
-    fireEvent.pointerDown(button);
+    pressDown(button);
     await screen.findByText('Starting…');
     await holdFor(400);
     fireEvent.pointerUp(button);
@@ -303,7 +308,7 @@ describe('Voice Note on the Shopping List', () => {
     setup({ explained: false });
     renderWithProviders(<ShoppingPage />);
 
-    fireEvent.pointerDown(await talkButton());
+    pressDown(await talkButton());
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent(/microphone/i);
     expect(mic.start).not.toHaveBeenCalled();
@@ -322,7 +327,7 @@ describe('Voice Note on the Shopping List', () => {
     mic.start.mockRejectedValue(new MicrophoneError('denied'));
     renderWithProviders(<ShoppingPage />);
 
-    fireEvent.pointerDown(await talkButton());
+    pressDown(await talkButton());
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/microphone is blocked/i);
@@ -564,7 +569,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
   async function openReview() {
     renderWithProviders(<ShoppingPage />);
     const button = await talkButton();
-    fireEvent.pointerDown(button);
+    pressDown(button);
     await screen.findByText('Listening');
     await holdLongEnough();
     fireEvent.pointerUp(button);

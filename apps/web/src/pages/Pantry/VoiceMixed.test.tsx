@@ -3,7 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
-import { holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
+import {
+  holdLongEnough,
+  pressDown,
+  useVoiceTimers,
+} from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 
@@ -127,7 +131,7 @@ describe('A Voice Note across both lists', () => {
     const button = await screen.findByRole('button', {
       name: /hold to record a voice note/i,
     });
-    fireEvent.pointerDown(button);
+    pressDown(button);
     await screen.findByText('Listening');
     await holdLongEnough();
     fireEvent.pointerUp(button);

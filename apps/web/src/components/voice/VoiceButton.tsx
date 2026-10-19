@@ -105,7 +105,7 @@ export function VoiceButton({
           disabled={active || busy}
           onChange={voice.setScanLanguage}
         />
-        <Box component="span" id={destinationId} sx={visuallyHidden}>
+        <Box component="span" id={destinationId} hidden sx={visuallyHidden}>
           {target === 'pantry'
             ? t('listening.toPantry')
             : t('listening.toShopping')}

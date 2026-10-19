@@ -32,19 +32,3 @@ window.matchMedia = (query: string) =>
     removeListener: () => undefined,
     dispatchEvent: () => false,
   }) as MediaQueryList;
-
-// A real pointer (a mouse, the first finger) is primary; jsdom defaults `isPrimary` to false,
-// which the Voice Note button ignores. Make a plain pointer event primary unless a test says not.
-if (typeof window.PointerEvent === 'function') {
-  const JsdomPointerEvent = window.PointerEvent;
-  window.PointerEvent = class extends JsdomPointerEvent {
-    private readonly primary: boolean;
-    constructor(type: string, init: PointerEventInit = {}) {
-      super(type, init);
-      this.primary = init.isPrimary ?? true;
-    }
-    get isPrimary() {
-      return this.primary;
-    }
-  };
-}
