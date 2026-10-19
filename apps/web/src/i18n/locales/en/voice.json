@@ -184,24 +184,44 @@
     }
   },
   "toast": {
-    "applied_one": "Applied {{count}} voice action.",
-    "applied_other": "Applied {{count}} voice actions.",
-    "skipped": "Skipped: {{names}}."
+    "applied_one": "{{count}} applied",
+    "applied_other": "{{count}} applied",
+    "split": "{{applied}}: {{here}} {{hereList}}, {{there}} {{thereList}}",
+    "where": {
+      "shopping": "on the list",
+      "pantry": "in the Pantry"
+    },
+    "skipped": "{{applied}}, {{skippedCount}}: {{reasons}}",
+    "skippedCount_one": "{{count}} skipped",
+    "skippedCount_other": "{{count}} skipped",
+    "skippedItem": "{{name}} {{reason}}",
+    "more": "+{{count}}",
+    "already": "{{name}} was already {{state}}, so that one counts as done.",
+    "alreadyMany_one": "{{name}} and {{count}} more were already done, so those count as done.",
+    "alreadyMany_other": "{{name}} and {{count}} more were already done, so those count as done.",
+    "alreadyState": {
+      "check": "ticked",
+      "uncheck": "unticked",
+      "remove": "off the list",
+      "setQuantity": "at that amount",
+      "runningLow": "marked as running low",
+      "other": "done"
+    }
   },
   "skipReason": {
     "shopping.quantity_too_large": "amount too large",
-    "shopping.ingredient_not_found": "ingredient no longer available",
+    "shopping.ingredient_not_found": "no longer available",
     "voice.not_supported": "not supported yet",
-    "voice.invalid_action": "incomplete",
-    "pantry.batch_not_found": "that batch is already gone",
-    "voice.batch_required": "no batch picked",
-    "pantry.location_required": "no location chosen",
-    "pantry.unit_required": "unit needed",
-    "pantry.ingredient_not_found": "ingredient no longer available",
+    "voice.invalid_action": "was incomplete",
+    "pantry.batch_not_found": "no longer in Pantry",
+    "voice.batch_required": "needed a batch picked",
+    "pantry.location_required": "needed a location",
+    "pantry.unit_required": "needed a unit",
+    "pantry.ingredient_not_found": "no longer available",
     "shopping.item_not_found": "no longer on the list",
-    "shopping.list_changed": "the list changed",
+    "shopping.list_changed": "list changed",
     "pantry.category_not_found": "category no longer available",
-    "pantry.other_leaf_missing": "no matching category available",
+    "pantry.other_leaf_missing": "had no matching category",
     "voice.item_not_found": "no longer on the list",
     "other": "could not be applied"
   }

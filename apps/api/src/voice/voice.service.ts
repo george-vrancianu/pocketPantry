@@ -275,7 +275,7 @@ export class VoiceService {
           continue;
         }
         try {
-          await tx.transaction(async (savepoint) => {
+          const applied = await tx.transaction(async (savepoint) => {
             const outcome = await handler.apply(draft, {
               memberId,
               locale: body.locale,
@@ -283,8 +283,14 @@ export class VoiceService {
               tx: savepoint,
             });
             if (!outcome.applied) throw new SkippedAction(outcome.reason);
+            return outcome;
           });
-          result.applied.push(draft.id);
+          result.applied.push({
+            actionId: draft.id,
+            list: applied.list,
+            ...(applied.rowId === undefined ? {} : { rowId: applied.rowId }),
+            alreadyDone: applied.alreadyDone,
+          });
         } catch (error) {
           if (!(error instanceof SkippedAction)) throw error;
           result.skipped.push({ id: draft.id, reason: error.reason });

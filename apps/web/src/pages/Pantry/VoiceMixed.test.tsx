@@ -109,7 +109,14 @@ describe('A Voice Note across both lists', () => {
       'POST /api/voice/apply': () =>
         Response.json(
           {
-            applied: ['m'],
+            applied: [
+              {
+                actionId: 'm',
+                list: 'shopping',
+                rowId: 'i1',
+                alreadyDone: false,
+              },
+            ],
             skipped: [
               { id: 'y', reason: 'pantry.location_required' },
               { id: 'b', reason: 'shopping.item_not_found' },
@@ -168,10 +175,11 @@ describe('A Voice Note across both lists', () => {
       await within(dialog).findByRole('button', { name: 'Apply 3 changes' }),
     );
 
-    const toast = await screen.findByText(/Applied 1 voice action\./);
-    expect(toast).toHaveTextContent(
-      /Skipped: Yogurt \(no location chosen\), Bread \(no longer on the list\)\./,
-    );
+    expect(
+      await screen.findByText(
+        '1 applied, 2 skipped: yogurt needed a location, bread no longer on the list',
+      ),
+    ).toBeVisible();
     await waitFor(() => {
       const keys = invalidate.mock.calls.map(
         ([filters]) => filters?.queryKey?.[0],

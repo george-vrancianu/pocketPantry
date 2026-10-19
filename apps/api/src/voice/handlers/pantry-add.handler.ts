@@ -38,7 +38,7 @@ export function pantryAddHandler(pantry: PantryService): VoiceActionHandler {
           return { applied: false, reason: 'voice.invalid_action' };
         }
         const { quantity, unit } = amountOf(draft);
-        await pantry.addInTransaction(
+        const [batch] = await pantry.addInTransaction(
           ctx.tx,
           ctx.memberId,
           [
@@ -61,7 +61,12 @@ export function pantryAddHandler(pantry: PantryService): VoiceActionHandler {
           ctx.locale,
           ctx.today,
         );
-        return { applied: true };
+        return {
+          applied: true,
+          list: 'pantry',
+          ...(batch ? { rowId: batch.id } : {}),
+          alreadyDone: false,
+        };
       }),
   };
 }

@@ -31,12 +31,12 @@ export class RunningLowService {
     await this.setIn(this.database, memberId, ingredientId);
   }
 
-  /** The same, in the caller's transaction. */
+  /** The same, in the caller's transaction. True when it was not flagged before. */
   async setIn(
     executor: Executor,
     memberId: string,
     ingredientId: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const familyId = await this.settings.familyIdOf(memberId);
     const ingredients = catalogScope(familyId).ingredients(executor);
     const [found] = await executor
@@ -44,10 +44,12 @@ export class RunningLowService {
       .from(ingredients)
       .where(eq(ingredients.id, ingredientId));
     if (!found) throw new ApiException(404, 'pantry.ingredient_not_found');
-    await executor
+    const inserted = await executor
       .insert(runningLow)
       .values({ familyId, ingredientId })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ id: runningLow.ingredientId });
+    return inserted.length > 0;
   }
 
   /** Idempotent: clearing an Ingredient that is not flagged succeeds. */

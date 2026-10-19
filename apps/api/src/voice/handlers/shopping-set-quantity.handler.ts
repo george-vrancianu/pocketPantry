@@ -27,7 +27,9 @@ export function shoppingSetQuantityHandler(
         const quantity = draft.quantity;
         const unit = draft.unit ?? target.unit ?? 'pcs';
         // Already that amount: nothing to do, which counts as applied.
-        if (target.quantity !== quantity || target.unit !== unit) {
+        const alreadyDone =
+          target.quantity === quantity && target.unit === unit;
+        if (!alreadyDone) {
           await shopping.setAmountInTransaction(
             ctx.tx,
             ctx.memberId,
@@ -35,7 +37,12 @@ export function shoppingSetQuantityHandler(
             { quantity, unit },
           );
         }
-        return { applied: true };
+        return {
+          applied: true,
+          list: 'shopping',
+          rowId: target.id,
+          alreadyDone,
+        };
       }),
   };
 }

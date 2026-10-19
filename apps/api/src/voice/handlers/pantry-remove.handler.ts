@@ -87,6 +87,7 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
             });
           }
         }
+        const kept = steps.find((step) => step.take !== null);
         const deleted = steps.filter((step) => step.take === null);
         if (deleted.length > 0) {
           await pantry.removeInTransaction(
@@ -95,7 +96,20 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
             deleted.map((step) => step.id),
           );
         }
-        return { applied: true };
+        // A deleted Batch is gone, so point at one that is still there: the one a
+        // quantity step touched, else any left of the same Ingredient (the roll-up row).
+        let rowId = kept?.id;
+        if (rowId === undefined && deleted.length > 0) {
+          const gone = new Set(deleted.map((step) => step.id));
+          const left = await candidatesOf(pantry, draft, ctx);
+          rowId = left.find((row) => !gone.has(row.id))?.id;
+        }
+        return {
+          applied: true,
+          list: 'pantry',
+          ...(rowId ? { rowId } : {}),
+          alreadyDone: false,
+        };
       }),
   };
 }

@@ -115,6 +115,7 @@ export function VoiceButton({
           component="button"
           type="button"
           aria-label={t('voiceButton.label')}
+          data-voice-button=""
           aria-pressed={voice.recording}
           aria-describedby={destinationId}
           disabled={busy}

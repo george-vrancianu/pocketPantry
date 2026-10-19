@@ -17,6 +17,9 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { applyToast } from './applyResult';
+import { focusVoiceButton } from './focusVoiceButton';
+import { toastBottom } from './placement';
 import { HeardCard } from './HeardCard';
 import { ReviewFooter } from './ReviewFooter';
 import { VoiceActionRow } from './VoiceActionRow';
@@ -40,7 +43,11 @@ import {
   type VoiceApplyResult,
   type VoiceReviewAction,
 } from '../../lib/voice';
+import { flashRows } from '../../lib/rowFlash';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNoteStore';
+
+/** How long the Apply result stays: long enough to read, no Undo (ADR 0017). */
+const APPLY_TOAST_MS = 5200;
 
 const quantityText = (action: VoiceReviewAction) =>
   action.quantity === null ? '' : String(action.quantity);
@@ -55,7 +62,7 @@ export function VoiceReview() {
 }
 
 function ReviewSheet() {
-  const { t } = useTranslation(['voice', 'common']);
+  const { t, i18n } = useTranslation(['voice', 'common']);
   const { proposal, page, phase, recording } = useVoiceNoteState();
   const { locale, scanLanguage } = useScanLanguage();
   const toast = useToast();
@@ -96,27 +103,27 @@ function ReviewSheet() {
     mutationFn: () => applyVoiceActions(applicable, locale),
     onError: () => voiceNote.applyFailed(),
     onSuccess: (result: VoiceApplyResult) => {
-      const skipped = result.skipped.flatMap(({ id, reason }) => {
-        const action = actions.find((a) => a.id === id);
-        return action
-          ? [
-              `${displayName(action)} (${t(`voice:skipReason.${reason}`, {
-                defaultValue: t('voice:skipReason.other'),
-              })})`,
-            ]
-          : [];
-      });
-      voiceNote.applied();
-      toast.show(
-        [
-          t('voice:toast.applied', { count: result.applied.length }),
-          skipped.length > 0
-            ? t('voice:toast.skipped', { names: skipped.join(', ') })
-            : null,
-        ]
-          .filter(Boolean)
-          .join(' '),
+      const { message, detail } = applyToast(
+        result,
+        actions,
+        page,
+        t,
+        i18n.language,
       );
+      voiceNote.applied();
+      // Only this page's rows: the other list's rows are not on screen to flash.
+      flashRows(
+        result.applied.flatMap((entry) =>
+          entry.list === page && entry.rowId ? [entry.rowId] : [],
+        ),
+      );
+      toast.show(message, {
+        detail,
+        polite: true,
+        duration: APPLY_TOAST_MS,
+        bottom: toastBottom,
+      });
+      focusVoiceButton();
       void Promise.all(
         [
           ['shopping-list'],
@@ -134,7 +141,9 @@ function ReviewSheet() {
     voiceNote.discard();
     toast.show(
       `${t('voice:review.footer.discarded')} · ${t('voice:review.footer.discardedHint')}`,
+      { polite: true, bottom: toastBottom },
     );
+    focusVoiceButton();
   };
 
   // Focus: the row that holds Apply back, else the title.
