@@ -13,6 +13,7 @@ import {
   MAX_VOICE_NOTE_MS,
   micExplained,
   MIN_VOICE_NOTE_MS,
+  QUICK_TAP_MS,
   NOT_RETRYABLE,
   rememberMicExplained,
   sendVoiceNote,
@@ -67,6 +68,14 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   const [tip, setTip] = useState(false);
   const tipTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pressedAt = useRef(0);
+  // Let go after 0.3 s but before the stream was live: say how it works once it arrives.
+  const tipOnArrival = useRef(false);
+
+  const showTip = useCallback(() => {
+    setTip(true);
+    clearTimeout(tipTimer.current);
+    tipTimer.current = setTimeout(() => setTip(false), TIP_MS);
+  }, []);
 
   const session = useRef<MicrophoneSession | null>(null);
   // The pointer is still down: a release before the microphone is ready cancels the start.
@@ -133,13 +142,14 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       return;
     }
     if (audio.durationMs < MIN_VOICE_NOTE_MS) {
+      // Too little audio to read (a slow microphone): the same tip as a quick tap.
       stopping.current = false;
-      voiceNote.fail('tooShort');
+      showTip();
       return;
     }
     stopping.current = false;
     await send(audio);
-  }, [send]);
+  }, [send, showTip]);
 
   const cancel = useCallback(() => {
     held.current = false;
@@ -157,6 +167,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       return;
     held.current = true;
     pressedAt.current = Date.now();
+    tipOnArrival.current = false;
     clearTimeout(tipTimer.current);
     setTip(false);
     voiceNote.dismiss();
@@ -182,6 +193,10 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (!held.current) {
       started.cancel();
       setPressing(false);
+      if (tipOnArrival.current) {
+        tipOnArrival.current = false;
+        showTip();
+      }
       return;
     }
     session.current = started;
@@ -198,22 +213,22 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       haptic(14);
       void finish();
     }, MAX_VOICE_NOTE_MS);
-  }, [finish, sending]);
+  }, [finish, sending, showTip]);
 
   const release = useCallback(() => {
     if (!held.current) return;
-    if (Date.now() - pressedAt.current < MIN_VOICE_NOTE_MS) {
+    if (Date.now() - pressedAt.current < QUICK_TAP_MS) {
       // Too quick to be a Voice Note: send nothing and say how it works.
       cancel();
-      setTip(true);
-      clearTimeout(tipTimer.current);
-      tipTimer.current = setTimeout(() => setTip(false), TIP_MS);
+      showTip();
       return;
     }
     held.current = false;
+    // The stream is not live yet: nothing to send, so it ends with the tip once it arrives.
+    if (starting.current) tipOnArrival.current = true;
     haptic(14);
     void finish();
-  }, [finish, cancel]);
+  }, [finish, cancel, showTip]);
 
   /** The input loudness, 0 to 1, for the Listening card's meter. */
   const level = useCallback(() => session.current?.level() ?? 0, []);

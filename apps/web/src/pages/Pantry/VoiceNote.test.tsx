@@ -1,14 +1,9 @@
-import {
-  act,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
+import { holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 
@@ -20,10 +15,6 @@ vi.mock('../../lib/microphone', () => ({
   requestPermission: vi.fn(async () => undefined),
   MicrophoneError: class MicrophoneError extends Error {},
 }));
-
-// A press shorter than 0.3 s is a tap, not a Voice Note.
-const heldLongEnough = () =>
-  act(() => new Promise<void>((resolve) => setTimeout(resolve, 320)));
 
 const recording: Recording = {
   blob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
@@ -126,12 +117,13 @@ describe('Voice Notes on the Pantry page', () => {
     });
     fireEvent.pointerDown(button);
     await screen.findByText('Listening');
-    await heldLongEnough();
+    await holdLongEnough();
     fireEvent.pointerUp(button);
     return screen.findByRole('dialog');
   }
 
   beforeEach(() => {
+    useVoiceTimers();
     resetVoiceNote();
     mic.start.mockReset();
     mic.start.mockImplementation(() =>
@@ -142,7 +134,10 @@ describe('Voice Notes on the Pantry page', () => {
       }),
     );
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('puts the voice button on the Pantry page and records for the Pantry', async () => {
     const { sent } = setup([]);

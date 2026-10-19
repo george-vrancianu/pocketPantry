@@ -7,8 +7,10 @@ import type { Locale, ScanLanguage } from '../i18n/resources';
 
 /** A Voice Note lasts at most this long; the recording stops and sends itself here. */
 export const MAX_VOICE_NOTE_MS = 60_000;
-/** Shorter than this (a hold, or the audio itself) is an accidental tap, not a Voice Note. */
-export const MIN_VOICE_NOTE_MS = 300;
+/** A press shorter than this is a tap, not a Voice Note (the gesture). */
+export const QUICK_TAP_MS = 300;
+/** Recorded audio shorter than this is too little to read. */
+export const MIN_VOICE_NOTE_MS = 400;
 
 /** The list the page a Voice Note is recorded on acts on (ADR 0017). */
 export type VoiceList = 'shopping' | 'pantry';

@@ -16,3 +16,6 @@ export const aboveButton = (gap: number) => ({
   xs: `calc(${buttonBottom.xs} + ${BUTTON_SIZE + gap}px)`,
   md: `calc(${buttonBottom.md} + ${BUTTON_SIZE + gap}px)`,
 });
+
+/** Where a toast sits so it clears the button and its chip. */
+export const toastBottom = aboveButton(10);

@@ -8,6 +8,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
+import { holdFor, holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import { ShoppingPage } from './ShoppingPage';
@@ -25,10 +26,6 @@ vi.mock('../../lib/microphone', () => ({
   },
 }));
 import { MicrophoneError } from '../../lib/microphone';
-
-// A press shorter than 0.3 s is a tap, not a Voice Note.
-const heldLongEnough = () =>
-  act(() => new Promise<void>((resolve) => setTimeout(resolve, 320)));
 
 const recording: Recording = {
   blob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
@@ -80,7 +77,7 @@ async function hold() {
   const button = await talkButton();
   fireEvent.pointerDown(button);
   await screen.findByText('Listening');
-  await heldLongEnough();
+  await holdLongEnough();
   return button;
 }
 
@@ -88,6 +85,7 @@ describe('Voice Note on the Shopping List', () => {
   let session: ReturnType<typeof fakeSession>;
 
   beforeEach(() => {
+    useVoiceTimers();
     resetVoiceNote();
     session = fakeSession();
     mic.start.mockReset();
@@ -109,7 +107,6 @@ describe('Voice Note on the Shopping List', () => {
   });
 
   it('records while held, shows the elapsed time, and sends on release', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     const { sent } = setup();
     renderWithProviders(<ShoppingPage />);
 
@@ -192,7 +189,6 @@ describe('Voice Note on the Shopping List', () => {
   });
 
   it('treats a release under 0.3 s as a tap: nothing sent, and a tip', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     const { sent } = setup();
     renderWithProviders(<ShoppingPage />);
 
@@ -215,8 +211,72 @@ describe('Voice Note on the Shopping List', () => {
     expect(screen.queryByText('Hold to talk, let go to send')).toBeNull();
   });
 
+  it('counts 299 ms as a tap and 300 ms as a Voice Note', async () => {
+    // A clock that only moves when told to, so the boundary is exact.
+    const { sent } = setup();
+    renderWithProviders(<ShoppingPage />);
+    const button = await talkButton();
+    vi.useFakeTimers();
+
+    fireEvent.pointerDown(button);
+    await holdFor(299);
+    fireEvent.pointerUp(button);
+    await holdFor(0);
+    expect(screen.getByText('Hold to talk, let go to send')).toBeVisible();
+    expect(sent).toHaveLength(0);
+    await holdFor(2000);
+
+    fireEvent.pointerDown(button);
+    await holdFor(300);
+    fireEvent.pointerUp(button);
+    await holdFor(100);
+    expect(sent).toHaveLength(1);
+  });
+
+  it('ends with the tip, not an Alert, when the microphone recorded too little', async () => {
+    const { sent } = setup();
+    session.stop.mockResolvedValue({ ...recording, durationMs: 200 });
+    renderWithProviders(<ShoppingPage />);
+    const button = await talkButton();
+
+    fireEvent.pointerDown(button);
+    await screen.findByText('Listening');
+    await holdFor(350);
+    fireEvent.pointerUp(button);
+
+    expect(
+      await screen.findByText('Hold to talk, let go to send'),
+    ).toBeVisible();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(sent).toHaveLength(0);
+  });
+
+  it('ends with the tip when let go after 0.3 s but before the stream is live', async () => {
+    const { sent } = setup();
+    let ready: (s: ReturnType<typeof fakeSession>) => void = () => {};
+    mic.start.mockImplementation(
+      () => new Promise((resolve) => (ready = resolve)),
+    );
+    renderWithProviders(<ShoppingPage />);
+    const button = await talkButton();
+
+    fireEvent.pointerDown(button);
+    await screen.findByText('Starting…');
+    await holdFor(400);
+    fireEvent.pointerUp(button);
+    await act(async () => ready(session));
+
+    expect(
+      await screen.findByText('Hold to talk, let go to send'),
+    ).toBeVisible();
+    expect(session.cancel).toHaveBeenCalledTimes(1);
+    expect(session.stop).not.toHaveBeenCalled();
+    expect(screen.queryByText('Starting…')).toBeNull();
+    expect(screen.queryByText('Listening')).toBeNull();
+    expect(sent).toHaveLength(0);
+  });
+
   it('drives the meter from the microphone level and names the target list', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     setup();
     session.level.mockReturnValue(1);
     renderWithProviders(<ShoppingPage />);
@@ -238,7 +298,6 @@ describe('Voice Note on the Shopping List', () => {
   });
 
   it('stops itself and sends at 60 seconds', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     const { sent } = setup();
     renderWithProviders(<ShoppingPage />);
 
@@ -519,19 +578,23 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     const button = await talkButton();
     fireEvent.pointerDown(button);
     await screen.findByText('Listening');
-    await heldLongEnough();
+    await holdLongEnough();
     fireEvent.pointerUp(button);
     return screen.findByRole('dialog');
   }
 
   beforeEach(() => {
+    useVoiceTimers();
     resetVoiceNote();
     session = fakeSession();
     mic.start.mockReset();
     mic.start.mockImplementation(() => Promise.resolve(session));
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('groups the Voice Actions under their list, with the transcript collapsed under What I heard', async () => {
     setupReview([...threeAdds, didntUnderstand('a4', 'do a dance')]);

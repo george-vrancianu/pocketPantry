@@ -1,5 +1,6 @@
-import { Box, MicIcon, radius, shadow, tokens } from '@pocket-pantry/ui';
+import { Box, color, MicIcon, radius, shadow } from '@pocket-pantry/ui';
 import type { KeyboardEvent, PointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { VoiceList } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
@@ -48,7 +49,7 @@ export function VoiceButton({
     if (event.key === ' ' || event.key === 'Enter') voice.release();
   };
 
-  return (
+  return createPortal(
     <>
       {active ? (
         <Box
@@ -58,7 +59,8 @@ export function VoiceButton({
             inset: 0,
             zIndex: 1100,
             pointerEvents: 'none',
-            backgroundColor: `color-mix(in srgb, ${tokens.color.ink} 16%, transparent)`,
+            backgroundColor:
+              'color-mix(in srgb, var(--mui-palette-text-primary) 16%, transparent)',
           }}
         />
       ) : null}
@@ -73,8 +75,8 @@ export function VoiceButton({
             px: '12px',
             py: '8px',
             borderRadius: radius.control,
-            backgroundColor: tokens.color.ink,
-            color: tokens.color.bg,
+            backgroundColor: 'pp.toastBg',
+            color: 'pp.toastInk',
             fontSize: 13,
             fontWeight: 600,
           }}
@@ -142,14 +144,12 @@ export function VoiceButton({
             p: 0,
             border: 0,
             borderRadius: '50%',
-            backgroundColor: voice.recording
-              ? tokens.color.urgentFg
-              : tokens.color.accent,
-            color: 'primary.contrastText',
+            backgroundColor: active ? color.rec : 'pp.accent',
+            color: active ? 'pp.cardBg' : 'pp.accentInk',
             boxShadow: shadow.float,
             cursor: busy ? 'default' : 'pointer',
             opacity: busy ? 0.6 : 1,
-            transform: voice.recording ? 'scale(1.14)' : 'none',
+            transform: active ? 'scale(1.14)' : 'none',
             transition:
               'transform 180ms cubic-bezier(.2,.8,.2,1), background-color 180ms cubic-bezier(.2,.8,.2,1)',
             // A held press must not scroll, select or open the context menu.
@@ -172,7 +172,7 @@ export function VoiceButton({
                 inset: -7,
                 borderRadius: '50%',
                 pointerEvents: 'none',
-                background: `conic-gradient(${tokens.color.urgentFg} 0 ${progress * 360}deg, color-mix(in srgb, ${tokens.color.urgentFg} 18%, transparent) 0)`,
+                background: `conic-gradient(${color.rec} 0 ${progress * 360}deg, color-mix(in srgb, ${color.rec} 18%, transparent) 0)`,
                 mask: 'radial-gradient(farthest-side, transparent calc(100% - 4px), currentColor calc(100% - 3px))',
                 WebkitMask:
                   'radial-gradient(farthest-side, transparent calc(100% - 4px), currentColor calc(100% - 3px))',
@@ -182,6 +182,7 @@ export function VoiceButton({
           <MicIcon size={27} />
         </Box>
       </Box>
-    </>
+    </>,
+    document.body,
   );
 }

@@ -1,4 +1,4 @@
-import { Box, radius, shadow, tokens } from '@pocket-pantry/ui';
+import { Box, color, radius, shadow } from '@pocket-pantry/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
@@ -77,8 +77,8 @@ export function ListeningCard({
         flexDirection: 'column',
         gap: '10px',
         p: '14px 16px 13px',
-        backgroundColor: tokens.color.surface,
-        color: tokens.color.ink,
+        backgroundColor: 'pp.cardBg',
+        color: 'text.primary',
         borderRadius: radius.card,
         boxShadow: shadow.float,
         ...enter,
@@ -92,7 +92,7 @@ export function ListeningCard({
             width: 10,
             height: 10,
             borderRadius: '50%',
-            backgroundColor: tokens.color.urgentFg,
+            backgroundColor: color.rec,
             ...blink,
           }}
         />
@@ -103,6 +103,7 @@ export function ListeningCard({
           <>
             <Box
               component="span"
+              aria-hidden
               sx={{
                 fontSize: 22,
                 fontWeight: 700,
@@ -113,7 +114,8 @@ export function ListeningCard({
             </Box>
             <Box
               component="span"
-              sx={{ fontSize: 12, fontWeight: 600, color: tokens.color.muted }}
+              aria-hidden
+              sx={{ fontSize: 12, fontWeight: 600, color: 'text.secondary' }}
             >
               {t('listening.of')}
             </Box>
@@ -131,7 +133,7 @@ export function ListeningCard({
             sx={{
               flex: 1,
               borderRadius: radius.box,
-              backgroundColor: tokens.color.urgentFg,
+              backgroundColor: color.rec,
               transition: 'height 90ms linear',
             }}
             style={{ height: 3 + Math.min(1, Math.max(0, value)) * 35 }}
@@ -145,7 +147,7 @@ export function ListeningCard({
           alignItems: 'center',
           gap: '4px 8px',
           fontSize: 12.5,
-          color: tokens.color.muted,
+          color: 'text.secondary',
         }}
       >
         <Box
@@ -154,8 +156,8 @@ export function ListeningCard({
             px: '8px',
             py: '2px',
             borderRadius: radius.chip,
-            backgroundColor: tokens.color.chipNeutral,
-            color: tokens.color.ink,
+            backgroundColor: 'pp.chip',
+            color: 'text.primary',
             fontSize: 11.5,
             fontWeight: 700,
           }}

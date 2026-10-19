@@ -1,15 +1,8 @@
-import {
-  Box,
-  CheckIcon,
-  radius,
-  shadow,
-  tokens,
-  useToast,
-} from '@pocket-pantry/ui';
+import { Box, CheckIcon, radius, shadow, useToast } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SCAN_LANGUAGES, type ScanLanguage } from '../../i18n/resources';
-import { buttonBottom } from './placement';
+import { buttonBottom, toastBottom } from './placement';
 
 /** Each language in its own name, whatever the UI language. */
 const OWN_NAME: Record<ScanLanguage, string> = {
@@ -60,7 +53,7 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
       `${t('languageMenu.saved', {
         language: t(`languageMenu.names.${language}`),
       })} · ${t('languageMenu.savedHint')}`,
-      { polite: true },
+      { polite: true, bottom: toastBottom },
     );
     close();
   };
@@ -102,10 +95,11 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
           height: 30,
           minWidth: 40,
           px: '9px',
-          border: `1px solid ${tokens.color.line}`,
+          border: '1px solid',
+          borderColor: 'pp.lineStrong',
           borderRadius: radius.chip,
-          backgroundColor: tokens.color.surface,
-          color: tokens.color.ink,
+          backgroundColor: 'pp.cardBg',
+          color: 'text.primary',
           boxShadow: shadow.card,
           font: 'inherit',
           fontSize: 12,
@@ -140,7 +134,7 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
             width: 220,
             p: '6px',
             zIndex: 1250,
-            backgroundColor: tokens.color.surface,
+            backgroundColor: 'pp.cardBg',
             borderRadius: radius.control,
             boxShadow: shadow.float,
           }}
@@ -152,7 +146,7 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
               fontWeight: 700,
               letterSpacing: '.07em',
               textTransform: 'uppercase',
-              color: tokens.color.muted,
+              color: 'text.secondary',
             }}
           >
             {t('languageMenu.title')}
@@ -175,28 +169,28 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
                 border: 0,
                 borderRadius: radius.box,
                 background: 'none',
-                color: tokens.color.ink,
+                color: 'text.primary',
                 font: 'inherit',
                 fontSize: 14.5,
                 fontWeight: 600,
                 textAlign: 'left',
                 cursor: 'pointer',
                 '&:hover, &:focus-visible': {
-                  backgroundColor: tokens.color.subtle,
+                  backgroundColor: 'pp.subtle',
                 },
               }}
             >
               <span style={{ flex: 1 }}>{OWN_NAME[language]}</span>
               <Box
                 component="span"
-                sx={{ fontSize: 12, color: tokens.color.muted }}
+                sx={{ fontSize: 12, color: 'text.secondary' }}
               >
                 {language.toUpperCase()}
               </Box>
               <Box
                 component="span"
                 aria-hidden
-                sx={{ width: 16, color: tokens.color.accent, display: 'flex' }}
+                sx={{ width: 16, color: 'pp.accent', display: 'flex' }}
               >
                 {language === value ? <CheckIcon size={16} /> : null}
               </Box>

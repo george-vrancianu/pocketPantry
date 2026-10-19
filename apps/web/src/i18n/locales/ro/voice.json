@@ -1,13 +1,4 @@
 {
-  "button": {
-    "label": "Ține apăsat pentru a vorbi",
-    "release": "Eliberează pentru a trimite",
-    "sending": "Se trimite…"
-  },
-  "recording": {
-    "label": "Se înregistrează",
-    "cancelHint": "trage în afară pentru a anula"
-  },
   "explainer": {
     "title": "Notele vocale folosesc microfonul",
     "body": "Ține apăsat butonul și spune ce ai cumpărat sau ai terminat. Vocea ta este transformată în text pe care îl verifici. Înregistrarea nu este păstrată.",

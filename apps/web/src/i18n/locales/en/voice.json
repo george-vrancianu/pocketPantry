@@ -1,13 +1,4 @@
 {
-  "button": {
-    "label": "Hold to talk",
-    "release": "Release to send",
-    "sending": "Sending…"
-  },
-  "recording": {
-    "label": "Recording",
-    "cancelHint": "slide away to cancel"
-  },
   "explainer": {
     "title": "Voice notes use your microphone",
     "body": "Hold the button and say what you bought or used up. Your voice is turned into text for you to check. The recording is not stored.",

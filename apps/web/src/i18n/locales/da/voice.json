@@ -1,13 +1,4 @@
 {
-  "button": {
-    "label": "Hold for at tale",
-    "release": "Slip for at sende",
-    "sending": "Sender…"
-  },
-  "recording": {
-    "label": "Optager",
-    "cancelHint": "træk væk for at annullere"
-  },
   "explainer": {
     "title": "Stemmenoter bruger din mikrofon",
     "body": "Hold knappen nede og sig, hvad du har købt eller brugt op. Din stemme bliver til tekst, som du kan tjekke. Optagelsen gemmes ikke.",
