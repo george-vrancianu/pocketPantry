@@ -23,6 +23,29 @@
   "nothingHeard": "Didn't catch anything, try again",
   "retry": "Retry",
   "dismiss": "Dismiss",
+  "voiceButton": {
+    "label": "Hold to record a Voice Note"
+  },
+  "listening": {
+    "title": "Listening",
+    "starting": "Starting…",
+    "of": "/ 1:00",
+    "hint": "Let go to send · slide off to cancel",
+    "toShopping": "Goes to your Shopping List. Say “in the pantry” to add stock.",
+    "toPantry": "Goes to your Pantry. Say “on the list” for the Shopping List.",
+    "tip": "Hold to talk, let go to send"
+  },
+  "languageMenu": {
+    "chipLabel": "Scan Language: {{language}}. Change",
+    "title": "Scan Language",
+    "saved": "Scan Language: {{language}}",
+    "savedHint": "Used for Voice Notes and the camera.",
+    "names": {
+      "en": "English",
+      "ro": "Romanian",
+      "da": "Danish"
+    }
+  },
   "review": {
     "title": "Voice note",
     "heard": "What I heard",

@@ -1,4 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
@@ -13,6 +19,10 @@ vi.mock('../../lib/microphone', () => ({
   requestPermission: vi.fn(async () => undefined),
   MicrophoneError: class MicrophoneError extends Error {},
 }));
+
+// A press shorter than 0.3 s is a tap, not a Voice Note.
+const heldLongEnough = () =>
+  act(() => new Promise<void>((resolve) => setTimeout(resolve, 320)));
 
 const recording: Recording = {
   blob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
@@ -119,9 +129,12 @@ describe('A Voice Note across both lists', () => {
 
   async function openReview() {
     const view = renderWithProviders(<PantryPage />);
-    const button = await screen.findByRole('button', { name: /hold to talk/i });
+    const button = await screen.findByRole('button', {
+      name: /hold to record a voice note/i,
+    });
     fireEvent.pointerDown(button);
-    await screen.findByRole('status');
+    await screen.findByText('Listening');
+    await heldLongEnough();
     fireEvent.pointerUp(button);
     return { ...view, dialog: await screen.findByRole('dialog') };
   }

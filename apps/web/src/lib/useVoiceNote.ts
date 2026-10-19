@@ -61,6 +61,12 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     [phase, error, errorMessage, kept],
   );
   const [explaining, setExplaining] = useState(false);
+  // The pointer is down and the stream is not live yet ("Starting…").
+  const [pressing, setPressing] = useState(false);
+  // The "Hold to talk" tip after a press too quick to be a Voice Note.
+  const [tip, setTip] = useState(false);
+  const tipTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const pressedAt = useRef(0);
 
   const session = useRef<MicrophoneSession | null>(null);
   // The pointer is still down: a release before the microphone is ready cancels the start.
@@ -137,6 +143,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
   const cancel = useCallback(() => {
     held.current = false;
+    setPressing(false);
     const active = session.current;
     if (!active) return;
     session.current = null;
@@ -149,6 +156,9 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (session.current || starting.current || stopping.current || sending)
       return;
     held.current = true;
+    pressedAt.current = Date.now();
+    clearTimeout(tipTimer.current);
+    setTip(false);
     voiceNote.dismiss();
     if (!micExplained()) {
       held.current = false;
@@ -156,11 +166,14 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       return;
     }
     starting.current = true;
+    setPressing(true);
+    haptic(10);
     let started: MicrophoneSession;
     try {
       started = await startRecording();
     } catch (error) {
       held.current = false;
+      setPressing(false);
       voiceNote.fail(failureCode(error));
       return;
     } finally {
@@ -168,9 +181,11 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     }
     if (!held.current) {
       started.cancel();
+      setPressing(false);
       return;
     }
     session.current = started;
+    setPressing(false);
     const startedAt = Date.now();
     setElapsedMs(0);
     voiceNote.startRecording(options.current.defaultTarget);
@@ -180,14 +195,28 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     );
     timers.current.limit = setTimeout(() => {
       held.current = false;
+      haptic(14);
       void finish();
     }, MAX_VOICE_NOTE_MS);
   }, [finish, sending]);
 
   const release = useCallback(() => {
+    if (!held.current) return;
+    if (Date.now() - pressedAt.current < MIN_VOICE_NOTE_MS) {
+      // Too quick to be a Voice Note: send nothing and say how it works.
+      cancel();
+      setTip(true);
+      clearTimeout(tipTimer.current);
+      tipTimer.current = setTimeout(() => setTip(false), TIP_MS);
+      return;
+    }
     held.current = false;
+    haptic(14);
     void finish();
-  }, [finish]);
+  }, [finish, cancel]);
+
+  /** The input loudness, 0 to 1, for the Listening card's meter. */
+  const level = useCallback(() => session.current?.level() ?? 0, []);
 
   /** The explanation was accepted: ask for the microphone now, so the browser's prompt does not interrupt a hold. */
   const allowMicrophone = useCallback(async () => {
@@ -219,6 +248,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   useEffect(
     () => () => {
       clearTimers();
+      clearTimeout(tipTimer.current);
       if (session.current) {
         session.current.cancel();
         session.current = null;
@@ -234,6 +264,9 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     locale,
     recording,
     elapsedMs,
+    pressing,
+    tip,
+    level,
     sending,
     notice,
     note,
@@ -247,6 +280,17 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     dismiss,
     discard: voiceNote.discard,
   };
+}
+
+const TIP_MS = 1800;
+
+/** A short buzz where the device has one. */
+function haptic(ms: number) {
+  try {
+    navigator.vibrate?.(ms);
+  } catch {
+    // Some browsers refuse without a user gesture: it is only a nicety.
+  }
 }
 
 function failureCode(error: unknown): VoiceErrorCode {
