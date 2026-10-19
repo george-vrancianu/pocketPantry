@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
 import { ApiError } from './api';
@@ -22,6 +22,7 @@ import {
   getVoiceNoteState,
   voiceNote,
   useVoiceNoteState,
+  type VoiceErrorCode,
 } from './voiceNoteStore';
 import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 
@@ -34,12 +35,31 @@ import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 export function useVoiceNote(defaultTarget: VoiceList) {
   const { t } = useTranslation(['errors']);
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
-  const [recording, setRecording] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   // The Voice Note itself lives in the shared store, so Review and the button on any page see it.
-  const { sending, notice, note } = useVoiceNoteState();
-  const setSending = voiceNote.setSending;
-  const setNotice = voiceNote.setNotice;
+  const {
+    phase,
+    recording: kept,
+    proposal,
+    error,
+    errorMessage,
+  } = useVoiceNoteState();
+  const recording = phase === 'recording';
+  const sending = phase === 'reading';
+  const note = proposal ?? null;
+  const notice = useMemo(
+    () =>
+      phase === 'failed' && error
+        ? error === 'failed'
+          ? {
+              kind: 'failed' as const,
+              message: errorMessage ?? '',
+              canRetry: kept !== undefined,
+            }
+          : { kind: error }
+        : null,
+    [phase, error, errorMessage, kept],
+  );
   const [explaining, setExplaining] = useState(false);
 
   const session = useRef<MicrophoneSession | null>(null);
@@ -61,8 +81,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
   const send = useCallback(async (audio: Recording) => {
     const { locale, scanLanguage, defaultTarget, t } = options.current;
-    setSending(true);
-    setNotice(null);
+    voiceNote.read(audio, scanLanguage);
     try {
       const result = await sendVoiceNote({
         recording: audio,
@@ -71,26 +90,21 @@ export function useVoiceNote(defaultTarget: VoiceList) {
         defaultTarget,
         today: localIso(new Date()),
       });
-      voiceNote.setPending(null);
-      if (result.transcript.trim() === '') setNotice({ kind: 'nothingHeard' });
-      else voiceNote.open(result, defaultTarget);
+      if (result.transcript.trim() === '') {
+        voiceNote.fail('nothingHeard');
+      } else voiceNote.review(result);
     } catch (error) {
       if (error instanceof ApiError && error.code === 'voice.nothing_heard') {
-        voiceNote.setPending(null);
-        setNotice({ kind: 'nothingHeard' });
+        voiceNote.fail('nothingHeard');
         return;
       }
       const canRetry = !(
         error instanceof ApiError && NOT_RETRYABLE.has(error.code)
       );
-      voiceNote.setPending(canRetry ? audio : null);
-      setNotice({
-        kind: 'failed',
+      voiceNote.fail('failed', {
         message: translateApiError(t, error),
-        canRetry,
+        keepRecording: canRetry,
       });
-    } finally {
-      setSending(false);
     }
   }, []);
 
@@ -99,19 +113,17 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (!active) return;
     session.current = null;
     clearTimers();
-    setRecording(false);
     let audio: Recording;
     try {
       audio = await active.stop();
     } catch {
-      setNotice({ kind: 'unavailable' });
+      voiceNote.fail('unavailable');
       return;
     }
     if (audio.durationMs < MIN_VOICE_NOTE_MS) {
-      setNotice({ kind: 'tooShort' });
+      voiceNote.fail('tooShort');
       return;
     }
-    voiceNote.setPending(audio);
     await send(audio);
   }, [send]);
 
@@ -121,15 +133,14 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (!active) return;
     session.current = null;
     clearTimers();
-    setRecording(false);
     active.cancel();
+    voiceNote.cancelRecording();
   }, []);
 
   const press = useCallback(async () => {
     if (session.current || starting.current || sending) return;
-    voiceNote.setPending(null);
     held.current = true;
-    setNotice(null);
+    voiceNote.dismiss();
     if (!micExplained()) {
       held.current = false;
       setExplaining(true);
@@ -141,9 +152,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       started = await startRecording();
     } catch (error) {
       held.current = false;
-      setNotice({
-        kind: error instanceof MicrophoneError ? error.reason : 'unavailable',
-      });
+      voiceNote.fail(failureCode(error));
       return;
     } finally {
       starting.current = false;
@@ -155,7 +164,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     session.current = started;
     const startedAt = Date.now();
     setElapsedMs(0);
-    setRecording(true);
+    voiceNote.startRecording(options.current.defaultTarget);
     timers.current.tick = setInterval(
       () => setElapsedMs(Date.now() - startedAt),
       200,
@@ -178,28 +187,34 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     try {
       (await startRecording()).cancel();
     } catch (error) {
-      setNotice({
-        kind: error instanceof MicrophoneError ? error.reason : 'unavailable',
-      });
+      voiceNote.fail(failureCode(error));
     }
   }, []);
 
   const retry = useCallback(() => {
-    const { pending } = getVoiceNoteState();
-    if (pending) void send(pending);
+    const { recording: kept } = getVoiceNoteState();
+    if (kept) {
+      void send({
+        blob: kept.blob,
+        mimeType: kept.mimeType,
+        durationMs: kept.seconds * 1000,
+      });
+    }
   }, [send]);
 
   const dismiss = useCallback(() => {
-    voiceNote.setPending(null);
-    setNotice(null);
+    voiceNote.dismiss();
   }, []);
 
   // Leaving the page drops a recording in progress.
   useEffect(
     () => () => {
       clearTimers();
-      session.current?.cancel();
-      session.current = null;
+      if (session.current) {
+        session.current.cancel();
+        session.current = null;
+        voiceNote.cancelRecording();
+      }
     },
     [],
   );
@@ -223,4 +238,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     dismiss,
     discard: voiceNote.discard,
   };
+}
+
+function failureCode(error: unknown): VoiceErrorCode {
+  return error instanceof MicrophoneError ? error.reason : 'unavailable';
 }

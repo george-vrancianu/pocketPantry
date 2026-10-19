@@ -10,6 +10,8 @@ import { PantryPage } from './PantryPage';
 const mic = vi.hoisted(() => ({ start: vi.fn() }));
 vi.mock('../../lib/microphone', () => ({
   startRecording: mic.start,
+  permissionState: vi.fn(async () => 'granted'),
+  requestPermission: vi.fn(async () => undefined),
   MicrophoneError: class MicrophoneError extends Error {},
 }));
 
