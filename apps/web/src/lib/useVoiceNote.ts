@@ -15,11 +15,9 @@ import { haptic } from './haptic';
 import { keepScreenAwake } from './wakeLock';
 import {
   MAX_VOICE_NOTE_MS,
-  micExplained,
   MIN_VOICE_NOTE_MS,
   QUICK_TAP_MS,
   NOT_RETRYABLE,
-  rememberMicExplained,
   sendVoiceNote,
   type VoiceList,
 } from './voice';
@@ -27,8 +25,8 @@ import {
   getVoiceNoteState,
   voiceNote,
   useVoiceNoteState,
-  type VoiceErrorCode,
 } from './voiceNoteStore';
+import { useMicPermission } from '../components/voice/useMicPermission';
 import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 
 /**
@@ -66,7 +64,6 @@ export function useVoiceNote(defaultTarget: VoiceList) {
         : null,
     [phase, error, errorMessage, kept],
   );
-  const [explaining, setExplaining] = useState(false);
   // The pointer is down and the stream is not live yet ("Starting…").
   const [pressing, setPressing] = useState(false);
   // The "Hold to talk" tip after a press too quick to be a Voice Note.
@@ -105,6 +102,16 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   };
   const say = (message: string) =>
     options.current.toast.show(message, { polite: true, bottom: toastBottom });
+
+  const mic = useMicPermission({
+    onGranted: () => {
+      const { t } = options.current;
+      say(`${t('voice:mic.on')} · ${t('voice:mic.onHint')}`);
+    },
+    onUnavailable: () => voiceNote.fail('unavailable'),
+  });
+
+  const { refresh, showBlocked, showIntro } = mic;
 
   const clearTimers = () => {
     clearInterval(timers.current.tick);
@@ -202,12 +209,16 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     clearTimeout(tipTimer.current);
     setTip(false);
     voiceNote.dismiss();
-    if (!micExplained()) {
+    starting.current = true;
+    // The microphone sheets stand in for the hold until it is allowed; nothing records and the press resets.
+    const permission = await refresh();
+    if (permission !== 'granted') {
       held.current = false;
-      setExplaining(true);
+      starting.current = false;
+      if (permission === 'denied') showBlocked();
+      else showIntro();
       return;
     }
-    starting.current = true;
     setPressing(true);
     stayAwake();
     haptic(10);
@@ -218,7 +229,9 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       held.current = false;
       setPressing(false);
       settle();
-      voiceNote.fail(failureCode(error));
+      // A browser with no Permissions API only says "blocked" when a hold meets the refusal.
+      if (isDenied(error)) showBlocked();
+      else voiceNote.fail('unavailable');
       return;
     } finally {
       starting.current = false;
@@ -251,7 +264,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       );
       void finish();
     }, MAX_VOICE_NOTE_MS);
-  }, [finish, sending, showTip]);
+  }, [finish, refresh, showBlocked, showIntro, sending, showTip]);
 
   const release = useCallback(() => {
     if (!held.current) return;
@@ -270,17 +283,6 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
   /** The input loudness, 0 to 1, for the Listening card's meter. */
   const level = useCallback(() => session.current?.level() ?? 0, []);
-
-  /** The explanation was accepted: ask for the microphone now, so the browser's prompt does not interrupt a hold. */
-  const allowMicrophone = useCallback(async () => {
-    rememberMicExplained();
-    setExplaining(false);
-    try {
-      (await startRecording()).cancel();
-    } catch (error) {
-      voiceNote.fail(failureCode(error));
-    }
-  }, []);
 
   const retry = useCallback(() => {
     const { recording: kept } = getVoiceNoteState();
@@ -327,12 +329,10 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     sending,
     notice,
     note,
-    explaining,
+    mic,
     press,
     release,
     cancel,
-    allowMicrophone,
-    dismissExplainer: () => setExplaining(false),
     retry,
     dismiss,
     discard: voiceNote.discard,
@@ -341,6 +341,6 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
 const TIP_MS = 1800;
 
-function failureCode(error: unknown): VoiceErrorCode {
-  return error instanceof MicrophoneError ? error.reason : 'unavailable';
+function isDenied(error: unknown) {
+  return error instanceof MicrophoneError && error.reason === 'denied';
 }

@@ -50,7 +50,6 @@ function fakeSession() {
 }
 
 function setup() {
-  localStorage.setItem('pp.voice.micExplained', '1');
   const sent: FormData[] = [];
   const { fetchMock } = stubApi({
     'GET /api/shopping-list': () =>
@@ -554,7 +553,6 @@ describe('the recording gesture on the Shopping List', () => {
     });
 
     it('is released when the read fails', async () => {
-      localStorage.setItem('pp.voice.micExplained', '1');
       const { fetchMock } = stubApi({
         'GET /api/shopping-list': () =>
           Response.json({

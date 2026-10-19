@@ -30,7 +30,6 @@ vi.mock('../../lib/microphone', () => ({
     }
   },
 }));
-import { MicrophoneError } from '../../lib/microphone';
 
 const recording: Recording = {
   blob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
@@ -55,11 +54,9 @@ const emptyList = {
 type Setup = {
   configured?: boolean;
   note?: () => Response;
-  explained?: boolean;
 };
 
-function setup({ configured = true, note, explained = true }: Setup = {}) {
-  if (explained) localStorage.setItem('pp.voice.micExplained', '1');
+function setup({ configured = true, note }: Setup = {}) {
   const sent: FormData[] = [];
   const { fetchMock } = stubApi({
     'GET /api/shopping-list': () => Response.json(emptyList),
@@ -154,6 +151,8 @@ describe('Voice Note on the Shopping List', () => {
     const button = await talkButton();
     pressDown(button);
     fireEvent.pointerUp(button);
+    // The permission check comes first, so the microphone is asked for a moment after the press.
+    await waitFor(() => expect(mic.start).toHaveBeenCalledTimes(1));
     await act(async () => ready(session));
 
     await waitFor(() => expect(session.cancel).toHaveBeenCalledTimes(1));
@@ -302,36 +301,6 @@ describe('Voice Note on the Shopping List', () => {
     expect(session.stop).toHaveBeenCalledTimes(1);
     expect(await screen.findByRole('dialog')).toHaveTextContent('What I heard');
     expect(sent).toHaveLength(1);
-  });
-
-  it('explains why the microphone is needed on first use, then asks for it', async () => {
-    setup({ explained: false });
-    renderWithProviders(<ShoppingPage />);
-
-    pressDown(await talkButton());
-    const dialog = await screen.findByRole('dialog');
-    expect(dialog).toHaveTextContent(/microphone/i);
-    expect(mic.start).not.toHaveBeenCalled();
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Allow microphone' }),
-    );
-    // Asking now keeps the browser's prompt out of the first hold.
-    await waitFor(() => expect(mic.start).toHaveBeenCalledTimes(1));
-    expect(session.cancel).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem('pp.voice.micExplained')).not.toBeNull();
-  });
-
-  it('shows how to allow the microphone when permission is denied', async () => {
-    setup();
-    mic.start.mockRejectedValue(new MicrophoneError('denied'));
-    renderWithProviders(<ShoppingPage />);
-
-    pressDown(await talkButton());
-
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(/microphone is blocked/i);
-    expect(alert).toHaveTextContent(/browser settings/i);
   });
 
   it('says so, and opens no sheet, when nothing was heard', async () => {
@@ -534,7 +503,6 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
         { status: 201 },
       ),
   ) {
-    localStorage.setItem('pp.voice.micExplained', '1');
     applied = [];
     listFetches = 0;
     const { fetchMock } = stubApi({

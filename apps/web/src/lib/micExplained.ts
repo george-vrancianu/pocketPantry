@@ -2,7 +2,10 @@
 
 const EXPLAINED_KEY = 'pp.voice.micExplained';
 
-/** Whether the "why the microphone" explanation has been shown and accepted. */
+/**
+ * Whether this device has allowed the microphone through Voice Notes. Only the fallback for browsers
+ * without a microphone Permissions API reads it. (The key keeps its old name so devices already allowed stay allowed.)
+ */
 export function micExplained(): boolean {
   try {
     return window.localStorage.getItem(EXPLAINED_KEY) !== null;

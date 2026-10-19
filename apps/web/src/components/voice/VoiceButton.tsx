@@ -2,6 +2,7 @@ import {
   Box,
   color,
   MicIcon,
+  MicOffIcon,
   palette,
   radius,
   shadow,
@@ -136,7 +137,7 @@ export function VoiceButton({
             color: active ? 'pp.cardBg' : 'pp.accentInk',
             boxShadow: shadow.float,
             cursor: busy ? 'default' : 'pointer',
-            opacity: busy ? 0.6 : 1,
+            opacity: busy ? 0.6 : voice.mic.blocked ? 0.55 : 1,
             transform: armed ? 'scale(.9)' : active ? 'scale(1.14)' : 'none',
             transition:
               'transform 180ms cubic-bezier(.2,.8,.2,1), background-color 180ms cubic-bezier(.2,.8,.2,1)',
@@ -167,7 +168,7 @@ export function VoiceButton({
               }}
             />
           ) : null}
-          <MicIcon size={27} />
+          {voice.mic.blocked ? <MicOffIcon size={27} /> : <MicIcon size={27} />}
         </Box>
       </Box>
     </>,

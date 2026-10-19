@@ -1,13 +1,56 @@
 {
-  "explainer": {
-    "title": "Notele vocale folosesc microfonul",
-    "body": "Ține apăsat butonul și spune ce ai cumpărat sau ai terminat. Vocea ta este transformată în text pe care îl verifici. Înregistrarea nu este păstrată.",
+  "intro": {
+    "title": "Spune ce ai făcut",
+    "body": "Ține apăsat butonul, vorbește, apoi dă drumul. Verifici fiecare modificare înainte să se salveze ceva.",
+    "privacy": "<b>Pocket Pantry are nevoie de microfon</b> ca să audă notele vocale. Browserul te va întreba în continuare. Înregistrarea este transformată în text pentru a citi modificările tale, apoi ștearsă; nu se păstrează nimic.",
+    "notNow": "Nu acum",
     "allow": "Permite microfonul",
-    "notNow": "Nu acum"
+    "examples": {
+      "shopping": {
+        "one": {
+          "say": "Am luat pâinea, scoate laptele",
+          "result": "Bifează pâinea, scoate laptele"
+        },
+        "two": {
+          "say": "Adaugă doi litri de lapte",
+          "result": "Adaugă lapte, 2 l"
+        },
+        "three": {
+          "say": "Pune două iaurturi în frigider, expiră vineri",
+          "result": "Merge direct în Cămară"
+        }
+      },
+      "pantry": {
+        "one": {
+          "say": "Două iaurturi în frigider, expiră vineri",
+          "result": "Adaugă un lot de 2 buc"
+        },
+        "two": {
+          "say": "Am terminat laptele",
+          "result": "Scoate laptele care expiră primul"
+        },
+        "three": {
+          "say": "Se termină orezul",
+          "result": "Marchează orezul ca fiind pe terminate"
+        }
+      }
+    }
   },
-  "denied": {
-    "title": "Microfonul este blocat.",
-    "body": "Pentru a folosi notele vocale, permite microfonul pentru acest site din setările browserului (caută pictograma cu lacăt sau setări de lângă adresă), apoi ține din nou apăsat butonul."
+  "mic": {
+    "on": "Microfon activat",
+    "onHint": "Acum ține apăsat butonul și vorbește."
+  },
+  "blocked": {
+    "title": "Microfonul este blocat",
+    "body": "Notele vocale au nevoie de el. Permite-l pentru Pocket Pantry în browser, apoi revino și ține din nou apăsat butonul.",
+    "safari": "iPhone, Safari",
+    "safariStep1": "Atinge <b>aA</b> în bara de adrese",
+    "safariStep2": "<b>Setările site-ului</b> → <b>Microfon</b> → <b>Permite</b>",
+    "chrome": "Android, Chrome",
+    "chromeStep1": "Atinge lacătul de lângă adresă",
+    "chromeStep2": "<b>Permisiuni</b> → <b>Microfon</b> → <b>Permite</b>",
+    "close": "Închide",
+    "retry": "Am permis"
   },
   "unavailable": "Acest browser nu poate înregistra sunet, deci notele vocale nu sunt disponibile aici.",
   "tooShort": "Ține apăsat butonul cât timp vorbești.",

@@ -1,0 +1,236 @@
+import { act, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { pressDown, useVoiceTimers } from '../../test/voiceHold';
+import { renderWithProviders, stubApi } from '../../test/render';
+import { resetVoiceNote } from '../../lib/voiceNoteStore';
+import { ShoppingPage } from './ShoppingPage';
+
+// jsdom has no getUserMedia or MediaRecorder: the microphone module is the seam.
+const mic = vi.hoisted(() => ({
+  start: vi.fn(),
+  permission: vi.fn(),
+  request: vi.fn(),
+}));
+vi.mock('../../lib/microphone', () => ({
+  startRecording: mic.start,
+  permissionState: mic.permission,
+  requestPermission: mic.request,
+  MicrophoneError: class MicrophoneError extends Error {
+    constructor(readonly reason: string) {
+      super(reason);
+    }
+  },
+}));
+import { MicrophoneError } from '../../lib/microphone';
+
+function setup() {
+  const { fetchMock } = stubApi({
+    'GET /api/shopping-list': () =>
+      Response.json({
+        id: 'l1',
+        groups: [],
+        summary: { remaining: 0, checked: 0 },
+      }),
+    'GET /api/voice/config': () => Response.json({ configured: true }),
+  });
+  vi.stubGlobal('fetch', fetchMock);
+}
+
+const talkButton = () =>
+  screen.findByRole('button', { name: /hold to record a voice note/i });
+
+const session = () => ({
+  stop: vi.fn(),
+  cancel: vi.fn(),
+  level: vi.fn(() => 0),
+});
+
+describe('Voice Note microphone sheets', () => {
+  beforeEach(() => {
+    useVoiceTimers();
+    resetVoiceNote();
+    mic.start.mockReset();
+    mic.start.mockImplementation(() => Promise.resolve(session()));
+    mic.permission.mockReset();
+    mic.permission.mockResolvedValue('prompt');
+    mic.request.mockReset();
+    mic.request.mockResolvedValue(undefined);
+    setup();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  describe('while the microphone has not been asked for', () => {
+    it('opens the intro sheet with the Shopping examples, and records nothing', async () => {
+      renderWithProviders(<ShoppingPage />);
+
+      pressDown(await talkButton());
+
+      const dialog = await screen.findByRole('dialog');
+      expect(dialog).toHaveTextContent('Say what you did');
+      expect(dialog).toHaveTextContent('Got the bread, take milk off');
+      expect(dialog).toHaveTextContent('Goes straight to the Pantry');
+      expect(dialog).toHaveTextContent(/then deleted/i);
+      expect(mic.start).not.toHaveBeenCalled();
+      expect(screen.queryByText('Listening')).toBeNull();
+    });
+
+    it('can be pressed again after Not now, and changes nothing', async () => {
+      renderWithProviders(<ShoppingPage />);
+      const button = await talkButton();
+      pressDown(button);
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Not now' }),
+      );
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(mic.request).not.toHaveBeenCalled();
+      expect(mic.start).not.toHaveBeenCalled();
+    });
+
+    it('asks for the microphone on Allow, then thanks without recording', async () => {
+      renderWithProviders(<ShoppingPage />);
+      pressDown(await talkButton());
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Allow microphone' }),
+      );
+
+      await waitFor(() => expect(mic.request).toHaveBeenCalledTimes(1));
+      expect(await screen.findByText(/Microphone on/)).toHaveTextContent(
+        'Microphone on · Now hold the button and speak.',
+      );
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(mic.start).not.toHaveBeenCalled();
+    });
+
+    it('swaps to the blocked sheet when Allow is refused', async () => {
+      mic.request.mockRejectedValue(new MicrophoneError('denied'));
+      renderWithProviders(<ShoppingPage />);
+      pressDown(await talkButton());
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Allow microphone' }),
+      );
+
+      expect(
+        await screen.findByText('The microphone is blocked'),
+      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.queryByText('Say what you did')).toBeNull(),
+      );
+    });
+  });
+
+  it('skips the intro when the browser already granted the microphone', async () => {
+    mic.permission.mockResolvedValue('granted');
+    renderWithProviders(<ShoppingPage />);
+
+    pressDown(await talkButton());
+
+    await screen.findByText('Listening');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  describe('while the microphone is blocked', () => {
+    beforeEach(() => mic.permission.mockResolvedValue('denied'));
+
+    it('shows the blocked button, and a press opens the blocked sheet', async () => {
+      renderWithProviders(<ShoppingPage />);
+      const button = await talkButton();
+      await waitFor(() => expect(button).toHaveStyle({ opacity: '0.55' }));
+
+      pressDown(button);
+
+      const dialog = await screen.findByRole('dialog');
+      expect(dialog).toHaveTextContent('The microphone is blocked');
+      expect(mic.start).not.toHaveBeenCalled();
+    });
+
+    it('lists the steps for both browsers when the browser is not known', async () => {
+      renderWithProviders(<ShoppingPage />);
+      pressDown(await talkButton());
+
+      const dialog = await screen.findByRole('dialog');
+      expect(dialog).toHaveTextContent('iPhone, Safari');
+      expect(dialog).toHaveTextContent('Android, Chrome');
+    });
+
+    it('lists only the steps for the browser it knows', async () => {
+      vi.stubGlobal('navigator', {
+        ...navigator,
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+      });
+      renderWithProviders(<ShoppingPage />);
+      pressDown(await talkButton());
+
+      const dialog = await screen.findByRole('dialog');
+      expect(dialog).toHaveTextContent('iPhone, Safari');
+      expect(dialog).not.toHaveTextContent('Android, Chrome');
+    });
+
+    it('closes with a thanks when "I\'ve allowed it" finds the microphone allowed', async () => {
+      renderWithProviders(<ShoppingPage />);
+      pressDown(await talkButton());
+      const dialog = await screen.findByRole('dialog');
+
+      mic.permission.mockResolvedValue('granted');
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: "I've allowed it" }),
+      );
+
+      expect(await screen.findByText(/Microphone on/)).toBeInTheDocument();
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(mic.start).not.toHaveBeenCalled();
+    });
+
+    it('stays, and shakes the hero once, while still blocked', async () => {
+      mic.request.mockRejectedValue(new MicrophoneError('denied'));
+      renderWithProviders(<ShoppingPage />);
+      pressDown(await talkButton());
+      const dialog = await screen.findByRole('dialog');
+      const hero = within(dialog).getByTestId('mic-hero');
+      expect(hero).not.toHaveAttribute('data-shaking');
+
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: "I've allowed it" }),
+      );
+
+      await waitFor(() =>
+        expect(within(dialog).getByTestId('mic-hero')).toHaveAttribute(
+          'data-shaking',
+        ),
+      );
+      expect(screen.getByRole('dialog')).toHaveTextContent(
+        'The microphone is blocked',
+      );
+    });
+
+    it('closes without changing anything on Close', async () => {
+      renderWithProviders(<ShoppingPage />);
+      pressDown(await talkButton());
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Close' }),
+      );
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+  });
+
+  it('opens the blocked sheet when the browser refuses mid-hold (no Permissions API)', async () => {
+    mic.permission.mockResolvedValue('granted');
+    mic.start.mockRejectedValue(new MicrophoneError('denied'));
+    renderWithProviders(<ShoppingPage />);
+
+    pressDown(await talkButton());
+
+    expect(
+      await screen.findByText('The microphone is blocked'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+    await act(async () => {});
+  });
+});

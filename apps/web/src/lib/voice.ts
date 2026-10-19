@@ -166,8 +166,6 @@ export function sendVoiceNote({
   });
 }
 
-export { micExplained, rememberMicExplained } from './micExplained';
-
 /** Errors a second try of the same recording cannot fix: keeping it for Retry would only mislead. */
 export const NOT_RETRYABLE = new Set([
   'voice.cap_reached',

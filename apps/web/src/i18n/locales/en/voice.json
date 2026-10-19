@@ -1,13 +1,56 @@
 {
-  "explainer": {
-    "title": "Voice notes use your microphone",
-    "body": "Hold the button and say what you bought or used up. Your voice is turned into text for you to check. The recording is not stored.",
+  "intro": {
+    "title": "Say what you did",
+    "body": "Hold the button, speak, let go. You check every change before anything is saved.",
+    "privacy": "<b>Pocket Pantry needs your microphone</b> to hear Voice Notes. Your browser will ask next. The recording is turned into text to read your changes, then deleted; nothing is kept.",
+    "notNow": "Not now",
     "allow": "Allow microphone",
-    "notNow": "Not now"
+    "examples": {
+      "shopping": {
+        "one": {
+          "say": "Got the bread, take milk off",
+          "result": "Ticks bread, removes milk"
+        },
+        "two": {
+          "say": "Add two litres of milk",
+          "result": "Adds milk, 2 l"
+        },
+        "three": {
+          "say": "Put two yogurts in the fridge, they expire Friday",
+          "result": "Goes straight to the Pantry"
+        }
+      },
+      "pantry": {
+        "one": {
+          "say": "Two yogurts in the fridge, they expire Friday",
+          "result": "Adds a Batch of 2 pcs"
+        },
+        "two": {
+          "say": "We finished the milk",
+          "result": "Removes the milk expiring soonest"
+        },
+        "three": {
+          "say": "Running low on rice",
+          "result": "Marks rice running low"
+        }
+      }
+    }
   },
-  "denied": {
-    "title": "The microphone is blocked.",
-    "body": "To use voice notes, allow the microphone for this site in your browser settings (look for the lock or settings icon next to the address), then hold the button again."
+  "mic": {
+    "on": "Microphone on",
+    "onHint": "Now hold the button and speak."
+  },
+  "blocked": {
+    "title": "The microphone is blocked",
+    "body": "Voice Notes need it. Allow it for Pocket Pantry in your browser, then come back and hold the button again.",
+    "safari": "iPhone, Safari",
+    "safariStep1": "Tap <b>aA</b> in the address bar",
+    "safariStep2": "<b>Website Settings</b> → <b>Microphone</b> → <b>Allow</b>",
+    "chrome": "Android, Chrome",
+    "chromeStep1": "Tap the lock next to the address",
+    "chromeStep2": "<b>Permissions</b> → <b>Microphone</b> → <b>Allow</b>",
+    "close": "Close",
+    "retry": "I've allowed it"
   },
   "unavailable": "This browser cannot record audio, so voice notes are not available here.",
   "tooShort": "Hold the button while you speak.",

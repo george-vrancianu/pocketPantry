@@ -16,7 +16,7 @@ export type VoicePhase =
 
 /** Why the last Voice Note did not reach Review. */
 export type VoiceErrorCode =
-  'denied' | 'unavailable' | 'tooShort' | 'nothingHeard' | 'failed';
+  'unavailable' | 'tooShort' | 'nothingHeard' | 'failed';
 
 /** A Voice Action as Review edits it. */
 export type VoiceActionDraft = VoiceReviewAction;

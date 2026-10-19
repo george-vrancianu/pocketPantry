@@ -87,7 +87,6 @@ describe('A Voice Note across both lists', () => {
   beforeEach(() => {
     useVoiceTimers();
     resetVoiceNote();
-    localStorage.setItem('pp.voice.micExplained', '1');
     mic.start.mockReset();
     mic.start.mockImplementation(() =>
       Promise.resolve({
