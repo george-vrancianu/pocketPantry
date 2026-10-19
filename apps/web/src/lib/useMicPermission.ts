@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { rememberMicExplained } from '../../lib/micExplained';
+import { rememberMicExplained } from './micExplained';
 import {
   MicrophoneError,
   permissionState,
   requestPermission,
+  watchPermission,
   type MicrophonePermission,
-} from '../../lib/microphone';
+} from './microphone';
 
 export type MicSheet = 'intro' | 'blocked' | null;
 
@@ -24,19 +25,26 @@ export function useMicPermission({
 }) {
   const [permission, setPermission] = useState<MicrophonePermission>('granted');
   const [sheet, setSheet] = useState<MicSheet>(null);
-  // Counts the "still blocked" shakes, so each one replays the animation.
-  const [shakes, setShakes] = useState(0);
+  // Counts the "still blocked" answers: each replays the shake and re-announces the notice.
+  const [stillBlocked, setStillBlocked] = useState(0);
+  // A request to the browser is in flight: further taps wait for it.
+  const [requesting, setRequesting] = useState(false);
+  const inFlight = useRef(false);
   const callbacks = useRef({ onGranted, onUnavailable });
   callbacks.current = { onGranted, onUnavailable };
 
-  // Read once on arrival so a blocked microphone shows on the button before it is pressed.
+  // Read on arrival, and whenever the browser's setting changes, so a blocked microphone shows on the button.
   useEffect(() => {
     let current = true;
     void permissionState().then((state) => {
       if (current) setPermission(state);
     });
+    const stop = watchPermission((state) => {
+      if (current) setPermission(state);
+    });
     return () => {
       current = false;
+      stop();
     };
   }, []);
 
@@ -61,39 +69,63 @@ export function useMicPermission({
     callbacks.current.onGranted();
   }, []);
 
-  /** Asks the browser now, so its prompt never meets the first real hold. */
-  const allow = useCallback(async () => {
+  /** Runs one request at a time. */
+  const once = useCallback(async (run: () => Promise<void>) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setRequesting(true);
     try {
-      await requestPermission();
-      granted();
-    } catch (error) {
-      if (error instanceof MicrophoneError && error.reason === 'denied') {
-        showBlocked();
-      } else {
-        setSheet(null);
-        callbacks.current.onUnavailable();
-      }
+      await run();
+    } finally {
+      inFlight.current = false;
+      setRequesting(false);
     }
-  }, [granted, showBlocked]);
+  }, []);
+
+  const unavailable = useCallback(() => {
+    setSheet(null);
+    callbacks.current.onUnavailable();
+  }, []);
+
+  /** Asks the browser now, so its prompt never meets the first real hold. */
+  const allow = useCallback(
+    () =>
+      once(async () => {
+        try {
+          await requestPermission();
+          granted();
+        } catch (error) {
+          if (isDenied(error)) showBlocked();
+          else unavailable();
+        }
+      }),
+    [once, granted, showBlocked, unavailable],
+  );
 
   /** "I've allowed it": look again. Where the browser cannot be asked about it, trying is the only way to know. */
-  const recheck = useCallback(async () => {
-    if ((await refresh()) === 'granted') {
-      granted();
-      return;
-    }
-    try {
-      await requestPermission();
-      granted();
-    } catch {
-      setShakes((count) => count + 1);
-    }
-  }, [granted, refresh]);
+  const recheck = useCallback(
+    () =>
+      once(async () => {
+        if ((await refresh()) === 'granted') {
+          granted();
+          return;
+        }
+        try {
+          await requestPermission();
+          granted();
+        } catch (error) {
+          if (isDenied(error)) setStillBlocked((count) => count + 1);
+          else unavailable();
+        }
+      }),
+    [once, granted, refresh, unavailable],
+  );
 
   return {
     blocked: permission === 'denied',
     sheet,
-    shakes,
+    stillBlocked,
+    requesting,
     refresh,
     showIntro,
     showBlocked,
@@ -101,4 +133,8 @@ export function useMicPermission({
     allow,
     recheck,
   };
+}
+
+function isDenied(error: unknown) {
+  return error instanceof MicrophoneError && error.reason === 'denied';
 }

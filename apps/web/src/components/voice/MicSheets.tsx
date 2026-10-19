@@ -14,12 +14,13 @@ import type { ReactNode } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { detectMobileBrowser } from '../../lib/browserKind';
 import type { VoiceList } from '../../lib/voice';
-import type { MicSheet } from './useMicPermission';
+import type { MicSheet } from '../../lib/useMicPermission';
 
 type MicSheetsProps = {
   sheet: MicSheet;
   target: VoiceList;
-  shakes: number;
+  stillBlocked: number;
+  requesting: boolean;
   onClose: () => void;
   onAllow: () => void;
   onRecheck: () => void;
@@ -37,19 +38,19 @@ const footerSx = {
 
 function Hero({
   tone,
-  shakes = 0,
+  stillBlocked = 0,
   children,
 }: {
   tone: 'accent' | 'urgent';
-  shakes?: number;
+  stillBlocked?: number;
   children: ReactNode;
 }) {
   return (
     <Box
       // A new key replays the shake for each "still blocked".
-      key={shakes}
+      key={stillBlocked}
       data-testid="mic-hero"
-      data-shaking={shakes > 0 ? '' : undefined}
+      data-shaking={stillBlocked > 0 ? '' : undefined}
       aria-hidden
       sx={{
         width: 76,
@@ -62,7 +63,7 @@ function Hero({
         backgroundColor:
           tone === 'accent' ? tokens.color.accentTint : tokens.color.urgentBg,
         color: tone === 'accent' ? color.accentOnTint : tokens.color.urgentFg,
-        ...(shakes > 0
+        ...(stillBlocked > 0
           ? {
               animation: 'pp-voice-shake 420ms ease-in-out',
               '@keyframes pp-voice-shake': {
@@ -84,10 +85,13 @@ const examples = ['one', 'two', 'three'] as const;
 
 function Intro({
   target,
+  requesting,
   onClose,
   onAllow,
   open,
-}: Pick<MicSheetsProps, 'target' | 'onClose' | 'onAllow'> & { open: boolean }) {
+}: Pick<MicSheetsProps, 'target' | 'requesting' | 'onClose' | 'onAllow'> & {
+  open: boolean;
+}) {
   const { t } = useTranslation('voice');
   return (
     <Sheet
@@ -100,7 +104,11 @@ function Intro({
           <Button variant="ghost" onClick={onClose}>
             {t('intro.notNow')}
           </Button>
-          <Button startIcon={<MicIcon size={18} />} onClick={onAllow}>
+          <Button
+            startIcon={<MicIcon size={18} />}
+            onClick={onAllow}
+            disabled={requesting}
+          >
             {t('intro.allow')}
           </Button>
         </Box>
@@ -183,11 +191,15 @@ function Steps({ browser }: { browser: 'safari' | 'chrome' }) {
 }
 
 function Blocked({
-  shakes,
+  stillBlocked,
   onClose,
   onRecheck,
   open,
-}: Pick<MicSheetsProps, 'shakes' | 'onClose' | 'onRecheck'> & {
+  requesting,
+}: Pick<
+  MicSheetsProps,
+  'stillBlocked' | 'requesting' | 'onClose' | 'onRecheck'
+> & {
   open: boolean;
 }) {
   const { t } = useTranslation('voice');
@@ -204,12 +216,14 @@ function Blocked({
           <Button variant="ghost" onClick={onClose}>
             {t('blocked.close')}
           </Button>
-          <Button onClick={onRecheck}>{t('blocked.retry')}</Button>
+          <Button onClick={onRecheck} disabled={requesting}>
+            {t('blocked.retry')}
+          </Button>
         </Box>
       }
     >
       <Stack spacing={2} sx={{ p: '20px 16px 16px' }}>
-        <Hero tone="urgent" shakes={shakes}>
+        <Hero tone="urgent" stillBlocked={stillBlocked}>
           <MicOffIcon size={34} />
         </Hero>
         <Typography variant="h2" sx={{ textAlign: 'center' }}>
@@ -217,6 +231,19 @@ function Blocked({
         </Typography>
         <Typography sx={{ textAlign: 'center', color: 'text.secondary' }}>
           {t('blocked.body')}
+        </Typography>
+        <Typography
+          role="status"
+          sx={{
+            textAlign: 'center',
+            fontWeight: 600,
+            color: tokens.color.urgentFg,
+          }}
+        >
+          {stillBlocked > 0
+            ? // The trailing space alternates so a repeat is announced again.
+              `${t('blocked.still')}${stillBlocked % 2 === 0 ? ' ' : ''}`
+            : null}
         </Typography>
         <Stack
           spacing={2}
@@ -237,11 +264,31 @@ function Blocked({
 }
 
 /** The two microphone sheets: the intro before the microphone is asked for, and the blocked one after a refusal. */
-export function MicSheets({ sheet, ...props }: MicSheetsProps) {
+export function MicSheets({
+  sheet,
+  target,
+  stillBlocked,
+  requesting,
+  onClose,
+  onAllow,
+  onRecheck,
+}: MicSheetsProps) {
   return (
     <>
-      <Intro {...props} open={sheet === 'intro'} />
-      <Blocked {...props} open={sheet === 'blocked'} />
+      <Intro
+        open={sheet === 'intro'}
+        target={target}
+        requesting={requesting}
+        onClose={onClose}
+        onAllow={onAllow}
+      />
+      <Blocked
+        open={sheet === 'blocked'}
+        stillBlocked={stillBlocked}
+        requesting={requesting}
+        onClose={onClose}
+        onRecheck={onRecheck}
+      />
     </>
   );
 }

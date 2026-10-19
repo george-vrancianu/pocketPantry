@@ -55,7 +55,8 @@ function VoiceNoteControls({ defaultTarget }: { defaultTarget: VoiceList }) {
       <MicSheets
         sheet={voice.mic.sheet}
         target={defaultTarget}
-        shakes={voice.mic.shakes}
+        stillBlocked={voice.mic.stillBlocked}
+        requesting={voice.mic.requesting}
         onClose={voice.mic.close}
         onAllow={() => void voice.mic.allow()}
         onRecheck={() => void voice.mic.recheck()}

@@ -28,6 +28,7 @@ vi.mock('../../lib/microphone', () => ({
   startRecording: mic.start,
   permissionState: vi.fn(async () => 'granted'),
   requestPermission: vi.fn(async () => undefined),
+  watchPermission: () => () => {},
   MicrophoneError: class MicrophoneError extends Error {
     constructor(readonly reason: string) {
       super(reason);

@@ -39,6 +39,7 @@ export function VoiceButton({
 
   const host = useVoiceHost();
   const destinationId = useId();
+  const blockedId = useId();
   const { armed, buttonProps } = usePressGesture({
     active,
     start: () => void voice.press(),
@@ -111,13 +112,18 @@ export function VoiceButton({
             ? t('listening.toPantry')
             : t('listening.toShopping')}
         </Box>
+        <Box component="span" id={blockedId} hidden sx={visuallyHidden}>
+          {t('voiceButton.blocked')}
+        </Box>
         <Box
           component="button"
           type="button"
           aria-label={t('voiceButton.label')}
           data-voice-button=""
           aria-pressed={voice.recording}
-          aria-describedby={destinationId}
+          aria-describedby={
+            voice.mic.blocked ? `${destinationId} ${blockedId}` : destinationId
+          }
           disabled={busy}
           {...buttonProps}
           sx={{

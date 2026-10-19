@@ -50,7 +50,8 @@
     "chromeStep1": "Tap the lock next to the address",
     "chromeStep2": "<b>Permissions</b> → <b>Microphone</b> → <b>Allow</b>",
     "close": "Close",
-    "retry": "I've allowed it"
+    "retry": "I've allowed it",
+    "still": "Still blocked. Allow the microphone in your browser, then try again."
   },
   "unavailable": "This browser cannot record audio, so voice notes are not available here.",
   "tooShort": "Hold the button while you speak.",
@@ -58,7 +59,8 @@
   "retry": "Retry",
   "dismiss": "Dismiss",
   "voiceButton": {
-    "label": "Hold to record a Voice Note"
+    "label": "Hold to record a Voice Note",
+    "blocked": "Microphone blocked"
   },
   "listening": {
     "title": "Listening",

@@ -23,7 +23,7 @@
       "pantry": {
         "one": {
           "say": "To yoghurter i køleskabet, de udløber fredag",
-          "result": "Tilføjer en Batch på 2 stk"
+          "result": "Tilføjer et parti på 2 stk"
         },
         "two": {
           "say": "Vi er løbet tør for mælk",
@@ -50,7 +50,8 @@
     "chromeStep1": "Tryk på låsen ved adressen",
     "chromeStep2": "<b>Tilladelser</b> → <b>Mikrofon</b> → <b>Tillad</b>",
     "close": "Luk",
-    "retry": "Jeg har tilladt den"
+    "retry": "Jeg har tilladt den",
+    "still": "Stadig blokeret. Tillad mikrofonen i din browser, og prøv igen."
   },
   "unavailable": "Denne browser kan ikke optage lyd, så stemmenoter er ikke tilgængelige her.",
   "tooShort": "Hold knappen nede, mens du taler.",
@@ -58,7 +59,8 @@
   "retry": "Prøv igen",
   "dismiss": "Luk",
   "voiceButton": {
-    "label": "Hold for at optage en stemmenote"
+    "label": "Hold for at optage en stemmenote",
+    "blocked": "Mikrofon blokeret"
   },
   "listening": {
     "title": "Lytter",

@@ -182,3 +182,29 @@ export async function startRecording(): Promise<MicrophoneSession> {
     },
   };
 }
+
+/** Calls `onChange` when the browser's microphone permission changes (the Member allows it in settings). Returns the stop function. */
+export function watchPermission(
+  onChange: (state: MicrophonePermission) => void,
+): () => void {
+  let stopped = false;
+  let status: PermissionStatus | undefined;
+  const handler = () => {
+    if (status) onChange(status.state);
+  };
+  void Promise.resolve(
+    navigator.permissions?.query({ name: 'microphone' as PermissionName }),
+  )
+    .then((found) => {
+      if (stopped || !found) return;
+      status = found;
+      found.addEventListener('change', handler);
+    })
+    .catch(() => {
+      // Not supported for the microphone: the button reads the permission on each press instead.
+    });
+  return () => {
+    stopped = true;
+    status?.removeEventListener('change', handler);
+  };
+}

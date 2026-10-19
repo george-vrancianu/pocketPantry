@@ -26,7 +26,8 @@ import {
   voiceNote,
   useVoiceNoteState,
 } from './voiceNoteStore';
-import { useMicPermission } from '../components/voice/useMicPermission';
+import { useMicPermission } from './useMicPermission';
+import { micExplained } from './micExplained';
 import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 
 /**
@@ -83,6 +84,9 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   // The pointer is still down: a release before the microphone is ready cancels the start.
   const held = useRef(false);
   const starting = useRef(false);
+  // The press was cancelled (not merely let go) while the permission was being read.
+  const cancelled = useRef(false);
+  const unmounted = useRef(false);
   // The recording was let go and is being finalised: no new note until it is read or has failed.
   const stopping = useRef(false);
   const timers = useRef<{
@@ -196,6 +200,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   const cancel = useCallback(() => {
     // Pressed counts even before the stream is live.
     const pressed = held.current || starting.current || !!session.current;
+    cancelled.current = true;
     discardRecording();
     if (pressed) say(options.current.t('voice:listening.cancelled'));
   }, [discardRecording]);
@@ -204,6 +209,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (session.current || starting.current || stopping.current || sending)
       return;
     held.current = true;
+    cancelled.current = false;
     pressedAt.current = Date.now();
     tipOnArrival.current = false;
     clearTimeout(tipTimer.current);
@@ -212,11 +218,29 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     starting.current = true;
     // The microphone sheets stand in for the hold until it is allowed; nothing records and the press resets.
     const permission = await refresh();
-    if (permission !== 'granted') {
+    // Cancelled (Escape, a system gesture) or the page left while asking: nothing more happens.
+    if (cancelled.current || unmounted.current) {
+      starting.current = false;
+      return;
+    }
+    // iOS Safari often forgets a grant between sessions and reports `prompt` again: a device that has
+    // allowed the microphone before goes straight to the hold, and the browser asks as it does.
+    const needsSheet =
+      permission === 'denied' || (permission === 'prompt' && !micExplained());
+    if (needsSheet) {
       held.current = false;
       starting.current = false;
       if (permission === 'denied') showBlocked();
       else showIntro();
+      return;
+    }
+    // Let go while the permission was being read: no recording to start.
+    if (!held.current) {
+      starting.current = false;
+      if (tipOnArrival.current) {
+        tipOnArrival.current = false;
+        showTip();
+      }
       return;
     }
     setPressing(true);
@@ -300,8 +324,10 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   }, []);
 
   // Leaving the page drops a recording in progress.
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    unmounted.current = false;
+    return () => {
+      unmounted.current = true;
       clearTimers();
       clearTimeout(tipTimer.current);
       settle();
@@ -313,9 +339,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
         session.current = null;
         voiceNote.cancelRecording();
       }
-    },
-    [],
-  );
+    };
+  }, []);
 
   return {
     scanLanguage,

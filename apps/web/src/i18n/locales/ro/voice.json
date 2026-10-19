@@ -50,7 +50,8 @@
     "chromeStep1": "Atinge lacătul de lângă adresă",
     "chromeStep2": "<b>Permisiuni</b> → <b>Microfon</b> → <b>Permite</b>",
     "close": "Închide",
-    "retry": "Am permis"
+    "retry": "Am permis",
+    "still": "Încă blocat. Permite microfonul în browser, apoi încearcă din nou."
   },
   "unavailable": "Acest browser nu poate înregistra sunet, deci notele vocale nu sunt disponibile aici.",
   "tooShort": "Ține apăsat butonul cât timp vorbești.",
@@ -58,7 +59,8 @@
   "retry": "Reîncearcă",
   "dismiss": "Închide",
   "voiceButton": {
-    "label": "Ține apăsat pentru a înregistra o notă vocală"
+    "label": "Ține apăsat pentru a înregistra o notă vocală",
+    "blocked": "Microfon blocat"
   },
   "listening": {
     "title": "Ascult",

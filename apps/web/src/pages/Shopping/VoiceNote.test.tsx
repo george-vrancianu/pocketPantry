@@ -26,6 +26,7 @@ vi.mock('../../lib/microphone', () => ({
   startRecording: mic.start,
   permissionState: vi.fn(async () => 'granted'),
   requestPermission: vi.fn(async () => undefined),
+  watchPermission: () => () => {},
   MicrophoneError: class MicrophoneError extends Error {
     constructor(readonly reason: string) {
       super(reason);
@@ -153,9 +154,9 @@ describe('Voice Note on the Shopping List', () => {
 
     const button = await talkButton();
     pressDown(button);
-    fireEvent.pointerUp(button);
     // The permission check comes first, so the microphone is asked for a moment after the press.
-    await waitFor(() => expect(mic.start).toHaveBeenCalledTimes(1));
+    await screen.findByText('Starting…');
+    fireEvent.pointerUp(button);
     await act(async () => ready(session));
 
     await waitFor(() => expect(session.cancel).toHaveBeenCalledTimes(1));
