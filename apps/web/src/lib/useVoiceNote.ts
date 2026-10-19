@@ -11,7 +11,7 @@ import {
 } from './microphone';
 import { localIso } from './pantry';
 import { toastBottom } from '../components/voice/placement';
-import { haptic } from './usePressGesture';
+import { haptic } from './haptic';
 import { keepScreenAwake } from './wakeLock';
 import {
   MAX_VOICE_NOTE_MS,
@@ -155,19 +155,18 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     try {
       audio = await active.stop();
     } catch {
-      stopping.current = false;
       settle();
       voiceNote.fail('unavailable');
       return;
+    } finally {
+      stopping.current = false;
     }
     if (audio.durationMs < MIN_VOICE_NOTE_MS) {
       // Too little audio to read (a slow microphone): the same tip as a quick tap.
-      stopping.current = false;
       settle();
       showTip();
       return;
     }
-    stopping.current = false;
     await send(audio);
   }, [send, showTip]);
 
@@ -187,10 +186,10 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
   /** The Member cancelled (slid off, Escape, a system gesture): discard it and say so. */
   const cancel = useCallback(() => {
-    if (discardRecording()) {
-      const { t } = options.current;
-      say(t('voice:listening.cancelled'));
-    }
+    // Pressed counts even before the stream is live.
+    const pressed = held.current || starting.current || !!session.current;
+    discardRecording();
+    if (pressed) say(options.current.t('voice:listening.cancelled'));
   }, [discardRecording]);
 
   const press = useCallback(async () => {
@@ -303,6 +302,9 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       clearTimers();
       clearTimeout(tipTimer.current);
       settle();
+      // A stream that arrives after this page is gone must not start a note.
+      held.current = false;
+      tipOnArrival.current = false;
       if (session.current) {
         session.current.cancel();
         session.current = null;

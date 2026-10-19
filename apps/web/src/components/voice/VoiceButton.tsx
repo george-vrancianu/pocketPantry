@@ -5,10 +5,12 @@ import {
   palette,
   radius,
   shadow,
+  visuallyHidden,
 } from '@pocket-pantry/ui';
+import { useId } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import type { VoiceList } from '../../lib/voice';
+import { MAX_VOICE_NOTE_MS, type VoiceList } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { usePressGesture } from '../../lib/usePressGesture';
 import { LanguageMenu } from './LanguageMenu';
@@ -32,9 +34,10 @@ export function VoiceButton({
   const { t } = useTranslation('voice');
   const busy = voice.sending;
   const active = voice.recording || voice.pressing;
-  const progress = Math.min(1, voice.elapsedMs / 60_000);
+  const progress = Math.min(1, voice.elapsedMs / MAX_VOICE_NOTE_MS);
 
   const host = useVoiceHost();
+  const destinationId = useId();
   const { armed, buttonProps } = usePressGesture({
     active,
     start: () => void voice.press(),
@@ -102,11 +105,17 @@ export function VoiceButton({
           disabled={active || busy}
           onChange={voice.setScanLanguage}
         />
+        <Box component="span" id={destinationId} sx={visuallyHidden}>
+          {target === 'pantry'
+            ? t('listening.toPantry')
+            : t('listening.toShopping')}
+        </Box>
         <Box
           component="button"
           type="button"
           aria-label={t('voiceButton.label')}
           aria-pressed={voice.recording}
+          aria-describedby={destinationId}
           disabled={busy}
           {...buttonProps}
           sx={{

@@ -14,10 +14,8 @@ import type { VoiceList } from '../../lib/voice';
 import { aboveButton } from './placement';
 import { MAX_VOICE_NOTE_MS } from '../../lib/voice';
 
-/** From here the time turns amber and counts down. */
-const SOON_MS = 50_000;
-/** The last stretch announced to a screen reader, "10 seconds left". */
-const ANNOUNCE_MS = 50_000;
+/** From here the time turns amber and counts down, and "10 seconds left" is announced. */
+const SOON_MS = MAX_VOICE_NOTE_MS - 10_000;
 
 const BARS = 30;
 const METER_MS = 90;
@@ -81,14 +79,25 @@ export function ListeningCard({
 
   const soon = elapsedMs >= SOON_MS;
   const left = Math.max(0, Math.ceil((MAX_VOICE_NOTE_MS - elapsedMs) / 1000));
-  // What a screen reader hears, once per change: never the ticking time.
-  const announcement = starting
+  // What a screen reader hears: each phrase once per note, never the ticking time.
+  const phrase = starting
     ? ''
     : armed
       ? t('listening.cancelArmed')
-      : elapsedMs >= ANNOUNCE_MS
+      : elapsedMs >= SOON_MS
         ? t('listening.tenLeft')
         : t('listening.recording');
+  const [spoken, setSpoken] = useState({ said: [] as string[], now: '' });
+  useEffect(() => {
+    setSpoken((was) =>
+      phrase && !was.said.includes(phrase)
+        ? { said: [...was.said, phrase], now: phrase }
+        : was.now === ''
+          ? was
+          : { ...was, now: '' },
+    );
+  }, [phrase]);
+  const announcement = spoken.now;
 
   return (
     <Box

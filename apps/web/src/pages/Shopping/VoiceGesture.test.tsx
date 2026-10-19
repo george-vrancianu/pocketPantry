@@ -191,6 +191,88 @@ describe('the recording gesture on the Shopping List', () => {
     });
   });
 
+  describe('a press that is no longer a recording', () => {
+    it('does not arm, buzz or grey the button after Escape or the 60 s auto-stop while the finger is still down', async () => {
+      setup();
+      renderWithProviders(<ShoppingPage />);
+      const button = await hold();
+      await userEvent.keyboard('{Escape}');
+      await screen.findByText(cancelledToast);
+      vibrate.mockClear();
+      fireEvent.pointerMove(button, { clientX: 10, clientY: 530 });
+      expect(vibrate).not.toHaveBeenCalled();
+      expect(screen.queryByText('Slide back to keep recording')).toBeNull();
+      fireEvent.pointerUp(button);
+
+      const again = await hold();
+      await holdFor(60_000);
+      await screen.findByRole('dialog');
+      vibrate.mockClear();
+      fireEvent.pointerMove(again, { clientX: 10, clientY: 530 });
+      expect(vibrate).not.toHaveBeenCalled();
+      expect(screen.queryByText('Slide back to keep recording')).toBeNull();
+    });
+
+    it('still treats a later click with no press before it as assistive after a press that ended early', async () => {
+      setup();
+      renderWithProviders(<ShoppingPage />);
+      const button = await hold();
+      await userEvent.keyboard('{Escape}');
+      await holdFor(1_000);
+      fireEvent.click(button);
+      await screen.findByText('Listening');
+      expect(mic.start).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignores a second finger or a right click', async () => {
+      setup();
+      renderWithProviders(<ShoppingPage />);
+      const button = await talkButton();
+      fireEvent.pointerDown(button, { isPrimary: false });
+      fireEvent.pointerDown(button, { button: 2 });
+      await holdFor(100);
+      expect(mic.start).not.toHaveBeenCalled();
+    });
+
+    it('says Cancelled even when the stream had not arrived yet, and then records nothing', async () => {
+      let arrive: (value: ReturnType<typeof fakeSession>) => void = () => {};
+      mic.start.mockImplementation(
+        () => new Promise((resolve) => (arrive = resolve)),
+      );
+      const { sent } = setup();
+      renderWithProviders(<ShoppingPage />);
+      const button = await talkButton();
+      fireEvent.pointerDown(button, { clientX: 130, clientY: 530 });
+      await screen.findByText('Starting…');
+      await userEvent.keyboard('{Escape}');
+
+      expect(await screen.findByText(cancelledToast)).toBeVisible();
+      await act(async () => arrive(session));
+      expect(session.cancel).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText('Listening')).toBeNull();
+      expect(sent).toHaveLength(0);
+    });
+
+    it('records nothing when the stream arrives after leaving the page', async () => {
+      let arrive: (value: ReturnType<typeof fakeSession>) => void = () => {};
+      mic.start.mockImplementation(
+        () => new Promise((resolve) => (arrive = resolve)),
+      );
+      const { sent } = setup();
+      const view = renderWithProviders(<ShoppingPage />);
+      const button = await talkButton();
+      fireEvent.pointerDown(button);
+      await screen.findByText('Starting…');
+      view.unmount();
+
+      await act(async () => arrive(session));
+      await holdFor(61_000);
+      expect(session.cancel).toHaveBeenCalledTimes(1);
+      expect(session.stop).not.toHaveBeenCalled();
+      expect(sent).toHaveLength(0);
+    });
+  });
+
   describe('time limit', () => {
     it('turns to "n s left" from 50 s, and stops and sends at 60 s with a toast', async () => {
       const { sent } = setup();
@@ -200,6 +282,9 @@ describe('the recording gesture on the Shopping List', () => {
 
       await holdFor(50_000);
       expect(screen.getByText('10 s left')).toBeVisible();
+      expect(screen.getByTestId('elapsed')).toHaveStyle({
+        color: 'var(--mui-palette-warning-main)',
+      });
       await holdFor(4_000);
       expect(screen.getByText('6 s left')).toBeVisible();
       expect(session.stop).not.toHaveBeenCalled();
@@ -319,30 +404,58 @@ describe('the recording gesture on the Shopping List', () => {
     it('announces Recording, Let go to cancel and 10 seconds left once each, never the ticking time', async () => {
       setup();
       renderWithProviders(<ShoppingPage />);
-      const button = await hold();
-      const card = screen.getByText('Listening').closest('[role="status"]')!;
-      expect(card).toBeInTheDocument();
+      const button = await talkButton();
+      place(button);
+      fireEvent.pointerDown(button, { clientX: 130, clientY: 530 });
+      const card = (await screen.findByText('Listening')).closest(
+        '[role="status"]',
+      )!;
+      expect(card).toHaveAttribute('role', 'status');
+
+      // What a screen reader reads: everything not aria-hidden.
       const live = () =>
-        // What a screen reader reads: everything not aria-hidden.
         Array.from(card.querySelectorAll('*'))
           .filter((node) => !node.closest('[aria-hidden="true"]'))
           .map((node) => (node.children.length === 0 ? node.textContent : ''))
           .join('')
           .trim();
+      const announced: string[] = [];
+      const watch = new MutationObserver(() => {
+        const now = live();
+        if (now) announced.push(now);
+      });
+      watch.observe(card, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+      });
+      const arm = () => {
+        fireEvent.pointerMove(button, { clientX: 10, clientY: 530 });
+      };
+      const disarm = () => {
+        fireEvent.pointerMove(button, { clientX: 130, clientY: 530 });
+      };
 
-      expect(live()).toBe('Recording');
       await holdFor(3_000);
-      expect(live()).toBe('Recording');
-
-      fireEvent.pointerMove(button, { clientX: 10, clientY: 530 });
-      expect(live()).toBe('Let go to cancel');
-      fireEvent.pointerMove(button, { clientX: 130, clientY: 530 });
-      expect(live()).toBe('Recording');
-
+      arm();
+      await holdFor(10);
+      disarm();
+      await holdFor(10);
+      arm();
+      await holdFor(10);
+      disarm();
       await holdFor(47_000);
-      expect(live()).toBe('10 seconds left');
-      await holdFor(3_000);
-      expect(live()).toBe('10 seconds left');
+      arm();
+      await holdFor(10);
+      disarm();
+      await holdFor(5_000);
+      watch.disconnect();
+
+      expect(announced).toEqual([
+        'Recording',
+        'Let go to cancel',
+        '10 seconds left',
+      ]);
     });
   });
 
@@ -432,6 +545,34 @@ describe('the recording gesture on the Shopping List', () => {
       expect(released).toHaveBeenCalledTimes(1);
     });
 
+    it('is released on Escape, a pointer cancel, the 60 s auto-stop and leaving the page', async () => {
+      setup();
+      const view = renderWithProviders(<ShoppingPage />);
+      await hold();
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
+
+      const button = await talkButton();
+      fireEvent.pointerDown(button);
+      await screen.findByText('Listening');
+      fireEvent.pointerCancel(button);
+      await waitFor(() => expect(released).toHaveBeenCalledTimes(2));
+
+      fireEvent.pointerDown(button);
+      await screen.findByText('Listening');
+      await holdFor(60_000);
+      await screen.findByRole('dialog');
+      await waitFor(() => expect(released).toHaveBeenCalledTimes(3));
+
+      view.unmount();
+      resetVoiceNote();
+      const second = renderWithProviders(<ShoppingPage />);
+      await hold();
+      second.unmount();
+      await waitFor(() => expect(released).toHaveBeenCalledTimes(4));
+      expect(request).toHaveBeenCalledTimes(4);
+    });
+
     it('is skipped silently when the browser has none, or refuses', async () => {
       request.mockImplementation(() => Promise.reject(new Error('denied')));
       setup();
@@ -473,6 +614,13 @@ describe('the recording gesture on the Shopping List', () => {
       const dock = screen.getByRole('navigation');
 
       chip.focus();
+      // Before the chip is the page itself.
+      await userEvent.tab({ shift: true });
+      expect(document.querySelector('main')).toContainElement(
+        document.activeElement as HTMLElement,
+      );
+      await userEvent.tab();
+      expect(chip).toHaveFocus();
       await userEvent.tab();
       expect(button).toHaveFocus();
       await userEvent.tab();

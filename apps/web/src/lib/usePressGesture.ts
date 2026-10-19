@@ -6,6 +6,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
+import { haptic } from './haptic';
 
 /** How far outside the button's box the pointer must go to arm cancel, px (72 pt in the handoff). */
 export const CANCEL_DISTANCE = 72;
@@ -22,15 +23,6 @@ type Press = {
   /** Throw the recording away and say so. */
   cancel: () => void;
 };
-
-/** A short buzz where the device has one. */
-export function haptic(ms: number) {
-  try {
-    navigator.vibrate?.(ms);
-  } catch {
-    // Some browsers refuse without a user gesture: it is only a nicety.
-  }
-}
 
 /**
  * Turns pointer, keyboard and assistive-technology input on the Voice Note button into
@@ -61,7 +53,10 @@ export function usePressGesture({ active, start, send, cancel }: Press) {
 
   // The note ended some other way (60 s, a failed start): nothing is armed any more.
   useEffect(() => {
-    if (!active) disarm();
+    if (!active) {
+      disarm();
+      pointerDown.current = false;
+    }
   }, [active, disarm]);
 
   // Escape cancels wherever focus is, as the screen-reader toggle leaves the pointer out of it.
@@ -79,6 +74,8 @@ export function usePressGesture({ active, start, send, cancel }: Press) {
 
   const buttonProps = {
     onPointerDown(event: PointerEvent<HTMLElement>) {
+      // Only the primary button or finger starts a note, not a second finger or a right click.
+      if (event.button !== 0 || !event.isPrimary) return;
       try {
         event.currentTarget.setPointerCapture?.(event.pointerId);
       } catch {
@@ -89,7 +86,7 @@ export function usePressGesture({ active, start, send, cancel }: Press) {
       start();
     },
     onPointerMove(event: PointerEvent<HTMLElement>) {
-      if (!pointerDown.current) return;
+      if (!pointerDown.current || !active) return;
       arm(outsideBy(event) > CANCEL_DISTANCE);
     },
     onPointerUp() {
@@ -100,6 +97,9 @@ export function usePressGesture({ active, start, send, cancel }: Press) {
         disarm();
         cancel();
       } else send();
+    },
+    onLostPointerCapture() {
+      pointerDown.current = false;
     },
     onPointerCancel() {
       pointerDown.current = false;
