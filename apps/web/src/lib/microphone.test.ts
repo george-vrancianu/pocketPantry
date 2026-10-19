@@ -96,7 +96,7 @@ describe('microphone', () => {
       expect(await permissionState()).toBe('prompt');
     });
 
-    it('falls back to the last request outcome once explained', async () => {
+    it('treats an explained device as granted until a request says otherwise', async () => {
       stubNavigator({
         permissions: {
           query: vi.fn(async () => Promise.reject(new TypeError())),
@@ -105,9 +105,6 @@ describe('microphone', () => {
       });
       window.localStorage.setItem('pp.voice.micExplained', '1');
       const mic = await load();
-      // Explained but never asked in this page: still unknown.
-      expect(await mic.permissionState()).toBe('prompt');
-      await mic.requestPermission();
       expect(await mic.permissionState()).toBe('granted');
     });
 

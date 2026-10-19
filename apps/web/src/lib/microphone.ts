@@ -3,14 +3,14 @@
  * `getUserMedia` or `MediaRecorder`. It records one Voice Note at a time.
  */
 
+import { micExplained } from './micExplained';
+
 export type Recording = {
   blob: Blob;
   /** The container the browser chose, e.g. `audio/webm;codecs=opus` (Chromium) or `audio/mp4` (Safari). */
   mimeType: string;
   durationMs: number;
 };
-
-import { micExplained } from './voice';
 
 /** What the browser will do when the microphone is asked for. */
 export type MicrophonePermission = 'prompt' | 'granted' | 'denied';
@@ -49,9 +49,10 @@ let lastOutcome: 'granted' | 'denied' | null = null;
 
 /**
  * Whether asking for the microphone would prompt, succeed or be refused. Uses the
- * Permissions API where it knows `microphone` (Chromium, Firefox); elsewhere (Safari)
- * it falls back to the stored "explained" flag plus the last request's outcome: before
- * the explanation, or with no outcome yet, it is `prompt`.
+ * Permissions API where the browser supports the `microphone` permission name;
+ * elsewhere it falls back to the last request's outcome, else the stored "explained"
+ * flag (explained means the Member decided, so `granted`; a real refusal surfaces on the
+ * next hold and is remembered as `denied`), else `prompt`.
  */
 export async function permissionState(): Promise<MicrophonePermission> {
   try {
@@ -62,8 +63,8 @@ export async function permissionState(): Promise<MicrophonePermission> {
   } catch {
     // Not supported for the microphone: use the fallback.
   }
-  if (!micExplained()) return 'prompt';
-  return lastOutcome ?? 'prompt';
+  if (lastOutcome) return lastOutcome;
+  return micExplained() ? 'granted' : 'prompt';
 }
 
 async function openStream(): Promise<MediaStream> {
@@ -98,6 +99,7 @@ function openMeter(stream: MediaStream) {
   if (!Context) return null;
   try {
     const context = new Context();
+    void context.resume?.();
     const source = context.createMediaStreamSource(stream);
     const analyser = context.createAnalyser();
     analyser.fftSize = 256;

@@ -21,7 +21,7 @@ export type VoiceErrorCode =
 /** A Voice Action as Review edits it. */
 export type VoiceActionDraft = VoiceReviewAction;
 
-type VoiceNoteState = {
+export type VoiceNoteState = {
   phase: VoicePhase;
   /** The page that recorded: the default target of the Voice Note. */
   page: VoiceList;
@@ -63,10 +63,11 @@ export const voiceNote = {
   /** The Member let go or slid off to cancel without sending. */
   cancelRecording: () => go({ phase: 'idle', page: state.page }),
   /** The recording is being sent and read. */
-  read(audio: Recording, scanLanguage: ScanLanguage) {
+  /** `page` is the list the note is sent to. */
+  read(audio: Recording, scanLanguage: ScanLanguage, page: VoiceList) {
     go({
       phase: 'reading',
-      page: state.page,
+      page,
       recording: {
         blob: audio.blob,
         mimeType: audio.mimeType,

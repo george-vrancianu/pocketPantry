@@ -5,7 +5,7 @@ Handoff: `docs/handoffs/voice-notes/handoff.md` (+ `icons-additions.ts`), also d
 
 ## Round 1 (2026-10-16)
 Prototype artifact: https://claude.ai/artifact/BUCR2vbWKR5DmyDC6y6BHd
-Source: `docs/voice-notes/prototype.html`. Spec: GitHub #378 (ADR 0017; sub-issues #379–#386). Covers the whole flow: button → first use / permission → recording → sending states → Review → Apply.
+Source: `docs/handoffs/voice-notes/prototype.html`. Spec: GitHub #378 (ADR 0017; sub-issues #379–#386). Covers the whole flow: button → first use / permission → recording → sending states → Review → Apply.
 
 ### Variants (button placement only; everything after the press is shared)
 - **A · Header pill**: "Speak" pill in the page header (next to Import / the avatar), language behind a divider in the same pill. Calm, but top of screen is hard to hold one-handed and scrolls away.

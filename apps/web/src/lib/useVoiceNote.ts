@@ -66,6 +66,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   // The pointer is still down: a release before the microphone is ready cancels the start.
   const held = useRef(false);
   const starting = useRef(false);
+  // The recording was let go and is being finalised: no new note until it is read or has failed.
+  const stopping = useRef(false);
   const timers = useRef<{
     tick?: ReturnType<typeof setInterval>;
     limit?: ReturnType<typeof setTimeout>;
@@ -81,7 +83,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
   const send = useCallback(async (audio: Recording) => {
     const { locale, scanLanguage, defaultTarget, t } = options.current;
-    voiceNote.read(audio, scanLanguage);
+    voiceNote.read(audio, scanLanguage, defaultTarget);
     try {
       const result = await sendVoiceNote({
         recording: audio,
@@ -113,17 +115,23 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (!active) return;
     session.current = null;
     clearTimers();
+    // Not recording any more, even while the audio is finalised.
+    voiceNote.cancelRecording();
+    stopping.current = true;
     let audio: Recording;
     try {
       audio = await active.stop();
     } catch {
+      stopping.current = false;
       voiceNote.fail('unavailable');
       return;
     }
     if (audio.durationMs < MIN_VOICE_NOTE_MS) {
+      stopping.current = false;
       voiceNote.fail('tooShort');
       return;
     }
+    stopping.current = false;
     await send(audio);
   }, [send]);
 
@@ -138,7 +146,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   }, []);
 
   const press = useCallback(async () => {
-    if (session.current || starting.current || sending) return;
+    if (session.current || starting.current || stopping.current || sending)
+      return;
     held.current = true;
     voiceNote.dismiss();
     if (!micExplained()) {

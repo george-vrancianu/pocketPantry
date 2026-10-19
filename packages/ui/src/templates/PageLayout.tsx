@@ -10,7 +10,7 @@ export type PageLayoutProps = {
   wide?: boolean;
   /**
    * A control floats above the Dock (the Voice Note button): reserve 190 px at the
-   * bottom so the last row can scroll clear of it. Default off.
+   * bottom so the last row can scroll clear of it. Only with the Dock. Default off.
    */
   floatingControl?: boolean;
 };
@@ -30,7 +30,7 @@ export function PageLayout({
         backgroundColor: tokens.color.bg,
         color: tokens.color.ink,
         px: { xs: '20px', md: '48px' },
-        pb: floatingControl ? '190px' : withDock ? '110px' : '24px',
+        pb: withDock ? (floatingControl ? '190px' : '110px') : '24px',
       }}
     >
       <Box component="main" sx={{ maxWidth: wide ? 1180 : 960, mx: 'auto' }}>

@@ -36,6 +36,7 @@ function fakeSession() {
   return {
     stop: vi.fn(() => Promise.resolve(recording)),
     cancel: vi.fn(),
+    level: vi.fn(() => 0),
   };
 }
 

@@ -13,6 +13,15 @@ describe('PageLayout', () => {
     expect(bottom(container)).toBe('110px');
   });
 
+  it('ignores the floating control without the Dock', () => {
+    const { container } = render(
+      <PageLayout withDock={false} floatingControl>
+        Page
+      </PageLayout>,
+    );
+    expect(bottom(container)).toBe('24px');
+  });
+
   it('leaves room for a floating control above the Dock when asked', () => {
     const { container } = render(<PageLayout floatingControl>Page</PageLayout>);
     expect(bottom(container)).toBe('190px');

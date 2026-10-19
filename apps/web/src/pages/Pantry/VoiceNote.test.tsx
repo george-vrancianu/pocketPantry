@@ -125,6 +125,7 @@ describe('Voice Notes on the Pantry page', () => {
       Promise.resolve({
         stop: vi.fn(() => Promise.resolve(recording)),
         cancel: vi.fn(),
+        level: vi.fn(() => 0),
       }),
     );
   });

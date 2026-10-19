@@ -87,6 +87,7 @@ describe('A Voice Note across both lists', () => {
       Promise.resolve({
         stop: vi.fn(() => Promise.resolve(recording)),
         cancel: vi.fn(),
+        level: vi.fn(() => 0),
       }),
     );
     const { fetchMock } = stubApi({
