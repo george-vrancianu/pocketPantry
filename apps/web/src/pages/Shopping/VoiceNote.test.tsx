@@ -376,10 +376,59 @@ describe('Voice Note on the Shopping List', () => {
       expect(screen.queryByText('Reading your note')).toBeNull();
       expect(screen.getByText('Cancelled. Nothing was saved.')).toBeVisible();
       expect(getVoiceNoteState().phase).toBe('idle');
-      // A new note can start at once, and the late answer of the cancelled one is ignored.
+      // A new note can start at once.
       pressDown(await talkButton());
       expect(await screen.findByText('Listening')).toBeVisible();
     });
+
+    it.each([
+      [
+        'a transcript',
+        (late: {
+          resolve: (r: Response) => void;
+          reject: (e: Error) => void;
+        }) =>
+          late.resolve(
+            Response.json({ transcript: 'late bread', actions: [] }),
+          ),
+      ],
+      [
+        'an error',
+        (late: {
+          resolve: (r: Response) => void;
+          reject: (e: Error) => void;
+        }) => late.reject(new TypeError('offline')),
+      ],
+    ])(
+      'ignores the late answer of a cancelled note: %s',
+      async (_name, settle) => {
+        const late = {} as {
+          resolve: (r: Response) => void;
+          reject: (e: Error) => void;
+        };
+        setup({
+          note: () =>
+            new Promise<Response>((resolve, reject) => {
+              late.resolve = resolve;
+              late.reject = reject;
+            }),
+        });
+        renderWithProviders(<ShoppingPage />);
+        fireEvent.pointerUp(await hold());
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Cancel' }),
+        );
+
+        await act(async () => {
+          settle(late);
+          await vi.advanceTimersByTimeAsync(50);
+        });
+
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(getVoiceNoteState().phase).toBe('idle');
+      },
+    );
 
     it('tells a press while reading that the last note is still being read', async () => {
       setup({ note: never });

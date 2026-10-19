@@ -61,6 +61,21 @@ describe('Daily caps counted by kind (integration)', () => {
     });
   });
 
+  it('tells the Voice Cap, and only it, when it resets: the next UTC midnight of the charged day', async () => {
+    const memberId = await signUp('resets');
+    for (let i = 0; i < 2; i++) await cap.consume(memberId, now, 'voice');
+    for (let i = 0; i < 3; i++) await cap.consume(memberId, now, 'scan');
+
+    const voice = await cap.consume(memberId, now, 'voice').catch((e) => e);
+    const scan = await cap.consume(memberId, now, 'scan').catch((e) => e);
+
+    expect(voice).toMatchObject({
+      code: 'voice.cap_reached',
+      params: { cap: 2, resetsAt: '2020-05-02T00:00:00.000Z' },
+    });
+    expect((scan as { params: unknown }).params).toEqual({ cap: 3 });
+  });
+
   it('refunds a voice use when the provider call fails, leaving scans alone', async () => {
     const memberId = await signUp('refund');
     for (let i = 0; i < 5; i++) {

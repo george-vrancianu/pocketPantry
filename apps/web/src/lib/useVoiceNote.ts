@@ -26,6 +26,7 @@ import {
 import type { ScanLanguage } from '../i18n/resources';
 import {
   getVoiceNoteState,
+  isVoiceCapReached,
   voiceNote,
   useVoiceNoteState,
   type VoiceErrorCode,
@@ -72,10 +73,10 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (!voiceCap) return;
     const wait = voiceCap.resetsAt - Date.now();
     if (wait <= 0) return;
-    const id = setTimeout(wake, wait);
+    const id = setTimeout(wake, Math.min(wait, 2 ** 31 - 1));
     return () => clearTimeout(id);
   }, [voiceCap]);
-  const capped = voiceCap !== undefined && Date.now() < voiceCap.resetsAt;
+  const capped = isVoiceCapReached();
   // A failed note is waiting for Retry or Discard.
   const kept = phase === 'failed' && keptRecording !== undefined;
   const [explaining, setExplaining] = useState(false);
@@ -191,7 +192,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
         });
       } finally {
         if (reading === request) reading = undefined;
-        settle();
+        // A cancelled send must not release the wake lock of a newer press.
+        if (!request.signal.aborted) settle();
       }
     },
     [queryClient],

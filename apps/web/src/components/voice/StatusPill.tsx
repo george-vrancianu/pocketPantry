@@ -122,12 +122,9 @@ export function StatusPill({ voice }: { voice: Voice }) {
       case 'failed':
         return failed(errorMessage ?? t('send.failedHint'), voice.kept);
       case 'tooLong':
-        return { ...failed(t('send.tooLong'), false), title: t('send.failed') };
+        return failed(t('send.tooLong'), false);
       case 'unsupported':
-        return {
-          ...failed(t('send.unsupported'), false),
-          title: t('send.failed'),
-        };
+        return failed(t('send.unsupported'), false);
       case 'nothingHeard':
         return {
           icon: <EarIcon size={17} />,
@@ -165,6 +162,8 @@ export function StatusPill({ voice }: { voice: Voice }) {
 
   return createPortal(
     <Box
+      // A fresh node per state, so a status that becomes an alert is announced.
+      key={phase === 'reading' ? 'reading' : error}
       role={look.urgent ? 'alert' : 'status'}
       sx={{
         position: 'fixed',
