@@ -11,7 +11,8 @@ import {
   type Recording,
 } from './microphone';
 import { localIso } from './pantry';
-import { toastBottom } from '../components/voice/placement';
+import { voiceToast } from './voicePlacement';
+import { returnFocusFromPill } from '../components/voice/focusVoiceButton';
 import { haptic } from './haptic';
 import { keepScreenAwake } from './wakeLock';
 import {
@@ -24,6 +25,7 @@ import {
 import type { ScanLanguage } from '../i18n/resources';
 import {
   getVoiceNoteState,
+  inFlight,
   isVoiceCapReached,
   voiceNote,
   useVoiceNoteState,
@@ -32,11 +34,14 @@ import { useMicPermission } from './useMicPermission';
 import { micExplained } from './micExplained';
 import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 
-/** Cancel aborts this request; module-level so the pill on either page can reach it. */
-let reading: AbortController | undefined;
-
-/** The pill for a note nothing came of closes itself after this long. */
-export const NOTHING_HEARD_MS = 3600;
+/** Keeps the screen awake from the press until the note is settled (Review, a notice, cancelled). */
+const stayAwake = () => {
+  inFlight.release ??= keepScreenAwake();
+};
+const settle = () => {
+  inFlight.release?.();
+  inFlight.release = undefined;
+};
 
 /**
  * Hold-to-talk Voice Note: `press` starts recording, `release` stops and sends,
@@ -102,17 +107,9 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   }>({});
   const options = useRef({ locale, scanLanguage, defaultTarget, t, toast });
   options.current = { locale, scanLanguage, defaultTarget, t, toast };
-  // Keeps the screen awake from the press until the note is settled (Review, a notice, cancelled).
-  const awake = useRef<(() => void) | undefined>(undefined);
-  const stayAwake = () => {
-    awake.current ??= keepScreenAwake();
-  };
-  const settle = () => {
-    awake.current?.();
-    awake.current = undefined;
-  };
-  const say = (message: string) =>
-    options.current.toast.show(message, { polite: true, bottom: toastBottom });
+  // `abovePill`: the note is about to be read, so the Reading pill and its Cancel come up here.
+  const say = (message: string, abovePill = false) =>
+    options.current.toast.show(message, voiceToast({ abovePill }));
 
   const mic = useMicPermission({
     onGranted: () => {
@@ -134,7 +131,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     async (audio: Recording, scanLanguage: ScanLanguage, page: VoiceList) => {
       const { locale, t } = options.current;
       const request = new AbortController();
-      reading = request;
+      inFlight.read = request;
       voiceNote.read(audio, scanLanguage, page);
       try {
         const result = await sendVoiceNote({
@@ -196,7 +193,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
           keepRecording: true,
         });
       } finally {
-        if (reading === request) reading = undefined;
+        if (inFlight.read === request) inFlight.read = undefined;
         // A cancelled send must not release the wake lock of a newer press.
         if (!request.signal.aborted) settle();
       }
@@ -342,6 +339,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       const { t } = options.current;
       say(
         `${t('voice:listening.stopped')} · ${t('voice:listening.stoppedHint')}`,
+        true,
       );
       void finish();
     }, MAX_VOICE_NOTE_MS);
@@ -369,12 +367,13 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   const retry = useCallback(() => {
     const { phase, recording: audio, page } = getVoiceNoteState();
     if (phase !== 'failed' || !audio) return;
+    returnFocusFromPill();
     stayAwake();
     void send(
       {
         blob: audio.blob,
         mimeType: audio.mimeType,
-        durationMs: audio.seconds * 1000,
+        durationMs: audio.durationMs,
       },
       audio.scanLanguage,
       page,
@@ -382,19 +381,22 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   }, [send]);
 
   const dismiss = useCallback(() => {
+    returnFocusFromPill();
     voiceNote.dismiss();
   }, []);
 
   /** Drops the kept recording (the pill's Discard). */
   const discardFailed = useCallback(() => {
+    returnFocusFromPill();
     voiceNote.dismiss();
     say(options.current.t('voice:send.discarded'));
   }, []);
 
   /** Gives up waiting for the read. The server is not told, so the Voice Cap charge stands. */
   const cancelReading = useCallback(() => {
-    reading?.abort();
-    reading = undefined;
+    returnFocusFromPill();
+    inFlight.read?.abort();
+    inFlight.read = undefined;
     voiceNote.dismiss();
     settle();
     say(options.current.t('voice:send.cancelled'));
@@ -407,7 +409,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       unmounted.current = true;
       clearTimers();
       clearTimeout(tipTimer.current);
-      settle();
+      // A read in flight keeps the screen awake until it ends; the next page's button sees it.
+      if (!inFlight.read) settle();
       // A stream that arrives after this page is gone must not start a note.
       held.current = false;
       tipOnArrival.current = false;

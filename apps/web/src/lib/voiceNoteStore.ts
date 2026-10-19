@@ -25,9 +25,6 @@ export type VoiceErrorCode =
   /** The Voice Cap is used up; the number is in `voiceCap`. */
   | 'capReached';
 
-/** A Voice Action as Review edits it. */
-export type VoiceActionDraft = VoiceReviewAction;
-
 export type VoiceNoteState = {
   phase: VoicePhase;
   /** The page that recorded: the default target of the Voice Note. */
@@ -36,11 +33,11 @@ export type VoiceNoteState = {
   recording?: {
     blob: Blob;
     mimeType: string;
-    seconds: number;
+    durationMs: number;
     scanLanguage: ScanLanguage;
   };
   /** What the server read from the recording, then as the Member edits it. */
-  proposal?: { transcript: string; actions: VoiceActionDraft[] };
+  proposal?: { transcript: string; actions: VoiceReviewAction[] };
   error?: VoiceErrorCode;
   /** The translated server message when `error` is `failed`. */
   errorMessage?: string;
@@ -53,10 +50,14 @@ const initial: VoiceNoteState = { phase: 'idle', page: 'shopping' };
 let state = initial;
 const listeners = new Set<() => void>();
 
+const emit = () => {
+  for (const listener of listeners) listener();
+};
+
 /** Replaces the transient fields; the Voice Cap is only touched by `setCap`. */
 function go(next: Omit<VoiceNoteState, 'voiceCap'>) {
   state = { ...next, voiceCap: state.voiceCap };
-  for (const listener of listeners) listener();
+  emit();
 }
 
 /**
@@ -69,8 +70,7 @@ export const voiceNote = {
   startRecording: (page: VoiceList) => go({ phase: 'recording', page }),
   /** The Member let go or slid off to cancel without sending. */
   cancelRecording: () => go({ phase: 'idle', page: state.page }),
-  /** The recording is being sent and read. */
-  /** `page` is the list the note is sent to. */
+  /** The recording is being sent and read; `page` is the list the note is sent to. */
   read(audio: Recording, scanLanguage: ScanLanguage, page: VoiceList) {
     go({
       phase: 'reading',
@@ -78,7 +78,7 @@ export const voiceNote = {
       recording: {
         blob: audio.blob,
         mimeType: audio.mimeType,
-        seconds: audio.durationMs / 1000,
+        durationMs: audio.durationMs,
         scanLanguage,
       },
     });
@@ -110,13 +110,13 @@ export const voiceNote = {
   applying() {
     if (state.phase !== 'review') return;
     state = { ...state, phase: 'applying' };
-    for (const listener of listeners) listener();
+    emit();
   },
   /** Apply failed: back to Review with every edit kept. */
   applyFailed() {
     if (state.phase !== 'applying') return;
     state = { ...state, phase: 'review' };
-    for (const listener of listeners) listener();
+    emit();
   },
   /** Drops a failure and its kept recording. */
   dismiss: () => go({ phase: 'idle', page: state.page }),
@@ -136,7 +136,7 @@ export const voiceNote = {
         actions: state.proposal.actions.filter((a) => a.id !== id),
       },
     };
-    for (const listener of listeners) listener();
+    emit();
   },
   edit(
     id: string,
@@ -162,7 +162,7 @@ export const voiceNote = {
         ),
       },
     };
-    for (const listener of listeners) listener();
+    emit();
   },
   /**
    * The server refused for the Voice Cap; `resetsAt` is an ISO timestamp. One that is missing or
@@ -178,7 +178,7 @@ export const voiceNote = {
         resetsAt: Number.isNaN(parsed) ? nextUtcMidnight(Date.now()) : parsed,
       },
     };
-    for (const listener of listeners) listener();
+    emit();
   },
 };
 
@@ -196,9 +196,22 @@ export function isVoiceCapReached(now: number = Date.now()): boolean {
   return state.voiceCap !== undefined && now < state.voiceCap.resetsAt;
 }
 
+/**
+ * What outlives the page that started a Voice Note, so the pill on either page can reach it: the request
+ * being read (Cancel aborts it) and the lock that keeps the screen awake until it ends.
+ */
+export const inFlight: {
+  read?: AbortController;
+  release?: () => void;
+} = {};
+
 export function resetVoiceNote() {
+  inFlight.read?.abort();
+  inFlight.read = undefined;
+  inFlight.release?.();
+  inFlight.release = undefined;
   state = initial;
-  for (const listener of listeners) listener();
+  emit();
 }
 
 const subscribe = (listener: () => void) => {

@@ -3,7 +3,6 @@ import {
   Box,
   Sheet,
   Typography,
-  tokens,
   ShoppingIcon,
   PantryIcon,
   SearchIcon,
@@ -13,13 +12,14 @@ import {
   radius,
   useToast,
   shadow,
+  palette,
 } from '@pocket-pantry/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { applyToast } from './applyResult';
 import { focusVoiceButton } from './focusVoiceButton';
-import { toastBottom } from './placement';
+import { voiceToast } from '../../lib/voicePlacement';
 import { HeardCard } from './HeardCard';
 import { ReviewFooter } from './ReviewFooter';
 import { VoiceActionRow } from './VoiceActionRow';
@@ -118,10 +118,9 @@ function ReviewSheet() {
         ),
       );
       toast.show(message, {
+        ...voiceToast(),
         detail,
-        polite: true,
         duration: APPLY_TOAST_MS,
-        bottom: toastBottom,
       });
       focusVoiceButton();
       void Promise.all(
@@ -141,7 +140,7 @@ function ReviewSheet() {
     voiceNote.discard();
     toast.show(
       `${t('voice:review.footer.discarded')} · ${t('voice:review.footer.discardedHint')}`,
-      { polite: true, bottom: toastBottom },
+      voiceToast(),
     );
     focusVoiceButton();
   };
@@ -223,7 +222,7 @@ function ReviewSheet() {
           >
             {t('voice:review.title')}
           </Typography>
-          <Typography sx={{ fontSize: 13, color: tokens.color.muted }}>
+          <Typography sx={{ fontSize: 13, color: palette('text-secondary') }}>
             {subline}
           </Typography>
         </Box>
@@ -268,7 +267,7 @@ function ReviewSheet() {
         <HeardCard
           transcript={transcript}
           language={language}
-          seconds={recording?.seconds}
+          durationMs={recording?.durationMs}
           defaultOpen={actions.every((a) => a.status === 'notUnderstood')}
         />
 
@@ -332,7 +331,7 @@ function Group({
           fontWeight: 700,
           letterSpacing: '.07em',
           textTransform: 'uppercase',
-          color: tokens.color.muted,
+          color: palette('text-secondary'),
         }}
       >
         {icon}
@@ -345,7 +344,7 @@ function Group({
               px: '8px',
               py: '1px',
               borderRadius: '999px',
-              backgroundColor: tokens.color.chipNeutral,
+              backgroundColor: palette('pp-chip'),
               fontSize: 11.5,
               fontWeight: 600,
               letterSpacing: 0,
@@ -365,8 +364,8 @@ function Group({
           m: 0,
           p: 0,
           listStyle: 'none',
-          backgroundColor: tokens.color.surface,
-          border: `1px solid ${tokens.color.line}`,
+          backgroundColor: palette('background-paper'),
+          border: `1px solid ${palette('pp-line')}`,
           borderRadius: radius.card,
           boxShadow: shadow.card,
           overflow: 'hidden',
@@ -401,7 +400,7 @@ function CouldntRow({ action }: { action: VoiceReviewAction }) {
         py: '10px',
         pl: '12px',
         pr: '52px',
-        '& + &': { borderTop: `1px solid ${tokens.color.divider}` },
+        '& + &': { borderTop: `1px solid ${palette('divider')}` },
       }}
     >
       <Box
@@ -413,22 +412,24 @@ function CouldntRow({ action }: { action: VoiceReviewAction }) {
           borderRadius: radius.control,
           display: 'grid',
           placeItems: 'center',
-          border: `1.5px dashed ${tokens.color.line}`,
-          color: tokens.color.muted,
+          border: `1.5px dashed ${palette('pp-line')}`,
+          color: palette('text-secondary'),
         }}
       >
         {notFound ? <SearchIcon size={18} /> : <AlertIcon size={18} />}
       </Box>
       <Box sx={{ minWidth: 0 }}>
         <Box sx={{ fontSize: 15 }}>
-          <Box component="span" sx={{ color: tokens.color.muted }}>
+          <Box component="span" sx={{ color: palette('text-secondary') }}>
             {t(notFound ? 'review.notFound' : 'review.notUnderstood')}{' '}
           </Box>
           <Box component="span" sx={{ fontWeight: 600 }}>
             “{action.text}”
           </Box>
         </Box>
-        <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>{reason}</Box>
+        <Box sx={{ fontSize: 12.5, color: palette('text-secondary') }}>
+          {reason}
+        </Box>
       </Box>
       <Box sx={{ position: 'absolute', right: 8, top: 12 }}>
         <IconButton

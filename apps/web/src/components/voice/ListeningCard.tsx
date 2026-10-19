@@ -11,28 +11,15 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
 import type { VoiceList } from '../../lib/voice';
-import { aboveButton } from './placement';
-import { MAX_VOICE_NOTE_MS } from '../../lib/voice';
+import { aboveButton, VOICE_LAYER } from '../../lib/voicePlacement';
+import { formatClock, MAX_VOICE_NOTE_MS } from '../../lib/voice';
+import { enter } from './enter';
 
 /** From here the time turns amber and counts down, and "10 seconds left" is announced. */
 const SOON_MS = MAX_VOICE_NOTE_MS - 10_000;
 
 const BARS = 30;
 const METER_MS = 90;
-
-const formatElapsed = (ms: number) => {
-  const seconds = Math.floor(ms / 1000);
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-};
-
-const enter = {
-  animation: 'pp-voice-card-in 200ms cubic-bezier(.2,.8,.2,1)',
-  '@keyframes pp-voice-card-in': {
-    from: { opacity: 0, transform: 'translateY(8px) scale(.98)' },
-    to: { opacity: 1, transform: 'none' },
-  },
-  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-};
 
 const blink = {
   animation: 'pp-voice-blink 1.1s ease-in-out infinite',
@@ -109,7 +96,7 @@ export function ListeningCard({
         bottom: aboveButton(22),
         mx: 'auto',
         maxWidth: 420,
-        zIndex: 1250,
+        zIndex: VOICE_LAYER.card,
         p: '14px 16px 13px',
         backgroundColor: armed ? 'pp.subtle' : 'pp.cardBg',
         color: 'text.primary',
@@ -171,7 +158,7 @@ export function ListeningCard({
                   color: soon && !armed ? palette('warning-main') : 'inherit',
                 }}
               >
-                {formatElapsed(elapsedMs)}
+                {formatClock(elapsedMs)}
               </Box>
               <Box
                 component="span"

@@ -6,30 +6,22 @@ import {
   radius,
   shadow,
   Spinner,
-  tokens,
   MicOffIcon,
   WifiOffIcon,
+  palette,
 } from '@pocket-pantry/ui';
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { formatClock } from '../../lib/voice';
-import { NOTHING_HEARD_MS, type useVoiceNote } from '../../lib/useVoiceNote';
+import { formatClock, NOTHING_HEARD_MS } from '../../lib/voice';
+import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { useVoiceNoteState } from '../../lib/voiceNoteStore';
 import { useVoiceHost } from './VoiceHost';
-import { aboveButton } from './placement';
+import { aboveButton, VOICE_LAYER } from '../../lib/voicePlacement';
+import { enter } from './enter';
+import { VOICE_PILL_ATTRIBUTE } from './focusVoiceButton';
 
 type Voice = ReturnType<typeof useVoiceNote>;
-const { color } = tokens;
-
-const enter = {
-  animation: 'pp-voice-pill-in 200ms cubic-bezier(.2,.8,.2,1)',
-  '@keyframes pp-voice-pill-in': {
-    from: { opacity: 0, transform: 'translateY(8px) scale(.98)' },
-    to: { opacity: 1, transform: 'none' },
-  },
-  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-};
 
 type Look = {
   icon: ReactNode;
@@ -63,11 +55,11 @@ export function StatusPill({ voice }: { voice: Voice }) {
     if (phase === 'reading') {
       return {
         icon: <Spinner label={t('send.reading')} />,
-        bg: color.accentTint,
-        fg: color.accentOnTint,
+        bg: palette('pp-accentTint'),
+        fg: palette('pp-accentOnTint'),
         title: t('send.reading'),
         hint: t('send.readingMeta', {
-          duration: formatClock(recording?.seconds ?? 0),
+          duration: formatClock(recording?.durationMs ?? 0),
           language: t(
             `settings:languageNames.${recording?.scanLanguage ?? 'en'}`,
           ),
@@ -86,6 +78,11 @@ export function StatusPill({ voice }: { voice: Voice }) {
       };
     }
     if (phase !== 'failed') return null;
+    const ok = (
+      <Button variant="primary" size="sm" shape="pill" onClick={voice.dismiss}>
+        {t('send.ok')}
+      </Button>
+    );
     const discard = (
       <Button
         variant="secondary"
@@ -98,8 +95,8 @@ export function StatusPill({ voice }: { voice: Voice }) {
     );
     const failed = (hint: string, canRetry: boolean): Look => ({
       icon: <WifiOffIcon size={17} />,
-      bg: color.soonBg,
-      fg: color.soonFg,
+      bg: palette('warning-light'),
+      fg: palette('warning-main'),
       title: t('send.failed'),
       hint,
       urgent: true,
@@ -128,26 +125,26 @@ export function StatusPill({ voice }: { voice: Voice }) {
           ...failed(t('unavailable'), false),
           icon: <MicOffIcon size={17} />,
           title: t('send.noRecording'),
-          actions: (
-            <Button
-              variant="primary"
-              size="sm"
-              shape="pill"
-              onClick={voice.dismiss}
-            >
-              {t('send.ok')}
-            </Button>
-          ),
+          actions: ok,
         };
+      // Nothing was kept, so there is nothing to discard or retry: only to close.
       case 'tooLong':
-        return failed(t('send.tooLong'), false);
+        return {
+          ...failed(t('send.tooLong'), false),
+          title: t('send.tooLongTitle'),
+          actions: ok,
+        };
       case 'unsupported':
-        return failed(t('send.unsupported'), false);
+        return {
+          ...failed(t('send.unsupported'), false),
+          title: t('send.unsupportedTitle'),
+          actions: ok,
+        };
       case 'nothingHeard':
         return {
           icon: <EarIcon size={17} />,
-          bg: color.accentTint,
-          fg: color.accentOnTint,
+          bg: palette('pp-accentTint'),
+          fg: palette('pp-accentOnTint'),
           title: t('send.nothing'),
           hint: t('send.nothingHint'),
           urgent: false,
@@ -156,21 +153,12 @@ export function StatusPill({ voice }: { voice: Voice }) {
       case 'capReached':
         return {
           icon: <ClockIcon size={17} />,
-          bg: color.urgentBg,
-          fg: color.urgentFg,
+          bg: palette('error-light'),
+          fg: palette('error-main'),
           title: t('send.cap', { cap: voiceCap?.cap ?? 0 }),
           hint: t('send.capHint'),
           urgent: true,
-          actions: (
-            <Button
-              variant="primary"
-              size="sm"
-              shape="pill"
-              onClick={voice.dismiss}
-            >
-              {t('send.ok')}
-            </Button>
-          ),
+          actions: ok,
         };
       default:
         return null;
@@ -183,6 +171,7 @@ export function StatusPill({ voice }: { voice: Voice }) {
       // A fresh node per state, so a status that becomes an alert is announced.
       key={phase === 'reading' ? 'reading' : error}
       role={look.urgent ? 'alert' : 'status'}
+      {...{ [VOICE_PILL_ATTRIBUTE]: '' }}
       sx={{
         position: 'fixed',
         left: 16,
@@ -190,7 +179,7 @@ export function StatusPill({ voice }: { voice: Voice }) {
         bottom: aboveButton(22),
         mx: 'auto',
         maxWidth: 420,
-        zIndex: 1250,
+        zIndex: VOICE_LAYER.card,
         display: 'flex',
         alignItems: 'center',
         gap: '11px',

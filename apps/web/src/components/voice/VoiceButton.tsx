@@ -6,7 +6,6 @@ import {
   palette,
   radius,
   shadow,
-  tokens,
   visuallyHidden,
 } from '@pocket-pantry/ui';
 import { useId } from 'react';
@@ -18,7 +17,15 @@ import { usePressGesture } from '../../lib/usePressGesture';
 import { LanguageMenu } from './LanguageMenu';
 import { useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
-import { aboveButton, BUTTON_SIZE, buttonBottom } from './placement';
+import {
+  abovePill,
+  aboveButton,
+  BUTTON_SIZE,
+  buttonBottom,
+  VOICE_LAYER,
+} from '../../lib/voicePlacement';
+import { useVoiceNoteState } from '../../lib/voiceNoteStore';
+import { VOICE_BUTTON_ATTRIBUTE } from './focusVoiceButton';
 
 type Voice = ReturnType<typeof useVoiceNote>;
 
@@ -35,6 +42,9 @@ export function VoiceButton({
 }) {
   const { t } = useTranslation('voice');
   const active = voice.recording || voice.pressing;
+  // While the status pill is up (reading, a failure) the tip must not cover its buttons.
+  const { phase } = useVoiceNoteState();
+  const pillUp = phase === 'reading' || phase === 'failed';
   const progress = Math.min(1, voice.elapsedMs / MAX_VOICE_NOTE_MS);
 
   const host = useVoiceHost();
@@ -55,7 +65,7 @@ export function VoiceButton({
           sx={{
             position: 'fixed',
             inset: 0,
-            zIndex: 1100,
+            zIndex: VOICE_LAYER.scrim,
             pointerEvents: 'none',
             backgroundColor: `color-mix(in srgb, ${palette('text-primary')} 16%, transparent)`,
           }}
@@ -67,8 +77,10 @@ export function VoiceButton({
           sx={{
             position: 'fixed',
             right: 18,
-            bottom: aboveButton(10),
-            zIndex: 1250,
+            bottom: pillUp ? abovePill : aboveButton(10),
+            zIndex: VOICE_LAYER.card,
+            // A hint, never a target: taps reach whatever is under it.
+            pointerEvents: 'none',
             px: '12px',
             py: '8px',
             borderRadius: radius.control,
@@ -100,7 +112,7 @@ export function VoiceButton({
           position: 'fixed',
           right: 18,
           bottom: buttonBottom,
-          zIndex: 1200,
+          zIndex: VOICE_LAYER.button,
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
@@ -123,7 +135,7 @@ export function VoiceButton({
           component="button"
           type="button"
           aria-label={t('voiceButton.label')}
-          data-voice-button=""
+          {...{ [VOICE_BUTTON_ATTRIBUTE]: '' }}
           aria-pressed={voice.recording}
           aria-describedby={
             voice.mic.blocked ? `${destinationId} ${blockedId}` : destinationId
@@ -192,7 +204,7 @@ export function VoiceButton({
                 width: 12,
                 height: 12,
                 borderRadius: '50%',
-                backgroundColor: tokens.color.soonFg,
+                backgroundColor: palette('warning-main'),
                 border: `2px solid ${color.cardBg}`,
                 boxSizing: 'content-box',
               }}
