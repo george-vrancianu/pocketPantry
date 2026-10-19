@@ -124,6 +124,47 @@ describe('microphone', () => {
     });
   });
 
+  describe('watchPermission', () => {
+    it('reports changes until stopped', async () => {
+      const listeners: Array<() => void> = [];
+      const status = {
+        state: 'denied',
+        addEventListener: (_: string, fn: () => void) => listeners.push(fn),
+        removeEventListener: (_: string, fn: () => void) => {
+          listeners.splice(listeners.indexOf(fn), 1);
+        },
+      };
+      stubNavigator({ permissions: { query: vi.fn(async () => status) } });
+      const { watchPermission } = await load();
+      const seen: string[] = [];
+      const stop = watchPermission((state) => seen.push(state));
+      await vi.waitFor(() => expect(listeners).toHaveLength(1));
+
+      status.state = 'granted';
+      listeners[0]();
+      expect(seen).toEqual(['granted']);
+
+      stop();
+      expect(listeners).toHaveLength(0);
+    });
+
+    it('does not throw when the permissions query throws synchronously', async () => {
+      stubNavigator({
+        permissions: {
+          query: vi.fn(() => {
+            throw new TypeError('unsupported');
+          }),
+        },
+      });
+      const { watchPermission } = await load();
+      let stop: () => void = () => {};
+      expect(() => {
+        stop = watchPermission(() => {});
+      }).not.toThrow();
+      expect(() => stop()).not.toThrow();
+    });
+  });
+
   describe('requestPermission', () => {
     it('opens a stream and stops it straight away', async () => {
       const { track, stream } = fakeStream();

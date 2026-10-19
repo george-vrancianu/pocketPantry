@@ -13,11 +13,15 @@ import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 
 // jsdom has no getUserMedia or MediaRecorder: the microphone module is the seam.
-const mic = vi.hoisted(() => ({ start: vi.fn() }));
+const mic = vi.hoisted(() => ({
+  start: vi.fn(),
+  permission: vi.fn(async () => 'granted'),
+}));
 vi.mock('../../lib/microphone', () => ({
   startRecording: mic.start,
-  permissionState: vi.fn(async () => 'granted'),
+  permissionState: mic.permission,
   requestPermission: vi.fn(async () => undefined),
+  watchPermission: () => () => {},
   MicrophoneError: class MicrophoneError extends Error {},
 }));
 
@@ -90,7 +94,6 @@ describe('Voice Notes on the Pantry page', () => {
       ),
     batches: unknown[] = [],
   ) {
-    localStorage.setItem('pp.voice.micExplained', '1');
     applied = [];
     pantryFetches = 0;
     const sent: FormData[] = [];
@@ -139,6 +142,7 @@ describe('Voice Notes on the Pantry page', () => {
   beforeEach(() => {
     useVoiceTimers();
     resetVoiceNote();
+    mic.permission.mockResolvedValue('granted');
     resetRowFlash();
     mic.start.mockReset();
     mic.start.mockImplementation(() =>
@@ -158,6 +162,24 @@ describe('Voice Notes on the Pantry page', () => {
     const { sent } = setup([]);
     await openReview();
     expect(sent[0].get('defaultTarget')).toBe('pantry');
+  });
+
+  it('shows the Pantry examples in the microphone intro, and records nothing', async () => {
+    setup([]);
+    mic.permission.mockResolvedValue('prompt');
+    renderWithProviders(<PantryPage />);
+
+    pressDown(
+      await screen.findByRole('button', {
+        name: /hold to record a voice note/i,
+      }),
+    );
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('We finished the milk');
+    expect(dialog).toHaveTextContent('Marks rice running low');
+    expect(dialog).not.toHaveTextContent('Goes straight to the Pantry');
+    expect(mic.start).not.toHaveBeenCalled();
   });
 
   /** The date `days` from now as YYYY-MM-DD, worked out apart from the app's own helper. */

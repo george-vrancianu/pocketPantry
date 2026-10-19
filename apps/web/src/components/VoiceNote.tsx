@@ -1,13 +1,7 @@
-import {
-  Alert,
-  Box,
-  Button,
-  Sheet,
-  Stack,
-  Typography,
-} from '@pocket-pantry/ui';
+import { Alert, Box, Button, Stack } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { VoiceReview } from './voice/VoiceReview';
+import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
 import { useVoiceConfigured, type VoiceList } from '../lib/voice';
 import { useVoiceNote } from '../lib/useVoiceNote';
@@ -42,13 +36,11 @@ function VoiceNoteControls({ defaultTarget }: { defaultTarget: VoiceList }) {
             <span>
               {voice.notice.kind === 'failed'
                 ? voice.notice.message
-                : voice.notice.kind === 'denied'
-                  ? `${t('voice:denied.title')} ${t('voice:denied.body')}`
-                  : voice.notice.kind === 'unavailable'
-                    ? t('voice:unavailable')
-                    : voice.notice.kind === 'tooShort'
-                      ? t('voice:tooShort')
-                      : t('voice:nothingHeard')}
+                : voice.notice.kind === 'unavailable'
+                  ? t('voice:unavailable')
+                  : voice.notice.kind === 'tooShort'
+                    ? t('voice:tooShort')
+                    : t('voice:nothingHeard')}
             </span>
             <Box sx={{ display: 'flex', gap: '8px' }}>
               {voice.notice.kind === 'failed' && voice.notice.canRetry ? (
@@ -60,23 +52,15 @@ function VoiceNoteControls({ defaultTarget }: { defaultTarget: VoiceList }) {
         </Alert>
       ) : null}
 
-      <Sheet
-        open={voice.explaining}
-        onClose={voice.dismissExplainer}
-        label={t('voice:explainer.title')}
-        size="content"
-      >
-        <Stack spacing={2}>
-          <Typography variant="h2">{t('voice:explainer.title')}</Typography>
-          <Typography>{t('voice:explainer.body')}</Typography>
-          <Button onClick={() => void voice.allowMicrophone()}>
-            {t('voice:explainer.allow')}
-          </Button>
-          <Button onClick={voice.dismissExplainer}>
-            {t('voice:explainer.notNow')}
-          </Button>
-        </Stack>
-      </Sheet>
+      <MicSheets
+        sheet={voice.mic.sheet}
+        target={defaultTarget}
+        stillBlocked={voice.mic.stillBlocked}
+        requesting={voice.mic.requesting}
+        onClose={voice.mic.close}
+        onAllow={() => void voice.mic.allow()}
+        onRecheck={() => void voice.mic.recheck()}
+      />
 
       <VoiceReview />
     </>

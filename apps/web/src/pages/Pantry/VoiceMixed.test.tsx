@@ -16,6 +16,7 @@ vi.mock('../../lib/microphone', () => ({
   startRecording: mic.start,
   permissionState: vi.fn(async () => 'granted'),
   requestPermission: vi.fn(async () => undefined),
+  watchPermission: () => () => {},
   MicrophoneError: class MicrophoneError extends Error {},
 }));
 
@@ -87,7 +88,6 @@ describe('A Voice Note across both lists', () => {
   beforeEach(() => {
     useVoiceTimers();
     resetVoiceNote();
-    localStorage.setItem('pp.voice.micExplained', '1');
     mic.start.mockReset();
     mic.start.mockImplementation(() =>
       Promise.resolve({
