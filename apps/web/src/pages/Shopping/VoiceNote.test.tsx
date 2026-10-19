@@ -126,6 +126,7 @@ describe('Voice Note on the Shopping List', () => {
     expect((sent[0].get('audio') as File).name).toBe('voice-note.webm');
 
     await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
@@ -410,135 +411,181 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('groups the Voice Actions under their list, with the transcript collapsed under What I heard', async () => {
-    setupReview([...threeAdds, didntUnderstand('a4', 'do a dance')]);
+  /** The row of an Ingredient: its verb and name, and the line under them. */
+  const rowOf = (dialog: ReturnType<typeof within>, name: string) =>
+    dialog.getByText(name, { selector: 'b' }).closest('li') as HTMLElement;
+
+  it('opens a tall Review that the scrim and Escape cannot close, and says nothing is saved yet', async () => {
+    setupReview(threeAdds);
     const dialog = await openReview();
 
-    const shopping = within(
-      await within(dialog).findByRole('region', { name: 'Shopping List' }),
-    );
-    expect(shopping.getAllByRole('listitem')).toHaveLength(3);
-    expect(shopping.getByText('Eggs')).toBeVisible();
-    expect(shopping.getByText('Quinoa crackers')).toBeVisible();
-    expect(shopping.getByLabelText(/^Amount of Milk/)).toHaveValue('2');
+    expect(dialog).toHaveAccessibleName('Review');
     expect(
-      shopping.getByRole('button', { name: 'Unit: L' }),
-    ).toBeInTheDocument();
+      await within(dialog).findByText(
+        '3 changes · nothing is saved until you Apply',
+      ),
+    ).toBeVisible();
 
-    const unclear = within(
-      within(dialog).getByRole('region', { name: "Didn't understand" }),
+    const scrim = document.querySelector('.MuiBackdrop-root') as HTMLElement;
+    await userEvent.click(scrim);
+    expect(screen.getByRole('dialog')).toBeVisible();
+
+    await waitFor(() =>
+      expect(dialog).toContainElement(document.activeElement as HTMLElement),
     );
-    expect(unclear.getByText('do a dance')).toBeVisible();
-    expect(unclear.queryByRole('button')).toBeNull();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('dialog')).toBeVisible();
+    expect(within(dialog).getByText('Discard this Voice Note?')).toBeVisible();
+    expect(
+      within(dialog).getByText(
+        "Nothing changes, and you'll have to say it again.",
+      ),
+    ).toBeVisible();
+    expect(within(dialog).queryByRole('button', { name: /^Apply/ })).toBeNull();
+  });
 
-    expect(dialog).not.toHaveTextContent('two litres of milk and quinoa');
+  it('keeps reviewing when the Discard confirmation is declined, and discards on confirm with a toast', async () => {
+    setupReview(threeAdds);
+    const dialog = within(await openReview());
+
+    await userEvent.click(dialog.getByRole('button', { name: 'Discard' }));
     await userEvent.click(
-      within(dialog).getByRole('button', { name: 'What I heard' }),
+      dialog.getByRole('button', { name: 'Keep reviewing' }),
     );
-    expect(dialog).toHaveTextContent(
+    expect(
+      dialog.getByRole('button', { name: 'Apply 3 changes' }),
+    ).toBeVisible();
+
+    await userEvent.click(dialog.getByRole('button', { name: 'Discard' }));
+    await userEvent.click(dialog.getByRole('button', { name: 'Discard' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(applied).toHaveLength(0);
+    expect(
+      await screen.findByText('Voice Note discarded · Nothing was changed.'),
+    ).toBeVisible();
+  });
+
+  it('shows What I heard collapsed to its first line, and opens it to the transcript and its language', async () => {
+    setupReview(threeAdds);
+    const dialog = within(await openReview());
+
+    const heard = await dialog.findByRole('button', { name: /What I heard/ });
+    expect(heard).toHaveAttribute('aria-expanded', 'false');
+    expect(heard).toHaveTextContent(
       'eggs, two litres of milk and quinoa crackers',
     );
-  });
+    expect(dialog.queryByText('English · 0:03')).toBeNull();
 
-  it('applies the edited quantity and unit, refreshes the list and says what was added', async () => {
-    setupReview(threeAdds);
-    const dialog = await openReview();
-    const before = listFetches;
-
-    const quantity = await within(dialog).findByLabelText(/^Amount of Eggs/);
-    await userEvent.type(quantity, '12');
-    await userEvent.click(
-      within(dialog).getAllByRole('button', { name: /^Unit: / })[0],
+    await userEvent.click(heard);
+    expect(heard).toHaveAttribute('aria-expanded', 'true');
+    expect(dialog.getByText('English · 0:03')).toBeVisible();
+    const transcript = dialog.getByText(
+      'eggs, two litres of milk and quinoa crackers',
+      { selector: 'p' },
     );
-    await userEvent.click(within(dialog).getByRole('button', { name: 'pcs' }));
-    await userEvent.click(
-      within(dialog).getByRole('button', { name: 'Apply' }),
-    );
-
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(applied).toHaveLength(1);
-    expect(applied[0]).toMatchObject({
-      actions: [
-        { id: 'a1', ingredientId: 'ing-eggs', quantity: 12, unit: 'pcs' },
-        { id: 'a2', ingredientId: 'ing-milk', quantity: 2, unit: 'l' },
-        { id: 'a3', ingredientId: null, name: 'Quinoa crackers' },
-      ],
-    });
-    expect(await screen.findByText(/Applied 3 voice actions/)).toBeVisible();
-    await waitFor(() => expect(listFetches).toBeGreaterThan(before));
+    expect(transcript).toHaveAttribute('lang', 'en');
   });
 
-  it('shows an error and blocks Apply while a quantity is invalid, then applies once fixed', async () => {
-    setupReview(threeAdds);
-    const dialog = await openReview();
-    const apply = within(dialog).getByRole('button', { name: 'Apply' });
-    const quantity = await within(dialog).findByLabelText(/^Amount of Milk/);
-
-    await userEvent.clear(quantity);
-    await userEvent.type(quantity, '0');
-    expect(
-      within(dialog).getByText(/Enter an amount from 0.001/),
-    ).toBeVisible();
-    expect(apply).toBeDisabled();
-
-    await userEvent.clear(quantity);
-    await userEvent.type(quantity, 'abc');
-    expect(apply).toBeDisabled();
-
-    await userEvent.clear(quantity);
-    await userEvent.type(quantity, '3');
-    expect(within(dialog).queryByText(/Enter an amount from/)).toBeNull();
-    expect(apply).toBeEnabled();
-    await userEvent.click(apply);
-
-    await waitFor(() => expect(applied).toHaveLength(1));
-    expect(applied[0]).toMatchObject({
-      actions: [{}, { id: 'a2', quantity: 3 }, {}],
+  it('says what every Shopping List Voice Action will do on its second line', async () => {
+    const item = (
+      name: string,
+      quantity: number | null,
+      unit: string | null,
+    ) => ({
+      id: `row-${name}`,
+      name,
+      quantity,
+      unit,
+      checked: false,
     });
-  });
-
-  it('lets the Member fix a Match with the catalog search', async () => {
-    setupReview(threeAdds);
-    const dialog = await openReview();
-
-    await userEvent.click(
-      await within(dialog).findByRole('button', {
-        name: 'Change match for Quinoa crackers',
+    const bread = catalogItem('ing-bread', 'Bread');
+    const butter = catalogItem('ing-butter', 'Butter');
+    const spinach = catalogItem('ing-spinach', 'Spinach');
+    const rice = catalogItem('ing-rice', 'Rice');
+    setupReview([
+      action({
+        id: 'c1',
+        op: 'check',
+        text: 'bread',
+        ingredient: bread,
+        rows: { shoppingItem: item('Bread', 1, 'pcs') },
       }),
-    );
-    const search = await screen.findByRole('combobox');
-    await userEvent.type(search, 'milk');
-    await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
+      action({
+        id: 'c2',
+        op: 'check',
+        text: 'milk',
+        ingredient: milk,
+        quantity: 2,
+        unit: 'l',
+        rows: { shoppingItem: item('Milk', 3, 'l') },
+      }),
+      action({
+        id: 'c3',
+        op: 'check',
+        text: 'sausages',
+        ingredient: null,
+        name: 'Sausages',
+        rows: { shoppingItem: null },
+      }),
+      action({
+        id: 'c4',
+        op: 'add',
+        text: 'twelve eggs',
+        quantity: 12,
+        unit: 'pcs',
+      }),
+      action({
+        id: 'c5',
+        op: 'uncheck',
+        text: 'butter',
+        ingredient: butter,
+        rows: { shoppingItem: item('Butter', null, null) },
+      }),
+      action({
+        id: 'c6',
+        op: 'remove',
+        text: 'spinach',
+        ingredient: spinach,
+        rows: { shoppingItem: item('Spinach', 200, 'g') },
+      }),
+      action({
+        id: 'c7',
+        op: 'setQuantity',
+        text: 'rice',
+        ingredient: rice,
+        quantity: 12,
+        unit: 'pcs',
+        rows: { shoppingItem: item('Rice', 6, 'pcs') },
+      }),
+    ]);
+    const dialog = within(await openReview());
+    await dialog.findByText('Bread', { selector: 'b' });
 
-    const shopping = within(
-      await within(dialog).findByRole('region', { name: 'Shopping List' }),
+    const line = (name: string) => rowOf(dialog, name).textContent;
+    expect(line('Bread')).toBe('Tick BreadOn your list · 1 pcs');
+    expect(line('Milk')).toBe('Tick Milk2 L, list said 3 L');
+    expect(line('Sausages')).toBe(
+      "Add, ticked SausagesNot on your list, so it's added ticked",
     );
-    expect(shopping.queryByText('Quinoa crackers')).toBeNull();
-    await userEvent.click(
-      within(dialog).getByRole('button', { name: 'Apply' }),
-    );
-    await waitFor(() => expect(applied).toHaveLength(1));
-    expect(applied[0]).toMatchObject({
-      actions: expect.arrayContaining([
-        expect.objectContaining({
-          id: 'a3',
-          ingredientId: 'ing-milk',
-          name: null,
-        }),
-      ]) as unknown,
-    });
+    expect(line('Eggs')).toBe('Add Eggs12 pcs');
+    expect(line('Butter')).toBe('Untick ButterBack on your list');
+    expect(line('Spinach')).toBe('Remove SpinachComes off your list · 200 g');
+    expect(line('Rice')).toBe('Change Rice12 pcs, list said 6 pcs');
   });
 
-  it('drops a removed Voice Action from Apply', async () => {
+  it('drops a change from this Review only, so it is not applied', async () => {
     setupReview(threeAdds);
-    const dialog = await openReview();
+    const dialog = within(await openReview());
 
     await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Remove Eggs' }),
+      await dialog.findByRole('button', { name: 'Drop this change: Add Eggs' }),
     );
-    expect(within(dialog).queryByText('Eggs')).toBeNull();
+    expect(dialog.queryByText('Eggs', { selector: 'b' })).toBeNull();
+    expect(
+      dialog.getByText('2 changes · nothing is saved until you Apply'),
+    ).toBeVisible();
     await userEvent.click(
-      within(dialog).getByRole('button', { name: 'Apply' }),
+      dialog.getByRole('button', { name: 'Apply 2 changes' }),
     );
 
     await waitFor(() => expect(applied).toHaveLength(1));
@@ -547,178 +594,63 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     ).toEqual(['a2', 'a3']);
   });
 
-  it('discards the Voice Note without applying anything', async () => {
-    setupReview(threeAdds);
-    const dialog = await openReview();
-
-    await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Discard' }),
-    );
-
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(applied).toHaveLength(0);
-  });
-
-  it('opens Review even when nothing was understood, with nothing to apply', async () => {
-    setupReview([didntUnderstand('a1', 'do a dance')]);
-    const dialog = await openReview();
-
-    expect(
-      await within(dialog).findByRole('region', { name: "Didn't understand" }),
-    ).toHaveTextContent('do a dance');
-    expect(
-      within(dialog).queryByRole('region', { name: 'Shopping List' }),
-    ).toBeNull();
-    expect(
-      within(dialog).getByRole('button', { name: 'Apply' }),
-    ).toBeDisabled();
-  });
-
-  it('names what was skipped in the result toast', async () => {
-    setupReview(threeAdds, () =>
-      Response.json(
-        {
-          applied: ['a1', 'a2'],
-          skipped: [{ id: 'a3', reason: 'shopping.quantity_too_large' }],
+  it('shows what could not be applied as read-only entries that can be hidden', async () => {
+    setupReview([
+      action({
+        id: 'a1',
+        op: 'check',
+        text: 'milk',
+        ingredient: milk,
+        rows: {
+          shoppingItem: {
+            id: 'r',
+            name: 'Milk',
+            quantity: null,
+            unit: null,
+            checked: false,
+          },
         },
-        { status: 201 },
-      ),
+      }),
+      action({
+        id: 'a2',
+        op: 'remove',
+        status: 'notFound',
+        text: 'cheddar',
+        ingredient: null,
+        name: 'Cheddar',
+      }),
+      didntUnderstand('a3', 'do a dance'),
+    ]);
+    const dialog = within(await openReview());
+
+    const couldnt = within(
+      await dialog.findByRole('region', { name: "Couldn't apply" }),
     );
-    const dialog = await openReview();
+    expect(couldnt.getAllByRole('listitem')).toHaveLength(2);
+    expect(couldnt.getByText(/Not found:/).closest('li')).toHaveTextContent(
+      'Not found: “cheddar”No Cheddar on your list.',
+    );
+    expect(couldnt.getByText('No Cheddar on your list.')).toBeVisible();
+    expect(
+      couldnt.getByText(/Didn't understand:/).closest('li'),
+    ).toHaveTextContent("Didn't understand: “do a dance”");
+    // Read-only: only the × is a button.
+    expect(couldnt.getAllByRole('button')).toHaveLength(2);
 
     await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Apply' }),
+      couldnt.getByRole('button', { name: 'Hide this entry: do a dance' }),
     );
-
-    const toast = await screen.findByText(/Applied 2 voice actions/);
-    expect(toast).toHaveTextContent(/Skipped: Quinoa crackers/);
-  });
-
-  describe('every other Shopping List Voice Action', () => {
-    const onList = (quantity: number | null = null) => ({
-      id: 'row-1',
-      name: 'Eggs',
-      quantity,
-      unit: null,
-      checked: false,
-    });
-    const opRow = (dialog: HTMLElement, name: string) =>
-      within(within(dialog).getByRole('region', { name: 'Shopping List' }))
-        .getByText(name)
-        .closest('li') as HTMLElement;
-
-    it('shows set quantity with its editable amount', async () => {
-      setupReview([
-        action({
-          op: 'setQuantity',
-          text: 'make the eggs twelve',
-          quantity: 12,
-          unit: 'pcs',
-          rows: { shoppingItem: onList(6) },
-        }),
-      ]);
-      const dialog = await openReview();
-      const row = within(await within(dialog).findByRole('listitem'));
-      expect(row.getByText('Set quantity')).toBeVisible();
-      expect(row.getByLabelText(/^Amount of Eggs/)).toHaveValue('12');
-    });
-
-    it('shows check, and Add & check when it is not on the list', async () => {
-      setupReview([
-        action({ id: 'a1', op: 'check', rows: { shoppingItem: onList() } }),
-        action({
-          id: 'a2',
-          op: 'check',
-          text: 'bread',
-          ingredient: null,
-          name: 'Bread',
-          rows: { shoppingItem: null },
-        }),
-      ]);
-      const dialog = await openReview();
-      expect(within(opRow(dialog, 'Eggs')).getByText('Check')).toBeVisible();
-      expect(
-        within(opRow(dialog, 'Bread')).getByText('Add & check'),
-      ).toBeVisible();
-    });
-
-    it('shows uncheck and remove without an amount field', async () => {
-      setupReview([
-        action({ id: 'a1', op: 'uncheck', rows: { shoppingItem: onList() } }),
-        action({
-          id: 'a2',
-          op: 'remove',
-          text: 'milk',
-          ingredient: milk,
-          rows: { shoppingItem: { ...onList(), name: 'Milk' } },
-        }),
-      ]);
-      const dialog = await openReview();
-      const uncheck = within(opRow(dialog, 'Eggs'));
-      expect(uncheck.getByText('Uncheck')).toBeVisible();
-      expect(uncheck.queryByLabelText(/^Amount of/)).toBeNull();
-      const remove = within(opRow(dialog, 'Milk'));
-      expect(remove.getByText('Remove from list')).toBeVisible();
-      expect(remove.queryByLabelText(/^Amount of/)).toBeNull();
-    });
-
-    it('shows Not found: … for nothing to act on and does not send it on Apply', async () => {
-      setupReview([
-        action({ id: 'a1', op: 'remove', status: 'notFound' }),
-        action({ id: 'a2', op: 'check', text: 'milk', ingredient: milk }),
-      ]);
-      const dialog = await openReview();
-      expect(await within(dialog).findByText('Not found: Eggs')).toBeVisible();
-      await userEvent.click(
-        within(dialog).getByRole('button', { name: 'Apply' }),
-      );
-      await waitFor(() => expect(applied).toHaveLength(1));
-      expect(
-        (applied[0] as { actions: { id: string }[] }).actions.map((a) => a.id),
-      ).toEqual(['a2']);
-    });
-
-    it('sends the op with the quantity on Apply, and names a partly skipped Apply in the toast', async () => {
-      setupReview(
-        [
-          action({
-            id: 'a1',
-            op: 'setQuantity',
-            quantity: 12,
-            unit: 'pcs',
-            rows: { shoppingItem: onList(6) },
-          }),
-          action({
-            id: 'a2',
-            op: 'uncheck',
-            text: 'milk',
-            ingredient: milk,
-            rows: { shoppingItem: { ...onList(), name: 'Milk' } },
-          }),
-        ],
-        () =>
-          Response.json(
-            {
-              applied: ['a1'],
-              skipped: [{ id: 'a2', reason: 'voice.item_not_found' }],
-            },
-            { status: 201 },
-          ),
-      );
-      const dialog = await openReview();
-      await userEvent.click(
-        await within(dialog).findByRole('button', { name: 'Apply' }),
-      );
-      const toast = await screen.findByText(/Applied 1 voice action\./);
-      expect(toast).toHaveTextContent(
-        /Skipped: Milk \(no longer on the list\)/,
-      );
-      expect(applied[0]).toMatchObject({
-        actions: [
-          { id: 'a1', op: 'setQuantity', quantity: 12, unit: 'pcs' },
-          { id: 'a2', op: 'uncheck', ingredientId: 'ing-milk' },
-        ],
-      });
-    });
+    expect(dialog.queryByText(/do a dance/)).toBeNull();
+    // They never counted as changes.
+    expect(
+      dialog.getByText('1 change · nothing is saved until you Apply'),
+    ).toBeVisible();
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 1 change' }),
+    );
+    await waitFor(() => expect(applied).toHaveLength(1));
+    expect(
+      (applied[0] as { actions: { id: string }[] }).actions.map((a) => a.id),
+    ).toEqual(['a1']);
   });
 });

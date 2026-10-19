@@ -10,7 +10,7 @@ import {
 } from '@pocket-pantry/ui';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { VoiceReview } from './VoiceReview';
+import { VoiceReview } from './voice/VoiceReview';
 import { ScanLanguageChip } from '../pages/Scan/components/ScanLanguageChip';
 import { useVoiceConfigured, type VoiceList } from '../lib/voice';
 import { useVoiceNote } from '../lib/useVoiceNote';

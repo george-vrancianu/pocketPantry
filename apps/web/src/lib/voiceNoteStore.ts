@@ -11,7 +11,7 @@ export type VoicePhase =
   | 'reading'
   | 'failed'
   | 'review'
-  /** Reserved for Review while Apply is in flight; not entered yet. */
+  /** Review while Apply is in flight; an error sends it back to `review` with the edits kept. */
   | 'applying';
 
 /** Why the last Voice Note did not reach Review. */
@@ -94,8 +94,22 @@ export const voiceNote = {
     go({
       phase: 'review',
       page: state.page,
+      // Kept for Review's "English · 0:09"; a discard or Apply drops it with the rest.
+      recording: state.recording,
       proposal: { transcript: result.transcript, actions: result.actions },
     });
+  },
+  /** Apply was sent: Review stays open, its buttons disabled. */
+  applying() {
+    if (state.phase !== 'review') return;
+    state = { ...state, phase: 'applying' };
+    for (const listener of listeners) listener();
+  },
+  /** Apply failed: back to Review with every edit kept. */
+  applyFailed() {
+    if (state.phase !== 'applying') return;
+    state = { ...state, phase: 'review' };
+    for (const listener of listeners) listener();
   },
   /** Drops a failure and its kept recording. */
   dismiss: () => go({ phase: 'idle', page: state.page }),
