@@ -294,6 +294,76 @@ describe('Review overview, epic review fixes', () => {
     });
   });
 
+  describe('a failed Barcode card (#421)', () => {
+    const failBarcode = (code?: string) => {
+      act(() => {
+        dispatchScanSession({
+          type: 'enqueue',
+          scan: {
+            id: 'b',
+            mode: 'barcode',
+            scanLanguage: 'en',
+            image: 'data:image/jpeg;base64,YQ==',
+            thumbnail: 'data:image/jpeg;base64,YQ==',
+            code: '5941234200017',
+          },
+        });
+        dispatchScanSession({ type: 'start' });
+        dispatchScanSession({
+          type: 'fail',
+          id: 'b',
+          reason: 'error',
+          code,
+        });
+      });
+    };
+
+    it('says the lookup failed, not that it could not be read, and retries the lookup in place', async () => {
+      failBarcode('internal');
+      const calls = renderOverview({
+        'GET /api/barcode-lookup/5941234200017': () =>
+          Response.json({ found: false, code: '5941234200017' }),
+      });
+      const card = cards()[0];
+      expect(
+        within(card).getByText("Couldn't look up this barcode"),
+      ).toBeInTheDocument();
+      expect(within(card).queryByText(/retake/i)).toBeNull();
+      expect(
+        within(card).queryByRole('button', { name: /^Retake/ }),
+      ).toBeNull();
+
+      await userEvent.click(
+        within(card).getByRole('button', { name: 'Retry lookup' }),
+      );
+      await waitFor(() =>
+        expect(
+          calls.filter(
+            (c) => c.key === 'GET /api/barcode-lookup/5941234200017',
+          ),
+        ).toHaveLength(1),
+      );
+      expect(screen.queryByTestId('scan-guide')).toBeNull();
+      expect(getScanSession().scans.map((scan) => scan.id)).toEqual(['b']);
+    });
+
+    it('offers Remove, not Retake or Retry, when the failure cannot change', async () => {
+      failBarcode('scan.image_invalid');
+      renderOverview();
+      const card = cards()[0];
+      expect(
+        within(card).getByText("Couldn't look up this barcode"),
+      ).toBeInTheDocument();
+      expect(
+        within(card).queryByRole('button', { name: /retry|retake/i }),
+      ).toBeNull();
+      await userEvent.click(
+        within(card).getByRole('button', { name: 'Remove' }),
+      );
+      expect(getScanSession().scans).toEqual([]);
+    });
+  });
+
   describe('merging after an edit (N1)', () => {
     it('saves both receipts lines when the upper card was edited before Merge', async () => {
       await seed('a', 'receipt', [line('Eggs'), line('Bag')]);

@@ -152,6 +152,8 @@
     "discardAll": "Discard all",
     "failed": "Couldn't read, retake",
     "retake": "Retake",
+    "lookupFailed": "Couldn't look up this barcode",
+    "removeCard": "Remove",
     "pickDish": "Pick the dish",
     "dishOption": "{{title}}, {{percent}}% likely",
     "readAgain": "Read again"

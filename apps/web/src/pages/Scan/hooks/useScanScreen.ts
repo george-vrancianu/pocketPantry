@@ -139,7 +139,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   });
   const warnSessionFull = () =>
     setToast({
-      text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+      text: t('scan:limit', { count: MAX_SESSION_SCANS }),
       severity: 'warning',
     });
   useEffect(() => {

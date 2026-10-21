@@ -33,6 +33,7 @@ import { savableLines, useSaveScan } from '../../lib/saveScan';
 import {
   showsErrorCopy,
   canMerge,
+  canRetry,
   dispatchScanSession,
   getScanSession,
   isBarcodeCard,
@@ -249,7 +250,11 @@ export function ReviewOverviewPage() {
           ) : isFailed ? (
             <>
               <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
-                {t('overview.failed')}
+                {t(
+                  isBarcodeCard(scan)
+                    ? 'overview.lookupFailed'
+                    : 'overview.failed',
+                )}
               </Typography>
               {scan.failure === 'cap' ? (
                 <Typography sx={{ fontSize: 13 }}>
@@ -261,20 +266,50 @@ export function ReviewOverviewPage() {
                 </Typography>
               ) : null}
               <Box sx={{ position: 'relative', zIndex: 1, mt: 0.75 }}>
-                <Box
-                  component="button"
-                  type="button"
-                  disabled={saving}
-                  onClick={() => {
-                    dispatchScanSession({ type: 'remove', id: scan.id });
-                    // Scans held back by the Scan Cap can go on now.
-                    readScans(i18n.language);
-                    navigate('/scan');
-                  }}
-                  sx={linkButton}
-                >
-                  {t('overview.retake')}
-                </Box>
+                {isBarcodeCard(scan) && canRetry(scan) ? (
+                  <Box
+                    component="button"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => {
+                      dispatchScanSession({ type: 'retry', id: scan.id });
+                      readScans(i18n.language);
+                    }}
+                    sx={linkButton}
+                  >
+                    {tScan('session.retryLookup')}
+                  </Box>
+                ) : null}
+                {isBarcodeCard(scan) ? (
+                  <Box
+                    component="button"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => {
+                      dispatchScanSession({ type: 'remove', id: scan.id });
+                      // Scans held back by the Scan Cap can go on now.
+                      readScans(i18n.language);
+                    }}
+                    sx={linkButton}
+                  >
+                    {t('overview.removeCard')}
+                  </Box>
+                ) : (
+                  <Box
+                    component="button"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => {
+                      dispatchScanSession({ type: 'remove', id: scan.id });
+                      // Scans held back by the Scan Cap can go on now.
+                      readScans(i18n.language);
+                      navigate('/scan');
+                    }}
+                    sx={linkButton}
+                  >
+                    {t('overview.retake')}
+                  </Box>
+                )}
               </Box>
             </>
           ) : display === 'uncropped' ? (

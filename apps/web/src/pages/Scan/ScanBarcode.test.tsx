@@ -540,7 +540,7 @@ describe('Barcode on the Scan page', () => {
       expect(thumbnails()).toHaveLength(20);
       expect(
         await screen.findByText(
-          'A Scan Session holds at most 20 photos. Add or discard these first.',
+          'A Scan Session holds at most 20 Scans and Barcode Lookups in total. Add or discard these first.',
         ),
       ).toBeInTheDocument();
     });
@@ -552,13 +552,17 @@ describe('Barcode on the Scan page', () => {
       for (let i = 0; i < 20; i += 1)
         await decode(`59412342${String(i).padStart(5, '0')}`);
       await decode(B);
-      await screen.findByText(/holds at most 20 photos/);
+      await screen.findByText(/holds at most 20 Scans and Barcode Lookups/);
       await userEvent.keyboard('{Escape}');
       await waitFor(() =>
-        expect(screen.queryByText(/holds at most 20 photos/)).toBeNull(),
+        expect(
+          screen.queryByText(/holds at most 20 Scans and Barcode Lookups/),
+        ).toBeNull(),
       );
       await decode(B);
-      expect(screen.queryByText(/holds at most 20 photos/)).toBeNull();
+      expect(
+        screen.queryByText(/holds at most 20 Scans and Barcode Lookups/),
+      ).toBeNull();
     });
   });
 

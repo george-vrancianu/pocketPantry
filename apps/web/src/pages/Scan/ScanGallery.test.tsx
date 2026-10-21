@@ -196,7 +196,9 @@ describe('Gallery import into the Scan Session', () => {
     }
     await pick(3);
     expect(getScanSession().scans).toHaveLength(20);
-    expect(await screen.findByText(/at most 20 photos/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/at most 20 Scans and Barcode Lookups/),
+    ).toBeInTheDocument();
   });
 
   it('keeps Add disabled, waiting on the uncropped receipt, until it is removed', async () => {
