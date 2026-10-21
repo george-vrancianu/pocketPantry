@@ -477,6 +477,8 @@ function TodoRow({
               m: 0,
               p: '0 0 10px',
               display: 'grid',
+              // minmax(0, …) stops a long item line widening the column past the sheet.
+              gridTemplateColumns: 'minmax(0, 1fr)',
               gap: '2px',
             }}
           >
