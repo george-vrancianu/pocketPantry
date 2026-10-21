@@ -362,6 +362,134 @@ describe('forecastPlan: the Shopping List', () => {
   });
 });
 
+describe('forecastPlan: the Shopping List amount', () => {
+  const eggs = (quantity: number | null, unit: 'pcs' | 'g' | 'kg' | null) => ({
+    ingredientId: EGGS,
+    name: null,
+    quantity,
+    unit,
+  });
+
+  it('marks only the day the list amount covers, not later days needing the same Ingredient', () => {
+    const result = forecast({
+      slots: [slot(0, 'dinner'), slot(1, 'dinner')],
+      shoppingList: [eggs(4, 'pcs')],
+    });
+    expect(statuses(result)).toEqual(['onList', 'short']);
+    expect(result.slots.map((s) => s.issues[0].onList)).toEqual([true, false]);
+  });
+
+  it('pools several list lines for the Ingredient', () => {
+    const result = forecast({
+      slots: [slot(0, 'dinner'), slot(1, 'dinner'), slot(2, 'dinner')],
+      shoppingList: [eggs(4, 'pcs'), eggs(4, 'pcs')],
+    });
+    expect(statuses(result)).toEqual(['onList', 'onList', 'short']);
+  });
+
+  it('leaves an issue short when the list only partly covers it, and uses the rest up', () => {
+    const result = forecast({
+      slots: [slot(0, 'dinner'), slot(1, 'dinner')],
+      shoppingList: [eggs(2, 'pcs')],
+    });
+    expect(statuses(result)).toEqual(['short', 'short']);
+    expect(result.slots[0].issues[0]).toMatchObject({
+      quantity: 4,
+      onList: false,
+      uncovered: 2,
+    });
+    expect(result.slots[1].issues[0].uncovered).toBe(4);
+  });
+
+  it('keeps the presence rule when a list line has no quantity', () => {
+    const result = forecast({
+      slots: [slot(0, 'dinner'), slot(1, 'dinner')],
+      shoppingList: [eggs(null, null)],
+    });
+    expect(statuses(result)).toEqual(['onList', 'onList']);
+  });
+
+  it('keeps the presence rule when the list unit cannot be compared', () => {
+    const result = forecast({
+      slots: [slot(0, 'dinner'), slot(1, 'dinner')],
+      shoppingList: [eggs(500, 'g')],
+    });
+    expect(statuses(result)).toEqual(['onList', 'onList']);
+  });
+
+  it('compares kg on the list with a g shortfall', () => {
+    const flour = (quantity: number) =>
+      recipe([line({ ingredientId: FLOUR, quantity, unit: 'g' })]);
+    const result = forecast({
+      recipes: { r1: flour(600) },
+      slots: [slot(0, 'dinner'), slot(1, 'dinner'), slot(2, 'dinner')],
+      shoppingList: [
+        { ingredientId: FLOUR, name: null, quantity: 1, unit: 'kg' },
+      ],
+    });
+    expect(statuses(result)).toEqual(['onList', 'short', 'short']);
+    expect(result.slots[1].issues[0].uncovered).toBe(200);
+  });
+
+  it('keeps the presence rule for the whole Ingredient when any list line has no amount', () => {
+    const result = forecast({
+      slots: [slot(0, 'dinner'), slot(1, 'dinner'), slot(2, 'dinner')],
+      shoppingList: [eggs(4, 'pcs'), eggs(null, null)],
+    });
+    expect(statuses(result)).toEqual(['onList', 'onList', 'onList']);
+  });
+
+  it('counts a leftover the list cannot store as covered', () => {
+    // 3 x 1000 g / 3 servings planned at 1 = 3 x 333.334 g = 1000.002 g; the list holds 1 kg.
+    const result = forecast({
+      recipes: {
+        r1: recipe([line({ ingredientId: FLOUR, quantity: 1000, unit: 'g' })], {
+          servings: 3,
+        }),
+      },
+      slots: [
+        slot(0, 'dinner', 'r1', 1),
+        slot(1, 'dinner', 'r1', 1),
+        slot(2, 'dinner', 'r1', 1),
+      ],
+      shoppingList: [
+        { ingredientId: FLOUR, name: null, quantity: 1, unit: 'kg' },
+      ],
+    });
+    expect(statuses(result)).toEqual(['onList', 'onList', 'onList']);
+  });
+
+  it('spends the rounding tolerance once, not on every later small need', () => {
+    const saffron = recipe([
+      line({ ingredientId: FLOUR, quantity: 0.8, unit: 'g' }),
+    ]);
+    const result = forecast({
+      recipes: { r1: saffron },
+      slots: [0, 1, 2, 3, 4].map((d) => slot(d, 'dinner')),
+      shoppingList: [
+        { ingredientId: FLOUR, name: null, quantity: 0.1, unit: 'g' },
+      ],
+    });
+    expect(statuses(result)).toEqual([
+      'onList',
+      'short',
+      'short',
+      'short',
+      'short',
+    ]);
+  });
+
+  it('makes Add missing add only the uncovered part', () => {
+    const result = forecast({
+      slots: [slot(0, 'dinner'), slot(1, 'dinner')],
+      shoppingList: [eggs(6, 'pcs')],
+    });
+    expect(missingItems(result.days)).toMatchObject([
+      { ingredientId: EGGS, quantity: 2, unit: 'pcs' },
+    ]);
+  });
+});
+
 describe('forecastPlan: unavailable slots', () => {
   it('leaves an archived Recipe out: unavailable, no issues, nothing used up', () => {
     const result = forecast({

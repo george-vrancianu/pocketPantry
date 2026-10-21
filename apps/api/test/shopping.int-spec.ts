@@ -172,10 +172,40 @@ describe('Shopping List (integration)', () => {
       expect(items(list)[0].quantity).toBe(1_000_000);
     });
 
-    it('keeps separate lines when the units differ', async () => {
-      const { cookie } = await signUp('Units');
+    it('merges a kg add into a ticked-off g line, keeping the line and its unit', async () => {
+      const { cookie } = await signUp('KgOnG');
+      const parmesan = await ingredientId(cookie, 'parmesan');
+      const added = await add(cookie, {
+        ingredientId: parmesan,
+        quantity: 500,
+        unit: 'g',
+      });
+      await call('patch', cookie, `/items/${items(added)[0].id}`)
+        .send({ checked: true })
+        .expect(200);
+
+      const list = await add(cookie, {
+        ingredientId: parmesan,
+        quantity: 1,
+        unit: 'kg',
+      });
+
+      expect(items(list)).toHaveLength(1);
+      expect(items(list)[0]).toMatchObject({
+        id: items(added)[0].id,
+        quantity: 1500,
+        unit: 'g',
+        checked: false,
+      });
+    });
+
+    it('merges a g add into a kg line and a ml add into an l line', async () => {
+      const { cookie } = await signUp('Convert');
+      const parmesan = await ingredientId(cookie, 'parmesan');
       const milk = await ingredientId(cookie, 'milk');
 
+      await add(cookie, { ingredientId: parmesan, quantity: 1, unit: 'kg' });
+      await add(cookie, { ingredientId: parmesan, quantity: 200, unit: 'g' });
       await add(cookie, { ingredientId: milk, quantity: 1, unit: 'l' });
       const list = await add(cookie, {
         ingredientId: milk,
@@ -183,9 +213,78 @@ describe('Shopping List (integration)', () => {
         unit: 'ml',
       });
 
+      expect(
+        items(list)
+          .map((i) => [i.name, i.quantity, i.unit])
+          .sort(),
+      ).toEqual([
+        ['Milk', 1.2, 'l'],
+        ['Parmesan', 1.2, 'kg'],
+      ]);
+    });
+
+    it('merges into the oldest line when several convertible lines exist', async () => {
+      const { cookie } = await signUp('Oldest');
+      const parmesan = await ingredientId(cookie, 'parmesan');
+      const first = await add(cookie, {
+        ingredientId: parmesan,
+        quantity: 100,
+        unit: 'g',
+      });
+      await call('post', cookie, '/items')
+        .send({ ingredientId: parmesan, quantity: 1, unit: 'pcs' })
+        .expect(200);
+
+      const list = await add(cookie, {
+        ingredientId: parmesan,
+        quantity: 1,
+        unit: 'kg',
+      });
+
+      expect(items(list).map((i) => [i.quantity, i.unit])).toEqual([
+        [1100, 'g'],
+        [1, 'pcs'],
+      ]);
+      expect(items(list)[0].id).toBe(items(first)[0].id);
+    });
+
+    it('rejects a converted merge that would pass the quantity cap', async () => {
+      const { cookie } = await signUp('ConvCap');
+      const parmesan = await ingredientId(cookie, 'parmesan');
+      await add(cookie, {
+        ingredientId: parmesan,
+        quantity: 900_000,
+        unit: 'g',
+      });
+
+      const rejected = await call('post', cookie, '/items').send({
+        ingredientId: parmesan,
+        quantity: 200,
+        unit: 'kg',
+      });
+
+      expect(rejected.status).toBe(400);
+      expect((rejected.body as { code: string }).code).toBe(
+        'shopping.quantity_too_large',
+      );
+    });
+
+    it('keeps separate lines when the units are in different dimensions', async () => {
+      const { cookie } = await signUp('Units');
+      const milk = await ingredientId(cookie, 'milk');
+
+      await add(cookie, { ingredientId: milk, quantity: 1, unit: 'l' });
+      await add(cookie, { ingredientId: milk, quantity: 200, unit: 'g' });
+      const list = await add(cookie, {
+        ingredientId: milk,
+        quantity: 2,
+        unit: 'pcs',
+      });
+
       expect(items(list).map((i) => [i.quantity, i.unit])).toEqual([
         [1, 'l'],
-        [200, 'ml'],
+        [200, 'g'],
+        [2, 'pcs'],
       ]);
     });
 
@@ -349,7 +448,7 @@ describe('Shopping List (integration)', () => {
       const two = await add(cookie, {
         ingredientId: milk,
         quantity: 500,
-        unit: 'ml',
+        unit: 'g',
       });
       const [litre, millilitres] = items(two);
 

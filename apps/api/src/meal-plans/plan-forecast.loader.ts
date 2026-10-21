@@ -311,15 +311,17 @@ export async function loadBatches(
   return rows;
 }
 
-/** The unchecked items on the active list, as Cook Tonight counts them (by stored normalised name). */
+/** The unchecked items on the active list, as Cook Tonight counts them (by stored normalised name), with their amounts. */
 export async function loadShoppingList(
   executor: Executor,
   familyId: string,
 ): Promise<ForecastListEntry[]> {
-  return executor
+  const rows = await executor
     .select({
       ingredientId: shoppingItems.ingredientId,
       name: shoppingItems.normalizedName,
+      quantity: shoppingItems.quantity,
+      unit: shoppingItems.unit,
     })
     .from(shoppingItems)
     .innerJoin(shoppingLists, eq(shoppingLists.id, shoppingItems.listId))
@@ -330,4 +332,8 @@ export async function loadShoppingList(
         eq(shoppingItems.checked, false),
       ),
     );
+  return rows.map(({ quantity, ...row }) => ({
+    ...row,
+    quantity: quantity === null ? null : Number(quantity),
+  }));
 }

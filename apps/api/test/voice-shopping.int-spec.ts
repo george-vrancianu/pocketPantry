@@ -190,6 +190,38 @@ describe('Shopping List Voice Actions (integration)', () => {
       });
     });
 
+    it('previews an add merging into the same line the apply merges into: the oldest compatible one', async () => {
+      const cookie = await signUp();
+      await addItem(cookie, { ...EGGS, quantity: 500, unit: 'g' });
+      await addItem(cookie, { ...EGGS, quantity: 2, unit: 'pcs' });
+      const [oldest, second] = await list(cookie);
+      // setAmount can leave two compatible lines of one Ingredient; the newer one becomes grams too.
+      await request(app.getHttpServer())
+        .put(`/api/shopping-list/items/${second.id}/amount?locale=en`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ quantity: 100, unit: 'g' })
+        .expect(200);
+      reading = {
+        actions: [eggsModel('add', { quantity: 1, unit: 'kg' })],
+        unsupported: [],
+      };
+      const [a] = await read(cookie);
+      expect((a.rows as { shoppingItem: { id: string } }).shoppingItem.id).toBe(
+        oldest.id,
+      );
+
+      await apply(cookie, [
+        action('add', { ...EGGS, quantity: 1, unit: 'kg' }),
+      ]);
+      const lines = await list(cookie);
+      expect(lines.find((l) => l.id === oldest.id)).toMatchObject({
+        quantity: 1500,
+        unit: 'g',
+      });
+      expect(lines.find((l) => l.id === second.id)?.quantity).toBe(100);
+    });
+
     it('reports Not found for set quantity, uncheck and remove with nothing to act on', async () => {
       const cookie = await signUp();
       reading = {
