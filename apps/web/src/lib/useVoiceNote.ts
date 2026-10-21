@@ -72,6 +72,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   };
 
   // The module stops a recording at 60 seconds by itself: the pointer is still down, but the press is over.
+  // So any recording -> not-recording move while held (the 60 s limit is the real case) buzzes once and ends the press.
   const wasRecording = useRef(false);
   useEffect(() => {
     if (wasRecording.current && !recording && held.current) {
@@ -110,6 +111,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     if (asking.current || held.current) return;
     // Nothing starts while the last note is being read or waits for Retry.
     const blocker = voiceNote.startBlocker();
+    // A note is already under way (still starting, recording or being finalised): the press changes nothing.
+    if (blocker === 'active') return;
     if (blocker === 'busy') return showTip('busy');
     if (blocker === 'kept') return showTip('failed');
     // The Voice Cap is used up: the module shows why.

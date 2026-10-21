@@ -119,7 +119,7 @@ export type StartOutcome =
   | 'cancelled';
 
 /** Why a start would be refused: the hook shows the matching tip before asking for permission. */
-export type StartBlocker = 'busy' | 'kept' | 'capped' | 'none';
+export type StartBlocker = 'active' | 'busy' | 'kept' | 'capped' | 'none';
 
 /** The longest delay `setTimeout` takes. */
 const MAX_TIMEOUT = 2 ** 31 - 1;
@@ -266,6 +266,8 @@ export function createVoiceNote(
 
   /** Why a start would be refused right now. */
   function startBlocker(): StartBlocker {
+    // A note is already under way (the microphone starting, recording, audio being finalised): ignore silently.
+    if (starting || session || finishing) return 'active';
     if (state.phase === 'reading') return 'busy';
     if (state.phase === 'failed' && state.recording) return 'kept';
     return isCapReached() ? 'capped' : 'none';
@@ -371,8 +373,8 @@ export function createVoiceNote(
     scanLanguage: ScanLanguage;
     locale: Locale;
   }): Promise<StartOutcome> {
-    if (starting || session || finishing) return 'refused';
     const blocker = startBlocker();
+    if (blocker === 'active') return 'refused';
     if (blocker === 'capped') {
       fail('capReached');
       return 'refused';

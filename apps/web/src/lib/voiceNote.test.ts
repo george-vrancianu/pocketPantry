@@ -802,6 +802,45 @@ describe('Voice Note module', () => {
       expect(failed.note.startBlocker()).toBe('none');
     });
 
+    it('is active while the microphone is starting', async () => {
+      const ctx = setup();
+      let open!: () => void;
+      ctx.startMicrophone.mockReturnValueOnce(
+        new Promise((resolve) => (open = () => resolve(fakeSession()))),
+      );
+      const started = ctx.note.start(options);
+      expect(ctx.note.startBlocker()).toBe('active');
+      expect(await ctx.note.start(options)).toBe('refused');
+      expect(ctx.startMicrophone).toHaveBeenCalledOnce();
+      open();
+      expect(await started).toBe('started');
+    });
+
+    it('is active while recording', async () => {
+      const { note, startMicrophone } = setup();
+      await note.start(options);
+      expect(note.startBlocker()).toBe('active');
+      expect(await note.start(options)).toBe('refused');
+      expect(startMicrophone).toHaveBeenCalledOnce();
+    });
+
+    it('is active while the audio is being finalised', async () => {
+      const ctx = setup();
+      let finish!: () => void;
+      const live = fakeSession();
+      live.stop.mockReturnValueOnce(
+        new Promise((resolve) => (finish = () => resolve(recording))),
+      );
+      ctx.startMicrophone.mockReturnValueOnce(Promise.resolve(live));
+      await ctx.note.start(options);
+      const stopped = ctx.note.stop();
+      expect(ctx.note.startBlocker()).toBe('active');
+      expect(await ctx.note.start(options)).toBe('refused');
+      finish();
+      expect(await stopped).toBe('sent');
+      expect(ctx.note.startBlocker()).toBe('busy');
+    });
+
     it('is busy while a note is being read, and a start is refused', async () => {
       const { note, startMicrophone } = setup();
       await record(note);

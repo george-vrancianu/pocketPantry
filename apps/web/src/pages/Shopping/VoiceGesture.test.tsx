@@ -256,6 +256,33 @@ describe('the recording gesture on the Shopping List', () => {
       expect(sent).toHaveLength(0);
     });
 
+    it('ignores a second press while the first is still starting: no buzz, no change, and the first keeps its tip', async () => {
+      let arrive: (value: ReturnType<typeof fakeSession>) => void = () => {};
+      mic.start.mockImplementation(
+        () => new Promise((resolve) => (arrive = resolve)),
+      );
+      setup();
+      renderWithProviders(<ShoppingPage />);
+      const button = await talkButton();
+      pressDown(button, { clientX: 130, clientY: 530 });
+      await screen.findByText('Starting…');
+      await holdLongEnough();
+      fireEvent.pointerUp(button);
+      vibrate.mockClear();
+
+      pressDown(button, { clientX: 130, clientY: 530 });
+      await holdFor(500);
+      expect(vibrate).not.toHaveBeenCalled();
+      expect(mic.start).toHaveBeenCalledTimes(1);
+      fireEvent.pointerUp(button);
+
+      await act(async () => arrive(session));
+      expect(
+        await screen.findByText('Hold to talk, let go to send'),
+      ).toBeVisible();
+      expect(session.cancel).toHaveBeenCalledTimes(1);
+    });
+
     it('records nothing when the stream arrives after leaving the page', async () => {
       let arrive: (value: ReturnType<typeof fakeSession>) => void = () => {};
       mic.start.mockImplementation(
