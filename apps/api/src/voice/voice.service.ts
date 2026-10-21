@@ -289,6 +289,7 @@ export class VoiceService {
             actionId: draft.id,
             list: applied.list,
             ...(applied.rowId === undefined ? {} : { rowId: applied.rowId }),
+            ...(applied.rowIds === undefined ? {} : { rowIds: applied.rowIds }),
             alreadyDone: applied.alreadyDone,
           });
         } catch (error) {
