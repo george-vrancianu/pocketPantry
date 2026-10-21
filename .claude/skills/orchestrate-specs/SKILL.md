@@ -9,6 +9,7 @@ Orchestrate the specs the user names. The top level (this session) and every orc
 ## The workflow (the user's words, the source of truth)
 
 
+> Orchestrate the implementation of the following specs: … Rules: For each spec - spawn a opus subagent to orchestrate the implementation of the tickets in that spec on it's own worktree. For each ticket (with /implement-spec skill) spawn an opus subagent that will orchestrate the implementation of the spec, that will spawn a sonnet subagent to implement - opus review, then loop fixes until reviewer satisfied. If original implementer is beyond 150K, spawn new sonnet subagent to fix. Final PR from implementation branch should follow the same fixes loop - opus reviews and sonnet fixes. Once PR is reviewed and reviewer satisfied, merge PR and update tickets. Note: when WSL consumes over 30GB of memory, it crashes and the agents are stopped. You can run the tickets in parallel as long as they don't heavily conflict each other and does not bust the memory. When done: pull latest changes into main, do migration if necessary, make sure dev server with tunnel is running, present a summary, a health status (how well/easy the agents worked, if had conflicts, where and why context windows got over 150K) and when agents ask for follow-up ticket, don't post them but present them at the end for my review. Orchestrators do not write code, only manage
 
 ## Roles
 
