@@ -213,13 +213,27 @@ const PLAIN_WORDS: Record<string, string> = {
     'plain verb ("Check your connection"); avoided only as a Health Factor noun',
   meal: 'everyday word in Meal Plan copy; avoided only as the name of a Plan Slot or Eating Moment',
   note: 'plain word; Voice Note and Nutrition Note are canonical and not matched',
-  token:
-    'Assistant Token (ADR 0019) is its own concept; "token" is avoided only as another name for the Invite Code',
   product: 'packaged goods in Product Scan copy, not an Ingredient',
 };
 
 /** Exceptions found when the broad whitelist was narrowed: term, reason, keys. */
 const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
+  [
+    'token',
+    'the Assistant Token (ADR 0019), not the Invite Code',
+    [
+      'errors:assistantTokens.not_found',
+      'siri:create',
+      'siri:empty',
+      'siri:hint',
+      'siri:loadFailed',
+      'siri:nameLabel',
+      'siri:reveal.copied',
+      'siri:reveal.secretLabel',
+      'siri:reveal.title',
+      'siri:revoked',
+    ],
+  ],
   [
     'account',
     'the sign-in account (and people without one), not a Member',

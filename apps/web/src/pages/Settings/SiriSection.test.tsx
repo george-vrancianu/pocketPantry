@@ -45,16 +45,12 @@ function stubTokens(initial: Row[]) {
         { status: 201 },
       );
     },
+    'DELETE /api/assistant-tokens/t1': () => {
+      rows = rows.filter((row) => row.id !== 't1');
+      return Response.json({ id: 't1' });
+    },
   });
-  const wrapped = (input: RequestInfo | URL, init?: RequestInit) => {
-    const match = /\/api\/assistant-tokens\/(.+)$/.exec(String(input));
-    if (init?.method === 'DELETE' && match) {
-      rows = rows.filter((row) => row.id !== match[1]);
-      return Promise.resolve(Response.json({ id: match[1] }));
-    }
-    return fetchMock(input, init);
-  };
-  vi.stubGlobal('fetch', wrapped);
+  vi.stubGlobal('fetch', fetchMock);
   return calls;
 }
 
@@ -102,7 +98,7 @@ describe('Settings Siri section', () => {
     });
     await user.click(screen.getByRole('button', { name: 'Copy' }));
     expect(writeText).toHaveBeenCalledWith('pp_Wm2dTHE-WHOLE-SECRET');
-    expect(await screen.findByText('Token copied')).toBeInTheDocument();
+    expect(await screen.findByRole('status')).toHaveTextContent('Token copied');
 
     await user.click(screen.getByRole('button', { name: /Done/ }));
     expect(
@@ -121,11 +117,14 @@ describe('Settings Siri section', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Revoke iPhone' }),
     );
-    expect(calls.some((c) => c.key.startsWith('DELETE'))).toBe(false);
+    const deleted = () =>
+      calls.some((c) => c.key === 'DELETE /api/assistant-tokens/t1');
+    expect(deleted()).toBe(false);
 
     const confirm = screen.getByRole('group', { name: /Revoke iPhone\?/ });
     await user.click(within(confirm).getByRole('button', { name: 'Cancel' }));
     expect(screen.getByText('iPhone')).toBeInTheDocument();
+    expect(deleted()).toBe(false);
 
     await user.click(screen.getByRole('button', { name: 'Revoke iPhone' }));
     await user.click(
@@ -136,7 +135,34 @@ describe('Settings Siri section', () => {
     );
 
     expect(await screen.findByText('Token revoked')).toBeInTheDocument();
+    expect(deleted()).toBe(true);
     expect(screen.queryByText('iPhone')).not.toBeInTheDocument();
     expect(screen.getByText('iPad')).toBeInTheDocument();
+  });
+
+  it('clears a failed create error once a revoke succeeds', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/assistant-tokens': () => Response.json([IPHONE]),
+      'POST /api/assistant-tokens': () =>
+        Response.json({ message: 'boom' }, { status: 500 }),
+      'DELETE /api/assistant-tokens/t1': () => Response.json({ id: 't1' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    renderWithProviders(<SiriSection />);
+
+    await user.type(await screen.findByLabelText('Token name'), 'Kitchen');
+    await user.click(screen.getByRole('button', { name: 'Create token' }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Revoke iPhone' }));
+    await user.click(
+      within(screen.getByRole('group', { name: /Revoke iPhone\?/ })).getByRole(
+        'button',
+        { name: 'Revoke' },
+      ),
+    );
+    expect(await screen.findByText('Token revoked')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

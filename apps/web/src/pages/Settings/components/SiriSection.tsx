@@ -20,16 +20,15 @@ import {
   type CreatedAssistantToken,
 } from '../../../lib/assistantTokens';
 import { formatDate } from '../../../lib/dateFormat';
+import { localIso } from '../../../lib/pantry';
 import { ScopeCaption, SectionHeading } from './SectionHeading';
 
+/** Keep in step with NAME_MAX_LENGTH in the API's assistant-token.schemas.ts. */
 const NAME_MAX_LENGTH = 60;
 
 /** A timestamp as the Member's local calendar day, day-first like every other date. */
 function localDay(timestamp: string): string {
-  const date = new Date(timestamp);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return formatDate(`${date.getFullYear()}-${month}-${day}`);
+  return formatDate(localIso(new Date(timestamp)));
 }
 
 /** The secret of a just-created token, shown once. Closing it forgets the secret. */
@@ -45,7 +44,7 @@ function SecretReveal({
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(token.secret);
-      toast.show(t('reveal.copied'));
+      toast.show(t('reveal.copied'), { polite: true });
     } catch {
       // The secret stays selectable (one tap selects all), so it can be copied by hand.
     }
@@ -177,12 +176,13 @@ export function SiriSection() {
   const [revealed, setRevealed] = useState<CreatedAssistantToken | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const tokens = query.data;
-  const error = [create.error, revoke.error].find(Boolean);
+  const error = create.error ?? revoke.error;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) return;
+    revoke.reset();
     create.mutate(trimmed, {
       onSuccess: (created) => {
         setName('');
@@ -239,14 +239,15 @@ export function SiriSection() {
                   busy={revoke.isPending}
                   onAskRevoke={() => setConfirmingId(token.id)}
                   onCancel={() => setConfirmingId(null)}
-                  onRevoke={() =>
+                  onRevoke={() => {
+                    create.reset();
                     revoke.mutate(token.id, {
                       onSuccess: () => {
                         setConfirmingId(null);
                         toast.show(t('siri:revoked'), { polite: true });
                       },
-                    })
-                  }
+                    });
+                  }}
                 />
               ))}
             </Stack>
