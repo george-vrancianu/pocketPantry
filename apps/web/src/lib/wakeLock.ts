@@ -1,4 +1,4 @@
-type Sentinel = { released?: boolean; release(): Promise<void> };
+export type Sentinel = { released?: boolean; release(): Promise<void> };
 
 /**
  * Keep the screen awake. Returns the function that lets it sleep again. Browsers drop the lock
@@ -49,6 +49,8 @@ export function keepScreenAwake(): () => void {
     acquire();
   };
 
+  // Nothing to keep, or to come back to, where the browser has no Screen Wake Lock.
+  if (!navigator.wakeLock) return () => undefined;
   document.addEventListener('visibilitychange', onVisibilityChange);
   acquire();
 

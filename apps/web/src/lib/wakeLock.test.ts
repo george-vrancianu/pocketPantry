@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { keepScreenAwake } from './wakeLock';
+import { keepScreenAwake, type Sentinel } from './wakeLock';
 
-type Sentinel = { released?: boolean; release(): Promise<void> };
+// Drains pending promise callbacks without timers.
+const flush = async () => {
+  for (let i = 0; i < 10; i++) await Promise.resolve();
+};
 
 const fakeWakeLock = (request: () => Promise<Sentinel>) =>
   Object.defineProperty(navigator, 'wakeLock', {
@@ -22,7 +25,7 @@ describe('keepScreenAwake', () => {
     const request = vi.fn(() => Promise.resolve({ release }));
     fakeWakeLock(request);
     const letSleep = keepScreenAwake();
-    await Promise.resolve();
+    await flush();
     letSleep();
     letSleep();
     expect(request).toHaveBeenCalledWith('screen');
@@ -36,7 +39,7 @@ describe('keepScreenAwake', () => {
     const letSleep = keepScreenAwake();
     letSleep();
     grant({ release });
-    await Promise.resolve();
+    await flush();
     expect(release).toHaveBeenCalledOnce();
   });
 
@@ -65,11 +68,11 @@ describe('keepScreenAwake', () => {
       const request = vi.fn(() => Promise.resolve(first));
       fakeWakeLock(request);
       const letSleep = keepScreenAwake();
-      await Promise.resolve();
+      await flush();
       setVisibility('hidden');
       dropLock(first);
       setVisibility('visible');
-      await Promise.resolve();
+      await flush();
       expect(request).toHaveBeenCalledTimes(2);
       letSleep();
     });
@@ -79,11 +82,11 @@ describe('keepScreenAwake', () => {
       const request = vi.fn(() => Promise.resolve(first));
       fakeWakeLock(request);
       const letSleep = keepScreenAwake();
-      await Promise.resolve();
+      await flush();
       letSleep();
       dropLock(first);
       setVisibility('visible');
-      await Promise.resolve();
+      await flush();
       expect(request).toHaveBeenCalledOnce();
     });
 
@@ -93,11 +96,11 @@ describe('keepScreenAwake', () => {
       fakeWakeLock(request);
       const letSleep = keepScreenAwake();
       setVisibility('visible'); // still in flight
-      await Promise.resolve();
+      await flush();
       setVisibility('visible'); // held
       dropLock(held);
       setVisibility('hidden');
-      await Promise.resolve();
+      await flush();
       expect(request).toHaveBeenCalledOnce();
       letSleep();
     });
@@ -114,13 +117,13 @@ describe('keepScreenAwake', () => {
       );
       fakeWakeLock(request);
       const letSleep = keepScreenAwake();
-      await Promise.resolve();
+      await flush();
       dropLock(first);
       setVisibility('visible');
       setVisibility('visible');
       expect(request).toHaveBeenCalledTimes(2);
       grant(second);
-      await Promise.resolve();
+      await flush();
       letSleep();
       expect(second.release).toHaveBeenCalledOnce();
     });
@@ -137,12 +140,12 @@ describe('keepScreenAwake', () => {
       );
       fakeWakeLock(request);
       const letSleep = keepScreenAwake();
-      await Promise.resolve();
+      await flush();
       dropLock(first);
       setVisibility('visible');
       letSleep();
       grant(second);
-      await Promise.resolve();
+      await flush();
       expect(second.release).toHaveBeenCalledOnce();
       setVisibility('visible');
       expect(request).toHaveBeenCalledTimes(2);
@@ -156,11 +159,10 @@ describe('keepScreenAwake', () => {
       request.mockRejectedValueOnce(new Error('denied'));
       fakeWakeLock(request);
       const letSleep = keepScreenAwake();
-      await Promise.resolve();
+      await flush();
       dropLock(first);
       setVisibility('visible');
-      await Promise.resolve();
-      await Promise.resolve();
+      await flush();
       expect(() => letSleep()).not.toThrow();
     });
   });
