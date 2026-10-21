@@ -2,7 +2,11 @@
 <html lang="en" data-theme="warm">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- No zoom: maximum-scale=1 also stops iOS zooming in on focused inputs under 16px. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <!-- Until the pre-paint script resolves the Theme: Warm editorial in light mode, Dark-first in dark mode. -->
     <meta
       name="theme-color"

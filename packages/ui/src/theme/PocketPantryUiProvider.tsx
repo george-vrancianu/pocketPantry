@@ -20,7 +20,13 @@ const colourTransition = 'background-color 200ms, color 200ms';
 
 const globalStyles = {
   ...ppCssVariables(),
-  html: { transition: colourTransition },
+  html: {
+    transition: colourTransition,
+    // No double-tap zoom; no font inflation when the phone rotates.
+    touchAction: 'manipulation',
+    WebkitTextSizeAdjust: '100%',
+    textSizeAdjust: '100%',
+  },
   body: {
     margin: 0,
     fontFamily: bodyFont,
