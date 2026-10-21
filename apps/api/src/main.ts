@@ -49,5 +49,5 @@ async function bootstrap() {
   Logger.log(`API listening on port ${port} (all interfaces)`, 'Bootstrap');
 }
 
-// Top-level entry point: bootstrap handles its own lifecycle, nothing to await at module scope.
+// Top-level entry point: if bootstrap() rejects, Node's default unhandled-rejection handling logs the error and exits non-zero, which is what we want for a failed startup.
 void bootstrap();
