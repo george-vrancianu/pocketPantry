@@ -923,14 +923,23 @@ describe('HealthWidget', () => {
           return release;
         },
         waitForGate: () => gate,
-        /** Adds the lines a bulk-add request names and answers with the list and their ids. */
+        /**
+         * Adds the lines a bulk-add request names (an Ingredient already on the list is merged into) and
+         * answers with the list, the ids created or merged into, and the ids newly inserted.
+         */
         add: (items: Array<Omit<Line, 'id'>>) => {
+          const insertedIds: string[] = [];
           const createdIds = items.map((item) => {
+            const existing = lines.find(
+              (line) => line.ingredientId === item.ingredientId,
+            );
+            if (existing) return existing.id;
             next += 1;
             lines.push({ id: `sh${next}`, ...item });
+            insertedIds.push(`sh${next}`);
             return `sh${next}`;
           });
-          return Response.json({ ...view(), createdIds });
+          return Response.json({ ...view(), createdIds, insertedIds });
         },
         remove: (id: string) => {
           const at = lines.findIndex((line) => line.id === id);
@@ -1088,6 +1097,23 @@ describe('HealthWidget', () => {
       expect(
         await within(sheet).findByRole('button', { name: 'Add 2 Staples' }),
       ).toBeInTheDocument();
+    });
+
+    it('does not delete a line the add only merged into when undoing', async () => {
+      const { user, sheet, shopping } = await openWith(filler(10), [
+        flour,
+        salt,
+      ]);
+      shopping.lines.push({ id: 'sh0', ingredientId: 'flour' });
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Add 2 Staples' }),
+      );
+      await screen.findByText(/^2 added to the Shopping List/);
+
+      await user.click(screen.getByRole('button', { name: 'Undo' }));
+
+      await waitFor(() => expect(shopping.deleted).toEqual(['sh1']));
+      expect(shopping.lines.map((line) => line.id)).toEqual(['sh0']);
     });
 
     it('still shows the toast when the sheet is closed before the add answers', async () => {

@@ -19,7 +19,7 @@ export type ShoppingFix = {
 
 /**
  * The Add fixes of the Health To-dos: one bulk-add, then a toast with the count and the new score
- * whose Undo deletes exactly the Shopping Items the add returned.
+ * whose Undo deletes exactly the Shopping Items the add newly inserted (not lines it merged into).
  */
 export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
   const { t, i18n } = useTranslation('dashboard');
@@ -43,10 +43,10 @@ export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
         : { ingredientId };
     });
 
-  const undo = async (createdIds: string[]) => {
+  const undo = async (insertedIds: string[]) => {
     try {
       // One at a time: each delete answers with the whole list, and parallel answers could cache a stale one.
-      for (const id of new Set(createdIds)) await remove.mutateAsync(id);
+      for (const id of new Set(insertedIds)) await remove.mutateAsync(id);
     } catch (error) {
       toast.show(translateApiError(t, error));
     } finally {
@@ -56,9 +56,9 @@ export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
 
   // mutateAsync, not mutate: per-call callbacks are dropped if the sheet closes before the answer.
   const add = async (key: HealthTodoKey, ingredientIds: string[]) => {
-    let createdIds: string[];
+    let insertedIds: string[];
     try {
-      ({ createdIds } = await addMany.mutateAsync(
+      ({ insertedIds } = await addMany.mutateAsync(
         itemsFor(key, ingredientIds),
       ));
     } catch (error) {
@@ -69,7 +69,7 @@ export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
     const message = t('health.toast.added', { count: ingredientIds.length });
     toast.show(
       messageWithScore(withOnShoppingList(state.input, ingredientIds), message),
-      undoOptions(() => void undo(createdIds)),
+      undoOptions(() => void undo(insertedIds)),
     );
   };
 

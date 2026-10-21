@@ -101,19 +101,20 @@ export class ShoppingService {
     body: AddShoppingItemBody,
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- only the bulk endpoint answers with createdIds
-    const { createdIds: _createdIds, ...view } = await this.addItems(
+    const { groups, id, summary } = await this.addItems(
       memberId,
       [body],
       locale,
     );
-    return view;
+    // Only the bulk endpoint answers with the ids.
+    return { id, groups, summary };
   }
 
   /**
    * Adds every item with the merge rules, in one transaction: all of them or none.
    * `createdIds` are the Shopping Items created or merged into, one per body in request order.
-   * Not the same as `insertedIds` of `addItemsWithSourceRecipes`: `createdIds` includes merge targets.
+   * `insertedIds` are only the Shopping Items this call newly inserted (not merged into), in request order;
+   * Undo deletes these, never `createdIds`, which includes lines that existed before.
    */
   async addItems(
     memberId: string,
@@ -124,13 +125,22 @@ export class ShoppingService {
       // Serialises with concurrent adds (merges never duplicate a line) and with Finish.
       const { listId, scope } = await this.lockActiveList(tx, memberId);
       const createdIds: string[] = [];
-      for (const body of bodies)
-        createdIds.push(
-          (await this.mergeItem(tx, listId, scope, body, locale)).id,
+      const insertedIds: string[] = [];
+      for (const body of bodies) {
+        const { id, inserted } = await this.mergeItem(
+          tx,
+          listId,
+          scope,
+          body,
+          locale,
         );
+        createdIds.push(id);
+        if (inserted) insertedIds.push(id);
+      }
       return {
         ...(await this.view(tx, listId, scope, locale)),
         createdIds,
+        insertedIds,
       };
     });
   }

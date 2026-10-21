@@ -476,10 +476,12 @@ describe('Plate Scan (integration)', () => {
         ]),
       );
       expect(items).toHaveLength(3);
-      const { createdIds, ...list } = response.body as List & {
+      const { createdIds, insertedIds, ...list } = response.body as List & {
         createdIds: string[];
+        insertedIds: string[];
       };
       expect(createdIds).toHaveLength(5);
+      expect(insertedIds).toHaveLength(2); // flour and Pixie dust; milk merged
       expect(await listOf(cookie)).toEqual(list);
     });
 
@@ -499,6 +501,35 @@ describe('Plate Scan (integration)', () => {
       const body = response.body as List & { createdIds: string[] };
       const flourId = flat(body).find((i) => i.name === 'Flour')?.id;
       expect(body.createdIds).toEqual([flourId, milkId, flourId]);
+    });
+
+    it('returns insertedIds apart from createdIds, so deleting them leaves a merged-into line alone', async () => {
+      const cookie = await signUp();
+      const first = await post(cookie, 'shopping-list/items', {
+        ingredientId: milk,
+        quantity: 100,
+        unit: 'ml',
+      }).expect(200);
+      const milkId = flat(first.body as List)[0].id;
+      const response = await bulk(cookie, [
+        { ingredientId: milk, quantity: 200, unit: 'ml' },
+        { ingredientId: flour, quantity: 60, unit: 'g' },
+        { ingredientId: flour, quantity: 40, unit: 'g' },
+      ]).expect(200);
+      const body = response.body as List & {
+        createdIds: string[];
+        insertedIds: string[];
+      };
+      const flourId = flat(body).find((i) => i.name === 'Flour')?.id;
+      expect(body.createdIds).toEqual([milkId, flourId, flourId]);
+      expect(body.insertedIds).toEqual([flourId]);
+
+      for (const id of body.insertedIds)
+        await request(app.getHttpServer())
+          .delete(`/api/shopping-list/items/${id}`)
+          .set('Cookie', cookie)
+          .expect(200);
+      expect(flat(await listOf(cookie)).map((i) => i.id)).toEqual([milkId]);
     });
 
     describe('Unmatched queue', () => {
