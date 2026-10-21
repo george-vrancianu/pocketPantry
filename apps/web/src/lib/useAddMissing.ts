@@ -74,7 +74,7 @@ export function useAddMissing(locale: string, today: IsoDate) {
       if (count === 0) return;
       const message = t('mealPlan.toast.added', { count });
       // Everything merged into lines already on the list: nothing was created, so nothing to undo.
-      if (createdIds.length === 0) toast.show(message);
+      if (createdIds.length === 0) toast.show(message, { polite: true });
       else
         toast.show(
           message,

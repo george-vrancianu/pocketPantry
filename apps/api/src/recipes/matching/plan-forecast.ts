@@ -1,7 +1,13 @@
 import { normalizeName } from '../../catalog/normalize';
 import { addDays } from '../../common/dates';
 import type { mealtime } from '../../database/schema';
-import { toComparable, type Dimension, type Unit } from './units';
+import {
+  roundQuantity,
+  toComparable,
+  UNITS,
+  type Dimension,
+  type Unit,
+} from './units';
 
 /**
  * The Plan Forecast: whether the Pantry still covers each Plan Slot once the
@@ -35,9 +41,9 @@ const BASE_UNIT: Record<Dimension, BaseUnit> = {
   count: 'pcs',
 };
 const DIMENSION_OF: Record<BaseUnit, Dimension> = {
-  g: 'mass',
-  ml: 'volume',
-  pcs: 'count',
+  g: UNITS.g.dimension,
+  ml: UNITS.ml.dimension,
+  pcs: UNITS.pcs.dimension,
 };
 /**
  * The most a list can fall short of a need and still count as covering it, per
@@ -147,8 +153,9 @@ export type ForecastIssue = {
   unit: BaseUnit | null;
   onList: boolean;
   /**
-   * Set only when the list covers part of a short issue: what is still
-   * uncovered, in `unit`. Add missing adds this instead of `quantity`.
+   * Set only when the list amount is judged and does not cover the issue:
+   * what is still uncovered, in `unit` (the whole `quantity` once the pool is
+   * used up). Add missing adds this instead of `quantity`.
    */
   uncovered?: number;
   reason: Reason;
@@ -189,7 +196,7 @@ export const keyOf = ({ ingredientId, name }: Identity): string =>
   ingredientId ?? `name:${normalizeName(name ?? '')}`;
 
 const EPSILON = 1e-9;
-const round = (value: number) => Math.round(value * 1000) / 1000;
+const round = roundQuantity;
 /** Rounds up, so a shortfall is never reported as nothing. */
 const roundUp = (value: number) => Math.ceil(value * 1000 - 1e-9) / 1000;
 
@@ -249,7 +256,7 @@ function againstList(
   // The tolerance is spent once per pool: only while some list amount is left.
   return left > EPSILON && quantity - left <= LIST_TOLERANCE[dimension]
     ? { onList: true }
-    : { onList: false, uncovered: roundUp(quantity - Math.max(left, 0)) };
+    : { onList: false, uncovered: roundUp(quantity - left) };
 }
 
 /** A Batch's working copy: what is left of it as the slots use it up. */

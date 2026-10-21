@@ -17,6 +17,9 @@ export function shoppingAddHandler(
   return {
     async resolve(draft, ctx) {
       const same = sameSubject(draft);
+      // The list reads oldest first within an Aisle (created, then id), and one
+      // subject sits in one Aisle, so the first compatible line is the oldest,
+      // the one mergeItem will merge into.
       const target = (await ctx.lists.shoppingItems()).find(
         (item) => same(item) && unitsMerge(item.unit, amountOf(draft).unit),
       );

@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { exceedsMaxQuantity } from '../common/quantity';
-import { unitsMerge } from '../recipes/matching/units';
+import { quantityInUnit, unitsMerge } from '../recipes/matching/units';
 import type { Tx } from '../database/database.types';
 import { clearRunningLowOnRestock } from '../pantry/running-low-flags';
 import { recordStocked } from '../pantry/stock-history';
@@ -15,7 +15,7 @@ import {
   shoppingTemplateLines,
   shoppingTemplates,
 } from '../database/schema';
-import { quantityInUnit, sumQuantities } from '../shopping/shopping.service';
+import { sumQuantities } from '../shopping/shopping.service';
 
 export type UnmatchedRelinkCounts = {
   relinkedBatches: number;

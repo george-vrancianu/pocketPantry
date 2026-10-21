@@ -72,7 +72,7 @@ export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
       message,
     );
     // Everything merged into lines already on the list: nothing was inserted, so nothing to undo.
-    if (insertedIds.length === 0) toast.show(text);
+    if (insertedIds.length === 0) toast.show(text, { polite: true });
     else
       toast.show(
         text,

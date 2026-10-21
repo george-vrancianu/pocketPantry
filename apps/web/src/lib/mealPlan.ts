@@ -149,8 +149,8 @@ const WORST_FIRST: SlotStatus[] = ['short', 'onList', 'covered'];
 /**
  * The window as it will read once the scope is on the Shopping List: the issues the scope
  * adds turn "On list" (a day's Add also covers the earlier days needing the same Ingredients,
- * but not later days), so short slots become on list and the missing list loses them. The same
- * rules as the server's forecast; the refetch that follows has the final say.
+ * but not later days), so short slots become on list and the missing list loses them. It flips
+ * the issues the server's Add covers, by presence only; the refetch that follows corrects the amounts.
  */
 export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
   const onTheDate = new Set(

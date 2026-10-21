@@ -1138,10 +1138,11 @@ describe('HealthWidget', () => {
         within(sheet).getByRole('button', { name: 'Add 2 Staples' }),
       );
 
-      expect(
-        await screen.findByText(/^2 added to the Shopping List/),
-      ).toBeInTheDocument();
+      const toast = await screen.findByText(/^2 added to the Shopping List/);
+      expect(toast).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+      // A toast without Undo is still a polite live region, not an alert.
+      expect(toast.closest('[role="status"]')).not.toBeNull();
     });
 
     it('still shows the toast when the sheet is closed before the add answers', async () => {

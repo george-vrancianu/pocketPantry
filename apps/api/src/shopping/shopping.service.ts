@@ -7,9 +7,9 @@ import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { exceedsMaxQuantity } from '../common/quantity';
 import {
-  convertQuantity,
+  quantityInUnit,
+  roundQuantity,
   unitsMerge,
-  type Unit,
 } from '../recipes/matching/units';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
@@ -49,26 +49,7 @@ export function sumQuantities(
 ): number | null {
   if (existing === null) return added;
   if (added === null) return existing;
-  return Math.round((existing + added) * 1000) / 1000;
-}
-
-/**
- * The quantity expressed in the target unit (500 g + 1 kg = 1500 g), rounded
- * like sumQuantities so float noise never reaches the DB. Callers pass units
- * that unitsMerge accepted, so a conversion exists; a missing quantity or
- * unit, or the same unit, passes through.
- */
-export function quantityInUnit(
-  quantity: number | null,
-  from: Unit | null,
-  to: Unit | null,
-): number | null {
-  if (quantity === null || from === null || to === null || from === to) {
-    return quantity;
-  }
-  const converted = convertQuantity(quantity, from, to);
-  if (converted === null) throw new Error('units do not convert');
-  return Math.round(converted * 1000) / 1000;
+  return roundQuantity(existing + added);
 }
 
 /** An item to merge; the server may claim any Unmatched source, a client only `SHOPPING_ITEM_SOURCES`. */
