@@ -67,10 +67,17 @@ export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
     }
     // The count is Ingredients added; two of them may have merged into one line.
     const message = t('health.toast.added', { count: ingredientIds.length });
-    toast.show(
-      messageWithScore(withOnShoppingList(state.input, ingredientIds), message),
-      undoOptions(() => void undo(insertedIds)),
+    const text = messageWithScore(
+      withOnShoppingList(state.input, ingredientIds),
+      message,
     );
+    // Everything merged into lines already on the list: nothing was inserted, so nothing to undo.
+    if (insertedIds.length === 0) toast.show(text);
+    else
+      toast.show(
+        text,
+        undoOptions(() => void undo(insertedIds)),
+      );
   };
 
   return { isPending: addMany.isPending, add };

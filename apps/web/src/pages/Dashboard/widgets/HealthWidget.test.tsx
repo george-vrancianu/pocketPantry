@@ -1116,6 +1116,25 @@ describe('HealthWidget', () => {
       expect(shopping.lines.map((line) => line.id)).toEqual(['sh0']);
     });
 
+    it('offers no Undo when everything merged into lines already on the list', async () => {
+      const { user, sheet, shopping } = await openWith(filler(10), [
+        flour,
+        salt,
+      ]);
+      shopping.lines.push(
+        { id: 'sh0', ingredientId: 'flour' },
+        { id: 'sh9', ingredientId: 'salt' },
+      );
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Add 2 Staples' }),
+      );
+
+      expect(
+        await screen.findByText(/^2 added to the Shopping List/),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+    });
+
     it('still shows the toast when the sheet is closed before the add answers', async () => {
       const { user, sheet, shopping } = await openWith(filler(10), [
         flour,

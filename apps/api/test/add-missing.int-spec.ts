@@ -205,12 +205,13 @@ describe('Add missing for a Meal Plan (integration)', () => {
     expect(await sourcesOf(milkItem!.id)).toEqual([latte]);
   });
 
-  it('returns only the ids it inserted, so Undo leaves a line already on the list alone', async () => {
+  it('returns only the ids of the Shopping Items it inserted, never one already on the list (what Undo deletes)', async () => {
     const ana = await member('undo');
     await week(ana);
     await add(ana, { scope: 'ingredient', ingredientId: eggs }).expect(201);
     const eggId = byIngredient(await shopping(ana), eggs)!.id;
 
+    // The forecast leaves Ingredients on the list out, so nothing merges here: this guards the ids returned.
     const res = await add(ana, { scope: 'window' });
 
     const { createdIds } = res.body as Added;
