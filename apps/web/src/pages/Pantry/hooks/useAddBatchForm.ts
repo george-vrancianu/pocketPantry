@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
@@ -130,6 +136,7 @@ export function useAddBatchForm({
   // starting `ingredientId`, and Location and expiry stay on their fallbacks.
   useEffect(() => {
     if (!startingDefaults || ingredient !== startingIngredient) return;
+    // oxlint-disable-next-line react/set-state-in-effect -- copies the Catalog lookup result (external data) into the form once, when it lands
     setIngredient(startingDefaults);
     if (!touched.location)
       setLocation(startingDefaults.defaults.location ?? FALLBACK_LOCATION);
@@ -137,6 +144,7 @@ export function useAddBatchForm({
     if (!touched.expiry && !prefilled.has('expiry'))
       setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
     // Once, when the lookup lands; not again after the Member has picked or typed something else.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- only startingDefaults: the other values are read as they are at that moment
   }, [startingDefaults]);
 
   /** Dropping the picked Ingredient must not change the unit on screen: freeze the Ingredient's unit first. */
@@ -233,7 +241,9 @@ export function useAddBatchForm({
   };
   // The read outlives the render that started it: it fills what is untouched when it lands.
   const prefillNow = useRef(applyPrefill);
-  prefillNow.current = applyPrefill;
+  useLayoutEffect(() => {
+    prefillNow.current = applyPrefill;
+  });
 
   const [cameraOpen, setCameraOpen] = useState(false);
   // The mode the overlay opened in, and whether it reopened because a barcode was not found.

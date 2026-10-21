@@ -7,7 +7,7 @@ import {
   Stack,
   Typography,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
@@ -29,10 +29,13 @@ export function PantryPage() {
   const rowToggleErrors = useRowToggleErrors();
   const rowHint = usePantryRowHint();
 
-  const focusAdd = () =>
-    document
-      .querySelector<HTMLElement>(`[aria-label="${t('pantry:add')}"]`)
-      ?.focus();
+  const focusAdd = useCallback(
+    () =>
+      document
+        .querySelector<HTMLElement>(`[aria-label="${t('pantry:add')}"]`)
+        ?.focus(),
+    [t],
+  );
 
   // The form replaces the list and the header's Add button while open: afterwards put focus back on
   // the Ingredient row whose Add batch button opened it, or else on the header's Add button.
@@ -47,7 +50,7 @@ export function PantryPage() {
       else focusAdd();
     }
     wasAdding.current = screen.adding ? { from: screen.addingFrom } : null;
-  }, [screen.adding, screen.addingFrom, t]);
+  }, [screen.adding, screen.addingFrom, focusAdd]);
 
   return (
     <RowToggleErrorProvider report={rowToggleErrors.report}>

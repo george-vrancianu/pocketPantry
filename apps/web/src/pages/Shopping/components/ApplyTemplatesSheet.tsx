@@ -115,6 +115,7 @@ function ApplyForm({ open, onClose, onExited }: ApplyTemplatesSheetProps) {
   // A ticked Template joins the selection once its lines (and the list the
   // default selection depends on) are here. One whose lines failed to load is
   // dropped; the error shows above.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- deliberately every render: it reads the useQueries result array, which is a new array each render, and returns early unless a ticked Template has settled
   useEffect(() => {
     if (pending.size === 0 || !listSettled) return;
     // A cached error does not count while the retry is still running.
@@ -129,6 +130,7 @@ function ApplyForm({ open, onClose, onExited }: ApplyTemplatesSheetProps) {
           (query?.data || (query?.isError && query.fetchStatus === 'idle')),
       );
     if (settled.length === 0) return;
+    // oxlint-disable-next-line react/set-state-in-effect -- folds settled query results (external data) into the selection once, then clears them from pending
     setSelection((current) =>
       settled.reduce(
         (next, { query }) =>
