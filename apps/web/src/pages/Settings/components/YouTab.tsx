@@ -21,6 +21,7 @@ import { useSaveLocale } from '../../../lib/settings';
 import { useLoadedUnmatchedCount } from '../hooks/useLoadedUnmatchedCount';
 import { AllergiesSection } from './AllergiesSection';
 import { AppearanceCard } from './AppearanceCard';
+import { SiriSection } from './SiriSection';
 import { ScopeCaption, SectionHeading } from './SectionHeading';
 
 const initials = (name: string) =>
@@ -90,6 +91,7 @@ export function YouTab() {
         {saveLocale.isError ? <Alert>{t('localeSaveFailed')}</Alert> : null}
       </Stack>
       <AllergiesSection />
+      <SiriSection />
       {isAdmin ? (
         <Stack component="section" spacing={1} aria-labelledby={`${id}-admin`}>
           <SectionHeading

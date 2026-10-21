@@ -1,0 +1,27 @@
+{
+  "title": "Siri",
+  "hint": "Create a token for each device that adds to your lists by voice. A token can only make voice requests; revoke it here to stop it right away.",
+  "nameLabel": "Token name",
+  "namePlaceholder": "For example, my iPhone",
+  "create": "Create token",
+  "creating": "Creating",
+  "reveal": {
+    "title": "Copy your token now",
+    "hint": "This is the only time it is shown. Paste it into the Shortcut when asked.",
+    "secretLabel": "Token",
+    "copy": "Copy",
+    "copied": "Token copied",
+    "done": "Done, I have copied it"
+  },
+  "empty": "No tokens yet.",
+  "loadFailed": "Your tokens could not be loaded.",
+  "created": "Created {{date}}",
+  "lastUsed": "Last used {{date}}",
+  "neverUsed": "Never used",
+  "revoke": "Revoke",
+  "revokeLabel": "Revoke {{name}}",
+  "revokeConfirm": "Revoke {{name}}? Anything using it stops working.",
+  "revokeAction": "Revoke",
+  "cancel": "Cancel",
+  "revoked": "Token revoked"
+}

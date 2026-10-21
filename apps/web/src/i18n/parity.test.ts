@@ -213,6 +213,8 @@ const PLAIN_WORDS: Record<string, string> = {
     'plain verb ("Check your connection"); avoided only as a Health Factor noun',
   meal: 'everyday word in Meal Plan copy; avoided only as the name of a Plan Slot or Eating Moment',
   note: 'plain word; Voice Note and Nutrition Note are canonical and not matched',
+  token:
+    'Assistant Token (ADR 0019) is its own concept; "token" is avoided only as another name for the Invite Code',
   product: 'packaged goods in Product Scan copy, not an Ingredient',
 };
 
