@@ -13,7 +13,13 @@ import {
   useToast,
   type ToastHandle,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AppScreenHeader } from '../../../components/AppScreenHeader';
@@ -102,7 +108,9 @@ function Editor({
   // The newest lines we know of: the page's, or the last save's reply. Undo builds on these, not on
   // what the page rendered when the toast appeared.
   const latest = useRef(lines);
-  latest.current = lines;
+  useLayoutEffect(() => {
+    latest.current = lines;
+  });
   // Saves run one at a time, each building its lines from the newest we know of once the one before it
   // has landed: a second swipe during the first row's fly-off must not bring the first line back.
   const saving = useRef<Promise<unknown>>(Promise.resolve());

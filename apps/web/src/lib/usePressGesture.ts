@@ -56,6 +56,7 @@ export function usePressGesture({ active, start, send, cancel }: Press) {
   // The note ended some other way (60 s, a failed start): nothing is armed any more.
   useEffect(() => {
     if (!active) {
+      // oxlint-disable-next-line react/set-state-in-effect -- the note ended outside the gesture; disarm mirrors that external state
       disarm();
       pointerDown.current = false;
     }

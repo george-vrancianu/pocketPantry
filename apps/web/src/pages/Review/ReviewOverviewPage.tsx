@@ -83,6 +83,7 @@ export function ReviewOverviewPage() {
   useEffect(() => {
     if (!focusId) return;
     document.querySelector<HTMLElement>(`[data-scan-id="${focusId}"]`)?.focus();
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: consumed (cleared) once the card is focused
     setFocusId(null);
   }, [focusId]);
 

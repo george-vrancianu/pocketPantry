@@ -2,8 +2,8 @@
   "title": "Shopping",
   "summary": {
     "toBuy": "{{count}} to buy",
-    "inBasket": "{{checked}} of {{total}} in your basket",
-    "progress": "Basket progress",
+    "inBasket": "{{checked}} of {{total}} checked",
+    "progress": "Shopping progress",
     "tickedOff_one": "{{count}} ticked off",
     "tickedOff_other": "{{count}} ticked off",
     "moveToPantry_one": "Move {{count}} to Pantry",
@@ -40,7 +40,6 @@
     "restore": "Keep {{name}}",
     "quantityInvalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals.",
     "confirm_one": "Add {{count}} item to Pantry",
-    "confirm_few": "Add {{count}} items to Pantry",
     "confirm_other": "Add {{count}} items to Pantry",
     "confirming": "Saving",
     "empty": "Nothing to review. Another member may have already finished shopping.",
