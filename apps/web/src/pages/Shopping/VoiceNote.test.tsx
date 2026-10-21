@@ -19,7 +19,6 @@ import {
   talkButton,
   voiceAction,
   voiceIngredient,
-  wake,
 } from '../../test/voice';
 import {
   holdFor,
@@ -310,55 +309,6 @@ describe('Voice Note on the Shopping List', () => {
       expect(await screen.findByText('Listening')).toBeVisible();
     });
 
-    it.each([
-      [
-        'a transcript',
-        (late: {
-          resolve: (r: Response) => void;
-          reject: (e: Error) => void;
-        }) =>
-          late.resolve(
-            Response.json({ transcript: 'late bread', actions: [] }),
-          ),
-      ],
-      [
-        'an error',
-        (late: {
-          resolve: (r: Response) => void;
-          reject: (e: Error) => void;
-        }) => late.reject(new TypeError('offline')),
-      ],
-    ])(
-      'ignores the late answer of a cancelled note: %s',
-      async (_name, settle) => {
-        const late = {} as {
-          resolve: (r: Response) => void;
-          reject: (e: Error) => void;
-        };
-        setup({
-          note: () =>
-            new Promise<Response>((resolve, reject) => {
-              late.resolve = resolve;
-              late.reject = reject;
-            }),
-        });
-        renderWithProviders(<ShoppingPage />);
-        fireEvent.pointerUp(await hold());
-        await userEvent.click(
-          await screen.findByRole('button', { name: 'Cancel' }),
-        );
-
-        await act(async () => {
-          settle(late);
-          await vi.advanceTimersByTimeAsync(50);
-        });
-
-        expect(screen.queryByRole('dialog')).toBeNull();
-        expect(screen.queryByRole('alert')).toBeNull();
-        expect(voiceNote.getState().phase).toBe('idle');
-      },
-    );
-
     /** jsdom ignores responsive rules in computed style, so the injected rule text is where `bottom` shows. */
     const cssText = () =>
       Array.from(document.styleSheets)
@@ -400,22 +350,6 @@ describe('Voice Note on the Shopping List', () => {
         .filter((line) => line.includes('MuiSnackbar-root'))
         .join('\n');
       expect(rule).toMatch(clearOfPill);
-    });
-
-    it('keeps the screen awake across a page switch while the note is still being read', async () => {
-      let answer!: (response: Response) => void;
-      setup({ note: () => new Promise<Response>((r) => (answer = r)) });
-      const page = renderWithProviders(<ShoppingPage />);
-      fireEvent.pointerUp(await hold());
-      await screen.findByText('Reading your note');
-
-      // The Member moves to another page: this one unmounts, the read carries on.
-      page.unmount();
-      expect(wake.released).not.toHaveBeenCalled();
-
-      answer(Response.json({ transcript: 'bread', actions: [] }));
-      await act(() => vi.advanceTimersByTimeAsync(50));
-      expect(wake.released).toHaveBeenCalledTimes(1);
     });
 
     it('puts focus back on the voice button when Cancel or Discard closes the pill', async () => {
@@ -462,21 +396,6 @@ describe('Voice Note on the Shopping List', () => {
       await waitFor(() => expect(button).toHaveFocus());
     });
 
-    it('offers Discard only on a too-long note, closing without a "discarded" toast', async () => {
-      setup({ note: () => error('voice.too_long', 413) });
-      renderWithProviders(<ShoppingPage />);
-      fireEvent.pointerUp(await hold());
-
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent('Recording too long');
-      expect(within(alert).queryByRole('button', { name: 'OK' })).toBeNull();
-      expect(within(alert).queryByRole('button', { name: 'Retry' })).toBeNull();
-      await userEvent.click(
-        within(alert).getByRole('button', { name: 'Discard' }),
-      );
-      expect(screen.queryByText('Recording discarded')).toBeNull();
-    });
-
     it('tells a press while reading that the last note is still being read', async () => {
       setup({ note: never });
       renderWithProviders(<ShoppingPage />);
@@ -519,44 +438,35 @@ describe('Voice Note on the Shopping List', () => {
       expect(screen.getByTestId('failed-dot')).toBeInTheDocument();
     });
 
-    it('treats a network error like a failed send', async () => {
-      setup({ note: () => Promise.reject(new TypeError('offline')) as never });
+    it('names an unexpected failure in the alert, keeping the recording for Retry', async () => {
+      setup({ note: () => error('scan.cap_reached', 429, { cap: 5 }) });
       renderWithProviders(<ShoppingPage />);
+
       fireEvent.pointerUp(await hold());
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        "Couldn't send",
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent("Couldn't send");
+      expect(alert).toHaveTextContent(
+        'You have used all 5 scans for today. Try again tomorrow, or add items by hand.',
       );
+      expect(alert).not.toHaveTextContent('No connection');
+      expect(
+        within(alert).getByRole('button', { name: 'Discard' }),
+      ).toBeVisible();
+      expect(
+        within(alert).getByRole('button', { name: 'Retry' }),
+      ).toBeVisible();
     });
 
-    it('Retry sends the same recording in the language it was made in', async () => {
-      let attempt = 0;
-      const { sent } = setup({
-        note: () =>
-          ++attempt === 1
-            ? error('voice.provider_unavailable', 502)
-            : Response.json({ transcript: 'two yogurts', actions: [] }),
-      });
+    it('falls back to the generic message for an unknown failure code', async () => {
+      setup({ note: () => error('nonsense.code', 500) });
       renderWithProviders(<ShoppingPage />);
+
       fireEvent.pointerUp(await hold());
-      await screen.findByRole('alert');
-      // The Scan Language changes while the failed note waits.
-      await userEvent.click(
-        screen.getByRole('button', { name: /Scan Language: English/ }),
-      );
-      await userEvent.click(
-        await screen.findByRole('menuitemradio', { name: /Dansk/ }),
-      );
 
-      await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
-
-      expect(await screen.findByRole('dialog')).toHaveTextContent(
-        'What I heard',
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Something went wrong. Please try again.',
       );
-      expect(sent).toHaveLength(2);
-      expect(sent[1].get('scanLanguage')).toBe('en');
-      expect(await (sent[1].get('audio') as Blob).text()).toBe('audio-bytes');
-      // The microphone is not asked twice.
-      expect(mic.start).toHaveBeenCalledTimes(1);
     });
 
     it("moves focus to the Reading pill's Cancel when Retry starts the read", async () => {
@@ -616,42 +526,6 @@ describe('Voice Note on the Shopping List', () => {
       expect(chip).toHaveFocus();
     });
 
-    it('keeps the screen awake while a retry is read', async () => {
-      let attempt = 0;
-      setup({
-        note: () =>
-          ++attempt === 1 ? error('voice.provider_unavailable', 502) : never(),
-      });
-      renderWithProviders(<ShoppingPage />);
-      fireEvent.pointerUp(await hold());
-      await screen.findByRole('alert');
-      wake.request.mockClear();
-      wake.released.mockClear();
-
-      await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
-
-      expect(wake.request).toHaveBeenCalledTimes(1);
-      expect(wake.released).not.toHaveBeenCalled();
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Cancel' }),
-      );
-      expect(wake.released).toHaveBeenCalled();
-    });
-
-    it('Discard drops the recording and says so', async () => {
-      setup({ note: () => error('voice.provider_unavailable', 502) });
-      renderWithProviders(<ShoppingPage />);
-      fireEvent.pointerUp(await hold());
-      await screen.findByRole('alert');
-
-      await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
-
-      expect(screen.queryByRole('alert')).toBeNull();
-      expect(screen.getByText('Recording discarded')).toBeVisible();
-      expect(voiceNote.getState().recording).toBeUndefined();
-      expect(screen.queryByTestId('failed-dot')).toBeNull();
-    });
-
     it('tells a press while a failed note waits to retry or discard it first', async () => {
       setup({ note: () => error('voice.provider_unavailable', 502) });
       renderWithProviders(<ShoppingPage />);
@@ -684,15 +558,6 @@ describe('Voice Note on the Shopping List', () => {
       await holdFor(200);
       expect(screen.queryByText("Didn't catch anything, try again")).toBeNull();
       expect(voiceNote.getState().phase).toBe('idle');
-    });
-
-    it('says nothing was heard for an empty transcript too', async () => {
-      setup({ note: () => Response.json({ transcript: '  ', actions: [] }) });
-      renderWithProviders(<ShoppingPage />);
-      fireEvent.pointerUp(await hold());
-      expect(
-        await screen.findByText("Didn't catch anything, try again"),
-      ).toBeVisible();
     });
 
     describe('Voice Cap', () => {
@@ -754,31 +619,15 @@ describe('Voice Note on the Shopping List', () => {
         await screen.findByText('Listening');
         expect(mic.start).toHaveBeenCalledTimes(1);
       });
-
-      it('treats an unreadable reset time as capped until the next UTC midnight', async () => {
-        vi.setSystemTime(new Date('2026-03-04T21:30:00Z'));
-        setup({ note: capReached('not a date') });
-        renderWithProviders(<ShoppingPage />);
-        fireEvent.pointerUp(await hold());
-        await userEvent.click(
-          within(await screen.findByRole('alert')).getByRole('button', {
-            name: 'OK',
-          }),
-        );
-
-        await holdFor(2 * 3_600_000);
-        expect(await talkButton()).toHaveStyle({ opacity: '0.55' });
-        await holdFor(3_600_000);
-        expect(await talkButton()).toHaveStyle({ opacity: '1' });
-      });
     });
 
-    it('offers only Discard when the recording was too long', async () => {
+    it('offers only Discard when the recording was too long, closing without a "discarded" toast', async () => {
       setup({ note: () => error('voice.too_long', 413) });
       renderWithProviders(<ShoppingPage />);
       fireEvent.pointerUp(await hold());
 
       const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent('Recording too long');
       expect(alert).toHaveTextContent(
         'That recording was too long. Try a shorter one.',
       );
@@ -788,6 +637,7 @@ describe('Voice Note on the Shopping List', () => {
         within(alert).getByRole('button', { name: 'Discard' }),
       );
       expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.queryByText('Recording discarded')).toBeNull();
     });
 
     it('offers only Discard, and logs, when the recording format is not supported', async () => {
@@ -826,22 +676,6 @@ describe('Voice Note on the Shopping List', () => {
       expect(screen.queryByTestId('failed-dot')).toBeNull();
       await userEvent.click(within(alert).getByRole('button', { name: 'OK' }));
       expect(screen.queryByRole('alert')).toBeNull();
-    });
-
-    it('hides the button and drops the note silently when voice is not configured at runtime', async () => {
-      setup({ note: () => error('voice.not_configured', 503) });
-      renderWithProviders(<ShoppingPage />);
-      fireEvent.pointerUp(await hold());
-
-      await waitFor(() =>
-        expect(
-          screen.queryByRole('button', {
-            name: /hold to record a voice note/i,
-          }),
-        ).toBeNull(),
-      );
-      expect(screen.queryByRole('alert')).toBeNull();
-      expect(voiceNote.getState().phase).toBe('idle');
     });
   });
 

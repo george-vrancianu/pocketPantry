@@ -7,7 +7,18 @@ import { ApiError } from '../lib/api';
  * unknown codes get the generic message.
  */
 export function translateApiError(t: TFunction, error: unknown): string {
-  const fallback = t('errors:unknown');
-  if (!(error instanceof ApiError)) return fallback;
-  return t(`errors:${error.code}`, { ...error.params, defaultValue: fallback });
+  if (!(error instanceof ApiError)) return t('errors:unknown');
+  return translateErrorCode(t, error.code, error.params);
+}
+
+/** The same for an error kept as its raw code and parameters. */
+export function translateErrorCode(
+  t: TFunction,
+  code: string,
+  params: Record<string, unknown> = {},
+): string {
+  return t(`errors:${code}`, {
+    ...params,
+    defaultValue: t('errors:unknown'),
+  });
 }
