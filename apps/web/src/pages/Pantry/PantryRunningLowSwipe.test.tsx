@@ -40,9 +40,20 @@ const milkStaple = {
   aisle: null,
 };
 
+type StubOptions = { failSaves?: boolean };
+/** A failing save answers only once this opens, so the optimistic flag shows before the failure. */
+let failGate: () => void = () => {};
 /** Running-low flags and Staples follow the PUT and DELETE calls, as the API does. */
-function stubRunningLow(flaggedAtStart: string[] = []) {
+function stubRunningLow(
+  flaggedAtStart: string[] = [],
+  { failSaves = false }: StubOptions = {},
+) {
   const flagged = new Set<string>(flaggedAtStart);
+  const gate = new Promise<void>((resolve) => (failGate = resolve));
+  const fail = async () => {
+    await gate;
+    return Response.json({ status: 500 }, { status: 500 });
+  };
   let staples: (typeof milkStaple)[] = [];
   const { fetchMock, calls } = stubApi({
     'GET /api/pantry': () =>
@@ -71,10 +82,12 @@ function stubRunningLow(flaggedAtStart: string[] = []) {
       return new Response(null, { status: 204 });
     },
     'PUT /api/pantry/running-low/milk-id': () => {
+      if (failSaves) return fail();
       flagged.add('milk-id');
       return new Response(null, { status: 204 });
     },
     'DELETE /api/pantry/running-low/milk-id': () => {
+      if (failSaves) return fail();
       flagged.delete('milk-id');
       return new Response(null, { status: 204 });
     },
@@ -113,9 +126,9 @@ function swipe(target: HTMLElement, dx: number) {
   release(target, dx);
 }
 
-async function renderPage(flagged: string[] = []) {
+async function renderPage(flagged: string[] = [], options: StubOptions = {}) {
   vi.useFakeTimers({ shouldAdvanceTime: true });
-  const { calls, flagged: serverFlagged } = stubRunningLow(flagged);
+  const { calls, flagged: serverFlagged } = stubRunningLow(flagged, options);
   const { queryClient } = renderWithProviders(<PantryPage />);
   watchSweeps();
   await screen.findByRole('button', { name: /^Milk/ });
@@ -146,6 +159,7 @@ const settle = () => act(() => vi.advanceTimersByTimeAsync(250));
 
 describe('swiping an Ingredient row to toggle Running low', () => {
   afterEach(() => {
+    failGate = () => {};
     sweepWatcher?.disconnect();
     vi.unstubAllGlobals();
     vi.useRealTimers();
@@ -441,6 +455,57 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       await waitFor(() => expect(chip()).toBeNull());
       expect(tint()).toBeNull();
       expect(sweepsSeen).toEqual([]);
+    });
+  });
+
+  describe('when the save fails', () => {
+    const failure = () =>
+      act(async () => {
+        failGate();
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+    it('puts a row that was not low back with no tint, chip or sweep left', async () => {
+      const { calls } = await renderPage([], { failSaves: true });
+      swipe(row('Milk'), -92);
+      await settle();
+      await waitFor(() =>
+        expect(saves(calls)).toEqual(['PUT /api/pantry/running-low/milk-id']),
+      );
+      // The flag shows at once, before the save answers.
+      await waitFor(() => expect(chip()).toBeVisible());
+      await failure();
+      expect(
+        await screen.findByText('Something went wrong. Please try again.'),
+      ).toBeVisible();
+      await waitFor(() => expect(chip()).toBeNull());
+      expect(tint()).toBeNull();
+      expect(sweepOf()).toBeNull();
+      expect(sweepsSeen).not.toContain('off');
+      await act(() => vi.advanceTimersByTimeAsync(600));
+      expect(sweepOf()).toBeNull();
+    });
+
+    it('puts a row that was low back with its tint and no sweep left', async () => {
+      const { calls } = await renderPage(['milk-id'], { failSaves: true });
+      swipe(row('Milk'), -120);
+      await settle();
+      await waitFor(() =>
+        expect(saves(calls)).toEqual([
+          'DELETE /api/pantry/running-low/milk-id',
+        ]),
+      );
+      await waitFor(() => expect(chip()).toBeNull());
+      await failure();
+      expect(
+        await screen.findByText('Something went wrong. Please try again.'),
+      ).toBeVisible();
+      await waitFor(() => expect(tint()).not.toBeNull());
+      expect(chip()).toBeVisible();
+      expect(sweepOf()).toBeNull();
+      expect(sweepsSeen).not.toContain('on');
+      await act(() => vi.advanceTimersByTimeAsync(600));
+      expect(sweepOf()).toBeNull();
     });
   });
 
