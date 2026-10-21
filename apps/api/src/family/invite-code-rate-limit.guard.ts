@@ -51,6 +51,7 @@ export class InviteCodeRateLimitGuard implements CanActivate {
         now,
       );
     if (retryAfterMs === undefined) return true;
+    // header() is synchronous and returns the reply for chaining; the result is unused.
     void http
       .getResponse<FastifyReply>()
       .header('Retry-After', Math.ceil(retryAfterMs / 1000));
