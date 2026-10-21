@@ -10,8 +10,6 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { scanUsage, user } from '../src/database/schema';
 import { ApiException } from '../src/common/api-exception';
-import { client, signUp } from './support/admin-session';
-import { createTestApp } from './support/create-test-app';
 
 jest.setTimeout(30_000);
 
@@ -35,6 +33,8 @@ const rice = seedId.ingredient('rice');
 
 // Spec: #411 / #446, ADR 0019. Thin HTTP wiring tests; the speech sentence and Voice services have their own tests.
 describe('Assistant Requests (integration)', () => {
+  let client: typeof import('./support/admin-session').client;
+  let signUp: typeof import('./support/admin-session').signUp;
   let app: NestFastifyApplication;
   let database: Database;
   let tokens: AssistantTokenService;
@@ -43,14 +43,27 @@ describe('Assistant Requests (integration)', () => {
   const stamp = Date.now();
   let counter = 0;
 
-  const savedKey = process.env.AI_API_KEY;
-  const savedProvider = process.env.AI_PROVIDER;
+  const saved = {
+    key: process.env.AI_API_KEY,
+    provider: process.env.AI_PROVIDER,
+    baseUrl: process.env.AI_BASE_URL,
+  };
 
   beforeAll(async () => {
-    // The endpoint answers 503 without a text model key; do not lean on a
-    // developer's .env. The fake AI below never calls out.
+    // The endpoint answers 503 without a text model key. AppModule validates
+    // env when first imported and process.env beats a developer's .env, so set
+    // these first and import the app only now. The fake AI below never calls out.
     process.env.AI_API_KEY = 'test-key';
     process.env.AI_PROVIDER = 'openai';
+    delete process.env.AI_BASE_URL;
+    const supportPath = './support/create-test-app'; // a variable: TS demands a .js extension on literal dynamic imports, Jest resolves the .ts
+    const { createTestApp } = (await import(
+      supportPath
+    )) as typeof import('./support/create-test-app');
+    const sessionPath = './support/admin-session';
+    ({ client, signUp } = (await import(
+      sessionPath
+    )) as typeof import('./support/admin-session'));
     const ai = {
       generate: () => {
         reads++;
@@ -64,10 +77,12 @@ describe('Assistant Requests (integration)', () => {
     tokens = app.get(AssistantTokenService);
   });
   afterAll(async () => {
-    if (savedKey === undefined) delete process.env.AI_API_KEY;
-    else process.env.AI_API_KEY = savedKey;
-    if (savedProvider === undefined) delete process.env.AI_PROVIDER;
-    else process.env.AI_PROVIDER = savedProvider;
+    if (saved.key === undefined) delete process.env.AI_API_KEY;
+    else process.env.AI_API_KEY = saved.key;
+    if (saved.provider === undefined) delete process.env.AI_PROVIDER;
+    else process.env.AI_PROVIDER = saved.provider;
+    if (saved.baseUrl === undefined) delete process.env.AI_BASE_URL;
+    else process.env.AI_BASE_URL = saved.baseUrl;
     await app.close();
   });
   beforeEach(() => {
