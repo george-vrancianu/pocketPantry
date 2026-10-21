@@ -63,6 +63,14 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
     admin = client(app, cookie, '/api/admin/recipes');
     settings = client(app, cookie, '/api/settings');
     recipesApi = client(app, cookie, '/api/recipes');
+    // Catalog rows another suite could leave behind: one-Ingredient Recipes that would crowd
+    // a Plate Scan's five matches if the dishes below did not out-score them. Their titles
+    // deliberately share the word "Plate" with the dishes: that is what made them outscore the
+    // old one-Ingredient scans, so renaming them would weaken the guard.
+    for (let k = 0; k < 6; k++) {
+      await create([g('parmesan')], `Plate ${stamp}-crowd${k}a`);
+      await create([g('flour')], `Plate ${stamp}-crowd${k}b`);
+    }
   });
 
   afterEach(async () => {
@@ -276,6 +284,8 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
   });
 
   describe('Plate Scan matches', () => {
+    // Plate Scan ranks the whole Catalog and keeps five, so each dish scans exactly its own
+    // Ingredients and carries a stamped title: nothing another suite left behind can outscore it.
     it('adds the warning to each match', async () => {
       const word = `Plate ${stamp}-${++n}`;
       const dish = await create([g('parmesan'), g('flour')], word);
@@ -285,7 +295,10 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
           .post('/plate-matches', {
             locale: 'en',
             dishTitle: word,
-            ingredientIds: [seedId.ingredient('parmesan')],
+            ingredientIds: [
+              seedId.ingredient('parmesan'),
+              seedId.ingredient('flour'),
+            ],
           })
           .expect(200)
       ).body as {
@@ -325,7 +338,10 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
           .post('/plate-matches', {
             locale: 'en',
             dishTitle: word,
-            ingredientIds: [seedId.ingredient('flour')],
+            ingredientIds: [
+              seedId.ingredient('parmesan'),
+              seedId.ingredient('flour'),
+            ],
           })
           .expect(200)
       ).body as {
