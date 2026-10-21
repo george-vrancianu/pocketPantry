@@ -34,6 +34,7 @@ export function FamilySynonymsQueue() {
     const buttons =
       listRef.current?.querySelectorAll<HTMLElement>('[data-add-for]');
     buttons?.[focusFrom]?.focus();
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
     setFocusFrom(null);
   }, [focusFrom, queue.isFetchingNextPage]);
 
@@ -48,6 +49,7 @@ export function FamilySynonymsQueue() {
         .find((button) => button.dataset.addFor === restoreFocus.key)
         ?.focus();
     }
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
     setRestoreFocus(null);
   }, [adding, restoreFocus, queue.data]);
 

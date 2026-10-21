@@ -3,7 +3,7 @@ import {
   DOCK_HEIGHT,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { LIFT_MS } from '../components/liftedBlock';
 
 /** The bottom of the viewport the Dock covers (its larger height, so it holds on every width). */
@@ -20,6 +20,10 @@ export function useLiftIntoView(
   open: boolean,
 ) {
   const reduceMotion = usePrefersReducedMotion();
+  const reduceMotionNow = useRef(reduceMotion);
+  useLayoutEffect(() => {
+    reduceMotionNow.current = reduceMotion;
+  });
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(() => {
@@ -30,10 +34,10 @@ export function useLiftIntoView(
       if (bottom <= limit) return;
       window.scrollBy({
         top: bottom - limit + BREATHING,
-        behavior: reduceMotion ? 'auto' : 'smooth',
+        behavior: reduceMotionNow.current ? 'auto' : 'smooth',
       });
     }, LIFT_MS + 20);
     return () => clearTimeout(timer);
-    // Only when the Ingredient opens, not when the motion setting changes while it is open.
-  }, [open]);
+    // Re-runs when the Ingredient opens or its target changes, not when the motion setting changes while it is open.
+  }, [open, target]);
 }

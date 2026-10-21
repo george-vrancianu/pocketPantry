@@ -21,8 +21,13 @@ vi.mock('../../lib/camera', async () => {
       const [status, setStatus] = useState('ready');
       useEffect(() => {
         setStatus('starting');
-        const timer = setTimeout(() => setStatus('ready'), 0);
-        return () => clearTimeout(timer);
+        let cancelled = false;
+        void Promise.resolve().then(() => {
+          if (!cancelled) setStatus('ready');
+        });
+        return () => {
+          cancelled = true;
+        };
       }, [highResolution]);
       return {
         videoRef: { current: null },

@@ -108,6 +108,7 @@ export function useReviewScreen() {
   useEffect(() => {
     if (focusId === null) return;
     document.getElementById(focusId)?.focus();
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: consumed (cleared) once the element is focused
     setFocusId(null);
   }, [focusId, state]);
   const overLimit = shopping
@@ -138,6 +139,7 @@ export function useReviewScreen() {
   // After the render that closed the dialog: back to the opener, or to the row if a regroup replaced it.
   useEffect(() => {
     if (!restoreOpener) return;
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: consumed (cleared) once focus is handed back
     setRestoreOpener(false);
     const opener = swapOpener.current;
     if (opener?.isConnected) opener.focus();

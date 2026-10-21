@@ -39,6 +39,7 @@ export function RecipesPage() {
   const filters = useRecipeFilters(i18n.language);
   const cookTonight = useCookTonight(
     i18n.language,
+    // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     localIso(new Date()),
     showHidden,
   );

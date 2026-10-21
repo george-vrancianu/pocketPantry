@@ -718,6 +718,7 @@ describe('Family Recipes (integration)', () => {
 
     it('requires the locale in Family bodies', async () => {
       const { locale, ...noLocale } = doc(null);
+      // Marks the destructured locale as intentionally unused (omitted from the body).
       void locale;
       await a1.post('', noLocale).expect(400);
     });

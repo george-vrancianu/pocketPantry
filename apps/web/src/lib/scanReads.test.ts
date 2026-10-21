@@ -30,13 +30,15 @@ const enqueue = (
     scan: { id, mode, scanLanguage, image: `image-${id}`, thumbnail: 'thumb' },
   });
 const scan = (id: string) => getScanSession().scans.find((s) => s.id === id)!;
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+/** Lets every pending promise and zero-delay timer run. */
+const settle = () => vi.advanceTimersByTimeAsync(0);
 
 type Call = { path: string; search: string; body: Record<string, unknown> };
 let calls: Call[];
 let answer: (call: Call, n: number) => Promise<Response> | Response;
 
 beforeEach(() => {
+  vi.useFakeTimers();
   resetScanSession();
   resetReads();
   calls = [];
@@ -52,7 +54,10 @@ beforeEach(() => {
     return Promise.resolve(answer(call, calls.length));
   });
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 const error = (code: string, status: number) =>
   Response.json({ code, params: {} }, { status });

@@ -48,6 +48,7 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
   const [edits, setEdits] = useState<Record<string, Partial<ReviewEdit>>>({});
   const [dropped, setDropped] = useState<ReadonlySet<string>>(new Set());
 
+  // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
   const today = new Date();
   const lines = (proposal.data?.lines ?? []).map((line) => {
     const edit = { ...initialEdit(line), ...edits[line.itemId] };

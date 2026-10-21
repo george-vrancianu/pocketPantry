@@ -59,6 +59,7 @@ export function ReceiptCropper({
 
   useEffect(() => {
     const objectUrl = URL.createObjectURL(photo);
+    // oxlint-disable-next-line react/set-state-in-effect -- the object URL is an external resource created and revoked with the effect
     setUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
   }, [photo]);

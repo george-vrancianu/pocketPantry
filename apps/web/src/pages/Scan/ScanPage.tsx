@@ -52,11 +52,13 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
   const screen = useScanScreen({ modes, defaultMode, rememberMode });
   // Barcode cards are announced as barcodes, not photos.
   const photos = screen.scans.filter((scan) => scan.mode !== 'barcode').length;
+  const { fileInput } = screen;
+  const { videoRef } = screen.camera;
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
   const dragEndedAt = useRef<number | null>(null);
   const scanRef = useRef<(() => void) | null>(null);
-  const closeInfo = useCallback(() => setInfoOpen(false), []);
+  const closeInfo = useCallback(() => setInfoOpen(false), [setInfoOpen]);
 
   return (
     <Box
@@ -75,7 +77,7 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
     >
       <Box
         component="video"
-        ref={screen.camera.videoRef}
+        ref={videoRef}
         data-testid="scan-feed"
         autoPlay
         playsInline
@@ -333,7 +335,7 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
 
       <Box
         component="input"
-        ref={screen.fileInput}
+        ref={fileInput}
         type="file"
         accept="image/*"
         multiple

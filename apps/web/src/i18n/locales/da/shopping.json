@@ -2,8 +2,8 @@
   "title": "Indkøb",
   "summary": {
     "toBuy": "{{count}} at købe",
-    "inBasket": "{{checked}} af {{total}} i din kurv",
-    "progress": "Fremdrift i kurven",
+    "inBasket": "{{checked}} af {{total}} afkrydset",
+    "progress": "Fremdrift på indkøbslisten",
     "tickedOff_one": "{{count}} afkrydset",
     "tickedOff_other": "{{count}} afkrydset",
     "moveToPantry_one": "Flyt {{count}} til spisekammeret",
