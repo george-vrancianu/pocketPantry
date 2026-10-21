@@ -24,7 +24,7 @@ Root `package.json` fans out `lint`, `typecheck`, `test`, `build` to every works
 
 ## Web (`apps/web/src`)
 
-- `pages/<Area>/` holds one feature area each (some areas have several pages), with its own `components/` and `hooks/` for code only that page uses. Page tests sit beside the page.
+- `pages/<Area>/` holds one feature area each (some areas have several pages), with its own `components/` and `hooks/` for code only that area uses. Page tests sit beside the page.
 - `components/` holds anything used by more than one page.
 - `lib/` holds non-visual logic: API client (`api.ts`), data hooks, the Voice Note module (`voiceNote.ts`), dates, amounts.
 - `test/` holds shared test helpers: `render.tsx` (render with providers), `voice.ts` (fake voice environment), `setup.ts` (vitest setup), plus per-feature helpers (`scan.ts`, `review.ts`, `mealPlans.ts`, `viewport.ts`, `scroll.ts`).
