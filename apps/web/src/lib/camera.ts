@@ -99,6 +99,7 @@ export function useCamera() {
 
   useEffect(() => {
     let cancelled = false;
+    // oxlint-disable-next-line react/set-state-in-effect -- resets the status for a new camera stream; the stream is an external system
     setStatus('starting');
     // The new stream's torch starts off and its support is not known yet.
     setTorchSupported(false);
