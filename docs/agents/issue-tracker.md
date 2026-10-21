@@ -11,10 +11,12 @@ Plain `gh issue view N`, `gh issue edit` and `gh pr edit` fail here with a "Proj
 - **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
 - **Children of a spec**: `gh issue list --state all --search '"Parent #<N>" in:body' --json number,title,state --jq '.[] | "\(.number) \(.state) \(.title)"'`. This repo links children with a `## Parent` section holding `#<N>`, not GitHub sub-issues.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
-- **Apply / remove labels**: `gh api -X POST repos/george-vrancianu/pocketPantry/issues/<number>/labels -f 'labels[]=<label>'` / `gh api -X DELETE repos/george-vrancianu/pocketPantry/issues/<number>/labels/<label>`. List current labels with `gh api repos/george-vrancianu/pocketPantry/issues/<number>/labels --jq '.[].name'`.
+- **Apply / remove labels**: `gh api -X POST repos/george-vrancianu/pocketPantry/issues/<number>/labels -f 'labels[]=<label>'` / `gh api -X DELETE repos/george-vrancianu/pocketPantry/issues/<number>/labels/<label>` (URL-encode spaces in the label name as `%20`). List current labels with `gh api repos/george-vrancianu/pocketPantry/issues/<number>/labels --jq '.[].name'`.
 - **Close with a comment**: `gh issue comment <number> --body "..."`, then `gh api -X PATCH repos/george-vrancianu/pocketPantry/issues/<number> -f state=closed -f state_reason=completed`.
 - **Read a PR**: `gh pr view <number> --json title,body,comments --jq ...` and `gh pr diff <number>` (`--name-only` for the file list).
 - **Edit a PR body**: `gh api -X PATCH repos/george-vrancianu/pocketPantry/pulls/<number> -F body=@body.md`. The body is replaced whole, so write the full text to the file first; never pass an empty file.
+
+**Syntax checked, not run.** These write commands were not executed when this doc was written, so expect to adjust on first use: label POST/DELETE, the close PATCH, the assignees POST, `gh issue create`, `gh issue comment`, `gh pr comment`, `gh pr close`. The read commands and the PR-body PATCH were run.
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
@@ -24,7 +26,7 @@ Infer the repo from `git remote -v`; `gh` does this automatically when run insid
 
 When set to `yes`, PRs run through the same labels and states as issues, using the `gh pr` equivalents:
 
-- **Read a PR**: `gh pr view <number> --json title,body,comments --jq ...` and `gh pr diff <number>` for the diff.
+- **Read a PR**: see the Read a PR command above.
 - **List external PRs for triage**: `gh pr list --state open --json number,title,body,labels,author,authorAssociation,comments` then keep only `authorAssociation` of `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`, or `NONE` (drop `OWNER`/`MEMBER`/`COLLABORATOR`).
 - **Comment / label / close**: `gh pr comment`, the issue label endpoints above (a PR number works there), `gh pr close`.
 

@@ -4,13 +4,15 @@ npm workspaces monorepo (Node >= 24, see `.nvmrc`). Run `npm ci` once per worktr
 
 ## Workspaces
 
-| Path | What | Lint |
-| --- | --- | --- |
-| `apps/api` | NestJS 12 on Fastify, Drizzle ORM, Postgres | eslint (`apps/api/eslint.config.mjs`) |
-| `apps/web` | React 19 + Vite + react-i18next, TanStack Query | `oxlint src` |
-| `packages/ui` | Design system on MUI, Storybook, imported as `@pocket-pantry/ui` | `oxlint src` |
+| Path | What |
+| --- | --- |
+| `apps/api` | NestJS on Fastify, Drizzle ORM, Postgres |
+| `apps/web` | React + Vite + react-i18next, TanStack Query |
+| `packages/ui` | Design system on MUI, Storybook, imported as `@pocket-pantry/ui` |
 
-Root `package.json` fans out `lint`, `typecheck`, `test`, `build` to every workspace. CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, build against a Postgres service. Husky pre-commit (`.husky/pre-commit`) runs lint-staged (prettier) and typecheck.
+Which linter each workspace uses: `CODING_STANDARDS.md`.
+
+Root `package.json` fans out `lint`, `typecheck`, `test`, `build` to every workspace. CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, build against a Postgres service. Pre-commit hooks: `.husky/pre-commit`.
 
 ## API (`apps/api`)
 
@@ -22,7 +24,7 @@ Root `package.json` fans out `lint`, `typecheck`, `test`, `build` to every works
 
 ## Web (`apps/web/src`)
 
-- `pages/<Page>/` holds one route each, with its own `components/` and `hooks/` for code only that page uses. Page tests sit beside the page.
+- `pages/<Area>/` holds one feature area each (some areas have several pages), with its own `components/` and `hooks/` for code only that page uses. Page tests sit beside the page.
 - `components/` holds anything used by more than one page.
 - `lib/` holds non-visual logic: API client (`api.ts`), data hooks, the Voice Note module (`voiceNote.ts`), dates, amounts.
 - `test/` holds shared test helpers: `render.tsx` (render with providers), `voice.ts` (fake voice environment), `setup.ts` (vitest setup), plus per-feature helpers (`scan.ts`, `review.ts`, `mealPlans.ts`, `viewport.ts`, `scroll.ts`).
@@ -38,7 +40,7 @@ Run from the repo root unless noted.
 
 - Typecheck all: `npm run typecheck`; one workspace: `npm run typecheck -w apps/web`.
 - Lint all: `npm run lint`; one workspace: `npm run lint -w apps/api`.
-- Targeted web or ui test: `cd apps/web && npx vitest run --pool=forks --maxWorkers=2 <path-or-pattern>`. Vitest rejects `--poolOptions.forks.maxForks`. Run the full suite only when a ticket needs it.
+- Targeted web or ui test (`cd apps/web` or `cd packages/ui`): `npx vitest run --pool=forks --maxWorkers=2 <path-or-pattern>`. Vitest rejects `--poolOptions.forks.maxForks`. Run the full suite only when a ticket needs it.
 - API unit: `npm run test:unit -w apps/api`.
 - API integration (needs Postgres, `npm run db:up`): `cd apps/api && npm run test:integration -- --runInBand <pattern>`.
 - Storybook: `npm run storybook -w packages/ui`.
