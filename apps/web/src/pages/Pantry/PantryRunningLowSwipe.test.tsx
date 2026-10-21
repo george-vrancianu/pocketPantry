@@ -40,7 +40,7 @@ const milkStaple = {
   aisle: null,
 };
 
-type StubOptions = { failSaves?: boolean };
+type StubOptions = { failSaves?: boolean | 'first' };
 /** A failing save answers only once this opens, so the optimistic flag shows before the failure. */
 let failGate: () => void = () => {};
 /** Running-low flags and Staples follow the PUT and DELETE calls, as the API does. */
@@ -50,6 +50,13 @@ function stubRunningLow(
 ) {
   const flagged = new Set<string>(flaggedAtStart);
   const gate = new Promise<void>((resolve) => (failGate = resolve));
+  let failed = false;
+  /** Whether this save fails: every one, or with 'first' only the first. */
+  const failing = () => {
+    if (!failSaves || (failSaves === 'first' && failed)) return false;
+    failed = true;
+    return true;
+  };
   const fail = async () => {
     await gate;
     return Response.json({ status: 500 }, { status: 500 });
@@ -82,12 +89,12 @@ function stubRunningLow(
       return new Response(null, { status: 204 });
     },
     'PUT /api/pantry/running-low/milk-id': () => {
-      if (failSaves) return fail();
+      if (failing()) return fail();
       flagged.add('milk-id');
       return new Response(null, { status: 204 });
     },
     'DELETE /api/pantry/running-low/milk-id': () => {
-      if (failSaves) return fail();
+      if (failing()) return fail();
       flagged.delete('milk-id');
       return new Response(null, { status: 204 });
     },
@@ -504,6 +511,28 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       expect(chip()).toBeVisible();
       expect(sweepOf()).toBeNull();
       expect(sweepsSeen).not.toContain('on');
+      await act(() => vi.advanceTimersByTimeAsync(600));
+      expect(sweepOf()).toBeNull();
+    });
+
+    it('plays a new sweep normally when swiped again after a failed save', async () => {
+      await renderPage([], { failSaves: 'first' });
+      swipe(row('Milk'), -92);
+      await settle();
+      await waitFor(() => expect(chip()).toBeVisible());
+      await failure();
+      await waitFor(() => expect(chip()).toBeNull());
+      await act(() => vi.advanceTimersByTimeAsync(600));
+      expect(sweepOf()).toBeNull();
+
+      sweepsSeen = [];
+      swipe(row('Milk'), -92);
+      await settle();
+      // The stale sweep state of the failed save does not swallow or replay this one.
+      await waitFor(() => expect(sweepOf()).toBe('on'));
+      await waitFor(() => expect(sweepOf()).toBeNull());
+      expect(sweepsSeen).not.toContain('off');
+      expect(tint()).not.toBeNull();
       await act(() => vi.advanceTimersByTimeAsync(600));
       expect(sweepOf()).toBeNull();
     });

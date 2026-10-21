@@ -597,19 +597,19 @@ describe('Voice Notes on the Pantry (integration)', () => {
         ingredientId: rice,
         quantity: 300,
         unit: 'g',
-        expiryDate: '2026-10-20',
+        expiryDate: '2099-10-20',
       });
       await stock(cookie, {
         ingredientId: rice,
         quantity: 200,
         unit: 'g',
-        expiryDate: '2026-11-01',
+        expiryDate: '2099-11-01',
       });
       const third = await stock(cookie, {
         ingredientId: rice,
         quantity: 400,
         unit: 'g',
-        expiryDate: '2026-11-20',
+        expiryDate: '2099-11-20',
       });
       const [action] = await readNote(cookie, [
         spoken(rice, { op: 'remove', scope: 'one', quantity: 600, unit: 'g' }),
@@ -637,21 +637,21 @@ describe('Voice Notes on the Pantry (integration)', () => {
         quantity: 300,
         unit: 'g',
         location: 'cupboard',
-        expiryDate: '2026-10-20',
+        expiryDate: '2099-10-20',
       });
       const fridge = await stock(cookie, {
         ingredientId: rice,
         quantity: 200,
         unit: 'g',
         location: 'fridge',
-        expiryDate: '2026-11-01',
+        expiryDate: '2099-11-01',
       });
       const cupboard = await stock(cookie, {
         ingredientId: rice,
         quantity: 500,
         unit: 'g',
         location: 'cupboard',
-        expiryDate: '2026-11-20',
+        expiryDate: '2099-11-20',
       });
       const [action] = await readNote(cookie, [
         spoken(rice, { op: 'remove', scope: 'one', quantity: 400, unit: 'g' }),

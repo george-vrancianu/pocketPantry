@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { keepScreenAwake, type Sentinel } from './wakeLock';
+import { keepScreenAwake, type WakeLockHandle } from './wakeLock';
 
 // Drains pending promise callbacks without timers.
 const flush = async () => {
   for (let i = 0; i < 10; i++) await Promise.resolve();
 };
 
-const fakeWakeLock = (request: () => Promise<Sentinel>) =>
+const fakeWakeLock = (request: () => Promise<WakeLockHandle>) =>
   Object.defineProperty(navigator, 'wakeLock', {
     configurable: true,
     value: { request },
@@ -58,13 +58,13 @@ describe('keepScreenAwake', () => {
       document.dispatchEvent(new Event('visibilitychange'));
     };
     // The browser drops the lock while hidden.
-    const dropLock = (lock: Sentinel) => {
+    const dropLock = (lock: WakeLockHandle) => {
       lock.released = true;
     };
     afterEach(() => setVisibility('visible'));
 
     it('asks for the lock again while it is held', async () => {
-      const first: Sentinel = { release: vi.fn(() => Promise.resolve()) };
+      const first: WakeLockHandle = { release: vi.fn(() => Promise.resolve()) };
       const request = vi.fn(() => Promise.resolve(first));
       fakeWakeLock(request);
       const letSleep = keepScreenAwake();
@@ -78,7 +78,7 @@ describe('keepScreenAwake', () => {
     });
 
     it('does not ask again once let go', async () => {
-      const first: Sentinel = { release: vi.fn(() => Promise.resolve()) };
+      const first: WakeLockHandle = { release: vi.fn(() => Promise.resolve()) };
       const request = vi.fn(() => Promise.resolve(first));
       fakeWakeLock(request);
       const letSleep = keepScreenAwake();
@@ -90,8 +90,23 @@ describe('keepScreenAwake', () => {
       expect(request).toHaveBeenCalledOnce();
     });
 
+    it('asks again when the lock fires release without a released flag', async () => {
+      const first = Object.assign(new EventTarget(), {
+        release: vi.fn(() => Promise.resolve()),
+      });
+      const request = vi.fn(() => Promise.resolve(first));
+      fakeWakeLock(request);
+      const letSleep = keepScreenAwake();
+      await flush();
+      first.dispatchEvent(new Event('release'));
+      setVisibility('visible');
+      await flush();
+      expect(request).toHaveBeenCalledTimes(2);
+      letSleep();
+    });
+
     it('does not ask while hidden, or while a request is in flight or the lock is still held', async () => {
-      const held: Sentinel = { release: vi.fn(() => Promise.resolve()) };
+      const held: WakeLockHandle = { release: vi.fn(() => Promise.resolve()) };
       const request = vi.fn(() => Promise.resolve(held));
       fakeWakeLock(request);
       const letSleep = keepScreenAwake();
@@ -106,12 +121,14 @@ describe('keepScreenAwake', () => {
     });
 
     it('asks only once for repeated visible events', async () => {
-      const first: Sentinel = { release: vi.fn(() => Promise.resolve()) };
-      const second: Sentinel = { release: vi.fn(() => Promise.resolve()) };
+      const first: WakeLockHandle = { release: vi.fn(() => Promise.resolve()) };
+      const second: WakeLockHandle = {
+        release: vi.fn(() => Promise.resolve()),
+      };
       const request = vi
-        .fn<() => Promise<Sentinel>>()
+        .fn<() => Promise<WakeLockHandle>>()
         .mockResolvedValueOnce(first);
-      let grant!: (lock: Sentinel) => void;
+      let grant!: (lock: WakeLockHandle) => void;
       request.mockImplementationOnce(
         () => new Promise((resolve) => (grant = resolve)),
       );
@@ -129,12 +146,14 @@ describe('keepScreenAwake', () => {
     });
 
     it('lets go of a lock that arrives after release, and stops listening', async () => {
-      const first: Sentinel = { release: vi.fn(() => Promise.resolve()) };
-      const second: Sentinel = { release: vi.fn(() => Promise.resolve()) };
+      const first: WakeLockHandle = { release: vi.fn(() => Promise.resolve()) };
+      const second: WakeLockHandle = {
+        release: vi.fn(() => Promise.resolve()),
+      };
       const request = vi
-        .fn<() => Promise<Sentinel>>()
+        .fn<() => Promise<WakeLockHandle>>()
         .mockResolvedValueOnce(first);
-      let grant!: (lock: Sentinel) => void;
+      let grant!: (lock: WakeLockHandle) => void;
       request.mockImplementationOnce(
         () => new Promise((resolve) => (grant = resolve)),
       );
@@ -152,9 +171,9 @@ describe('keepScreenAwake', () => {
     });
 
     it('survives a refused re-request', async () => {
-      const first: Sentinel = { release: vi.fn(() => Promise.resolve()) };
+      const first: WakeLockHandle = { release: vi.fn(() => Promise.resolve()) };
       const request = vi
-        .fn<() => Promise<Sentinel>>()
+        .fn<() => Promise<WakeLockHandle>>()
         .mockResolvedValueOnce(first);
       request.mockRejectedValueOnce(new Error('denied'));
       fakeWakeLock(request);

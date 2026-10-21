@@ -1,5 +1,5 @@
 import { PantryService } from '../../pantry/pantry.service';
-import { sameSubject } from '../voice-actions';
+import { sameSubject, type VoiceLocation } from '../voice-actions';
 import {
   skippingKnownErrors,
   type VoiceActionHandler,
@@ -55,7 +55,7 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
           reason: 'pantry.batch_not_found',
         } as const;
         let steps: RemovalStep[] | null;
-        let loaded: { id: string; location: string }[];
+        let loaded: { id: string; location: VoiceLocation }[];
         if (draft.batchId !== null || draft.batchIds.length > 0) {
           const ids = draft.batchId ? [draft.batchId] : draft.batchIds;
           const found = await pantry.findBatchRows(ctx.tx, ctx.memberId, {
@@ -112,9 +112,9 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
           const location = locationOf.get(step.id);
           if (covered.has(location)) continue;
           left ??= await candidatesOf(pantry, draft, ctx);
-          const survivor = left.find((row) => row.location === location);
+          const survivor = survivorIn(left, location);
           if (survivor) {
-            rowIds.push(survivor.id);
+            rowIds.push(survivor);
             covered.add(location);
           }
         }
@@ -126,4 +126,12 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
         };
       }),
   };
+}
+
+/** The id of one Batch still left in `location`, if any. */
+function survivorIn(
+  left: { id: string; location: VoiceLocation }[],
+  location: VoiceLocation | undefined,
+): string | undefined {
+  return left.find((row) => row.location === location)?.id;
 }

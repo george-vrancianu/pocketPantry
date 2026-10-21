@@ -170,7 +170,7 @@ export type VoiceApplyBody = z.infer<typeof voiceApplyBody>;
 export type VoiceAppliedEntry = {
   actionId: string;
   list: VoiceTarget;
-  /** The Shopping Item or Batch touched (for a removal, the row just removed, or a surviving Batch of the Ingredient). */
+  /** The Shopping Item or Batch touched (for a removal, `rowIds[0]`: a surviving Batch in a Location the removal touched). */
   rowId?: string;
   /** Set by Pantry removals: one surviving Batch per Location the removal touched; `rowId` is the first. Other Actions set only `rowId`. */
   rowIds?: string[];

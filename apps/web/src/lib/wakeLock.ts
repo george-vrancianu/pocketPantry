@@ -1,4 +1,8 @@
-export type Sentinel = { released?: boolean; release(): Promise<void> };
+/** The part of a WakeLockSentinel this module relies on; older browsers lack the optional parts. */
+export type WakeLockHandle = Pick<WakeLockSentinel, 'release'> & {
+  released?: boolean;
+  addEventListener?: WakeLockSentinel['addEventListener'];
+};
 
 /**
  * Keep the screen awake. Returns the function that lets it sleep again. Browsers drop the lock
@@ -9,7 +13,7 @@ export type Sentinel = { released?: boolean; release(): Promise<void> };
 export function keepScreenAwake(): () => void {
   let released = false;
   let requesting = false;
-  let sentinel: Sentinel | undefined;
+  let sentinel: WakeLockHandle | undefined;
 
   const letGo = () => {
     const held = sentinel;
@@ -18,28 +22,31 @@ export function keepScreenAwake(): () => void {
   };
 
   const acquire = () => {
-    requesting = true;
+    let request: Promise<WakeLockHandle> | undefined;
     try {
-      const request = navigator.wakeLock?.request('screen');
-      if (!request) {
-        requesting = false;
-        return;
-      }
-      void request.then(
+      request = navigator.wakeLock?.request('screen');
+    } catch {
+      // Unsupported, or refused synchronously.
+      return;
+    }
+    if (!request) return;
+    requesting = true;
+    void request
+      .then(
         (granted) => {
-          requesting = false;
           sentinel = granted;
+          // The browser dropped it (some do not set `released`, but all fire `release`).
+          granted.addEventListener?.('release', () => {
+            if (sentinel === granted) sentinel = undefined;
+          });
           // Released before the browser answered.
           if (released) letGo();
         },
-        () => {
-          requesting = false;
-        },
-      );
-    } catch {
-      // Unsupported, or refused synchronously.
-      requesting = false;
-    }
+        () => undefined,
+      )
+      .finally(() => {
+        requesting = false;
+      });
   };
 
   const onVisibilityChange = () => {
