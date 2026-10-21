@@ -10,6 +10,17 @@ const config = (member: number, global: number) =>
       key === 'BARCODE_LOOKUP_LIMIT_PER_MEMBER' ? member : global,
   }) as unknown as ConfigService<never, true>;
 
+/** The rate-limit error `charge` throws, or a failure if it did not. */
+const limitedBy = (charge: () => void): BarcodeRateLimitedException => {
+  try {
+    charge();
+  } catch (error) {
+    expect(error).toBeInstanceOf(BarcodeRateLimitedException);
+    return error as BarcodeRateLimitedException;
+  }
+  throw new Error('should have been limited');
+};
+
 describe('OpenFoodFactsThrottle', () => {
   let time = 1_000_000;
   const make = (member: number, global: number) =>
@@ -82,9 +93,9 @@ describe('OpenFoodFactsThrottle', () => {
     time += 10_000;
     throttle.charge('m1');
     time += 5_000;
-    expect(() => throttle.charge('m1')).toThrow(
-      expect.objectContaining({ retryAfterSeconds: 45 }),
-    );
+    expect(limitedBy(() => throttle.charge('m1'))).toMatchObject({
+      retryAfterSeconds: 45,
+    });
   });
 
   it('reports the later of the two waits when both limits are full', () => {
@@ -94,8 +105,8 @@ describe('OpenFoodFactsThrottle', () => {
     throttle.charge('m2'); // t = 30 s: the API is full, m2 too
     time += 10_000;
     // The API as a whole is free again in 20 s (when m1's call is a minute old), m2 in 50 s.
-    expect(() => throttle.charge('m2')).toThrow(
-      expect.objectContaining({ retryAfterSeconds: 50 }),
-    );
+    expect(limitedBy(() => throttle.charge('m2'))).toMatchObject({
+      retryAfterSeconds: 50,
+    });
   });
 });

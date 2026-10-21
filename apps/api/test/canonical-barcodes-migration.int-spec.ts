@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import pg from 'pg';
+import { GTIN_FIXTURES } from '../src/barcode/gtin.fixtures';
 import { freshBarcode, freshUpcE } from './support/fresh-barcode';
 
 // Migration 0032 moves stored barcodes to their canonical GTIN-13 form. Each test plays it
@@ -82,6 +83,19 @@ describe('Migration 0032: canonical barcodes (integration)', () => {
         [barcodes],
       )
     ).rows;
+
+  it.each(GTIN_FIXTURES)(
+    'agrees with normalizeBarcode: %s',
+    async (_label, raw, canonical) => {
+      await migrate();
+      // The migration's temp functions live for this session: ask them directly.
+      const { rows } = await client.query<{ gtin13: string | null }>(
+        'select pg_temp.pp_gtin13($1) as gtin13',
+        [raw],
+      );
+      expect(rows[0].gtin13).toBe(canonical);
+    },
+  );
 
   it('moves UPC-A and UPC-E Known Barcodes to GTIN-13 and leaves EAN-13, EAN-8 alone', async () => {
     const upcA = freshBarcode(12);

@@ -271,6 +271,16 @@ describe('Barcode on the Scan page', () => {
       expect(thumbnails()).toHaveLength(3);
     });
 
+    it('treats a UPC-A and its EAN-13 form as the same code', async () => {
+      renderScan('/scan?mode=barcode');
+      await decode('036000291452');
+      await decode('0036000291452');
+      expect(thumbnails()).toHaveLength(1);
+      await decode(B);
+      await decode('0036000291452');
+      expect(thumbnails()).toHaveLength(3);
+    });
+
     describe('the cooldown', () => {
       const vibrate = vi.fn(() => true);
       beforeEach(() => {

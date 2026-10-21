@@ -7,13 +7,18 @@ import { hasValidCheckDigit } from '../../src/barcode/gtin';
  * uses its own barcode. It never starts with 0, so it is already in canonical
  * form (a 12-digit one is a UPC-A, which the API stores with a leading 0).
  */
-export const freshBarcode = (length = 13): string => {
-  const digits = BigInt(`0x${randomUUID().replaceAll('-', '')}`).toString();
-  const body = `1${digits.slice(-(length - 2)).padStart(length - 2, '1')}`;
+/** `body` with the one check digit that makes it a valid barcode. */
+const withCheckDigit = (body: string): string => {
   for (let check = 0; check < 10; check += 1) {
     if (hasValidCheckDigit(`${body}${check}`)) return `${body}${check}`;
   }
   throw new Error('unreachable: one check digit always fits');
+};
+
+export const freshBarcode = (length = 13): string => {
+  const digits = BigInt(`0x${randomUUID().replaceAll('-', '')}`).toString();
+  const body = `1${digits.slice(-(length - 2)).padStart(length - 2, '1')}`;
+  return withCheckDigit(body);
 };
 
 /**
@@ -24,10 +29,6 @@ export const freshUpcE = (): { upcE: string; gtin13: string } => {
   const digits = BigInt(`0x${randomUUID().replaceAll('-', '')}`).toString();
   const body = `${digits.slice(-5).padStart(5, '1')}${5 + (Number(digits.at(-6)) % 5)}`;
   const upcA = `0${body.slice(0, 5)}0000${body[5]}`;
-  for (let check = 0; check < 10; check += 1) {
-    if (hasValidCheckDigit(`${upcA}${check}`)) {
-      return { upcE: `0${body}${check}`, gtin13: `0${upcA}${check}` };
-    }
-  }
-  throw new Error('unreachable: one check digit always fits');
+  const gtin13 = `0${withCheckDigit(upcA)}`;
+  return { upcE: `0${body}${gtin13.at(-1)}`, gtin13 };
 };

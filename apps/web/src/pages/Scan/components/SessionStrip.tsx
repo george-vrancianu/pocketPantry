@@ -5,6 +5,7 @@ import {
   canRetry,
   showsErrorCopy,
   isBarcodeCard,
+  failedCopyKey,
   scanDisplayState,
   type SessionScan,
 } from '../../../lib/scanSession';
@@ -67,9 +68,7 @@ export function SessionStrip({
                       uncropped
                         ? 'session.needsCrop'
                         : failed
-                          ? isBarcodeCard(scan)
-                            ? 'session.lookupFailed'
-                            : 'session.failed'
+                          ? `session.${failedCopyKey(scan)}`
                           : reading
                             ? 'session.reading'
                             : 'session.read',

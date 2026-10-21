@@ -16,7 +16,10 @@ import { SettingsService } from '../settings/settings.service';
 import type { BarcodeLookupResponse } from './barcode.schemas';
 import { allergenSlugsOf } from './open-food-facts-allergens';
 import { findKnownBarcode } from './known-barcodes';
-import { OpenFoodFactsThrottle } from './open-food-facts-throttle';
+import {
+  BarcodeRateLimitedException,
+  OpenFoodFactsThrottle,
+} from './open-food-facts-throttle';
 import { parseNetQuantity } from './net-quantity';
 import {
   InjectOpenFoodFacts,
@@ -193,7 +196,18 @@ export class BarcodeLookupService {
     if (cached) return cached.product;
     // Lookups of the same uncached code that overlap share one call and one charge.
     const pending = this.fetching.get(barcode);
-    if (pending) return pending;
+    if (pending) {
+      try {
+        return await pending;
+      } catch (error) {
+        // The 429 was the caller who paid for the call, not this one's: try again on this
+        // Member's own charge (the failed call is gone from `fetching` by now).
+        if (error instanceof BarcodeRateLimitedException) {
+          return this.product(memberId, barcode);
+        }
+        throw error;
+      }
+    }
     const fetching = this.fetchAndCache(memberId, barcode).finally(() =>
       this.fetching.delete(barcode),
     );

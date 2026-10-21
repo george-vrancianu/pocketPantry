@@ -5,14 +5,25 @@
  * (one rejected barcode would fail a whole Batch save). The API also canonicalises the code.
  */
 export function isValidBarcode(code: string): boolean {
-  if (!/^(?:\d{8}|\d{12}|\d{13})$/.test(code)) return false;
-  if (
-    code.length === 8 &&
-    code.startsWith('0') &&
-    hasCheckDigit(expandUpcE(code))
-  )
-    return true;
-  return hasCheckDigit(code);
+  return normalizeBarcode(code) !== null;
+}
+
+/**
+ * The canonical form of a barcode (GTIN-13; an EAN-8 keeps its 8 digits), or null when it is
+ * not valid. A copy of normalizeBarcode in apps/api/src/barcode/gtin.ts; both are checked
+ * against the same table of codes (see gtin.test.ts).
+ */
+export function normalizeBarcode(code: string): string | null {
+  if (!/^(?:\d{8}|\d{12}|\d{13})$/.test(code)) return null;
+  if (code.length === 8) {
+    if (code.startsWith('0')) {
+      const upcA = expandUpcE(code);
+      if (hasCheckDigit(upcA)) return `0${upcA}`;
+    }
+    return hasCheckDigit(code) ? code : null;
+  }
+  const gtin13 = code.padStart(13, '0');
+  return hasCheckDigit(gtin13) ? gtin13 : null;
 }
 
 function hasCheckDigit(digits: string): boolean {

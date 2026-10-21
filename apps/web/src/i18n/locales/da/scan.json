@@ -62,7 +62,7 @@
   "tickFailed_other": "{{count}} varer på indkøbslisten kunne ikke afkrydses.",
   "added_one": "Resultater tilføjet fra {{count}} foto",
   "added_other": "Resultater tilføjet fra {{count}} fotos",
-  "limit_one": "En scanningssession rummer højst {{count}} scanning eller stregkodeopslag. Tilføj eller kassér det først.",
+  "limit_one": "En scanningssession rummer højst {{count}} scanning eller stregkodeopslag. Tilføj eller kassér den først.",
   "limit_other": "En scanningssession rummer højst {{count}} scanninger og stregkodeopslag i alt. Tilføj eller kassér dem først.",
   "discardScans_one": "Kasser {{count}} foto?",
   "discardScans_other": "Kasser {{count}} fotos?",

@@ -125,6 +125,10 @@ export const isBarcodeMode = (mode: CameraMode): mode is 'barcode' =>
 export const isBarcodeCard = (scan: Pick<SessionScan, 'mode'>) =>
   isBarcodeMode(scan.mode);
 
+/** The copy key (`failed` or `lookupFailed`) that says a card failed: a Barcode card did a lookup, not a read. */
+export const failedCopyKey = (scan: Pick<SessionScan, 'mode'>) =>
+  isBarcodeCard(scan) ? 'lookupFailed' : 'failed';
+
 export const emptySession: SessionState = { scans: [] };
 
 export function sessionReducer(

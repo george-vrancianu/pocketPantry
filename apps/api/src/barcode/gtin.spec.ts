@@ -1,6 +1,11 @@
 import { normalizeBarcode } from './gtin';
+import { GTIN_FIXTURES } from './gtin.fixtures';
 
 describe('normalizeBarcode', () => {
+  it.each(GTIN_FIXTURES)('fixture: %s', (_label, raw, canonical) => {
+    expect(normalizeBarcode(raw)).toBe(canonical);
+  });
+
   it.each([
     ['EAN-13 stays as it is', '3017620422003', '3017620422003'],
     ['UPC-A gets a leading 0', '036000291452', '0036000291452'],

@@ -36,6 +36,7 @@ import {
   dispatchScanSession,
   getScanSession,
   isBarcodeCard,
+  failedCopyKey,
   pendingCount,
   resetScanSession,
   scanDisplayState,
@@ -250,7 +251,7 @@ export function ReviewOverviewPage() {
           ) : isFailed ? (
             <>
               <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
-                {t(barcode ? 'overview.lookupFailed' : 'overview.failed')}
+                {t(`overview.${failedCopyKey(scan)}`)}
               </Typography>
               {scan.failure === 'cap' ? (
                 <Typography sx={{ fontSize: 13 }}>
