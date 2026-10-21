@@ -475,8 +475,10 @@ function TodoRow({
             sx={{
               listStyle: 'none',
               m: 0,
-              p: '0 0 10px 42px',
+              p: '0 0 10px',
               display: 'grid',
+              // minmax(0, …) stops a long item line widening the column past the sheet.
+              gridTemplateColumns: 'minmax(0, 1fr)',
               gap: '2px',
             }}
           >
@@ -548,7 +550,12 @@ function TodoItemRow({
       <Box component="span" sx={{ flex: 1, minWidth: 0 }}>
         <Box
           component="span"
-          sx={{ display: 'block', fontSize: 13.5, fontWeight: 600 }}
+          sx={{
+            display: 'block',
+            fontSize: 13.5,
+            fontWeight: 600,
+            overflowWrap: 'anywhere',
+          }}
         >
           {item.name}
         </Box>
