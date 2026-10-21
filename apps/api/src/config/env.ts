@@ -51,6 +51,7 @@ const envSchema = z.object({
   SCAN_DAILY_CAP: z.coerce.number().int().min(0).default(30),
   /** Voice Cap: Voice Notes per Member per UTC day. 0 disables the cap (unlimited). */
   VOICE_DAILY_CAP: z.coerce.number().int().min(0).default(50),
+  ASSISTANT_DAILY_CAP: z.coerce.number().int().min(0).default(50),
   /** Meal Plans per Family, past ones included. */
   MEAL_PLAN_CAP: z.coerce.number().int().positive().default(10),
   /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */

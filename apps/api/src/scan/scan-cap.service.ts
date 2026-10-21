@@ -7,11 +7,15 @@ import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { scanUsage } from '../database/schema';
 
-export type UsageKind = 'scan' | 'voice';
+export type UsageKind = 'scan' | 'voice' | 'assistant';
 
 const LIMITS = {
   scan: { setting: 'SCAN_DAILY_CAP', code: 'scan.cap_reached' },
   voice: { setting: 'VOICE_DAILY_CAP', code: 'voice.cap_reached' },
+  assistant: {
+    setting: 'ASSISTANT_DAILY_CAP',
+    code: 'assistant.cap_reached',
+  },
 } as const;
 
 /** When the cap's UTC `day` ends (ISO), which is when its count starts over. */

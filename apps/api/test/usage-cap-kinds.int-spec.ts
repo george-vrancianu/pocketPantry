@@ -23,11 +23,12 @@ describe('Daily caps counted by kind (integration)', () => {
     await app.close();
   });
 
+  let ipCounter = 0;
   async function signUp(tag: string) {
     const response = await request(app.getHttpServer())
       .post('/api/auth/sign-up/email')
       .set('origin', TEST_ORIGIN)
-      .set('x-forwarded-for', '10.14.0.1')
+      .set('x-forwarded-for', `10.14.0.${++ipCounter}`)
       .send({
         name: tag,
         email: `${tag}-${Date.now()}@example.com`,
@@ -70,6 +71,30 @@ describe('Daily caps counted by kind (integration)', () => {
     await cap.consume(memberId, now, 'voice');
     await expect(cap.consume(memberId, now, 'scan')).rejects.toMatchObject({
       code: 'scan.cap_reached',
+    });
+  });
+
+  it('caps assistant requests, refunds them, and counts them apart from voice and scan', async () => {
+    const memberId = await signUp('assistant');
+    await cap.consume(memberId, now, 'assistant');
+    await cap.consume(memberId, now, 'assistant');
+    await expect(cap.consume(memberId, now, 'assistant')).rejects.toMatchObject(
+      { code: 'assistant.cap_reached', params: { cap: 2 } },
+    );
+
+    // The other kinds are untouched by a full Assistant Cap.
+    await cap.consume(memberId, now, 'voice');
+    await cap.consume(memberId, now, 'scan');
+
+    // A refund gives one request back, and only for its own kind.
+    await cap.refund(memberId, '2020-05-01', 'assistant');
+    await cap.consume(memberId, now, 'assistant');
+    await expect(cap.consume(memberId, now, 'assistant')).rejects.toMatchObject(
+      { code: 'assistant.cap_reached' },
+    );
+    await cap.consume(memberId, now, 'voice');
+    await expect(cap.consume(memberId, now, 'voice')).rejects.toMatchObject({
+      code: 'voice.cap_reached',
     });
   });
 
