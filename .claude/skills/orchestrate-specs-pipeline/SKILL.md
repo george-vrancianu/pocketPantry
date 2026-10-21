@@ -10,7 +10,7 @@ This session is the top level the user talks to. It starts each spec with [orche
 
 - **"Add #N to the pipeline"**: read the issue, list its children (the "Children of a spec" command) and each child's `## Blocked by` lines, and confirm it carries `ready-for-agent`. A single ticket that is not a spec runs as a one-ticket spec.
 - **"What new issues in the last X hours can be implemented?"**: list only parent issues (not children) labelled `ready-for-agent`. For each give whether its blockers, including other specs, are closed, and which children belong to it.
-- **Before starting a spec**: compare it with the running specs for shared files or modules. Start in parallel only when conflict is light and `free -g` leaves memory well under 30 GB: about 2 to 3 spec orchestrators at once, each with at most 2 ticket orchestrators.
+- **Before starting a spec**: compare it with the running specs for shared files or modules. Start in parallel only when conflict is light and `free -g` leaves memory well under 30 GB: about 2 to 3 spec orchestrators at once ([SPEC-ORCHESTRATOR](../orchestrate-specs/SPEC-ORCHESTRATOR.md) caps each at 2 ticket orchestrators).
 - **Unsettled blocker**: ask the user before starting. Once the user says the blocker "is settled", start the spec.
 
 ## While specs run
@@ -23,25 +23,29 @@ This session is the top level the user talks to. It starts each spec with [orche
 
 ## The user's checkout
 
-The user keeps working in the main checkout. Only this level runs commands there, only after a spec has merged, following [END-OF-RUN.md](../orchestrate-specs/END-OF-RUN.md) steps 1 to 3 (fetch, fast-forward only on a clean `main`, `npm ci`, migrate and seed). The user's branch and work stay as they are: no switching, no stashing. Untracked files there (handoff zips, stashes, notes) are the user's: ask before deleting or overwriting any.
+The user keeps working in the main checkout. Only this level runs commands there. Run [END-OF-RUN.md](../orchestrate-specs/END-OF-RUN.md) steps 1 to 3 after each spec merges, without waiting for the whole pipeline. Plus:
+
+- The user's branch and work stay as they are: no switching, no stashing.
+- Untracked files there (handoff zips, stashes, notes) are the user's: ask before deleting or overwriting any.
 
 ## Dev server and tunnel
 
-Restarts follow [END-OF-RUN.md](../orchestrate-specs/END-OF-RUN.md) steps 4 to 6. Specifics:
+[END-OF-RUN.md](../orchestrate-specs/END-OF-RUN.md) steps 4 to 6, plus:
 
-- API: `nohup npm run start:dev --workspace @pocket-pantry/api > /tmp/pp-api.log`. Web: `nohup npm run dev --workspace @pocket-pantry/web > /tmp/pp-web.log`. Stop them by PID; patterns in `pkill -f`/`pgrep -f` can match this agent's own shell.
-- Orphan `apps/api/dist/main` holding port 3000 shows up as EADDRINUSE: find it by PID and stop it.
-- Tunnel: cloudflared to port 5173, log in `/tmp/cloudflared.log`. Another session may have started it: reuse it. Down: start a new one, and set `CLIENT_ORIGIN` in `.env` to the new URL **before** starting the API. A `cloudflared` pointing at another port belongs to something else: leave it.
-- Verify: web 200 on 5173, `/api/health` 200 on 3000, both again through the tunnel, and the `access-control-allow-origin` header equals the tunnel URL. Tell the user the URL whenever it changes.
+- API: `nohup npm run start:dev --workspace @pocket-pantry/api > /tmp/pp-api.log`. Web: `nohup npm run dev --workspace @pocket-pantry/web > /tmp/pp-web.log`. Stop them by PID; `pkill -f`/`pgrep -f` patterns can match this agent's own shell.
+- An orphan `apps/api/dist/main` holding port 3000 shows up as EADDRINUSE: stop it by PID.
+- Tunnel log: `/tmp/cloudflared.log`. Another session may have started the tunnel: reuse it. Down: start a new one, and set `CLIENT_ORIGIN` in `.env` to the new URL **before** starting the API. A `cloudflared` pointing at another port belongs to something else: leave it.
+- Verify web 200 on 5173 and `/api/health` 200 on 3000 both directly and through the tunnel, and that the `access-control-allow-origin` header equals the tunnel URL. Tell the user the URL whenever it changes.
 
 ## Reporting when a spec finishes
 
-Build the report from the spec orchestrator's hand-back, with:
+[END-OF-RUN.md](../orchestrate-specs/END-OF-RUN.md) step 7, per spec, built from the spec orchestrator's hand-back, plus:
 
-1. **Summary**: PR, merge commit, CI, what was built, migrations, env vars, dependencies.
-2. **Health status**: how easily the agents worked, review rounds and real bugs caught, conflicts and why, every agent over 150K context and why, memory peak, process slips.
-3. **Needs a human**.
-4. **Proposed follow-ups**: shown, never posted without the user's approval. Add them to the running list below.
+- Summary fields: PR, merge commit, CI, what was built, migrations, env vars, dependencies.
+- Health fields: review rounds and real bugs caught, memory peak, process slips.
+- Proposed follow-ups are shown and never posted without the user's approval; add them to the running list below.
+
+Done when each item is answered, even if only "none".
 
 ## Follow-ups
 
