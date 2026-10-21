@@ -100,6 +100,17 @@ export class VoiceService {
     return this.transcription.isConfigured();
   }
 
+  /** The text model can be called: a key, and for a compatible vendor a base URL. */
+  isTextConfigured(): boolean {
+    const provider = this.config.get('AI_PROVIDER', { infer: true });
+    return Boolean(
+      this.config.get('AI_API_KEY', { infer: true }) &&
+      this.config.get('AI_TEXT_MODEL', { infer: true }) &&
+      (provider !== 'openai-compatible' ||
+        this.config.get('AI_BASE_URL', { infer: true })),
+    );
+  }
+
   async read(
     memberId: string,
     input: VoiceNoteInput,
