@@ -264,7 +264,7 @@ describe('Add missing for a Meal Plan (integration)', () => {
     expect(items).toHaveLength(3);
   });
 
-  it('adds one date only', async () => {
+  it('adds one date, with the earlier days needing the same Ingredients', async () => {
     const ana = await member('one-date');
     await week(ana);
 
@@ -274,7 +274,70 @@ describe('Add missing for a Meal Plan (integration)', () => {
     expect(items.map((i) => i.ingredientId).sort()).toEqual(
       [eggs, flour].sort(),
     );
-    expect(byIngredient(items, eggs)?.quantity).toBe(4);
+    expect(byIngredient(items, eggs)?.quantity).toBe(8);
+  });
+
+  it('does not mark a later day as On list after an earlier day was added, and the next Add only adds its own amount', async () => {
+    const ana = await member('later-day');
+    const { id } = await week(ana);
+    const eggsStatuses = async () =>
+      (
+        (await ana.plans.get(`/${id}${q}`).expect(200)).body as {
+          slots: {
+            dayIndex: number;
+            issues: { ingredientId: string; onList: boolean }[];
+          }[];
+        }
+      ).slots
+        .filter((slot) => slot.dayIndex < 2)
+        .map(
+          (slot) => slot.issues.find((i) => i.ingredientId === eggs)?.onList,
+        );
+
+    await add(ana, { scope: 'date', date: at(0) }).expect(201);
+
+    expect(await eggsStatuses()).toEqual([true, false]);
+    await add(ana, { scope: 'date', date: at(1) }).expect(201);
+    const items = await shopping(ana);
+    expect(items.filter((i) => i.ingredientId === eggs)).toHaveLength(1);
+    expect(byIngredient(items, eggs)?.quantity).toBe(8);
+    expect(await eggsStatuses()).toEqual([true, true]);
+  });
+
+  it('puts a later day, and the earlier days needing the same Ingredients, on list when that day is added', async () => {
+    const ana = await member('later-first');
+    const { id } = await week(ana);
+
+    const res = await add(ana, { scope: 'date', date: at(1) }).expect(201);
+
+    expect((res.body as Added).count).toBe(2);
+    const items = await shopping(ana);
+    expect(byIngredient(items, eggs)?.quantity).toBe(8);
+    expect(byIngredient(items, flour)?.quantity).toBe(1.2);
+    const read = (await ana.plans.get(`/${id}${q}`).expect(200)).body as {
+      slots: { dayIndex: number; issues: { onList: boolean }[] }[];
+    };
+    expect(
+      read.slots
+        .filter((slot) => slot.dayIndex < 2)
+        .every((slot) => slot.issues.every((issue) => issue.onList)),
+    ).toBe(true);
+  });
+
+  it('adds only the uncovered part when the list already covers some of the need', async () => {
+    const ana = await member('partial');
+    await week(ana);
+    await ana.list
+      .post('/items?locale=en', {
+        ingredientId: eggs,
+        quantity: 6,
+        unit: 'pcs',
+      })
+      .expect(200);
+
+    await add(ana, { scope: 'window' }).expect(201);
+
+    expect(byIngredient(await shopping(ana), eggs)?.quantity).toBe(8);
   });
 
   it('adds one Ingredient, summed across the window', async () => {

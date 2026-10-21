@@ -147,16 +147,27 @@ export function dayMissing(day: {
 const WORST_FIRST: SlotStatus[] = ['short', 'onList', 'covered'];
 
 /**
- * The window as it will read once the scope is on the Shopping List: those Ingredients' issues
- * turn "On list", so short slots become on list, and the missing list loses them. The same
+ * The window as it will read once the scope is on the Shopping List: the issues the scope
+ * adds turn "On list" (a day's Add also covers the earlier days needing the same Ingredients,
+ * but not later days), so short slots become on list and the missing list loses them. The same
  * rules as the server's forecast; the refetch that follows has the final say.
  */
 export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
-  const flipped = new Set<string>();
+  const onTheDate = new Set(
+    add.scope === 'date'
+      ? view.days
+          .filter((day) => day.date === add.date)
+          .flatMap(dayMissing)
+          .map(ingredientKey)
+      : [],
+  );
   const matches = (day: WindowDay, issue: PlanIssue): boolean => {
     if (!isAddable(issue)) return false;
     if (add.scope === 'window') return true;
-    if (add.scope === 'date') return day.date === add.date;
+    // A day's Add covers that day and the earlier days needing the same Ingredients.
+    if (add.scope === 'date') {
+      return day.date <= add.date && onTheDate.has(ingredientKey(issue));
+    }
     // The Widget never sends a plan scope; it covers the same days as the window it shows.
     if (add.scope === 'plan') return day.planId === add.planId;
     // An Ingredient scope with a plan covers that plan's days only.
@@ -167,21 +178,11 @@ export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
           ingredientKey(issue) ===
             ingredientKey({ ingredientId: null, name: add.name });
   };
-  for (const day of view.days) {
-    for (const slot of day.slots) {
-      if (slot.status === 'unavailable') continue;
-      for (const issue of slot.issues) {
-        if (matches(day, issue)) flipped.add(ingredientKey(issue));
-      }
-    }
-  }
   const days = view.days.map((day): WindowDay => {
     const slots = day.slots.map((slot): WindowSlot => {
       if (slot.status === 'unavailable') return slot;
       const issues = slot.issues.map((issue) =>
-        isAddable(issue) && flipped.has(ingredientKey(issue))
-          ? { ...issue, onList: true }
-          : issue,
+        matches(day, issue) ? { ...issue, onList: true } : issue,
       );
       const short = issues.some(isAddable);
       return {
@@ -201,6 +202,14 @@ export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
           'unavailable');
     return { ...day, slots, status };
   });
+  // Only the issues the scope adds turn "On list"; an Ingredient needed on a day it
+  // does not cover stays on the missing list.
+  const stillShort = new Set(
+    days
+      .flatMap((day) => day.slots)
+      .filter((slot) => slot.status !== 'unavailable')
+      .flatMap((slot) => slot.issues.filter(isAddable).map(ingredientKey)),
+  );
   const counted = days
     .flatMap((day) => day.slots)
     .filter((slot) => slot.status !== 'unavailable');
@@ -217,7 +226,7 @@ export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
     ...view,
     days,
     tag,
-    missing: view.missing.filter((item) => !flipped.has(ingredientKey(item))),
+    missing: view.missing.filter((item) => stillShort.has(ingredientKey(item))),
   };
 }
 
