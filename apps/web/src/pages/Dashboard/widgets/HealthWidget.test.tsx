@@ -350,12 +350,17 @@ describe('HealthWidget', () => {
     });
 
     it('counts to the new score otherwise', async () => {
-      const card = await changeScore(false);
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        const card = await changeScore(false);
 
-      expect(card).toHaveTextContent('91');
-      await waitFor(() => expect(card).toHaveTextContent('95'), {
-        timeout: 2000,
-      });
+        expect(card).toHaveTextContent('91');
+        // The count runs on animation frames: step the clock past it rather than wait for wall time.
+        await act(() => vi.advanceTimersByTimeAsync(1000));
+        await waitFor(() => expect(card).toHaveTextContent('95'));
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 

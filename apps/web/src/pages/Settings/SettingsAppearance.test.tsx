@@ -1,6 +1,6 @@
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApplyMemberTheme } from '../../components/ApplyMemberTheme';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubSystemScheme } from '../../test/viewport';
@@ -77,8 +77,15 @@ async function signOutInline() {
 const themeTiles = async () =>
   within(await screen.findByRole('radiogroup', { name: 'Appearance' }));
 
+/** Lets timers (React Query hands results to observers on one) and their follow-up renders run. */
+const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
+
 describe('Settings Appearance', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
   afterEach(() => {
+    vi.useRealTimers();
     document.documentElement.removeAttribute('data-theme');
     vi.unstubAllGlobals();
   });
@@ -429,7 +436,7 @@ describe('Settings Appearance', () => {
         ),
       );
       // Let any retry from the preferences read settle while still offline.
-      await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+      await advance(50);
       expect(saves(calls)).toEqual([]);
 
       network.online = true;
@@ -477,7 +484,7 @@ describe('Settings Appearance', () => {
       });
       renderSettings();
       await vi.waitFor(() => expect(rootTheme()).toBe('dark'));
-      await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+      await advance(50);
       expect(saves(second)).toEqual([]);
       expect(stored()).toEqual({ theme: 'dark', matchSystem: false });
     });
@@ -497,7 +504,7 @@ describe('Settings Appearance', () => {
       renderSettings();
 
       await vi.waitFor(() => expect(rootTheme()).toBe('dark'));
-      await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+      await advance(50);
       expect(saves(calls)).toEqual([]);
     });
 
@@ -571,7 +578,7 @@ describe('Settings Appearance', () => {
       });
       await act(async () => {
         settlePut();
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await vi.advanceTimersByTimeAsync(50);
       });
 
       // The mounted You tab may read preferences again for the new session; A's answer is not it.
@@ -607,7 +614,7 @@ describe('Settings Appearance', () => {
       await act(async () => {
         loadPreferences();
         // React Query hands the result to observers on a timer.
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await vi.advanceTimersByTimeAsync(50);
       });
 
       expect(rootTheme()).toBe('minimal');
