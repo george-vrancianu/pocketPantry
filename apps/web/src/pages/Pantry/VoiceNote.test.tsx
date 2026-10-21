@@ -733,12 +733,11 @@ describe('Voice Notes on the Pantry page', () => {
     await userEvent.click(
       await dialog.findByRole('button', { name: 'Apply 1 change' }),
     );
-    await waitFor(() =>
-      expect(
-        Array.from(document.querySelectorAll('[data-row-flash]')).map((el) =>
-          el.closest('li')?.textContent?.slice(0, 6),
-        ),
-      ).toEqual(['Yogurt', 'Yogurt']),
-    );
+    for (const section of [/^Fridge/, /^Freezer/]) {
+      const region = await screen.findByRole('region', { name: section });
+      await waitFor(() =>
+        expect(region.querySelectorAll('[data-row-flash]')).toHaveLength(1),
+      );
+    }
   });
 });

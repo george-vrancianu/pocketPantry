@@ -98,14 +98,12 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
             deleted.map((step) => step.id),
           );
         }
-        // A deleted Batch is deletedIds and cannot flash. Each Location the removal touched is its own
+        // A deleted Batch is gone and cannot flash. Each Location the removal touched is its own
         // roll-up row on the Pantry page, so name one Batch still there in each: the reduced one,
         // else any left of the same Ingredient in that Location.
         const locationOf = new Map(loaded.map((row) => [row.id, row.location]));
-        const deletedIds = new Set(deleted.map((step) => step.id));
-        const left = (await candidatesOf(pantry, draft, ctx)).filter(
-          (row) => !deletedIds.has(row.id),
-        );
+        // Read lazily: only a Location with no reduced Batch needs the lookup (deletions are in this transaction).
+        let left: Awaited<ReturnType<typeof candidatesOf>> | undefined;
         const rowIds: string[] = [];
         const reduced = steps.filter((step) => step.take !== null);
         for (const step of reduced) rowIds.push(step.id);
@@ -113,6 +111,7 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
         for (const step of deleted) {
           const location = locationOf.get(step.id);
           if (covered.has(location)) continue;
+          left ??= await candidatesOf(pantry, draft, ctx);
           const survivor = left.find((row) => row.location === location);
           if (survivor) {
             rowIds.push(survivor.id);

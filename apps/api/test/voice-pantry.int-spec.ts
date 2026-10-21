@@ -669,6 +669,26 @@ describe('Voice Notes on the Pantry (integration)', () => {
       ]);
     });
 
+    it('reports a survivor per Location for Batches picked in Review', async () => {
+      const cookie = await signUp();
+      const gone = await stockMilk(cookie, { location: 'fridge' });
+      const fridgeLeft = await stockMilk(cookie, { location: 'fridge' });
+      const freezerGone = await stockMilk(cookie, { location: 'freezer' });
+      const freezerLeft = await stockMilk(cookie, { location: 'freezer' });
+      const [action] = await readNote(cookie, [remove({ scope: 'all' })]);
+      const result = await apply(cookie, [
+        asSent(action, {
+          batchId: null,
+          batchIds: [gone.id, freezerGone.id],
+        }),
+      ]);
+      expect(result.applied).toHaveLength(1);
+      expect([...(result.applied[0].rowIds ?? [])].sort()).toEqual(
+        [fridgeLeft.id, freezerLeft.id].sort(),
+      );
+      expect(result.applied[0].rowId).toBe(result.applied[0].rowIds?.[0]);
+    });
+
     it('does not point at a Location the removal never touched', async () => {
       const cookie = await signUp();
       await stockMilk(cookie, { location: 'fridge', expiryDate: '2026-10-20' });

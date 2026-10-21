@@ -172,7 +172,7 @@ export type VoiceAppliedEntry = {
   list: VoiceTarget;
   /** The Shopping Item or Batch touched (for a removal, the row just removed, or a surviving Batch of the Ingredient). */
   rowId?: string;
-  /** All rows changed, one per Location a removal touched; `rowId` is the first. Absent for single-row Actions. */
+  /** Set by Pantry removals: one surviving Batch per Location the removal touched; `rowId` is the first. Other Actions set only `rowId`. */
   rowIds?: string[];
   /** Already satisfied when applied; still counts as applied. */
   alreadyDone: boolean;
