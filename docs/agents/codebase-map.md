@@ -18,7 +18,7 @@ Root `package.json` fans out `lint`, `typecheck`, `test`, `build` to every works
 
 - One folder per module in `apps/api/src/` (`pantry`, `shopping`, `recipes`, `voice`, ...), each with `*.module.ts`, `*.controller.ts`, `*.service.ts`, `*.schemas.ts`. Register new modules in `apps/api/src/app.module.ts`.
 - Unit specs sit beside the code as `*.spec.ts`.
-- Integration tests live in `apps/api/test/*.int-spec.ts` (real Postgres via `TEST_DATABASE_URL`; config `apps/api/test/jest-integration.json`). Helpers: `apps/api/test/support/`.
+- Integration tests live in `apps/api/test/*.int-spec.ts` (real Postgres via `TEST_DATABASE_URL`; config `apps/api/test/jest-integration.config.mjs`). Helpers: `apps/api/test/support/`.
 - Schema: `apps/api/src/database/schema.ts`. Migrations: `apps/api/drizzle/NNNN_name.sql` plus `apps/api/drizzle/meta/_journal.json` and a snapshot. Generate with `npm run db:generate -w apps/api`; never hand-number a file, because parallel branches collide on the next number.
 - Voice: handlers in `apps/api/src/voice/handlers/`, registry in `voice-handlers.registry.ts`.
 
@@ -42,7 +42,7 @@ Run from the repo root unless noted.
 - Lint all: `npm run lint`; one workspace: `npm run lint -w apps/api`.
 - Targeted web or ui test (`cd apps/web` or `cd packages/ui`): `npx vitest run --pool=forks --maxWorkers=2 <path-or-pattern>`. Vitest rejects `--poolOptions.forks.maxForks`. Run the full suite only when a ticket needs it.
 - API unit: `npm run test:unit -w apps/api`.
-- API integration (needs Postgres, `npm run db:up`): `cd apps/api && npm run test:integration -- --runInBand <pattern>`.
+- API integration (needs Postgres, `npm run db:up`): `cd apps/api && npm run test:integration -w apps/api -- <pattern>` (the script caps workers itself; `--runInBand` is only for debugging).
 - Storybook: `npm run storybook -w packages/ui`.
 - Worktree create/remove helper: `scripts/worktree.sh` (see `docs/agents/worktrees-and-migrations.md`).
 - Migration-number collision check: `npm run check:migrations` (`scripts/check-migrations.mjs`).

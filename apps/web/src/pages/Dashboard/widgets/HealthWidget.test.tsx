@@ -2,6 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SCORE_ANIMATION_MS } from '../../../components/HealthSheet/healthStyle';
 import type { Batch } from '../../../lib/pantry';
 import type { Staple } from '../../../lib/staples';
 import { renderWithProviders, stubApi } from '../../../test/render';
@@ -350,12 +351,20 @@ describe('HealthWidget', () => {
     });
 
     it('counts to the new score otherwise', async () => {
-      const card = await changeScore(false);
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        const card = await changeScore(false);
 
-      expect(card).toHaveTextContent('91');
-      await waitFor(() => expect(card).toHaveTextContent('95'), {
-        timeout: 2000,
-      });
+        expect(card).toHaveTextContent('91');
+        // The count runs on animation frames: step the clock past it rather than wait for wall time.
+        const SETTLE_SLACK_MS = 100; // margin so the final frame lands
+        await act(() =>
+          vi.advanceTimersByTimeAsync(SCORE_ANIMATION_MS + SETTLE_SLACK_MS),
+        );
+        expect(card).toHaveTextContent('95');
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
