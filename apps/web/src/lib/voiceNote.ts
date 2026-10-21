@@ -1,9 +1,17 @@
 import { useSyncExternalStore } from 'react';
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
-import type { ScanLanguage } from '../i18n/resources';
+import type { Locale, ScanLanguage } from '../i18n/resources';
+import { ApiError } from './api';
 import type { Recording } from './microphone';
+import { localIso } from './pantry';
 import { keepScreenAwake } from './wakeLock';
-import type { VoiceList, VoiceNoteResult, VoiceReviewAction } from './voice';
+import {
+  sendVoiceNote,
+  type VoiceList,
+  type VoiceNoteRequest,
+  type VoiceNoteResult,
+  type VoiceReviewAction,
+} from './voice';
 
 /** Where the Voice Note is: the hold-to-talk button, the status pill and Review all read this. */
 export type VoicePhase =
@@ -40,16 +48,32 @@ export type VoiceNoteState = {
   /** What the server read from the recording, then as the Member edits it. */
   proposal?: { transcript: string; actions: VoiceReviewAction[] };
   error?: VoiceErrorCode;
-  /** The translated server message when `error` is `failed`. */
-  errorMessage?: string;
+  /**
+   * The server's error behind a `failed` that the pill has no wording of its own for: the raw code
+   * and parameters, translated by the status pill. Absent for a send that never reached the server.
+   */
+  rawError?: { code: string; params: Record<string, unknown> };
   /** The Voice Cap, once the server reported it reached. In memory only; a reload drops it. */
   voiceCap?: { cap: number; resetsAt: number };
 };
 
-/** The outside world of the Voice Note. More adapters (sender, microphone, notifier) join as the read and the recording move in. */
+/** A notice for the Member that the module has no toast of its own for. */
+export type VoiceNotice =
+  /** Cancel reading: the late answer is ignored. */
+  | 'readCancelled'
+  /** Discard on a failed Voice Note. */
+  | 'discarded'
+  /** The server has Voice Notes switched off: the note was dropped quietly. */
+  | 'switchedOff';
+
+/** The outside world of the Voice Note. The microphone joins as the recording moves in. */
 export type VoiceNoteAdapters = {
+  /** Sends a recording to be read. */
+  send: (request: VoiceNoteRequest) => Promise<VoiceNoteResult>;
   /** Keeps the screen awake; returns the function that lets it sleep again. */
   keepScreenAwake: () => () => void;
+  /** Tells the Member something. Can also be attached later with `attachNotifier`. */
+  notify?: (notice: VoiceNotice) => void;
 };
 
 export type VoiceNoteEdit = Partial<{
@@ -63,6 +87,9 @@ export type VoiceNoteEdit = Partial<{
   batchId: string | null;
   defaults: VoiceReviewAction['defaults'];
 }>;
+
+/** The longest delay `setTimeout` takes. */
+const MAX_TIMEOUT = 2 ** 31 - 1;
 
 const initial: VoiceNoteState = { phase: 'idle', page: 'shopping' };
 
@@ -81,7 +108,7 @@ const nextUtcMidnight = (now: number) => {
  * does nothing.
  */
 export function createVoiceNote(
-  adapters: VoiceNoteAdapters = { keepScreenAwake },
+  adapters: VoiceNoteAdapters = { send: sendVoiceNote, keepScreenAwake },
 ) {
   let state = initial;
   const listeners = new Set<() => void>();
@@ -100,8 +127,161 @@ export function createVoiceNote(
    * What outlives the page that started a Voice Note, so the pill on either page can reach it: the
    * request being read (Cancel aborts it) and the lock that keeps the screen awake until it ends.
    */
-  let read: AbortController | undefined;
+  let reading: AbortController | undefined;
   let release: (() => void) | undefined;
+  let notifier = adapters.notify;
+  let capTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const notify = (notice: VoiceNotice) => notifier?.(notice);
+  const hold = () => {
+    release ??= adapters.keepScreenAwake();
+  };
+  const letSleep = () => {
+    release?.();
+    release = undefined;
+  };
+
+  /** Renders again when the Voice Cap lifts: the state itself would not change. */
+  function watchCap() {
+    clearTimeout(capTimer);
+    if (!state.voiceCap) return;
+    const wait = state.voiceCap.resetsAt - Date.now();
+    if (wait <= 0) return;
+    capTimer = setTimeout(
+      () => {
+        // A new object, so subscribers that compare snapshots render again.
+        state = { ...state };
+        emit();
+        watchCap();
+      },
+      Math.min(wait, MAX_TIMEOUT),
+    );
+  }
+
+  /**
+   * The server refused for the Voice Cap; `resetsAt` is an ISO timestamp. One that is missing or
+   * unreadable counts as the next UTC midnight (the Voice Cap's day is a UTC day), so the button
+   * is never stuck capped for good nor wrongly free at once.
+   */
+  function setCap(cap: { cap: number; resetsAt?: string }) {
+    const parsed = Date.parse(cap.resetsAt ?? '');
+    state = {
+      ...state,
+      voiceCap: {
+        cap: cap.cap,
+        resetsAt: Number.isNaN(parsed) ? nextUtcMidnight(Date.now()) : parsed,
+      },
+    };
+    watchCap();
+  }
+
+  /** The Voice Note did not reach Review; `keepRecording` holds the audio for Retry. */
+  function failed(
+    error: VoiceErrorCode,
+    options: {
+      rawError?: VoiceNoteState['rawError'];
+      keepRecording?: boolean;
+    } = {},
+  ) {
+    letSleep();
+    go({
+      phase: 'failed',
+      page: state.page,
+      recording: options.keepRecording ? state.recording : undefined,
+      error,
+      rawError: options.rawError,
+    });
+  }
+
+  /** Maps what went wrong with the read to the state the status pill shows. */
+  function settleFailure(error: unknown, audio: Recording) {
+    if (error instanceof ApiError) {
+      switch (error.code) {
+        case 'voice.nothing_heard':
+          return failed('nothingHeard');
+        case 'voice.cap_reached':
+          setCap({
+            cap: Number(error.params.cap) || 0,
+            resetsAt:
+              typeof error.params.resetsAt === 'string'
+                ? error.params.resetsAt
+                : undefined,
+          });
+          return failed('capReached');
+        case 'voice.too_long':
+          return failed('tooLong');
+        case 'voice.unsupported_audio':
+          console.error('Voice Note format not supported', audio.mimeType);
+          return failed('unsupported');
+        case 'voice.not_configured':
+          // Voice went away on the server: drop the note without a word.
+          letSleep();
+          idle();
+          return notify('switchedOff');
+      }
+    }
+    // No signal and a provider that is down share the pill's own wording; anything else says what it was.
+    const offline =
+      error instanceof ApiError &&
+      (error.code === 'network_error' ||
+        error.code === 'voice.provider_unavailable');
+    failed('failed', {
+      rawError: offline
+        ? undefined
+        : error instanceof ApiError
+          ? { code: error.code, params: error.params }
+          : { code: 'unknown', params: {} },
+      keepRecording: true,
+    });
+  }
+
+  /** Sends the audio and settles the note. Everything after an abort is ignored. */
+  async function send(
+    audio: Recording,
+    scanLanguage: ScanLanguage,
+    locale: Locale,
+    page: VoiceList,
+  ) {
+    const request = new AbortController();
+    reading = request;
+    hold();
+    go({
+      phase: 'reading',
+      page,
+      recording: {
+        blob: audio.blob,
+        mimeType: audio.mimeType,
+        durationMs: audio.durationMs,
+        scanLanguage,
+      },
+    });
+    try {
+      const result = await adapters.send({
+        recording: audio,
+        scanLanguage,
+        locale,
+        defaultTarget: page,
+        today: localIso(new Date()),
+        signal: request.signal,
+      });
+      if (request.signal.aborted) return;
+      reading = undefined;
+      if (result.transcript.trim() === '') return failed('nothingHeard');
+      letSleep();
+      go({
+        phase: 'review',
+        page,
+        // Kept for Review's "English · 0:09"; a discard or Apply drops it with the rest.
+        recording: state.recording,
+        proposal: { transcript: result.transcript, actions: result.actions },
+      });
+    } catch (error) {
+      // Cancelled: the pill is already gone, and so is the lock (a newer press may hold its own).
+      if (request.signal.aborted) return;
+      reading = undefined;
+      settleFailure(error, audio);
+    }
+  }
 
   return {
     getState: () => state,
@@ -109,64 +289,96 @@ export function createVoiceNote(
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
+    /**
+     * Attaches the function that tells the Member (the app root's toasts). Returns the function
+     * that detaches it.
+     */
+    attachNotifier(notify: (notice: VoiceNotice) => void) {
+      notifier = notify;
+      return () => {
+        if (notifier === notify) notifier = adapters.notify;
+      };
+    },
+
+    /**
+     * Interim, until the recording moves in: the Member pressed the button. The screen stays awake
+     * until the note is settled.
+     */
+    pressStarted: hold,
+    /**
+     * Interim: the press ended without a note (let go too soon, no microphone, the page left). The
+     * screen may sleep, unless a read in flight still needs it.
+     */
+    pressEnded() {
+      if (!reading) letSleep();
+    },
 
     /** The microphone is on and the Member is speaking. */
-    startRecording: (page: VoiceList) => go({ phase: 'recording', page }),
+    startRecording(page: VoiceList) {
+      if (state.phase !== 'idle') return;
+      go({ phase: 'recording', page });
+    },
     /** The Member let go or slid off to cancel without sending. */
-    cancelRecording: idle,
-    /** The recording is being sent and read; `page` is the list the note is sent to. */
-    read(audio: Recording, scanLanguage: ScanLanguage, page: VoiceList) {
-      go({
-        phase: 'reading',
-        page,
-        recording: {
-          blob: audio.blob,
-          mimeType: audio.mimeType,
-          durationMs: audio.durationMs,
-          scanLanguage,
+    cancelRecording() {
+      if (state.phase !== 'recording') return;
+      idle();
+    },
+    /**
+     * Sends the recording and reads it; `page` is the list the note is sent to. Settles when the
+     * read has: in Review, failed, or dropped.
+     */
+    read(
+      audio: Recording,
+      options: { scanLanguage: ScanLanguage; locale: Locale; page: VoiceList },
+    ): Promise<void> {
+      if (state.phase !== 'idle') return Promise.resolve();
+      return send(audio, options.scanLanguage, options.locale, options.page);
+    },
+    /** Sends the kept recording again: the same audio, in the language and for the page it had. */
+    retry(locale: Locale): Promise<void> {
+      const { phase, recording: kept, page } = state;
+      if (phase !== 'failed' || !kept) return Promise.resolve();
+      return send(
+        {
+          blob: kept.blob,
+          mimeType: kept.mimeType,
+          durationMs: kept.durationMs,
         },
-      });
+        kept.scanLanguage,
+        locale,
+        page,
+      );
     },
-    /** The Voice Note did not reach Review; `keepRecording` holds the audio for Retry. */
-    fail(
-      error: VoiceErrorCode,
-      options: { message?: string; keepRecording?: boolean } = {},
-    ) {
-      go({
-        phase: 'failed',
-        page: state.page,
-        recording: options.keepRecording ? state.recording : undefined,
-        error,
-        errorMessage: options.message,
-      });
+    /** Gives up waiting for the read. The server is not told, so the Voice Cap charge stands. */
+    cancelReading() {
+      if (state.phase !== 'reading') return;
+      reading?.abort();
+      reading = undefined;
+      letSleep();
+      idle();
+      notify('readCancelled');
     },
-    /** The server read the recording: open Review on the Voice Actions. */
-    review(result: VoiceNoteResult) {
-      go({
-        phase: 'review',
-        page: state.page,
-        // Kept for Review's "English · 0:09"; a discard or Apply drops it with the rest.
-        recording: state.recording,
-        proposal: { transcript: result.transcript, actions: result.actions },
-      });
+    /** The Voice Note failed before or without a read (no microphone, the Voice Cap). */
+    fail(error: 'unavailable' | 'capReached') {
+      if (
+        state.phase !== 'idle' &&
+        state.phase !== 'recording' &&
+        state.phase !== 'failed'
+      ) {
+        return;
+      }
+      failed(error);
     },
     /** Drops a failure and its kept recording. */
-    dismiss: idle,
-    /**
-     * The server refused for the Voice Cap; `resetsAt` is an ISO timestamp. One that is missing or
-     * unreadable counts as the next UTC midnight (the Voice Cap's day is a UTC day), so the button
-     * is never stuck capped for good nor wrongly free at once.
-     */
-    setCap(cap: { cap: number; resetsAt?: string }) {
-      const parsed = Date.parse(cap.resetsAt ?? '');
-      state = {
-        ...state,
-        voiceCap: {
-          cap: cap.cap,
-          resetsAt: Number.isNaN(parsed) ? nextUtcMidnight(Date.now()) : parsed,
-        },
-      };
-      emit();
+    dismiss() {
+      if (state.phase !== 'failed') return;
+      idle();
+    },
+    /** Drops a failure and its kept recording, and says so. */
+    discardFailed() {
+      if (state.phase !== 'failed') return;
+      idle();
+      notify('discarded');
     },
     /** Whether the Voice Cap is still in force at `now` (ms). It lifts at the server's reset time. */
     isCapReached: (now: number = Date.now()) =>
@@ -221,34 +433,12 @@ export function createVoiceNote(
       idle();
     },
 
-    beginRead(request: AbortController) {
-      read = request;
-    },
-    /** Forgets the read, unless a newer one has taken its place. */
-    endRead(request: AbortController) {
-      if (read === request) read = undefined;
-    },
-    isReading: () => read !== undefined,
-    /** Aborts the read in flight, if any. */
-    abortRead() {
-      read?.abort();
-      read = undefined;
-    },
-    /** Keeps the screen awake from the press until the note is settled (Review, a notice, cancelled). */
-    stayAwake() {
-      release ??= adapters.keepScreenAwake();
-    },
-    releaseAwake() {
-      release?.();
-      release = undefined;
-    },
-
     /** Back to a fresh start: aborts any read, lets the screen sleep, forgets the Voice Cap. */
     reset() {
-      read?.abort();
-      read = undefined;
-      release?.();
-      release = undefined;
+      reading?.abort();
+      reading = undefined;
+      letSleep();
+      clearTimeout(capTimer);
       state = initial;
       emit();
     },

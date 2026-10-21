@@ -51,7 +51,10 @@ describe('Voice Notes on the Pantry page', () => {
         { status: 201 },
       ),
     batches: unknown[] = [],
+    /** How the first Voice Note read ends: it answers, the network fails, or it never settles. */
+    firstRead: 'answers' | 'fails' | 'hangs' = 'answers',
   ) {
+    let reads = 0;
     applied = [];
     pantryFetches = 0;
     const { fetchMock } = stubApi({
@@ -64,11 +67,18 @@ describe('Voice Notes on the Pantry page', () => {
       'GET /api/voice/config': () => Response.json({ configured: true }),
       'GET /api/catalog/search': () =>
         Response.json({ results: [yogurt, rice] }),
-      'POST /api/voice': () =>
-        Response.json(
+      'POST /api/voice': () => {
+        reads += 1;
+        if (reads === 1 && firstRead === 'fails') {
+          return Promise.reject(new TypeError('Failed to fetch'));
+        }
+        if (reads === 1 && firstRead === 'hangs')
+          return new Promise<Response>(() => {});
+        return Response.json(
           { transcript: 'a note about the pantry', actions },
           { status: 201 },
-        ),
+        );
+      },
       'POST /api/voice/apply': () => apply(),
     });
     return stubVoiceFetch(fetchMock, (input, init) => {
@@ -107,9 +117,12 @@ describe('Voice Notes on the Pantry page', () => {
 
   it('shows a note that failed on the Shopping List here too, and retries it for its own page', async () => {
     // Recorded on the Shopping List, then the Member moved to the Pantry (not a reload).
-    voiceNote.read(recording, 'ro', 'shopping');
-    voiceNote.fail('failed', { keepRecording: true });
-    const { sent } = setup([]);
+    const { sent } = setup([], undefined, [], 'fails');
+    await voiceNote.read(recording, {
+      scanLanguage: 'ro',
+      locale: 'en',
+      page: 'shopping',
+    });
     renderWithProviders(<PantryPage />);
 
     const alert = await screen.findByRole('alert');
@@ -124,8 +137,12 @@ describe('Voice Notes on the Pantry page', () => {
   });
 
   it('keeps the voice button, the pill and a read going while a Batch is added', async () => {
-    setup([]);
-    voiceNote.read(recording, 'en', 'pantry');
+    setup([], undefined, [], 'hangs');
+    void voiceNote.read(recording, {
+      scanLanguage: 'en',
+      locale: 'en',
+      page: 'pantry',
+    });
     renderWithProviders(<PantryPage />);
     await screen.findByText('Reading your note');
 

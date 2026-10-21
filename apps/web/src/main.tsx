@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
+import { VoiceNotices } from './components/voice/VoiceNotices';
 import { createI18n } from './i18n';
 import { RouterLink } from './lib/RouterLink';
 
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <PocketPantryUiProvider linkComponent={RouterLink}>
           <BrowserRouter>
+            <VoiceNotices />
             <App />
           </BrowserRouter>
         </PocketPantryUiProvider>
