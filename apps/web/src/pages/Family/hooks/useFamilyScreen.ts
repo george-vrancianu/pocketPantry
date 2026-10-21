@@ -38,6 +38,7 @@ export function useFamilyScreen() {
     family: family.data,
     isLoading: family.isPending,
     error: error ? translateApiError(t, error) : null,
+    // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     expired: expiresAt !== null && expiresAt.getTime() <= Date.now(),
     expiryLabel: expiresAt
       ? new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' }).format(

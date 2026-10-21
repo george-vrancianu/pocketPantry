@@ -136,7 +136,6 @@ export function useAddBatchForm({
   // starting `ingredientId`, and Location and expiry stay on their fallbacks.
   useEffect(() => {
     if (!startingDefaults || ingredient !== startingIngredient) return;
-    // oxlint-disable-next-line react/set-state-in-effect -- copies the Catalog lookup result (external data) into the form once, when it lands
     setIngredient(startingDefaults);
     if (!touched.location)
       setLocation(startingDefaults.defaults.location ?? FALLBACK_LOCATION);

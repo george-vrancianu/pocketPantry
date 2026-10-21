@@ -45,6 +45,7 @@ export type FinishRequest = {
 
 /** The proposal is a snapshot to edit, so it is fetched once per Review and never refetched. */
 export function useFinishProposal(locale: string) {
+  // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
   const today = defaultExpiryDate(0, new Date());
   return useQuery({
     queryKey: ['finish-shopping-proposal', locale],

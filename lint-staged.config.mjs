@@ -12,18 +12,26 @@ const relative = (file) =>
 
 const isWebOrUi = (file) => /^(apps\/web|packages\/ui)\/.*\.tsx?$/.test(file);
 const isApi = (file) => /^apps\/api\/(src|test)\/.*\.ts$/.test(file);
+// Same scope as `npm run lint` (the src folders); other web/ui .ts files still get Prettier.
+const isLinted = (file) =>
+  /^(apps\/web|packages\/ui)\/src\/.*\.tsx?$/.test(file);
 const isFormatted = (file) => /\.(tsx?|mjs|json|ya?ml)$/.test(file);
 
 export default {
   '*': (files) => {
     const web = files.filter((file) => isWebOrUi(relative(file)));
+    const linted = web.filter((file) => isLinted(relative(file)));
     const api = files.filter((file) => isApi(relative(file)));
     const other = files.filter(
       (file) => isFormatted(file) && !web.includes(file) && !api.includes(file),
     );
     const commands = [];
     // Web and UI: oxlint with the shared root .oxlintrc.json.
-    if (web.length) commands.push(`oxlint -c .oxlintrc.json ${quote(web)}`);
+    if (linted.length) {
+      commands.push(
+        `oxlint -c .oxlintrc.json --report-unused-disable-directives-severity error ${quote(linted)}`,
+      );
+    }
     // API: ESLint with apps/api's own type-aware config, so it runs from apps/api. Prettier is off
     // inside ESLint because the Prettier step below formats the files anyway.
     if (api.length) {

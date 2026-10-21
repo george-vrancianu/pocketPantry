@@ -130,7 +130,6 @@ function ApplyForm({ open, onClose, onExited }: ApplyTemplatesSheetProps) {
           (query?.data || (query?.isError && query.fetchStatus === 'idle')),
       );
     if (settled.length === 0) return;
-    // oxlint-disable-next-line react/set-state-in-effect -- folds settled query results (external data) into the selection once, then clears them from pending
     setSelection((current) =>
       settled.reduce(
         (next, { query }) =>

@@ -58,8 +58,7 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
   const [infoOpen, setInfoOpen] = useState(false);
   const dragEndedAt = useRef<number | null>(null);
   const scanRef = useRef<(() => void) | null>(null);
-  // oxlint-disable-next-line react/preserve-manual-memoization -- the compiler cannot infer this stable handler; InfoSheet re-subscribes its key listener when onClose changes
-  const closeInfo = useCallback(() => setInfoOpen(false), []);
+  const closeInfo = useCallback(() => setInfoOpen(false), [setInfoOpen]);
 
   return (
     <Box

@@ -334,6 +334,7 @@ export function useRecipePantryMatch(
   servings: number,
   enabled = true,
 ) {
+  // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
   const today = localIso(new Date());
   return useQuery({
     queryKey: [...matchKey(id), servings, today],
