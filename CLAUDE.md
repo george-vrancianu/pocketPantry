@@ -13,3 +13,9 @@ Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 ### Domain docs
 
 Single-context: `GLOSSARY.md` at the root plus `docs/adr/`. See `docs/agents/domain.md`.
+
+## Codebase
+
+Where things live and the test, lint and typecheck commands: `docs/agents/codebase-map.md`. Read it before exploring.
+
+Review rules (toasts, fake timers, shared components, Undo, i18n, lint tools): `CODING_STANDARDS.md`. Follow them when writing or reviewing code.
