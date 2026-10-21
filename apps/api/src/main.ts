@@ -34,6 +34,7 @@ async function bootstrap() {
     .setDescription('Pocket Pantry API')
     .setVersion('1.0')
     .addCookieAuth('better-auth.session_token')
+    .addBearerAuth({ type: 'http', scheme: 'bearer' }, 'assistant-token')
     .build();
   SwaggerModule.setup(
     'api/docs',

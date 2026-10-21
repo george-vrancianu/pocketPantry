@@ -1,0 +1,188 @@
+import { Injectable } from '@nestjs/common';
+import {
+  CATALOG_LOCALES,
+  FALLBACK_LOCALE,
+  type CatalogLocale,
+} from '../catalog/catalog.schemas';
+import type { AssistantTokenMember } from '../assistant-tokens/assistant-token.schemas';
+import { ApiException } from '../common/api-exception';
+import { ScanCapService } from '../scan/scan-cap.service';
+import {
+  voiceActionKind,
+  type ResolvedVoiceAction,
+  type VoiceActionDraft,
+  type VoiceActionKind,
+  type VoiceApplyResult,
+} from '../voice/voice-actions';
+import { VoiceService } from '../voice/voice.service';
+import {
+  assistantSpeech,
+  type AssistantOutcome,
+  type AssistantState,
+} from './assistant-speech';
+import type {
+  AssistantRequestBody,
+  AssistantRequestResponse,
+} from './assistant.schemas';
+
+/**
+ * The Voice Action kinds an Assistant Request applies without Review (ADR 0019).
+ * Adding a Shopping Item and flagging Running low are the safe kinds;
+ * everything else, `shopping.setQuantity` included, is refused.
+ */
+export const ASSISTANT_ALLOWED_KINDS: ReadonlySet<VoiceActionKind> = new Set([
+  'shopping.add',
+  'pantry.runningLow',
+]);
+
+/** A request answered with a whole-request state instead of per-action outcomes. */
+export type AssistantReply =
+  | ({ state?: undefined } & AssistantRequestResponse)
+  | { state: AssistantState; outcomes: []; speech: string };
+
+const localeOf = (member: AssistantTokenMember): CatalogLocale =>
+  CATALOG_LOCALES.find((locale) => locale === member.locale) ?? FALLBACK_LOCALE;
+
+const displayName = (action: ResolvedVoiceAction): string =>
+  action.ingredient?.name ?? action.name ?? action.text;
+
+/**
+ * An Assistant Request: dictated text read into Voice Actions and the safe ones
+ * applied at once, with no Review. Charged to the Assistant Cap and refunded on
+ * a provider failure or when nothing was understood. The text is passed
+ * through and never stored.
+ */
+@Injectable()
+export class AssistantService {
+  constructor(
+    private readonly voice: VoiceService,
+    private readonly cap: ScanCapService,
+  ) {}
+
+  async handle(
+    member: AssistantTokenMember,
+    body: AssistantRequestBody,
+  ): Promise<AssistantReply> {
+    const locale = localeOf(member);
+    const stateReply = (state: AssistantState): AssistantReply => ({
+      state,
+      outcomes: [],
+      speech: assistantSpeech({ locale, state }),
+    });
+    // Before the charge: an unconfigured deployment costs the Member nothing.
+    if (!this.voice.isTextConfigured()) return stateReply('notConfigured');
+
+    // Nothing dictated: no model call and no charge.
+    if (body.text === '') return stateReply('nothingUnderstood');
+
+    let day: string;
+    try {
+      day = await this.cap.consume(member.id, new Date(), 'assistant');
+    } catch (error) {
+      if (
+        error instanceof ApiException &&
+        error.code === 'assistant.cap_reached'
+      ) {
+        return stateReply('capReached');
+      }
+      throw error;
+    }
+
+    let outcomes: AssistantOutcome[];
+    try {
+      const today = body.today ?? new Date().toISOString().slice(0, 10);
+      const resolved = (
+        await this.voice.readText(member.id, {
+          text: body.text,
+          scanLanguage: locale,
+          locale,
+          today,
+          defaultTarget: 'shopping',
+        })
+      ).filter((action) => action.status !== 'notUnderstood');
+      const drafts = resolved.map(toDraft);
+      // An add onto an existing line sets the spoken quantity (ADR 0017) and
+      // wants the line back on the list, rather than summing as in Review.
+      const result = await this.voice.applyActions(member.id, {
+        actions: drafts,
+        locale,
+        today,
+        allowedKinds: ASSISTANT_ALLOWED_KINDS,
+        addSetsQuantity: true,
+      });
+      outcomes = resolved.map((action, index) =>
+        outcomeOf(action, drafts[index], result),
+      );
+    } catch (error) {
+      await this.cap.refund(member.id, day, 'assistant');
+      if (
+        error instanceof ApiException &&
+        error.code === 'voice.provider_unavailable'
+      ) {
+        return stateReply('providerFailed');
+      }
+      throw error;
+    }
+    if (outcomes.length === 0) {
+      await this.cap.refund(member.id, day, 'assistant');
+      return stateReply('nothingUnderstood');
+    }
+    return { outcomes, speech: assistantSpeech({ locale, outcomes }) };
+  }
+}
+
+/** The action as a draft to apply. */
+function toDraft(action: ResolvedVoiceAction): VoiceActionDraft {
+  return {
+    id: action.id,
+    // notUnderstood entries are filtered out, so target and op are set.
+    target: action.target ?? 'shopping',
+    op: action.op ?? 'add',
+    text: action.text,
+    ingredientId: action.ingredient?.id ?? null,
+    name: action.name,
+    quantity: action.quantity,
+    unit: action.unit,
+    scope: action.scope,
+    expiresOn: action.expiresOn,
+    noExpiry: action.noExpiry,
+    location: action.location,
+    batchId: null,
+    batchIds: [],
+  };
+}
+
+/** What happened to one action, from the draft that was applied and the apply result. */
+function outcomeOf(
+  action: ResolvedVoiceAction,
+  draft: VoiceActionDraft,
+  result: VoiceApplyResult,
+): AssistantOutcome {
+  const name = displayName(action);
+  const refused = { kind: 'refused', name } as const;
+  const applied = result.applied.find((entry) => entry.actionId === draft.id);
+  if (!applied) return refused; // refused by kind, or skipped (the Member is sent to the app)
+  const amount = { quantity: action.quantity, unit: action.unit };
+  switch (voiceActionKind(draft)) {
+    case 'pantry.runningLow':
+      return {
+        kind: action.rows.shoppingFallback
+          ? 'addedBecauseRunningLowNoBatch'
+          : 'flaggedRunningLow',
+        name,
+      };
+    case 'shopping.add':
+      if (applied.alreadyDone) return { kind: 'alreadyOnList', name };
+      if (applied.merged && action.quantity !== null) {
+        return { kind: 'quantitySet', name, ...amount };
+      }
+      // A bare add that put a checked line back on the list reads as an add.
+      return {
+        kind: action.ingredient ? 'added' : 'addedUnmatched',
+        name,
+        ...amount,
+      };
+    default:
+      return refused;
+  }
+}
