@@ -88,6 +88,12 @@ export type VoiceAppliedEntry = {
    * a Batch removal names a surviving Batch of the Ingredient, and none when nothing is left.
    */
   rowId?: string;
+  /**
+   * Every row to flash when the Action changed several: a Batch removal across Locations names a
+   * surviving Batch in each Location it touched (each is its own roll-up row). `rowId` is the first.
+   * Absent for single-row Actions; fall back to `rowId`.
+   */
+  rowIds?: string[];
   /** Already satisfied when applied; still counts as applied. */
   alreadyDone: boolean;
 };

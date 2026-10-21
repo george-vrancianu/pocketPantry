@@ -39,6 +39,7 @@ type Applied = {
     actionId: string;
     list: 'shopping' | 'pantry';
     rowId?: string;
+    rowIds?: string[];
     alreadyDone: boolean;
   }[];
   skipped: { id: string; reason: string }[];
@@ -564,6 +565,7 @@ describe('Voice Notes on the Pantry (integration)', () => {
           actionId: action.id,
           list: 'pantry',
           rowId: bag.id,
+          rowIds: [bag.id],
           alreadyDone: false,
         },
       ]);
@@ -580,6 +582,7 @@ describe('Voice Notes on the Pantry (integration)', () => {
           actionId: action.id,
           list: 'pantry',
           rowId: later.id,
+          rowIds: [later.id],
           alreadyDone: false,
         },
       ]);
@@ -618,11 +621,75 @@ describe('Voice Notes on the Pantry (integration)', () => {
           actionId: action.id,
           list: 'pantry',
           rowId: third.id,
+          rowIds: [third.id],
           alreadyDone: false,
         },
       ]);
       expect((await pantry(cookie)).batches).toMatchObject([
         { id: third.id, quantity: 300 },
+      ]);
+    });
+
+    it('reports a surviving Batch in every Location a removal across Locations changed', async () => {
+      const cookie = await signUp();
+      await stock(cookie, {
+        ingredientId: rice,
+        quantity: 300,
+        unit: 'g',
+        location: 'cupboard',
+        expiryDate: '2026-10-20',
+      });
+      const fridge = await stock(cookie, {
+        ingredientId: rice,
+        quantity: 200,
+        unit: 'g',
+        location: 'fridge',
+        expiryDate: '2026-11-01',
+      });
+      const cupboard = await stock(cookie, {
+        ingredientId: rice,
+        quantity: 500,
+        unit: 'g',
+        location: 'cupboard',
+        expiryDate: '2026-11-20',
+      });
+      const [action] = await readNote(cookie, [
+        spoken(rice, { op: 'remove', scope: 'one', quantity: 400, unit: 'g' }),
+      ]);
+      const result = await apply(cookie, [asSent(action)]);
+      // The reduced Batch leads (rowId), then the Location whose Batch was only deleted.
+      expect(result.applied).toEqual([
+        {
+          actionId: action.id,
+          list: 'pantry',
+          rowId: fridge.id,
+          rowIds: [fridge.id, cupboard.id],
+          alreadyDone: false,
+        },
+      ]);
+    });
+
+    it('does not point at a Location the removal never touched', async () => {
+      const cookie = await signUp();
+      await stockMilk(cookie, { location: 'fridge', expiryDate: '2026-10-20' });
+      await stockMilk(cookie, {
+        location: 'freezer',
+        expiryDate: '2026-11-01',
+      });
+      const fridgeLater = await stockMilk(cookie, {
+        location: 'fridge',
+        expiryDate: '2026-11-20',
+      });
+      const [action] = await readNote(cookie, [remove()]);
+      const result = await apply(cookie, [asSent(action)]);
+      expect(result.applied).toEqual([
+        {
+          actionId: action.id,
+          list: 'pantry',
+          rowId: fridgeLater.id,
+          rowIds: [fridgeLater.id],
+          alreadyDone: false,
+        },
       ]);
     });
 
@@ -639,7 +706,11 @@ describe('Voice Notes on the Pantry (integration)', () => {
     it('skips a Batch that is already gone and still applies the rest', async () => {
       const cookie = await signUp();
       const gone = await stockMilk(cookie, {});
-      await stock(cookie, { ingredientId: rice, quantity: 500, unit: 'g' });
+      const left = await stock(cookie, {
+        ingredientId: rice,
+        quantity: 500,
+        unit: 'g',
+      });
       const actions = await readNote(cookie, [
         remove(),
         spoken(rice, { op: 'remove', scope: 'one', quantity: 100, unit: 'g' }),
@@ -656,7 +727,8 @@ describe('Voice Notes on the Pantry (integration)', () => {
           {
             actionId: actions[1].id,
             list: 'pantry',
-            rowId: (await pantry(cookie)).batches[0].id,
+            rowId: left.id,
+            rowIds: [left.id],
             alreadyDone: false,
           },
         ],
