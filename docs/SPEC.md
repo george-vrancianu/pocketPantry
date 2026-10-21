@@ -216,7 +216,7 @@ These stories were added on 2026-10-10 after a grilling session and number on fr
 ### Shopping
 
 - A Family has one active Shopping List at a time, plus archived ones. A Shopping Item references an Ingredient (or an Unmatched raw name), quantity, unit, checked flag, and zero or more Source Recipe references. The recipe reference is nullable-free in wave 1 because no recipes exist, but the join table is created now.
-- Adding an item for an Ingredient already on the list merges into the existing item, summing quantities when units agree and keeping both lines when they don't.
+- Adding an item for an Ingredient already on the list merges into the existing item, summing quantities when units agree. Lines in g/kg or ml/l merge too, summed in the existing line's unit; other differing units stay as separate lines.
 - Reads return items grouped by Aisle in Aisle sort order. The client polls on an interval and refetches on window focus.
 - Finish Shopping takes the checked items, returns a proposed list of Batches with Default Expiry and default Location, lets the Member adjust on a Review screen, then creates the Batches, archives the list, and creates a new empty one in a single transaction.
 
@@ -230,7 +230,7 @@ Staples, Used Up Suggestions, and Shopping Templates make adding Shopping Items 
 - **Dismissal.** Dismissing a Suggestion hides it for the whole Family until a new Batch of the Ingredient is created and it then goes missing or Used Up again. There is no timed snooze. To stop suggesting a Staple for good, the Member removes the Staple.
 - **Where Suggestions show.** A collapsible Suggestions section at the top of the Shopping List, and a new `suggestions` Dashboard Widget with the missing-Staples count and the first few Suggestions. No badges elsewhere.
 - **Shopping Templates.** A Shopping Template has a name and up to 100 lines. Each line is an Ingredient or an Unmatched name with optional quantity and unit, the same shape as a Shopping Item. At most 50 per Family. A Template is created from scratch or by saving the current Shopping List. Archived lists cannot be read yet, so they cannot be saved as Templates.
-- **Applying a Template.** A picker lists the lines grouped by Aisle. Lines whose Ingredient is present in the Pantry (as for Staples, an unexpired Batch) start unticked. Unmatched lines and missing Ingredients start ticked. The ticked lines are added through the existing bulk-add endpoint, all or none, and merge with the list by the usual rule: quantities sum when units agree.
+- **Applying a Template.** A picker lists the lines grouped by Aisle. Lines whose Ingredient is present in the Pantry (as for Staples, an unexpired Batch) start unticked. Unmatched lines and missing Ingredients start ticked. The ticked lines are added through the existing bulk-add endpoint, all or none, and merge with the list by the usual rule: quantities sum when units agree (g/kg and ml/l included, summed in the existing line's unit).
 - **Provenance.** Items added from a Staple, a Suggestion, or a Template carry no source marker. Source Recipe stays recipe-only.
 - **Catalog curation.** When an Admin resolves an Unmatched name, Unmatched Shopping Template lines are relinked along with Batches and Shopping Items, and relinked Batches update the stock history. A Staple or a Template line keeps an Ingredient in use, so the Admin cannot delete it (`catalog.ingredient_in_use`). Stock history rows do not, and are deleted with the Ingredient.
 

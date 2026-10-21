@@ -6,7 +6,7 @@ import { loadDisplayNames } from '../catalog/display-names';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { exceedsMaxQuantity } from '../common/quantity';
-import { fromComparable, toComparable } from '../recipes/matching/units';
+import { convertQuantity, unitsMerge } from '../recipes/matching/units';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
@@ -232,12 +232,6 @@ export class ShoppingService {
       insertValues = { name, normalizedName };
     }
 
-    const sameDimension = (rowUnit: typeof unit) => {
-      if (rowUnit === unit) return true;
-      if (rowUnit === null || unit === null) return false;
-      const row = toComparable(1, rowUnit);
-      return row !== null && row.dimension === toComparable(1, unit)?.dimension;
-    };
     const candidates = await tx
       .select({
         id: shoppingItems.id,
@@ -246,20 +240,19 @@ export class ShoppingService {
       })
       .from(shoppingItems)
       .where(and(eq(shoppingItems.listId, listId), identity))
-      // setAmount can leave two lines with the same identity and unit; the oldest one is the merge target.
+      // The merge target is the oldest line of this identity with a compatible unit (the same, or g/kg, ml/l); setAmount can leave several.
       .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
-    const existing = candidates.find((row) => sameDimension(row.unit));
+    const existing = candidates.find((row) => unitsMerge(row.unit, unit));
 
     if (existing) {
       // The added amount is expressed in the existing line's unit (500 g + 1 kg = 1500 g).
       let addedQuantity = quantity;
       if (quantity !== null && unit !== null && existing.unit !== unit) {
-        const base = toComparable(quantity, unit);
-        const converted =
-          base && existing.unit
-            ? fromComparable(base.amount, base.dimension, existing.unit)
-            : null;
-        addedQuantity = converted;
+        // unitsMerge guarantees the same dimension, so a conversion exists.
+        const converted = convertQuantity(quantity, unit, existing.unit!);
+        if (converted === null) throw new Error('units do not convert');
+        // Rounded like sumQuantities, so float noise never reaches the DB.
+        addedQuantity = Math.round(converted * 1000) / 1000;
       }
       const merged = sumQuantities(
         existing.quantity === null ? null : Number(existing.quantity),
