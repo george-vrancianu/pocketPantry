@@ -400,6 +400,22 @@ describe('Meal Plan page', () => {
       );
     });
 
+    it('offers no Undo when everything merged into existing lines, and announces politely', async () => {
+      setup(week(), {
+        'POST /api/meal-plans/add-missing': () =>
+          Response.json({ createdIds: [], count: 2 }),
+      });
+      const u = userEvent.setup();
+      renderPage();
+
+      await u.click(
+        await screen.findByRole('button', { name: 'Add 2 missing' }),
+      );
+      const toast = await screen.findByText('2 added to the Shopping List');
+      expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+      expect(toast.closest('[role="status"]')).not.toBeNull();
+    });
+
     it('adds for one day', async () => {
       const api = setup(week(), addMissing());
       const u = userEvent.setup();

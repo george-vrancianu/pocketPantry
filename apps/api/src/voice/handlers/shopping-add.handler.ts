@@ -1,3 +1,4 @@
+import { unitsMerge } from '../../recipes/matching/units';
 import { ShoppingService } from '../../shopping/shopping.service';
 import { amountOf, hasSubject, sameSubject, subjectOf } from '../voice-actions';
 import {
@@ -7,7 +8,7 @@ import {
 
 /**
  * Shopping add: merges by the Shopping List's usual add rules (same Ingredient
- * or Unmatched name, same unit, quantities summed). An Unmatched name is added
+ * or Unmatched name, same or convertible unit (g/kg, ml/l), quantities summed). An Unmatched name is added
  * and queued for curation by the Shopping List service.
  */
 export function shoppingAddHandler(
@@ -16,8 +17,11 @@ export function shoppingAddHandler(
   return {
     async resolve(draft, ctx) {
       const same = sameSubject(draft);
+      // The list reads oldest first within an Aisle (created, then id), and one
+      // subject sits in one Aisle, so the first compatible line is the oldest,
+      // the one mergeItem will merge into.
       const target = (await ctx.lists.shoppingItems()).find(
-        (item) => same(item) && item.unit === amountOf(draft).unit,
+        (item) => same(item) && unitsMerge(item.unit, amountOf(draft).unit),
       );
       return {
         status: 'ready',

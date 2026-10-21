@@ -28,8 +28,14 @@ export type ShoppingList = {
   summary: { remaining: number; checked: number };
 };
 
-/** What a bulk add answers: the whole list, and the ids of the Shopping Items created or merged into, in request order. */
-export type AddedShoppingItems = ShoppingList & { createdIds: string[] };
+/**
+ * What a bulk add answers: the whole list, the ids of the Shopping Items created or merged into (request order),
+ * and `insertedIds`, only the ones newly inserted: what Undo may delete.
+ */
+export type AddedShoppingItems = ShoppingList & {
+  createdIds: string[];
+  insertedIds: string[];
+};
 
 export type NewShoppingItem = {
   ingredientId?: string;
@@ -134,7 +140,8 @@ export function useShoppingMutations(locale: string) {
         method: 'POST',
         body: { items },
       }),
-    onSuccess: ({ createdIds: _createdIds, ...list }) => onSuccess(list),
+    onSuccess: ({ createdIds: _created, insertedIds: _inserted, ...list }) =>
+      onSuccess(list),
   });
   const setChecked = useMutation({
     mutationFn: ({ id, checked }: { id: string; checked: boolean }) =>

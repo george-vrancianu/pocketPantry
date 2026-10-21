@@ -618,10 +618,7 @@ describe('Voice Note (integration)', () => {
         ),
       ]).expect(201);
       const items = await list(cookie);
-      expect(items.map((i) => [i.quantity, i.unit]).sort()).toEqual([
-        [3, 'l'],
-        [500, 'ml'],
-      ]);
+      expect(items.map((i) => [i.quantity, i.unit])).toEqual([[3.5, 'l']]);
     });
 
     it('skips what cannot be applied with a reason, and still applies the rest', async () => {

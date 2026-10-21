@@ -6,6 +6,11 @@ import { loadDisplayNames } from '../catalog/display-names';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { exceedsMaxQuantity } from '../common/quantity';
+import {
+  quantityInUnit,
+  roundQuantity,
+  unitsMerge,
+} from '../recipes/matching/units';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
@@ -32,9 +37,11 @@ import type {
 
 /**
  * Merge rule: lines for the same Ingredient (or the same Unmatched name) with
- * the same unit collapse into one and their quantities add up. Different units
- * stay on separate lines. A missing quantity adds nothing. Callers enforce
- * the quantity cap on the result.
+ * the same unit, or units of one dimension (g/kg, ml/l), collapse into one and
+ * their quantities add up; the added amount is converted to the existing
+ * line's unit first. Units of different dimensions (pcs, g, ml) and a missing
+ * unit stay on separate lines. A missing quantity adds nothing. Callers
+ * enforce the quantity cap on the result.
  */
 export function sumQuantities(
   existing: number | null,
@@ -42,7 +49,7 @@ export function sumQuantities(
 ): number | null {
   if (existing === null) return added;
   if (added === null) return existing;
-  return Math.round((existing + added) * 1000) / 1000;
+  return roundQuantity(existing + added);
 }
 
 /** An item to merge; the server may claim any Unmatched source, a client only `SHOPPING_ITEM_SOURCES`. */
@@ -101,19 +108,20 @@ export class ShoppingService {
     body: AddShoppingItemBody,
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- only the bulk endpoint answers with createdIds
-    const { createdIds: _createdIds, ...view } = await this.addItems(
+    const { groups, id, summary } = await this.addItems(
       memberId,
       [body],
       locale,
     );
-    return view;
+    // Only the bulk endpoint answers with the ids.
+    return { id, groups, summary };
   }
 
   /**
    * Adds every item with the merge rules, in one transaction: all of them or none.
    * `createdIds` are the Shopping Items created or merged into, one per body in request order.
-   * Not the same as `insertedIds` of `addItemsWithSourceRecipes`: `createdIds` includes merge targets.
+   * `insertedIds` are only the Shopping Items this call newly inserted (not merged into), in request order;
+   * Undo deletes these, never `createdIds`, which includes lines that existed before.
    */
   async addItems(
     memberId: string,
@@ -124,13 +132,22 @@ export class ShoppingService {
       // Serialises with concurrent adds (merges never duplicate a line) and with Finish.
       const { listId, scope } = await this.lockActiveList(tx, memberId);
       const createdIds: string[] = [];
-      for (const body of bodies)
-        createdIds.push(
-          (await this.mergeItem(tx, listId, scope, body, locale)).id,
+      const insertedIds: string[] = [];
+      for (const body of bodies) {
+        const { id, inserted } = await this.mergeItem(
+          tx,
+          listId,
+          scope,
+          body,
+          locale,
         );
+        createdIds.push(id);
+        if (inserted) insertedIds.push(id);
+      }
       return {
         ...(await this.view(tx, listId, scope, locale)),
         createdIds,
+        insertedIds,
       };
     });
   }
@@ -219,26 +236,24 @@ export class ShoppingService {
       insertValues = { name, normalizedName };
     }
 
-    const [existing] = await tx
-      .select({ id: shoppingItems.id, quantity: shoppingItems.quantity })
+    const candidates = await tx
+      .select({
+        id: shoppingItems.id,
+        quantity: shoppingItems.quantity,
+        unit: shoppingItems.unit,
+      })
       .from(shoppingItems)
-      .where(
-        and(
-          eq(shoppingItems.listId, listId),
-          identity,
-          unit === null
-            ? isNull(shoppingItems.unit)
-            : eq(shoppingItems.unit, unit),
-        ),
-      )
-      // setAmount can leave two lines with the same identity and unit; the oldest one is the merge target.
-      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id))
-      .limit(1);
+      .where(and(eq(shoppingItems.listId, listId), identity))
+      // The merge target is the oldest line of this identity with a compatible unit (the same, or g/kg, ml/l); setAmount can leave several.
+      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
+    const existing = candidates.find((row) => unitsMerge(row.unit, unit));
 
     if (existing) {
+      // The added amount is expressed in the existing line's unit (500 g + 1 kg = 1500 g).
+      const addedQuantity = quantityInUnit(quantity, unit, existing.unit);
       const merged = sumQuantities(
         existing.quantity === null ? null : Number(existing.quantity),
-        quantity,
+        addedQuantity,
       );
       if (exceedsMaxQuantity(merged)) {
         throw new ApiException(400, 'shopping.quantity_too_large');
