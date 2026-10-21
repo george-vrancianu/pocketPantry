@@ -18,7 +18,7 @@ Launch agents with the Agent tool, `general-purpose`, setting `model` explicitly
 
 ## Hard rules
 
-[HARD-RULES.md](HARD-RULES.md) holds the hard-rules block. Copy it verbatim into every brief at every level (spec orchestrator, ticket orchestrator, implementer, reviewer, fixer, merger), and point each brief at the notes directory. A brief is done when the block is in it character for character.
+[HARD-RULES.md](HARD-RULES.md) holds the hard-rules block. Copy it verbatim into every brief at every level (spec orchestrator, ticket orchestrator, implementer, reviewer, fixer, merger), and point each brief at the notes directory. A brief is done when the block is in it character for character. Replace the `<<HARD-RULES.md block, verbatim>>` placeholder with the block.
 
 ## Steps
 
