@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
-    "test:integration": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./test/jest-integration.json",
+    "test:integration": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./test/jest-integration.config.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/catalog/seed/run-seed.ts",
