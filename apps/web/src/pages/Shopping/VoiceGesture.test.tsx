@@ -283,6 +283,25 @@ describe('the recording gesture on the Shopping List', () => {
       expect(session.cancel).toHaveBeenCalledTimes(1);
     });
 
+    it('says Cancelled for a system cancel after letting go while the permission is still being read', async () => {
+      let answer: (value: 'granted') => void = () => {};
+      mic.permission.mockImplementation(
+        () => new Promise((resolve) => (answer = resolve)),
+      );
+      const { sent } = setup();
+      renderWithProviders(<ShoppingPage />);
+      const button = await talkButton();
+      pressDown(button, { clientX: 130, clientY: 530 });
+      await holdLongEnough();
+      fireEvent.pointerUp(button);
+      fireEvent.pointerCancel(button);
+
+      expect(await screen.findByText(cancelledToast)).toBeVisible();
+      await act(async () => answer('granted'));
+      expect(mic.start).not.toHaveBeenCalled();
+      expect(sent).toHaveLength(0);
+    });
+
     it('records nothing when the stream arrives after leaving the page', async () => {
       let arrive: (value: ReturnType<typeof fakeSession>) => void = () => {};
       mic.start.mockImplementation(

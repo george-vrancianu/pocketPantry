@@ -97,8 +97,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
   /** The Member cancelled (slid off, Escape, a system gesture): discard it and say so. */
   const cancel = useCallback(() => {
-    // Pressed counts even before the module was asked to start.
-    const waiting = asking.current && held.current;
+    // Pressed counts even before the module was asked to start, and even after letting go.
+    const waiting = asking.current;
     cancelled.current = true;
     held.current = false;
     tipOnArrival.current = false;
