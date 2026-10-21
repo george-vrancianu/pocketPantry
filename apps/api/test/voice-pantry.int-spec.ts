@@ -588,6 +588,44 @@ describe('Voice Notes on the Pantry (integration)', () => {
       ]);
     });
 
+    it('reports the one surviving Batch a removal across several Batches changed', async () => {
+      const cookie = await signUp();
+      await stock(cookie, {
+        ingredientId: rice,
+        quantity: 300,
+        unit: 'g',
+        expiryDate: '2026-10-20',
+      });
+      await stock(cookie, {
+        ingredientId: rice,
+        quantity: 200,
+        unit: 'g',
+        expiryDate: '2026-11-01',
+      });
+      const third = await stock(cookie, {
+        ingredientId: rice,
+        quantity: 400,
+        unit: 'g',
+        expiryDate: '2026-11-20',
+      });
+      const [action] = await readNote(cookie, [
+        spoken(rice, { op: 'remove', scope: 'one', quantity: 600, unit: 'g' }),
+      ]);
+      const result = await apply(cookie, [asSent(action)]);
+      // Two Batches are deleted (they cannot flash); only the reduced one is left changed.
+      expect(result.applied).toEqual([
+        {
+          actionId: action.id,
+          list: 'pantry',
+          rowId: third.id,
+          alreadyDone: false,
+        },
+      ]);
+      expect((await pantry(cookie)).batches).toMatchObject([
+        { id: third.id, quantity: 300 },
+      ]);
+    });
+
     it('reports no row when the removal empties the Ingredient', async () => {
       const cookie = await signUp();
       await stockMilk(cookie, {});
