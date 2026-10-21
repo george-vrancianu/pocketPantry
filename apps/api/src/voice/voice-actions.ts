@@ -178,9 +178,29 @@ export type VoiceAppliedEntry = {
   alreadyDone: boolean;
 };
 
+/**
+ * The kind of a Voice Action: its list and what it does, e.g. `shopping.add` or
+ * `pantry.runningLow`. An allowed set of kinds limits what Apply may write.
+ */
+export type VoiceActionKind = `${VoiceTarget}.${VoiceOp}`;
+
+export const voiceActionKind = (
+  draft: Pick<VoiceActionDraft, 'target' | 'op'>,
+): VoiceActionKind => `${draft.target}.${draft.op}`;
+
+/** A Voice Action whose kind is outside the allowed set: not applied, nothing written. */
+export type VoiceRefusedEntry = {
+  id: string;
+  kind: VoiceActionKind;
+  /** `voice.kind_not_allowed`. */
+  reason: string;
+};
+
 export type VoiceApplyResult = {
   applied: VoiceAppliedEntry[];
   skipped: { id: string; reason: string }[];
+  /** Only present when Apply was given an allowed set (never for Review). */
+  refused?: VoiceRefusedEntry[];
 };
 
 /** A unit only goes with a quantity; a bare number counts pieces. */
