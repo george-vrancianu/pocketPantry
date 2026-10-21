@@ -98,7 +98,9 @@ export function SwipeToggle({
   // Animate or snap on every change of `on`. A layout effect so a snap never paints a frame of sweep.
   const [phase, setPhase] = useState<SweepPhase>('idle');
   const sweepRef = useRef(sweep);
-  sweepRef.current = sweep;
+  useLayoutEffect(() => {
+    sweepRef.current = sweep;
+  });
   const previousOn = useRef(on);
   const usedSweepId = useRef<number | null>(null);
   useLayoutEffect(() => {
@@ -118,9 +120,7 @@ export function SwipeToggle({
     setPhase(on ? 'in' : 'out');
   }, [on, reduceMotion]);
   // Reduced motion turned on mid-sweep ends it for good, so it cannot reappear when it turns off.
-  useLayoutEffect(() => {
-    if (reduceMotion) setPhase('idle');
-  }, [reduceMotion]);
+  if (reduceMotion && phase !== 'idle') setPhase('idle');
   // A sweep ends on its own; a new phase or unmount cancels the wait.
   useEffect(() => {
     if (phase === 'idle') return;
