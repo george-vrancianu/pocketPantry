@@ -953,7 +953,7 @@ describe('Barcode cards in the Scan Session reducer', () => {
   const barcode = (id: string) =>
     enqueue(id, {
       mode: 'barcode',
-      code: '5941234567890',
+      code: '5941234567899',
       image: undefined,
       scanLanguage: undefined,
     });
@@ -962,7 +962,7 @@ describe('Barcode cards in the Scan Session reducer', () => {
     const state = run(barcode('a'));
     expect(state.scans[0]).toMatchObject({
       status: 'reading',
-      code: '5941234567890',
+      code: '5941234567899',
     });
     expect(state.scans[0].image).toBeUndefined();
   });

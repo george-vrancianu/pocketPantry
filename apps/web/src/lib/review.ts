@@ -6,6 +6,7 @@ import type {
 } from './catalog';
 import { defaultExpiryDate, parseQuantity, type NewBatch } from './pantry';
 import { isIsoDate } from './dateFormat';
+import { isValidBarcode } from './gtin';
 import type { CameraMode } from './cameraMode';
 import type { ExclusionReason, ProposedLine } from './scan';
 import type { SessionScan } from './scanSession';
@@ -206,7 +207,10 @@ export function toNewBatch(line: ReviewLine): NewBatch {
     location: line.location,
     expiryDate: line.expiryDate === '' ? null : line.expiryDate,
     productDescription: line.description.trim() || null,
-    ...(line.barcode ? { barcode: line.barcode } : {}),
+    // Never a code the API rejects: one would fail the whole save.
+    ...(line.barcode && isValidBarcode(line.barcode)
+      ? { barcode: line.barcode }
+      : {}),
   };
 }
 

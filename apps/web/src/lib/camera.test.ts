@@ -71,6 +71,46 @@ describe('barcode detection', () => {
     const { readBarcode } = await import('./camera');
     expect(await readBarcode(video)).toBeNull();
   });
+
+  it.each(['3017620422004', '036000291453'])(
+    'ignores the misread %s, whose check digit is wrong, and takes the next code',
+    async (misread) => {
+      vi.doMock('./barcodeDecoder', () => ({
+        createZXingDetector: () => ({
+          detect: () =>
+            Promise.resolve([
+              { rawValue: misread },
+              { rawValue: '036000291452' },
+            ]),
+        }),
+      }));
+      const { readBarcode } = await import('./camera');
+      expect(await readBarcode(video)).toBe('036000291452');
+    },
+  );
+
+  it.each(['96385075', '04252615'])(
+    'ignores the 8-digit misread %s',
+    async (misread) => {
+      vi.doMock('./barcodeDecoder', () => ({
+        createZXingDetector: () => ({
+          detect: () => Promise.resolve([{ rawValue: misread }]),
+        }),
+      }));
+      const { readBarcode } = await import('./camera');
+      expect(await readBarcode(video)).toBeNull();
+    },
+  );
+
+  it('reads a valid UPC-E', async () => {
+    vi.doMock('./barcodeDecoder', () => ({
+      createZXingDetector: () => ({
+        detect: () => Promise.resolve([{ rawValue: '04252614' }]),
+      }),
+    }));
+    const { readBarcode } = await import('./camera');
+    expect(await readBarcode(video)).toBe('04252614');
+  });
 });
 
 describe('focusForScan', () => {

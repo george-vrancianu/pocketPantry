@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SCAN_INTERVAL_MS } from './cameraMode';
+import { isValidBarcode } from './gtin';
 import { GUIDE_CENTER_Y } from './scanGuides';
 
 /** Ask for 1080p where the device can, in every Scan Mode so the dial never restarts the stream: a receipt's small print is unreadable at the 640x480 browsers often default to. */
@@ -57,10 +58,7 @@ export async function readBarcode(
   source: HTMLVideoElement | Blob,
 ): Promise<string | null> {
   const found = await (await loadDetector()).detect(source);
-  return (
-    found.find((code) => /^(?:\d{8}|\d{12}|\d{13})$/.test(code.rawValue))
-      ?.rawValue ?? null
-  );
+  return found.find((code) => isValidBarcode(code.rawValue))?.rawValue ?? null;
 }
 
 export type CameraStatus = 'starting' | 'ready' | 'unavailable';

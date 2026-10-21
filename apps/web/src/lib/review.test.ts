@@ -168,6 +168,16 @@ describe('toNewBatch', () => {
     });
   });
 
+  it('sends a valid barcode but drops one the API would reject, so the save does not fail', () => {
+    const reviewed = (barcode: string) =>
+      toNewBatch(toReviewLine(line({ barcode }), 'a', today));
+    expect(reviewed('3017620422003')).toMatchObject({
+      barcode: '3017620422003',
+    });
+    expect(reviewed('96385075')).not.toHaveProperty('barcode');
+    expect(reviewed('3017620422004')).not.toHaveProperty('barcode');
+  });
+
   it('sends the chosen Parent Category with an Unmatched line only', () => {
     const unmatched = toReviewLine(line({ match: null }), 'a', today);
     expect(

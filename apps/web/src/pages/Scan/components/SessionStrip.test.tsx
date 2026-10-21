@@ -11,7 +11,7 @@ describe('SessionStrip', () => {
           {
             id: 'a',
             mode: 'barcode',
-            code: '5941234567890',
+            code: '5941234567899',
             thumbnail: '',
             status: 'read',
           } as never,

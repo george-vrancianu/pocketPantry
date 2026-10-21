@@ -89,6 +89,13 @@ describe('Barcode Lookup cache (integration)', () => {
     });
   });
 
+  it('shares one cache entry between a UPC-A code and its EAN-13 form', async () => {
+    const upcA = freshBarcode(12);
+    await a.get(`/barcode-lookup/${upcA}?locale=en`).expect(200);
+    await b.get(`/barcode-lookup/0${upcA}?locale=en`).expect(200);
+    expect(asked).toEqual([`0${upcA}`]);
+  });
+
   it('fetches a hit again once it is older than 30 days', async () => {
     await lookup(a);
     now += 30 * DAY + 1000;

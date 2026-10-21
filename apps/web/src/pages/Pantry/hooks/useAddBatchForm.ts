@@ -10,6 +10,7 @@ import {
 } from '../../../lib/catalog';
 import { ApiError } from '../../../lib/api';
 import { barcodeLine, useBarcodeLookup } from '../../../lib/barcode';
+import { isValidBarcode } from '../../../lib/gtin';
 import { loadOverlayMode, type CameraMode } from '../../../lib/cameraMode';
 import { useProductRead, type ProposedLine } from '../../../lib/scan';
 import type { CameraResult } from '../../Scan/CameraOverlay';
@@ -344,7 +345,10 @@ export function useAddBatchForm({
         location,
         expiryDate,
         productDescription: description.trim() || null,
-        ...(barcodeToSend ? { barcode: barcodeToSend } : {}),
+        // Never a code the API rejects: it would fail the save.
+        ...(barcodeToSend && isValidBarcode(barcodeToSend)
+          ? { barcode: barcodeToSend }
+          : {}),
       },
       { onSuccess: onSaved },
     );
