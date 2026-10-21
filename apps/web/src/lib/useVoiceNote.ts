@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { voiceToast } from './voicePlacement';
@@ -51,7 +57,9 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   const cancelled = useRef(false);
   const unmounted = useRef(false);
   const options = useRef({ locale, scanLanguage, defaultTarget, t, toast });
-  options.current = { locale, scanLanguage, defaultTarget, t, toast };
+  useLayoutEffect(() => {
+    options.current = { locale, scanLanguage, defaultTarget, t, toast };
+  });
   const say = (message: string) =>
     options.current.toast.show(message, voiceToast());
 

@@ -18,6 +18,7 @@ export function useAppearance(): Appearance {
   const [appearance, setAppearance] = useState(readAppearance);
   useEffect(() => {
     // Catch a change made between the first render and subscribing.
+    // oxlint-disable-next-line react/set-state-in-effect -- catch-up read of the external appearance store before subscribing
     setAppearance(readAppearance());
     return subscribeAppearance(setAppearance);
   }, []);

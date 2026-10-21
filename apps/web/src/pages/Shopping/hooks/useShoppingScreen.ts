@@ -26,6 +26,7 @@ export function useShoppingScreen() {
     [list.data, removal.hiddenIds],
   );
   // A failed Suggestions request just hides the section; the list still works.
+  // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
   const suggestions = useSuggestions(i18n.language, localIso(new Date()));
 
   // A failed add is shown by the Add sheet, next to what was typed.

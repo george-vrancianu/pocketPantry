@@ -65,6 +65,7 @@ export function UnmatchedQueue({ catalog }: Props) {
       // The row can be gone (refetched, resolved by someone else): the heading is always there.
       (button ?? headingRef.current)?.focus();
     }
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
     setRestoreFocus(null);
   }, [resolving, restoreFocus, queue.data]);
 
@@ -73,6 +74,7 @@ export function UnmatchedQueue({ catalog }: Props) {
     const buttons =
       listRef.current?.querySelectorAll<HTMLElement>('[data-resolve-for]');
     (buttons?.[focusFrom] ?? headingRef.current)?.focus();
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
     setFocusFrom(null);
   }, [focusFrom, queue.isFetchingNextPage]);
 

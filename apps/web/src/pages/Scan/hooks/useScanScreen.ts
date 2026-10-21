@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { readBarcode, useCamera } from '../../../lib/camera';
@@ -320,7 +326,9 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     readScans(i18n.language);
   };
   const onCode = useRef(acceptCode);
-  onCode.current = acceptCode;
+  useLayoutEffect(() => {
+    onCode.current = acceptCode;
+  });
   const { watchBarcodes } = camera;
   useEffect(() => {
     if (mode !== 'barcode' || camera.status !== 'ready') return;
