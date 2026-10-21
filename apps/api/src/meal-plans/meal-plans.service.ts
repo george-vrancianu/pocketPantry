@@ -12,6 +12,7 @@ import { lockMemberAndFamily, runLocked } from '../family/family-locks';
 import { fillPlan, randomTieBreaker } from '../recipes/matching/plan-fill';
 import {
   dayStatus,
+  keyOf,
   planTag,
   type BaseUnit,
   type SlotStatus,
@@ -157,6 +158,8 @@ export class MealPlansService {
    * shortfalls to the Shopping List, one item per Ingredient with its Source
    * Recipes. Ingredients already on the list, uncertain issues, Pantry Basics,
    * optional lines and unavailable slots are left out by the forecast itself.
+   * A date adds what that day needs plus the earlier days' need for the same
+   * Ingredients, since the list is used up in forecast order.
    */
   async addMissing(
     memberId: string,
@@ -177,11 +180,31 @@ export class MealPlansService {
       today,
       through,
     );
+    // A day's Add covers that day and the earlier days needing the same Ingredients.
+    const addable = (issue: { kind: string; onList: boolean }) =>
+      issue.kind !== 'uncertain' && !issue.onList;
+    const onTheDate =
+      body.scope === 'date'
+        ? new Set(
+            forecast.days
+              .filter((day) => day.date === body.date)
+              .flatMap((day) => day.slots)
+              .filter((slot) => slot.status !== 'unavailable')
+              .flatMap((slot) => slot.issues.filter(addable).map(keyOf)),
+          )
+        : null;
     const days = forecast.days.map((day) => ({
       ...day,
       slots: day.slots
         .filter((slot) => keepSlot(day.date, slot.id))
-        .map((slot) => ({ ...slot, issues: slot.issues.filter(keepIssue) })),
+        .map((slot) => ({
+          ...slot,
+          issues: slot.issues.filter(
+            (issue) =>
+              keepIssue(issue) &&
+              (onTheDate === null || onTheDate.has(keyOf(issue))),
+          ),
+        })),
     }));
     const entries = missingOf(days).map((item) => {
       const { quantity, unit } = readable(item.quantity, item.unit);
@@ -243,7 +266,7 @@ export class MealPlansService {
       case 'date':
         return {
           through: body.date,
-          keepSlot: (date) => date === body.date,
+          keepSlot: (date) => date <= body.date,
           keepIssue: everything,
         };
       case 'ingredient': {

@@ -78,6 +78,12 @@ describe('flipOnList', () => {
     expect(next.tag).toEqual({ kind: 'short', count: 1 });
   });
 
+  it('turns a later day and the earlier days needing the same Ingredient on list when that day is added', () => {
+    const next = flipOnList(view(), { scope: 'date', date: '2026-10-16' });
+    expect(next.days.map((d) => d.status)).toEqual(['onList', 'onList']);
+    expect(next.tag).toEqual({ kind: 'coveredOnceYouShop' });
+  });
+
   it('turns every day on list for the window scope', () => {
     const next = flipOnList(view(), { scope: 'window' });
     expect(next.days.map((d) => d.status)).toEqual(['onList', 'onList']);

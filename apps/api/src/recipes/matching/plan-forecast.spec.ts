@@ -431,6 +431,34 @@ describe('forecastPlan: the Shopping List amount', () => {
     expect(result.slots[1].issues[0].uncovered).toBe(200);
   });
 
+  it('keeps the presence rule for the whole Ingredient when any list line has no amount', () => {
+    const result = forecast({
+      slots: [slot(0, 'dinner'), slot(1, 'dinner'), slot(2, 'dinner')],
+      shoppingList: [eggs(4, 'pcs'), eggs(null, null)],
+    });
+    expect(statuses(result)).toEqual(['onList', 'onList', 'onList']);
+  });
+
+  it('counts a leftover the list cannot store as covered', () => {
+    // 3 x 1000 g / 3 servings planned at 1 = 3 x 333.334 g = 1000.002 g; the list holds 1 kg.
+    const result = forecast({
+      recipes: {
+        r1: recipe([line({ ingredientId: FLOUR, quantity: 1000, unit: 'g' })], {
+          servings: 3,
+        }),
+      },
+      slots: [
+        slot(0, 'dinner', 'r1', 1),
+        slot(1, 'dinner', 'r1', 1),
+        slot(2, 'dinner', 'r1', 1),
+      ].map((s) => ({ ...s })),
+      shoppingList: [
+        { ingredientId: FLOUR, name: null, quantity: 1, unit: 'kg' },
+      ],
+    });
+    expect(statuses(result)).toEqual(['onList', 'onList', 'onList']);
+  });
+
   it('makes Add missing add only the uncovered part', () => {
     const result = forecast({
       slots: [slot(0, 'dinner'), slot(1, 'dinner')],

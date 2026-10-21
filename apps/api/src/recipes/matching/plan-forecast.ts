@@ -34,6 +34,21 @@ const BASE_UNIT: Record<Dimension, BaseUnit> = {
   volume: 'ml',
   count: 'pcs',
 };
+const DIMENSION_OF: Record<BaseUnit, Dimension> = {
+  g: 'mass',
+  ml: 'volume',
+  pcs: 'count',
+};
+/**
+ * The most a list can fall short of a need and still count as covering it, per
+ * dimension: Add missing stores whole g/ml (shown as kg/l) and counts to 3 dp,
+ * so anything smaller can never be added and would leave the issue short forever.
+ */
+const LIST_TOLERANCE: Record<Dimension, number> = {
+  mass: 1,
+  volume: 1,
+  count: 0.001,
+};
 
 export type ForecastSlot = {
   /** Opaque to the forecast; copied to the slot's result and to reasons. */
@@ -170,7 +185,7 @@ export type Forecast = {
 type Identity = { ingredientId: string | null; name: string | null };
 
 /** The Ingredient id, or the normalised name for an Unmatched line, Batch or list entry. */
-const keyOf = ({ ingredientId, name }: Identity): string =>
+export const keyOf = ({ ingredientId, name }: Identity): string =>
   ingredientId ?? `name:${normalizeName(name ?? '')}`;
 
 const EPSILON = 1e-9;
@@ -205,6 +220,37 @@ function poolList(entries: readonly ForecastListEntry[]) {
       );
   }
   return pools;
+}
+
+/**
+ * Judges an issue against its Ingredient's list amount and uses up what covers
+ * it. Presence is all that can be judged for uncertain issues, issues with no
+ * amount, a list line with no amount, or a list in another dimension.
+ */
+function againstList(
+  pool: ListPool | undefined,
+  kind: IssueKind,
+  quantity: number | null,
+  unit: BaseUnit | null,
+): { onList: boolean; uncovered?: number } {
+  if (!pool) return { onList: false };
+  const dimension = unit === null ? undefined : DIMENSION_OF[unit];
+  const left =
+    dimension === undefined ? undefined : pool.remaining.get(dimension);
+  if (
+    kind === 'uncertain' ||
+    quantity === null ||
+    pool.presenceOnly ||
+    dimension === undefined ||
+    left === undefined
+  )
+    return { onList: true };
+  const used = Math.min(left, quantity);
+  pool.remaining.set(dimension, left - used);
+  const uncovered = quantity - used;
+  return uncovered <= LIST_TOLERANCE[dimension]
+    ? { onList: true }
+    : { onList: false, uncovered: roundUp(uncovered) };
 }
 
 /** A Batch's working copy: what is left of it as the slots use it up. */
@@ -291,38 +337,15 @@ function run(input: ForecastInput) {
         quantity: number | null,
         unit: BaseUnit | null,
         reason: Reason,
-      ): ForecastIssue => {
-        const base = {
-          ingredientId: line.ingredientId,
-          name: line.ingredientId === null ? line.name : null,
-          kind,
-          quantity,
-          unit,
-          reason,
-        };
-        const pool = list.get(key);
-        if (!pool) return { ...base, onList: false };
-        // Uncertain issues, no amount on either side, or a list in another
-        // dimension: presence is all that can be judged.
-        const dimension = (Object.keys(BASE_UNIT) as Dimension[]).find(
-          (d) => BASE_UNIT[d] === unit,
-        );
-        const left =
-          dimension === undefined ? undefined : pool.remaining.get(dimension);
-        if (
-          kind === 'uncertain' ||
-          quantity === null ||
-          pool.presenceOnly ||
-          dimension === undefined ||
-          left === undefined
-        )
-          return { ...base, onList: true };
-        const used = Math.min(left, quantity);
-        pool.remaining.set(dimension, left - used);
-        return quantity - used <= EPSILON
-          ? { ...base, onList: true }
-          : { ...base, onList: false, uncovered: roundUp(quantity - used) };
-      };
+      ): ForecastIssue => ({
+        ingredientId: line.ingredientId,
+        name: line.ingredientId === null ? line.name : null,
+        kind,
+        quantity,
+        unit,
+        reason,
+        ...againstList(list.get(key), kind, quantity, unit),
+      });
       const absent = (): Reason => {
         // Only leftovers really expired: a Batch earlier slots used up did not.
         // A Batch with no comparable quantity is never used up, so it counts.

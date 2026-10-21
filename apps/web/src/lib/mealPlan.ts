@@ -147,15 +147,27 @@ export function dayMissing(day: {
 const WORST_FIRST: SlotStatus[] = ['short', 'onList', 'covered'];
 
 /**
- * The window as it will read once the scope is on the Shopping List: the issues the scope adds
- * turn "On list" (not later days needing the same Ingredient), so short slots become on list, and the missing list loses them. The same
+ * The window as it will read once the scope is on the Shopping List: the issues the scope
+ * adds turn "On list" (a day's Add also covers the earlier days needing the same Ingredients,
+ * but not later days), so short slots become on list and the missing list loses them. The same
  * rules as the server's forecast; the refetch that follows has the final say.
  */
 export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
+  const onTheDate = new Set(
+    add.scope === 'date'
+      ? view.days
+          .filter((day) => day.date === add.date)
+          .flatMap(dayMissing)
+          .map(ingredientKey)
+      : [],
+  );
   const matches = (day: WindowDay, issue: PlanIssue): boolean => {
     if (!isAddable(issue)) return false;
     if (add.scope === 'window') return true;
-    if (add.scope === 'date') return day.date === add.date;
+    // A day's Add covers that day and the earlier days needing the same Ingredients.
+    if (add.scope === 'date') {
+      return day.date <= add.date && onTheDate.has(ingredientKey(issue));
+    }
     // The Widget never sends a plan scope; it covers the same days as the window it shows.
     if (add.scope === 'plan') return day.planId === add.planId;
     // An Ingredient scope with a plan covers that plan's days only.
