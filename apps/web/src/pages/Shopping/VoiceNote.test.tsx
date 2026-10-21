@@ -396,21 +396,6 @@ describe('Voice Note on the Shopping List', () => {
       await waitFor(() => expect(button).toHaveFocus());
     });
 
-    it('offers Discard only on a too-long note, closing without a "discarded" toast', async () => {
-      setup({ note: () => error('voice.too_long', 413) });
-      renderWithProviders(<ShoppingPage />);
-      fireEvent.pointerUp(await hold());
-
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent('Recording too long');
-      expect(within(alert).queryByRole('button', { name: 'OK' })).toBeNull();
-      expect(within(alert).queryByRole('button', { name: 'Retry' })).toBeNull();
-      await userEvent.click(
-        within(alert).getByRole('button', { name: 'Discard' }),
-      );
-      expect(screen.queryByText('Recording discarded')).toBeNull();
-    });
-
     it('tells a press while reading that the last note is still being read', async () => {
       setup({ note: never });
       renderWithProviders(<ShoppingPage />);
@@ -451,6 +436,37 @@ describe('Voice Note on the Shopping List', () => {
       ).toBeVisible();
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(screen.getByTestId('failed-dot')).toBeInTheDocument();
+    });
+
+    it('names an unexpected failure in the alert, keeping the recording for Retry', async () => {
+      setup({ note: () => error('scan.cap_reached', 429, { cap: 5 }) });
+      renderWithProviders(<ShoppingPage />);
+
+      fireEvent.pointerUp(await hold());
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent("Couldn't send");
+      expect(alert).toHaveTextContent(
+        'You have used all 5 scans for today. Try again tomorrow, or add items by hand.',
+      );
+      expect(alert).not.toHaveTextContent('No connection');
+      expect(
+        within(alert).getByRole('button', { name: 'Discard' }),
+      ).toBeVisible();
+      expect(
+        within(alert).getByRole('button', { name: 'Retry' }),
+      ).toBeVisible();
+    });
+
+    it('falls back to the generic message for an unknown failure code', async () => {
+      setup({ note: () => error('nonsense.code', 500) });
+      renderWithProviders(<ShoppingPage />);
+
+      fireEvent.pointerUp(await hold());
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Something went wrong. Please try again.',
+      );
     });
 
     it("moves focus to the Reading pill's Cancel when Retry starts the read", async () => {
@@ -605,12 +621,13 @@ describe('Voice Note on the Shopping List', () => {
       });
     });
 
-    it('offers only Discard when the recording was too long', async () => {
+    it('offers only Discard when the recording was too long, closing without a "discarded" toast', async () => {
       setup({ note: () => error('voice.too_long', 413) });
       renderWithProviders(<ShoppingPage />);
       fireEvent.pointerUp(await hold());
 
       const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent('Recording too long');
       expect(alert).toHaveTextContent(
         'That recording was too long. Try a shorter one.',
       );
@@ -620,6 +637,7 @@ describe('Voice Note on the Shopping List', () => {
         within(alert).getByRole('button', { name: 'Discard' }),
       );
       expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.queryByText('Recording discarded')).toBeNull();
     });
 
     it('offers only Discard, and logs, when the recording format is not supported', async () => {
