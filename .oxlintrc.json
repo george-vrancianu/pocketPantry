@@ -9,7 +9,12 @@
     "jsx-a11y/prefer-tag-over-role": "off",
     // Off: the autofocus calls are deliberate (sheets and dialogs move focus to their first field on open);
     // removing them would change Member-visible focus behaviour.
-    "jsx-a11y/no-autofocus": "off"
+    "jsx-a11y/no-autofocus": "off",
+    // Off (10 findings): every hit is `new Date()` read in render to compute "today" for a query key or a
+    // greeting (Dashboard, Recipes, Shopping, Family, FamilyCard, finishShopping). Re-reading the clock on
+    // each render is the behaviour: the day rolls over on the next render, and freezing it in state or a
+    // ref would leave a Member on a stale day.
+    "react/purity": "off"
   },
   "overrides": [
     {
