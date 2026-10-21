@@ -109,6 +109,7 @@ describe('focusForScan', () => {
     const { hook, applyConstraints } = await openCamera({
       focusMode: ['manual', 'single-shot', 'continuous'],
     });
+    vi.useFakeTimers();
     let pass!: ReturnType<typeof hook.result.current.focusForScan>;
     act(() => {
       pass = hook.result.current.focusForScan();
@@ -121,8 +122,9 @@ describe('focusForScan', () => {
         },
       ],
     });
+    await act(() => vi.advanceTimersByTimeAsync(400));
     await act(() => pass.done);
-    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    await act(() => vi.advanceTimersByTimeAsync(1));
     expect(applyConstraints).toHaveBeenLastCalledWith({
       advanced: [{ focusMode: 'continuous' }],
     });
@@ -185,12 +187,13 @@ describe('focusForScan', () => {
       focusMode: ['single-shot', 'continuous'],
     });
     applyConstraints.mockRejectedValueOnce(new Error('refused'));
+    vi.useFakeTimers();
     let pass!: ReturnType<typeof hook.result.current.focusForScan>;
     act(() => {
       pass = hook.result.current.focusForScan();
     });
     await act(() => pass.done);
-    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    await act(() => vi.advanceTimersByTimeAsync(1));
     expect(applyConstraints).toHaveBeenLastCalledWith({
       advanced: [{ focusMode: 'continuous' }],
     });

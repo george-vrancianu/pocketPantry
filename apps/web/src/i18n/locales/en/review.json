@@ -80,11 +80,9 @@
     "confirmFor": "Confirm {{name}}"
   },
   "save_one": "Save {{count}} item",
-  "save_few": "Save {{count}} items",
   "save_other": "Save {{count}} items",
   "discard": "Discard",
   "shoppingSave_one": "Add {{count}} item to shopping list",
-  "shoppingSave_few": "Add {{count}} items to shopping list",
   "shoppingSave_other": "Add {{count}} items to shopping list",
   "shoppingAdding": "Adding",
   "excluded": {

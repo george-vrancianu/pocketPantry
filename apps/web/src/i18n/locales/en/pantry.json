@@ -28,7 +28,6 @@
   },
   "noMatches": "No batches match.",
   "batchCount_one": "{{count}} batch",
-  "batchCount_few": "{{count}} batches",
   "batchCount_other": "{{count}} batches",
   "group": {
     "label_one": "{{name}}, {{count}} batch",

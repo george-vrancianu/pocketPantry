@@ -159,6 +159,7 @@ function ReviewSheet() {
   useEffect(() => {
     if (!keptReviewing || confirming) return;
     document.querySelector<HTMLElement>('[data-voice-discard]')?.focus();
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
     setKeptReviewing(false);
   }, [keptReviewing, confirming]);
   // A failed Apply puts its Alert at the top of the body; bring it into view.
@@ -170,6 +171,7 @@ function ReviewSheet() {
   }, [apply.isError, apply.failureCount]);
   useEffect(() => {
     if (focusId === null) return;
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: cleared once the picker is focused
     if (focusPicker(focusId)) setFocusId(null);
   }, [focusId, openId]);
 

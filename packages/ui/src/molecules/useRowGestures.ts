@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { MouseEvent, PointerEvent } from 'react';
 
 /** Row gesture numbers from the handoff (docs/handoffs/row-gestures/handoff.md, section 3). */
@@ -181,7 +187,9 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
     moveTolerance: options.moveTolerance ?? DEFAULTS.moveTolerance,
   };
   const latest = useRef({ options, tuning });
-  latest.current = { options, tuning };
+  useLayoutEffect(() => {
+    latest.current = { options, tuning };
+  });
 
   const [view, setView] = useState({
     x: 0,

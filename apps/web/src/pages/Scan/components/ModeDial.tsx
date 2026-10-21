@@ -1,6 +1,7 @@
 import { Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -121,15 +122,17 @@ export function ModeDial<Mode extends CameraMode>({
     focusForScan,
     canScan,
   });
-  latest.current = {
-    modes,
-    index,
-    keysDisabled,
-    onChange,
-    onScan,
-    focusForScan,
-    canScan,
-  };
+  useLayoutEffect(() => {
+    latest.current = {
+      modes,
+      index,
+      keysDisabled,
+      onChange,
+      onScan,
+      focusForScan,
+      canScan,
+    };
+  });
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const step =
@@ -328,6 +331,7 @@ export function ModeDial<Mode extends CameraMode>({
     }
     lastTap.current = null;
     setDragOffset(null);
+    // oxlint-disable-next-line react/immutability -- dragEndedAt is a ref owned by the parent (shared with the guide); writing its .current is the contract
     dragEndedAt.current = performance.now();
     justDragged.current = true;
     clearTimeout(clickGuard.current);

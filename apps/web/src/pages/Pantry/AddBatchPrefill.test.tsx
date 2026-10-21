@@ -140,6 +140,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     camera.shots = 0;
   });
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -188,7 +189,8 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
   });
 
   it('drops a photo still being prepared when the overlay is cancelled', async () => {
-    const user = userEvent.setup();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     let finish: () => void = () => {};
     camera.prepare = new Promise<void>((resolve) => (finish = resolve));
     const { calls, release } = stubProductScan(() =>
@@ -203,7 +205,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     finish();
     release();
     // Every promise is already settled; the wait only gives a wrongly started read time to show.
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await act(() => vi.advanceTimersByTimeAsync(50));
     expect(scanCalls(calls)).toHaveLength(0);
     expect(screen.queryByText(/Reading the product photo/)).toBeNull();
     expect(screen.queryByTestId('prefilled-expiry')).toBeNull();

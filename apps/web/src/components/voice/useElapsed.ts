@@ -11,6 +11,7 @@ export function useElapsedMs(startedAt: number | undefined) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (startedAt === undefined) return;
+    // oxlint-disable-next-line react/set-state-in-effect -- restarts the clock when the recording starts; Date.now() is the external system
     setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), TICK_MS);
     return () => clearInterval(id);

@@ -9,7 +9,7 @@ import {
   useForcedThemeColor,
   visuallyHidden,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
 import { readBarcode, useCamera } from '../../lib/camera';
@@ -98,6 +98,7 @@ export function CameraOverlay({
   const dragEndedAt = useRef<number | null>(null);
   const scanRef = useRef<(() => void) | null>(null);
   const shooting = useRef(false);
+  const { videoRef } = camera;
 
   // Focus moves into the dialog on open, and Escape closes it as Close does.
   const dialog = useRef<HTMLDivElement>(null);
@@ -105,7 +106,9 @@ export function CameraOverlay({
   // Set once the overlay is cancelled or gone: a photo still being prepared is then dropped.
   const closed = useRef(false);
   const cancelRef = useRef(onCancel);
-  cancelRef.current = onCancel;
+  useLayoutEffect(() => {
+    cancelRef.current = onCancel;
+  });
   const cancel = () => {
     closed.current = true;
     cancelRef.current();
@@ -128,7 +131,9 @@ export function CameraOverlay({
   // Barcode reads the live stream: the first code closes the overlay. The decoder (WASM
   // where the browser has none) is loaded by this call, the first time Barcode is used.
   const resultRef = useRef(onResult);
-  resultRef.current = onResult;
+  useLayoutEffect(() => {
+    resultRef.current = onResult;
+  });
   const { watchBarcodes } = camera;
   useEffect(() => {
     if (mode !== 'barcode' || camera.status !== 'ready') return;
@@ -199,7 +204,7 @@ export function CameraOverlay({
     >
       <Box
         component="video"
-        ref={camera.videoRef}
+        ref={videoRef}
         autoPlay
         playsInline
         muted

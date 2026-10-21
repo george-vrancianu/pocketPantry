@@ -121,9 +121,9 @@ describe('ShoppingPage', () => {
     renderWithProviders(<ShoppingPage />);
 
     expect(await screen.findByText('1 to buy')).toBeVisible();
-    expect(screen.getByText('1 of 2 in your basket')).toBeVisible();
+    expect(screen.getByText('1 of 2 checked')).toBeVisible();
     expect(
-      screen.getByRole('progressbar', { name: 'Basket progress' }),
+      screen.getByRole('progressbar', { name: 'Shopping progress' }),
     ).toHaveAttribute('aria-valuenow', '50');
     expect(
       screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
