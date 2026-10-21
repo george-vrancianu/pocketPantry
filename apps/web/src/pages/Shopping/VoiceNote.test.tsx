@@ -30,7 +30,7 @@ import {
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubMotion } from '../../test/viewport';
 import { resetRowFlash } from '../../lib/rowFlash';
-import { getVoiceNoteState, resetVoiceNote } from '../../lib/voiceNoteStore';
+import { voiceNote } from '../../lib/voiceNote';
 import { ShoppingPage } from './ShoppingPage';
 
 const emptyList = {
@@ -60,7 +60,6 @@ describe('Voice Note on the Shopping List', () => {
 
   beforeEach(() => {
     useVoiceTimers();
-    resetVoiceNote();
     resetRowFlash();
     resetVoiceEnvironment();
     session = fakeSession();
@@ -305,7 +304,7 @@ describe('Voice Note on the Shopping List', () => {
       expect(signals.at(-1)?.aborted).toBe(true);
       expect(screen.queryByText('Reading your note')).toBeNull();
       expect(screen.getByText('Cancelled. Nothing was saved.')).toBeVisible();
-      expect(getVoiceNoteState().phase).toBe('idle');
+      expect(voiceNote.getState().phase).toBe('idle');
       // A new note can start at once.
       pressDown(await talkButton());
       expect(await screen.findByText('Listening')).toBeVisible();
@@ -356,7 +355,7 @@ describe('Voice Note on the Shopping List', () => {
 
         expect(screen.queryByRole('dialog')).toBeNull();
         expect(screen.queryByRole('alert')).toBeNull();
-        expect(getVoiceNoteState().phase).toBe('idle');
+        expect(voiceNote.getState().phase).toBe('idle');
       },
     );
 
@@ -649,7 +648,7 @@ describe('Voice Note on the Shopping List', () => {
 
       expect(screen.queryByRole('alert')).toBeNull();
       expect(screen.getByText('Recording discarded')).toBeVisible();
-      expect(getVoiceNoteState().recording).toBeUndefined();
+      expect(voiceNote.getState().recording).toBeUndefined();
       expect(screen.queryByTestId('failed-dot')).toBeNull();
     });
 
@@ -684,7 +683,7 @@ describe('Voice Note on the Shopping List', () => {
       expect(text).toBeVisible();
       await holdFor(200);
       expect(screen.queryByText("Didn't catch anything, try again")).toBeNull();
-      expect(getVoiceNoteState().phase).toBe('idle');
+      expect(voiceNote.getState().phase).toBe('idle');
     });
 
     it('says nothing was heard for an empty transcript too', async () => {
@@ -842,7 +841,7 @@ describe('Voice Note on the Shopping List', () => {
         ).toBeNull(),
       );
       expect(screen.queryByRole('alert')).toBeNull();
-      expect(getVoiceNoteState().phase).toBe('idle');
+      expect(voiceNote.getState().phase).toBe('idle');
     });
   });
 
@@ -1027,8 +1026,8 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
 
   beforeEach(() => {
     useVoiceTimers();
-    resetVoiceNote();
     resetRowFlash();
+    resetVoiceEnvironment();
     session = fakeSession();
     mic.start.mockReset();
     mic.start.mockImplementation(() => Promise.resolve(session));
@@ -1445,7 +1444,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
 
     await userEvent.keyboard('{Escape}');
     expect(dialog.queryByText('Discard this Voice Note?')).toBeNull();
-    expect(getVoiceNoteState().phase).toBe('applying');
+    expect(voiceNote.getState().phase).toBe('applying');
     expect(
       dialog
         .getByRole('button', { name: 'Drop this change: Add Eggs' })
@@ -1527,7 +1526,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
       dialog.getByRole('button', { name: 'Apply 3 changes' }),
     ).toBeEnabled();
     expect(dialog.getByLabelText('Amount of Eggs')).toHaveValue('12');
-    expect(getVoiceNoteState().phase).toBe('review');
+    expect(voiceNote.getState().phase).toBe('review');
   });
 
   const applyAll = async () => {

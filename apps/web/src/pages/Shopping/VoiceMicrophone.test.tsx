@@ -15,7 +15,6 @@ import {
 } from '../../test/voice';
 import { holdFor, pressDown, useVoiceTimers } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import { ShoppingPage } from './ShoppingPage';
 
 function setup() {
@@ -34,7 +33,6 @@ function setup() {
 describe('Voice Note microphone sheets', () => {
   beforeEach(() => {
     useVoiceTimers();
-    resetVoiceNote();
     resetVoiceEnvironment();
     mic.permission.mockResolvedValue('prompt');
     setup();

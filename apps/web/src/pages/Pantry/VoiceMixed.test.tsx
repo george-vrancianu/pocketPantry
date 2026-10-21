@@ -6,7 +6,6 @@ import {
   voiceAction as action,
   voiceIngredient as ingredient,
 } from '../../test/voice';
-import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import {
   holdLongEnough,
   pressDown,
@@ -42,7 +41,6 @@ const mixed = [
 describe('A Voice Note across both lists', () => {
   beforeEach(() => {
     useVoiceTimers();
-    resetVoiceNote();
     resetVoiceEnvironment();
     const { fetchMock } = stubApi({
       'GET /api/pantry/recently-stocked': () =>

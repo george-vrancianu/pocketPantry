@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import type { Recording } from '../lib/microphone';
+import { voiceNote } from '../lib/voiceNote';
 import { holdLongEnough, pressDown } from './voiceHold';
 
 /*
@@ -41,6 +42,8 @@ export const wake = fakes.wake;
 
 /** Defaults: a granted microphone that hands out `fakeSession()`s, a supported wake lock. */
 export function resetVoiceEnvironment() {
+  // First: dropping the Voice Note releases the wake lock, which the resets below then forget.
+  voiceNote.reset();
   mic.start.mockReset();
   mic.start.mockImplementation(() => Promise.resolve(fakeSession()));
   mic.permission.mockReset();
