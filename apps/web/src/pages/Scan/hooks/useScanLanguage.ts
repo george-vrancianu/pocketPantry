@@ -32,6 +32,7 @@ export function useScanLanguage(): {
   useEffect(() => {
     if (chosen.locale === locale) return;
     saveScanLanguage(locale, scanLanguage);
+    // oxlint-disable-next-line react/set-state-in-effect -- persists the carried-over choice, then records it as settled; the save is the side effect
     setChosen({ locale, language: scanLanguage });
   }, [chosen.locale, locale, scanLanguage]);
   return {

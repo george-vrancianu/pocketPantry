@@ -28,7 +28,10 @@ const milk = {
 const taco: Template = { id: 't1', name: 'Taco night', lines: [milk] };
 
 describe('Shopping Template screens', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('lists templates and creates a new one', async () => {
     const { fetchMock, calls } = stubApi({
@@ -184,15 +187,16 @@ describe('Shopping Template screens', () => {
   it('does not bring a removed line back when a second one is swiped during its fly-off', async () => {
     const { calls, fetchMock } = statefulTemplate([milk, eggs, bread]);
     // A slow save: the second row's removal finishes while the first one is still in flight.
+    let releaseSaves: () => void = () => undefined;
+    const savesGate = new Promise<void>((resolve) => (releaseSaves = resolve));
     vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
       init?.method === 'PATCH'
-        ? new Promise((resolve) =>
-            setTimeout(() => resolve(fetchMock(input, init)), 700),
-          )
+        ? savesGate.then(() => fetchMock(input, init))
         : fetchMock(input, init),
     );
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     renderEditor();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await screen.findByRole('group', { name: 'Eggs' });
     const removeIn = async (name: string) => {
       const row = screen.getByRole('group', { name });
@@ -204,6 +208,9 @@ describe('Shopping Template screens', () => {
     // Both before the first row has collapsed and saved.
     await removeIn('Eggs');
     await removeIn('Bread');
+    // The first save stays in flight while both rows fly off and collapse.
+    await act(() => vi.advanceTimersByTimeAsync(700));
+    releaseSaves();
 
     await waitFor(() => expect(patches(calls)).toHaveLength(2));
     expect(patches(calls)[1]).toEqual({
@@ -341,8 +348,9 @@ describe('Shopping Template screens', () => {
       if (args[1]?.method === 'PATCH' && gate) await gate;
       return fetchMock(...args);
     });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     renderEditor();
-    const user = userEvent.setup();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await screen.findByRole('group', { name: 'Eggs' });
     await removeLine(user, 'Eggs');
     await screen.findByText('Removed Eggs');
@@ -357,7 +365,7 @@ describe('Shopping Template screens', () => {
     await user.type(field, '2');
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));
     await user.click(screen.getByRole('button', { name: 'Undo' }));
-    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    await act(() => vi.advanceTimersByTimeAsync(50));
     expect(patches(calls)).toHaveLength(1);
 
     gate = null;

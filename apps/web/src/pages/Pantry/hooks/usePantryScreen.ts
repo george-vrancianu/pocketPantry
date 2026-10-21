@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { StorageLocation } from '../../../lib/catalog';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -96,9 +96,7 @@ export function usePantryScreen() {
     section.rows.some((row) => row.open),
   );
   const loaded = batches.data !== undefined;
-  useEffect(() => {
-    if (loaded && !openRowShown) setOpenKey(null);
-  }, [loaded, openRowShown]);
+  if (loaded && !openRowShown && openKey !== null) setOpenKey(null);
 
   return {
     sections,

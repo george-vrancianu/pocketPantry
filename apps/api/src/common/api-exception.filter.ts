@@ -8,6 +8,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const reply = host.switchToHttp().getResponse<FastifyReply>();
     const { status, body } = toErrorResponse(exception);
+    // send() returns the reply for chaining; Fastify finishes the response itself.
     void reply.code(status).send(body);
   }
 }

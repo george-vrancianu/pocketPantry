@@ -1,6 +1,6 @@
 import { useToast } from '@pocket-pantry/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { voiceNote, type VoiceNotice } from '../../lib/voiceNote';
 import { voiceToast } from '../../lib/voicePlacement';
@@ -15,7 +15,9 @@ export function VoiceNotices() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const latest = useRef({ t, toast, queryClient });
-  latest.current = { t, toast, queryClient };
+  useLayoutEffect(() => {
+    latest.current = { t, toast, queryClient };
+  });
 
   useEffect(
     () =>

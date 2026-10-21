@@ -20,7 +20,7 @@ export function RecipeMeta(props: Props) {
     props.cuisine?.name,
     props.method?.name,
     props.servings === undefined ? null : (
-      <Servings servings={props.servings} />
+      <Servings key="servings" servings={props.servings} />
     ),
     props.prepMinutes
       ? t('prep', { time: t('minutes', { count: props.prepMinutes }) })

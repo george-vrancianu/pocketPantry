@@ -11,6 +11,7 @@ import {
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ComponentProps,
@@ -94,7 +95,9 @@ export function RollUpRow({
   };
   // The timer reads the row as it is when it fires, not as it was at the release.
   const latestFlip = useRef(flipLow);
-  latestFlip.current = flipLow;
+  useLayoutEffect(() => {
+    latestFlip.current = flipLow;
+  });
   const flipTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -124,11 +127,15 @@ export function RollUpRow({
   // The last Batch was removed: if focus was on its row it is on the list or <body> now, so place it.
   const item = useRef<HTMLLIElement>(null);
   useLiftIntoView(item, expanded && !rollUp.gone);
+  const onRowGoneNow = useRef(onRowGone);
+  useLayoutEffect(() => {
+    onRowGoneNow.current = onRowGone;
+  });
   useEffect(() => {
     if (!rollUp.gone) return;
     const active = document.activeElement;
     if (active === document.body || item.current?.contains(active)) {
-      onRowGone();
+      onRowGoneNow.current();
     }
     // Only when the row becomes gone, not on every render while it is.
   }, [rollUp.gone]);

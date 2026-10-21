@@ -19,8 +19,10 @@ export function configureApp(app: NestFastifyApplication): void {
     .getInstance()
     .setErrorHandler((error, _request, reply) => {
       const { status, body } = toErrorResponse(error);
+      // Fire-and-forget: send() returns the reply for chaining; nothing to await in an error handler.
       void reply.code(status).send(body);
     });
+  // Fire-and-forget: Fastify queues plugin registration; app.listen/ready awaits it.
   void app
     .getHttpAdapter()
     .getInstance()

@@ -809,7 +809,8 @@ describe('MealPlanWidget day popover', () => {
   });
 
   it('leaves focus on the field tapped outside the popover', async () => {
-    const u = user();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const u = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     stub(windowOf(week(3)));
     renderWidget();
     const field = document.createElement('input');
@@ -822,7 +823,8 @@ describe('MealPlanWidget day popover', () => {
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    // Give a wrongly restored focus (the popover handing it back to its trigger) time to show.
+    await vi.advanceTimersByTimeAsync(10);
     expect(field).toHaveFocus();
     field.remove();
   });

@@ -529,6 +529,7 @@ describe('Admin: merge Family Ingredients, Synonym candidates (integration)', ()
           [familyB, name.toUpperCase(), 'synonym', normalizeName(name)],
         ].sort(),
       );
+      // Marks the destructured value as intentionally unused.
       void copyB;
 
       // A name equal to the target's own name is not kept.
