@@ -231,6 +231,7 @@ export function compareActions(
   const missing: ExpectedAction[] = [];
   expected.actions.forEach((e, i) => {
     const j = pairs.get(i);
+    // push() returns a number; void discards it so the early return yields undefined.
     if (j === undefined) return void missing.push(e);
     const diffs = diffsOf(e, read.actions[j]);
     if (diffs.length)

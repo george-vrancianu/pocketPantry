@@ -49,4 +49,5 @@ async function bootstrap() {
   Logger.log(`API listening on port ${port} (all interfaces)`, 'Bootstrap');
 }
 
+// Top-level entry point: bootstrap handles its own lifecycle, nothing to await at module scope.
 void bootstrap();
