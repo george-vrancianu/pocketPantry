@@ -8,7 +8,6 @@ Orchestrate the specs the user names. The top level (this session) and every orc
 
 ## The workflow (the user's words, the source of truth)
 
-
 > Orchestrate the implementation of the following specs: … Rules: For each spec - spawn a opus subagent to orchestrate the implementation of the tickets in that spec on it's own worktree. For each ticket (with /implement-spec skill) spawn an opus subagent that will orchestrate the implementation of the spec, that will spawn a sonnet subagent to implement - opus review, then loop fixes until reviewer satisfied. If original implementer is beyond 150K, spawn new sonnet subagent to fix. Final PR from implementation branch should follow the same fixes loop - opus reviews and sonnet fixes. Once PR is reviewed and reviewer satisfied, merge PR and update tickets. Note: when WSL consumes over 30GB of memory, it crashes and the agents are stopped. You can run the tickets in parallel as long as they don't heavily conflict each other and does not bust the memory. When done: pull latest changes into main, do migration if necessary, make sure dev server with tunnel is running, present a summary, a health status (how well/easy the agents worked, if had conflicts, where and why context windows got over 150K) and when agents ask for follow-up ticket, don't post them but present them at the end for my review. Orchestrators do not write code, only manage
 
 ## Roles
@@ -35,17 +34,16 @@ Link these in briefs instead of restating them. Each is used if present; if one 
 - `docs/agents/issue-tracker.md`: working `gh` commands. Some write commands there (label POST/DELETE, close PATCH, assignees POST, `gh issue create`, `gh issue comment`, `gh pr comment`, `gh pr close`) were syntax-checked but not run: verify on first use.
 - `docs/agents/codebase-map.md`: workspaces, commands, gotchas.
 - `CODING_STANDARDS.md`: what the Standards review checks.
-- `docs/agents/worktrees-and-migrations.md` and `scripts/worktree.sh`: create and remove agent worktrees (`scripts/worktree.sh <name> [base]`; `--remove <name>`); without the script use `git worktree add .claude/worktrees/<name> -b <name> origin/main` and `npm ci`.
+- `docs/agents/worktrees-and-migrations.md` and `scripts/worktree.sh`: create and remove agent worktrees (`scripts/worktree.sh <name> [base]`; `--remove <name>`); without the script use `git worktree add .claude/worktrees/<name> -b <name> origin/main`, copy the `.env` files from the main checkout (read-only copy: `.env`, `.env.local`, and the same two names under `apps/api/` and `apps/web/`), and run `npm ci`.
 
 ## Gotchas
 
-- Plain `gh issue view N` and `gh pr edit` fail with a Projects (classic) deprecation error: use `gh issue view N --json ... --jq` and `gh api -X PATCH repos/<owner>/<repo>/pulls/N -f body=...`.
-- Never test GitHub write commands against real issues or PRs. A subagent once blanked a merged PR's body by reading the body file from the wrong directory. Before any body PATCH, `test -s <body-file>` with an absolute path.
+- Plain `gh issue view N` and `gh pr edit` fail (Projects classic deprecation); use the working commands in `docs/agents/issue-tracker.md`.
+- Never test GitHub write commands against real issues or PRs. A subagent once blanked a merged PR's body by reading the body file from the wrong directory.
 - web and ui lint with `oxlint src`; api uses eslint.
 - vitest: targeted files, `--pool=forks --maxWorkers=2`. API integration tests: `--runInBand`. Flaky-under-load tests are rerun alone before counting as a regression.
 - Each worktree needs its own `npm ci`.
-- Migrations come from drizzle-kit in `apps/api/drizzle`; if main moved, regenerate the migration on top of main. Renumber an ADR if its number is taken.
-- Never use `pkill -f` (it can kill the agent's own shell).
+- Migrations come from drizzle-kit in `apps/api/drizzle`; if main moved, regenerate the migration on top of main. Renumber an ADR if its number is taken. After the merger merges a branch that adds a migration it runs `npm run check:migrations` and renumbers the newer migration on failure (see `docs/agents/worktrees-and-migrations.md`).
 
 ## Context hygiene
 

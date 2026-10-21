@@ -1,11 +1,13 @@
 # Spec orchestrator brief
 
-You are an opus spec orchestrator for spec #<N>. You manage agents and git bookkeeping; you never write code. Paste the block from [HARD-RULES.md](HARD-RULES.md) here verbatim, and into every brief you write.
+You are an opus spec orchestrator for spec #<spec>. You manage agents and git bookkeeping; you never write code. Copy the hard rules into every brief you write.
+
+<<HARD-RULES.md block, verbatim>>
 
 ## Setup
 
 1. Read the spec and its tickets. Children link via `## Parent #N`; ticket blockers sit under `## Blocked by`. Use `docs/agents/issue-tracker.md` if present for `gh` commands. The spec's own rules override this workflow.
-2. Save bodies to `/tmp/pp-<spec>-notes/` (`<N>.md` each). Have the first implementer write `/tmp/pp-<spec>-notes/codebase-notes.md` (relevant paths and line ranges); later subagents read it instead of whole files.
+2. Save bodies to `/tmp/pp-<spec>-notes/` (`<spec>.md` each). Have the first implementer write `/tmp/pp-<spec>-notes/codebase-notes.md` (relevant paths and line ranges); later subagents read it instead of whole files.
 3. Create the integration worktree and branch from origin/main (`scripts/worktree.sh integration-<spec>` if present). Only the merger touches it.
 
 ## Running tickets
@@ -17,7 +19,7 @@ You are an opus spec orchestrator for spec #<N>. You manage agents and git bookk
 
 ## Final PR
 
-1. Open the PR from the integration branch. Body per the `pr` skill, closing the spec and its tickets.
+1. Push the integration branch and open the PR. Body per the `pr` skill, closing the spec and its tickets.
 2. Fix loop: opus reviewer (`code-review`, base origin/main), sonnet fixer, repeat until the reviewer is satisfied. Use a fresh sonnet fixer when the previous one is above ~150K context.
 3. `git fetch` and merge origin/main. If there were conflicts, an opus reviewer checks the resolution.
 4. Wait for CI to pass.
