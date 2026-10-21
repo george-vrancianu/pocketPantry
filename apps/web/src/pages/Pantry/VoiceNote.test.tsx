@@ -1,6 +1,14 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  mic,
+  recording,
+  resetVoiceEnvironment,
+  stubVoiceFetch,
+  voiceAction,
+  voiceIngredient as ingredient,
+} from '../../test/voice';
 import { resetRowFlash } from '../../lib/rowFlash';
 import { resetVoiceNote, voiceNote } from '../../lib/voiceNoteStore';
 import {
@@ -9,26 +17,7 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
-import {
-  fakeSession,
-  recording,
-  voiceAction,
-  voiceIngredient as ingredient,
-} from '../../test/voice';
 import { PantryPage } from './PantryPage';
-
-// jsdom has no getUserMedia or MediaRecorder: the microphone module is the seam.
-const mic = vi.hoisted(() => ({
-  start: vi.fn(),
-  permission: vi.fn(async () => 'granted'),
-}));
-vi.mock('../../lib/microphone', () => ({
-  startRecording: mic.start,
-  permissionState: mic.permission,
-  requestPermission: vi.fn(async () => undefined),
-  watchPermission: () => () => {},
-  MicrophoneError: class MicrophoneError extends Error {},
-}));
 
 const yogurt = ingredient('ing-yogurt', 'Yogurt');
 const rice = ingredient('ing-rice', 'Rice');
@@ -65,7 +54,6 @@ describe('Voice Notes on the Pantry page', () => {
   ) {
     applied = [];
     pantryFetches = 0;
-    const sent: FormData[] = [];
     const { fetchMock } = stubApi({
       'GET /api/pantry/recently-stocked': () =>
         Response.json({ ingredients: [] }),
@@ -83,17 +71,14 @@ describe('Voice Notes on the Pantry page', () => {
         ),
       'POST /api/voice/apply': () => apply(),
     });
-    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
-      if (init?.body instanceof FormData) sent.push(init.body);
+    return stubVoiceFetch(fetchMock, (input, init) => {
       if (
         String(input).endsWith('/voice/apply') &&
         typeof init?.body === 'string'
       ) {
         applied.push(JSON.parse(init.body) as Record<string, unknown>);
       }
-      return fetchMock(input, init);
     });
-    return { sent };
   }
 
   async function openReview() {
@@ -113,10 +98,8 @@ describe('Voice Notes on the Pantry page', () => {
     // `inDays` and the app both read today: pin it so the dates do not depend on the day the suite runs.
     vi.setSystemTime(new Date(2026, 9, 19, 12));
     resetVoiceNote();
-    mic.permission.mockResolvedValue('granted');
+    resetVoiceEnvironment();
     resetRowFlash();
-    mic.start.mockReset();
-    mic.start.mockImplementation(() => Promise.resolve(fakeSession()));
   });
   afterEach(() => {
     vi.useRealTimers();
