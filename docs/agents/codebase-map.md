@@ -4,15 +4,15 @@ npm workspaces monorepo (Node >= 24, see `.nvmrc`). Run `npm ci` once per worktr
 
 ## Workspaces
 
-| Path | What |
-| --- | --- |
-| `apps/api` | NestJS on Fastify, Drizzle ORM, Postgres |
-| `apps/web` | React + Vite + react-i18next, TanStack Query |
+| Path          | What                                                             |
+| ------------- | ---------------------------------------------------------------- |
+| `apps/api`    | NestJS on Fastify, Drizzle ORM, Postgres                         |
+| `apps/web`    | React + Vite + react-i18next, TanStack Query                     |
 | `packages/ui` | Design system on MUI, Storybook, imported as `@pocket-pantry/ui` |
 
 Which linter each workspace uses: `CODING_STANDARDS.md`.
 
-Root `package.json` fans out `lint`, `typecheck`, `test`, `build` to every workspace. CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, build against a Postgres service. Pre-commit hooks: `.husky/pre-commit`.
+Root `package.json` fans out `lint`, `typecheck`, `test`, `build` to every workspace. CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, build against a Postgres service. Pre-commit hooks: `.husky/pre-commit` (lint-staged: `lint-staged.config.mjs` lints staged files, then Prettier; then typecheck).
 
 ## API (`apps/api`)
 

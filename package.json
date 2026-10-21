@@ -21,9 +21,6 @@
     "build": "npm run build --workspaces --if-present",
     "prepare": "husky"
   },
-  "lint-staged": {
-    "*.{ts,tsx,mjs,json,yml,yaml}": "prettier --write"
-  },
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",

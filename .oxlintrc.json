@@ -1,0 +1,65 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["unicorn", "oxc", "typescript", "react", "jsx-a11y"],
+  "categories": { "correctness": "error" },
+  "rules": {
+    // Off: the rule wants role="group"/"checkbox"/"progressbar"/... swapped for fieldset/input/progress
+    // across ~105 elements (SwipeRow, SegmentedControl, MUI Box wrappers). That changes markup, styling
+    // and screen reader output, so it needs a design decision, not a lint sweep.
+    "jsx-a11y/prefer-tag-over-role": "off",
+    // Off: the autofocus calls are deliberate (sheets and dialogs move focus to their first field on open);
+    // removing them would change Member-visible focus behaviour.
+    "jsx-a11y/no-autofocus": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "setTimeout",
+            "message": "No real waits in tests. Use vi.useFakeTimers(), waitFor, findBy*, or await the real promise."
+          },
+          {
+            "name": "setInterval",
+            "message": "No real waits in tests. Use vi.useFakeTimers(), waitFor, findBy*, or await the real promise."
+          }
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "window",
+            "property": "setTimeout",
+            "message": "No real waits in tests. Use vi.useFakeTimers(), waitFor, findBy*, or await the real promise."
+          },
+          {
+            "object": "window",
+            "property": "setInterval",
+            "message": "No real waits in tests. Use vi.useFakeTimers(), waitFor, findBy*, or await the real promise."
+          },
+          {
+            "object": "globalThis",
+            "property": "setTimeout",
+            "message": "No real waits in tests. Use vi.useFakeTimers(), waitFor, findBy*, or await the real promise."
+          },
+          {
+            "object": "globalThis",
+            "property": "setInterval",
+            "message": "No real waits in tests. Use vi.useFakeTimers(), waitFor, findBy*, or await the real promise."
+          },
+          {
+            "object": "self",
+            "property": "setTimeout",
+            "message": "No real waits in tests. Use vi.useFakeTimers(), waitFor, findBy*, or await the real promise."
+          },
+          {
+            "object": "self",
+            "property": "setInterval",
+            "message": "No real waits in tests. Use vi.useFakeTimers(), waitFor, findBy*, or await the real promise."
+          }
+        ]
+      }
+    }
+  ]
+}
