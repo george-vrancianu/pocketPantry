@@ -1,0 +1,51 @@
+---
+name: orchestrate-specs
+description: "Orchestrate the implementation of one or more specs end to end: a spec orchestrator per spec, a ticket orchestrator per ticket, then final PR, merge and an end-of-run report."
+disable-model-invocation: true
+---
+
+Orchestrate the specs the user names. The top level (this session) and every orchestrator below it manage agents and git bookkeeping; orchestrators never write code.
+
+## The workflow (the user's words, the source of truth)
+
+
+
+## Roles
+
+Top level (this session) -> one opus spec orchestrator per spec, in the background -> one opus ticket orchestrator per ticket -> sonnet implementer (uses `tdd`, or skips it for docs-only work), opus reviewer (uses `code-review`), sonnet fixer, sonnet merger.
+
+Launch agents with the Agent tool, `general-purpose`, setting `model` explicitly.
+
+## Hard rules
+
+[HARD-RULES.md](HARD-RULES.md) holds the hard-rules block. Copy it verbatim into every brief at every level (spec orchestrator, ticket orchestrator, implementer, reviewer, fixer, merger), and point each brief at the notes directory. A brief is done when the block is in it character for character.
+
+## Steps
+
+1. Top level: resolve each spec number, check `free -g`, then spawn one spec orchestrator per spec in the background with the brief from [SPEC-ORCHESTRATOR.md](SPEC-ORCHESTRATOR.md). Specs run in parallel only if they won't heavily conflict.
+2. Each spec orchestrator spawns ticket orchestrators from [TICKET-ORCHESTRATOR.md](TICKET-ORCHESTRATOR.md) and runs the final PR flow in SPEC-ORCHESTRATOR.md.
+3. Wait for the spec orchestrators' hand-backs. Follow-up tickets that agents propose are collected, never posted.
+4. Run the end-of-run steps in [END-OF-RUN.md](END-OF-RUN.md), then present the report. Done when every spec has a merged PR (or a stated reason it has none) and the report is presented.
+
+## Repo docs
+
+Link these in briefs instead of restating them. Each is used if present; if one is missing, fall back to `gh --help`, `ls`, and reading `package.json` scripts.
+
+- `docs/agents/issue-tracker.md`: working `gh` commands. Some write commands there (label POST/DELETE, close PATCH, assignees POST, `gh issue create`, `gh issue comment`, `gh pr comment`, `gh pr close`) were syntax-checked but not run: verify on first use.
+- `docs/agents/codebase-map.md`: workspaces, commands, gotchas.
+- `CODING_STANDARDS.md`: what the Standards review checks.
+- `docs/agents/worktrees-and-migrations.md` and `scripts/worktree.sh`: create and remove agent worktrees (`scripts/worktree.sh <name> [base]`; `--remove <name>`); without the script use `git worktree add .claude/worktrees/<name> -b <name> origin/main` and `npm ci`.
+
+## Gotchas
+
+- Plain `gh issue view N` and `gh pr edit` fail with a Projects (classic) deprecation error: use `gh issue view N --json ... --jq` and `gh api -X PATCH repos/<owner>/<repo>/pulls/N -f body=...`.
+- Never test GitHub write commands against real issues or PRs. A subagent once blanked a merged PR's body by reading the body file from the wrong directory. Before any body PATCH, `test -s <body-file>` with an absolute path.
+- web and ui lint with `oxlint src`; api uses eslint.
+- vitest: targeted files, `--pool=forks --maxWorkers=2`. API integration tests: `--runInBand`. Flaky-under-load tests are rerun alone before counting as a regression.
+- Each worktree needs its own `npm ci`.
+- Migrations come from drizzle-kit in `apps/api/drizzle`; if main moved, regenerate the migration on top of main. Renumber an ADR if its number is taken.
+- Never use `pkill -f` (it can kill the agent's own shell).
+
+## Context hygiene
+
+Read by line range or grep, run `git diff --stat` before full diffs, and reuse the notes directory `/tmp/pp-<spec>-notes/` rather than re-reading files.
