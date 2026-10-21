@@ -17,6 +17,7 @@ import { usePressGesture } from '../../lib/usePressGesture';
 import { LanguageMenu } from './LanguageMenu';
 import { useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
+import { useElapsedMs } from './useElapsed';
 import {
   abovePill,
   aboveButton,
@@ -24,7 +25,7 @@ import {
   buttonBottom,
   VOICE_LAYER,
 } from '../../lib/voicePlacement';
-import { isPillUp, useVoiceNoteState } from '../../lib/voiceNoteStore';
+import { isPillUp, useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 
 type Voice = ReturnType<typeof useVoiceNote>;
@@ -43,9 +44,8 @@ export function VoiceButton({
   const { t } = useTranslation('voice');
   const active = voice.recording || voice.pressing;
   // While the status pill is up (reading, a failure) the tip must not cover its buttons.
-  const { phase } = useVoiceNoteState();
+  const { phase, startedAt } = useVoiceNoteState();
   const pillUp = isPillUp(phase);
-  const progress = Math.min(1, voice.elapsedMs / MAX_VOICE_NOTE_MS);
 
   const host = useVoiceHost();
   const destinationId = useId();
@@ -100,10 +100,10 @@ export function VoiceButton({
       {active ? (
         <ListeningCard
           starting={!voice.recording}
-          elapsedMs={voice.elapsedMs}
+          startedAt={startedAt}
           target={target}
           scanLanguage={voice.scanLanguage}
-          level={voice.level}
+          level={voiceNote.level}
           armed={armed}
         />
       ) : null}
@@ -175,22 +175,7 @@ export function VoiceButton({
             },
           }}
         >
-          {voice.recording ? (
-            <Box
-              aria-hidden
-              data-testid="progress-ring"
-              sx={{
-                position: 'absolute',
-                inset: -7,
-                borderRadius: '50%',
-                pointerEvents: 'none',
-                background: `conic-gradient(${color.rec} 0 ${progress * 360}deg, color-mix(in srgb, ${color.rec} 18%, transparent) 0)`,
-                mask: 'radial-gradient(farthest-side, transparent calc(100% - 4px), currentColor calc(100% - 3px))',
-                WebkitMask:
-                  'radial-gradient(farthest-side, transparent calc(100% - 4px), currentColor calc(100% - 3px))',
-              }}
-            />
-          ) : null}
+          {voice.recording ? <ProgressRing startedAt={startedAt} /> : null}
           {voice.mic.blocked ? <MicOffIcon size={27} /> : <MicIcon size={27} />}
           {voice.kept ? (
             <Box
@@ -214,5 +199,26 @@ export function VoiceButton({
       </Box>
     </>,
     host,
+  );
+}
+
+/** The ring around the button that fills over the 60 seconds, on its own clock. */
+function ProgressRing({ startedAt }: { startedAt?: number }) {
+  const progress = Math.min(1, useElapsedMs(startedAt) / MAX_VOICE_NOTE_MS);
+  return (
+    <Box
+      aria-hidden
+      data-testid="progress-ring"
+      sx={{
+        position: 'absolute',
+        inset: -7,
+        borderRadius: '50%',
+        pointerEvents: 'none',
+        background: `conic-gradient(${color.rec} 0 ${progress * 360}deg, color-mix(in srgb, ${color.rec} 18%, transparent) 0)`,
+        mask: 'radial-gradient(farthest-side, transparent calc(100% - 4px), currentColor calc(100% - 3px))',
+        WebkitMask:
+          'radial-gradient(farthest-side, transparent calc(100% - 4px), currentColor calc(100% - 3px))',
+      }}
+    />
   );
 }

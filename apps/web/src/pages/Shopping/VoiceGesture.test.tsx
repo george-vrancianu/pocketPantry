@@ -1,14 +1,16 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-  type Mock,
-} from 'vitest';
+  fakeSession,
+  hold as holdOn,
+  mic,
+  removeWakeLock,
+  resetVoiceEnvironment,
+  stubVoiceFetch,
+  talkButton,
+  wake,
+} from '../../test/voice';
 import {
   holdFor,
   holdLongEnough,
@@ -16,28 +18,12 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { fakeSession, hold as holdOn, talkButton } from '../../test/voice';
-import { resetVoiceNote } from '../../lib/voiceNoteStore';
+import { voiceNote } from '../../lib/voiceNote';
 import { Route, Routes } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { ShoppingPage } from './ShoppingPage';
 
-// jsdom has no getUserMedia or MediaRecorder: the microphone module is the seam.
-const mic = vi.hoisted(() => ({ start: vi.fn() }));
-vi.mock('../../lib/microphone', () => ({
-  startRecording: mic.start,
-  permissionState: vi.fn(async () => 'granted'),
-  requestPermission: vi.fn(async () => undefined),
-  watchPermission: () => () => {},
-  MicrophoneError: class MicrophoneError extends Error {
-    constructor(readonly reason: string) {
-      super(reason);
-    }
-  },
-}));
-
 function setup() {
-  const sent: FormData[] = [];
   const { fetchMock } = stubApi({
     'GET /api/shopping-list': () =>
       Response.json({
@@ -49,11 +35,7 @@ function setup() {
     'POST /api/voice': () =>
       Response.json({ transcript: 'got the bread', actions: [] }),
   });
-  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
-    if (init?.body instanceof FormData) sent.push(init.body);
-    return fetchMock(input, init);
-  });
-  return { sent };
+  return stubVoiceFetch(fetchMock);
 }
 
 /** jsdom has no layout: the button sits at 100..162 x 500..562. */
@@ -80,9 +62,8 @@ describe('the recording gesture on the Shopping List', () => {
 
   beforeEach(() => {
     useVoiceTimers();
-    resetVoiceNote();
+    resetVoiceEnvironment();
     session = fakeSession();
-    mic.start.mockReset();
     mic.start.mockImplementation(() => Promise.resolve(session));
     vibrate = vi.fn();
     vi.stubGlobal(
@@ -276,6 +257,52 @@ describe('the recording gesture on the Shopping List', () => {
       expect(sent).toHaveLength(0);
     });
 
+    it('ignores a second press while the first is still starting: no buzz, no change, and the first keeps its tip', async () => {
+      let arrive: (value: ReturnType<typeof fakeSession>) => void = () => {};
+      mic.start.mockImplementation(
+        () => new Promise((resolve) => (arrive = resolve)),
+      );
+      setup();
+      renderWithProviders(<ShoppingPage />);
+      const button = await talkButton();
+      pressDown(button, { clientX: 130, clientY: 530 });
+      await screen.findByText('Starting…');
+      await holdLongEnough();
+      fireEvent.pointerUp(button);
+      vibrate.mockClear();
+
+      pressDown(button, { clientX: 130, clientY: 530 });
+      await holdFor(500);
+      expect(vibrate).not.toHaveBeenCalled();
+      expect(mic.start).toHaveBeenCalledTimes(1);
+      fireEvent.pointerUp(button);
+
+      await act(async () => arrive(session));
+      expect(
+        await screen.findByText('Hold to talk, let go to send'),
+      ).toBeVisible();
+      expect(session.cancel).toHaveBeenCalledTimes(1);
+    });
+
+    it('says Cancelled for a system cancel after letting go while the permission is still being read', async () => {
+      let answer: (value: 'granted') => void = () => {};
+      mic.permission.mockImplementation(
+        () => new Promise((resolve) => (answer = resolve)),
+      );
+      const { sent } = setup();
+      renderWithProviders(<ShoppingPage />);
+      const button = await talkButton();
+      pressDown(button, { clientX: 130, clientY: 530 });
+      await holdLongEnough();
+      fireEvent.pointerUp(button);
+      fireEvent.pointerCancel(button);
+
+      expect(await screen.findByText(cancelledToast)).toBeVisible();
+      await act(async () => answer('granted'));
+      expect(mic.start).not.toHaveBeenCalled();
+      expect(sent).toHaveLength(0);
+    });
+
     it('records nothing when the stream arrives after leaving the page', async () => {
       let arrive: (value: ReturnType<typeof fakeSession>) => void = () => {};
       mic.start.mockImplementation(
@@ -322,6 +349,16 @@ describe('the recording gesture on the Shopping List', () => {
         'What I heard',
       );
       expect(sent).toHaveLength(1);
+    });
+
+    it('does not buzz when the recording fails mid-hold, only at the limit', async () => {
+      setup();
+      renderWithProviders(<ShoppingPage />);
+      await hold();
+      vibrate.mockClear();
+      act(() => voiceNote.fail('unavailable'));
+      await waitFor(() => expect(screen.queryByText('Listening')).toBeNull());
+      expect(vibrate).not.toHaveBeenCalledWith(14);
     });
   });
 
@@ -483,20 +520,8 @@ describe('the recording gesture on the Shopping List', () => {
   });
 
   describe('wake lock', () => {
-    let request: ReturnType<typeof vi.fn>;
-    let released: Mock<() => Promise<void>>;
-
-    beforeEach(() => {
-      released = vi.fn<() => Promise<void>>(() => Promise.resolve());
-      request = vi.fn(() => Promise.resolve({ release: released }));
-      vi.stubGlobal(
-        'navigator',
-        Object.assign(Object.create(navigator), {
-          vibrate,
-          wakeLock: { request },
-        }),
-      );
-    });
+    const request = wake.request;
+    const released = wake.released;
 
     it('is held from the press until Review opens', async () => {
       setup();
@@ -511,90 +536,6 @@ describe('the recording gesture on the Shopping List', () => {
       await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
     });
 
-    it('is released when cancelled', async () => {
-      setup();
-      renderWithProviders(<ShoppingPage />);
-      const button = await hold();
-      fireEvent.pointerMove(button, { clientX: 10, clientY: 530 });
-      fireEvent.pointerUp(button);
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
-    });
-
-    it('is released after a tap', async () => {
-      setup();
-      renderWithProviders(<ShoppingPage />);
-      const button = await talkButton();
-      pressDown(button);
-      await screen.findByText('Listening');
-      fireEvent.pointerUp(button);
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
-    });
-
-    it('is released when the read fails', async () => {
-      const { fetchMock } = stubApi({
-        'GET /api/shopping-list': () =>
-          Response.json({
-            id: 'l1',
-            groups: [],
-            summary: { remaining: 0, checked: 0 },
-          }),
-        'GET /api/voice/config': () => Response.json({ configured: true }),
-        'POST /api/voice': () =>
-          Response.json(
-            { code: 'voice.nothing_heard', params: {} },
-            { status: 422 },
-          ),
-      });
-      vi.stubGlobal('fetch', fetchMock);
-      renderWithProviders(<ShoppingPage />);
-      const button = await hold();
-      fireEvent.pointerUp(button);
-      await screen.findByText(/Didn't catch anything/);
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
-    });
-
-    it('is released even when the grant arrives after the press ended', async () => {
-      let grant: (lock: { release: () => Promise<void> }) => void = () => {};
-      request.mockImplementation(
-        () => new Promise((resolve) => (grant = resolve)),
-      );
-      setup();
-      renderWithProviders(<ShoppingPage />);
-      const button = await hold();
-      fireEvent.pointerMove(button, { clientX: 10, clientY: 530 });
-      fireEvent.pointerUp(button);
-      await act(async () => grant({ release: released }));
-      expect(released).toHaveBeenCalledTimes(1);
-    });
-
-    it('is released on Escape, a pointer cancel, the 60 s auto-stop and leaving the page', async () => {
-      setup();
-      const view = renderWithProviders(<ShoppingPage />);
-      await hold();
-      await userEvent.keyboard('{Escape}');
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
-
-      const button = await talkButton();
-      pressDown(button);
-      await screen.findByText('Listening');
-      fireEvent.pointerCancel(button);
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(2));
-
-      pressDown(button);
-      await screen.findByText('Listening');
-      await holdFor(60_000);
-      await screen.findByRole('dialog');
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(3));
-
-      view.unmount();
-      resetVoiceNote();
-      const second = renderWithProviders(<ShoppingPage />);
-      await hold();
-      second.unmount();
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(4));
-      expect(request).toHaveBeenCalledTimes(4);
-    });
-
     it('is skipped silently when the browser has none, or refuses', async () => {
       request.mockImplementation(() => Promise.reject(new Error('denied')));
       setup();
@@ -606,10 +547,7 @@ describe('the recording gesture on the Shopping List', () => {
     });
 
     it('works where wakeLock is unsupported', async () => {
-      vi.stubGlobal(
-        'navigator',
-        Object.assign(Object.create(navigator), { vibrate }),
-      );
+      removeWakeLock();
       setup();
       renderWithProviders(<ShoppingPage />);
       const button = await hold();

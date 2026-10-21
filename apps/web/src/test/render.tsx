@@ -4,6 +4,7 @@ import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { MemoryRouter, type InitialEntry } from 'react-router-dom';
+import { VoiceNotices } from '../components/voice/VoiceNotices';
 import { createI18n, type Locale } from '../i18n';
 import { RouterLink } from '../lib/RouterLink';
 
@@ -22,7 +23,10 @@ export function renderWithProviders(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
         <PocketPantryUiProvider linkComponent={RouterLink}>
-          <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+          <MemoryRouter initialEntries={[route]}>
+            <VoiceNotices />
+            {ui}
+          </MemoryRouter>
         </PocketPantryUiProvider>
       </QueryClientProvider>
     </I18nextProvider>,

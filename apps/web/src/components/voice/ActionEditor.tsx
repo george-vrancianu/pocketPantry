@@ -29,7 +29,7 @@ import {
 } from '../../lib/pantry';
 import { useToday } from '../../lib/useToday';
 import type { VoiceBatchRow, VoiceReviewAction } from '../../lib/voice';
-import { voiceNote } from '../../lib/voiceNoteStore';
+import { voiceNote } from '../../lib/voiceNote';
 import {
   canChangeIngredient,
   displayName,

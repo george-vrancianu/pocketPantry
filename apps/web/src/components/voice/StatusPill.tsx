@@ -13,9 +13,10 @@ import {
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { translateErrorCode } from '../../i18n/translateApiError';
 import { formatClock, NOTHING_HEARD_MS } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
-import { useVoiceNoteState } from '../../lib/voiceNoteStore';
+import { useVoiceNoteState } from '../../lib/voiceNote';
 import { useVoiceHost } from './VoiceHost';
 import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
 import { enter } from './enter';
@@ -46,9 +47,8 @@ type Look = {
  * the Voice Cap. The page stays usable underneath.
  */
 export function StatusPill({ voice }: { voice: Voice }) {
-  const { t } = useTranslation('voice');
-  const { phase, error, errorMessage, recording, voiceCap } =
-    useVoiceNoteState();
+  const { t } = useTranslation(['voice', 'errors']);
+  const { phase, error, rawError, recording, voiceCap } = useVoiceNoteState();
   const host = useVoiceHost();
   const nothing = phase === 'failed' && error === 'nothingHeard';
 
@@ -131,7 +131,12 @@ export function StatusPill({ voice }: { voice: Voice }) {
     });
     switch (error) {
       case 'failed':
-        return failed(errorMessage ?? t('send.failedHint'), voice.kept);
+        return failed(
+          rawError
+            ? translateErrorCode(t, rawError.code, rawError.params)
+            : t('send.failedHint'),
+          voice.kept,
+        );
       case 'unavailable':
         // This browser cannot record at all: nothing to retry, only to close.
         return {

@@ -2,7 +2,7 @@ import { Box, CheckIcon, radius, shadow, useToast } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SCAN_LANGUAGES, type ScanLanguage } from '../../i18n/resources';
-import { isPillUp, useVoiceNoteState } from '../../lib/voiceNoteStore';
+import { isPillUp, useVoiceNoteState } from '../../lib/voiceNote';
 import {
   buttonBottom,
   voiceToast,

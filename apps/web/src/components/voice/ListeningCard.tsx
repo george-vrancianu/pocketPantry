@@ -14,6 +14,7 @@ import type { VoiceList } from '../../lib/voice';
 import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
 import { formatClock, MAX_VOICE_NOTE_MS } from '../../lib/voice';
 import { enter } from './enter';
+import { useElapsedMs } from './useElapsed';
 
 /** From here the time turns amber and counts down, and "10 seconds left" is announced. */
 const SOON_MS = MAX_VOICE_NOTE_MS - 10_000;
@@ -33,7 +34,8 @@ const blink = {
 type Props = {
   /** The pointer is down but the stream is not live yet. */
   starting: boolean;
-  elapsedMs: number;
+  /** When the microphone went live; the card keeps its own clock from it. */
+  startedAt?: number;
   target: VoiceList;
   scanLanguage: ScanLanguage;
   /** The current input loudness, 0 to 1. */
@@ -45,13 +47,14 @@ type Props = {
 /** The card above the button while a Voice Note is being recorded. */
 export function ListeningCard({
   starting,
-  elapsedMs,
+  startedAt,
   target,
   scanLanguage,
   level,
   armed = false,
 }: Props) {
   const { t } = useTranslation('voice');
+  const elapsedMs = useElapsedMs(startedAt);
   const [bars, setBars] = useState<number[]>(() => Array(BARS).fill(0));
 
   // Newest on the right: the meter scrolls left.
