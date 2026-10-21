@@ -18,7 +18,7 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { resetVoiceNote } from '../../lib/voiceNoteStore';
+import { voiceNote } from '../../lib/voiceNote';
 import { Route, Routes } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { ShoppingPage } from './ShoppingPage';
@@ -62,7 +62,7 @@ describe('the recording gesture on the Shopping List', () => {
 
   beforeEach(() => {
     useVoiceTimers();
-    resetVoiceNote();
+    voiceNote.reset();
     resetVoiceEnvironment();
     session = fakeSession();
     mic.start.mockImplementation(() => Promise.resolve(session));
@@ -557,7 +557,7 @@ describe('the recording gesture on the Shopping List', () => {
       await waitFor(() => expect(released).toHaveBeenCalledTimes(3));
 
       view.unmount();
-      resetVoiceNote();
+      voiceNote.reset();
       const second = renderWithProviders(<ShoppingPage />);
       await hold();
       second.unmount();

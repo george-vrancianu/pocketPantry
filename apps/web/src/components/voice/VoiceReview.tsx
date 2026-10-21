@@ -44,7 +44,7 @@ import {
   type VoiceReviewAction,
 } from '../../lib/voice';
 import { flashRows } from '../../lib/rowFlash';
-import { useVoiceNoteState, voiceNote } from '../../lib/voiceNoteStore';
+import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 
 /** How long the Apply result stays: long enough to read, no Undo (ADR 0017). */
 const APPLY_TOAST_MS = 5200;

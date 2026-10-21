@@ -16,7 +16,7 @@ import { soonBorder } from './soonBorder';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { VoiceReviewAction } from '../../lib/voice';
-import { voiceNote } from '../../lib/voiceNoteStore';
+import { voiceNote } from '../../lib/voiceNote';
 import { ActionEditor } from './ActionEditor';
 import {
   blockOf,

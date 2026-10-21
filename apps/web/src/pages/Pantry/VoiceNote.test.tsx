@@ -10,7 +10,7 @@ import {
   voiceIngredient as ingredient,
 } from '../../test/voice';
 import { resetRowFlash } from '../../lib/rowFlash';
-import { resetVoiceNote, voiceNote } from '../../lib/voiceNoteStore';
+import { voiceNote } from '../../lib/voiceNote';
 import {
   holdLongEnough,
   pressDown,
@@ -97,7 +97,7 @@ describe('Voice Notes on the Pantry page', () => {
     useVoiceTimers();
     // `inDays` and the app both read today: pin it so the dates do not depend on the day the suite runs.
     vi.setSystemTime(new Date(2026, 9, 19, 12));
-    resetVoiceNote();
+    voiceNote.reset();
     resetVoiceEnvironment();
     resetRowFlash();
   });

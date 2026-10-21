@@ -24,7 +24,7 @@ import {
   buttonBottom,
   VOICE_LAYER,
 } from '../../lib/voicePlacement';
-import { isPillUp, useVoiceNoteState } from '../../lib/voiceNoteStore';
+import { isPillUp, useVoiceNoteState } from '../../lib/voiceNote';
 import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 
 type Voice = ReturnType<typeof useVoiceNote>;
