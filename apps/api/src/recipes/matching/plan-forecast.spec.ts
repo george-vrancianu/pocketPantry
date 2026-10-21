@@ -451,12 +451,32 @@ describe('forecastPlan: the Shopping List amount', () => {
         slot(0, 'dinner', 'r1', 1),
         slot(1, 'dinner', 'r1', 1),
         slot(2, 'dinner', 'r1', 1),
-      ].map((s) => ({ ...s })),
+      ],
       shoppingList: [
         { ingredientId: FLOUR, name: null, quantity: 1, unit: 'kg' },
       ],
     });
     expect(statuses(result)).toEqual(['onList', 'onList', 'onList']);
+  });
+
+  it('spends the rounding tolerance once, not on every later small need', () => {
+    const saffron = recipe([
+      line({ ingredientId: FLOUR, quantity: 0.8, unit: 'g' }),
+    ]);
+    const result = forecast({
+      recipes: { r1: saffron },
+      slots: [0, 1, 2, 3, 4].map((d) => slot(d, 'dinner')),
+      shoppingList: [
+        { ingredientId: FLOUR, name: null, quantity: 0.1, unit: 'g' },
+      ],
+    });
+    expect(statuses(result)).toEqual([
+      'onList',
+      'short',
+      'short',
+      'short',
+      'short',
+    ]);
   });
 
   it('makes Add missing add only the uncovered part', () => {

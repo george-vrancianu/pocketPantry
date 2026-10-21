@@ -245,12 +245,11 @@ function againstList(
     left === undefined
   )
     return { onList: true };
-  const used = Math.min(left, quantity);
-  pool.remaining.set(dimension, left - used);
-  const uncovered = quantity - used;
-  return uncovered <= LIST_TOLERANCE[dimension]
+  pool.remaining.set(dimension, Math.max(left - quantity, 0));
+  // The tolerance is spent once per pool: only while some list amount is left.
+  return left > EPSILON && quantity - left <= LIST_TOLERANCE[dimension]
     ? { onList: true }
-    : { onList: false, uncovered: roundUp(uncovered) };
+    : { onList: false, uncovered: roundUp(quantity - Math.max(left, 0)) };
 }
 
 /** A Batch's working copy: what is left of it as the slots use it up. */
@@ -490,6 +489,10 @@ export function planTag(slots: readonly { status: SlotStatus }[]): PlanTag {
 
 const amountToAdd = (issue: ForecastIssue) => issue.uncovered ?? issue.quantity;
 
+/** Whether Add missing would put the issue on the list: not uncertain, not on it already. */
+export const isAddable = (issue: { kind: IssueKind; onList: boolean }) =>
+  issue.kind !== 'uncertain' && !issue.onList;
+
 export type MissingItem = {
   ingredientId: string | null;
   /** The Unmatched name as typed; null for an Ingredient. */
@@ -512,7 +515,7 @@ export function missingItems(days: readonly DayForecast[]): MissingItem[] {
     for (const slot of day.slots) {
       if (slot.status === 'unavailable') continue;
       for (const issue of slot.issues) {
-        if (issue.kind === 'uncertain' || issue.onList) continue;
+        if (!isAddable(issue)) continue;
         const key = keyOf(issue);
         const item = items.get(key);
         if (!item) {

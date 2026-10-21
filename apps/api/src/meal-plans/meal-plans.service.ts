@@ -12,6 +12,7 @@ import { lockMemberAndFamily, runLocked } from '../family/family-locks';
 import { fillPlan, randomTieBreaker } from '../recipes/matching/plan-fill';
 import {
   dayStatus,
+  isAddable,
   keyOf,
   planTag,
   type BaseUnit,
@@ -181,8 +182,6 @@ export class MealPlansService {
       through,
     );
     // A day's Add covers that day and the earlier days needing the same Ingredients.
-    const addable = (issue: { kind: string; onList: boolean }) =>
-      issue.kind !== 'uncertain' && !issue.onList;
     const onTheDate =
       body.scope === 'date'
         ? new Set(
@@ -190,7 +189,7 @@ export class MealPlansService {
               .filter((day) => day.date === body.date)
               .flatMap((day) => day.slots)
               .filter((slot) => slot.status !== 'unavailable')
-              .flatMap((slot) => slot.issues.filter(addable).map(keyOf)),
+              .flatMap((slot) => slot.issues.filter(isAddable).map(keyOf)),
           )
         : null;
     const days = forecast.days.map((day) => ({
