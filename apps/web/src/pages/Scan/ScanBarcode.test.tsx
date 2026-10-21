@@ -468,6 +468,7 @@ describe('Barcode on the Scan page', () => {
         Response.json({ code: 'internal', params: {} }, { status: 500 });
       await decode(A);
       await waitFor(() => expect(states()).toEqual(['failed']));
+      expect(screen.getByText('Barcode Lookup failed')).toBeInTheDocument();
 
       answers[A] = () => Response.json(found());
       await user.click(screen.getByRole('button', { name: 'Retry lookup' }));

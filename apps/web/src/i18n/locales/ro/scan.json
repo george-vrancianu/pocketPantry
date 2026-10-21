@@ -65,7 +65,7 @@
   "added_one": "Rezultate adăugate din {{count}} fotografie",
   "added_few": "Rezultate adăugate din {{count}} fotografii",
   "added_other": "Rezultate adăugate din {{count}} de fotografii",
-  "limit_one": "O sesiune de scanare ține cel mult {{count}} scanare sau căutare de cod de bare. Adaugă sau renunță mai întâi la acestea.",
+  "limit_one": "O sesiune de scanare ține cel mult {{count}} scanare sau căutare de cod de bare. Adaugă sau renunță mai întâi la aceasta.",
   "limit_few": "O sesiune de scanare ține cel mult {{count}} scanări și căutări de cod de bare în total. Adaugă sau renunță mai întâi la acestea.",
   "limit_other": "O sesiune de scanare ține cel mult {{count}} de scanări și căutări de cod de bare în total. Adaugă sau renunță mai întâi la acestea.",
   "discardScans_one": "Renunți la {{count}} fotografie?",

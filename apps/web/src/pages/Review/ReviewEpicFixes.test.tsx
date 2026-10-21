@@ -345,22 +345,21 @@ describe('Review overview, epic review fixes', () => {
       );
       expect(screen.queryByTestId('scan-guide')).toBeNull();
       expect(getScanSession().scans.map((scan) => scan.id)).toEqual(['b']);
+      await waitFor(() => expect(cards()[0]).toHaveFocus());
     });
 
-    it('offers Remove, not Retake or Retry, when the failure cannot change', async () => {
-      failBarcode('scan.image_invalid');
+    it('offers Remove next to Retry lookup, never Retake, and stays on Review', async () => {
+      failBarcode('internal');
       renderOverview();
       const card = cards()[0];
       expect(
-        within(card).getByText("Couldn't look up this barcode"),
-      ).toBeInTheDocument();
-      expect(
-        within(card).queryByRole('button', { name: /retry|retake/i }),
+        within(card).queryByRole('button', { name: /^Retake/ }),
       ).toBeNull();
       await userEvent.click(
         within(card).getByRole('button', { name: 'Remove' }),
       );
       expect(getScanSession().scans).toEqual([]);
+      expect(screen.queryByTestId('scan-guide')).toBeNull();
     });
   });
 

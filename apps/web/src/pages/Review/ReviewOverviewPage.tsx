@@ -33,7 +33,6 @@ import { savableLines, useSaveScan } from '../../lib/saveScan';
 import {
   showsErrorCopy,
   canMerge,
-  canRetry,
   dispatchScanSession,
   getScanSession,
   isBarcodeCard,
@@ -167,6 +166,7 @@ export function ReviewOverviewPage() {
     const display = scanDisplayState(scan);
     const isFailed = display === 'failed';
     const isReading = display === 'reading';
+    const barcode = isBarcodeCard(scan);
     // Lines Receipt Scan left out are not saved, so they are not counted or shown.
     const lines: ReviewLine[] = reviewLinesOf(scan).filter(
       (line) => !line.excluded,
@@ -178,7 +178,7 @@ export function ReviewOverviewPage() {
     // A not-found Barcode card's empty line has no name to show yet.
     const firstName = lines.length > 0 ? displayName(lines[0]).trim() : '';
     const result =
-      (scan.mode === 'product' || isBarcodeCard(scan)) && firstName
+      (scan.mode === 'product' || barcode) && firstName
         ? firstName
         : t('overview.items', { count: lines.length });
     return (
@@ -250,11 +250,7 @@ export function ReviewOverviewPage() {
           ) : isFailed ? (
             <>
               <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
-                {t(
-                  isBarcodeCard(scan)
-                    ? 'overview.lookupFailed'
-                    : 'overview.failed',
-                )}
+                {t(barcode ? 'overview.lookupFailed' : 'overview.failed')}
               </Typography>
               {scan.failure === 'cap' ? (
                 <Typography sx={{ fontSize: 13 }}>
@@ -266,7 +262,7 @@ export function ReviewOverviewPage() {
                 </Typography>
               ) : null}
               <Box sx={{ position: 'relative', zIndex: 1, mt: 0.75 }}>
-                {isBarcodeCard(scan) && canRetry(scan) ? (
+                {barcode ? (
                   <Box
                     component="button"
                     type="button"
@@ -274,42 +270,28 @@ export function ReviewOverviewPage() {
                     onClick={() => {
                       dispatchScanSession({ type: 'retry', id: scan.id });
                       readScans(i18n.language);
+                      // The button goes while the lookup runs: keep focus on the card.
+                      setFocusId(scan.id);
                     }}
                     sx={linkButton}
                   >
                     {tScan('session.retryLookup')}
                   </Box>
                 ) : null}
-                {isBarcodeCard(scan) ? (
-                  <Box
-                    component="button"
-                    type="button"
-                    disabled={saving}
-                    onClick={() => {
-                      dispatchScanSession({ type: 'remove', id: scan.id });
-                      // Scans held back by the Scan Cap can go on now.
-                      readScans(i18n.language);
-                    }}
-                    sx={linkButton}
-                  >
-                    {t('overview.removeCard')}
-                  </Box>
-                ) : (
-                  <Box
-                    component="button"
-                    type="button"
-                    disabled={saving}
-                    onClick={() => {
-                      dispatchScanSession({ type: 'remove', id: scan.id });
-                      // Scans held back by the Scan Cap can go on now.
-                      readScans(i18n.language);
-                      navigate('/scan');
-                    }}
-                    sx={linkButton}
-                  >
-                    {t('overview.retake')}
-                  </Box>
-                )}
+                <Box
+                  component="button"
+                  type="button"
+                  disabled={saving}
+                  onClick={() => {
+                    dispatchScanSession({ type: 'remove', id: scan.id });
+                    // Scans held back by the Scan Cap can go on now.
+                    readScans(i18n.language);
+                    if (!barcode) navigate('/scan');
+                  }}
+                  sx={linkButton}
+                >
+                  {t(barcode ? 'overview.removeCard' : 'overview.retake')}
+                </Box>
               </Box>
             </>
           ) : display === 'uncropped' ? (
