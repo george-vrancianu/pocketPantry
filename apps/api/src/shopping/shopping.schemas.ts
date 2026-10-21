@@ -74,7 +74,11 @@ export type ShoppingListView = {
   summary: { remaining: number; checked: number };
 };
 
-/** What a bulk add answers: the list, and the ids of the Shopping Items created or merged into, in request order. */
+/**
+ * What a bulk add answers: the list, the ids of the Shopping Items created or merged into (request order),
+ * and `insertedIds`, only those the add newly inserted: the ones Undo may delete.
+ */
 export type AddedShoppingItemsView = ShoppingListView & {
   createdIds: string[];
+  insertedIds: string[];
 };

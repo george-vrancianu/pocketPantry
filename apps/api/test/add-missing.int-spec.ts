@@ -205,6 +205,26 @@ describe('Add missing for a Meal Plan (integration)', () => {
     expect(await sourcesOf(milkItem!.id)).toEqual([latte]);
   });
 
+  it('returns only the ids of the Shopping Items it inserted, never one already on the list (what Undo deletes)', async () => {
+    const ana = await member('undo');
+    await week(ana);
+    await add(ana, { scope: 'ingredient', ingredientId: eggs }).expect(201);
+    const eggId = byIngredient(await shopping(ana), eggs)!.id;
+
+    // The forecast leaves Ingredients on the list out, so nothing merges here: this guards the ids returned.
+    const res = await add(ana, { scope: 'window' });
+
+    const { createdIds } = res.body as Added;
+    const items = await shopping(ana);
+    expect(createdIds).not.toContain(eggId);
+    expect(createdIds.slice().sort()).toEqual(
+      items
+        .filter((i) => i.id !== eggId)
+        .map((i) => i.id)
+        .sort(),
+    );
+  });
+
   it('keeps counts as counts and leaves amounts under 1000 in g and ml', async () => {
     const ana = await member('units');
     const dish = await recipe([
