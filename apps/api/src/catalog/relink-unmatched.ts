@@ -1,4 +1,5 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { convertQuantity, unitsMerge } from '../recipes/matching/units';
 import { exceedsMaxQuantity } from '../common/quantity';
 import type { Tx } from '../database/database.types';
 import { clearRunningLowOnRestock } from '../pantry/running-low-flags';
@@ -167,12 +168,13 @@ async function relinkShoppingItems(
     )
     .orderBy(shoppingItems.id);
   for (const row of rows) {
-    const [twin] =
+    const candidates =
       row.status === 'active'
         ? await tx
             .select({
               id: shoppingItems.id,
               quantity: shoppingItems.quantity,
+              unit: shoppingItems.unit,
               checked: shoppingItems.checked,
             })
             .from(shoppingItems)
@@ -180,18 +182,29 @@ async function relinkShoppingItems(
               and(
                 eq(shoppingItems.listId, row.listId),
                 eq(shoppingItems.ingredientId, ingredientId),
-                row.unit === null
-                  ? isNull(shoppingItems.unit)
-                  : eq(shoppingItems.unit, row.unit),
               ),
             )
-            .limit(1)
+            .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id))
             .for('update')
         : [];
+    // The same rule as adding: the oldest line with a compatible unit (the same, or g/kg, ml/l).
+    const twin = candidates.find((c) => unitsMerge(c.unit, row.unit));
+    let rowQuantity = row.quantity === null ? null : Number(row.quantity);
+    if (
+      twin &&
+      rowQuantity !== null &&
+      row.unit !== null &&
+      twin.unit !== row.unit
+    ) {
+      // unitsMerge guarantees the same dimension; expressed in the twin's unit.
+      const converted = convertQuantity(rowQuantity, row.unit, twin.unit!);
+      if (converted === null) throw new Error('units do not convert');
+      rowQuantity = Math.round(converted * 1000) / 1000;
+    }
     const merged = twin
       ? sumQuantities(
           twin.quantity === null ? null : Number(twin.quantity),
-          row.quantity === null ? null : Number(row.quantity),
+          rowQuantity,
         )
       : null;
     // A merge past the cap is neither rejected nor clamped: an Admin cannot
