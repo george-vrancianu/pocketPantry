@@ -687,4 +687,57 @@ describe('Voice Notes on the Pantry page', () => {
       ).toHaveFocus(),
     );
   });
+
+  it('flashes the roll-up row of every Location a removal changed', async () => {
+    const stocked = {
+      id: 'r1',
+      name: 'Yogurt',
+      ingredientId: 'ing-yogurt',
+      unmatched: false,
+      aisle: null,
+      amountScale: null,
+      defaultUnit: null,
+      defaultExpiryDays: null,
+      quantity: 2,
+      unit: 'pcs',
+      location: 'fridge',
+      expiryDate: null,
+      productDescription: null,
+      createdAt: '2026-10-01T00:00:00Z',
+    };
+    setup(
+      [action({ defaults: { location: 'fridge', expiresOn: '2099-05-20' } })],
+      () =>
+        Response.json(
+          {
+            applied: [
+              {
+                actionId: 'a1',
+                list: 'pantry',
+                rowId: 'r1',
+                rowIds: ['r1', 'r2'],
+                alreadyDone: false,
+              },
+            ],
+            skipped: [],
+          },
+          { status: 201 },
+        ),
+      [
+        stocked,
+        { ...stocked, id: 'r2', location: 'freezer' },
+        { ...stocked, id: 'r9', name: 'Milk', ingredientId: 'm' },
+      ],
+    );
+    const dialog = within(await openReview());
+    await userEvent.click(
+      await dialog.findByRole('button', { name: 'Apply 1 change' }),
+    );
+    for (const section of [/^Fridge/, /^Freezer/]) {
+      const region = await screen.findByRole('region', { name: section });
+      await waitFor(() =>
+        expect(region.querySelectorAll('[data-row-flash]')).toHaveLength(1),
+      );
+    }
+  });
 });
