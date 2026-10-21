@@ -3,8 +3,8 @@ import { availableParallelism } from 'node:os';
 // Every worker boots whole Nest apps (about 1 GB resident) and owns a cloned
 // database. Jest's default of cores - 1 means 31 workers on a big dev machine:
 // the cloning, the memory and the CPU contention then push suite setup past the
-// timeout. Keep jest's default on small machines (CI: 4 vCPUs -> 3 workers) and
-// cap it at 4 elsewhere.
+// timeout. Small machines (e.g. CI) keep jest's default of cores - 1; cap it at
+// 4 elsewhere.
 const MAX_WORKERS = 4;
 
 /** @type {import('jest').Config} */
