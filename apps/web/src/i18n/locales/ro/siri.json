@@ -7,7 +7,7 @@
   "creating": "Se creează",
   "reveal": {
     "title": "Copiază jetonul acum",
-    "hint": "Este singura dată când apare. Lipește-l în Shortcut când ți se cere.",
+    "hint": "Este singura dată când apare. Lipește-l în comanda rapidă când ți se cere.",
     "secretLabel": "Jeton",
     "copy": "Copiază",
     "copied": "Jeton copiat",
@@ -23,5 +23,14 @@
   "revokeConfirm": "Revoci {{name}}? Orice îl folosește se oprește.",
   "revokeAction": "Revocă",
   "cancel": "Anulează",
-  "revoked": "Jeton revocat"
+  "revoked": "Jeton revocat",
+  "setup": {
+    "title": "Configurează Siri",
+    "create": "Creează mai sus un jeton și copiază-l.",
+    "add": "Adaugă comanda rapidă „Pantry add” în aplicația Comenzi rapide.",
+    "link": "Deschide comanda rapidă „Pantry add”",
+    "paste": "Lipește jetonul când comanda rapidă ți-l cere.",
+    "say": "Spune „Hey Siri, Pantry add”, apoi spune ce vrei să adaugi.",
+    "language": "Fraza pentru Siri este mereu în engleză, dar poți spune articolele în orice limbă acceptată de Pocket Pantry."
+  }
 }

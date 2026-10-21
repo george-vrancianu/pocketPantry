@@ -232,6 +232,8 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
       'siri:reveal.secretLabel',
       'siri:reveal.title',
       'siri:revoked',
+      'siri:setup.create',
+      'siri:setup.paste',
     ],
   ],
   [

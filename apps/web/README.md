@@ -10,6 +10,9 @@ React 19 + Vite web app. It only renders and calls the API; business logic lives
 The API origin defaults to the current hostname on port 3000. Set `VITE_API_URL` to point
 elsewhere. The API only accepts browser origins on ports 5173 and 5174 (plus `CLIENT_ORIGIN`).
 
+Set `VITE_SIRI_SHORTCUT_URL` (build time) to the iCloud link of the "Pantry add" Shortcut to show it in
+Settings > Siri; the link is hidden while unset. See [docs/siri-shortcut.md](../../docs/siri-shortcut.md).
+
 Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` (all with `-w @pocket-pantry/web`).
 
 ## Conventions
