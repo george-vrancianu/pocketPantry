@@ -8,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { readBarcode, useCamera } from '../../../lib/camera';
+import { normalizeBarcode } from '../../../lib/gtin';
 import { decodePhotoBarcode, readScans } from '../../../lib/scanReads';
 import {
   capReached,
@@ -139,7 +140,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   });
   const warnSessionFull = () =>
     setToast({
-      text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+      text: t('scan:limit', { count: MAX_SESSION_SCANS }),
       severity: 'warning',
     });
   useEffect(() => {
@@ -286,14 +287,16 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   const acceptCode = async (code: string) => {
     // The code just accepted is ignored while it keeps being seen: it is taken again once
     // another code was accepted, or once it has gone unseen for the cooldown.
+    // Compared in canonical form: a UPC-A and its EAN-13 form are one pack.
+    const canonical = normalizeBarcode(code) ?? code;
     const now = performance.now();
     const held =
-      code === lastCode.current &&
+      canonical === lastCode.current &&
       now - lastSeenAt.current < BARCODE_COOLDOWN_MS;
     lastSeenAt.current = now;
     if (held) return;
     // Remembered before the limit check, so a held pack at the limit toasts once, not every tick.
-    lastCode.current = code;
+    lastCode.current = canonical;
     if (
       getScanSession().scans.length + resizingPicks.current >=
       MAX_SESSION_SCANS

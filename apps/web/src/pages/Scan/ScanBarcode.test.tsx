@@ -84,8 +84,8 @@ const found = (overrides: object = {}) => ({
 });
 const MILK = { id: 'al-milk', name: 'Milk' };
 const GLUTEN = { id: 'al-gluten', name: 'Gluten' };
-const A = '5941234567890';
-const B = '5949999999990';
+const A = '5941234567899';
+const B = '5949999999993';
 
 type Held = { code: string; search: string; respond: (r: Response) => void };
 /** Barcode Lookups and photo reads answer only when the test says so. */
@@ -268,6 +268,16 @@ describe('Barcode on the Scan page', () => {
       expect(thumbnails()).toHaveLength(1);
       await decode(B);
       await decode(A);
+      expect(thumbnails()).toHaveLength(3);
+    });
+
+    it('treats a UPC-A and its EAN-13 form as the same code', async () => {
+      renderScan('/scan?mode=barcode');
+      await decode('036000291452');
+      await decode('0036000291452');
+      expect(thumbnails()).toHaveLength(1);
+      await decode(B);
+      await decode('0036000291452');
       expect(thumbnails()).toHaveLength(3);
     });
 
@@ -468,6 +478,29 @@ describe('Barcode on the Scan page', () => {
         Response.json({ code: 'internal', params: {} }, { status: 500 });
       await decode(A);
       await waitFor(() => expect(states()).toEqual(['failed']));
+      expect(screen.getByText('Barcode Lookup failed')).toBeInTheDocument();
+
+      answers[A] = () => Response.json(found());
+      await user.click(screen.getByRole('button', { name: 'Retry lookup' }));
+      await waitFor(() => expect(states()).toEqual(['read']));
+      expect(lookupCalls()).toHaveLength(2);
+    });
+  });
+
+  describe('when Barcode Lookups are rate limited', () => {
+    it('fails the card with the rate-limit copy, never as not found, and repeats the lookup on Retry', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () =>
+        Response.json(
+          { code: 'barcode.rate_limited', params: {} },
+          { status: 429, headers: { 'Retry-After': '30' } },
+        );
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['failed']));
+      expect(
+        screen.getByLabelText(/Too many Barcode Lookups right now/),
+      ).toBeInTheDocument();
 
       answers[A] = () => Response.json(found());
       await user.click(screen.getByRole('button', { name: 'Retry lookup' }));
@@ -511,14 +544,14 @@ describe('Barcode on the Scan page', () => {
     it('counts Barcode cards toward the 20-card limit and tells the Member when it is full', async () => {
       renderScan('/scan?mode=barcode');
       for (let i = 0; i < 20; i += 1)
-        await decode(`59412345${String(i).padStart(5, '0')}`);
+        await decode(`59412342${String(i).padStart(5, '0')}`);
       expect(thumbnails()).toHaveLength(20);
 
       await decode(B);
       expect(thumbnails()).toHaveLength(20);
       expect(
         await screen.findByText(
-          'A Scan Session holds at most 20 photos. Add or discard these first.',
+          'A Scan Session holds at most 20 Scans and Barcode Lookups in total. Add or discard these first.',
         ),
       ).toBeInTheDocument();
     });
@@ -528,15 +561,19 @@ describe('Barcode on the Scan page', () => {
     it('toasts once for a code held at the limit, not on every decoder tick', async () => {
       renderScan('/scan?mode=barcode');
       for (let i = 0; i < 20; i += 1)
-        await decode(`59412345${String(i).padStart(5, '0')}`);
+        await decode(`59412342${String(i).padStart(5, '0')}`);
       await decode(B);
-      await screen.findByText(/holds at most 20 photos/);
+      await screen.findByText(/holds at most 20 Scans and Barcode Lookups/);
       await userEvent.keyboard('{Escape}');
       await waitFor(() =>
-        expect(screen.queryByText(/holds at most 20 photos/)).toBeNull(),
+        expect(
+          screen.queryByText(/holds at most 20 Scans and Barcode Lookups/),
+        ).toBeNull(),
       );
       await decode(B);
-      expect(screen.queryByText(/holds at most 20 photos/)).toBeNull();
+      expect(
+        screen.queryByText(/holds at most 20 Scans and Barcode Lookups/),
+      ).toBeNull();
     });
   });
 

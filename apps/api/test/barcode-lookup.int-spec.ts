@@ -124,12 +124,25 @@ describe('Barcode Lookup (integration)', () => {
     },
   );
 
-  it.each([8, 12, 13])('accepts a %i-digit barcode', async (length) => {
-    const barcode = freshBarcode(length);
-    found = product({ productName: 'Parmesan' });
-    await lookup(a, barcode).expect(200);
-    expect(asked).toEqual([barcode]);
+  it('rejects a barcode with a wrong check digit without asking Open Food Facts', async () => {
+    await lookup(a, '3017620422004').expect(400);
+    await lookup(a, '036000291453').expect(400);
+    expect(asked).toEqual([]);
   });
+
+  it.each([
+    ['EAN-8', 8, ''],
+    ['UPC-A', 12, '0'],
+    ['EAN-13', 13, ''],
+  ])(
+    'accepts a %s barcode and asks Open Food Facts for it prefixed with %j',
+    async (_format, length, prefix) => {
+      const barcode = freshBarcode(length);
+      found = product({ productName: 'Parmesan' });
+      await lookup(a, barcode).expect(200);
+      expect(asked).toEqual([`${prefix}${barcode}`]);
+    },
+  );
 
   it('answers not found when Open Food Facts does not know the barcode', async () => {
     found = null;

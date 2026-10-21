@@ -51,7 +51,7 @@ const result = (id: string, name: string, unit: 'g' | 'l', days: number) =>
 
 const yogurt = result('yogurt-id', 'Yogurt', 'g', 10);
 const milk = result('milk-id', 'Milk', 'l', 7);
-const CODE = '5941234567890';
+const CODE = '5941234567899';
 
 const milkBatch: Batch = {
   id: 'milk-1',
@@ -313,6 +313,23 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     expect(
       await screen.findByText(/barcode lookup is unavailable/),
     ).toBeVisible();
+    expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
+  });
+
+  it('keeps the form and says to wait when the lookup is rate limited', async () => {
+    const user = userEvent.setup();
+    stubLookup(() =>
+      Response.json(
+        { code: 'barcode.rate_limited', params: {} },
+        { status: 429, headers: { 'Retry-After': '30' } },
+      ),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    expect(await screen.findByText(/Too many Barcode Lookups/)).toBeVisible();
+    expect(screen.queryByText(/No product found/)).toBeNull();
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
   });
 

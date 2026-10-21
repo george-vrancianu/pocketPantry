@@ -511,7 +511,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
 });
 
 describe('Learn barcodes from Product photos', () => {
-  const CODE = '5941234567890';
+  const CODE = '5941234567899';
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');

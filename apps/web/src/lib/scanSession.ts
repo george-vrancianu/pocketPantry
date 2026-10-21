@@ -125,6 +125,10 @@ export const isBarcodeMode = (mode: CameraMode): mode is 'barcode' =>
 export const isBarcodeCard = (scan: Pick<SessionScan, 'mode'>) =>
   isBarcodeMode(scan.mode);
 
+/** The copy key (`failed` or `lookupFailed`) that says a card failed: a Barcode card did a lookup, not a read. */
+export const failedCopyKey = (scan: Pick<SessionScan, 'mode'>) =>
+  isBarcodeCard(scan) ? 'lookupFailed' : 'failed';
+
 export const emptySession: SessionState = { scans: [] };
 
 export function sessionReducer(
@@ -329,6 +333,11 @@ const FINAL_ERRORS = [
 /** Whether tapping a failed Scan to read it again can change anything. */
 export const canRetry = (scan: SessionScan) =>
   !FINAL_ERRORS.includes(scan.errorCode ?? '');
+
+/** Whether a failed Scan's own error copy is shown: when a retry cannot help, or when it explains why to wait (a rate-limited Barcode Lookup). */
+export const showsErrorCopy = (scan: SessionScan) =>
+  Boolean(scan.errorCode) &&
+  (!canRetry(scan) || scan.errorCode === 'barcode.rate_limited');
 
 const sectionsOf = (scan: SessionScan) => scan.sections ?? [scan];
 

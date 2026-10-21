@@ -225,6 +225,13 @@
       "when": 1792173148765,
       "tag": "0031_scan_usage_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792605471346,
+      "tag": "0032_canonical_barcodes",
+      "breakpoints": true
     }
   ]
 }

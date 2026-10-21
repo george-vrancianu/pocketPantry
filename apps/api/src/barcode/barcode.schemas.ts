@@ -4,9 +4,20 @@ import type {
   CatalogSearchResult,
 } from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
+import { normalizeBarcode } from './gtin';
 
-/** EAN-8 or UPC-E (8 digits), UPC-A (12) or EAN-13 (13): digits only. */
-export const barcodeValue = z.string().regex(/^(?:\d{8}|\d{12}|\d{13})$/);
+/**
+ * EAN-8 or UPC-E (8 digits), UPC-A (12) or EAN-13 (13) with a valid check digit,
+ * parsed to its one canonical form (see `normalizeBarcode`).
+ */
+export const barcodeValue = z.string().transform((raw, ctx) => {
+  const barcode = normalizeBarcode(raw);
+  if (barcode === null) {
+    ctx.addIssue({ code: 'custom', message: 'invalid barcode' });
+    return z.NEVER;
+  }
+  return barcode;
+});
 export const barcodeParams = z.object({ barcode: barcodeValue });
 
 /**

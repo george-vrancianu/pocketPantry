@@ -152,6 +152,8 @@
     "discardAll": "Kasser alle",
     "failed": "Kunne ikke læses, tag om",
     "retake": "Tag om",
+    "lookupFailed": "Stregkoden kunne ikke slås op",
+    "removeCard": "Fjern",
     "pickDish": "Vælg retten",
     "dishOption": "{{title}}, {{percent}} % sandsynlig",
     "readAgain": "Læs igen"

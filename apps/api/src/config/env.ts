@@ -56,6 +56,16 @@ const envSchema = z.object({
   /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */
   INVITE_CODE_LIMIT_PER_USER: z.coerce.number().int().positive().default(10),
   INVITE_CODE_LIMIT_PER_IP: z.coerce.number().int().positive().default(30),
+  /**
+   * Barcode Lookup calls that go out to Open Food Facts per minute: per Member, and for the whole API process.
+   * Open Food Facts allows 15 product reads a minute per IP (https://openfoodfacts.github.io/openfoodfacts-server/api/).
+   */
+  BARCODE_LOOKUP_LIMIT_PER_MEMBER: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(8),
+  BARCODE_LOOKUP_LIMIT_GLOBAL: z.coerce.number().int().positive().default(12),
   /** Below this a Match counts as Unmatched, and an image read counts as low-confidence. */
   SCAN_MATCH_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.6),
   /** Signs the Plate Scan token. Required in production; elsewhere a missing one becomes a random per-process secret (tokens do not survive a restart). */
