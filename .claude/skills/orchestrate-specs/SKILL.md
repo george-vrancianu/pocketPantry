@@ -14,6 +14,8 @@ Orchestrate the specs the user names. The top level (this session) and every orc
 
 Top level (this session) -> one opus spec orchestrator per spec, in the background -> one opus ticket orchestrator per ticket -> sonnet implementer (uses `tdd`, or skips it for docs-only work), opus reviewer (uses `code-review`), sonnet fixer, sonnet merger.
 
+The spec orchestrator follows `implement-spec`'s task-graph/frontier approach, and ticket orchestrators run each ticket per its loop.
+
 Launch agents with the Agent tool, `general-purpose`, setting `model` explicitly.
 
 ## Hard rules
@@ -40,7 +42,7 @@ Link these in briefs instead of restating them. Each is used if present; if one 
 
 - Plain `gh issue view N` and `gh pr edit` fail (Projects classic deprecation); use the working commands in `docs/agents/issue-tracker.md`.
 - Never test GitHub write commands against real issues or PRs. A subagent once blanked a merged PR's body by reading the body file from the wrong directory.
-- web and ui lint with `oxlint src`; api uses eslint.
+- web and ui lint with oxlint (not eslint) via `npm run lint -w <workspace>` (uses the root `.oxlintrc.json` and fails on unused disable directives); api uses eslint.
 - vitest: targeted files, `--pool=forks --maxWorkers=2`. API integration tests: `--runInBand`. Flaky-under-load tests are rerun alone before counting as a regression.
 - Each worktree needs its own `npm ci`.
 - Migrations come from drizzle-kit in `apps/api/drizzle`; if main moved, regenerate the migration on top of main. Renumber an ADR if its number is taken. After the merger merges a branch that adds a migration it runs `npm run check:migrations` and renumbers the newer migration on failure (see `docs/agents/worktrees-and-migrations.md`).

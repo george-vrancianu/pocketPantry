@@ -17,7 +17,7 @@ const ALL = [SOURCE, ...TARGETS] as const;
 const EXPECTED_FORMS: Record<string, string[]> = {
   en: ['one', 'other'],
   da: ['one', 'other'],
-  // ro `few` covers 0 and counts ending 02-19 (101 is `other`).
+  // ro `few`: 0, fractions, and n != 1 with n % 100 in 1..19 (so 2-19 and 101-119; 20, 100, 120 are `other`).
   ro: ['one', 'few', 'other'],
 };
 
@@ -355,6 +355,27 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
     'plain adjective; copy drift for an Unmatched name, flag',
     ['admin:recipe.lines.unknown', 'dashboard:mealPlan.line.unknown'],
   ],
+  [
+    'import',
+    'Shopping Template import action (copy drift, flag)',
+    [
+      'shopping:empty.importTitle',
+      'shopping:import.button',
+      'shopping:import.title',
+      'shopping:import.aria',
+      'shopping:import.tickLabel',
+      'shopping:import.confirm_one',
+      'shopping:import.confirm_other',
+    ],
+  ],
+  [
+    'move to pantry',
+    'the Finish Shopping action named "Move to Pantry" (copy drift, flag)',
+    [
+      'shopping:summary.moveToPantry_one',
+      'shopping:summary.moveToPantry_other',
+    ],
+  ],
 ];
 
 /**
@@ -408,24 +429,6 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
     'a Recipe language, not the Scan Language',
   'dashboard:settings|settings': 'link to Settings',
   'voice:blocked.safariStep2|settings': 'Safari "Website Settings" menu name',
-  'shopping:summary.moveToPantry_one|move to pantry':
-    'the Finish Shopping action named "Move to Pantry" (copy drift, flag)',
-  'shopping:summary.moveToPantry_other|move to pantry':
-    'the Finish Shopping action named "Move to Pantry" (copy drift, flag)',
-  'shopping:empty.importTitle|import':
-    'Shopping Template import action (copy drift, flag)',
-  'shopping:import.button|import':
-    'Shopping Template import action (copy drift, flag)',
-  'shopping:import.title|import':
-    'Shopping Template import action (copy drift, flag)',
-  'shopping:import.aria|import':
-    'Shopping Template import action (copy drift, flag)',
-  'shopping:import.tickLabel|import':
-    'Shopping Template import action (copy drift, flag)',
-  'shopping:import.confirm_one|import':
-    'Shopping Template import action (copy drift, flag)',
-  'shopping:import.confirm_other|import':
-    'Shopping Template import action (copy drift, flag)',
 };
 
 const escape = (s: string) =>

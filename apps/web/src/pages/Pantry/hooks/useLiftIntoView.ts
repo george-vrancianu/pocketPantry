@@ -38,6 +38,6 @@ export function useLiftIntoView(
       });
     }, LIFT_MS + 20);
     return () => clearTimeout(timer);
-    // Only when the Ingredient opens, not when the motion setting changes while it is open.
+    // Re-runs when the Ingredient opens or its target changes, not when the motion setting changes while it is open.
   }, [open, target]);
 }
