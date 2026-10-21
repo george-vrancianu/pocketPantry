@@ -66,6 +66,8 @@ export type ApplyOutcome =
       applied: true;
       list: VoiceTarget;
       rowId?: string;
+      /** Every row to flash when the Action changed several (a removal across Locations); `rowId` is the first. */
+      rowIds?: string[];
       alreadyDone: boolean;
     }
   | { applied: false; reason: string };

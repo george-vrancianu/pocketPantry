@@ -114,7 +114,9 @@ function ReviewSheet() {
       // Only this page's rows: the other list's rows are not on screen to flash.
       flashRows(
         result.applied.flatMap((entry) =>
-          entry.list === page && entry.rowId ? [entry.rowId] : [],
+          entry.list !== page
+            ? []
+            : (entry.rowIds ?? (entry.rowId ? [entry.rowId] : [])),
         ),
       );
       toast.show(message, {
