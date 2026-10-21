@@ -405,8 +405,15 @@ describe('Voice Note module', () => {
         error: 'capReached',
         voiceCap: { cap: 5, resetsAt: reset },
       });
-      expect(note.isCapReached(reset - 1)).toBe(true);
-      expect(note.isCapReached(reset)).toBe(false);
+      vi.useFakeTimers({ toFake: ['Date'] });
+      try {
+        vi.setSystemTime(reset - 1);
+        expect(note.isCapReached()).toBe(true);
+        vi.setSystemTime(reset);
+        expect(note.isCapReached()).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it.each([
@@ -422,8 +429,10 @@ describe('Voice Note module', () => {
           const { note } = await capped(resetsAt);
           const midnight = Date.UTC(2026, 9, 20);
           expect(note.getState().voiceCap?.resetsAt).toBe(midnight);
-          expect(note.isCapReached(midnight - 1)).toBe(true);
-          expect(note.isCapReached(midnight)).toBe(false);
+          vi.setSystemTime(midnight - 1);
+          expect(note.isCapReached()).toBe(true);
+          vi.setSystemTime(midnight);
+          expect(note.isCapReached()).toBe(false);
         } finally {
           vi.useRealTimers();
         }

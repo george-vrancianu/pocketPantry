@@ -18,6 +18,7 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { voiceNote } from '../../lib/voiceNote';
 import { Route, Routes } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { ShoppingPage } from './ShoppingPage';
@@ -348,6 +349,16 @@ describe('the recording gesture on the Shopping List', () => {
         'What I heard',
       );
       expect(sent).toHaveLength(1);
+    });
+
+    it('does not buzz when the recording fails mid-hold, only at the limit', async () => {
+      setup();
+      renderWithProviders(<ShoppingPage />);
+      await hold();
+      vibrate.mockClear();
+      act(() => voiceNote.fail('unavailable'));
+      await waitFor(() => expect(screen.queryByText('Listening')).toBeNull());
+      expect(vibrate).not.toHaveBeenCalledWith(14);
     });
   });
 

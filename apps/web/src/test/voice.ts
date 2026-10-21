@@ -6,7 +6,7 @@ import { holdLongEnough, pressDown } from './voiceHold';
 
 /*
  * The shared fake voice environment. Import this module BEFORE anything that reaches the
- * microphone module (the page, the Voice Note store): it registers the mock, and a module that
+ * microphone module (the page, the Voice Note module): it registers the mock, and a module that
  * is already loaded keeps the real one.
  *
  * - Microphone: jsdom has no getUserMedia or MediaRecorder, so the microphone module is the seam.

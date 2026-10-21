@@ -177,7 +177,7 @@ export function createVoiceNote(
   let finishing = false;
 
   const notify = (notice: VoiceNotice) => notifier?.(notice);
-  const hold = () => {
+  const keepAwake = () => {
     release ??= adapters.keepScreenAwake();
   };
   const letSleep = () => {
@@ -247,13 +247,13 @@ export function createVoiceNote(
     });
   }
 
-  /** Whether the Voice Cap is still in force at `now` (ms). It lifts at the server's reset time. */
-  function isCapReached(now: number = Date.now()) {
-    return state.voiceCap !== undefined && now < state.voiceCap.resetsAt;
+  /** Whether the Voice Cap is still in force. It lifts at the server's reset time. */
+  function isCapReached() {
+    return state.voiceCap !== undefined && Date.now() < state.voiceCap.resetsAt;
   }
 
   /** The Voice Note failed before or without a read (no microphone, the Voice Cap). */
-  function fail(error: 'unavailable' | 'capReached') {
+  function failBeforeRead(error: 'unavailable' | 'capReached') {
     if (
       state.phase !== 'idle' &&
       state.phase !== 'recording' &&
@@ -263,6 +263,9 @@ export function createVoiceNote(
     }
     failed(error);
   }
+
+  /** The Voice Note cannot be recorded: no microphone, or this browser cannot record. */
+  const fail = (error: 'unavailable') => failBeforeRead(error);
 
   /** Why a start would be refused right now. */
   function startBlocker(): StartBlocker {
@@ -324,7 +327,7 @@ export function createVoiceNote(
   ) {
     const request = new AbortController();
     reading = request;
-    hold();
+    keepAwake();
     go({
       phase: 'reading',
       page,
@@ -376,7 +379,7 @@ export function createVoiceNote(
     const blocker = startBlocker();
     if (blocker === 'active') return 'refused';
     if (blocker === 'capped') {
-      fail('capReached');
+      failBeforeRead('capReached');
       return 'refused';
     }
     if (blocker !== 'none') return 'refused';
@@ -385,7 +388,7 @@ export function createVoiceNote(
     if (state.phase !== 'idle') return 'refused';
     const attempt = { cancelled: false };
     starting = attempt;
-    hold();
+    keepAwake();
     let live: MicrophoneSession;
     try {
       live = await adapters.startMicrophone();
@@ -597,7 +600,7 @@ export type VoiceNote = ReturnType<typeof createVoiceNote>;
 /** The app's one Voice Note. */
 export const voiceNote = createVoiceNote();
 
-/** Whether the status pill is up (reading, or a failure or notice) for this phase. */
+/** Whether the status pill is up (reading or failed) for this phase. */
 export const isPillUp = (phase: VoicePhase) =>
   phase === 'reading' || phase === 'failed';
 

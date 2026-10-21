@@ -21,10 +21,9 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   const toast = useToast();
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
   // The Voice Note itself lives in the Voice Note module, so Review and the button on any page see it.
-  const { phase, recording: keptRecording, proposal } = useVoiceNoteState();
+  const { phase, recording: keptRecording } = useVoiceNoteState();
   const recording = phase === 'recording';
   const sending = phase === 'reading';
-  const note = proposal ?? null;
   // The module renders again when the Voice Cap lifts.
   const capped = voiceNote.isCapReached();
   // A failed note is waiting for Retry or Discard.
@@ -72,15 +71,16 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   };
 
   // The module stops a recording at 60 seconds by itself: the pointer is still down, but the press is over.
-  // So any recording -> not-recording move while held (the 60 s limit is the real case) buzzes once and ends the press.
+  // The recording ends and the audio is finalised (idle) while the pointer is still down: that is the limit, so it buzzes once and
+  // ends the press. A failure mid-recording goes to `failed` instead and does not buzz.
   const wasRecording = useRef(false);
   useEffect(() => {
-    if (wasRecording.current && !recording && held.current) {
+    if (wasRecording.current && phase === 'idle' && held.current) {
       held.current = false;
       haptic(14);
     }
     wasRecording.current = recording;
-  }, [recording]);
+  }, [recording, phase]);
 
   /** Ends the recording and sends it; a recording too short to read gets the tip. */
   const finish = useCallback(async () => {
@@ -187,8 +187,6 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
   /** Sends the kept recording again: the same audio, in the language it was recorded in. */
   const retry = useCallback(() => {
-    const { phase, recording: audio } = voiceNote.getState();
-    if (phase !== 'failed' || !audio) return;
     // The Reading pill replaces this one: its Cancel takes the focus (the voice button is disabled).
     if (isInPill()) focusPillAction();
     void voiceNote.retry(options.current.locale);
@@ -227,14 +225,12 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   return {
     scanLanguage,
     setScanLanguage,
-    locale,
     recording,
     pressing,
     tip,
     sending,
     kept,
     capped,
-    note,
     mic,
     press,
     release,

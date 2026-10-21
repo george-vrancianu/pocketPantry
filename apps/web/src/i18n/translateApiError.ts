@@ -15,7 +15,7 @@ export function translateApiError(t: TFunction, error: unknown): string {
 export function translateErrorCode(
   t: TFunction,
   code: string,
-  params: Record<string, unknown> = {},
+  params: Record<string, unknown>,
 ): string {
   return t(`errors:${code}`, {
     ...params,
