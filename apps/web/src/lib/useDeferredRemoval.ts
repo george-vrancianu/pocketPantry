@@ -1,6 +1,12 @@
 import { useToast, type ToastHandle } from '@pocket-pantry/ui';
 import { useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
 
@@ -59,7 +65,9 @@ export function useDeferredRemoval<Id extends string | number>(
   const queryClient = useQueryClient();
   // Held by key value, so a new array each render does not change `send`.
   const keyRef = useRef(queryKey);
-  keyRef.current = queryKey;
+  useLayoutEffect(() => {
+    keyRef.current = queryKey;
+  });
   const send = useCallback(
     async (ids: Id[], many: boolean) => {
       await queryClient.cancelQueries({ queryKey: keyRef.current });
@@ -109,12 +117,14 @@ export function useDeferredRemoval<Id extends string | number>(
   // Leaving the page, by route change or closing the tab, sends it too, and
   // takes down the Undo toast, which would otherwise outlive the delete.
   const flushWaiting = useRef(() => {});
-  flushWaiting.current = () => {
-    const pending = waiting.current;
-    if (!pending) return;
-    flush(pending.token);
-    pending.toast.close();
-  };
+  useLayoutEffect(() => {
+    flushWaiting.current = () => {
+      const pending = waiting.current;
+      if (!pending) return;
+      flush(pending.token);
+      pending.toast.close();
+    };
+  });
   useEffect(() => {
     const onPageHide = () => flushWaiting.current();
     window.addEventListener('pagehide', onPageHide);

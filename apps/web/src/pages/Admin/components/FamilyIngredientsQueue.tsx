@@ -38,6 +38,7 @@ export function FamilyIngredientsQueue() {
     const buttons =
       listRef.current?.querySelectorAll<HTMLElement>('[data-promote-for]');
     buttons?.[focusFrom]?.focus();
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
     setFocusFrom(null);
   }, [focusFrom, queue.isFetchingNextPage]);
 
@@ -55,6 +56,7 @@ export function FamilyIngredientsQueue() {
         .find((button) => button.getAttribute(attribute) === restoreFocus.name)
         ?.focus();
     }
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
     setRestoreFocus(null);
   }, [promoting, merging, restoreFocus, queue.data]);
 

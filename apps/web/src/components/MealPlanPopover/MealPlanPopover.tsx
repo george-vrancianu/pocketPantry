@@ -356,7 +356,9 @@ export function MealPlanPopover({
   const dockHeight = tabletUp ? DOCK_HEIGHT.md : DOCK_HEIGHT.xs;
   const [position, setPosition] = useState<Position | null>(null);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useLayoutEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   const place = useCallback(() => {
     const popover = popoverRef.current;

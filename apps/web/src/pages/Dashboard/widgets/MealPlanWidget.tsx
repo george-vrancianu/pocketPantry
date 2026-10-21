@@ -13,7 +13,14 @@ import {
   tokens,
   color,
 } from '@pocket-pantry/ui';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
@@ -175,16 +182,19 @@ export function MealPlanWidget({ columns }: WidgetProps) {
     !!view?.plan &&
     view.plan.startDate <= todayIso &&
     planEnd(view.plan) >= todayIso;
-  const days = view?.days ?? [];
+  const days = useMemo(() => view?.days ?? [], [view]);
   const planned = days.length > 0;
   // A date no longer in the window shows nothing; the effect below then forgets it.
   const open =
     openDate === null ? -1 : days.findIndex((d) => d.date === openDate);
-  openIndexRef.current = open;
+  useLayoutEffect(() => {
+    openIndexRef.current = open;
+  });
   const openDay = open >= 0 ? days[open] : undefined;
 
   useEffect(() => {
     if (openDate === null || !view || open >= 0) return;
+    // oxlint-disable-next-line react/set-state-in-effect -- forgets a date that left the window and hands focus on; the window arrives from the server
     setOpenDate(null);
     // The popover is gone with focus inside it, so focus fell to the page: give it to the nearest column.
     const active = document.activeElement;
@@ -527,6 +537,7 @@ export function MealPlanWidget({ columns }: WidgetProps) {
           days={days}
           index={open}
           today={todayIso}
+          // oxlint-disable-next-line react/refs -- the popover only renders once a column is open, so its element was set in an earlier commit
           anchor={columnRefs.current[open] ?? null}
           measureCard={measureCard}
           onStep={(index) => setOpenDate(days[index].date)}

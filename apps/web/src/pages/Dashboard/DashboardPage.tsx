@@ -20,6 +20,7 @@ export function DashboardPage() {
   const { t, i18n } = useTranslation('dashboard');
   const layout = useDashboardLayout();
   const columns = useGridColumns();
+  // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
   const now = new Date();
   const date = new Intl.DateTimeFormat(i18n.language, {
     weekday: 'long',

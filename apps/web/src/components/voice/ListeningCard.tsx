@@ -79,6 +79,7 @@ export function ListeningCard({
         : t('listening.recording');
   const [spoken, setSpoken] = useState({ said: [] as string[], now: '' });
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- live-region log of phrases already announced; it must update after render, once per phrase
     setSpoken((was) =>
       phrase && !was.said.includes(phrase)
         ? { said: [...was.said, phrase], now: phrase }

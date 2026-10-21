@@ -16,14 +16,12 @@
     "shopping": {
       "title": "Shopping",
       "itemsToBuy_one": "item to buy",
-      "itemsToBuy_few": "items to buy",
       "itemsToBuy_other": "items to buy",
       "empty": "Your list is empty"
     },
     "pantryStock": {
       "title": "Pantry",
       "itemsInStock_one": "item in stock",
-      "itemsInStock_few": "items in stock",
       "itemsInStock_other": "items in stock"
     },
     "suggestions": {

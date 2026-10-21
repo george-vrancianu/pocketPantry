@@ -84,6 +84,7 @@ export function Viewfinder({
   }, []);
   useEffect(() => {
     if (!shot) return;
+    // oxlint-disable-next-line react/set-state-in-effect -- starts the shutter pulse and flash animations when a Scan is taken; both end on timers
     setPulse(true);
     setFlash(true);
     const pending = [
