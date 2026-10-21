@@ -29,8 +29,8 @@ const timestamps = {
 };
 
 export const userRole = pgEnum('user_role', ['admin', 'regular']);
-// What a daily cap counts: Scans or Voice Notes.
-export const usageKind = pgEnum('usage_kind', ['scan', 'voice']);
+// What a daily cap counts: Scans, Voice Notes or Assistant Requests.
+export const usageKind = pgEnum('usage_kind', ['scan', 'voice', 'assistant']);
 export const familyRole = pgEnum('family_role', ['owner', 'member']);
 
 // A Family owns the Pantry, Shopping List and Family Settings.
