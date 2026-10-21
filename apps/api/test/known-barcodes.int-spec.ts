@@ -202,6 +202,40 @@ describe('Known Barcodes (integration)', () => {
       );
     });
 
+    it('remembers a UPC-A and its EAN-13 form as one Known Barcode', async () => {
+      await saveIngredient(a, '036000291452', {
+        productDescription: 'first',
+      }).expect(201);
+      await saveIngredient(a, '0036000291452', {
+        productDescription: 'second',
+      }).expect(201);
+      const rows = await database
+        .select()
+        .from(knownBarcodes)
+        .where(
+          and(
+            eq(knownBarcodes.familyId, familyA),
+            eq(knownBarcodes.barcode, '0036000291452'),
+          ),
+        );
+      expect(rows).toHaveLength(1);
+      expect(rows[0].productDescription).toBe('second');
+      expect(await knownOf('036000291452')).toBeUndefined();
+      const body = (await lookup(a, '036000291452').expect(200)).body as Json;
+      expect(body).toMatchObject({
+        source: 'known_barcode',
+        productDescription: 'second',
+      });
+    });
+
+    it('rejects a barcode with a wrong check digit and saves nothing', async () => {
+      const res = await saveIngredient(a, '3017620422004', {
+        productDescription: 'bad check digit',
+      });
+      expect(res.status).toBe(400);
+      expect(await knownOf('3017620422004')).toBeUndefined();
+    });
+
     it.each(['abc', '123', '12345678901234', '30176 20422003'])(
       'rejects the invalid barcode %j and saves nothing',
       async (code) => {
