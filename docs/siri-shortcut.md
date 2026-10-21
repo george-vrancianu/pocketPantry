@@ -19,9 +19,9 @@ Response: `{ "outcomes": [...], "speech": string }`. The Shortcut only uses `spe
 ## Actions, in order
 
 1. **Text** (the token). Add a Text action and put the placeholder `Assistant Token` in it. Open the Shortcut's settings (the "i" button) and choose **Setup > Add Import Question** on this Text action. Question: `Paste your Assistant Token`. A Member creates the token in Settings > Siri; the question is asked once, when they add the Shortcut, and the answer is stored in this action.
-2. **Dictate Text**. Language: choose the language most items will be said in, or leave it on "Ask Every Time" if you want to be asked (Dictate Text takes one language per action, so a Member who speaks Romanian should set Romanian). Stop Listening: "After Pause" (or "On Tap" if pauses cut dictation short). Prompt: `What should I add?` (the Siri question spoken before listening).
-3. **Current Date**.
-4. **Format Date**. Date: Current Date. Date Format: **Custom**, format string `yyyy-MM-dd`. This gives the Member's local date in ISO form (`YYYY-MM-DD`), which the API needs to resolve words like "tomorrow".
+2. **Dictate Text**. Leave Language at its default (the device language) or pick one specific language; do not use "Ask Each Time", which breaks the hands-free flow under Siri. Dictate Text takes one language per action and one link is shared with every Member, so Members who say items in another language change it after installing (see "After installing" below). Stop Listening: "After Pause" (or "On Tap" if pauses cut dictation short). Prompt: `What should I add?` (the Siri question spoken before listening).
+3. **Date**. Leave it on Current Date.
+4. **Format Date**. Date: the **Date** variable from step 3. Date Format: **Custom**, format string `yyyy-MM-dd`. This gives the Member's local date in ISO form (`YYYY-MM-DD`), which the API needs to resolve words like "tomorrow".
 5. **Get Contents of URL**.
    - URL: `<API origin>/api/assistant/requests`
    - Show More > Method: **POST**
@@ -32,17 +32,28 @@ Response: `{ "outcomes": [...], "speech": string }`. The Shortcut only uses `spe
      - `text` (Text) = the **Dictated Text** variable from step 2
      - `today` (Text) = the **Formatted Date** variable from step 4
 6. **Get Dictionary Value**. Get **Value** for key `speech` in the **Contents of URL** result.
-7. **Speak Text**. Text: the **Dictionary Value** from step 6.
+7. **If**. Input: the **Dictionary Value** from step 6, condition **has any value**.
+   - In the If branch: **Speak Text**, text = the **Dictionary Value** from step 6.
+   - In the **Otherwise** branch: **Speak Text**, text = `Pocket Pantry didn't answer. Check your Assistant Token in Settings.` (a fixed English fallback).
+8. **End If**.
+
+The If is needed because some failures have no `speech`: a revoked, unknown or missing token gets HTTP 401 with no `speech`, and a network failure returns nothing at all. Without the If, Speak Text would say nothing. As far as we know, Get Contents of URL returns the error body on non-2xx statuses rather than stopping the Shortcut, which is what lets the Otherwise branch run; verify this on a device with a revoked token.
 
 Finally, rename the Shortcut to exactly `Pantry add` (Shortcut name field at the top of the editor, or Rename in the menu). Shortcuts can be run by saying the name after "Hey Siri".
 
 ## Sharing it
 
 1. In the Shortcut's settings, confirm the Import Question from step 1 is listed under Setup.
-2. Share > **Copy iCloud Link**. The link carries the actions and the import question but not the answer, so no token is shared. Re-share (a new link or an updated one) after any change.
-3. Build the web app with `VITE_SIRI_SHORTCUT_URL=<the iCloud link>` (documented in [apps/web/README.md](../apps/web/README.md)). Settings > Siri then shows the link in its setup steps; while the variable is unset or empty the link is hidden.
+2. Set the first **Text** action back to the placeholder `Assistant Token`. Never share with a real token in it: the action's current value is shared as the Import Question's default answer, so a real token would travel in the iCloud link to everyone who imports it.
+3. Share > **Copy iCloud Link**. The link carries the actions and the import question (with the placeholder as its default). An iCloud link is a snapshot: after any edit, copy a new link and update `VITE_SIRI_SHORTCUT_URL` in each environment.
+4. Build the web app with `VITE_SIRI_SHORTCUT_URL=<the iCloud link>` (documented in [apps/web/README.md](../apps/web/README.md)). Settings > Siri then shows the link in its setup steps; while the variable is unset or empty the link is hidden.
+
+## After installing
+
+To dictate in another language (for example Romanian or Danish; Siri's phrase stays English), open the Shortcut in the Shortcuts app, tap **Dictate Text**, and set **Language** to the language items are said in.
 
 ## When something goes wrong
 
-- A revoked or mistyped token is refused by the API. Revoke and create tokens in Settings > Siri; to change the token in an installed Shortcut, edit its first Text action.
-- Where the API answers with a `speech` reply (including for refused or failed requests), the Shortcut speaks it as normal. If there is no network or the response has no `speech`, Shortcuts shows its own error; the Shortcut has no extra error handling.
+- A revoked, unknown or mistyped token gets HTTP 401 with no `speech`; the Shortcut then speaks the fixed fallback from step 7. Revoke and create tokens in Settings > Siri; to change the token in an installed Shortcut, edit its first Text action.
+- Cap reached, provider failure, nothing understood and "not configured" are answered with a `speech` reply, which the Shortcut speaks as normal.
+- With no network there is no response, so the Otherwise branch speaks the fallback (or Shortcuts shows its own error).

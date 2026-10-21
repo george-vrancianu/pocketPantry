@@ -65,8 +65,11 @@ describe('Settings Siri section', () => {
     renderWithProviders(<SiriSection />);
 
     await screen.findByText('iPhone');
-    // The setup steps are list items too; they come after the token rows.
-    const rows = screen.getAllByRole('listitem').slice(0, 2);
+    // The setup steps are list items too; the token list comes first.
+    const rows = within(screen.getAllByRole('list')[0]).getAllByRole(
+      'listitem',
+    );
+    expect(rows).toHaveLength(2);
     expect(within(rows[0]).getByText('iPhone')).toBeInTheDocument();
     expect(within(rows[0]).getByText('pp_aB3x…')).toBeInTheDocument();
     expect(
@@ -227,7 +230,7 @@ describe('Settings Siri section', () => {
       renderWithProviders(<SiriSection />);
 
       const link = await screen.findByRole('link', {
-        name: /Open the Pantry add Shortcut/,
+        name: /Open the “Pantry add” Shortcut/,
       });
       expect(link).toHaveAttribute(
         'href',
@@ -240,7 +243,7 @@ describe('Settings Siri section', () => {
     it.each(['unset', 'empty'])(
       'hides the Shortcut link when the URL is %s',
       async (kind) => {
-        if (kind === 'empty') vi.stubEnv('VITE_SIRI_SHORTCUT_URL', '');
+        vi.stubEnv('VITE_SIRI_SHORTCUT_URL', kind === 'empty' ? '' : undefined);
         stubTokens([]);
         renderWithProviders(<SiriSection />);
 

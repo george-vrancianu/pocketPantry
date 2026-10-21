@@ -28,7 +28,7 @@
     "title": "Configurează Siri",
     "create": "Creează mai sus un jeton și copiază-l.",
     "add": "Adaugă comanda rapidă „Pantry add” în aplicația Comenzi rapide.",
-    "link": "Deschide comanda rapidă Pantry add",
+    "link": "Deschide comanda rapidă „Pantry add”",
     "paste": "Lipește jetonul când comanda rapidă ți-l cere.",
     "say": "Spune „Hey Siri, Pantry add”, apoi spune ce vrei să adaugi.",
     "language": "Fraza pentru Siri este mereu în engleză, dar poți spune articolele în orice limbă acceptată de Pocket Pantry."

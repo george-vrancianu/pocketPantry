@@ -28,7 +28,7 @@
     "title": "Set up Siri",
     "create": "Create a token above and copy it.",
     "add": "Add the “Pantry add” Shortcut to the Shortcuts app.",
-    "link": "Open the Pantry add Shortcut",
+    "link": "Open the “Pantry add” Shortcut",
     "paste": "Paste the token when the Shortcut asks for it.",
     "say": "Say “Hey Siri, Pantry add”, then say what to add.",
     "language": "Siri’s phrase is always English, but you can say the items in any language Pocket Pantry supports."

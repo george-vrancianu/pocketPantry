@@ -169,14 +169,15 @@ const SETUP_STEPS = ['create', 'add', 'paste', 'say'] as const;
 function SetupGuide() {
   const { t } = useTranslation('siri');
   const shortcutUrl = siriShortcutUrl();
+  const titleId = useId();
   return (
     <Stack spacing={1}>
-      <Typography id="siri-setup-title" sx={{ fontWeight: 600 }}>
+      <Typography id={titleId} sx={{ fontWeight: 600 }}>
         {t('setup.title')}
       </Typography>
       <Box
         component="ol"
-        aria-labelledby="siri-setup-title"
+        aria-labelledby={titleId}
         sx={{ m: 0, pl: 3, display: 'grid', gap: 0.5 }}
       >
         {SETUP_STEPS.map((step) => (
