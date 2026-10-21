@@ -2,10 +2,17 @@ import { useSyncExternalStore } from 'react';
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import type { Locale, ScanLanguage } from '../i18n/resources';
 import { ApiError } from './api';
-import type { Recording } from './microphone';
+import {
+  MicrophoneError,
+  startRecording as startMicrophone,
+  type MicrophoneSession,
+  type Recording,
+} from './microphone';
 import { localIso } from './pantry';
 import { keepScreenAwake } from './wakeLock';
 import {
+  MAX_VOICE_NOTE_MS,
+  MIN_VOICE_NOTE_MS,
   sendVoiceNote,
   type VoiceList,
   type VoiceNoteRequest,
@@ -55,10 +62,16 @@ export type VoiceNoteState = {
   rawError?: { code: string; params: Record<string, unknown> };
   /** The Voice Cap, once the server reported it reached. In memory only; a reload drops it. */
   voiceCap?: { cap: number; resetsAt: number };
+  /** When the microphone went live (ms since the epoch), while recording. The clock is the card's. */
+  startedAt?: number;
 };
 
 /** A notice for the Member that the module has no toast of its own for. */
 export type VoiceNotice =
+  /** The recording was cancelled (let go off the button, Escape). */
+  | 'recordingCancelled'
+  /** The recording reached 60 seconds and was stopped and sent. */
+  | 'stoppedAtLimit'
   /** Cancel reading: the late answer is ignored. */
   | 'readCancelled'
   /** Discard on a failed Voice Note. */
@@ -66,12 +79,14 @@ export type VoiceNotice =
   /** The server has Voice Notes switched off: the note was dropped quietly. */
   | 'switchedOff';
 
-/** The outside world of the Voice Note. The microphone joins as the recording moves in. */
+/** The outside world of the Voice Note. */
 export type VoiceNoteAdapters = {
   /** Sends a recording to be read. */
   send: (request: VoiceNoteRequest) => Promise<VoiceNoteResult>;
   /** Keeps the screen awake; returns the function that lets it sleep again. */
   keepScreenAwake: () => () => void;
+  /** Asks for the microphone (prompting the first time) and starts recording. */
+  startMicrophone: () => Promise<MicrophoneSession>;
   /** Tells the Member something. Can also be attached later with `attachNotifier`. */
   notify?: (notice: VoiceNotice) => void;
 };
@@ -87,6 +102,24 @@ export type VoiceNoteEdit = Partial<{
   batchId: string | null;
   defaults: VoiceReviewAction['defaults'];
 }>;
+
+/** What stopped the recording came to: sent to be read, too short to read, or nothing was recording. */
+export type StopOutcome = 'sent' | 'tooShort' | 'notStarted';
+
+/** What a start came to. Only `denied` is the Member's to act on (the microphone sheets). */
+export type StartOutcome =
+  | 'started'
+  /** Refused by the start guard (or a note is already under way). */
+  | 'refused'
+  /** The Member or the browser refused the microphone. */
+  | 'denied'
+  /** No microphone, or this browser cannot record: the Voice Note failed. */
+  | 'unavailable'
+  /** Stopped or cancelled before the microphone was live: the stream was thrown away. */
+  | 'cancelled';
+
+/** Why a start would be refused: the hook shows the matching tip before asking for permission. */
+export type StartBlocker = 'busy' | 'kept' | 'capped' | 'none';
 
 /** The longest delay `setTimeout` takes. */
 const MAX_TIMEOUT = 2 ** 31 - 1;
@@ -108,7 +141,11 @@ const nextUtcMidnight = (now: number) => {
  * does nothing.
  */
 export function createVoiceNote(
-  adapters: VoiceNoteAdapters = { send: sendVoiceNote, keepScreenAwake },
+  adapters: VoiceNoteAdapters = {
+    send: sendVoiceNote,
+    keepScreenAwake,
+    startMicrophone,
+  },
 ) {
   let state = initial;
   const listeners = new Set<() => void>();
@@ -131,6 +168,13 @@ export function createVoiceNote(
   let release: (() => void) | undefined;
   let notifier = adapters.notify;
   let capTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The microphone: being asked for, then live; and what the recording is for. */
+  let starting: { cancelled: boolean } | undefined;
+  let session: MicrophoneSession | undefined;
+  let limitTimer: ReturnType<typeof setTimeout> | undefined;
+  let recordingFor: { scanLanguage: ScanLanguage; locale: Locale } | undefined;
+  /** The audio of a stopped recording is being finalised. */
+  let finishing = false;
 
   const notify = (notice: VoiceNotice) => notifier?.(notice);
   const hold = () => {
@@ -175,6 +219,15 @@ export function createVoiceNote(
     watchCap();
   }
 
+  /** Ends the microphone without sending: a live session is cancelled, a start in flight on arrival. */
+  function dropMicrophone() {
+    clearTimeout(limitTimer);
+    limitTimer = undefined;
+    session?.cancel();
+    session = undefined;
+    if (starting) starting.cancelled = true;
+  }
+
   /** The Voice Note did not reach Review; `keepRecording` holds the audio for Retry. */
   function failed(
     error: VoiceErrorCode,
@@ -183,6 +236,7 @@ export function createVoiceNote(
       keepRecording?: boolean;
     } = {},
   ) {
+    dropMicrophone();
     letSleep();
     go({
       phase: 'failed',
@@ -191,6 +245,30 @@ export function createVoiceNote(
       error,
       rawError: options.rawError,
     });
+  }
+
+  /** Whether the Voice Cap is still in force at `now` (ms). It lifts at the server's reset time. */
+  function isCapReached(now: number = Date.now()) {
+    return state.voiceCap !== undefined && now < state.voiceCap.resetsAt;
+  }
+
+  /** The Voice Note failed before or without a read (no microphone, the Voice Cap). */
+  function fail(error: 'unavailable' | 'capReached') {
+    if (
+      state.phase !== 'idle' &&
+      state.phase !== 'recording' &&
+      state.phase !== 'failed'
+    ) {
+      return;
+    }
+    failed(error);
+  }
+
+  /** Why a start would be refused right now. */
+  function startBlocker(): StartBlocker {
+    if (state.phase === 'reading') return 'busy';
+    if (state.phase === 'failed' && state.recording) return 'kept';
+    return isCapReached() ? 'capped' : 'none';
   }
 
   /** Maps what went wrong with the read to the state the status pill shows. */
@@ -283,6 +361,122 @@ export function createVoiceNote(
     }
   }
 
+  /**
+   * Turns the microphone on and keeps the screen awake until the note is settled. Enforces the
+   * start guard again: a capped start moves the note to the Voice Cap failure. Resolves once the
+   * microphone is live, or why it is not. `scanLanguage` and `locale` are for the read.
+   */
+  async function start(options: {
+    page: VoiceList;
+    scanLanguage: ScanLanguage;
+    locale: Locale;
+  }): Promise<StartOutcome> {
+    if (starting || session || finishing) return 'refused';
+    const blocker = startBlocker();
+    if (blocker === 'capped') {
+      fail('capReached');
+      return 'refused';
+    }
+    if (blocker !== 'none') return 'refused';
+    // A failure without a kept recording is dropped by the next press.
+    if (state.phase === 'failed') idle();
+    if (state.phase !== 'idle') return 'refused';
+    const attempt = { cancelled: false };
+    starting = attempt;
+    hold();
+    let live: MicrophoneSession;
+    try {
+      live = await adapters.startMicrophone();
+    } catch (error) {
+      starting = undefined;
+      if (!attempt.cancelled) letSleep();
+      if (error instanceof MicrophoneError && error.reason === 'denied') {
+        return 'denied';
+      }
+      fail('unavailable');
+      return 'unavailable';
+    }
+    starting = undefined;
+    // Stopped or cancelled on the way (its lock is already let go): the stream is not wanted.
+    if (attempt.cancelled || state.phase !== 'idle') {
+      live.cancel();
+      if (!attempt.cancelled) letSleep();
+      return 'cancelled';
+    }
+    session = live;
+    recordingFor = {
+      scanLanguage: options.scanLanguage,
+      locale: options.locale,
+    };
+    limitTimer = setTimeout(() => {
+      notify('stoppedAtLimit');
+      void stopRecording();
+    }, MAX_VOICE_NOTE_MS);
+    go({
+      phase: 'recording',
+      page: options.page,
+      startedAt: Date.now(),
+    });
+    return 'started';
+  }
+
+  /**
+   * The Member let go: ends the recording and sends it to be read. Can be called while the
+   * microphone is still starting, which then throws its stream away when it arrives.
+   */
+  async function stopRecording(): Promise<StopOutcome> {
+    if (starting) {
+      starting.cancelled = true;
+      letSleep();
+      return 'notStarted';
+    }
+    const active = session;
+    const mine = recordingFor;
+    if (!active || !mine) return 'notStarted';
+    clearTimeout(limitTimer);
+    limitTimer = undefined;
+    session = undefined;
+    recordingFor = undefined;
+    // Not recording any more, even while the audio is finalised.
+    finishing = true;
+    idle();
+    let audio: Recording;
+    try {
+      audio = await active.stop();
+    } catch {
+      finishing = false;
+      fail('unavailable');
+      return 'notStarted';
+    }
+    finishing = false;
+    if (audio.durationMs < MIN_VOICE_NOTE_MS) {
+      letSleep();
+      return 'tooShort';
+    }
+    // Something else ended the note while the audio was finalised.
+    if (state.phase !== 'idle') {
+      letSleep();
+      return 'notStarted';
+    }
+    void send(audio, mine.scanLanguage, mine.locale, state.page);
+    return 'sent';
+  }
+
+  /**
+   * Throws the recording away. Says so unless `quiet` (the page was left). With nothing
+   * recording or starting it does nothing: a read in flight and its wake lock are left alone.
+   */
+  function cancel(options: { quiet?: boolean } = {}) {
+    if (!starting && !session) return;
+    dropMicrophone();
+    letSleep();
+    if (state.phase === 'recording') idle();
+    if (!options.quiet) notify('recordingCancelled');
+  }
+
+  /** The input loudness, 0 to 1, for the Listening card's meter; 0 when nothing records. */
+  const level = () => session?.level() ?? 0;
+
   return {
     getState: () => state,
     subscribe(listener: () => void) {
@@ -300,40 +494,14 @@ export function createVoiceNote(
       };
     },
 
-    /**
-     * Interim, until the recording moves in: the Member pressed the button. The screen stays awake
-     * until the note is settled.
-     */
-    pressStarted: hold,
-    /**
-     * Interim: the press ended without a note (let go too soon, no microphone, the page left). The
-     * screen may sleep, unless a read in flight still needs it.
-     */
-    pressEnded() {
-      if (!reading) letSleep();
-    },
+    /** Why a start would be refused right now; read it before asking for the microphone. */
+    startBlocker,
+    start,
+    stop: stopRecording,
+    cancel,
+    level,
+    fail,
 
-    /** The microphone is on and the Member is speaking. */
-    startRecording(page: VoiceList) {
-      if (state.phase !== 'idle') return;
-      go({ phase: 'recording', page });
-    },
-    /** The Member let go or slid off to cancel without sending. */
-    cancelRecording() {
-      if (state.phase !== 'recording') return;
-      idle();
-    },
-    /**
-     * Sends the recording and reads it; `page` is the list the note is sent to. Settles when the
-     * read has: in Review, failed, or dropped.
-     */
-    read(
-      audio: Recording,
-      options: { scanLanguage: ScanLanguage; locale: Locale; page: VoiceList },
-    ): Promise<void> {
-      if (state.phase !== 'idle') return Promise.resolve();
-      return send(audio, options.scanLanguage, options.locale, options.page);
-    },
     /** Sends the kept recording again: the same audio, in the language and for the page it had. */
     retry(locale: Locale): Promise<void> {
       const { phase, recording: kept, page } = state;
@@ -358,17 +526,6 @@ export function createVoiceNote(
       idle();
       notify('readCancelled');
     },
-    /** The Voice Note failed before or without a read (no microphone, the Voice Cap). */
-    fail(error: 'unavailable' | 'capReached') {
-      if (
-        state.phase !== 'idle' &&
-        state.phase !== 'recording' &&
-        state.phase !== 'failed'
-      ) {
-        return;
-      }
-      failed(error);
-    },
     /** Drops a failure and its kept recording. */
     dismiss() {
       if (state.phase !== 'failed') return;
@@ -380,9 +537,7 @@ export function createVoiceNote(
       idle();
       notify('discarded');
     },
-    /** Whether the Voice Cap is still in force at `now` (ms). It lifts at the server's reset time. */
-    isCapReached: (now: number = Date.now()) =>
-      state.voiceCap !== undefined && now < state.voiceCap.resetsAt,
+    isCapReached,
 
     /** Review: drops a Voice Action. */
     remove(id: string) {
@@ -431,16 +586,6 @@ export function createVoiceNote(
     discard() {
       if (state.phase !== 'review') return;
       idle();
-    },
-
-    /** Back to a fresh start: aborts any read, lets the screen sleep, forgets the Voice Cap. */
-    reset() {
-      reading?.abort();
-      reading = undefined;
-      letSleep();
-      clearTimeout(capTimer);
-      state = initial;
-      emit();
     },
   };
 }

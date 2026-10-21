@@ -12,6 +12,8 @@ import { holdLongEnough, pressDown } from './voiceHold';
  * - Microphone: jsdom has no getUserMedia or MediaRecorder, so the microphone module is the seam.
  *   `mic.start` / `mic.permission` / `mic.request` are the mocks behind it.
  * - Wake lock: a fake `navigator.wakeLock`; `wake.request` / `wake.released` are its mocks.
+ * - Voice Note: the default instance is swapped for a fresh one by `resetVoiceEnvironment`, so no
+ *   page test inherits the last one's phase, Voice Cap or lock. The module has no reset of its own.
  * - Send-Voice-Note request: `stubVoiceFetch` wraps the stubbed API and returns what is sent.
  *
  * Call `resetVoiceEnvironment()` in `beforeEach` to put all of it back to its defaults.
@@ -24,6 +26,7 @@ const fakes = vi.hoisted(() => ({
   },
   mic: { start: vi.fn(), permission: vi.fn(), request: vi.fn() },
   wake: { request: vi.fn(), released: vi.fn() },
+  voice: { replace: () => {} },
 }));
 
 vi.mock('../lib/microphone', () => ({
@@ -34,6 +37,39 @@ vi.mock('../lib/microphone', () => ({
   MicrophoneError: fakes.MicrophoneError,
 }));
 
+// The pages use the default Voice Note; behind it sits an instance this environment can renew.
+vi.mock('../lib/voiceNote', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/voiceNote')>();
+  const { useSyncExternalStore } = await import('react');
+  let current = actual.createVoiceNote();
+  const listeners = new Set<() => void>();
+  const emit = () => listeners.forEach((listener) => listener());
+  let unsubscribe = current.subscribe(emit);
+  const subscribe = (listener: () => void) => {
+    listeners.add(listener);
+    return () => void listeners.delete(listener);
+  };
+  const voiceNote = new Proxy(current, {
+    get: (_, key) =>
+      key === 'subscribe' ? subscribe : Reflect.get(current, key),
+  });
+  fakes.voice.replace = () => {
+    // Settle what the last test left under way, then start over.
+    current.cancelReading();
+    current.cancel({ quiet: true });
+    unsubscribe();
+    current = actual.createVoiceNote();
+    unsubscribe = current.subscribe(emit);
+    emit();
+  };
+  return {
+    ...actual,
+    voiceNote,
+    useVoiceNoteState: () =>
+      useSyncExternalStore(subscribe, voiceNote.getState, voiceNote.getState),
+  };
+});
+
 /** The microphone module's error, as the page sees it (the page checks `instanceof`). */
 export const MicrophoneError = fakes.MicrophoneError;
 
@@ -43,7 +79,7 @@ export const wake = fakes.wake;
 /** Defaults: a granted microphone that hands out `fakeSession()`s, a supported wake lock. */
 export function resetVoiceEnvironment() {
   // First: dropping the Voice Note releases the wake lock, which the resets below then forget.
-  voiceNote.reset();
+  fakes.voice.replace();
   mic.start.mockReset();
   mic.start.mockImplementation(() => Promise.resolve(fakeSession()));
   mic.permission.mockReset();
@@ -97,6 +133,16 @@ export const recording: Recording = {
   mimeType: 'audio/webm;codecs=opus',
   durationMs: 3000,
 };
+
+/** Records a Voice Note from the fake microphone and lets go, as another page would have: it is sent to be read. */
+export async function recordAndSend(options: {
+  scanLanguage: 'en' | 'ro';
+  locale: 'en' | 'ro';
+  page: 'shopping' | 'pantry';
+}) {
+  await voiceNote.start(options);
+  await voiceNote.stop();
+}
 
 /** A live microphone session that stops with `recording`. */
 export function fakeSession() {

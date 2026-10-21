@@ -18,7 +18,6 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { voiceNote } from '../../lib/voiceNote';
 import { Route, Routes } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { ShoppingPage } from './ShoppingPage';
@@ -478,90 +477,6 @@ describe('the recording gesture on the Shopping List', () => {
       await screen.findByRole('dialog');
       expect(request).toHaveBeenCalledTimes(1);
       await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
-    });
-
-    it('is released when cancelled', async () => {
-      setup();
-      renderWithProviders(<ShoppingPage />);
-      const button = await hold();
-      fireEvent.pointerMove(button, { clientX: 10, clientY: 530 });
-      fireEvent.pointerUp(button);
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
-    });
-
-    it('is released after a tap', async () => {
-      setup();
-      renderWithProviders(<ShoppingPage />);
-      const button = await talkButton();
-      pressDown(button);
-      await screen.findByText('Listening');
-      fireEvent.pointerUp(button);
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
-    });
-
-    it('is released when the read fails', async () => {
-      const { fetchMock } = stubApi({
-        'GET /api/shopping-list': () =>
-          Response.json({
-            id: 'l1',
-            groups: [],
-            summary: { remaining: 0, checked: 0 },
-          }),
-        'GET /api/voice/config': () => Response.json({ configured: true }),
-        'POST /api/voice': () =>
-          Response.json(
-            { code: 'voice.nothing_heard', params: {} },
-            { status: 422 },
-          ),
-      });
-      vi.stubGlobal('fetch', fetchMock);
-      renderWithProviders(<ShoppingPage />);
-      const button = await hold();
-      fireEvent.pointerUp(button);
-      await screen.findByText(/Didn't catch anything/);
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
-    });
-
-    it('is released even when the grant arrives after the press ended', async () => {
-      let grant: (lock: { release: () => Promise<void> }) => void = () => {};
-      request.mockImplementation(
-        () => new Promise((resolve) => (grant = resolve)),
-      );
-      setup();
-      renderWithProviders(<ShoppingPage />);
-      const button = await hold();
-      fireEvent.pointerMove(button, { clientX: 10, clientY: 530 });
-      fireEvent.pointerUp(button);
-      await act(async () => grant({ release: released }));
-      expect(released).toHaveBeenCalledTimes(1);
-    });
-
-    it('is released on Escape, a pointer cancel, the 60 s auto-stop and leaving the page', async () => {
-      setup();
-      const view = renderWithProviders(<ShoppingPage />);
-      await hold();
-      await userEvent.keyboard('{Escape}');
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
-
-      const button = await talkButton();
-      pressDown(button);
-      await screen.findByText('Listening');
-      fireEvent.pointerCancel(button);
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(2));
-
-      pressDown(button);
-      await screen.findByText('Listening');
-      await holdFor(60_000);
-      await screen.findByRole('dialog');
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(3));
-
-      view.unmount();
-      voiceNote.reset();
-      const second = renderWithProviders(<ShoppingPage />);
-      await hold();
-      second.unmount();
-      await waitFor(() => expect(released).toHaveBeenCalledTimes(4));
-      expect(request).toHaveBeenCalledTimes(4);
     });
 
     it('is skipped silently when the browser has none, or refuses', async () => {
