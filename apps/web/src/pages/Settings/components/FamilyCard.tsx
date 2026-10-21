@@ -139,7 +139,7 @@ export function FamilyCard() {
   const data = family.data;
   const expiresAt = new Date(data.inviteCodeExpiresAt);
   // Expired is by the instant, as on the Family page; days left counts calendar days on the device.
-  // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
+  // oxlint-disable-next-line react/purity -- invite expiry is checked against the current time on each render; freezing it would keep an expired invite looking valid
   const expired = expiresAt.getTime() <= Date.now();
   const daysLeft = daysUntil(localIso(expiresAt), today);
   const expiryText =
