@@ -330,6 +330,11 @@ const FINAL_ERRORS = [
 export const canRetry = (scan: SessionScan) =>
   !FINAL_ERRORS.includes(scan.errorCode ?? '');
 
+/** Whether a failed Scan's own error copy is shown: when a retry cannot help, or when it explains why to wait (a rate-limited Barcode Lookup). */
+export const showsErrorCopy = (scan: SessionScan) =>
+  Boolean(scan.errorCode) &&
+  (!canRetry(scan) || scan.errorCode === 'barcode.rate_limited');
+
 const sectionsOf = (scan: SessionScan) => scan.sections ?? [scan];
 
 /** Whether the receipt Scan `id` may join the receipt Scan above it: both read, within the section limit. */

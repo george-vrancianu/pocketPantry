@@ -31,7 +31,7 @@ import {
 } from '../../lib/review';
 import { savableLines, useSaveScan } from '../../lib/saveScan';
 import {
-  canRetry,
+  showsErrorCopy,
   canMerge,
   dispatchScanSession,
   getScanSession,
@@ -255,7 +255,7 @@ export function ReviewOverviewPage() {
                 <Typography sx={{ fontSize: 13 }}>
                   {tScan('capReached')}
                 </Typography>
-              ) : scan.errorCode && !canRetry(scan) ? (
+              ) : showsErrorCopy(scan) ? (
                 <Typography sx={{ fontSize: 13 }}>
                   {tScan(`errors:${scan.errorCode}`, scan.errorParams)}
                 </Typography>

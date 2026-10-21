@@ -19,3 +19,4 @@ Members want the add-Batch form prefilled from a product, and a photo read costs
 ## Consequences
 
 - Open Food Facts coverage for Romanian and Danish products is patchy. The Family's Known Barcodes, not Open Food Facts, are what make repeat purchases instant.
+- Open Food Facts allows 15 product reads a minute per IP, so Barcode Lookups have a Lookup Limit (#416): 8 a minute per Member and 12 for the whole API process, counting only calls that really go out (not Known Barcodes, cache hits or invalid codes). Over it the API answers 429 `barcode.rate_limited` with Retry-After. Per Member, not per Family, because a Member's scan session is what bursts; the global limit bounds a Family of scanners. In memory and per process, like the Invite Code limit.

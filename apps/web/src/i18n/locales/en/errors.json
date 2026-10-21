@@ -138,7 +138,8 @@
     "allergen_retired": "That Allergen is retired and can't be picked."
   },
   "barcode": {
-    "provider_unavailable": "The barcode lookup is unavailable right now. Try again, or fill the form by hand."
+    "provider_unavailable": "The barcode lookup is unavailable right now. Try again, or fill the form by hand.",
+    "rate_limited": "Too many barcode lookups for now. Wait a minute and try again, or fill the form by hand."
   },
   "meal_plan": {
     "cap_reached": "Your Family can have {{cap}} Meal plans. Delete one to make room.",

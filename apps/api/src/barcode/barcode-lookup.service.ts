@@ -16,6 +16,7 @@ import { SettingsService } from '../settings/settings.service';
 import type { BarcodeLookupResponse } from './barcode.schemas';
 import { allergenSlugsOf } from './open-food-facts-allergens';
 import { findKnownBarcode } from './known-barcodes';
+import { OpenFoodFactsThrottle } from './open-food-facts-throttle';
 import { parseNetQuantity } from './net-quantity';
 import {
   InjectOpenFoodFacts,
@@ -41,6 +42,7 @@ export class BarcodeLookupService {
     @InjectOpenFoodFacts() private readonly openFoodFacts: OpenFoodFactsClient,
     private readonly catalogSearch: CatalogSearchService,
     private readonly settings: SettingsService,
+    private readonly throttle: OpenFoodFactsThrottle,
     @Inject(DATABASE) private readonly database: Database,
   ) {}
 
@@ -56,7 +58,7 @@ export class BarcodeLookupService {
     const scope = catalogScope(familyId);
     const known = await this.knownBarcode(familyId, barcode, locale, scope);
     if (known) return known;
-    const product = await this.product(barcode);
+    const product = await this.product(memberId, barcode);
     if (!product) return { found: false };
 
     const names = candidateNames(product, locale);
@@ -175,11 +177,16 @@ export class BarcodeLookupService {
 
   /**
    * The product as Open Food Facts has it, or null. Served from the shared
-   * cache while fresh; a failure throws and is never cached.
+   * cache while fresh; a failure throws and is never cached. A call that goes out is rate limited.
    */
-  private async product(barcode: string): Promise<OpenFoodFactsProduct | null> {
+  private async product(
+    memberId: string,
+    barcode: string,
+  ): Promise<OpenFoodFactsProduct | null> {
     const cached = await this.freshCached(barcode);
     if (cached) return cached.product;
+    // Only a call that really goes out is charged against the limits (#416).
+    this.throttle.charge(memberId);
     const fetched = await this.openFoodFacts.fetchProduct(barcode);
     // A product with no usable name cannot prefill anything: it is a not found.
     const product = fetched && hasName(fetched) ? fetched : null;

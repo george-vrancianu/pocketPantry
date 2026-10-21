@@ -316,6 +316,23 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
   });
 
+  it('keeps the form and says to wait when the lookup is rate limited', async () => {
+    const user = userEvent.setup();
+    stubLookup(() =>
+      Response.json(
+        { code: 'barcode.rate_limited', params: {} },
+        { status: 429, headers: { 'Retry-After': '30' } },
+      ),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    expect(await screen.findByText(/Too many barcode lookups/)).toBeVisible();
+    expect(screen.queryByText(/No product found/)).toBeNull();
+    expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
+  });
+
   it('cancelling keeps the form and ends the watch', async () => {
     const user = userEvent.setup();
     const calls = stubLookup(() => Response.json(found()));
