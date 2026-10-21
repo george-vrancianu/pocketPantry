@@ -41,11 +41,19 @@ const milkStaple = {
 };
 
 /** Running-low flags and Staples follow the PUT and DELETE calls, as the API does. */
+type StubOptions = { failSaves?: boolean };
+/** A failing save answers only once this opens, so the optimistic flag shows before the failure. */
+let failGate: () => void = () => {};
 function stubRunningLow(
   flaggedAtStart: string[] = [],
-  { failSaves = false }: { failSaves?: boolean } = {},
+  { failSaves = false }: StubOptions = {},
 ) {
   const flagged = new Set<string>(flaggedAtStart);
+  const gate = new Promise<void>((resolve) => (failGate = resolve));
+  const fail = async () => {
+    await gate;
+    return Response.json({ status: 500 }, { status: 500 });
+  };
   let staples: (typeof milkStaple)[] = [];
   const { fetchMock, calls } = stubApi({
     'GET /api/pantry': () =>
@@ -74,12 +82,12 @@ function stubRunningLow(
       return new Response(null, { status: 204 });
     },
     'PUT /api/pantry/running-low/milk-id': () => {
-      if (failSaves) return Response.json({ status: 500 }, { status: 500 });
+      if (failSaves) return fail();
       flagged.add('milk-id');
       return new Response(null, { status: 204 });
     },
     'DELETE /api/pantry/running-low/milk-id': () => {
-      if (failSaves) return Response.json({ status: 500 }, { status: 500 });
+      if (failSaves) return fail();
       flagged.delete('milk-id');
       return new Response(null, { status: 204 });
     },
@@ -118,10 +126,7 @@ function swipe(target: HTMLElement, dx: number) {
   release(target, dx);
 }
 
-async function renderPage(
-  flagged: string[] = [],
-  options: { failSaves?: boolean } = {},
-) {
+async function renderPage(flagged: string[] = [], options: StubOptions = {}) {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   const { calls, flagged: serverFlagged } = stubRunningLow(flagged, options);
   const { queryClient } = renderWithProviders(<PantryPage />);
@@ -453,6 +458,12 @@ describe('swiping an Ingredient row to toggle Running low', () => {
   });
 
   describe('when the save fails', () => {
+    const failure = () =>
+      act(async () => {
+        failGate();
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
     it('puts a row that was not low back with no tint, chip or sweep left', async () => {
       const { calls } = await renderPage([], { failSaves: true });
       swipe(row('Milk'), -92);
@@ -460,9 +471,15 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       await waitFor(() =>
         expect(saves(calls)).toEqual(['PUT /api/pantry/running-low/milk-id']),
       );
+      // The flag shows at once, before the save answers.
+      await waitFor(() => expect(chip()).toBeVisible());
+      await failure();
+      expect((await screen.findAllByRole('alert')).length).toBeGreaterThan(0);
       await waitFor(() => expect(chip()).toBeNull());
-      await act(() => vi.advanceTimersByTimeAsync(600));
       expect(tint()).toBeNull();
+      expect(sweepOf()).toBeNull();
+      expect(sweepsSeen).not.toContain('off');
+      await act(() => vi.advanceTimersByTimeAsync(600));
       expect(sweepOf()).toBeNull();
     });
 
@@ -475,9 +492,14 @@ describe('swiping an Ingredient row to toggle Running low', () => {
           'DELETE /api/pantry/running-low/milk-id',
         ]),
       );
-      await act(() => vi.advanceTimersByTimeAsync(600));
+      await waitFor(() => expect(chip()).toBeNull());
+      await failure();
+      expect((await screen.findAllByRole('alert')).length).toBeGreaterThan(0);
+      await waitFor(() => expect(tint()).not.toBeNull());
       expect(chip()).toBeVisible();
-      expect(tint()).not.toBeNull();
+      expect(sweepOf()).toBeNull();
+      expect(sweepsSeen).not.toContain('on');
+      await act(() => vi.advanceTimersByTimeAsync(600));
       expect(sweepOf()).toBeNull();
     });
   });
