@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
-import { SCAN_LANGUAGES } from '../catalog/catalog.schemas';
+import {
+  SCAN_LANGUAGES,
+  type CatalogLocale,
+  type ScanLanguage,
+} from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import { DATABASE } from '../database/database.constants';
@@ -14,10 +18,13 @@ import { TranscriptionService } from './transcription.service';
 import {
   amountOf,
   type ModelVoiceAction,
+  type VoiceTarget,
   type ResolvedVoiceAction,
   type VoiceActionDraft,
+  type VoiceActionKind,
   type VoiceApplyBody,
   type VoiceApplyResult,
+  voiceActionKind,
 } from './voice-actions';
 import type { VoiceActionHandler } from './voice-handlers';
 import { VoiceHandlers } from './voice-handlers.registry';
@@ -34,6 +41,28 @@ export type VoiceNoteInput = VoiceNoteFields & {
   audio: Buffer;
   /** A bare, supported container type such as `audio/webm`. */
   mimeType: string;
+};
+
+/** Plain text to read into Voice Actions: no audio, no cap. */
+export type VoiceReadTextInput = {
+  text: string;
+  scanLanguage: ScanLanguage;
+  locale: CatalogLocale;
+  /** The Member's local date, for resolving spoken dates. */
+  today: string;
+  defaultTarget: VoiceTarget;
+  /** Debug capture only: ties this read to a transcription. */
+  captureId?: string;
+};
+
+/** Voice Actions to apply on their own, without Review. */
+export type VoiceApplyActionsInput = {
+  actions: VoiceActionDraft[];
+  locale: CatalogLocale;
+  /** The Member's local date, for a Pantry add that takes the Default Expiry. */
+  today: string;
+  /** When given, an action of any other kind is refused and nothing is written for it. */
+  allowedKinds?: ReadonlySet<VoiceActionKind>;
 };
 
 type PantryBatches = Awaited<ReturnType<PantryService['list']>>;
@@ -91,12 +120,14 @@ export class VoiceService {
       });
       const transcript = text.trim();
       if (!transcript) throw new ApiException(422, 'voice.nothing_heard');
-      const actions = await this.resolveTranscript(
-        memberId,
-        transcript,
-        input,
+      const actions = await this.readText(memberId, {
+        text: transcript,
+        scanLanguage: input.scanLanguage,
+        locale: input.locale,
+        today: input.today,
+        defaultTarget: input.defaultTarget,
         captureId,
-      );
+      });
       // Noise ("Thank you.") reads into nothing: no Review, and no charge. A
       // note of only "Didn't understand" rows still opens Review.
       if (actions.length === 0) {
@@ -109,11 +140,14 @@ export class VoiceService {
     }
   }
 
-  private async resolveTranscript(
+  /**
+   * Reads plain text into Voice Actions, each resolved against the Member's
+   * current lists. No transcription and no cap; writes nothing. A provider
+   * failure is `voice.provider_unavailable`.
+   */
+  async readText(
     memberId: string,
-    transcript: string,
-    input: VoiceNoteFields,
-    captureId: string,
+    input: VoiceReadTextInput,
   ): Promise<ResolvedVoiceAction[]> {
     const shoppingItems = await this.shopping
       .peekList(memberId, input.locale)
@@ -123,12 +157,12 @@ export class VoiceService {
       read = await this.reader.read({
         shoppingItems,
         memberId,
-        transcript,
+        transcript: input.text,
         scanLanguage: input.scanLanguage,
         locale: input.locale,
         today: input.today,
         defaultTarget: input.defaultTarget,
-        captureId,
+        captureId: input.captureId,
       });
     } catch (error) {
       // The shared AI service speaks `scan.*`; to a Member this is the voice provider failing.
@@ -255,19 +289,43 @@ export class VoiceService {
     };
   }
 
+  /** Applies the Voice Actions as edited in Review. Free of the Voice Cap. */
+  apply(memberId: string, body: VoiceApplyBody): Promise<VoiceApplyResult> {
+    return this.applyActions(memberId, {
+      actions: body.actions,
+      locale: body.locale,
+      today: body.today ?? new Date().toISOString().slice(0, 10),
+    });
+  }
+
   /**
-   * Applies the Voice Actions as edited in Review, all in one transaction.
-   * Each is re-checked against the current lists by its handler and runs in its
-   * own savepoint, so a skipped one leaves no partial write. Free of the Voice Cap.
+   * Applies Voice Actions all in one transaction. Each is re-checked against
+   * the current lists by its handler and runs in its own savepoint, so a
+   * skipped one leaves no partial write. With an allowed set, an action of
+   * another kind is refused (`refused`, reason `voice.kind_not_allowed`) before
+   * any handler runs.
    */
-  async apply(
+  async applyActions(
     memberId: string,
-    body: VoiceApplyBody,
+    input: VoiceApplyActionsInput,
   ): Promise<VoiceApplyResult> {
-    const result: VoiceApplyResult = { applied: [], skipped: [] };
+    const { allowedKinds } = input;
+    const result: VoiceApplyResult = {
+      applied: [],
+      skipped: [],
+      ...(allowedKinds ? { refused: [] } : {}),
+    };
     await this.database.transaction(async (tx) => {
-      for (const action of body.actions) {
-        const draft: VoiceActionDraft = action;
+      for (const draft of input.actions) {
+        const kind = voiceActionKind(draft);
+        if (allowedKinds && !allowedKinds.has(kind)) {
+          result.refused?.push({
+            id: draft.id,
+            kind,
+            reason: 'voice.kind_not_allowed',
+          });
+          continue;
+        }
         const handler: VoiceActionHandler | undefined =
           this.handlers.for(draft);
         if (!handler) {
@@ -278,8 +336,8 @@ export class VoiceService {
           const applied = await tx.transaction(async (savepoint) => {
             const outcome = await handler.apply(draft, {
               memberId,
-              locale: body.locale,
-              today: body.today ?? new Date().toISOString().slice(0, 10),
+              locale: input.locale,
+              today: input.today,
               tx: savepoint,
             });
             if (!outcome.applied) throw new SkippedAction(outcome.reason);
