@@ -44,6 +44,8 @@ Run from the repo root unless noted.
 - API unit: `npm run test:unit -w apps/api`.
 - API integration (needs Postgres, `npm run db:up`): `cd apps/api && npm run test:integration -- --runInBand <pattern>`.
 - Storybook: `npm run storybook -w packages/ui`.
+- Worktree create/remove helper: `scripts/worktree.sh` (see `docs/agents/worktrees-and-migrations.md`).
+- Migration-number collision check: `npm run check:migrations` (`scripts/check-migrations.mjs`).
 - `npm run dev` starts Postgres, migrates, and runs both apps; agents leave it to the human.
 
 ## Gotchas
