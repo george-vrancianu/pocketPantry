@@ -6,7 +6,11 @@ import { loadDisplayNames } from '../catalog/display-names';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { exceedsMaxQuantity } from '../common/quantity';
-import { convertQuantity, unitsMerge } from '../recipes/matching/units';
+import {
+  convertQuantity,
+  unitsMerge,
+  type Unit,
+} from '../recipes/matching/units';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
@@ -46,6 +50,25 @@ export function sumQuantities(
   if (existing === null) return added;
   if (added === null) return existing;
   return Math.round((existing + added) * 1000) / 1000;
+}
+
+/**
+ * The quantity expressed in the target unit (500 g + 1 kg = 1500 g), rounded
+ * like sumQuantities so float noise never reaches the DB. Callers pass units
+ * that unitsMerge accepted, so a conversion exists; a missing quantity or
+ * unit, or the same unit, passes through.
+ */
+export function quantityInUnit(
+  quantity: number | null,
+  from: Unit | null,
+  to: Unit | null,
+): number | null {
+  if (quantity === null || from === null || to === null || from === to) {
+    return quantity;
+  }
+  const converted = convertQuantity(quantity, from, to);
+  if (converted === null) throw new Error('units do not convert');
+  return Math.round(converted * 1000) / 1000;
 }
 
 /** An item to merge; the server may claim any Unmatched source, a client only `SHOPPING_ITEM_SOURCES`. */
@@ -246,14 +269,7 @@ export class ShoppingService {
 
     if (existing) {
       // The added amount is expressed in the existing line's unit (500 g + 1 kg = 1500 g).
-      let addedQuantity = quantity;
-      if (quantity !== null && unit !== null && existing.unit !== unit) {
-        // unitsMerge guarantees the same dimension, so a conversion exists.
-        const converted = convertQuantity(quantity, unit, existing.unit!);
-        if (converted === null) throw new Error('units do not convert');
-        // Rounded like sumQuantities, so float noise never reaches the DB.
-        addedQuantity = Math.round(converted * 1000) / 1000;
-      }
+      const addedQuantity = quantityInUnit(quantity, unit, existing.unit);
       const merged = sumQuantities(
         existing.quantity === null ? null : Number(existing.quantity),
         addedQuantity,

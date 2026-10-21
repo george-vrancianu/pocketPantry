@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
-import { convertQuantity, unitsMerge } from '../recipes/matching/units';
 import { exceedsMaxQuantity } from '../common/quantity';
+import { unitsMerge } from '../recipes/matching/units';
 import type { Tx } from '../database/database.types';
 import { clearRunningLowOnRestock } from '../pantry/running-low-flags';
 import { recordStocked } from '../pantry/stock-history';
@@ -15,7 +15,7 @@ import {
   shoppingTemplateLines,
   shoppingTemplates,
 } from '../database/schema';
-import { sumQuantities } from '../shopping/shopping.service';
+import { quantityInUnit, sumQuantities } from '../shopping/shopping.service';
 
 export type UnmatchedRelinkCounts = {
   relinkedBatches: number;
@@ -139,7 +139,8 @@ export async function relinkUnmatched(
 /**
  * Relinks Unmatched Shopping Items to the Ingredient. On the active list a
  * Shopping Item merges into an existing one for the same Ingredient and
- * unit (the list's "adding an item for an Ingredient already on it merges"
+ * a compatible unit (the same, or g/kg, ml/l, converted into the existing
+ * line's unit; the list's "adding an item for an Ingredient already on it merges"
  * rule); archived lists are history, so there it only relinks, and so does a
  * merge that would pass the quantity cap.
  */
@@ -189,18 +190,13 @@ async function relinkShoppingItems(
         : [];
     // The same rule as adding: the oldest line with a compatible unit (the same, or g/kg, ml/l).
     const twin = candidates.find((c) => unitsMerge(c.unit, row.unit));
-    let rowQuantity = row.quantity === null ? null : Number(row.quantity);
-    if (
-      twin &&
-      rowQuantity !== null &&
-      row.unit !== null &&
-      twin.unit !== row.unit
-    ) {
-      // unitsMerge guarantees the same dimension; expressed in the twin's unit.
-      const converted = convertQuantity(rowQuantity, row.unit, twin.unit!);
-      if (converted === null) throw new Error('units do not convert');
-      rowQuantity = Math.round(converted * 1000) / 1000;
-    }
+    const rowQuantity = twin
+      ? quantityInUnit(
+          row.quantity === null ? null : Number(row.quantity),
+          row.unit,
+          twin.unit,
+        )
+      : null;
     const merged = twin
       ? sumQuantities(
           twin.quantity === null ? null : Number(twin.quantity),

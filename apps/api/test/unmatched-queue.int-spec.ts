@@ -1025,6 +1025,31 @@ describe('Unmatched queue (integration)', () => {
       expect(await entryFor(raw)).toBeUndefined();
     });
 
+    it('keeps a separate line instead of merging a converted quantity past the quantity cap', async () => {
+      const raw = name('capconv');
+      const member = await newMember();
+      const parmesan = seedId.ingredient('parmesan');
+      await addTyped(member, {
+        ingredientId: parmesan,
+        quantity: 600_000,
+        unit: 'g',
+      });
+      // 500 kg is 500_000 g, which would take the g line past the cap.
+      await addTyped(member, { name: raw, quantity: 500, unit: 'kg' });
+
+      await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: parmesan,
+      }).expect(201);
+
+      const items = await itemsOf(member);
+      expect(items).toHaveLength(2);
+      expect(items.find((i) => i.unit === 'g')?.quantity).toBe(600_000);
+      expect(items.find((i) => i.unit === 'kg')?.quantity).toBe(500);
+      expect(items.every((i) => !i.unmatched)).toBe(true);
+      expect(await entryFor(raw)).toBeUndefined();
+    });
+
     it('moves the Source Recipes of a merged Shopping Item onto the item it merged into', async () => {
       const raw = name('sources');
       const member = await newMember();
