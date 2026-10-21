@@ -22,7 +22,7 @@ import { TemplateEditorPage } from './Shopping/templates/TemplateEditorPage';
 /** The pill reads the `row.hint` string (en). */
 const PILL = 'Swipe left to remove · hold to edit';
 const flag = (list: string) => localStorage.getItem(`pp.rowHint.${list}`);
-const sleep = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
+const sleep = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
 const peeking = () => document.querySelector('[data-peeking]');
 const pill = () => document.querySelector('[data-row-hint]');
 /** The pill keeps its space while hidden; it is "shown" once exposed to assistive technology. */
@@ -171,8 +171,14 @@ function stubPopulated() {
 }
 
 describe('first-use row hint', () => {
-  beforeEach(() => localStorage.clear());
-  afterEach(() => vi.unstubAllGlobals());
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   describe.each(SETUPS)('$list', (setup) => {
     const swipeToZone1 = (row: HTMLElement) => {
