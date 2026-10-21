@@ -252,12 +252,24 @@ A short recording a Member speaks into the Shopping List or the Pantry, read int
 _Avoid_: Voice scan, voice command, dictation
 
 **Voice Action**:
-One change a Voice Note proposes: adding, removing, checking or unchecking a Shopping Item or setting its quantity, adding or removing Batches, or flagging an Ingredient Running low. Nothing is applied until the Member confirms it in Review.
+One change read from spoken or dictated text: adding, removing, checking or unchecking a Shopping Item or setting its quantity, adding or removing Batches, or flagging an Ingredient Running low. From a Voice Note, nothing is applied until the Member confirms it in Review. An Assistant Request may apply a Voice Action without Review, but only the safe kinds: adding a Shopping Item and flagging an Ingredient Running low. Every other kind is refused.
 _Avoid_: Command, intent, voice line
 
 **Voice Cap**:
 The maximum number of Voice Notes a Member may record per day.
 _Avoid_: Voice quota, Scan Cap (a separate limit)
+
+**Assistant Request**:
+Text a Member dictates to a voice assistant (today only Siri, through an Apple Shortcut) and the Shortcut sends to the API with an Assistant Token. It is read into Voice Actions like a Voice Note, but the safe ones are applied at once with no Review and the rest are refused. The reply is one sentence for the assistant to speak, in the Member's UI language. Not a Voice Note (no recording, no transcription) and not a Scan; the text is not stored.
+_Avoid_: Siri command, assistant call, Voice Note
+
+**Assistant Cap**:
+The maximum number of Assistant Requests a Member may make per day. Separate from the Voice Cap and the Scan Cap, so using Siri never locks a Member out of in-app Voice Notes.
+_Avoid_: Assistant quota, Voice Cap (a separate limit)
+
+**Assistant Token**:
+A secret a Member creates in Settings, with a name such as "George's iPhone", and pastes into the Shortcut. It authenticates as a Bearer token on the Assistant Request endpoint only, and is accepted nowhere else. It belongs to the Member, not to a Family, and is shown once; only a hash is stored. A Member can have several and revoke each separately.
+_Avoid_: API key, session, login
 
 ### Recipes
 
