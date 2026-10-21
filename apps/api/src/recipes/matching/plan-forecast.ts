@@ -79,6 +79,9 @@ export type ForecastBatch = {
 export type ForecastListEntry = {
   ingredientId: string | null;
   name: string | null;
+  /** Absent or null: the line has no amount, so it only counts as present. */
+  quantity?: number | null;
+  unit?: Unit | null;
 };
 
 export type ForecastInput = {
@@ -89,7 +92,10 @@ export type ForecastInput = {
   recipes: Readonly<Record<string, ForecastRecipe>>;
   /** The Family's unexpired Batches. The caller drops those expired before `today`. */
   batches: readonly ForecastBatch[];
-  /** Only turns short into onList; it is never stock. */
+  /**
+   * Only turns short into onList; it is never stock. Its amount is used up
+   * slot by slot in forecast order (see `ListPool`).
+   */
   shoppingList: readonly ForecastListEntry[];
 };
 
@@ -125,6 +131,11 @@ export type ForecastIssue = {
   quantity: number | null;
   unit: BaseUnit | null;
   onList: boolean;
+  /**
+   * Set only when the list covers part of a short issue: what is still
+   * uncovered, in `unit`. Add missing adds this instead of `quantity`.
+   */
+  uncovered?: number;
   reason: Reason;
 };
 
@@ -167,6 +178,35 @@ const round = (value: number) => Math.round(value * 1000) / 1000;
 /** Rounds up, so a shortfall is never reported as nothing. */
 const roundUp = (value: number) => Math.ceil(value * 1000 - 1e-9) / 1000;
 
+/**
+ * An Ingredient's Shopping List amount, pooled across its lines. `presenceOnly`
+ * when any line has no amount: then it only counts as present, as before.
+ */
+type ListPool = {
+  presenceOnly: boolean;
+  remaining: Map<Dimension, number>;
+};
+
+function poolList(entries: readonly ForecastListEntry[]) {
+  const pools = new Map<string, ListPool>();
+  for (const entry of entries) {
+    const key = keyOf(entry);
+    const pool = pools.get(key) ?? {
+      presenceOnly: false,
+      remaining: new Map<Dimension, number>(),
+    };
+    pools.set(key, pool);
+    const comparable = toComparable(entry.quantity ?? null, entry.unit ?? null);
+    if (comparable === null) pool.presenceOnly = true;
+    else
+      pool.remaining.set(
+        comparable.dimension,
+        (pool.remaining.get(comparable.dimension) ?? 0) + comparable.amount,
+      );
+  }
+  return pools;
+}
+
 /** A Batch's working copy: what is left of it as the slots use it up. */
 type Stock = {
   batch: ForecastBatch;
@@ -201,7 +241,7 @@ function run(input: ForecastInput) {
   const slots = input.slots
     .filter((slot) => slot.date >= input.today)
     .sort(compareSlotOrder);
-  const onList = new Set(input.shoppingList.map(keyOf));
+  const list = poolList(input.shoppingList);
   const stock = new Map<string, Stock[]>();
   for (const batch of input.batches) {
     const comparable = toComparable(batch.quantity, batch.unit);
@@ -251,15 +291,38 @@ function run(input: ForecastInput) {
         quantity: number | null,
         unit: BaseUnit | null,
         reason: Reason,
-      ): ForecastIssue => ({
-        ingredientId: line.ingredientId,
-        name: line.ingredientId === null ? line.name : null,
-        kind,
-        quantity,
-        unit,
-        onList: onList.has(key),
-        reason,
-      });
+      ): ForecastIssue => {
+        const base = {
+          ingredientId: line.ingredientId,
+          name: line.ingredientId === null ? line.name : null,
+          kind,
+          quantity,
+          unit,
+          reason,
+        };
+        const pool = list.get(key);
+        if (!pool) return { ...base, onList: false };
+        // Uncertain issues, no amount on either side, or a list in another
+        // dimension: presence is all that can be judged.
+        const dimension = (Object.keys(BASE_UNIT) as Dimension[]).find(
+          (d) => BASE_UNIT[d] === unit,
+        );
+        const left =
+          dimension === undefined ? undefined : pool.remaining.get(dimension);
+        if (
+          kind === 'uncertain' ||
+          quantity === null ||
+          pool.presenceOnly ||
+          dimension === undefined ||
+          left === undefined
+        )
+          return { ...base, onList: true };
+        const used = Math.min(left, quantity);
+        pool.remaining.set(dimension, left - used);
+        return quantity - used <= EPSILON
+          ? { ...base, onList: true }
+          : { ...base, onList: false, uncovered: roundUp(quantity - used) };
+      };
       const absent = (): Reason => {
         // Only leftovers really expired: a Batch earlier slots used up did not.
         // A Batch with no comparable quantity is never used up, so it counts.
@@ -402,6 +465,8 @@ export function planTag(slots: readonly { status: SlotStatus }[]): PlanTag {
     : { kind: 'allCovered' };
 }
 
+const amountToAdd = (issue: ForecastIssue) => issue.uncovered ?? issue.quantity;
+
 export type MissingItem = {
   ingredientId: string | null;
   /** The Unmatched name as typed; null for an Ingredient. */
@@ -431,7 +496,7 @@ export function missingItems(days: readonly DayForecast[]): MissingItem[] {
           items.set(key, {
             ingredientId: issue.ingredientId,
             name: issue.name,
-            quantity: issue.quantity,
+            quantity: amountToAdd(issue),
             unit: issue.unit,
             recipeIds: [slot.recipeId],
           });
@@ -445,7 +510,7 @@ export function missingItems(days: readonly DayForecast[]): MissingItem[] {
           item.quantity = null;
           item.unit = null;
         } else {
-          item.quantity = round(item.quantity + issue.quantity);
+          item.quantity = round(item.quantity + (amountToAdd(issue) ?? 0));
         }
         if (!item.recipeIds.includes(slot.recipeId))
           item.recipeIds.push(slot.recipeId);
