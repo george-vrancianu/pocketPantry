@@ -1,6 +1,6 @@
 {
   "title": "Siri",
-  "hint": "Creează un jeton pentru fiecare dispozitiv care adaugă în liste prin voce. Un jeton poate doar să trimită cereri vocale; revocă-l aici ca să nu mai funcționeze imediat.",
+  "hint": "Creează un jeton de asistent pentru fiecare dispozitiv care adaugă în liste prin voce. Un jeton poate doar să trimită cereri vocale; revocă-l aici ca să nu mai funcționeze imediat.",
   "nameLabel": "Numele jetonului",
   "namePlaceholder": "De exemplu, iPhone-ul meu",
   "create": "Creează jeton",

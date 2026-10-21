@@ -182,7 +182,7 @@ export function SiriSection() {
     event.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) return;
-    revoke.reset();
+    if (revoke.isError) revoke.reset();
     create.mutate(trimmed, {
       onSuccess: (created) => {
         setName('');
@@ -240,7 +240,7 @@ export function SiriSection() {
                   onAskRevoke={() => setConfirmingId(token.id)}
                   onCancel={() => setConfirmingId(null)}
                   onRevoke={() => {
-                    create.reset();
+                    if (create.isError) create.reset();
                     revoke.mutate(token.id, {
                       onSuccess: () => {
                         setConfirmingId(null);

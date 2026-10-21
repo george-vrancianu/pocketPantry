@@ -165,4 +165,52 @@ describe('Settings Siri section', () => {
     expect(await screen.findByText('Token revoked')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+
+  it('still reveals the secret when a revoke is confirmed while the create is pending', async () => {
+    let finishCreate: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      finishCreate = resolve;
+    });
+    const { fetchMock, calls } = stubApi({
+      'GET /api/assistant-tokens': () => Response.json([IPHONE]),
+      'POST /api/assistant-tokens': async () => {
+        await gate;
+        return Response.json(
+          {
+            id: 't3',
+            name: 'Kitchen',
+            prefix: 'pp_Wm2d',
+            createdAt: '2030-03-10T12:00:00.000Z',
+            lastUsedAt: null,
+            secret: 'pp_Wm2dTHE-WHOLE-SECRET',
+          },
+          { status: 201 },
+        );
+      },
+      'DELETE /api/assistant-tokens/t1': () => Response.json({ id: 't1' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    renderWithProviders(<SiriSection />);
+
+    await user.type(await screen.findByLabelText('Token name'), 'Kitchen');
+    await user.click(screen.getByRole('button', { name: 'Create token' }));
+    await user.click(screen.getByRole('button', { name: 'Revoke iPhone' }));
+    await user.click(
+      within(screen.getByRole('group', { name: /Revoke iPhone\?/ })).getByRole(
+        'button',
+        { name: 'Revoke' },
+      ),
+    );
+    expect(await screen.findByText('Token revoked')).toBeInTheDocument();
+    expect(calls.some((c) => c.key === 'POST /api/assistant-tokens')).toBe(
+      true,
+    );
+
+    finishCreate();
+    expect(
+      await screen.findByText('pp_Wm2dTHE-WHOLE-SECRET'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+  });
 });

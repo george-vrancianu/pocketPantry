@@ -1,6 +1,6 @@
 {
   "title": "Siri",
-  "hint": "Opret et token til hver enhed, der tilføjer til dine lister med stemmen. Et token kan kun sende stemmeforespørgsler; tilbagekald det her for at stoppe det med det samme.",
+  "hint": "Opret et assistent-token til hver enhed, der tilføjer til dine lister med stemmen. Et token kan kun sende stemmeforespørgsler; tilbagekald det her for at stoppe det med det samme.",
   "nameLabel": "Tokenets navn",
   "namePlaceholder": "For eksempel min iPhone",
   "create": "Opret token",

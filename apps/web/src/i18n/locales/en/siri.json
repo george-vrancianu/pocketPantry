@@ -1,6 +1,6 @@
 {
   "title": "Siri",
-  "hint": "Create a token for each device that adds to your lists by voice. A token can only make voice requests; revoke it here to stop it right away.",
+  "hint": "Create an Assistant Token for each device that adds to your lists by voice. A token can only make voice requests; revoke it here to stop it right away.",
   "nameLabel": "Token name",
   "namePlaceholder": "For example, my iPhone",
   "create": "Create token",

@@ -220,12 +220,12 @@ const PLAIN_WORDS: Record<string, string> = {
 const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   [
     'token',
-    'the Assistant Token (ADR 0019), not the Invite Code',
+    'the Assistant Token (GLOSSARY), shortened to "token" in the Siri section; not the Invite Code',
     [
       'errors:assistantTokens.not_found',
       'siri:create',
-      'siri:empty',
       'siri:hint',
+      'siri:empty',
       'siri:loadFailed',
       'siri:nameLabel',
       'siri:reveal.copied',
