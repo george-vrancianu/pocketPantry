@@ -41,7 +41,10 @@ const milkStaple = {
 };
 
 /** Running-low flags and Staples follow the PUT and DELETE calls, as the API does. */
-function stubRunningLow(flaggedAtStart: string[] = []) {
+function stubRunningLow(
+  flaggedAtStart: string[] = [],
+  { failSaves = false }: { failSaves?: boolean } = {},
+) {
   const flagged = new Set<string>(flaggedAtStart);
   let staples: (typeof milkStaple)[] = [];
   const { fetchMock, calls } = stubApi({
@@ -71,10 +74,12 @@ function stubRunningLow(flaggedAtStart: string[] = []) {
       return new Response(null, { status: 204 });
     },
     'PUT /api/pantry/running-low/milk-id': () => {
+      if (failSaves) return Response.json({ status: 500 }, { status: 500 });
       flagged.add('milk-id');
       return new Response(null, { status: 204 });
     },
     'DELETE /api/pantry/running-low/milk-id': () => {
+      if (failSaves) return Response.json({ status: 500 }, { status: 500 });
       flagged.delete('milk-id');
       return new Response(null, { status: 204 });
     },
@@ -113,9 +118,12 @@ function swipe(target: HTMLElement, dx: number) {
   release(target, dx);
 }
 
-async function renderPage(flagged: string[] = []) {
+async function renderPage(
+  flagged: string[] = [],
+  options: { failSaves?: boolean } = {},
+) {
   vi.useFakeTimers({ shouldAdvanceTime: true });
-  const { calls, flagged: serverFlagged } = stubRunningLow(flagged);
+  const { calls, flagged: serverFlagged } = stubRunningLow(flagged, options);
   const { queryClient } = renderWithProviders(<PantryPage />);
   watchSweeps();
   await screen.findByRole('button', { name: /^Milk/ });
@@ -441,6 +449,36 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       await waitFor(() => expect(chip()).toBeNull());
       expect(tint()).toBeNull();
       expect(sweepsSeen).toEqual([]);
+    });
+  });
+
+  describe('when the save fails', () => {
+    it('puts a row that was not low back with no tint, chip or sweep left', async () => {
+      const { calls } = await renderPage([], { failSaves: true });
+      swipe(row('Milk'), -92);
+      await settle();
+      await waitFor(() =>
+        expect(saves(calls)).toEqual(['PUT /api/pantry/running-low/milk-id']),
+      );
+      await waitFor(() => expect(chip()).toBeNull());
+      await act(() => vi.advanceTimersByTimeAsync(600));
+      expect(tint()).toBeNull();
+      expect(sweepOf()).toBeNull();
+    });
+
+    it('puts a row that was low back with its tint and no sweep left', async () => {
+      const { calls } = await renderPage(['milk-id'], { failSaves: true });
+      swipe(row('Milk'), -120);
+      await settle();
+      await waitFor(() =>
+        expect(saves(calls)).toEqual([
+          'DELETE /api/pantry/running-low/milk-id',
+        ]),
+      );
+      await act(() => vi.advanceTimersByTimeAsync(600));
+      expect(chip()).toBeVisible();
+      expect(tint()).not.toBeNull();
+      expect(sweepOf()).toBeNull();
     });
   });
 
