@@ -40,10 +40,10 @@ const milkStaple = {
   aisle: null,
 };
 
-/** Running-low flags and Staples follow the PUT and DELETE calls, as the API does. */
 type StubOptions = { failSaves?: boolean };
 /** A failing save answers only once this opens, so the optimistic flag shows before the failure. */
 let failGate: () => void = () => {};
+/** Running-low flags and Staples follow the PUT and DELETE calls, as the API does. */
 function stubRunningLow(
   flaggedAtStart: string[] = [],
   { failSaves = false }: StubOptions = {},
@@ -159,6 +159,7 @@ const settle = () => act(() => vi.advanceTimersByTimeAsync(250));
 
 describe('swiping an Ingredient row to toggle Running low', () => {
   afterEach(() => {
+    failGate = () => {};
     sweepWatcher?.disconnect();
     vi.unstubAllGlobals();
     vi.useRealTimers();
@@ -474,7 +475,9 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       // The flag shows at once, before the save answers.
       await waitFor(() => expect(chip()).toBeVisible());
       await failure();
-      expect((await screen.findAllByRole('alert')).length).toBeGreaterThan(0);
+      expect(
+        await screen.findByText('Something went wrong. Please try again.'),
+      ).toBeVisible();
       await waitFor(() => expect(chip()).toBeNull());
       expect(tint()).toBeNull();
       expect(sweepOf()).toBeNull();
@@ -494,7 +497,9 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       );
       await waitFor(() => expect(chip()).toBeNull());
       await failure();
-      expect((await screen.findAllByRole('alert')).length).toBeGreaterThan(0);
+      expect(
+        await screen.findByText('Something went wrong. Please try again.'),
+      ).toBeVisible();
       await waitFor(() => expect(tint()).not.toBeNull());
       expect(chip()).toBeVisible();
       expect(sweepOf()).toBeNull();
