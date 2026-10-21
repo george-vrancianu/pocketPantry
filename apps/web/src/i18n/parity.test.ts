@@ -216,309 +216,144 @@ const PLAIN_WORDS: Record<string, string> = {
   product: 'packaged goods in Product Scan copy, not an Ingredient',
 };
 
-/** Exceptions found when the broad whitelist was narrowed (term, key, reason). */
-const WORD_EXCEPTIONS: [term: string, id: string, reason: string][] = [
+/** Exceptions found when the broad whitelist was narrowed: term, reason, keys. */
+const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   [
     'account',
-    'errors:auth.user_already_exists',
     'the sign-in account (and people without one), not a Member',
-  ],
-  [
-    'account',
-    'errors:auth.user_already_exists_use_another_email',
-    'the sign-in account (and people without one), not a Member',
-  ],
-  [
-    'account',
-    'settings:account',
-    'the sign-in account (and people without one), not a Member',
-  ],
-  [
-    'account',
-    'settings:allergies.noAccount',
-    'the sign-in account (and people without one), not a Member',
-  ],
-  [
-    'account',
-    'settings:familyAllergies.hint',
-    'the sign-in account (and people without one), not a Member',
-  ],
-  [
-    'account',
-    'signIn:createAccount',
-    'the sign-in account (and people without one), not a Member',
-  ],
-  [
-    'account',
-    'signUp:haveAccount',
-    'the sign-in account (and people without one), not a Member',
-  ],
-  [
-    'account',
-    'signUp:submit',
-    'the sign-in account (and people without one), not a Member',
-  ],
-  [
-    'account',
-    'signUp:submitting',
-    'the sign-in account (and people without one), not a Member',
-  ],
-  [
-    'account',
-    'signUp:title',
-    'the sign-in account (and people without one), not a Member',
+    [
+      'errors:auth.user_already_exists',
+      'errors:auth.user_already_exists_use_another_email',
+      'settings:account',
+      'settings:allergies.noAccount',
+      'settings:familyAllergies.hint',
+      'signIn:createAccount',
+      'signUp:haveAccount',
+      'signUp:submit',
+      'signUp:submitting',
+      'signUp:title',
+    ],
   ],
   [
     'available',
-    'dashboard:mealPlan.status.unavailable',
     'a service, camera, Recipe or voice target that is no longer available, not the Can Make state',
-  ],
-  [
-    'available',
-    'errors:scan.provider_unavailable',
-    'a service, camera, Recipe or voice target that is no longer available, not the Can Make state',
-  ],
-  [
-    'available',
-    'errors:voice.provider_unavailable',
-    'a service, camera, Recipe or voice target that is no longer available, not the Can Make state',
-  ],
-  [
-    'available',
-    'mealPlans:detail.unavailable',
-    'a service, camera, Recipe or voice target that is no longer available, not the Can Make state',
-  ],
-  [
-    'available',
-    'scan:noCamera',
-    'a service, camera, Recipe or voice target that is no longer available, not the Can Make state',
-  ],
-  [
-    'available',
-    'scan:overlay.noCamera',
-    'a service, camera, Recipe or voice target that is no longer available, not the Can Make state',
-  ],
-  [
-    'available',
-    'voice:skipReason.pantry.category_not_found',
-    'a service, camera, Recipe or voice target that is no longer available, not the Can Make state',
-  ],
-  [
-    'available',
-    'voice:skipReason.pantry.ingredient_not_found',
-    'a service, camera, Recipe or voice target that is no longer available, not the Can Make state',
-  ],
-  [
-    'available',
-    'voice:skipReason.shopping.ingredient_not_found',
-    'a service, camera, Recipe or voice target that is no longer available, not the Can Make state',
-  ],
-  [
-    'available',
-    'voice:unavailable',
-    'a service, camera, Recipe or voice target that is no longer available, not the Can Make state',
+    [
+      'dashboard:mealPlan.status.unavailable',
+      'errors:scan.provider_unavailable',
+      'errors:voice.provider_unavailable',
+      'mealPlans:detail.unavailable',
+      'scan:noCamera',
+      'scan:overlay.noCamera',
+      'voice:skipReason.pantry.category_not_found',
+      'voice:skipReason.pantry.ingredient_not_found',
+      'voice:skipReason.shopping.ingredient_not_found',
+      'voice:unavailable',
+    ],
   ],
   [
     'direction',
-    'admin:recipe.guidance.nutrition.helper',
     'plain word ("a general direction") in a Nutrition Note hint, not a Method instruction',
+    ['admin:recipe.guidance.nutrition.helper'],
   ],
   [
     'dish',
-    'errors:scan.plate_token_invalid',
     'a dish on a plate Scan, not a Recipe or Meal',
-  ],
-  [
-    'dish',
-    'review:overview.pickDish',
-    'a dish on a plate Scan, not a Recipe or Meal',
+    ['errors:scan.plate_token_invalid', 'review:overview.pickDish'],
   ],
   [
     'entry',
-    'errors:catalog.canonical_name_managed',
     'a Catalog or voice-review entry as a plain word, not a Template Line or Batch',
-  ],
-  [
-    'entry',
-    'errors:catalog.not_found',
-    'a Catalog or voice-review entry as a plain word, not a Template Line or Batch',
-  ],
-  [
-    'entry',
-    'errors:catalog.translation_exists',
-    'a Catalog or voice-review entry as a plain word, not a Template Line or Batch',
-  ],
-  [
-    'entry',
-    'voice:review.hide',
-    'a Catalog or voice-review entry as a plain word, not a Template Line or Batch',
+    [
+      'errors:catalog.canonical_name_managed',
+      'errors:catalog.not_found',
+      'errors:catalog.translation_exists',
+      'voice:review.hide',
+    ],
   ],
   [
     'food',
-    'admin:recipe.guidance.pairings.kindFood',
     'plain adjective, a Pairing kind or the Open Food Facts brand, not an Ingredient',
-  ],
-  [
-    'food',
-    'pantry:form.prefill.credit',
-    'plain adjective, a Pairing kind or the Open Food Facts brand, not an Ingredient',
-  ],
-  [
-    'food',
-    'recipes:pairingKind.food',
-    'plain adjective, a Pairing kind or the Open Food Facts brand, not an Ingredient',
-  ],
-  [
-    'food',
-    'review:excluded.hint',
-    'plain adjective, a Pairing kind or the Open Food Facts brand, not an Ingredient',
-  ],
-  [
-    'food',
-    'review:excluded.reason.not_food',
-    'plain adjective, a Pairing kind or the Open Food Facts brand, not an Ingredient',
+    [
+      'admin:recipe.guidance.pairings.kindFood',
+      'pantry:form.prefill.credit',
+      'recipes:pairingKind.food',
+      'review:excluded.hint',
+      'review:excluded.reason.not_food',
+    ],
   ],
   [
     'label',
-    'admin:recipe.guidance.pairings.invalid',
     'a Pairing label, a product label or a Family Allergy label, not a Product Description label',
+    [
+      'admin:recipe.guidance.pairings.invalid',
+      'admin:recipe.guidance.pairings.label',
+      'admin:recipe.translations.pairingIncomplete',
+      'admin:recipe.translations.pairingLabel',
+      'errors:settings.family_allergy_exists',
+      'recipes:allergens.reminder',
+      'settings:familyAllergies.label',
+    ],
   ],
-  [
-    'label',
-    'admin:recipe.guidance.pairings.label',
-    'a Pairing label, a product label or a Family Allergy label, not a Product Description label',
-  ],
-  [
-    'label',
-    'admin:recipe.translations.pairingIncomplete',
-    'a Pairing label, a product label or a Family Allergy label, not a Product Description label',
-  ],
-  [
-    'label',
-    'admin:recipe.translations.pairingLabel',
-    'a Pairing label, a product label or a Family Allergy label, not a Product Description label',
-  ],
-  [
-    'label',
-    'errors:settings.family_allergy_exists',
-    'a Pairing label, a product label or a Family Allergy label, not a Product Description label',
-  ],
-  [
-    'label',
-    'recipes:allergens.reminder',
-    'a Pairing label, a product label or a Family Allergy label, not a Product Description label',
-  ],
-  [
-    'label',
-    'settings:familyAllergies.label',
-    'a Pairing label, a product label or a Family Allergy label, not a Product Description label',
-  ],
-  ['mode', 'scan:info.dial', 'the Scan Mode dial, not a Theme'],
+  ['mode', 'the Scan Mode dial, not a Theme', ['scan:info.dial']],
   [
     'mode',
-    'settings:appearance.lightOnlyToast',
     "the phone's OS dark/light mode (Match system), not a Theme",
-  ],
-  [
-    'mode',
-    'settings:appearance.matchSystemHint',
-    "the phone's OS dark/light mode (Match system), not a Theme",
-  ],
-  [
-    'mode',
-    'settings:appearance.usedInDark',
-    "the phone's OS dark/light mode (Match system), not a Theme",
-  ],
-  [
-    'mode',
-    'settings:appearance.usedInLight',
-    "the phone's OS dark/light mode (Match system), not a Theme",
+    [
+      'settings:appearance.lightOnlyToast',
+      'settings:appearance.matchSystemHint',
+      'settings:appearance.usedInDark',
+      'settings:appearance.usedInLight',
+    ],
   ],
   [
     'old',
-    'dashboard:health.line.age',
     'age of a Batch ("3 d old"); copy drift for Forgotten, flag',
+    ['dashboard:health.line.age'],
   ],
   [
     'place',
-    'voice:review.detail.noPlace',
     'asks for a storage place; copy drift for Location, flag',
-  ],
-  [
-    'place',
-    'voice:review.edit.locationDefault',
-    'asks for a storage place; copy drift for Location, flag',
-  ],
-  [
-    'place',
-    'voice:review.footer.pickPlace',
-    'asks for a storage place; copy drift for Location, flag',
+    [
+      'voice:review.detail.noPlace',
+      'voice:review.edit.locationDefault',
+      'voice:review.footer.pickPlace',
+    ],
   ],
   [
     'queue',
-    'admin:unmatched.statusLabel',
     'the Admin Unmatched review list as a plain word, not a Scan queue',
-  ],
-  [
-    'queue',
-    'errors:family_ingredients.not_found',
-    'the Admin Unmatched review list as a plain word, not a Scan queue',
-  ],
-  [
-    'queue',
-    'errors:family_synonyms.not_found',
-    'the Admin Unmatched review list as a plain word, not a Scan queue',
-  ],
-  [
-    'queue',
-    'errors:unmatched.not_found',
-    'the Admin Unmatched review list as a plain word, not a Scan queue',
+    [
+      'admin:unmatched.statusLabel',
+      'errors:family_ingredients.not_found',
+      'errors:family_synonyms.not_found',
+      'errors:unmatched.not_found',
+    ],
   ],
   [
     'section',
-    'admin:sections',
     'a group of tabs or Catalog areas, not a Receipt Section or Aisle',
-  ],
-  [
-    'section',
-    'settings:tabs.label',
-    'a group of tabs or Catalog areas, not a Receipt Section or Aisle',
+    ['admin:sections', 'settings:tabs.label'],
   ],
   [
     'settings',
-    'settings:tabs.label',
     'the Settings page title, not a name for Member Preferences',
+    ['settings:tabs.label', 'settings:title'],
   ],
-  [
-    'settings',
-    'settings:title',
-    'the Settings page title, not a name for Member Preferences',
-  ],
-  ['side', 'errors:internal_server_error', '"on our side", an apology'],
+  ['side', '"on our side", an apology', ['errors:internal_server_error']],
   [
     'style',
-    'recipes:facts.style',
     'label of the Cuisine fact, not a Cuisine alias',
+    ['recipes:facts.style'],
   ],
   [
     'type',
-    'catalog:catalogAdd.typeToSearch',
     'plain verb ("Type an ingredient"), not a Category type',
-  ],
-  [
-    'type',
-    'catalog:search.placeholder',
-    'plain verb ("Type an ingredient"), not a Category type',
+    ['catalog:catalogAdd.typeToSearch', 'catalog:search.placeholder'],
   ],
   [
     'unknown',
-    'admin:recipe.lines.unknown',
     'plain adjective; copy drift for an Unmatched name, flag',
-  ],
-  [
-    'unknown',
-    'dashboard:mealPlan.line.unknown',
-    'plain adjective; copy drift for an Unmatched name, flag',
+    ['admin:recipe.lines.unknown', 'dashboard:mealPlan.line.unknown'],
   ],
 ];
 
@@ -528,7 +363,9 @@ const WORD_EXCEPTIONS: [term: string, id: string, reason: string][] = [
  */
 const GLOSSARY_EXCEPTIONS: Record<string, string> = {
   ...Object.fromEntries(
-    WORD_EXCEPTIONS.map(([term, id, reason]) => [`${id}|${term}`, reason]),
+    WORD_EXCEPTIONS.flatMap(([term, reason, keys]) =>
+      keys.map((id) => [`${id}|${term}`, reason]),
+    ),
   ),
   ...Object.fromEntries(
     [
@@ -571,6 +408,10 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
     'a Recipe language, not the Scan Language',
   'dashboard:settings|settings': 'link to Settings',
   'voice:blocked.safariStep2|settings': 'Safari "Website Settings" menu name',
+  'shopping:summary.moveToPantry_one|move to pantry':
+    'the Finish Shopping action named "Move to Pantry" (copy drift, flag)',
+  'shopping:summary.moveToPantry_other|move to pantry':
+    'the Finish Shopping action named "Move to Pantry" (copy drift, flag)',
   'shopping:empty.importTitle|import':
     'Shopping Template import action (copy drift, flag)',
   'shopping:import.button|import':
@@ -605,17 +446,17 @@ const avoidedPatterns = avoidedTerms()
   .map((term) => ({ term, regex: wholeWord([term], 'giu') }));
 
 /**
- * An interpolation variable is replaced by a separator that no word matches
- * across, so "Move {{count}} to Pantry" is not the avoided "Move to pantry"
- * (the Member sees "Move 3 to Pantry").
+ * Interpolation variables are dropped before matching, so "Move {{count}} to
+ * Pantry" reads as the avoided "Move to pantry" (it is listed as an exception).
+ * A variable never separates words: that keeps the check strict.
  */
-const VARIABLE_GAP = '\u2063';
+const withoutVariables = (text: string) => text.replace(/{{[^}]*}}/g, '');
 
 function glossaryProblems(): string[] {
   const problems: string[] = [];
   for (const [ns, strings] of localesByCode[SOURCE])
     for (const [key, text] of strings) {
-      const copy = text.replace(/{{[^}]*}}/g, VARIABLE_GAP);
+      const copy = withoutVariables(text);
       // A hit inside a canonical term is that term, not the avoided word:
       // "Voice Note" is not the avoided "note".
       const canonicalSpans = [...copy.matchAll(canonicalRegex)].map((m) => [
@@ -679,9 +520,7 @@ describe('translation parity', () => {
         return (
           text === undefined ||
           !terms.includes(term) ||
-          !wholeWord([term], 'iu').test(
-            text.replace(/{{[^}]*}}/g, VARIABLE_GAP),
-          )
+          !wholeWord([term], 'iu').test(withoutVariables(text))
         );
       }),
       ...Object.keys(PLAIN_WORDS).filter((term) => !terms.includes(term)),
