@@ -63,6 +63,15 @@ export type ItemWithSourceRecipes = {
   recipeIds: string[];
 };
 
+/**
+ * How an add treats the amount of a line it merges into: `sum` adds to it (the
+ * usual rule); `set` makes the spoken quantity the amount and leaves a bare add
+ * of a line that is still wanted alone (an Assistant Request, ADR 0017).
+ */
+export type AddAmountMode = 'sum' | 'set';
+
+type MergeResult = { id: string; inserted: boolean; unchanged: boolean };
+
 const itemNotFound = () => new ApiException(404, 'shopping.item_not_found');
 
 @Injectable()
@@ -196,19 +205,24 @@ export class ShoppingService {
     memberId: string,
     body: MergeItemInput,
     locale: CatalogLocale,
-  ): Promise<{ id: string; inserted: boolean }> {
+    amount: AddAmountMode = 'sum',
+  ): Promise<MergeResult> {
     const { listId, scope } = await this.lockActiveList(tx, memberId);
-    return this.mergeItem(tx, listId, scope, body, locale);
+    return this.mergeItem(tx, listId, scope, body, locale, amount);
   }
 
-  /** Merges or inserts the item; answers with the Shopping Item it ended up on and whether that row is new. */
+  /**
+   * Merges or inserts the item; answers with the Shopping Item it ended up on,
+   * whether that row is new, and whether a merge left the line as it was.
+   */
   private async mergeItem(
     tx: Tx,
     listId: string,
     scope: CatalogScope,
     body: MergeItemInput,
     locale: CatalogLocale,
-  ): Promise<{ id: string; inserted: boolean }> {
+    amount: AddAmountMode = 'sum',
+  ): Promise<MergeResult> {
     const unit = body.unit ?? null;
     const quantity = body.quantity ?? null;
     let identity;
@@ -241,20 +255,31 @@ export class ShoppingService {
         id: shoppingItems.id,
         quantity: shoppingItems.quantity,
         unit: shoppingItems.unit,
+        checked: shoppingItems.checked,
       })
       .from(shoppingItems)
       .where(and(eq(shoppingItems.listId, listId), identity))
       // The merge target is the oldest line of this identity with a compatible unit (the same, or g/kg, ml/l); setAmount can leave several.
       .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
-    const existing = candidates.find((row) => unitsMerge(row.unit, unit));
+    // 'set' with no quantity names the item, not an amount: a line of any unit
+    // that is still wanted is left alone, else the oldest is put back on the list.
+    const bare = amount === 'set' && quantity === null;
+    const wanted = bare ? candidates.find((row) => !row.checked) : undefined;
+    if (wanted) return { id: wanted.id, inserted: false, unchanged: true };
+    const existing =
+      candidates.find((row) => unitsMerge(row.unit, unit)) ??
+      (bare ? candidates[0] : undefined);
 
     if (existing) {
       // The added amount is expressed in the existing line's unit (500 g + 1 kg = 1500 g).
       const addedQuantity = quantityInUnit(quantity, unit, existing.unit);
-      const merged = sumQuantities(
-        existing.quantity === null ? null : Number(existing.quantity),
-        addedQuantity,
-      );
+      const merged =
+        amount === 'set' && quantity !== null
+          ? addedQuantity
+          : sumQuantities(
+              existing.quantity === null ? null : Number(existing.quantity),
+              addedQuantity,
+            );
       if (exceedsMaxQuantity(merged)) {
         throw new ApiException(400, 'shopping.quantity_too_large');
       }
@@ -266,7 +291,7 @@ export class ShoppingService {
           checked: false,
         })
         .where(eq(shoppingItems.id, existing.id));
-      return { id: existing.id, inserted: false };
+      return { id: existing.id, inserted: false, unchanged: false };
     }
 
     const [inserted] = await tx
@@ -289,7 +314,7 @@ export class ShoppingService {
         },
       ]);
     }
-    return { id: inserted.id, inserted: true };
+    return { id: inserted.id, inserted: true, unchanged: false };
   }
 
   /** Ids of unchecked Shopping Items on the Family's active list for any of these Ingredients. */

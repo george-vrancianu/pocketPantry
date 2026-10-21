@@ -3,8 +3,8 @@ import type { AssistantOutcome } from './assistant-speech';
 
 /** The body of `POST /assistant/requests`. */
 export const assistantRequestBody = z.object({
-  /** What the Member dictated. Read and applied, never stored. */
-  text: z.string().trim().min(1).max(2000),
+  /** What the Member dictated. Read and applied, never stored. Blank is answered as "nothing understood"; over 2000 characters is a 400. */
+  text: z.string().trim().max(2000),
   /** The Member's local date, for resolving spoken dates. Defaults to today (UTC). */
   today: z.iso.date().optional(),
 });

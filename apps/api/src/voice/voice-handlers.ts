@@ -58,6 +58,8 @@ export type ApplyContext = {
   today: string;
   /** The one transaction of the whole Apply; each action runs in its own savepoint. */
   tx: Tx;
+  /** Assistant Request only: an add onto an existing line sets its quantity instead of summing. */
+  addSetsQuantity?: boolean;
 };
 
 /** `skipped` carries the stable error code or reason Review names. */
@@ -69,6 +71,8 @@ export type ApplyOutcome =
       /** Every row to flash when the Action changed several (a removal across Locations); `rowId` is the first. */
       rowIds?: string[];
       alreadyDone: boolean;
+      /** Set mode only: the add landed on a line already on the list. */
+      merged?: boolean;
     }
   | { applied: false; reason: string };
 

@@ -63,6 +63,8 @@ export type VoiceApplyActionsInput = {
   today: string;
   /** When given, an action of any other kind is refused and nothing is written for it. */
   allowedKinds?: ReadonlySet<VoiceActionKind>;
+  /** An add onto an existing Shopping line sets its quantity (and unchecks it) instead of summing. Off for Review. */
+  addSetsQuantity?: boolean;
 };
 
 type PantryBatches = Awaited<ReturnType<PantryService['list']>>;
@@ -105,7 +107,6 @@ export class VoiceService {
     const provider = this.config.get('AI_PROVIDER', { infer: true });
     return Boolean(
       this.config.get('AI_API_KEY', { infer: true }) &&
-      this.config.get('AI_TEXT_MODEL', { infer: true }) &&
       (provider !== 'openai-compatible' ||
         this.config.get('AI_BASE_URL', { infer: true })),
     );
@@ -350,6 +351,7 @@ export class VoiceService {
               locale: input.locale,
               today: input.today,
               tx: savepoint,
+              ...(input.addSetsQuantity ? { addSetsQuantity: true } : {}),
             });
             if (!outcome.applied) throw new SkippedAction(outcome.reason);
             return outcome;
@@ -360,6 +362,7 @@ export class VoiceService {
             ...(applied.rowId === undefined ? {} : { rowId: applied.rowId }),
             ...(applied.rowIds === undefined ? {} : { rowIds: applied.rowIds }),
             alreadyDone: applied.alreadyDone,
+            ...(applied.merged ? { merged: true } : {}),
           });
         } catch (error) {
           if (!(error instanceof SkippedAction)) throw error;

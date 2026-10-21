@@ -7,9 +7,7 @@ import {
 import type { AssistantTokenMember } from '../assistant-tokens/assistant-token.schemas';
 import { ApiException } from '../common/api-exception';
 import { ScanCapService } from '../scan/scan-cap.service';
-import { ShoppingService } from '../shopping/shopping.service';
 import {
-  sameSubject,
   voiceActionKind,
   type ResolvedVoiceAction,
   type VoiceActionDraft,
@@ -30,13 +28,10 @@ import type {
 /**
  * The Voice Action kinds an Assistant Request applies without Review (ADR 0019).
  * Adding a Shopping Item and flagging Running low are the safe kinds;
- * `shopping.setQuantity` only changes the amount of an item already on the
- * list (and is how a spoken quantity on an existing item is applied, ADR 0017),
- * so nothing is removed, checked or lost. Everything else is refused.
+ * everything else, `shopping.setQuantity` included, is refused.
  */
 export const ASSISTANT_ALLOWED_KINDS: ReadonlySet<VoiceActionKind> = new Set([
   'shopping.add',
-  'shopping.setQuantity',
   'pantry.runningLow',
 ]);
 
@@ -62,7 +57,6 @@ export class AssistantService {
   constructor(
     private readonly voice: VoiceService,
     private readonly cap: ScanCapService,
-    private readonly shopping: ShoppingService,
   ) {}
 
   async handle(
@@ -78,6 +72,9 @@ export class AssistantService {
     // Before the charge: an unconfigured deployment costs the Member nothing.
     if (!this.voice.isTextConfigured()) return stateReply('notConfigured');
 
+    // Nothing dictated: no model call and no charge.
+    if (body.text === '') return stateReply('nothingUnderstood');
+
     let day: string;
     try {
       day = await this.cap.consume(member.id, new Date(), 'assistant');
@@ -91,6 +88,7 @@ export class AssistantService {
       throw error;
     }
 
+    let outcomes: AssistantOutcome[];
     try {
       const today = body.today ?? new Date().toISOString().slice(0, 10);
       const resolved = (
@@ -102,35 +100,19 @@ export class AssistantService {
           defaultTarget: 'shopping',
         })
       ).filter((action) => action.status !== 'notUnderstood');
-      if (resolved.length === 0) {
-        await this.cap.refund(member.id, day, 'assistant');
-        return stateReply('nothingUnderstood');
-      }
       const drafts = resolved.map(toDraft);
-      // Adding what is already on the list, with no quantity, changes nothing.
-      const items = await this.shopping
-        .peekList(member.id, locale)
-        .then((list) => list?.groups.flatMap((group) => group.items) ?? []);
-      const present = new Set(
-        drafts
-          .filter(
-            (draft) =>
-              voiceActionKind(draft) === 'shopping.add' &&
-              draft.quantity === null &&
-              items.some((item) => !item.checked && sameSubject(draft)(item)),
-          )
-          .map((draft) => draft.id),
-      );
+      // An add onto an existing line sets the spoken quantity (ADR 0017) and
+      // wants the line back on the list, rather than summing as in Review.
       const result = await this.voice.applyActions(member.id, {
-        actions: drafts.filter((draft) => !present.has(draft.id)),
+        actions: drafts,
         locale,
         today,
         allowedKinds: ASSISTANT_ALLOWED_KINDS,
+        addSetsQuantity: true,
       });
-      const outcomes = resolved.map((action, index) =>
-        outcomeOf(action, drafts[index], result, present.has(drafts[index].id)),
+      outcomes = resolved.map((action, index) =>
+        outcomeOf(action, drafts[index], result),
       );
-      return { outcomes, speech: assistantSpeech({ locale, outcomes }) };
     } catch (error) {
       await this.cap.refund(member.id, day, 'assistant');
       if (
@@ -141,16 +123,17 @@ export class AssistantService {
       }
       throw error;
     }
+    if (outcomes.length === 0) {
+      await this.cap.refund(member.id, day, 'assistant');
+      return stateReply('nothingUnderstood');
+    }
+    return { outcomes, speech: assistantSpeech({ locale, outcomes }) };
   }
 }
 
-/**
- * The action as a draft to apply. Adding an item already on the list with a
- * spoken quantity sets that quantity (ADR 0017) rather than summing, so it is
- * applied as `shopping.setQuantity`; with no quantity the add leaves it alone.
- */
+/** The action as a draft to apply. */
 function toDraft(action: ResolvedVoiceAction): VoiceActionDraft {
-  const draft: VoiceActionDraft = {
+  return {
     id: action.id,
     // notUnderstood entries are filtered out, so target and op are set.
     target: action.target ?? 'shopping',
@@ -167,12 +150,6 @@ function toDraft(action: ResolvedVoiceAction): VoiceActionDraft {
     batchId: null,
     batchIds: [],
   };
-  return draft.target === 'shopping' &&
-    draft.op === 'add' &&
-    action.rows.shoppingItem != null &&
-    draft.quantity !== null
-    ? { ...draft, op: 'setQuantity' }
-    : draft;
 }
 
 /** What happened to one action, from the draft that was applied and the apply result. */
@@ -180,10 +157,8 @@ function outcomeOf(
   action: ResolvedVoiceAction,
   draft: VoiceActionDraft,
   result: VoiceApplyResult,
-  alreadyPresent: boolean,
 ): AssistantOutcome {
   const name = displayName(action);
-  if (alreadyPresent) return { kind: 'alreadyOnList', name };
   const refused = { kind: 'refused', name } as const;
   const applied = result.applied.find((entry) => entry.actionId === draft.id);
   if (!applied) return refused; // refused by kind, or skipped (the Member is sent to the app)
@@ -196,13 +171,12 @@ function outcomeOf(
           : 'flaggedRunningLow',
         name,
       };
-    case 'shopping.setQuantity':
-      return {
-        kind: applied.alreadyDone ? 'alreadyOnList' : 'quantitySet',
-        name,
-        ...amount,
-      };
     case 'shopping.add':
+      if (applied.alreadyDone) return { kind: 'alreadyOnList', name };
+      if (applied.merged && action.quantity !== null) {
+        return { kind: 'quantitySet', name, ...amount };
+      }
+      // A bare add that put a checked line back on the list reads as an add.
       return {
         kind: action.ingredient ? 'added' : 'addedUnmatched',
         name,

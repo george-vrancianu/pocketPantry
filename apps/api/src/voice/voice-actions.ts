@@ -176,6 +176,8 @@ export type VoiceAppliedEntry = {
   rowIds?: string[];
   /** Already satisfied when applied; still counts as applied. */
   alreadyDone: boolean;
+  /** Only with `addSetsQuantity` (Assistant Request): the add landed on a line already on the list. Never present for Review. */
+  merged?: boolean;
 };
 
 /**

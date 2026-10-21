@@ -215,6 +215,7 @@ describe('Assistant Requests (integration)', () => {
       expect(
         reply(response).outcomes.map((o: { kind: string }) => o.kind),
       ).toEqual(['added', 'flaggedRunningLow', 'refused', 'refused']);
+      expect(await used(ana.id)).toBe(1); // one charge for the whole request
       expect(reply(response).speech).toContain('Open Pocket Pantry');
       expect(await list(ana.cookie)).toMatchObject([{ name: 'Eggs' }]);
       const pantry = (
@@ -245,6 +246,61 @@ describe('Assistant Requests (integration)', () => {
         { kind: 'quantitySet', name: 'Eggs', quantity: 12 },
       ]);
       expect(await list(ana.cookie)).toMatchObject([{ quantity: 12 }]);
+    });
+
+    it('unchecks a checked item when it is added again, with a quantity or without', async () => {
+      const ana = await member();
+      const items = client(app, ana.cookie, '/api/shopping-list');
+      const checkedMilk = async (quantity: number) => {
+        await items.post('/items?locale=en', {
+          ingredientId: milk,
+          quantity,
+          unit: 'pcs',
+        });
+        await items.patch(
+          `/items/${(await list(ana.cookie))[0].id}?locale=en`,
+          { checked: true },
+        );
+      };
+      await checkedMilk(1);
+      reading = {
+        actions: [of(milk, 'Milk', { quantity: 2, unit: 'pcs' })],
+        unsupported: [],
+      };
+      let response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'quantitySet', name: 'Milk', quantity: 2 },
+      ]);
+      expect(await list(ana.cookie)).toMatchObject([
+        { quantity: 2, checked: false },
+      ]);
+
+      await items.patch(`/items/${(await list(ana.cookie))[0].id}?locale=en`, {
+        checked: true,
+      });
+      reading = { actions: [of(milk, 'Milk')], unsupported: [] };
+      response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([{ kind: 'added' }]);
+      expect(await list(ana.cookie)).toMatchObject([
+        { quantity: 2, checked: false },
+      ]);
+    });
+
+    it('refuses a model-emitted setQuantity and leaves the quantity alone', async () => {
+      const ana = await member();
+      await client(app, ana.cookie, '/api/shopping-list').post(
+        '/items?locale=en',
+        { ingredientId: eggs, quantity: 6, unit: 'pcs' },
+      );
+      reading = {
+        actions: [
+          of(eggs, 'Eggs', { op: 'setQuantity', quantity: 12, unit: 'pcs' }),
+        ],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([{ kind: 'refused' }]);
+      expect(await list(ana.cookie)).toMatchObject([{ quantity: 6 }]);
     });
 
     it('adds an unknown name as Unmatched', async () => {
@@ -316,9 +372,19 @@ describe('Assistant Requests (integration)', () => {
       expect(reads).toBe(0);
     });
 
-    it('rejects an empty text with 400', async () => {
+    it('answers a blank text with speech, without calling the model or charging', async () => {
       const ana = await member();
-      await ask(ana.secret, { text: '  ' }).expect(400);
+      const response = await ask(ana.secret, { text: '  ' }).expect(200);
+      expect(reply(response)).toMatchObject({ outcomes: [] });
+      expect(reply(response).speech).toContain('did not understand');
+      expect(await used(ana.id)).toBe(0);
+      expect(reads).toBe(0);
+    });
+
+    it('rejects a missing or over-long text with 400', async () => {
+      const ana = await member();
+      await ask(ana.secret, {}).expect(400);
+      await ask(ana.secret, { text: 'x'.repeat(2001) }).expect(400);
       expect(await used(ana.id)).toBe(0);
     });
   });
