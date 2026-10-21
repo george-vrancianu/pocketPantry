@@ -8,7 +8,9 @@ import {
 
 /**
  * Shopping add: merges by the Shopping List's usual add rules (same Ingredient
- * or Unmatched name, same or convertible unit (g/kg, ml/l), quantities summed). An Unmatched name is added
+ * or Unmatched name, same or convertible unit (g/kg, ml/l), quantities summed). With `addSetsQuantity`
+ * (Assistant Requests) the spoken quantity is set instead of summed and the line
+ * unchecked; a bare add of a wanted line is left alone. An Unmatched name is added
  * and queued for curation by the Shopping List service.
  */
 export function shoppingAddHandler(

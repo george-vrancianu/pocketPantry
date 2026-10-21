@@ -34,10 +34,10 @@ Response: `{ "outcomes": [...], "speech": string }`. The Shortcut only uses `spe
 6. **Get Dictionary Value**. Get **Value** for key `speech` in the **Contents of URL** result.
 7. **If**. Input: the **Dictionary Value** from step 6, condition **has any value**.
    - In the If branch: **Speak Text**, text = the **Dictionary Value** from step 6.
-   - In the **Otherwise** branch: **Speak Text**, text = `Pocket Pantry didn't answer. Check your Assistant Token in Settings.` (a fixed English fallback).
+   - In the **Otherwise** branch: **Speak Text**, text = `Pocket Pantry didn't answer. Try again, or check your Assistant Token in Settings.` (a fixed English fallback).
 8. **End If**.
 
-The If is needed because some failures have no `speech`: a revoked, unknown or missing token gets HTTP 401 with no `speech`, and a network failure returns nothing at all. Without the If, Speak Text would say nothing. As far as we know, Get Contents of URL returns the error body on non-2xx statuses rather than stopping the Shortcut, which is what lets the Otherwise branch run; verify this on a device with a revoked token.
+The If is needed because some failures have no `speech`: a revoked, unknown or missing token gets HTTP 401, a text over 2000 characters or an invalid body gets HTTP 400, and an unexpected server error gets HTTP 500, all with no `speech`; a network failure returns nothing at all. Without the If, Speak Text would say nothing. As far as we know, Get Contents of URL returns the error body on non-2xx statuses rather than stopping the Shortcut, which is what lets the Otherwise branch run; verify this on a device with a revoked token.
 
 Finally, rename the Shortcut to exactly `Pantry add` (Shortcut name field at the top of the editor, or Rename in the menu). Shortcuts can be run by saying the name after "Hey Siri".
 
@@ -54,6 +54,6 @@ To dictate in another language (for example Romanian or Danish; Siri's phrase st
 
 ## When something goes wrong
 
-- A revoked, unknown or mistyped token gets HTTP 401 with no `speech`; the Shortcut then speaks the fixed fallback from step 7. Revoke and create tokens in Settings > Siri; to change the token in an installed Shortcut, edit its first Text action.
-- Cap reached, provider failure, nothing understood and "not configured" are answered with a `speech` reply, which the Shortcut speaks as normal.
+- A revoked, unknown or mistyped token gets HTTP 401, an invalid body (for example text over 2000 characters) gets HTTP 400, and an unexpected server error gets HTTP 500; none carry `speech`, so the Shortcut speaks the fixed fallback from step 7. Revoke and create tokens in Settings > Siri; to change the token in an installed Shortcut, edit its first Text action.
+- Cap reached (429), provider failure (502), nothing understood (200) and "not configured" (503) are answered with a `speech` reply, which the Shortcut speaks as normal.
 - With no network there is no response, so the Otherwise branch speaks the fallback (or Shortcuts shows its own error).

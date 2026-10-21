@@ -261,8 +261,10 @@ export class ShoppingService {
       .where(and(eq(shoppingItems.listId, listId), identity))
       // The merge target is the oldest line of this identity with a compatible unit (the same, or g/kg, ml/l); setAmount can leave several.
       .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
-    // 'set' with no quantity names the item, not an amount: a line of any unit
-    // that is still wanted is left alone, else the oldest is put back on the list.
+    // 'sum' adds the amount to the oldest compatible line. 'set' with a quantity
+    // replaces that line's amount instead. 'set' with no quantity names the item,
+    // not an amount: a line of any unit that is still wanted is left alone, else
+    // the oldest line (of any unit) is put back on the list.
     const bare = amount === 'set' && quantity === null;
     const wanted = bare ? candidates.find((row) => !row.checked) : undefined;
     if (wanted) return { id: wanted.id, inserted: false, unchanged: true };

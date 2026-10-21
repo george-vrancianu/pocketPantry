@@ -164,10 +164,19 @@ describe('Assistant Requests (integration)', () => {
 
     it('is the only endpoint a token works on', async () => {
       const ana = await member();
-      await request(app.getHttpServer())
-        .get('/api/shopping-list?locale=en')
-        .set('authorization', `Bearer ${ana.secret}`)
-        .expect(401);
+      const [created] = await tokens.list(ana.id);
+      const bearer = { authorization: `Bearer ${ana.secret}` };
+      const http = () => request(app.getHttpServer());
+      const calls = [
+        () => http().get('/api/shopping-list?locale=en'),
+        () => http().get('/api/assistant-tokens'),
+        () => http().post('/api/assistant-tokens').send({ name: 'x' }),
+        () => http().delete(`/api/assistant-tokens/${created.id}`),
+        () =>
+          http().post('/api/voice/apply').send({ actions: [], locale: 'en' }),
+      ];
+      for (const call of calls) await call().set(bearer).expect(401);
+      expect(await tokens.list(ana.id)).toHaveLength(1);
     });
   });
 
@@ -301,6 +310,72 @@ describe('Assistant Requests (integration)', () => {
       const response = await ask(ana.secret).expect(200);
       expect(reply(response).outcomes).toMatchObject([{ kind: 'refused' }]);
       expect(await list(ana.cookie)).toMatchObject([{ quantity: 6 }]);
+    });
+
+    it('converts units when setting: 500 ml onto a 1 l line sets 0.5 l', async () => {
+      const ana = await member();
+      await client(app, ana.cookie, '/api/shopping-list').post(
+        '/items?locale=en',
+        { ingredientId: milk, quantity: 1, unit: 'l' },
+      );
+      reading = {
+        actions: [of(milk, 'Milk', { quantity: 500, unit: 'ml' })],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'quantitySet', name: 'Milk' },
+      ]);
+      expect(await list(ana.cookie)).toMatchObject([
+        { quantity: 0.5, unit: 'l', checked: false },
+      ]);
+    });
+
+    it('adds a Family Ingredient the model matched by id', async () => {
+      const ana = await member();
+      const name = `Gran ${stamp}`;
+      const created = (
+        await client(app, ana.cookie, '/api/catalog')
+          .post('/family-ingredients?locale=en', {
+            name,
+            leafCategoryId: seedId.leaf('hard-cheese'),
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as { id: string };
+      reading = { actions: [of(created.id, name)], unsupported: [] };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([{ kind: 'added', name }]);
+      expect(await list(ana.cookie)).toMatchObject([{ name }]);
+    });
+
+    it.each([
+      ['ro', 'Am adăugat pe Lista de cumpărături'],
+      ['da', 'Føjet til indkøbslisten'],
+    ])('speaks in the Member stored locale (%s)', async (locale, phrase) => {
+      const ana = await member();
+      await database.update(user).set({ locale }).where(eq(user.id, ana.id));
+      reading = { actions: [of(milk, 'Milk')], unsupported: [] };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toContain(phrase);
+    });
+
+    it('writes to the new Family list after the Member changes Family', async () => {
+      const ana = await member();
+      const ben = await member();
+      const { inviteCode } = (
+        await client(app, ben.cookie, '/api/family').get('')
+      ).body as { inviteCode: string };
+      reading = { actions: [of(milk, 'Milk')], unsupported: [] };
+      await ask(ana.secret).expect(200);
+      expect(await list(ana.cookie)).toHaveLength(1);
+      await client(app, ana.cookie, '/api/family')
+        .post('/join', { code: inviteCode })
+        .expect(201);
+      reading = { actions: [of(eggs, 'Eggs')], unsupported: [] };
+      await ask(ana.secret).expect(200);
+      expect(await list(ben.cookie)).toMatchObject([{ name: 'Eggs' }]);
+      expect(await list(ana.cookie)).toMatchObject([{ name: 'Eggs' }]);
     });
 
     it('adds an unknown name as Unmatched', async () => {
