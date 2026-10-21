@@ -1,0 +1,27 @@
+{
+  "title": "Siri",
+  "hint": "Creează un jeton de asistent pentru fiecare dispozitiv care adaugă în liste prin voce. Un jeton poate doar să trimită cereri vocale; revocă-l aici ca să nu mai funcționeze imediat.",
+  "nameLabel": "Numele jetonului",
+  "namePlaceholder": "De exemplu, iPhone-ul meu",
+  "create": "Creează jeton",
+  "creating": "Se creează",
+  "reveal": {
+    "title": "Copiază jetonul acum",
+    "hint": "Este singura dată când apare. Lipește-l în Shortcut când ți se cere.",
+    "secretLabel": "Jeton",
+    "copy": "Copiază",
+    "copied": "Jeton copiat",
+    "done": "Gata, l-am copiat"
+  },
+  "empty": "Niciun jeton încă.",
+  "loadFailed": "Jetoanele tale nu au putut fi încărcate.",
+  "created": "Creat pe {{date}}",
+  "lastUsed": "Folosit ultima dată pe {{date}}",
+  "neverUsed": "Nefolosit",
+  "revoke": "Revocă",
+  "revokeLabel": "Revocă {{name}}",
+  "revokeConfirm": "Revoci {{name}}? Orice îl folosește se oprește.",
+  "revokeAction": "Revocă",
+  "cancel": "Anulează",
+  "revoked": "Jeton revocat"
+}

@@ -160,5 +160,8 @@
     "not_configured": "Notele vocale nu sunt încă configurate pe acest server.",
     "provider_unavailable": "Notele vocale nu sunt disponibile acum. Încearcă din nou în câteva clipe.",
     "nothing_heard": "Nu am prins nimic. Încearcă din nou."
+  },
+  "assistantTokens": {
+    "not_found": "Acest jeton nu mai există. Poate a fost deja revocat."
   }
 }

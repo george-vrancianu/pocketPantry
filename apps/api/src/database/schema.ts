@@ -353,6 +353,29 @@ export const memberAllergies = pgTable(
   ],
 );
 
+// An Assistant Token (ADR 0019): a named, revocable secret a Member creates so a voice
+// assistant can make Assistant Requests for them. Keyed to the Member, not their Family,
+// so it keeps working across Family changes, and deleted with the Member. Only the SHA-256
+// hash of the secret is stored; `prefix` is the short display start of the secret.
+export const assistantTokens = pgTable(
+  'assistant_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    secretHash: text('secret_hash').notNull().unique(),
+    prefix: text('prefix').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (table) => [index('assistant_tokens_user_id_idx').on(table.userId)],
+);
+
 // A Family Allergy: "someone in this Family without an account must avoid this
 // Allergen", with an optional label such as "Mia". Several rows may share an Allergen
 // with different labels. Owned by the Family and deleted with it (ADR 0001).

@@ -160,5 +160,8 @@
     "not_configured": "Voice notes are not set up on this server yet.",
     "provider_unavailable": "Voice notes are not available right now. Please try again in a moment.",
     "nothing_heard": "We did not catch anything. Please try again."
+  },
+  "assistantTokens": {
+    "not_found": "That token is no longer there. It may already be revoked."
   }
 }
