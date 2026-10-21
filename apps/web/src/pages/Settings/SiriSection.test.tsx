@@ -64,8 +64,9 @@ describe('Settings Siri section', () => {
     stubTokens([IPHONE, IPAD]);
     renderWithProviders(<SiriSection />);
 
-    const rows = await screen.findAllByRole('listitem');
-    expect(rows).toHaveLength(2);
+    await screen.findByText('iPhone');
+    // The setup steps are list items too; they come after the token rows.
+    const rows = screen.getAllByRole('listitem').slice(0, 2);
     expect(within(rows[0]).getByText('iPhone')).toBeInTheDocument();
     expect(within(rows[0]).getByText('pp_aB3x…')).toBeInTheDocument();
     expect(
@@ -212,5 +213,60 @@ describe('Settings Siri section', () => {
       await screen.findByText('pp_Wm2dTHE-WHOLE-SECRET'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+  });
+
+  describe('setup guide', () => {
+    afterEach(() => vi.unstubAllEnvs());
+
+    it('links to the Pantry add Shortcut in a new tab when its URL is configured', async () => {
+      vi.stubEnv(
+        'VITE_SIRI_SHORTCUT_URL',
+        'https://www.icloud.com/shortcuts/abc',
+      );
+      stubTokens([]);
+      renderWithProviders(<SiriSection />);
+
+      const link = await screen.findByRole('link', {
+        name: /Open the Pantry add Shortcut/,
+      });
+      expect(link).toHaveAttribute(
+        'href',
+        'https://www.icloud.com/shortcuts/abc',
+      );
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    });
+
+    it.each(['unset', 'empty'])(
+      'hides the Shortcut link when the URL is %s',
+      async (kind) => {
+        if (kind === 'empty') vi.stubEnv('VITE_SIRI_SHORTCUT_URL', '');
+        stubTokens([]);
+        renderWithProviders(<SiriSection />);
+
+        await screen.findByText('No tokens yet.');
+        expect(screen.queryByRole('link')).not.toBeInTheDocument();
+        expect(screen.getAllByRole('listitem').length).toBeGreaterThanOrEqual(
+          4,
+        );
+      },
+    );
+
+    it.each([
+      ['en', /Hey Siri, Pantry add/, /always English/],
+      ['ro', /Hey Siri, Pantry add/, /mereu în engleză/],
+      ['da', /Hey Siri, Pantry add/, /altid på engelsk/],
+    ] as const)(
+      'shows the setup steps and the language note in %s',
+      async (locale, phrase, note) => {
+        stubTokens([]);
+        renderWithProviders(<SiriSection />, { locale });
+
+        const steps = await screen.findByRole('list', { name: /.+/ });
+        expect(within(steps).getAllByRole('listitem')).toHaveLength(4);
+        expect(within(steps).getByText(phrase)).toBeInTheDocument();
+        expect(screen.getByText(note)).toBeInTheDocument();
+      },
+    );
   });
 });

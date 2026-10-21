@@ -23,5 +23,14 @@
   "revokeConfirm": "Tilbagekald {{name}}? Alt, der bruger det, holder op med at virke.",
   "revokeAction": "Tilbagekald",
   "cancel": "Annuller",
-  "revoked": "Token tilbagekaldt"
+  "revoked": "Token tilbagekaldt",
+  "setup": {
+    "title": "Opsæt Siri",
+    "create": "Opret et token ovenfor, og kopiér det.",
+    "add": "Føj genvejen “Pantry add” til appen Genveje.",
+    "link": "Åbn genvejen Pantry add",
+    "paste": "Indsæt tokenet, når genvejen beder om det.",
+    "say": "Sig “Hey Siri, Pantry add”, og sig derefter, hvad der skal tilføjes.",
+    "language": "Siris frase er altid på engelsk, men du kan sige varerne på ethvert sprog, Pocket Pantry understøtter."
+  }
 }

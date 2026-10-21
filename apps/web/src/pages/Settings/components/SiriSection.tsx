@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Card,
+  Link,
   radius,
   Stack,
   TextField,
@@ -21,6 +22,7 @@ import {
 } from '../../../lib/assistantTokens';
 import { formatDate } from '../../../lib/dateFormat';
 import { localIso } from '../../../lib/pantry';
+import { siriShortcutUrl } from '../../../lib/siriShortcut';
 import { ScopeCaption, SectionHeading } from './SectionHeading';
 
 /** Keep in step with NAME_MAX_LENGTH in the API's assistant-token.schemas.ts. */
@@ -161,9 +163,51 @@ function TokenRow({
   );
 }
 
+const SETUP_STEPS = ['create', 'add', 'paste', 'say'] as const;
+
+/** The four steps from creating a token to talking to Siri; the Shortcut link joins step two. */
+function SetupGuide() {
+  const { t } = useTranslation('siri');
+  const shortcutUrl = siriShortcutUrl();
+  return (
+    <Stack spacing={1}>
+      <Typography id="siri-setup-title" sx={{ fontWeight: 600 }}>
+        {t('setup.title')}
+      </Typography>
+      <Box
+        component="ol"
+        aria-labelledby="siri-setup-title"
+        sx={{ m: 0, pl: 3, display: 'grid', gap: 0.5 }}
+      >
+        {SETUP_STEPS.map((step) => (
+          <Typography key={step} component="li" variant="body2">
+            {t(`setup.${step}`)}
+            {step === 'add' && shortcutUrl ? (
+              <>
+                {' '}
+                <Link
+                  component="a"
+                  href={shortcutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('setup.link')}
+                </Link>
+              </>
+            ) : null}
+          </Typography>
+        ))}
+      </Box>
+      <Typography variant="meta" color="text.secondary">
+        {t('setup.language')}
+      </Typography>
+    </Stack>
+  );
+}
+
 /**
  * Siri: the Member's Assistant Tokens (ADR 0019). Create one by name, copy its secret from the
- * one-time reveal, and revoke it after confirming. Setup help for the Shortcut goes in here too.
+ * one-time reveal, and revoke it after confirming. Setup steps for the Shortcut follow.
  */
 export function SiriSection() {
   const { t } = useTranslation(['siri', 'settings']);
@@ -253,6 +297,7 @@ export function SiriSection() {
             </Stack>
           ) : null}
           {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
+          <SetupGuide />
         </Stack>
       </Card>
     </Stack>
