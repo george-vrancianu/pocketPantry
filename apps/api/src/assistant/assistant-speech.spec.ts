@@ -106,7 +106,7 @@ describe('assistantSpeech', () => {
     });
     it('ro', () => {
       expect(say('ro', [{ kind: 'added', name: 'lapte' }])).toBe(
-        'Adăugat în Lista de cumpărături: lapte.',
+        'Am adăugat pe Lista de cumpărături: lapte.',
       );
     });
     it('da', () => {
@@ -198,6 +198,14 @@ describe('assistantSpeech', () => {
       ).toContain('2 cup of milk');
     });
 
+    it('does not treat inherited object keys as units', () => {
+      expect(
+        say('en', [
+          { kind: 'added', name: 'milk', quantity: 2, unit: 'constructor' },
+        ]),
+      ).toContain('2 constructor of milk');
+    });
+
     it('ignores a unit without a quantity', () => {
       expect(say('en', [{ kind: 'added', name: 'milk', unit: 'l' }])).toBe(
         'Added to your Shopping List: milk.',
@@ -209,19 +217,19 @@ describe('assistantSpeech', () => {
     const litres = (quantity: number): string =>
       say('ro', [{ kind: 'added', name: 'lapte', quantity, unit: 'l' }]);
     const pieces = (quantity: number): string =>
-      say('ro', [{ kind: 'added', name: 'ouă', quantity, unit: 'pcs' }]);
+      say('ro', [{ kind: 'added', name: 'mere', quantity, unit: 'pcs' }]);
 
     it('uses one for 1', () => {
       expect(litres(1)).toContain('1 litru de lapte');
-      expect(pieces(1)).toContain('1 ouă');
+      expect(pieces(1)).toContain('1 mere');
     });
     it('uses few for 2', () => {
       expect(litres(2)).toContain('2 litri de lapte');
-      expect(pieces(2)).toContain('2 ouă');
+      expect(pieces(2)).toContain('2 mere');
     });
     it('uses other, with "de", for 20', () => {
       expect(litres(20)).toContain('20 de litri de lapte');
-      expect(pieces(20)).toContain('20 de ouă');
+      expect(pieces(20)).toContain('20 de mere');
     });
     it('treats 12 as few and 100 as other', () => {
       expect(litres(12)).toContain('12 litri');
@@ -238,18 +246,17 @@ describe('assistantSpeech', () => {
 
   describe('refused', () => {
     it.each([
-      ['en', 'Open Pocket Pantry'],
-      ['ro', 'Deschide Pocket Pantry'],
-      ['da', 'Åbn Pocket Pantry'],
+      ['en', 'Open Pocket Pantry for', 'eggs and bread'],
+      ['ro', 'Deschide Pocket Pantry pentru', 'eggs și bread'],
+      ['da', 'Åbn Pocket Pantry for', 'eggs og bread'],
     ] as const)(
       'names the items and points to the app in %s',
-      (locale, open) => {
+      (locale, open, expected) => {
         const out = say(locale, [
-          { kind: 'refused', name: 'a' },
-          { kind: 'refused', name: 'b' },
+          { kind: 'refused', name: 'eggs' },
+          { kind: 'refused', name: 'bread' },
         ]);
-        expect(out).toContain(open);
-        expect(out).toMatch(/a .* b/);
+        expect(out).toBe(`${open} ${expected}.`);
       },
     );
   });

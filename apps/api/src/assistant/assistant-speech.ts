@@ -1,3 +1,4 @@
+import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { VoiceUnit } from '../voice/voice-actions';
 
 /**
@@ -8,8 +9,9 @@ import type { VoiceUnit } from '../voice/voice-actions';
  * has to be understood when heard: clauses are "<what happened>: <items>".
  */
 
-export const ASSISTANT_LOCALES = ['en', 'ro', 'da'] as const;
-export type AssistantLocale = (typeof ASSISTANT_LOCALES)[number];
+// Type-only import: catalog.schemas pulls in the database schema at runtime, so
+// the locale set is tied to it at compile time and the list below stays pure.
+export type AssistantLocale = CatalogLocale;
 export const ASSISTANT_DEFAULT_LOCALE: AssistantLocale = 'en';
 
 /** What happened to one Voice Action of the request. */
@@ -22,6 +24,11 @@ export type AssistantOutcomeKind =
   | 'addedUnmatched'
   | 'refused';
 
+/**
+ * One Voice Action of a request, as the reply needs it. #446 maps its apply
+ * result onto these: a `skipped` entry is passed as `refused` (the Member is
+ * sent to the app), and entries the assistant did not understand are dropped.
+ */
 export type AssistantOutcome = {
   kind: AssistantOutcomeKind;
   /** The Ingredient's display name in the Member's locale, or the spoken name when Unmatched. */
@@ -71,7 +78,7 @@ const plain = (one: string, other: string): Forms => ({
   other,
 });
 
-export const assistantMessages: Record<AssistantLocale, Messages> = {
+export const assistantMessages = {
   en: {
     clauseSeparator: '; ',
     count: same('{n}'),
@@ -115,13 +122,13 @@ export const assistantMessages: Record<AssistantLocale, Messages> = {
       pcs: null,
     },
     outcomes: {
-      added: 'Adăugat în Lista de cumpărături: {items}',
-      quantitySet: 'Actualizat în Lista de cumpărături: {items}',
-      alreadyOnList: 'Deja în Lista de cumpărături: {items}',
-      flaggedRunningLow: 'Marcat ca pe cale să se termine: {items}',
+      added: 'Am adăugat pe Lista de cumpărături: {items}',
+      quantitySet: 'Am actualizat pe Lista de cumpărături: {items}',
+      alreadyOnList: 'Deja pe Lista de cumpărături: {items}',
+      flaggedRunningLow: 'Am marcat ca pe cale să se termine: {items}',
       addedBecauseRunningLowNoBatch:
-        'Adăugat în Lista de cumpărături fiindcă nu mai este în stoc: {items}',
-      addedUnmatched: 'Adăugat, dar nerecunoscut: {items}',
+        'Am adăugat pe Lista de cumpărături, fiindcă nu mai este în stoc: {items}',
+      addedUnmatched: 'Am adăugat, dar nu am recunoscut: {items}',
       refused: 'Deschide Pocket Pantry pentru {items}',
     },
     states: {
@@ -161,7 +168,11 @@ export const assistantMessages: Record<AssistantLocale, Messages> = {
       notConfigured: 'Assistenten er ikke sat op.',
     },
   },
-};
+} as const satisfies Record<AssistantLocale, Messages>;
+
+export const ASSISTANT_LOCALES = Object.keys(
+  assistantMessages,
+) as AssistantLocale[];
 
 /** Clause order of a reply. */
 const KIND_ORDER: readonly AssistantOutcomeKind[] = [
@@ -175,7 +186,7 @@ const KIND_ORDER: readonly AssistantOutcomeKind[] = [
 ];
 
 const resolveLocale = (locale: string | null | undefined): AssistantLocale =>
-  (ASSISTANT_LOCALES as readonly string[]).includes(locale ?? '')
+  locale != null && Object.hasOwn(assistantMessages, locale)
     ? (locale as AssistantLocale)
     : ASSISTANT_DEFAULT_LOCALE;
 
@@ -195,14 +206,15 @@ const amountPhrase = (
     '{n}',
     quantity.toLocaleString(locale, { maximumFractionDigits: 2 }),
   );
-  const forms = unit ? messages.units[unit as VoiceUnit] : null;
-  const word = forms
-    ? forms[cat]
-    : unit && !(unit in messages.units)
-      ? unit
-      : '';
-  return word
-    ? { amount: `${number} ${word}`, hasUnit: forms !== null }
+  if (!unit) return { amount: number, hasUnit: false };
+  if (!Object.hasOwn(messages.units, unit)) {
+    // Not a known unit code: speak it as it is.
+    return { amount: `${number} ${unit}`, hasUnit: true };
+  }
+  const forms = messages.units[unit as VoiceUnit];
+  // A known unit without a word (pieces) is a bare count.
+  return forms
+    ? { amount: `${number} ${forms[cat]}`, hasUnit: true }
     : { amount: number, hasUnit: false };
 };
 
