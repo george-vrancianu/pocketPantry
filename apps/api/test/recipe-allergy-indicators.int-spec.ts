@@ -64,7 +64,9 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
     settings = client(app, cookie, '/api/settings');
     recipesApi = client(app, cookie, '/api/recipes');
     // Catalog rows another suite could leave behind: one-Ingredient Recipes that would crowd
-    // a Plate Scan's five matches if the dishes below did not out-score them.
+    // a Plate Scan's five matches if the dishes below did not out-score them. Their titles
+    // deliberately share the word "Plate" with the dishes: that is what made them outscore the
+    // old one-Ingredient scans, so renaming them would weaken the guard.
     for (let k = 0; k < 6; k++) {
       await create([g('parmesan')], `Plate ${stamp}-crowd${k}a`);
       await create([g('flour')], `Plate ${stamp}-crowd${k}b`);
@@ -337,8 +339,8 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
             locale: 'en',
             dishTitle: word,
             ingredientIds: [
-              seedId.ingredient('flour'),
               seedId.ingredient('parmesan'),
+              seedId.ingredient('flour'),
             ],
           })
           .expect(200)
