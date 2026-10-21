@@ -34,7 +34,7 @@
     "importTitle": "Importă un șablon",
     "importMeta_one": "{{count}} șablon",
     "importMeta_few": "{{count}} șabloane",
-    "importMeta_other": "{{count}} șabloane"
+    "importMeta_other": "{{count}} de șabloane"
   },
   "finish": {
     "reviewTitle": "Adaugă în cămară",
