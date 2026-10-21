@@ -38,6 +38,12 @@ const DESCRIPTION_MAX = 200;
  */
 @Injectable()
 export class BarcodeLookupService {
+  /** Open Food Facts calls in flight, by barcode (single-flight). */
+  private readonly fetching = new Map<
+    string,
+    Promise<OpenFoodFactsProduct | null>
+  >();
+
   constructor(
     @InjectOpenFoodFacts() private readonly openFoodFacts: OpenFoodFactsClient,
     private readonly catalogSearch: CatalogSearchService,
@@ -185,6 +191,20 @@ export class BarcodeLookupService {
   ): Promise<OpenFoodFactsProduct | null> {
     const cached = await this.freshCached(barcode);
     if (cached) return cached.product;
+    // Lookups of the same uncached code that overlap share one call and one charge.
+    const pending = this.fetching.get(barcode);
+    if (pending) return pending;
+    const fetching = this.fetchAndCache(memberId, barcode).finally(() =>
+      this.fetching.delete(barcode),
+    );
+    this.fetching.set(barcode, fetching);
+    return fetching;
+  }
+
+  private async fetchAndCache(
+    memberId: string,
+    barcode: string,
+  ): Promise<OpenFoodFactsProduct | null> {
     // Only a call that really goes out is charged against the limits (#416).
     this.throttle.charge(memberId);
     const fetched = await this.openFoodFacts.fetchProduct(barcode);

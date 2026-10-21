@@ -328,7 +328,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     await openForm(user);
     await user.click(cameraButton());
     await decode();
-    expect(await screen.findByText(/Too many barcode lookups/)).toBeVisible();
+    expect(await screen.findByText(/Too many Barcode Lookups/)).toBeVisible();
     expect(screen.queryByText(/No product found/)).toBeNull();
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
   });

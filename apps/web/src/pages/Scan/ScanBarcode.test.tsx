@@ -488,7 +488,7 @@ describe('Barcode on the Scan page', () => {
       await decode(A);
       await waitFor(() => expect(states()).toEqual(['failed']));
       expect(
-        screen.getByLabelText(/Too many barcode lookups for now/),
+        screen.getByLabelText(/Too many Barcode Lookups right now/),
       ).toBeInTheDocument();
 
       answers[A] = () => Response.json(found());

@@ -205,7 +205,7 @@ Reading a product's barcode in the camera and looking the code up, first among t
 _Avoid_: Barcode scan, barcode mode
 
 **Lookup Limit**:
-How many Barcode Lookups per minute may reach the open product database: a few per Member, and a smaller total for the whole app, kept under the database's own published limit. Only a lookup that really goes out is counted; a Known Barcode or a recently seen code is answered without counting. A Member over it is asked to wait a minute and try again; the lookup is not reported as not found.
+How many Barcode Lookups per minute may reach the open product database: a few per Member, and a total for the whole app that is a little higher but still under the database's own published limit, counted over the last minute rather than in fixed minutes. Only a lookup that really goes out is counted; a Known Barcode or a recently seen code is answered without counting. A Member over it is asked to wait a minute and try again; the lookup is not reported as not found.
 _Avoid_: Scan Cap (that limits Scans)
 
 **Known Barcode**:

@@ -13,7 +13,9 @@ const config = (member: number, global: number) =>
 describe('OpenFoodFactsThrottle', () => {
   let time = 1_000_000;
   const make = (member: number, global: number) =>
-    new OpenFoodFactsThrottle(config(member, global), () => time);
+    Object.assign(new OpenFoodFactsThrottle(config(member, global)), {
+      clock: () => time,
+    });
 
   beforeEach(() => {
     time = 1_000_000;
@@ -57,5 +59,43 @@ describe('OpenFoodFactsThrottle', () => {
     throttle.charge('m3');
     throttle.charge('m3');
     expect(() => throttle.charge('m3')).toThrow(BarcodeRateLimitedException);
+  });
+
+  it('does not allow a burst at the edge of a minute: calls count while under 60 s old', () => {
+    const throttle = make(100, 3);
+    time += 59_900;
+    throttle.charge('m1');
+    throttle.charge('m2');
+    throttle.charge('m3');
+    time += 100;
+    // 60.0 s after the start, but the three calls are only 100 ms old.
+    expect(() => throttle.charge('m4')).toThrow(BarcodeRateLimitedException);
+    time += 59_899;
+    expect(() => throttle.charge('m4')).toThrow(BarcodeRateLimitedException);
+    time += 1;
+    throttle.charge('m4');
+  });
+
+  it('tells a Member to wait until their oldest call is a minute old', () => {
+    const throttle = make(2, 100);
+    throttle.charge('m1');
+    time += 10_000;
+    throttle.charge('m1');
+    time += 5_000;
+    expect(() => throttle.charge('m1')).toThrow(
+      expect.objectContaining({ retryAfterSeconds: 45 }),
+    );
+  });
+
+  it('reports the later of the two waits when both limits are full', () => {
+    const throttle = make(1, 2);
+    throttle.charge('m1'); // t = 0
+    time += 30_000;
+    throttle.charge('m2'); // t = 30 s: the API is full, m2 too
+    time += 10_000;
+    // The API as a whole is free again in 20 s (when m1's call is a minute old), m2 in 50 s.
+    expect(() => throttle.charge('m2')).toThrow(
+      expect.objectContaining({ retryAfterSeconds: 50 }),
+    );
   });
 });

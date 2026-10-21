@@ -139,7 +139,7 @@
   },
   "barcode": {
     "provider_unavailable": "Căutarea codului de bare nu este disponibilă acum. Încearcă din nou sau completează formularul manual.",
-    "rate_limited": "Prea multe căutări de coduri de bare acum. Așteaptă un minut și încearcă din nou sau completează formularul manual."
+    "rate_limited": "Prea multe căutări de coduri de bare acum. Așteaptă un minut și încearcă din nou."
   },
   "meal_plan": {
     "cap_reached": "Familia ta poate avea {{cap}} planuri de mese. Șterge unul ca să faci loc.",
