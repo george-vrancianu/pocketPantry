@@ -84,3 +84,27 @@ test('fails when a journal idx does not match the tag prefix', () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('fails when the journal has no entries array', () => {
+  const dir = makeDir({ sql: ['0000_init'], journal: ['0000_init'] });
+  try {
+    writeFileSync(join(dir, 'meta', '_journal.json'), '{}');
+    const r = spawnSync(process.execPath, [script, dir], { encoding: 'utf8' });
+    assert.equal(r.status, 1);
+    assert.match(r.stdout + r.stderr, /entries/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('fails when the journal lists a tag twice', () => {
+  const r = run({ sql: ['0000_init'], journal: ['0000_init', '0000_init'] });
+  assert.equal(r.status, 1);
+  assert.match(r.output, /0000_init more than once/);
+});
+
+test('fails when a SQL file has no numeric prefix', () => {
+  const r = run({ sql: ['0000_init', 'oops'], journal: ['0000_init', 'oops'] });
+  assert.equal(r.status, 1);
+  assert.match(r.output, /oops\.sql has no numeric prefix/);
+});

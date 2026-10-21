@@ -4,7 +4,7 @@
 #   scripts/worktree.sh --remove <name>   remove the worktree, delete the branch if merged
 # Only git fetch / worktree / branch are run against the main checkout; its
 # working tree, index and HEAD are never touched. Env files are copied, not linked.
-set -Eeuo pipefail
+set -euo pipefail
 
 usage() {
   cat >&2 <<'USAGE'
@@ -54,6 +54,7 @@ fi
 name=$1
 base=${2:-origin/main}
 validate_name "$name"
+case "$base" in -*) echo "Invalid base: '$base'" >&2; usage ;; esac
 target="$main/.claude/worktrees/$name"
 
 if [ -e "$target" ]; then
@@ -66,7 +67,10 @@ if git_main show-ref --verify --quiet "refs/heads/$name"; then
 fi
 
 git_main fetch origin
-git_main worktree add "$target" -b "$name" "$base"
+git_main worktree add --no-track "$target" -b "$name" "$base"
+
+# From here on the worktree exists; on failure tell the user how to clean up.
+trap 'echo "Setup failed. Clean up with: scripts/worktree.sh --remove $name" >&2' ERR
 
 # Copy (never link, never modify the source) the gitignored env files.
 for f in .env .env.local apps/api/.env apps/api/.env.local apps/web/.env apps/web/.env.local; do

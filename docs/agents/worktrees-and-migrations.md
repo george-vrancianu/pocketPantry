@@ -11,6 +11,7 @@ scripts/worktree.sh --remove <name>   # remove
 - Works from the main checkout or from any worktree. It resolves the main checkout from the shared git dir and only runs `git fetch`, `git worktree add/remove` and `git branch` against it. It never runs checkout, stash, reset, pull, commit or `npm ci` there.
 - Refuses if the target directory or the branch already exists. `<name>` may not be empty or contain `/` or `..`.
 - Copies (never links) `.env`, `.env.local`, `apps/api/.env`, `apps/api/.env.local`, `apps/web/.env` and `apps/web/.env.local` from the main checkout where they exist, then runs `npm ci` in the new worktree.
+- The new branch does not track the base. If `cp` or `npm ci` fails after the worktree was added, the script prints a hint; clean up with `scripts/worktree.sh --remove <name>` (add `git branch -D <name>` in the main repo if it reports the branch as unmerged) and retry.
 - `--remove` runs `git worktree remove` (fails if the worktree has uncommitted changes) and then `git branch -d`. An unmerged branch is kept and reported; the script never force-deletes.
 
 ## Migration check: `scripts/check-migrations.mjs`

@@ -36,15 +36,19 @@ for (const [prefix, tags] of byPrefix) {
 }
 
 let entries;
+let journalReadable = false;
 try {
   entries = JSON.parse(
     readFileSync(join(dir, 'meta', '_journal.json'), 'utf8'),
   ).entries;
+  journalReadable = true;
 } catch (e) {
   errors.push(`Cannot read meta/_journal.json: ${e.message}`);
 }
 
-if (Array.isArray(entries)) {
+if (journalReadable && !Array.isArray(entries)) {
+  errors.push('meta/_journal.json has no "entries" array');
+} else if (Array.isArray(entries)) {
   const journalTags = new Set(entries.map((e) => e.tag));
   for (const tag of sqlTags) {
     if (!journalTags.has(tag))
