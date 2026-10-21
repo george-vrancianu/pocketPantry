@@ -131,17 +131,16 @@ describe('Barcode Lookup (integration)', () => {
   });
 
   it.each([
-    [8, 0],
-    [12, 1],
-    [13, 0],
+    ['EAN-8', 8, ''],
+    ['UPC-A', 12, '0'],
+    ['EAN-13', 13, ''],
   ])(
-    'accepts a %i-digit barcode and asks for its GTIN-13 form (%i leading zero)',
-    async (length, zeros) => {
+    'accepts a %s barcode and asks Open Food Facts for it prefixed with %j',
+    async (_format, length, prefix) => {
       const barcode = freshBarcode(length);
       found = product({ productName: 'Parmesan' });
       await lookup(a, barcode).expect(200);
-      expect(asked).toEqual([length === 12 ? `0${barcode}` : barcode]);
-      expect(zeros).toBeGreaterThanOrEqual(0);
+      expect(asked).toEqual([`${prefix}${barcode}`]);
     },
   );
 

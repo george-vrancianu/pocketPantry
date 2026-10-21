@@ -84,8 +84,8 @@ const found = (overrides: object = {}) => ({
 });
 const MILK = { id: 'al-milk', name: 'Milk' };
 const GLUTEN = { id: 'al-gluten', name: 'Gluten' };
-const A = '5941234567890';
-const B = '5949999999990';
+const A = '5941234567899';
+const B = '5949999999993';
 
 type Held = { code: string; search: string; respond: (r: Response) => void };
 /** Barcode Lookups and photo reads answer only when the test says so. */
@@ -511,7 +511,7 @@ describe('Barcode on the Scan page', () => {
     it('counts Barcode cards toward the 20-card limit and tells the Member when it is full', async () => {
       renderScan('/scan?mode=barcode');
       for (let i = 0; i < 20; i += 1)
-        await decode(`59412345${String(i).padStart(5, '0')}`);
+        await decode(`59412342${String(i).padStart(5, '0')}`);
       expect(thumbnails()).toHaveLength(20);
 
       await decode(B);
@@ -528,7 +528,7 @@ describe('Barcode on the Scan page', () => {
     it('toasts once for a code held at the limit, not on every decoder tick', async () => {
       renderScan('/scan?mode=barcode');
       for (let i = 0; i < 20; i += 1)
-        await decode(`59412345${String(i).padStart(5, '0')}`);
+        await decode(`59412342${String(i).padStart(5, '0')}`);
       await decode(B);
       await screen.findByText(/holds at most 20 photos/);
       await userEvent.keyboard('{Escape}');

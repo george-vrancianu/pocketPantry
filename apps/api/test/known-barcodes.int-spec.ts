@@ -203,10 +203,11 @@ describe('Known Barcodes (integration)', () => {
     });
 
     it('remembers a UPC-A and its EAN-13 form as one Known Barcode', async () => {
-      await saveIngredient(a, '036000291452', {
+      const upcA = freshBarcode(12);
+      await saveIngredient(a, upcA, {
         productDescription: 'first',
       }).expect(201);
-      await saveIngredient(a, '0036000291452', {
+      await saveIngredient(a, `0${upcA}`, {
         productDescription: 'second',
       }).expect(201);
       const rows = await database
@@ -215,13 +216,13 @@ describe('Known Barcodes (integration)', () => {
         .where(
           and(
             eq(knownBarcodes.familyId, familyA),
-            eq(knownBarcodes.barcode, '0036000291452'),
+            eq(knownBarcodes.barcode, `0${upcA}`),
           ),
         );
       expect(rows).toHaveLength(1);
       expect(rows[0].productDescription).toBe('second');
-      expect(await knownOf('036000291452')).toBeUndefined();
-      const body = (await lookup(a, '036000291452').expect(200)).body as Json;
+      expect(await knownOf(upcA)).toBeUndefined();
+      const body = (await lookup(a, upcA).expect(200)).body as Json;
       expect(body).toMatchObject({
         source: 'known_barcode',
         productDescription: 'second',
@@ -229,11 +230,13 @@ describe('Known Barcodes (integration)', () => {
     });
 
     it('rejects a barcode with a wrong check digit and saves nothing', async () => {
-      const res = await saveIngredient(a, '3017620422004', {
+      const valid = freshBarcode();
+      const wrong = `${valid.slice(0, -1)}${(Number(valid.at(-1)) + 1) % 10}`;
+      const res = await saveIngredient(a, wrong, {
         productDescription: 'bad check digit',
       });
       expect(res.status).toBe(400);
-      expect(await knownOf('3017620422004')).toBeUndefined();
+      expect(await knownOf(wrong)).toBeUndefined();
     });
 
     it.each(['abc', '123', '12345678901234', '30176 20422003'])(

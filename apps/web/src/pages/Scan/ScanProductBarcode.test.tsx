@@ -68,7 +68,7 @@ const line = (name: string) => ({
   expiryDate: null,
   productDescription: null,
 });
-const CODE = '5941234567890';
+const CODE = '5941234567899';
 
 /** Stands in for the browser Back button (jsdom has none): goes to the overview, leaving the editor. */
 function BackToOverview() {

@@ -89,7 +89,20 @@ describe('barcode detection', () => {
     },
   );
 
-  it('passes an 8-digit code on, since the API tells EAN-8 from UPC-E', async () => {
+  it.each(['96385075', '04252615'])(
+    'ignores the 8-digit misread %s',
+    async (misread) => {
+      vi.doMock('./barcodeDecoder', () => ({
+        createZXingDetector: () => ({
+          detect: () => Promise.resolve([{ rawValue: misread }]),
+        }),
+      }));
+      const { readBarcode } = await import('./camera');
+      expect(await readBarcode(video)).toBeNull();
+    },
+  );
+
+  it('reads a valid UPC-E', async () => {
     vi.doMock('./barcodeDecoder', () => ({
       createZXingDetector: () => ({
         detect: () => Promise.resolve([{ rawValue: '04252614' }]),

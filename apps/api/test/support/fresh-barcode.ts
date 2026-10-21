@@ -15,3 +15,19 @@ export const freshBarcode = (length = 13): string => {
   }
   throw new Error('unreachable: one check digit always fits');
 };
+
+/**
+ * A UPC-E no other test has used, with the GTIN-13 it expands to. Built from a six-digit body
+ * ending in 5 to 9 (the manufacturer keeps five digits, the product code is the sixth).
+ */
+export const freshUpcE = (): { upcE: string; gtin13: string } => {
+  const digits = BigInt(`0x${randomUUID().replaceAll('-', '')}`).toString();
+  const body = `${digits.slice(-5).padStart(5, '1')}${5 + (Number(digits.at(-6)) % 5)}`;
+  const upcA = `0${body.slice(0, 5)}0000${body[5]}`;
+  for (let check = 0; check < 10; check += 1) {
+    if (hasValidCheckDigit(`${upcA}${check}`)) {
+      return { upcE: `0${body}${check}`, gtin13: `0${upcA}${check}` };
+    }
+  }
+  throw new Error('unreachable: one check digit always fits');
+};

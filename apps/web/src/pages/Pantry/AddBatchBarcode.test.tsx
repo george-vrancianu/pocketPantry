@@ -51,7 +51,7 @@ const result = (id: string, name: string, unit: 'g' | 'l', days: number) =>
 
 const yogurt = result('yogurt-id', 'Yogurt', 'g', 10);
 const milk = result('milk-id', 'Milk', 'l', 7);
-const CODE = '5941234567890';
+const CODE = '5941234567899';
 
 const milkBatch: Batch = {
   id: 'milk-1',

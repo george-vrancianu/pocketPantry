@@ -28,7 +28,9 @@ function expandUpcE(upcE: string): string {
  * - EAN-13 is canonical (GTIN-13): kept as is.
  * - UPC-A (12 digits) gets a leading 0, so it and its EAN-13 form are one code.
  * - 8 digits starting with 0 that read as a UPC-E with a valid check digit are
- *   expanded to UPC-A, then to GTIN-13.
+ *   expanded to UPC-A, then to GTIN-13. A code valid both as UPC-E and as EAN-8 is
+ *   read as UPC-E. Only number system 0 is expanded: a UPC-E starting with 1 is rare
+ *   and is taken for an EAN-8 (or rejected).
  * - Any other 8-digit code is an EAN-8 and stays its own 8-digit form: an EAN-8
  *   is not a zero-padded EAN-13 in practice.
  */

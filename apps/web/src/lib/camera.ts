@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SCAN_INTERVAL_MS } from './cameraMode';
+import { isValidBarcode } from './gtin';
 import { GUIDE_CENTER_Y } from './scanGuides';
 
 /** Ask for 1080p where the device can, in every Scan Mode so the dial never restarts the stream: a receipt's small print is unreadable at the 640x480 browsers often default to. */
@@ -52,27 +53,12 @@ function loadDetector(): Promise<Detector> {
   return detector;
 }
 
-/**
- * Whether a read code is worth a lookup: 8, 12 or 13 digits and, for UPC-A and EAN-13, a valid
- * check digit, as the API requires. An 8-digit code is left to the API, which tells EAN-8 from
- * UPC-E (the UPC-E check digit belongs to its expanded form).
- */
-export function isLookupBarcode(code: string): boolean {
-  if (!/^(?:\d{8}|\d{12}|\d{13})$/.test(code)) return false;
-  if (code.length === 8) return true;
-  let sum = 0;
-  for (let index = 0; index < code.length - 1; index += 1) {
-    sum += Number(code[index]) * ((code.length - 1 - index) % 2 === 1 ? 3 : 1);
-  }
-  return (10 - (sum % 10)) % 10 === Number(code.at(-1));
-}
-
 /** The first product barcode in a video frame or a captured image (8, 12 or 13 digits), or null. */
 export async function readBarcode(
   source: HTMLVideoElement | Blob,
 ): Promise<string | null> {
   const found = await (await loadDetector()).detect(source);
-  return found.find((code) => isLookupBarcode(code.rawValue))?.rawValue ?? null;
+  return found.find((code) => isValidBarcode(code.rawValue))?.rawValue ?? null;
 }
 
 export type CameraStatus = 'starting' | 'ready' | 'unavailable';

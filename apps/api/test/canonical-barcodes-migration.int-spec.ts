@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import pg from 'pg';
+import { freshBarcode, freshUpcE } from './support/fresh-barcode';
 
 // Migration 0032 moves stored barcodes to their canonical GTIN-13 form. Each test plays it
 // again inside a transaction that is rolled back, against rows written the old way.
@@ -14,6 +15,9 @@ const statements = readFileSync(
 
 const familyA = '00000000-0000-4000-8000-000000003201';
 const familyB = '00000000-0000-4000-8000-000000003202';
+
+const wrongCheckDigit = (code: string) =>
+  `${code.slice(0, -1)}${(Number(code.at(-1)) + 1) % 10}`;
 
 describe('Migration 0032: canonical barcodes (integration)', () => {
   let client: pg.Client;
@@ -80,34 +84,43 @@ describe('Migration 0032: canonical barcodes (integration)', () => {
     ).rows;
 
   it('moves UPC-A and UPC-E Known Barcodes to GTIN-13 and leaves EAN-13, EAN-8 alone', async () => {
-    await known(familyA, '036000291452', 'upc-a', '2026-01-01');
-    await known(familyA, '04252614', 'upc-e', '2026-01-01');
-    await known(familyA, '3017620422003', 'ean-13', '2026-01-01');
-    await known(familyA, '96385074', 'ean-8', '2026-01-01');
+    const upcA = freshBarcode(12);
+    const { upcE, gtin13 } = freshUpcE();
+    const ean13 = freshBarcode(13);
+    const ean8 = freshBarcode(8);
+    await known(familyA, upcA, 'upc-a', '2026-01-01');
+    await known(familyA, upcE, 'upc-e', '2026-01-01');
+    await known(familyA, ean13, 'ean-13', '2026-01-01');
+    await known(familyA, ean8, 'ean-8', '2026-01-01');
 
     await migrate();
 
-    expect(await knownRows(familyA)).toEqual([
-      { barcode: '0036000291452', description: 'upc-a' },
-      { barcode: '0042100005264', description: 'upc-e' },
-      { barcode: '3017620422003', description: 'ean-13' },
-      { barcode: '96385074', description: 'ean-8' },
+    expect(
+      (await knownRows(familyA)).sort((x, y) =>
+        x.description.localeCompare(y.description),
+      ),
+    ).toEqual([
+      { barcode: ean13, description: 'ean-13' },
+      { barcode: ean8, description: 'ean-8' },
+      { barcode: `0${upcA}`, description: 'upc-a' },
+      { barcode: gtin13, description: 'upc-e' },
     ]);
   });
 
   it('keeps the most recently updated row when a UPC-A and its EAN-13 form collapse, per Family', async () => {
-    await known(familyA, '036000291452', 'newer upc-a', '2026-03-01');
-    await known(familyA, '0036000291452', 'older ean-13', '2026-02-01');
-    await known(familyB, '036000291452', 'b older upc-a', '2026-01-01');
-    await known(familyB, '0036000291452', 'b newer ean-13', '2026-02-01');
+    const upcA = freshBarcode(12);
+    await known(familyA, upcA, 'newer upc-a', '2026-03-01');
+    await known(familyA, `0${upcA}`, 'older ean-13', '2026-02-01');
+    await known(familyB, upcA, 'b older upc-a', '2026-01-01');
+    await known(familyB, `0${upcA}`, 'b newer ean-13', '2026-02-01');
 
     await migrate();
 
     expect(await knownRows(familyA)).toEqual([
-      { barcode: '0036000291452', description: 'newer upc-a' },
+      { barcode: `0${upcA}`, description: 'newer upc-a' },
     ]);
     expect(await knownRows(familyB)).toEqual([
-      { barcode: '0036000291452', description: 'b newer ean-13' },
+      { barcode: `0${upcA}`, description: 'b newer ean-13' },
     ]);
   });
 
@@ -124,25 +137,22 @@ describe('Migration 0032: canonical barcodes (integration)', () => {
   });
 
   it('moves cache entries to GTIN-13 and keeps the most recently fetched one on a collapse', async () => {
-    await cache('036000291452', 'upc-a old', '2026-01-01');
-    await cache('0036000291452', 'ean-13 new', '2026-02-01');
-    await cache('04252614', 'upc-e only', '2026-01-01');
-    await cache('036000291453', 'bad check digit', '2026-01-01');
+    const upcA = freshBarcode(12);
+    const { upcE, gtin13 } = freshUpcE();
+    const bad = wrongCheckDigit(freshBarcode(12));
+    await cache(upcA, 'upc-a old', '2026-01-01');
+    await cache(`0${upcA}`, 'ean-13 new', '2026-02-01');
+    await cache(upcE, 'upc-e only', '2026-01-01');
+    await cache(bad, 'bad check digit', '2026-01-01');
 
     await migrate();
 
-    expect(
-      await cacheRows([
-        '036000291452',
-        '0036000291452',
-        '04252614',
-        '0042100005264',
-        '036000291453',
-      ]),
-    ).toEqual([
-      { barcode: '0036000291452', name: 'ean-13 new' },
-      { barcode: '0042100005264', name: 'upc-e only' },
-      { barcode: '036000291453', name: 'bad check digit' },
-    ]);
+    expect(await cacheRows([upcA, `0${upcA}`, upcE, gtin13, bad])).toEqual(
+      [
+        { barcode: `0${upcA}`, name: 'ean-13 new' },
+        { barcode: gtin13, name: 'upc-e only' },
+        { barcode: bad, name: 'bad check digit' },
+      ].sort((x, y) => x.barcode.localeCompare(y.barcode)),
+    );
   });
 });
