@@ -138,7 +138,8 @@
     "allergen_retired": "Dette allergen er udgået og kan ikke vælges."
   },
   "barcode": {
-    "provider_unavailable": "Opslag af stregkoder er ikke tilgængeligt lige nu. Prøv igen, eller udfyld formularen selv."
+    "provider_unavailable": "Opslag af stregkoder er ikke tilgængeligt lige nu. Prøv igen, eller udfyld formularen selv.",
+    "rate_limited": "For mange opslag af stregkoder lige nu. Vent et minut, og prøv igen."
   },
   "meal_plan": {
     "cap_reached": "Jeres familie kan have {{cap}} madplaner. Slet en for at få plads.",

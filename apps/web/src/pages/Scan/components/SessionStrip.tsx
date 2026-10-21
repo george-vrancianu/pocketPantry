@@ -3,6 +3,7 @@ import { shade, translucent } from './glass';
 import { useTranslation } from 'react-i18next';
 import {
   canRetry,
+  showsErrorCopy,
   isBarcodeCard,
   scanDisplayState,
   type SessionScan,
@@ -60,7 +61,7 @@ export function SessionStrip({
             aria-label={
               scan.failure === 'cap'
                 ? t('capReached')
-                : scan.errorCode && !canRetry(scan)
+                : showsErrorCopy(scan)
                   ? t(`errors:${scan.errorCode}`, scan.errorParams)
                   : t(
                       uncropped

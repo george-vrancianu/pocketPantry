@@ -476,6 +476,28 @@ describe('Barcode on the Scan page', () => {
     });
   });
 
+  describe('when Barcode Lookups are rate limited', () => {
+    it('fails the card with the rate-limit copy, never as not found, and repeats the lookup on Retry', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () =>
+        Response.json(
+          { code: 'barcode.rate_limited', params: {} },
+          { status: 429, headers: { 'Retry-After': '30' } },
+        );
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['failed']));
+      expect(
+        screen.getByLabelText(/Too many Barcode Lookups right now/),
+      ).toBeInTheDocument();
+
+      answers[A] = () => Response.json(found());
+      await user.click(screen.getByRole('button', { name: 'Retry lookup' }));
+      await waitFor(() => expect(states()).toEqual(['read']));
+      expect(lookupCalls()).toHaveLength(2);
+    });
+  });
+
   describe('the Scan Cap and the Session limit', () => {
     it('keeps accepting codes once the Scan Cap is reached, never failing them with the cap', async () => {
       const user = userEvent.setup();

@@ -12,4 +12,7 @@ process.env.VOICE_DAILY_CAP = '2';
 // Out of the way for most suites; family-join-rate-limit lowers them.
 process.env.INVITE_CODE_LIMIT_PER_USER = '1000';
 process.env.INVITE_CODE_LIMIT_PER_IP = '1000';
+// Out of the way for most suites; barcode-rate-limit lowers them.
+process.env.BARCODE_LOOKUP_LIMIT_PER_MEMBER = '1000';
+process.env.BARCODE_LOOKUP_LIMIT_GLOBAL = '1000';
 process.env.SCAN_MATCH_CONFIDENCE_THRESHOLD = '0.6';
