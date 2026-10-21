@@ -84,7 +84,10 @@ describe('Daily caps counted by kind (integration)', () => {
 
     // The other kinds are untouched by a full Assistant Cap.
     await cap.consume(memberId, now, 'voice');
-    await cap.consume(memberId, now, 'scan');
+    for (let i = 0; i < 3; i++) await cap.consume(memberId, now, 'scan');
+    await expect(cap.consume(memberId, now, 'scan')).rejects.toMatchObject({
+      code: 'scan.cap_reached',
+    });
 
     // A refund gives one request back, and only for its own kind.
     await cap.refund(memberId, '2020-05-01', 'assistant');
