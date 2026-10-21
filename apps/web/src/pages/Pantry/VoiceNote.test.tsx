@@ -97,7 +97,6 @@ describe('Voice Notes on the Pantry page', () => {
     useVoiceTimers();
     // `inDays` and the app both read today: pin it so the dates do not depend on the day the suite runs.
     vi.setSystemTime(new Date(2026, 9, 19, 12));
-    voiceNote.reset();
     resetVoiceEnvironment();
     resetRowFlash();
   });

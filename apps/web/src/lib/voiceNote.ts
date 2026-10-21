@@ -264,9 +264,9 @@ export const voiceNote = createVoiceNote();
 export const isPillUp = (phase: VoicePhase) =>
   phase === 'reading' || phase === 'failed';
 
-export const useVoiceNoteState = (instance: VoiceNote = voiceNote) =>
+export const useVoiceNoteState = () =>
   useSyncExternalStore(
-    instance.subscribe,
-    instance.getState,
-    instance.getState,
+    voiceNote.subscribe,
+    voiceNote.getState,
+    voiceNote.getState,
   );

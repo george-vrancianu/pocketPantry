@@ -427,7 +427,6 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     dismiss,
     discardFailed,
     cancelReading,
-    discard: voiceNote.discard,
   };
 }
 

@@ -78,10 +78,12 @@ describe('Voice Note module', () => {
     it('goes back to Review with the edits kept when Apply fails', () => {
       const { note } = inReview('a', 'b');
       note.remove('a');
+      note.edit('b', { quantity: 9 });
       note.applying();
       note.applyFailed();
       expect(note.getState().phase).toBe('review');
       expect(ids(note)).toEqual(['b']);
+      expect(note.getState().proposal!.actions[0].quantity).toBe(9);
     });
 
     it('ignores apply failed outside applying', () => {

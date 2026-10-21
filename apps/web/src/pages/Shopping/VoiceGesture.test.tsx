@@ -62,7 +62,6 @@ describe('the recording gesture on the Shopping List', () => {
 
   beforeEach(() => {
     useVoiceTimers();
-    voiceNote.reset();
     resetVoiceEnvironment();
     session = fakeSession();
     mic.start.mockImplementation(() => Promise.resolve(session));

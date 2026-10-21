@@ -60,7 +60,6 @@ describe('Voice Note on the Shopping List', () => {
 
   beforeEach(() => {
     useVoiceTimers();
-    voiceNote.reset();
     resetRowFlash();
     resetVoiceEnvironment();
     session = fakeSession();
@@ -1027,8 +1026,8 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
 
   beforeEach(() => {
     useVoiceTimers();
-    voiceNote.reset();
     resetRowFlash();
+    resetVoiceEnvironment();
     session = fakeSession();
     mic.start.mockReset();
     mic.start.mockImplementation(() => Promise.resolve(session));
