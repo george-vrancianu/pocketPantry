@@ -52,6 +52,7 @@
     "needsCrop": "Needs crop",
     "read": "Photo read",
     "failed": "Could not read photo",
+    "lookupFailed": "Barcode Lookup failed",
     "retryLookup": "Retry lookup",
     "retry": "Retry reading photo"
   },
@@ -61,7 +62,8 @@
   "tickFailed_other": "{{count}} Shopping Items could not be ticked off.",
   "added_one": "Added results from {{count}} photo",
   "added_other": "Added results from {{count}} photos",
-  "limit": "A Scan Session holds at most {{max}} photos. Add or discard these first.",
+  "limit_one": "A Scan Session holds at most {{count}} Scan or Barcode Lookup. Add or discard these first.",
+  "limit_other": "A Scan Session holds at most {{count}} Scans and Barcode Lookups in total. Add or discard these first.",
   "discardScans_one": "Discard {{count}} photo?",
   "discardScans_other": "Discard {{count}} photos?",
   "discarded": "Discarded",

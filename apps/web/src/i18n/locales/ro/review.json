@@ -162,6 +162,8 @@
     "discardAll": "Renunță la toate",
     "failed": "Nu am putut citi, refă poza",
     "retake": "Refă poza",
+    "lookupFailed": "Nu am putut căuta acest cod de bare",
+    "removeCard": "Elimină",
     "pickDish": "Alege preparatul",
     "dishOption": "{{title}}, {{percent}}% probabil",
     "readAgain": "Citește din nou"

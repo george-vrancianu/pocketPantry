@@ -26,6 +26,7 @@ import { SessionStrip } from './components/SessionStrip';
 import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
 import { Viewfinder } from './components/Viewfinder';
+import { isBarcodeCard } from '../../lib/scanSession';
 import { useScanScreen, type ScanScreenModes } from './hooks/useScanScreen';
 
 const roundButton = (size: number) => ({
@@ -316,8 +317,15 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
       </Snackbar>
 
       <Box role="status" sx={visuallyHidden}>
-        {screen.scans.some((scan) => scan.status === 'failed') ? (
+        {screen.scans.some(
+          (scan) => scan.status === 'failed' && !isBarcodeCard(scan),
+        ) ? (
           <p>{t('session.failed')}</p>
+        ) : null}
+        {screen.scans.some(
+          (scan) => scan.status === 'failed' && isBarcodeCard(scan),
+        ) ? (
+          <p>{t('session.lookupFailed')}</p>
         ) : null}
         {photos > 0 ? <p>{t('photoAdded', { count: photos })}</p> : null}
         {screen.barcodesAnnounced > 0 ? (

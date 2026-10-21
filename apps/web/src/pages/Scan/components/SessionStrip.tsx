@@ -67,7 +67,9 @@ export function SessionStrip({
                       uncropped
                         ? 'session.needsCrop'
                         : failed
-                          ? 'session.failed'
+                          ? isBarcodeCard(scan)
+                            ? 'session.lookupFailed'
+                            : 'session.failed'
                           : reading
                             ? 'session.reading'
                             : 'session.read',

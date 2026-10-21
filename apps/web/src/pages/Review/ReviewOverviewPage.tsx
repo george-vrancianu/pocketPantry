@@ -166,6 +166,7 @@ export function ReviewOverviewPage() {
     const display = scanDisplayState(scan);
     const isFailed = display === 'failed';
     const isReading = display === 'reading';
+    const barcode = isBarcodeCard(scan);
     // Lines Receipt Scan left out are not saved, so they are not counted or shown.
     const lines: ReviewLine[] = reviewLinesOf(scan).filter(
       (line) => !line.excluded,
@@ -177,7 +178,7 @@ export function ReviewOverviewPage() {
     // A not-found Barcode card's empty line has no name to show yet.
     const firstName = lines.length > 0 ? displayName(lines[0]).trim() : '';
     const result =
-      (scan.mode === 'product' || isBarcodeCard(scan)) && firstName
+      (scan.mode === 'product' || barcode) && firstName
         ? firstName
         : t('overview.items', { count: lines.length });
     return (
@@ -249,7 +250,7 @@ export function ReviewOverviewPage() {
           ) : isFailed ? (
             <>
               <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
-                {t('overview.failed')}
+                {t(barcode ? 'overview.lookupFailed' : 'overview.failed')}
               </Typography>
               {scan.failure === 'cap' ? (
                 <Typography sx={{ fontSize: 13 }}>
@@ -261,6 +262,22 @@ export function ReviewOverviewPage() {
                 </Typography>
               ) : null}
               <Box sx={{ position: 'relative', zIndex: 1, mt: 0.75 }}>
+                {barcode ? (
+                  <Box
+                    component="button"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => {
+                      dispatchScanSession({ type: 'retry', id: scan.id });
+                      readScans(i18n.language);
+                      // The button goes while the lookup runs: keep focus on the card.
+                      setFocusId(scan.id);
+                    }}
+                    sx={linkButton}
+                  >
+                    {tScan('session.retryLookup')}
+                  </Box>
+                ) : null}
                 <Box
                   component="button"
                   type="button"
@@ -269,11 +286,11 @@ export function ReviewOverviewPage() {
                     dispatchScanSession({ type: 'remove', id: scan.id });
                     // Scans held back by the Scan Cap can go on now.
                     readScans(i18n.language);
-                    navigate('/scan');
+                    if (!barcode) navigate('/scan');
                   }}
                   sx={linkButton}
                 >
-                  {t('overview.retake')}
+                  {t(barcode ? 'overview.removeCard' : 'overview.retake')}
                 </Box>
               </Box>
             </>

@@ -23,4 +23,29 @@ describe('SessionStrip', () => {
     expect(card.querySelector('img')).toBeNull();
     expect(card).toHaveAttribute('data-mode', 'barcode');
   });
+
+  it.each([
+    ['barcode', 'Barcode Lookup failed'],
+    ['product', 'Could not read photo'],
+  ])('labels a failed %s card as "%s"', (mode, label) => {
+    renderWithProviders(
+      <SessionStrip
+        scans={[
+          {
+            id: 'a',
+            mode,
+            code: mode === 'barcode' ? '5941234567899' : undefined,
+            thumbnail: '',
+            status: 'failed',
+            failure: 'error',
+          } as never,
+        ]}
+        onRetry={() => {}}
+      />,
+    );
+    expect(screen.getByTestId('scan-thumbnail')).toHaveAttribute(
+      'aria-label',
+      label,
+    );
+  });
 });
