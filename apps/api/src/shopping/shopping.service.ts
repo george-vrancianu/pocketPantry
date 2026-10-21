@@ -6,6 +6,11 @@ import { loadDisplayNames } from '../catalog/display-names';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { exceedsMaxQuantity } from '../common/quantity';
+import {
+  convertQuantity,
+  unitsMerge,
+  type Unit,
+} from '../recipes/matching/units';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
@@ -32,9 +37,11 @@ import type {
 
 /**
  * Merge rule: lines for the same Ingredient (or the same Unmatched name) with
- * the same unit collapse into one and their quantities add up. Different units
- * stay on separate lines. A missing quantity adds nothing. Callers enforce
- * the quantity cap on the result.
+ * the same unit, or units of one dimension (g/kg, ml/l), collapse into one and
+ * their quantities add up; the added amount is converted to the existing
+ * line's unit first. Units of different dimensions (pcs, g, ml) and a missing
+ * unit stay on separate lines. A missing quantity adds nothing. Callers
+ * enforce the quantity cap on the result.
  */
 export function sumQuantities(
   existing: number | null,
@@ -43,6 +50,25 @@ export function sumQuantities(
   if (existing === null) return added;
   if (added === null) return existing;
   return Math.round((existing + added) * 1000) / 1000;
+}
+
+/**
+ * The quantity expressed in the target unit (500 g + 1 kg = 1500 g), rounded
+ * like sumQuantities so float noise never reaches the DB. Callers pass units
+ * that unitsMerge accepted, so a conversion exists; a missing quantity or
+ * unit, or the same unit, passes through.
+ */
+export function quantityInUnit(
+  quantity: number | null,
+  from: Unit | null,
+  to: Unit | null,
+): number | null {
+  if (quantity === null || from === null || to === null || from === to) {
+    return quantity;
+  }
+  const converted = convertQuantity(quantity, from, to);
+  if (converted === null) throw new Error('units do not convert');
+  return Math.round(converted * 1000) / 1000;
 }
 
 /** An item to merge; the server may claim any Unmatched source, a client only `SHOPPING_ITEM_SOURCES`. */
@@ -229,26 +255,24 @@ export class ShoppingService {
       insertValues = { name, normalizedName };
     }
 
-    const [existing] = await tx
-      .select({ id: shoppingItems.id, quantity: shoppingItems.quantity })
+    const candidates = await tx
+      .select({
+        id: shoppingItems.id,
+        quantity: shoppingItems.quantity,
+        unit: shoppingItems.unit,
+      })
       .from(shoppingItems)
-      .where(
-        and(
-          eq(shoppingItems.listId, listId),
-          identity,
-          unit === null
-            ? isNull(shoppingItems.unit)
-            : eq(shoppingItems.unit, unit),
-        ),
-      )
-      // setAmount can leave two lines with the same identity and unit; the oldest one is the merge target.
-      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id))
-      .limit(1);
+      .where(and(eq(shoppingItems.listId, listId), identity))
+      // The merge target is the oldest line of this identity with a compatible unit (the same, or g/kg, ml/l); setAmount can leave several.
+      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
+    const existing = candidates.find((row) => unitsMerge(row.unit, unit));
 
     if (existing) {
+      // The added amount is expressed in the existing line's unit (500 g + 1 kg = 1500 g).
+      const addedQuantity = quantityInUnit(quantity, unit, existing.unit);
       const merged = sumQuantities(
         existing.quantity === null ? null : Number(existing.quantity),
-        quantity,
+        addedQuantity,
       );
       if (exceedsMaxQuantity(merged)) {
         throw new ApiException(400, 'shopping.quantity_too_large');

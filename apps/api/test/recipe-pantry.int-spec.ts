@@ -487,7 +487,7 @@ describe('Recipe Pantry matching (integration)', () => {
       expect(await sourcesOf(r.id)).toEqual([items[0].id]);
     });
 
-    it('merges into an item with the same unit, keeping both Source Recipes, and keeps another unit apart', async () => {
+    it('merges into an item with a compatible unit, keeping all Source Recipes, and keeps an incompatible unit apart', async () => {
       const m = await newMember('merge');
       const first = await makeRecipe([
         { ingredientId: milk, quantity: 300, unit: 'ml' },
@@ -497,6 +497,9 @@ describe('Recipe Pantry matching (integration)', () => {
       ]);
       const third = await makeRecipe([
         { ingredientId: milk, quantity: 1, unit: 'l' },
+      ]);
+      const fourth = await makeRecipe([
+        { ingredientId: milk, quantity: 2, unit: 'pcs' },
       ]);
       await m.add(first.id).expect(200);
       await m.add(second.id).expect(200);
@@ -510,16 +513,21 @@ describe('Recipe Pantry matching (integration)', () => {
       expect(summary(await m.items())).toEqual([['Milk', 700, 'ml']]);
       expect(await sourcesOf(second.id)).toEqual([merged.id]);
 
-      // Litres do not merge into millilitres.
+      // Litres merge into millilitres, converted into the existing line's unit.
       await m.add(third.id).expect(200);
+      expect(summary(await m.items())).toEqual([['Milk', 1700, 'ml']]);
+      expect(await sourcesOf(third.id)).toEqual([merged.id]);
+
+      // Pieces do not convert to millilitres, so they stay a separate line.
+      await m.add(fourth.id).expect(200);
       expect(summary(await m.items()).sort()).toEqual(
         [
-          ['Milk', 700, 'ml'],
-          ['Milk', 1, 'l'],
+          ['Milk', 1700, 'ml'],
+          ['Milk', 2, 'pcs'],
         ].sort(),
       );
-      const [litre] = (await m.items()).filter((i) => i.unit === 'l');
-      expect(await sourcesOf(third.id)).toEqual([litre.id]);
+      const [pieces] = (await m.items()).filter((i) => i.unit === 'pcs');
+      expect(await sourcesOf(fourth.id)).toEqual([pieces.id]);
     });
 
     it('wants a checked item again when it merges', async () => {
@@ -653,11 +661,12 @@ describe('Recipe Pantry matching (integration)', () => {
       expect(await sourcesOf(r.id)).toEqual([items[0].id]);
     });
 
-    it('merges into an item with the same unit, keeps another unit apart, and wants a checked item again', async () => {
+    it('merges into an item with a compatible unit, keeps an incompatible unit apart, and wants a checked item again', async () => {
       const m = await newMember('line-merge');
       const r = await makeRecipe([
         { ingredientId: milk, quantity: 300, unit: 'ml' },
         { ingredientId: milk, quantity: 1, unit: 'l' },
+        { ingredientId: milk, quantity: 2, unit: 'pcs' },
       ]);
       await m.addItem({ ingredientId: milk, quantity: 200, unit: 'ml' });
       const [existing] = await m.items();
@@ -672,11 +681,16 @@ describe('Recipe Pantry matching (integration)', () => {
       });
       expect(await sourcesOf(r.id)).toEqual([existing.id]);
 
+      // A litre merges into the millilitre line.
       await m.addLine(r.id, { lineId: r.lineIds[1], today }).expect(200);
+      expect(summary(await m.items())).toEqual([['Milk', 1500, 'ml']]);
+
+      // Pieces do not convert to millilitres, so they stay apart.
+      await m.addLine(r.id, { lineId: r.lineIds[2], today }).expect(200);
       expect(summary(await m.items()).sort()).toEqual(
         [
-          ['Milk', 500, 'ml'],
-          ['Milk', 1, 'l'],
+          ['Milk', 1500, 'ml'],
+          ['Milk', 2, 'pcs'],
         ].sort(),
       );
     });

@@ -37,3 +37,19 @@ export function fromComparable(
   const target = UNITS[unit];
   return target.dimension === dimension ? amount / target.factor : null;
 }
+
+/** Whether two units can be added together: the same unit, or two of one dimension (g/kg, ml/l). A missing unit only matches a missing unit. */
+export function unitsMerge(a: Unit | null, b: Unit | null): boolean {
+  if (a === null || b === null) return a === b;
+  return UNITS[a].dimension === UNITS[b].dimension;
+}
+
+/** `quantity` of unit `from` expressed in unit `to`; null when the units are in different dimensions. */
+export function convertQuantity(
+  quantity: number,
+  from: Unit,
+  to: Unit,
+): number | null {
+  const base = toComparable(quantity, from);
+  return base && fromComparable(base.amount, base.dimension, to);
+}

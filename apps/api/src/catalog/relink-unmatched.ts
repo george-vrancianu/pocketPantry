@@ -1,5 +1,6 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { exceedsMaxQuantity } from '../common/quantity';
+import { unitsMerge } from '../recipes/matching/units';
 import type { Tx } from '../database/database.types';
 import { clearRunningLowOnRestock } from '../pantry/running-low-flags';
 import { recordStocked } from '../pantry/stock-history';
@@ -14,7 +15,7 @@ import {
   shoppingTemplateLines,
   shoppingTemplates,
 } from '../database/schema';
-import { sumQuantities } from '../shopping/shopping.service';
+import { quantityInUnit, sumQuantities } from '../shopping/shopping.service';
 
 export type UnmatchedRelinkCounts = {
   relinkedBatches: number;
@@ -138,7 +139,8 @@ export async function relinkUnmatched(
 /**
  * Relinks Unmatched Shopping Items to the Ingredient. On the active list a
  * Shopping Item merges into an existing one for the same Ingredient and
- * unit (the list's "adding an item for an Ingredient already on it merges"
+ * a compatible unit (the same, or g/kg, ml/l, converted into the existing
+ * line's unit; the list's "adding an item for an Ingredient already on it merges"
  * rule); archived lists are history, so there it only relinks, and so does a
  * merge that would pass the quantity cap.
  */
@@ -167,12 +169,13 @@ async function relinkShoppingItems(
     )
     .orderBy(shoppingItems.id);
   for (const row of rows) {
-    const [twin] =
+    const candidates =
       row.status === 'active'
         ? await tx
             .select({
               id: shoppingItems.id,
               quantity: shoppingItems.quantity,
+              unit: shoppingItems.unit,
               checked: shoppingItems.checked,
             })
             .from(shoppingItems)
@@ -180,18 +183,24 @@ async function relinkShoppingItems(
               and(
                 eq(shoppingItems.listId, row.listId),
                 eq(shoppingItems.ingredientId, ingredientId),
-                row.unit === null
-                  ? isNull(shoppingItems.unit)
-                  : eq(shoppingItems.unit, row.unit),
               ),
             )
-            .limit(1)
+            .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id))
             .for('update')
         : [];
+    // The same rule as adding: the oldest line with a compatible unit (the same, or g/kg, ml/l).
+    const twin = candidates.find((c) => unitsMerge(c.unit, row.unit));
+    const rowQuantity = twin
+      ? quantityInUnit(
+          row.quantity === null ? null : Number(row.quantity),
+          row.unit,
+          twin.unit,
+        )
+      : null;
     const merged = twin
       ? sumQuantities(
           twin.quantity === null ? null : Number(twin.quantity),
-          row.quantity === null ? null : Number(row.quantity),
+          rowQuantity,
         )
       : null;
     // A merge past the cap is neither rejected nor clamped: an Admin cannot
