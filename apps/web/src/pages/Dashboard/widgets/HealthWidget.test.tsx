@@ -357,7 +357,10 @@ describe('HealthWidget', () => {
 
         expect(card).toHaveTextContent('91');
         // The count runs on animation frames: step the clock past it rather than wait for wall time.
-        await act(() => vi.advanceTimersByTimeAsync(SCORE_ANIMATION_MS + 100));
+        const SETTLE_SLACK_MS = 100; // margin so the final frame lands
+        await act(() =>
+          vi.advanceTimersByTimeAsync(SCORE_ANIMATION_MS + SETTLE_SLACK_MS),
+        );
         expect(card).toHaveTextContent('95');
       } finally {
         vi.useRealTimers();

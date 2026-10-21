@@ -5,6 +5,7 @@ import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { recipes } from '../src/database/schema';
+import { MAX_PLATE_MATCHES } from '../src/recipes/plate-matches';
 import type {
   AdminRecipeDetail,
   CompactAllergyWarning,
@@ -17,6 +18,8 @@ import { createTestApp } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 jest.setTimeout(30_000);
+
+const CROWD_PER_INGREDIENT = MAX_PLATE_MATCHES + 1;
 
 // Spec: #350 / #358, ADR 0014. The compact allergyWarning on Recipe browse, Cook Tonight
 // (which also feeds the Can Make strip) and Plate Scan matches.
@@ -63,11 +66,12 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
     admin = client(app, cookie, '/api/admin/recipes');
     settings = client(app, cookie, '/api/settings');
     recipesApi = client(app, cookie, '/api/recipes');
-    // Catalog rows another suite could leave behind: one-Ingredient Recipes that would crowd
-    // a Plate Scan's five matches if the dishes below did not out-score them. Their titles
-    // deliberately share the word "Plate" with the dishes: that is what made them outscore the
-    // old one-Ingredient scans, so renaming them would weaken the guard.
-    for (let k = 0; k < 6; k++) {
+    // Recipes another suite could leave behind: one-Ingredient Recipes that would crowd a
+    // Plate Scan's top-5 matches if the dishes below did not out-score them. A dish scores 1.5
+    // and a crowd Recipe at most 0.75, so CROWD_PER_INGREDIENT of them per Ingredient exceed
+    // the cap. Their titles deliberately share the word "Plate" with the dishes, so renaming
+    // them would weaken the guard.
+    for (let k = 0; k < CROWD_PER_INGREDIENT; k++) {
       await create([g('parmesan')], `Plate ${stamp}-crowd${k}a`);
       await create([g('flour')], `Plate ${stamp}-crowd${k}b`);
     }
@@ -284,17 +288,15 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
   });
 
   describe('Plate Scan matches', () => {
-    // Plate Scan ranks the whole Catalog and keeps five, so each dish scans exactly its own
-    // Ingredients and carries a stamped title: nothing another suite left behind can outscore it.
-    it('adds the warning to each match', async () => {
-      const word = `Plate ${stamp}-${++n}`;
-      const dish = await create([g('parmesan'), g('flour')], word);
-      await mine(MILK);
-      const { matches } = (
+    // Plate Scan ranks all Recipes and keeps the top 5 (MAX_PLATE_MATCHES), so each dish scans
+    // exactly its own Ingredients and carries a stamped title: the crowd Recipes seeded in
+    // beforeAll (at most 0.75 against a dish's 1.5) cannot outscore it.
+    const plateMatches = async (dishTitle: string) =>
+      (
         await recipesApi
           .post('/plate-matches', {
             locale: 'en',
-            dishTitle: word,
+            dishTitle,
             ingredientIds: [
               seedId.ingredient('parmesan'),
               seedId.ingredient('flour'),
@@ -302,11 +304,14 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
           })
           .expect(200)
       ).body as {
-        matches: {
-          id: string;
-          allergyWarning: CompactAllergyWarning | null;
-        }[];
+        matches: { id: string; allergyWarning: CompactAllergyWarning | null }[];
       };
+
+    it('adds the warning to each match', async () => {
+      const word = `Plate ${stamp}-${++n}`;
+      const dish = await create([g('parmesan'), g('flour')], word);
+      await mine(MILK);
+      const { matches } = await plateMatches(word);
       const match = matches.find((m) => m.id === dish.id)!;
       expect(match.allergyWarning).toEqual({
         severity: 'strong',
@@ -333,20 +338,7 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
         word,
       );
       await mine(MILK);
-      const { matches } = (
-        await recipesApi
-          .post('/plate-matches', {
-            locale: 'en',
-            dishTitle: word,
-            ingredientIds: [
-              seedId.ingredient('parmesan'),
-              seedId.ingredient('flour'),
-            ],
-          })
-          .expect(200)
-      ).body as {
-        matches: { id: string; allergyWarning: CompactAllergyWarning | null }[];
-      };
+      const { matches } = await plateMatches(word);
       const compact = matches.find((m) => m.id === dish.id)!.allergyWarning;
       const detail = await detailWarning(dish.id);
       expect(compact?.severity).toBe('soft');
