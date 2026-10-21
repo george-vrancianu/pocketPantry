@@ -6,6 +6,7 @@ import { loadDisplayNames } from '../catalog/display-names';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { exceedsMaxQuantity } from '../common/quantity';
+import { fromComparable, toComparable } from '../recipes/matching/units';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
@@ -32,9 +33,11 @@ import type {
 
 /**
  * Merge rule: lines for the same Ingredient (or the same Unmatched name) with
- * the same unit collapse into one and their quantities add up. Different units
- * stay on separate lines. A missing quantity adds nothing. Callers enforce
- * the quantity cap on the result.
+ * the same unit, or units of one dimension (g/kg, ml/l), collapse into one and
+ * their quantities add up; the added amount is converted to the existing
+ * line's unit first. Units of different dimensions (pcs, g, ml) and a missing
+ * unit stay on separate lines. A missing quantity adds nothing. Callers
+ * enforce the quantity cap on the result.
  */
 export function sumQuantities(
   existing: number | null,
@@ -229,26 +232,38 @@ export class ShoppingService {
       insertValues = { name, normalizedName };
     }
 
-    const [existing] = await tx
-      .select({ id: shoppingItems.id, quantity: shoppingItems.quantity })
+    const sameDimension = (rowUnit: typeof unit) => {
+      if (rowUnit === unit) return true;
+      if (rowUnit === null || unit === null) return false;
+      const row = toComparable(1, rowUnit);
+      return row !== null && row.dimension === toComparable(1, unit)?.dimension;
+    };
+    const candidates = await tx
+      .select({
+        id: shoppingItems.id,
+        quantity: shoppingItems.quantity,
+        unit: shoppingItems.unit,
+      })
       .from(shoppingItems)
-      .where(
-        and(
-          eq(shoppingItems.listId, listId),
-          identity,
-          unit === null
-            ? isNull(shoppingItems.unit)
-            : eq(shoppingItems.unit, unit),
-        ),
-      )
+      .where(and(eq(shoppingItems.listId, listId), identity))
       // setAmount can leave two lines with the same identity and unit; the oldest one is the merge target.
-      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id))
-      .limit(1);
+      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
+    const existing = candidates.find((row) => sameDimension(row.unit));
 
     if (existing) {
+      // The added amount is expressed in the existing line's unit (500 g + 1 kg = 1500 g).
+      let addedQuantity = quantity;
+      if (quantity !== null && unit !== null && existing.unit !== unit) {
+        const base = toComparable(quantity, unit);
+        const converted =
+          base && existing.unit
+            ? fromComparable(base.amount, base.dimension, existing.unit)
+            : null;
+        addedQuantity = converted;
+      }
       const merged = sumQuantities(
         existing.quantity === null ? null : Number(existing.quantity),
-        quantity,
+        addedQuantity,
       );
       if (exceedsMaxQuantity(merged)) {
         throw new ApiException(400, 'shopping.quantity_too_large');
