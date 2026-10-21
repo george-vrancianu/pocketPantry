@@ -43,7 +43,14 @@ describe('Assistant Requests (integration)', () => {
   const stamp = Date.now();
   let counter = 0;
 
+  const savedKey = process.env.AI_API_KEY;
+  const savedProvider = process.env.AI_PROVIDER;
+
   beforeAll(async () => {
+    // The endpoint answers 503 without a text model key; do not lean on a
+    // developer's .env. The fake AI below never calls out.
+    process.env.AI_API_KEY = 'test-key';
+    process.env.AI_PROVIDER = 'openai';
     const ai = {
       generate: () => {
         reads++;
@@ -57,6 +64,10 @@ describe('Assistant Requests (integration)', () => {
     tokens = app.get(AssistantTokenService);
   });
   afterAll(async () => {
+    if (savedKey === undefined) delete process.env.AI_API_KEY;
+    else process.env.AI_API_KEY = savedKey;
+    if (savedProvider === undefined) delete process.env.AI_PROVIDER;
+    else process.env.AI_PROVIDER = savedProvider;
     await app.close();
   });
   beforeEach(() => {
