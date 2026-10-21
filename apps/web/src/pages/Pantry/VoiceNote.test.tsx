@@ -3,14 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   mic,
-  recording,
+  recordAndSend,
   resetVoiceEnvironment,
   stubVoiceFetch,
   voiceAction,
   voiceIngredient as ingredient,
 } from '../../test/voice';
 import { resetRowFlash } from '../../lib/rowFlash';
-import { voiceNote } from '../../lib/voiceNote';
 import {
   holdLongEnough,
   pressDown,
@@ -118,7 +117,7 @@ describe('Voice Notes on the Pantry page', () => {
   it('shows a note that failed on the Shopping List here too, and retries it for its own page', async () => {
     // Recorded on the Shopping List, then the Member moved to the Pantry (not a reload).
     const { sent } = setup([], undefined, [], 'fails');
-    await voiceNote.read(recording, {
+    await recordAndSend({
       scanLanguage: 'ro',
       locale: 'en',
       page: 'shopping',
@@ -138,7 +137,7 @@ describe('Voice Notes on the Pantry page', () => {
 
   it('keeps the voice button, the pill and a read going while a Batch is added', async () => {
     setup([], undefined, [], 'hangs');
-    void voiceNote.read(recording, {
+    await recordAndSend({
       scanLanguage: 'en',
       locale: 'en',
       page: 'pantry',

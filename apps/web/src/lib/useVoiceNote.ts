@@ -1,21 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import {
-  MicrophoneError,
-  startRecording,
-  type MicrophoneSession,
-  type Recording,
-} from './microphone';
 import { voiceToast } from './voicePlacement';
 import { focusPillAction, isInPill, returnFocusFromPill } from './voiceFocus';
 import { haptic } from './haptic';
-import {
-  MAX_VOICE_NOTE_MS,
-  MIN_VOICE_NOTE_MS,
-  QUICK_TAP_MS,
-  type VoiceList,
-} from './voice';
+import { QUICK_TAP_MS, type VoiceList } from './voice';
 import { voiceNote, useVoiceNoteState } from './voiceNote';
 import { useMicPermission } from './useMicPermission';
 import { micExplained } from './micExplained';
@@ -31,8 +20,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   const { t } = useTranslation(['errors', 'voice']);
   const toast = useToast();
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
-  const [elapsedMs, setElapsedMs] = useState(0);
-  // The Voice Note itself lives in the shared store, so Review and the button on any page see it.
+  // The Voice Note itself lives in the Voice Note module, so Review and the button on any page see it.
   const { phase, recording: keptRecording, proposal } = useVoiceNoteState();
   const recording = phase === 'recording';
   const sending = phase === 'reading';
@@ -47,7 +35,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   const [tip, setTip] = useState<'hold' | 'busy' | 'failed' | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pressedAt = useRef(0);
-  // Let go after 0.3 s but before the stream was live: say how it works once it arrives.
+  // Let go after 0.3 s but before the stream was live: say how it works once it is known to be dropped.
   const tipOnArrival = useRef(false);
 
   const showTip = useCallback((which: 'hold' | 'busy' | 'failed' = 'hold') => {
@@ -56,24 +44,17 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     tipTimer.current = setTimeout(() => setTip(null), TIP_MS);
   }, []);
 
-  const session = useRef<MicrophoneSession | null>(null);
   // The pointer is still down: a release before the microphone is ready cancels the start.
   const held = useRef(false);
-  const starting = useRef(false);
+  // The permission is being read, before the module is asked to start.
+  const asking = useRef(false);
   // The press was cancelled (not merely let go) while the permission was being read.
   const cancelled = useRef(false);
   const unmounted = useRef(false);
-  // The recording was let go and is being finalised: no new note until it is read or has failed.
-  const stopping = useRef(false);
-  const timers = useRef<{
-    tick?: ReturnType<typeof setInterval>;
-    limit?: ReturnType<typeof setTimeout>;
-  }>({});
   const options = useRef({ locale, scanLanguage, defaultTarget, t, toast });
   options.current = { locale, scanLanguage, defaultTarget, t, toast };
-  // `abovePill`: the note is about to be read, so the Reading pill and its Cancel come up here.
-  const say = (message: string, abovePill = false) =>
-    options.current.toast.show(message, voiceToast({ abovePill }));
+  const say = (message: string) =>
+    options.current.toast.show(message, voiceToast());
 
   const mic = useMicPermission({
     onGranted: () => {
@@ -85,40 +66,25 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
   const { refresh, showBlocked, showIntro } = mic;
 
-  const clearTimers = () => {
-    clearInterval(timers.current.tick);
-    clearTimeout(timers.current.limit);
-    timers.current = {};
+  const begin = () => {
+    const { defaultTarget: page, scanLanguage, locale } = options.current;
+    return voiceNote.start({ page, scanLanguage, locale });
   };
 
+  // The module stops a recording at 60 seconds by itself: the pointer is still down, but the press is over.
+  // So any recording -> not-recording move while held (the 60 s limit is the real case) buzzes once and ends the press.
+  const wasRecording = useRef(false);
+  useEffect(() => {
+    if (wasRecording.current && !recording && held.current) {
+      held.current = false;
+      haptic(14);
+    }
+    wasRecording.current = recording;
+  }, [recording]);
+
+  /** Ends the recording and sends it; a recording too short to read gets the tip. */
   const finish = useCallback(async () => {
-    const active = session.current;
-    if (!active) return;
-    session.current = null;
-    clearTimers();
-    // Not recording any more, even while the audio is finalised.
-    voiceNote.cancelRecording();
-    stopping.current = true;
-    let audio: Recording;
-    try {
-      audio = await active.stop();
-    } catch {
-      voiceNote.fail('unavailable');
-      return;
-    } finally {
-      stopping.current = false;
-    }
-    if (audio.durationMs < MIN_VOICE_NOTE_MS) {
-      // Too little audio to read (a slow microphone): the same tip as a quick tap.
-      voiceNote.pressEnded();
-      showTip();
-      return;
-    }
-    await voiceNote.read(audio, {
-      scanLanguage: options.current.scanLanguage,
-      locale: options.current.locale,
-      page: options.current.defaultTarget,
-    });
+    if ((await voiceNote.stop()) === 'tooShort') showTip();
   }, [showTip]);
 
   /** Throw the recording away without a word (a tap too quick to be a note). */
@@ -126,31 +92,34 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     held.current = false;
     tipOnArrival.current = false;
     setPressing(false);
-    voiceNote.pressEnded();
-    const active = session.current;
-    if (!active) return false;
-    session.current = null;
-    clearTimers();
-    active.cancel();
-    voiceNote.cancelRecording();
-    return true;
+    voiceNote.cancel({ quiet: true });
   }, []);
 
   /** The Member cancelled (slid off, Escape, a system gesture): discard it and say so. */
   const cancel = useCallback(() => {
-    // Pressed counts even before the stream is live.
-    const pressed = held.current || starting.current || !!session.current;
+    // Pressed counts even before the module was asked to start, and even after letting go.
+    const waiting = asking.current;
     cancelled.current = true;
-    discardRecording();
-    if (pressed) say(options.current.t('voice:listening.cancelled'));
-  }, [discardRecording]);
+    held.current = false;
+    tipOnArrival.current = false;
+    setPressing(false);
+    if (waiting) say(options.current.t('voice:listening.cancelled'));
+    else voiceNote.cancel();
+  }, []);
 
   const press = useCallback(async () => {
-    if (session.current || starting.current || stopping.current) return;
-    // Nothing starts while the last note is being read, waits for Retry, or the Voice Cap is used up.
-    if (sending) return showTip('busy');
-    if (kept) return showTip('failed');
-    if (capped) return voiceNote.fail('capReached');
+    if (asking.current || held.current) return;
+    // Nothing starts while the last note is being read or waits for Retry.
+    const blocker = voiceNote.startBlocker();
+    // A note is already under way (still starting, recording or being finalised): the press changes nothing.
+    if (blocker === 'active') return;
+    if (blocker === 'busy') return showTip('busy');
+    if (blocker === 'kept') return showTip('failed');
+    // The Voice Cap is used up: the module shows why.
+    if (blocker === 'capped') {
+      void begin();
+      return;
+    }
     held.current = true;
     cancelled.current = false;
     pressedAt.current = Date.now();
@@ -158,12 +127,12 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     clearTimeout(tipTimer.current);
     setTip(null);
     voiceNote.dismiss();
-    starting.current = true;
+    asking.current = true;
     // The microphone sheets stand in for the hold until it is allowed; nothing records and the press resets.
     const permission = await refresh();
     // Cancelled (Escape, a system gesture) or the page left while asking: nothing more happens.
     if (cancelled.current || unmounted.current) {
-      starting.current = false;
+      asking.current = false;
       return;
     }
     // iOS Safari often forgets a grant between sessions and reports `prompt` again: a device that has
@@ -172,14 +141,14 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       permission === 'denied' || (permission === 'prompt' && !micExplained());
     if (needsSheet) {
       held.current = false;
-      starting.current = false;
+      asking.current = false;
       if (permission === 'denied') showBlocked();
       else showIntro();
       return;
     }
     // Let go while the permission was being read: no recording to start.
     if (!held.current) {
-      starting.current = false;
+      asking.current = false;
       if (tipOnArrival.current) {
         tipOnArrival.current = false;
         showTip();
@@ -187,52 +156,19 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       return;
     }
     setPressing(true);
-    voiceNote.pressStarted();
     haptic(10);
-    let started: MicrophoneSession;
-    try {
-      started = await startRecording();
-    } catch (error) {
-      held.current = false;
-      setPressing(false);
-      voiceNote.pressEnded();
-      // A browser with no Permissions API only says "blocked" when a hold meets the refusal.
-      if (isDenied(error)) showBlocked();
-      else voiceNote.fail('unavailable');
-      return;
-    } finally {
-      starting.current = false;
-    }
-    if (!held.current) {
-      started.cancel();
-      setPressing(false);
-      voiceNote.pressEnded();
-      if (tipOnArrival.current) {
-        tipOnArrival.current = false;
-        showTip();
-      }
-      return;
-    }
-    session.current = started;
+    asking.current = false;
+    const outcome = await begin();
     setPressing(false);
-    const startedAt = Date.now();
-    setElapsedMs(0);
-    voiceNote.startRecording(options.current.defaultTarget);
-    timers.current.tick = setInterval(
-      () => setElapsedMs(Date.now() - startedAt),
-      200,
-    );
-    timers.current.limit = setTimeout(() => {
-      held.current = false;
-      haptic(14);
-      const { t } = options.current;
-      say(
-        `${t('voice:listening.stopped')} · ${t('voice:listening.stoppedHint')}`,
-        true,
-      );
-      void finish();
-    }, MAX_VOICE_NOTE_MS);
-  }, [finish, refresh, showBlocked, showIntro, sending, kept, capped, showTip]);
+    if (outcome === 'started') return;
+    held.current = false;
+    if (outcome === 'cancelled' && tipOnArrival.current) {
+      tipOnArrival.current = false;
+      showTip();
+    }
+    // A browser with no Permissions API only says "blocked" when a hold meets the refusal.
+    if (outcome === 'denied') showBlocked();
+  }, [refresh, showBlocked, showIntro, showTip]);
 
   const release = useCallback(() => {
     if (!held.current) return;
@@ -243,14 +179,11 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       return;
     }
     held.current = false;
-    // The stream is not live yet: nothing to send, so it ends with the tip once it arrives.
-    if (starting.current) tipOnArrival.current = true;
+    // The stream may not be live yet: nothing to send, so it ends with the tip once it is dropped.
+    tipOnArrival.current = true;
     haptic(14);
     void finish();
   }, [finish, discardRecording, showTip]);
-
-  /** The input loudness, 0 to 1, for the Listening card's meter. */
-  const level = useCallback(() => session.current?.level() ?? 0, []);
 
   /** Sends the kept recording again: the same audio, in the language it was recorded in. */
   const retry = useCallback(() => {
@@ -278,23 +211,16 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     voiceNote.cancelReading();
   }, []);
 
-  // Leaving the page drops a recording in progress.
+  // Leaving the page drops a recording in progress; a read in flight carries on.
   useEffect(() => {
     unmounted.current = false;
     return () => {
       unmounted.current = true;
-      clearTimers();
       clearTimeout(tipTimer.current);
-      // A read in flight keeps the screen awake until it ends; the next page's button sees it.
-      voiceNote.pressEnded();
       // A stream that arrives after this page is gone must not start a note.
       held.current = false;
       tipOnArrival.current = false;
-      if (session.current) {
-        session.current.cancel();
-        session.current = null;
-        voiceNote.cancelRecording();
-      }
+      voiceNote.cancel({ quiet: true });
     };
   }, []);
 
@@ -303,10 +229,8 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     setScanLanguage,
     locale,
     recording,
-    elapsedMs,
     pressing,
     tip,
-    level,
     sending,
     kept,
     capped,
@@ -323,7 +247,3 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 }
 
 const TIP_MS = 1800;
-
-function isDenied(error: unknown) {
-  return error instanceof MicrophoneError && error.reason === 'denied';
-}

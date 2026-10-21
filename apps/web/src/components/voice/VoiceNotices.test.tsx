@@ -1,6 +1,6 @@
-import { act, screen } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { recording, resetVoiceEnvironment } from '../../test/voice';
+import { resetVoiceEnvironment } from '../../test/voice';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { voiceNote } from '../../lib/voiceNote';
 
@@ -12,12 +12,13 @@ const readOn = (reply: () => Response | Promise<Response>) => {
   vi.stubGlobal('fetch', fetchMock);
 };
 
-const start = () =>
-  voiceNote.read(recording, {
-    scanLanguage: 'en',
-    locale: 'en',
-    page: 'shopping',
-  });
+/** Records a Voice Note from the fake microphone and lets go: the read starts. */
+const start = async () => {
+  await voiceNote.start({ page: 'shopping', scanLanguage: 'en', locale: 'en' });
+  await voiceNote.stop();
+};
+const settled = () =>
+  waitFor(() => expect(voiceNote.getState().phase).not.toBe('reading'));
 
 describe('Voice Note notices at the app root', () => {
   beforeEach(() => {
@@ -29,10 +30,39 @@ describe('Voice Note notices at the app root', () => {
     vi.unstubAllGlobals();
   });
 
+  it('says a recording was cancelled, but not when it is dropped quietly', async () => {
+    renderWithProviders(<Elsewhere />);
+    await act(() =>
+      voiceNote.start({ page: 'shopping', scanLanguage: 'en', locale: 'en' }),
+    );
+    act(() => voiceNote.cancel({ quiet: true }));
+    expect(screen.queryByText('Cancelled. Nothing was sent.')).toBeNull();
+
+    await act(() =>
+      voiceNote.start({ page: 'shopping', scanLanguage: 'en', locale: 'en' }),
+    );
+    act(() => voiceNote.cancel());
+    expect(
+      await screen.findByText('Cancelled. Nothing was sent.'),
+    ).toBeVisible();
+  });
+
+  it('says a recording was stopped at the 60-second limit', async () => {
+    readOn(() => new Promise<Response>(() => undefined));
+    renderWithProviders(<Elsewhere />);
+    await act(() =>
+      voiceNote.start({ page: 'shopping', scanLanguage: 'en', locale: 'en' }),
+    );
+    await act(() => vi.advanceTimersByTimeAsync(60_000));
+    expect(
+      await screen.findByText('Stopped at 1 minute · Sending what you said.'),
+    ).toBeVisible();
+  });
+
   it('says a cancelled read was not saved, on a page with no Voice Note button', async () => {
     readOn(() => new Promise<Response>(() => undefined));
     renderWithProviders(<Elsewhere />);
-    void start();
+    await act(() => start());
 
     act(() => voiceNote.cancelReading());
 
@@ -50,6 +80,7 @@ describe('Voice Note notices at the app root', () => {
     );
     renderWithProviders(<Elsewhere />);
     await act(() => start());
+    await settled();
 
     act(() => voiceNote.discardFailed());
 
@@ -67,6 +98,7 @@ describe('Voice Note notices at the app root', () => {
     queryClient.setQueryData(['voice', 'config'], { configured: true });
 
     await act(() => start());
+    await settled();
 
     expect(queryClient.getQueryData(['voice', 'config'])).toEqual({
       configured: false,

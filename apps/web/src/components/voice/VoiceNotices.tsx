@@ -22,6 +22,14 @@ export function VoiceNotices() {
       voiceNote.attachNotifier((notice: VoiceNotice) => {
         const { t, toast, queryClient } = latest.current;
         switch (notice) {
+          case 'recordingCancelled':
+            return toast.show(t('listening.cancelled'), voiceToast());
+          case 'stoppedAtLimit':
+            // The note is about to be read, so the Reading pill and its Cancel come up here.
+            return toast.show(
+              `${t('listening.stopped')} · ${t('listening.stoppedHint')}`,
+              voiceToast({ abovePill: true }),
+            );
           case 'readCancelled':
             return toast.show(t('send.cancelled'), voiceToast());
           case 'discarded':

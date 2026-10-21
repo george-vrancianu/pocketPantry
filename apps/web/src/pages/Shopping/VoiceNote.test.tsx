@@ -260,20 +260,6 @@ describe('Voice Note on the Shopping List', () => {
     expect(card).toHaveTextContent('EN');
   });
 
-  it('stops itself and sends at 60 seconds', async () => {
-    const { sent } = setup();
-    renderWithProviders(<ShoppingPage />);
-
-    await hold();
-    await act(() => vi.advanceTimersByTimeAsync(59_000));
-    expect(session.stop).not.toHaveBeenCalled();
-    await act(() => vi.advanceTimersByTimeAsync(1_000));
-
-    expect(session.stop).toHaveBeenCalledTimes(1);
-    expect(await screen.findByRole('dialog')).toHaveTextContent('What I heard');
-    expect(sent).toHaveLength(1);
-  });
-
   describe('the status pill', () => {
     const error = (code: string, status: number, params = {}) =>
       Response.json({ code, params }, { status });
