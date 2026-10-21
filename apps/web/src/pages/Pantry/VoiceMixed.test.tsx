@@ -1,6 +1,11 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  resetVoiceEnvironment,
+  voiceAction as action,
+  voiceIngredient as ingredient,
+} from '../../test/voice';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import {
   holdLongEnough,
@@ -8,21 +13,7 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
-import {
-  recording,
-  voiceAction as action,
-  voiceIngredient as ingredient,
-} from '../../test/voice';
 import { PantryPage } from './PantryPage';
-
-const mic = vi.hoisted(() => ({ start: vi.fn() }));
-vi.mock('../../lib/microphone', () => ({
-  startRecording: mic.start,
-  permissionState: vi.fn(async () => 'granted'),
-  requestPermission: vi.fn(async () => undefined),
-  watchPermission: () => () => {},
-  MicrophoneError: class MicrophoneError extends Error {},
-}));
 
 // "put the yogurts in the pantry, got the bread, and add milk" said on the Pantry page.
 const mixed = [
@@ -52,14 +43,7 @@ describe('A Voice Note across both lists', () => {
   beforeEach(() => {
     useVoiceTimers();
     resetVoiceNote();
-    mic.start.mockReset();
-    mic.start.mockImplementation(() =>
-      Promise.resolve({
-        stop: vi.fn(() => Promise.resolve(recording)),
-        cancel: vi.fn(),
-        level: vi.fn(() => 0),
-      }),
-    );
+    resetVoiceEnvironment();
     const { fetchMock } = stubApi({
       'GET /api/pantry/recently-stocked': () =>
         Response.json({ ingredients: [] }),

@@ -1,14 +1,16 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-  type Mock,
-} from 'vitest';
+  fakeSession,
+  hold as holdOn,
+  mic,
+  removeWakeLock,
+  resetVoiceEnvironment,
+  stubVoiceFetch,
+  talkButton,
+  wake,
+} from '../../test/voice';
 import {
   holdFor,
   holdLongEnough,
@@ -16,28 +18,12 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { fakeSession, hold as holdOn, talkButton } from '../../test/voice';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import { Route, Routes } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { ShoppingPage } from './ShoppingPage';
 
-// jsdom has no getUserMedia or MediaRecorder: the microphone module is the seam.
-const mic = vi.hoisted(() => ({ start: vi.fn() }));
-vi.mock('../../lib/microphone', () => ({
-  startRecording: mic.start,
-  permissionState: vi.fn(async () => 'granted'),
-  requestPermission: vi.fn(async () => undefined),
-  watchPermission: () => () => {},
-  MicrophoneError: class MicrophoneError extends Error {
-    constructor(readonly reason: string) {
-      super(reason);
-    }
-  },
-}));
-
 function setup() {
-  const sent: FormData[] = [];
   const { fetchMock } = stubApi({
     'GET /api/shopping-list': () =>
       Response.json({
@@ -49,11 +35,7 @@ function setup() {
     'POST /api/voice': () =>
       Response.json({ transcript: 'got the bread', actions: [] }),
   });
-  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
-    if (init?.body instanceof FormData) sent.push(init.body);
-    return fetchMock(input, init);
-  });
-  return { sent };
+  return stubVoiceFetch(fetchMock);
 }
 
 /** jsdom has no layout: the button sits at 100..162 x 500..562. */
@@ -81,8 +63,8 @@ describe('the recording gesture on the Shopping List', () => {
   beforeEach(() => {
     useVoiceTimers();
     resetVoiceNote();
+    resetVoiceEnvironment();
     session = fakeSession();
-    mic.start.mockReset();
     mic.start.mockImplementation(() => Promise.resolve(session));
     vibrate = vi.fn();
     vi.stubGlobal(
@@ -483,20 +465,8 @@ describe('the recording gesture on the Shopping List', () => {
   });
 
   describe('wake lock', () => {
-    let request: ReturnType<typeof vi.fn>;
-    let released: Mock<() => Promise<void>>;
-
-    beforeEach(() => {
-      released = vi.fn<() => Promise<void>>(() => Promise.resolve());
-      request = vi.fn(() => Promise.resolve({ release: released }));
-      vi.stubGlobal(
-        'navigator',
-        Object.assign(Object.create(navigator), {
-          vibrate,
-          wakeLock: { request },
-        }),
-      );
-    });
+    const request = wake.request;
+    const released = wake.released;
 
     it('is held from the press until Review opens', async () => {
       setup();
@@ -606,10 +576,7 @@ describe('the recording gesture on the Shopping List', () => {
     });
 
     it('works where wakeLock is unsupported', async () => {
-      vi.stubGlobal(
-        'navigator',
-        Object.assign(Object.create(navigator), { vibrate }),
-      );
+      removeWakeLock();
       setup();
       renderWithProviders(<ShoppingPage />);
       const button = await hold();

@@ -7,30 +7,16 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  MicrophoneError,
+  mic,
+  resetVoiceEnvironment,
+  talkButton,
+} from '../../test/voice';
 import { holdFor, pressDown, useVoiceTimers } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { fakeSession, talkButton } from '../../test/voice';
 import { resetVoiceNote } from '../../lib/voiceNoteStore';
 import { ShoppingPage } from './ShoppingPage';
-
-// jsdom has no getUserMedia or MediaRecorder: the microphone module is the seam.
-const mic = vi.hoisted(() => ({
-  start: vi.fn(),
-  permission: vi.fn(),
-  request: vi.fn(),
-}));
-vi.mock('../../lib/microphone', () => ({
-  startRecording: mic.start,
-  permissionState: mic.permission,
-  requestPermission: mic.request,
-  watchPermission: () => () => {},
-  MicrophoneError: class MicrophoneError extends Error {
-    constructor(readonly reason: string) {
-      super(reason);
-    }
-  },
-}));
-import { MicrophoneError } from '../../lib/microphone';
 
 function setup() {
   const { fetchMock } = stubApi({
@@ -49,12 +35,8 @@ describe('Voice Note microphone sheets', () => {
   beforeEach(() => {
     useVoiceTimers();
     resetVoiceNote();
-    mic.start.mockReset();
-    mic.start.mockImplementation(() => Promise.resolve(fakeSession()));
-    mic.permission.mockReset();
+    resetVoiceEnvironment();
     mic.permission.mockResolvedValue('prompt');
-    mic.request.mockReset();
-    mic.request.mockResolvedValue(undefined);
     setup();
   });
 

@@ -8,7 +8,19 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MicrophoneError } from '../../lib/microphone';
+import {
+  MicrophoneError,
+  fakeSession,
+  hold,
+  mic,
+  recording,
+  resetVoiceEnvironment,
+  stubVoiceFetch,
+  talkButton,
+  voiceAction,
+  voiceIngredient,
+  wake,
+} from '../../test/voice';
 import {
   holdFor,
   holdLongEnough,
@@ -16,35 +28,10 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderWithProviders, stubApi } from '../../test/render';
-import {
-  fakeSession,
-  hold,
-  recording,
-  talkButton,
-  voiceAction,
-  voiceIngredient,
-} from '../../test/voice';
 import { stubMotion } from '../../test/viewport';
 import { resetRowFlash } from '../../lib/rowFlash';
 import { getVoiceNoteState, resetVoiceNote } from '../../lib/voiceNoteStore';
 import { ShoppingPage } from './ShoppingPage';
-
-// jsdom has no getUserMedia or MediaRecorder: the microphone module is the seam.
-const mic = vi.hoisted(() => ({ start: vi.fn() }));
-vi.mock('../../lib/microphone', () => ({
-  startRecording: mic.start,
-  permissionState: vi.fn(async () => 'granted'),
-  requestPermission: vi.fn(async () => undefined),
-  watchPermission: () => () => {},
-  MicrophoneError: class MicrophoneError extends Error {
-    constructor(readonly reason: string) {
-      super(reason);
-    }
-  },
-}));
-
-const wake = vi.hoisted(() => ({ keep: vi.fn() }));
-vi.mock('../../lib/wakeLock', () => ({ keepScreenAwake: wake.keep }));
 
 const emptyList = {
   id: 'l1',
@@ -58,8 +45,6 @@ type Setup = {
 };
 
 function setup({ configured = true, note }: Setup = {}) {
-  const sent: FormData[] = [];
-  const signals: AbortSignal[] = [];
   const { fetchMock } = stubApi({
     'GET /api/shopping-list': () => Response.json(emptyList),
     'GET /api/voice/config': () => Response.json({ configured }),
@@ -67,14 +52,7 @@ function setup({ configured = true, note }: Setup = {}) {
       note?.() ??
       Response.json({ transcript: 'got the bread and sausages', actions: [] }),
   });
-  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
-    if (init?.body instanceof FormData) {
-      sent.push(init.body);
-      if (init.signal) signals.push(init.signal);
-    }
-    return fetchMock(input, init);
-  });
-  return { sent, signals };
+  return stubVoiceFetch(fetchMock);
 }
 
 describe('Voice Note on the Shopping List', () => {
@@ -84,10 +62,8 @@ describe('Voice Note on the Shopping List', () => {
     useVoiceTimers();
     resetVoiceNote();
     resetRowFlash();
+    resetVoiceEnvironment();
     session = fakeSession();
-    wake.keep.mockReset();
-    wake.keep.mockReturnValue(() => undefined);
-    mic.start.mockReset();
     mic.start.mockImplementation(() => Promise.resolve(session));
   });
 
@@ -430,19 +406,17 @@ describe('Voice Note on the Shopping List', () => {
     it('keeps the screen awake across a page switch while the note is still being read', async () => {
       let answer!: (response: Response) => void;
       setup({ note: () => new Promise<Response>((r) => (answer = r)) });
-      const release = vi.fn();
-      wake.keep.mockReturnValue(release);
       const page = renderWithProviders(<ShoppingPage />);
       fireEvent.pointerUp(await hold());
       await screen.findByText('Reading your note');
 
       // The Member moves to another page: this one unmounts, the read carries on.
       page.unmount();
-      expect(release).not.toHaveBeenCalled();
+      expect(wake.released).not.toHaveBeenCalled();
 
       answer(Response.json({ transcript: 'bread', actions: [] }));
       await act(() => vi.advanceTimersByTimeAsync(50));
-      expect(release).toHaveBeenCalledTimes(1);
+      expect(wake.released).toHaveBeenCalledTimes(1);
     });
 
     it('puts focus back on the voice button when Cancel or Discard closes the pill', async () => {
@@ -649,22 +623,20 @@ describe('Voice Note on the Shopping List', () => {
         note: () =>
           ++attempt === 1 ? error('voice.provider_unavailable', 502) : never(),
       });
-      const release = vi.fn();
-      wake.keep.mockReturnValue(release);
       renderWithProviders(<ShoppingPage />);
       fireEvent.pointerUp(await hold());
       await screen.findByRole('alert');
-      wake.keep.mockClear();
-      release.mockClear();
+      wake.request.mockClear();
+      wake.released.mockClear();
 
       await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
-      expect(wake.keep).toHaveBeenCalledTimes(1);
-      expect(release).not.toHaveBeenCalled();
+      expect(wake.request).toHaveBeenCalledTimes(1);
+      expect(wake.released).not.toHaveBeenCalled();
       await userEvent.click(
         await screen.findByRole('button', { name: 'Cancel' }),
       );
-      expect(release).toHaveBeenCalled();
+      expect(wake.released).toHaveBeenCalled();
     });
 
     it('Discard drops the recording and says so', async () => {

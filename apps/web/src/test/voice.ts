@@ -3,6 +3,91 @@ import { vi } from 'vitest';
 import type { Recording } from '../lib/microphone';
 import { holdLongEnough, pressDown } from './voiceHold';
 
+/*
+ * The shared fake voice environment. Import this module BEFORE anything that reaches the
+ * microphone module (the page, the Voice Note store): it registers the mock, and a module that
+ * is already loaded keeps the real one.
+ *
+ * - Microphone: jsdom has no getUserMedia or MediaRecorder, so the microphone module is the seam.
+ *   `mic.start` / `mic.permission` / `mic.request` are the mocks behind it.
+ * - Wake lock: a fake `navigator.wakeLock`; `wake.request` / `wake.released` are its mocks.
+ * - Send-Voice-Note request: `stubVoiceFetch` wraps the stubbed API and returns what is sent.
+ *
+ * Call `resetVoiceEnvironment()` in `beforeEach` to put all of it back to its defaults.
+ */
+const fakes = vi.hoisted(() => ({
+  MicrophoneError: class MicrophoneError extends Error {
+    constructor(readonly reason: string) {
+      super(reason);
+    }
+  },
+  mic: { start: vi.fn(), permission: vi.fn(), request: vi.fn() },
+  wake: { request: vi.fn(), released: vi.fn() },
+}));
+
+vi.mock('../lib/microphone', () => ({
+  startRecording: fakes.mic.start,
+  permissionState: fakes.mic.permission,
+  requestPermission: fakes.mic.request,
+  watchPermission: () => () => {},
+  MicrophoneError: fakes.MicrophoneError,
+}));
+
+/** The microphone module's error, as the page sees it (the page checks `instanceof`). */
+export const MicrophoneError = fakes.MicrophoneError;
+
+export const mic = fakes.mic;
+export const wake = fakes.wake;
+
+/** Defaults: a granted microphone that hands out `fakeSession()`s, a supported wake lock. */
+export function resetVoiceEnvironment() {
+  mic.start.mockReset();
+  mic.start.mockImplementation(() => Promise.resolve(fakeSession()));
+  mic.permission.mockReset();
+  mic.permission.mockResolvedValue('granted');
+  mic.request.mockReset();
+  mic.request.mockResolvedValue(undefined);
+  wake.released.mockReset();
+  wake.released.mockImplementation(() => Promise.resolve());
+  wake.request.mockReset();
+  wake.request.mockImplementation(() =>
+    Promise.resolve({ release: wake.released }),
+  );
+  Object.defineProperty(navigator, 'wakeLock', {
+    configurable: true,
+    value: { request: wake.request },
+  });
+}
+
+/** Take the wake lock away, as on a browser without Screen Wake Lock. */
+export function removeWakeLock() {
+  Object.defineProperty(navigator, 'wakeLock', {
+    configurable: true,
+    value: undefined,
+  });
+}
+
+/**
+ * Route `fetch` through `fetchMock`, recording every Voice Note upload (a FormData body) and its abort signal.
+ * `onRequest` sees every request first, e.g. to capture another body.
+ */
+export function stubVoiceFetch(
+  fetchMock: (input: RequestInfo | URL, init?: RequestInit) => unknown,
+  onRequest?: (input: RequestInfo | URL, init?: RequestInit) => void,
+) {
+  const sent: FormData[] = [];
+  const signals: AbortSignal[] = [];
+  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+    onRequest?.(input, init);
+    if (init?.body instanceof FormData) {
+      sent.push(init.body);
+      if (init.signal) signals.push(init.signal);
+    }
+    return fetchMock(input, init);
+  });
+  return { sent, signals };
+}
+
 /** A three second Voice Note recording, as the microphone module hands it over. */
 export const recording: Recording = {
   blob: new Blob(['audio-bytes'], { type: 'audio/webm' }),
