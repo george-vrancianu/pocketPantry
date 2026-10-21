@@ -1,4 +1,11 @@
-import { useEffect, useId, useImperativeHandle, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import type {
   KeyboardEvent,
   MouseEvent,
@@ -122,11 +129,14 @@ export function SwipeRow({
   const itemRef = useRef<HTMLLIElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
   // A stable identity, so the module-level slot can tell which row holds it.
-  const closer = useRef(() =>
-    setPhase((current) => (current === 'confirming' ? 'idle' : current)),
-  ).current;
+  const [closer] = useState(
+    () => () =>
+      setPhase((current) => (current === 'confirming' ? 'idle' : current)),
+  );
   const onRemoveRef = useRef(onRemove);
-  onRemoveRef.current = onRemove;
+  useLayoutEffect(() => {
+    onRemoveRef.current = onRemove;
+  });
   const removing = useRef(false);
   const timers = useRef<Array<ReturnType<typeof setTimeout>>>([]);
 
@@ -136,7 +146,9 @@ export function SwipeRow({
   const [peekBack, setPeekBack] = useState(false);
   const touching = useRef(false);
   const idleRef = useRef(idle);
-  idleRef.current = idle;
+  useLayoutEffect(() => {
+    idleRef.current = idle;
+  });
   const peekTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );

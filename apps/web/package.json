@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "lint": "oxlint src",
+    "lint": "oxlint -c ../../.oxlintrc.json --report-unused-disable-directives-severity error src",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

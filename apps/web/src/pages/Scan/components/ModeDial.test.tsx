@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModeDial } from './ModeDial';
@@ -285,7 +285,9 @@ describe('ModeDial Scan gestures on the current mode', () => {
       let setOff: (off: boolean) => void = () => {};
       function Harness() {
         const [off, set] = useState(false);
-        setOff = set;
+        useEffect(() => {
+          setOff = set;
+        }, [set]);
         return (
           <ModeDial
             modes={['product', 'receipt', 'barcode']}
@@ -317,7 +319,9 @@ describe('ModeDial Scan gestures on the current mode', () => {
       let setOff: (off: boolean) => void = () => {};
       function Harness() {
         const [off, set] = useState(false);
-        setOff = set;
+        useEffect(() => {
+          setOff = set;
+        }, [set]);
         return (
           <ModeDial
             modes={['product', 'receipt', 'barcode']}

@@ -287,6 +287,7 @@ export function CustomisePage() {
       listRef.current?.querySelectorAll<HTMLElement>('[data-handle]') ?? [],
     ).find((candidate) => candidate.dataset.handle === target);
     (handle ?? headingRef.current)?.focus();
+    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: cleared once the row is focused
     setFocus(null);
   }, [focus, layout.data]);
 

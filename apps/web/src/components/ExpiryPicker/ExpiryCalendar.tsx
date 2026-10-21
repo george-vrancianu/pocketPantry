@@ -368,6 +368,7 @@ export function ExpiryCalendar({
                   <Box key={row} role="row" sx={{ ...grid, mb: '2px' }}>
                     {week.map((iso, column) => {
                       if (iso === null)
+                        // oxlint-disable-next-line jsx-a11y/control-has-associated-label -- empty padding cell before the 1st of the month, no control
                         return <span key={column} role="gridcell" />;
                       const days = daysUntil(iso, today);
                       const inBand =

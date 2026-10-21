@@ -53,6 +53,7 @@ export function FamilyCatalogSection() {
   useEffect(() => {
     if (focusKey && editingId === null) {
       controls.current.get(focusKey)?.focus();
+      // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: consumed (cleared) once the control is focused
       setFocusKey(null);
     }
   }, [focusKey, editingId]);

@@ -11,7 +11,7 @@ import {
   tokens,
   useToast,
 } from '@pocket-pantry/ui';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpiryTag } from '../../../components/ExpiryTag';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -97,9 +97,13 @@ export function ExpiringSoonSection() {
   };
 
   // Leaving the tab must not drop a tap that is still waiting for its 600 ms.
+  const flushNow = useRef(flush);
+  useLayoutEffect(() => {
+    flushNow.current = flush;
+  });
   useEffect(
     () => () => {
-      if (unsent.current !== null) flush();
+      if (unsent.current !== null) flushNow.current();
     },
     [],
   );

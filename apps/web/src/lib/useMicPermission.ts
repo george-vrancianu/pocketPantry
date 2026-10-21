@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { rememberMicExplained } from './micExplained';
 import {
   MicrophoneError,
@@ -31,7 +37,9 @@ export function useMicPermission({
   const [requesting, setRequesting] = useState(false);
   const inFlight = useRef(false);
   const callbacks = useRef({ onGranted, onUnavailable });
-  callbacks.current = { onGranted, onUnavailable };
+  useLayoutEffect(() => {
+    callbacks.current = { onGranted, onUnavailable };
+  });
 
   // Read on arrival, and whenever the browser's setting changes, so a blocked microphone shows on the button.
   useEffect(() => {

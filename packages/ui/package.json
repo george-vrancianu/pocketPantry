@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "oxlint src",
+    "lint": "oxlint -c ../../.oxlintrc.json --report-unused-disable-directives-severity error src",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "storybook": "storybook dev -p 6006",
