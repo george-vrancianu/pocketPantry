@@ -2,8 +2,8 @@
   "title": "Cumpărături",
   "summary": {
     "toBuy": "{{count}} de cumpărat",
-    "inBasket": "{{checked}} din {{total}} în coș",
-    "progress": "Progresul coșului",
+    "inBasket": "{{checked}} din {{total}} bifate",
+    "progress": "Progresul listei de cumpărături",
     "tickedOff_one": "{{count}} produs bifat",
     "tickedOff_few": "{{count}} produse bifate",
     "tickedOff_other": "{{count}} de produse bifate",
@@ -33,6 +33,7 @@
     "addMeta": "Caută ingrediente și produse de bază care ți s-au terminat",
     "importTitle": "Importă un șablon",
     "importMeta_one": "{{count}} șablon",
+    "importMeta_few": "{{count}} șabloane",
     "importMeta_other": "{{count}} șabloane"
   },
   "finish": {
