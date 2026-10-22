@@ -20,6 +20,7 @@ import {
   useScanSession,
 } from '../../../lib/scanSession';
 import { resizeImage } from '../../../lib/image';
+import { importPhotos, resizingImports } from '../../../lib/importPhotos';
 import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useScanLanguage } from './useScanLanguage';
 import {
@@ -27,6 +28,7 @@ import {
   loadScanPageMode,
   saveScanPageMode,
   SCAN_INTERVAL_MS,
+  scanModeOf,
   type CameraMode,
 } from '../../../lib/cameraMode';
 
@@ -102,8 +104,6 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     }
     previousMode.current = mode;
   }, [mode]);
-  /** Gallery photos still being resized: they will join the Scan Session, so they count against its limit. */
-  const resizingPicks = useRef(0);
   const [flash, setFlash] = useState(false);
   const [resizing, setResizing] = useState(false);
   // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
@@ -190,7 +190,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     // A camera Scan joins the Scan Session at once; its read goes on in the background.
     if (origin === 'camera') {
       if (
-        getScanSession().scans.length + resizingPicks.current >=
+        getScanSession().scans.length + resizingImports() >=
         MAX_SESSION_SCANS
       ) {
         warnSessionFull();
@@ -234,52 +234,13 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     if (picked.length === 0 || mode === 'barcode') return;
     setLocalError(null);
     setNotAdded(false);
-    // Take what fits under the Scan Session's cap, counting photos still being resized.
-    const room = Math.max(
-      0,
-      MAX_SESSION_SCANS - getScanSession().scans.length - resizingPicks.current,
-    );
-    if (picked.length > room) {
-      warnSessionFull();
-    }
-    const base = {
-      mode,
-      scanLanguage: mode === 'plate' ? undefined : scanLanguage,
-    };
-    for (const file of picked.slice(0, room)) {
-      const id = crypto.randomUUID();
-      if (mode === 'receipt') {
-        // Cropped from its card in Review, then read.
-        dispatchScanSession({
-          type: 'enqueue',
-          scan: {
-            ...base,
-            id,
-            image: '',
-            thumbnail: URL.createObjectURL(file),
-            source: file,
-          },
-        });
-        continue;
-      }
-      resizingPicks.current += 1;
-      void resizeImage(file)
-        .then(
-          (image) => {
-            dispatchScanSession({
-              type: 'enqueue',
-              scan: { ...base, id, image, thumbnail: image },
-            });
-            readScans(i18n.language);
-            if (base.mode === 'product')
-              decodePhotoBarcode(id, file, (photo) => readBarcode(photo));
-          },
-          () => setLocalError('scan.image_invalid'),
-        )
-        .finally(() => {
-          resizingPicks.current -= 1;
-        });
-    }
+    importPhotos(picked, {
+      mode: scanModeOf(mode),
+      scanLanguage,
+      uiLanguage: i18n.language,
+      onFull: warnSessionFull,
+      onInvalid: () => setLocalError('scan.image_invalid'),
+    });
   };
 
   // The Barcode dial mode reads on its own. Each accepted code adds a card at once; the watch reads one
@@ -298,7 +259,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     // Remembered before the limit check, so a held pack at the limit toasts once, not every tick.
     lastCode.current = canonical;
     if (
-      getScanSession().scans.length + resizingPicks.current >=
+      getScanSession().scans.length + resizingImports() >=
       MAX_SESSION_SCANS
     ) {
       warnSessionFull();

@@ -121,7 +121,7 @@ function renderOverview(
 }
 
 const cards = () => screen.getAllByTestId('review-card');
-const add = () => screen.getByRole('button', { name: /^Add/ });
+const add = () => screen.getByRole('button', { name: /^Add(?! from photos)/ });
 const batchesOf = (body: unknown) => (body as { batches: unknown[] }).batches;
 
 describe('Review overview, epic review fixes', () => {
@@ -207,7 +207,7 @@ describe('Review overview, epic review fixes', () => {
       );
       await userEvent.click(screen.getByRole('button', { name: 'test back' }));
       await userEvent.click(
-        await screen.findByRole('button', { name: /^Add/ }),
+        await screen.findByRole('button', { name: /^Add(?! from photos)/ }),
       );
       await waitFor(() =>
         expect(
@@ -334,7 +334,7 @@ describe('Review overview, epic review fixes', () => {
       ).toBeNull();
 
       await userEvent.click(
-        within(card).getByRole('button', { name: 'Retry lookup' }),
+        within(card).getByRole('button', { name: 'Look up again' }),
       );
       await waitFor(() =>
         expect(
@@ -348,7 +348,7 @@ describe('Review overview, epic review fixes', () => {
       await waitFor(() => expect(cards()[0]).toHaveFocus());
     });
 
-    it('offers Remove next to Retry lookup, never Retake, and stays on Review', async () => {
+    it('offers Remove next to Look up again, never Retake, and stays on Review', async () => {
       failBarcode('internal');
       renderOverview();
       const card = cards()[0];
@@ -377,7 +377,7 @@ describe('Review overview, epic review fixes', () => {
         await screen.findByRole('button', { name: /merge with previous/i }),
       );
       await userEvent.click(
-        await screen.findByRole('button', { name: /^Add/ }),
+        await screen.findByRole('button', { name: /^Add(?! from photos)/ }),
       );
       await waitFor(() =>
         expect(
