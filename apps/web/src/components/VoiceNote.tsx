@@ -8,8 +8,9 @@ import { useLocation } from 'react-router-dom';
 
 /** The Default List of a route: the list its page acts on, or none where there is no mic. */
 export function defaultListFor(pathname: string): VoiceList | null {
-  if (pathname === '/shopping') return 'shopping';
-  if (pathname === '/pantry') return 'pantry';
+  const path = pathname.replace(/\/+$/, '');
+  if (path === '/shopping') return 'shopping';
+  if (path === '/pantry') return 'pantry';
   return null;
 }
 

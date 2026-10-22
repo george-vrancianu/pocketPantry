@@ -1,18 +1,17 @@
-import { screen } from '@testing-library/react';
-import { vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
 import {
   resetVoiceEnvironment,
   stubVoiceFetch,
   talkButton,
 } from '../test/voice';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import { renderWithProviders, stubApi } from '../test/render';
 import { AppLayout } from './AppLayout';
 
 function renderAt(route: string) {
-  renderAtView(route);
+  return renderAtView(route);
 }
 
 function renderAtView(route: string) {
@@ -23,6 +22,7 @@ function renderAtView(route: string) {
         <Route path="/pantry" element={<p>pantry</p>} />
         <Route path="/recipes" element={<p>recipes</p>} />
         <Route path="/shopping" element={<p>shopping</p>} />
+        <Route path="/shopping/staples" element={<p>staples</p>} />
       </Route>
     </Routes>,
     { route },
@@ -102,12 +102,18 @@ describe('AppLayout Voice Note host', () => {
     },
   );
 
-  it('shows no mic on other screens', async () => {
-    renderAt('/recipes');
-    expect(await screen.findByText('recipes')).toBeInTheDocument();
-    await Promise.resolve();
-    expect(
-      screen.queryByRole('button', { name: /hold to record a voice note/i }),
-    ).toBeNull();
-  });
+  it.each(['/recipes', '/scan', '/shopping/staples'])(
+    'shows no mic on %s, once the voice config has loaded',
+    async (route) => {
+      const { queryClient } = renderAt(route);
+      await waitFor(() =>
+        expect(queryClient.getQueryState(['voice', 'config'])?.status).toBe(
+          'success',
+        ),
+      );
+      expect(
+        screen.queryByRole('button', { name: /hold to record a voice note/i }),
+      ).toBeNull();
+    },
+  );
 });

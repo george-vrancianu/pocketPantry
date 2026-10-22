@@ -2855,7 +2855,7 @@ describe('ShoppingPage', () => {
     renderWithProviders(<ShoppingPage />, { locale: 'ro' });
 
     expect(await screen.findByText('0 de cumpărat')).toBeVisible();
-    // The list request, wherever it falls among the page's requests (the voice config is one too).
+    // The list request, wherever it falls among the page's requests.
     const url = fetchSpy.mock.calls
       .map(([input]) => new URL(String(input), window.location.origin))
       .find((u) => u.pathname === '/api/shopping-list');
