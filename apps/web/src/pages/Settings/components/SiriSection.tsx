@@ -203,19 +203,22 @@ function SetupGuide() {
           </Typography>
         ))}
       </Box>
-      {checkUrl ? (
-        <Typography variant="body2">
-          {t('setup.check')}{' '}
-          <Link
-            component="a"
-            href={checkUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t('setup.checkLink')}
-          </Link>
-        </Typography>
-      ) : null}
+      <Typography variant="body2">
+        {t('setup.check')}
+        {checkUrl ? (
+          <>
+            {' '}
+            <Link
+              component="a"
+              href={checkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('setup.checkLink')}
+            </Link>
+          </>
+        ) : null}
+      </Typography>
       <Typography variant="meta" color="text.secondary">
         {t('setup.language')}
       </Typography>

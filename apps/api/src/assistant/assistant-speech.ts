@@ -309,10 +309,10 @@ const LIST_TYPE: Record<
 /**
  * Siri speaks at most this many answered Ingredients, whatever their kind;
  * the rest are left to the app ("And 3 more, check PantryGator"). The ones
- * spoken are the first in spoken order: `ANSWER_ORDER` by kind, then the order
- * the Ingredients were asked in. So a long list drops the last kinds first
- * (the "no"s before the "yes"es), and the grouped kinds are cut by Ingredient:
- * "No butter or eggs" becomes "No butter" when only one of them fits.
+ * spoken are the first asked, whatever their kind; those are then grouped and
+ * spoken in `ANSWER_ORDER` as usual. So a "no" asked early is kept and a "yes"
+ * asked ninth is dropped, and a grouped kind is cut by Ingredient: "No butter
+ * or eggs" becomes "No butter" when only one of them fits.
  */
 export const MAX_SPOKEN_ANSWERS = 8;
 
@@ -445,15 +445,11 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
   const all = input.outcomes ?? [];
   if (all.length === 0) return messages.states.nothingUnderstood;
 
-  const inSpokenOrder = ANSWER_ORDER.flatMap((kind) =>
-    all.filter(isAnswer).filter((outcome) => outcome.kind === kind),
-  );
-  const spoken = new Set(inSpokenOrder.slice(0, MAX_SPOKEN_ANSWERS));
-  const leftOut = inSpokenOrder.length - spoken.size;
+  const asked = all.filter(isAnswer);
+  const spokenAnswers = asked.slice(0, MAX_SPOKEN_ANSWERS);
+  const leftOut = asked.length - spokenAnswers.length;
   const answerClauses = ANSWER_ORDER.flatMap((kind) => {
-    const answers = all
-      .filter(isAnswer)
-      .filter((outcome) => outcome.kind === kind && spoken.has(outcome));
+    const answers = spokenAnswers.filter((outcome) => outcome.kind === kind);
     if (answers.length === 0) return [];
     const say = (items: string) =>
       messages.answers[kind].replace('{items}', items);

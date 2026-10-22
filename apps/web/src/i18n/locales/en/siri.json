@@ -1,6 +1,6 @@
 {
   "title": "Siri",
-  "hint": "Create an Assistant Token for each device that talks to your lists by voice. A token can add to your lists, and read your Pantry and Shopping List to answer questions; revoke it here to stop it right away.",
+  "hint": "Create an Assistant Token for each device that talks to your lists by voice. A token can add to your lists and read your Pantry and Shopping List to answer questions, and nothing else; revoke it here to stop it right away.",
   "nameLabel": "Token name",
   "namePlaceholder": "For example, my iPhone",
   "create": "Create token",

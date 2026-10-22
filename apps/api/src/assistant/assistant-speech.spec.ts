@@ -534,7 +534,7 @@ describe('assistantSpeech', () => {
       expect(speech).not.toContain('item9');
     });
 
-    it('counts every kind and speaks the first 8 in spoken order', () => {
+    it('counts every kind and speaks the first 8 asked, in answer order', () => {
       const speech = say('en', [
         { kind: 'no', name: 'butter' },
         { kind: 'no', name: 'rice' },
@@ -544,7 +544,7 @@ describe('assistantSpeech', () => {
       ]);
       expect(speech).toBe(
         'You have item1. You have item2. You have item3. You have item4. ' +
-          'You have item5. You have item6. Only expired tea. No butter. ' +
+          'Only expired tea. No butter, rice, or oil. ' +
           'And 2 more, check PantryGator.',
       );
     });

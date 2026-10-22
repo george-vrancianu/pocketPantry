@@ -1,6 +1,6 @@
 {
   "title": "Siri",
-  "hint": "Opret et assistent-token til hver enhed, der taler med dine lister via stemmen. Et token kan tilføje til dine lister og læse dit spisekammer og din indkøbsliste for at svare på spørgsmål; tilbagekald det her for at stoppe det med det samme.",
+  "hint": "Opret et assistent-token til hver enhed, der taler med dine lister via stemmen. Et token kan tilføje til dine lister og læse dit spisekammer og din indkøbsliste for at svare på spørgsmål, men intet andet; tilbagekald det her for at stoppe det med det samme.",
   "nameLabel": "Tokenets navn",
   "namePlaceholder": "For eksempel min iPhone",
   "create": "Opret token",
@@ -32,7 +32,7 @@
     "paste": "Indsæt tokenet, når genvejen beder om det.",
     "say": "Sig “Hey Siri, Pantry add”, og sig derefter, hvad der skal tilføjes.",
     "language": "Siris frase er altid på engelsk, men du kan sige varerne på ethvert sprog, Pocket Pantry understøtter.",
-    "check": "Hvis du vil spørge, hvad du har i spisekammeret, så sig „Hey Siri, Pantry check”. „Pantry add” svarer også på spørgsmål.",
+    "check": "Hvis du vil spørge, hvad du har i spisekammeret, så sig “Hey Siri, Pantry check”. “Pantry add” svarer også på spørgsmål.",
     "checkLink": "Åbn genvejen “Pantry check”"
   }
 }

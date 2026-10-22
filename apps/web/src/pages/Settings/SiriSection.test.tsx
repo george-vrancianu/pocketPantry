@@ -285,11 +285,24 @@ describe('Settings Siri section', () => {
       },
     );
 
-    it('says in each language that a token can read the Pantry and Shopping List', async () => {
-      stubTokens([]);
-      renderWithProviders(<SiriSection />, { locale: 'ro' });
-      expect(await screen.findByText(/poate citi Cămara/)).toBeInTheDocument();
-    });
+    it.each([
+      [
+        'en',
+        /read your Pantry and Shopping List/,
+        /“Pantry add” answers questions too/,
+      ],
+      ['ro', /poate citi Cămara/, /Și „Pantry add” răspunde la întrebări/],
+      ['da', /læse dit spisekammer/, /“Pantry add” svarer også på spørgsmål/],
+    ] as const)(
+      'says in %s what a token can read, and that Pantry add answers questions, with no Pantry check link',
+      async (locale, hint, note) => {
+        vi.stubEnv('VITE_SIRI_CHECK_SHORTCUT_URL', undefined);
+        stubTokens([]);
+        renderWithProviders(<SiriSection />, { locale });
+        expect(await screen.findByText(hint)).toBeInTheDocument();
+        expect(screen.getByText(note)).toBeInTheDocument();
+      },
+    );
 
     it.each(['unset', 'empty'])(
       'hides the Shortcut link when the URL is %s',
