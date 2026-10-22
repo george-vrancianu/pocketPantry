@@ -972,8 +972,8 @@ describe('Assistant Requests (integration)', () => {
         { kind: 'no', name: 'Eggs', onShoppingList: false },
       ]);
       expect(reply(response).speech).toBe(
-        'Only expired Milk and Butter, Milk is already on your Shopping List. ' +
-          'No Flour or Eggs, Flour is already on your Shopping List.',
+        'Only expired Milk and Butter, already on your Shopping List: Milk. ' +
+          'No Flour or Eggs, already on your Shopping List: Flour.',
       );
     });
 

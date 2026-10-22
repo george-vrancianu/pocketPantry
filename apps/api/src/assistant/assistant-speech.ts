@@ -122,7 +122,7 @@ type Messages = {
     expiringSoon: string;
     runningLow: string;
     /** Added to a no or only expired: `{items}` are the ones already on the Shopping List. */
-    onShoppingList: { one: string; other: string };
+    onShoppingList: string;
   };
   /** The unit word of a bare count beside other units ("milk: 2 litres and 3 pieces"). */
   pieces: Forms;
@@ -169,14 +169,11 @@ export const assistantMessages = {
         fridge: 'in the fridge',
         freezer: 'in the freezer',
         cupboard: 'in the cupboard',
-        spices: 'in the spice rack',
+        spices: 'on the spice rack',
       },
       expiringSoon: 'some expiring soon',
       runningLow: 'running low',
-      onShoppingList: {
-        one: '{items} is already on your Shopping List',
-        other: '{items} are already on your Shopping List',
-      },
+      onShoppingList: 'already on your Shopping List: {items}',
     },
     pieces: plain('piece', 'pieces'),
     states: {
@@ -223,10 +220,7 @@ export const assistantMessages = {
       },
       expiringSoon: 'o parte expiră curând',
       runningLow: 'pe cale să se termine',
-      onShoppingList: {
-        one: '{items} este deja pe Lista de cumpărături',
-        other: '{items} sunt deja pe Lista de cumpărături',
-      },
+      onShoppingList: 'deja pe Lista de cumpărături: {items}',
     },
     pieces: { one: 'bucată', few: 'bucăți', other: 'bucăți' },
     states: {
@@ -272,10 +266,7 @@ export const assistantMessages = {
       },
       expiringSoon: 'noget udløber snart',
       runningLow: 'ved at løbe tør',
-      onShoppingList: {
-        one: '{items} står allerede på indkøbslisten',
-        other: '{items} står allerede på indkøbslisten',
-      },
+      onShoppingList: 'allerede på indkøbslisten: {items}',
     },
     pieces: plain('stykke', 'stykker'),
     states: {
@@ -292,12 +283,10 @@ export const ASSISTANT_LOCALES = Object.keys(
   assistantMessages,
 ) as AssistantLocale[];
 
-/** Answers that get a clause per Ingredient ("You have milk. You have eggs."); the rest are grouped into one list. */
-const OWN_CLAUSE: ReadonlySet<AssistantAnswerKind> = new Set(['yes']);
-
-/** "No butter or eggs" is a choice; "only expired milk and eggs" is a fact about each. */
-const LIST_TYPE: Partial<
-  Record<AssistantAnswerKind, 'conjunction' | 'disjunction'>
+/** Yes gets a clause per Ingredient ("You have milk. You have eggs."); the rest are grouped into one list. "No butter or eggs" is a choice; "only expired milk and eggs" is a fact about each. */
+const LIST_TYPE: Record<
+  Exclude<AssistantAnswerKind, 'yes'>,
+  'conjunction' | 'disjunction'
 > = {
   onlyExpired: 'conjunction',
   no: 'disjunction',
@@ -439,7 +428,7 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
     if (answers.length === 0) return [];
     const say = (items: string) =>
       messages.answers[kind].replace('{items}', items);
-    if (OWN_CLAUSE.has(kind)) {
+    if (kind === 'yes') {
       return answers.map((answer) =>
         say(
           answer.kind === 'yes'
@@ -460,7 +449,7 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
     );
     return [
       covered.length
-        ? `${grouped}, ${messages.answerDetails.onShoppingList[covered.length === 1 ? 'one' : 'other'].replace('{items}', joinList(locale, covered))}`
+        ? `${grouped}, ${messages.answerDetails.onShoppingList.replace('{items}', joinList(locale, covered))}`
         : grouped,
     ];
   });

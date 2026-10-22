@@ -425,7 +425,7 @@ describe('assistantSpeech', () => {
           { kind: 'onlyExpired', name: 'milk', onShoppingList: true },
         ]),
       ).toBe(
-        'Only expired milk, milk is already on your Shopping List. No butter, rice, or oil, rice and oil are already on your Shopping List.',
+        'Only expired milk, already on your Shopping List: milk. No butter, rice, or oil, already on your Shopping List: rice and oil.',
       );
     });
 
@@ -460,7 +460,7 @@ describe('assistantSpeech', () => {
         'Ai 21 de litri de lapte în frigider și în dulapul cu condimente, o parte expiră curând, pe cale să se termine. ' +
           'Ai unt: 1 litru și 3 bucăți. ' +
           'Doar produse expirate: ouă. ' +
-          'Nu ai pâine sau orez, pâine este deja pe Lista de cumpărături.',
+          'Nu ai pâine sau orez, deja pe Lista de cumpărături: pâine.',
       );
     });
 
@@ -485,7 +485,7 @@ describe('assistantSpeech', () => {
         'Du har 2 liter mælk i skabet, noget udløber snart, ved at løbe tør. ' +
           'Du har smør: 1 liter og 2 stykker. ' +
           'Kun udløbne varer: æg. ' +
-          'Du har ikke brød eller ris, brød står allerede på indkøbslisten.',
+          'Du har ikke brød eller ris, allerede på indkøbslisten: brød.',
       );
     });
 
