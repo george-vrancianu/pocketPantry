@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { and, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import {
   SCAN_LANGUAGES,
@@ -7,6 +8,7 @@ import {
   type CatalogSearchResult,
   type ScanLanguage,
 } from '../catalog/catalog.schemas';
+import type { CatalogScope } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import { DATABASE } from '../database/database.constants';
@@ -32,6 +34,7 @@ import {
 import type { ResolveContext, VoiceActionHandler } from './voice-handlers';
 import { VoiceHandlers } from './voice-handlers.registry';
 import { PantryService } from '../pantry/pantry.service';
+import { RunningLowService } from '../pantry/running-low.service';
 import {
   answerPantryQuestions,
   type PantryAnswer,
@@ -118,6 +121,7 @@ export class VoiceService {
     private readonly settings: SettingsService,
     private readonly shopping: ShoppingService,
     private readonly pantry: PantryService,
+    private readonly runningLow: RunningLowService,
     private readonly handlers: VoiceHandlers,
     private readonly config: ConfigService<AppConfig, true>,
     @Inject(DATABASE) private readonly database: Database,
@@ -303,12 +307,33 @@ export class VoiceService {
       spokenNames.set(id, question.spokenName);
       asked.push({ id, text: question.spokenText, ingredient: match });
     }
-    const answers = asked.length
-      ? answerPantryQuestions(asked, {
-          batches: await ctx.lists.pantryBatches(),
-          today: input.today,
-        })
-      : [];
+    let answers: PantryAnswer[] = [];
+    if (asked.length) {
+      const [batches, runningLowIds, pantryBasicIds, staleThresholdDays] =
+        await Promise.all([
+          ctx.lists.pantryBatches(),
+          this.runningLow.list(memberId),
+          this.pantryBasicsAmong(
+            scope,
+            asked.map((entry) => entry.ingredient.id),
+          ),
+          this.settings
+            .familyIdOf(memberId)
+            .then((familyId) => this.settings.staleThresholdOf(familyId)),
+        ]);
+      answers = answerPantryQuestions(asked, {
+        batches,
+        shoppingIngredientIds: new Set(
+          shoppingItems.flatMap((item) =>
+            item.ingredientId ? [item.ingredientId] : [],
+          ),
+        ),
+        runningLowIds: new Set(runningLowIds),
+        pantryBasicIds,
+        staleThresholdDays,
+        today: input.today,
+      });
+    }
     for (const phrase of read.unsupported) {
       out.push(this.notUnderstood(phrase));
     }
@@ -318,6 +343,24 @@ export class VoiceService {
       spokenLanguage: read.spokenLanguage,
       spokenNames,
     };
+  }
+
+  /** The Pantry Basics (water, salt) among the Ingredients; Family Ingredients count like shared ones. */
+  private async pantryBasicsAmong(
+    scope: CatalogScope,
+    ingredientIds: string[],
+  ): Promise<Set<string>> {
+    const ingredients = scope.ingredients(this.database);
+    const rows = await this.database
+      .select({ id: ingredients.id })
+      .from(ingredients)
+      .where(
+        and(
+          inArray(ingredients.id, ingredientIds),
+          eq(ingredients.pantryBasic, true),
+        ),
+      );
+    return new Set(rows.map((row) => row.id));
   }
 
   /** The draft resolved by its (target, op) handler; undefined when no handler is registered. */

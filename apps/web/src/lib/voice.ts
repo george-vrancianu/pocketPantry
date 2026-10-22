@@ -99,7 +99,18 @@ type VoiceAnswerBase = {
   ingredient: CatalogSearchResult;
 };
 export type VoiceAnswer =
-  (VoiceAnswerBase & { kind: 'yes' }) | (VoiceAnswerBase & { kind: 'no' });
+  | (VoiceAnswerBase & {
+      kind: 'yes';
+      /** Quantity summed per unit over the Batches that are not Expired; never converted. Empty for a Pantry Basic with no Batch. */
+      totals: Array<{ unit: Unit; quantity: number }>;
+      /** Where the stock is, in Location order. */
+      locations: StorageLocation[];
+      /** A Batch expires within the Family's Stale Threshold. */
+      expiringSoon: boolean;
+      runningLow: boolean;
+    })
+  | (VoiceAnswerBase & { kind: 'onlyExpired'; onShoppingList: boolean })
+  | (VoiceAnswerBase & { kind: 'no'; onShoppingList: boolean });
 export type VoiceAnswerKind = VoiceAnswer['kind'];
 
 export type VoiceNoteResult = {

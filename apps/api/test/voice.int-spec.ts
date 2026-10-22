@@ -526,6 +526,48 @@ describe('Voice Note (integration)', () => {
     expect(await usage(memberId, 'voice')).toBe(1);
   });
 
+  // Spec: #461. The Voice Note carries the same details as the spoken answer.
+  it('returns the details of a yes and the Shopping List state of a no', async () => {
+    const { cookie } = await signUp();
+    const milk = seedId.ingredient('milk');
+    const butter = seedId.ingredient('butter');
+    await request(app.getHttpServer())
+      .post('/api/pantry/batches?locale=en')
+      .set('origin', TEST_ORIGIN)
+      .set('cookie', cookie)
+      .send({ ingredientId: milk, quantity: 2, unit: 'l', location: 'fridge' })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/api/shopping-list/items?locale=en')
+      .set('origin', TEST_ORIGIN)
+      .set('cookie', cookie)
+      .send({ ingredientId: butter, quantity: 1, unit: 'pcs' })
+      .expect(200);
+    const asked = (id: string, name: string) => ({
+      spokenText: name,
+      matchedIngredientId: id,
+      matchConfidence: 0.95,
+      fallbackIngredientName: name,
+      spokenName: name,
+    });
+    reading = {
+      actions: [],
+      questions: [asked(milk, 'Milk'), asked(butter, 'Butter')],
+      unsupported: [],
+    };
+    const response = await note(cookie).expect(201);
+    expect((response.body as { answers: object[] }).answers).toMatchObject([
+      {
+        kind: 'yes',
+        totals: [{ unit: 'l', quantity: 2 }],
+        locations: ['fridge'],
+        expiringSoon: false,
+        runningLow: false,
+      },
+      { kind: 'no', onShoppingList: true },
+    ]);
+  });
+
   it('returns an empty answers list when nothing was asked', async () => {
     const { cookie } = await signUp();
     reading = {

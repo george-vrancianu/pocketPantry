@@ -48,7 +48,7 @@ import {
 } from '../../lib/voice';
 import { flashRows } from '../../lib/rowFlash';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
-import { AnswerRow } from './VoiceAnswerSheet';
+import { PantryAnswerRow } from './PantryAnswerRow';
 
 /** How long the Apply result stays: long enough to read, no Undo (ADR 0017). */
 const APPLY_TOAST_MS = 5200;
@@ -328,7 +328,7 @@ function ReviewSheet() {
             tag={null}
           >
             {answers.map((answer) => (
-              <AnswerRow key={answer.id} answer={answer} />
+              <PantryAnswerRow key={answer.id} answer={answer} />
             ))}
           </Group>
         ) : null}
