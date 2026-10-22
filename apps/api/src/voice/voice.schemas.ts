@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ResolvedVoiceAction } from './voice-actions';
+import type { PantryAnswer } from './pantry-answers';
 import {
   CATALOG_LOCALES,
   FALLBACK_LOCALE,
@@ -40,6 +41,8 @@ export type VoiceNoteResponse = {
   transcript: string;
   /** The Voice Actions read from it, each resolved against the current lists; nothing is written. */
   actions: ResolvedVoiceAction[];
+  /** The answers to the Pantry Questions in it (ADR 0020); read-only, nothing to apply. */
+  answers: PantryAnswer[];
 };
 
 /** The container types a browser's MediaRecorder produces (Chromium webm, Safari mp4, Firefox ogg). */

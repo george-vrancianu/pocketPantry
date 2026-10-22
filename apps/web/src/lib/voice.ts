@@ -87,10 +87,27 @@ export type VoiceReviewAction = {
   byList?: { shopping: VoiceReviewAction; pantry: VoiceReviewAction };
 };
 
+/**
+ * The answer to one Pantry Question (ADR 0020), as the server read it. Mirrors the API's
+ * `PantryAnswer`: `kind` is the discriminant, and each later kind (only expired, not sure, ...)
+ * is a new member carrying its own details.
+ */
+type VoiceAnswerBase = {
+  id: string;
+  /** What was said. */
+  text: string;
+  ingredient: CatalogSearchResult;
+};
+export type VoiceAnswer =
+  (VoiceAnswerBase & { kind: 'yes' }) | (VoiceAnswerBase & { kind: 'no' });
+export type VoiceAnswerKind = VoiceAnswer['kind'];
+
 export type VoiceNoteResult = {
   /** What was said. */
   transcript: string;
   actions: VoiceReviewAction[];
+  /** The answers to the Pantry Questions in it; read-only, nothing to apply. */
+  answers: VoiceAnswer[];
 };
 
 /** One applied Voice Action: the list it landed on and the row it touched. */

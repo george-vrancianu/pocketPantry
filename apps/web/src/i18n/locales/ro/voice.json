@@ -273,5 +273,15 @@
     "tipBusy": "Încă citesc ultima notă",
     "tipFailed": "Reîncearcă sau șterge mai întâi ultima notă",
     "noRecording": "Nu se poate înregistra aici"
+  },
+  "answers": {
+    "title": "Cămara ta",
+    "subline": "Nimic nu a fost schimbat",
+    "list": "Răspunsuri",
+    "verdict": {
+      "yes": "În cămara ta",
+      "no": "Nu e în cămara ta"
+    },
+    "done": "Gata"
   }
 }
