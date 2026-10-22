@@ -120,7 +120,7 @@ describe('Voice Notes on the Pantry page', () => {
     await recordAndSend({
       scanLanguage: 'ro',
       locale: 'en',
-      page: 'shopping',
+      defaultTarget: 'shopping',
     });
     renderInAppLayout(<PantryPage />, '/pantry');
 
@@ -140,7 +140,7 @@ describe('Voice Notes on the Pantry page', () => {
     await recordAndSend({
       scanLanguage: 'en',
       locale: 'en',
-      page: 'pantry',
+      defaultTarget: 'pantry',
     });
     renderInAppLayout(<PantryPage />, '/pantry');
     await screen.findByText('Reading your note');

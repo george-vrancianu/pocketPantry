@@ -5,7 +5,7 @@ import type {
   VoiceList,
   VoiceReviewAction,
 } from '../../lib/voice';
-import { displayName } from './reviewModel';
+import { displayName, leadingList } from './reviewModel';
 
 /** The longest the result names skipped actions before counting the rest. */
 const NAMED_SKIPS = 2;
@@ -44,8 +44,7 @@ export function applyToast(
       : [];
   });
 
-  // Off the lists there is no page list to name first: the Shopping List leads.
-  const page: VoiceList = target === 'none' ? 'shopping' : target;
+  const page = leadingList(target);
   const per = (list: VoiceList) =>
     result.applied.filter((entry) => entry.list === list).length;
   const other: VoiceList = page === 'shopping' ? 'pantry' : 'shopping';

@@ -14,7 +14,11 @@ const readOn = (reply: () => Response | Promise<Response>) => {
 
 /** Records a Voice Note from the fake microphone and lets go: the read starts. */
 const start = async () => {
-  await voiceNote.start({ page: 'shopping', scanLanguage: 'en', locale: 'en' });
+  await voiceNote.start({
+    defaultTarget: 'shopping',
+    scanLanguage: 'en',
+    locale: 'en',
+  });
   await voiceNote.stop();
 };
 const settled = () =>
@@ -33,13 +37,21 @@ describe('Voice Note notices at the app root', () => {
   it('says a recording was cancelled, but not when it is dropped quietly', async () => {
     renderWithProviders(<Elsewhere />);
     await act(() =>
-      voiceNote.start({ page: 'shopping', scanLanguage: 'en', locale: 'en' }),
+      voiceNote.start({
+        defaultTarget: 'shopping',
+        scanLanguage: 'en',
+        locale: 'en',
+      }),
     );
     act(() => voiceNote.cancel({ quiet: true }));
     expect(screen.queryByText('Cancelled. Nothing was sent.')).toBeNull();
 
     await act(() =>
-      voiceNote.start({ page: 'shopping', scanLanguage: 'en', locale: 'en' }),
+      voiceNote.start({
+        defaultTarget: 'shopping',
+        scanLanguage: 'en',
+        locale: 'en',
+      }),
     );
     act(() => voiceNote.cancel());
     expect(
@@ -51,7 +63,11 @@ describe('Voice Note notices at the app root', () => {
     readOn(() => new Promise<Response>(() => undefined));
     renderWithProviders(<Elsewhere />);
     await act(() =>
-      voiceNote.start({ page: 'shopping', scanLanguage: 'en', locale: 'en' }),
+      voiceNote.start({
+        defaultTarget: 'shopping',
+        scanLanguage: 'en',
+        locale: 'en',
+      }),
     );
     await act(() => vi.advanceTimersByTimeAsync(60_000));
     expect(

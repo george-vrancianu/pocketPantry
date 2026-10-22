@@ -138,7 +138,7 @@ export const recording: Recording = {
 export async function recordAndSend(options: {
   scanLanguage: 'en' | 'ro';
   locale: 'en' | 'ro';
-  page: 'shopping' | 'pantry';
+  defaultTarget: 'shopping' | 'pantry';
 }) {
   await voiceNote.start(options);
   await voiceNote.stop();

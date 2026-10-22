@@ -19,7 +19,7 @@ const recording = {
 const options = {
   scanLanguage: 'en',
   locale: 'en',
-  page: 'shopping',
+  defaultTarget: 'shopping',
 } as const;
 
 /** A live fake microphone session that stops with `audio`. */
@@ -40,7 +40,7 @@ async function record(
   startOptions: {
     scanLanguage: 'en' | 'ro';
     locale: 'en' | 'ro';
-    page: 'shopping' | 'pantry';
+    defaultTarget: 'shopping' | 'pantry';
   } = options,
 ) {
   await note.start(startOptions);
@@ -229,11 +229,11 @@ describe('Voice Note module', () => {
         await record(note, {
           scanLanguage: 'ro',
           locale: 'ro',
-          page: 'pantry',
+          defaultTarget: 'pantry',
         });
         expect(note.getState()).toMatchObject({
           phase: 'reading',
-          page: 'pantry',
+          defaultTarget: 'pantry',
         });
         expect(requests[0]).toMatchObject({
           recording,
@@ -246,7 +246,7 @@ describe('Voice Note module', () => {
         await settle();
         expect(note.getState()).toMatchObject({
           phase: 'review',
-          page: 'pantry',
+          defaultTarget: 'pantry',
           proposal: { transcript: 'milk and eggs' },
           recording: { scanLanguage: 'ro', durationMs: 2000 },
         });
@@ -493,7 +493,7 @@ describe('Voice Note module', () => {
       await record(ctx.note, {
         scanLanguage: 'ro',
         locale: 'en',
-        page: 'pantry',
+        defaultTarget: 'pantry',
       });
       ctx.refuse(new ApiError('network_error', 0));
       await settle();
@@ -510,7 +510,7 @@ describe('Voice Note module', () => {
       await second;
       expect(ctx.note.getState()).toMatchObject({
         phase: 'review',
-        page: 'pantry',
+        defaultTarget: 'pantry',
       });
     });
 
@@ -591,12 +591,15 @@ describe('Voice Note module', () => {
       vi.setSystemTime(new Date(2026, 9, 19, 12));
       try {
         const { note, startMicrophone } = setup();
-        const outcome = await note.start({ ...options, page: 'pantry' });
+        const outcome = await note.start({
+          ...options,
+          defaultTarget: 'pantry',
+        });
         expect(outcome).toBe('started');
         expect(startMicrophone).toHaveBeenCalledOnce();
         expect(note.getState()).toMatchObject({
           phase: 'recording',
-          page: 'pantry',
+          defaultTarget: 'pantry',
           startedAt: Date.now(),
         });
       } finally {
@@ -606,11 +609,15 @@ describe('Voice Note module', () => {
 
     it('sends what it recorded when the Member lets go', async () => {
       const { note, requests } = setup();
-      await note.start({ scanLanguage: 'ro', locale: 'ro', page: 'pantry' });
+      await note.start({
+        scanLanguage: 'ro',
+        locale: 'ro',
+        defaultTarget: 'pantry',
+      });
       expect(await note.stop()).toBe('sent');
       expect(note.getState()).toMatchObject({
         phase: 'reading',
-        page: 'pantry',
+        defaultTarget: 'pantry',
       });
       expect(note.getState().startedAt).toBeUndefined();
       expect(requests[0]).toMatchObject({

@@ -74,8 +74,8 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   const { refresh, showBlocked, showIntro } = mic;
 
   const begin = () => {
-    const { defaultTarget: page, scanLanguage, locale } = options.current;
-    return voiceNote.start({ page, scanLanguage, locale });
+    const { defaultTarget, scanLanguage, locale } = options.current;
+    return voiceNote.start({ defaultTarget, scanLanguage, locale });
   };
 
   // The module stops a recording at 60 seconds by itself: the pointer is still down, but the press is over.

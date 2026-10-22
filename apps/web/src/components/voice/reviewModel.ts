@@ -123,20 +123,32 @@ export type ReviewGroup = {
   actions: VoiceReviewAction[];
 };
 
+/** The list that leads a Review and its toast: the page's own, or the Shopping List off the lists (`none`). */
+export const leadingList = (defaultTarget: VoiceDefaultTarget): VoiceList =>
+  defaultTarget === 'none' ? 'shopping' : defaultTarget;
+
 /**
  * One group per list that has changes: the page's own list first, then the other. Off the lists (`none`) the
  * Shopping List comes first and nothing counts as named, since the page had no list to differ from.
  */
 export function groupsOf(
   actions: VoiceReviewAction[],
-  page: VoiceDefaultTarget,
+  defaultTarget: VoiceDefaultTarget,
 ): ReviewGroup[] {
   const order: VoiceList[] =
-    page === 'pantry' ? ['pantry', 'shopping'] : ['shopping', 'pantry'];
+    leadingList(defaultTarget) === 'pantry'
+      ? ['pantry', 'shopping']
+      : ['shopping', 'pantry'];
   return order.flatMap((list) => {
     const rows = actions.filter((a) => isChange(a) && a.target === list);
     return rows.length === 0
       ? []
-      : [{ list, named: page !== 'none' && list !== page, actions: rows }];
+      : [
+          {
+            list,
+            named: defaultTarget !== 'none' && list !== defaultTarget,
+            actions: rows,
+          },
+        ];
   });
 }
