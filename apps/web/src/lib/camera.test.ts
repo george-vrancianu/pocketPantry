@@ -1,6 +1,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cameraConstraints, FOCUS_POINT_Y, useCamera } from './camera';
+import {
+  cameraConstraints,
+  clampZoom,
+  FOCUS_POINT_Y,
+  useCamera,
+} from './camera';
 
 describe('cameraConstraints', () => {
   it('asks for the rear camera at an ideal (never exact) 1080p, in every Scan Mode', () => {
@@ -275,5 +280,75 @@ describe('focusForScan', () => {
       vi.useRealTimers();
       hook.unmount();
     }
+  });
+});
+
+describe('zoom', () => {
+  afterEach(() => Reflect.deleteProperty(navigator, 'mediaDevices'));
+
+  async function openCamera(capabilities: object | undefined) {
+    const applyConstraints = vi.fn(() => Promise.resolve());
+    const track = {
+      getCapabilities: capabilities ? () => capabilities : undefined,
+      applyConstraints,
+      stop: vi.fn(),
+    };
+    const stream = {
+      getVideoTracks: () => [track],
+      getTracks: () => [track],
+    } as unknown as MediaStream;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: { getUserMedia: () => Promise.resolve(stream) },
+      configurable: true,
+    });
+    const hook = renderHook(() => useCamera());
+    await waitFor(() => expect(hook.result.current.status).toBe('ready'));
+    return { hook, applyConstraints };
+  }
+
+  it('clamps a level to the capability range', () => {
+    const range = { min: 1, max: 1.5 };
+    expect(clampZoom(2, range)).toBe(1.5);
+    expect(clampZoom(0.5, range)).toBe(1);
+    expect(clampZoom(1.2, range)).toBe(1.2);
+  });
+
+  it('is unsupported without a zoom capability, and setZoom then does nothing', async () => {
+    const { hook, applyConstraints } = await openCamera({ torch: true });
+    expect(hook.result.current.zoomSupported).toBe(false);
+    expect(await hook.result.current.setZoom(2)).toBe(false);
+    expect(applyConstraints).not.toHaveBeenCalled();
+  });
+
+  it('is unsupported where the browser has no getCapabilities', async () => {
+    const { hook } = await openCamera(undefined);
+    expect(hook.result.current.zoomSupported).toBe(false);
+  });
+
+  it('applies the zoom constraint, clamped to the track range', async () => {
+    const { hook, applyConstraints } = await openCamera({
+      zoom: { min: 1, max: 1.5, step: 0.1 },
+    });
+    expect(hook.result.current.zoomSupported).toBe(true);
+    await act(async () => {
+      expect(await hook.result.current.setZoom(2)).toBe(true);
+    });
+    expect(applyConstraints).toHaveBeenLastCalledWith({
+      advanced: [{ zoom: 1.5 }],
+    });
+    await act(async () => {
+      await hook.result.current.setZoom(1);
+    });
+    expect(applyConstraints).toHaveBeenLastCalledWith({
+      advanced: [{ zoom: 1 }],
+    });
+  });
+
+  it('resolves false when the camera refuses the level', async () => {
+    const { hook, applyConstraints } = await openCamera({
+      zoom: { min: 1, max: 4 },
+    });
+    applyConstraints.mockRejectedValueOnce(new Error('refused'));
+    expect(await hook.result.current.setZoom(2)).toBe(false);
   });
 });

@@ -12,6 +12,8 @@ type Props = {
   right?: ReactNode;
   /** The mode slider (or whatever stands in for it). */
   slider: ReactNode;
+  /** The zoom pill, centred just above the bar; nothing where the camera cannot zoom. */
+  zoom?: ReactNode;
   /** Messages for the Member (reading, camera trouble, alerts), shown just above the bar so they never cover the guide. */
   status?: ReactNode;
 };
@@ -21,12 +23,36 @@ type Props = {
  * a `1fr auto 1fr` grid so the shutter never moves), then the mode slider, then the bottom safe area.
  * Both camera hosts mount it. Their messages sit right above the bar.
  */
-export function CameraFooter({ stack, shutter, right, slider, status }: Props) {
+export function CameraFooter({
+  stack,
+  shutter,
+  right,
+  slider,
+  status,
+  zoom,
+}: Props) {
   return (
     <Box
       data-testid="scan-footer"
       sx={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
     >
+      {zoom ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            // Clear of the status line that sits right above the bar.
+            bottom: 'calc(100% + 34px)',
+            display: 'flex',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            '& > *': { pointerEvents: 'auto' },
+          }}
+        >
+          {zoom}
+        </Box>
+      ) : null}
       {status ? (
         <Box
           sx={{

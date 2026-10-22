@@ -1,7 +1,7 @@
 import { Box, Typography, tokens, radius } from '@pocket-pantry/ui';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CAMERA_MODES } from '../../../lib/cameraMode';
+import { CAMERA_MODES, type CameraMode } from '../../../lib/cameraMode';
 import { glassFocusRing, shade, translucent } from './glass';
 
 const FOCUSABLE =
@@ -11,7 +11,17 @@ const FOCUSABLE =
  * The Info bottom sheet over the camera. Tab stays inside it, Escape or a scrim tap closes it,
  * and focus goes back to whatever opened it.
  */
-export function InfoSheet({ onClose }: { onClose: () => void }) {
+export function InfoSheet({
+  onClose,
+  modes = CAMERA_MODES,
+  stackTip = true,
+}: {
+  onClose: () => void;
+  /** The modes to describe, in slider order: the add-Batch camera has only Product and Barcode. */
+  modes?: readonly CameraMode[];
+  /** The tip about the photo stack; the add-Batch camera has no stack. */
+  stackTip?: boolean;
+}) {
   const { t } = useTranslation('scan');
   const sheet = useRef<HTMLDivElement>(null);
 
@@ -95,7 +105,7 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
           component="ul"
           sx={{ mt: 1.5, mb: 0, p: 0, listStyle: 'none', fontSize: 14 }}
         >
-          {CAMERA_MODES.map((mode) => (
+          {modes.map((mode) => (
             <Box component="li" key={mode} sx={{ mt: 0.75 }}>
               <strong>{t(`mode.${mode}`)}</strong>{' '}
               <Box component="span" sx={{ color: tokens.color.muted }}>
@@ -116,9 +126,11 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
             </Box>
           ))}
         </Box>
-        <Typography sx={{ mt: 1.5, fontSize: 14, color: tokens.color.muted }}>
-          {t('info.tip')}
-        </Typography>
+        {stackTip ? (
+          <Typography sx={{ mt: 1.5, fontSize: 14, color: tokens.color.muted }}>
+            {t('info.tip')}
+          </Typography>
+        ) : null}
         <Box
           component="button"
           type="button"
