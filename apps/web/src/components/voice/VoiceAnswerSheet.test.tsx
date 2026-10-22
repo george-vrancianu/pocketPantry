@@ -1,4 +1,10 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -48,6 +54,7 @@ describe('the answer sheet for Pantry Questions', () => {
     actions: {
       id: string;
       target?: string;
+      text?: string;
       op?: string;
       ingredientId?: string | null;
       name?: string | null;
@@ -58,18 +65,22 @@ describe('the answer sheet for Pantry Questions', () => {
   function setup(
     body: Record<string, unknown>,
     onList: { ingredientId: string | null; name: string }[] = [],
+    listGate: Promise<unknown> = Promise.resolve(),
   ) {
+    // The Shopping List as the server holds it: the apply stub adds to it.
+    const items = [...onList];
     calls = [];
     applyPayloads = [];
     const { fetchMock } = stubApi({
-      'GET /api/shopping-list': () =>
-        Response.json({
+      'GET /api/shopping-list': async () => {
+        await listGate;
+        return Response.json({
           id: 'l1',
-          groups: onList.length
+          groups: items.length
             ? [
                 {
                   aisle: null,
-                  items: onList.map((item, i) => ({
+                  items: items.map((item, i) => ({
                     id: `item-${i}`,
                     quantity: null,
                     unit: null,
@@ -80,8 +91,9 @@ describe('the answer sheet for Pantry Questions', () => {
                 },
               ]
             : [],
-          summary: { remaining: onList.length, checked: 0 },
-        }),
+          summary: { remaining: items.length, checked: 0 },
+        });
+      },
       'GET /api/pantry/recently-stocked': () =>
         Response.json({ ingredients: [] }),
       'GET /api/pantry': () => Response.json({ batches: [], runningLow: [] }),
@@ -91,8 +103,14 @@ describe('the answer sheet for Pantry Questions', () => {
           { transcript: 'Do we have milk and butter?', ...body },
           { status: 201 },
         ),
-      'POST /api/voice/apply': () =>
-        Response.json({
+      'POST /api/voice/apply': () => {
+        for (const a of applyPayloads.at(-1)?.actions ?? []) {
+          items.push({
+            ingredientId: a.ingredientId ?? null,
+            name: a.text ?? '',
+          });
+        }
+        return Response.json({
           applied: (applyPayloads.at(-1)?.actions ?? []).map((a) => ({
             actionId: a.id,
             list: 'shopping',
@@ -100,7 +118,8 @@ describe('the answer sheet for Pantry Questions', () => {
             alreadyDone: false,
           })),
           skipped: [],
-        }),
+        });
+      },
     });
     ({ sent } = stubVoiceFetch(fetchMock, (input, init) => {
       calls.push(String(input));
@@ -287,7 +306,7 @@ describe('the answer sheet for Pantry Questions', () => {
           within(card)
             .getAllByRole('button')
             .map((b) => b.textContent),
-        ).toEqual(['Add 1 to shopping list']);
+        ).toEqual(['Add 1 to the Shopping List']);
         expect(within(card).queryAllByRole('textbox')).toHaveLength(0);
         // Above the Voice Action rows.
         const rowsGroup = dialog.getByRole('region', { name: list });
@@ -365,8 +384,8 @@ describe('the answer sheet for Pantry Questions', () => {
     });
   });
 
-  // Spec: #464. "Add N to shopping list" on the sheet and on the Review answer card.
-  describe('Add N to shopping list', () => {
+  // Spec: #464. "Add N to the Shopping List" on the sheet and on the Review answer card.
+  describe('Add N to the Shopping List', () => {
     const eggs = voiceIngredient('ing-eggs', 'Eggs');
     const flour = voiceIngredient('ing-flour', 'Flour');
     const rice = voiceIngredient('ing-rice', 'Rice');
@@ -399,7 +418,7 @@ describe('the answer sheet for Pantry Questions', () => {
     ];
     const onList = [{ ingredientId: 'ing-oil', name: 'Oil' }];
     const addButton = (n: number) =>
-      screen.findByRole('button', { name: `Add ${n} to shopping list` });
+      screen.findByRole('button', { name: `Add ${n} to the Shopping List` });
 
     it.each([
       ['the Pantry page', <PantryPage key="p" />, '/pantry'],
@@ -435,7 +454,7 @@ describe('the answer sheet for Pantry Questions', () => {
         // No Undo (ADR 0017), and the sheet stays; the button is gone as nothing is left to add.
         expect(screen.queryByRole('button', { name: /undo/i })).toBeNull();
         expect(
-          dialog.queryByRole('button', { name: /to shopping list/ }),
+          dialog.queryByRole('button', { name: /to the Shopping List/ }),
         ).toBeNull();
         expect(
           dialog.getByRole('heading', { name: 'Your Pantry' }),
@@ -467,8 +486,49 @@ describe('the answer sheet for Pantry Questions', () => {
       await act(() => vi.advanceTimersByTimeAsync(10));
       expect(dialog.getAllByRole('listitem')).toHaveLength(4);
       expect(
-        dialog.queryByRole('button', { name: /to shopping list/ }),
+        dialog.queryByRole('button', { name: /to the Shopping List/ }),
       ).toBeNull();
+    });
+
+    it('shows the added rows on the Shopping List page after the add', async () => {
+      setup({ actions: [], answers: [short('q1', 'no', butter, false)] });
+      await ask(<ShoppingPage />, '/shopping');
+      expect(screen.queryByText('Butter', { selector: 'p, span' })).toBeNull();
+
+      await userEvent.click(await addButton(1));
+      await act(() => vi.advanceTimersByTimeAsync(10));
+
+      await waitFor(() =>
+        expect(
+          calls.filter((url) => url.includes('/shopping-list')).length,
+        ).toBeGreaterThan(1),
+      );
+      expect(
+        (await screen.findAllByText('Butter')).some(
+          (el) => !el.closest('[role="dialog"]'),
+        ),
+      ).toBe(true);
+    });
+
+    it('waits for the Shopping List before offering the button, so Running low is not overcounted', async () => {
+      let release: () => void = () => {};
+      setup(
+        {
+          actions: [],
+          answers: [short('q1', 'no', butter, false), yes('q2', oil, true)],
+        },
+        onList,
+        new Promise<void>((resolve) => (release = resolve)),
+      );
+      const dialog = within(await ask(<p>home</p>, '/'));
+      expect(dialog.getAllByRole('listitem')).toHaveLength(2);
+      expect(
+        dialog.queryByRole('button', { name: /to the Shopping List/ }),
+      ).toBeNull();
+
+      release();
+      await act(() => vi.advanceTimersByTimeAsync(10));
+      expect(await addButton(1)).toBeVisible();
     });
 
     it('adds from the Review answer card without applying or discarding the other Voice Actions', async () => {
@@ -506,7 +566,7 @@ describe('the answer sheet for Pantry Questions', () => {
       const card = within(dialog.getByRole('region', { name: 'Your Pantry' }));
 
       await userEvent.click(
-        card.getByRole('button', { name: 'Add 3 to shopping list' }),
+        card.getByRole('button', { name: 'Add 3 to the Shopping List' }),
       );
       await act(() => vi.advanceTimersByTimeAsync(10));
 
@@ -522,7 +582,7 @@ describe('the answer sheet for Pantry Questions', () => {
       expect(dialog.getByRole('heading', { name: 'Review' })).toBeVisible();
       expect(card.getAllByRole('listitem')).toHaveLength(6);
       expect(
-        card.queryByRole('button', { name: /to shopping list/ }),
+        card.queryByRole('button', { name: /to the Shopping List/ }),
       ).toBeNull();
       expect(
         dialog.getByRole('button', { name: 'Pick a list first' }),

@@ -12,7 +12,7 @@ import {
 } from '../../lib/voice';
 import { voiceToast } from '../../lib/voicePlacement';
 import { shoppingListChangeQueryKeys } from '../../lib/queryKeys';
-import { useShoppingList } from '../../lib/shopping';
+import { shoppingListQueryKey, useShoppingList } from '../../lib/shopping';
 import { useVoiceNoteState } from '../../lib/voiceNote';
 import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
 import { applyToast } from './applyResult';
@@ -22,14 +22,16 @@ const ADD_TOAST_MS = 5200;
 
 /** The answers the Member is out of or running short of: no, only expired, or yes but Running low. */
 const isShort = (answer: VoiceAnswer) =>
-  answer.kind === 'yes' ? answer.runningLow : true;
+  answer.kind === 'no' ||
+  answer.kind === 'onlyExpired' ||
+  (answer.kind === 'yes' && answer.runningLow);
 
 /**
  * The answers worth adding to the Shopping List: the ones that are short and not on it already.
  * `no` and `onlyExpired` answers say whether they are; a Running low `yes` does not, so `onList`
  * (the Ingredients on the Shopping List, any line) decides for it.
  */
-export function answersToAdd(
+function answersToAdd(
   answers: VoiceAnswer[],
   onList: ReadonlySet<string>,
   added: ReadonlySet<string> = new Set(),
@@ -96,7 +98,7 @@ export function AddToShoppingListButton({
   const add = useMutation({
     mutationFn: (batch: VoiceAnswer[]) =>
       applyVoiceActions(batch.map(addAction), locale),
-    onSuccess: (result: VoiceApplyResult, batch) => {
+    onSuccess: async (result: VoiceApplyResult, batch) => {
       const { message, detail } = applyToast(
         result,
         batch.map(addAction),
@@ -105,6 +107,18 @@ export function AddToShoppingListButton({
         i18n.language,
       );
       setAdded((current) => new Set([...current, ...batch.map((a) => a.id)]));
+      toast.show(message, {
+        ...voiceToast(),
+        detail,
+        duration: ADD_TOAST_MS,
+      });
+      onAdded?.();
+      // The rows exist once the list is refetched; only then is there something to flash.
+      await Promise.all(
+        [shoppingListQueryKey, ...shoppingListChangeQueryKeys].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
       if (defaultTarget === 'shopping') {
         flashRows(
           result.applied.flatMap(
@@ -112,21 +126,11 @@ export function AddToShoppingListButton({
           ),
         );
       }
-      toast.show(message, {
-        ...voiceToast(),
-        detail,
-        duration: ADD_TOAST_MS,
-      });
-      void Promise.all(
-        shoppingListChangeQueryKeys.map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey }),
-        ),
-      );
-      onAdded?.();
     },
   });
 
-  if (wanted.length === 0) return null;
+  // Until the list is known a Running low Ingredient may already be on it, so the count would be too high.
+  if (!list.isSuccess || wanted.length === 0) return null;
   return (
     <Box sx={{ mt: '10px' }}>
       {add.isError ? <Alert>{translateApiError(t, add.error)}</Alert> : null}

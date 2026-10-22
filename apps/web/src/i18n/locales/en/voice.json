@@ -278,7 +278,7 @@
     "done": "Done",
     "onShoppingList": "Already on your Shopping List",
     "expiringSoon": "Expiring soon",
-    "addToList_one": "Add {{count}} to shopping list",
-    "addToList_other": "Add {{count}} to shopping list"
+    "addToList_one": "Add {{count}} to the Shopping List",
+    "addToList_other": "Add {{count}} to the Shopping List"
   }
 }
