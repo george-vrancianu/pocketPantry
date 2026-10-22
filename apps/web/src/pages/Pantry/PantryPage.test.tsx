@@ -2814,9 +2814,9 @@ describe('PantryPage', () => {
           const scrollBy = await openWithBottomAt(760);
           expect(scrollBy).not.toHaveBeenCalled();
           await act(() => vi.advanceTimersByTimeAsync(300));
-          // 800 tall, the Dock and its gap take the bottom 100, and 14 more to breathe.
+          // 800 tall, the Dock and its gap take the bottom 130 with the capsule's overhang, and 14 more to breathe.
           expect(scrollBy).toHaveBeenCalledWith({
-            top: 74,
+            top: 104,
             behavior: 'smooth',
           });
         });
@@ -2825,7 +2825,7 @@ describe('PantryPage', () => {
           stubMotion(true);
           const scrollBy = await openWithBottomAt(760);
           await act(() => vi.advanceTimersByTimeAsync(300));
-          expect(scrollBy).toHaveBeenCalledWith({ top: 74, behavior: 'auto' });
+          expect(scrollBy).toHaveBeenCalledWith({ top: 104, behavior: 'auto' });
         });
 
         it('leaves the page alone when the card is clear of the Dock', async () => {

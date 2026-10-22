@@ -555,7 +555,7 @@ describe('the recording gesture on the Shopping List', () => {
   });
 
   describe('keyboard order', () => {
-    it('tabs from the page to the Scan Language chip, then the button, then the Dock', async () => {
+    it('tabs from the page to the Scan Language chip, then through the Dock, camera before mic', async () => {
       setup();
       renderInAppLayout(<ShoppingPage />, '/shopping');
       const chip = await screen.findByRole('button', {
@@ -563,6 +563,7 @@ describe('the recording gesture on the Shopping List', () => {
       });
       const button = await talkButton();
       const dock = screen.getByRole('navigation');
+      const camera = screen.getByRole('link', { name: 'Camera' });
 
       chip.focus();
       // Before the chip is the page itself.
@@ -573,13 +574,12 @@ describe('the recording gesture on the Shopping List', () => {
       await userEvent.tab();
       expect(chip).toHaveFocus();
       await userEvent.tab();
-      expect(button).toHaveFocus();
-      await userEvent.tab();
       expect(dock.contains(document.activeElement)).toBe(true);
-      await userEvent.tab({ shift: true });
+      camera.focus();
+      await userEvent.tab();
       expect(button).toHaveFocus();
       await userEvent.tab({ shift: true });
-      expect(chip).toHaveFocus();
+      expect(camera).toHaveFocus();
     });
   });
 });

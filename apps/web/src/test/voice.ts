@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { vi } from 'vitest';
 import type { Recording } from '../lib/microphone';
 import { voiceNote } from '../lib/voiceNote';
@@ -153,8 +153,11 @@ export function fakeSession() {
   };
 }
 
-export const talkButton = () =>
-  screen.findByRole('button', { name: /hold to record a voice note/i });
+/** The mic half of the Dock's capsule: the one place a Voice Note is recorded from. */
+export const talkButton = async () =>
+  within(await screen.findByRole('navigation')).findByRole('button', {
+    name: /hold to record a voice note/i,
+  });
 
 /** Press the voice button, wait for Listening and hold past a tap; the button is returned still held. */
 export async function hold({

@@ -4,14 +4,11 @@ import { dockStateFor } from '../lib/dockState';
 import { ApplyMemberLocale } from './ApplyMemberLocale';
 import { ApplyMemberTheme } from './ApplyMemberTheme';
 import { AppDock } from './AppDock';
-import { defaultListFor, VoiceNote } from './VoiceNote';
+import { VoiceNote } from './VoiceNote';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
 
 /** The line editor, whose tablet layout is a wide table (the overview of cards is not). */
 const isWide = (pathname: string) => pathname.startsWith('/scan/review/');
-
-/** The pages with the floating Voice Note button, which need extra room to scroll clear of it. */
-const hasVoiceButton = (pathname: string) => defaultListFor(pathname) !== null;
 
 /** The signed-in shell: page frame plus the Dock for the current route. */
 export function AppLayout() {
@@ -22,11 +19,7 @@ export function AppLayout() {
       <ApplyMemberLocale />
       <ApplyMemberTheme />
       <VoiceHostProvider>
-        <PageLayout
-          withDock={dock.visible}
-          wide={isWide(pathname)}
-          floatingControl={hasVoiceButton(pathname)}
-        >
+        <PageLayout withDock={dock.visible} wide={isWide(pathname)}>
           <Outlet />
         </PageLayout>
         <VoiceHostSlot />

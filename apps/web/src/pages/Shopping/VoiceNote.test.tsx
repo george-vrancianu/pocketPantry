@@ -301,8 +301,8 @@ describe('Voice Note on the Shopping List', () => {
         .flatMap((sheet) => Array.from(sheet.cssRules))
         .map((rule) => rule.cssText)
         .join('\n');
-    // 62 px button + 22 px gap + 60 px pill + 8 px air.
-    const clearOfPill = /bottom: calc\(152px \+/;
+    // 36 px chip row + 22 px gap + 60 px pill + 8 px air.
+    const clearOfPill = /bottom: calc\(126px \+/;
 
     it('lets taps through the tip and lifts it clear of the pill while reading', async () => {
       setup({ note: never });
@@ -1453,17 +1453,17 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     await waitFor(() => expect(screen.queryByText('3 applied')).toBeNull());
   });
 
-  it('puts the result toast clear of the voice button', async () => {
+  it('puts the result toast clear of the Dock mic', async () => {
     setupReview(threeAdds);
     await applyAll();
     await screen.findByText('3 applied');
     // jsdom's getComputedStyle ignores the responsive (media query) `bottom`, so the rule text is the only
-    // place to read it; kept loose on purpose. 62 px button + 10 px gap above it, rather than just above the Dock.
+    // place to read it; kept loose on purpose. 36 px chip row + 10 px gap above the capsule, rather than just above the Dock.
     const css = Array.from(document.styleSheets)
       .flatMap((sheet) => Array.from(sheet.cssRules))
       .map((rule) => rule.cssText)
       .join('\n');
-    expect(css).toMatch(/MuiSnackbar-root \{ bottom: calc\(72px \+/);
+    expect(css).toMatch(/MuiSnackbar-root \{ bottom: calc\(46px \+/);
   });
 
   it('puts focus on the voice button after Apply and after Discard', async () => {

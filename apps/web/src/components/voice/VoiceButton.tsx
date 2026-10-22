@@ -1,28 +1,27 @@
 import {
   Box,
   color,
+  focusRing,
   MicIcon,
   MicOffIcon,
   palette,
   radius,
-  shadow,
   visuallyHidden,
 } from '@pocket-pantry/ui';
-import { useId } from 'react';
+import { useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { MAX_VOICE_NOTE_MS, type VoiceList } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { usePressGesture } from '../../lib/usePressGesture';
 import { LanguageMenu } from './LanguageMenu';
-import { useVoiceHost } from './VoiceHost';
+import { useDockMicSlot, useReportRecording, useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
 import { useElapsedMs } from './useElapsed';
 import {
   abovePill,
-  aboveButton,
-  BUTTON_SIZE,
-  buttonBottom,
+  aboveMic,
+  micBottom,
   VOICE_LAYER,
 } from '../../lib/voicePlacement';
 import { isPillUp, useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
@@ -31,8 +30,8 @@ import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 type Voice = ReturnType<typeof useVoiceNote>;
 
 /**
- * The round hold-to-talk button bottom-right above the Dock (handoff variant B), with the Scan
- * Language chip to its left, the page scrim, the progress ring and the Listening card.
+ * The hold-to-talk mic: the button sits in the lower half of the Dock's capsule, and the Scan
+ * Language chip above it, with the page scrim and the Listening card.
  */
 export function VoiceButton({
   voice,
@@ -48,6 +47,12 @@ export function VoiceButton({
   const pillUp = isPillUp(phase);
 
   const host = useVoiceHost();
+  const micSlot = useDockMicSlot();
+  const reportRecording = useReportRecording();
+  useEffect(() => {
+    reportRecording(active);
+    return () => reportRecording(false);
+  }, [active, reportRecording]);
   const destinationId = useId();
   const blockedId = useId();
   const { armed, buttonProps } = usePressGesture({
@@ -57,7 +62,7 @@ export function VoiceButton({
     cancel: voice.cancel,
   });
 
-  return createPortal(
+  const overlay = createPortal(
     <>
       {active ? (
         <Box
@@ -76,8 +81,11 @@ export function VoiceButton({
           role="status"
           sx={{
             position: 'fixed',
-            right: 18,
-            bottom: pillUp ? abovePill : aboveButton(10),
+            left: 0,
+            right: 0,
+            mx: 'auto',
+            width: 'fit-content',
+            bottom: pillUp ? abovePill : aboveMic(10),
             zIndex: VOICE_LAYER.card,
             // A hint, never a target: taps reach whatever is under it.
             pointerEvents: 'none',
@@ -110,12 +118,15 @@ export function VoiceButton({
       <Box
         sx={{
           position: 'fixed',
-          right: 18,
-          bottom: buttonBottom,
-          zIndex: VOICE_LAYER.button,
+          left: 0,
+          right: 0,
+          bottom: micBottom,
+          zIndex: VOICE_LAYER.card,
           display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
+          justifyContent: 'center',
+          // Only the chip takes taps; the row around it lets them through.
+          pointerEvents: 'none',
+          '& > *': { pointerEvents: 'auto' },
         }}
       >
         <LanguageMenu
@@ -123,87 +134,101 @@ export function VoiceButton({
           disabled={active || voice.sending}
           onChange={voice.setScanLanguage}
         />
-        <Box component="span" id={destinationId} hidden sx={visuallyHidden}>
-          {target === 'pantry'
-            ? t('listening.toPantry')
-            : t('listening.toShopping')}
-        </Box>
-        <Box component="span" id={blockedId} hidden sx={visuallyHidden}>
-          {t('voiceButton.blocked')}
-        </Box>
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('voiceButton.label')}
-          {...{ [VOICE_BUTTON_ATTRIBUTE]: '' }}
-          aria-pressed={voice.recording}
-          aria-describedby={
-            voice.mic.blocked ? `${destinationId} ${blockedId}` : destinationId
-          }
-          {...buttonProps}
-          sx={{
-            position: 'relative',
-            width: BUTTON_SIZE,
-            height: BUTTON_SIZE,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            p: 0,
-            border: 0,
-            borderRadius: '50%',
-            backgroundColor: armed
-              ? `color-mix(in srgb, ${palette('text-primary')} 55%, ${color.cardBg})`
-              : active
-                ? color.rec
-                : 'pp.accent',
-            color: active ? 'pp.cardBg' : 'pp.accentInk',
-            boxShadow: shadow.float,
-            cursor: 'pointer',
-            // The Voice Cap is used up, or the microphone is blocked: the press shows why.
-            opacity: voice.capped || voice.mic.blocked ? 0.55 : 1,
-            transform: armed ? 'scale(.9)' : active ? 'scale(1.14)' : 'none',
-            transition:
-              'transform 180ms cubic-bezier(.2,.8,.2,1), background-color 180ms cubic-bezier(.2,.8,.2,1)',
-            // A held press must not scroll, select or open the context menu.
-            touchAction: 'none',
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
-            WebkitTouchCallout: 'none',
-            '@media (prefers-reduced-motion: reduce)': {
-              transition: 'background-color 180ms',
-              transform: 'none',
-            },
-          }}
-        >
-          {voice.recording ? <ProgressRing startedAt={startedAt} /> : null}
-          {voice.mic.blocked ? <MicOffIcon size={27} /> : <MicIcon size={27} />}
-          {voice.kept ? (
-            <Box
-              aria-hidden
-              data-testid="failed-dot"
-              component="span"
-              sx={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                backgroundColor: palette('warning-main'),
-                border: `2px solid ${color.cardBg}`,
-                boxSizing: 'content-box',
-              }}
-            />
-          ) : null}
-        </Box>
       </Box>
     </>,
     host,
   );
+  const button = micSlot
+    ? createPortal(
+        <>
+          <Box component="span" id={destinationId} hidden sx={visuallyHidden}>
+            {target === 'pantry'
+              ? t('listening.toPantry')
+              : t('listening.toShopping')}
+          </Box>
+          <Box component="span" id={blockedId} hidden sx={visuallyHidden}>
+            {t('voiceButton.blocked')}
+          </Box>
+          <Box
+            component="button"
+            type="button"
+            aria-label={t('voiceButton.label')}
+            {...{ [VOICE_BUTTON_ATTRIBUTE]: '' }}
+            aria-pressed={voice.recording}
+            aria-describedby={
+              voice.mic.blocked
+                ? `${destinationId} ${blockedId}`
+                : destinationId
+            }
+            {...buttonProps}
+            sx={[
+              {
+                position: 'relative',
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                p: 0,
+                border: 0,
+                borderRadius: `0 0 ${radius.pill} ${radius.pill}`,
+                backgroundColor: armed
+                  ? `color-mix(in srgb, ${palette('text-primary')} 55%, ${color.cardBg})`
+                  : active
+                    ? color.rec
+                    : 'transparent',
+                color: active ? 'pp.cardBg' : 'inherit',
+                cursor: 'pointer',
+                // The Voice Cap is used up, or the microphone is blocked: the press shows why.
+                opacity: voice.capped || voice.mic.blocked ? 0.55 : 1,
+                transition: 'background-color 180ms cubic-bezier(.2,.8,.2,1)',
+                // A held press must not scroll, select or open the context menu.
+                touchAction: 'none',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none',
+              },
+              focusRing,
+            ]}
+          >
+            {voice.recording ? <ProgressBar startedAt={startedAt} /> : null}
+            {voice.mic.blocked ? (
+              <MicOffIcon size={26} />
+            ) : (
+              <MicIcon size={26} />
+            )}
+            {voice.kept ? (
+              <Box
+                aria-hidden
+                data-testid="failed-dot"
+                component="span"
+                sx={{
+                  position: 'absolute',
+                  top: 6,
+                  right: 8,
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  backgroundColor: palette('warning-main'),
+                  border: `2px solid ${color.cardBg}`,
+                  boxSizing: 'content-box',
+                }}
+              />
+            ) : null}
+          </Box>
+        </>,
+        micSlot,
+      )
+    : null;
+  return (
+    <>
+      {overlay}
+      {button}
+    </>
+  );
 }
 
-/** The ring around the button that fills over the 60 seconds, on its own clock. */
-function ProgressRing({ startedAt }: { startedAt?: number }) {
+/** The bar along the mic's bottom edge that fills over the 60 seconds, on its own clock. */
+function ProgressBar({ startedAt }: { startedAt?: number }) {
   const progress = Math.min(1, useElapsedMs(startedAt) / MAX_VOICE_NOTE_MS);
   return (
     <Box
@@ -211,13 +236,13 @@ function ProgressRing({ startedAt }: { startedAt?: number }) {
       data-testid="progress-ring"
       sx={{
         position: 'absolute',
-        inset: -7,
-        borderRadius: '50%',
+        left: 10,
+        right: 10,
+        bottom: 5,
+        height: 4,
+        borderRadius: radius.pill,
         pointerEvents: 'none',
-        background: `conic-gradient(${color.rec} 0 ${progress * 360}deg, color-mix(in srgb, ${color.rec} 18%, transparent) 0)`,
-        mask: 'radial-gradient(farthest-side, transparent calc(100% - 4px), currentColor calc(100% - 3px))',
-        WebkitMask:
-          'radial-gradient(farthest-side, transparent calc(100% - 4px), currentColor calc(100% - 3px))',
+        background: `linear-gradient(to right, ${color.cardBg} ${progress * 100}%, color-mix(in srgb, ${color.cardBg} 30%, transparent) 0)`,
       }}
     />
   );
