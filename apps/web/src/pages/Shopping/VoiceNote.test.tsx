@@ -26,7 +26,7 @@ import {
   pressDown,
   useVoiceTimers,
 } from '../../test/voiceHold';
-import { renderWithProviders, stubApi } from '../../test/render';
+import { renderInAppLayout, stubApi } from '../../test/render';
 import { stubMotion } from '../../test/viewport';
 import { resetRowFlash } from '../../lib/rowFlash';
 import { voiceNote } from '../../lib/voiceNote';
@@ -72,7 +72,7 @@ describe('Voice Note on the Shopping List', () => {
 
   it('is hidden when voice is not configured', async () => {
     setup({ configured: false });
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
     await screen.findByText('Your list is empty');
     expect(
       screen.queryByRole('button', { name: /hold to record a voice note/i }),
@@ -81,7 +81,7 @@ describe('Voice Note on the Shopping List', () => {
 
   it('records while held, shows the elapsed time, and sends on release', async () => {
     const { sent } = setup();
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
 
     const button = await hold();
     expect(screen.getByRole('status')).toHaveTextContent(/Listening\s*0:00/);
@@ -117,7 +117,7 @@ describe('Voice Note on the Shopping List', () => {
     mic.start.mockImplementation(
       () => new Promise((resolve) => (ready = resolve)),
     );
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
 
     const button = await talkButton();
     pressDown(button);
@@ -138,7 +138,7 @@ describe('Voice Note on the Shopping List', () => {
     mic.start.mockImplementation(
       () => new Promise((resolve) => (ready = resolve)),
     );
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
 
     pressDown(await talkButton());
     expect(await screen.findByText('Starting…')).toBeVisible();
@@ -151,7 +151,7 @@ describe('Voice Note on the Shopping List', () => {
 
   it('treats a release under 0.3 s as a tap: nothing sent, and a tip', async () => {
     const { sent } = setup();
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
 
     const button = await talkButton();
     pressDown(button);
@@ -175,7 +175,7 @@ describe('Voice Note on the Shopping List', () => {
   it('counts 299 ms as a tap and 300 ms as a Voice Note', async () => {
     // A clock that only moves when told to, so the boundary is exact.
     const { sent } = setup();
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
     const button = await talkButton();
     vi.useFakeTimers();
 
@@ -199,7 +199,7 @@ describe('Voice Note on the Shopping List', () => {
   it('ends with the tip, not an Alert, when the microphone recorded too little', async () => {
     const { sent } = setup();
     session.stop.mockResolvedValue({ ...recording, durationMs: 200 });
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
     const button = await talkButton();
 
     pressDown(button);
@@ -220,7 +220,7 @@ describe('Voice Note on the Shopping List', () => {
     mic.start.mockImplementation(
       () => new Promise((resolve) => (ready = resolve)),
     );
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
     const button = await talkButton();
 
     pressDown(button);
@@ -242,7 +242,7 @@ describe('Voice Note on the Shopping List', () => {
   it('drives the meter from the microphone level and names the target list', async () => {
     setup();
     session.level.mockReturnValue(1);
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
 
     await hold();
     await act(() => vi.advanceTimersByTimeAsync(200));
@@ -267,7 +267,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('reads in a polite pill with the speech length and language, and the page stays usable', async () => {
       setup({ note: never });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
 
       fireEvent.pointerUp(await hold());
 
@@ -280,7 +280,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('Cancel aborts the request, closes the pill and says nothing was saved', async () => {
       const { signals } = setup({ note: never });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       await screen.findByText('Reading your note');
 
@@ -306,7 +306,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('lets taps through the tip and lifts it clear of the pill while reading', async () => {
       setup({ note: never });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       await screen.findByText('Reading your note');
 
@@ -324,7 +324,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('puts the 60 second stop toast clear of the Reading pill and its Cancel', async () => {
       setup({ note: never });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       await hold();
       await act(() => vi.advanceTimersByTimeAsync(60_000));
 
@@ -346,7 +346,7 @@ describe('Voice Note on the Shopping List', () => {
             ? error('voice.provider_unavailable', 502)
             : error('voice.too_long', 413),
       });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       const button = await talkButton();
 
@@ -371,7 +371,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('puts focus back on the voice button when Cancel ends a read', async () => {
       setup({ note: never });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       const button = await talkButton();
 
@@ -384,7 +384,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('tells a press while reading that the last note is still being read', async () => {
       setup({ note: never });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       await screen.findByText('Reading your note');
       mic.start.mockClear();
@@ -399,7 +399,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('closes the pill and opens Review on success', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       expect(await screen.findByRole('dialog')).toBeVisible();
       expect(screen.queryByText('Reading your note')).toBeNull();
@@ -407,7 +407,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('keeps a recording that failed to send in an alert with Discard and Retry', async () => {
       setup({ note: () => error('voice.provider_unavailable', 502) });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
 
       fireEvent.pointerUp(await hold());
 
@@ -426,7 +426,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('names an unexpected failure in the alert, keeping the recording for Retry', async () => {
       setup({ note: () => error('scan.cap_reached', 429, { cap: 5 }) });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
 
       fireEvent.pointerUp(await hold());
 
@@ -446,7 +446,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('falls back to the generic message for an unknown failure code', async () => {
       setup({ note: () => error('nonsense.code', 500) });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
 
       fireEvent.pointerUp(await hold());
 
@@ -461,7 +461,7 @@ describe('Voice Note on the Shopping List', () => {
         note: () =>
           ++attempt === 1 ? error('voice.provider_unavailable', 502) : never(),
       });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
 
       await userEvent.click(
@@ -476,7 +476,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('puts a language-change toast clear of a failed pill and its Retry', async () => {
       setup({ note: () => error('voice.provider_unavailable', 502) });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       await screen.findByRole('alert');
 
@@ -500,7 +500,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('leaves focus alone when the pill closes with focus outside it', async () => {
       setup({ note: () => error('voice.nothing_heard', 422) });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       await screen.findByText("Didn't catch anything, try again");
       const chip = screen.getByRole('button', { name: /Scan Language/ });
@@ -514,7 +514,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('tells a press while a failed note waits to retry or discard it first', async () => {
       setup({ note: () => error('voice.provider_unavailable', 502) });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       await screen.findByRole('alert');
       mic.start.mockClear();
@@ -530,7 +530,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('says nothing was heard in a polite pill that closes itself after 3.6 seconds', async () => {
       setup({ note: () => error('voice.nothing_heard', 422) });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
 
       fireEvent.pointerUp(await hold());
 
@@ -556,7 +556,7 @@ describe('Voice Note on the Shopping List', () => {
         setup({
           note: capReached(new Date(Date.now() + 3_600_000).toISOString(), 37),
         });
-        renderWithProviders(<ShoppingPage />);
+        renderInAppLayout(<ShoppingPage />, '/shopping');
 
         fireEvent.pointerUp(await hold());
 
@@ -580,7 +580,7 @@ describe('Voice Note on the Shopping List', () => {
         setup({
           note: capReached(new Date(Date.now() + 60_000).toISOString()),
         });
-        renderWithProviders(<ShoppingPage />);
+        renderInAppLayout(<ShoppingPage />, '/shopping');
         fireEvent.pointerUp(await hold());
         await userEvent.click(
           within(await screen.findByRole('alert')).getByRole('button', {
@@ -609,7 +609,7 @@ describe('Voice Note on the Shopping List', () => {
 
     it('offers only Discard when the recording was too long, closing without a "discarded" toast', async () => {
       setup({ note: () => error('voice.too_long', 413) });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
 
       const alert = await screen.findByRole('alert');
@@ -631,7 +631,7 @@ describe('Voice Note on the Shopping List', () => {
         .spyOn(console, 'error')
         .mockImplementation(() => undefined);
       setup({ note: () => error('voice.unsupported_audio', 415) });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
 
       const alert = await screen.findByRole('alert');
@@ -651,7 +651,7 @@ describe('Voice Note on the Shopping List', () => {
     it('says the browser cannot record, with only OK', async () => {
       setup();
       mic.start.mockRejectedValue(new MicrophoneError('unavailable'));
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
 
       pressDown(await talkButton());
 
@@ -667,7 +667,7 @@ describe('Voice Note on the Shopping List', () => {
 
   it('changes the stored Scan Language from the chip menu, with a toast', async () => {
     setup();
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
 
     const chip = await screen.findByRole('button', {
       name: 'Scan Language: English. Change',
@@ -701,7 +701,7 @@ describe('Voice Note on the Shopping List', () => {
 
   it('closes the language menu with Escape and returns focus to the chip', async () => {
     setup();
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
     const chip = await screen.findByRole('button', {
       name: 'Scan Language: English. Change',
     });
@@ -717,7 +717,7 @@ describe('Voice Note on the Shopping List', () => {
       JSON.stringify({ locale: 'en', language: 'ro' }),
     );
     const { sent } = setup();
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
 
     const chip = await screen.findByRole('button', {
       name: 'Scan Language: Română. Change',
@@ -835,7 +835,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
   }
 
   async function openReview() {
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
     const button = await talkButton();
     pressDown(button);
     await screen.findByText('Listening');

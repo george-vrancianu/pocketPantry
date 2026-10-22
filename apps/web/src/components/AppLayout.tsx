@@ -4,6 +4,7 @@ import { dockStateFor } from '../lib/dockState';
 import { ApplyMemberLocale } from './ApplyMemberLocale';
 import { ApplyMemberTheme } from './ApplyMemberTheme';
 import { AppDock } from './AppDock';
+import { VoiceNote } from './VoiceNote';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
 
 /** The line editor, whose tablet layout is a wide table (the overview of cards is not). */
@@ -30,6 +31,7 @@ export function AppLayout() {
           <Outlet />
         </PageLayout>
         <VoiceHostSlot />
+        <VoiceNote />
         {dock.visible ? <AppDock activeKey={dock.activeKey} /> : null}
       </VoiceHostProvider>
     </>

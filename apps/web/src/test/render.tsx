@@ -3,7 +3,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { I18nextProvider } from 'react-i18next';
-import { MemoryRouter, type InitialEntry } from 'react-router-dom';
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  type InitialEntry,
+} from 'react-router-dom';
+import { AppLayout } from '../components/AppLayout';
 import { VoiceNotices } from '../components/voice/VoiceNotices';
 import { createI18n, type Locale } from '../i18n';
 import { RouterLink } from '../lib/RouterLink';
@@ -32,6 +38,22 @@ export function renderWithProviders(
     </I18nextProvider>,
   );
   return { ...result, i18n, queryClient };
+}
+
+/** Render a page inside the app layout at its route, as the app does (the Voice Note lives in the layout). */
+export function renderInAppLayout(
+  page: ReactElement,
+  path: string,
+  options: Omit<Options, 'route'> = {},
+) {
+  return renderWithProviders(
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route path={path} element={page} />
+      </Route>
+    </Routes>,
+    { ...options, route: path },
+  );
 }
 
 /** A fetch stub that answers by method and path, e.g. `'POST /api/auth/sign-in/email'`. */

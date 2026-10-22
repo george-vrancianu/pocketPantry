@@ -1,8 +1,14 @@
 import { screen } from '@testing-library/react';
+import { vi } from 'vitest';
+import {
+  resetVoiceEnvironment,
+  stubVoiceFetch,
+  talkButton,
+} from '../test/voice';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { paintedColour } from '@pocket-pantry/ui/test/colour';
-import { renderWithProviders } from '../test/render';
+import { renderWithProviders, stubApi } from '../test/render';
 import { AppLayout } from './AppLayout';
 
 function renderAt(route: string) {
@@ -16,6 +22,7 @@ function renderAtView(route: string) {
         <Route path="/scan" element={<p>camera</p>} />
         <Route path="/pantry" element={<p>pantry</p>} />
         <Route path="/recipes" element={<p>recipes</p>} />
+        <Route path="/shopping" element={<p>shopping</p>} />
       </Route>
     </Routes>,
     { route },
@@ -68,5 +75,39 @@ describe('AppLayout Dock', () => {
       'RGBA(0, 0, 0, 0)',
     );
     expect(paintedColour(inactive, 'color')).toBe('#97A69B');
+  });
+});
+
+describe('AppLayout Voice Note host', () => {
+  beforeEach(() => {
+    resetVoiceEnvironment();
+    const { fetchMock } = stubApi({
+      'GET /api/voice/config': () => Response.json({ configured: true }),
+    });
+    stubVoiceFetch(fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it.each(['/shopping', '/pantry'])(
+    'shows the mic once on %s',
+    async (route) => {
+      renderAt(route);
+      expect(await talkButton()).toBeInTheDocument();
+      expect(
+        screen.getAllByRole('button', { name: /hold to record a voice note/i }),
+      ).toHaveLength(1);
+    },
+  );
+
+  it('shows no mic on other screens', async () => {
+    renderAt('/recipes');
+    expect(await screen.findByText('recipes')).toBeInTheDocument();
+    await Promise.resolve();
+    expect(
+      screen.queryByRole('button', { name: /hold to record a voice note/i }),
+    ).toBeNull();
   });
 });

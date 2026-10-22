@@ -1,4 +1,3 @@
-import { VoiceNote } from '../../components/VoiceNote';
 import {
   Alert,
   Button,
@@ -68,8 +67,6 @@ export function PantryPage() {
         }
       />
       <RowHintNote hint={rowHint.hint} />
-      {/* Outside the form/list switch: adding a Batch must not end a read in flight. */}
-      <VoiceNote defaultTarget="pantry" />
       {screen.adding ? (
         <AddBatchForm
           start={screen.addStart}
