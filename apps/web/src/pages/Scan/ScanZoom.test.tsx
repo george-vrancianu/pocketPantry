@@ -50,7 +50,7 @@ describe('The zoom pill on the Scan page', () => {
     expect(pill()).toBeInTheDocument();
   });
 
-  it('still crops a receipt Scan taken at 2× to the guide, from the camera frame', async () => {
+  it('crops receipt Scans at 1× and 2× from the same camera frame and guide view', async () => {
     fakeCamera.zoomSupported = true;
     const { fetchMock } = stubApi({
       'POST /api/scan/receipt': () => Response.json({ lines: [] }),
@@ -58,13 +58,18 @@ describe('The zoom pill on the Scan page', () => {
     vi.stubGlobal('fetch', fetchMock);
     cropToReceiptGuideMock.mockClear();
     renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
+    takeScan();
+    await act(async () => {});
     await userEvent.click(screen.getByRole('button', { name: 'Zoom 2×' }));
     takeScan();
     await act(async () => {});
-    expect(cropToReceiptGuideMock).toHaveBeenCalledTimes(1);
-    const [frame, view] = cropToReceiptGuideMock.mock.calls[0];
-    expect(frame).toBe(fakeCamera.frame);
-    expect(view).toMatchObject({
+    expect(cropToReceiptGuideMock).toHaveBeenCalledTimes(2);
+    const [[frame1, view1], [frame2, view2]] =
+      cropToReceiptGuideMock.mock.calls;
+    expect(frame1).toBe(fakeCamera.frame);
+    expect(frame2).toBe(frame1);
+    expect(view2).toEqual(view1);
+    expect(view1).toMatchObject({
       width: expect.any(Number),
       height: expect.any(Number),
     });

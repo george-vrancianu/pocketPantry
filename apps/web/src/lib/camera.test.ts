@@ -320,6 +320,11 @@ describe('zoom', () => {
     expect(applyConstraints).not.toHaveBeenCalled();
   });
 
+  it('is unsupported when the zoom range is a single level', async () => {
+    const { hook } = await openCamera({ zoom: { min: 1, max: 1 } });
+    expect(hook.result.current.zoomSupported).toBe(false);
+  });
+
   it('is unsupported where the browser has no getCapabilities', async () => {
     const { hook } = await openCamera(undefined);
     expect(hook.result.current.zoomSupported).toBe(false);

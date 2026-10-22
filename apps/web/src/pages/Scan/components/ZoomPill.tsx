@@ -22,6 +22,7 @@ const button = {
   transition: 'width 200ms, color 200ms',
   '&[aria-pressed="true"]': { width: 38, color: tokens.color.accent },
   '&:focus-visible': glassFocusRing,
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
 };
 
 type Props = {

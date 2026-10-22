@@ -144,7 +144,11 @@ export function useCamera() {
           | undefined;
         setTorchSupported(capabilities?.torch === true);
         const zoom = capabilities?.zoom;
-        if (typeof zoom?.min === 'number' && typeof zoom.max === 'number') {
+        if (
+          typeof zoom?.min === 'number' &&
+          typeof zoom.max === 'number' &&
+          zoom.max > zoom.min
+        ) {
           zoomRangeRef.current = { min: zoom.min, max: zoom.max };
           setZoomSupported(true);
         }

@@ -128,10 +128,10 @@ let focusPauseMs = 0;
 
 const capture = () => Promise.resolve(fakeCamera.frame);
 const setTorch = () => Promise.resolve(fakeCamera.torchSupported);
-const setZoom = vi.fn((level: number) => {
+const setZoom = (level: number) => {
   fakeCamera.zooms.push(level);
   return Promise.resolve(fakeCamera.zoomSupported);
-});
+};
 
 function watchBarcodes(onCode: (code: string) => void) {
   let active = true;
