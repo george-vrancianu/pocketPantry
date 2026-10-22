@@ -37,7 +37,9 @@ export function DockCapsule({
           flex: 1,
           width: '100%',
           color: 'inherit',
-          borderRadius: micSlot ? '31px 31px 0 0' : radius.pill,
+          borderRadius: micSlot
+            ? `${radius.pill} ${radius.pill} 0 0`
+            : radius.pill,
         },
         focusRing,
       ]}

@@ -164,7 +164,7 @@ export function VoiceButton({
                 justifyContent: 'center',
                 p: 0,
                 border: 0,
-                borderRadius: '0 0 31px 31px',
+                borderRadius: `0 0 ${radius.pill} ${radius.pill}`,
                 backgroundColor: armed
                   ? `color-mix(in srgb, ${palette('text-primary')} 55%, ${color.cardBg})`
                   : active
@@ -234,7 +234,7 @@ function ProgressBar({ startedAt }: { startedAt?: number }) {
         right: 10,
         bottom: 5,
         height: 4,
-        borderRadius: 2,
+        borderRadius: radius.pill,
         pointerEvents: 'none',
         background: `linear-gradient(to right, ${color.cardBg} ${progress * 100}%, color-mix(in srgb, ${color.cardBg} 30%, transparent) 0)`,
       }}
