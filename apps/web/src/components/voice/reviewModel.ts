@@ -44,6 +44,9 @@ export function soonestFirst(batches: VoiceBatchRow[]): VoiceBatchRow[] {
 }
 
 export function kindOf(action: VoiceReviewAction): VoiceActionKind {
+  if (action.status === 'needsList') {
+    return action.op === 'remove' ? 'remove' : 'add';
+  }
   if (action.target === 'shopping') {
     switch (action.op) {
       case 'check':
@@ -89,11 +92,18 @@ export const isActionable = (action: VoiceReviewAction) =>
   action.status === 'ready' ||
   (action.status === 'needsBatch' && !!action.batchId);
 
+/** An add or remove still waiting for the Member to pick the Shopping List or the Pantry. */
+export const needsList = (action: VoiceReviewAction) =>
+  action.status === 'needsList';
+
 export const isChange = (action: VoiceReviewAction) =>
   action.status === 'ready' || action.status === 'needsBatch';
 
 /** What holds Apply back for this action, if anything. */
-export function blockOf(action: VoiceReviewAction): 'batch' | 'place' | null {
+export function blockOf(
+  action: VoiceReviewAction,
+): 'list' | 'batch' | 'place' | null {
+  if (action.status === 'needsList') return 'list';
   if (action.status === 'needsBatch' && !action.batchId) return 'batch';
   if (
     action.status === 'ready' &&

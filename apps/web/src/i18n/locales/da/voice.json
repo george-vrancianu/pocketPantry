@@ -188,7 +188,17 @@
       "confirmHint": "Intet ændres, og du må sige det igen.",
       "keep": "Bliv ved at gennemse",
       "discarded": "Stemmenote kasseret",
-      "discardedHint": "Intet blev ændret."
+      "discardedHint": "Intet blev ændret.",
+      "pickList": "Vælg først en liste"
+    },
+    "pickList": {
+      "label": "Liste til {{name}}",
+      "group": "Vælg en liste",
+      "hint": "Vælg Indkøbsliste eller Spisekammer"
+    },
+    "putAll": {
+      "label": "Sæt alt på:",
+      "name": "Sæt alt på"
     }
   },
   "toast": {

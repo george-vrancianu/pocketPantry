@@ -29,7 +29,8 @@ export type VoiceLocation = (typeof storageLocation.enumValues)[number];
 
 /** One Voice Action as the text model returns it, before Matching. */
 const modelAction = z.object({
-  target: z.enum(VOICE_LISTS),
+  /** Null only for a bare add or remove with no Default List (`defaultTarget: none`); the server then asks Review for a list. */
+  target: z.enum(VOICE_LISTS).nullable(),
   op: z.enum(VOICE_OPS),
   /** The words that made this Voice Action, in the language spoken. */
   spokenText: z.string().trim().min(1).max(200),
@@ -115,12 +116,12 @@ export type ResolvedRows = {
 };
 
 export type VoiceActionStatus =
-  'ready' | 'needsBatch' | 'notFound' | 'notUnderstood';
+  'ready' | 'needsBatch' | 'notFound' | 'notUnderstood' | 'needsList';
 
 export type ResolvedVoiceAction = {
   id: string;
   status: VoiceActionStatus;
-  /** Null for a Didn't understand entry, which belongs to no list. */
+  /** Null for a Didn't understand entry and for `needsList`, which belong to no list yet. */
   target: VoiceTarget | null;
   op: VoiceOp | null;
   text: string;
@@ -137,6 +138,8 @@ export type ResolvedVoiceAction = {
   rows: ResolvedRows;
   /** What fills in for anything unspoken (Location and Default Expiry for Pantry adds). */
   defaults: { location?: VoiceLocation; expiresOn?: string };
+  /** Only `needsList`: the action resolved against each list, so Review swaps without a request. */
+  byList?: { shopping: ResolvedVoiceAction; pantry: ResolvedVoiceAction };
 };
 
 /** The body of `POST /voice/apply`. */

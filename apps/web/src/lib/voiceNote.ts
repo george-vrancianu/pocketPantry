@@ -15,6 +15,7 @@ import {
   MIN_VOICE_NOTE_MS,
   sendVoiceNote,
   type VoiceDefaultTarget,
+  type VoiceList,
   type VoiceNoteRequest,
   type VoiceNoteResult,
   type VoiceReviewAction,
@@ -158,6 +159,23 @@ export function createVoiceNote(
     state = { ...next, voiceCap: state.voiceCap };
     emit();
   }
+  /** Review: swaps the chosen list's resolution into each action with a list to pick that `matches`. `byList` stays, so the pick can change. */
+  const swapLists = (
+    list: VoiceList,
+    matches: (action: VoiceReviewAction) => boolean,
+  ) => {
+    if (state.phase !== 'review' || !state.proposal) return;
+    state = {
+      ...state,
+      proposal: {
+        ...state.proposal,
+        actions: state.proposal.actions.map((a) =>
+          a.byList && matches(a) ? { ...a.byList[list], byList: a.byList } : a,
+        ),
+      },
+    };
+    emit();
+  };
   const idle = () => go({ phase: 'idle', page: state.page });
 
   /**
@@ -555,6 +573,14 @@ export function createVoiceNote(
         },
       };
       emit();
+    },
+    /** Review: puts a `needsList` action on a list, swapping in that list's resolution. The pick can change. */
+    pickList(id: string, list: VoiceList) {
+      swapLists(list, (a) => a.id === id);
+    },
+    /** Review: puts every action that has a list to pick on one list. */
+    pickAllLists(list: VoiceList) {
+      swapLists(list, () => true);
     },
     /** Review: changes a Voice Action. */
     edit(id: string, patch: VoiceNoteEdit) {

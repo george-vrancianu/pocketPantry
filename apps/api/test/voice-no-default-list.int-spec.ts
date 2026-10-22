@@ -21,7 +21,11 @@ type Action = {
   expiresOn: string | null;
   noExpiry: boolean;
   location: string | null;
-  rows: { batches?: { id: string }[]; shoppingFallback?: boolean };
+  rows: {
+    batches?: { id: string; expiresOn?: string | null }[];
+    shoppingFallback?: boolean;
+  };
+  byList?: { shopping: Action; pantry: Action };
 };
 
 const TODAY = '2026-10-16';
@@ -240,15 +244,141 @@ describe('Voice Notes with no Default List (integration)', () => {
       ]);
     });
 
-    it("returns a bare add or remove as Didn't understand, with no target", async () => {
+    it("keeps phrases the model could not read as Didn't understand, with no target", async () => {
       const { cookie } = await signUp();
-      reading = { actions: [], unsupported: ['add milk', 'remove the eggs'] };
+      reading = { actions: [], unsupported: ['hello there'] };
       const response = await sendNote(cookie, 'none').expect(201);
       const actions = (response.body as { actions: Action[] }).actions;
       expect(actions.map((a) => [a.status, a.target, a.op, a.text])).toEqual([
-        ['notUnderstood', null, null, 'add milk'],
-        ['notUnderstood', null, null, 'remove the eggs'],
+        ['notUnderstood', null, null, 'hello there'],
       ]);
+    });
+  });
+
+  describe('a bare add or remove with defaultTarget none', () => {
+    const bare = (id: string, overrides: Record<string, unknown> = {}) =>
+      spoken(id, { target: null, ...overrides });
+    const stock = (cookie: string, body: Record<string, unknown>) =>
+      api('post', cookie, '/pantry/batches?locale=en').send(body).expect(201);
+    const applyPicked = async (
+      cookie: string,
+      action: Action,
+      target: string,
+    ) =>
+      (
+        await api('post', cookie, '/voice/apply')
+          .send({
+            actions: [
+              {
+                id: action.id,
+                target,
+                op: action.op,
+                text: action.text,
+                ingredientId: action.ingredient?.id ?? null,
+                name: action.name,
+                quantity: action.quantity,
+                unit: action.unit,
+                scope: action.scope,
+                expiresOn: action.expiresOn,
+                noExpiry: action.noExpiry,
+                location: action.location,
+                batchIds: (
+                  (target === 'pantry'
+                    ? action.byList?.pantry.rows.batches
+                    : undefined) ?? []
+                ).map((b) => b.id),
+              },
+            ],
+            locale: 'en',
+            today: TODAY,
+          })
+          .expect(201)
+      ).body as { applied: { list: string }[]; skipped: object[] };
+
+    it('comes back as needsList with no target, resolved against both lists', async () => {
+      const { cookie } = await signUp();
+      const [action] = await read(cookie, [bare(yogurt, { op: 'add' })]);
+      expect(action).toMatchObject({
+        status: 'needsList',
+        target: null,
+        op: 'add',
+        text: 'x',
+        ingredient: { id: yogurt },
+        byList: {
+          shopping: { status: 'ready', target: 'shopping', op: 'add' },
+          pantry: { status: 'ready', target: 'pantry', op: 'add' },
+        },
+      });
+    });
+
+    it('resolves a removal to the Shopping Item and the Batch it would take, with expiry', async () => {
+      const { cookie } = await signUp();
+      await addToList(cookie, { ingredientId: milk });
+      await stock(cookie, { ingredientId: milk, expiryDate: '2026-10-20' });
+      const [action] = await read(cookie, [bare(milk, { op: 'remove' })]);
+      expect(action.status).toBe('needsList');
+      expect(action.byList?.shopping).toMatchObject({
+        status: 'ready',
+        target: 'shopping',
+        rows: { shoppingItem: { name: 'Milk' } },
+      });
+      expect(action.byList?.pantry).toMatchObject({
+        status: 'ready',
+        target: 'pantry',
+        rows: { batches: [{ expiresOn: '2026-10-20' }] },
+      });
+    });
+
+    it('carries needsBatch for the Pantry when a Batch must be chosen', async () => {
+      const { cookie } = await signUp();
+      for (const expiryDate of ['2026-10-20', '2026-11-20']) {
+        await stock(cookie, {
+          ingredientId: milk,
+          quantity: 300,
+          unit: 'ml',
+          expiryDate,
+        });
+      }
+      const [action] = await read(cookie, [
+        bare(milk, { op: 'remove', scope: 'one', quantity: 5000, unit: 'ml' }),
+      ]);
+      expect(action.status).toBe('needsList');
+      expect(action.byList?.pantry.status).toBe('needsBatch');
+      expect(action.byList?.pantry.rows.batches).toHaveLength(2);
+      expect(action.byList?.shopping.status).toBe('notFound');
+    });
+
+    it('applies to the list the Member picked', async () => {
+      const { cookie } = await signUp();
+      await addToList(cookie, { ingredientId: milk });
+      await stock(cookie, { ingredientId: milk });
+      const [action] = await read(cookie, [bare(milk, { op: 'remove' })]);
+      const result = await applyPicked(cookie, action, 'pantry');
+      expect(result.applied.map((a) => a.list)).toEqual(['pantry']);
+      const list = await api('get', cookie, '/shopping-list?locale=en').expect(
+        200,
+      );
+      expect(JSON.stringify(list.body)).toContain('Milk');
+      const batches = await api('get', cookie, '/pantry?locale=en').expect(200);
+      expect((batches.body as { batches: object[] }).batches).toHaveLength(0);
+    });
+
+    it.each(['shopping', 'pantry'])(
+      'never produces needsList on a %s page',
+      async (page) => {
+        const { cookie } = await signUp();
+        const [action] = await readNote(cookie, page, [
+          bare(yogurt, { op: 'add' }),
+        ]);
+        expect(action).toMatchObject({ status: 'ready', target: page });
+        expect(action.byList).toBeUndefined();
+      },
+    );
+
+    it("sends a targetless op that always has a list to Didn't understand", async () => {
+      const { cookie } = await signUp();
+      const [action] = await read(cookie, [bare(bread, { op: 'check' })]);
+      expect(action).toMatchObject({ status: 'notUnderstood', target: null });
     });
   });
 });
