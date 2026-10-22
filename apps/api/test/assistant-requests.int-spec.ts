@@ -826,7 +826,7 @@ describe('Assistant Requests (integration)', () => {
 
       it('does not expand a Category word to its Ingredients', async () => {
         const ana = await member();
-        await stock(ana.cookie, butter);
+        await stock(ana.cookie, seedId.ingredient('parmesan'));
         const answer = await askAbout(ana.secret, 'cheese');
         expect(answer.outcomes).toEqual([{ kind: 'notSure', name: 'cheese' }]);
       });

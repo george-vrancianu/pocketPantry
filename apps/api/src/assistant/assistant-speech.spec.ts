@@ -348,7 +348,7 @@ describe('assistantSpeech', () => {
     });
   });
 
-  // Spec: #461. What a yes carries, only expired, and the Shopping List note.
+  // Spec: #462. A name with no Match is neither yes nor no.
   describe('not sure', () => {
     const notSure = (name: string): AssistantOutcome => ({
       kind: 'notSure',
@@ -359,10 +359,14 @@ describe('assistantSpeech', () => {
       ['en', 'Not sure about zorblax.', 'Not sure about zorblax and kale.'],
       [
         'ro',
-        'Nu sunt sigur despre zorblax.',
-        'Nu sunt sigur despre zorblax și kale.',
+        'Nu știu sigur dacă ai zorblax.',
+        'Nu știu sigur dacă ai zorblax și kale.',
       ],
-      ['da', 'Ikke sikker på zorblax.', 'Ikke sikker på zorblax og kale.'],
+      [
+        'da',
+        'Jeg ved ikke, om du har zorblax.',
+        'Jeg ved ikke, om du har zorblax og kale.',
+      ],
     ] as const)('speaks %s, single and grouped', (locale, one, many) => {
       expect(say(locale, [notSure('zorblax')])).toBe(one);
       expect(say(locale, [notSure('zorblax'), notSure('kale')])).toBe(many);
@@ -379,6 +383,7 @@ describe('assistantSpeech', () => {
     });
   });
 
+  // Spec: #461. What a yes carries, only expired, and the Shopping List note.
   describe('full answers', () => {
     type Yes = Extract<AssistantOutcome, { kind: 'yes' }>;
     const stock = (details: Partial<Yes>, name = 'milk'): AssistantOutcome => ({

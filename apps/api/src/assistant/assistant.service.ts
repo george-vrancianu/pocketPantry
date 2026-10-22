@@ -148,22 +148,26 @@ export class AssistantService {
       outcomes = [
         ...read.answers.map((answer): AssistantOutcome => {
           const name = nameOf(answer);
-          return answer.kind === 'yes'
-            ? {
+          switch (answer.kind) {
+            case 'yes':
+              return {
                 kind: 'yes',
                 name,
                 totals: answer.totals,
                 locations: answer.locations,
                 expiringSoon: answer.expiringSoon,
                 runningLow: answer.runningLow,
-              }
-            : answer.kind === 'notSure'
-              ? { kind: 'notSure', name }
-              : {
-                  kind: answer.kind,
-                  name,
-                  onShoppingList: answer.onShoppingList,
-                };
+              };
+            case 'notSure':
+              return { kind: 'notSure', name };
+            case 'onlyExpired':
+            case 'no':
+              return {
+                kind: answer.kind,
+                name,
+                onShoppingList: answer.onShoppingList,
+              };
+          }
         }),
         ...resolved.map((action, index) =>
           outcomeOf(action, drafts[index], result, nameOf(action)),

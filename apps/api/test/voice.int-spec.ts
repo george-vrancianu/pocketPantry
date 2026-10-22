@@ -611,6 +611,10 @@ describe('Voice Note (integration)', () => {
         unit: 'kg',
         location: 'freezer',
       }).expect(201);
+      // A real cheese Ingredient is stocked: the Category word still expands to nothing.
+      await post(cookie, '/api/pantry/batches?locale=en', {
+        ingredientId: seedId.ingredient('parmesan'),
+      }).expect(201);
       await post(cookie, '/api/shopping-list/items?locale=en', {
         name: 'Quux',
         quantity: 1,

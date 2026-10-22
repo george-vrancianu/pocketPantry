@@ -15,8 +15,7 @@ import {
  * Batches, Shopping List, Running low flags and Stale Threshold alone. Pure,
  * so the caller loads everything once and nothing here can write.
  *
- * `kind` is the discriminant. The kinds the ADR adds later (`notSure`) are
- * new members of the union, with their own fields.
+ * `kind` is the discriminant; each kind has its own fields.
  *
  * A name with no confident Match is looked up among the Family's Unmatched
  * Batches and Unmatched Shopping Items (same normalised name, the one

@@ -302,6 +302,7 @@ export class VoiceService {
       const name = match ? null : question.fallbackIngredientName;
       // "Milk and milk" is one question; so are two spellings of one Unmatched name.
       const sameAsked = sameSubject({ ingredientId: match?.id ?? null, name });
+      // An entry's `name` is null only when it has an Ingredient, which `sameAsked` then compares by id.
       if (
         asked.some((entry) =>
           sameAsked({

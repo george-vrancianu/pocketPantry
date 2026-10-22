@@ -214,7 +214,7 @@ export const assistantMessages = {
       yes: 'Ai {items}',
       onlyExpired: 'Doar produse expirate: {items}',
       no: 'Nu ai {items}',
-      notSure: 'Nu sunt sigur despre {items}',
+      notSure: 'Nu știu sigur dacă ai {items}',
     },
     answerDetails: {
       locations: {
@@ -261,7 +261,7 @@ export const assistantMessages = {
       yes: 'Du har {items}',
       onlyExpired: 'Kun udløbne varer: {items}',
       no: 'Du har ikke {items}',
-      notSure: 'Ikke sikker på {items}',
+      notSure: 'Jeg ved ikke, om du har {items}',
     },
     answerDetails: {
       locations: {
