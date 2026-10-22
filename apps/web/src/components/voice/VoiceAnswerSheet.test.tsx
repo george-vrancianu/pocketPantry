@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -120,5 +120,27 @@ describe('the answer sheet for Pantry Questions', () => {
     const dialog = within(await ask(<p>home</p>, '/'));
     expect(dialog.getByRole('heading', { name: 'Review' })).toBeVisible();
     expect(screen.queryByRole('heading', { name: 'Your Pantry' })).toBeNull();
+    // Interim until #463: the question stays visible as a Didn't understand row.
+    expect(dialog.getByText('“do we have milk”')).toBeVisible();
+    expect(
+      dialog.getByText("Didn't understand:", { exact: false }),
+    ).toBeVisible();
+  });
+
+  it('puts focus back on the voice button after Done', async () => {
+    setup({ actions: [], answers });
+    const dialog = within(await ask(<p>home</p>, '/'));
+    await userEvent.click(dialog.getByRole('button', { name: 'Done' }));
+    await act(() => vi.advanceTimersByTimeAsync(10));
+    expect(await talkButton()).toHaveFocus();
+  });
+
+  it('closes on a scrim tap without applying anything', async () => {
+    setup({ actions: [], answers });
+    await ask(<p>home</p>, '/');
+    fireEvent.click(document.querySelector('.MuiBackdrop-root')!);
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(calls.some((url) => url.endsWith('/voice/apply'))).toBe(false);
   });
 });

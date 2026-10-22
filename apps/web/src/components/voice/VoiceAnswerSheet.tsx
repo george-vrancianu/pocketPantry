@@ -60,7 +60,6 @@ function AnswerSheet() {
     <Sheet
       open
       onClose={done}
-      onEscape={done}
       onEntered={() => title.current?.focus()}
       label={t('answers.title')}
       header={
@@ -81,7 +80,7 @@ function AnswerSheet() {
       }
       footer={
         <Box sx={{ p: '12px 16px calc(20px + env(safe-area-inset-bottom))' }}>
-          <Button fullWidth onClick={done} autoFocus>
+          <Button fullWidth onClick={done}>
             {t('answers.done')}
           </Button>
         </Box>

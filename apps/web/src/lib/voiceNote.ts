@@ -133,6 +133,25 @@ export type StartBlocker = 'active' | 'busy' | 'kept' | 'capped' | 'none';
 /** The longest delay `setTimeout` takes. */
 const MAX_TIMEOUT = 2 ** 31 - 1;
 
+/** INTERIM (#463): a Pantry Question in a mixed note, shown in Review as a "Didn't understand" row. */
+const unansweredRow = (answer: VoiceAnswer): VoiceReviewAction => ({
+  id: answer.id,
+  status: 'notUnderstood',
+  target: null,
+  op: null,
+  text: answer.text,
+  ingredient: null,
+  name: null,
+  quantity: null,
+  unit: null,
+  scope: null,
+  expiresOn: null,
+  noExpiry: false,
+  location: null,
+  rows: {},
+  defaults: {},
+});
+
 const initial: VoiceNoteState = { phase: 'idle', defaultTarget: 'shopping' };
 
 const nextUtcMidnight = (now: number) => {
@@ -378,18 +397,21 @@ export function createVoiceNote(
       if (result.transcript.trim() === '') return failed('nothingHeard');
       letSleep();
       const answers = result.answers ?? [];
+      // Only Pantry Questions: the answer sheet, with nothing to review or apply.
+      const answersOnly = result.actions.length === 0 && answers.length > 0;
       go({
-        // Only Pantry Questions: the answer sheet, with nothing to review or apply.
-        phase:
-          result.actions.length === 0 && answers.length > 0
-            ? 'answers'
-            : 'review',
+        phase: answersOnly ? 'answers' : 'review',
         defaultTarget,
         // Kept for the sheet's "English · 0:09"; closing it or Apply drops it with the rest.
         recording: state.recording,
         proposal: {
           transcript: result.transcript,
-          actions: result.actions,
+          // INTERIM until #463 shows answers inside Review: in a mixed note each question stays
+          // visible as a "Didn't understand" row, as it did before answers existed.
+          actions:
+            result.actions.length > 0
+              ? [...result.actions, ...answers.map(unansweredRow)]
+              : result.actions,
           answers,
         },
       });
