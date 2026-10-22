@@ -792,6 +792,45 @@ describe('Assistant Requests (integration)', () => {
       response = await ask(ana.secret).expect(200);
       expect(reply(response).speech).toMatch(/^Du har .+\. Du har ikke .+\.$/);
     });
+
+    // Spec: #463. One request can ask and act: answers first, then the usual outcome clauses.
+    it('speaks the answers, then the outcomes, and applies only the allow-listed Voice Actions', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk);
+      await stock(ana.cookie, rice);
+      reading = {
+        actions: [
+          of(eggs, 'Eggs'),
+          model({
+            ...of(rice, 'Rice'),
+            target: 'pantry',
+            op: 'remove',
+            scope: 'all',
+          }),
+        ],
+        questions: [question(milk, 'Milk'), question(butter, 'Butter')],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret, {
+        text: 'do we have milk and butter, add eggs, and remove the rice',
+      }).expect(200);
+      expect(
+        reply(response).outcomes.map((o: { kind: string }) => o.kind),
+      ).toEqual(['yes', 'no', 'added', 'refused']);
+      const speech: string = reply(response).speech;
+      expect(speech.startsWith('You have Milk. No Butter.')).toBe(true);
+      expect(speech.indexOf('Eggs')).toBeGreaterThan(
+        speech.indexOf('No Butter.'),
+      );
+      expect(await list(ana.cookie)).toMatchObject([{ name: 'Eggs' }]);
+      const pantry = (
+        await client(app, ana.cookie, '/api/pantry').get('?locale=en')
+      ).body as { batches: { ingredientId: string }[] };
+      expect(pantry.batches.map((b) => b.ingredientId).sort()).toEqual(
+        [milk, rice].sort(),
+      );
+      expect(await used(ana.id)).toBe(1);
+    });
   });
 
   // Spec: #461, ADR 0020. The full answers.

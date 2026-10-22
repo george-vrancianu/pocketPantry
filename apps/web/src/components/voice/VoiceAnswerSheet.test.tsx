@@ -44,9 +44,11 @@ const answers = [
 describe('the answer sheet for Pantry Questions', () => {
   let sent: FormData[];
   let calls: string[];
+  let applyPayloads: { actions: { id: string; target?: string }[] }[];
 
   function setup(body: Record<string, unknown>) {
     calls = [];
+    applyPayloads = [];
     const { fetchMock } = stubApi({
       'GET /api/shopping-list': () =>
         Response.json({
@@ -66,9 +68,15 @@ describe('the answer sheet for Pantry Questions', () => {
       'POST /api/voice/apply': () =>
         Response.json({ applied: [], skipped: [] }),
     });
-    ({ sent } = stubVoiceFetch(fetchMock, (input) =>
-      calls.push(String(input)),
-    ));
+    ({ sent } = stubVoiceFetch(fetchMock, (input, init) => {
+      calls.push(String(input));
+      if (
+        String(input).endsWith('/voice/apply') &&
+        typeof init?.body === 'string'
+      ) {
+        applyPayloads.push(JSON.parse(init.body));
+      }
+    }));
   }
 
   async function ask(page: ReactElement, path: string) {
@@ -195,18 +203,128 @@ describe('the answer sheet for Pantry Questions', () => {
     expect(rows[4]).toHaveTextContent('Already on your Shopping List');
   });
 
-  it('keeps Review for a note with actions, even beside answers', async () => {
-    setup({
-      actions: [
-        voiceAction({ text: 'eggs', target: 'shopping', ingredient: milk }),
+  describe('a note with actions and answers', () => {
+    const eggs = voiceIngredient('ing-eggs', 'Eggs');
+    const applyBodies = () =>
+      calls.filter((url) => url.endsWith('/voice/apply')).length;
+
+    it.each([
+      [
+        'the Pantry page',
+        <PantryPage key="p" />,
+        '/pantry',
+        'pantry',
+        'Pantry',
       ],
-      answers,
+      [
+        'the Shopping List page',
+        <ShoppingPage key="s" />,
+        '/shopping',
+        'shopping',
+        'Shopping List',
+      ],
+    ])(
+      'opens Review from %s with the answer card above the rows; Apply sends only the actions',
+      async (_name, page, path, target, list) => {
+        setup({
+          actions: [
+            voiceAction({
+              text: 'eggs',
+              target,
+              ingredient: eggs,
+              quantity: 6,
+              unit: 'pcs',
+              defaults: { location: 'fridge' },
+            }),
+          ],
+          answers,
+        });
+        const dialog = within(await ask(page, path));
+
+        expect(dialog.getByRole('heading', { name: 'Review' })).toBeVisible();
+        const card = dialog.getByRole('region', { name: 'Your Pantry' });
+        const rows = within(card).getAllByRole('listitem');
+        expect(rows).toHaveLength(2);
+        expect(rows[0]).toHaveTextContent('Milk');
+        expect(rows[0]).toHaveTextContent('In your Pantry');
+        expect(rows[1]).toHaveTextContent('Not in your Pantry');
+        // No editing, no removing: the card has no buttons or fields.
+        expect(within(card).queryAllByRole('button')).toHaveLength(0);
+        expect(within(card).queryAllByRole('textbox')).toHaveLength(0);
+        // Above the Voice Action rows.
+        const rowsGroup = dialog.getByRole('region', { name: list });
+        expect(
+          card.compareDocumentPosition(rowsGroup) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(dialog.queryByText('“do we have milk”')).toBeNull();
+
+        await userEvent.click(
+          dialog.getByRole('button', { name: 'Apply 1 change' }),
+        );
+        await act(() => vi.advanceTimersByTimeAsync(10));
+        expect(applyBodies()).toBe(1);
+        expect(applyPayloads).toHaveLength(1);
+        expect(
+          applyPayloads[0].actions.map((a: { id: string }) => a.id),
+        ).toEqual(['a1']);
+        expect(JSON.stringify(applyPayloads[0])).not.toContain('q1');
+      },
+    );
+
+    it('keeps the card beside a needsList action off-page, and Apply sends only the action once a list is picked', async () => {
+      const side = (list: string) =>
+        voiceAction({
+          id: 'a1',
+          target: list,
+          text: 'eggs',
+          ingredient: eggs,
+          defaults: { location: 'fridge' },
+        });
+      setup({
+        actions: [
+          voiceAction({
+            id: 'a1',
+            status: 'needsList',
+            target: null,
+            text: 'eggs',
+            ingredient: eggs,
+            byList: { shopping: side('shopping'), pantry: side('pantry') },
+          }),
+        ],
+        answers,
+      });
+      const dialog = within(await ask(<p>home</p>, '/'));
+
+      expect(sent[0].get('defaultTarget')).toBe('none');
+      const card = dialog.getByRole('region', { name: 'Your Pantry' });
+      expect(within(card).getAllByRole('listitem')).toHaveLength(2);
+      expect(
+        dialog.getByRole('button', { name: 'Pick a list first' }),
+      ).toHaveAttribute('aria-disabled', 'true');
+
+      await userEvent.click(
+        within(dialog.getByRole('group', { name: 'List for Eggs' })).getByRole(
+          'button',
+          { name: 'Shopping List' },
+        ),
+      );
+      // The card is still there after the pick.
+      expect(
+        within(
+          dialog.getByRole('region', { name: 'Your Pantry' }),
+        ).getAllByRole('listitem'),
+      ).toHaveLength(2);
+      await userEvent.click(
+        dialog.getByRole('button', { name: 'Apply 1 change' }),
+      );
+      await act(() => vi.advanceTimersByTimeAsync(10));
+      expect(applyPayloads).toHaveLength(1);
+      expect(applyPayloads[0].actions.map((a) => [a.id, a.target])).toEqual([
+        ['a1', 'shopping'],
+      ]);
+      expect(JSON.stringify(applyPayloads[0])).not.toContain('q1');
     });
-    const dialog = within(await ask(<p>home</p>, '/'));
-    expect(dialog.getByRole('heading', { name: 'Review' })).toBeVisible();
-    expect(screen.queryByRole('heading', { name: 'Your Pantry' })).toBeNull();
-    // Interim until #463: the question stays visible as a Didn't understand row.
-    expect(dialog.getByText('“do we have milk”')).toBeVisible();
   });
 
   it('puts focus back on the voice button after Done', async () => {

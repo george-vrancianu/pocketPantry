@@ -48,6 +48,7 @@ import {
 } from '../../lib/voice';
 import { flashRows } from '../../lib/rowFlash';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
+import { PantryAnswerRow } from './PantryAnswerRow';
 
 /** How long the Apply result stays: long enough to read, no Undo (ADR 0017). */
 const APPLY_TOAST_MS = 5200;
@@ -81,6 +82,8 @@ function ReviewSheet() {
   const title = useRef<HTMLHeadingElement>(null);
 
   const actions = proposal?.actions ?? [];
+  // The Pantry Questions' answers: a read-only card above the rows; Apply never sends them.
+  const answers = proposal?.answers ?? [];
   const transcript = proposal?.transcript ?? '';
   // What the server heard of each expiry, to tell it from one picked here.
   const [spoken] = useState(
@@ -317,6 +320,18 @@ function ReviewSheet() {
           durationMs={recording?.durationMs}
           defaultOpen={actions.every((a) => a.status === 'notUnderstood')}
         />
+
+        {answers.length > 0 ? (
+          <Group
+            label={t('voice:answers.title')}
+            count={answers.length}
+            tag={null}
+          >
+            {answers.map((answer) => (
+              <PantryAnswerRow key={answer.id} answer={answer} />
+            ))}
+          </Group>
+        ) : null}
 
         {withPicker > 1 ? (
           <Box
