@@ -32,6 +32,7 @@ const answers = [
     id: 'q1',
     kind: 'yes',
     text: 'do we have milk',
+    name: null,
     ingredient: milk,
     totals: [{ unit: 'l', quantity: 2 }],
     locations: ['fridge'],
@@ -256,6 +257,46 @@ describe('the answer sheet for Pantry Questions', () => {
     expect(rows[4]).toHaveTextContent('Already on your Shopping List');
   });
 
+  // Spec: #462. A name with no Match is an answer too: the sheet opens, never Review.
+  it('shows a not sure row beside matched ones, by the asked name, off-page (Home)', async () => {
+    setup({
+      actions: [],
+      answers: [
+        answers[0],
+        {
+          id: 'q2',
+          kind: 'notSure',
+          text: 'and zorblax',
+          ingredient: null,
+          name: 'zorblax',
+        },
+        {
+          id: 'q3',
+          kind: 'yes',
+          text: 'quux',
+          ingredient: null,
+          name: 'quux',
+          totals: [{ unit: 'pcs', quantity: 3 }],
+          locations: ['cupboard'],
+          expiringSoon: false,
+          runningLow: false,
+        },
+      ],
+    });
+    const dialog = within(await ask(<p>home</p>, '/'));
+
+    expect(dialog.getByRole('heading', { name: 'Your Pantry' })).toBeVisible();
+    expect(dialog.queryByRole('heading', { name: 'Review' })).toBeNull();
+    const rows = dialog.getAllByRole('listitem');
+    expect(rows).toHaveLength(3);
+    expect(rows[1]).toHaveTextContent('zorblax');
+    expect(rows[1]).toHaveTextContent('Not sure');
+    expect(rows[1]).not.toHaveTextContent('Not in your Pantry');
+    expect(rows[2]).toHaveTextContent('quux');
+    expect(rows[2]).toHaveTextContent('In your Pantry');
+    expect(rows[2]).toHaveTextContent('3 pcs · Cupboard');
+  });
+
   describe('a note with actions and answers', () => {
     const eggs = voiceIngredient('ing-eggs', 'Eggs');
     const applyBodies = () =>
@@ -467,6 +508,48 @@ describe('the answer sheet for Pantry Questions', () => {
       setup({ actions: [], answers: [short('q1', 'no', butter, false)] });
       await ask(<p>home</p>, '/');
       expect(await addButton(1)).toBeVisible();
+    });
+
+    // Spec: #462. An answer with no Match is added by its name; not sure is never offered.
+    it('adds an Unmatched short name by its name, and skips not sure and the ones on the list', async () => {
+      const unmatched = (id: string, name: string, extra: object) => ({
+        id,
+        text: name,
+        ingredient: null,
+        name,
+        ...extra,
+      });
+      setup({
+        actions: [],
+        answers: [
+          unmatched('q1', 'zorblax', { kind: 'notSure' }),
+          unmatched('q2', 'quux', {
+            kind: 'onlyExpired',
+            onShoppingList: false,
+          }),
+          unmatched('q3', 'kale', {
+            kind: 'onlyExpired',
+            onShoppingList: true,
+          }),
+        ],
+      });
+      const dialog = within(await ask(<p>home</p>, '/'));
+
+      await userEvent.click(await addButton(1));
+      await act(() => vi.advanceTimersByTimeAsync(10));
+
+      expect(applyPayloads).toHaveLength(1);
+      expect(
+        applyPayloads[0].actions.map((a) => [
+          a.target,
+          a.op,
+          a.ingredientId,
+          a.name,
+        ]),
+      ).toEqual([['shopping', 'add', null, 'quux']]);
+      expect(await screen.findByText('1 applied')).toBeVisible();
+      expect(screen.queryByRole('button', { name: /undo/i })).toBeNull();
+      expect(dialog.getAllByRole('listitem')).toHaveLength(3);
     });
 
     it('is hidden when nothing is short or everything is on the list already', async () => {

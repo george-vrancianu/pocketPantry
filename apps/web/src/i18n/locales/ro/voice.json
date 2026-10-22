@@ -281,7 +281,8 @@
     "verdict": {
       "yes": "În cămara ta",
       "no": "Nu e în cămara ta",
-      "onlyExpired": "Doar expirat"
+      "onlyExpired": "Doar expirat",
+      "notSure": "Nu sunt sigur"
     },
     "done": "Gata",
     "onShoppingList": "Deja pe Lista de cumpărături",

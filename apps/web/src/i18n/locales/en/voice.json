@@ -273,7 +273,8 @@
     "verdict": {
       "yes": "In your Pantry",
       "no": "Not in your Pantry",
-      "onlyExpired": "Only expired"
+      "onlyExpired": "Only expired",
+      "notSure": "Not sure"
     },
     "done": "Done",
     "onShoppingList": "Already on your Shopping List",

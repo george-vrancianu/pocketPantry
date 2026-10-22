@@ -747,17 +747,97 @@ describe('Assistant Requests (integration)', () => {
       expect(reply(response).outcomes).toHaveLength(1);
     });
 
-    it('does not answer a name that matched no Ingredient, and refunds when that is all', async () => {
-      const ana = await member();
-      reading = {
-        actions: [],
-        questions: [question(null, 'zorblax')],
-        unsupported: [],
+    // Spec: #462. A name with no confident Match is looked up among Unmatched rows, else "not sure".
+    describe('a name that matched no Ingredient', () => {
+      const unmatchedBatch = (cookie: string, rawName: string) =>
+        client(app, cookie, '/api/pantry').post('/batches?locale=en', {
+          rawName,
+          parentCategoryId: seedId.parent('dairy'),
+          quantity: 3,
+          unit: 'pcs',
+          location: 'cupboard',
+        });
+      const unmatchedItem = (cookie: string, name: string) =>
+        client(app, cookie, '/api/shopping-list').post('/items?locale=en', {
+          name,
+          quantity: 1,
+          unit: 'pcs',
+        });
+      const askAbout = async (secret: string, name: string, extra = {}) => {
+        reading = {
+          actions: [],
+          questions: [question(null, name, extra)],
+          unsupported: [],
+        };
+        return reply(await ask(secret).expect(200));
       };
-      const response = await ask(ana.secret).expect(200);
-      expect(reply(response).outcomes).toEqual([]);
-      expect(reply(response).speech).toContain('did not understand');
-      expect(await used(ana.id)).toBe(0);
+
+      it('is not sure when no Unmatched row has the name, charged as an answer', async () => {
+        const ana = await member();
+        const answer = await askAbout(ana.secret, 'zorblax');
+        expect(answer.outcomes).toEqual([{ kind: 'notSure', name: 'zorblax' }]);
+        expect(answer.speech).toBe('Not sure about zorblax.');
+        expect(await used(ana.id)).toBe(1);
+      });
+
+      it('groups several unsure names', async () => {
+        const ana = await member();
+        reading = {
+          actions: [],
+          questions: [question(null, 'zorblax'), question(null, 'quux')],
+          unsupported: [],
+        };
+        expect(reply(await ask(ana.secret).expect(200)).speech).toBe(
+          'Not sure about zorblax and quux.',
+        );
+      });
+
+      it('answers yes from an Unmatched Batch, whatever the case and spacing', async () => {
+        const ana = await member();
+        await unmatchedBatch(ana.cookie, 'Zorblax');
+        const answer = await askAbout(ana.secret, 'ZORBLAX');
+        expect(answer.outcomes).toMatchObject([
+          {
+            kind: 'yes',
+            name: 'ZORBLAX',
+            totals: [{ unit: 'pcs', quantity: 3 }],
+            locations: ['cupboard'],
+          },
+        ]);
+      });
+
+      it('answers no, already on the Shopping List, for an Unmatched Shopping Item alone', async () => {
+        const ana = await member();
+        await unmatchedItem(ana.cookie, 'Zorblax');
+        const answer = await askAbout(ana.secret, 'zorblax');
+        expect(answer.outcomes).toMatchObject([
+          { kind: 'no', onShoppingList: true },
+        ]);
+      });
+
+      it("does not count another Family's Unmatched rows", async () => {
+        const ana = await member();
+        const ben = await member();
+        await unmatchedBatch(ben.cookie, 'Zorblax');
+        await unmatchedItem(ben.cookie, 'Zorblax');
+        const answer = await askAbout(ana.secret, 'zorblax');
+        expect(answer.outcomes).toMatchObject([{ kind: 'notSure' }]);
+      });
+
+      it('does not expand a Category word to its Ingredients', async () => {
+        const ana = await member();
+        await stock(ana.cookie, seedId.ingredient('parmesan'));
+        const answer = await askAbout(ana.secret, 'cheese');
+        expect(answer.outcomes).toEqual([{ kind: 'notSure', name: 'cheese' }]);
+      });
+
+      it('writes nothing', async () => {
+        const ana = await member();
+        const before = await pantryOf(ana.cookie);
+        await askAbout(ana.secret, 'zorblax');
+        expect(await pantryOf(ana.cookie)).toEqual(before);
+        expect(await list(ana.cookie)).toEqual([]);
+      });
     });
 
     it('still sends a wider question to unsupported, which is not answered', async () => {

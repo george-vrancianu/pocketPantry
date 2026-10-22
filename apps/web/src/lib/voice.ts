@@ -96,7 +96,10 @@ type VoiceAnswerBase = {
   id: string;
   /** What was said. */
   text: string;
-  ingredient: CatalogSearchResult;
+  /** The Match; null when the name matched no Ingredient with confidence (then `name` is the asked name). */
+  ingredient: CatalogSearchResult | null;
+  /** The name asked about when there is no Match; null when matched. */
+  name: string | null;
 };
 export type VoiceAnswer =
   | (VoiceAnswerBase & {
@@ -110,7 +113,9 @@ export type VoiceAnswer =
       runningLow: boolean;
     })
   | (VoiceAnswerBase & { kind: 'onlyExpired'; onShoppingList: boolean })
-  | (VoiceAnswerBase & { kind: 'no'; onShoppingList: boolean });
+  | (VoiceAnswerBase & { kind: 'no'; onShoppingList: boolean })
+  /** Nothing matched with confidence and no Unmatched row has the name; never "no". */
+  | (VoiceAnswerBase & { kind: 'notSure' });
 export type VoiceAnswerKind = VoiceAnswer['kind'];
 
 export type VoiceNoteResult = {

@@ -348,6 +348,41 @@ describe('assistantSpeech', () => {
     });
   });
 
+  // Spec: #462. A name with no Match is neither yes nor no.
+  describe('not sure', () => {
+    const notSure = (name: string): AssistantOutcome => ({
+      kind: 'notSure',
+      name,
+    });
+
+    it.each([
+      ['en', 'Not sure about zorblax.', 'Not sure about zorblax and kale.'],
+      [
+        'ro',
+        'Nu știu sigur dacă ai zorblax.',
+        'Nu știu sigur dacă ai zorblax și kale.',
+      ],
+      [
+        'da',
+        'Jeg ved ikke, om du har zorblax.',
+        'Jeg ved ikke, om du har zorblax og kale.',
+      ],
+    ] as const)('speaks %s, single and grouped', (locale, one, many) => {
+      expect(say(locale, [notSure('zorblax')])).toBe(one);
+      expect(say(locale, [notSure('zorblax'), notSure('kale')])).toBe(many);
+    });
+
+    it('comes after the yes and no sentences', () => {
+      expect(
+        say('en', [
+          notSure('zorblax'),
+          { kind: 'no', name: 'butter' },
+          { kind: 'yes', name: 'milk' },
+        ]),
+      ).toBe('You have milk. No butter. Not sure about zorblax.');
+    });
+  });
+
   // Spec: #461. What a yes carries, only expired, and the Shopping List note.
   describe('full answers', () => {
     type Yes = Extract<AssistantOutcome, { kind: 'yes' }>;

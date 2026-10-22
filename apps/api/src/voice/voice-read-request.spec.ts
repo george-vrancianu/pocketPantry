@@ -102,6 +102,9 @@ describe('buildVoiceReadRequest', () => {
       expect(prompt).toContain('"do we have milk?"');
       expect(prompt).toContain('one questions entry per ingredient');
       expect(prompt).toContain('A question is never an action');
+      expect(prompt).toContain(
+        'A Category word such as "cheese" is not one ingredient',
+      );
     });
 
     it('no longer sends them to unsupported, but still sends wider questions there', () => {
