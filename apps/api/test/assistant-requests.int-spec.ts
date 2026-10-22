@@ -818,7 +818,9 @@ describe('Assistant Requests (integration)', () => {
         reply(response).outcomes.map((o: { kind: string }) => o.kind),
       ).toEqual(['yes', 'no', 'added', 'refused']);
       const speech: string = reply(response).speech;
-      expect(speech.startsWith('You have Milk. No Butter.')).toBe(true);
+      expect(speech.startsWith('You have Milk in the fridge. No Butter.')).toBe(
+        true,
+      );
       expect(speech.indexOf('Eggs')).toBeGreaterThan(
         speech.indexOf('No Butter.'),
       );
