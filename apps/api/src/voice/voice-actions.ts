@@ -8,7 +8,7 @@ import {
 import { normalizeName } from '../catalog/normalize';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, storageLocation } from '../database/schema';
-import { VOICE_LISTS } from './voice.schemas';
+import { VOICE_LISTS, VOICE_DEFAULT_TARGETS } from './voice.schemas';
 
 /** Structured-output schema name of a Voice Note read. */
 export const VOICE_READ_SCHEMA_NAME = 'voice_note_actions';
@@ -23,6 +23,7 @@ export const VOICE_OPS = [
 ] as const;
 export type VoiceOp = (typeof VOICE_OPS)[number];
 export type VoiceTarget = (typeof VOICE_LISTS)[number];
+export type VoiceDefaultTarget = (typeof VOICE_DEFAULT_TARGETS)[number];
 export type VoiceUnit = (typeof ingredientUnit.enumValues)[number];
 export type VoiceLocation = (typeof storageLocation.enumValues)[number];
 

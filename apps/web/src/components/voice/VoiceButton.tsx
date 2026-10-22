@@ -11,7 +11,11 @@ import {
 import { useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { MAX_VOICE_NOTE_MS, type VoiceList } from '../../lib/voice';
+import {
+  LISTENING_DESTINATION,
+  MAX_VOICE_NOTE_MS,
+  type VoiceDefaultTarget,
+} from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { usePressGesture } from '../../lib/usePressGesture';
 import { LanguageMenu } from './LanguageMenu';
@@ -38,7 +42,7 @@ export function VoiceButton({
   target,
 }: {
   voice: Voice;
-  target: VoiceList;
+  target: VoiceDefaultTarget;
 }) {
   const { t } = useTranslation('voice');
   const active = voice.recording || voice.pressing;
@@ -142,9 +146,7 @@ export function VoiceButton({
     ? createPortal(
         <>
           <Box component="span" id={destinationId} hidden sx={visuallyHidden}>
-            {target === 'pantry'
-              ? t('listening.toPantry')
-              : t('listening.toShopping')}
+            {t(LISTENING_DESTINATION[target])}
           </Box>
           <Box component="span" id={blockedId} hidden sx={visuallyHidden}>
             {t('voiceButton.blocked')}

@@ -33,6 +33,20 @@
           "say": "Running low on rice",
           "result": "Marks rice running low"
         }
+      },
+      "none": {
+        "one": {
+          "say": "Got the bread",
+          "result": "Ticks bread off the Shopping List"
+        },
+        "two": {
+          "say": "We need two litres of milk",
+          "result": "Adds milk, 2 l, to the Shopping List"
+        },
+        "three": {
+          "say": "Two yogurts, they expire Friday",
+          "result": "Goes to the Pantry"
+        }
       }
     }
   },
@@ -65,6 +79,7 @@
     "hint": "Let go to send · slide off to cancel",
     "toShopping": "Goes to your Shopping List. Say “in the pantry” to add stock.",
     "toPantry": "Goes to your Pantry. Say “on the list” for the Shopping List.",
+    "toNone": "Say which list: “on the list” or “in the pantry”.",
     "tip": "Hold to talk, let go to send",
     "recording": "Recording",
     "cancelArmed": "Let go to cancel",

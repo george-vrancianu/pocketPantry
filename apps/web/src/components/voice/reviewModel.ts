@@ -1,6 +1,7 @@
 import type { StorageLocation } from '../../lib/catalog';
 import type {
   VoiceBatchRow,
+  VoiceDefaultTarget,
   VoiceList,
   VoiceReviewAction,
 } from '../../lib/voice';
@@ -112,17 +113,20 @@ export type ReviewGroup = {
   actions: VoiceReviewAction[];
 };
 
-/** One group per list that has changes: the page's own list first, then the other. */
+/**
+ * One group per list that has changes: the page's own list first, then the other. Off the lists (`none`) the
+ * Shopping List comes first and nothing counts as named, since the page had no list to differ from.
+ */
 export function groupsOf(
   actions: VoiceReviewAction[],
-  page: VoiceList,
+  page: VoiceDefaultTarget,
 ): ReviewGroup[] {
   const order: VoiceList[] =
-    page === 'shopping' ? ['shopping', 'pantry'] : ['pantry', 'shopping'];
+    page === 'pantry' ? ['pantry', 'shopping'] : ['shopping', 'pantry'];
   return order.flatMap((list) => {
     const rows = actions.filter((a) => isChange(a) && a.target === list);
     return rows.length === 0
       ? []
-      : [{ list, named: list !== page, actions: rows }];
+      : [{ list, named: page !== 'none' && list !== page, actions: rows }];
   });
 }

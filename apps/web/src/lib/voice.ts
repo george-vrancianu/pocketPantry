@@ -14,6 +14,15 @@ export const MIN_VOICE_NOTE_MS = QUICK_TAP_MS;
 
 /** The list the page a Voice Note is recorded on acts on (ADR 0017). */
 export type VoiceList = 'shopping' | 'pantry';
+/** What a page sends as its Default List: a list, or `none` where the page has no list (ADR 0021). */
+export type VoiceDefaultTarget = VoiceList | 'none';
+
+/** Where the Listening card says a Voice Note goes, per Default List (voice namespace). */
+export const LISTENING_DESTINATION = {
+  shopping: 'listening.toShopping',
+  pantry: 'listening.toPantry',
+  none: 'listening.toNone',
+} as const satisfies Record<VoiceDefaultTarget, string>;
 
 export type VoiceActionStatus =
   'ready' | 'needsBatch' | 'notFound' | 'notUnderstood';
@@ -155,7 +164,7 @@ export type VoiceNoteRequest = {
   recording: Recording;
   scanLanguage: ScanLanguage;
   locale: Locale;
-  defaultTarget: VoiceList;
+  defaultTarget: VoiceDefaultTarget;
   /** The Member's local date, `YYYY-MM-DD`. */
   today: string;
   /** Aborting it abandons the request on this side only; the Voice Cap charge stands. */

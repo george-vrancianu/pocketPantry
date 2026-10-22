@@ -1,10 +1,13 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {
   resetVoiceEnvironment,
   stubVoiceFetch,
   talkButton,
+  voiceAction,
+  voiceIngredient,
 } from '../test/voice';
-import { pressDown } from '../test/voiceHold';
+import { holdLongEnough, pressDown, useVoiceTimers } from '../test/voiceHold';
 import { VOICE_LAYER } from '../lib/voicePlacement';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -140,7 +143,7 @@ describe('AppLayout Voice Note host', () => {
     vi.unstubAllGlobals();
   });
 
-  it.each(['/shopping', '/pantry'])(
+  it.each(['/shopping', '/pantry', '/', '/recipes', '/shopping/staples'])(
     'shows the mic once on %s',
     async (route) => {
       renderAt(route);
@@ -151,8 +154,8 @@ describe('AppLayout Voice Note host', () => {
     },
   );
 
-  it.each(['/recipes', '/scan', '/customise', '/shopping/staples'])(
-    'shows no mic on %s, once the voice config has loaded',
+  it.each(['/scan', '/customise'])(
+    'shows no mic on %s, where there is no Dock',
     async (route) => {
       const { queryClient } = renderAt(route);
       await waitFor(() =>
@@ -166,7 +169,7 @@ describe('AppLayout Voice Note host', () => {
     },
   );
 
-  it.each(['/shopping', '/pantry'])(
+  it.each(['/shopping', '/pantry', '/recipes'])(
     'puts the mic in the Dock, under the camera, on %s',
     async (route) => {
       renderAt(route);
@@ -191,17 +194,10 @@ describe('AppLayout Voice Note host', () => {
     );
   });
 
-  it('keeps the camera, with no mic, where the Dock has no Default List', async () => {
-    const { queryClient } = renderAt('/recipes');
-    await waitFor(() =>
-      expect(queryClient.getQueryState(['voice', 'config'])?.status).toBe(
-        'success',
-      ),
-    );
+  it('keeps the camera next to the mic on a page with no Default List', async () => {
+    renderAt('/recipes');
+    expect(await talkButton()).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Camera' })).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /hold to record a voice note/i }),
-    ).toBeNull();
   });
 });
 
@@ -233,4 +229,110 @@ describe('AppLayout Dock when voice is not configured', () => {
       ).toBeNull();
     },
   );
+});
+
+describe('AppLayout Voice Notes off the Shopping List and the Pantry', () => {
+  const bread = voiceIngredient('ing-bread', 'Bread');
+  let applied: Record<string, unknown>[];
+  let sent: FormData[];
+
+  beforeEach(() => {
+    useVoiceTimers();
+    resetVoiceEnvironment();
+    applied = [];
+    const { fetchMock } = stubApi({
+      'GET /api/voice/config': () => Response.json({ configured: true }),
+      'GET /api/catalog/search': () => Response.json({ results: [bread] }),
+      'GET /api/catalog/aisles': () => Response.json({ aisles: [] }),
+      'POST /api/voice': () =>
+        Response.json(
+          {
+            transcript: 'got the bread',
+            actions: [
+              voiceAction({
+                target: 'shopping',
+                op: 'check',
+                text: 'bread',
+                ingredient: bread,
+              }),
+            ],
+          },
+          { status: 201 },
+        ),
+      'POST /api/voice/apply': () =>
+        Response.json(
+          {
+            applied: [
+              {
+                actionId: 'a1',
+                list: 'shopping',
+                rowId: 'r1',
+                alreadyDone: false,
+              },
+            ],
+            skipped: [],
+          },
+          { status: 201 },
+        ),
+    });
+    ({ sent } = stubVoiceFetch(fetchMock, (input, init) => {
+      if (
+        String(input).endsWith('/voice/apply') &&
+        typeof init?.body === 'string'
+      ) {
+        applied.push(JSON.parse(init.body) as Record<string, unknown>);
+      }
+    }));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  async function recordNote() {
+    const button = await talkButton();
+    pressDown(button);
+    await screen.findByText('Listening');
+    await holdLongEnough();
+    fireEvent.pointerUp(button);
+    return screen.findByRole('dialog');
+  }
+
+  it.each([
+    ['/shopping', 'shopping'],
+    ['/pantry', 'pantry'],
+    ['/', 'none'],
+    ['/recipes', 'none'],
+    ['/shopping/staples', 'none'],
+  ])('sends the Default List of %s as %s', async (route, target) => {
+    renderAt(route);
+    await recordNote();
+    expect(sent).toHaveLength(1);
+    expect(sent[0].get('defaultTarget')).toBe(target);
+  });
+
+  it('tells the Member to name a list while listening off the lists', async () => {
+    renderAt('/recipes');
+    pressDown(await talkButton());
+    await screen.findByText('Listening');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Say which list: “on the list” or “in the pantry”.',
+    );
+  });
+
+  it('opens Review over the current page and applies with the usual toast, without navigating', async () => {
+    renderAt('/recipes');
+    const dialog = within(await recordNote());
+    expect(screen.getByText('recipes')).toBeInTheDocument();
+
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 1 change' }),
+    );
+
+    await waitFor(() => expect(applied).toHaveLength(1));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByText('recipes')).toBeInTheDocument();
+    expect(await screen.findByText('1 applied')).toBeVisible();
+  });
 });

@@ -10,9 +10,13 @@ import {
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
-import type { VoiceList } from '../../lib/voice';
 import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
-import { formatClock, MAX_VOICE_NOTE_MS } from '../../lib/voice';
+import {
+  formatClock,
+  LISTENING_DESTINATION,
+  MAX_VOICE_NOTE_MS,
+  type VoiceDefaultTarget,
+} from '../../lib/voice';
 import { enter } from './enter';
 import { useElapsedMs } from './useElapsed';
 
@@ -36,7 +40,7 @@ type Props = {
   starting: boolean;
   /** When the microphone went live; the card keeps its own clock from it. */
   startedAt?: number;
-  target: VoiceList;
+  target: VoiceDefaultTarget;
   scanLanguage: ScanLanguage;
   /** The current input loudness, 0 to 1. */
   level: () => number;
@@ -225,9 +229,7 @@ export function ListeningCard({
           </Box>
           <span>{armed ? t('listening.slideBack') : t('listening.hint')}</span>
           <Box sx={{ flexBasis: '100%' }}>
-            {target === 'pantry'
-              ? t('listening.toPantry')
-              : t('listening.toShopping')}
+            {t(LISTENING_DESTINATION[target])}
           </Box>
         </Box>
       </Box>
