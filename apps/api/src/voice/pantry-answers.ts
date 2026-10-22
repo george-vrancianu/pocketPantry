@@ -99,10 +99,9 @@ export function answerPantryQuestions(
     const ingredientId = question.ingredient.id;
     const own = batches.filter((batch) => batch.ingredientId === ingredientId);
     const stock = own.filter((batch) => isUnexpired(batch.expiryDate, today));
-    const onShoppingList = context.shoppingIngredientIds.has(ingredientId);
     if (
       stock.length > 0 ||
-      (own.length === 0 && isBasic(context, ingredientId))
+      (own.length === 0 && context.pantryBasicIds.has(ingredientId))
     ) {
       return {
         ...base,
@@ -120,13 +119,10 @@ export function answerPantryQuestions(
     return {
       ...base,
       kind: own.length > 0 ? 'onlyExpired' : 'no',
-      onShoppingList,
+      onShoppingList: context.shoppingIngredientIds.has(ingredientId),
     };
   });
 }
-
-const isBasic = (context: AnswerContext, ingredientId: string): boolean =>
-  context.pantryBasicIds.has(ingredientId);
 
 /** One total per unit, in a fixed unit order; Batches with no quantity or no unit add nothing. */
 function totalsOf(stock: readonly AnswerBatch[]): UnitTotal[] {

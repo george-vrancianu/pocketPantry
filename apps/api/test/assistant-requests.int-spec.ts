@@ -863,7 +863,7 @@ describe('Assistant Requests (integration)', () => {
         },
       ]);
       expect(reply(response).speech).toBe(
-        'You have Milk: 500 millilitres and 1.5 litres in the fridge and the freezer.',
+        'You have Milk: 500 millilitres and 1.5 litres in the fridge and in the freezer.',
       );
     });
 
@@ -931,9 +931,23 @@ describe('Assistant Requests (integration)', () => {
         { kind: 'no', name: 'Eggs', onShoppingList: false },
       ]);
       expect(reply(response).speech).toBe(
-        'Only expired Milk and Butter, Milk already on your Shopping List. ' +
-          'No Flour or Eggs, Flour already on your Shopping List.',
+        'Only expired Milk and Butter, Milk is already on your Shopping List. ' +
+          'No Flour or Eggs, Flour is already on your Shopping List.',
       );
+    });
+
+    it('counts a checked Shopping List line as already on the list', async () => {
+      const ana = await member();
+      await onList(ana.cookie, flour);
+      const [line] = await list(ana.cookie);
+      await client(app, ana.cookie, '/api/shopping-list')
+        .patch(`/items/${line.id}?locale=en`, { checked: true })
+        .expect(200);
+      asking([flour, 'Flour']);
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'no', name: 'Flour', onShoppingList: true },
+      ]);
     });
 
     it('answers a Family Ingredient like a shared one', async () => {

@@ -4,7 +4,6 @@ import {
   defaultExpiryDate,
   expiryTagFor,
   countByLocation,
-  daysUntil,
   fromIso,
   groupByLocation,
   isExpiringSoon,
@@ -230,32 +229,26 @@ describe('rollUp against the shared Pantry answer fixture', () => {
   const fixtureToday = fromIso(fixture.today);
 
   it.each(fixture.cases)('$name', (testCase) => {
-    // The answer counts the Batches that are not Expired, as stock.
-    const stock = testCase.batches
-      .filter(
-        (batch) =>
-          batch.expiryDate === null || batch.expiryDate >= fixture.today,
-      )
-      .map((batch) =>
-        make({
-          ...batch,
-          unit: batch.unit as Batch['unit'],
-          location: batch.location as Batch['location'],
-        }),
-      );
-    const [row] = rollUp(stock);
-    expect(row.totals).toEqual(testCase.expected.totals);
-    expect([...new Set(stock.map((batch) => batch.location))].sort()).toEqual(
-      [...testCase.expected.locations].sort(),
+    const tagOf = (batch: Batch) =>
+      expiryTagFor(batch.expiryDate, fixtureToday, testCase.staleThresholdDays);
+    const batches = testCase.batches.map((entry) =>
+      make({
+        ...entry,
+        unit: entry.unit as Batch['unit'],
+        location: entry.location as Batch['location'],
+      }),
     );
+    // The answer counts the Batches the Pantry does not tag Expired as stock.
+    const stock = batches.filter((batch) => tagOf(batch).kind !== 'expired');
+    expect(rollUp(stock)[0].totals).toEqual(testCase.expected.totals);
+    // The Pantry lists Locations in its own order.
+    expect(groupByLocation(stock).map((group) => group.location)).toEqual(
+      testCase.expected.locations,
+    );
+    // Expiring Soon is the amber and urgent not-yet-expired tags.
     expect(
-      stock.some(
-        (batch) =>
-          batch.expiryDate !== null &&
-          isExpiringSoon(
-            daysUntil(batch.expiryDate, fixtureToday),
-            testCase.staleThresholdDays,
-          ),
+      stock.some((batch) =>
+        ['today', 'tomorrow', 'daysLeft'].includes(tagOf(batch).kind),
       ),
     ).toBe(testCase.expected.expiringSoon);
   });

@@ -397,7 +397,7 @@ describe('assistantSpeech', () => {
           }),
         ]),
       ).toBe(
-        'You have 2 litres of milk in the fridge and the freezer, some expiring soon, running low.',
+        'You have 2 litres of milk in the fridge and in the freezer, some expiring soon, running low.',
       );
     });
 
@@ -420,11 +420,12 @@ describe('assistantSpeech', () => {
       expect(
         say('en', [
           { kind: 'no', name: 'butter' },
-          { kind: 'no', name: 'eggs', onShoppingList: true },
+          { kind: 'no', name: 'rice', onShoppingList: true },
+          { kind: 'no', name: 'oil', onShoppingList: true },
           { kind: 'onlyExpired', name: 'milk', onShoppingList: true },
         ]),
       ).toBe(
-        'Only expired milk, milk already on your Shopping List. No butter or eggs, eggs already on your Shopping List.',
+        'Only expired milk, milk is already on your Shopping List. No butter, rice, or oil, rice and oil are already on your Shopping List.',
       );
     });
 
@@ -456,10 +457,10 @@ describe('assistantSpeech', () => {
           { kind: 'no', name: 'orez' },
         ]),
       ).toBe(
-        'Ai 21 de litri de lapte în frigider și raftul de condimente, o parte expiră curând, pe cale să se termine. ' +
+        'Ai 21 de litri de lapte în frigider și în dulapul cu condimente, o parte expiră curând, pe cale să se termine. ' +
           'Ai unt: 1 litru și 3 bucăți. ' +
           'Doar produse expirate: ouă. ' +
-          'Nu ai pâine sau orez, pâine deja pe Lista de cumpărături.',
+          'Nu ai pâine sau orez, pâine este deja pe Lista de cumpărături.',
       );
     });
 

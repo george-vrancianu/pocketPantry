@@ -8,6 +8,7 @@ import {
   type CatalogSearchResult,
   type ScanLanguage,
 } from '../catalog/catalog.schemas';
+import type { CatalogScope } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import { DATABASE } from '../database/database.constants';
@@ -306,25 +307,33 @@ export class VoiceService {
       spokenNames.set(id, question.spokenName);
       asked.push({ id, text: question.spokenText, ingredient: match });
     }
-    const answers = asked.length
-      ? answerPantryQuestions(asked, {
-          batches: await ctx.lists.pantryBatches(),
-          shoppingIngredientIds: new Set(
-            shoppingItems.flatMap((item) =>
-              item.ingredientId ? [item.ingredientId] : [],
-            ),
-          ),
-          runningLowIds: new Set(await this.runningLow.list(memberId)),
-          pantryBasicIds: await this.pantryBasicsAmong(
+    let answers: PantryAnswer[] = [];
+    if (asked.length) {
+      const [batches, runningLowIds, pantryBasicIds, staleThresholdDays] =
+        await Promise.all([
+          ctx.lists.pantryBatches(),
+          this.runningLow.list(memberId),
+          this.pantryBasicsAmong(
             scope,
             asked.map((entry) => entry.ingredient.id),
           ),
-          staleThresholdDays: await this.settings.staleThresholdOf(
-            await this.settings.familyIdOf(memberId),
+          this.settings
+            .familyIdOf(memberId)
+            .then((familyId) => this.settings.staleThresholdOf(familyId)),
+        ]);
+      answers = answerPantryQuestions(asked, {
+        batches,
+        shoppingIngredientIds: new Set(
+          shoppingItems.flatMap((item) =>
+            item.ingredientId ? [item.ingredientId] : [],
           ),
-          today: input.today,
-        })
-      : [];
+        ),
+        runningLowIds: new Set(runningLowIds),
+        pantryBasicIds,
+        staleThresholdDays,
+        today: input.today,
+      });
+    }
     for (const phrase of read.unsupported) {
       out.push(this.notUnderstood(phrase));
     }
@@ -338,7 +347,7 @@ export class VoiceService {
 
   /** The Pantry Basics (water, salt) among the Ingredients; Family Ingredients count like shared ones. */
   private async pantryBasicsAmong(
-    scope: Awaited<ReturnType<SettingsService['catalogScopeForMember']>>,
+    scope: CatalogScope,
     ingredientIds: string[],
   ): Promise<Set<string>> {
     const ingredients = scope.ingredients(this.database);

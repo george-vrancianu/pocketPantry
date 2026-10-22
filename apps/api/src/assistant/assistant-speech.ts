@@ -117,13 +117,12 @@ type Messages = {
   answers: Record<AssistantAnswerKind, string>;
   /** The details a yes adds after the Ingredient. */
   answerDetails: {
-    /** `{locations}` is the joined Locations. */
-    inLocations: string;
+    /** Each Location with its own preposition ("in the fridge", "på krydderihylden"). */
     locations: Record<VoiceLocation, string>;
     expiringSoon: string;
     runningLow: string;
     /** Added to a no or only expired: `{items}` are the ones already on the Shopping List. */
-    onShoppingList: string;
+    onShoppingList: { one: string; other: string };
   };
   /** The unit word of a bare count beside other units ("milk: 2 litres and 3 pieces"). */
   pieces: Forms;
@@ -166,16 +165,18 @@ export const assistantMessages = {
       no: 'No {items}',
     },
     answerDetails: {
-      inLocations: 'in {locations}',
       locations: {
-        fridge: 'the fridge',
-        freezer: 'the freezer',
-        cupboard: 'the cupboard',
-        spices: 'the spice rack',
+        fridge: 'in the fridge',
+        freezer: 'in the freezer',
+        cupboard: 'in the cupboard',
+        spices: 'in the spice rack',
       },
       expiringSoon: 'some expiring soon',
       runningLow: 'running low',
-      onShoppingList: '{items} already on your Shopping List',
+      onShoppingList: {
+        one: '{items} is already on your Shopping List',
+        other: '{items} are already on your Shopping List',
+      },
     },
     pieces: plain('piece', 'pieces'),
     states: {
@@ -214,16 +215,18 @@ export const assistantMessages = {
       no: 'Nu ai {items}',
     },
     answerDetails: {
-      inLocations: 'în {locations}',
       locations: {
-        fridge: 'frigider',
-        freezer: 'congelator',
-        cupboard: 'cămară',
-        spices: 'raftul de condimente',
+        fridge: 'în frigider',
+        freezer: 'în congelator',
+        cupboard: 'în cămară',
+        spices: 'în dulapul cu condimente',
       },
       expiringSoon: 'o parte expiră curând',
       runningLow: 'pe cale să se termine',
-      onShoppingList: '{items} deja pe Lista de cumpărături',
+      onShoppingList: {
+        one: '{items} este deja pe Lista de cumpărături',
+        other: '{items} sunt deja pe Lista de cumpărături',
+      },
     },
     pieces: { one: 'bucată', few: 'bucăți', other: 'bucăți' },
     states: {
@@ -261,16 +264,18 @@ export const assistantMessages = {
       no: 'Du har ikke {items}',
     },
     answerDetails: {
-      inLocations: 'i {locations}',
       locations: {
-        fridge: 'køleskabet',
-        freezer: 'fryseren',
-        cupboard: 'skabet',
-        spices: 'krydderihylden',
+        fridge: 'i køleskabet',
+        freezer: 'i fryseren',
+        cupboard: 'i skabet',
+        spices: 'på krydderihylden',
       },
       expiringSoon: 'noget udløber snart',
       runningLow: 'ved at løbe tør',
-      onShoppingList: '{items} står allerede på indkøbslisten',
+      onShoppingList: {
+        one: '{items} står allerede på indkøbslisten',
+        other: '{items} står allerede på indkøbslisten',
+      },
     },
     pieces: plain('stykke', 'stykker'),
     states: {
@@ -291,8 +296,9 @@ export const ASSISTANT_LOCALES = Object.keys(
 const OWN_CLAUSE: ReadonlySet<AssistantAnswerKind> = new Set(['yes']);
 
 /** "No butter or eggs" is a choice; "only expired milk and eggs" is a fact about each. */
-const LIST_TYPE: Record<AssistantAnswerKind, 'conjunction' | 'disjunction'> = {
-  yes: 'conjunction',
+const LIST_TYPE: Partial<
+  Record<AssistantAnswerKind, 'conjunction' | 'disjunction'>
+> = {
   onlyExpired: 'conjunction',
   no: 'disjunction',
 };
@@ -399,12 +405,9 @@ const yesPhrase = (
   const details = messages.answerDetails;
   const locations = outcome.locations ?? [];
   const where = locations.length
-    ? ` ${details.inLocations.replace(
-        '{locations}',
-        joinList(
-          locale,
-          locations.map((location) => details.locations[location]),
-        ),
+    ? ` ${joinList(
+        locale,
+        locations.map((location) => details.locations[location]),
       )}`
     : '';
   const flags = [
@@ -457,7 +460,7 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
     );
     return [
       covered.length
-        ? `${grouped}, ${messages.answerDetails.onShoppingList.replace('{items}', joinList(locale, covered))}`
+        ? `${grouped}, ${messages.answerDetails.onShoppingList[covered.length === 1 ? 'one' : 'other'].replace('{items}', joinList(locale, covered))}`
         : grouped,
     ];
   });
