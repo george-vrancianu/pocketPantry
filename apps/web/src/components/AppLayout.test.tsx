@@ -4,6 +4,8 @@ import {
   stubVoiceFetch,
   talkButton,
 } from '../test/voice';
+import { pressDown } from '../test/voiceHold';
+import { VOICE_LAYER } from '../lib/voicePlacement';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { paintedColour } from '@pocket-pantry/ui/test/colour';
@@ -149,7 +151,7 @@ describe('AppLayout Voice Note host', () => {
     },
   );
 
-  it.each(['/recipes', '/scan', '/shopping/staples'])(
+  it.each(['/recipes', '/scan', '/customise', '/shopping/staples'])(
     'shows no mic on %s, once the voice config has loaded',
     async (route) => {
       const { queryClient } = renderAt(route);
@@ -177,6 +179,17 @@ describe('AppLayout Voice Note host', () => {
       ).toBeTruthy();
     },
   );
+
+  it('lifts the Dock above the scrim while the mic is held, so the mic is not dimmed', async () => {
+    renderAt('/shopping');
+    const dock = screen.getByRole('navigation');
+    expect(getComputedStyle(dock).zIndex).toBe('10');
+    pressDown(await talkButton());
+    await screen.findByText('Listening');
+    expect(Number(getComputedStyle(dock).zIndex)).toBeGreaterThan(
+      VOICE_LAYER.scrim,
+    );
+  });
 
   it('keeps the camera, with no mic, where the Dock has no Default List', async () => {
     const { queryClient } = renderAt('/recipes');

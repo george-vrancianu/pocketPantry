@@ -8,14 +8,14 @@ import {
   radius,
   visuallyHidden,
 } from '@pocket-pantry/ui';
-import { useId } from 'react';
+import { useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { MAX_VOICE_NOTE_MS, type VoiceList } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { usePressGesture } from '../../lib/usePressGesture';
 import { LanguageMenu } from './LanguageMenu';
-import { useDockMicSlot, useVoiceHost } from './VoiceHost';
+import { useDockMicSlot, useReportRecording, useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
 import { useElapsedMs } from './useElapsed';
 import {
@@ -48,6 +48,11 @@ export function VoiceButton({
 
   const host = useVoiceHost();
   const micSlot = useDockMicSlot();
+  const reportRecording = useReportRecording();
+  useEffect(() => {
+    reportRecording(active);
+    return () => reportRecording(false);
+  }, [active, reportRecording]);
   const destinationId = useId();
   const blockedId = useId();
   const { armed, buttonProps } = usePressGesture({
@@ -116,6 +121,7 @@ export function VoiceButton({
           left: 0,
           right: 0,
           bottom: micBottom,
+          zIndex: VOICE_LAYER.card,
           display: 'flex',
           justifyContent: 'center',
           // Only the chip takes taps; the row around it lets them through.

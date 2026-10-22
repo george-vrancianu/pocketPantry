@@ -45,6 +45,8 @@ export const voiceToast = ({ abovePill: lifted = false } = {}) => ({
 /** Stacking of the voice layers; the app's toasts (1400) stay above all of them. */
 export const VOICE_LAYER = {
   scrim: 1100,
+  /** The Dock while a Voice Note is held: above the scrim, so the mic is not dimmed. */
+  dock: 1150,
   /** The Listening card, the status pill, the tip, the language menu. */
   card: 1250,
 } as const;

@@ -10,7 +10,15 @@ const HostContext = createContext<HTMLElement | null>(null);
 const MicSlotContext = createContext<{
   slot: HTMLElement | null;
   setSlot: (element: HTMLElement | null) => void;
-}>({ slot: null, setSlot: () => undefined });
+  /** A Voice Note is being held: the Dock rises above the scrim. */
+  recording: boolean;
+  setRecording: (recording: boolean) => void;
+}>({
+  slot: null,
+  setSlot: () => undefined,
+  recording: false,
+  setRecording: () => undefined,
+});
 
 const SetHostContext = createContext<(element: HTMLElement | null) => void>(
   () => undefined,
@@ -35,7 +43,11 @@ export function useRegisterDockMicSlot() {
 export function VoiceHostProvider({ children }: { children: ReactNode }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [slot, setSlot] = useState<HTMLElement | null>(null);
-  const mic = useMemo(() => ({ slot, setSlot }), [slot]);
+  const [recording, setRecording] = useState(false);
+  const mic = useMemo(
+    () => ({ slot, setSlot, recording, setRecording }),
+    [slot, recording],
+  );
   return (
     <SetHostContext.Provider value={setHost}>
       <HostContext.Provider value={host}>
@@ -48,9 +60,20 @@ export function VoiceHostProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Put this in the DOM between the page and the Dock: the Voice Note button and its chip are fixed
- * on screen, but in the DOM they sit here, so Tab reaches them after the page and before the Dock.
+ * Put this in the DOM between the page and the Dock: the Voice Note's Scan Language chip, scrim and
+ * notices are fixed on screen, but in the DOM they sit here, so Tab reaches the chip after the page
+ * and before the Dock (whose mic half holds the button itself).
  */
 export function VoiceHostSlot() {
   return <div ref={useContext(SetHostContext)} />;
+}
+
+/** True while a Voice Note is held; the Dock lifts above the scrim so the mic stays bright. */
+export function useDockRaised() {
+  return useContext(MicSlotContext).recording;
+}
+
+/** Tell the Dock whether a Voice Note is being held. */
+export function useReportRecording() {
+  return useContext(MicSlotContext).setRecording;
 }

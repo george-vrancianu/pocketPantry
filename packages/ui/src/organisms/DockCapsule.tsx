@@ -1,7 +1,12 @@
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import { CameraIcon } from '../atoms/icons';
-import { DOCK_OVERHANG } from '../theme/dock';
+import {
+  CAPSULE_CAMERA_ONLY_WIDTH,
+  CAPSULE_WIDTH,
+  DOCK_OVERHANG,
+  DOCK_PADDING,
+} from '../theme/dock';
 import { focusRing } from '../theme/focusRing';
 import { color, palette, radius, shadow } from '../theme/themeVars';
 
@@ -14,9 +19,6 @@ export type DockCapsuleProps = {
    */
   micSlot?: (element: HTMLElement | null) => void;
 };
-
-/** The Dock's padding, px: the capsule reaches past it, then past the edge. */
-const DOCK_PADDING = 8;
 
 /**
  * The Camera/Mic capsule over the Dock's middle slot: the camera on top, the mic below, a
@@ -59,7 +61,7 @@ export function DockCapsule({
         transform: 'translateX(-50%)',
         top: micSlot ? -DOCK_PADDING - DOCK_OVERHANG : 0,
         bottom: micSlot ? -DOCK_PADDING - DOCK_OVERHANG : 0,
-        width: micSlot ? 62 : 52,
+        width: micSlot ? CAPSULE_WIDTH : CAPSULE_CAMERA_ONLY_WIDTH,
         display: 'flex',
         flexDirection: 'column',
         borderRadius: radius.pill,

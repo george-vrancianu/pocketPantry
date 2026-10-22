@@ -9,6 +9,7 @@ import {
   displayType,
   DOCK_BOTTOM,
   DOCK_HEIGHT,
+  DOCK_OVERHANG,
   focusRing,
   IconButton,
   PlusIcon,
@@ -380,7 +381,8 @@ export function MealPlanPopover({
       EDGE,
       Math.min(centre - width / 2, viewWidth - width - EDGE),
     );
-    const limit = viewHeight - (DOCK_BOTTOM + dockHeight + DOCK_CLEARANCE);
+    const limit =
+      viewHeight - (DOCK_BOTTOM + dockHeight + DOCK_OVERHANG + DOCK_CLEARANCE);
     let top = column.bottom + GAP;
     let placement: Position['placement'] = 'below';
     if (top + height > limit) {
