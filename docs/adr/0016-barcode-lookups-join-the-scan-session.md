@@ -1,5 +1,7 @@
 # Barcode Lookups join the Scan Session
 
+> Amended by Scan screen v3 (2026-10-22): the dial became a text mode slider (Receipt, Ingredients, Product, Barcode, Plate), and Barcode is still right after Product. In Barcode the shutter is a non-interactive ring, and each accepted code's frozen frame flies into the photo stack. With no thumbnails on the camera, a failed Barcode card is retried from its Review card ("Look up again"), only for errors a retry can change.
+
 A Member unpacking a bag of shopping on the Scan page had to take a Product Scan of each item, even for a Known Barcode the Family had already saved. Barcode Lookup is the free, instant path ([ADR 0013](0013-barcode-lookup-is-not-a-scan.md)), but it only filled the add-Batch form. Barcode now sits on the Scan page's mode dial, right after Product, and its lookups ride in the Scan Session as cards, reviewed and saved like any other card. A Barcode Lookup is still not a Scan: it stays a camera mode, not a Scan Mode.
 
 ## Decision

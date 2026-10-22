@@ -201,7 +201,7 @@ Product, Receipt, Plate, or Ingredients.
 Recognises a single packaged product from one photo, and its best-before date when the date is in that photo.
 
 **Barcode Lookup**:
-Reading a product's barcode in the camera and looking the code up, first among the Family's Known Barcodes and then in an open product database. It fills the add-Batch form, or adds a card to a Scan Session. Not a Scan: no photo is sent for recognition, it has no Scan Language, and it never counts against the Scan Cap. Barcode sits on the camera's mode dial but is not a Scan Mode.
+Reading a product's barcode in the camera and looking the code up, first among the Family's Known Barcodes and then in an open product database. It fills the add-Batch form, or adds a card to a Scan Session. Not a Scan: no photo is sent for recognition, it has no Scan Language, and it never counts against the Scan Cap. Barcode sits on the camera's mode slider but is not a Scan Mode.
 _Avoid_: Barcode scan, barcode mode
 
 **Lookup Limit**:
@@ -224,7 +224,7 @@ A long receipt can be scanned across several photos, one per **Receipt Section**
 One photo of a folded part of the same receipt. It is read as one **Scan**, and in Review its card is merged with the card of the previous section (up to 10 sections).
 
 **Scan Language**:
-The language the printed text in a Scan is read in: English, Romanian, or Danish. Defaults to the Member's Scan Language preference, which follows the UI Language until the Member sets it, and can be changed for a single Scan. Independent of the UI Language and the Catalog Language. Plate Scans have none.
+The language the printed text in a Scan is read in: English, Romanian, or Danish. Defaults to the Member's Scan Language preference, which follows the UI Language until the Member sets it, and can be changed for one Scan Session without changing the preference. Independent of the UI Language and the Catalog Language. Plate Scans and Barcode Lookups have none.
 _Avoid_: Scan locale, source language
 
 **Plate Scan**:

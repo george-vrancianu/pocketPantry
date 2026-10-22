@@ -1,0 +1,35 @@
+# SPEC.md amendments — Scan screen v3 (2026-10-22)
+
+Replace the matching bullets under **Implementation Decisions → Scanning** in `docs/SPEC.md`. Text not listed here stays as it is. Design detail is in `handoff.md`.
+
+## 1. Replace the "The Scan screen is a full-screen…" bullet with
+
+- The Scan screen is a full-screen, non-scrolling, always-dark camera view (it stays dark in the light theme), using the `cam-*` camera palette, laid out like the iOS Camera app. The camera feed is aspect-filled behind everything, under a radial vignette, and runs under two semi-transparent glass bars (`cam-glass` with a 14 pt blur): a top bar and a footer. The top bar holds Close on the left, and the torch button (hidden when the camera has no torch), the Scan Language chip and Info on the right. The footer holds, from top to bottom, the shutter row (the photo stack on the left, the shutter in the middle, Import on the right) and the mode slider, above the bottom safe area. Manual entry is not offered here; it lives on the Pantry. The chip shows the Scan Language code, starting at the Member's Scan Language preference, and opens a menu of English, Română and Dansk in that order. A pick overrides the Scan Language for the rest of the Scan Session without changing the preference (ADR 0022). It is sent with each following Scan, including photos added from Review, and it is locked while a photo is being prepared. The chip is hidden in Plate and Barcode, which have no Scan Language.
+
+## 2. Replace the "Scan Modes are picked on an icon dial…" bullet with
+
+- Camera modes are picked on a text slider at the bottom of the footer, in the order Receipt, Ingredients, Product, Barcode, Plate, written in capitals (Barcode is a camera mode, not a Scan Mode, ADR 0016); the selected name is centred and accent-coloured and the strip fades at both edges. Dragging the slider or the camera view sideways moves the strip with the finger (after 10 pt of mostly horizontal travel; past either end it follows at 35 %) and settles on the nearest mode on release, or one step for a quick short flick; the guide shrinks slightly while dragging and the settle animation is off under reduced motion. Tapping a name or pressing the left and right arrow keys also changes mode (stopping at the ends; the keys do nothing while a sheet or the language menu is open, or focus is in a field), with a light haptic where the browser supports it and a screen-reader announcement. The slider is a radio group. The last-used mode is remembered on the device; with none, or an unknown one, Receipt opens. A `?mode=` link wins and becomes the last-used mode. The Info sheet lists the five camera modes with a one-line description each, Receipt with its framing and folding tips; the camera screen itself shows no mode description.
+
+## 3. Replace the "Every Scan Mode has a guide…" bullet with
+
+- Every Scan Mode has a guide of four L-shaped corner brackets, centred horizontally and placed in the clear area between the two bars, 14 pt above its middle, sized as a fraction of the screen width and of the clear area's height: Receipt 0.56 x 0.78, Product 0.62 x 0.56, Ingredients 0.88 x 0.50, Plate 0.80 x 0.60, Barcode 0.80 x 0.30. It morphs to the new size over 400 ms when the mode changes (no animation under reduced motion). The guide is a framing aid only and takes no input. The shutter takes the Scan: a round button in the middle of the footer, activated by a tap, Enter or Space. Holding it runs the best-effort focus pass and letting go takes the Scan (ADR 0015). In Barcode, which reads codes on its own, the shutter is replaced by a ring with a barcode glyph that takes no input, the Import button is hidden, and each accepted code's frozen frame flies into the photo stack. It is disabled while a photo is being prepared, while the camera is not ready, at the Scan Session limit and while the Scan Cap blocks scanning. A camera Scan never waits for an earlier one to be read. A Scan flashes the screen white (55 % fading out over 280 ms, gone by 420 ms), flashes the guide's inside (85 % over 420 ms), thickens the brackets from 3.5 to 6 pt for the flash and pulses the guide to 0.965 scale for 360 ms, with a 12 ms haptic where supported, then the cropped photo flies into the photo stack over 460 ms; under reduced motion the flash, fill, pulse and fly animations are dropped, while the bracket change to 6 pt (white) and the haptic remain. No hint is shown under the guide; the Info sheet explains the modes. A receipt camera frame is cropped to the guide by mapping it through the feed's cover scaling and is sent at the crop's aspect, at most 512 px wide. The add-Batch form's camera (Product and Barcode, for Prefill) uses the same top bar, shutter and slider, with no photo stack.
+
+## 4. In the "Scan Session (ADR 0004)…" bullet
+
+Replace the sentence starting "The Scan column down the left edge…" up to and including "…which show their reason as the thumbnail's name and offer no retry." with:
+
+> The photo stack left of the shutter shows the last three cards fanned, newest on top, with the number of cards (Scans and Barcode Lookups) as a badge: amber with a spinner while any Scan waits or is read, amber while any gallery receipt still needs crop, amber with "!" while any Scan has failed, and accent green once all are read. With an empty Scan Session it is a dashed placeholder and does nothing. A network error is retried once automatically; any other failed read (or a photo with nothing in it) leaves the Scan in the Scan Session as failed: its Review card offers "Read again", which reads the same photo again (a failed Barcode card offers "Look up again"), except for errors a retry cannot change (too many items, photo too large or invalid, nothing found), which show their reason and offer no retry.
+
+Replace "The gallery button in the top bar adds the picked files…" with "The Import button right of the shutter (a photo icon with a "+" badge) adds the picked files…". In the receipt-crop sentence, replace "(Done stays amber, …)" with "(the stack badge stays amber, …)".
+
+## 5. Replace the "Done sits at the right of the top bar…" bullet with
+
+- Tapping the photo stack opens `/scan/review`, even while reads are running; it is disabled with an empty Scan Session. There is no Done button.
+
+## 6. In the "`/scan/review` is the overview…" bullet, add after the first sentence
+
+> The list ends with two buttons: "Take more" returns to the camera with the Scan Session intact, and "Add from photos" opens the file picker and adds the picked files to the Scan Session in the last-used Scan Mode (Product when the last-used camera mode was Barcode), as new cards at the end, without leaving Review.
+
+## 7. Glossary
+
+No new terms. "Scan column" is retired in favour of "photo stack" (UI wording only, not a domain term). Already applied: Barcode Lookup sits on the "mode slider"; the Scan Language "can be changed for one Scan Session without changing the preference". ADRs 0015, 0016 and 0022 carry matching amendment notes.

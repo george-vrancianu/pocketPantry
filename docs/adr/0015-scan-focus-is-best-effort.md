@@ -1,6 +1,8 @@
 # Focus before a Scan is best-effort
 
-Holding the mode dial focuses before the Scan is taken. Browsers differ on whether a page may ask the camera to focus, so we do what each one allows and never let focus block a Scan.
+> Amended by Scan screen v3 (2026-10-22): the hold moved from the mode dial to the shutter. A tap on the shutter scans at once; holding it focuses, and letting go scans.
+
+Holding the shutter focuses before the Scan is taken. Browsers differ on whether a page may ask the camera to focus, so we do what each one allows and never let focus block a Scan.
 
 ## Decision
 
