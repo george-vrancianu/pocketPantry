@@ -60,7 +60,7 @@ export type VoiceNoteState = {
   proposal?: {
     transcript: string;
     actions: VoiceReviewAction[];
-    /** The Pantry Questions' answers. Shown by the answer sheet when they are all there is (a mixed note is #463). */
+    /** The Pantry Questions' answers. Shown by the answer sheet when they are all there is, else by the answer card in Review. */
     answers: VoiceAnswer[];
   };
   error?: VoiceErrorCode;
@@ -132,25 +132,6 @@ export type StartBlocker = 'active' | 'busy' | 'kept' | 'capped' | 'none';
 
 /** The longest delay `setTimeout` takes. */
 const MAX_TIMEOUT = 2 ** 31 - 1;
-
-/** INTERIM (#463): a Pantry Question in a mixed note, shown in Review as a "Didn't understand" row. */
-const unansweredRow = (answer: VoiceAnswer): VoiceReviewAction => ({
-  id: answer.id,
-  status: 'notUnderstood',
-  target: null,
-  op: null,
-  text: answer.text,
-  ingredient: null,
-  name: null,
-  quantity: null,
-  unit: null,
-  scope: null,
-  expiresOn: null,
-  noExpiry: false,
-  location: null,
-  rows: {},
-  defaults: {},
-});
 
 const initial: VoiceNoteState = { phase: 'idle', defaultTarget: 'shopping' };
 
@@ -406,12 +387,7 @@ export function createVoiceNote(
         recording: state.recording,
         proposal: {
           transcript: result.transcript,
-          // INTERIM until #463 shows answers inside Review: in a mixed note each question stays
-          // visible as a "Didn't understand" row, as it did before answers existed.
-          actions:
-            result.actions.length > 0
-              ? [...result.actions, ...answers.map(unansweredRow)]
-              : result.actions,
+          actions: result.actions,
           answers,
         },
       });

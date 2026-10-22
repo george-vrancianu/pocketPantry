@@ -125,7 +125,7 @@ function AnswerSheet() {
 }
 
 /** One answer: the Ingredient Icon and name, then the verdict for its kind. */
-function AnswerRow({ answer }: { answer: VoiceAnswer }) {
+export function AnswerRow({ answer }: { answer: VoiceAnswer }) {
   const { t } = useTranslation('voice');
   const look = ANSWER[answer.kind];
   return (
