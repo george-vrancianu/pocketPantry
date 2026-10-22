@@ -540,7 +540,7 @@
     {
       "id": "ro-27",
       "scanLanguage": "ro",
-      "tags": ["mixed-lists", "relative-date", "off-page"],
+      "tags": ["mixed-lists", "off-page"],
       "transcript": "Adaugă unt, pune două iaurturi în frigider și avem nevoie de cafea. Ah, și adaugă făină în cămară.",
       "defaultTarget": "none",
       "expected": {

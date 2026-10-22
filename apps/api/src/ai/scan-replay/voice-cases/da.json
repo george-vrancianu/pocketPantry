@@ -550,8 +550,8 @@
     {
       "id": "da-27",
       "scanLanguage": "da",
-      "tags": ["mixed-lists", "relative-date", "off-page"],
-      "transcript": "Tilføj smør, læg to yoghurt i køleskabet, og vi skal have kaffe. Ah, og tilføj mel til spisekammeret.",
+      "tags": ["mixed-lists", "off-page"],
+      "transcript": "Tilføj smør, læg to yoghurt i køleskabet, og vi mangler kaffe. Ah, og tilføj mel til spisekammeret.",
       "defaultTarget": "none",
       "expected": {
         "actions": [

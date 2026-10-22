@@ -545,7 +545,7 @@
     {
       "id": "en-27",
       "scanLanguage": "en",
-      "tags": ["mixed-lists", "relative-date", "off-page"],
+      "tags": ["mixed-lists", "off-page"],
       "transcript": "Add butter, put two yoghurts in the fridge, and we need coffee. Oh, and add flour to the pantry.",
       "defaultTarget": "none",
       "expected": {
