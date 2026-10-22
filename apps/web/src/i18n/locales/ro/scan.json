@@ -13,9 +13,9 @@
     "label": "Citit ca",
     "read": "Se citește în {{language}}",
     "inSentence": {
-      "en": "English",
+      "en": "engleză",
       "ro": "română",
-      "da": "dansk"
+      "da": "daneză"
     }
   },
   "modes": "Mod de scanare",

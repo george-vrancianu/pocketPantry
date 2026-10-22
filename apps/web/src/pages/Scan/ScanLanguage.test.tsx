@@ -137,7 +137,7 @@ describe('Scan Language on the Scan screen', () => {
   });
 
   it.each([
-    ['ro', 'Se citește în dansk'],
+    ['ro', 'Se citește în daneză'],
     ['da', 'Læser på dansk'],
     ['en', 'Reading in Dansk'],
   ] as const)(
