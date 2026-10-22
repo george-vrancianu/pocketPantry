@@ -1,7 +1,7 @@
 import { Box, Typography, tokens, radius } from '@pocket-pantry/ui';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SCAN_MODES } from '../../../lib/scan';
+import { CAMERA_MODES } from '../../../lib/cameraMode';
 import { glassFocusRing, shade, translucent } from './glass';
 
 const FOCUSABLE =
@@ -19,7 +19,8 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
     const opener = document.activeElement as HTMLElement | null;
     const focusables = () =>
       Array.from(sheet.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
-    focusables()[0]?.focus();
+    // No scroll: the sheet is still sliding in, and scrolling the camera root would shift the feed.
+    focusables()[0]?.focus({ preventScroll: true });
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') return onClose();
       if (event.key !== 'Tab') return;
@@ -90,18 +91,15 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
         <Typography sx={{ mt: 1, fontSize: 14, color: tokens.color.muted }}>
           {t('info.intro')}
         </Typography>
-        <Typography sx={{ mt: 1, fontSize: 14, color: tokens.color.muted }}>
-          {t('info.hold')}
-        </Typography>
         <Box
           component="ul"
           sx={{ mt: 1.5, mb: 0, p: 0, listStyle: 'none', fontSize: 14 }}
         >
-          {SCAN_MODES.map((mode) => (
+          {CAMERA_MODES.map((mode) => (
             <Box component="li" key={mode} sx={{ mt: 0.75 }}>
               <strong>{t(`mode.${mode}`)}</strong>{' '}
               <Box component="span" sx={{ color: tokens.color.muted }}>
-                {t(`detail.${mode}`)}
+                {t(mode === 'barcode' ? 'info.barcode' : `detail.${mode}`)}
               </Box>
               {mode === 'receipt'
                 ? (['guide.receipt', 'guide.receiptFold'] as const).map(
@@ -118,6 +116,9 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
             </Box>
           ))}
         </Box>
+        <Typography sx={{ mt: 1.5, fontSize: 14, color: tokens.color.muted }}>
+          {t('info.tip')}
+        </Typography>
         <Box
           component="button"
           type="button"
@@ -137,7 +138,7 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
             '&:focus-visible': glassFocusRing,
           }}
         >
-          {t('info.dismiss')}
+          {t('info.ok')}
         </Box>
       </Box>
     </Box>

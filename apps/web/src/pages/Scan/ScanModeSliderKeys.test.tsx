@@ -30,9 +30,9 @@ function setup(route: string, routes: Record<string, () => Response> = {}) {
   );
 }
 
-const dial = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
+const slider = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
 const checked = () =>
-  within(dial())
+  within(slider())
     .getAllByRole('radio')
     .filter((r) => r.getAttribute('aria-checked') === 'true')
     .map((r) => r.getAttribute('aria-label') ?? r.textContent);
@@ -54,7 +54,7 @@ describe('Scan mode slider: when arrows must not change the mode', () => {
       screen.getByRole('button', { name: 'How scanning works' }),
     );
     await userEvent.keyboard('{ArrowRight}');
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Got it' }));
     expect(checked()).toEqual(['Product']);
   });
 
@@ -105,18 +105,20 @@ describe('Scan mode slider: when arrows must not change the mode', () => {
 
   it('moves focus to the newly selected radio after an arrow press', async () => {
     setup('/scan?mode=product');
-    within(dial()).getByRole('radio', { name: 'Product' }).focus();
+    within(slider()).getByRole('radio', { name: 'Product' }).focus();
     await userEvent.keyboard('{ArrowRight}');
     await waitFor(() =>
       expect(
-        within(dial()).getByRole('radio', { name: 'Barcode' }),
+        within(slider()).getByRole('radio', { name: 'Barcode' }),
       ).toHaveFocus(),
     );
   });
 
   it('announces the change in the slider status, naming the new mode', async () => {
     setup('/scan?mode=product');
-    await userEvent.click(within(dial()).getByRole('radio', { name: 'Plate' }));
+    await userEvent.click(
+      within(slider()).getByRole('radio', { name: 'Plate' }),
+    );
     const live = screen
       .getAllByRole('status')
       .filter((el) => el.textContent?.trim() === 'Plate mode');

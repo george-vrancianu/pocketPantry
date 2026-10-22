@@ -88,25 +88,32 @@ describe('ScanPage', () => {
     expect(screen.getByRole('radio', { name: 'Receipt' })).toBeChecked();
     for (const name of [
       'Close scanner',
-      'Toggle flash',
-      'Choose from photos',
+      /^Torch/,
+      'How scanning works',
+      'Import from photos',
       'Take photo',
+      'No photos yet',
     ]) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
+    // Done, the top-bar gallery button and the thumbnail column are gone.
+    expect(
+      screen.queryByRole('button', { name: /^Done|Choose from photos/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('scan-thumbnail')).not.toBeInTheDocument();
   });
 
   it('hides the flash toggle when the camera has no torch', () => {
     fakeCamera.torchSupported = false;
     renderScan({});
     expect(
-      screen.queryByRole('button', { name: 'Toggle flash' }),
+      screen.queryByRole('button', { name: /^Torch/ }),
     ).not.toBeInTheDocument();
   });
 
   it('toggles the flash', async () => {
     renderScan({});
-    const flash = screen.getByRole('button', { name: 'Toggle flash' });
+    const flash = screen.getByRole('button', { name: /^Torch/ });
     expect(flash).toHaveAttribute('aria-pressed', 'false');
     await userEvent.click(flash);
     expect(flash).toHaveAttribute('aria-pressed', 'true');
@@ -123,7 +130,7 @@ describe('ScanPage', () => {
       );
       expect(shutter()).not.toHaveAttribute('aria-disabled');
       expect(
-        screen.getByRole('button', { name: 'Choose from photos' }),
+        screen.getByRole('button', { name: 'Import from photos' }),
       ).toBeEnabled();
     },
   );
@@ -161,8 +168,10 @@ describe('ScanPage', () => {
         ),
     });
     await shoot();
-    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
-      /too large/,
+    // Retry and the reason live on the card in Review; the camera only shows the stack going amber.
+    expect(await screen.findByTestId('stack-badge')).toHaveAttribute(
+      'data-state',
+      'failed',
     );
     expect(
       screen.queryByRole('button', { name: /retry/i }),

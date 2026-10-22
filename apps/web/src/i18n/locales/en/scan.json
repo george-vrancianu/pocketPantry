@@ -1,18 +1,17 @@
 {
   "title": "Scan {{mode}}",
   "close": "Close scanner",
-  "flash": "Toggle flash",
   "info": {
     "label": "How scanning works",
     "title": "Scanning your pantry",
     "intro": "Pick a mode, frame it inside the corners, tap the shutter.",
-    "hold": "Hold the shutter to focus first, then let go to scan.",
-    "dismiss": "Close"
+    "tip": "Every photo is read in the background. Keep shooting, then tap the stack at the bottom left to review everything at once.",
+    "ok": "Got it",
+    "barcode": "Point at a barcode; each one is added on its own"
   },
   "scanLanguage": {
     "label": "Reading as"
   },
-  "gallery": "Choose from photos",
   "modes": "Scan mode",
   "shutter": {
     "label": "Take photo"
@@ -48,18 +47,9 @@
     "plate": "Lists its ingredients so you can add what you are missing to your shopping list.",
     "ingredients": "Adds each loose item on the counter to your Pantry."
   },
-  "done": "Done",
-  "doneCount_one": "Done, {{count}} photo",
-  "doneCount_other": "Done, {{count}} photos",
   "session": {
-    "label": "Photos taken",
-    "reading": "Reading photo",
-    "needsCrop": "Needs crop",
-    "read": "Photo read",
     "failed": "Could not read photo",
-    "lookupFailed": "Barcode Lookup failed",
-    "retryLookup": "Retry lookup",
-    "retry": "Retry reading photo"
+    "lookupFailed": "Barcode Lookup failed"
   },
   "photoAdded": "Photo {{count}} added",
   "barcodeAdded": "Barcode {{count}} added",
@@ -85,5 +75,31 @@
     "photoFailed": "That photo could not be used. Try again.",
     "pointAtBarcode": "Point the camera at the barcode.",
     "barcodeNotFound": "No product found for that barcode. Take a photo of the product instead."
+  },
+  "torch": {
+    "on": "Torch on",
+    "off": "Torch off"
+  },
+  "stack": {
+    "empty": "No photos yet",
+    "photos_one": "{{count}} photo",
+    "photos_other": "{{count}} photos",
+    "barcodes_one": "{{count}} barcode",
+    "barcodes_other": "{{count}} barcodes",
+    "both": "{{photos}} and {{barcodes}}",
+    "label": "Review {{items}}",
+    "labelWithStatus": "{{review}}, {{status}}",
+    "reading_one": "{{count}} still reading",
+    "reading_other": "{{count}} still reading",
+    "allRead": "all read",
+    "failed_one": "{{count}} couldn't be read",
+    "failed_other": "{{count}} couldn't be read",
+    "needsCrop_one": "{{count}} receipt to crop",
+    "needsCrop_other": "{{count}} receipts to crop"
+  },
+  "import": {
+    "label": "Import from photos",
+    "added_one": "{{count}} photo added · {{mode}}",
+    "added_other": "{{count}} photos added · {{mode}}"
   }
 }

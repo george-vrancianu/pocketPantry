@@ -2,15 +2,13 @@ import { Box, tokens } from '@pocket-pantry/ui';
 import { shade } from './glass';
 import { useCallback, useEffect, useState } from 'react';
 import type { Rect } from '../../../lib/scanGuides';
+import { useReducedMotion } from '../../../lib/useReducedMotion';
 
 const PULSE_MS = 360;
 const FLASH_MS = 420;
 const HAPTIC_MS = 12;
 const noMotion = {
   '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
-};
-const noAnimation = {
-  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
 };
 const CORNERS = [
   ['Top', 'Left'],
@@ -49,6 +47,10 @@ type Props = {
 export function Viewfinder({ rect, shot, sliding = false }: Props) {
   const [pulse, setPulse] = useState(false);
   const [flash, setFlash] = useState(false);
+  // Under reduced motion the screen flash, the guide's fill and the pulse are not rendered at all;
+  // the thicker brackets (which follow `flash`) and the haptic stay.
+  const reduced = useReducedMotion();
+  const animated = !reduced;
   useEffect(() => {
     if (!shot) return;
     // oxlint-disable-next-line react/set-state-in-effect -- starts the pulse and flash animations when a Scan is taken; both end on timers
@@ -62,7 +64,7 @@ export function Viewfinder({ rect, shot, sliding = false }: Props) {
   }, [shot]);
   return (
     <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-      {flash ? (
+      {flash && animated ? (
         <Box
           data-testid="scan-flash"
           aria-hidden="true"
@@ -76,13 +78,14 @@ export function Viewfinder({ rect, shot, sliding = false }: Props) {
               from: { opacity: 0.55 },
               to: { opacity: 0 },
             },
-            ...noAnimation,
           }}
         />
       ) : null}
       <Box
         data-testid="scan-guide"
-        data-pulse={pulse ? 'true' : undefined}
+        data-pulse={pulse && animated ? 'true' : undefined}
+        // The brackets are thicker while a Scan flashes, with or without motion.
+        data-thick={flash ? 'true' : undefined}
         aria-hidden="true"
         sx={{
           position: 'absolute',
@@ -95,18 +98,17 @@ export function Viewfinder({ rect, shot, sliding = false }: Props) {
           transform: sliding ? 'scale(.985)' : 'none',
           transition: `left 400ms cubic-bezier(.3,.7,.2,1), top 400ms cubic-bezier(.3,.7,.2,1), width 400ms cubic-bezier(.3,.7,.2,1), height 400ms cubic-bezier(.3,.7,.2,1), transform 200ms`,
           ...noMotion,
-          ...(pulse && {
-            animation: `pp-scan-pulse ${PULSE_MS}ms ease-out`,
-            '@keyframes pp-scan-pulse': {
-              '0%, 100%': { transform: 'scale(1)' },
-              '40%': { transform: 'scale(0.965)' },
-            },
-          }),
-          // Nested so it is its own rule next to the transition's.
-          '&': noAnimation,
+          ...(pulse &&
+            animated && {
+              animation: `pp-scan-pulse ${PULSE_MS}ms ease-out`,
+              '@keyframes pp-scan-pulse': {
+                '0%, 100%': { transform: 'scale(1)' },
+                '40%': { transform: 'scale(0.965)' },
+              },
+            }),
         }}
       >
-        {flash ? (
+        {flash && animated ? (
           <Box
             data-testid="scan-guide-fill"
             aria-hidden="true"
@@ -120,7 +122,6 @@ export function Viewfinder({ rect, shot, sliding = false }: Props) {
                 from: { opacity: 0.85 },
                 to: { opacity: 0 },
               },
-              ...noAnimation,
             }}
           />
         ) : null}

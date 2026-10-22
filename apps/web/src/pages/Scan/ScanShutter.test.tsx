@@ -160,6 +160,27 @@ describe('The shutter on the Scan page', () => {
     expect(scans()).toHaveLength(0);
   });
 
+  it('a press still pending when the shutter turns into the Barcode ring starts no focus pass', async () => {
+    renderScan();
+    press();
+    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    await flush();
+    expect(screen.getByTestId('shutter-ring')).toBeInTheDocument();
+    await advance(400);
+    expect(fakeCamera.focuses).toBe(0);
+  });
+
+  it('a hold already running when the shutter turns into the ring is cancelled', async () => {
+    renderScan();
+    press();
+    await advance(301);
+    expect(fakeCamera.focuses).toBe(1);
+    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    await flush();
+    expect(fakeCamera.cancels).toBe(1);
+    expect(scans()).toHaveLength(0);
+  });
+
   describe('when it is disabled', () => {
     it('stays disabled and sends nothing under the Scan Cap, where the cap message already shows', async () => {
       dispatchScanSession({

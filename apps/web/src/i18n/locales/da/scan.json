@@ -1,24 +1,23 @@
 {
   "title": "Scan {{mode}}",
   "close": "Luk scanner",
-  "flash": "Slå blitz til/fra",
   "info": {
     "label": "Sådan virker scanning",
     "title": "Scan dit spisekammer",
     "intro": "Vælg en tilstand, ram motivet ind mellem hjørnerne, og tryk på udløseren.",
-    "hold": "Hold udløseren nede for at fokusere først, og slip for at scanne.",
-    "dismiss": "Luk"
+    "tip": "Hvert foto læses i baggrunden. Bliv ved med at tage billeder, og tryk så på bunken nederst til venstre for at gennemgå alt på én gang.",
+    "ok": "Forstået",
+    "barcode": "Ret kameraet mod en stregkode; hver kode tilføjes for sig"
   },
   "scanLanguage": {
     "label": "Læses på"
   },
-  "gallery": "Vælg fra fotos",
   "modes": "Scanningstilstand",
   "shutter": {
     "label": "Tag billede"
   },
   "slider": {
-    "announce": "Tilstanden {{mode}}"
+    "announce": "{{mode}}-tilstand"
   },
   "reading": "Læser dit foto",
   "noCamera": "Kameraet er ikke tilgængeligt. Vælg i stedet et foto fra dit galleri.",
@@ -48,18 +47,9 @@
     "plate": "Viser rettens ingredienser, så du kan føje det, du mangler, til din indkøbsliste.",
     "ingredients": "Lægger hver enkelt vare på bordet i dit spisekammer."
   },
-  "done": "Færdig",
-  "doneCount_one": "Færdig, {{count}} foto",
-  "doneCount_other": "Færdig, {{count}} fotos",
   "session": {
-    "label": "Tagne fotos",
-    "reading": "Læser foto",
-    "needsCrop": "Skal beskæres",
-    "read": "Foto læst",
     "failed": "Fotoet kunne ikke læses",
-    "lookupFailed": "Stregkodeopslaget mislykkedes",
-    "retryLookup": "Slå op igen",
-    "retry": "Læs foto igen"
+    "lookupFailed": "Stregkodeopslaget mislykkedes"
   },
   "photoAdded": "Foto {{count}} tilføjet",
   "barcodeAdded": "Stregkode {{count}} tilføjet",
@@ -85,5 +75,31 @@
     "photoFailed": "Det foto kunne ikke bruges. Prøv igen.",
     "pointAtBarcode": "Ret kameraet mod stregkoden.",
     "barcodeNotFound": "Der blev ikke fundet noget produkt til den stregkode. Tag i stedet et foto af produktet."
+  },
+  "torch": {
+    "on": "Lommelygte tændt",
+    "off": "Lommelygte slukket"
+  },
+  "stack": {
+    "empty": "Ingen fotos endnu",
+    "photos_one": "{{count}} foto",
+    "photos_other": "{{count}} fotos",
+    "barcodes_one": "{{count}} stregkode",
+    "barcodes_other": "{{count}} stregkoder",
+    "both": "{{photos}} og {{barcodes}}",
+    "label": "Gennemgå {{items}}",
+    "labelWithStatus": "{{review}}, {{status}}",
+    "reading_one": "{{count}} læses stadig",
+    "reading_other": "{{count}} læses stadig",
+    "allRead": "alle er læst",
+    "failed_one": "{{count}} kunne ikke læses",
+    "failed_other": "{{count}} kunne ikke læses",
+    "needsCrop_one": "{{count}} kvittering at beskære",
+    "needsCrop_other": "{{count}} kvitteringer at beskære"
+  },
+  "import": {
+    "label": "Importér fra fotos",
+    "added_one": "{{count}} foto tilføjet · {{mode}}",
+    "added_other": "{{count}} fotos tilføjet · {{mode}}"
   }
 }

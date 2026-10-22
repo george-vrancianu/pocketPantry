@@ -21,10 +21,10 @@ function renderScan(route = '/scan') {
   );
 }
 
-const dial = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
-const item = (name: string) => within(dial()).getByRole('radio', { name });
+const slider = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
+const item = (name: string) => within(slider()).getByRole('radio', { name });
 const selected = () =>
-  within(dial())
+  within(slider())
     .getAllByRole('radio')
     .filter((radio) => radio.getAttribute('aria-checked') === 'true')
     .map((radio) => radio.textContent);
@@ -38,7 +38,7 @@ describe('Scan mode slider', () => {
   it('lists Receipt, Ingredients, Product, Barcode, Plate, each named by its mode', () => {
     renderScan();
     expect(
-      within(dial())
+      within(slider())
         .getAllByRole('radio')
         .map((radio) => radio.textContent),
     ).toEqual(ORDER);
@@ -86,13 +86,13 @@ describe('Scan mode slider', () => {
 
   it('is a radio group of the five words, only the selected one in the tab order', () => {
     renderScan();
-    expect(dial()).toBeInTheDocument();
-    expect(within(dial()).getAllByRole('radio')).toHaveLength(5);
+    expect(slider()).toBeInTheDocument();
+    expect(within(slider()).getAllByRole('radio')).toHaveLength(5);
     expect(item('Receipt')).toHaveAttribute('tabindex', '0');
     expect(item('Plate')).toHaveAttribute('tabindex', '-1');
   });
 
-  it('forgets nothing about the screen: the heading follows the mode', async () => {
+  it('the heading follows the mode', async () => {
     renderScan();
     await userEvent.click(item('Barcode'));
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
@@ -158,7 +158,7 @@ describe('Scan page opened with its own modes', () => {
       />,
     );
     expect(
-      within(dial())
+      within(slider())
         .getAllByRole('radio')
         .map((radio) => radio.textContent),
     ).toEqual(['Product', 'Receipt']);

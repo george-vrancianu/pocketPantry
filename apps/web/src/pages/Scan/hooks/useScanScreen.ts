@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { readBarcode, useCamera } from '../../../lib/camera';
@@ -20,7 +14,11 @@ import {
   useScanSession,
 } from '../../../lib/scanSession';
 import { resizeImage } from '../../../lib/image';
-import { importPhotos, resizingImports } from '../../../lib/importPhotos';
+import {
+  importPhotos,
+  importRoom,
+  resizingImports,
+} from '../../../lib/importPhotos';
 import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useScanLanguage } from './useScanLanguage';
 import { measureView } from './useGuideRect';
@@ -45,6 +43,11 @@ export type ScanScreenModes = {
   defaultMode?: CameraMode;
   /** Load and save the mode used last. Defaults to true, as on the main Scan page; callers with their own mode set pass false. */
   rememberMode?: boolean;
+  /**
+   * A camera Scan or a Barcode card just joined the Scan Session, with its thumbnail: the page flies
+   * it into the photo stack. Decoration only, called after the card is already in the Session.
+   */
+  onCardAdded?: (thumbnail: string, mode: CameraMode) => void;
 };
 
 /** Scan screen state: mode, camera, flash, and the photo-to-Review flow. */
@@ -151,7 +154,10 @@ export function useScanScreen(config: ScanScreenModes = {}) {
       state: null,
     });
   }, [location, navigate]);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const cardAdded = useRef(config.onCardAdded);
+  useLayoutEffect(() => {
+    cardAdded.current = config.onCardAdded;
+  });
 
   const reading = resizing;
 
@@ -204,6 +210,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
           thumbnail: image,
         },
       });
+      cardAdded.current?.(image, mode);
       readScans(i18n.language);
       // The full frame, before it was resized for the read: barcodes need the resolution.
       if (mode === 'product')
@@ -225,12 +232,20 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     }
   };
 
-  const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const picked = Array.from(event.target.files ?? []);
-    event.target.value = '';
+  const importFiles = (picked: File[]) => {
     if (picked.length === 0 || mode === 'barcode') return;
     setLocalError(null);
     setNotAdded(false);
+    // Files that do not fit are left out and the limit toast replaces this one (see `onFull`).
+    const added = Math.min(picked.length, importRoom());
+    if (added > 0)
+      setToast({
+        text: t('scan:import.added', {
+          count: added,
+          mode: t(`scan:mode.${mode}`),
+        }),
+        severity: 'success',
+      });
     importPhotos(picked, {
       mode: scanModeOf(mode),
       scanLanguage,
@@ -283,6 +298,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     });
     navigator.vibrate?.(BARCODE_HAPTIC_MS);
     setBarcodesRead((n) => n + 1);
+    cardAdded.current?.(thumbnail, 'barcode');
     // The lookup starts at once, outside the read slots.
     readScans(i18n.language);
   };
@@ -337,7 +353,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
         ? session.scans.filter((scan) => scan.mode === 'barcode').length
         : 0,
     pending: pendingCount(session),
-    done: () => navigate('/scan/review'),
+    /** The photo stack: Review opens even while reads run. */
+    openReview: () => navigate('/scan/review'),
     flash,
     reading,
     modesDisabled: resizing,
@@ -351,11 +368,6 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     },
     notAdded,
     dismissNotAdded: () => setNotAdded(false),
-    retryScan: (id: string) => {
-      dispatchScanSession({ type: 'retry', id });
-      readScans(i18n.language);
-    },
-    fileInput,
     error,
     setMode: (next: CameraMode) => {
       scanEpoch.current += 1;
@@ -366,8 +378,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     toast,
     clearToast: () => setToast(null),
     shoot,
-    pickFile,
-    openGallery: () => fileInput.current?.click(),
+    importFiles,
     toggleFlash,
     // Back to wherever the Member came from, or home when this was the first page.
     close: () => {

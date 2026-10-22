@@ -97,8 +97,10 @@ function renderScan(route = '/scan?mode=product') {
   );
 }
 
-const thumbnails = () => screen.queryAllByTestId('scan-thumbnail');
-const states = () => thumbnails().map((t) => t.getAttribute('data-state'));
+// What the photo stack's badge shows: the first matching state of the Scan Session, and its card count.
+const badge = () => screen.queryByTestId('stack-badge');
+const states = () => (badge() ? [badge()?.getAttribute('data-state')] : []);
+const cards = () => Number(badge()?.textContent?.replace(/\D/g, '') ?? 0);
 const flush = () => act(async () => {});
 const scanOnce = async () => {
   takeScan();
@@ -149,28 +151,15 @@ describe('Scan Session reads that fail', () => {
       await scanOnce();
       await waitFor(() => expect(states()).toEqual(['failed']));
       expect(bodies).toHaveLength(1);
-      expect(thumbnails()[0]).toHaveAccessibleName(
-        /We could not spot any ingredients/,
-      );
-      expect(
-        screen.queryByRole('button', { name: /retry/i }),
-      ).not.toBeInTheDocument();
     });
 
-    it.each([
-      ['tooMany', /more than 50 items/],
-      ['tooLarge', /That photo is too large/],
-    ] as const)(
-      'with a reason that cannot change (%s) say why and offer no retry',
-      async (kind, reason) => {
+    it.each([['tooMany'], ['tooLarge']] as const)(
+      'with a reason that cannot change (%s) fail the Scan and are not read again',
+      async (kind) => {
         outcome = () => kind;
         renderScan();
         await scanOnce();
         await waitFor(() => expect(states()).toEqual(['failed']));
-        expect(thumbnails()[0]).toHaveAccessibleName(reason);
-        expect(
-          screen.queryByRole('button', { name: /retry/i }),
-        ).not.toBeInTheDocument();
         expect(bodies).toHaveLength(1);
       },
     );
@@ -187,70 +176,14 @@ describe('Scan Session reads that fail', () => {
       ).toBe(true);
     });
 
-    it('keep the failed thumbnail in place and do not raise an alert', async () => {
+    it('keep the failed Scan in the stack, which stays amber, and do not raise an alert', async () => {
       outcome = (n) => (n === 1 ? 'server' : 'ok');
       renderScan();
       await scanOnce();
       await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed', 'read']));
+      await waitFor(() => expect(cards()).toBe(2));
+      await waitFor(() => expect(states()).toEqual(['failed']));
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('a failed thumbnail', () => {
-    it('is read again with the same image when tapped', async () => {
-      outcome = (n) => (n === 1 ? 'server' : 'ok');
-      renderScan();
-      await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed']));
-      await userEvent.click(
-        within(thumbnails()[0]).getByRole('button', { name: /retry/i }),
-      );
-      await waitFor(() => expect(states()).toEqual(['read']));
-      expect(bodies).toHaveLength(2);
-      expect(bodies[1]).toEqual(bodies[0]);
-    });
-
-    it('can fail again and be tapped again', async () => {
-      outcome = (n) => (n < 3 ? 'server' : 'ok');
-      renderScan();
-      await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed']));
-      const retry = () =>
-        userEvent.click(
-          within(thumbnails()[0]).getByRole('button', { name: /retry/i }),
-        );
-      await retry();
-      await waitFor(() => expect(bodies).toHaveLength(2));
-      await waitFor(() => expect(states()).toEqual(['failed']));
-      await retry();
-      await waitFor(() => expect(states()).toEqual(['read']));
-      expect(bodies).toHaveLength(3);
-    });
-
-    it('waits for a free read slot when 2 reads are running', async () => {
-      outcome = (n) => (n === 1 ? 'server' : 'hold');
-      renderScan();
-      await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed']));
-      await scanOnce();
-      await scanOnce();
-      await waitFor(() => expect(bodies).toHaveLength(3));
-      await userEvent.click(
-        within(thumbnails()[0]).getByRole('button', { name: /retry/i }),
-      );
-      await flush();
-      expect(bodies).toHaveLength(3);
-    });
-
-    it('is not offered on Scans that are reading or read', async () => {
-      outcome = () => 'ok';
-      renderScan();
-      await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['read']));
-      expect(
-        screen.queryByRole('button', { name: /retry/i }),
-      ).not.toBeInTheDocument();
     });
   });
 
@@ -265,7 +198,7 @@ describe('Scan Session reads that fail', () => {
       expect(bodies).toHaveLength(1);
       await scanOnce();
       await flush();
-      expect(thumbnails()).toHaveLength(1);
+      expect(cards()).toBe(1);
       expect(bodies).toHaveLength(1);
     });
 
@@ -274,7 +207,9 @@ describe('Scan Session reads that fail', () => {
       renderScan();
       await scanOnce();
       await waitFor(() => expect(states()).toEqual(['failed']));
-      await userEvent.click(screen.getByRole('button', { name: /^Done/ }));
+      await userEvent.click(
+        screen.getByRole('button', { name: /^Review \d+ / }),
+      );
       await userEvent.click(
         within(await screen.findByTestId('review-card')).getByRole('button', {
           name: 'Remove photo',
@@ -300,7 +235,7 @@ describe('Scan Session reads that fail', () => {
   });
 
   describe('a Scan that cannot be enqueued', () => {
-    it('shows a toast and adds no thumbnail', async () => {
+    it('shows a toast and adds no card', async () => {
       outcome = () => 'ok';
       prepareFails = true;
       renderScan();
@@ -308,7 +243,7 @@ describe('Scan Session reads that fail', () => {
       expect(
         await screen.findByText(/could not be added/i),
       ).toBeInTheDocument();
-      expect(thumbnails()).toHaveLength(0);
+      expect(badge()).toBeNull();
       expect(bodies).toHaveLength(0);
     });
   });

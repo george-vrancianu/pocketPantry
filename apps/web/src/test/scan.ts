@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 import { beforeEach, vi } from 'vitest';
 import type { CameraStatus, FocusPass } from '../lib/camera';
+import { getScanSession, scanDisplayState } from '../lib/scanSession';
 
 /** The shutter button, which takes a Scan. */
 export const shutter = () => screen.getByRole('button', { name: 'Take photo' });
@@ -12,9 +13,21 @@ export function takeScan() {
   fireEvent.click(shutter());
 }
 
-/** Done, then the first card once it is read: the line editor for that Scan. */
+/** How each card of the Scan Session shows (uncropped, reading, failed, read), oldest first: what the thumbnail column used to show, now only the stack's badge does. */
+export const states = () => getScanSession().scans.map(scanDisplayState);
+
+/** The cards in the Scan Session. */
+export const cardCount = () => getScanSession().scans.length;
+
+/** The photo stack: its name starts with "Review" once the Scan Session holds a card. */
+export const photoStack = () =>
+  screen.getByRole('button', { name: /^(Review|No photos yet)/ });
+
+/** The photo stack, then the first card once it is read: the line editor for that Scan. */
 export async function openFirstScanCard() {
-  await userEvent.click(await screen.findByRole('button', { name: /^Done/ }));
+  await userEvent.click(
+    await screen.findByRole('button', { name: /^Review \d+ / }),
+  );
   const [card] = await screen.findAllByTestId('card-result');
   await userEvent.click(card);
 }

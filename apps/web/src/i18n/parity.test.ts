@@ -426,6 +426,8 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
       'plain "in stock" availability phrase, not the Pantry noun',
     ]),
   ),
+  'scan:import.label|import':
+    "the Scan screen's Import button adds photos to the Scan Session; it is not the Shopping Template action",
   'common:locations.fridge|fridge':
     'Fridge is a Location value, not a name for the Pantry',
   'voice:intro.examples.shopping.three.say|fridge':

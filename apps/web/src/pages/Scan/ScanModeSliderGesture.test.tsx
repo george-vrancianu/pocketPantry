@@ -17,15 +17,15 @@ function renderScan(route = '/scan') {
   );
 }
 
-const dial = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
-const item = (name: string) => within(dial()).getByRole('radio', { name });
+const slider = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
+const item = (name: string) => within(slider()).getByRole('radio', { name });
 const selected = () =>
-  within(dial())
+  within(slider())
     .getAllByRole('radio')
     .filter((radio) => radio.getAttribute('aria-checked') === 'true')
     .map((radio) => radio.textContent);
 /** Where the strip is: it moves with a finger and comes back on release. */
-const stripAt = () => getComputedStyle(dial()).transform;
+const stripAt = () => getComputedStyle(slider()).transform;
 
 let now = 0;
 beforeEach(() => {
@@ -262,7 +262,7 @@ describe('Scan mode slider gestures', () => {
   it('does not start a drag while the slider is disabled', () => {
     renderScan('/scan?mode=product');
     fireEvent.click(screen.getByRole('button', { name: 'How scanning works' }));
-    drag(dial(), { dx: -150 });
+    drag(slider(), { dx: -150 });
     expect(selected()).toEqual(['Product']);
   });
 

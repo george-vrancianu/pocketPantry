@@ -51,7 +51,7 @@ describe('Scan Session limits', () => {
     vi.restoreAllMocks();
   });
 
-  it('refuses the 21st Scan with a toast and adds no thumbnail', async () => {
+  it('refuses the 21st Scan with a toast and adds no card', async () => {
     renderScan();
     for (let i = 0; i < 20; i += 1) await scanOnce();
     expect(getScanSession().scans).toHaveLength(20);
@@ -60,7 +60,7 @@ describe('Scan Session limits', () => {
     ).not.toBeInTheDocument();
     await scanOnce();
     expect(getScanSession().scans).toHaveLength(20);
-    expect(screen.getAllByTestId('scan-thumbnail')).toHaveLength(20);
+    expect(screen.getByTestId('stack-badge')).toHaveTextContent('20');
     const toast = await screen.findByText(/20 Scans and Barcode Lookups/);
     expect((toast.closest('.MuiAlert-root') as HTMLElement).className).toMatch(
       /MuiAlert-\w*Warning/,

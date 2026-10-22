@@ -1,18 +1,17 @@
 {
   "title": "Scanează {{mode}}",
   "close": "Închide scanerul",
-  "flash": "Comută blițul",
   "info": {
     "label": "Cum funcționează scanarea",
     "title": "Scanează-ți cămara",
     "intro": "Alege un mod, încadrează totul între colțuri și atinge declanșatorul.",
-    "hold": "Ține apăsat declanșatorul pentru a focaliza mai întâi, apoi ridică degetul pentru a scana.",
-    "dismiss": "Închide"
+    "tip": "Fiecare fotografie este citită în fundal. Continuă să fotografiezi, apoi atinge teancul din stânga jos ca să le revizuiești pe toate deodată.",
+    "ok": "Am înțeles",
+    "barcode": "Îndreaptă camera spre un cod de bare; fiecare cod este adăugat separat"
   },
   "scanLanguage": {
     "label": "Citit ca"
   },
-  "gallery": "Alege din galerie",
   "modes": "Mod de scanare",
   "shutter": {
     "label": "Fă o fotografie"
@@ -48,19 +47,9 @@
     "plate": "Îi listează ingredientele ca să adaugi ce îți lipsește în lista de cumpărături.",
     "ingredients": "Adaugă în cămară fiecare produs vrac de pe blat."
   },
-  "done": "Gata",
-  "doneCount_one": "Gata, {{count}} fotografie",
-  "doneCount_few": "Gata, {{count}} fotografii",
-  "doneCount_other": "Gata, {{count}} de fotografii",
   "session": {
-    "label": "Fotografii făcute",
-    "reading": "Citim fotografia",
-    "needsCrop": "Trebuie decupată",
-    "read": "Fotografie citită",
     "failed": "Fotografia nu a putut fi citită",
-    "lookupFailed": "Căutarea codului de bare a eșuat",
-    "retryLookup": "Caută din nou produsul",
-    "retry": "Citește din nou fotografia"
+    "lookupFailed": "Căutarea codului de bare a eșuat"
   },
   "photoAdded": "Fotografia {{count}} a fost adăugată",
   "barcodeAdded": "Codul de bare {{count}} a fost adăugat",
@@ -90,5 +79,37 @@
     "photoFailed": "Fotografia nu a putut fi folosită. Încearcă din nou.",
     "pointAtBarcode": "Îndreaptă camera spre codul de bare.",
     "barcodeNotFound": "Nu am găsit niciun produs pentru acest cod de bare. Fă în schimb o poză produsului."
+  },
+  "torch": {
+    "on": "Lanterna pornită",
+    "off": "Lanterna oprită"
+  },
+  "stack": {
+    "empty": "Nicio fotografie încă",
+    "photos_one": "{{count}} fotografie",
+    "photos_few": "{{count}} fotografii",
+    "photos_other": "{{count}} de fotografii",
+    "barcodes_one": "{{count}} cod de bare",
+    "barcodes_few": "{{count}} coduri de bare",
+    "barcodes_other": "{{count}} de coduri de bare",
+    "both": "{{photos}} și {{barcodes}}",
+    "label": "Revizuiește {{items}}",
+    "labelWithStatus": "{{review}}, {{status}}",
+    "reading_one": "încă se citește {{count}}",
+    "reading_few": "încă se citesc {{count}}",
+    "reading_other": "încă se citesc {{count}}",
+    "allRead": "toate sunt citite",
+    "failed_one": "{{count}} cu probleme la citire",
+    "failed_few": "{{count}} cu probleme la citire",
+    "failed_other": "{{count}} cu probleme la citire",
+    "needsCrop_one": "{{count}} bon de decupat",
+    "needsCrop_few": "{{count}} bonuri de decupat",
+    "needsCrop_other": "{{count}} de bonuri de decupat"
+  },
+  "import": {
+    "label": "Importă din fotografii",
+    "added_one": "{{count}} fotografie adăugată · {{mode}}",
+    "added_few": "{{count}} fotografii adăugate · {{mode}}",
+    "added_other": "{{count}} de fotografii adăugate · {{mode}}"
   }
 }

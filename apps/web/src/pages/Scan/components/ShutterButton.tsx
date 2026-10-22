@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { FocusPass } from '../../../lib/camera';
+import { BARCODE_GLYPH } from './barcodeGlyph';
 import { glassFocusRing, shade } from './glass';
 
 const HAPTIC_MS = 6;
@@ -89,6 +90,16 @@ export function ShutterButton({
     current.pass?.cancel();
     setHolding(false);
   };
+
+  // The shutter turned into the ring, or became disabled, mid-press: nothing may start or finish from it.
+  useEffect(() => {
+    if (!ring && !disabled) return;
+    cancelHold();
+    if (press.current) suppressClick.current = true;
+    press.current = null;
+    // oxlint-disable-next-line react/set-state-in-effect -- the press ended without a pointer event
+    setDown(false);
+  }, [ring, disabled]);
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     if (!event.isPrimary || event.button !== 0) return;
@@ -184,19 +195,20 @@ export function ShutterButton({
   const pressed = down || holding;
   const glyph = (
     <Box
-      component="svg"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
       sx={{
         width: 28,
         height: 28,
-        stroke: 'currentColor',
-        fill: 'none',
-        strokeWidth: 2,
-        strokeLinecap: 'round',
+        '& svg': {
+          width: '100%',
+          height: '100%',
+          stroke: 'currentColor',
+          fill: 'none',
+          strokeWidth: 2,
+          strokeLinecap: 'round',
+        },
       }}
     >
-      <path d="M4 6v12M7 6v12M11 6v12M14 6v12M17 6v12M20 6v12" />
+      {BARCODE_GLYPH}
     </Box>
   );
 
@@ -242,7 +254,10 @@ export function ShutterButton({
       onPointerCancel={(event: PointerEvent<HTMLElement>) =>
         release(event, true)
       }
-      onPointerLeave={cancelHold}
+      onPointerLeave={() => {
+        cancelHold();
+        setDown(false);
+      }}
       onContextMenu={(event: MouseEvent) => {
         if (pressed) event.preventDefault();
       }}

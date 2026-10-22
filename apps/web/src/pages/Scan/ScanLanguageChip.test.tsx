@@ -56,8 +56,7 @@ describe('Scan Language chip in the top bar', () => {
 
   it('sits in the top bar', () => {
     renderScan('/scan?mode=product');
-    const bar = screen.getByRole('button', { name: 'Close scanner' })
-      .parentElement as HTMLElement;
+    const bar = screen.getByTestId('scan-top-bar');
     expect(within(bar).getByRole('combobox', { name: chipName })).toBe(chip());
   });
 

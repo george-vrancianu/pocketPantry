@@ -88,12 +88,10 @@ describe('Ingredients Scan on the Scan screen', () => {
       'POST /api/scan/ingredients': () => Response.json({ lines: [] }),
     });
     takeScan();
-    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
-      /We could not spot any ingredients/,
+    expect(await screen.findByTestId('stack-badge')).toHaveAttribute(
+      'data-state',
+      'failed',
     );
-    expect(
-      screen.queryByRole('button', { name: /retry/i }),
-    ).not.toBeInTheDocument();
     expect(shutter()).not.toHaveAttribute('aria-disabled');
   });
 
@@ -106,11 +104,9 @@ describe('Ingredients Scan on the Scan screen', () => {
         ),
     });
     takeScan();
-    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
-      /more than 50 items/,
+    expect(await screen.findByTestId('stack-badge')).toHaveAttribute(
+      'data-state',
+      'failed',
     );
-    expect(
-      screen.queryByRole('button', { name: /retry/i }),
-    ).not.toBeInTheDocument();
   });
 });

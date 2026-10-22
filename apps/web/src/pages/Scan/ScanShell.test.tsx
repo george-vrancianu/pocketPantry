@@ -97,12 +97,11 @@ describe('Scan screen shell', () => {
     expect(paintedColour(home, 'color')).toBe(THEMES.minimal.ink);
   });
 
-  it('shows the torch button next to Close when the camera has a torch', () => {
+  it('shows the torch button in the top bar when the camera has a torch', () => {
     renderScan();
-    const bar = screen.getByRole('button', { name: 'Close scanner' })
-      .parentElement as HTMLElement;
+    const bar = screen.getByTestId('scan-top-bar');
     expect(
-      within(bar).getByRole('button', { name: 'Toggle flash' }),
+      within(bar).getByRole('button', { name: /^Torch/ }),
     ).toBeInTheDocument();
     expect(
       within(bar).getByRole('button', { name: 'How scanning works' }),
@@ -113,7 +112,7 @@ describe('Scan screen shell', () => {
     fakeCamera.torchSupported = false;
     renderScan();
     expect(
-      screen.queryByRole('button', { name: 'Toggle flash' }),
+      screen.queryByRole('button', { name: /^Torch/ }),
     ).not.toBeInTheDocument();
   });
 

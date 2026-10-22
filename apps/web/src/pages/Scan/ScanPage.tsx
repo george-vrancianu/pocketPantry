@@ -2,47 +2,29 @@ import {
   Alert,
   bodyFont,
   Box,
-  CloseIcon,
-  FlashIcon,
-  GalleryIcon,
-  InfoIcon,
   Snackbar,
-  Typography,
-  visuallyHidden,
   tokens,
-  radius,
   useForcedThemeColor,
+  visuallyHidden,
 } from '@pocket-pantry/ui';
-import { useCallback, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  glassControl,
-  glassFocusRing,
-  shade,
-  translucent,
-} from './components/glass';
-import { ScanLanguageChip } from './components/ScanLanguageChip';
-import { SessionStrip } from './components/SessionStrip';
-import { ModeSlider } from './components/ModeSlider';
-import { ShutterButton } from './components/ShutterButton';
+import { shade } from './components/glass';
+import { CameraFooter } from './components/CameraFooter';
+import { CameraTopBar } from './components/CameraTopBar';
+import { Fading } from './components/Fading';
+import { ImportButton } from './components/ImportButton';
 import { InfoSheet } from './components/InfoSheet';
+import { ModeSlider } from './components/ModeSlider';
+import { PhotoStack } from './components/PhotoStack';
+import { ScanLanguageChip } from './components/ScanLanguageChip';
+import { ShutterButton } from './components/ShutterButton';
 import { Viewfinder, useShotFeedback } from './components/Viewfinder';
+import { useFlyToStack } from './components/FlyToStack';
 import { useGuideRect } from './hooks/useGuideRect';
-import { SHUTTER_ROW_HEIGHT } from '../../lib/scanGuides';
+import type { Rect } from '../../lib/scanGuides';
 import { failedCopyKey } from '../../lib/scanSession';
 import { useScanScreen, type ScanScreenModes } from './hooks/useScanScreen';
-
-const roundButton = (size: number) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: size,
-  height: size,
-  borderRadius: '50%',
-  border: 0,
-  ...glassControl(false),
-  '&:focus-visible': glassFocusRing,
-});
 
 export type ScanPageProps = ScanScreenModes;
 
@@ -53,15 +35,27 @@ export type ScanPageProps = ScanScreenModes;
 export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
   const { t } = useTranslation('scan');
   useForcedThemeColor('dark');
-  const screen = useScanScreen({ modes, defaultMode, rememberMode });
+  // Where the guide is when a card joins the Scan Session: the photo flies from there to the stack.
+  const guideNow = useRef<Rect | null>(null);
+  const { fly, stackRef, layer: flights } = useFlyToStack();
+  const screen = useScanScreen({
+    modes,
+    defaultMode,
+    rememberMode,
+    onCardAdded: (thumbnail) => {
+      if (guideNow.current) fly(thumbnail, guideNow.current);
+    },
+  });
   // Barcode cards are announced as barcodes, not photos.
   const photos = screen.scans.filter((scan) => scan.mode !== 'barcode').length;
-  const { fileInput } = screen;
   const { videoRef } = screen.camera;
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
   const { shot, fire } = useShotFeedback();
   const guide = useGuideRect(screen.mode);
+  useLayoutEffect(() => {
+    guideNow.current = guide;
+  });
   // The viewfinder, so a sideways swipe on it also drives the mode slider.
   const [viewfinder, setViewfinder] = useState<HTMLElement | null>(null);
   const [sliding, setSliding] = useState(false);
@@ -115,217 +109,86 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
         />
         <Viewfinder rect={guide} shot={shot} sliding={sliding} />
       </Box>
-      <SessionStrip scans={screen.scans} onRetry={screen.retryScan} />
 
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          // Sized so Close, torch, Scan Language, Info, Gallery and Done fit a 360 px phone.
-          px: 2,
-          pt: 'calc(22px + env(safe-area-inset-top))',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-        }}
-      >
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('close')}
-          onClick={screen.close}
-          sx={roundButton(40)}
-        >
-          <CloseIcon size={20} />
-        </Box>
-        {screen.camera.torchSupported ? (
-          <Box
-            component="button"
-            type="button"
-            aria-label={t('flash')}
-            aria-pressed={screen.flash}
-            onClick={() => void screen.toggleFlash()}
-            sx={{
-              ...roundButton(40),
-              ...(screen.flash && {
-                backgroundColor: tokens.color.ink,
-                color: tokens.color.bg,
-              }),
-            }}
-          >
-            <FlashIcon size={20} />
-          </Box>
-        ) : null}
-        <Typography component="h1" sx={{ ...visuallyHidden, flex: 'none' }}>
-          {t('title', { mode: modeLabel.toLocaleLowerCase() })}
-        </Typography>
-        {/* Pushes the Scan Language, Info and Done to the right edge. */}
-        <Box sx={{ flex: 1 }} />
-        {screen.scanLanguageShown ? (
-          <ScanLanguageChip
-            value={screen.scanLanguage}
-            locale={screen.uiLocale}
-            disabled={screen.scanLanguageLocked}
-            onChange={screen.setScanLanguage}
-          />
-        ) : null}
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('info.label')}
-          onClick={() => setInfoOpen(true)}
-          sx={roundButton(40)}
-        >
-          <InfoIcon size={20} />
-        </Box>
-        {screen.mode === 'barcode' ? null : (
-          <Box
-            component="button"
-            type="button"
-            aria-label={t('gallery')}
-            disabled={screen.controlsDisabled}
-            onClick={screen.openGallery}
-            sx={roundButton(40)}
-          >
-            <GalleryIcon size={20} />
-          </Box>
-        )}
-        <Box
-          component="button"
-          type="button"
-          disabled={screen.scans.length === 0}
-          onClick={screen.done}
-          aria-label={
-            screen.scans.length > 0
-              ? t('doneCount', { count: screen.scans.length })
-              : undefined
-          }
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            height: 40,
-            px: '12px',
-            borderRadius: radius.pill,
-            border: 0,
-            fontSize: 14,
-            fontWeight: 800,
-            fontFamily: 'inherit',
-            backgroundColor: tokens.color.ink,
-            color: tokens.color.bg,
-            opacity: screen.scans.length === 0 ? 0.45 : 1,
-            cursor: screen.scans.length === 0 ? 'default' : 'pointer',
-            '&:focus-visible': glassFocusRing,
-          }}
-        >
-          {screen.scans.length > 0 ? (
-            <Box
-              component="span"
-              data-testid="done-count"
-              aria-hidden="true"
-              data-reading={screen.pending > 0}
-              sx={{
-                minWidth: 20,
-                height: 20,
-                px: '6px',
-                borderRadius: radius.pill,
-                fontSize: 12,
-                lineHeight: '20px',
-                textAlign: 'center',
-                backgroundColor:
-                  screen.pending > 0
-                    ? tokens.color.soonFg
-                    : translucent(tokens.color.surface, 82),
-                color: screen.pending > 0 ? tokens.color.bg : tokens.color.ink,
-              }}
-            >
-              {screen.scans.length}
-            </Box>
-          ) : null}
-          {/* On the narrowest phones the count alone stands for Done; its name still says Done. */}
-          <Box
-            component="span"
-            sx={{
-              '@media (max-width: 389px)': {
-                display: screen.scans.length > 0 ? 'none' : undefined,
-              },
-            }}
-          >
-            {t('done')}
-          </Box>
-        </Box>
-      </Box>
-
-      <Box
-        sx={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: 'calc(100% - 80px)',
-        }}
-      >
-        <Box sx={{ overflowY: 'auto', px: 2.5 }}>
-          <Box
-            role="status"
-            sx={{
-              mt: '24px',
-              minHeight: 24,
-              textAlign: 'center',
-              fontSize: 13,
-            }}
-          >
-            {screen.reading ? t('reading') : null}
-            {screen.camera.status === 'unavailable'
-              ? t('noCamera')
-              : screen.mode === 'barcode'
-                ? t('overlay.pointAtBarcode')
-                : null}
-          </Box>
-          {/* Barcode Lookups are not Scans: the Scan Cap does not stop them. */}
-          {screen.capped && screen.mode !== 'barcode' ? (
-            <Box sx={{ mt: 1 }}>
-              <Alert severity="warning">{t('capReached')}</Alert>
-            </Box>
-          ) : null}
-          {screen.error ? (
-            <Box sx={{ mt: 1 }}>
-              <Alert>{screen.error}</Alert>
-            </Box>
-          ) : null}
-        </Box>
-
-        <Box sx={{ pb: 'env(safe-area-inset-bottom)' }}>
-          <Box
-            sx={{
-              height: SHUTTER_ROW_HEIGHT,
-              px: '30px',
-              display: 'grid',
-              gridTemplateColumns: '1fr auto 1fr',
-              alignItems: 'center',
-            }}
-          >
-            <Box />
-            <ShutterButton
-              ring={screen.mode === 'barcode'}
-              disabled={
-                screen.controlsDisabled ||
-                screen.full ||
-                screen.camera.status !== 'ready'
-              }
-              onShoot={() => {
-                fire();
-                void screen.shoot();
-              }}
-              onBlocked={screen.shutterBlocked}
-              focusForScan={screen.camera.focusForScan}
+      <CameraTopBar
+        heading={t('title', { mode: modeLabel.toLocaleLowerCase() })}
+        onClose={screen.close}
+        torch={
+          screen.camera.torchSupported
+            ? { on: screen.flash, onToggle: () => void screen.toggleFlash() }
+            : undefined
+        }
+        language={
+          <Fading hidden={!screen.scanLanguageShown}>
+            <ScanLanguageChip
+              value={screen.scanLanguage}
+              locale={screen.uiLocale}
+              disabled={screen.scanLanguageLocked}
+              onChange={screen.setScanLanguage}
             />
-            <Box />
-          </Box>
+          </Fading>
+        }
+        onInfo={() => setInfoOpen(true)}
+      />
+
+      <CameraFooter
+        status={
+          <>
+            <Box
+              role="status"
+              sx={{ minHeight: 24, textAlign: 'center', fontSize: 13 }}
+            >
+              {screen.reading ? t('reading') : null}
+              {screen.camera.status === 'unavailable'
+                ? t('noCamera')
+                : screen.mode === 'barcode'
+                  ? t('overlay.pointAtBarcode')
+                  : null}
+            </Box>
+            {/* Barcode Lookups are not Scans: the Scan Cap does not stop them. */}
+            {screen.capped && screen.mode !== 'barcode' ? (
+              <Box sx={{ mt: 1 }}>
+                <Alert severity="warning">{t('capReached')}</Alert>
+              </Box>
+            ) : null}
+            {screen.error ? (
+              <Box sx={{ mt: 1 }}>
+                <Alert>{screen.error}</Alert>
+              </Box>
+            ) : null}
+          </>
+        }
+        stack={
+          <PhotoStack
+            scans={screen.scans}
+            onOpen={screen.openReview}
+            stackRef={stackRef}
+          />
+        }
+        shutter={
+          <ShutterButton
+            ring={screen.mode === 'barcode'}
+            disabled={
+              screen.controlsDisabled ||
+              screen.full ||
+              screen.camera.status !== 'ready'
+            }
+            onShoot={() => {
+              fire();
+              void screen.shoot();
+            }}
+            onBlocked={screen.shutterBlocked}
+            focusForScan={screen.camera.focusForScan}
+          />
+        }
+        right={
+          <ImportButton
+            hidden={screen.mode === 'barcode'}
+            disabled={screen.controlsDisabled}
+            onFiles={screen.importFiles}
+          />
+        }
+        slider={
           <ModeSlider
             modes={screen.modes}
             mode={screen.mode}
@@ -335,8 +198,10 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
             swipeSurface={viewfinder}
             onDragChange={setSliding}
           />
-        </Box>
-      </Box>
+        }
+      />
+
+      {flights}
 
       <Snackbar
         open={screen.toast !== null}
@@ -369,17 +234,6 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
       </Snackbar>
 
       {infoOpen ? <InfoSheet onClose={closeInfo} /> : null}
-
-      <Box
-        component="input"
-        ref={fileInput}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={screen.pickFile}
-        data-testid="gallery-input"
-        sx={{ display: 'none' }}
-      />
     </Box>
   );
 }

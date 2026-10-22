@@ -121,11 +121,15 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       'Barcode',
     ]);
     expect(screen.getByRole('radio', { name: 'Barcode' })).toBeChecked();
-    expect(screen.queryByLabelText('Reading as')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', { name: 'Reading as' }),
+    ).not.toBeInTheDocument();
     expect(fakeCamera.watching).toBe(1);
 
     await user.click(screen.getByRole('radio', { name: 'Product' }));
-    expect(screen.getByLabelText('Reading as')).toBeInTheDocument();
+    expect(
+      screen.getByRole('combobox', { name: 'Reading as' }),
+    ).toBeInTheDocument();
     expect(fakeCamera.watching).toBe(0);
   });
 

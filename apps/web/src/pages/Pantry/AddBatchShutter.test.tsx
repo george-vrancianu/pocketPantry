@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -79,6 +79,29 @@ describe('Scanning from the add-Batch camera overlay by the shutter', () => {
       screen.getAllByRole('radio').map((radio) => radio.textContent),
     ).toEqual(['Product', 'Barcode']);
     expect(screen.queryByRole('button', { name: /^Review/ })).toBeNull();
+  });
+
+  it('uses the shared top bar and footer, with an empty stack cell and no Import', async () => {
+    stubPantry();
+    await openOverlay('product');
+    const bar = within(screen.getByTestId('scan-top-bar'));
+    expect(bar.getByRole('button', { name: 'Close scanner' })).toBeVisible();
+    expect(bar.getByRole('button', { name: /^Torch/ })).toBeVisible();
+    expect(bar.getByRole('combobox', { name: 'Reading as' })).toBeVisible();
+    const footer = within(screen.getByTestId('scan-footer'));
+    expect(footer.getByRole('button', { name: 'Take photo' })).toBeVisible();
+    expect(screen.queryByTestId('photo-stack')).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Import from photos' }),
+    ).toBeNull();
+  });
+
+  it('hides the Scan Language chip in Barcode', async () => {
+    stubPantry();
+    await openOverlay('barcode');
+    expect(
+      screen.queryByRole('combobox', { name: 'Reading as' }),
+    ).not.toBeInTheDocument();
   });
 
   it('a tap on the shutter sends a Scan, with the guide haptic', async () => {
