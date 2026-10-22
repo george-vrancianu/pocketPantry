@@ -22,6 +22,10 @@
   "shutter": {
     "label": "Take photo"
   },
+  "zoom": {
+    "label": "Zoom",
+    "level": "Zoom {{level}}×"
+  },
   "slider": {
     "announce": "{{mode}} mode"
   },

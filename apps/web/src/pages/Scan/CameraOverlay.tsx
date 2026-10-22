@@ -7,7 +7,13 @@ import {
   useForcedThemeColor,
   visuallyHidden,
 } from '@pocket-pantry/ui';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
 import { readBarcode, useCamera } from '../../lib/camera';
@@ -16,10 +22,12 @@ import { IMAGE_PREPARATION } from '../../lib/scanImage';
 import { CameraFooter } from './components/CameraFooter';
 import { CameraTopBar } from './components/CameraTopBar';
 import { Fading } from './components/Fading';
+import { InfoSheet } from './components/InfoSheet';
 import { shade } from './components/glass';
 import { ModeSlider } from './components/ModeSlider';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ShutterButton } from './components/ShutterButton';
+import { ZoomPill } from './components/ZoomPill';
 import { Viewfinder, useShotFeedback } from './components/Viewfinder';
 import { measureView, useGuideRect } from './hooks/useGuideRect';
 import { useScanLanguage } from './hooks/useScanLanguage';
@@ -83,6 +91,8 @@ export function CameraOverlay({
   const [mode, setMode] = useState<CameraMode>(
     modes.includes(defaultMode) ? defaultMode : modes[0],
   );
+  const [infoOpen, setInfoOpen] = useState(false);
+  const closeInfo = useCallback(() => setInfoOpen(false), []);
   const [flash, setFlash] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -99,8 +109,11 @@ export function CameraOverlay({
   // Set once the overlay is cancelled or gone: a photo still being prepared is then dropped.
   const closed = useRef(false);
   const cancelRef = useRef(onCancel);
+  // Escape closes the Info sheet first, not the camera under it.
+  const infoOpenRef = useRef(false);
   useLayoutEffect(() => {
     cancelRef.current = onCancel;
+    infoOpenRef.current = infoOpen;
   });
   const cancel = () => {
     closed.current = true;
@@ -109,7 +122,7 @@ export function CameraOverlay({
   useEffect(() => {
     closed.current = false;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !infoOpenRef.current) {
         closed.current = true;
         cancelRef.current();
       }
@@ -232,6 +245,7 @@ export function CameraOverlay({
             ? { on: flash, onToggle: () => void toggleFlash() }
             : undefined
         }
+        onInfo={() => setInfoOpen(true)}
         language={
           <Fading hidden={mode === 'barcode'}>
             <ScanLanguageChip
@@ -243,6 +257,9 @@ export function CameraOverlay({
         }
       />
       <CameraFooter
+        zoom={
+          camera.zoomSupported ? <ZoomPill onZoom={camera.setZoom} /> : null
+        }
         status={
           <>
             <Typography
@@ -278,8 +295,8 @@ export function CameraOverlay({
             <ModeSlider
               modes={modes}
               mode={mode}
-              disabled={preparing}
-              keysDisabled={preparing}
+              disabled={preparing || infoOpen}
+              keysDisabled={preparing || infoOpen}
               swipeSurface={viewfinder}
               onDragChange={setSliding}
               onChange={(next) => {
@@ -294,6 +311,9 @@ export function CameraOverlay({
           )
         }
       />
+      {infoOpen ? (
+        <InfoSheet onClose={closeInfo} modes={modes} stackTip={false} />
+      ) : null}
     </Box>
   );
 }
