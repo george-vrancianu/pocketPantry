@@ -32,6 +32,11 @@ import {
 import type { ResolveContext, VoiceActionHandler } from './voice-handlers';
 import { VoiceHandlers } from './voice-handlers.registry';
 import { PantryService } from '../pantry/pantry.service';
+import {
+  answerPantryQuestions,
+  type PantryAnswer,
+  type PantryQuestion,
+} from './pantry-answers';
 import { resolveSpokenDate } from './voice-dates';
 import { VoiceReaderService } from './voice-reader.service';
 import {
@@ -61,9 +66,11 @@ export type VoiceReadTextInput = {
 
 export type VoiceReadTextResult = {
   actions: ResolvedVoiceAction[];
+  /** Answers to the Pantry Questions that matched an Ingredient (ADR 0020); never Voice Actions. Unmatched questions are in `actions` as Didn't understand. */
+  answers: PantryAnswer[];
   /** The language the text was spoken in, as the model read it; null when it can't be told. */
   spokenLanguage: ScanLanguage | null;
-  /** Each action's short generic name in the language spoken, by action id. Only Assistant Requests use it. */
+  /** Each action's and answer's short generic name in the language spoken, by id. Only Assistant Requests use it. */
   spokenNames: Map<string, string>;
 };
 
@@ -150,7 +157,7 @@ export class VoiceService {
       });
       const transcript = text.trim();
       if (!transcript) throw new ApiException(422, 'voice.nothing_heard');
-      const { actions } = await this.readText(memberId, {
+      const { actions, answers } = await this.readText(memberId, {
         text: transcript,
         scanLanguage: input.scanLanguage,
         locale: input.locale,
@@ -158,6 +165,10 @@ export class VoiceService {
         defaultTarget: input.defaultTarget,
         captureId,
       });
+      // The app does not show answers yet (#460): until then a Pantry Question reads as Didn't understand.
+      for (const answer of answers) {
+        actions.push(this.notUnderstood(answer.text));
+      }
       // Noise ("Thank you.") reads into nothing: no Review, and no charge. A
       // note of only "Didn't understand" rows still opens Review.
       if (actions.length === 0) {
@@ -207,8 +218,9 @@ export class VoiceService {
     const threshold = this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
       infer: true,
     });
+    // Voice Actions and Pantry Questions are matched together, one Catalog query per kind.
     const resolved = await this.catalogMatch.resolve(
-      read.actions.map((action) => ({
+      [...read.actions, ...read.questions].map((action) => ({
         names: [action.fallbackIngredientName, action.spokenText],
         proposedIngredientId: action.matchedIngredientId,
         // An exact name or Synonym hit beats a Match the model doubted.
@@ -275,11 +287,38 @@ export class VoiceService {
       spokenNames.set(draft.id, action.spokenName);
       out.push(resolution);
     }
+    // Pantry Questions never reach a handler. A question that matched no Ingredient is
+    // not answered (never "no" for an unsure name, ADR 0020); #462 gives it "not sure".
+    const asked: PantryQuestion[] = [];
+    for (const [index, question] of read.questions.entries()) {
+      const match = keepConfident(
+        resolved[read.actions.length + index],
+        question.matchConfidence,
+        threshold,
+      );
+      if (!match) {
+        out.push(this.notUnderstood(question.spokenText));
+        continue;
+      }
+      // "Milk and milk" is one question.
+      if (asked.some((entry) => entry.ingredient.id === match.id)) continue;
+      const id = randomUUID();
+      spokenNames.set(id, question.spokenName);
+      asked.push({ id, text: question.spokenText, ingredient: match });
+    }
+    const answers = asked.length
+      ? answerPantryQuestions(
+          asked,
+          await ctx.lists.pantryBatches(),
+          input.today,
+        )
+      : [];
     for (const phrase of read.unsupported) {
       out.push(this.notUnderstood(phrase));
     }
     return {
       actions: out,
+      answers,
       spokenLanguage: read.spokenLanguage,
       spokenNames,
     };

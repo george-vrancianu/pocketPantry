@@ -4,14 +4,14 @@ import {
   assistantSpeech,
   type AssistantLocale,
   type AssistantOutcome,
-  type AssistantOutcomeKind,
+  type AssistantActionKind,
   type AssistantState,
 } from './assistant-speech';
 
 const say = (locale: AssistantLocale, outcomes: AssistantOutcome[]): string =>
   assistantSpeech({ locale, outcomes });
 
-const KINDS: AssistantOutcomeKind[] = [
+const KINDS: AssistantActionKind[] = [
   'added',
   'quantitySet',
   'alreadyOnList',
@@ -299,5 +299,52 @@ describe('assistantSpeech', () => {
         expect(out.endsWith('.')).toBe(true);
       },
     );
+  });
+  // Spec: #459, ADR 0020. Pantry Question answers are spoken before the outcome clauses.
+  describe('answers', () => {
+    const yes = (name: string): AssistantOutcome => ({ kind: 'yes', name });
+    const no = (name: string): AssistantOutcome => ({ kind: 'no', name });
+
+    it('speaks yes and no as sentences of their own', () => {
+      expect(say('en', [yes('milk'), no('butter')])).toBe(
+        'You have milk. No butter.',
+      );
+    });
+
+    it('gives each yes its own sentence and groups the nos into one list', () => {
+      expect(
+        say('en', [yes('milk'), no('butter'), yes('rice'), no('eggs')]),
+      ).toBe('You have milk. You have rice. No butter and eggs.');
+    });
+
+    it('speaks the answers first, then the outcome clauses', () => {
+      expect(say('en', [{ kind: 'added', name: 'eggs' }, yes('milk')])).toBe(
+        'You have milk. Added to your Shopping List: eggs.',
+      );
+    });
+
+    it('is not "nothing understood" when only answers came back', () => {
+      expect(say('en', [no('butter')])).not.toBe(
+        assistantMessages.en.states.nothingUnderstood,
+      );
+    });
+
+    it('speaks Romanian', () => {
+      expect(say('ro', [yes('lapte'), no('unt'), no('ouă')])).toBe(
+        'Ai lapte. Nu ai unt și ouă.',
+      );
+    });
+
+    it('speaks Danish', () => {
+      expect(say('da', [yes('mælk'), no('smør'), no('æg')])).toBe(
+        'Du har mælk. Du har ikke smør og æg.',
+      );
+    });
+
+    it('leaves no placeholders in any locale', () => {
+      for (const locale of ASSISTANT_LOCALES) {
+        expect(say(locale, [yes('X'), no('Y')])).not.toMatch(/[{}]/);
+      }
+    });
   });
 });

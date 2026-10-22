@@ -15,7 +15,7 @@ export type AssistantLocale = CatalogLocale;
 export const ASSISTANT_DEFAULT_LOCALE: AssistantLocale = 'en';
 
 /** What happened to one Voice Action of the request. */
-export type AssistantOutcomeKind =
+export type AssistantActionKind =
   | 'added'
   | 'quantitySet'
   | 'alreadyOnList'
@@ -23,6 +23,16 @@ export type AssistantOutcomeKind =
   | 'addedBecauseRunningLowNoBatch'
   | 'addedUnmatched'
   | 'refused';
+
+/**
+ * The answer to one Pantry Question (ADR 0020), mirroring the API's
+ * `PantryAnswerKind`. Later kinds (`onlyExpired`, `notSure`) are added here, to
+ * `ANSWER_ORDER` and to every dictionary.
+ */
+export type AssistantAnswerKind = 'yes' | 'no';
+
+/** An entry of the outcomes list: what happened to a Voice Action, or the answer to a Pantry Question. */
+export type AssistantOutcomeKind = AssistantActionKind | AssistantAnswerKind;
 
 /**
  * One Voice Action of a request, as the reply needs it. #446 maps its apply
@@ -67,7 +77,9 @@ type Messages = {
   /** Spoken unit words per plural category. */
   units: Record<VoiceUnit, Forms | null>;
   /** One clause per kind; `{items}` is the joined list. */
-  outcomes: Record<AssistantOutcomeKind, string>;
+  outcomes: Record<AssistantActionKind, string>;
+  /** One clause per answer kind; `{items}` is the Ingredient, or the joined list for a kind that is grouped. */
+  answers: Record<AssistantAnswerKind, string>;
   states: Record<AssistantState, string>;
 };
 
@@ -101,6 +113,7 @@ export const assistantMessages = {
       addedUnmatched: 'Added but not recognised: {items}',
       refused: 'Open Pocket Pantry for {items}',
     },
+    answers: { yes: 'You have {items}', no: 'No {items}' },
     states: {
       capReached:
         'You have reached the daily limit for the assistant. Try again tomorrow.',
@@ -131,6 +144,7 @@ export const assistantMessages = {
       addedUnmatched: 'Am adăugat, dar nu am recunoscut: {items}',
       refused: 'Deschide Pocket Pantry pentru {items}',
     },
+    answers: { yes: 'Ai {items}', no: 'Nu ai {items}' },
     states: {
       capReached: 'Ai atins limita zilnică pentru asistent. Încearcă mâine.',
       providerFailed: 'Nu am putut citi cererea acum. Încearcă din nou.',
@@ -160,6 +174,7 @@ export const assistantMessages = {
       addedUnmatched: 'Tilføjet, men ikke genkendt: {items}',
       refused: 'Åbn Pocket Pantry for {items}',
     },
+    answers: { yes: 'Du har {items}', no: 'Du har ikke {items}' },
     states: {
       capReached:
         'Du har nået dagens grænse for assistenten. Prøv igen i morgen.',
@@ -174,8 +189,14 @@ export const ASSISTANT_LOCALES = Object.keys(
   assistantMessages,
 ) as AssistantLocale[];
 
+/** Answer order of a reply; answers come before the outcome clauses. */
+const ANSWER_ORDER: readonly AssistantAnswerKind[] = ['yes', 'no'];
+
+/** Answers that get a clause per Ingredient ("You have milk. You have eggs."); the rest are grouped into one list. */
+const OWN_CLAUSE: ReadonlySet<AssistantAnswerKind> = new Set(['yes']);
+
 /** Clause order of a reply. */
-const KIND_ORDER: readonly AssistantOutcomeKind[] = [
+const KIND_ORDER: readonly AssistantActionKind[] = [
   'added',
   'quantitySet',
   'alreadyOnList',
@@ -250,16 +271,31 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
   const locale = resolveLocale(input.locale);
   const messages = assistantMessages[locale];
   if (input.state !== undefined) return messages.states[input.state];
-  const outcomes = input.outcomes ?? [];
-  if (outcomes.length === 0) return messages.states.nothingUnderstood;
+  const all = input.outcomes ?? [];
+  if (all.length === 0) return messages.states.nothingUnderstood;
 
+  const answerClauses = ANSWER_ORDER.flatMap((kind) => {
+    const names = all
+      .filter((outcome) => outcome.kind === kind)
+      .map((outcome) => outcome.name);
+    if (names.length === 0) return [];
+    const say = (items: string) =>
+      messages.answers[kind].replace('{items}', items);
+    return OWN_CLAUSE.has(kind)
+      ? names.map(say)
+      : [say(joinList(locale, names))];
+  });
   const clauses = KIND_ORDER.flatMap((kind) => {
-    const items = outcomes
+    const items = all
       .filter((outcome) => outcome.kind === kind)
       .map((outcome) => itemPhrase(locale, messages, outcome));
     return items.length === 0
       ? []
       : [messages.outcomes[kind].replace('{items}', joinList(locale, items))];
   });
-  return `${clauses.join(messages.clauseSeparator)}.`;
+  // Each answer is a sentence of its own, spoken before the outcome clauses.
+  return [
+    ...answerClauses.map((clause) => `${clause}.`),
+    ...(clauses.length ? [`${clauses.join(messages.clauseSeparator)}.`] : []),
+  ].join(' ');
 }

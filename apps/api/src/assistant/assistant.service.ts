@@ -45,8 +45,11 @@ export type AssistantReply =
 const localeOf = (member: AssistantTokenMember): CatalogLocale =>
   CATALOG_LOCALES.find((locale) => locale === member.locale) ?? FALLBACK_LOCALE;
 
-const displayName = (action: ResolvedVoiceAction): string =>
-  action.ingredient?.name ?? action.name ?? action.text;
+const displayName = (action: {
+  ingredient: { name: string } | null;
+  name?: string | null;
+  text: string;
+}): string => action.ingredient?.name ?? action.name ?? action.text;
 
 /**
  * An Assistant Request: dictated text read into Voice Actions and the safe ones
@@ -110,31 +113,45 @@ export class AssistantService {
       );
       const drafts = resolved.map(toDraft);
       // Looked up before the writes: a failure here must not follow committed items.
-      const names = await this.namesIn(
-        member.id,
-        locale,
-        replyLocale,
-        resolved,
-      );
+      const names = await this.namesIn(member.id, locale, replyLocale, [
+        ...resolved,
+        ...read.answers,
+      ]);
       // An add onto an existing line sets the spoken quantity (ADR 0017) and
       // wants the line back on the list, rather than summing as in Review.
-      const result = await this.voice.applyActions(member.id, {
-        actions: drafts,
-        locale,
-        today,
-        allowedKinds: ASSISTANT_ALLOWED_KINDS,
-        addSetsQuantity: true,
-      });
+      // A question-only request has nothing to apply and writes nothing.
+      const result: VoiceApplyResult =
+        drafts.length === 0
+          ? { applied: [], skipped: [], refused: [] }
+          : await this.voice.applyActions(member.id, {
+              actions: drafts,
+              locale,
+              today,
+              allowedKinds: ASSISTANT_ALLOWED_KINDS,
+              addSetsQuantity: true,
+            });
       // The list keeps UI-locale names; the reply names things in the language spoken.
-      const nameOf = (action: ResolvedVoiceAction): string =>
+      const nameOf = (
+        action: Pick<ResolvedVoiceAction, 'id' | 'ingredient'> & {
+          name?: string | null;
+          text: string;
+        },
+      ): string =>
         action.ingredient
           ? (names.get(action.ingredient.id) ?? action.ingredient.name)
           : ((replyLocale !== locale
               ? read.spokenNames.get(action.id)
               : undefined) ?? displayName(action));
-      outcomes = resolved.map((action, index) =>
-        outcomeOf(action, drafts[index], result, nameOf(action)),
-      );
+      // Answers to Pantry Questions come first, as they are spoken first.
+      outcomes = [
+        ...read.answers.map((answer): AssistantOutcome => ({
+          kind: answer.kind,
+          name: nameOf(answer),
+        })),
+        ...resolved.map((action, index) =>
+          outcomeOf(action, drafts[index], result, nameOf(action)),
+        ),
+      ];
     } catch (error) {
       await this.cap.refund(member.id, day, 'assistant');
       if (
@@ -160,7 +177,7 @@ export class AssistantService {
     memberId: string,
     uiLocale: CatalogLocale,
     replyLocale: CatalogLocale,
-    actions: ResolvedVoiceAction[],
+    actions: { ingredient: { id: string } | null }[],
   ): Promise<Map<string, string>> {
     // Ingredient names already come in the UI locale.
     if (replyLocale === uiLocale) return new Map();
