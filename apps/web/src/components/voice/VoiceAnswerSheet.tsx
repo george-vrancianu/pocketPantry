@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { focusVoiceButton } from '../../lib/voiceFocus';
 import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
+import { AddToShoppingListButton } from './AddToShoppingListButton';
 import { HeardCard } from './HeardCard';
 import { PantryAnswerRow } from './PantryAnswerRow';
 
@@ -96,6 +97,10 @@ function AnswerSheet() {
             <PantryAnswerRow key={answer.id} answer={answer} />
           ))}
         </Box>
+        <AddToShoppingListButton
+          answers={answers}
+          onAdded={() => title.current?.focus()}
+        />
       </Box>
     </Sheet>
   );

@@ -278,6 +278,8 @@
     },
     "done": "Færdig",
     "onShoppingList": "Allerede på indkøbslisten",
-    "expiringSoon": "Udløber snart"
+    "expiringSoon": "Udløber snart",
+    "addToList_one": "Tilføj {{count}} til indkøbslisten",
+    "addToList_other": "Tilføj {{count}} til indkøbslisten"
   }
 }
