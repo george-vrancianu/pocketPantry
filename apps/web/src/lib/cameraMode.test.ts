@@ -22,7 +22,7 @@ describe('the camera overlay mode', () => {
     expect(loadOverlayMode()).toBe('barcode');
   });
 
-  it('ignores a Scan Mode that is not on the overlay dial', () => {
+  it('ignores a Scan Mode that is not in the overlay mode slider', () => {
     localStorage.setItem('pocket-pantry.camera-overlay-mode', 'receipt');
     expect(loadOverlayMode()).toBe('barcode');
   });

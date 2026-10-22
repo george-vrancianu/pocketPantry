@@ -14,15 +14,17 @@ import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
 import {
-  takeScan,
   emitBarcode,
-  fakeCamera,
-  shutter,
   expectStack,
-  stackCount,
-  photoStack,
+  fakeCamera,
   languageChip,
+  photoStack,
   queryLanguageChip,
+  selected,
+  shutter,
+  slider,
+  stackCount,
+  takeScan,
 } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
@@ -35,13 +37,6 @@ vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
-
-const slider = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
-const selected = () =>
-  within(slider())
-    .getAllByRole('radio')
-    .filter((radio) => radio.getAttribute('aria-checked') === 'true')
-    .map((radio) => radio.textContent);
 
 const yogurt = {
   owner: 'catalog',

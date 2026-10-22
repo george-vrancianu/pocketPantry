@@ -3,7 +3,7 @@ import { ApiError, apiRequest } from './api';
 import type { CatalogAllergen, CatalogSearchResult, Unit } from './catalog';
 import type { Batch, NewBatch } from './pantry';
 
-/** In dial order. */
+/** In mode-slider order. */
 export const SCAN_MODES = [
   'receipt',
   'product',

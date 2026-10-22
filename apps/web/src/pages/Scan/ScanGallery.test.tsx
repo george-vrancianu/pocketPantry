@@ -13,7 +13,12 @@ import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ScanPage } from './ScanPage';
-import { fakeCamera, expectStack, stackCount } from '../../test/scan';
+import {
+  fakeCamera,
+  expectStack,
+  photoStack,
+  stackCount,
+} from '../../test/scan';
 
 const image = vi.hoisted(() => ({ cropFails: false }));
 vi.mock('../../lib/camera', async () =>
@@ -104,7 +109,6 @@ const pick = async (count = 1) => {
     });
   });
 };
-const stack = () => screen.getByRole('button', { name: /^Review \d+ / });
 
 describe('Gallery import into the Scan Session', () => {
   beforeEach(() => {
@@ -120,7 +124,7 @@ describe('Gallery import into the Scan Session', () => {
     vi.restoreAllMocks();
   });
 
-  it('adds a picked file as a thumbnail and reads it in the background, staying on the camera', async () => {
+  it('adds a picked file to the photo stack and reads it in the background, staying on the camera', async () => {
     renderScan();
     await pick();
     expectStack('reading');
@@ -132,7 +136,7 @@ describe('Gallery import into the Scan Session', () => {
     expect(screen.queryByTestId('review-overview')).not.toBeInTheDocument();
   });
 
-  it('marks the thumbnail read when the read comes back', async () => {
+  it('marks the photo stack read when the read comes back', async () => {
     renderScan();
     await pick();
     await act(async () => held[0].respond());
@@ -148,7 +152,7 @@ describe('Gallery import into the Scan Session', () => {
       'POST /api/scan/ingredients',
       'POST /api/scan/ingredients',
     ]);
-    expect(stack()).toHaveAccessibleName(/^Review 3 photos/);
+    expect(photoStack()).toHaveAccessibleName(/^Review 3 photos/);
     expect(
       await screen.findByText('3 photos added · Ingredients'),
     ).toBeInTheDocument();
@@ -158,7 +162,7 @@ describe('Gallery import into the Scan Session', () => {
     renderScan();
     await pick();
     expect(stackCount()).toBe(1);
-    expect(stack()).toHaveAccessibleName(/^Review 1 photo/);
+    expect(photoStack()).toHaveAccessibleName(/^Review 1 photo/);
   });
 
   it('still works when the camera is not available', async () => {
@@ -191,7 +195,7 @@ describe('Gallery import into the Scan Session', () => {
   it('keeps Add disabled, waiting on the uncropped receipt, until it is removed', async () => {
     renderScan('/scan?mode=receipt');
     await pick();
-    await userEvent.click(stack());
+    await userEvent.click(photoStack());
     const add = screen.getByRole('button', { name: /^Crop 1 receipt first/ });
     expect(add).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Remove photo' }));
@@ -213,7 +217,7 @@ describe('Gallery import into the Scan Session', () => {
     it('is cropped from its card in Review, then read', async () => {
       renderScan('/scan?mode=receipt');
       await pick();
-      await userEvent.click(stack());
+      await userEvent.click(photoStack());
       const card = within(screen.getByTestId('review-card'));
       expect(held).toHaveLength(0);
       await userEvent.click(card.getByRole('button', { name: /^Crop/ }));
@@ -238,7 +242,7 @@ describe('Gallery import into the Scan Session', () => {
     it('stays uncropped and unread when the crop is cancelled', async () => {
       renderScan('/scan?mode=receipt');
       await pick();
-      await userEvent.click(stack());
+      await userEvent.click(photoStack());
       await userEvent.click(cropButton());
       await userEvent.click(
         await screen.findByRole('button', { name: 'Cancel' }),
@@ -252,24 +256,21 @@ describe('Gallery import into the Scan Session', () => {
       renderScan('/scan?mode=receipt');
       await pick();
       expectStack('uncropped');
-      expect(stack()).toHaveAccessibleName(/1 receipt to crop/);
+      expect(photoStack()).toHaveAccessibleName(/1 receipt to crop/);
     });
 
     it('counts as pending: the stack badge stays amber and Review does not say all read', async () => {
       renderScan('/scan?mode=receipt');
       await pick();
-      expect(screen.getByTestId('stack-badge')).toHaveAttribute(
-        'data-state',
-        'needsCrop',
-      );
-      await userEvent.click(stack());
+      expectStack('uncropped');
+      await userEvent.click(photoStack());
       expect(screen.queryByText(/all read/)).not.toBeInTheDocument();
     });
 
     it('says why and keeps the Crop button when the crop fails', async () => {
       renderScan('/scan?mode=receipt');
       await pick();
-      await userEvent.click(stack());
+      await userEvent.click(photoStack());
       const card = within(screen.getByTestId('review-card'));
       await userEvent.click(card.getByRole('button', { name: /^Crop/ }));
       image.cropFails = true;
@@ -284,7 +285,7 @@ describe('Gallery import into the Scan Session', () => {
     it('returns focus to the card after Use photo', async () => {
       renderScan('/scan?mode=receipt');
       await pick();
-      await userEvent.click(stack());
+      await userEvent.click(photoStack());
       await userEvent.click(
         within(screen.getByTestId('review-card')).getByRole('button', {
           name: /^Crop/,
@@ -303,7 +304,7 @@ describe('Gallery import into the Scan Session', () => {
     it('makes one card per picked file, each cropped on its own', async () => {
       renderScan('/scan?mode=receipt');
       await pick(2);
-      await userEvent.click(stack());
+      await userEvent.click(photoStack());
       expect(screen.getAllByTestId('review-card')).toHaveLength(2);
       expect(held).toHaveLength(0);
       await userEvent.click(

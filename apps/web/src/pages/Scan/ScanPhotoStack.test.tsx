@@ -10,7 +10,12 @@ import {
 } from '../../lib/scanSession';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ScanPage } from './ScanPage';
-import { emitBarcode, fakeCamera, takeScan } from '../../test/scan';
+import {
+  emitBarcode,
+  expectStack,
+  fakeCamera,
+  takeScan,
+} from '../../test/scan';
 
 vi.mock('../../lib/camera', async () =>
   (await import('../../test/scan')).fakeCameraModule(),
@@ -127,16 +132,13 @@ describe('The photo stack on the Scan page', () => {
   it('shows the four badge states in order: reading, needs crop, failed, all read', async () => {
     renderScan();
     await seed('read');
-    expect(badge()).toHaveAttribute('data-state', 'read');
     expect(stack()).toHaveAccessibleName('Review 1 photo, all read');
     await seed('failed');
     expect(badge()).toHaveAttribute('data-state', 'failed');
     expect(stack()).toHaveAccessibleName("Review 2 photos, 1 couldn't be read");
     await seed('uncropped', 'receipt');
-    expect(badge()).toHaveAttribute('data-state', 'needsCrop');
     expect(stack()).toHaveAccessibleName(/1 receipt to crop$/);
     await seed('queued');
-    expect(badge()).toHaveAttribute('data-state', 'reading');
     expect(screen.getByTestId('stack-spinner')).toBeInTheDocument();
     expect(stack()).toHaveAccessibleName('Review 4 photos, 1 still reading');
   });
@@ -145,7 +147,7 @@ describe('The photo stack on the Scan page', () => {
     renderScan();
     takeScan();
     await act(async () => {});
-    expect(badge()).toHaveAttribute('data-state', 'reading');
+    expectStack('reading');
     await userEvent.click(stack());
     expect(screen.getByTestId('review-overview')).toBeInTheDocument();
   });

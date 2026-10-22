@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetReads } from '../../lib/scanReads';
 import { getScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { takeScan } from '../../test/scan';
+import { scanOnce } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
 vi.mock('../../lib/camera', async () =>
@@ -15,12 +15,6 @@ vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
-
-const flush = () => act(async () => {});
-const scanOnce = async () => {
-  takeScan();
-  await flush();
-};
 
 function renderScan() {
   // Reads never answer, so the Scans stay in the Scan Session.

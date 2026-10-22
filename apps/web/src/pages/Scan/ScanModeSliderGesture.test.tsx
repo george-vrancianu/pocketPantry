@@ -2,6 +2,7 @@ import { act, fireEvent, screen, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
+import { selected, slider } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
 vi.mock('../../lib/camera', async () =>
@@ -17,13 +18,7 @@ function renderScan(route = '/scan') {
   );
 }
 
-const slider = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
 const item = (name: string) => within(slider()).getByRole('radio', { name });
-const selected = () =>
-  within(slider())
-    .getAllByRole('radio')
-    .filter((radio) => radio.getAttribute('aria-checked') === 'true')
-    .map((radio) => radio.textContent);
 /** Where the strip is: it moves with a finger and comes back on release. */
 const stripAt = () => getComputedStyle(slider()).transform;
 

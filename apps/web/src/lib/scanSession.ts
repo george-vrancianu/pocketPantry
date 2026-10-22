@@ -17,7 +17,7 @@ export type ScanFailure = 'error' | 'cap';
 export const MAX_SESSION_SCANS = 20;
 
 /**
- * One card of the Scan Session, from the double-tap (or the accepted barcode) until it is saved or
+ * One card of the Scan Session, from the shutter press (or the accepted barcode) until it is saved or
  * removed. A Barcode card is a Barcode Lookup, not a Scan (ADR 0013, ADR 0016): it has a `code`
  * instead of an `image`, is looked up outside the read slots, and is exempt from the Scan Cap.
  */
@@ -333,7 +333,7 @@ const FINAL_ERRORS = [
 
 /**
  * Whether reading a failed Scan again (or looking a Barcode card up again) can change anything.
- * The one rule behind every retry: the camera's failed thumbnail and Review's "Read again" /
+ * The one rule behind every retry: the photo stack's failed state and Review's "Read again" /
  * "Look up again". Network, Lookup Limit, Scan Cap and unknown errors can be retried; `FINAL_ERRORS` cannot.
  */
 export const canRetry = (scan: SessionScan) =>

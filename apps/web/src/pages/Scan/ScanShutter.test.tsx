@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,7 +6,18 @@ import { FOCUS_PAUSE_MS } from '../../lib/camera';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { ScanPage } from './ScanPage';
-import { fakeCamera, setStatus, shutter, takeScan } from '../../test/scan';
+import {
+  advance,
+  cancelPress,
+  fakeCamera,
+  flush,
+  lift,
+  moveOnShutter,
+  press,
+  setStatus,
+  shutter,
+  takeScan,
+} from '../../test/scan';
 
 const image = vi.hoisted(() => ({ resize: null as null | Promise<string> }));
 vi.mock('../../lib/camera', async () =>
@@ -34,14 +45,6 @@ function renderScan() {
 }
 const scans = () =>
   fetchCalls.filter((c) => c.key === 'POST /api/scan/product');
-const flush = () => act(async () => {});
-
-const base = { pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0 };
-const press = (x = 200, y = 700) =>
-  fireEvent.pointerDown(shutter(), { ...base, clientX: x, clientY: y });
-const lift = (x = 200, y = 700) =>
-  fireEvent.pointerUp(shutter(), { ...base, clientX: x, clientY: y });
-const advance = (ms: number) => act(() => vi.advanceTimersByTime(ms));
 
 describe('The shutter on the Scan page', () => {
   const vibrate = vi.fn(() => true);
@@ -127,8 +130,8 @@ describe('The shutter on the Scan page', () => {
     renderScan();
     press();
     await advance(301);
-    fireEvent.pointerMove(shutter(), { ...base, clientX: 150, clientY: 700 });
-    fireEvent.pointerMove(shutter(), { ...base, clientX: 60, clientY: 700 });
+    moveOnShutter(150, 700);
+    moveOnShutter(60, 700);
     lift(60);
     fireEvent.click(shutter());
     fakeCamera.finishFocus();
@@ -141,7 +144,7 @@ describe('The shutter on the Scan page', () => {
   it('sliding off before the hold starts takes no Scan and starts no focus pass', async () => {
     renderScan();
     press();
-    fireEvent.pointerMove(shutter(), { ...base, clientX: 120, clientY: 700 });
+    moveOnShutter(120, 700);
     await advance(400);
     lift(120);
     fireEvent.click(shutter());
@@ -154,7 +157,7 @@ describe('The shutter on the Scan page', () => {
     renderScan();
     press();
     await advance(301);
-    fireEvent.pointerCancel(shutter(), base);
+    cancelPress();
     await flush();
     expect(fakeCamera.cancels).toBe(1);
     expect(scans()).toHaveLength(0);

@@ -1,5 +1,10 @@
-import { screen } from '@testing-library/react';
-import { shutter, openFirstScanCard, takeScan } from '../../test/scan';
+import { waitFor } from '@testing-library/react';
+import {
+  expectStack,
+  shutter,
+  openFirstScanCard,
+  takeScan,
+} from '../../test/scan';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
@@ -88,10 +93,7 @@ describe('Ingredients Scan on the Scan screen', () => {
       'POST /api/scan/ingredients': () => Response.json({ lines: [] }),
     });
     takeScan();
-    expect(await screen.findByTestId('stack-badge')).toHaveAttribute(
-      'data-state',
-      'failed',
-    );
+    await waitFor(() => expectStack('failed'));
     expect(shutter()).not.toHaveAttribute('aria-disabled');
   });
 
@@ -104,9 +106,6 @@ describe('Ingredients Scan on the Scan screen', () => {
         ),
     });
     takeScan();
-    expect(await screen.findByTestId('stack-badge')).toHaveAttribute(
-      'data-state',
-      'failed',
-    );
+    await waitFor(() => expectStack('failed'));
   });
 });

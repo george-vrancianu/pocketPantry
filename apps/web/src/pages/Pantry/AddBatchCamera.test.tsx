@@ -5,10 +5,8 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithProviders, stubApi } from '../../test/render';
-import { PantryPage } from './PantryPage';
+import { openOverlay, stubPantry } from '../../test/addBatch';
 import { emitBarcode, fakeCamera } from '../../test/scan';
 
 // The add-Batch camera's v3 chrome, opened from the Pantry's add-Batch form. Prefill itself is
@@ -20,32 +18,6 @@ vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,AAAA'),
 }));
 
-function stubPantry() {
-  const { fetchMock } = stubApi({
-    'GET /api/pantry': () => Response.json({ batches: [], runningLow: [] }),
-    'GET /api/staples': () => Response.json({ staples: [] }),
-    'GET /api/settings/family': () =>
-      Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
-    'GET /api/catalog/search': () => Response.json({ results: [] }),
-    'GET /api/pantry/recently-stocked': () =>
-      Response.json({ ingredients: [] }),
-    'POST /api/scan/product': () => Response.json({ lines: [] }),
-    'GET /api/barcode-lookup/3017620422003': () =>
-      Response.json({ found: false }, { status: 404 }),
-  });
-  vi.stubGlobal('fetch', fetchMock);
-}
-
-async function openOverlay(mode: 'product' | 'barcode') {
-  localStorage.setItem('pocket-pantry.camera-overlay-mode', mode);
-  const user = userEvent.setup();
-  renderWithProviders(<PantryPage />);
-  await user.click(await screen.findByRole('button', { name: 'Add batch' }));
-  await user.click(
-    screen.getByRole('button', { name: 'Fill from the camera' }),
-  );
-  return user;
-}
 const bar = () => within(screen.getByTestId('scan-top-bar'));
 const overlay = () => screen.queryByTestId('camera-overlay');
 

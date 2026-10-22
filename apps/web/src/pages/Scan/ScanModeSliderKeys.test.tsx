@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { languageChip } from '../../test/scan';
+import { languageChip, slider } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
 vi.mock('../../lib/camera', async () =>
@@ -31,7 +31,6 @@ function setup(route: string, routes: Record<string, () => Response> = {}) {
   );
 }
 
-const slider = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
 const checked = () =>
   within(slider())
     .getAllByRole('radio')

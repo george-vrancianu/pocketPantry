@@ -1,5 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import {
+  expectStack,
   shutter,
   openFirstScanCard,
   takeScan,
@@ -169,10 +170,7 @@ describe('ScanPage', () => {
     });
     await shoot();
     // Retry and the reason live on the card in Review; the camera only shows the stack going amber.
-    expect(await screen.findByTestId('stack-badge')).toHaveAttribute(
-      'data-state',
-      'failed',
-    );
+    await waitFor(() => expectStack('failed'));
     expect(
       screen.queryByRole('button', { name: /retry/i }),
     ).not.toBeInTheDocument();

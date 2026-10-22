@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 import { beforeEach, expect, vi } from 'vitest';
@@ -7,9 +7,54 @@ import type { CameraStatus, FocusPass } from '../lib/camera';
 /** The shutter button, which takes a Scan. */
 export const shutter = () => screen.getByRole('button', { name: 'Take photo' });
 
+/** Lets pending promises and effects settle. */
+export const flush = () => act(async () => {});
+
+/** Advances the fake timers inside `act` (the test must have called `vi.useFakeTimers()`). */
+export const advance = (ms: number) => act(() => vi.advanceTimersByTime(ms));
+
+const touch = {
+  pointerId: 1,
+  pointerType: 'touch',
+  isPrimary: true,
+  button: 0,
+};
+
+/** Presses the shutter with a finger at (x, y). */
+export const press = (x = 200, y = 700) =>
+  fireEvent.pointerDown(shutter(), { ...touch, clientX: x, clientY: y });
+
+/** Moves the finger on the shutter to (x, y). */
+export const moveOnShutter = (x: number, y: number) =>
+  fireEvent.pointerMove(shutter(), { ...touch, clientX: x, clientY: y });
+
+/** Lifts the finger off the shutter at (x, y). */
+export const lift = (x = 200, y = 700) =>
+  fireEvent.pointerUp(shutter(), { ...touch, clientX: x, clientY: y });
+
+/** The browser cancels the touch on the shutter. */
+export const cancelPress = () => fireEvent.pointerCancel(shutter(), touch);
+
+/** The mode slider (a radio group). */
+export const slider = () =>
+  screen.getByRole('radiogroup', { name: 'Scan mode' });
+
+/** The words of the selected mode(s) in the mode slider. */
+export const selected = () =>
+  within(slider())
+    .getAllByRole('radio')
+    .filter((radio) => radio.getAttribute('aria-checked') === 'true')
+    .map((radio) => radio.textContent);
+
 /** Take a Scan as a Member does: press the shutter. */
 export function takeScan() {
   fireEvent.click(shutter());
+}
+
+/** Takes a Scan and lets it settle. */
+export async function scanOnce() {
+  takeScan();
+  await flush();
 }
 
 /** The Scan Language chip (the button that opens the language menu), in any UI language. */

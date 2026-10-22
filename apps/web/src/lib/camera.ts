@@ -97,7 +97,7 @@ export function clampZoom(level: number, range: ZoomRange): number {
 
 /**
  * The rear camera as a live preview. `unavailable` covers no camera, a denied
- * permission, and a non-secure page; the Scan screen then leans on the gallery.
+ * permission, and a non-secure page; the Scan screen then offers Import instead.
  */
 export function useCamera() {
   const videoRef = useRef<HTMLVideoElement>(null);

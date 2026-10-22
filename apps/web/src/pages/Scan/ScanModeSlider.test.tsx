@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
+import { selected, slider } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
 // jsdom has no camera: the camera hook is the seam.
@@ -21,13 +22,7 @@ function renderScan(route = '/scan') {
   );
 }
 
-const slider = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
 const item = (name: string) => within(slider()).getByRole('radio', { name });
-const selected = () =>
-  within(slider())
-    .getAllByRole('radio')
-    .filter((radio) => radio.getAttribute('aria-checked') === 'true')
-    .map((radio) => radio.textContent);
 
 describe('Scan mode slider', () => {
   beforeEach(() => {

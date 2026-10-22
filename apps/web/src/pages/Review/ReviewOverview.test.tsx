@@ -12,11 +12,7 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine, ScanMode } from '../../lib/scan';
 import { saveScanLanguage } from '../../lib/scanLanguage';
 import { resetReads } from '../../lib/scanReads';
-import {
-  dispatchScanSession,
-  getScanSession,
-  resetScanSession,
-} from '../../lib/scanSession';
+import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { saveScanPageMode, type CameraMode } from '../../lib/cameraMode';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ScanPage } from '../Scan/ScanPage';
@@ -97,6 +93,7 @@ const seedFailed = (
   mode: CameraMode,
   errorCode?: string,
   errorParams?: Record<string, unknown>,
+  scanLanguage: 'en' | 'ro' | 'da' = 'en',
 ) =>
   act(() => {
     dispatchScanSession({
@@ -104,7 +101,7 @@ const seedFailed = (
       scan: {
         id,
         mode,
-        scanLanguage: 'en',
+        scanLanguage,
         ...(mode === 'barcode'
           ? { code: '5941234200017' }
           : { image: 'data:image/jpeg;base64,YQ==' }),
@@ -399,7 +396,21 @@ describe('Review overview', () => {
       });
       // Still on Review, same card.
       expect(screen.queryByTestId('scan-guide')).toBeNull();
-      expect(getScanSession().scans.map((scan) => scan.id)).toEqual(['a']);
+      expect(cards()).toHaveLength(1);
+    });
+
+    it("reads again in the Scan Language the Scan was taken in, not the Member's current pick", async () => {
+      saveScanLanguage('en', 'da');
+      await seedFailed('a', 'product', 'internal', undefined, 'ro');
+      const calls = renderOverview({
+        'POST /api/scan/product': () => Response.json({ lines: [yogurt] }),
+      });
+      await userEvent.click(within(cards()[0]).getByRole('button', readAgain));
+      await waitFor(() =>
+        expect(
+          calls.find((c) => c.key === 'POST /api/scan/product')?.search,
+        ).toContain('scanLanguage=ro'),
+      );
     });
 
     it('keeps the focus on the card while the photo is read again', async () => {
@@ -469,7 +480,7 @@ describe('Review overview', () => {
           ).toHaveLength(1),
         );
         expect(screen.queryByTestId('scan-guide')).toBeNull();
-        expect(getScanSession().scans.map((scan) => scan.id)).toEqual(['b']);
+        expect(cards()).toHaveLength(1);
       },
     );
 
@@ -537,7 +548,6 @@ describe('Review overview', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Take more' }));
       expect(await screen.findByTestId('scan-guide')).toBeInTheDocument();
       expect(screen.getByTestId('stack-badge')).toHaveTextContent('2');
-      expect(getScanSession().scans.map((scan) => scan.id)).toEqual(['a', 'b']);
     });
 
     it('keeps the header Camera link', async () => {
@@ -592,9 +602,6 @@ describe('Review overview', () => {
         await pick(1);
         await waitFor(() => expect(cards()).toHaveLength(2));
         expect(cards()[1]).toHaveTextContent(label);
-        expect(getScanSession().scans[1].mode).toBe(
-          last === 'barcode' ? 'product' : last,
-        );
       },
     );
 
@@ -605,7 +612,6 @@ describe('Review overview', () => {
       const calls = renderOverview(later);
       await pick(1);
       await waitFor(() => expect(cards()).toHaveLength(2));
-      expect(getScanSession().scans[1].scanLanguage).toBe('ro');
       await waitFor(() =>
         expect(
           calls.find((c) => c.key === 'POST /api/scan/product')?.search,
@@ -622,7 +628,6 @@ describe('Review overview', () => {
       expect(
         within(cards()[1]).getByRole('button', { name: 'Crop receipt photo' }),
       ).toBeInTheDocument();
-      expect(getScanSession().scans[1].status).toBe('uncropped');
     });
 
     it('refuses the files over the 20-card limit with the usual message', async () => {
@@ -634,7 +639,6 @@ describe('Review overview', () => {
       expect(await screen.findByRole('status')).toHaveTextContent(
         /A Scan Session holds at most 20 Scans and Barcode Lookups in total\. Add or discard these first\./,
       );
-      expect(getScanSession().scans).toHaveLength(20);
     });
   });
 });

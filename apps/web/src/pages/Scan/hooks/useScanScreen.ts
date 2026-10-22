@@ -19,7 +19,7 @@ import {
   importRoom,
   resizingImports,
 } from '../../../lib/importPhotos';
-import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
+import { IMAGE_PREPARATION } from '../../../lib/scanImage';
 import {
   clearScanLanguageOverride,
   useSessionScanLanguage,
@@ -41,7 +41,7 @@ const BARCODE_HAPTIC_MS = 12;
 
 /** What opens the camera decides which modes it offers and which one it starts in. */
 export type ScanScreenModes = {
-  /** In dial order. Defaults to all five camera modes. */
+  /** In mode-slider order. Defaults to all five camera modes. */
   modes?: readonly CameraMode[];
   /** Used when the URL names no allowed mode and either `rememberMode` is false or the remembered mode isn't allowed. */
   defaultMode?: CameraMode;
@@ -169,62 +169,56 @@ export function useScanScreen(config: ScanScreenModes = {}) {
 
   const reading = resizing;
 
-  /** A camera frame or gallery file: prepare it, then join the Scan Session. */
-  const scanImage = async (
-    source: Blob,
-    origin: ImageOrigin,
-    prepare: () => Promise<string> = () => {
-      const view = measureView(camera.videoRef.current);
-      // Barcode sends no photo: it never gets here.
-      if (mode === 'barcode')
-        return Promise.reject(new Error('Barcode has no photo to prepare'));
-      return IMAGE_PREPARATION[mode](source, origin, view);
-    },
-  ): Promise<boolean> => {
+  /** A camera frame: prepare it, then join the Scan Session. (Gallery files go through `importPhotos`.) */
+  const scanFrame = async (frame: Blob): Promise<void> => {
     setLocalError(null);
     setNotAdded(false);
     setResizing(true);
     const epoch = scanEpoch.current;
     let image: string;
     try {
-      image = await prepare();
+      // Barcode sends no photo: it never gets here.
+      if (mode === 'barcode')
+        throw new Error('Barcode has no photo to prepare');
+      image = await IMAGE_PREPARATION[mode](
+        frame,
+        'camera',
+        measureView(camera.videoRef.current),
+      );
     } catch {
       if (epoch === scanEpoch.current) {
-        if (origin === 'camera' && mode !== 'plate') setNotAdded(true);
+        if (mode !== 'plate') setNotAdded(true);
         else setLocalError('scan.image_invalid');
       }
-      return false;
+      return;
     } finally {
       setResizing(false);
     }
-    if (epoch !== scanEpoch.current) return false;
+    if (epoch !== scanEpoch.current) return;
     // A camera Scan joins the Scan Session at once; its read goes on in the background.
-    if (origin === 'camera') {
-      if (
-        getScanSession().scans.length + resizingImports() >=
-        MAX_SESSION_SCANS
-      ) {
-        warnSessionFull();
-        return false;
-      }
-      const id = crypto.randomUUID();
-      dispatchScanSession({
-        type: 'enqueue',
-        scan: {
-          id,
-          mode,
-          scanLanguage: mode === 'plate' ? undefined : scanLanguage,
-          image,
-          thumbnail: image,
-        },
-      });
-      cardAdded.current?.(image, mode);
-      readScans(i18n.language);
-      // The full frame, before it was resized for the read: barcodes need the resolution.
-      if (mode === 'product')
-        decodePhotoBarcode(id, source, (photo) => readBarcode(photo));
+    if (
+      getScanSession().scans.length + resizingImports() >=
+      MAX_SESSION_SCANS
+    ) {
+      warnSessionFull();
+      return;
     }
-    return false;
+    const id = crypto.randomUUID();
+    dispatchScanSession({
+      type: 'enqueue',
+      scan: {
+        id,
+        mode,
+        scanLanguage: mode === 'plate' ? undefined : scanLanguage,
+        image,
+        thumbnail: image,
+      },
+    });
+    cardAdded.current?.(image, mode);
+    readScans(i18n.language);
+    // The full frame, before it was resized for the read: barcodes need the resolution.
+    if (mode === 'product')
+      decodePhotoBarcode(id, frame, (photo) => readBarcode(photo));
   };
 
   // Two quick presses must not send the same photo twice.
@@ -234,7 +228,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     shooting.current = true;
     try {
       const frame = await camera.capture();
-      if (frame) await scanImage(frame, 'camera');
+      if (frame) await scanFrame(frame);
     } finally {
       shooting.current = false;
     }
@@ -263,7 +257,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     });
   };
 
-  // The Barcode dial mode reads on its own. Each accepted code adds a card at once; the watch reads one
+  // The Barcode mode reads on its own. Each accepted code adds a card at once; the watch reads one
   // code per subscription, so it is re-armed after every read.
   const acceptCode = async (code: string) => {
     // The code just accepted is ignored while it keeps being seen: it is taken again once

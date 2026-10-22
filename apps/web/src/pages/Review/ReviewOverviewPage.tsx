@@ -79,7 +79,7 @@ const dashedButton = {
 };
 
 /**
- * The overview a Member lands on from Done: one card per Scan of the Scan Session, in the order
+ * The overview a Member reaches from the photo stack: one card per Scan of the Scan Session, in the order
  * the Scans were taken. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
  */
 export function ReviewOverviewPage() {

@@ -1,9 +1,15 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithProviders, stubApi } from '../../test/render';
-import { PantryPage } from './PantryPage';
-import { fakeCamera, queryLanguageChip } from '../../test/scan';
+import { openOverlay, stubPantry } from '../../test/addBatch';
+import {
+  advance,
+  fakeCamera,
+  flush,
+  lift,
+  press,
+  queryLanguageChip,
+  shutter,
+} from '../../test/scan';
 
 // jsdom has no camera or canvas: the camera hook and image preparation are the seams.
 vi.mock('../../lib/camera', async () =>
@@ -13,44 +19,8 @@ vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,AAAA'),
 }));
 
-function stubPantry() {
-  const { fetchMock, calls } = stubApi({
-    'GET /api/pantry': () => Response.json({ batches: [], runningLow: [] }),
-    'GET /api/staples': () => Response.json({ staples: [] }),
-    'GET /api/settings/family': () =>
-      Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
-    'GET /api/catalog/search': () => Response.json({ results: [] }),
-    'GET /api/pantry/recently-stocked': () =>
-      Response.json({ ingredients: [] }),
-    'POST /api/scan/product': () => Response.json({ lines: [] }),
-  });
-  vi.stubGlobal('fetch', fetchMock);
-  return calls;
-}
 const scans = (calls: ReturnType<typeof stubPantry>) =>
   calls.filter((call) => call.key === 'POST /api/scan/product');
-
-async function openOverlay(mode: 'product' | 'barcode') {
-  localStorage.setItem('pocket-pantry.camera-overlay-mode', mode);
-  const user = userEvent.setup();
-  renderWithProviders(<PantryPage />);
-  await user.click(await screen.findByRole('button', { name: 'Add batch' }));
-  await user.click(
-    screen.getByRole('button', { name: 'Fill from the camera' }),
-  );
-}
-
-const base = { pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0 };
-const shutter = () => screen.getByRole('button', { name: 'Take photo' });
-const press = () =>
-  fireEvent.pointerDown(shutter(), { ...base, clientX: 100, clientY: 100 });
-const release = () =>
-  fireEvent.pointerUp(shutter(), { ...base, clientX: 100, clientY: 100 });
-const advance = (ms: number) =>
-  act(() => {
-    vi.advanceTimersByTime(ms);
-  });
-const flush = () => act(async () => {});
 
 describe('Scanning from the add-Batch camera overlay by the shutter', () => {
   beforeEach(() => {
@@ -119,7 +89,7 @@ describe('Scanning from the add-Batch camera overlay by the shutter', () => {
     await advance(301);
     expect(fakeCamera.focuses).toBe(1);
     expect(navigator.vibrate).toHaveBeenCalledWith(6);
-    release();
+    lift();
     expect(scans(calls)).toHaveLength(0);
     fakeCamera.finishFocus();
     await flush();

@@ -4,7 +4,13 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { expectStack, photoStack, stackCount, takeScan } from '../../test/scan';
+import {
+  expectStack,
+  photoStack,
+  scanOnce,
+  stackCount,
+  flush,
+} from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -96,12 +102,6 @@ function renderScan(route = '/scan?mode=product') {
     { route },
   );
 }
-
-const flush = () => act(async () => {});
-const scanOnce = async () => {
-  takeScan();
-  await flush();
-};
 
 describe('Scan Session reads that fail', () => {
   beforeEach(() => {
