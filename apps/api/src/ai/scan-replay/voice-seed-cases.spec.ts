@@ -71,7 +71,10 @@ describe('seed Voice Note cases', () => {
       );
       expect(
         mixed.some(
-          (c) => new Set(c.expected.actions.map((a) => a.target)).size === 2,
+          (c) =>
+            new Set(
+              c.expected.actions.map((a) => a.target).filter((t) => t !== null),
+            ).size === 2,
         ),
       ).toBe(true);
     }
