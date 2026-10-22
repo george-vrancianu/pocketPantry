@@ -1,7 +1,12 @@
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 import { DockItem } from '../molecules/DockItem';
-import { DOCK_BOTTOM, DOCK_CENTRE_WIDTH, DOCK_HEIGHT } from '../theme/dock';
+import {
+  DOCK_BOTTOM,
+  DOCK_CENTRE_WIDTH,
+  DOCK_HEIGHT,
+  DOCK_PADDING,
+} from '../theme/dock';
 import { border, radius, shadow } from '../theme/themeVars';
 
 export type DockEntry = {
@@ -59,7 +64,7 @@ export function Dock({
         maxWidth: { sm: 480, md: 520 },
         height: DOCK_HEIGHT,
         boxSizing: 'border-box',
-        p: '8px',
+        p: `${DOCK_PADDING}px`,
         display: 'grid',
         gridTemplateColumns: `repeat(2, minmax(0, 1fr)) ${DOCK_CENTRE_WIDTH}px repeat(2, minmax(0, 1fr))`,
         gap: { xs: '4px', md: '6px' },

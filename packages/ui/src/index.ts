@@ -49,10 +49,6 @@ export {
   DOCK_BOTTOM,
   DOCK_HEIGHT,
   DOCK_OVERHANG,
-  DOCK_PADDING,
-  CAPSULE_WIDTH,
-  CAPSULE_CAMERA_ONLY_WIDTH,
-  DOCK_CENTRE_WIDTH,
 } from './theme/dock';
 export { visuallyHidden } from './theme/visuallyHidden';
 
@@ -142,7 +138,6 @@ export {
   QuoteIcon,
   EqualIcon,
   LockIcon,
-  CameraIcon,
   StarIcon,
   StarFillIcon,
   UndoIcon,
