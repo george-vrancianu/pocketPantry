@@ -28,7 +28,7 @@ export function DockCapsule({
   cameraHref,
   micSlot,
 }: DockCapsuleProps) {
-  const cameraRadius = micSlot
+  const CAMERA_RADIUS = micSlot
     ? `${radius.pill} ${radius.pill} 0 0`
     : radius.pill;
   const camera = (
@@ -40,7 +40,7 @@ export function DockCapsule({
           flex: 1,
           width: '100%',
           color: 'inherit',
-          borderRadius: cameraRadius,
+          borderRadius: CAMERA_RADIUS,
         },
         focusRing,
       ]}
