@@ -87,6 +87,12 @@ class SkippedAction extends Error {
   }
 }
 
+/** The list a model action with no target implies off the Shopping List and the Pantry; null for a bare add or remove, which needs the Member's pick. */
+function impliedTarget(op: VoiceOp): VoiceTarget | null {
+  if (op === 'add' || op === 'remove') return null;
+  return op === 'runningLow' ? 'pantry' : 'shopping';
+}
+
 /**
  * A Voice Note: the recording is transcribed, the transcript read into Voice
  * Actions and each resolved against the current lists. Charged to the Voice Cap
@@ -95,12 +101,6 @@ class SkippedAction extends Error {
  * the edited Voice Actions in one transaction and is free. Neither audio nor
  * transcript is stored.
  */
-/** The list a model action with no target implies off the Shopping List and the Pantry; null for a bare add or remove, which needs the Member's pick. */
-function impliedTarget(op: VoiceOp): VoiceTarget | null {
-  if (op === 'add' || op === 'remove') return null;
-  return op === 'runningLow' ? 'pantry' : 'shopping';
-}
-
 @Injectable()
 export class VoiceService {
   constructor(
