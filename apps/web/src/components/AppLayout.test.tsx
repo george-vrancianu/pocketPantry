@@ -154,6 +154,25 @@ describe('AppLayout Voice Note host', () => {
     },
   );
 
+  it('reserves room for the Scan Language chip row above the Dock when the mic shows', async () => {
+    renderAt('/pantry');
+    await talkButton();
+    const page = (
+      screen.getByRole('main').parentElement as HTMLElement
+    ).className
+      .split(' ')
+      .pop() as string;
+    // jsdom drops calc() with env() from computed style, so read the injected rule text.
+    const rules = Array.from(document.styleSheets)
+      .flatMap((sheet) => Array.from(sheet.cssRules))
+      .map((rule) => rule.cssText)
+      .filter((text) => text.includes(page))
+      .join('\n');
+    // Chip row 36 above the chip's own spot: Dock 28 + 76 + 24 on phones, 28 + 84 + 24 from md.
+    expect(rules).toMatch(/padding-bottom: calc\(36px \+ calc\(128px \+ env\(/);
+    expect(rules).toMatch(/padding-bottom: calc\(36px \+ calc\(136px \+ env\(/);
+  });
+
   it.each(['/scan', '/customise'])(
     'shows no mic on %s, where there is no Dock',
     async (route) => {

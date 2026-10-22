@@ -12,6 +12,12 @@ export const micBottom = {
   md: aboveDock(DOCK_HEIGHT.md),
 };
 
+/** Bottom padding that keeps a page's last row clear of the chip row (and its safe-area inset). */
+export const micClearance = {
+  xs: `calc(${micBottom.xs} + ${MIC_ROW}px)`,
+  md: `calc(${micBottom.md} + ${MIC_ROW}px)`,
+};
+
 /** CSS `bottom` of something sitting above the chip row (the Listening card, the tip). */
 export const aboveMic = (gap: number) => ({
   xs: `calc(${micBottom.xs} + ${MIC_ROW + gap}px)`,

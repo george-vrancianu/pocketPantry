@@ -1,10 +1,11 @@
 import { PageLayout } from '@pocket-pantry/ui';
 import { Outlet, useLocation } from 'react-router-dom';
 import { dockStateFor } from '../lib/dockState';
+import { micClearance } from '../lib/voicePlacement';
 import { ApplyMemberLocale } from './ApplyMemberLocale';
 import { ApplyMemberTheme } from './ApplyMemberTheme';
 import { AppDock } from './AppDock';
-import { VoiceNote } from './VoiceNote';
+import { useShowsDockMic, VoiceNote } from './VoiceNote';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
 
 /** The line editor, whose tablet layout is a wide table (the overview of cards is not). */
@@ -14,12 +15,17 @@ const isWide = (pathname: string) => pathname.startsWith('/scan/review/');
 export function AppLayout() {
   const { pathname } = useLocation();
   const dock = dockStateFor(pathname);
+  const showsMic = useShowsDockMic();
   return (
     <>
       <ApplyMemberLocale />
       <ApplyMemberTheme />
       <VoiceHostProvider>
-        <PageLayout withDock={dock.visible} wide={isWide(pathname)}>
+        <PageLayout
+          withDock={dock.visible}
+          dockClearance={showsMic ? micClearance : undefined}
+          wide={isWide(pathname)}
+        >
           <Outlet />
         </PageLayout>
         <VoiceHostSlot />

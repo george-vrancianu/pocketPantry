@@ -6,6 +6,8 @@ export type PageLayoutProps = {
   children: ReactNode;
   /** Reserve room at the bottom so content never hides under the Dock (or its capsule, which reaches above it). */
   withDock?: boolean;
+  /** Bottom padding (a CSS length, or one per breakpoint) that replaces the default Dock room, e.g. to also clear a row of controls that hangs above the Dock. */
+  dockClearance?: string | { xs: string; md: string };
   /** Lift the ~960 px cap to 1180 px for table screens that need the room. */
   wide?: boolean;
 };
@@ -14,6 +16,7 @@ export type PageLayoutProps = {
 export function PageLayout({
   children,
   withDock = true,
+  dockClearance,
   wide = false,
 }: PageLayoutProps) {
   return (
@@ -24,7 +27,7 @@ export function PageLayout({
         backgroundColor: tokens.color.bg,
         color: tokens.color.ink,
         px: { xs: '20px', md: '48px' },
-        pb: withDock ? '132px' : '24px',
+        pb: withDock ? (dockClearance ?? '132px') : '24px',
       }}
     >
       <Box component="main" sx={{ maxWidth: wide ? 1180 : 960, mx: 'auto' }}>
