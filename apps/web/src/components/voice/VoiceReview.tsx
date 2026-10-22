@@ -17,6 +17,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AddToShoppingListButton } from './AddToShoppingListButton';
 import { applyToast } from './applyResult';
 import { focusVoiceButton } from '../../lib/voiceFocus';
 import { voiceToast } from '../../lib/voicePlacement';
@@ -326,6 +327,12 @@ function ReviewSheet() {
             label={t('voice:answers.title')}
             count={answers.length}
             tag={null}
+            after={
+              <AddToShoppingListButton
+                answers={answers}
+                onAdded={() => title.current?.focus()}
+              />
+            }
           >
             {answers.map((answer) => (
               <PantryAnswerRow key={answer.id} answer={answer} />
@@ -409,12 +416,15 @@ function Group({
   icon,
   count,
   tag,
+  after,
   children,
 }: {
   label: string;
   icon?: React.ReactNode;
   count: number;
   tag: string | null;
+  /** Below the list, inside the region. */
+  after?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -472,6 +482,7 @@ function Group({
       >
         {children}
       </Box>
+      {after}
     </Box>
   );
 }
