@@ -522,10 +522,8 @@ describe('Barcode on the Scan page', () => {
       await user.click(
         await screen.findByRole('button', { name: 'Look up again' }),
       );
-      await waitFor(() =>
-        expect(
-          screen.queryByRole('button', { name: 'Look up again' }),
-        ).not.toBeInTheDocument(),
+      expect(await screen.findByTestId('card-result')).toHaveTextContent(
+        'Yogurt',
       );
       expect(lookupCalls()).toHaveLength(2);
     });
@@ -549,10 +547,8 @@ describe('Barcode on the Scan page', () => {
       await user.click(
         await screen.findByRole('button', { name: 'Look up again' }),
       );
-      await waitFor(() =>
-        expect(
-          screen.queryByRole('button', { name: 'Look up again' }),
-        ).not.toBeInTheDocument(),
+      expect(await screen.findByTestId('card-result')).toHaveTextContent(
+        'Yogurt',
       );
       expect(lookupCalls()).toHaveLength(2);
     });
@@ -586,7 +582,11 @@ describe('Barcode on the Scan page', () => {
 
       await user.click(screen.getByRole('radio', { name: 'Barcode' }));
       await decode(A);
-      await waitFor(() => expectStack('failed'));
+      await waitFor(() =>
+        expect(photoStack()).toHaveAccessibleName(
+          "Review 1 photo and 1 barcode, 1 couldn't be read",
+        ),
+      );
       expect(lookupCalls()).toHaveLength(1);
     });
 

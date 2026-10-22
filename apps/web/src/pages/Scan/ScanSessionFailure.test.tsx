@@ -4,7 +4,7 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { expectStack, stackCount, takeScan } from '../../test/scan';
+import { expectStack, photoStack, stackCount, takeScan } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -239,7 +239,7 @@ describe('Scan Session reads that fail', () => {
       expect(
         await screen.findByText(/could not be added/i),
       ).toBeInTheDocument();
-      expect(stackCount()).toBe(0);
+      expect(photoStack()).toHaveAccessibleName('No photos yet');
       expect(bodies).toHaveLength(0);
     });
   });
