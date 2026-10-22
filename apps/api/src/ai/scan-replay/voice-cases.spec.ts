@@ -252,6 +252,27 @@ describe('compareActions', () => {
     expect(result.extra).toEqual([]);
   });
 
+  it('expects no list for a bare add, and reports a guessed list as a mismatch', () => {
+    const expectedBare = {
+      actions: [expected({ target: null })],
+      unsupported: 0,
+    };
+    expect(
+      compareActions(expectedBare, {
+        actions: [actual({ target: null })],
+        unsupported: [],
+      }).passed,
+    ).toBe(true);
+    const guessed = compareActions(expectedBare, {
+      actions: [actual({ target: 'shopping' })],
+      unsupported: [],
+    });
+    expect(guessed.passed).toBe(false);
+    expect(guessed.mismatched[0].diffs).toEqual([
+      { field: 'target', expected: null, actual: 'shopping' },
+    ]);
+  });
+
   it('accepts any listed name for an Ingredient, ignoring case', () => {
     const result = compareActions(
       {
@@ -337,6 +358,19 @@ describe('voiceCaseFileSchema', () => {
       expected: { unsupported: 0 },
     });
     expect(parsed.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('accepts an expected action with no list (null target) but not a missing one', () => {
+    const parse = (target: unknown) =>
+      voiceCaseFileSchema.safeParse(
+        file({
+          defaultTarget: 'none',
+          expected: { actions: [{ ...expected(), target }] },
+        }),
+      ).success;
+    expect(parse(null)).toBe(true);
+    expect(parse(undefined)).toBe(false);
+    expect(parse('kitchen')).toBe(false);
   });
 
   it('rejects a quantity without a unit, an unknown tag and a bad date', () => {

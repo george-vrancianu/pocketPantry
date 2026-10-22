@@ -312,6 +312,264 @@
           }
         ]
       }
+    },
+    {
+      "id": "ro-16",
+      "scanLanguage": "ro",
+      "tags": ["basic", "off-page"],
+      "transcript": "Adaugă lapte și ouă.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Lapte"
+          },
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Ouă"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-17",
+      "scanLanguage": "ro",
+      "tags": ["off-page"],
+      "transcript": "Scoate ouăle.",
+      "defaultTarget": "none",
+      "shoppingList": ["Ouă"],
+      "pantry": ["Ouă"],
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "remove",
+            "ingredient": "Ouă"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-18",
+      "scanLanguage": "ro",
+      "tags": ["filler", "off-page"],
+      "transcript": "Păi, adaugă niște unt și scoate făina.",
+      "defaultTarget": "none",
+      "shoppingList": ["Făină"],
+      "pantry": ["Făină"],
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Unt"
+          },
+          {
+            "target": null,
+            "op": "remove",
+            "ingredient": "Făină"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-19",
+      "scanLanguage": "ro",
+      "tags": ["off-page"],
+      "transcript": "Pune două iaurturi în frigider.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Iaurt",
+            "quantity": 2,
+            "unit": "pcs",
+            "location": "fridge"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-20",
+      "scanLanguage": "ro",
+      "tags": ["units", "relative-date", "off-page"],
+      "transcript": "Adaugă un kilogram de somon, expiră peste trei zile.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Somon",
+            "quantity": 1,
+            "unit": "kg",
+            "expiresOn": "2026-10-17"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-21",
+      "scanLanguage": "ro",
+      "tags": ["off-page"],
+      "transcript": "Avem nevoie de lapte și ouă.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Lapte"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Ouă"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-22",
+      "scanLanguage": "ro",
+      "tags": ["units", "off-page"],
+      "transcript": "Cumpără două lămâi și niște unt.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Lămâie",
+            "quantity": 2,
+            "unit": "pcs"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Unt"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-23",
+      "scanLanguage": "ro",
+      "tags": ["off-page"],
+      "transcript": "Bifează pâinea și laptele.",
+      "defaultTarget": "none",
+      "shoppingList": ["Pâine", "Lapte"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "check",
+            "ingredient": "Pâine"
+          },
+          {
+            "target": "shopping",
+            "op": "check",
+            "ingredient": "Lapte"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-24",
+      "scanLanguage": "ro",
+      "tags": ["off-page"],
+      "transcript": "Debifează ouăle.",
+      "defaultTarget": "none",
+      "shoppingList": ["Ouă"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "uncheck",
+            "ingredient": "Ouă"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-25",
+      "scanLanguage": "ro",
+      "tags": ["units", "off-page"],
+      "transcript": "Schimbă laptele la trei litri.",
+      "defaultTarget": "none",
+      "shoppingList": ["Lapte"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "setQuantity",
+            "ingredient": "Lapte",
+            "quantity": 3,
+            "unit": "l"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-26",
+      "scanLanguage": "ro",
+      "tags": ["off-page"],
+      "transcript": "Ni se termină orezul și cafeaua.",
+      "defaultTarget": "none",
+      "pantry": ["Orez", "Cafea"],
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "runningLow",
+            "ingredient": "Orez"
+          },
+          {
+            "target": "pantry",
+            "op": "runningLow",
+            "ingredient": "Cafea"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-27",
+      "scanLanguage": "ro",
+      "tags": ["mixed-lists", "relative-date", "off-page"],
+      "transcript": "Adaugă unt, pune două iaurturi în frigider și avem nevoie de cafea. Ah, și adaugă făină în cămară.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Unt"
+          },
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Iaurt",
+            "quantity": 2,
+            "unit": "pcs",
+            "location": "fridge"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Cafea"
+          },
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Făină"
+          }
+        ]
+      }
     }
   ]
 }
