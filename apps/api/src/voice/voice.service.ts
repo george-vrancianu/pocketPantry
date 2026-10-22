@@ -165,16 +165,13 @@ export class VoiceService {
         defaultTarget: input.defaultTarget,
         captureId,
       });
-      // The app does not show answers yet (#460): until then a Pantry Question reads as Didn't understand.
-      for (const answer of answers) {
-        actions.push(this.notUnderstood(answer.text));
-      }
       // Noise ("Thank you.") reads into nothing: no Review, and no charge. A
-      // note of only "Didn't understand" rows still opens Review.
-      if (actions.length === 0) {
+      // note of only "Didn't understand" rows still opens Review, and a note
+      // of only Pantry Questions opens the answer sheet.
+      if (actions.length === 0 && answers.length === 0) {
         throw new ApiException(422, 'voice.nothing_heard');
       }
-      return { transcript, actions };
+      return { transcript, actions, answers };
     } catch (error) {
       await this.cap.refund(memberId, day, 'voice');
       throw error;

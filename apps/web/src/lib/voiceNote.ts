@@ -15,6 +15,7 @@ import {
   MIN_VOICE_NOTE_MS,
   sendVoiceNote,
   type VoiceDefaultTarget,
+  type VoiceAnswer,
   type VoiceList,
   type VoiceNoteRequest,
   type VoiceNoteResult,
@@ -28,6 +29,8 @@ export type VoicePhase =
   | 'reading'
   | 'failed'
   | 'review'
+  /** The answer sheet for a note of only Pantry Questions; nothing to apply. */
+  | 'answers'
   /** Review while Apply is in flight; an error sends it back to `review` with the edits kept. */
   | 'applying';
 
@@ -54,7 +57,12 @@ export type VoiceNoteState = {
     scanLanguage: ScanLanguage;
   };
   /** What the server read from the recording, then as the Member edits it. */
-  proposal?: { transcript: string; actions: VoiceReviewAction[] };
+  proposal?: {
+    transcript: string;
+    actions: VoiceReviewAction[];
+    /** The Pantry Questions' answers. Shown by the answer sheet when they are all there is (a mixed note is #463). */
+    answers: VoiceAnswer[];
+  };
   error?: VoiceErrorCode;
   /**
    * The server's error behind a `failed` that the pill has no wording of its own for: the raw code
@@ -369,12 +377,21 @@ export function createVoiceNote(
       reading = undefined;
       if (result.transcript.trim() === '') return failed('nothingHeard');
       letSleep();
+      const answers = result.answers ?? [];
       go({
-        phase: 'review',
+        // Only Pantry Questions: the answer sheet, with nothing to review or apply.
+        phase:
+          result.actions.length === 0 && answers.length > 0
+            ? 'answers'
+            : 'review',
         defaultTarget,
-        // Kept for Review's "English · 0:09"; a discard or Apply drops it with the rest.
+        // Kept for the sheet's "English · 0:09"; closing it or Apply drops it with the rest.
         recording: state.recording,
-        proposal: { transcript: result.transcript, actions: result.actions },
+        proposal: {
+          transcript: result.transcript,
+          actions: result.actions,
+          answers,
+        },
       });
     } catch (error) {
       // Cancelled: the pill is already gone, and so is the lock (a newer press may hold its own).
@@ -611,6 +628,11 @@ export function createVoiceNote(
     /** Closes Review once Apply has succeeded. */
     applied() {
       if (state.phase !== 'applying') return;
+      idle();
+    },
+    /** Done on the answer sheet: closes it. Nothing was written, so nothing is sent. */
+    closeAnswers() {
+      if (state.phase !== 'answers') return;
       idle();
     },
     /** Closes Review without applying; ignored while Apply is in flight. */

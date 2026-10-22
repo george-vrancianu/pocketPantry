@@ -497,8 +497,8 @@ describe('Voice Note (integration)', () => {
     });
   });
 
-  // Spec: #459. Until the app shows answers (#460), a Pantry Question in a Voice Note reads as before.
-  it("reads a question-only Voice Note as Didn't understand and charges the Voice Cap", async () => {
+  // Spec: #460. A Pantry Question comes back as an answer, beside the Voice Actions.
+  it('returns the answers to a question-only Voice Note and charges the Voice Cap', async () => {
     const { cookie, memberId } = await signUp();
     reading = {
       actions: [],
@@ -514,10 +514,26 @@ describe('Voice Note (integration)', () => {
       unsupported: [],
     };
     const response = await note(cookie).expect(201);
-    expect((response.body as { actions: object[] }).actions).toMatchObject([
-      { status: 'notUnderstood', text: 'do we have milk' },
+    const body = response.body as { actions: object[]; answers: object[] };
+    expect(body.actions).toEqual([]);
+    expect(body.answers).toMatchObject([
+      {
+        kind: 'no',
+        text: 'do we have milk',
+        ingredient: { id: seedId.ingredient('milk') },
+      },
     ]);
     expect(await usage(memberId, 'voice')).toBe(1);
+  });
+
+  it('returns an empty answers list when nothing was asked', async () => {
+    const { cookie } = await signUp();
+    reading = {
+      actions: [],
+      unsupported: ['do a dance'],
+    };
+    const response = await note(cookie).expect(201);
+    expect((response.body as { answers: object[] }).answers).toEqual([]);
   });
 
   describe('applying Voice Actions', () => {

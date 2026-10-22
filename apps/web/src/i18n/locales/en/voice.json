@@ -265,5 +265,15 @@
     "tipBusy": "Still reading your last note",
     "tipFailed": "Retry or discard the last note first",
     "noRecording": "Can't record here"
+  },
+  "answers": {
+    "title": "Your Pantry",
+    "subline": "Nothing was changed",
+    "list": "Answers",
+    "verdict": {
+      "yes": "In your Pantry",
+      "no": "Not in your Pantry"
+    },
+    "done": "Done"
   }
 }
