@@ -48,8 +48,25 @@ const modelAction = z.object({
   noExpiry: z.boolean(),
   location: z.enum(storageLocation.enumValues).nullable(),
 });
+/**
+ * One Pantry Question as the text model returns it: "do we have X?" names one
+ * Ingredient (ADR 0020). Matched like a Voice Action, but it is not one: it has
+ * no list, op or amount, and never reaches a handler.
+ */
+const modelQuestion = z.object({
+  /** The words that made this question, in the language spoken. */
+  spokenText: z.string().trim().min(1).max(200),
+  matchedIngredientId: z.uuid().nullable(),
+  matchConfidence: z.number().min(0).max(1),
+  /** A short generic Ingredient name in the UI locale. */
+  fallbackIngredientName: z.string().trim().min(1).max(80),
+  /** The same short generic name in the language spoken, for an Assistant reply. */
+  spokenName: z.string().trim().min(1).max(80),
+});
 export const voiceReadModelSchema = z.object({
   actions: z.array(modelAction),
+  /** Pantry Questions, one per Ingredient asked about (ADR 0020). */
+  questions: z.array(modelQuestion).default([]),
   /** Phrases the model could not turn into a supported Voice Action. */
   unsupported: z.array(z.string().trim().min(1).max(200)),
   /** The language the text was spoken in, or null when it can't be told. Only Assistant Requests use it. */
@@ -57,11 +74,15 @@ export const voiceReadModelSchema = z.object({
 });
 export type VoiceReadModelResult = z.infer<typeof voiceReadModelSchema>;
 export type ModelVoiceAction = z.infer<typeof modelAction>;
+export type ModelPantryQuestion = z.infer<typeof modelQuestion>;
 
 export const voiceReadJsonSchema = z.toJSONSchema(voiceReadModelSchema, {
   target: 'draft-7',
 });
 delete voiceReadJsonSchema.$schema;
+// The provider's schema keeps `questions` required; the `default` only serves parsing a reply that omits it.
+delete (voiceReadJsonSchema.properties as Record<string, { default?: unknown }>)
+  .questions.default;
 
 /**
  * A Voice Action as the resolvers and appliers see it: what Review shows and

@@ -8,7 +8,7 @@ import { AssistantTokenService } from '../src/assistant-tokens/assistant-token.s
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { scanUsage, user } from '../src/database/schema';
+import { ingredients, scanUsage, user } from '../src/database/schema';
 import { ApiException } from '../src/common/api-exception';
 
 jest.setTimeout(30_000);
@@ -41,6 +41,7 @@ describe('Assistant Requests (integration)', () => {
   let reading:
     | {
         actions: object[];
+        questions?: object[];
         unsupported: string[];
         spokenLanguage?: string | null;
       }
@@ -264,7 +265,7 @@ describe('Assistant Requests (integration)', () => {
         reply(response).outcomes.map((o: { kind: string }) => o.kind),
       ).toEqual(['added', 'flaggedRunningLow', 'refused', 'refused']);
       expect(await used(ana.id)).toBe(1); // one charge for the whole request
-      expect(reply(response).speech).toContain('Open Pocket Pantry');
+      expect(reply(response).speech).toContain('Open PantryGator');
       expect(await list(ana.cookie)).toMatchObject([{ name: 'Eggs' }]);
       const pantry = (
         await client(app, ana.cookie, '/api/pantry').get('?locale=en')
@@ -546,7 +547,7 @@ describe('Assistant Requests (integration)', () => {
       expect(reply(response).outcomes).toMatchObject([
         { kind: 'refused', name: 'Milk' },
       ]);
-      expect(reply(response).speech).toBe('Open Pocket Pantry for Milk.');
+      expect(reply(response).speech).toBe('Open PantryGator for Milk.');
     });
 
     it('says an item is already on the list in the language spoken', async () => {
@@ -617,6 +618,548 @@ describe('Assistant Requests (integration)', () => {
         'Ai atins limita zilnică pentru asistent. Încearcă mâine.',
       );
       expect(reads).toBe(2);
+    });
+  });
+
+  // Spec: #459, ADR 0020. A Pantry Question is answered from the Pantry, never applied.
+  describe('Pantry Questions', () => {
+    const butter = seedId.ingredient('butter');
+    const question = (
+      id: string | null,
+      name: string,
+      overrides: Record<string, unknown> = {},
+    ) => ({
+      spokenText: name,
+      matchedIngredientId: id,
+      matchConfidence: id ? 0.95 : 0,
+      fallbackIngredientName: name,
+      spokenName: name,
+      ...overrides,
+    });
+    const stock = (cookie: string, ingredientId: string, expiryDate?: string) =>
+      client(app, cookie, '/api/pantry').post('/batches?locale=en', {
+        ingredientId,
+        ...(expiryDate ? { expiryDate } : {}),
+      });
+    const pantryOf = async (cookie: string) =>
+      (await client(app, cookie, '/api/pantry').get('?locale=en'))
+        .body as object;
+
+    it('says yes for an Ingredient in the Pantry and no for one that is not, and writes nothing', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk);
+      await client(app, ana.cookie, '/api/shopping-list').post(
+        '/items?locale=en',
+        { ingredientId: eggs, quantity: 6, unit: 'pcs' },
+      );
+      const before = await pantryOf(ana.cookie);
+      const listBefore = await list(ana.cookie);
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Milk'), question(butter, 'Butter')],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret, {
+        text: 'do we have milk and butter',
+      }).expect(200);
+      expect(reply(response).speech).toBe(
+        'You have Milk in the fridge. No Butter.',
+      );
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'yes', name: 'Milk' },
+        { kind: 'no', name: 'Butter' },
+      ]);
+      expect(await list(ana.cookie)).toEqual(listBefore);
+      expect(await list(ana.cookie)).toMatchObject([
+        { name: 'Eggs', quantity: 6, checked: false },
+      ]);
+      expect(await pantryOf(ana.cookie)).toEqual(before);
+    });
+
+    it('charges the Assistant Cap once for a question-only request', async () => {
+      const ana = await member();
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Milk'), question(butter, 'Butter')],
+        unsupported: [],
+      };
+      await ask(ana.secret).expect(200);
+      expect(await used(ana.id)).toBe(1);
+      expect(reads).toBe(1);
+    });
+
+    it('counts a Batch expiring today as yes and only Expired Batches as no', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk, '2026-10-22');
+      await stock(ana.cookie, butter, '2026-10-21');
+      await stock(ana.cookie, eggs, '2026-10-01');
+      await stock(ana.cookie, eggs, '2026-11-01');
+      reading = {
+        actions: [],
+        questions: [
+          question(milk, 'Milk'),
+          question(butter, 'Butter'),
+          question(eggs, 'Eggs'),
+        ],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret, {
+        text: 'do we have milk, butter and eggs',
+        today: '2026-10-22',
+      }).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'yes', name: 'Milk' },
+        { kind: 'onlyExpired', name: 'Butter' },
+        { kind: 'yes', name: 'Eggs' },
+      ]);
+      expect(reply(response).speech).toBe(
+        'You have Milk in the fridge, some expiring soon. You have Eggs in the fridge. Only expired Butter.',
+      );
+    });
+
+    it('answers from the whole Family Pantry', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk);
+      const ben = await member();
+      const { inviteCode } = (
+        await client(app, ana.cookie, '/api/family').get('')
+      ).body as { inviteCode: string };
+      await client(app, ben.cookie, '/api/family')
+        .post('/join', { code: inviteCode })
+        .expect(201);
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Milk')],
+        unsupported: [],
+      };
+      const response = await ask(ben.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([{ kind: 'yes' }]);
+    });
+
+    it('asks once for an Ingredient named twice', async () => {
+      const ana = await member();
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Milk'), question(milk, 'milk')],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toHaveLength(1);
+    });
+
+    // Spec: #462. A name with no confident Match is looked up among Unmatched rows, else "not sure".
+    describe('a name that matched no Ingredient', () => {
+      const unmatchedBatch = (cookie: string, rawName: string) =>
+        client(app, cookie, '/api/pantry').post('/batches?locale=en', {
+          rawName,
+          parentCategoryId: seedId.parent('dairy'),
+          quantity: 3,
+          unit: 'pcs',
+          location: 'cupboard',
+        });
+      const unmatchedItem = (cookie: string, name: string) =>
+        client(app, cookie, '/api/shopping-list').post('/items?locale=en', {
+          name,
+          quantity: 1,
+          unit: 'pcs',
+        });
+      const askAbout = async (secret: string, name: string, extra = {}) => {
+        reading = {
+          actions: [],
+          questions: [question(null, name, extra)],
+          unsupported: [],
+        };
+        return reply(await ask(secret).expect(200));
+      };
+
+      it('is not sure when no Unmatched row has the name, charged as an answer', async () => {
+        const ana = await member();
+        const answer = await askAbout(ana.secret, 'zorblax');
+        expect(answer.outcomes).toEqual([{ kind: 'notSure', name: 'zorblax' }]);
+        expect(answer.speech).toBe('Not sure about zorblax.');
+        expect(await used(ana.id)).toBe(1);
+      });
+
+      it('groups several unsure names', async () => {
+        const ana = await member();
+        reading = {
+          actions: [],
+          questions: [question(null, 'zorblax'), question(null, 'quux')],
+          unsupported: [],
+        };
+        expect(reply(await ask(ana.secret).expect(200)).speech).toBe(
+          'Not sure about zorblax and quux.',
+        );
+      });
+
+      it('answers yes from an Unmatched Batch, whatever the case and spacing', async () => {
+        const ana = await member();
+        await unmatchedBatch(ana.cookie, 'Zorblax');
+        const answer = await askAbout(ana.secret, 'ZORBLAX');
+        expect(answer.outcomes).toMatchObject([
+          {
+            kind: 'yes',
+            name: 'ZORBLAX',
+            totals: [{ unit: 'pcs', quantity: 3 }],
+            locations: ['cupboard'],
+          },
+        ]);
+      });
+
+      it('answers no, already on the Shopping List, for an Unmatched Shopping Item alone', async () => {
+        const ana = await member();
+        await unmatchedItem(ana.cookie, 'Zorblax');
+        const answer = await askAbout(ana.secret, 'zorblax');
+        expect(answer.outcomes).toMatchObject([
+          { kind: 'no', onShoppingList: true },
+        ]);
+      });
+
+      it("does not count another Family's Unmatched rows", async () => {
+        const ana = await member();
+        const ben = await member();
+        await unmatchedBatch(ben.cookie, 'Zorblax');
+        await unmatchedItem(ben.cookie, 'Zorblax');
+        const answer = await askAbout(ana.secret, 'zorblax');
+        expect(answer.outcomes).toMatchObject([{ kind: 'notSure' }]);
+      });
+
+      it('does not expand a Category word to its Ingredients', async () => {
+        const ana = await member();
+        await stock(ana.cookie, seedId.ingredient('parmesan'));
+        const answer = await askAbout(ana.secret, 'cheese');
+        expect(answer.outcomes).toEqual([{ kind: 'notSure', name: 'cheese' }]);
+      });
+
+      it('writes nothing', async () => {
+        const ana = await member();
+        const before = await pantryOf(ana.cookie);
+        await askAbout(ana.secret, 'zorblax');
+        expect(await pantryOf(ana.cookie)).toEqual(before);
+        expect(await list(ana.cookie)).toEqual([]);
+      });
+    });
+
+    it('still sends a wider question to unsupported, which is not answered', async () => {
+      const ana = await member();
+      reading = {
+        actions: [],
+        questions: [],
+        unsupported: ['what is expiring soon'],
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toEqual([]);
+      expect(await used(ana.id)).toBe(0);
+    });
+
+    it('speaks the answers in the language spoken', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk);
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Lapte'), question(butter, 'Unt')],
+        unsupported: [],
+        spokenLanguage: 'ro',
+      };
+      let response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toMatch(/^Ai .+\. Nu ai .+\.$/);
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Mælk'), question(butter, 'Smør')],
+        unsupported: [],
+        spokenLanguage: 'da',
+      };
+      response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toMatch(/^Du har .+\. Du har ikke .+\.$/);
+    });
+
+    // Spec: #463. One request can ask and act: answers first, then the usual outcome clauses.
+    it('speaks the answers, then the outcomes, and applies only the allow-listed Voice Actions', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk);
+      await stock(ana.cookie, rice);
+      reading = {
+        actions: [
+          of(eggs, 'Eggs'),
+          model({
+            ...of(rice, 'Rice'),
+            target: 'pantry',
+            op: 'remove',
+            scope: 'all',
+          }),
+        ],
+        questions: [question(milk, 'Milk'), question(butter, 'Butter')],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret, {
+        text: 'do we have milk and butter, add eggs, and remove the rice',
+      }).expect(200);
+      expect(
+        reply(response).outcomes.map((o: { kind: string }) => o.kind),
+      ).toEqual(['yes', 'no', 'added', 'refused']);
+      const speech: string = reply(response).speech;
+      expect(speech.startsWith('You have Milk in the fridge. No Butter.')).toBe(
+        true,
+      );
+      expect(speech.indexOf('Eggs')).toBeGreaterThan(
+        speech.indexOf('No Butter.'),
+      );
+      expect(await list(ana.cookie)).toMatchObject([{ name: 'Eggs' }]);
+      const pantry = (
+        await client(app, ana.cookie, '/api/pantry').get('?locale=en')
+      ).body as { batches: { ingredientId: string }[] };
+      expect(pantry.batches.map((b) => b.ingredientId).sort()).toEqual(
+        [milk, rice].sort(),
+      );
+      expect(await used(ana.id)).toBe(1);
+    });
+
+    it('speaks at most 8 answered Ingredients, then says how many more (#465)', async () => {
+      const ana = await member();
+      const names = [
+        'butter',
+        'flour',
+        'bread',
+        'carrot',
+        'onion',
+        'potato',
+        'yogurt',
+      ];
+      const asked = [
+        ['Milk', milk],
+        ['Eggs', eggs],
+        ['Rice', rice],
+        ...names.map(
+          (n) =>
+            [n[0].toUpperCase() + n.slice(1), seedId.ingredient(n)] as const,
+        ),
+      ] as const;
+      for (const [, id] of asked) await stock(ana.cookie, id);
+      reading = {
+        actions: [],
+        questions: asked.map(([name, id]) => question(id, name)),
+        unsupported: [],
+      };
+      const response = await ask(ana.secret, {
+        text: 'do we have all of these',
+      }).expect(200);
+      const body = reply(response);
+      expect(body.outcomes).toHaveLength(10);
+      expect(body.speech.match(/You have /g)).toHaveLength(8);
+      expect(body.speech.endsWith('And 2 more, check PantryGator.')).toBe(true);
+      expect(await used(ana.id)).toBe(1);
+    });
+  });
+
+  // Spec: #461, ADR 0020. The full answers.
+  describe('Pantry Questions: full answers', () => {
+    const butter = seedId.ingredient('butter');
+    const rice = seedId.ingredient('rice');
+    const flour = seedId.ingredient('flour');
+    const question = (id: string, name: string) => ({
+      spokenText: name,
+      matchedIngredientId: id,
+      matchConfidence: 0.95,
+      fallbackIngredientName: name,
+      spokenName: name,
+    });
+    const stock = (
+      cookie: string,
+      ingredientId: string,
+      body: Record<string, unknown> = {},
+    ) =>
+      client(app, cookie, '/api/pantry')
+        .post('/batches?locale=en', { ingredientId, ...body })
+        .expect(201);
+    const onList = (cookie: string, ingredientId: string) =>
+      client(app, cookie, '/api/shopping-list')
+        .post('/items?locale=en', { ingredientId, quantity: 1, unit: 'pcs' })
+        .expect(200);
+    const asking = (...entries: Array<[string, string]>) => {
+      reading = {
+        actions: [],
+        questions: entries.map(([id, name]) => question(id, name)),
+        unsupported: [],
+      };
+    };
+
+    it('sums per unit without converting, and names the Locations', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk, {
+        quantity: 1,
+        unit: 'l',
+        location: 'fridge',
+        expiryDate: '2026-12-31',
+      });
+      await stock(ana.cookie, milk, {
+        quantity: 500,
+        unit: 'ml',
+        location: 'freezer',
+      });
+      await stock(ana.cookie, milk, {
+        quantity: 0.5,
+        unit: 'l',
+        location: 'fridge',
+      });
+      asking([milk, 'Milk']);
+      const response = await ask(ana.secret, {
+        text: 'do we have milk',
+        today: '2026-10-22',
+      }).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        {
+          kind: 'yes',
+          name: 'Milk',
+          totals: [
+            { unit: 'ml', quantity: 500 },
+            { unit: 'l', quantity: 1.5 },
+          ],
+          locations: ['fridge', 'freezer'],
+          expiringSoon: false,
+          runningLow: false,
+        },
+      ]);
+      expect(reply(response).speech).toBe(
+        'You have Milk: 500 millilitres and 1.5 litres in the fridge and in the freezer.',
+      );
+    });
+
+    it('flags Expiring Soon under the Stale Threshold and honours a Family override', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk, {
+        quantity: 1,
+        unit: 'l',
+        location: 'fridge',
+        expiryDate: '2026-10-30',
+      });
+      asking([milk, 'Milk']);
+      const ask1 = () =>
+        ask(ana.secret, { text: 'milk?', today: '2026-10-22' }).expect(200);
+      // 8 days away is past the default of 3.
+      expect(reply(await ask1()).outcomes).toMatchObject([
+        { kind: 'yes', expiringSoon: false },
+      ]);
+      await client(app, ana.cookie, '/api/settings')
+        .patch('/family', { staleThresholdDays: 10 })
+        .expect(200);
+      const response = await ask1();
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'yes', expiringSoon: true },
+      ]);
+      expect(reply(response).speech).toBe(
+        'You have 1 litre of Milk in the fridge, some expiring soon.',
+      );
+    });
+
+    it('says running low on a yes', async () => {
+      const ana = await member();
+      await stock(ana.cookie, rice, { quantity: 200, unit: 'g' });
+      await client(app, ana.cookie, '/api/pantry')
+        .put(`/running-low/${rice}`)
+        .expect(204);
+      asking([rice, 'Rice']);
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'yes', runningLow: true },
+      ]);
+      expect(reply(response).speech).toContain('running low');
+    });
+
+    it('answers only expired and no, each saying when it is on the Shopping List', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk, { expiryDate: '2026-10-01' });
+      await stock(ana.cookie, butter, { expiryDate: '2026-10-01' });
+      await onList(ana.cookie, milk);
+      await onList(ana.cookie, flour);
+      asking(
+        [milk, 'Milk'],
+        [butter, 'Butter'],
+        [flour, 'Flour'],
+        [eggs, 'Eggs'],
+      );
+      const response = await ask(ana.secret, {
+        text: 'do we have milk, butter, flour and eggs',
+        today: '2026-10-22',
+      }).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'onlyExpired', name: 'Milk', onShoppingList: true },
+        { kind: 'onlyExpired', name: 'Butter', onShoppingList: false },
+        { kind: 'no', name: 'Flour', onShoppingList: true },
+        { kind: 'no', name: 'Eggs', onShoppingList: false },
+      ]);
+      expect(reply(response).speech).toBe(
+        'Only expired Milk and Butter, already on your Shopping List: Milk. ' +
+          'No Flour or Eggs, already on your Shopping List: Flour.',
+      );
+    });
+
+    it('counts a checked Shopping List line as already on the list', async () => {
+      const ana = await member();
+      await onList(ana.cookie, flour);
+      const [line] = await list(ana.cookie);
+      await client(app, ana.cookie, '/api/shopping-list')
+        .patch(`/items/${line.id}?locale=en`, { checked: true })
+        .expect(200);
+      asking([flour, 'Flour']);
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'no', name: 'Flour', onShoppingList: true },
+      ]);
+    });
+
+    it('answers a Family Ingredient like a shared one', async () => {
+      const ana = await member();
+      const name = `Gran ${stamp}`;
+      const created = (
+        await client(app, ana.cookie, '/api/catalog')
+          .post('/family-ingredients?locale=en', {
+            name,
+            leafCategoryId: seedId.leaf('hard-cheese'),
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as { id: string };
+      await stock(ana.cookie, created.id, {
+        quantity: 250,
+        unit: 'g',
+        location: 'fridge',
+      });
+      asking([created.id, name]);
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        {
+          kind: 'yes',
+          name,
+          totals: [{ unit: 'g', quantity: 250 }],
+          locations: ['fridge'],
+        },
+      ]);
+    });
+
+    it('answers yes for a Pantry Basic with no Batch', async () => {
+      const ana = await member();
+      const basicId = crypto.randomUUID();
+      const [sample] = await database
+        .select()
+        .from(ingredients)
+        .where(eq(ingredients.id, milk));
+      await database.insert(ingredients).values({
+        ...sample,
+        id: basicId,
+        name: `Basic ${stamp}`,
+        normalizedName: `basic ${stamp}`,
+        pantryBasic: true,
+      });
+      try {
+        asking([basicId, `Basic ${stamp}`]);
+        const response = await ask(ana.secret).expect(200);
+        expect(reply(response).outcomes).toMatchObject([
+          { kind: 'yes', totals: [], locations: [], expiringSoon: false },
+        ]);
+        expect(reply(response).speech).toBe(`You have Basic ${stamp}.`);
+      } finally {
+        await database.delete(ingredients).where(eq(ingredients.id, basicId));
+      }
     });
   });
 

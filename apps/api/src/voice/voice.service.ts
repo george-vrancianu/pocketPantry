@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { and, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import {
   SCAN_LANGUAGES,
@@ -7,6 +8,7 @@ import {
   type CatalogSearchResult,
   type ScanLanguage,
 } from '../catalog/catalog.schemas';
+import type { CatalogScope } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import { DATABASE } from '../database/database.constants';
@@ -27,11 +29,18 @@ import {
   type VoiceActionKind,
   type VoiceApplyBody,
   type VoiceApplyResult,
+  sameSubject,
   voiceActionKind,
 } from './voice-actions';
 import type { ResolveContext, VoiceActionHandler } from './voice-handlers';
 import { VoiceHandlers } from './voice-handlers.registry';
 import { PantryService } from '../pantry/pantry.service';
+import { RunningLowService } from '../pantry/running-low.service';
+import {
+  answerPantryQuestions,
+  type PantryAnswer,
+  type PantryQuestion,
+} from './pantry-answers';
 import { resolveSpokenDate } from './voice-dates';
 import { VoiceReaderService } from './voice-reader.service';
 import {
@@ -61,9 +70,11 @@ export type VoiceReadTextInput = {
 
 export type VoiceReadTextResult = {
   actions: ResolvedVoiceAction[];
+  /** Answers to the Pantry Questions (ADR 0020); never Voice Actions. A name with no Match is answered from Unmatched rows, or not sure. */
+  answers: PantryAnswer[];
   /** The language the text was spoken in, as the model read it; null when it can't be told. */
   spokenLanguage: ScanLanguage | null;
-  /** Each action's short generic name in the language spoken, by action id. Only Assistant Requests use it. */
+  /** Each action's and answer's short generic name in the language spoken, by id. Only Assistant Requests use it. */
   spokenNames: Map<string, string>;
 };
 
@@ -111,6 +122,7 @@ export class VoiceService {
     private readonly settings: SettingsService,
     private readonly shopping: ShoppingService,
     private readonly pantry: PantryService,
+    private readonly runningLow: RunningLowService,
     private readonly handlers: VoiceHandlers,
     private readonly config: ConfigService<AppConfig, true>,
     @Inject(DATABASE) private readonly database: Database,
@@ -150,7 +162,7 @@ export class VoiceService {
       });
       const transcript = text.trim();
       if (!transcript) throw new ApiException(422, 'voice.nothing_heard');
-      const { actions } = await this.readText(memberId, {
+      const { actions, answers } = await this.readText(memberId, {
         text: transcript,
         scanLanguage: input.scanLanguage,
         locale: input.locale,
@@ -159,11 +171,12 @@ export class VoiceService {
         captureId,
       });
       // Noise ("Thank you.") reads into nothing: no Review, and no charge. A
-      // note of only "Didn't understand" rows still opens Review.
-      if (actions.length === 0) {
+      // note of only "Didn't understand" rows still opens Review, and a note
+      // of only Pantry Questions opens the answer sheet.
+      if (actions.length === 0 && answers.length === 0) {
         throw new ApiException(422, 'voice.nothing_heard');
       }
-      return { transcript, actions };
+      return { transcript, actions, answers };
     } catch (error) {
       await this.cap.refund(memberId, day, 'voice');
       throw error;
@@ -207,8 +220,9 @@ export class VoiceService {
     const threshold = this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
       infer: true,
     });
+    // Voice Actions and Pantry Questions are matched together, one Catalog query per kind.
     const resolved = await this.catalogMatch.resolve(
-      read.actions.map((action) => ({
+      [...read.actions, ...read.questions].map((action) => ({
         names: [action.fallbackIngredientName, action.spokenText],
         proposedIngredientId: action.matchedIngredientId,
         // An exact name or Synonym hit beats a Match the model doubted.
@@ -275,14 +289,92 @@ export class VoiceService {
       spokenNames.set(draft.id, action.spokenName);
       out.push(resolution);
     }
+    // Pantry Questions never reach a handler. A question with no confident Match is looked up
+    // by name among the Unmatched Batches and Shopping Items, and is "not sure" when none has
+    // it: never "no" for an unsure name (ADR 0020).
+    const asked: PantryQuestion[] = [];
+    for (const [index, question] of read.questions.entries()) {
+      const match = keepConfident(
+        resolved[read.actions.length + index],
+        question.matchConfidence,
+        threshold,
+      );
+      const name = match ? null : question.fallbackIngredientName;
+      // "Milk and milk" is one question; so are two spellings of one Unmatched name.
+      const sameAsked = sameSubject({ ingredientId: match?.id ?? null, name });
+      // An entry's `name` is null only when it has an Ingredient, which `sameAsked` then compares by id.
+      if (
+        asked.some((entry) =>
+          sameAsked({
+            ingredientId: entry.ingredient?.id ?? null,
+            name: entry.name ?? '',
+          }),
+        )
+      ) {
+        continue;
+      }
+      const id = randomUUID();
+      spokenNames.set(id, question.spokenName);
+      asked.push({ id, text: question.spokenText, ingredient: match, name });
+    }
+    let answers: PantryAnswer[] = [];
+    if (asked.length) {
+      const [batches, runningLowIds, pantryBasicIds, staleThresholdDays] =
+        await Promise.all([
+          ctx.lists.pantryBatches(),
+          this.runningLow.list(memberId),
+          this.pantryBasicsAmong(
+            scope,
+            asked.flatMap((entry) => entry.ingredient?.id ?? []),
+          ),
+          this.settings
+            .familyIdOf(memberId)
+            .then((familyId) => this.settings.staleThresholdOf(familyId)),
+        ]);
+      answers = answerPantryQuestions(asked, {
+        batches,
+        unmatchedShoppingNames: shoppingItems.flatMap((item) =>
+          item.ingredientId ? [] : [item.name],
+        ),
+        shoppingIngredientIds: new Set(
+          shoppingItems.flatMap((item) =>
+            item.ingredientId ? [item.ingredientId] : [],
+          ),
+        ),
+        runningLowIds: new Set(runningLowIds),
+        pantryBasicIds,
+        staleThresholdDays,
+        today: input.today,
+      });
+    }
     for (const phrase of read.unsupported) {
       out.push(this.notUnderstood(phrase));
     }
     return {
       actions: out,
+      answers,
       spokenLanguage: read.spokenLanguage,
       spokenNames,
     };
+  }
+
+  /** The Pantry Basics (water, salt) among the Ingredients; Family Ingredients count like shared ones. */
+  private async pantryBasicsAmong(
+    scope: CatalogScope,
+    ingredientIds: string[],
+  ): Promise<Set<string>> {
+    if (ingredientIds.length === 0) return new Set();
+    const ingredients = scope.ingredients(this.database);
+    const rows = await this.database
+      .select({ id: ingredients.id })
+      .from(ingredients)
+      .where(
+        and(
+          inArray(ingredients.id, ingredientIds),
+          eq(ingredients.pantryBasic, true),
+        ),
+      );
+    return new Set(rows.map((row) => row.id));
   }
 
   /** The draft resolved by its (target, op) handler; undefined when no handler is registered. */
