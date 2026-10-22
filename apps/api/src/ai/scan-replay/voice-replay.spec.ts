@@ -135,6 +135,7 @@ const goodAnswer = {
       matchedIngredientId: MILK,
       matchConfidence: 0.9,
       fallbackIngredientName: 'Milk',
+      spokenName: 'Milk',
       quantity: null,
       unit: null,
       scope: null,
@@ -144,6 +145,7 @@ const goodAnswer = {
     },
   ],
   unsupported: [],
+  spokenLanguage: null,
 };
 
 describe('requestFor', () => {

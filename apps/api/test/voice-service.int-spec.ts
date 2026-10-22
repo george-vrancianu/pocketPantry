@@ -28,7 +28,10 @@ describe('VoiceService without audio or Review (integration)', () => {
       generate: (input: StructuredOutputRequest) => {
         aiCalls.push(input);
         if (aiFailure) return Promise.reject(aiFailure);
-        return Promise.resolve({ data: reading, requestId: 'req-1' });
+        return Promise.resolve({
+          data: { spokenLanguage: null, ...reading },
+          requestId: 'req-1',
+        });
       },
     };
     app = await createTestApp([], ai);
@@ -75,6 +78,7 @@ describe('VoiceService without audio or Review (integration)', () => {
     matchedIngredientId: seedId.ingredient('eggs'),
     matchConfidence: 0.95,
     fallbackIngredientName: 'Eggs',
+    spokenName: 'Eggs',
     quantity: null,
     unit: null,
     scope: null,
@@ -123,7 +127,7 @@ describe('VoiceService without audio or Review (integration)', () => {
         unsupported: ['do a barrel roll'],
       };
 
-      const actions = await voice.readText(memberId, textInput);
+      const { actions } = await voice.readText(memberId, textInput);
 
       expect(actions.map((a) => [a.op, a.status, a.text])).toEqual([
         ['add', 'ready', 'eggs'],
@@ -149,7 +153,9 @@ describe('VoiceService without audio or Review (integration)', () => {
       );
       reading = { actions: [model({ op: 'check' })], unsupported: [] };
 
-      const [action] = await voice.readText(memberId, textInput);
+      const {
+        actions: [action],
+      } = await voice.readText(memberId, textInput);
 
       expect(action.rows.shoppingItem).toMatchObject({ name: 'Eggs' });
     });

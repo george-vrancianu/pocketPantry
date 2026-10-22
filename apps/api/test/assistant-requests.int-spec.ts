@@ -38,7 +38,13 @@ describe('Assistant Requests (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
   let tokens: AssistantTokenService;
-  let reading: { actions: object[]; unsupported: string[] } | Error;
+  let reading:
+    | {
+        actions: object[];
+        unsupported: string[];
+        spokenLanguage?: string | null;
+      }
+    | Error;
   let reads = 0;
   const stamp = Date.now();
   let counter = 0;
@@ -69,7 +75,10 @@ describe('Assistant Requests (integration)', () => {
         reads++;
         return reading instanceof Error
           ? Promise.reject(reading)
-          : Promise.resolve({ data: reading, requestId: 'req-1' });
+          : Promise.resolve({
+              data: { spokenLanguage: null, ...reading },
+              requestId: 'req-1',
+            });
       },
     };
     app = await createTestApp([], ai);
@@ -112,9 +121,9 @@ describe('Assistant Requests (integration)', () => {
     );
   };
 
-  const list = async (cookie: string) =>
+  const list = async (cookie: string, locale = 'en') =>
     (
-      (await client(app, cookie, '/api/shopping-list').get('?locale=en'))
+      (await client(app, cookie, '/api/shopping-list').get(`?locale=${locale}`))
         .body as {
         groups: { items: Item[] }[];
       }
@@ -140,6 +149,7 @@ describe('Assistant Requests (integration)', () => {
     matchedIngredientId: null,
     matchConfidence: 0,
     fallbackIngredientName: 'X',
+    spokenName: 'X',
     quantity: null,
     unit: null,
     scope: null,
@@ -417,6 +427,83 @@ describe('Assistant Requests (integration)', () => {
         { kind: 'addedUnmatched', name: 'Zorblax' },
       ]);
       expect(await list(ana.cookie)).toMatchObject([{ name: 'Zorblax' }]);
+    });
+  });
+
+  // Spec: #455. The reply follows the language spoken; the list stays in the UI locale.
+  describe('reply language', () => {
+    const romanian = async () => {
+      const m = await member();
+      await database
+        .update(user)
+        .set({ locale: 'ro' })
+        .where(eq(user.id, m.id));
+      return m;
+    };
+
+    it('answers in the language spoken and writes the list in the UI locale', async () => {
+      const ana = await romanian();
+      reading = {
+        actions: [of(milk, 'Lapte', { spokenText: 'milk' })],
+        unsupported: [],
+        spokenLanguage: 'en',
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toBe('Added to your Shopping List: Milk.');
+      expect(await list(ana.cookie, 'ro')).toMatchObject([{ name: 'Lapte' }]);
+    });
+
+    it('names an Unmatched item by its spoken name, without the spoken amount', async () => {
+      const ana = await romanian();
+      reading = {
+        actions: [
+          model({
+            spokenText: 'two packs of oat crackers',
+            spokenName: 'oat crackers',
+            fallbackIngredientName: 'Biscuiți de ovăz',
+            quantity: 2,
+            unit: 'pcs',
+          }),
+        ],
+        unsupported: [],
+        spokenLanguage: 'en',
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toBe(
+        'Added but not recognised: 2 oat crackers.',
+      );
+      expect(await list(ana.cookie, 'ro')).toMatchObject([
+        { name: 'Biscuiți de ovăz', quantity: 2 },
+      ]);
+    });
+
+    it('answers in the UI locale when the language spoken cannot be told', async () => {
+      const ana = await romanian();
+      reading = {
+        actions: [of(milk, 'Lapte', { spokenText: 'milk' })],
+        unsupported: [],
+        spokenLanguage: null,
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toBe(
+        'Am adăugat pe Lista de cumpărături: Lapte.',
+      );
+    });
+
+    it('answers in the UI locale when the cap is reached, without reading', async () => {
+      const ana = await romanian();
+      reading = {
+        actions: [of(milk, 'Lapte')],
+        unsupported: [],
+        spokenLanguage: 'en',
+      };
+      await ask(ana.secret).expect(200);
+      await ask(ana.secret).expect(200);
+      const response = await ask(ana.secret).expect(429);
+      expect(reply(response).speech).toBe(
+        'Ai atins limita zilnică pentru asistent. Încearcă mâine.',
+      );
+      expect(reads).toBe(2);
     });
   });
 

@@ -46,13 +46,20 @@ export type VoiceNoteInput = VoiceNoteFields & {
 /** Plain text to read into Voice Actions: no audio, no cap. */
 export type VoiceReadTextInput = {
   text: string;
-  scanLanguage: ScanLanguage;
+  /** Null when the language spoken is not known: the model works it out and reports it. */
+  scanLanguage: ScanLanguage | null;
   locale: CatalogLocale;
   /** The Member's local date, for resolving spoken dates. */
   today: string;
   defaultTarget: VoiceTarget;
   /** Debug capture only: ties this read to a transcription. */
   captureId?: string;
+};
+
+export type VoiceReadTextResult = {
+  actions: ResolvedVoiceAction[];
+  /** The language the text was spoken in, as the model read it; null when it can't be told. */
+  spokenLanguage: ScanLanguage | null;
 };
 
 /** Voice Actions to apply on their own, without Review. */
@@ -132,7 +139,7 @@ export class VoiceService {
       });
       const transcript = text.trim();
       if (!transcript) throw new ApiException(422, 'voice.nothing_heard');
-      const actions = await this.readText(memberId, {
+      const { actions } = await this.readText(memberId, {
         text: transcript,
         scanLanguage: input.scanLanguage,
         locale: input.locale,
@@ -160,7 +167,7 @@ export class VoiceService {
   async readText(
     memberId: string,
     input: VoiceReadTextInput,
-  ): Promise<ResolvedVoiceAction[]> {
+  ): Promise<VoiceReadTextResult> {
     const shoppingItems = await this.shopping
       .peekList(memberId, input.locale)
       .then((list) => list?.groups.flatMap((group) => group.items) ?? []);
@@ -235,6 +242,7 @@ export class VoiceService {
         text: draft.text,
         ingredient: match,
         name: match ? null : draft.name,
+        spokenName: action.spokenName,
         quantity: draft.quantity,
         unit: draft.unit,
         scope: draft.scope,
@@ -248,7 +256,7 @@ export class VoiceService {
     for (const phrase of read.unsupported) {
       out.push(this.notUnderstood(phrase));
     }
-    return out;
+    return { actions: out, spokenLanguage: read.spokenLanguage };
   }
 
   private draftOf(
@@ -290,6 +298,7 @@ export class VoiceService {
       text,
       ingredient: null,
       name: null,
+      spokenName: null,
       quantity: null,
       unit: null,
       scope: null,

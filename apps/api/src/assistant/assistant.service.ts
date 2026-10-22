@@ -5,8 +5,10 @@ import {
   type CatalogLocale,
 } from '../catalog/catalog.schemas';
 import type { AssistantTokenMember } from '../assistant-tokens/assistant-token.schemas';
+import { CatalogSearchService } from '../catalog/catalog-search.service';
 import { ApiException } from '../common/api-exception';
 import { ScanCapService } from '../scan/scan-cap.service';
+import { SettingsService } from '../settings/settings.service';
 import {
   voiceActionKind,
   type ResolvedVoiceAction,
@@ -57,6 +59,8 @@ export class AssistantService {
   constructor(
     private readonly voice: VoiceService,
     private readonly cap: ScanCapService,
+    private readonly catalogSearch: CatalogSearchService,
+    private readonly settings: SettingsService,
   ) {}
 
   async handle(
@@ -89,17 +93,21 @@ export class AssistantService {
     }
 
     let outcomes: AssistantOutcome[];
+    let replyLocale = locale;
     try {
       const today = body.today ?? new Date().toISOString().slice(0, 10);
-      const resolved = (
-        await this.voice.readText(member.id, {
-          text: body.text,
-          scanLanguage: locale,
-          locale,
-          today,
-          defaultTarget: 'shopping',
-        })
-      ).filter((action) => action.status !== 'notUnderstood');
+      const read = await this.voice.readText(member.id, {
+        text: body.text,
+        // Siri dictation may be in any language, whatever the UI locale.
+        scanLanguage: null,
+        locale,
+        today,
+        defaultTarget: 'shopping',
+      });
+      replyLocale = read.spokenLanguage ?? locale;
+      const resolved = read.actions.filter(
+        (action) => action.status !== 'notUnderstood',
+      );
       const drafts = resolved.map(toDraft);
       // An add onto an existing line sets the spoken quantity (ADR 0017) and
       // wants the line back on the list, rather than summing as in Review.
@@ -110,8 +118,16 @@ export class AssistantService {
         allowedKinds: ASSISTANT_ALLOWED_KINDS,
         addSetsQuantity: true,
       });
+      const names = await this.namesIn(member.id, replyLocale, resolved);
+      // The list keeps UI-locale names; the reply names things in the language spoken.
+      const nameOf = (action: ResolvedVoiceAction): string =>
+        action.ingredient
+          ? (names.get(action.ingredient.id) ?? action.ingredient.name)
+          : replyLocale !== locale && action.spokenName
+            ? action.spokenName
+            : displayName(action);
       outcomes = resolved.map((action, index) =>
-        outcomeOf(action, drafts[index], result),
+        outcomeOf(action, drafts[index], result, nameOf(action)),
       );
     } catch (error) {
       await this.cap.refund(member.id, day, 'assistant');
@@ -127,7 +143,25 @@ export class AssistantService {
       await this.cap.refund(member.id, day, 'assistant');
       return stateReply('nothingUnderstood');
     }
-    return { outcomes, speech: assistantSpeech({ locale, outcomes }) };
+    return {
+      outcomes,
+      speech: assistantSpeech({ locale: replyLocale, outcomes }),
+    };
+  }
+
+  /** Matched Ingredients' display names in the reply language, by id. */
+  private async namesIn(
+    memberId: string,
+    locale: CatalogLocale,
+    actions: ResolvedVoiceAction[],
+  ): Promise<Map<string, string>> {
+    const ids = [
+      ...new Set(actions.flatMap((action) => action.ingredient?.id ?? [])),
+    ];
+    if (ids.length === 0) return new Map();
+    const scope = await this.settings.catalogScopeForMember(memberId);
+    const found = await this.catalogSearch.mapByIds(scope, ids, locale);
+    return new Map([...found].map(([id, result]) => [id, result.name]));
   }
 }
 
@@ -152,13 +186,13 @@ function toDraft(action: ResolvedVoiceAction): VoiceActionDraft {
   };
 }
 
-/** What happened to one action, from the draft that was applied and the apply result. */
+/** What happened to one action, from the draft that was applied and the apply result, named for the reply. */
 function outcomeOf(
   action: ResolvedVoiceAction,
   draft: VoiceActionDraft,
   result: VoiceApplyResult,
+  name: string,
 ): AssistantOutcome {
-  const name = displayName(action);
   const refused = { kind: 'refused', name } as const;
   const applied = result.applied.find((entry) => entry.actionId === draft.id);
   if (!applied) return refused; // refused by kind, or skipped (the Member is sent to the app)
