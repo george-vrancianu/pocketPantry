@@ -18,7 +18,8 @@ In the shop or the kitchen, with hands full, a Member wants to say "Hey Siri, Pa
 - **Count Assistant Requests under the Voice Cap.** Rejected: a Shortcut called many times could lock the Member out of Voice Notes, and the other way round.
 - **Reuse the session cookie, or a general API key.** Rejected: a Shortcut has no browser session, and a token that works anywhere makes a leaked Shortcut a leaked account.
 - **A native iOS app with App Intents.** Deferred: a one-shot "add milk to Pocket Pantry" needs a native app we do not have.
-- **Questions answered aloud, and two-way sync with Apple Reminders or Google Keep.** Out of scope.
+- **Questions answered aloud.** Out of scope here. Pantry Questions were added later by ADR 0020, which also lets an Assistant Token read the Pantry.
+- **Two-way sync with Apple Reminders or Google Keep.** Out of scope.
 
 ## Consequences
 
