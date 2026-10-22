@@ -224,7 +224,7 @@ A long receipt can be scanned across several photos, one per **Receipt Section**
 One photo of a folded part of the same receipt. It is read as one **Scan**, and in Review its card is merged with the card of the previous section (up to 10 sections).
 
 **Scan Language**:
-The language the text in a Scan is read in, or a Voice Note is spoken in: English, Romanian, or Danish. Chosen per Scan or Voice Note and independent of the Member's UI locale. Plate Scans have none.
+The language the printed text in a Scan is read in: English, Romanian, or Danish. Defaults to the Member's Scan Language preference, which follows the UI Language until the Member sets it, and can be changed for a single Scan. Independent of the UI Language and the Catalog Language. Plate Scans have none.
 _Avoid_: Scan locale, source language
 
 **Plate Scan**:
@@ -251,6 +251,10 @@ _Avoid_: Quota, rate limit
 A short recording a Member speaks into the Shopping List or the Pantry, read into Voice Actions and Pantry Questions. Not a Scan: nothing is photographed, and it counts against the Voice Cap, never the Scan Cap.
 _Avoid_: Voice scan, voice command, dictation
 
+**Spoken Language**:
+The language a Voice Note is spoken in. Defaults to the Member's Spoken Language preference, which follows the UI Language until the Member sets it, and can be changed for a single Voice Note. Not the Scan Language: a Member may speak their own language while shopping in the local one. An Assistant Request has none; its language is told from the dictated text.
+_Avoid_: Voice language, Scan Language (for Voice Notes)
+
 **Voice Action**:
 One change read from spoken or dictated text: adding, removing, checking or unchecking a Shopping Item or setting its quantity, adding or removing Batches, or flagging an Ingredient Running low. From a Voice Note, nothing is applied until the Member confirms it in Review. An Assistant Request may apply a Voice Action without Review, but only the safe kinds: adding a Shopping Item and flagging an Ingredient Running low. Every other kind is refused.
 _Avoid_: Command, intent, voice line
@@ -264,7 +268,7 @@ The maximum number of Voice Notes a Member may record per day.
 _Avoid_: Voice quota, Scan Cap (a separate limit)
 
 **Assistant Request**:
-Text a Member dictates to a voice assistant (today only Siri, through an Apple Shortcut) and the Shortcut sends to the API with an Assistant Token. It is read into Voice Actions like a Voice Note, but the safe ones are applied at once with no Review and the rest are refused. The reply is one sentence for the assistant to speak, in the language the Member spoke (the UI language when that can't be told); what is written stays in the UI language. Not a Voice Note (no recording, no transcription) and not a Scan; the text is not stored.
+Text a Member dictates to a voice assistant (today only Siri, through an Apple Shortcut) and the Shortcut sends to the API with an Assistant Token. It is read into Voice Actions like a Voice Note, but the safe ones are applied at once with no Review and the rest are refused. The reply is one sentence for the assistant to speak, in the language the Member spoke (the UI Language when that can't be told); what is written follows the Catalog Language. Not a Voice Note (no recording, no transcription) and not a Scan; the text is not stored.
 _Avoid_: Siri command, assistant call, Voice Note
 
 **Assistant Cap**:
@@ -385,8 +389,16 @@ _Avoid_: Card, tile, panel
 Settings shared by all Members of a Family: Default Expiry overrides per Category and the Stale Threshold.
 _Avoid_: Preferences (reserved for per-Member settings)
 
+**UI Language**:
+The language a Member sees the app's own text in: menus, buttons, messages, and how dates and numbers are written. Says nothing about the language of Catalog names, what the Member speaks, or what they scan.
+_Avoid_: Locale, app language
+
+**Catalog Language**:
+The language a Member sees everything Admins curate and translate in: Ingredients, Categories, Aisles, Allergens, Eating Moments and Catalog Recipes. Names the AI makes up for Unmatched lines and Plate Scan dishes are in it too. Follows the UI Language until the Member sets it, so a Member can use an English UI with Romanian Ingredient names. Family Ingredients, Family Recipes and typed Shopping Items keep the one language they were written in.
+_Avoid_: Product language, name language, locale
+
 **Member Preferences**:
-Settings private to a Member: locale, Theme, Dashboard layout, and whether to hide Recipes containing their Allergies.
+Settings private to a Member: UI Language, Catalog Language, Spoken Language, Scan Language, Theme, Dashboard layout, and whether to hide Recipes containing their Allergies.
 _Avoid_: Settings
 
 **Allergy**:

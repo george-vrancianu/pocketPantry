@@ -1,5 +1,7 @@
 # Scan Language is separate from the UI locale
 
+> Partly superseded by ADR 0022: the Catalog Language, not the UI locale, now drives Ingredient names in Review, `fallbackIngredientName` and Plate Scan dish titles, and Voice Notes use the Spoken Language.
+
 Until now every Scan sent one `locale`, the Member's UI language, and the API used it for four jobs: the reading hint in the AI prompt, the language of Ingredient names returned to Review, the tag on Unmatched entries, and the output language of Plate Scan dish titles. A Member who scans a receipt in another language (a Danish receipt with a Romanian UI) got the receipt read with the wrong assumptions about abbreviations, dates and decimal commas, and its Unmatched names tagged with the wrong language.
 
 ## Decision
