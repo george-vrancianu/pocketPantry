@@ -27,6 +27,7 @@ import {
   Quote,
   Equal,
   Lock,
+  Camera,
   type LucideProps,
 } from 'lucide-react';
 
@@ -317,3 +318,5 @@ export const QuoteIcon = lucide(Quote);
 export const EqualIcon = lucide(Equal);
 /** Locked / unavailable marker. */
 export const LockIcon = lucide(Lock);
+/** The Dock's stacked Camera/Mic button: open the camera. */
+export const CameraIcon = lucide(Camera);

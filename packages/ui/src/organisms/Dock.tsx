@@ -4,6 +4,9 @@ import { DockItem } from '../molecules/DockItem';
 import { DOCK_BOTTOM, DOCK_HEIGHT } from '../theme/dock';
 import { border, radius, shadow } from '../theme/themeVars';
 
+/** Width of the middle slot, px: the capsule is 62 wide. */
+const CENTRE_WIDTH = 66;
+
 export type DockEntry = {
   key: string;
   label: string;
@@ -14,8 +17,11 @@ export type DockEntry = {
 export type DockProps = {
   /** Accessible name of the navigation landmark. */
   label: string;
+  /** The four tabs: the first two sit left of the middle slot, the rest right of it. */
   items: DockEntry[];
   activeKey?: string;
+  /** The middle slot, usually a `DockCapsule`; it may reach past the bar's edges. */
+  centre?: ReactNode;
 };
 
 /**
@@ -23,7 +29,16 @@ export type DockProps = {
  * and 9; colours, border, radius and shadow follow the Theme
  * (docs/handoffs/themes/handoff.md section 4).
  */
-export function Dock({ label, items, activeKey }: DockProps) {
+export function Dock({ label, items, activeKey, centre }: DockProps) {
+  const tab = (item: DockEntry) => (
+    <DockItem
+      key={item.key}
+      label={item.label}
+      href={item.href}
+      icon={item.icon}
+      active={item.key === activeKey}
+    />
+  );
   return (
     <Box
       component="nav"
@@ -41,7 +56,7 @@ export function Dock({ label, items, activeKey }: DockProps) {
         boxSizing: 'border-box',
         p: '8px',
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+        gridTemplateColumns: `repeat(2, minmax(0, 1fr)) ${CENTRE_WIDTH}px repeat(2, minmax(0, 1fr))`,
         gap: { xs: '4px', md: '6px' },
         bgcolor: 'pp.dockBg',
         backdropFilter: 'blur(12px)',
@@ -53,15 +68,9 @@ export function Dock({ label, items, activeKey }: DockProps) {
         boxShadow: shadow.float,
       }}
     >
-      {items.map((item) => (
-        <DockItem
-          key={item.key}
-          label={item.label}
-          href={item.href}
-          icon={item.icon}
-          active={item.key === activeKey}
-        />
-      ))}
+      {items.slice(0, 2).map(tab)}
+      <Box sx={{ position: 'relative' }}>{centre}</Box>
+      {items.slice(2).map(tab)}
     </Box>
   );
 }

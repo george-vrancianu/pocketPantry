@@ -15,9 +15,9 @@ export function defaultListFor(pathname: string): VoiceList | null {
 }
 
 /**
- * Voice Notes, hosted once in the app layout: the floating hold-to-talk button with its
- * Scan Language chip, its notices, and the Review sheet that shows "What I heard". Shown on the
- * Shopping List and the Pantry only, acting on that page's list. Hidden until the server says
+ * Voice Notes, hosted once in the app layout: the hold-to-talk mic in the Dock's capsule with
+ * the Scan Language chip above it, its notices, and the Review sheet that shows "What I heard".
+ * Shown on the Shopping List and the Pantry only, acting on that page's list. Hidden until the server says
  * transcription is configured.
  */
 export function VoiceNote() {

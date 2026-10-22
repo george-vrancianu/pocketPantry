@@ -1,7 +1,8 @@
 {
   "label": "Hovedmenu",
+  "home": "Hjem",
   "shopping": "Indkøb",
   "pantry": "Spisekammer",
   "recipes": "Opskrifter",
-  "scan": "Scan"
+  "camera": "Kamera"
 }

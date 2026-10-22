@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import {
   resetVoiceEnvironment,
   stubVoiceFetch,
@@ -18,6 +18,8 @@ function renderAtView(route: string) {
   return renderWithProviders(
     <Routes>
       <Route element={<AppLayout />}>
+        <Route path="/" element={<p>home</p>} />
+        <Route path="/customise" element={<p>customise</p>} />
         <Route path="/scan" element={<p>camera</p>} />
         <Route path="/pantry" element={<p>pantry</p>} />
         <Route path="/recipes" element={<p>recipes</p>} />
@@ -46,15 +48,60 @@ describe('AppLayout Dock', () => {
     expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 
-  it('leaves 190px at the bottom of the Pantry for the Voice Note button, and 110px elsewhere', () => {
+  it('shows no Dock on /customise', () => {
+    renderAt('/customise');
+    expect(screen.getByText('customise')).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
+
+  it('shows five slots: Home, Shopping, the camera, Pantry and Recipes, in that order', () => {
+    renderAt('/recipes');
+    const dock = within(screen.getByRole('navigation'));
+    expect(
+      dock.getAllByRole('link').map((l) => l.getAttribute('href')),
+    ).toEqual(['/', '/shopping', '/scan', '/pantry', '/recipes']);
+    expect(dock.getByRole('link', { name: 'Home' })).toBeInTheDocument();
+    expect(dock.queryByRole('link', { name: 'Scan' })).toBeNull();
+  });
+
+  it.each([
+    ['/', 'Home'],
+    ['/shopping', 'Shopping'],
+    ['/pantry', 'Pantry'],
+    ['/recipes', 'Recipes'],
+  ])('announces the current page on %s as %s', (route, name) => {
+    renderAt(route);
+    const current = screen
+      .getAllByRole('link', { current: 'page' })
+      .map((l) => l.textContent);
+    expect(current).toEqual([name]);
+  });
+
+  it('highlights the section tab on its nested screens', () => {
+    renderAt('/shopping/staples');
+    // Staples sits under the Shopping section.
+    expect(screen.getByRole('link', { current: 'page' })).toHaveTextContent(
+      'Shopping',
+    );
+  });
+
+  it('opens the camera from the camera half', () => {
+    renderAt('/recipes');
+    expect(screen.getByRole('link', { name: 'Camera' })).toHaveAttribute(
+      'href',
+      '/scan',
+    );
+  });
+
+  it('leaves 132px at the bottom of every page for the Dock and its capsule', () => {
     const bottomPadding = () =>
       getComputedStyle(screen.getByRole('main').parentElement as HTMLElement)
         .paddingBottom;
     const { unmount } = renderAtView('/pantry');
-    expect(bottomPadding()).toBe('190px');
+    expect(bottomPadding()).toBe('132px');
     unmount();
     renderAtView('/recipes');
-    expect(bottomPadding()).toBe('110px');
+    expect(bottomPadding()).toBe('132px');
   });
 
   it('paints the dock and its tabs from the active Theme', () => {
@@ -111,6 +158,63 @@ describe('AppLayout Voice Note host', () => {
           'success',
         ),
       );
+      expect(
+        screen.queryByRole('button', { name: /hold to record a voice note/i }),
+      ).toBeNull();
+    },
+  );
+
+  it.each(['/shopping', '/pantry'])(
+    'puts the mic in the Dock, under the camera, on %s',
+    async (route) => {
+      renderAt(route);
+      const mic = await talkButton();
+      const dock = screen.getByRole('navigation');
+      expect(dock).toContainElement(mic);
+      const camera = within(dock).getByRole('link', { name: 'Camera' });
+      expect(
+        camera.compareDocumentPosition(mic) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    },
+  );
+
+  it('keeps the camera, with no mic, where the Dock has no Default List', async () => {
+    const { queryClient } = renderAt('/recipes');
+    await waitFor(() =>
+      expect(queryClient.getQueryState(['voice', 'config'])?.status).toBe(
+        'success',
+      ),
+    );
+    expect(screen.getByRole('link', { name: 'Camera' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /hold to record a voice note/i }),
+    ).toBeNull();
+  });
+});
+
+describe('AppLayout Dock when voice is not configured', () => {
+  beforeEach(() => {
+    resetVoiceEnvironment();
+    const { fetchMock } = stubApi({
+      'GET /api/voice/config': () => Response.json({ configured: false }),
+    });
+    stubVoiceFetch(fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it.each(['/shopping', '/pantry'])(
+    'shows only the camera on %s',
+    async (route) => {
+      const { queryClient } = renderAt(route);
+      await waitFor(() =>
+        expect(queryClient.getQueryState(['voice', 'config'])?.status).toBe(
+          'success',
+        ),
+      );
+      expect(screen.getByRole('link', { name: 'Camera' })).toBeInTheDocument();
       expect(
         screen.queryByRole('button', { name: /hold to record a voice note/i }),
       ).toBeNull();
