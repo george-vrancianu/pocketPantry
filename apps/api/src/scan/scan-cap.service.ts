@@ -7,11 +7,15 @@ import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { scanUsage } from '../database/schema';
 
-export type UsageKind = 'scan' | 'voice';
+export type UsageKind = 'scan' | 'voice' | 'assistant';
 
 const LIMITS = {
   scan: { setting: 'SCAN_DAILY_CAP', code: 'scan.cap_reached' },
   voice: { setting: 'VOICE_DAILY_CAP', code: 'voice.cap_reached' },
+  assistant: {
+    setting: 'ASSISTANT_DAILY_CAP',
+    code: 'assistant.cap_reached',
+  },
 } as const;
 
 /** When the cap's UTC `day` ends (ISO), which is when its count starts over. */
@@ -22,8 +26,9 @@ const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 
 /**
  * The per-Member daily caps, counted per UTC day and per kind and enforced
- * before the provider is called. The Scan Cap is `SCAN_DAILY_CAP` and the Voice
- * Cap `VOICE_DAILY_CAP`; a cap of 0 disables it. Kinds never affect each other.
+ * before the provider is called. The Scan Cap is `SCAN_DAILY_CAP`, the Voice
+ * Cap `VOICE_DAILY_CAP` and the Assistant Cap `ASSISTANT_DAILY_CAP`; a cap of 0
+ * disables it. Kinds never affect each other.
  */
 @Injectable()
 export class ScanCapService {
@@ -33,8 +38,9 @@ export class ScanCapService {
   ) {}
 
   /**
-   * Counts one use of `kind`, atomically; throws `scan.cap_reached` (Scan Cap)
-   * or `voice.cap_reached` (Voice Cap) once the Member is at that kind's cap.
+   * Counts one use of `kind`, atomically; throws `scan.cap_reached` (Scan Cap),
+   * `voice.cap_reached` (Voice Cap) or `assistant.cap_reached` (Assistant Cap)
+   * once the Member is at that kind's cap.
    * Returns the UTC day it was counted on, which a refund must use.
    */
   async consume(

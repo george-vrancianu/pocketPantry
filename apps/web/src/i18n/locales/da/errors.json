@@ -160,5 +160,8 @@
     "not_configured": "Stemmenoter er ikke sat op på denne server endnu.",
     "provider_unavailable": "Stemmenoter er ikke tilgængelige lige nu. Prøv igen om et øjeblik.",
     "nothing_heard": "Vi opfangede ikke noget. Prøv igen."
+  },
+  "assistantTokens": {
+    "not_found": "Det token findes ikke længere. Det er måske allerede tilbagekaldt."
   }
 }

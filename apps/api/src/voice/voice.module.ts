@@ -27,5 +27,6 @@ import { VoiceService } from './voice.service';
     VoiceReaderService,
     VoiceService,
   ],
+  exports: [VoiceService],
 })
 export class VoiceModule {}

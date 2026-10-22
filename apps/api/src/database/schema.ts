@@ -29,8 +29,8 @@ const timestamps = {
 };
 
 export const userRole = pgEnum('user_role', ['admin', 'regular']);
-// What a daily cap counts: Scans or Voice Notes.
-export const usageKind = pgEnum('usage_kind', ['scan', 'voice']);
+// What a daily cap counts: Scans, Voice Notes or Assistant Requests.
+export const usageKind = pgEnum('usage_kind', ['scan', 'voice', 'assistant']);
 export const familyRole = pgEnum('family_role', ['owner', 'member']);
 
 // A Family owns the Pantry, Shopping List and Family Settings.
@@ -351,6 +351,29 @@ export const memberAllergies = pgTable(
     primaryKey({ columns: [table.userId, table.allergenId] }),
     index('member_allergies_allergen_idx').on(table.allergenId),
   ],
+);
+
+// An Assistant Token (ADR 0019): a named, revocable secret a Member creates so a voice
+// assistant can make Assistant Requests for them. Keyed to the Member, not their Family,
+// so it keeps working across Family changes, and deleted with the Member. Only the SHA-256
+// hash of the secret is stored; `prefix` is the short display start of the secret.
+export const assistantTokens = pgTable(
+  'assistant_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    secretHash: text('secret_hash').notNull().unique(),
+    prefix: text('prefix').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (table) => [index('assistant_tokens_user_id_idx').on(table.userId)],
 );
 
 // A Family Allergy: "someone in this Family without an account must avoid this

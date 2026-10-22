@@ -8,7 +8,9 @@ import {
 
 /**
  * Shopping add: merges by the Shopping List's usual add rules (same Ingredient
- * or Unmatched name, same or convertible unit (g/kg, ml/l), quantities summed). An Unmatched name is added
+ * or Unmatched name, same or convertible unit (g/kg, ml/l), quantities summed). With `addSetsQuantity`
+ * (Assistant Requests) the spoken quantity is set instead of summed and the line
+ * unchecked; a bare add of a wanted line is left alone. An Unmatched name is added
  * and queued for curation by the Shopping List service.
  */
 export function shoppingAddHandler(
@@ -36,7 +38,8 @@ export function shoppingAddHandler(
           return { applied: false, reason: 'voice.invalid_action' };
         }
         const { quantity, unit } = amountOf(draft);
-        const { id } = await shopping.addInTransaction(
+        const setMode = ctx.addSetsQuantity === true;
+        const { id, inserted, unchanged } = await shopping.addInTransaction(
           ctx.tx,
           ctx.memberId,
           {
@@ -48,12 +51,15 @@ export function shoppingAddHandler(
           // The Unmatched name is written in the UI locale (the read prompt asks
           // for it), so that is the queue's source language.
           ctx.locale,
+          setMode ? 'set' : 'sum',
         );
         return {
           applied: true,
           list: 'shopping',
           rowId: id,
-          alreadyDone: false,
+          alreadyDone: unchanged,
+          // Only reported in set mode, so Review's response is unchanged.
+          ...(setMode && !inserted ? { merged: true } : {}),
         };
       }),
   };

@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
+import { AssistantModule } from './assistant/assistant.module';
+import { AssistantTokensModule } from './assistant-tokens/assistant-tokens.module';
 import { AuthModule } from './auth/auth.module';
 import { BarcodeModule } from './barcode/barcode.module';
 import { CatalogModule } from './catalog/catalog.module';
@@ -38,6 +40,8 @@ import { SettingsModule } from './settings/settings.module';
     BarcodeModule,
     DashboardModule,
     SettingsModule,
+    AssistantTokensModule,
+    AssistantModule,
     RecipesModule,
     MealPlansModule,
     AdminModule,

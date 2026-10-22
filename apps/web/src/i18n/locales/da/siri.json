@@ -1,0 +1,36 @@
+{
+  "title": "Siri",
+  "hint": "Opret et assistent-token til hver enhed, der tilføjer til dine lister med stemmen. Et token kan kun sende stemmeforespørgsler; tilbagekald det her for at stoppe det med det samme.",
+  "nameLabel": "Tokenets navn",
+  "namePlaceholder": "For eksempel min iPhone",
+  "create": "Opret token",
+  "creating": "Opretter",
+  "reveal": {
+    "title": "Kopiér dit token nu",
+    "hint": "Det vises kun denne ene gang. Indsæt det i genvejen, når du bliver bedt om det.",
+    "secretLabel": "Token",
+    "copy": "Kopiér",
+    "copied": "Token kopieret",
+    "done": "Færdig, jeg har kopieret det"
+  },
+  "empty": "Ingen tokens endnu.",
+  "loadFailed": "Dine tokens kunne ikke indlæses.",
+  "created": "Oprettet {{date}}",
+  "lastUsed": "Sidst brugt {{date}}",
+  "neverUsed": "Aldrig brugt",
+  "revoke": "Tilbagekald",
+  "revokeLabel": "Tilbagekald {{name}}",
+  "revokeConfirm": "Tilbagekald {{name}}? Alt, der bruger det, holder op med at virke.",
+  "revokeAction": "Tilbagekald",
+  "cancel": "Annuller",
+  "revoked": "Token tilbagekaldt",
+  "setup": {
+    "title": "Opsæt Siri",
+    "create": "Opret et token ovenfor, og kopiér det.",
+    "add": "Føj genvejen “Pantry add” til appen Genveje.",
+    "link": "Åbn genvejen “Pantry add”",
+    "paste": "Indsæt tokenet, når genvejen beder om det.",
+    "say": "Sig “Hey Siri, Pantry add”, og sig derefter, hvad der skal tilføjes.",
+    "language": "Siris frase er altid på engelsk, men du kan sige varerne på ethvert sprog, Pocket Pantry understøtter."
+  }
+}

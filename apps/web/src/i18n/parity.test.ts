@@ -219,6 +219,24 @@ const PLAIN_WORDS: Record<string, string> = {
 /** Exceptions found when the broad whitelist was narrowed: term, reason, keys. */
 const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   [
+    'token',
+    'the Assistant Token (GLOSSARY), shortened to "token" in the Siri section; not the Invite Code',
+    [
+      'errors:assistantTokens.not_found',
+      'siri:create',
+      'siri:hint',
+      'siri:empty',
+      'siri:loadFailed',
+      'siri:nameLabel',
+      'siri:reveal.copied',
+      'siri:reveal.secretLabel',
+      'siri:reveal.title',
+      'siri:revoked',
+      'siri:setup.create',
+      'siri:setup.paste',
+    ],
+  ],
+  [
     'account',
     'the sign-in account (and people without one), not a Member',
     [
