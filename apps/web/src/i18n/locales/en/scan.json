@@ -1,21 +1,26 @@
 {
   "title": "Scan {{mode}}",
   "close": "Close scanner",
-  "flash": "Toggle flash",
   "info": {
     "label": "How scanning works",
     "title": "Scanning your pantry",
-    "body": "Point the camera at a receipt, a product, loose ingredients or a plate, then double-tap the guide. You can check everything before it is saved.",
-    "dial": "Double-tap or hold the mode dial to scan; hold focuses first.",
-    "dismiss": "Close"
+    "intro": "Pick a mode, frame it inside the corners, tap the shutter.",
+    "tip": "Every photo is read in the background. Keep shooting, then tap the stack at the bottom left to review everything at once.",
+    "ok": "Got it",
+    "barcode": "Point at a barcode; each one is added on its own"
   },
   "scanLanguage": {
     "label": "Reading as"
   },
-  "gallery": "Choose from photos",
   "modes": "Scan mode",
+  "shutter": {
+    "label": "Take photo"
+  },
+  "slider": {
+    "announce": "{{mode}} mode"
+  },
   "reading": "Reading your photo",
-  "noCamera": "The camera is not available. Choose a photo from your gallery instead.",
+  "noCamera": "The camera is not available. Import a photo instead.",
   "crop": {
     "title": "Crop receipt",
     "instruction": "Drag and zoom so the whole receipt fits the frame.",
@@ -33,7 +38,6 @@
     "barcode": "Barcode"
   },
   "guide": {
-    "scan": "Scan: double-tap or press Enter",
     "receipt": "Hold the phone about 40 cm above the receipt so its edges touch the guide.",
     "receiptFold": "For long receipts, fold where the guide ends (about every 20 items), flip the folded part over, and take the next photo."
   },
@@ -43,18 +47,9 @@
     "plate": "Lists its ingredients so you can add what you are missing to your shopping list.",
     "ingredients": "Adds each loose item on the counter to your Pantry."
   },
-  "done": "Done",
-  "doneCount_one": "Done, {{count}} photo",
-  "doneCount_other": "Done, {{count}} photos",
   "session": {
-    "label": "Photos taken",
-    "reading": "Reading photo",
-    "needsCrop": "Needs crop",
-    "read": "Photo read",
     "failed": "Could not read photo",
-    "lookupFailed": "Barcode Lookup failed",
-    "retryLookup": "Retry lookup",
-    "retry": "Retry reading photo"
+    "lookupFailed": "Barcode Lookup failed"
   },
   "photoAdded": "Photo {{count}} added",
   "barcodeAdded": "Barcode {{count}} added",
@@ -80,5 +75,28 @@
     "photoFailed": "That photo could not be used. Try again.",
     "pointAtBarcode": "Point the camera at the barcode.",
     "barcodeNotFound": "No product found for that barcode. Take a photo of the product instead."
+  },
+  "torch": "Torch",
+  "stack": {
+    "empty": "No photos yet",
+    "photos_one": "{{count}} photo",
+    "photos_other": "{{count}} photos",
+    "barcodes_one": "{{count}} barcode",
+    "barcodes_other": "{{count}} barcodes",
+    "both": "{{photos}} and {{barcodes}}",
+    "label": "Review {{items}}",
+    "labelWithStatus": "{{review}}, {{status}}",
+    "reading_one": "{{count}} still reading",
+    "reading_other": "{{count}} still reading",
+    "allRead": "all read",
+    "failed_one": "{{count}} couldn't be read",
+    "failed_other": "{{count}} couldn't be read",
+    "needsCrop_one": "{{count}} receipt to crop",
+    "needsCrop_other": "{{count}} receipts to crop"
+  },
+  "import": {
+    "label": "Import from photos",
+    "added_one": "{{count}} photo added · {{mode}}",
+    "added_other": "{{count}} photos added · {{mode}}"
   }
 }

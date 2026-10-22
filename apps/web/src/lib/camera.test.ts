@@ -1,7 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cameraConstraints, useCamera } from './camera';
-import { GUIDE_CENTER_Y } from './scanGuides';
+import { cameraConstraints, FOCUS_POINT_Y, useCamera } from './camera';
 
 describe('cameraConstraints', () => {
   it('asks for the rear camera at an ideal (never exact) 1080p, in every Scan Mode', () => {
@@ -158,7 +157,7 @@ describe('focusForScan', () => {
       advanced: [
         {
           focusMode: 'single-shot',
-          pointsOfInterest: [{ x: 0.5, y: GUIDE_CENTER_Y }],
+          pointsOfInterest: [{ x: 0.5, y: FOCUS_POINT_Y }],
         },
       ],
     });

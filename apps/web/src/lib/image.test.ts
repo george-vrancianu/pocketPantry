@@ -80,7 +80,7 @@ describe('receiptOutputSize', () => {
 });
 
 describe('receipt crop follows the on-screen guide on an aspect-fill feed', () => {
-  const phone = { width: 390, height: 844 };
+  const phone = { width: 390, height: 844, insets: { top: 47, bottom: 34 } };
   const crop = (width: number, height: number, view = phone) => {
     const guide = guideRect('receipt', view);
     const rect = guideCropRect({ width, height }, view, guide);
@@ -98,28 +98,33 @@ describe('receipt crop follows the on-screen guide on an aspect-fill feed', () =
     expect(rect.height).toBeCloseTo(guide.height / scale, -1);
   });
 
-  it('keeps the on-screen guide aspect (0.52 x 0.64 of the screen)', () => {
+  it('keeps the on-screen guide aspect', () => {
     const { guide, rect } = crop(1080, 1920);
     expect(rect.width / rect.height).toBeCloseTo(guide.width / guide.height, 1);
   });
 
-  it('is centred at 46% of the height, not the middle of the frame', () => {
+  it('follows the guide centred in the clear area, not the middle of the frame', () => {
     // 1920 x 1080 on 390 x 844: scale = 844 / 1080, the sides are cut off.
-    const { rect } = crop(1920, 1080);
+    const { guide, rect } = crop(1920, 1080);
+    const scale = 844 / 1080;
     expect(rect.x + rect.width / 2).toBeCloseTo(1920 / 2, -1);
-    expect(rect.y + rect.height / 2).toBeCloseTo(1080 * 0.46, -1);
+    expect(rect.y + rect.height / 2).toBeCloseTo(
+      (guide.y + guide.height / 2) / scale,
+      -1,
+    );
+    expect(rect.y + rect.height / 2).not.toBeCloseTo(1080 / 2, -1);
   });
 
   it('maps the guide of a tall frame on a wider view by the other axis', () => {
     // 1080 x 2400 on 390 x 700: scale = 390 / 1080, top and bottom are cut off.
-    const view = { width: 390, height: 700 };
+    const view = { width: 390, height: 700, insets: { top: 0, bottom: 0 } };
     const { guide, rect } = crop(1080, 2400, view);
     const scale = 390 / 1080;
     const visibleY = (2400 - 700 / scale) / 2;
     expect(rect.y).toBeCloseTo(visibleY + guide.y / scale, -1);
     expect(rect.height).toBeCloseTo(guide.height / scale, -1);
     expect(rect.y + rect.height / 2).toBeCloseTo(
-      visibleY + (700 * 0.46) / scale,
+      visibleY + (guide.y + guide.height / 2) / scale,
       -1,
     );
   });

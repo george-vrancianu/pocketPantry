@@ -115,17 +115,21 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     await openForm(user);
     await user.click(cameraButton());
 
-    const dial = screen.getAllByRole('radio');
-    expect(dial.map((radio) => radio.getAttribute('aria-label'))).toEqual([
+    const slider = screen.getAllByRole('radio');
+    expect(slider.map((radio) => radio.textContent)).toEqual([
       'Product',
       'Barcode',
     ]);
     expect(screen.getByRole('radio', { name: 'Barcode' })).toBeChecked();
-    expect(screen.queryByLabelText('Reading as')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', { name: 'Reading as' }),
+    ).not.toBeInTheDocument();
     expect(fakeCamera.watching).toBe(1);
 
     await user.click(screen.getByRole('radio', { name: 'Product' }));
-    expect(screen.getByLabelText('Reading as')).toBeInTheDocument();
+    expect(
+      screen.getByRole('combobox', { name: 'Reading as' }),
+    ).toBeInTheDocument();
     expect(fakeCamera.watching).toBe(0);
   });
 
@@ -336,7 +340,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
 
     await user.click(cameraButton());
     await user.click(screen.getByRole('radio', { name: 'Product' }));
-    screen.getByTestId('scan-guide').focus();
+    screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
     await waitFor(() =>
       expect(screen.queryByText('Product data: Open Food Facts')).toBeNull(),
@@ -471,7 +475,7 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
     await user.click(cameraButton());
     await decode();
     await screen.findByText(/No product found for that barcode/);
-    screen.getByTestId('scan-guide').focus();
+    screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
     await waitFor(() =>
       expect(calls.some((call) => call.key === 'POST /api/scan/product')).toBe(

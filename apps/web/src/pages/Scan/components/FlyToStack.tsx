@@ -1,0 +1,98 @@
+import { Box, usePrefersReducedMotion } from '@pocket-pantry/ui';
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
+import type { Rect } from '../../../lib/scanGuides';
+
+const FLY_MS = 460;
+
+type Flight = { id: number; image: string; from: Rect };
+
+function Flying({
+  flight,
+  target,
+  onDone,
+}: {
+  flight: Flight;
+  target: RefObject<HTMLElement | null>;
+  onDone: (id: number) => void;
+}) {
+  const el = useRef<HTMLImageElement>(null);
+  useLayoutEffect(() => {
+    const to = target.current?.getBoundingClientRect();
+    const { from } = flight;
+    if (to && to.width > 0) {
+      el.current?.animate?.(
+        [
+          { transform: 'none', borderRadius: '10px' },
+          {
+            transform: `translate(${to.left + to.width / 2 - (from.x + from.width / 2)}px, ${to.top + to.height / 2 - (from.y + from.height / 2)}px) scale(${to.width / from.width}, ${to.height / from.height})`,
+            borderRadius: '40px',
+          },
+        ],
+        {
+          duration: FLY_MS,
+          easing: 'cubic-bezier(.5,0,.2,1)',
+          fill: 'forwards',
+        },
+      );
+    }
+    const timer = window.setTimeout(() => onDone(flight.id), FLY_MS);
+    return () => window.clearTimeout(timer);
+  }, [flight, target, onDone]);
+  return (
+    <Box
+      component="img"
+      ref={el}
+      data-testid="scan-fly"
+      src={flight.image}
+      alt=""
+      aria-hidden="true"
+      sx={{
+        position: 'absolute',
+        left: flight.from.x,
+        top: flight.from.y,
+        width: flight.from.width,
+        height: flight.from.height,
+        objectFit: 'cover',
+        borderRadius: '10px',
+        pointerEvents: 'none',
+      }}
+    />
+  );
+}
+
+/**
+ * A captured photo flying from the guide into the photo stack (handoff 5.3). It is decoration only:
+ * the Scan has joined the Scan Session before `fly` is called, and nothing waits for the animation.
+ * Under reduced motion `fly` does nothing, so no element is ever rendered.
+ */
+export function useFlyToStack() {
+  const reduced = usePrefersReducedMotion();
+  const target = useRef<HTMLElement | null>(null);
+  const next = useRef(0);
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const fly = useCallback(
+    (image: string, from: Rect) => {
+      if (reduced || !image) return;
+      setFlights((all) => [...all, { id: next.current++, image, from }]);
+    },
+    [reduced],
+  );
+  const done = useCallback(
+    (id: number) => setFlights((all) => all.filter((f) => f.id !== id)),
+    [],
+  );
+  const layer = (
+    <>
+      {flights.map((flight) => (
+        <Flying key={flight.id} flight={flight} target={target} onDone={done} />
+      ))}
+    </>
+  );
+  return { fly, stackRef: target, layer };
+}

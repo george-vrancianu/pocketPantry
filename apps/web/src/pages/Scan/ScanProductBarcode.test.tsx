@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PHOTO_DECODE_TIMEOUT_MS, resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { scanViaGuide, fakeCamera } from '../../test/scan';
+import { takeScan, fakeCamera, expectStack, stackCount } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -99,10 +99,6 @@ function renderScan(route = '/scan?mode=product') {
 }
 
 const flush = () => act(async () => {});
-const states = () =>
-  screen
-    .queryAllByTestId('scan-thumbnail')
-    .map((t) => t.getAttribute('data-state'));
 const saves = () =>
   calls
     .filter((call) => call.key === 'POST /api/pantry/batches/bulk')
@@ -115,7 +111,7 @@ const decoded = async (code: string | null, nth = 0) => {
   await act(async () => fakeCamera.pendingReads[nth].resolve(code));
 };
 async function addAll(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: /^Done/ }));
+  await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
   await user.click(await screen.findByRole('button', { name: 'Add all' }));
   await waitFor(() => expect(saves().length).toBeGreaterThan(0));
 }
@@ -134,11 +130,11 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('sends the barcode found in the photo with the saved Batch, without Open Food Facts credit', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
-    await waitFor(() => expect(states()).toEqual(['read']));
+    takeScan();
+    await waitFor(() => expectStack('read'));
     await decoded(CODE);
     // No lookup happened: nothing credits Open Food Facts in the editor.
-    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     await user.click(await screen.findByTestId('card-result'));
     await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
     expect(
@@ -154,7 +150,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
 
   it('decodes the full captured frame, not the resized photo', async () => {
     renderScan();
-    scanViaGuide();
+    takeScan();
     await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
     expect(await fakeCamera.pendingReads[0].source.text()).toBe('frame');
   });
@@ -162,10 +158,10 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('keeps the barcode after the Member changes the Ingredient in Review', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
-    await waitFor(() => expect(states()).toEqual(['read']));
+    takeScan();
+    await waitFor(() => expectStack('read'));
     await decoded(CODE);
-    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     await user.click(await screen.findByTestId('card-result'));
     await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
     await user.click(
@@ -190,9 +186,9 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('attaches a barcode that settles while the Member is already editing the card', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
-    await waitFor(() => expect(states()).toEqual(['read']));
-    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    takeScan();
+    await waitFor(() => expectStack('read'));
+    await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     await user.click(await screen.findByTestId('card-result'));
     await screen.findByRole('button', { name: /Yogurt/ });
     await decoded(CODE);
@@ -205,9 +201,9 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('attaches a barcode that settles before the read answers', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
+    takeScan();
     await decoded(CODE);
-    await waitFor(() => expect(states()).toEqual(['read']));
+    await waitFor(() => expectStack('read'));
     await addAll(user);
 
     expect(saves()).toEqual([expect.objectContaining({ barcode: CODE })]);
@@ -216,8 +212,8 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('sends no barcode when the photo has none', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
-    await waitFor(() => expect(states()).toEqual(['read']));
+    takeScan();
+    await waitFor(() => expectStack('read'));
     await decoded(null);
     await addAll(user);
 
@@ -228,8 +224,8 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     const user = userEvent.setup();
     renderScan();
     readLines = [line('Yogurt'), line('Skyr')];
-    scanViaGuide();
-    await waitFor(() => expect(states()).toEqual(['read']));
+    takeScan();
+    await waitFor(() => expectStack('read'));
     await decoded(CODE);
     await addAll(user);
 
@@ -240,14 +236,14 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('reads the card without waiting for a slow decode, and a failed decode does not fail it', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
+    takeScan();
     // The decode never answers, yet the card is read.
-    await waitFor(() => expect(states()).toEqual(['read']));
+    await waitFor(() => expectStack('read'));
     await act(async () =>
       fakeCamera.pendingReads[0].reject(new Error('no detector here')),
     );
     await flush();
-    expect(states()).toEqual(['read']);
+    expectStack('read');
     await addAll(user);
 
     expect(saves()[0]).not.toHaveProperty('barcode');
@@ -257,10 +253,10 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     /** Two Product Scans; the first one's decode is still pending. */
     async function twoScans() {
       renderScan();
-      scanViaGuide();
-      await waitFor(() => expect(states()).toEqual(['read']));
-      scanViaGuide();
-      await waitFor(() => expect(states()).toEqual(['read', 'read']));
+      takeScan();
+      await waitFor(() => expectStack('read'));
+      takeScan();
+      await waitFor(() => expectStack('read', 2));
       await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
     }
     /** The first decode settles late; the second then settles without a barcode. */
@@ -272,7 +268,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     it('is ignored when the card was removed', async () => {
       const user = userEvent.setup();
       await twoScans();
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       const [remove] = await screen.findAllByRole('button', {
         name: 'Remove photo',
       });
@@ -287,7 +283,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     it('is ignored when the card was saved on its own', async () => {
       const user = userEvent.setup();
       await twoScans();
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       const [first] = await screen.findAllByTestId('card-result');
       await user.click(first);
       await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
@@ -307,7 +303,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
       (n) => new File(['x'], `pack${n}.jpg`, { type: 'image/jpeg' }),
     );
     await act(async () => {
-      fireEvent.change(screen.getByTestId('gallery-input'), {
+      fireEvent.change(screen.getByTestId('import-input'), {
         target: { files: photos },
       });
     });
@@ -325,7 +321,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
       (n) => new File(['x'], `pack${n}.jpg`, { type: 'image/jpeg' }),
     );
     await act(async () => {
-      fireEvent.change(screen.getByTestId('gallery-input'), {
+      fireEvent.change(screen.getByTestId('import-input'), {
         target: { files: photos },
       });
     });
@@ -342,13 +338,13 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
       (n) => new File(['x'], `pack${n}.jpg`, { type: 'image/jpeg' }),
     );
     await act(async () => {
-      fireEvent.change(screen.getByTestId('gallery-input'), {
+      fireEvent.change(screen.getByTestId('import-input'), {
         target: { files: photos },
       });
     });
-    await waitFor(() => expect(states()).toEqual(['read', 'read', 'read']));
+    await waitFor(() => expectStack('read', 3));
     await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
-    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     const removes = await screen.findAllByRole('button', {
       name: 'Remove photo',
     });
@@ -363,10 +359,10 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     const user = userEvent.setup();
     renderScan();
     readLines = [{ ...line('Mystery'), match: null }];
-    scanViaGuide();
-    await waitFor(() => expect(states()).toEqual(['read']));
+    takeScan();
+    await waitFor(() => expectStack('read'));
     await decoded(CODE);
-    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     await user.click(await screen.findByTestId('card-result'));
     const match = (await screen.findAllByRole('button')).find(
       (button) => button.getAttribute('aria-haspopup') === 'dialog',
@@ -382,10 +378,10 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     const user = userEvent.setup();
     renderScan();
     readLines = [{ ...line('Mystery'), match: null }];
-    scanViaGuide();
-    await waitFor(() => expect(states()).toEqual(['read']));
+    takeScan();
+    await waitFor(() => expectStack('read'));
     await decoded(CODE);
-    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     await user.click(await screen.findByTestId('card-result'));
     await user.type(await screen.findByLabelText('Name'), ' jar');
     await user.click(screen.getByRole('button', { name: /^Save/ }));
@@ -399,9 +395,9 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('attaches a barcode that settles after the Member edited the card and went back to the overview', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
-    await waitFor(() => expect(states()).toEqual(['read']));
-    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    takeScan();
+    await waitFor(() => expectStack('read'));
+    await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     await user.click(await screen.findByTestId('card-result'));
     await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
     await user.click(
@@ -430,11 +426,11 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     renderScan();
     const photo = new File(['gallery'], 'pack.jpg', { type: 'image/jpeg' });
     await act(async () => {
-      fireEvent.change(screen.getByTestId('gallery-input'), {
+      fireEvent.change(screen.getByTestId('import-input'), {
         target: { files: [photo] },
       });
     });
-    await waitFor(() => expect(states()).toEqual(['read']));
+    await waitFor(() => expectStack('read'));
     await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
     expect(fakeCamera.pendingReads[0].source).toBe(photo);
     await decoded(CODE);
@@ -447,10 +443,8 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     'does not decode %s Scans for a barcode',
     async (mode) => {
       renderScan(`/scan?mode=${mode}`);
-      scanViaGuide();
-      await waitFor(() =>
-        expect(screen.queryAllByTestId('scan-thumbnail')).toHaveLength(1),
-      );
+      takeScan();
+      await waitFor(() => expect(stackCount()).toBe(1));
       await flush();
       expect(fakeCamera.pendingReads).toHaveLength(0);
     },

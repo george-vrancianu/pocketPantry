@@ -9,7 +9,7 @@ import {
   resetScanSession,
 } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { scanViaGuide, fakeCamera } from '../../test/scan';
+import { takeScan, fakeCamera } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
 vi.mock('../../lib/camera', async () =>
@@ -50,7 +50,7 @@ describe('Scan screen, epic review fixes', () => {
     vi.restoreAllMocks();
   });
 
-  it('requests 1080p in every mode, so the dial never restarts the stream (#2)', () => {
+  it('requests 1080p in every mode, so the mode slider never restarts the stream (#2)', () => {
     for (const mode of ['product', 'ingredients', 'plate']) {
       fakeCamera.calls = [];
       const { unmount } = renderScan(`/scan?mode=${mode}`);
@@ -62,7 +62,7 @@ describe('Scan screen, epic review fixes', () => {
 
   it('announces a Scan joining the Scan Session (#12b)', async () => {
     renderScan();
-    scanViaGuide();
+    takeScan();
     await flush();
     expect(
       screen
@@ -97,7 +97,7 @@ describe('Scan screen, epic review fixes', () => {
   it('words the limit toast for any Scan Mode, not just the pantry (#18)', async () => {
     renderScan();
     for (let i = 0; i < 21; i += 1) {
-      scanViaGuide();
+      takeScan();
       await flush();
     }
     expect(

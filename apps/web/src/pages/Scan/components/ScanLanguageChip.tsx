@@ -1,7 +1,7 @@
-import { Box, tokens, radius } from '@pocket-pantry/ui';
+import { Box, GlobeIcon, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { Locale, ScanLanguage } from '../../../i18n/resources';
-import { glassControl, glassFocusRing } from './glass';
+import { glassFocusRing, translucent } from './glass';
 import { scanLanguageOptions } from '../../../lib/scanLanguage';
 
 type Props = {
@@ -9,54 +9,67 @@ type Props = {
   /** The UI language, listed first. */
   locale: Locale;
   disabled: boolean;
-  /** `glass` is the translucent look on the camera; `surface` the plain pill used on a page. */
-  variant?: 'glass' | 'surface';
   onChange: (language: ScanLanguage) => void;
 };
 
-/** The language this Scan is read in ("EN ▾"), picked without touching the UI language. */
-export function ScanLanguageChip({
-  value,
-  locale,
-  disabled,
-  variant = 'glass',
-  onChange,
-}: Props) {
+/** The language this Scan is read in: a pill with a globe and the language code, picked without touching the UI language. */
+export function ScanLanguageChip({ value, locale, disabled, onChange }: Props) {
   const { t } = useTranslation('scan');
   return (
     <Box
-      component="select"
-      aria-label={t('scanLanguage.label')}
-      value={value}
-      disabled={disabled}
-      onChange={(event) => onChange(event.target.value as ScanLanguage)}
       sx={{
-        // As tall as the Info and Done buttons beside it.
-        height: variant === 'glass' ? 40 : 48,
-        px: variant === 'glass' ? '10px' : '12px',
-        borderRadius: radius.pill,
-        ...(variant === 'glass'
-          ? glassControl(disabled)
-          : {
-              border: 0,
-              backgroundColor: tokens.color.surface,
-              boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
-              color: tokens.color.ink,
-              opacity: disabled ? 0.5 : 1,
-            }),
-        fontFamily: 'inherit',
-        fontSize: 13,
-        fontWeight: 700,
-        cursor: disabled ? 'default' : 'pointer',
-        '&:focus-visible': glassFocusRing,
-        '& option': { color: tokens.color.ink },
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+        mx: '4px',
+        color: tokens.color.ink,
+        opacity: disabled ? 0.5 : 1,
       }}
     >
-      {scanLanguageOptions(locale).map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
+      <GlobeIcon
+        size={13}
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          left: 10,
+          pointerEvents: 'none',
+        }}
+      />
+      <Box
+        component="select"
+        aria-label={t('scanLanguage.label')}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value as ScanLanguage)}
+        sx={{
+          appearance: 'none',
+          height: 28,
+          minWidth: 44,
+          boxSizing: 'border-box',
+          pl: '28px',
+          pr: '10px',
+          borderRadius: radius.pill,
+          border: `1.5px solid ${translucent(tokens.color.ink, 75)}`,
+          backgroundColor: 'transparent',
+          color: 'inherit',
+          fontFamily: 'inherit',
+          fontSize: 12.5,
+          fontWeight: 800,
+          letterSpacing: '0.06em',
+          cursor: disabled ? 'default' : 'pointer',
+          '&:focus-visible': glassFocusRing,
+          '& option': {
+            color: tokens.color.ink,
+            backgroundColor: tokens.color.bg,
+          },
+        }}
+      >
+        {scanLanguageOptions(locale).map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </Box>
     </Box>
   );
 }

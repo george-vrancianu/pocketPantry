@@ -1,5 +1,5 @@
 import { THEMES } from '@pocket-pantry/ui';
-import { scanGuide, fakeCamera, setStatus } from '../../test/scan';
+import { shutter, fakeCamera, setStatus } from '../../test/scan';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
@@ -97,12 +97,11 @@ describe('Scan screen shell', () => {
     expect(paintedColour(home, 'color')).toBe(THEMES.minimal.ink);
   });
 
-  it('shows the torch button next to Close when the camera has a torch', () => {
+  it('shows the torch button in the top bar when the camera has a torch', () => {
     renderScan();
-    const bar = screen.getByRole('button', { name: 'Close scanner' })
-      .parentElement as HTMLElement;
+    const bar = screen.getByTestId('scan-top-bar');
     expect(
-      within(bar).getByRole('button', { name: 'Toggle flash' }),
+      within(bar).getByRole('button', { name: /^Torch/ }),
     ).toBeInTheDocument();
     expect(
       within(bar).getByRole('button', { name: 'How scanning works' }),
@@ -113,7 +112,7 @@ describe('Scan screen shell', () => {
     fakeCamera.torchSupported = false;
     renderScan();
     expect(
-      screen.queryByRole('button', { name: 'Toggle flash' }),
+      screen.queryByRole('button', { name: /^Torch/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -143,7 +142,7 @@ describe('Scan screen shell', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(fakeCamera.stops).toBe(0);
     expect(fakeCamera.starts).toBe(startsBefore);
-    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
+    expect(shutter()).not.toHaveAttribute('aria-disabled');
   });
 });
 
@@ -163,7 +162,10 @@ describe('camera feed and overlays', () => {
     const feed = screen.getByTestId('scan-feed');
     const style = getComputedStyle(feed);
     expect(feed.tagName).toBe('VIDEO');
-    expect(feed.parentElement).toBe(screen.getByTestId('scan-screen'));
+    expect(feed.parentElement).toBe(screen.getByTestId('scan-viewfinder'));
+    expect(screen.getByTestId('scan-viewfinder').parentElement).toBe(
+      screen.getByTestId('scan-screen'),
+    );
     expect(style.objectFit).toBe('cover');
     expect(style.position).toBe('absolute');
     expect(style.width).toBe('100%');
@@ -181,9 +183,9 @@ describe('camera feed and overlays', () => {
     expect(style.pointerEvents).toBe('none');
   });
 
-  it('pins the guide and the mode dial over the feed so they stay reachable', () => {
+  it('pins the shutter and the mode slider over the feed so they stay reachable', () => {
     renderScan();
-    expect(pinned(scanGuide())).toBe(true);
+    expect(pinned(shutter())).toBe(true);
     expect(pinned(screen.getByRole('radiogroup', { name: 'Scan mode' }))).toBe(
       true,
     );

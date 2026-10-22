@@ -15,6 +15,10 @@ let resizing = 0;
 /** How many imported photos are still being resized. */
 export const resizingImports = () => resizing;
 
+/** How many more photos the Scan Session can take, counting those still being resized. */
+export const importRoom = () =>
+  Math.max(0, MAX_SESSION_SCANS - getScanSession().scans.length - resizing);
+
 export type ImportOptions = {
   /** The Scan Mode every file is read in (see `scanModeOf` for a camera mode). */
   mode: ScanMode;
@@ -37,10 +41,7 @@ export function importPhotos(
   picked: File[],
   { mode, scanLanguage, uiLanguage, onFull, onInvalid }: ImportOptions,
 ): void {
-  const room = Math.max(
-    0,
-    MAX_SESSION_SCANS - getScanSession().scans.length - resizing,
-  );
+  const room = importRoom();
   if (picked.length > room) onFull();
   const base = {
     mode,

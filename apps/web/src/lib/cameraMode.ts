@@ -18,12 +18,12 @@ export const scanModeOf = (mode: CameraMode): ScanMode =>
 /** How often the barcode watch looks at a frame. */
 export const SCAN_INTERVAL_MS = 250;
 
-/** The Scan page's dial, in order: Barcode sits right after Product. */
+/** The Scan page's mode slider, in order: Barcode sits right after Product (ADR 0016). */
 export const CAMERA_MODES = [
   'receipt',
+  'ingredients',
   'product',
   'barcode',
-  'ingredients',
   'plate',
 ] as const satisfies readonly CameraMode[];
 

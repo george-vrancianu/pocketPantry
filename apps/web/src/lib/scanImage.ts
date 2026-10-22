@@ -1,5 +1,6 @@
 import { cropToReceiptGuide, resizeImage } from './image';
 import type { ScanMode } from './scan';
+import type { GuideView } from './scanGuides';
 
 /** Where the image came from: a live camera frame, or a file the Member picked from their gallery. */
 export type ImageOrigin = 'camera' | 'gallery';
@@ -8,8 +9,8 @@ export type ImageOrigin = 'camera' | 'gallery';
 export type ImagePreparation = (
   source: Blob,
   origin: ImageOrigin,
-  /** On-screen size of the feed the frame came from; the receipt guide is mapped through it. */
-  view?: { width: number; height: number },
+  /** On-screen size and safe-area insets of the feed the frame came from; the receipt guide is mapped through it. */
+  view?: GuideView,
 ) => Promise<string>;
 
 const resizeOnly: ImagePreparation = (source) => resizeImage(source);

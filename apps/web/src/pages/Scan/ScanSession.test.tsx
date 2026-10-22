@@ -8,7 +8,7 @@ import {
   resetScanSession,
 } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { scanViaGuide } from '../../test/scan';
+import { takeScan } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -73,12 +73,14 @@ function renderScan(route = '/scan?mode=product') {
   );
 }
 
-const thumbnails = () => screen.queryAllByTestId('scan-thumbnail');
-const states = () => thumbnails().map((t) => t.getAttribute('data-state'));
-const done = () => screen.getByRole('button', { name: /^Done/ });
+// The photo stack's badge: its state (reading, needsCrop, failed, read) and its card count.
+const badge = () => screen.getByTestId('stack-badge');
+const state = () => badge().getAttribute('data-state');
+const cards = () => Number(badge().textContent?.replace(/\D/g, ''));
+const stack = () => screen.getByRole('button', { name: /^Review \d+ / });
 const flush = () => act(async () => {});
 const scanOnce = async () => {
-  scanViaGuide();
+  takeScan();
   await flush();
 };
 const answer = async (index: number, lines?: unknown[]) => {
@@ -92,10 +94,10 @@ describe('Scan Session on the Scan screen', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('adds the Scan at once, shows a reading thumbnail and stays on the camera', async () => {
+  it('adds the Scan at once, shows the stack reading and stays on the camera', async () => {
     renderScan();
     await scanOnce();
-    expect(states()).toEqual(['reading']);
+    expect(state()).toBe('reading');
     expect(screen.getByTestId('scan-guide')).toBeInTheDocument();
     expect(screen.queryByTestId('review-overview')).not.toBeInTheDocument();
   });
@@ -110,26 +112,29 @@ describe('Scan Session on the Scan screen', () => {
     });
   });
 
-  it('marks the thumbnail read when the read comes back', async () => {
+  it('turns the stack read when the read comes back', async () => {
     renderScan();
     await scanOnce();
     await answer(0);
-    expect(states()).toEqual(['read']);
+    expect(state()).toBe('read');
   });
 
   it('keeps scanning while earlier Scans are still being read', async () => {
     renderScan();
     await scanOnce();
     await scanOnce();
-    expect(states()).toEqual(['reading', 'reading']);
+    expect(cards()).toBe(2);
+    expect(state()).toBe('reading');
   });
 
-  it('stacks thumbnails in capture order, oldest first', async () => {
+  it('stays reading while any Scan is still being read', async () => {
     renderScan();
     await scanOnce();
     await scanOnce();
     await answer(1);
-    expect(states()).toEqual(['reading', 'read']);
+    expect(state()).toBe('reading');
+    await answer(0);
+    expect(state()).toBe('read');
   });
 
   it('reads at most 2 Scans at once and starts the next when one finishes', async () => {
@@ -137,11 +142,11 @@ describe('Scan Session on the Scan screen', () => {
     await scanOnce();
     await scanOnce();
     await scanOnce();
-    expect(thumbnails()).toHaveLength(3);
+    expect(cards()).toBe(3);
     expect(held).toHaveLength(2);
     await answer(0);
     await waitFor(() => expect(held).toHaveLength(3));
-    expect(states()).toEqual(['read', 'reading', 'reading']);
+    expect(state()).toBe('reading');
   });
 
   it('gives every Scan the mode and Scan Language it was taken in', async () => {
@@ -168,7 +173,7 @@ describe('Scan Session on the Scan screen', () => {
     ]);
     expect(new URLSearchParams(held[0].search).get('scanLanguage')).toBe('ro');
     expect(new URLSearchParams(held[1].search).get('scanLanguage')).toBe('da');
-    expect(thumbnails()).toHaveLength(2);
+    expect(cards()).toBe(2);
   });
 
   it('queues a single-photo Receipt Scan like the others', async () => {
@@ -178,7 +183,7 @@ describe('Scan Session on the Scan screen', () => {
     expect(held[0].body).toEqual({
       receiptImage: 'data:image/jpeg;base64,Y3JvcA==',
     });
-    expect(states()).toEqual(['reading']);
+    expect(state()).toBe('reading');
     expect(screen.getByTestId('scan-guide')).toBeInTheDocument();
   });
 
@@ -191,7 +196,7 @@ describe('Scan Session on the Scan screen', () => {
         { name: 'Ingredients' },
       ),
     );
-    expect(thumbnails()).toHaveLength(1);
+    expect(cards()).toBe(1);
   });
 
   it('keeps the title for screen readers but hides it visually', () => {
@@ -223,55 +228,19 @@ describe('Scan Session on the Scan screen', () => {
     it('leaves the Scan as a failed thumbnail, also after leaving the screen', async () => {
       renderScan();
       await scanOnce();
-      await userEvent.click(done());
+      await userEvent.click(stack());
       await userEvent.click(screen.getByRole('link', { name: 'Camera' }));
       await answer(0, []);
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expect(state()).toBe('failed'));
     });
   });
 
-  describe('Done', () => {
-    it('is named with the number of photos, not the badge', async () => {
-      renderScan();
-      await scanOnce();
-      expect(done()).toHaveAccessibleName('Done, 1 photo');
-      await scanOnce();
-      expect(done()).toHaveAccessibleName('Done, 2 photos');
-    });
-
-    it('puts the count badge before the label', async () => {
-      renderScan();
-      await scanOnce();
-      expect(done().firstElementChild).toBe(
-        within(done()).getByTestId('done-count'),
-      );
-      expect(done().textContent).toMatch(/^1\s*Done/);
-    });
-
-    it('is disabled while the Scan Session is empty', () => {
-      renderScan();
-      expect(done()).toBeDisabled();
-    });
-
-    it('shows how many Scans there are, amber while any is reading', async () => {
-      renderScan();
-      await scanOnce();
-      await scanOnce();
-      const badge = within(done()).getByTestId('done-count');
-      expect(badge).toHaveTextContent('2');
-      expect(badge).toHaveAttribute('data-reading', 'true');
-      await answer(0);
-      expect(badge).toHaveAttribute('data-reading', 'true');
-      await answer(1);
-      expect(badge).toHaveTextContent('2');
-      expect(badge).toHaveAttribute('data-reading', 'false');
-    });
-
+  describe('The photo stack', () => {
     it('opens the Review overview, even while a Scan is still reading', async () => {
       renderScan();
       await scanOnce();
-      expect(done()).toBeEnabled();
-      await userEvent.click(done());
+      expect(stack()).not.toHaveAttribute('aria-disabled');
+      await userEvent.click(stack());
       expect(screen.getByTestId('review-overview')).toBeInTheDocument();
       expect(screen.getAllByTestId('review-card')).toHaveLength(1);
     });
@@ -280,7 +249,7 @@ describe('Scan Session on the Scan screen', () => {
   it('finishes a read that was in flight when the Member left for the overview', async () => {
     renderScan();
     await scanOnce();
-    await userEvent.click(done());
+    await userEvent.click(stack());
     expect(screen.getByText('Reading photo…')).toBeInTheDocument();
     await answer(0);
     expect(screen.queryByText('Reading photo…')).not.toBeInTheDocument();

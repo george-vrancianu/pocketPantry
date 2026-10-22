@@ -239,7 +239,7 @@ describe('Review overview', () => {
     renderOverview();
     await userEvent.click(screen.getByRole('link', { name: 'Camera' }));
     expect(screen.getByTestId('scan-guide')).toBeInTheDocument();
-    expect(screen.getAllByTestId('scan-thumbnail')).toHaveLength(2);
+    expect(screen.getByTestId('stack-badge')).toHaveTextContent('2');
   });
 
   describe('opening a card', () => {
@@ -536,7 +536,7 @@ describe('Review overview', () => {
       renderOverview();
       await userEvent.click(screen.getByRole('button', { name: 'Take more' }));
       expect(await screen.findByTestId('scan-guide')).toBeInTheDocument();
-      expect(screen.getAllByTestId('scan-thumbnail')).toHaveLength(2);
+      expect(screen.getByTestId('stack-badge')).toHaveTextContent('2');
       expect(getScanSession().scans.map((scan) => scan.id)).toEqual(['a', 'b']);
     });
 

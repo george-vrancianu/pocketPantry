@@ -1,8 +1,8 @@
 import { screen, waitFor } from '@testing-library/react';
 import {
-  scanGuide,
+  shutter,
   openFirstScanCard,
-  scanViaGuide,
+  takeScan,
   fakeCamera,
 } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
@@ -26,8 +26,8 @@ vi.mock('../../lib/image', () => ({
 
 /** The camera restarts when the mode changes: wait until the guide takes Scans again. */
 const shoot = async () => {
-  await waitFor(() => expect(scanGuide()).not.toHaveAttribute('aria-disabled'));
-  scanViaGuide();
+  await waitFor(() => expect(shutter()).not.toHaveAttribute('aria-disabled'));
+  takeScan();
 };
 
 const parmesan: CatalogSearchResult = {
@@ -78,30 +78,42 @@ describe('ScanPage', () => {
 
   it('has the camera controls, with Receipt selected among all four modes', () => {
     renderScan({}, '/scan');
-    expect(
-      screen.getAllByRole('radio').map((r) => r.getAttribute('aria-label')),
-    ).toEqual(['Receipt', 'Product', 'Barcode', 'Ingredients', 'Plate']);
+    expect(screen.getAllByRole('radio').map((r) => r.textContent)).toEqual([
+      'Receipt',
+      'Ingredients',
+      'Product',
+      'Barcode',
+      'Plate',
+    ]);
     expect(screen.getByRole('radio', { name: 'Receipt' })).toBeChecked();
     for (const name of [
       'Close scanner',
-      'Toggle flash',
-      'Choose from photos',
+      /^Torch/,
+      'How scanning works',
+      'Import from photos',
+      'Take photo',
+      'No photos yet',
     ]) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
+    // Done, the top-bar gallery button and the thumbnail column are gone.
+    expect(
+      screen.queryByRole('button', { name: /^Done|Choose from photos/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('scan-thumbnail')).not.toBeInTheDocument();
   });
 
   it('hides the flash toggle when the camera has no torch', () => {
     fakeCamera.torchSupported = false;
     renderScan({});
     expect(
-      screen.queryByRole('button', { name: 'Toggle flash' }),
+      screen.queryByRole('button', { name: /^Torch/ }),
     ).not.toBeInTheDocument();
   });
 
   it('toggles the flash', async () => {
     renderScan({});
-    const flash = screen.getByRole('button', { name: 'Toggle flash' });
+    const flash = screen.getByRole('button', { name: /^Torch/ });
     expect(flash).toHaveAttribute('aria-pressed', 'false');
     await userEvent.click(flash);
     expect(flash).toHaveAttribute('aria-pressed', 'true');
@@ -116,9 +128,9 @@ describe('ScanPage', () => {
         'aria-checked',
         'true',
       );
-      expect(scanGuide()).not.toHaveAttribute('aria-disabled');
+      expect(shutter()).not.toHaveAttribute('aria-disabled');
       expect(
-        screen.getByRole('button', { name: 'Choose from photos' }),
+        screen.getByRole('button', { name: 'Import from photos' }),
       ).toBeEnabled();
     },
   );
@@ -144,7 +156,7 @@ describe('ScanPage', () => {
     expect(
       await screen.findByText('Daily scan limit reached'),
     ).toBeInTheDocument();
-    expect(scanGuide()).toHaveAttribute('aria-disabled', 'true');
+    expect(shutter()).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('fails the Scan for a rejected image', async () => {
@@ -156,8 +168,10 @@ describe('ScanPage', () => {
         ),
     });
     await shoot();
-    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
-      /too large/,
+    // Retry and the reason live on the card in Review; the camera only shows the stack going amber.
+    expect(await screen.findByTestId('stack-badge')).toHaveAttribute(
+      'data-state',
+      'failed',
     );
     expect(
       screen.queryByRole('button', { name: /retry/i }),

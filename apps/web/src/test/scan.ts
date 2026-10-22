@@ -1,29 +1,48 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
-import { beforeEach, vi } from 'vitest';
+import { beforeEach, expect, vi } from 'vitest';
 import type { CameraStatus, FocusPass } from '../lib/camera';
 
-/** The Scan guide, which takes a Scan on a double-tap. */
-export const scanGuide = () => screen.getByTestId('scan-guide');
+/** The shutter button, which takes a Scan. */
+export const shutter = () => screen.getByRole('button', { name: 'Take photo' });
 
-/** Double-tap the Scan guide, as a Member takes a Scan. */
-export function scanViaGuide() {
-  const pointer = {
-    pointerId: 1,
-    pointerType: 'touch',
-    isPrimary: true,
-    button: 0,
-  };
-  for (let i = 0; i < 2; i += 1) {
-    fireEvent.pointerDown(scanGuide(), pointer);
-    fireEvent.pointerUp(scanGuide(), pointer);
-  }
+/** Take a Scan as a Member does: press the shutter. */
+export function takeScan() {
+  fireEvent.click(shutter());
 }
 
-/** Done, then the first card once it is read: the line editor for that Scan. */
+/** The photo stack: its name starts with "Review" once the Scan Session holds a card. */
+export const photoStack = () =>
+  screen.getByRole('button', { name: /^(Review|No photos yet)/ });
+
+/** The number on the photo stack's badge: how many cards the Scan Session holds (0 when the stack is empty). */
+export const stackCount = () =>
+  Number(
+    screen.queryByTestId('stack-badge')?.textContent?.replace(/\D/g, '') ?? 0,
+  );
+
+const STACK_STATUS = {
+  reading: (n: number) => new RegExp(`${n} still reading$`),
+  read: () => /all read$/,
+  failed: (n: number) => new RegExp(`${n} couldn't be read$`),
+  uncropped: (n: number) => new RegExp(`${n} receipts? to crop$`),
+};
+
+/**
+ * Expects the photo stack to announce `state` in its accessible name. `n` is the number the name
+ * carries for that state (still reading, failed, to crop); for `read` it is the badge's card count.
+ */
+export function expectStack(state: keyof typeof STACK_STATUS, n = 1): void {
+  expect(photoStack()).toHaveAccessibleName(STACK_STATUS[state](n));
+  if (state === 'read') expect(stackCount()).toBe(n);
+}
+
+/** The photo stack, then the first card once it is read: the line editor for that Scan. */
 export async function openFirstScanCard() {
-  await userEvent.click(await screen.findByRole('button', { name: /^Done/ }));
+  await userEvent.click(
+    await screen.findByRole('button', { name: /^Review \d+ / }),
+  );
   const [card] = await screen.findAllByTestId('card-result');
   await userEvent.click(card);
 }
@@ -49,7 +68,7 @@ function defaults() {
     status: 'ready' as CameraStatus,
     /** Whether the camera has a torch; the flash toggle shows only then. */
     torchSupported: true,
-    /** Whether it supports `single-shot` focus. Off: a Scan's focus pass is the steady 400 ms pause. */
+    /** Whether it supports `single-shot` focus. Off: a Scan's focus pass is the steady pause (`FOCUS_PAUSE_MS`). */
     focusSupported: false,
     /** The frame a Scan captures (null: no live frame, so the capture yields nothing). */
     frame: new Blob(['frame'], { type: 'image/jpeg' }) as Blob | null,

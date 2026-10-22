@@ -1,5 +1,5 @@
 import { RECEIPT_OUTPUT_WIDTH } from './receiptGuide';
-import { guideRect, type Rect } from './scanGuides';
+import { guideRect, type GuideView, type Rect } from './scanGuides';
 
 export type { Rect };
 
@@ -152,11 +152,12 @@ function cropReceiptRegion(
 
 /**
  * Crops a receipt camera frame to the on-screen guide and scales it to the receipt output size.
- * `view` is the size of the aspect-filled feed on screen, which the guide is centred in.
+ * `view` is the size of the aspect-filled feed on screen and its safe-area insets; the guide is
+ * centred in the clear area between the bars.
  */
 export async function cropToReceiptGuide(
   frame: Blob,
-  view: { width: number; height: number },
+  view: GuideView,
 ): Promise<string> {
   const bitmap = await createImageBitmap(frame);
   try {

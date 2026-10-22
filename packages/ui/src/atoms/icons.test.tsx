@@ -10,6 +10,8 @@ import {
   CopyIcon,
   EarIcon,
   EqualIcon,
+  GlobeIcon,
+  ImagePlusIcon,
   LockIcon,
   LogoutIcon,
   MicIcon,
@@ -133,6 +135,8 @@ describe('icons', () => {
       QuoteIcon,
       EqualIcon,
       LockIcon,
+      GlobeIcon,
+      ImagePlusIcon,
     ];
     for (const Glyph of glyphs) {
       const { container, unmount } = render(<Glyph />);

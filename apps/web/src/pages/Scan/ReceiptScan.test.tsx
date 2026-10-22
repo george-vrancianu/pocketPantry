@@ -1,5 +1,5 @@
-import { screen } from '@testing-library/react';
-import { openFirstScanCard, scanViaGuide, fakeCamera } from '../../test/scan';
+import { act, screen } from '@testing-library/react';
+import { openFirstScanCard, takeScan, fakeCamera } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -13,12 +13,14 @@ vi.mock('../../lib/camera', async () =>
   (await import('../../test/scan')).fakeCameraModule(),
 );
 const cropToReceiptAreaMock = vi.hoisted(() => vi.fn());
+const cropToReceiptGuideMock = vi.hoisted(() => vi.fn());
 /** When set, image preparation waits on it, so a test can change the screen mid-preparation. */
 const gate = vi.hoisted(() => ({ current: null as Promise<void> | null }));
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
-  cropToReceiptGuide: async () => {
+  cropToReceiptGuide: async (...args: unknown[]) => {
+    cropToReceiptGuideMock(...args);
     await gate.current;
     return 'data:image/jpeg;base64,Y3JvcA==';
   },
@@ -89,7 +91,7 @@ describe('Receipt Scan on the Scan screen', () => {
       </Routes>,
       { route: '/scan?mode=receipt' },
     );
-    scanViaGuide();
+    takeScan();
     await openFirstScanCard();
     expect(await findReviewRow('Eggs')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
@@ -98,6 +100,26 @@ describe('Receipt Scan on the Scan screen', () => {
       { receiptImage: 'data:image/jpeg;base64,Y3JvcA==' },
     );
     expect(calls.map((c) => c.key)).not.toContain('POST /api/scan/product');
+  });
+
+  it('crops a receipt Scan to the guide: the camera frame and the screen it was framed on', async () => {
+    const { fetchMock } = stubApi({
+      'POST /api/scan/receipt': () => Response.json({ lines: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    cropToReceiptGuideMock.mockClear();
+    renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
+    takeScan();
+    await act(async () => {});
+    expect(cropToReceiptGuideMock).toHaveBeenCalledTimes(1);
+    const [frame, view] = cropToReceiptGuideMock.mock.calls[0];
+    expect(frame).toBe(fakeCamera.frame);
+    // The view carries the screen size and safe areas the guide is centred in.
+    expect(view).toMatchObject({
+      width: expect.any(Number),
+      height: expect.any(Number),
+      insets: { top: expect.any(Number), bottom: expect.any(Number) },
+    });
   });
 
   it('shows the guide and asks the camera for high resolution (as in every mode)', () => {

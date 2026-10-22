@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SCAN_INTERVAL_MS } from './cameraMode';
 import { isValidBarcode } from './gtin';
-import { GUIDE_CENTER_Y } from './scanGuides';
 
-/** Ask for 1080p where the device can, in every Scan Mode so the dial never restarts the stream: a receipt's small print is unreadable at the 640x480 browsers often default to. */
+/** Ask for 1080p where the device can, in every Scan Mode so changing mode never restarts the stream: a receipt's small print is unreadable at the 640x480 browsers often default to. */
 export const HIGH_RESOLUTION_VIDEO = {
   width: { ideal: 1920 },
   height: { ideal: 1080 },
@@ -67,6 +66,8 @@ export type CameraStatus = 'starting' | 'ready' | 'unavailable';
 export const FOCUS_TIMEOUT_MS = 1000;
 /** The steady pause where the browser cannot focus on demand (iOS Safari). */
 export const FOCUS_PAUSE_MS = 400;
+/** Where a focus pass aims, as a fraction of the video height: about the guide's centre (approximate: the feed is object-fit: cover). */
+export const FOCUS_POINT_Y = 0.44;
 
 /** A focus pass started by a hold: `done` resolves once focus finishes, times out or is cancelled. */
 export type FocusPass = { done: Promise<void>; cancel: () => void };
@@ -216,8 +217,8 @@ export function useCamera() {
           {
             focusMode: 'single-shot',
             // Approximate: the feed is object-fit: cover, so the guide centre in the video's own
-            // coordinates is not exactly (0.5, GUIDE_CENTER_Y).
-            pointsOfInterest: [{ x: 0.5, y: GUIDE_CENTER_Y }],
+            // coordinates is not exactly (0.5, FOCUS_POINT_Y).
+            pointsOfInterest: [{ x: 0.5, y: FOCUS_POINT_Y }],
           },
         ],
       } as FocusConstraints)

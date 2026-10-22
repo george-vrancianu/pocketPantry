@@ -10,16 +10,13 @@ export const translucent = (colour: string, percent: number) =>
 /** Dark-first's background as a scrim or drop shadow over the camera feed. */
 export const shade = (percent: number) => translucent(tokens.color.bg, percent);
 
-/** The translucent control look on the dark camera screen: round buttons and the Scan Language chip. */
-export const glassControl = (disabled: boolean) => ({
-  backgroundColor: translucent(tokens.color.surface, 55),
-  color: tokens.color.ink,
-  backdropFilter: 'blur(14px)',
-  cursor: disabled ? 'default' : 'pointer',
-  opacity: disabled ? 0.5 : 1,
-});
-
 export const glassFocusRing = {
   outline: `2px solid ${tokens.color.accent}`,
   outlineOffset: 2,
+};
+
+/** The see-through bar over the feed (the camera's top bar and footer): glass with a blur, never a solid fill. */
+export const glassBar = {
+  backgroundColor: translucent(tokens.color.bg, 55),
+  backdropFilter: 'blur(14px) saturate(1.2)',
 };
