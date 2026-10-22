@@ -280,8 +280,11 @@
     "list": "Răspunsuri",
     "verdict": {
       "yes": "În cămara ta",
-      "no": "Nu e în cămara ta"
+      "no": "Nu e în cămara ta",
+      "onlyExpired": "Doar expirat"
     },
-    "done": "Gata"
+    "done": "Gata",
+    "onShoppingList": "Deja pe Lista de cumpărături",
+    "expiringSoon": "Expiră curând"
   }
 }

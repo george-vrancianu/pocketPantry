@@ -1,5 +1,5 @@
 import type { CatalogLocale } from '../catalog/catalog.schemas';
-import type { VoiceUnit } from '../voice/voice-actions';
+import type { VoiceLocation, VoiceUnit } from '../voice/voice-actions';
 
 /**
  * The one sentence an assistant (Siri) speaks after an Assistant Request.
@@ -26,10 +26,10 @@ export type AssistantActionKind =
 
 /**
  * The answer to one Pantry Question (ADR 0020), mirroring the API's
- * `PantryAnswerKind`. Later kinds (`onlyExpired`, `notSure`) are added here, to
- * `ANSWER_ORDER` and to every dictionary.
+ * `PantryAnswerKind`. A later kind (`notSure`) is added here, to `ANSWER_ORDER`
+ * and to every dictionary.
  */
-export type AssistantAnswerKind = 'yes' | 'no';
+export type AssistantAnswerKind = 'yes' | 'onlyExpired' | 'no';
 
 /** An entry of the outcomes list: what happened to a Voice Action, or the answer to a Pantry Question. */
 export type AssistantOutcomeKind = AssistantActionKind | AssistantAnswerKind;
@@ -48,17 +48,36 @@ export type AssistantActionOutcome = {
   unit?: string | null;
 };
 
-/** The answer to one Pantry Question. Kinds that carry details add their fields here. */
-export type AssistantAnswerOutcome = {
-  kind: AssistantAnswerKind;
-  /** The Ingredient's name in the reply language. */
-  name: string;
-};
+/**
+ * The answer to one Pantry Question. A yes carries what is in stock, each
+ * detail optional so a bare yes still reads; a no and an only expired say
+ * whether the Ingredient is already on the Shopping List.
+ */
+export type AssistantAnswerOutcome =
+  | {
+      kind: 'yes';
+      /** The Ingredient's name in the reply language. */
+      name: string;
+      /** One total per unit (a `VoiceUnit` code), never converted. */
+      totals?: ReadonlyArray<{ unit: string; quantity: number }>;
+      locations?: readonly VoiceLocation[];
+      expiringSoon?: boolean;
+      runningLow?: boolean;
+    }
+  | {
+      kind: 'onlyExpired' | 'no';
+      name: string;
+      onShoppingList?: boolean;
+    };
 
 export type AssistantOutcome = AssistantActionOutcome | AssistantAnswerOutcome;
 
 /** Answer order of a reply; answers come before the outcome clauses. */
-const ANSWER_ORDER: readonly AssistantAnswerKind[] = ['yes', 'no'];
+const ANSWER_ORDER: readonly AssistantAnswerKind[] = [
+  'yes',
+  'onlyExpired',
+  'no',
+];
 const ANSWER_KINDS: ReadonlySet<string> = new Set<string>(ANSWER_ORDER);
 const isAnswer = (
   outcome: AssistantOutcome,
@@ -96,6 +115,18 @@ type Messages = {
   outcomes: Record<AssistantActionKind, string>;
   /** One clause per answer kind; `{items}` is the Ingredient, or the joined list for a kind that is grouped. */
   answers: Record<AssistantAnswerKind, string>;
+  /** The details a yes adds after the Ingredient. */
+  answerDetails: {
+    /** `{locations}` is the joined Locations. */
+    inLocations: string;
+    locations: Record<VoiceLocation, string>;
+    expiringSoon: string;
+    runningLow: string;
+    /** Added to a no or only expired: `{items}` are the ones already on the Shopping List. */
+    onShoppingList: string;
+  };
+  /** The unit word of a bare count beside other units ("milk: 2 litres and 3 pieces"). */
+  pieces: Forms;
   states: Record<AssistantState, string>;
 };
 
@@ -129,7 +160,24 @@ export const assistantMessages = {
       addedUnmatched: 'Added but not recognised: {items}',
       refused: 'Open Pocket Pantry for {items}',
     },
-    answers: { yes: 'You have {items}', no: 'No {items}' },
+    answers: {
+      yes: 'You have {items}',
+      onlyExpired: 'Only expired {items}',
+      no: 'No {items}',
+    },
+    answerDetails: {
+      inLocations: 'in {locations}',
+      locations: {
+        fridge: 'the fridge',
+        freezer: 'the freezer',
+        cupboard: 'the cupboard',
+        spices: 'the spice rack',
+      },
+      expiringSoon: 'some expiring soon',
+      runningLow: 'running low',
+      onShoppingList: '{items} already on your Shopping List',
+    },
+    pieces: plain('piece', 'pieces'),
     states: {
       capReached:
         'You have reached the daily limit for the assistant. Try again tomorrow.',
@@ -160,7 +208,24 @@ export const assistantMessages = {
       addedUnmatched: 'Am adăugat, dar nu am recunoscut: {items}',
       refused: 'Deschide Pocket Pantry pentru {items}',
     },
-    answers: { yes: 'Ai {items}', no: 'Nu ai {items}' },
+    answers: {
+      yes: 'Ai {items}',
+      onlyExpired: 'Doar produse expirate: {items}',
+      no: 'Nu ai {items}',
+    },
+    answerDetails: {
+      inLocations: 'în {locations}',
+      locations: {
+        fridge: 'frigider',
+        freezer: 'congelator',
+        cupboard: 'cămară',
+        spices: 'raftul de condimente',
+      },
+      expiringSoon: 'o parte expiră curând',
+      runningLow: 'pe cale să se termine',
+      onShoppingList: '{items} deja pe Lista de cumpărături',
+    },
+    pieces: { one: 'bucată', few: 'bucăți', other: 'bucăți' },
     states: {
       capReached: 'Ai atins limita zilnică pentru asistent. Încearcă mâine.',
       providerFailed: 'Nu am putut citi cererea acum. Încearcă din nou.',
@@ -190,7 +255,24 @@ export const assistantMessages = {
       addedUnmatched: 'Tilføjet, men ikke genkendt: {items}',
       refused: 'Åbn Pocket Pantry for {items}',
     },
-    answers: { yes: 'Du har {items}', no: 'Du har ikke {items}' },
+    answers: {
+      yes: 'Du har {items}',
+      onlyExpired: 'Kun udløbne varer: {items}',
+      no: 'Du har ikke {items}',
+    },
+    answerDetails: {
+      inLocations: 'i {locations}',
+      locations: {
+        fridge: 'køleskabet',
+        freezer: 'fryseren',
+        cupboard: 'skabet',
+        spices: 'krydderihylden',
+      },
+      expiringSoon: 'noget udløber snart',
+      runningLow: 'ved at løbe tør',
+      onShoppingList: '{items} står allerede på indkøbslisten',
+    },
+    pieces: plain('stykke', 'stykker'),
     states: {
       capReached:
         'Du har nået dagens grænse for assistenten. Prøv igen i morgen.',
@@ -207,6 +289,13 @@ export const ASSISTANT_LOCALES = Object.keys(
 
 /** Answers that get a clause per Ingredient ("You have milk. You have eggs."); the rest are grouped into one list. */
 const OWN_CLAUSE: ReadonlySet<AssistantAnswerKind> = new Set(['yes']);
+
+/** "No butter or eggs" is a choice; "only expired milk and eggs" is a fact about each. */
+const LIST_TYPE: Record<AssistantAnswerKind, 'conjunction' | 'disjunction'> = {
+  yes: 'conjunction',
+  onlyExpired: 'conjunction',
+  no: 'disjunction',
+};
 
 /** Clause order of a reply. */
 const KIND_ORDER: readonly AssistantActionKind[] = [
@@ -234,6 +323,8 @@ const amountPhrase = (
   messages: Messages,
   quantity: number,
   unit: string | null | undefined,
+  /** Say "pieces" for a bare count, as it stands beside other units. */
+  spellPieces = false,
 ): { amount: string; hasUnit: boolean } => {
   const cat = category(locale, quantity);
   const number = messages.count[cat].replace(
@@ -247,6 +338,12 @@ const amountPhrase = (
   }
   const forms = messages.units[unit as VoiceUnit];
   // A known unit without a word (pieces) is a bare count.
+  if (!forms && spellPieces) {
+    return {
+      amount: `${number} ${messages.pieces[cat]}`,
+      hasUnit: true,
+    };
+  }
   return forms
     ? { amount: `${number} ${forms[cat]}`, hasUnit: true }
     : { amount: number, hasUnit: false };
@@ -273,6 +370,50 @@ const itemPhrase = (
     .join(' ');
 };
 
+/** What a yes says about one Ingredient: "2 litres of milk in the fridge, some expiring soon, running low". */
+const yesPhrase = (
+  locale: AssistantLocale,
+  messages: Messages,
+  outcome: Extract<AssistantAnswerOutcome, { kind: 'yes' }>,
+): string => {
+  const totals = outcome.totals ?? [];
+  const what = (() => {
+    if (totals.length === 0) return outcome.name;
+    if (totals.length === 1) {
+      const { amount, hasUnit } = amountPhrase(
+        locale,
+        messages,
+        totals[0].quantity,
+        totals[0].unit,
+      );
+      return [amount, hasUnit ? messages.unitOf : '', outcome.name]
+        .filter(Boolean)
+        .join(' ');
+    }
+    const amounts = totals.map(
+      (total) =>
+        amountPhrase(locale, messages, total.quantity, total.unit, true).amount,
+    );
+    return `${outcome.name}: ${joinList(locale, amounts)}`;
+  })();
+  const details = messages.answerDetails;
+  const locations = outcome.locations ?? [];
+  const where = locations.length
+    ? ` ${details.inLocations.replace(
+        '{locations}',
+        joinList(
+          locale,
+          locations.map((location) => details.locations[location]),
+        ),
+      )}`
+    : '';
+  const flags = [
+    outcome.expiringSoon ? details.expiringSoon : '',
+    outcome.runningLow ? details.runningLow : '',
+  ].filter(Boolean);
+  return `${what}${where}${flags.map((flag) => `, ${flag}`).join('')}`;
+};
+
 /** "a", "a and b", "a, b and c" in the locale's own conjunction (answers use "or"). */
 const joinList = (
   locale: AssistantLocale,
@@ -289,16 +430,36 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
   if (all.length === 0) return messages.states.nothingUnderstood;
 
   const answerClauses = ANSWER_ORDER.flatMap((kind) => {
-    const names = all
+    const answers = all
       .filter(isAnswer)
-      .filter((outcome) => outcome.kind === kind)
-      .map((outcome) => outcome.name);
-    if (names.length === 0) return [];
+      .filter((outcome) => outcome.kind === kind);
+    if (answers.length === 0) return [];
     const say = (items: string) =>
       messages.answers[kind].replace('{items}', items);
-    return OWN_CLAUSE.has(kind)
-      ? names.map(say)
-      : [say(joinList(locale, names, 'disjunction'))];
+    if (OWN_CLAUSE.has(kind)) {
+      return answers.map((answer) =>
+        say(
+          answer.kind === 'yes'
+            ? yesPhrase(locale, messages, answer)
+            : answer.name,
+        ),
+      );
+    }
+    const covered = answers.flatMap((answer) =>
+      answer.kind !== 'yes' && answer.onShoppingList ? [answer.name] : [],
+    );
+    const grouped = say(
+      joinList(
+        locale,
+        answers.map((answer) => answer.name),
+        LIST_TYPE[kind],
+      ),
+    );
+    return [
+      covered.length
+        ? `${grouped}, ${messages.answerDetails.onShoppingList.replace('{items}', joinList(locale, covered))}`
+        : grouped,
+    ];
   });
   const clauses = KIND_ORDER.flatMap((kind) => {
     const items = all

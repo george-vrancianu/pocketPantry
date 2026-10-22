@@ -22,8 +22,23 @@ const milk = voiceIngredient('ing-milk', 'Milk');
 const butter = voiceIngredient('ing-butter', 'Butter');
 
 const answers = [
-  { id: 'q1', kind: 'yes', text: 'do we have milk', ingredient: milk },
-  { id: 'q2', kind: 'no', text: 'and butter', ingredient: butter },
+  {
+    id: 'q1',
+    kind: 'yes',
+    text: 'do we have milk',
+    ingredient: milk,
+    totals: [{ unit: 'l', quantity: 2 }],
+    locations: ['fridge'],
+    expiringSoon: false,
+    runningLow: false,
+  },
+  {
+    id: 'q2',
+    kind: 'no',
+    text: 'and butter',
+    ingredient: butter,
+    onShoppingList: false,
+  },
 ];
 
 describe('the answer sheet for Pantry Questions', () => {
@@ -109,6 +124,76 @@ describe('the answer sheet for Pantry Questions', () => {
       expect(calls.some((url) => url.endsWith('/voice/apply'))).toBe(false);
     },
   );
+
+  // Spec: #461. The rows show the details the Assistant speaks; an off-page case (Home, no Default List).
+  it('shows the details of each answer kind', async () => {
+    const eggs = voiceIngredient('ing-eggs', 'Eggs');
+    const flour = voiceIngredient('ing-flour', 'Flour');
+    setup({
+      actions: [],
+      answers: [
+        {
+          id: 'q1',
+          kind: 'yes',
+          text: 'milk',
+          ingredient: milk,
+          totals: [
+            { unit: 'ml', quantity: 500 },
+            { unit: 'l', quantity: 1.5 },
+          ],
+          locations: ['fridge', 'freezer'],
+          expiringSoon: true,
+          runningLow: true,
+        },
+        {
+          id: 'q2',
+          kind: 'yes',
+          text: 'salt',
+          ingredient: voiceIngredient('ing-salt', 'Salt'),
+          totals: [],
+          locations: [],
+          expiringSoon: false,
+          runningLow: false,
+        },
+        {
+          id: 'q3',
+          kind: 'onlyExpired',
+          text: 'eggs',
+          ingredient: eggs,
+          onShoppingList: true,
+        },
+        {
+          id: 'q4',
+          kind: 'no',
+          text: 'butter',
+          ingredient: butter,
+          onShoppingList: false,
+        },
+        {
+          id: 'q5',
+          kind: 'no',
+          text: 'flour',
+          ingredient: flour,
+          onShoppingList: true,
+        },
+      ],
+    });
+    const dialog = within(await ask(<p>home</p>, '/'));
+    const rows = dialog.getAllByRole('listitem');
+    expect(rows).toHaveLength(5);
+    expect(rows[0]).toHaveTextContent('In your Pantry');
+    expect(rows[0]).toHaveTextContent('500 ml · 1.5 L · Fridge · Freezer');
+    expect(rows[0]).toHaveTextContent('Expiring soon');
+    expect(rows[0]).toHaveTextContent('Running low');
+    expect(rows[1]).toHaveTextContent('In your Pantry');
+    expect(rows[1]).not.toHaveTextContent('Expiring soon');
+    expect(rows[1]).not.toHaveTextContent('Running low');
+    expect(rows[2]).toHaveTextContent('Only expired');
+    expect(rows[2]).toHaveTextContent('Already on your Shopping List');
+    expect(rows[3]).toHaveTextContent('Not in your Pantry');
+    expect(rows[3]).not.toHaveTextContent('Shopping List');
+    expect(rows[4]).toHaveTextContent('Already on your Shopping List');
+  });
 
   it('keeps Review for a note with actions, even beside answers', async () => {
     setup({

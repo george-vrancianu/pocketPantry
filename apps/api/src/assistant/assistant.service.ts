@@ -146,10 +146,23 @@ export class AssistantService {
               : undefined) ?? displayName(action));
       // Answers to Pantry Questions come first, as they are spoken first.
       outcomes = [
-        ...read.answers.map((answer): AssistantOutcome => ({
-          kind: answer.kind,
-          name: nameOf(answer),
-        })),
+        ...read.answers.map((answer): AssistantOutcome => {
+          const name = nameOf(answer);
+          return answer.kind === 'yes'
+            ? {
+                kind: 'yes',
+                name,
+                totals: answer.totals,
+                locations: answer.locations,
+                expiringSoon: answer.expiringSoon,
+                runningLow: answer.runningLow,
+              }
+            : {
+                kind: answer.kind,
+                name,
+                onShoppingList: answer.onShoppingList,
+              };
+        }),
         ...resolved.map((action, index) =>
           outcomeOf(action, drafts[index], result, nameOf(action)),
         ),

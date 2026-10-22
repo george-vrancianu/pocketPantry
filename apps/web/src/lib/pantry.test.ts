@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import fixture from '../../../../fixtures/pantry-answers.json';
 import {
   defaultExpiryDate,
   expiryTagFor,
   countByLocation,
+  daysUntil,
+  fromIso,
   groupByLocation,
   isExpiringSoon,
   matchesSearch,
@@ -218,6 +221,43 @@ describe('rollUp', () => {
       ['Rice', 1],
       ['Zorblax', 2],
     ]);
+  });
+});
+
+// Spec: #461. The API's Pantry answer (apps/api/src/voice/pantry-answers.spec.ts) reads the same fixture, so
+// the server-side totals and Expiring Soon cannot drift from this roll-up (ADR 0002, ADR 0020).
+describe('rollUp against the shared Pantry answer fixture', () => {
+  const fixtureToday = fromIso(fixture.today);
+
+  it.each(fixture.cases)('$name', (testCase) => {
+    // The answer counts the Batches that are not Expired, as stock.
+    const stock = testCase.batches
+      .filter(
+        (batch) =>
+          batch.expiryDate === null || batch.expiryDate >= fixture.today,
+      )
+      .map((batch) =>
+        make({
+          ...batch,
+          unit: batch.unit as Batch['unit'],
+          location: batch.location as Batch['location'],
+        }),
+      );
+    const [row] = rollUp(stock);
+    expect(row.totals).toEqual(testCase.expected.totals);
+    expect([...new Set(stock.map((batch) => batch.location))].sort()).toEqual(
+      [...testCase.expected.locations].sort(),
+    );
+    expect(
+      stock.some(
+        (batch) =>
+          batch.expiryDate !== null &&
+          isExpiringSoon(
+            daysUntil(batch.expiryDate, fixtureToday),
+            testCase.staleThresholdDays,
+          ),
+      ),
+    ).toBe(testCase.expected.expiringSoon);
   });
 });
 

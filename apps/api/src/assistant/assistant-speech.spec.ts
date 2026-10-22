@@ -347,4 +347,162 @@ describe('assistantSpeech', () => {
       }
     });
   });
+
+  // Spec: #461. What a yes carries, only expired, and the Shopping List note.
+  describe('full answers', () => {
+    type Yes = Extract<AssistantOutcome, { kind: 'yes' }>;
+    const stock = (details: Partial<Yes>, name = 'milk'): AssistantOutcome => ({
+      kind: 'yes',
+      name,
+      ...details,
+    });
+    const litres = (quantity: number) => ({ unit: 'l', quantity });
+
+    it('speaks the quantity with its unit', () => {
+      expect(say('en', [stock({ totals: [litres(2)] })])).toBe(
+        'You have 2 litres of milk.',
+      );
+    });
+
+    it('uses the singular for one', () => {
+      expect(say('en', [stock({ totals: [litres(1)] })])).toBe(
+        'You have 1 litre of milk.',
+      );
+    });
+
+    it('speaks a bare count of pieces without a unit word', () => {
+      expect(
+        say('en', [stock({ totals: [{ unit: 'pcs', quantity: 6 }] }, 'eggs')]),
+      ).toBe('You have 6 eggs.');
+    });
+
+    it('reports mixed units separately, never converted', () => {
+      expect(
+        say('en', [
+          stock({
+            totals: [litres(1), { unit: 'pcs', quantity: 1 }],
+          }),
+        ]),
+      ).toBe('You have milk: 1 litre and 1 piece.');
+    });
+
+    it('speaks the Locations, Expiring Soon and Running low', () => {
+      expect(
+        say('en', [
+          stock({
+            totals: [litres(2)],
+            locations: ['fridge', 'freezer'],
+            expiringSoon: true,
+            runningLow: true,
+          }),
+        ]),
+      ).toBe(
+        'You have 2 litres of milk in the fridge and the freezer, some expiring soon, running low.',
+      );
+    });
+
+    it('speaks Running low alone after a bare yes', () => {
+      expect(say('en', [stock({ runningLow: true }, 'salt')])).toBe(
+        'You have salt, running low.',
+      );
+    });
+
+    it('groups only expired into one list', () => {
+      expect(
+        say('en', [
+          { kind: 'onlyExpired', name: 'milk' },
+          { kind: 'onlyExpired', name: 'eggs' },
+        ]),
+      ).toBe('Only expired milk and eggs.');
+    });
+
+    it('says which of a no or an only expired are already on the Shopping List', () => {
+      expect(
+        say('en', [
+          { kind: 'no', name: 'butter' },
+          { kind: 'no', name: 'eggs', onShoppingList: true },
+          { kind: 'onlyExpired', name: 'milk', onShoppingList: true },
+        ]),
+      ).toBe(
+        'Only expired milk, milk already on your Shopping List. No butter or eggs, eggs already on your Shopping List.',
+      );
+    });
+
+    it('speaks yes, only expired and no in that order', () => {
+      expect(
+        say('en', [
+          { kind: 'no', name: 'butter' },
+          { kind: 'onlyExpired', name: 'milk' },
+          stock({}, 'rice'),
+        ]),
+      ).toBe('You have rice. Only expired milk. No butter.');
+    });
+
+    it('speaks every clause in Romanian', () => {
+      expect(
+        say('ro', [
+          stock(
+            {
+              totals: [{ unit: 'l', quantity: 21 }],
+              locations: ['fridge', 'spices'],
+              expiringSoon: true,
+              runningLow: true,
+            },
+            'lapte',
+          ),
+          stock({ totals: [litres(1), { unit: 'pcs', quantity: 3 }] }, 'unt'),
+          { kind: 'onlyExpired', name: 'ouă' },
+          { kind: 'no', name: 'pâine', onShoppingList: true },
+          { kind: 'no', name: 'orez' },
+        ]),
+      ).toBe(
+        'Ai 21 de litri de lapte în frigider și raftul de condimente, o parte expiră curând, pe cale să se termine. ' +
+          'Ai unt: 1 litru și 3 bucăți. ' +
+          'Doar produse expirate: ouă. ' +
+          'Nu ai pâine sau orez, pâine deja pe Lista de cumpărături.',
+      );
+    });
+
+    it('speaks every clause in Danish', () => {
+      expect(
+        say('da', [
+          stock(
+            {
+              totals: [litres(2)],
+              locations: ['cupboard'],
+              expiringSoon: true,
+              runningLow: true,
+            },
+            'mælk',
+          ),
+          stock({ totals: [litres(1), { unit: 'pcs', quantity: 2 }] }, 'smør'),
+          { kind: 'onlyExpired', name: 'æg' },
+          { kind: 'no', name: 'brød', onShoppingList: true },
+          { kind: 'no', name: 'ris' },
+        ]),
+      ).toBe(
+        'Du har 2 liter mælk i skabet, noget udløber snart, ved at løbe tør. ' +
+          'Du har smør: 1 liter og 2 stykker. ' +
+          'Kun udløbne varer: æg. ' +
+          'Du har ikke brød eller ris, brød står allerede på indkøbslisten.',
+      );
+    });
+
+    it('leaves no placeholders in any locale', () => {
+      for (const locale of ASSISTANT_LOCALES) {
+        expect(
+          say(locale, [
+            stock({
+              totals: [litres(2), { unit: 'pcs', quantity: 1 }],
+              locations: ['spices'],
+              expiringSoon: true,
+              runningLow: true,
+            }),
+            { kind: 'onlyExpired', name: 'Y', onShoppingList: true },
+            { kind: 'no', name: 'Z', onShoppingList: true },
+          ]),
+        ).not.toMatch(/[{}]/);
+      }
+    });
+  });
 });

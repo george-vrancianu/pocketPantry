@@ -272,8 +272,11 @@
     "list": "Svar",
     "verdict": {
       "yes": "I dit spisekammer",
-      "no": "Ikke i dit spisekammer"
+      "no": "Ikke i dit spisekammer",
+      "onlyExpired": "Kun udløbet"
     },
-    "done": "Færdig"
+    "done": "Færdig",
+    "onShoppingList": "Allerede på indkøbslisten",
+    "expiringSoon": "Udløber snart"
   }
 }

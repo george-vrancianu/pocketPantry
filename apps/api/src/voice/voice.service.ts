@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { and, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import {
   SCAN_LANGUAGES,
@@ -32,6 +33,7 @@ import {
 import type { ResolveContext, VoiceActionHandler } from './voice-handlers';
 import { VoiceHandlers } from './voice-handlers.registry';
 import { PantryService } from '../pantry/pantry.service';
+import { RunningLowService } from '../pantry/running-low.service';
 import {
   answerPantryQuestions,
   type PantryAnswer,
@@ -118,6 +120,7 @@ export class VoiceService {
     private readonly settings: SettingsService,
     private readonly shopping: ShoppingService,
     private readonly pantry: PantryService,
+    private readonly runningLow: RunningLowService,
     private readonly handlers: VoiceHandlers,
     private readonly config: ConfigService<AppConfig, true>,
     @Inject(DATABASE) private readonly database: Database,
@@ -306,6 +309,19 @@ export class VoiceService {
     const answers = asked.length
       ? answerPantryQuestions(asked, {
           batches: await ctx.lists.pantryBatches(),
+          shoppingIngredientIds: new Set(
+            shoppingItems.flatMap((item) =>
+              item.ingredientId ? [item.ingredientId] : [],
+            ),
+          ),
+          runningLowIds: new Set(await this.runningLow.list(memberId)),
+          pantryBasicIds: await this.pantryBasicsAmong(
+            scope,
+            asked.map((entry) => entry.ingredient.id),
+          ),
+          staleThresholdDays: await this.settings.staleThresholdOf(
+            await this.settings.familyIdOf(memberId),
+          ),
           today: input.today,
         })
       : [];
@@ -318,6 +334,24 @@ export class VoiceService {
       spokenLanguage: read.spokenLanguage,
       spokenNames,
     };
+  }
+
+  /** The Pantry Basics (water, salt) among the Ingredients; Family Ingredients count like shared ones. */
+  private async pantryBasicsAmong(
+    scope: Awaited<ReturnType<SettingsService['catalogScopeForMember']>>,
+    ingredientIds: string[],
+  ): Promise<Set<string>> {
+    const ingredients = scope.ingredients(this.database);
+    const rows = await this.database
+      .select({ id: ingredients.id })
+      .from(ingredients)
+      .where(
+        and(
+          inArray(ingredients.id, ingredientIds),
+          eq(ingredients.pantryBasic, true),
+        ),
+      );
+    return new Set(rows.map((row) => row.id));
   }
 
   /** The draft resolved by its (target, op) handler; undefined when no handler is registered. */

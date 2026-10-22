@@ -1,8 +1,6 @@
 import {
   Box,
   Button,
-  CheckIcon,
-  CloseIcon,
   Sheet,
   Typography,
   palette,
@@ -12,31 +10,10 @@ import {
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { focusVoiceButton } from '../../lib/voiceFocus';
-import type { VoiceAnswer, VoiceAnswerKind } from '../../lib/voice';
 import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
-import { IngredientIconSlot } from '../IngredientIconSlot';
 import { HeardCard } from './HeardCard';
-
-/**
- * How each kind of answer looks: its mark and its words (voice namespace). The one place to add a
- * kind: a new member of `VoiceAnswer` needs an entry here, and a `detail` line when it carries more.
- */
-const ANSWER: Record<
-  VoiceAnswerKind,
-  { icon: React.ReactNode; verdict: string; tone: string }
-> = {
-  yes: {
-    icon: <CheckIcon size={18} />,
-    verdict: 'answers.verdict.yes',
-    tone: 'success-main',
-  },
-  no: {
-    icon: <CloseIcon size={18} />,
-    verdict: 'answers.verdict.no',
-    tone: 'text-secondary',
-  },
-};
+import { PantryAnswerRow } from './PantryAnswerRow';
 
 /** The answer sheet for a Voice Note of only Pantry Questions: read-only, closed with Done. */
 export function VoiceAnswers() {
@@ -116,55 +93,10 @@ function AnswerSheet() {
           }}
         >
           {answers.map((answer) => (
-            <AnswerRow key={answer.id} answer={answer} />
+            <PantryAnswerRow key={answer.id} answer={answer} />
           ))}
         </Box>
       </Box>
     </Sheet>
-  );
-}
-
-/** One answer: the Ingredient Icon and name, then the verdict for its kind. */
-function AnswerRow({ answer }: { answer: VoiceAnswer }) {
-  const { t } = useTranslation('voice');
-  const look = ANSWER[answer.kind];
-  return (
-    <Box
-      component="li"
-      data-voice-answer={answer.id}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '11px',
-        minHeight: 60,
-        py: '9px',
-        px: '12px',
-        '& + &': { borderTop: `1px solid ${palette('divider')}` },
-      }}
-    >
-      <IngredientIconSlot
-        ingredientId={answer.ingredient.id}
-        aisleId={answer.ingredient.parentCategory.aisle.id}
-      />
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ fontSize: 15, fontWeight: 600 }}>
-          {answer.ingredient.name}
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            fontSize: 13,
-            color: palette(look.tone),
-          }}
-        >
-          <Box component="span" aria-hidden sx={{ display: 'flex' }}>
-            {look.icon}
-          </Box>
-          {t(look.verdict)}
-        </Box>
-      </Box>
-    </Box>
   );
 }
