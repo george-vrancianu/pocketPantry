@@ -1,4 +1,4 @@
-# Pocket Pantry
+# PantryGator
 
 A kitchen app for a person or a family: scan groceries into a shared pantry, keep a shared shopping list, and (later) cook from recipes that match what you have.
 
@@ -252,7 +252,7 @@ A short recording a Member makes from the Dock on any page that shows it, read i
 _Avoid_: Voice scan, voice command, dictation
 
 **Default List**:
-The list a Voice Note's Voice Actions target when they name none: the Shopping List when recorded on the Shopping List, the Pantry when recorded on the Pantry, and none on any other page. With no Default List, a Voice Action counts as naming a list when the Member says one or gives a clear cue, such as a Location or expiry date for the Pantry, or "need" or "buy" for the Shopping List; otherwise the Member picks the list in Review. An Assistant Request always has the Shopping List as its Default List.
+The list a Voice Note's Voice Actions target when they name none: the Shopping List when recorded on the Shopping List, the Pantry when recorded on the Pantry or during Setup, and none on any other page. With no Default List, a Voice Action counts as naming a list when the Member says one or gives a clear cue, such as a Location or expiry date for the Pantry, or "need" or "buy" for the Shopping List; otherwise the Member picks the list in Review. An Assistant Request always has the Shopping List as its Default List.
 _Avoid_: Target, context, current list
 
 **Spoken Language**:
@@ -260,7 +260,7 @@ The language a Voice Note is spoken in. Defaults to the Member's Spoken Language
 _Avoid_: Voice language, Scan Language (for Voice Notes)
 
 **Voice Action**:
-One change read from spoken or dictated text: adding, removing, checking or unchecking a Shopping Item or setting its quantity, adding or removing Batches, or flagging an Ingredient Running low. From a Voice Note, nothing is applied until the Member confirms it in Review. An Assistant Request may apply a Voice Action without Review, but only the safe kinds: adding a Shopping Item and flagging an Ingredient Running low. Every other kind is refused.
+One change read from spoken or dictated text: adding, removing, checking or unchecking a Shopping Item or setting its quantity, adding or removing Batches, or flagging an Ingredient Running low. From a Voice Note, nothing is applied until the Member confirms it in Review. An Assistant Request may apply a Voice Action without Review, but only the safe kinds: adding a Shopping Item, checking a Shopping Item already on the list, and flagging an Ingredient Running low. Every other kind is refused.
 _Avoid_: Command, intent, voice line
 
 **Pantry Question**:
@@ -273,7 +273,7 @@ _Avoid_: Voice quota, Scan Cap (a separate limit)
 
 **Assistant Request**:
 Text a Member dictates to a voice assistant (today only Siri, through an Apple Shortcut) and the Shortcut sends to the API with an Assistant Token. It is read into Voice Actions like a Voice Note, but the safe ones are applied at once with no Review and the rest are refused. The reply is one sentence for the assistant to speak, in the language the Member spoke (the UI Language when that can't be told); what is written follows the Catalog Language. Not a Voice Note (no recording, no transcription) and not a Scan; the text is not stored.
-_Avoid_: Siri command, assistant call, Voice Note
+_Avoid_: Siri command, assistant call, Voice Note, Gator (the mascot, even when a Shortcut's phrase names it)
 
 **Assistant Cap**:
 The maximum number of Assistant Requests a Member may make per day. Separate from the Voice Cap and the Scan Cap, so using Siri never locks a Member out of in-app Voice Notes.
@@ -333,6 +333,10 @@ _Avoid_: Instruction, direction
 A Recipe whose required Ingredient Lines are all covered by the Pantry's unexpired Batches. Optional lines and Pantry Basics never block it.
 _Avoid_: Cookable, available, in stock
 
+**Cook Tonight**:
+The Recipes a Family's Pantry can make now, or with one required Ingredient Line short, one per Base Recipe, best match first.
+_Avoid_: Suggestions, what to cook, use it up
+
 **Pairing**:
 A food or drink that goes well with a Recipe, with a reason why. It may link to a Catalog Ingredient or another Recipe.
 _Avoid_: Match, side, suggestion
@@ -376,6 +380,20 @@ _Avoid_: Grace period, trash
 **Row hint**:
 The one-time pill and peek that teach a list's swipe and hold gestures, shown once per list and remembered on the device. Not a Tip, which is cooking advice on a Recipe.
 _Avoid_: Tutorial, onboarding
+
+### Intro
+
+**Gator**:
+The app's mascot, an alligator who speaks the app's own lines in the first person. A character, not a feature: what Gator says describes only real features.
+_Avoid_: Assistant, bot, AI
+
+**Intro**:
+The screens a new Member goes through once, after which they land on the Dashboard: choosing their languages, creating an account, and an optional Setup. Shown once per Member, never again on another device.
+_Avoid_: Onboarding, tutorial, walkthrough, welcome flow
+
+**Setup**:
+The two optional tries in the Intro, one Scan and one Voice Note, each taken from the real Dock and saved through the real Review. Either can be skipped.
+_Avoid_: Demo, practice, trial
 
 ### Dashboard
 
