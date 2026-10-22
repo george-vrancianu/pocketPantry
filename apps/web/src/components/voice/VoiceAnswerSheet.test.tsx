@@ -690,6 +690,46 @@ describe('the answer sheet for Pantry Questions', () => {
       expect(applyPayloads[1].actions.map((a) => a.id)).toEqual(['a1', 'a2']);
     });
 
+    // After the add, "Nothing was changed" would be false: the sheet drops its subline and Discard its hint.
+    it('drops the "Nothing was changed" subline from the sheet after the add', async () => {
+      setup({ actions: [], answers: mixed }, onList);
+      const dialog = within(await ask(<p>home</p>, '/'));
+      expect(dialog.getByText('Nothing was changed')).toBeVisible();
+
+      await userEvent.click(await addButton(3));
+      await act(() => vi.advanceTimersByTimeAsync(10));
+
+      expect(await screen.findByText('3 applied')).toBeVisible();
+      expect(dialog.queryByText('Nothing was changed')).toBeNull();
+    });
+
+    it('does not say "Nothing was changed" when Review is discarded after the add', async () => {
+      setup(
+        {
+          actions: [
+            voiceAction({ id: 'a1', target: 'shopping', text: 'bread' }),
+          ],
+          answers: mixed,
+        },
+        onList,
+      );
+      const dialog = within(await ask(<p>home</p>, '/'));
+      const card = within(dialog.getByRole('region', { name: 'Your Pantry' }));
+
+      await userEvent.click(
+        card.getByRole('button', { name: 'Add 3 to the Shopping List' }),
+      );
+      await act(() => vi.advanceTimersByTimeAsync(10));
+      expect(await screen.findByText('3 applied')).toBeVisible();
+
+      await userEvent.click(dialog.getByRole('button', { name: 'Discard' }));
+      await userEvent.click(dialog.getByRole('button', { name: 'Discard' }));
+      await act(() => vi.advanceTimersByTimeAsync(10));
+
+      expect(await screen.findByText('Voice Note discarded')).toBeVisible();
+      expect(screen.queryByText(/Nothing was changed/)).toBeNull();
+    });
+
     const applyBodies = () =>
       calls.filter((url) => url.endsWith('/voice/apply')).length;
   });

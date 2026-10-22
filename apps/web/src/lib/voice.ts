@@ -89,8 +89,8 @@ export type VoiceReviewAction = {
 
 /**
  * The answer to one Pantry Question (ADR 0020), as the server read it. Mirrors the API's
- * `PantryAnswer`: `kind` is the discriminant, and each later kind (only expired, not sure, ...)
- * is a new member carrying its own details.
+ * `PantryAnswer`: `kind` is the discriminant (yes, only expired, no, not sure), and
+ * each kind is a member carrying its own details.
  */
 type VoiceAnswerBase = {
   id: string;

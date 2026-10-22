@@ -246,9 +246,9 @@ describe('assistantSpeech', () => {
 
   describe('refused', () => {
     it.each([
-      ['en', 'Open Pocket Pantry for', 'eggs and bread'],
-      ['ro', 'Deschide Pocket Pantry pentru', 'eggs și bread'],
-      ['da', 'Åbn Pocket Pantry for', 'eggs og bread'],
+      ['en', 'Open PantryGator for', 'eggs and bread'],
+      ['ro', 'Deschide PantryGator pentru', 'eggs și bread'],
+      ['da', 'Åbn PantryGator for', 'eggs og bread'],
     ] as const)(
       'names the items and points to the app in %s',
       (locale, open, expected) => {

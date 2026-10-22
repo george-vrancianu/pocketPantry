@@ -7,7 +7,7 @@ import {
   radius,
   shadow,
 } from '@pocket-pantry/ui';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { focusVoiceButton } from '../../lib/voiceFocus';
 import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
@@ -27,6 +27,7 @@ function AnswerSheet() {
   const { proposal, recording } = useVoiceNoteState();
   const { scanLanguage } = useScanLanguage();
   const title = useRef<HTMLHeadingElement>(null);
+  const [added, setAdded] = useState(false);
   const answers = proposal?.answers ?? [];
 
   const done = () => {
@@ -51,9 +52,11 @@ function AnswerSheet() {
           >
             {t('answers.title')}
           </Typography>
-          <Typography sx={{ fontSize: 13, color: palette('text-secondary') }}>
-            {t('answers.subline')}
-          </Typography>
+          {added ? null : (
+            <Typography sx={{ fontSize: 13, color: palette('text-secondary') }}>
+              {t('answers.subline')}
+            </Typography>
+          )}
         </Box>
       }
       footer={
@@ -99,7 +102,10 @@ function AnswerSheet() {
         </Box>
         <AddToShoppingListButton
           answers={answers}
-          onAdded={() => title.current?.focus()}
+          onAdded={() => {
+            setAdded(true);
+            title.current?.focus();
+          }}
         />
       </Box>
     </Sheet>

@@ -68,7 +68,7 @@ export type AnswerBatch = {
   expiryDate: string | null;
 };
 
-/** What the answers are read from; later kinds add fields (Unmatched rows). */
+/** What the answers are read from: the Pantry's batches plus what is on the Shopping List. */
 export type AnswerContext = {
   batches: readonly AnswerBatch[];
   /** The Ingredients that have a line on the Shopping List. */

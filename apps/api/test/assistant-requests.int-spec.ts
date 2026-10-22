@@ -265,7 +265,7 @@ describe('Assistant Requests (integration)', () => {
         reply(response).outcomes.map((o: { kind: string }) => o.kind),
       ).toEqual(['added', 'flaggedRunningLow', 'refused', 'refused']);
       expect(await used(ana.id)).toBe(1); // one charge for the whole request
-      expect(reply(response).speech).toContain('Open Pocket Pantry');
+      expect(reply(response).speech).toContain('Open PantryGator');
       expect(await list(ana.cookie)).toMatchObject([{ name: 'Eggs' }]);
       const pantry = (
         await client(app, ana.cookie, '/api/pantry').get('?locale=en')
@@ -547,7 +547,7 @@ describe('Assistant Requests (integration)', () => {
       expect(reply(response).outcomes).toMatchObject([
         { kind: 'refused', name: 'Milk' },
       ]);
-      expect(reply(response).speech).toBe('Open Pocket Pantry for Milk.');
+      expect(reply(response).speech).toBe('Open PantryGator for Milk.');
     });
 
     it('says an item is already on the list in the language spoken', async () => {

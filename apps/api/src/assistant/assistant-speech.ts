@@ -164,7 +164,7 @@ export const assistantMessages = {
       addedBecauseRunningLowNoBatch:
         'Added to your Shopping List because there is no stock: {items}',
       addedUnmatched: 'Added but not recognised: {items}',
-      refused: 'Open Pocket Pantry for {items}',
+      refused: 'Open PantryGator for {items}',
     },
     answers: {
       yes: 'You have {items}',
@@ -214,7 +214,7 @@ export const assistantMessages = {
       addedBecauseRunningLowNoBatch:
         'Am adăugat pe Lista de cumpărături, fiindcă nu mai este în stoc: {items}',
       addedUnmatched: 'Am adăugat, dar nu am recunoscut: {items}',
-      refused: 'Deschide Pocket Pantry pentru {items}',
+      refused: 'Deschide PantryGator pentru {items}',
     },
     answers: {
       yes: 'Ai {items}',
@@ -267,7 +267,7 @@ export const assistantMessages = {
       addedBecauseRunningLowNoBatch:
         'Føjet til indkøbslisten, fordi der ikke er mere på lager: {items}',
       addedUnmatched: 'Tilføjet, men ikke genkendt: {items}',
-      refused: 'Åbn Pocket Pantry for {items}',
+      refused: 'Åbn PantryGator for {items}',
     },
     answers: {
       yes: 'Du har {items}',
@@ -461,13 +461,14 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
     const say = (items: string) =>
       messages.answers[kind].replace('{items}', items);
     if (kind === 'yes') {
-      return answers.map((answer) =>
-        say(
-          answer.kind === 'yes'
-            ? yesPhrase(locale, messages, answer)
-            : answer.name,
-        ),
-      );
+      return answers
+        .filter(
+          (
+            answer,
+          ): answer is Extract<AssistantAnswerOutcome, { kind: 'yes' }> =>
+            answer.kind === 'yes',
+        )
+        .map((answer) => say(yesPhrase(locale, messages, answer)));
     }
     const covered = answers.flatMap((answer) =>
       'onShoppingList' in answer && answer.onShoppingList ? [answer.name] : [],

@@ -86,6 +86,8 @@ function ReviewSheet() {
   // The Pantry Questions' answers: a read-only card above the rows; Apply never sends them.
   const answers = proposal?.answers ?? [];
   const transcript = proposal?.transcript ?? '';
+  // Set once "Add N to the Shopping List" ran: a later Discard no longer changes nothing.
+  const [addedFromAnswers, setAddedFromAnswers] = useState(false);
   // What the server heard of each expiry, to tell it from one picked here.
   const [spoken] = useState(
     () => new Map(actions.map((a) => [a.id, a.expiresOn])),
@@ -160,8 +162,11 @@ function ReviewSheet() {
 
   const discard = () => {
     voiceNote.discard();
+    // After "Add N to the Shopping List" something was changed, so the hint would be false.
     toast.show(
-      `${t('voice:review.footer.discarded')} · ${t('voice:review.footer.discardedHint')}`,
+      addedFromAnswers
+        ? t('voice:review.footer.discarded')
+        : `${t('voice:review.footer.discarded')} · ${t('voice:review.footer.discardedHint')}`,
       voiceToast(),
     );
     focusVoiceButton();
@@ -330,7 +335,10 @@ function ReviewSheet() {
             after={
               <AddToShoppingListButton
                 answers={answers}
-                onAdded={() => title.current?.focus()}
+                onAdded={() => {
+                  setAddedFromAnswers(true);
+                  title.current?.focus();
+                }}
               />
             }
           >
