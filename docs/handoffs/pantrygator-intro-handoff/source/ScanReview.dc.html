@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reading photos with Gator</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&amp;family=Instrument+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#5F6F2E}a:hover{color:#4A5722}
+</style>
+</helmet>
+<div style="width: 864px; height: 912px; box-sizing: border-box; padding: 48px; background: #EDE5D6; font-family: 'Instrument Sans', system-ui, sans-serif; color: #2B2418; display: flex; gap: 48px">
+
+  <!-- 3 · Review overview while reading -->
+  <div style="display: flex; flex-direction: column; gap: 16px; width: 360px">
+    <div style="font-size: 15px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #766A58; height: 24px">Review · still reading</div>
+    <div style="position: relative; width: 360px; height: 760px; border-radius: 40px; overflow: hidden; background: #F3EDE1; border: 1px solid #D6C9B2; box-shadow: 0 14px 34px -10px rgba(60,40,10,.28); box-sizing: border-box; padding: 48px 16px 0; display: flex; flex-direction: column; gap: 10px">
+      <a href="#" style="font-size: 14px; font-weight: 600; padding: 0 4px">‹ Camera</a>
+      <div style="padding: 0 4px"><div style="font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 26px">Review</div><div style="font-size: 14px; color: #766A58; margin-top: 2px">3 photos · 1 still reading</div></div>
+      <div style="background: #FBF8F1; border: 1px solid #E9E0CF; border-radius: 16px; padding: 14px 16px">
+        <div style="font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #766A58">Receipt</div>
+        <div style="font-weight: 600; font-size: 16px; margin-top: 2px">14 items</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px"><span style="background: #EAE1CF; border-radius: 999px; padding: 3px 10px; font-size: 13px">Milk</span><span style="background: #EAE1CF; border-radius: 999px; padding: 3px 10px; font-size: 13px">Eggs</span><span style="background: #EAE1CF; border-radius: 999px; padding: 3px 10px; font-size: 13px">Spinach</span><span style="background: #EAE1CF; border-radius: 999px; padding: 3px 10px; font-size: 13px">+11</span></div>
+        <div style="font-size: 13px; font-weight: 600; color: #704E00; margin-top: 8px">Check 2 items</div>
+      </div>
+      <div style="background: #E6EAD2; border-radius: 16px; padding: 10px 16px 10px 4px; display: flex; align-items: center; gap: 4px">
+        <img src="/_blob/447ca5c81a1bdc3ba6ca3b453638da28" alt="Gator in glasses reading the receipt" style="width: 110px; height: 96px; flex-shrink: 0">
+        <div><div style="font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #4A5722">Receipt</div><div style="font-weight: 600; font-size: 16px; margin-top: 2px">Gator's reading this one…</div><div style="font-size: 13px; color: #4A5722; margin-top: 2px">Long receipt, nearly there</div></div>
+      </div>
+      <div style="background: #FBF8F1; border: 1px solid #E9E0CF; border-radius: 16px; padding: 10px 16px 12px 4px; display: flex; align-items: center; gap: 4px">
+        <img src="/_blob/a0ad9589320f00952c8b625d8995d66d" alt="Gator, worried" style="width: 100px; height: 81px; flex-shrink: 0">
+        <div style="flex-grow: 1"><div style="font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #766A58">Product</div><div style="font-weight: 600; font-size: 15px; margin-top: 2px">Couldn't read, retake</div><div style="font-size: 13px; color: #766A58; margin-top: 2px">I couldn't make this one out</div></div>
+        <button type="button" style="height: 34px; padding: 0 12px; border: 1px solid #D6C9B2; border-radius: 999px; background: #FBF8F1; font: 700 13px 'Instrument Sans', sans-serif; color: #2B2418; flex-shrink: 0">Retake</button>
+      </div>
+      <div style="flex-grow: 1"></div>
+      <div style="display: flex; gap: 10px; padding-bottom: 28px">
+        <button type="button" style="flex-grow: 1; height: 50px; border: 1px solid #D6C9B2; border-radius: 12px; background: #FBF8F1; font: 600 15px 'Instrument Sans', sans-serif; color: #2B2418">Discard all</button>
+        <button type="button" disabled style="flex-grow: 2; height: 50px; border: 0; border-radius: 12px; background: #D6C9B2; color: #5C5243; font: 600 15px 'Instrument Sans', sans-serif">Add all (waiting on 1)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 · Review overview all read -->
+  <div style="display: flex; flex-direction: column; gap: 16px; width: 360px">
+    <div style="font-size: 15px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #766A58; height: 24px">Review · all read</div>
+    <div style="position: relative; width: 360px; height: 760px; border-radius: 40px; overflow: hidden; background: #F3EDE1; border: 1px solid #D6C9B2; box-shadow: 0 14px 34px -10px rgba(60,40,10,.28); box-sizing: border-box; padding: 48px 16px 0; display: flex; flex-direction: column; gap: 10px">
+      <a href="#" style="font-size: 14px; font-weight: 600; padding: 0 4px">‹ Camera</a>
+      <div style="padding: 0 4px"><div style="font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 26px">Review</div><div style="font-size: 14px; color: #766A58; margin-top: 2px">3 photos · all read</div></div>
+      <div style="background: #5F6F2E; color: #FBF8F1; border-radius: 18px; padding: 10px 16px 10px 2px; display: flex; align-items: center; gap: 4px">
+        <img src="/_blob/4cde9c63ae525662f56aaeef619f5b32" alt="Gator, happy" style="width: 104px; height: 84px; flex-shrink: 0">
+        <div style="font-size: 15px; line-height: 1.4"><strong>All read! 23 items.</strong><br>Check the 2 I wasn't sure about, then add them.</div>
+      </div>
+      <div style="background: #FBF8F1; border: 1px solid #E9E0CF; border-radius: 16px; padding: 14px 16px">
+        <div style="font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #766A58">Receipt</div>
+        <div style="font-weight: 600; font-size: 16px; margin-top: 2px">14 items</div>
+        <div style="font-size: 13px; font-weight: 600; color: #704E00; margin-top: 6px">Check 2 items</div>
+      </div>
+      <div style="background: #FBF8F1; border: 1px solid #E9E0CF; border-radius: 16px; padding: 14px 16px">
+        <div style="font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #766A58">Receipt</div>
+        <div style="font-weight: 600; font-size: 16px; margin-top: 2px">8 items</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px"><span style="background: #EAE1CF; border-radius: 999px; padding: 3px 10px; font-size: 13px">Rice</span><span style="background: #EAE1CF; border-radius: 999px; padding: 3px 10px; font-size: 13px">Chicken</span><span style="background: #EAE1CF; border-radius: 999px; padding: 3px 10px; font-size: 13px">+6</span></div>
+      </div>
+      <div style="background: #FBF8F1; border: 1px solid #E9E0CF; border-radius: 16px; padding: 14px 16px">
+        <div style="font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #766A58">Product</div>
+        <div style="font-weight: 600; font-size: 16px; margin-top: 2px">Greek yoghurt 1 kg</div>
+        <div style="font-size: 13px; color: #766A58; margin-top: 4px">Best before 30 Oct</div>
+      </div>
+      <div style="flex-grow: 1"></div>
+      <div style="display: flex; gap: 10px; padding-bottom: 28px">
+        <button type="button" style="flex-grow: 1; height: 50px; border: 1px solid #D6C9B2; border-radius: 12px; background: #FBF8F1; font: 600 15px 'Instrument Sans', sans-serif; color: #2B2418">Discard all</button>
+        <button type="button" style="flex-grow: 2; height: 50px; border: 0; border-radius: 12px; background: #5F6F2E; color: #FFFFFF; font: 600 15px 'Instrument Sans', sans-serif">Add all</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":864,"height":912}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

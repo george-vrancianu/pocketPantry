@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Intro 1b · Log in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&amp;family=Instrument+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#5F6F2E}a:hover{color:#4A5722}
+</style>
+</helmet>
+<div style="width: 360px; height: 760px; overflow: hidden; background: #F3EDE1; font-family: 'Instrument Sans', system-ui, sans-serif; color: #2B2418; display: flex; flex-direction: column; box-sizing: border-box; padding: 52px 28px 40px">
+  <a href="Main.dc.html" style="font-size: 15px; font-weight: 600; align-self: flex-start; padding: 6px 0">‹ Back</a>
+  <img src="/_blob/9ac5a5612c7f0c0d900cefffc56c39f5" alt="" aria-hidden="true" style="width: 64px; height: 64px; margin-top: 28px">
+  <h1 style="font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 32px; line-height: 1.15; margin: 20px 0 8px">Welcome back</h1>
+  <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #5C5243">Your Pantry, lists and family are waiting.</p>
+  <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 28px">
+    <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">Email
+      <input type="email" placeholder="you@example.com" style="height: 50px; border-radius: 12px; border: 1px solid #D6C9B2; background: #FBF8F1; padding: 0 14px; font: 400 16px 'Instrument Sans', sans-serif; color: #2B2418; box-sizing: border-box">
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">Password
+      <input type="password" placeholder="Your password" style="height: 50px; border-radius: 12px; border: 1px solid #D6C9B2; background: #FBF8F1; padding: 0 14px; font: 400 16px 'Instrument Sans', sans-serif; color: #2B2418; box-sizing: border-box">
+    </label>
+    <a href="#" style="font-size: 14px; font-weight: 500; align-self: flex-end">Forgot password?</a>
+  </div>
+  <div style="flex-grow: 1"></div>
+  <a href="#" style="width: 100%; height: 52px; border-radius: 12px; background: #5F6F2E; color: #FFFFFF; font-weight: 600; font-size: 16px; display: flex; align-items: center; justify-content: center; text-decoration: none">Log in</a>
+  <div style="text-align: center; margin-top: 16px; font-size: 15px; color: #766A58">New here? <a href="IntroLanguage.dc.html" style="font-weight: 600">Get started</a></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":760}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
