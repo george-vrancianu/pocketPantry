@@ -68,6 +68,10 @@ function defaults() {
     status: 'ready' as CameraStatus,
     /** Whether the camera has a torch; the flash toggle shows only then. */
     torchSupported: true,
+    /** Whether the track has the zoom capability; the zoom pill shows only then. `setZoom` records each level asked for in `zooms`. */
+    zoomSupported: false,
+    /** The levels `setZoom` was called with, in order. */
+    zooms: [] as number[],
     /** Whether it supports `single-shot` focus. Off: a Scan's focus pass is the steady pause (`FOCUS_PAUSE_MS`). */
     focusSupported: false,
     /** The frame a Scan captures (null: no live frame, so the capture yields nothing). */
@@ -124,6 +128,10 @@ let focusPauseMs = 0;
 
 const capture = () => Promise.resolve(fakeCamera.frame);
 const setTorch = () => Promise.resolve(fakeCamera.torchSupported);
+const setZoom = (level: number) => {
+  fakeCamera.zooms.push(level);
+  return Promise.resolve(fakeCamera.zoomSupported);
+};
 
 function watchBarcodes(onCode: (code: string) => void) {
   let active = true;
@@ -186,6 +194,8 @@ function fakeUseCamera(...args: unknown[]) {
     videoRef,
     status: fakeCamera.status,
     torchSupported: fakeCamera.torchSupported,
+    zoomSupported: fakeCamera.zoomSupported,
+    setZoom,
     focusForScan,
     capture,
     setTorch,

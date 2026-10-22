@@ -18,6 +18,7 @@ import { InfoSheet } from './components/InfoSheet';
 import { ModeSlider } from './components/ModeSlider';
 import { PhotoStack } from './components/PhotoStack';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
+import { ZoomPill } from './components/ZoomPill';
 import { ShutterButton } from './components/ShutterButton';
 import { Viewfinder, useShotFeedback } from './components/Viewfinder';
 import { useFlyToStack } from './components/FlyToStack';
@@ -132,6 +133,11 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
       />
 
       <CameraFooter
+        zoom={
+          screen.camera.zoomSupported ? (
+            <ZoomPill onZoom={screen.camera.setZoom} />
+          ) : null
+        }
         status={
           <>
             <Box

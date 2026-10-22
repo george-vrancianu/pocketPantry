@@ -16,6 +16,10 @@
   "shutter": {
     "label": "Fă o fotografie"
   },
+  "zoom": {
+    "label": "Zoom",
+    "level": "Zoom {{level}}×"
+  },
   "slider": {
     "announce": "Modul {{mode}}"
   },

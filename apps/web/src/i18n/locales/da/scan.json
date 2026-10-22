@@ -16,6 +16,10 @@
   "shutter": {
     "label": "Tag billede"
   },
+  "zoom": {
+    "label": "Zoom",
+    "level": "Zoom {{level}}×"
+  },
   "slider": {
     "announce": "{{mode}}-tilstand"
   },
