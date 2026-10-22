@@ -5,7 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { ScanPage } from './ScanPage';
-import { fakeCamera } from '../../test/scan';
+import {
+  fakeCamera,
+  pickScanLanguage,
+  queryLanguageChip,
+} from '../../test/scan';
 
 vi.mock('../../lib/camera', async () =>
   (await import('../../test/scan')).fakeCameraModule(),
@@ -21,7 +25,7 @@ function renderScan(route = '/scan?mode=product') {
   );
 }
 const bar = () => within(screen.getByTestId('scan-top-bar'));
-const chip = () => screen.queryByRole('combobox', { name: /Reading as/ });
+const chip = () => queryLanguageChip();
 
 describe('The Scan page top bar', () => {
   beforeEach(() => {
@@ -38,7 +42,7 @@ describe('The Scan page top bar', () => {
     for (const name of ['Close scanner', /^Torch/, 'How scanning works']) {
       expect(bar().getByRole('button', { name })).toBeInTheDocument();
     }
-    expect(bar().getByRole('combobox', { name: /Reading as/ })).toBeVisible();
+    expect(bar().getByRole('button', { name: /Reading as/ })).toBeVisible();
     expect(
       screen.queryByRole('button', { name: /^Done|Choose from photos/ }),
     ).not.toBeInTheDocument();
@@ -92,8 +96,8 @@ describe('The Scan page top bar', () => {
 
   it('still changes the Scan Language from the chip', async () => {
     renderScan();
-    await userEvent.selectOptions(chip() as HTMLElement, 'ro');
-    expect(chip()).toHaveValue('ro');
+    await pickScanLanguage('Română');
+    expect(chip()).toHaveTextContent('RO');
   });
 
   it('opens the Info sheet with the shutter copy and focuses it without scrolling', async () => {

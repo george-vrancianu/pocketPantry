@@ -10,7 +10,8 @@
     "barcode": "Point at a barcode; each one is added on its own"
   },
   "scanLanguage": {
-    "label": "Reading as"
+    "label": "Reading as",
+    "read": "Reading in {{language}}"
   },
   "modes": "Scan mode",
   "shutter": {

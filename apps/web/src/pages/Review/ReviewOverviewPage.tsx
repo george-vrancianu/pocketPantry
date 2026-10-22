@@ -28,7 +28,7 @@ import { cropToReceiptArea } from '../../lib/image';
 import { MAX_BULK_BATCHES } from '../../lib/scan';
 import { loadLastScanMode } from '../../lib/cameraMode';
 import { importPhotos } from '../../lib/importPhotos';
-import { useScanLanguage } from '../Scan/hooks/useScanLanguage';
+import { useSessionScanLanguage } from '../../lib/sessionScanLanguage';
 import {
   displayName,
   invalidFields,
@@ -92,7 +92,7 @@ export function ReviewOverviewPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const toast = useToast();
-  const { scanLanguage } = useScanLanguage();
+  const { scanLanguage } = useSessionScanLanguage();
   const photosInput = useRef<HTMLInputElement>(null);
   const session = useScanSession();
   const uncropped = uncroppedCount(session);

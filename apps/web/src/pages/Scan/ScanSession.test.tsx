@@ -8,7 +8,7 @@ import {
   resetScanSession,
 } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { takeScan } from '../../test/scan';
+import { pickScanLanguage, takeScan } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -151,10 +151,7 @@ describe('Scan Session on the Scan screen', () => {
 
   it('gives every Scan the mode and Scan Language it was taken in', async () => {
     renderScan('/scan?mode=product');
-    await userEvent.selectOptions(
-      screen.getByRole('combobox', { name: /Reading as/ }),
-      'ro',
-    );
+    await pickScanLanguage('Română');
     await scanOnce();
     await userEvent.click(
       within(screen.getByRole('radiogroup', { name: 'Scan mode' })).getByRole(
@@ -162,10 +159,7 @@ describe('Scan Session on the Scan screen', () => {
         { name: 'Ingredients' },
       ),
     );
-    await userEvent.selectOptions(
-      screen.getByRole('combobox', { name: /Reading as/ }),
-      'da',
-    );
+    await pickScanLanguage('Dansk');
     await scanOnce();
     expect(held.map((h) => h.key)).toEqual([
       'POST /api/scan/product',

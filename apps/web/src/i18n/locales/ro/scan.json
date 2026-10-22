@@ -10,7 +10,8 @@
     "barcode": "Îndreaptă camera spre un cod de bare; fiecare cod este adăugat separat"
   },
   "scanLanguage": {
-    "label": "Citit ca"
+    "label": "Citit ca",
+    "read": "Se citește în {{language}}"
   },
   "modes": "Mod de scanare",
   "shutter": {

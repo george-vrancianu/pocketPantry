@@ -5,7 +5,12 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import type { Batch } from '../../lib/pantry';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
-import { emitBarcode, fakeCamera } from '../../test/scan';
+import {
+  emitBarcode,
+  fakeCamera,
+  languageChip,
+  queryLanguageChip,
+} from '../../test/scan';
 
 vi.mock('../../lib/camera', async () =>
   (await import('../../test/scan')).fakeCameraModule(),
@@ -121,15 +126,11 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       'Barcode',
     ]);
     expect(screen.getByRole('radio', { name: 'Barcode' })).toBeChecked();
-    expect(
-      screen.queryByRole('combobox', { name: 'Reading as' }),
-    ).not.toBeInTheDocument();
+    expect(queryLanguageChip()).not.toBeInTheDocument();
     expect(fakeCamera.watching).toBe(1);
 
     await user.click(screen.getByRole('radio', { name: 'Product' }));
-    expect(
-      screen.getByRole('combobox', { name: 'Reading as' }),
-    ).toBeInTheDocument();
+    expect(languageChip()).toBeInTheDocument();
     expect(fakeCamera.watching).toBe(0);
   });
 

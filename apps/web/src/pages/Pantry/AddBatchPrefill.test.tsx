@@ -7,7 +7,7 @@ import type { Batch } from '../../lib/pantry';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
-import { fakeCamera } from '../../test/scan';
+import { fakeCamera, languageChip, pickScanLanguage } from '../../test/scan';
 
 // jsdom has no camera or canvas: the camera hook and image preparation are the seams.
 const image = vi.hoisted(() => ({
@@ -150,7 +150,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
 
     await user.click(cameraButton());
     expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
-    expect(screen.getByLabelText('Reading as')).toBeInTheDocument();
+    expect(languageChip()).toBeInTheDocument();
     // The host page's URL is left alone.
     expect(screen.getByTestId('where')).toHaveTextContent(
       '/pantry?mode=receipt&tab=x',
@@ -249,8 +249,8 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    expect(screen.getByLabelText('Reading as')).toHaveValue('ro');
-    await user.selectOptions(screen.getByLabelText('Reading as'), 'da');
+    expect(languageChip()).toHaveTextContent('RO');
+    await pickScanLanguage('Dansk');
     screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
 

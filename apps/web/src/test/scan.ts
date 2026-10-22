@@ -12,6 +12,18 @@ export function takeScan() {
   fireEvent.click(shutter());
 }
 
+/** The Scan Language chip (the button that opens the language menu), in any UI language. */
+export const languageChip = () =>
+  screen.getByRole('button', { name: /Reading as|Citit ca|Læses på/ });
+export const queryLanguageChip = () =>
+  screen.queryByRole('button', { name: /Reading as|Citit ca|Læses på/ });
+
+/** Pick a Scan Language from the chip's menu as a Member does: open it, click the language by its own name. */
+export async function pickScanLanguage(name: 'English' | 'Română' | 'Dansk') {
+  await userEvent.click(languageChip());
+  await userEvent.click(screen.getByRole('menuitemradio', { name }));
+}
+
 /** The photo stack: its name starts with "Review" once the Scan Session holds a card. */
 export const photoStack = () =>
   screen.getByRole('button', { name: /^(Review|No photos yet)/ });
