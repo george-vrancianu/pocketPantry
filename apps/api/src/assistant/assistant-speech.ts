@@ -57,13 +57,12 @@ export type AssistantAnswerOutcome = {
 
 export type AssistantOutcome = AssistantActionOutcome | AssistantAnswerOutcome;
 
+/** Answer order of a reply; answers come before the outcome clauses. */
+const ANSWER_ORDER: readonly AssistantAnswerKind[] = ['yes', 'no'];
+const ANSWER_KINDS: ReadonlySet<string> = new Set<string>(ANSWER_ORDER);
 const isAnswer = (
   outcome: AssistantOutcome,
 ): outcome is AssistantAnswerOutcome => ANSWER_KINDS.has(outcome.kind);
-const ANSWER_KINDS: ReadonlySet<string> = new Set<AssistantAnswerKind>([
-  'yes',
-  'no',
-]);
 
 /** A whole-request state that replaces per-outcome wording. */
 export type AssistantState =
@@ -205,9 +204,6 @@ export const assistantMessages = {
 export const ASSISTANT_LOCALES = Object.keys(
   assistantMessages,
 ) as AssistantLocale[];
-
-/** Answer order of a reply; answers come before the outcome clauses. */
-const ANSWER_ORDER: readonly AssistantAnswerKind[] = ['yes', 'no'];
 
 /** Answers that get a clause per Ingredient ("You have milk. You have eggs."); the rest are grouped into one list. */
 const OWN_CLAUSE: ReadonlySet<AssistantAnswerKind> = new Set(['yes']);

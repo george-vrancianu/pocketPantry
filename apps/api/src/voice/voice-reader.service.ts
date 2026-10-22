@@ -65,11 +65,7 @@ export class VoiceReaderService {
       }),
     );
     try {
-      // A reply with no `questions` list (a stubbed model, an older fixture) asked none.
-      return voiceReadModelSchema.parse({
-        questions: [],
-        ...(response.data as object),
-      });
+      return voiceReadModelSchema.parse(response.data);
     } catch (error) {
       // Field paths only, never the transcript.
       this.logger.warn({
