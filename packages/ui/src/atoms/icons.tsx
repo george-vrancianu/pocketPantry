@@ -28,6 +28,8 @@ import {
   Equal,
   Lock,
   Camera,
+  Globe,
+  ImagePlus,
   type LucideProps,
 } from 'lucide-react';
 
@@ -320,3 +322,7 @@ export const EqualIcon = lucide(Equal);
 export const LockIcon = lucide(Lock);
 /** The Dock's stacked Camera/Mic button: open the camera. */
 export const CameraIcon = lucide(Camera);
+/** Scan camera: the Scan Language chip's globe. */
+export const GlobeIcon = lucide(Globe);
+/** Review overview: "Add from photos". */
+export const ImagePlusIcon = lucide(ImagePlus);

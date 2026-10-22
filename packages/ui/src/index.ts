@@ -112,6 +112,8 @@ export {
   FlashIcon,
   GalleryIcon,
   CameraIcon,
+  GlobeIcon,
+  ImagePlusIcon,
   ManualEntryIcon,
   InfoIcon,
   HomeIcon,

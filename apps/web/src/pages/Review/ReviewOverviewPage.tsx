@@ -4,7 +4,7 @@ import {
   Button,
   CameraIcon,
   CloseIcon,
-  GalleryIcon,
+  ImagePlusIcon,
   Link,
   Spinner,
   Typography,
@@ -552,7 +552,7 @@ export function ReviewOverviewPage() {
           </Button>
           <Button
             variant="ghost"
-            startIcon={<GalleryIcon size={20} />}
+            startIcon={<ImagePlusIcon size={20} />}
             disabled={saving}
             onClick={() => photosInput.current?.click()}
             sx={dashedButton}
