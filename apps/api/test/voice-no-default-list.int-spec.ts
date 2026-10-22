@@ -21,13 +21,14 @@ type Action = {
   expiresOn: string | null;
   noExpiry: boolean;
   location: string | null;
-  rows: { batches?: { id: string }[] };
+  rows: { batches?: { id: string }[]; shoppingFallback?: boolean };
 };
 
 const TODAY = '2026-10-16';
 const bread = seedId.ingredient('bread');
 const yogurt = seedId.ingredient('yogurt');
 const milk = seedId.ingredient('milk');
+const rice = seedId.ingredient('rice');
 
 describe('Voice Notes with no Default List (integration)', () => {
   let app: NestFastifyApplication;
@@ -133,17 +134,7 @@ describe('Voice Notes with no Default List (integration)', () => {
     actions: object[],
   ) => {
     reading = { actions, unsupported: [] };
-    const response = await api('post', cookie, '/voice')
-      .field('scanLanguage', 'en')
-      .field('locale', 'en')
-      .field('defaultTarget', defaultTarget)
-      .field('today', TODAY)
-      .field('durationMs', '3000')
-      .attach('audio', Buffer.from('a'), {
-        filename: 'n.webm',
-        contentType: 'audio/webm',
-      })
-      .expect(201);
+    const response = await sendNote(cookie, defaultTarget).expect(201);
     return (response.body as { actions: Action[] }).actions;
   };
   const addToList = (cookie: string, body: Record<string, unknown>) =>
@@ -151,15 +142,8 @@ describe('Voice Notes with no Default List (integration)', () => {
       .send(body)
       .expect(200);
 
-  const read = async (
-    cookie: string,
-    actions: object[],
-    unsupported: string[] = [],
-  ) => {
-    const result = await readNote(cookie, 'none', actions);
-    void unsupported;
-    return result;
-  };
+  const read = (cookie: string, actions: object[]) =>
+    readNote(cookie, 'none', actions);
 
   describe('the request', () => {
     it('rejects a Voice Note without a defaultTarget', async () => {
@@ -212,17 +196,31 @@ describe('Voice Notes with no Default List (integration)', () => {
       ]);
     });
 
-    it('resolves Running low with a Pantry target, and a Shopping List add when there is no Batch', async () => {
+    it('resolves Running low as a Shopping List add when there is no Batch', async () => {
       const { cookie } = await signUp();
-      const actions = await read(cookie, [
-        spoken(yogurt, { op: 'runningLow', target: 'pantry' }),
+      const [action] = await read(cookie, [
+        spoken(rice, { op: 'runningLow', target: 'pantry' }),
       ]);
-      expect(actions).toHaveLength(1);
-      expect(actions[0].target).not.toBeNull();
-      expect(actions[0].status).not.toBe('notUnderstood');
+      expect(action).toMatchObject({
+        target: 'pantry',
+        status: 'ready',
+        rows: { shoppingFallback: true },
+      });
     });
 
-    it('keeps the target of an explicitly named list, a Location, an expiry date, and need or buy', async () => {
+    it('resolves Running low on a stocked Ingredient with a Pantry target', async () => {
+      const { cookie } = await signUp();
+      await api('post', cookie, '/pantry/batches?locale=en')
+        .send({ ingredientId: rice })
+        .expect(201);
+      const [action] = await read(cookie, [
+        spoken(rice, { op: 'runningLow', target: 'pantry' }),
+      ]);
+      expect(action).toMatchObject({ target: 'pantry', status: 'ready' });
+      expect(action.rows.shoppingFallback).toBeFalsy();
+    });
+
+    it('passes through the target the model gave for an explicit list, a Location, an expiry date, or need/buy', async () => {
       const { cookie } = await signUp();
       const actions = await read(cookie, [
         spoken(yogurt, { op: 'add', target: 'pantry' }),
