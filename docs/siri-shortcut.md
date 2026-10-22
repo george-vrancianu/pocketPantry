@@ -50,7 +50,7 @@ Finally, rename the Shortcut to exactly `Pantry add` (Shortcut name field at the
 
 ## After installing
 
-To dictate in another language (for example Romanian or Danish; Siri's phrase stays English), open the Shortcut in the Shortcuts app, tap **Dictate Text**, and set **Language** to the language items are said in. The reply comes back in the language you spoke, so also tap **Speak Text**, open Show More, and set its **Language** to the same one; otherwise a Romanian reply is read by an English voice.
+To dictate in another language (for example Romanian or Danish; Siri's phrase stays English), open the Shortcut in the Shortcuts app, tap **Dictate Text**, and set **Language** to the language items are said in. The reply comes back in the language you spoke, so also tap **Speak Text**, open **Show More**, and set its **Language** to the same one; otherwise a Romanian reply is read by an English voice.
 
 ## When something goes wrong
 

@@ -5,7 +5,6 @@ import { and, eq } from 'drizzle-orm';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import request from 'supertest';
 import { AssistantTokenService } from '../src/assistant-tokens/assistant-token.service';
-import { CatalogSearchService } from '../src/catalog/catalog-search.service';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
@@ -47,6 +46,7 @@ describe('Assistant Requests (integration)', () => {
       }
     | Error;
   let reads = 0;
+  let prompts: string[] = [];
   const stamp = Date.now();
   let counter = 0;
 
@@ -72,8 +72,9 @@ describe('Assistant Requests (integration)', () => {
       sessionPath
     )) as typeof import('./support/admin-session'));
     const ai = {
-      generate: () => {
+      generate: (request: { prompt: string }) => {
         reads++;
+        prompts.push(request.prompt);
         return reading instanceof Error
           ? Promise.reject(reading)
           : Promise.resolve({
@@ -98,6 +99,7 @@ describe('Assistant Requests (integration)', () => {
   beforeEach(() => {
     reading = { actions: [], unsupported: [] };
     reads = 0;
+    prompts = [];
   });
 
   async function member() {
@@ -455,7 +457,7 @@ describe('Assistant Requests (integration)', () => {
       expect(await list(ana.cookie, 'ro')).toMatchObject([{ name: 'Lapte' }]);
     });
 
-    it('names a Family Ingredient from the Family scope, by its own name', async () => {
+    it('speaks a Family Ingredient by its own name and lists it in the UI locale', async () => {
       const ana = await romanian();
       const name = `Gran ${stamp}`;
       const created = (
@@ -467,29 +469,48 @@ describe('Assistant Requests (integration)', () => {
           })
           .expect(201)
       ).body as { id: string };
-      // The name falls back to the Ingredient's own, so the speech alone can't
-      // tell a Family lookup from a global one: check what the lookup found.
-      const lookup = jest.spyOn(CatalogSearchService.prototype, 'mapByIds');
-      try {
-        reading = {
-          actions: [of(created.id, name, { spokenText: 'gran' })],
-          unsupported: [],
-          spokenLanguage: 'en',
-        };
-        const response = await ask(ana.secret).expect(200);
-        expect(reply(response).outcomes).toMatchObject([
-          { kind: 'added', name: `Gran ${stamp}` },
-        ]);
-        expect(reply(response).speech).toBe(
-          `Added to your Shopping List: Gran ${stamp}.`,
-        );
-        const found = await (lookup.mock.results[0].value as Promise<
-          Map<string, { name: string }>
-        >);
-        expect(found.get(created.id)?.name).toBe(`Gran ${stamp}`);
-      } finally {
-        lookup.mockRestore();
-      }
+      reading = {
+        actions: [of(created.id, name, { spokenText: 'gran' })],
+        unsupported: [],
+        spokenLanguage: 'en',
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'added', name: `Gran ${stamp}` },
+      ]);
+      expect(reply(response).speech).toBe(
+        `Added to your Shopping List: Gran ${stamp}.`,
+      );
+      expect(await list(ana.cookie, 'ro')).toMatchObject([
+        { name: `Gran ${stamp}` },
+      ]);
+    });
+
+    it('does not tell the model the UI language is the one spoken', async () => {
+      const ana = await romanian();
+      reading = {
+        actions: [of(milk, 'Lapte')],
+        unsupported: [],
+        spokenLanguage: 'en',
+      };
+      await ask(ana.secret).expect(200);
+      expect(prompts[0]).toContain(
+        'may be in any supported language (English, Romanian or Danish)',
+      );
+      expect(prompts[0]).not.toContain('The note was spoken in Romanian');
+    });
+
+    it('answers in the UI locale when only unsupported phrases were read, whatever language was spoken', async () => {
+      const ana = await romanian();
+      reading = {
+        actions: [],
+        unsupported: ['what is the weather'],
+        spokenLanguage: 'en',
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toBe(
+        'Nu am înțeles nimic. Încearcă din nou.',
+      );
     });
 
     it('keeps the list name of an Unmatched item when the language spoken is the UI locale', async () => {

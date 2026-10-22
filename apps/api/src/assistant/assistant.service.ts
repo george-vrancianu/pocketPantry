@@ -109,8 +109,6 @@ export class AssistantService {
         (action) => action.status !== 'notUnderstood',
       );
       const drafts = resolved.map(toDraft);
-      // An add onto an existing line sets the spoken quantity (ADR 0017) and
-      // wants the line back on the list, rather than summing as in Review.
       // Looked up before the writes: a failure here must not follow committed items.
       const names = await this.namesIn(
         member.id,
@@ -118,6 +116,8 @@ export class AssistantService {
         replyLocale,
         resolved,
       );
+      // An add onto an existing line sets the spoken quantity (ADR 0017) and
+      // wants the line back on the list, rather than summing as in Review.
       const result = await this.voice.applyActions(member.id, {
         actions: drafts,
         locale,
@@ -129,9 +129,9 @@ export class AssistantService {
       const nameOf = (action: ResolvedVoiceAction): string =>
         action.ingredient
           ? (names.get(action.ingredient.id) ?? action.ingredient.name)
-          : replyLocale !== locale && read.spokenNames.get(action.id)
-            ? (read.spokenNames.get(action.id) as string)
-            : displayName(action);
+          : ((replyLocale !== locale
+              ? read.spokenNames.get(action.id)
+              : undefined) ?? displayName(action));
       outcomes = resolved.map((action, index) =>
         outcomeOf(action, drafts[index], result, nameOf(action)),
       );
@@ -159,17 +159,17 @@ export class AssistantService {
   private async namesIn(
     memberId: string,
     uiLocale: CatalogLocale,
-    locale: CatalogLocale,
+    replyLocale: CatalogLocale,
     actions: ResolvedVoiceAction[],
   ): Promise<Map<string, string>> {
     // Ingredient names already come in the UI locale.
-    if (locale === uiLocale) return new Map();
+    if (replyLocale === uiLocale) return new Map();
     const ids = [
       ...new Set(actions.flatMap((action) => action.ingredient?.id ?? [])),
     ];
     if (ids.length === 0) return new Map();
     const scope = await this.settings.catalogScopeForMember(memberId);
-    const found = await this.catalogSearch.mapByIds(scope, ids, locale);
+    const found = await this.catalogSearch.mapByIds(scope, ids, replyLocale);
     return new Map([...found].map(([id, result]) => [id, result.name]));
   }
 }
