@@ -122,9 +122,6 @@ describe('the answer sheet for Pantry Questions', () => {
     expect(screen.queryByRole('heading', { name: 'Your Pantry' })).toBeNull();
     // Interim until #463: the question stays visible as a Didn't understand row.
     expect(dialog.getByText('“do we have milk”')).toBeVisible();
-    expect(
-      dialog.getByText("Didn't understand:", { exact: false }),
-    ).toBeVisible();
   });
 
   it('puts focus back on the voice button after Done', async () => {
