@@ -330,7 +330,11 @@ const FINAL_ERRORS = [
   'scan.nothing_found',
 ];
 
-/** Whether tapping a failed Scan to read it again can change anything. */
+/**
+ * Whether reading a failed Scan again (or looking a Barcode card up again) can change anything.
+ * The one rule behind every retry: the camera's failed thumbnail and Review's "Read again" /
+ * "Look up again". Network, Lookup Limit, Scan Cap and unknown errors can be retried; `FINAL_ERRORS` cannot.
+ */
 export const canRetry = (scan: SessionScan) =>
   !FINAL_ERRORS.includes(scan.errorCode ?? '');
 

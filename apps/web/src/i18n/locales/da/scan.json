@@ -69,6 +69,12 @@
   "discarded": "Kasseret",
   "capReached": "Daglig scanningsgrænse nået",
   "notAdded": "Fotoet kunne ikke tilføjes. Prøv igen.",
+  "review": {
+    "readAgain": "Læs igen",
+    "lookUpAgain": "Slå op igen",
+    "takeMore": "Tag flere",
+    "addFromPhotos": "Tilføj fra billeder"
+  },
   "overlay": {
     "noCamera": "Kameraet er ikke tilgængeligt. Tjek kameratilladelsen, eller udfyld formularen selv.",
     "photoFailed": "Det foto kunne ikke bruges. Prøv igen.",

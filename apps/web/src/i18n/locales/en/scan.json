@@ -69,6 +69,12 @@
   "discarded": "Discarded",
   "capReached": "Daily scan limit reached",
   "notAdded": "That photo could not be added. Try again.",
+  "review": {
+    "readAgain": "Read again",
+    "lookUpAgain": "Look up again",
+    "takeMore": "Take more",
+    "addFromPhotos": "Add from photos"
+  },
   "overlay": {
     "noCamera": "The camera is not available. Check the camera permission, or fill the form by hand.",
     "photoFailed": "That photo could not be used. Try again.",

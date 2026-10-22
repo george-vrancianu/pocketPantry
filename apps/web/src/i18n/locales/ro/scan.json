@@ -74,6 +74,12 @@
   "discarded": "Eliminate",
   "capReached": "Limita zilnică de scanări a fost atinsă",
   "notAdded": "Fotografia nu a putut fi adăugată. Încearcă din nou.",
+  "review": {
+    "readAgain": "Citește din nou",
+    "lookUpAgain": "Caută din nou",
+    "takeMore": "Mai fă poze",
+    "addFromPhotos": "Adaugă din poze"
+  },
   "overlay": {
     "noCamera": "Camera nu este disponibilă. Verifică permisiunea camerei sau completează formularul manual.",
     "photoFailed": "Fotografia nu a putut fi folosită. Încearcă din nou.",
