@@ -17,27 +17,18 @@ import {
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ScanPage } from './ScanPage';
+import { fakeCamera } from '../../test/scan';
 
-const camera = vi.hoisted(() => ({
-  status: 'ready' as string,
-  cropFails: false,
-}));
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: camera.status,
-    torchSupported: false,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(false),
-    watchBarcodes: () => () => {},
-  }),
-}));
+const image = vi.hoisted(() => ({ cropFails: false }));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
   cropToReceiptGuide: () => Promise.resolve('data:image/jpeg;base64,Y3JvcA=='),
   cropToReceiptArea: () =>
-    camera.cropFails
+    image.cropFails
       ? Promise.reject(new Error('bad photo'))
       : Promise.resolve('data:image/jpeg;base64,Z2FsbGVyeQ=='),
 }));
@@ -126,8 +117,7 @@ describe('Gallery import into the Scan Session', () => {
     resetReads();
     resetScanSession();
     localStorage.clear();
-    camera.status = 'ready';
-    camera.cropFails = false;
+    image.cropFails = false;
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:photo');
     vi.spyOn(URL, 'revokeObjectURL').mockReturnValue();
   });
@@ -175,7 +165,7 @@ describe('Gallery import into the Scan Session', () => {
   });
 
   it('still works when the camera is not available', async () => {
-    camera.status = 'unavailable';
+    fakeCamera.status = 'unavailable';
     renderScan();
     expect(screen.getByText(/The camera is not available/)).toBeInTheDocument();
     expect(
@@ -285,7 +275,7 @@ describe('Gallery import into the Scan Session', () => {
       await userEvent.click(done());
       const card = within(screen.getByTestId('review-card'));
       await userEvent.click(card.getByRole('button', { name: /^Crop/ }));
-      camera.cropFails = true;
+      image.cropFails = true;
       await userEvent.click(
         await screen.findByRole('button', { name: 'Use photo' }),
       );

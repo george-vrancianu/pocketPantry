@@ -5,30 +5,11 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import type { Batch } from '../../lib/pantry';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
+import { emitBarcode, fakeCamera } from '../../test/scan';
 
-// jsdom has no camera: the camera module is the seam, and it now also yields decoded barcodes.
-const camera = vi.hoisted(() => ({
-  /** Hands a decoded barcode to the overlay that is watching. */
-  emit: null as null | ((code: string) => void),
-  watching: 0,
-}));
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: false,
-    capture: () => Promise.resolve(new Blob(['frame'])),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: (onCode: (code: string) => void) => {
-      camera.watching += 1;
-      camera.emit = onCode;
-      return () => {
-        camera.watching -= 1;
-      };
-    },
-  }),
-  readBarcode: () => Promise.resolve(null),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,AAAA'),
 }));
@@ -115,15 +96,13 @@ const cameraButton = () =>
   screen.getByRole('button', { name: 'Fill from the camera' });
 
 async function decode(code = CODE) {
-  await waitFor(() => expect(camera.emit).not.toBeNull());
-  act(() => camera.emit?.(code));
+  await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
+  act(() => emitBarcode(code));
 }
 
 describe('Prefill the add-Batch form from a Barcode Lookup', () => {
   beforeEach(() => {
     localStorage.clear();
-    camera.emit = null;
-    camera.watching = 0;
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -143,11 +122,11 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     ]);
     expect(screen.getByRole('radio', { name: 'Barcode' })).toBeChecked();
     expect(screen.queryByLabelText('Reading as')).not.toBeInTheDocument();
-    expect(camera.watching).toBe(1);
+    expect(fakeCamera.watching).toBe(1);
 
     await user.click(screen.getByRole('radio', { name: 'Product' }));
     expect(screen.getByLabelText('Reading as')).toBeInTheDocument();
-    expect(camera.watching).toBe(0);
+    expect(fakeCamera.watching).toBe(0);
   });
 
   it("remembers the last mode apart from the Scan page's", async () => {
@@ -340,7 +319,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     await openForm(user);
     await user.click(cameraButton());
     await user.click(screen.getByRole('button', { name: 'Close scanner' }));
-    expect(camera.watching).toBe(0);
+    expect(fakeCamera.watching).toBe(0);
     expect(calls.some((call) => call.key.startsWith('GET /api/barcode'))).toBe(
       false,
     );
@@ -382,7 +361,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       name: 'Ingredient: Yogurt. Press Backspace to change',
     });
 
-    camera.emit = null;
+    fakeCamera.emit = null;
     await user.click(cameraButton());
     await decode();
     await waitFor(() =>
@@ -416,8 +395,6 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
 describe('Known Barcodes on the add-Batch form (#348)', () => {
   beforeEach(() => {
     localStorage.clear();
-    camera.emit = null;
-    camera.watching = 0;
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -601,8 +578,6 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
 describe('Allergens from a Barcode Lookup', () => {
   beforeEach(() => {
     localStorage.clear();
-    camera.emit = null;
-    camera.watching = 0;
   });
   afterEach(() => {
     vi.unstubAllGlobals();

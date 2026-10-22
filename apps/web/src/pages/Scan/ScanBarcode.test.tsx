@@ -7,43 +7,14 @@ import { resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
-import { scanViaGuide } from '../../test/scan';
+import { scanViaGuide, emitBarcode, fakeCamera } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
-// jsdom has no camera: the camera module is the seam, and it yields decoded barcodes one per watch.
-const camera = vi.hoisted(() => ({
-  listener: null as null | ((code: string) => void),
-  watching: 0,
-}));
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: false,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: (onCode: (code: string) => void) => {
-      let active = true;
-      camera.watching += 1;
-      camera.listener = (code) => {
-        if (!active) return;
-        active = false;
-        camera.watching -= 1;
-        camera.listener = null;
-        onCode(code);
-      };
-      return () => {
-        if (!active) return;
-        active = false;
-        camera.watching -= 1;
-        camera.listener = null;
-      };
-    },
-  }),
-  readBarcode: () => Promise.resolve(null),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
@@ -141,8 +112,8 @@ function renderScan(route = '/scan') {
 const flush = () => act(async () => {});
 /** The camera decodes `code`: the Scan page accepts it and re-arms the watch. */
 async function decode(code: string) {
-  await waitFor(() => expect(camera.listener).not.toBeNull());
-  act(() => camera.listener?.(code));
+  await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
+  act(() => emitBarcode(code));
   await flush();
 }
 const thumbnails = () => screen.queryAllByTestId('scan-thumbnail');
@@ -155,8 +126,6 @@ describe('Barcode on the Scan page', () => {
     resetScanSession();
     resetReads();
     localStorage.clear();
-    camera.listener = null;
-    camera.watching = 0;
   });
   afterEach(() => vi.unstubAllGlobals());
 
@@ -202,15 +171,15 @@ describe('Barcode on the Scan page', () => {
       expect(
         screen.queryByRole('button', { name: 'Choose from photos' }),
       ).not.toBeInTheDocument();
-      await waitFor(() => expect(camera.watching).toBe(1));
+      await waitFor(() => expect(fakeCamera.watching).toBe(1));
     });
 
     it('stops reading barcodes in another mode', async () => {
       const user = userEvent.setup();
       renderScan('/scan?mode=barcode');
-      await waitFor(() => expect(camera.watching).toBe(1));
+      await waitFor(() => expect(fakeCamera.watching).toBe(1));
       await user.click(screen.getByRole('radio', { name: 'Product' }));
-      expect(camera.watching).toBe(0);
+      expect(fakeCamera.watching).toBe(0);
       expect(screen.getByLabelText(/Reading as/)).toBeInTheDocument();
     });
   });
@@ -225,7 +194,7 @@ describe('Barcode on the Scan page', () => {
         'src',
         'data:image/jpeg;base64,YQ==',
       );
-      expect(camera.watching).toBe(1);
+      expect(fakeCamera.watching).toBe(1);
 
       await decode(B);
       expect(thumbnails()).toHaveLength(2);
@@ -233,19 +202,19 @@ describe('Barcode on the Scan page', () => {
 
     it('watches again only after the scan interval, so a held pack is not decoded back to back', async () => {
       renderScan('/scan?mode=barcode');
-      await waitFor(() => expect(camera.listener).not.toBeNull());
+      await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
       vi.useFakeTimers();
       try {
-        act(() => camera.listener?.(A));
-        expect(camera.watching).toBe(0);
+        act(() => emitBarcode(A));
+        expect(fakeCamera.watching).toBe(0);
         act(() => {
           vi.advanceTimersByTime(SCAN_INTERVAL_MS - 1);
         });
-        expect(camera.watching).toBe(0);
+        expect(fakeCamera.watching).toBe(0);
         act(() => {
           vi.advanceTimersByTime(1);
         });
-        expect(camera.watching).toBe(1);
+        expect(fakeCamera.watching).toBe(1);
       } finally {
         vi.useRealTimers();
       }
@@ -304,15 +273,15 @@ describe('Barcode on the Scan page', () => {
         await act(async () => {
           await vi.advanceTimersByTimeAsync(ms);
         });
-        expect(camera.listener).not.toBeNull();
+        expect(fakeCamera.emit).not.toBeNull();
         await act(async () => {
-          camera.listener?.(code);
+          emitBarcode(code);
           await vi.advanceTimersByTimeAsync(0);
         });
       };
       const startWatching = async () => {
         renderScan('/scan?mode=barcode');
-        await waitFor(() => expect(camera.listener).not.toBeNull());
+        await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
         vi.useFakeTimers();
       };
 

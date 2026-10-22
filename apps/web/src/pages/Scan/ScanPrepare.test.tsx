@@ -9,16 +9,9 @@ import { scanViaGuide } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
 const prep = vi.hoisted(() => ({ release: () => {} }));
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: false,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(false),
-    watchBarcodes: () => () => {},
-  }),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   cropToReceiptGuide: () =>

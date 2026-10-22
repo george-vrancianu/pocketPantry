@@ -23,17 +23,9 @@ import { ScanPage } from '../Scan/ScanPage';
 import { ReviewOverviewPage } from './ReviewOverviewPage';
 import { ReviewPage } from './ReviewPage';
 
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-  readBarcode: () => Promise.resolve(null),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),

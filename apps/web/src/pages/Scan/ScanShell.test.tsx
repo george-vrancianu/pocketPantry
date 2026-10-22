@@ -1,41 +1,18 @@
 import { THEMES } from '@pocket-pantry/ui';
-import { scanGuide } from '../../test/scan';
+import { scanGuide, fakeCamera, setStatus } from '../../test/scan';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import { renderWithProviders } from '../../test/render';
 import { ScanPage } from './ScanPage';
 
-// jsdom has no camera: the camera hook is the seam. `lifecycle` shows whether the stream was
-// stopped or restarted (mount/unmount of the hook) while the Info sheet was open.
-const camera = vi.hoisted(() => ({
-  torchSupported: true,
-  starts: 0,
-  stops: 0,
-}));
-vi.mock('../../lib/camera', async () => {
-  const { useEffect } = await import('react');
-  return {
-    useCamera: () => {
-      useEffect(() => {
-        camera.starts += 1;
-        return () => {
-          camera.stops += 1;
-        };
-      }, []);
-      return {
-        videoRef: { current: null },
-        status: 'ready',
-        torchSupported: camera.torchSupported,
-        capture: () => Promise.resolve(new Blob(['frame'])),
-        setTorch: () => Promise.resolve(true),
-        watchBarcodes: () => () => {},
-      };
-    },
-  };
-});
+// jsdom has no camera: the camera hook is the seam. `starts`/`stops` of the fake camera show whether the
+// stream was stopped or restarted (mount/unmount of the hook) while the Info sheet was open.
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 
 const DARK = THEMES.dark;
 
@@ -49,12 +26,16 @@ function renderScan() {
 }
 
 describe('Scan screen shell', () => {
-  beforeEach(() => {
-    camera.torchSupported = true;
-    camera.starts = 0;
-    camera.stops = 0;
-  });
   afterEach(() => vi.unstubAllGlobals());
+
+  it('shows the camera as unavailable when its status flips mid-test', () => {
+    renderScan();
+    expect(screen.queryByText(/The camera is not available/)).toBeNull();
+    setStatus('unavailable');
+    expect(screen.getByText(/The camera is not available/)).toBeInTheDocument();
+    setStatus('ready');
+    expect(screen.queryByText(/The camera is not available/)).toBeNull();
+  });
 
   it('is a full-screen, non-scrolling surface', () => {
     renderScan();
@@ -129,7 +110,7 @@ describe('Scan screen shell', () => {
   });
 
   it('hides the torch button when the camera has no torch', () => {
-    camera.torchSupported = false;
+    fakeCamera.torchSupported = false;
     renderScan();
     expect(
       screen.queryByRole('button', { name: 'Toggle flash' }),
@@ -155,13 +136,13 @@ describe('Scan screen shell', () => {
 
   it('keeps the camera running while the Info sheet is open', async () => {
     renderScan();
-    const startsBefore = camera.starts;
+    const startsBefore = fakeCamera.starts;
     await userEvent.click(
       screen.getByRole('button', { name: 'How scanning works' }),
     );
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(camera.stops).toBe(0);
-    expect(camera.starts).toBe(startsBefore);
+    expect(fakeCamera.stops).toBe(0);
+    expect(fakeCamera.starts).toBe(startsBefore);
     expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 });

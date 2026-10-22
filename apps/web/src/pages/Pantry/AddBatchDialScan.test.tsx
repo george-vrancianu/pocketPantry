@@ -3,33 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
+import { fakeCamera } from '../../test/scan';
 
 // jsdom has no camera or canvas: the camera hook and image preparation are the seams.
-const camera = vi.hoisted(() => ({
-  focuses: 0,
-  cancels: 0,
-  /** Ends the latest focus pass, as the camera does when focus finishes. */
-  finish: () => {},
-}));
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: false,
-    focusSupported: false,
-    focusForScan: () => {
-      camera.focuses += 1;
-      return {
-        done: new Promise<void>((resolve) => (camera.finish = resolve)),
-        cancel: () => (camera.cancels += 1),
-      };
-    },
-    capture: () => Promise.resolve(new Blob(['frame'])),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-  readBarcode: () => Promise.resolve(null),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,AAAA'),
 }));
@@ -78,8 +57,7 @@ describe('Scanning from the add-Batch camera overlay by the mode dial', () => {
   beforeEach(() => {
     localStorage.clear();
     now = 1000;
-    camera.focuses = 0;
-    camera.cancels = 0;
+    fakeCamera.focusSupported = true;
     vi.spyOn(performance, 'now').mockImplementation(() => now);
     Object.defineProperty(navigator, 'vibrate', {
       value: vi.fn(() => true),
@@ -116,12 +94,12 @@ describe('Scanning from the add-Batch camera overlay by the mode dial', () => {
     gesturesOnFakeTimers();
     press(current());
     await advance(301);
-    expect(camera.focuses).toBe(1);
+    expect(fakeCamera.focuses).toBe(1);
     expect(navigator.vibrate).toHaveBeenCalledWith(6);
     expect(screen.getByTestId('mode-dial-hold')).toBeInTheDocument();
     release(current());
     expect(scans(calls)).toHaveLength(0);
-    camera.finish();
+    fakeCamera.finishFocus();
     await flush();
     expect(scans(calls)).toHaveLength(1);
     expect(navigator.vibrate).toHaveBeenCalledWith(12);
@@ -139,9 +117,9 @@ describe('Scanning from the add-Batch camera overlay by the mode dial', () => {
     press(current());
     await advance(500);
     release(current());
-    camera.finish();
+    fakeCamera.finishFocus();
     await flush();
-    expect(camera.focuses).toBe(0);
+    expect(fakeCamera.focuses).toBe(0);
     expect(screen.queryByTestId('scan-flash')).toBeNull();
     expect(scans(calls)).toHaveLength(0);
   });

@@ -10,16 +10,9 @@ import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
 let prepareFails = false;
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () =>
