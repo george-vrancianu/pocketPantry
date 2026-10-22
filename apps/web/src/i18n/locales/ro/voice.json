@@ -193,7 +193,16 @@
       "confirmHint": "Nu se schimbă nimic și va trebui să o spui din nou.",
       "keep": "Continuă verificarea",
       "discarded": "Nota vocală a fost eliminată",
-      "discardedHint": "Nu s-a schimbat nimic."
+      "discardedHint": "Nu s-a schimbat nimic.",
+      "pickList": "Alege mai întâi o listă"
+    },
+    "pickList": {
+      "label": "Lista pentru {{name}}",
+      "group": "Alege o listă",
+      "hint": "Alege Lista de cumpărături sau Cămara"
+    },
+    "putAll": {
+      "label": "Pune tot pe:"
     }
   },
   "toast": {

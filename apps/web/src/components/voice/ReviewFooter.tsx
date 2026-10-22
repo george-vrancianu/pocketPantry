@@ -40,7 +40,7 @@ export function ReviewFooter({
   /** The changes Apply would send. */
   count: number;
   /** What holds Apply back, if anything. */
-  blocked: 'batch' | 'place' | null;
+  blocked: 'list' | 'batch' | 'place' | null;
   /** An amount that can't be read. */
   invalid: boolean;
   applying: boolean;
@@ -100,11 +100,13 @@ export function ReviewFooter({
 
   const label = applying
     ? t('review.footer.applying')
-    : blocked === 'batch'
-      ? t('review.footer.pickBatch')
-      : blocked === 'place'
-        ? t('review.footer.pickPlace')
-        : t('review.footer.apply', { count });
+    : blocked === 'list'
+      ? t('review.footer.pickList')
+      : blocked === 'batch'
+        ? t('review.footer.pickBatch')
+        : blocked === 'place'
+          ? t('review.footer.pickPlace')
+          : t('review.footer.apply', { count });
 
   return (
     <Box sx={{ ...box, display: 'flex', gap: '10px' }}>

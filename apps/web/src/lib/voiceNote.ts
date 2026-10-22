@@ -15,6 +15,7 @@ import {
   MIN_VOICE_NOTE_MS,
   sendVoiceNote,
   type VoiceDefaultTarget,
+  type VoiceList,
   type VoiceNoteRequest,
   type VoiceNoteResult,
   type VoiceReviewAction,
@@ -552,6 +553,36 @@ export function createVoiceNote(
         proposal: {
           ...state.proposal,
           actions: state.proposal.actions.filter((a) => a.id !== id),
+        },
+      };
+      emit();
+    },
+    /** Review: puts a `needsList` action on a list, swapping in that list's resolution. The pick can change. */
+    pickList(id: string, list: VoiceList) {
+      if (state.phase !== 'review' || !state.proposal) return;
+      state = {
+        ...state,
+        proposal: {
+          ...state.proposal,
+          actions: state.proposal.actions.map((a) =>
+            a.id === id && a.byList
+              ? { ...a.byList[list], byList: a.byList }
+              : a,
+          ),
+        },
+      };
+      emit();
+    },
+    /** Review: puts every action that has a list to pick on one list. */
+    pickAllLists(list: VoiceList) {
+      if (state.phase !== 'review' || !state.proposal) return;
+      state = {
+        ...state,
+        proposal: {
+          ...state.proposal,
+          actions: state.proposal.actions.map((a) =>
+            a.byList ? { ...a.byList[list], byList: a.byList } : a,
+          ),
         },
       };
       emit();

@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  SegmentedControl,
   Sheet,
   Typography,
   ShoppingIcon,
@@ -30,6 +31,7 @@ import {
   hasAmount,
   isActionable,
   isChange,
+  needsList,
 } from './reviewModel';
 import { translateApiError } from '../../i18n/translateApiError';
 import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
@@ -41,6 +43,7 @@ import {
 import {
   applyVoiceActions,
   type VoiceApplyResult,
+  type VoiceList,
   type VoiceReviewAction,
 } from '../../lib/voice';
 import { flashRows } from '../../lib/rowFlash';
@@ -48,6 +51,13 @@ import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 
 /** How long the Apply result stays: long enough to read, no Undo (ADR 0017). */
 const APPLY_TOAST_MS = 5200;
+
+/** The list every action with a pick is on, or '' when they are split or undecided. */
+const allOn = (actions: VoiceReviewAction[]): VoiceList | '' => {
+  const lists = new Set(actions.filter((a) => a.byList).map((a) => a.target));
+  const [only] = lists;
+  return lists.size === 1 && only ? only : '';
+};
 
 const quantityText = (action: VoiceReviewAction) =>
   action.quantity === null ? '' : String(action.quantity);
@@ -81,10 +91,16 @@ function ReviewSheet() {
   const groups = groupsOf(actions, page);
   const changes = actions.filter(isChange);
   const applicable = actions.filter(isActionable);
-  const unclear = actions.filter((a) => !isChange(a));
-  const blocking = groups.flatMap((g) => g.actions).find((a) => blockOf(a));
+  const undecided = actions.filter(needsList);
+  const unclear = actions.filter((a) => !isChange(a) && !needsList(a));
+  const blocking = [...undecided, ...groups.flatMap((g) => g.actions)].find(
+    (a) => blockOf(a),
+  );
+  const withPicker = actions.filter((a) => a.byList).length;
 
-  const [openId, setOpenId] = useState<string | null>(blocking?.id ?? null);
+  const [openId, setOpenId] = useState<string | null>(
+    blocking && blockOf(blocking) !== 'list' ? blocking.id : null,
+  );
   const [confirming, setConfirming] = useState(false);
   const [keptReviewing, setKeptReviewing] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -177,7 +193,7 @@ function ReviewSheet() {
     if (focusPicker(focusId)) setFocusId(null);
   }, [focusId, openId]);
 
-  const count = changes.length;
+  const count = changes.length + undecided.length;
   const both = new Set(changes.map((a) => a.target)).size > 1;
   const subline =
     count === 0
@@ -194,6 +210,14 @@ function ReviewSheet() {
       typed={textOf(action)}
       invalid={invalid.has(action.id)}
       spokenExpiry={spoken.get(action.id) ?? null}
+      onPick={(list) => {
+        voiceNote.pickList(action.id, list);
+        // A Pantry removal that needs a Batch opens on its picker.
+        if (action.byList?.[list].status === 'needsBatch') {
+          setOpenId(action.id);
+          setFocusId(action.id);
+        }
+      }}
       onToggle={() => setOpenId((id) => (id === action.id ? null : action.id))}
       onTyped={(text) => {
         setTyped((current) => ({ ...current, [action.id]: text }));
@@ -274,6 +298,49 @@ function ReviewSheet() {
           durationMs={recording?.durationMs}
           defaultOpen={actions.every((a) => a.status === 'notUnderstood')}
         />
+
+        {withPicker > 1 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              px: '4px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: palette('text-secondary'),
+            }}
+          >
+            <span aria-hidden>{t('voice:review.putAll.label')}</span>
+            <Box sx={{ flex: 1 }}>
+              <SegmentedControl<VoiceList | ''>
+                fullWidth
+                label={t('voice:review.putAll.label').replace(/:$/, '')}
+                value={allOn(actions)}
+                options={[
+                  {
+                    value: 'shopping',
+                    label: t('voice:review.lists.shopping'),
+                  },
+                  { value: 'pantry', label: t('voice:review.lists.pantry') },
+                ]}
+                onChange={(list) => {
+                  if (list) voiceNote.pickAllLists(list);
+                }}
+              />
+            </Box>
+          </Box>
+        ) : null}
+
+        {undecided.length > 0 ? (
+          <Group
+            label={t('voice:review.pickList.group')}
+            count={undecided.length}
+            tag={null}
+          >
+            {undecided.map(renderRow)}
+          </Group>
+        ) : null}
 
         {groups.map((group) => (
           <Group

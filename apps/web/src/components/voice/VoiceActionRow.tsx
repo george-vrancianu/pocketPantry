@@ -8,6 +8,7 @@ import {
   IconButton,
   MinusIcon,
   PlusIcon,
+  SegmentedControl,
   focusRing,
   radius,
   palette,
@@ -15,7 +16,7 @@ import {
 import { soonBorder } from './soonBorder';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { VoiceReviewAction } from '../../lib/voice';
+import type { VoiceList, VoiceReviewAction } from '../../lib/voice';
 import { voiceNote } from '../../lib/voiceNote';
 import { ActionEditor } from './ActionEditor';
 import {
@@ -90,6 +91,7 @@ export function VoiceActionRow({
   spokenExpiry,
   onToggle,
   onTyped,
+  onPick,
 }: {
   action: VoiceReviewAction;
   open: boolean;
@@ -98,6 +100,8 @@ export function VoiceActionRow({
   spokenExpiry: string | null;
   onToggle: () => void;
   onTyped: (text: string) => void;
+  /** A list was picked for an action that came back without one. */
+  onPick: (list: VoiceList) => void;
 }) {
   const { t } = useTranslation('voice');
   const { verb, lineTwo } = useVoiceActionText();
@@ -105,6 +109,7 @@ export function VoiceActionRow({
   const tile = TILE[kind];
   const name = displayName(action);
   const blocked = blockOf(action) !== null;
+  const choosing = action.status === 'needsList';
 
   return (
     <Box
@@ -123,7 +128,8 @@ export function VoiceActionRow({
       <Box
         component="button"
         type="button"
-        aria-expanded={open}
+        aria-expanded={choosing ? undefined : open}
+        disabled={choosing}
         onClick={onToggle}
         sx={{
           display: 'flex',
@@ -139,7 +145,7 @@ export function VoiceActionRow({
           font: 'inherit',
           color: palette('text-primary'),
           textAlign: 'left',
-          cursor: 'pointer',
+          cursor: choosing ? 'default' : 'pointer',
           ...focusRing,
         }}
       >
@@ -187,14 +193,14 @@ export function VoiceActionRow({
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {lineTwo(action)}
+            {choosing ? t('review.pickList.hint') : lineTwo(action)}
           </Box>
         </Box>
         <Box
           component="span"
           aria-hidden
           sx={{
-            display: 'flex',
+            display: choosing ? 'none' : 'flex',
             flexShrink: 0,
             transform: open ? 'rotate(180deg)' : 'none',
             transition: 'transform 220ms',
@@ -214,7 +220,27 @@ export function VoiceActionRow({
           <CloseIcon size={17} />
         </IconButton>
       </Box>
-      {open ? (
+      {action.byList ? (
+        <Box
+          data-voice-picker={choosing ? action.id : undefined}
+          tabIndex={choosing ? -1 : undefined}
+          sx={{ px: '12px', pb: '10px', outline: 'none' }}
+        >
+          <SegmentedControl<VoiceList | ''>
+            fullWidth
+            label={t('review.pickList.label', { name })}
+            value={action.target ?? ''}
+            options={[
+              { value: 'shopping', label: t('review.lists.shopping') },
+              { value: 'pantry', label: t('review.lists.pantry') },
+            ]}
+            onChange={(list) => {
+              if (list) onPick(list);
+            }}
+          />
+        </Box>
+      ) : null}
+      {open && !choosing ? (
         <ActionEditor
           action={action}
           typed={typed}

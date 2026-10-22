@@ -336,3 +336,224 @@ describe('AppLayout Voice Notes off the Shopping List and the Pantry', () => {
     expect(await screen.findByText('1 applied')).toBeVisible();
   });
 });
+
+describe('AppLayout Review for actions that need a list', () => {
+  const milk = voiceIngredient('ing-milk', 'Milk');
+  const eggs = voiceIngredient('ing-eggs', 'Eggs');
+  let note: Record<string, unknown>[];
+  let applied: { actions: Record<string, unknown>[] }[];
+  let voiceReads: number;
+
+  const batch = (id: string, expiresOn: string | null, quantity = 1) => ({
+    id,
+    name: 'Milk',
+    quantity,
+    unit: 'l',
+    location: 'fridge',
+    expiresOn,
+  });
+  const shoppingSide = (id: string, op: string, ingredient: object) =>
+    voiceAction({
+      id,
+      target: 'shopping',
+      op,
+      text: 'milk',
+      ingredient,
+      rows:
+        op === 'remove'
+          ? {
+              shoppingItem: {
+                id: 'i1',
+                name: 'Milk',
+                quantity: 2,
+                unit: 'pcs',
+                checked: false,
+              },
+            }
+          : {},
+    });
+  /** A bare add or remove the server could not give a list. */
+  const needsList = (
+    id: string,
+    op: 'add' | 'remove',
+    ingredient: object,
+    pantry: Record<string, unknown> = {},
+  ) =>
+    voiceAction({
+      id,
+      status: 'needsList',
+      target: null,
+      op,
+      text: 'milk',
+      ingredient,
+      byList: {
+        shopping: shoppingSide(id, op, ingredient),
+        pantry: voiceAction({
+          id,
+          target: 'pantry',
+          op,
+          text: 'milk',
+          ingredient,
+          scope: op === 'remove' ? 'one' : null,
+          rows: op === 'remove' ? { batches: [batch('b1', '2099-05-20')] } : {},
+          defaults: { location: 'fridge' },
+          ...pantry,
+        }),
+      },
+    });
+
+  beforeEach(() => {
+    useVoiceTimers();
+    resetVoiceEnvironment();
+    applied = [];
+    voiceReads = 0;
+    const { fetchMock } = stubApi({
+      'GET /api/voice/config': () => Response.json({ configured: true }),
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+      'GET /api/catalog/aisles': () => Response.json({ aisles: [] }),
+      'POST /api/voice': () => {
+        voiceReads += 1;
+        return Response.json(
+          { transcript: 'milk', actions: note },
+          { status: 201 },
+        );
+      },
+      'POST /api/voice/apply': () =>
+        Response.json({ applied: [], skipped: [] }, { status: 201 }),
+    });
+    stubVoiceFetch(fetchMock, (input, init) => {
+      if (
+        String(input).endsWith('/voice/apply') &&
+        typeof init?.body === 'string'
+      ) {
+        applied.push(JSON.parse(init.body) as (typeof applied)[number]);
+      }
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  async function openReview(actions: Record<string, unknown>[]) {
+    note = actions;
+    renderAt('/recipes');
+    const button = await talkButton();
+    pressDown(button);
+    await screen.findByText('Listening');
+    await holdLongEnough();
+    fireEvent.pointerUp(button);
+    return within(await screen.findByRole('dialog'));
+  }
+  const pickerOf = (dialog: ReturnType<typeof within>, name: string) =>
+    within(dialog.getByRole('group', { name: `List for ${name}` }));
+  const sectionOf = (dialog: ReturnType<typeof within>, name: string) =>
+    within(dialog.getByRole('region', { name }));
+
+  it('shows a Shopping List / Pantry picker and holds Apply back until a list is picked', async () => {
+    const dialog = await openReview([needsList('a1', 'add', milk)]);
+
+    const picker = pickerOf(dialog, 'Milk');
+    expect(
+      picker.getByRole('button', { name: 'Shopping List' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+    expect(picker.getByRole('button', { name: 'Pantry' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(
+      dialog.getByRole('button', { name: 'Pick a list first' }),
+    ).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Pick a list first' }),
+    );
+    expect(applied).toHaveLength(0);
+  });
+
+  it('moves the action under the picked list at once, without a request, and lets the pick change', async () => {
+    const dialog = await openReview([needsList('a1', 'add', milk)]);
+    expect(voiceReads).toBe(1);
+
+    await userEvent.click(
+      pickerOf(dialog, 'Milk').getByRole('button', { name: 'Pantry' }),
+    );
+    expect(sectionOf(dialog, 'Pantry').getByText('Milk')).toBeInTheDocument();
+    expect(dialog.queryByRole('region', { name: 'Shopping List' })).toBeNull();
+    expect(
+      dialog.getByRole('button', { name: 'Apply 1 change' }),
+    ).not.toHaveAttribute('aria-disabled');
+
+    await userEvent.click(
+      pickerOf(dialog, 'Milk').getByRole('button', { name: 'Shopping List' }),
+    );
+    expect(
+      sectionOf(dialog, 'Shopping List').getByText('Milk'),
+    ).toBeInTheDocument();
+    expect(dialog.queryByRole('region', { name: 'Pantry' })).toBeNull();
+    expect(voiceReads).toBe(1);
+  });
+
+  it('shows the Batch a Pantry removal takes, with its expiry, once Pantry is picked', async () => {
+    const dialog = await openReview([needsList('a1', 'remove', milk)]);
+    await userEvent.click(
+      pickerOf(dialog, 'Milk').getByRole('button', { name: 'Pantry' }),
+    );
+    const [row] = sectionOf(dialog, 'Pantry').getAllByRole('listitem');
+    expect(row).toHaveTextContent(/2099/);
+  });
+
+  it('asks which Batch to use when the picked Pantry removal needs one', async () => {
+    const dialog = await openReview([
+      needsList('a1', 'remove', milk, {
+        status: 'needsBatch',
+        quantity: 5,
+        unit: 'l',
+        rows: {
+          batches: [batch('b1', '2099-05-20'), batch('b2', '2098-01-02')],
+        },
+      }),
+    ]);
+    await userEvent.click(
+      pickerOf(dialog, 'Milk').getByRole('button', { name: 'Pantry' }),
+    );
+    const group = dialog.getByRole('radiogroup', {
+      name: 'Which batch did you use up?',
+    });
+    expect(within(group).getAllByRole('radio')).toHaveLength(2);
+    expect(
+      dialog.getByRole('button', { name: 'Pick a batch first' }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers "Put all on" only with two or more, and sets them all', async () => {
+    const dialog = await openReview([needsList('a1', 'add', milk)]);
+    expect(dialog.queryByRole('group', { name: 'Put all on' })).toBeNull();
+  });
+
+  it('puts every action on the chosen list, and applies each to its picked list', async () => {
+    const dialog = await openReview([
+      needsList('a1', 'add', milk),
+      needsList('a2', 'add', eggs),
+    ]);
+    const all = within(dialog.getByRole('group', { name: 'Put all on' }));
+    await userEvent.click(all.getByRole('button', { name: 'Pantry' }));
+    expect(
+      dialog.getByRole('button', { name: 'Apply 2 changes' }),
+    ).not.toHaveAttribute('aria-disabled');
+    expect(sectionOf(dialog, 'Pantry')).toBeTruthy();
+    expect(dialog.queryByRole('region', { name: 'Shopping List' })).toBeNull();
+
+    await userEvent.click(
+      pickerOf(dialog, 'Eggs').getByRole('button', { name: 'Shopping List' }),
+    );
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 2 changes' }),
+    );
+    await waitFor(() => expect(applied).toHaveLength(1));
+    expect(applied[0].actions.map((a) => [a.id, a.target, a.op])).toEqual([
+      ['a1', 'pantry', 'add'],
+      ['a2', 'shopping', 'add'],
+    ]);
+  });
+});

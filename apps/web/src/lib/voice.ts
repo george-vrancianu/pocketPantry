@@ -25,7 +25,7 @@ export const LISTENING_DESTINATION = {
 } as const satisfies Record<VoiceDefaultTarget, string>;
 
 export type VoiceActionStatus =
-  'ready' | 'needsBatch' | 'notFound' | 'notUnderstood';
+  'ready' | 'needsBatch' | 'notFound' | 'notUnderstood' | 'needsList';
 
 export type VoiceBatchRow = {
   id: string;
@@ -42,7 +42,7 @@ export type VoiceBatchRow = {
 export type VoiceReviewAction = {
   id: string;
   status: VoiceActionStatus;
-  /** Null for a Didn't understand entry. */
+  /** Null for a Didn't understand entry and for `needsList`, which waits for a pick in Review. */
   target: VoiceList | null;
   op:
     | 'add'
@@ -80,6 +80,11 @@ export type VoiceReviewAction = {
     } | null;
   };
   defaults: { location?: StorageLocation; expiresOn?: string };
+  /**
+   * A bare add or remove off the lists: the action resolved against each list, so picking swaps one in without a
+   * request. Kept after the pick so the Member can change it.
+   */
+  byList?: { shopping: VoiceReviewAction; pantry: VoiceReviewAction };
 };
 
 export type VoiceNoteResult = {

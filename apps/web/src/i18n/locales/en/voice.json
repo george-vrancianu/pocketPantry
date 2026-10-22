@@ -188,7 +188,16 @@
       "confirmHint": "Nothing changes, and you'll have to say it again.",
       "keep": "Keep reviewing",
       "discarded": "Voice Note discarded",
-      "discardedHint": "Nothing was changed."
+      "discardedHint": "Nothing was changed.",
+      "pickList": "Pick a list first"
+    },
+    "pickList": {
+      "label": "List for {{name}}",
+      "group": "Pick a list",
+      "hint": "Pick the Shopping List or the Pantry"
+    },
+    "putAll": {
+      "label": "Put all on:"
     }
   },
   "toast": {
