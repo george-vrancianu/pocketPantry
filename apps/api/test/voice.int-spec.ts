@@ -26,7 +26,11 @@ describe('Voice Note (integration)', () => {
   let next: (input: TranscriptionRequest) => Promise<{ text: string }>;
   const calls: TranscriptionRequest[] = [];
   const aiCalls: StructuredOutputRequest[] = [];
-  let reading: { actions: object[]; unsupported: string[] };
+  let reading: {
+    actions: object[];
+    questions?: object[];
+    unsupported: string[];
+  };
   let counter = 0;
   let aiFailure: ApiException | null = null;
 
@@ -491,6 +495,29 @@ describe('Voice Note (integration)', () => {
         text: 'do a dance',
       });
     });
+  });
+
+  // Spec: #459. Until the app shows answers (#460), a Pantry Question in a Voice Note reads as before.
+  it("reads a question-only Voice Note as Didn't understand and charges the Voice Cap", async () => {
+    const { cookie, memberId } = await signUp();
+    reading = {
+      actions: [],
+      questions: [
+        {
+          spokenText: 'do we have milk',
+          matchedIngredientId: seedId.ingredient('milk'),
+          matchConfidence: 0.95,
+          fallbackIngredientName: 'Milk',
+          spokenName: 'Milk',
+        },
+      ],
+      unsupported: [],
+    };
+    const response = await note(cookie).expect(201);
+    expect((response.body as { actions: object[] }).actions).toMatchObject([
+      { status: 'notUnderstood', text: 'do we have milk' },
+    ]);
+    expect(await usage(memberId, 'voice')).toBe(1);
   });
 
   describe('applying Voice Actions', () => {

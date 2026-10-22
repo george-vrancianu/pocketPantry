@@ -66,7 +66,7 @@ const modelQuestion = z.object({
 export const voiceReadModelSchema = z.object({
   actions: z.array(modelAction),
   /** Pantry Questions, one per Ingredient asked about (ADR 0020). */
-  questions: z.array(modelQuestion),
+  questions: z.array(modelQuestion).default([]),
   /** Phrases the model could not turn into a supported Voice Action. */
   unsupported: z.array(z.string().trim().min(1).max(200)),
   /** The language the text was spoken in, or null when it can't be told. Only Assistant Requests use it. */
@@ -80,6 +80,9 @@ export const voiceReadJsonSchema = z.toJSONSchema(voiceReadModelSchema, {
   target: 'draft-7',
 });
 delete voiceReadJsonSchema.$schema;
+// The provider's schema keeps `questions` required; the `default` only serves parsing a reply that omits it.
+delete (voiceReadJsonSchema.properties as Record<string, { default?: unknown }>)
+  .questions.default;
 
 /**
  * A Voice Action as the resolvers and appliers see it: what Review shows and

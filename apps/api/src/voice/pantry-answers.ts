@@ -32,14 +32,20 @@ export type AnswerBatch = {
   expiryDate: string | null;
 };
 
+/** What the answers are read from; later kinds add fields (Shopping List, Stale Threshold, Unmatched rows). */
+export type AnswerContext = {
+  batches: readonly AnswerBatch[];
+  /** The Member's local date. */
+  today: string;
+};
+
 /**
  * Yes when the Ingredient has at least one Batch that is not Expired (a Batch
  * expiring today still counts); no otherwise. `today` is the Member's local date.
  */
 export function answerPantryQuestions(
   questions: readonly PantryQuestion[],
-  batches: readonly AnswerBatch[],
-  today: string,
+  { batches, today }: AnswerContext,
 ): PantryAnswer[] {
   const inStock = new Set(
     batches

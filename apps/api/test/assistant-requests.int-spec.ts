@@ -648,7 +648,12 @@ describe('Assistant Requests (integration)', () => {
     it('says yes for an Ingredient in the Pantry and no for one that is not, and writes nothing', async () => {
       const ana = await member();
       await stock(ana.cookie, milk);
+      await client(app, ana.cookie, '/api/shopping-list').post(
+        '/items?locale=en',
+        { ingredientId: eggs, quantity: 6, unit: 'pcs' },
+      );
       const before = await pantryOf(ana.cookie);
+      const listBefore = await list(ana.cookie);
       reading = {
         actions: [],
         questions: [question(milk, 'Milk'), question(butter, 'Butter')],
@@ -662,7 +667,10 @@ describe('Assistant Requests (integration)', () => {
         { kind: 'yes', name: 'Milk' },
         { kind: 'no', name: 'Butter' },
       ]);
-      expect(await list(ana.cookie)).toEqual([]);
+      expect(await list(ana.cookie)).toEqual(listBefore);
+      expect(await list(ana.cookie)).toMatchObject([
+        { name: 'Eggs', quantity: 6, checked: false },
+      ]);
       expect(await pantryOf(ana.cookie)).toEqual(before);
     });
 

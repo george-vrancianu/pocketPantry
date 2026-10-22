@@ -307,11 +307,10 @@ export class VoiceService {
       asked.push({ id, text: question.spokenText, ingredient: match });
     }
     const answers = asked.length
-      ? answerPantryQuestions(
-          asked,
-          await ctx.lists.pantryBatches(),
-          input.today,
-        )
+      ? answerPantryQuestions(asked, {
+          batches: await ctx.lists.pantryBatches(),
+          today: input.today,
+        })
       : [];
     for (const phrase of read.unsupported) {
       out.push(this.notUnderstood(phrase));

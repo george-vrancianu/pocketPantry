@@ -45,11 +45,18 @@ export type AssistantReply =
 const localeOf = (member: AssistantTokenMember): CatalogLocale =>
   CATALOG_LOCALES.find((locale) => locale === member.locale) ?? FALLBACK_LOCALE;
 
-const displayName = (action: {
-  ingredient: { name: string } | null;
+/** Anything the reply names: a Voice Action or an answer. */
+type Named = {
+  id: string;
+  ingredient: { id: string; name: string } | null;
+  /** The Unmatched name. */
   name?: string | null;
+  /** What was said. */
   text: string;
-}): string => action.ingredient?.name ?? action.name ?? action.text;
+};
+
+const displayName = (action: Named): string =>
+  action.ingredient?.name ?? action.name ?? action.text;
 
 /**
  * An Assistant Request: dictated text read into Voice Actions and the safe ones
@@ -131,12 +138,7 @@ export class AssistantService {
               addSetsQuantity: true,
             });
       // The list keeps UI-locale names; the reply names things in the language spoken.
-      const nameOf = (
-        action: Pick<ResolvedVoiceAction, 'id' | 'ingredient'> & {
-          name?: string | null;
-          text: string;
-        },
-      ): string =>
+      const nameOf = (action: Named): string =>
         action.ingredient
           ? (names.get(action.ingredient.id) ?? action.ingredient.name)
           : ((replyLocale !== locale

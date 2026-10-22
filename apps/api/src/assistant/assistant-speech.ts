@@ -39,14 +39,31 @@ export type AssistantOutcomeKind = AssistantActionKind | AssistantAnswerKind;
  * result onto these: a `skipped` entry is passed as `refused` (the Member is
  * sent to the app), and entries the assistant did not understand are dropped.
  */
-export type AssistantOutcome = {
-  kind: AssistantOutcomeKind;
+export type AssistantActionOutcome = {
+  kind: AssistantActionKind;
   /** The Ingredient's display name in the Member's locale, or the spoken name when Unmatched. */
   name: string;
   quantity?: number | null;
   /** A unit code (`VoiceUnit`); an unknown code is spoken as it is. */
   unit?: string | null;
 };
+
+/** The answer to one Pantry Question. Kinds that carry details add their fields here. */
+export type AssistantAnswerOutcome = {
+  kind: AssistantAnswerKind;
+  /** The Ingredient's name in the reply language. */
+  name: string;
+};
+
+export type AssistantOutcome = AssistantActionOutcome | AssistantAnswerOutcome;
+
+const isAnswer = (
+  outcome: AssistantOutcome,
+): outcome is AssistantAnswerOutcome => ANSWER_KINDS.has(outcome.kind);
+const ANSWER_KINDS: ReadonlySet<string> = new Set<AssistantAnswerKind>([
+  'yes',
+  'no',
+]);
 
 /** A whole-request state that replaces per-outcome wording. */
 export type AssistantState =
@@ -242,7 +259,7 @@ const amountPhrase = (
 const itemPhrase = (
   locale: AssistantLocale,
   messages: Messages,
-  outcome: AssistantOutcome,
+  outcome: AssistantActionOutcome,
 ): string => {
   const { name, quantity } = outcome;
   if (outcome.kind === 'refused' || quantity == null) return name;
@@ -260,11 +277,12 @@ const itemPhrase = (
     .join(' ');
 };
 
-/** "a", "a and b", "a, b and c" in the locale's own conjunction. */
-const joinList = (locale: AssistantLocale, items: string[]): string =>
-  new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(
-    items,
-  );
+/** "a", "a and b", "a, b and c" in the locale's own conjunction (answers use "or"). */
+const joinList = (
+  locale: AssistantLocale,
+  items: string[],
+  type: 'conjunction' | 'disjunction' = 'conjunction',
+): string => new Intl.ListFormat(locale, { style: 'long', type }).format(items);
 
 /** The sentence to speak for one Assistant Request. Pure; never throws on odd input. */
 export function assistantSpeech(input: AssistantSpeechInput): string {
@@ -276,6 +294,7 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
 
   const answerClauses = ANSWER_ORDER.flatMap((kind) => {
     const names = all
+      .filter(isAnswer)
       .filter((outcome) => outcome.kind === kind)
       .map((outcome) => outcome.name);
     if (names.length === 0) return [];
@@ -283,10 +302,11 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
       messages.answers[kind].replace('{items}', items);
     return OWN_CLAUSE.has(kind)
       ? names.map(say)
-      : [say(joinList(locale, names))];
+      : [say(joinList(locale, names, 'disjunction'))];
   });
   const clauses = KIND_ORDER.flatMap((kind) => {
     const items = all
+      .filter((outcome) => !isAnswer(outcome))
       .filter((outcome) => outcome.kind === kind)
       .map((outcome) => itemPhrase(locale, messages, outcome));
     return items.length === 0

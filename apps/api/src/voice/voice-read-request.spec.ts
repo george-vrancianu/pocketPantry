@@ -119,6 +119,7 @@ describe('buildVoiceReadRequest', () => {
         expect.arrayContaining(['actions', 'questions', 'unsupported']),
       );
       expect(schema.required).toContain('questions');
+      expect(JSON.stringify(schema)).not.toContain('"default"');
     });
   });
 

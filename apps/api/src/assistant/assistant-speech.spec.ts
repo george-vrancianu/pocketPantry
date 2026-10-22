@@ -314,7 +314,7 @@ describe('assistantSpeech', () => {
     it('gives each yes its own sentence and groups the nos into one list', () => {
       expect(
         say('en', [yes('milk'), no('butter'), yes('rice'), no('eggs')]),
-      ).toBe('You have milk. You have rice. No butter and eggs.');
+      ).toBe('You have milk. You have rice. No butter or eggs.');
     });
 
     it('speaks the answers first, then the outcome clauses', () => {
@@ -331,13 +331,13 @@ describe('assistantSpeech', () => {
 
     it('speaks Romanian', () => {
       expect(say('ro', [yes('lapte'), no('unt'), no('ouă')])).toBe(
-        'Ai lapte. Nu ai unt și ouă.',
+        'Ai lapte. Nu ai unt sau ouă.',
       );
     });
 
     it('speaks Danish', () => {
       expect(say('da', [yes('mælk'), no('smør'), no('æg')])).toBe(
-        'Du har mælk. Du har ikke smør og æg.',
+        'Du har mælk. Du har ikke smør eller æg.',
       );
     });
 
