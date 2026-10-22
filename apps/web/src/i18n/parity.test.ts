@@ -312,7 +312,11 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
       'settings:familyAllergies.label',
     ],
   ],
-  ['mode', 'the Scan Mode dial, not a Theme', ['scan:info.dial']],
+  [
+    'mode',
+    'the camera mode slider, not a Theme',
+    ['scan:info.intro', 'scan:slider.announce'],
+  ],
   [
     'mode',
     "the phone's OS dark/light mode (Match system), not a Theme",

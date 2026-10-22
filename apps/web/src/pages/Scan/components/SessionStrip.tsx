@@ -9,7 +9,7 @@ import {
   scanDisplayState,
   type SessionScan,
 } from '../../../lib/scanSession';
-import { MODE_ICONS } from './ModeDial';
+import { MODE_ICONS } from './modeIcons';
 
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
 

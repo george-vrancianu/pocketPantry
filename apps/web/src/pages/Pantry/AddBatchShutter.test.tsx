@@ -41,24 +41,21 @@ async function openOverlay(mode: 'product' | 'barcode') {
 }
 
 const base = { pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0 };
-const current = () => screen.getByRole('radio', { checked: true });
-const press = (target: Element) =>
-  fireEvent.pointerDown(target, { ...base, clientX: 100, clientY: 100 });
-const release = (target: Element) =>
-  fireEvent.pointerUp(target, { ...base, clientX: 100, clientY: 100 });
+const shutter = () => screen.getByRole('button', { name: 'Take photo' });
+const press = () =>
+  fireEvent.pointerDown(shutter(), { ...base, clientX: 100, clientY: 100 });
+const release = () =>
+  fireEvent.pointerUp(shutter(), { ...base, clientX: 100, clientY: 100 });
 const advance = (ms: number) =>
   act(() => {
     vi.advanceTimersByTime(ms);
   });
 const flush = () => act(async () => {});
 
-describe('Scanning from the add-Batch camera overlay by the mode dial', () => {
-  let now = 1000;
+describe('Scanning from the add-Batch camera overlay by the shutter', () => {
   beforeEach(() => {
     localStorage.clear();
-    now = 1000;
     fakeCamera.focusSupported = true;
-    vi.spyOn(performance, 'now').mockImplementation(() => now);
     Object.defineProperty(navigator, 'vibrate', {
       value: vi.fn(() => true),
       configurable: true,
@@ -74,30 +71,34 @@ describe('Scanning from the add-Batch camera overlay by the mode dial', () => {
   const gesturesOnFakeTimers = () =>
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 
-  it('double-tapping the current mode sends a Scan, with the guide haptic', async () => {
+  it('has the v3 chrome: the shutter and a slider with Product and Barcode only', async () => {
+    stubPantry();
+    await openOverlay('product');
+    expect(shutter()).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('radio').map((radio) => radio.textContent),
+    ).toEqual(['Product', 'Barcode']);
+    expect(screen.queryByRole('button', { name: /^Review/ })).toBeNull();
+  });
+
+  it('a tap on the shutter sends a Scan, with the guide haptic', async () => {
     const calls = stubPantry();
     await openOverlay('product');
-    gesturesOnFakeTimers();
-    for (let i = 0; i < 2; i++) {
-      press(current());
-      release(current());
-      now += 100;
-    }
+    fireEvent.click(shutter());
     await flush();
     expect(scans(calls)).toHaveLength(1);
     expect(navigator.vibrate).toHaveBeenCalledWith(12);
   });
 
-  it('holding the current mode focuses, then sends exactly one Scan on release', async () => {
+  it('holding the shutter focuses, then sends exactly one Scan on release', async () => {
     const calls = stubPantry();
     await openOverlay('product');
     gesturesOnFakeTimers();
-    press(current());
+    press();
     await advance(301);
     expect(fakeCamera.focuses).toBe(1);
     expect(navigator.vibrate).toHaveBeenCalledWith(6);
-    expect(screen.getByTestId('mode-dial-hold')).toBeInTheDocument();
-    release(current());
+    release();
     expect(scans(calls)).toHaveLength(0);
     fakeCamera.finishFocus();
     await flush();
@@ -105,19 +106,15 @@ describe('Scanning from the add-Batch camera overlay by the mode dial', () => {
     expect(navigator.vibrate).toHaveBeenCalledWith(12);
   });
 
-  it('sends nothing for either gesture in Barcode Lookup', async () => {
+  it('shows a ring that takes no input in Barcode Lookup', async () => {
     const calls = stubPantry();
     await openOverlay('barcode');
-    gesturesOnFakeTimers();
-    for (let i = 0; i < 2; i++) {
-      press(current());
-      release(current());
-      now += 100;
-    }
-    press(current());
-    await advance(500);
-    release(current());
-    fakeCamera.finishFocus();
+    expect(
+      screen.queryByRole('button', { name: 'Take photo' }),
+    ).not.toBeInTheDocument();
+    const ring = screen.getByTestId('shutter-ring');
+    expect(ring).toHaveAttribute('aria-hidden', 'true');
+    fireEvent.click(ring);
     await flush();
     expect(fakeCamera.focuses).toBe(0);
     expect(screen.queryByTestId('scan-flash')).toBeNull();

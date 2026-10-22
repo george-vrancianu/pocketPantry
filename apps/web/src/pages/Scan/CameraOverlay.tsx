@@ -16,9 +16,12 @@ import { readBarcode, useCamera } from '../../lib/camera';
 import type { CameraMode } from '../../lib/cameraMode';
 import { IMAGE_PREPARATION } from '../../lib/scanImage';
 import { glassControl, glassFocusRing, shade } from './components/glass';
-import { ModeDial } from './components/ModeDial';
+import { ModeSlider } from './components/ModeSlider';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
-import { Viewfinder } from './components/Viewfinder';
+import { ShutterButton } from './components/ShutterButton';
+import { Viewfinder, useShotFeedback } from './components/Viewfinder';
+import { measureView, useGuideRect } from './hooks/useGuideRect';
+import { SHUTTER_ROW_HEIGHT } from '../../lib/scanGuides';
 import { useScanLanguage } from './hooks/useScanLanguage';
 
 export type { CameraMode };
@@ -95,8 +98,10 @@ export function CameraOverlay({
   const [flash, setFlash] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [failed, setFailed] = useState(false);
-  const dragEndedAt = useRef<number | null>(null);
-  const scanRef = useRef<(() => void) | null>(null);
+  const { shot, fire } = useShotFeedback();
+  const guide = useGuideRect(mode);
+  const [viewfinder, setViewfinder] = useState<HTMLElement | null>(null);
+  const [sliding, setSliding] = useState(false);
   const shooting = useRef(false);
   const { videoRef } = camera;
 
@@ -158,11 +163,11 @@ export function CameraOverlay({
         (resolve) => (settle = resolve),
       );
       setPreparing(true);
-      const feed = camera.videoRef.current;
-      const image = await IMAGE_PREPARATION[mode](frame, 'camera', {
-        width: feed?.clientWidth || window.innerWidth,
-        height: feed?.clientHeight || window.innerHeight,
-      });
+      const image = await IMAGE_PREPARATION[mode](
+        frame,
+        'camera',
+        measureView(camera.videoRef.current),
+      );
       if (!closed.current) {
         onResult({ kind: 'product', image, scanLanguage, barcode });
         setTimeout(() => {
@@ -203,36 +208,35 @@ export function CameraOverlay({
       }}
     >
       <Box
-        component="video"
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-        }}
-      />
-      <Box
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          backgroundImage: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${shade(45)} 100%)`,
-        }}
-      />
-      <Viewfinder
-        mode={mode}
-        disabled={mode === 'barcode' || preparing || camera.status !== 'ready'}
-        onScan={() => void shoot()}
-        dragEndedAt={dragEndedAt}
-        scanRef={scanRef}
-      />
+        ref={setViewfinder}
+        sx={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }}
+      >
+        <Box
+          component="video"
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            backgroundImage: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${shade(45)} 100%)`,
+          }}
+        />
+        <Viewfinder rect={guide} shot={shot} sliding={sliding} />
+      </Box>
       <Box
         sx={{
           position: 'absolute',
@@ -289,43 +293,71 @@ export function CameraOverlay({
           left: 0,
           right: 0,
           bottom: 0,
-          px: 2.5,
-          pb: 'calc(16px + env(safe-area-inset-bottom))',
         }}
       >
-        <Typography
-          role="status"
-          component="div"
-          sx={{ mt: '24px', minHeight: 24, textAlign: 'center', fontSize: 13 }}
-        >
-          {camera.status === 'unavailable'
-            ? t('overlay.noCamera')
-            : mode === 'barcode'
-              ? t('overlay.pointAtBarcode')
-              : null}
-        </Typography>
-        {notice ? <Alert severity="info">{notice}</Alert> : null}
-        {failed ? <Alert role="alert">{t('overlay.photoFailed')}</Alert> : null}
-        {modes.length > 1 ? (
-          <ModeDial
-            modes={modes}
-            mode={mode}
-            disabled={preparing}
-            keysDisabled={preparing}
-            dragEndedAt={dragEndedAt}
-            onScan={() => scanRef.current?.()}
-            scanDisabled={preparing || camera.status !== 'ready'}
-            focusForScan={camera.focusForScan}
-            onChange={(next) => {
-              const picked = modes.find((item) => item === next);
-              if (!picked) return;
-              setMode(picked);
-              onModeChange?.(picked);
+        <Box sx={{ px: 2.5 }}>
+          <Typography
+            role="status"
+            component="div"
+            sx={{
+              mt: '24px',
+              minHeight: 24,
+              textAlign: 'center',
+              fontSize: 13,
             }}
-          />
-        ) : (
-          <Box sx={visuallyHidden}>{t(`mode.${mode}`)}</Box>
-        )}
+          >
+            {camera.status === 'unavailable'
+              ? t('overlay.noCamera')
+              : mode === 'barcode'
+                ? t('overlay.pointAtBarcode')
+                : null}
+          </Typography>
+          {notice ? <Alert severity="info">{notice}</Alert> : null}
+          {failed ? (
+            <Alert role="alert">{t('overlay.photoFailed')}</Alert>
+          ) : null}
+        </Box>
+        <Box sx={{ pb: 'env(safe-area-inset-bottom)' }}>
+          <Box
+            sx={{
+              height: SHUTTER_ROW_HEIGHT,
+              px: '30px',
+              display: 'grid',
+              gridTemplateColumns: '1fr auto 1fr',
+              alignItems: 'center',
+            }}
+          >
+            <Box />
+            <ShutterButton
+              ring={mode === 'barcode'}
+              disabled={preparing || camera.status !== 'ready'}
+              onShoot={() => {
+                fire();
+                void shoot();
+              }}
+              focusForScan={camera.focusForScan}
+            />
+            <Box />
+          </Box>
+          {modes.length > 1 ? (
+            <ModeSlider
+              modes={modes}
+              mode={mode}
+              disabled={preparing}
+              keysDisabled={preparing}
+              swipeSurface={viewfinder}
+              onDragChange={setSliding}
+              onChange={(next) => {
+                const picked = modes.find((item) => item === next);
+                if (!picked) return;
+                setMode(picked);
+                onModeChange?.(picked);
+              }}
+            />
+          ) : (
+            <Box sx={visuallyHidden}>{t(`mode.${mode}`)}</Box>
+          )}
+        </Box>
       </Box>
     </Box>
   );

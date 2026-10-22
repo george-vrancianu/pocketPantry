@@ -5,8 +5,8 @@
   "info": {
     "label": "Sådan virker scanning",
     "title": "Scan dit spisekammer",
-    "body": "Ret kameraet mod en kvittering, et produkt, løse ingredienser eller en tallerken, og dobbelttryk på guiden. Du kan tjekke alt, før det gemmes.",
-    "dial": "Dobbelttryk eller hold på tilstandshjulet for at scanne; hold fokuserer først.",
+    "intro": "Vælg en tilstand, ram motivet ind mellem hjørnerne, og tryk på udløseren.",
+    "hold": "Hold udløseren nede for at fokusere først, og slip for at scanne.",
     "dismiss": "Luk"
   },
   "scanLanguage": {
@@ -14,6 +14,12 @@
   },
   "gallery": "Vælg fra fotos",
   "modes": "Scanningstilstand",
+  "shutter": {
+    "label": "Tag billede"
+  },
+  "slider": {
+    "announce": "Tilstanden {{mode}}"
+  },
   "reading": "Læser dit foto",
   "noCamera": "Kameraet er ikke tilgængeligt. Vælg i stedet et foto fra dit galleri.",
   "crop": {
@@ -33,7 +39,6 @@
     "barcode": "Stregkode"
   },
   "guide": {
-    "scan": "Scan: dobbelttryk eller tryk Enter",
     "receipt": "Hold telefonen cirka 40 cm over kvitteringen, så kanterne rører hjælpelinjen.",
     "receiptFold": "Ved lange kvitteringer: fold, hvor hjælpelinjen slutter (cirka for hver 20. vare), vend den foldede del om, og tag det næste foto."
   },

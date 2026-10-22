@@ -37,7 +37,7 @@ const checked = () =>
     .filter((r) => r.getAttribute('aria-checked') === 'true')
     .map((r) => r.getAttribute('aria-label') ?? r.textContent);
 
-describe('Scan mode dial: when arrows must not change the mode', () => {
+describe('Scan mode slider: when arrows must not change the mode', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:photo');
@@ -114,12 +114,12 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
     );
   });
 
-  it('announces the change in the dial status, naming the new mode', async () => {
+  it('announces the change in the slider status, naming the new mode', async () => {
     setup('/scan?mode=product');
     await userEvent.click(within(dial()).getByRole('radio', { name: 'Plate' }));
     const live = screen
       .getAllByRole('status')
-      .filter((el) => el.textContent?.trim() === 'Plate');
+      .filter((el) => el.textContent?.trim() === 'Plate mode');
     expect(live).toHaveLength(1);
   });
 });

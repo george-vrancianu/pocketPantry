@@ -13,7 +13,7 @@ import {
   radius,
   useForcedThemeColor,
 } from '@pocket-pantry/ui';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   glassControl,
@@ -23,9 +23,12 @@ import {
 } from './components/glass';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { SessionStrip } from './components/SessionStrip';
-import { ModeDial } from './components/ModeDial';
+import { ModeSlider } from './components/ModeSlider';
+import { ShutterButton } from './components/ShutterButton';
 import { InfoSheet } from './components/InfoSheet';
-import { Viewfinder } from './components/Viewfinder';
+import { Viewfinder, useShotFeedback } from './components/Viewfinder';
+import { useGuideRect } from './hooks/useGuideRect';
+import { SHUTTER_ROW_HEIGHT } from '../../lib/scanGuides';
 import { failedCopyKey } from '../../lib/scanSession';
 import { useScanScreen, type ScanScreenModes } from './hooks/useScanScreen';
 
@@ -57,8 +60,11 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
   const { videoRef } = screen.camera;
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
-  const dragEndedAt = useRef<number | null>(null);
-  const scanRef = useRef<(() => void) | null>(null);
+  const { shot, fire } = useShotFeedback();
+  const guide = useGuideRect(screen.mode);
+  // The viewfinder, so a sideways swipe on it also drives the mode slider.
+  const [viewfinder, setViewfinder] = useState<HTMLElement | null>(null);
+  const [sliding, setSliding] = useState(false);
   const closeInfo = useCallback(() => setInfoOpen(false), [setInfoOpen]);
 
   return (
@@ -77,42 +83,38 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
       }}
     >
       <Box
-        component="video"
-        ref={videoRef}
-        data-testid="scan-feed"
-        autoPlay
-        playsInline
-        muted
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-        }}
-      />
-      <Box
-        data-testid="scan-vignette"
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          backgroundImage: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${shade(45)} 100%)`,
-        }}
-      />
-      <Viewfinder
-        mode={screen.mode}
-        disabled={
-          screen.mode === 'barcode' ||
-          screen.controlsDisabled ||
-          screen.camera.status !== 'ready'
-        }
-        onScan={() => void screen.shoot()}
-        dragEndedAt={dragEndedAt}
-        scanRef={scanRef}
-      />
+        ref={setViewfinder}
+        data-testid="scan-viewfinder"
+        sx={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }}
+      >
+        <Box
+          component="video"
+          ref={videoRef}
+          data-testid="scan-feed"
+          autoPlay
+          playsInline
+          muted
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+        <Box
+          data-testid="scan-vignette"
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            backgroundImage: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${shade(45)} 100%)`,
+          }}
+        />
+        <Viewfinder rect={guide} shot={shot} sliding={sliding} />
+      </Box>
       <SessionStrip scans={screen.scans} onRetry={screen.retryScan} />
 
       <Box
@@ -262,54 +264,84 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
           left: 0,
           right: 0,
           bottom: 0,
+          display: 'flex',
+          flexDirection: 'column',
           maxHeight: 'calc(100% - 80px)',
-          overflowY: 'auto',
-          px: 2.5,
-          pb: 'calc(16px + env(safe-area-inset-bottom))',
         }}
       >
-        <Box
-          role="status"
-          sx={{ mt: '24px', minHeight: 24, textAlign: 'center', fontSize: 13 }}
-        >
-          {screen.reading ? t('reading') : null}
-          {screen.camera.status === 'unavailable'
-            ? t('noCamera')
-            : screen.mode === 'barcode'
-              ? t('overlay.pointAtBarcode')
-              : null}
+        <Box sx={{ overflowY: 'auto', px: 2.5 }}>
+          <Box
+            role="status"
+            sx={{
+              mt: '24px',
+              minHeight: 24,
+              textAlign: 'center',
+              fontSize: 13,
+            }}
+          >
+            {screen.reading ? t('reading') : null}
+            {screen.camera.status === 'unavailable'
+              ? t('noCamera')
+              : screen.mode === 'barcode'
+                ? t('overlay.pointAtBarcode')
+                : null}
+          </Box>
+          {/* Barcode Lookups are not Scans: the Scan Cap does not stop them. */}
+          {screen.capped && screen.mode !== 'barcode' ? (
+            <Box sx={{ mt: 1 }}>
+              <Alert severity="warning">{t('capReached')}</Alert>
+            </Box>
+          ) : null}
+          {screen.error ? (
+            <Box sx={{ mt: 1 }}>
+              <Alert>{screen.error}</Alert>
+            </Box>
+          ) : null}
         </Box>
-        {/* Barcode Lookups are not Scans: the Scan Cap does not stop them. */}
-        {screen.capped && screen.mode !== 'barcode' ? (
-          <Box sx={{ mt: 1 }}>
-            <Alert severity="warning">{t('capReached')}</Alert>
-          </Box>
-        ) : null}
-        {screen.error ? (
-          <Box sx={{ mt: 1 }}>
-            <Alert>{screen.error}</Alert>
-          </Box>
-        ) : null}
 
-        <ModeDial
-          modes={screen.modes}
-          mode={screen.mode}
-          disabled={screen.modesDisabled || infoOpen}
-          keysDisabled={screen.modesDisabled || infoOpen || screen.reading}
-          dragEndedAt={dragEndedAt}
-          onChange={screen.setMode}
-          onScan={() => scanRef.current?.()}
-          scanDisabled={
-            screen.controlsDisabled || screen.camera.status !== 'ready'
-          }
-          focusForScan={screen.camera.focusForScan}
-        />
+        <Box sx={{ pb: 'env(safe-area-inset-bottom)' }}>
+          <Box
+            sx={{
+              height: SHUTTER_ROW_HEIGHT,
+              px: '30px',
+              display: 'grid',
+              gridTemplateColumns: '1fr auto 1fr',
+              alignItems: 'center',
+            }}
+          >
+            <Box />
+            <ShutterButton
+              ring={screen.mode === 'barcode'}
+              disabled={
+                screen.controlsDisabled ||
+                screen.full ||
+                screen.camera.status !== 'ready'
+              }
+              onShoot={() => {
+                fire();
+                void screen.shoot();
+              }}
+              onBlocked={screen.shutterBlocked}
+              focusForScan={screen.camera.focusForScan}
+            />
+            <Box />
+          </Box>
+          <ModeSlider
+            modes={screen.modes}
+            mode={screen.mode}
+            disabled={screen.modesDisabled || infoOpen}
+            keysDisabled={screen.modesDisabled || infoOpen || screen.reading}
+            onChange={screen.setMode}
+            swipeSurface={viewfinder}
+            onDragChange={setSliding}
+          />
+        </Box>
       </Box>
 
       <Snackbar
         open={screen.toast !== null}
         onClose={screen.clearToast}
-        bottom={170}
+        bottom={200}
       >
         <Alert severity={screen.toast?.severity} role="status">
           {screen.toast?.text}

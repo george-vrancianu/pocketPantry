@@ -114,7 +114,7 @@ const cameraButton = () =>
 
 async function shoot(user: ReturnType<typeof userEvent.setup>) {
   await user.click(cameraButton());
-  screen.getByTestId('scan-guide').focus();
+  screen.getByRole('button', { name: 'Take photo' }).focus();
   await user.keyboard('{Enter}');
 }
 
@@ -185,7 +185,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    screen.getByTestId('scan-guide').focus();
+    screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
     await user.keyboard('{Escape}');
     finish();
@@ -219,7 +219,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     renderWithProviders(<PantryPage />, { locale: 'ro' });
     await user.click(await screen.findByRole('button', { name: /^Adaugă/ }));
     await user.click(screen.getByRole('button', { name: /camera/ }));
-    screen.getByTestId('scan-guide').focus();
+    screen.getByRole('button', { name: 'Fă o fotografie' }).focus();
     await user.keyboard('{Enter}');
     release();
     expect(await screen.findByDisplayValue('0,5')).toBeInTheDocument();
@@ -251,7 +251,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     await user.click(cameraButton());
     expect(screen.getByLabelText('Reading as')).toHaveValue('ro');
     await user.selectOptions(screen.getByLabelText('Reading as'), 'da');
-    screen.getByTestId('scan-guide').focus();
+    screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
 
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();

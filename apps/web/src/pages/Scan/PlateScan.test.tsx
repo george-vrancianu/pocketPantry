@@ -8,7 +8,7 @@ import { resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
-import { scanViaGuide } from '../../test/scan';
+import { takeScan } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -98,7 +98,7 @@ function renderPlate(extra: Record<string, () => Response> = {}) {
 }
 
 const scanThenDone = async () => {
-  scanViaGuide();
+  takeScan();
   await userEvent.click(await screen.findByRole('button', { name: /^Done/ }));
 };
 const picker = () => screen.findByRole('group', { name: 'Pick the dish' });
@@ -115,7 +115,7 @@ describe('Plate Scan in the Scan Session', () => {
 
   it('queues like the other modes: stays on the camera, no picker there', async () => {
     const calls = renderPlate();
-    scanViaGuide();
+    takeScan();
     expect(await screen.findAllByTestId('scan-thumbnail')).toHaveLength(1);
     expect(screen.getByTestId('scan-guide')).toBeInTheDocument();
     await waitFor(() =>
@@ -159,7 +159,7 @@ describe('Plate Scan in the Scan Session', () => {
 
   it('Add all saves a picked Plate card to the Shopping List and leaves an unpicked one', async () => {
     const calls = renderPlate();
-    scanViaGuide();
+    takeScan();
     await userEvent.click(await screen.findByRole('button', { name: /^Done/ }));
     await pick(/Pancakes/);
     await screen.findByTestId('card-result');

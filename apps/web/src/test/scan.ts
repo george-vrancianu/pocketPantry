@@ -4,21 +4,12 @@ import { useEffect, useState } from 'react';
 import { beforeEach, vi } from 'vitest';
 import type { CameraStatus, FocusPass } from '../lib/camera';
 
-/** The Scan guide, which takes a Scan on a double-tap. */
-export const scanGuide = () => screen.getByTestId('scan-guide');
+/** The shutter button, which takes a Scan. */
+export const shutter = () => screen.getByRole('button', { name: 'Take photo' });
 
-/** Double-tap the Scan guide, as a Member takes a Scan. */
-export function scanViaGuide() {
-  const pointer = {
-    pointerId: 1,
-    pointerType: 'touch',
-    isPrimary: true,
-    button: 0,
-  };
-  for (let i = 0; i < 2; i += 1) {
-    fireEvent.pointerDown(scanGuide(), pointer);
-    fireEvent.pointerUp(scanGuide(), pointer);
-  }
+/** Take a Scan as a Member does: press the shutter. */
+export function takeScan() {
+  fireEvent.click(shutter());
 }
 
 /** Done, then the first card once it is read: the line editor for that Scan. */
@@ -49,7 +40,7 @@ function defaults() {
     status: 'ready' as CameraStatus,
     /** Whether the camera has a torch; the flash toggle shows only then. */
     torchSupported: true,
-    /** Whether it supports `single-shot` focus. Off: a Scan's focus pass is the steady 400 ms pause. */
+    /** Whether it supports `single-shot` focus. Off: a Scan's focus pass is the steady pause (`FOCUS_PAUSE_MS`). */
     focusSupported: false,
     /** The frame a Scan captures (null: no live frame, so the capture yields nothing). */
     frame: new Blob(['frame'], { type: 'image/jpeg' }) as Blob | null,

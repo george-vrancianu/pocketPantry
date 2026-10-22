@@ -4,7 +4,7 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { scanViaGuide } from '../../test/scan';
+import { takeScan } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -101,7 +101,7 @@ const thumbnails = () => screen.queryAllByTestId('scan-thumbnail');
 const states = () => thumbnails().map((t) => t.getAttribute('data-state'));
 const flush = () => act(async () => {});
 const scanOnce = async () => {
-  scanViaGuide();
+  takeScan();
   await flush();
 };
 

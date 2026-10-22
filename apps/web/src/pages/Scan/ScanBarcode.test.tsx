@@ -1,4 +1,10 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,7 +13,7 @@ import { resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
-import { scanViaGuide, emitBarcode, fakeCamera } from '../../test/scan';
+import { takeScan, emitBarcode, fakeCamera, shutter } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -25,7 +31,7 @@ const selected = () =>
   within(dial())
     .getAllByRole('radio')
     .filter((radio) => radio.getAttribute('aria-checked') === 'true')
-    .map((radio) => radio.getAttribute('aria-label'));
+    .map((radio) => radio.textContent);
 
 const yogurt = {
   owner: 'catalog',
@@ -129,7 +135,7 @@ describe('Barcode on the Scan page', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  describe('the mode dial', () => {
+  describe('the mode slider', () => {
     it('opens on Receipt the first time', () => {
       renderScan();
       expect(selected()).toEqual(['Receipt']);
@@ -158,8 +164,15 @@ describe('Barcode on the Scan page', () => {
   });
 
   describe('the controls', () => {
-    it('disables the shutter, hides the guide from touch, shows the hint, and hides the language chip and gallery', async () => {
+    it('turns the shutter into a ring that takes no input, shows the hint, and hides the language chip and gallery', async () => {
       renderScan('/scan?mode=barcode');
+      expect(
+        screen.queryByRole('button', { name: 'Take photo' }),
+      ).not.toBeInTheDocument();
+      const ring = screen.getByTestId('shutter-ring');
+      expect(ring).toHaveAttribute('aria-hidden', 'true');
+      expect(ring).not.toHaveAttribute('tabindex');
+      expect(ring.querySelector('button, [tabindex]')).toBeNull();
       expect(screen.getByTestId('scan-guide')).toHaveAttribute(
         'aria-hidden',
         'true',
@@ -183,6 +196,31 @@ describe('Barcode on the Scan page', () => {
       expect(screen.getByLabelText(/Reading as/)).toBeInTheDocument();
     });
   });
+
+  describe('changing mode', () => {
+    it('forgets the last code, so the pack still held up is taken again on coming back', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      await decode(A);
+      expect(thumbnails()).toHaveLength(1);
+      await user.click(screen.getByRole('radio', { name: 'Product' }));
+      await user.click(screen.getByRole('radio', { name: 'Barcode' }));
+      await decode(A);
+      expect(thumbnails()).toHaveLength(2);
+    });
+
+    it.each(['Plate', 'Barcode'])(
+      'hides the Scan Language chip in %s',
+      async (mode) => {
+        const user = userEvent.setup();
+        renderScan('/scan?mode=product');
+        expect(screen.getByLabelText(/Reading as/)).toBeInTheDocument();
+        await user.click(screen.getByRole('radio', { name: mode }));
+        expect(screen.queryByLabelText(/Reading as/)).not.toBeInTheDocument();
+      },
+    );
+  });
+
   describe('accepting codes', () => {
     it('adds a card per accepted code with the frozen frame and a barcode badge, and keeps reading', async () => {
       renderScan('/scan?mode=barcode');
@@ -354,19 +392,29 @@ describe('Barcode on the Scan page', () => {
       });
     });
 
-    it('does not take a Scan when the guide is double-tapped', async () => {
+    it('does not take a Scan when the ring or the guide is tapped', async () => {
       renderScan('/scan?mode=barcode');
-      scanViaGuide();
+      fireEvent.click(screen.getByTestId('shutter-ring'));
+      fireEvent.pointerDown(screen.getByTestId('scan-guide'));
+      fireEvent.pointerUp(screen.getByTestId('scan-guide'));
       await flush();
       expect(thumbnails()).toHaveLength(0);
+    });
+
+    it('brings the shutter back when the mode changes away from Barcode', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      await user.click(screen.getByRole('radio', { name: 'Product' }));
+      expect(shutter()).toBeInTheDocument();
+      expect(screen.queryByTestId('shutter-ring')).not.toBeInTheDocument();
     });
 
     it('looks the code up at once in the UI locale, even when both photo reads are busy', async () => {
       const user = userEvent.setup();
       renderScan('/scan?mode=product');
-      scanViaGuide();
+      takeScan();
       await flush();
-      scanViaGuide();
+      takeScan();
       await flush();
       expect(
         calls.filter((call) => call.key === 'POST /api/scan/product'),
@@ -499,7 +547,7 @@ describe('Barcode on the Scan page', () => {
         });
         return Promise.resolve(Response.json(found()));
       });
-      scanViaGuide();
+      takeScan();
       await flush();
       await waitFor(() => expect(states()).toEqual(['failed']));
       expect(screen.getByText('Daily scan limit reached')).toBeInTheDocument();
@@ -623,7 +671,7 @@ describe('Barcode on the Scan page', () => {
             },
           ],
         });
-      scanViaGuide();
+      takeScan();
       await waitFor(() => expect(states()).toEqual(['read']));
       await user.click(within(dial()).getByRole('radio', { name: /Barcode/ }));
       answers[A] = () => Response.json(found());
@@ -856,7 +904,7 @@ describe('Barcode on the Scan page', () => {
             },
           ],
         });
-      scanViaGuide();
+      takeScan();
       await waitFor(() => expect(states()).toEqual(['read']));
       await user.click(screen.getByRole('button', { name: /^Done/ }));
       await user.click(await screen.findByTestId('card-result'));

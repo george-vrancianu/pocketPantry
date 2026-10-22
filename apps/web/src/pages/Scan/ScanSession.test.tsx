@@ -8,7 +8,7 @@ import {
   resetScanSession,
 } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { scanViaGuide } from '../../test/scan';
+import { takeScan } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -78,7 +78,7 @@ const states = () => thumbnails().map((t) => t.getAttribute('data-state'));
 const done = () => screen.getByRole('button', { name: /^Done/ });
 const flush = () => act(async () => {});
 const scanOnce = async () => {
-  scanViaGuide();
+  takeScan();
   await flush();
 };
 const answer = async (index: number, lines?: unknown[]) => {

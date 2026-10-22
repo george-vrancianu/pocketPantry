@@ -21,7 +21,7 @@ describe('InfoSheet focus trap', () => {
 });
 
 describe('InfoSheet mode list', () => {
-  it('describes the four Scan Modes in dial order', () => {
+  it('describes the four Scan Modes in list order', () => {
     renderWithProviders(<InfoSheet onClose={vi.fn()} />);
     const items = within(
       screen.getByRole('dialog').querySelector('ul') as HTMLElement,
@@ -44,14 +44,15 @@ describe('InfoSheet mode list', () => {
   });
 });
 
-describe('InfoSheet dial gestures line', () => {
+describe('InfoSheet shutter lines', () => {
   it.each([
-    ['en', /Double-tap or hold the mode dial to scan; hold focuses first\./],
-    ['ro', /Atinge de două ori sau ține apăsat cadranul de moduri/],
-    ['da', /Dobbelttryk eller hold på tilstandshjulet for at scanne/],
-  ])('says in %s how to scan from the dial', async (language, line) => {
+    ['en', /tap the shutter\./, /Hold the shutter to focus first/],
+    ['ro', /atinge declanșatorul/, /Ține apăsat declanșatorul/],
+    ['da', /tryk på udløseren/, /Hold udløseren nede/],
+  ])('says in %s how to scan with the shutter', async (language, tap, hold) => {
     const { i18n } = renderWithProviders(<InfoSheet onClose={vi.fn()} />);
     await act(() => i18n.changeLanguage(language));
-    expect(screen.getByRole('dialog')).toHaveTextContent(line);
+    expect(screen.getByRole('dialog')).toHaveTextContent(tap);
+    expect(screen.getByRole('dialog')).toHaveTextContent(hold);
   });
 });

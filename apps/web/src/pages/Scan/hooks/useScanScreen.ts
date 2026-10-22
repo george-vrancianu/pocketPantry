@@ -23,6 +23,7 @@ import { resizeImage } from '../../../lib/image';
 import { importPhotos, resizingImports } from '../../../lib/importPhotos';
 import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useScanLanguage } from './useScanLanguage';
+import { measureView } from './useGuideRect';
 import {
   CAMERA_MODES,
   loadScanPageMode,
@@ -159,11 +160,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     source: Blob,
     origin: ImageOrigin,
     prepare: () => Promise<string> = () => {
-      const feed = camera.videoRef.current;
-      const view = {
-        width: feed?.clientWidth || window.innerWidth,
-        height: feed?.clientHeight || window.innerHeight,
-      };
+      const view = measureView(camera.videoRef.current);
       // Barcode sends no photo: it never gets here.
       if (mode === 'barcode')
         return Promise.reject(new Error('Barcode has no photo to prepare'));
@@ -215,7 +212,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     return false;
   };
 
-  // A double tap on the guide must not send the same photo twice.
+  // Two quick presses must not send the same photo twice.
   const shooting = useRef(false);
   const shoot = async () => {
     if (shooting.current || capped || mode === 'barcode') return;
@@ -346,6 +343,12 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     modesDisabled: resizing,
     controlsDisabled: reading || capped,
     capped,
+    /** The Scan Session holds the most cards it can. */
+    full: session.scans.length >= MAX_SESSION_SCANS,
+    /** The shutter was pressed while it was disabled: the limit says why (the other reasons already show). */
+    shutterBlocked: () => {
+      if (session.scans.length >= MAX_SESSION_SCANS) warnSessionFull();
+    },
     notAdded,
     dismissNotAdded: () => setNotAdded(false),
     retryScan: (id: string) => {

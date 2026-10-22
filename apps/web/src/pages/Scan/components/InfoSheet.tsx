@@ -88,10 +88,10 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
           {t('info.title')}
         </Typography>
         <Typography sx={{ mt: 1, fontSize: 14, color: tokens.color.muted }}>
-          {t('info.body')}
+          {t('info.intro')}
         </Typography>
         <Typography sx={{ mt: 1, fontSize: 14, color: tokens.color.muted }}>
-          {t('info.dial')}
+          {t('info.hold')}
         </Typography>
         <Box
           component="ul"

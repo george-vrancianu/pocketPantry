@@ -5,8 +5,8 @@
   "info": {
     "label": "How scanning works",
     "title": "Scanning your pantry",
-    "body": "Point the camera at a receipt, a product, loose ingredients or a plate, then double-tap the guide. You can check everything before it is saved.",
-    "dial": "Double-tap or hold the mode dial to scan; hold focuses first.",
+    "intro": "Pick a mode, frame it inside the corners, tap the shutter.",
+    "hold": "Hold the shutter to focus first, then let go to scan.",
     "dismiss": "Close"
   },
   "scanLanguage": {
@@ -14,6 +14,12 @@
   },
   "gallery": "Choose from photos",
   "modes": "Scan mode",
+  "shutter": {
+    "label": "Take photo"
+  },
+  "slider": {
+    "announce": "{{mode}} mode"
+  },
   "reading": "Reading your photo",
   "noCamera": "The camera is not available. Choose a photo from your gallery instead.",
   "crop": {
@@ -33,7 +39,6 @@
     "barcode": "Barcode"
   },
   "guide": {
-    "scan": "Scan: double-tap or press Enter",
     "receipt": "Hold the phone about 40 cm above the receipt so its edges touch the guide.",
     "receiptFold": "For long receipts, fold where the guide ends (about every 20 items), flip the folded part over, and take the next photo."
   },

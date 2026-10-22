@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PHOTO_DECODE_TIMEOUT_MS, resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { scanViaGuide, fakeCamera } from '../../test/scan';
+import { takeScan, fakeCamera } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -134,7 +134,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('sends the barcode found in the photo with the saved Batch, without Open Food Facts credit', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
+    takeScan();
     await waitFor(() => expect(states()).toEqual(['read']));
     await decoded(CODE);
     // No lookup happened: nothing credits Open Food Facts in the editor.
@@ -154,7 +154,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
 
   it('decodes the full captured frame, not the resized photo', async () => {
     renderScan();
-    scanViaGuide();
+    takeScan();
     await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
     expect(await fakeCamera.pendingReads[0].source.text()).toBe('frame');
   });
@@ -162,7 +162,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('keeps the barcode after the Member changes the Ingredient in Review', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
+    takeScan();
     await waitFor(() => expect(states()).toEqual(['read']));
     await decoded(CODE);
     await user.click(screen.getByRole('button', { name: /^Done/ }));
@@ -190,7 +190,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('attaches a barcode that settles while the Member is already editing the card', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
+    takeScan();
     await waitFor(() => expect(states()).toEqual(['read']));
     await user.click(screen.getByRole('button', { name: /^Done/ }));
     await user.click(await screen.findByTestId('card-result'));
@@ -205,7 +205,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('attaches a barcode that settles before the read answers', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
+    takeScan();
     await decoded(CODE);
     await waitFor(() => expect(states()).toEqual(['read']));
     await addAll(user);
@@ -216,7 +216,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('sends no barcode when the photo has none', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
+    takeScan();
     await waitFor(() => expect(states()).toEqual(['read']));
     await decoded(null);
     await addAll(user);
@@ -228,7 +228,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     const user = userEvent.setup();
     renderScan();
     readLines = [line('Yogurt'), line('Skyr')];
-    scanViaGuide();
+    takeScan();
     await waitFor(() => expect(states()).toEqual(['read']));
     await decoded(CODE);
     await addAll(user);
@@ -240,7 +240,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('reads the card without waiting for a slow decode, and a failed decode does not fail it', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
+    takeScan();
     // The decode never answers, yet the card is read.
     await waitFor(() => expect(states()).toEqual(['read']));
     await act(async () =>
@@ -257,9 +257,9 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     /** Two Product Scans; the first one's decode is still pending. */
     async function twoScans() {
       renderScan();
-      scanViaGuide();
+      takeScan();
       await waitFor(() => expect(states()).toEqual(['read']));
-      scanViaGuide();
+      takeScan();
       await waitFor(() => expect(states()).toEqual(['read', 'read']));
       await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
     }
@@ -363,7 +363,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     const user = userEvent.setup();
     renderScan();
     readLines = [{ ...line('Mystery'), match: null }];
-    scanViaGuide();
+    takeScan();
     await waitFor(() => expect(states()).toEqual(['read']));
     await decoded(CODE);
     await user.click(screen.getByRole('button', { name: /^Done/ }));
@@ -382,7 +382,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     const user = userEvent.setup();
     renderScan();
     readLines = [{ ...line('Mystery'), match: null }];
-    scanViaGuide();
+    takeScan();
     await waitFor(() => expect(states()).toEqual(['read']));
     await decoded(CODE);
     await user.click(screen.getByRole('button', { name: /^Done/ }));
@@ -399,7 +399,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('attaches a barcode that settles after the Member edited the card and went back to the overview', async () => {
     const user = userEvent.setup();
     renderScan();
-    scanViaGuide();
+    takeScan();
     await waitFor(() => expect(states()).toEqual(['read']));
     await user.click(screen.getByRole('button', { name: /^Done/ }));
     await user.click(await screen.findByTestId('card-result'));
@@ -447,7 +447,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     'does not decode %s Scans for a barcode',
     async (mode) => {
       renderScan(`/scan?mode=${mode}`);
-      scanViaGuide();
+      takeScan();
       await waitFor(() =>
         expect(screen.queryAllByTestId('scan-thumbnail')).toHaveLength(1),
       );

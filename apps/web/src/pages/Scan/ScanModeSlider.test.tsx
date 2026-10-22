@@ -10,7 +10,7 @@ vi.mock('../../lib/camera', async () =>
   (await import('../../test/scan')).fakeCameraModule(),
 );
 
-const ORDER = ['Receipt', 'Product', 'Barcode', 'Ingredients', 'Plate'];
+const ORDER = ['Receipt', 'Ingredients', 'Product', 'Barcode', 'Plate'];
 
 function renderScan(route = '/scan') {
   return renderWithProviders(
@@ -27,20 +27,20 @@ const selected = () =>
   within(dial())
     .getAllByRole('radio')
     .filter((radio) => radio.getAttribute('aria-checked') === 'true')
-    .map((radio) => radio.getAttribute('aria-label') ?? radio.textContent);
+    .map((radio) => radio.textContent);
 
-describe('Scan mode dial', () => {
+describe('Scan mode slider', () => {
   beforeEach(() => {
     localStorage.clear();
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('lists Receipt, Product, Barcode, Ingredients, Plate, each named by its mode', () => {
+  it('lists Receipt, Ingredients, Product, Barcode, Plate, each named by its mode', () => {
     renderScan();
     expect(
       within(dial())
         .getAllByRole('radio')
-        .map((radio) => radio.getAttribute('aria-label') ?? radio.textContent),
+        .map((radio) => radio.textContent),
     ).toEqual(ORDER);
     for (const name of ORDER) expect(item(name)).toBeInTheDocument();
   });
@@ -51,7 +51,7 @@ describe('Scan mode dial', () => {
     expect(item('Receipt')).toBeChecked();
   });
 
-  it('selects a mode when its icon is tapped', async () => {
+  it('selects a mode when its word is tapped', async () => {
     renderScan();
     await userEvent.click(item('Ingredients'));
     expect(selected()).toEqual(['Ingredients']);
@@ -63,24 +63,41 @@ describe('Scan mode dial', () => {
   it('moves one mode with the arrow keys and stops at the ends', async () => {
     renderScan();
     await userEvent.keyboard('{ArrowRight}');
-    expect(selected()).toEqual(['Product']);
+    expect(selected()).toEqual(['Ingredients']);
     await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}');
     expect(selected()).toEqual(['Plate']);
     await userEvent.keyboard('{ArrowRight}');
     expect(selected()).toEqual(['Plate']);
     await userEvent.keyboard('{ArrowLeft}');
-    expect(selected()).toEqual(['Ingredients']);
+    expect(selected()).toEqual(['Barcode']);
     await userEvent.keyboard('{ArrowLeft}{ArrowLeft}{ArrowLeft}');
+    expect(selected()).toEqual(['Receipt']);
+    await userEvent.keyboard('{ArrowLeft}');
     expect(selected()).toEqual(['Receipt']);
   });
 
   it('announces the new mode when it changes', async () => {
     renderScan();
     await userEvent.click(item('Plate'));
-    const announced = screen
-      .getAllByRole('status')
-      .map((region) => region.textContent);
-    expect(announced.some((text) => text?.includes('Plate'))).toBe(true);
+    expect(
+      screen.getAllByRole('status').some((r) => r.textContent === 'Plate mode'),
+    ).toBe(true);
+  });
+
+  it('is a radio group of the five words, only the selected one in the tab order', () => {
+    renderScan();
+    expect(dial()).toBeInTheDocument();
+    expect(within(dial()).getAllByRole('radio')).toHaveLength(5);
+    expect(item('Receipt')).toHaveAttribute('tabindex', '0');
+    expect(item('Plate')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('forgets nothing about the screen: the heading follows the mode', async () => {
+    renderScan();
+    await userEvent.click(item('Barcode'));
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Scan barcode',
+    );
   });
 
   it('gives the light haptic on a change, not on mount', async () => {
@@ -143,7 +160,7 @@ describe('Scan page opened with its own modes', () => {
     expect(
       within(dial())
         .getAllByRole('radio')
-        .map((radio) => radio.getAttribute('aria-label')),
+        .map((radio) => radio.textContent),
     ).toEqual(['Product', 'Receipt']);
     expect(item('Receipt')).toBeChecked();
     expect(localStorage.getItem('pocket-pantry.scan-mode')).toBe('plate');

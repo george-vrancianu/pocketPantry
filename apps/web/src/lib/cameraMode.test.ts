@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  CAMERA_MODES,
   loadLastScanMode,
   loadOverlayMode,
   saveOverlayMode,
@@ -47,5 +48,17 @@ describe('the Scan Mode behind a camera mode', () => {
     expect(loadLastScanMode()).toBe('plate');
     saveScanPageMode('barcode');
     expect(loadLastScanMode()).toBe('product');
+  });
+});
+
+describe('the camera mode order', () => {
+  it('runs Receipt, Ingredients, Product, Barcode, Plate (Barcode right after Product)', () => {
+    expect([...CAMERA_MODES]).toEqual([
+      'receipt',
+      'ingredients',
+      'product',
+      'barcode',
+      'plate',
+    ]);
   });
 });

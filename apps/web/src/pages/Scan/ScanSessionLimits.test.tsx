@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetReads } from '../../lib/scanReads';
 import { getScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { scanViaGuide } from '../../test/scan';
+import { takeScan } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
 vi.mock('../../lib/camera', async () =>
@@ -18,7 +18,7 @@ vi.mock('../../lib/image', async (importActual) => ({
 
 const flush = () => act(async () => {});
 const scanOnce = async () => {
-  scanViaGuide();
+  takeScan();
   await flush();
 };
 

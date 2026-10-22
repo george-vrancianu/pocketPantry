@@ -5,8 +5,8 @@
   "info": {
     "label": "Cum funcționează scanarea",
     "title": "Scanează-ți cămara",
-    "body": "Îndreaptă camera spre un bon, un produs, ingrediente sau o farfurie, apoi atinge de două ori ghidajul. Verifici totul înainte de salvare.",
-    "dial": "Atinge de două ori sau ține apăsat cadranul de moduri pentru a scana; ținerea apăsată focalizează mai întâi.",
+    "intro": "Alege un mod, încadrează totul între colțuri și atinge declanșatorul.",
+    "hold": "Ține apăsat declanșatorul pentru a focaliza mai întâi, apoi ridică degetul pentru a scana.",
     "dismiss": "Închide"
   },
   "scanLanguage": {
@@ -14,6 +14,12 @@
   },
   "gallery": "Alege din galerie",
   "modes": "Mod de scanare",
+  "shutter": {
+    "label": "Fă o fotografie"
+  },
+  "slider": {
+    "announce": "Modul {{mode}}"
+  },
   "reading": "Citim fotografia",
   "noCamera": "Camera nu este disponibilă. Alege în schimb o fotografie din galerie.",
   "crop": {
@@ -33,7 +39,6 @@
     "barcode": "Cod de bare"
   },
   "guide": {
-    "scan": "Scanează: atinge de două ori sau apasă Enter",
     "receipt": "Ține telefonul la aproximativ 40 cm deasupra bonului, astfel încât marginile lui să atingă ghidajul.",
     "receiptFold": "Pentru bonuri lungi, împăturește bonul unde se termină ghidajul (cam la fiecare 20 de produse), întoarce partea împăturită și fă următoarea poză."
   },

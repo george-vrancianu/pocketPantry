@@ -1,5 +1,5 @@
 import { act, cleanup, screen } from '@testing-library/react';
-import { openFirstScanCard, scanViaGuide } from '../../test/scan';
+import { openFirstScanCard, takeScan } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -159,7 +159,7 @@ describe('Scan Language on the Scan screen', () => {
     async (mode) => {
       const calls = renderScan(`/scan?mode=${mode}`);
       await userEvent.selectOptions(chip(), 'da');
-      scanViaGuide();
+      takeScan();
       await openFirstScanCard();
       await userEvent.click(
         await screen.findByRole('button', { name: 'Save 1 item' }),
@@ -179,7 +179,7 @@ describe('Scan Language on the Scan screen', () => {
   it('reads a Receipt Scan in the chosen language and confirms in it', async () => {
     const calls = renderScan('/scan?mode=receipt');
     await userEvent.selectOptions(chip(), 'da');
-    scanViaGuide();
+    takeScan();
     await openFirstScanCard();
     await userEvent.click(
       await screen.findByRole('button', { name: 'Save 1 item' }),

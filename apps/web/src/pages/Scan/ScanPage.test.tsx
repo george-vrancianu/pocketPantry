@@ -1,8 +1,8 @@
 import { screen, waitFor } from '@testing-library/react';
 import {
-  scanGuide,
+  shutter,
   openFirstScanCard,
-  scanViaGuide,
+  takeScan,
   fakeCamera,
 } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
@@ -26,8 +26,8 @@ vi.mock('../../lib/image', () => ({
 
 /** The camera restarts when the mode changes: wait until the guide takes Scans again. */
 const shoot = async () => {
-  await waitFor(() => expect(scanGuide()).not.toHaveAttribute('aria-disabled'));
-  scanViaGuide();
+  await waitFor(() => expect(shutter()).not.toHaveAttribute('aria-disabled'));
+  takeScan();
 };
 
 const parmesan: CatalogSearchResult = {
@@ -78,14 +78,19 @@ describe('ScanPage', () => {
 
   it('has the camera controls, with Receipt selected among all four modes', () => {
     renderScan({}, '/scan');
-    expect(
-      screen.getAllByRole('radio').map((r) => r.getAttribute('aria-label')),
-    ).toEqual(['Receipt', 'Product', 'Barcode', 'Ingredients', 'Plate']);
+    expect(screen.getAllByRole('radio').map((r) => r.textContent)).toEqual([
+      'Receipt',
+      'Ingredients',
+      'Product',
+      'Barcode',
+      'Plate',
+    ]);
     expect(screen.getByRole('radio', { name: 'Receipt' })).toBeChecked();
     for (const name of [
       'Close scanner',
       'Toggle flash',
       'Choose from photos',
+      'Take photo',
     ]) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
@@ -116,7 +121,7 @@ describe('ScanPage', () => {
         'aria-checked',
         'true',
       );
-      expect(scanGuide()).not.toHaveAttribute('aria-disabled');
+      expect(shutter()).not.toHaveAttribute('aria-disabled');
       expect(
         screen.getByRole('button', { name: 'Choose from photos' }),
       ).toBeEnabled();
@@ -144,7 +149,7 @@ describe('ScanPage', () => {
     expect(
       await screen.findByText('Daily scan limit reached'),
     ).toBeInTheDocument();
-    expect(scanGuide()).toHaveAttribute('aria-disabled', 'true');
+    expect(shutter()).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('fails the Scan for a rejected image', async () => {
