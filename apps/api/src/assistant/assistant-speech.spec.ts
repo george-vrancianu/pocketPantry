@@ -425,7 +425,7 @@ describe('assistantSpeech', () => {
           { kind: 'onlyExpired', name: 'milk', onShoppingList: true },
         ]),
       ).toBe(
-        'Only expired milk, already on your Shopping List: milk. No butter, rice, or oil, already on your Shopping List: rice and oil.',
+        'Only expired milk, already on your Shopping List. No butter, rice, or oil, already on your Shopping List: rice and oil.',
       );
     });
 
@@ -504,6 +504,57 @@ describe('assistantSpeech', () => {
           ]),
         ).not.toMatch(/[{}]/);
       }
+    });
+  });
+  describe('the answer limit', () => {
+    const yesNames = (n: number): AssistantOutcome[] =>
+      Array.from({ length: n }, (_, i) => ({
+        kind: 'yes' as const,
+        name: `item${i + 1}`,
+      }));
+
+    it('speaks exactly 8 answered Ingredients without a tail', () => {
+      const speech = say('en', yesNames(8));
+      expect(speech).toContain('You have item8.');
+      expect(speech).not.toMatch(/more/);
+    });
+
+    it.each([
+      ['en', 9, 'And 1 more, check PantryGator.'],
+      ['en', 12, 'And 4 more, check PantryGator.'],
+      ['ro', 9, 'Și încă unul, verifică în PantryGator.'],
+      ['ro', 12, 'Și încă 4, verifică în PantryGator.'],
+      ['ro', 30, 'Și încă 22, verifică în PantryGator.'],
+      ['da', 9, 'Og 1 mere, tjek PantryGator.'],
+      ['da', 12, 'Og 4 mere, tjek PantryGator.'],
+    ] as const)('says the tail in %s for %i answers', (locale, total, tail) => {
+      const speech = say(locale, yesNames(total));
+      expect(speech.endsWith(tail)).toBe(true);
+      expect(speech).toContain('item8');
+      expect(speech).not.toContain('item9');
+    });
+
+    it('counts every kind and speaks the first 8 in spoken order', () => {
+      const speech = say('en', [
+        { kind: 'no', name: 'butter' },
+        { kind: 'no', name: 'rice' },
+        { kind: 'no', name: 'oil' },
+        { kind: 'onlyExpired', name: 'tea' },
+        ...yesNames(6),
+      ]);
+      expect(speech).toBe(
+        'You have item1. You have item2. You have item3. You have item4. ' +
+          'You have item5. You have item6. Only expired tea. No butter. ' +
+          'And 2 more, check PantryGator.',
+      );
+    });
+
+    it('puts the tail before the outcome clauses', () => {
+      expect(
+        say('en', [...yesNames(9), { kind: 'added', name: 'eggs' }]).endsWith(
+          'And 1 more, check PantryGator. Added to your Shopping List: eggs.',
+        ),
+      ).toBe(true);
     });
   });
 });

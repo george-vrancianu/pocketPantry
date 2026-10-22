@@ -1,6 +1,6 @@
 {
   "title": "Siri",
-  "hint": "Creează un jeton de asistent pentru fiecare dispozitiv care adaugă în liste prin voce. Un jeton poate doar să trimită cereri vocale; revocă-l aici ca să nu mai funcționeze imediat.",
+  "hint": "Creează un jeton de asistent pentru fiecare dispozitiv care vorbește cu listele tale prin voce. Un jeton poate adăuga în liste și poate citi Cămara și Lista de cumpărături ca să răspundă la întrebări; revocă-l aici ca să nu mai funcționeze imediat.",
   "nameLabel": "Numele jetonului",
   "namePlaceholder": "De exemplu, iPhone-ul meu",
   "create": "Creează jeton",
@@ -31,6 +31,8 @@
     "link": "Deschide comanda rapidă „Pantry add”",
     "paste": "Lipește jetonul când comanda rapidă ți-l cere.",
     "say": "Spune „Hey Siri, Pantry add”, apoi spune ce vrei să adaugi.",
-    "language": "Fraza pentru Siri este mereu în engleză, dar poți spune articolele în orice limbă acceptată de Pocket Pantry."
+    "language": "Fraza pentru Siri este mereu în engleză, dar poți spune articolele în orice limbă acceptată de Pocket Pantry.",
+    "check": "Ca să întrebi ce ai în Cămară, spune „Hey Siri, Pantry check”. Și „Pantry add” răspunde la întrebări.",
+    "checkLink": "Deschide comanda rapidă „Pantry check”"
   }
 }

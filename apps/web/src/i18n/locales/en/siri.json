@@ -1,6 +1,6 @@
 {
   "title": "Siri",
-  "hint": "Create an Assistant Token for each device that adds to your lists by voice. A token can only make voice requests; revoke it here to stop it right away.",
+  "hint": "Create an Assistant Token for each device that talks to your lists by voice. A token can add to your lists, and read your Pantry and Shopping List to answer questions; revoke it here to stop it right away.",
   "nameLabel": "Token name",
   "namePlaceholder": "For example, my iPhone",
   "create": "Create token",
@@ -31,6 +31,8 @@
     "link": "Open the “Pantry add” Shortcut",
     "paste": "Paste the token when the Shortcut asks for it.",
     "say": "Say “Hey Siri, Pantry add”, then say what to add.",
-    "language": "Siri’s phrase is always English, but you can say the items in any language Pocket Pantry supports."
+    "language": "Siri’s phrase is always English, but you can say the items in any language Pocket Pantry supports.",
+    "check": "To ask what is in your Pantry, say “Hey Siri, Pantry check”. “Pantry add” answers questions too.",
+    "checkLink": "Open the “Pantry check” Shortcut"
   }
 }

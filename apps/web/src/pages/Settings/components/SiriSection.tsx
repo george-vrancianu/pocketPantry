@@ -22,7 +22,10 @@ import {
 } from '../../../lib/assistantTokens';
 import { formatDate } from '../../../lib/dateFormat';
 import { localIso } from '../../../lib/pantry';
-import { siriShortcutUrl } from '../../../lib/siriShortcut';
+import {
+  siriCheckShortcutUrl,
+  siriShortcutUrl,
+} from '../../../lib/siriShortcut';
 import { ScopeCaption, SectionHeading } from './SectionHeading';
 
 /** Keep in step with NAME_MAX_LENGTH in the API's assistant-token.schemas.ts. */
@@ -169,6 +172,7 @@ const SETUP_STEPS = ['create', 'add', 'paste', 'say'] as const;
 function SetupGuide() {
   const { t } = useTranslation('siri');
   const shortcutUrl = siriShortcutUrl();
+  const checkUrl = siriCheckShortcutUrl();
   const titleId = useId();
   return (
     <Stack spacing={1}>
@@ -199,6 +203,19 @@ function SetupGuide() {
           </Typography>
         ))}
       </Box>
+      {checkUrl ? (
+        <Typography variant="body2">
+          {t('setup.check')}{' '}
+          <Link
+            component="a"
+            href={checkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t('setup.checkLink')}
+          </Link>
+        </Typography>
+      ) : null}
       <Typography variant="meta" color="text.secondary">
         {t('setup.language')}
       </Typography>

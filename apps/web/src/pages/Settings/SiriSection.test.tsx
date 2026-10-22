@@ -240,6 +240,57 @@ describe('Settings Siri section', () => {
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     });
 
+    it('links to the Pantry check Shortcut in a new tab when its URL is configured', async () => {
+      vi.stubEnv(
+        'VITE_SIRI_CHECK_SHORTCUT_URL',
+        'https://www.icloud.com/shortcuts/check',
+      );
+      stubTokens([]);
+      renderWithProviders(<SiriSection />);
+
+      const link = await screen.findByRole('link', {
+        name: /Open the “Pantry check” Shortcut/,
+      });
+      expect(link).toHaveAttribute(
+        'href',
+        'https://www.icloud.com/shortcuts/check',
+      );
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+      // The Pantry add link stays hidden while its own variable is unset.
+      expect(screen.getAllByRole('link')).toHaveLength(1);
+    });
+
+    it.each(['unset', 'empty'])(
+      'hides the Pantry check link when its URL is %s',
+      async (kind) => {
+        vi.stubEnv(
+          'VITE_SIRI_SHORTCUT_URL',
+          'https://www.icloud.com/shortcuts/abc',
+        );
+        vi.stubEnv(
+          'VITE_SIRI_CHECK_SHORTCUT_URL',
+          kind === 'empty' ? '' : undefined,
+        );
+        stubTokens([]);
+        renderWithProviders(<SiriSection />);
+
+        await screen.findByText('No tokens yet.');
+        expect(
+          screen.queryByRole('link', { name: /Pantry check/ }),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.getByRole('link', { name: /Pantry add/ }),
+        ).toBeInTheDocument();
+      },
+    );
+
+    it('says in each language that a token can read the Pantry and Shopping List', async () => {
+      stubTokens([]);
+      renderWithProviders(<SiriSection />, { locale: 'ro' });
+      expect(await screen.findByText(/poate citi Cămara/)).toBeInTheDocument();
+    });
+
     it.each(['unset', 'empty'])(
       'hides the Shortcut link when the URL is %s',
       async (kind) => {

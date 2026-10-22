@@ -41,12 +41,25 @@ The If is needed because some failures have no `speech`: a revoked, unknown or m
 
 Finally, rename the Shortcut to exactly `Pantry add` (Shortcut name field at the top of the editor, or Rename in the menu). Shortcuts can be run by saying the name after "Hey Siri".
 
+## The "Pantry check" Shortcut
+
+"Pantry check" is a second Shortcut for questions, so "Hey Siri, Pantry check" reads naturally ("do we have milk?", "is there any butter?"). It calls the same endpoint as "Pantry add" with the same contract, so the API treats both alike: there is nothing to configure on the server, and an Assistant Token works in either. Pantry Questions are answered from the Pantry and Shopping List (see [ADR 0020](adr/0020-voice-notes-and-assistant-requests-answer-pantry-questions.md)); Siri speaks at most 8 Ingredients, then "and N more, check PantryGator".
+
+Build it as a copy of "Pantry add" (Shortcuts app > duplicate), then change only:
+
+1. **Dictate Text** prompt: `What do you want to check?`
+2. The Shortcut's name: exactly `Pantry check`.
+
+Every other action (the token Text with its Import Question, Date, Format Date, Get Contents of URL, Get Dictionary Value, and the If with its fallback) stays as in "Actions, in order". Share it like "Pantry add" (see "Sharing it", with the placeholder token), then set `VITE_SIRI_CHECK_SHORTCUT_URL` to its iCloud link.
+
+"Pantry add" still answers questions: both Shortcuts send the dictated text to the same place, and a Pantry Question inside "Pantry add" is answered too. "Pantry check" only exists so the phrase fits the intent.
+
 ## Sharing it
 
 1. In the Shortcut's settings, confirm the Import Question from step 1 is listed under Setup.
 2. Set the first **Text** action back to the placeholder `Assistant Token`. Never share with a real token in it: the action's current value is shared as the Import Question's default answer, so a real token would travel in the iCloud link to everyone who imports it.
-3. Share > **Copy iCloud Link**. The link carries the actions and the import question (with the placeholder as its default). An iCloud link is a snapshot: after any edit, copy a new link and update `VITE_SIRI_SHORTCUT_URL` in each environment.
-4. Build the web app with `VITE_SIRI_SHORTCUT_URL=<the iCloud link>` (documented in [apps/web/README.md](../apps/web/README.md)). Settings > Siri then shows the link in its setup steps; while the variable is unset or empty the link is hidden.
+3. Share > **Copy iCloud Link**. The link carries the actions and the import question (with the placeholder as its default). An iCloud link is a snapshot: after any edit, copy a new link and update `VITE_SIRI_SHORTCUT_URL` (or `VITE_SIRI_CHECK_SHORTCUT_URL` for "Pantry check") in each environment.
+4. Build the web app with `VITE_SIRI_SHORTCUT_URL=<the iCloud link>` (documented in [apps/web/README.md](../apps/web/README.md)). Settings > Siri then shows the link in its setup steps; while the variable is unset or empty the link is hidden. The same goes for `VITE_SIRI_CHECK_SHORTCUT_URL` and the "Pantry check" link.
 
 ## After installing
 
