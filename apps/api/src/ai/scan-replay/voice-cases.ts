@@ -11,7 +11,7 @@ import {
   VOICE_OPS,
   type VoiceReadModelResult,
 } from '../../voice/voice-actions';
-import { VOICE_LISTS } from '../../voice/voice.schemas';
+import { VOICE_DEFAULT_TARGETS, VOICE_LISTS } from '../../voice/voice.schemas';
 import {
   exactIngredient,
   nameIn,
@@ -30,6 +30,8 @@ export const CASE_TAGS = [
   'unsupported',
   'mixed-lists',
   'sound-alike',
+  /** Spoken with no Default List (`defaultTarget: none`). */
+  'off-page',
 ] as const;
 export type CaseTag = (typeof CASE_TAGS)[number];
 
@@ -41,7 +43,8 @@ const unit = z.enum(ingredientUnit.enumValues);
 /** One Voice Action as the case writes it down: the fields that matter. */
 export const expectedActionSchema = z
   .object({
-    target: z.enum(VOICE_LISTS),
+    /** Null: the note gave no list (a bare add or remove off the Shopping List and the Pantry). */
+    target: z.enum(VOICE_LISTS).nullable(),
     op: z.enum(VOICE_OPS),
     /** The Ingredient as Review shows it: the Catalog name in the case's locale, or the generic name when Unmatched. Several names = any is right. */
     ingredient: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]),
@@ -72,7 +75,7 @@ export const voiceCaseSchema = z
     transcript: z.string().min(1),
     /** The recording, relative to the case file. Needed only to replay transcription. */
     audio: z.string().min(1).optional(),
-    defaultTarget: z.enum(VOICE_LISTS).default('shopping'),
+    defaultTarget: z.enum(VOICE_DEFAULT_TARGETS).default('shopping'),
     today: z.iso.date().default(DEFAULT_TODAY),
     /** Names already on the Shopping List / in the Pantry (spelling hints for the read). */
     shoppingList: z.array(z.string()).default([]),
@@ -95,7 +98,7 @@ export const voiceCaseFileSchema = z.object({
 
 /** A Voice Action as the replay compares it. */
 export type ActionView = {
-  target: (typeof VOICE_LISTS)[number];
+  target: (typeof VOICE_LISTS)[number] | null;
   op: (typeof VOICE_OPS)[number];
   ingredient: string;
   quantity: number | null;

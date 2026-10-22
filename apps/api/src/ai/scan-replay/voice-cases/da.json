@@ -322,6 +322,264 @@
           }
         ]
       }
+    },
+    {
+      "id": "da-16",
+      "scanLanguage": "da",
+      "tags": ["basic", "off-page"],
+      "transcript": "Tilføj mælk og æg.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Mælk"
+          },
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Æg"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-17",
+      "scanLanguage": "da",
+      "tags": ["off-page"],
+      "transcript": "Fjern æggene.",
+      "defaultTarget": "none",
+      "shoppingList": ["Æg"],
+      "pantry": ["Æg"],
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "remove",
+            "ingredient": "Æg"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-18",
+      "scanLanguage": "da",
+      "tags": ["filler", "off-page"],
+      "transcript": "Øh, tilføj noget smør og fjern melet.",
+      "defaultTarget": "none",
+      "shoppingList": ["Hvedemel"],
+      "pantry": ["Hvedemel"],
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Smør"
+          },
+          {
+            "target": null,
+            "op": "remove",
+            "ingredient": "Hvedemel"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-19",
+      "scanLanguage": "da",
+      "tags": ["off-page"],
+      "transcript": "Læg to yoghurt i køleskabet.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Yoghurt",
+            "quantity": 2,
+            "unit": "pcs",
+            "location": "fridge"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-20",
+      "scanLanguage": "da",
+      "tags": ["units", "relative-date", "off-page"],
+      "transcript": "Tilføj et kilo laks, den udløber om tre dage.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Laks",
+            "quantity": 1,
+            "unit": "kg",
+            "expiresOn": "2026-10-17"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-21",
+      "scanLanguage": "da",
+      "tags": ["off-page"],
+      "transcript": "Vi mangler mælk og æg.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Mælk"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Æg"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-22",
+      "scanLanguage": "da",
+      "tags": ["units", "off-page"],
+      "transcript": "Køb to citroner og noget smør.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Citron",
+            "quantity": 2,
+            "unit": "pcs"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Smør"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-23",
+      "scanLanguage": "da",
+      "tags": ["off-page"],
+      "transcript": "Sæt flueben ved brødet og mælken.",
+      "defaultTarget": "none",
+      "shoppingList": ["Brød", "Mælk"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "check",
+            "ingredient": "Brød"
+          },
+          {
+            "target": "shopping",
+            "op": "check",
+            "ingredient": "Mælk"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-24",
+      "scanLanguage": "da",
+      "tags": ["off-page"],
+      "transcript": "Fjern fluebenet ved æggene.",
+      "defaultTarget": "none",
+      "shoppingList": ["Æg"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "uncheck",
+            "ingredient": "Æg"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-25",
+      "scanLanguage": "da",
+      "tags": ["units", "off-page"],
+      "transcript": "Ret mælken til tre liter.",
+      "defaultTarget": "none",
+      "shoppingList": ["Mælk"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "setQuantity",
+            "ingredient": "Mælk",
+            "quantity": 3,
+            "unit": "l"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-26",
+      "scanLanguage": "da",
+      "tags": ["off-page"],
+      "transcript": "Vi er ved at løbe tør for ris og kaffe.",
+      "defaultTarget": "none",
+      "pantry": ["Ris", "Kaffe"],
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "runningLow",
+            "ingredient": "Ris"
+          },
+          {
+            "target": "pantry",
+            "op": "runningLow",
+            "ingredient": "Kaffe"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-27",
+      "scanLanguage": "da",
+      "tags": ["mixed-lists", "off-page"],
+      "transcript": "Tilføj smør, læg to yoghurt i køleskabet, og vi mangler kaffe. Ah, og tilføj mel til spisekammeret.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Smør"
+          },
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Yoghurt",
+            "quantity": 2,
+            "unit": "pcs",
+            "location": "fridge"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Kaffe"
+          },
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Hvedemel"
+          }
+        ]
+      }
     }
   ]
 }

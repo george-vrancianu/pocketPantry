@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import {
   SCAN_LANGUAGES,
   type CatalogLocale,
+  type CatalogSearchResult,
   type ScanLanguage,
 } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
@@ -18,6 +19,8 @@ import { TranscriptionService } from './transcription.service';
 import {
   amountOf,
   type ModelVoiceAction,
+  type VoiceDefaultTarget,
+  type VoiceOp,
   type VoiceTarget,
   type ResolvedVoiceAction,
   type VoiceActionDraft,
@@ -26,7 +29,7 @@ import {
   type VoiceApplyResult,
   voiceActionKind,
 } from './voice-actions';
-import type { VoiceActionHandler } from './voice-handlers';
+import type { ResolveContext, VoiceActionHandler } from './voice-handlers';
 import { VoiceHandlers } from './voice-handlers.registry';
 import { PantryService } from '../pantry/pantry.service';
 import { resolveSpokenDate } from './voice-dates';
@@ -51,7 +54,7 @@ export type VoiceReadTextInput = {
   locale: CatalogLocale;
   /** The Member's local date, for resolving spoken dates. */
   today: string;
-  defaultTarget: VoiceTarget;
+  defaultTarget: VoiceDefaultTarget;
   /** Debug capture only: ties this read to a transcription. */
   captureId?: string;
 };
@@ -82,6 +85,12 @@ class SkippedAction extends Error {
   constructor(readonly reason: string) {
     super(reason);
   }
+}
+
+/** The list a model action with no target implies off the Shopping List and the Pantry; null for a bare add or remove, which needs the Member's pick. */
+function impliedTarget(op: VoiceOp): VoiceTarget | null {
+  if (op === 'add' || op === 'remove') return null;
+  return op === 'runningLow' ? 'pantry' : 'shopping';
 }
 
 /**
@@ -230,31 +239,41 @@ export class VoiceService {
         action.matchConfidence,
         threshold,
       );
+      // Off the Shopping List and the Pantry the model leaves a bare add or remove without a target.
+      // Other kinds imply one: running low is a Pantry flag, check, uncheck and setQuantity are on the list.
+      const target =
+        action.target ??
+        (input.defaultTarget === 'none'
+          ? impliedTarget(action.op)
+          : input.defaultTarget);
       const draft = this.draftOf(action, match?.id ?? null, input.today);
-      const handler = this.handlers.for(draft);
-      if (!handler) {
+      if (target === null) {
+        const byList = {
+          shopping: await this.resolveDraft(draft, 'shopping', match, ctx),
+          pantry: await this.resolveDraft(draft, 'pantry', match, ctx),
+        };
+        if (!byList.shopping || !byList.pantry) {
+          out.push(this.notUnderstood(action.spokenText));
+          continue;
+        }
+        spokenNames.set(draft.id, action.spokenName);
+        out.push({
+          ...byList.shopping,
+          status: 'needsList',
+          target: null,
+          rows: {},
+          defaults: {},
+          byList: { shopping: byList.shopping, pantry: byList.pantry },
+        });
+        continue;
+      }
+      const resolution = await this.resolveDraft(draft, target, match, ctx);
+      if (!resolution) {
         out.push(this.notUnderstood(action.spokenText));
         continue;
       }
-      const resolution = await handler.resolve(draft, ctx);
       spokenNames.set(draft.id, action.spokenName);
-      out.push({
-        id: draft.id,
-        status: resolution.status,
-        target: draft.target,
-        op: draft.op,
-        text: draft.text,
-        ingredient: match,
-        name: match ? null : draft.name,
-        quantity: draft.quantity,
-        unit: draft.unit,
-        scope: draft.scope,
-        expiresOn: draft.expiresOn,
-        noExpiry: draft.noExpiry,
-        location: draft.location,
-        rows: resolution.rows,
-        defaults: resolution.defaults,
-      });
+      out.push(resolution);
     }
     for (const phrase of read.unsupported) {
       out.push(this.notUnderstood(phrase));
@@ -266,14 +285,43 @@ export class VoiceService {
     };
   }
 
+  /** The draft resolved by its (target, op) handler; undefined when no handler is registered. */
+  private async resolveDraft(
+    body: Omit<VoiceActionDraft, 'target'>,
+    target: VoiceTarget,
+    match: CatalogSearchResult | null,
+    ctx: ResolveContext,
+  ): Promise<ResolvedVoiceAction | undefined> {
+    const draft = { ...body, target };
+    const handler = this.handlers.for(draft);
+    if (!handler) return undefined;
+    const resolution = await handler.resolve(draft, ctx);
+    return {
+      id: draft.id,
+      status: resolution.status,
+      target: draft.target,
+      op: draft.op,
+      text: draft.text,
+      ingredient: match,
+      name: match ? null : draft.name,
+      quantity: draft.quantity,
+      unit: draft.unit,
+      scope: draft.scope,
+      expiresOn: draft.expiresOn,
+      noExpiry: draft.noExpiry,
+      location: draft.location,
+      rows: resolution.rows,
+      defaults: resolution.defaults,
+    };
+  }
+
   private draftOf(
     action: ModelVoiceAction,
     ingredientId: string | null,
     today: string,
-  ): VoiceActionDraft {
+  ): Omit<VoiceActionDraft, 'target'> {
     return {
       id: randomUUID(),
-      target: action.target,
       op: action.op,
       text: action.spokenText,
       ingredientId,

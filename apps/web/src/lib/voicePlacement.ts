@@ -1,39 +1,46 @@
 import { aboveDock, DOCK_HEIGHT } from '@pocket-pantry/ui';
 
-/** Air between the Dock and the Voice Note button, px. */
-const BUTTON_AIR = 8;
-/** The round button's size, px. */
-export const BUTTON_SIZE = 62;
+// The Voice Note's notices all hang above the Dock's mic: first the Scan Language chip's row, which
+// starts where `aboveDock` ends (clear of the capsule's overhang), then whatever sits above it.
 
-/** CSS `bottom` of the Voice Note button: above the Dock (76 on phones, 84 wider) plus air. */
-export const buttonBottom = {
-  xs: `calc(${aboveDock(DOCK_HEIGHT.xs)} + ${BUTTON_AIR}px)`,
-  md: `calc(${aboveDock(DOCK_HEIGHT.md)} + ${BUTTON_AIR}px)`,
+/** The chip's row: the 30 px chip plus air, px. */
+export const MIC_ROW = 36;
+
+/** CSS `bottom` of the chip row: just above the capsule, which overhangs the Dock. */
+export const micBottom = {
+  xs: aboveDock(DOCK_HEIGHT.xs),
+  md: aboveDock(DOCK_HEIGHT.md),
 };
 
-/** CSS `bottom` of something sitting above the button (the Listening card, the tip). */
-export const aboveButton = (gap: number) => ({
-  xs: `calc(${buttonBottom.xs} + ${BUTTON_SIZE + gap}px)`,
-  md: `calc(${buttonBottom.md} + ${BUTTON_SIZE + gap}px)`,
+/** Bottom padding that keeps a page's last row clear of the chip row (and its safe-area inset). */
+export const micClearance = {
+  xs: `calc(${micBottom.xs} + ${MIC_ROW}px)`,
+  md: `calc(${micBottom.md} + ${MIC_ROW}px)`,
+};
+
+/** CSS `bottom` of something sitting above the chip row (the Listening card, the tip). */
+export const aboveMic = (gap: number) => ({
+  xs: `calc(${micBottom.xs} + ${MIC_ROW + gap}px)`,
+  md: `calc(${micBottom.md} + ${MIC_ROW + gap}px)`,
 });
 
-/** Where a toast sits so it clears the button and its chip. */
-export const toastBottom = aboveButton(10);
+/** Where a toast sits so it clears the Dock's mic and its chip. */
+export const toastBottom = aboveMic(10);
 
-/** The status pill (and the Listening card) sit this far above the button, px. */
+/** The status pill (and the Listening card) sit this far above the chip row, px. */
 export const PILL_OFFSET = 22;
 /** The status pill's height (a title line, a one-line hint and its padding), px, plus the air kept above it. */
 export const PILL_HEIGHT = 60;
 export const PILL_GAP = 8;
 
 /** CSS `bottom` of the status pill and the Listening card. */
-export const pillBottom = aboveButton(PILL_OFFSET);
+export const pillBottom = aboveMic(PILL_OFFSET);
 
 /** The spot clear above the pill. */
-export const abovePill = aboveButton(PILL_OFFSET + PILL_HEIGHT + PILL_GAP);
+export const abovePill = aboveMic(PILL_OFFSET + PILL_HEIGHT + PILL_GAP);
 
 /**
- * Options for a voice toast: polite, clear of the button, and clear of the status pill when one is up
+ * Options for a voice toast: polite, clear of the mic, and clear of the status pill when one is up
  * (the Reading pill and its Cancel, a failed send and its Retry must stay reachable).
  */
 export const voiceToast = ({ abovePill: lifted = false } = {}) => ({
@@ -44,7 +51,8 @@ export const voiceToast = ({ abovePill: lifted = false } = {}) => ({
 /** Stacking of the voice layers; the app's toasts (1400) stay above all of them. */
 export const VOICE_LAYER = {
   scrim: 1100,
-  button: 1200,
+  /** The Dock while a Voice Note is held: above the scrim, so the mic is not dimmed. */
+  dock: 1150,
   /** The Listening card, the status pill, the tip, the language menu. */
   card: 1250,
 } as const;

@@ -262,11 +262,11 @@ const show = (value: unknown) =>
       ? value
       : JSON.stringify(value);
 const label = (a: {
-  target: string;
+  target: string | null;
   op: string;
   ingredient: string | string[];
 }) =>
-  `${a.target} ${a.op} ${Array.isArray(a.ingredient) ? a.ingredient.join('/') : a.ingredient}`;
+  `${a.target ?? 'no list'} ${a.op} ${Array.isArray(a.ingredient) ? a.ingredient.join('/') : a.ingredient}`;
 
 export type TranscriptionRunResult = {
   caseId: string;

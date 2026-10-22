@@ -317,6 +317,264 @@
           }
         ]
       }
+    },
+    {
+      "id": "en-16",
+      "scanLanguage": "en",
+      "tags": ["basic", "off-page"],
+      "transcript": "Add milk and eggs.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Milk"
+          },
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Eggs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-17",
+      "scanLanguage": "en",
+      "tags": ["off-page"],
+      "transcript": "Remove the eggs.",
+      "defaultTarget": "none",
+      "shoppingList": ["Eggs"],
+      "pantry": ["Eggs"],
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "remove",
+            "ingredient": "Eggs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-18",
+      "scanLanguage": "en",
+      "tags": ["filler", "off-page"],
+      "transcript": "Um, add some butter, and take the flour off.",
+      "defaultTarget": "none",
+      "shoppingList": ["Flour"],
+      "pantry": ["Flour"],
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Butter"
+          },
+          {
+            "target": null,
+            "op": "remove",
+            "ingredient": "Flour"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-19",
+      "scanLanguage": "en",
+      "tags": ["off-page"],
+      "transcript": "Put two yoghurts in the fridge.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Yogurt",
+            "quantity": 2,
+            "unit": "pcs",
+            "location": "fridge"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-20",
+      "scanLanguage": "en",
+      "tags": ["units", "relative-date", "off-page"],
+      "transcript": "Add a kilo of salmon, it expires in three days.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Salmon",
+            "quantity": 1,
+            "unit": "kg",
+            "expiresOn": "2026-10-17"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-21",
+      "scanLanguage": "en",
+      "tags": ["off-page"],
+      "transcript": "We need milk and eggs.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Milk"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Eggs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-22",
+      "scanLanguage": "en",
+      "tags": ["units", "off-page"],
+      "transcript": "Buy two lemons and some butter.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Lemon",
+            "quantity": 2,
+            "unit": "pcs"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Butter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-23",
+      "scanLanguage": "en",
+      "tags": ["off-page"],
+      "transcript": "Tick off the bread and the milk.",
+      "defaultTarget": "none",
+      "shoppingList": ["Bread", "Milk"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "check",
+            "ingredient": "Bread"
+          },
+          {
+            "target": "shopping",
+            "op": "check",
+            "ingredient": "Milk"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-24",
+      "scanLanguage": "en",
+      "tags": ["off-page"],
+      "transcript": "Uncheck the eggs.",
+      "defaultTarget": "none",
+      "shoppingList": ["Eggs"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "uncheck",
+            "ingredient": "Eggs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-25",
+      "scanLanguage": "en",
+      "tags": ["units", "off-page"],
+      "transcript": "Change the milk to three litres.",
+      "defaultTarget": "none",
+      "shoppingList": ["Milk"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "setQuantity",
+            "ingredient": "Milk",
+            "quantity": 3,
+            "unit": "l"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-26",
+      "scanLanguage": "en",
+      "tags": ["off-page"],
+      "transcript": "We're running low on rice and coffee.",
+      "defaultTarget": "none",
+      "pantry": ["Rice", "Coffee"],
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "runningLow",
+            "ingredient": "Rice"
+          },
+          {
+            "target": "pantry",
+            "op": "runningLow",
+            "ingredient": "Coffee"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-27",
+      "scanLanguage": "en",
+      "tags": ["mixed-lists", "off-page"],
+      "transcript": "Add butter, put two yoghurts in the fridge, and we need coffee. Oh, and add flour to the pantry.",
+      "defaultTarget": "none",
+      "expected": {
+        "actions": [
+          {
+            "target": null,
+            "op": "add",
+            "ingredient": "Butter"
+          },
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Yogurt",
+            "quantity": 2,
+            "unit": "pcs",
+            "location": "fridge"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Coffee"
+          },
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Flour"
+          }
+        ]
+      }
     }
   ]
 }

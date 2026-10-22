@@ -4,7 +4,7 @@ import { LANGUAGE_NAMES } from '../scan/scan-language';
 import {
   VOICE_READ_SCHEMA_NAME,
   voiceReadJsonSchema,
-  type VoiceTarget,
+  type VoiceDefaultTarget,
 } from './voice-actions';
 
 type VoiceReadRequestInput = {
@@ -17,7 +17,7 @@ type VoiceReadRequestInput = {
   scanLanguage: ScanLanguage | null;
   locale: CatalogLocale;
   today: string;
-  defaultTarget: VoiceTarget;
+  defaultTarget: VoiceDefaultTarget;
   /** Debug capture only: shared with the recording's transcription capture. */
   captureId?: string;
 };
@@ -37,6 +37,16 @@ const WEEKDAYS = [
 const weekdayOf = (date: string) =>
   WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()];
 
+const pageRules = (defaultTarget: 'shopping' | 'pantry') =>
+  `The page the Member spoke on targets the ${defaultTarget} list: use target "${defaultTarget}" for each action unless that action names the other list ("shopping list" or "pantry"). An explicitly named list always wins over the page, and it applies to that action only: "got the bread, and put the yogurts straight in the pantry" is a shopping check and a pantry add.`;
+
+/** ADR 0021: off the Shopping List and the Pantry, a target is given only when the note or the action makes it clear. */
+const NO_DEFAULT_LIST_RULES =
+  'The page the Member spoke on has no default list, so never guess a list. Give an action a target only when (1) the Member names the list ("shopping list" or "pantry"), which applies to that action only; or (2) the kind of action implies one: check, uncheck and setQuantity are on the "shopping" list, and runningLow is on the "pantry" list (with no Batch of it, the app turns that into a Shopping List add, so still use "pantry"); or (3) there is a clear cue: a location or an expiry date means "pantry", and "need" or "buy" means "shopping". A bare add or remove with none of these ("add milk", "remove the eggs") has no list: return it as an add or remove action with target null; the Member picks the list afterwards.';
+
+const defaultListRules = (defaultTarget: VoiceDefaultTarget) =>
+  defaultTarget === 'none' ? NO_DEFAULT_LIST_RULES : pageRules(defaultTarget);
+
 /**
  * The transcript read as a structured-output request. Pure, so the replay
  * tooling builds exactly what production sends. The prompt opens with the
@@ -54,7 +64,7 @@ export function buildVoiceReadRequest(
       input.scanLanguage
         ? `The note was spoken in ${LANGUAGE_NAMES[input.scanLanguage]}; the app is shown in ${LANGUAGE_NAMES[input.locale]}. Words from the other supported languages (English, Romanian, Danish) may appear; match catalog ingredients across languages.`
         : `The note may be in any supported language (English, Romanian or Danish); the app is shown in ${LANGUAGE_NAMES[input.locale]}. Match catalog ingredients across languages.`,
-      `Today is ${weekdayOf(input.today)} ${input.today}. The page the Member spoke on targets the ${input.defaultTarget} list: use target "${input.defaultTarget}" for each action unless that action names the other list ("shopping list" or "pantry"). An explicitly named list always wins over the page, and it applies to that action only: "got the bread, and put the yogurts straight in the pantry" is a shopping check and a pantry add.`,
+      `Today is ${weekdayOf(input.today)} ${input.today}. ${defaultListRules(input.defaultTarget)}`,
       `Names currently on the Shopping List (spelling hints only): ${JSON.stringify(names(input.shoppingNames))}.`,
       `Names currently in the Pantry (spelling hints only): ${JSON.stringify(names(input.pantryNames))}.`,
       'Return one actions entry for every thing the Member asked for, in the order spoken. op is add, remove, check (bought or ticked off), uncheck, setQuantity (change an amount) or runningLow (the Pantry item is running low).',

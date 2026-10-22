@@ -40,6 +40,48 @@ describe('buildVoiceReadRequest', () => {
     expect(prompt).toContain('Pantry (spelling hints only): ["Rice"]');
   });
 
+  // Spec: #478. The shopping and pantry branches stay as they were; none adds its own.
+  describe('the Default List', () => {
+    const shoppingSentence =
+      'The page the Member spoke on targets the shopping list: use target "shopping" for each action unless that action names the other list ("shopping list" or "pantry"). An explicitly named list always wins over the page, and it applies to that action only: "got the bread, and put the yogurts straight in the pantry" is a shopping check and a pantry add.';
+
+    it('keeps the shopping branch', () => {
+      const { prompt } = buildVoiceReadRequest({
+        ...input,
+        defaultTarget: 'shopping',
+      });
+      expect(prompt).toContain(shoppingSentence);
+      expect(prompt).not.toContain('no default list');
+    });
+
+    it('keeps the pantry branch', () => {
+      const { prompt } = buildVoiceReadRequest(input);
+      expect(prompt).toContain(
+        shoppingSentence.replaceAll(
+          'shopping list: use target "shopping"',
+          'pantry list: use target "pantry"',
+        ),
+      );
+      expect(prompt).not.toContain('no default list');
+    });
+
+    it('gives none its own rules for when an action gets a target', () => {
+      const { prompt } = buildVoiceReadRequest({
+        ...input,
+        defaultTarget: 'none',
+      });
+      expect(prompt).toContain('has no default list');
+      expect(prompt).not.toContain('targets the none list');
+      expect(prompt).toContain(
+        'check, uncheck and setQuantity are on the "shopping" list',
+      );
+      expect(prompt).toContain('runningLow is on the "pantry" list');
+      expect(prompt).toContain('a location or an expiry date means "pantry"');
+      expect(prompt).toContain('"need" or "buy" means "shopping"');
+      expect(prompt).toContain('with target null');
+    });
+  });
+
   // Spec: #455. An Assistant Request does not know the language spoken.
   it('asks the model which language was spoken when the Scan Language is unknown', () => {
     const { prompt } = buildVoiceReadRequest({ ...input, scanLanguage: null });

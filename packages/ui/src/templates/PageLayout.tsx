@@ -4,23 +4,20 @@ import { tokens } from '../theme/tokens';
 
 export type PageLayoutProps = {
   children: ReactNode;
-  /** Reserve room at the bottom so content never hides under the Dock. */
+  /** Reserve room at the bottom so content never hides under the Dock (or its capsule, which reaches above it). */
   withDock?: boolean;
+  /** Bottom padding (a CSS length, or one per breakpoint) that replaces the default Dock room, e.g. to also clear a row of controls that hangs above the Dock. */
+  dockClearance?: string | { xs: string; md: string };
   /** Lift the ~960 px cap to 1180 px for table screens that need the room. */
   wide?: boolean;
-  /**
-   * A control floats above the Dock (the Voice Note button): reserve 190 px at the
-   * bottom so the last row can scroll clear of it. Only with the Dock. Default off.
-   */
-  floatingControl?: boolean;
 };
 
 /** Page frame: 20 px gutters on phones, 48 px on wide screens, content capped at ~960 px. */
 export function PageLayout({
   children,
   withDock = true,
+  dockClearance,
   wide = false,
-  floatingControl = false,
 }: PageLayoutProps) {
   return (
     <Box
@@ -30,7 +27,7 @@ export function PageLayout({
         backgroundColor: tokens.color.bg,
         color: tokens.color.ink,
         px: { xs: '20px', md: '48px' },
-        pb: withDock ? (floatingControl ? '190px' : '110px') : '24px',
+        pb: withDock ? (dockClearance ?? '132px') : '24px',
       }}
     >
       <Box component="main" sx={{ maxWidth: wide ? 1180 : 960, mx: 'auto' }}>

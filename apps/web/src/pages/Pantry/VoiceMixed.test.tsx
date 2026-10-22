@@ -11,7 +11,7 @@ import {
   pressDown,
   useVoiceTimers,
 } from '../../test/voiceHold';
-import { renderWithProviders, stubApi } from '../../test/render';
+import { renderInAppLayout, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 
 // "put the yogurts in the pantry, got the bread, and add milk" said on the Pantry page.
@@ -80,7 +80,7 @@ describe('A Voice Note across both lists', () => {
   });
 
   async function openReview() {
-    const view = renderWithProviders(<PantryPage />);
+    const view = renderInAppLayout(<PantryPage />, '/pantry');
     const button = await screen.findByRole('button', {
       name: /hold to record a voice note/i,
     });

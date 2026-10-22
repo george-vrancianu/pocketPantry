@@ -67,17 +67,23 @@ describe('App shell', () => {
     const dock = await screen.findByRole('navigation', { name: 'Main' });
     const links = within(dock).getAllByRole('link');
     expect(links.map((link) => link.textContent)).toEqual([
+      'Home',
       'Shopping',
+      '',
       'Pantry',
       'Recipes',
-      'Scan',
     ]);
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/',
       '/shopping',
+      '/scan',
       '/pantry',
       '/recipes',
-      '/scan',
     ]);
+    expect(within(dock).getByRole('link', { name: 'Camera' })).toHaveAttribute(
+      'href',
+      '/scan',
+    );
     expect(
       screen.getByRole('link', { name: 'Customise dashboard' }),
     ).toHaveAttribute('href', '/customise');
@@ -95,10 +101,10 @@ describe('App shell', () => {
     expect(
       screen.getByRole('heading', { name: 'Pantry', level: 1 }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute(
-      'href',
-      '/',
-    );
+    // The header's way back to the Dashboard, and the Dock's Home tab.
+    for (const home of screen.getAllByRole('link', { name: 'Home' })) {
+      expect(home).toHaveAttribute('href', '/');
+    }
   });
 
   it('has no Dock while customising the dashboard', async () => {

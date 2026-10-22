@@ -1,7 +1,8 @@
 {
   "label": "Main",
+  "home": "Home",
   "shopping": "Shopping",
   "pantry": "Pantry",
   "recipes": "Recipes",
-  "scan": "Scan"
+  "camera": "Camera"
 }

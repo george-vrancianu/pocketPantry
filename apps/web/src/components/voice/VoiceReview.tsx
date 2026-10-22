@@ -21,6 +21,7 @@ import { applyToast } from './applyResult';
 import { focusVoiceButton } from '../../lib/voiceFocus';
 import { voiceToast } from '../../lib/voicePlacement';
 import { HeardCard } from './HeardCard';
+import { ListPicker, RowListPicker } from './ListPicker';
 import { ReviewFooter } from './ReviewFooter';
 import { VoiceActionRow } from './VoiceActionRow';
 import {
@@ -30,6 +31,7 @@ import {
   hasAmount,
   isActionable,
   isChange,
+  needsList,
 } from './reviewModel';
 import { translateApiError } from '../../i18n/translateApiError';
 import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
@@ -41,6 +43,7 @@ import {
 import {
   applyVoiceActions,
   type VoiceApplyResult,
+  type VoiceList,
   type VoiceReviewAction,
 } from '../../lib/voice';
 import { flashRows } from '../../lib/rowFlash';
@@ -48,6 +51,13 @@ import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 
 /** How long the Apply result stays: long enough to read, no Undo (ADR 0017). */
 const APPLY_TOAST_MS = 5200;
+
+/** The list every action with a pick is on, or '' when they are split or undecided. */
+const allOn = (actions: VoiceReviewAction[]): VoiceList | '' => {
+  const lists = new Set(actions.filter((a) => a.byList).map((a) => a.target));
+  const [only] = lists;
+  return lists.size === 1 && only ? only : '';
+};
 
 const quantityText = (action: VoiceReviewAction) =>
   action.quantity === null ? '' : String(action.quantity);
@@ -63,7 +73,7 @@ export function VoiceReview() {
 
 function ReviewSheet() {
   const { t, i18n } = useTranslation(['voice', 'common']);
-  const { proposal, page, phase, recording } = useVoiceNoteState();
+  const { proposal, defaultTarget, phase, recording } = useVoiceNoteState();
   const { locale, scanLanguage } = useScanLanguage();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -78,13 +88,19 @@ function ReviewSheet() {
   );
   const language = recording?.scanLanguage ?? scanLanguage;
 
-  const groups = groupsOf(actions, page);
+  const groups = groupsOf(actions, defaultTarget);
   const changes = actions.filter(isChange);
   const applicable = actions.filter(isActionable);
-  const unclear = actions.filter((a) => !isChange(a));
-  const blocking = groups.flatMap((g) => g.actions).find((a) => blockOf(a));
+  const undecided = actions.filter(needsList);
+  const unclear = actions.filter((a) => !isChange(a) && !needsList(a));
+  const blocking = [...undecided, ...groups.flatMap((g) => g.actions)].find(
+    (a) => blockOf(a),
+  );
+  const withPicker = actions.filter((a) => a.byList).length;
 
-  const [openId, setOpenId] = useState<string | null>(blocking?.id ?? null);
+  const [openId, setOpenId] = useState<string | null>(
+    blocking && blockOf(blocking) !== 'list' ? blocking.id : null,
+  );
   const [confirming, setConfirming] = useState(false);
   const [keptReviewing, setKeptReviewing] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -106,7 +122,7 @@ function ReviewSheet() {
       const { message, detail } = applyToast(
         result,
         actions,
-        page,
+        defaultTarget,
         t,
         i18n.language,
       );
@@ -114,7 +130,7 @@ function ReviewSheet() {
       // Only this page's rows: the other list's rows are not on screen to flash.
       flashRows(
         result.applied.flatMap((entry) =>
-          entry.list !== page
+          entry.list !== defaultTarget
             ? []
             : (entry.rowIds ?? (entry.rowId ? [entry.rowId] : [])),
         ),
@@ -177,7 +193,7 @@ function ReviewSheet() {
     if (focusPicker(focusId)) setFocusId(null);
   }, [focusId, openId]);
 
-  const count = changes.length;
+  const count = changes.length + undecided.length;
   const both = new Set(changes.map((a) => a.target)).size > 1;
   const subline =
     count === 0
@@ -185,6 +201,32 @@ function ReviewSheet() {
       : t(both ? 'voice:review.sublineBoth' : 'voice:review.subline', {
           count,
         });
+
+  /** What was typed belonged to the other list's resolution; and a Pantry removal that needs a Batch opens on its picker. */
+  const settlePicks = (picked: VoiceReviewAction[], list: VoiceList) => {
+    const ids = new Set(picked.map((a) => a.id));
+    setTyped((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([id]) => !ids.has(id)),
+      ),
+    );
+    const needy = picked.find((a) => a.byList?.[list].status === 'needsBatch');
+    if (needy) {
+      setOpenId(needy.id);
+      setFocusId(needy.id);
+    }
+  };
+  const pick = (action: VoiceReviewAction, list: VoiceList) => {
+    voiceNote.pickList(action.id, list);
+    settlePicks([action], list);
+  };
+  const pickAll = (list: VoiceList) => {
+    voiceNote.pickAllLists(list);
+    settlePicks(
+      actions.filter((a) => a.byList),
+      list,
+    );
+  };
 
   const renderRow = (action: VoiceReviewAction) => (
     <VoiceActionRow
@@ -194,6 +236,7 @@ function ReviewSheet() {
       typed={textOf(action)}
       invalid={invalid.has(action.id)}
       spokenExpiry={spoken.get(action.id) ?? null}
+      onPick={(list) => pick(action, list)}
       onToggle={() => setOpenId((id) => (id === action.id ? null : action.id))}
       onTyped={(text) => {
         setTyped((current) => ({ ...current, [action.id]: text }));
@@ -275,6 +318,39 @@ function ReviewSheet() {
           defaultOpen={actions.every((a) => a.status === 'notUnderstood')}
         />
 
+        {withPicker > 1 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              px: '4px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: palette('text-secondary'),
+            }}
+          >
+            <span aria-hidden>{t('voice:review.putAll.label')}</span>
+            <Box sx={{ flex: 1 }}>
+              <ListPicker
+                label={t('voice:review.putAll.name')}
+                value={allOn(actions)}
+                onChange={pickAll}
+              />
+            </Box>
+          </Box>
+        ) : null}
+
+        {undecided.length > 0 ? (
+          <Group
+            label={t('voice:review.pickList.group')}
+            count={undecided.length}
+            tag={null}
+          >
+            {undecided.map(renderRow)}
+          </Group>
+        ) : null}
+
         {groups.map((group) => (
           <Group
             key={group.list}
@@ -300,7 +376,11 @@ function ReviewSheet() {
             tag={null}
           >
             {unclear.map((action) => (
-              <CouldntRow key={action.id} action={action} />
+              <CouldntRow
+                key={action.id}
+                action={action}
+                onPick={(list) => pick(action, list)}
+              />
             ))}
           </Group>
         ) : null}
@@ -382,7 +462,13 @@ function Group({
 }
 
 /** A Voice Action the server could not act on: what was said and why, with no editor. */
-function CouldntRow({ action }: { action: VoiceReviewAction }) {
+function CouldntRow({
+  action,
+  onPick,
+}: {
+  action: VoiceReviewAction;
+  onPick: (list: VoiceList) => void;
+}) {
   const { t } = useTranslation('voice');
   const notFound = action.status === 'notFound';
   const name = displayName(action);
@@ -434,6 +520,11 @@ function CouldntRow({ action }: { action: VoiceReviewAction }) {
         <Box sx={{ fontSize: 12.5, color: palette('text-secondary') }}>
           {reason}
         </Box>
+        {action.byList ? (
+          <Box sx={{ pt: '8px' }}>
+            <RowListPicker action={action} onPick={onPick} />
+          </Box>
+        ) : null}
       </Box>
       <Box sx={{ position: 'absolute', right: 8, top: 12 }}>
         <IconButton

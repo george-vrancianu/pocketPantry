@@ -14,6 +14,7 @@ import {
   MAX_VOICE_NOTE_MS,
   MIN_VOICE_NOTE_MS,
   sendVoiceNote,
+  type VoiceDefaultTarget,
   type VoiceList,
   type VoiceNoteRequest,
   type VoiceNoteResult,
@@ -44,7 +45,7 @@ export type VoiceErrorCode =
 export type VoiceNoteState = {
   phase: VoicePhase;
   /** The page that recorded: the default target of the Voice Note. */
-  page: VoiceList;
+  defaultTarget: VoiceDefaultTarget;
   /** The audio, kept in memory while it is read and for Retry after a failed send. */
   recording?: {
     blob: Blob;
@@ -124,7 +125,7 @@ export type StartBlocker = 'active' | 'busy' | 'kept' | 'capped' | 'none';
 /** The longest delay `setTimeout` takes. */
 const MAX_TIMEOUT = 2 ** 31 - 1;
 
-const initial: VoiceNoteState = { phase: 'idle', page: 'shopping' };
+const initial: VoiceNoteState = { phase: 'idle', defaultTarget: 'shopping' };
 
 const nextUtcMidnight = (now: number) => {
   const day = new Date(now);
@@ -158,7 +159,24 @@ export function createVoiceNote(
     state = { ...next, voiceCap: state.voiceCap };
     emit();
   }
-  const idle = () => go({ phase: 'idle', page: state.page });
+  /** Review: swaps the chosen list's resolution into each action with a list to pick that `matches`. `byList` stays, so the pick can change. */
+  const swapLists = (
+    list: VoiceList,
+    matches: (action: VoiceReviewAction) => boolean,
+  ) => {
+    if (state.phase !== 'review' || !state.proposal) return;
+    state = {
+      ...state,
+      proposal: {
+        ...state.proposal,
+        actions: state.proposal.actions.map((a) =>
+          a.byList && matches(a) ? { ...a.byList[list], byList: a.byList } : a,
+        ),
+      },
+    };
+    emit();
+  };
+  const idle = () => go({ phase: 'idle', defaultTarget: state.defaultTarget });
 
   /**
    * What outlives the page that started a Voice Note, so the pill on either page can reach it: the
@@ -240,7 +258,7 @@ export function createVoiceNote(
     letSleep();
     go({
       phase: 'failed',
-      page: state.page,
+      defaultTarget: state.defaultTarget,
       recording: options.keepRecording ? state.recording : undefined,
       error,
       rawError: options.rawError,
@@ -323,14 +341,14 @@ export function createVoiceNote(
     audio: Recording,
     scanLanguage: ScanLanguage,
     locale: Locale,
-    page: VoiceList,
+    defaultTarget: VoiceDefaultTarget,
   ) {
     const request = new AbortController();
     reading = request;
     keepAwake();
     go({
       phase: 'reading',
-      page,
+      defaultTarget,
       recording: {
         blob: audio.blob,
         mimeType: audio.mimeType,
@@ -343,7 +361,7 @@ export function createVoiceNote(
         recording: audio,
         scanLanguage,
         locale,
-        defaultTarget: page,
+        defaultTarget,
         today: localIso(new Date()),
         signal: request.signal,
       });
@@ -353,7 +371,7 @@ export function createVoiceNote(
       letSleep();
       go({
         phase: 'review',
-        page,
+        defaultTarget,
         // Kept for Review's "English · 0:09"; a discard or Apply drops it with the rest.
         recording: state.recording,
         proposal: { transcript: result.transcript, actions: result.actions },
@@ -372,7 +390,7 @@ export function createVoiceNote(
    * microphone is live, or why it is not. `scanLanguage` and `locale` are for the read.
    */
   async function start(options: {
-    page: VoiceList;
+    defaultTarget: VoiceDefaultTarget;
     scanLanguage: ScanLanguage;
     locale: Locale;
   }): Promise<StartOutcome> {
@@ -419,7 +437,7 @@ export function createVoiceNote(
     }, MAX_VOICE_NOTE_MS);
     go({
       phase: 'recording',
-      page: options.page,
+      defaultTarget: options.defaultTarget,
       startedAt: Date.now(),
     });
     return 'started';
@@ -463,7 +481,7 @@ export function createVoiceNote(
       letSleep();
       return 'notStarted';
     }
-    void send(audio, mine.scanLanguage, mine.locale, state.page);
+    void send(audio, mine.scanLanguage, mine.locale, state.defaultTarget);
     return 'sent';
   }
 
@@ -509,7 +527,7 @@ export function createVoiceNote(
 
     /** Sends the kept recording again: the same audio, in the language and for the page it had. */
     retry(locale: Locale): Promise<void> {
-      const { phase, recording: kept, page } = state;
+      const { phase, recording: kept, defaultTarget } = state;
       if (phase !== 'failed' || !kept) return Promise.resolve();
       return send(
         {
@@ -519,7 +537,7 @@ export function createVoiceNote(
         },
         kept.scanLanguage,
         locale,
-        page,
+        defaultTarget,
       );
     },
     /** Gives up waiting for the read. The server is not told, so the Voice Cap charge stands. */
@@ -555,6 +573,14 @@ export function createVoiceNote(
         },
       };
       emit();
+    },
+    /** Review: puts a `needsList` action on a list, swapping in that list's resolution. The pick can change. */
+    pickList(id: string, list: VoiceList) {
+      swapLists(list, (a) => a.id === id);
+    },
+    /** Review: puts every action that has a list to pick on one list. */
+    pickAllLists(list: VoiceList) {
+      swapLists(list, () => true);
     },
     /** Review: changes a Voice Action. */
     edit(id: string, patch: VoiceNoteEdit) {

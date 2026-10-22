@@ -10,7 +10,7 @@ import {
   voiceReadModelSchema,
   type VoiceReadModelResult,
 } from './voice-actions';
-import type { VoiceTarget } from './voice-actions';
+import type { VoiceDefaultTarget } from './voice-actions';
 import { buildVoiceReadRequest } from './voice-read-request';
 
 export type VoiceReadInput = {
@@ -22,7 +22,7 @@ export type VoiceReadInput = {
   scanLanguage: ScanLanguage | null;
   locale: CatalogLocale;
   today: string;
-  defaultTarget: VoiceTarget;
+  defaultTarget: VoiceDefaultTarget;
   /** Debug capture only: ties this read to the recording's transcription. */
   captureId?: string;
 };

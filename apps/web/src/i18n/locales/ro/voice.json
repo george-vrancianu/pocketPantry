@@ -33,6 +33,20 @@
           "say": "Se termină orezul",
           "result": "Marchează orezul ca fiind pe terminate"
         }
+      },
+      "none": {
+        "one": {
+          "say": "Am luat pâinea",
+          "result": "Bifează pâinea din Lista de cumpărături"
+        },
+        "two": {
+          "say": "Ne trebuie doi litri de lapte",
+          "result": "Adaugă lapte, 2 l, în Lista de cumpărături"
+        },
+        "three": {
+          "say": "Două iaurturi, expiră vineri",
+          "result": "Merge în Cămară"
+        }
       }
     }
   },
@@ -65,6 +79,7 @@
     "hint": "Eliberează pentru a trimite · glisează în afară pentru a anula",
     "toShopping": "Ajunge în Lista de cumpărături. Spune „în cămară” pentru a adăuga stoc.",
     "toPantry": "Ajunge în Cămară. Spune „pe listă” pentru Lista de cumpărături.",
+    "toNone": "Spune care listă: „pe listă” sau „în cămară”.",
     "tip": "Ține apăsat pentru a vorbi, eliberează pentru a trimite",
     "recording": "Se înregistrează",
     "cancelArmed": "Eliberează pentru a anula",
@@ -178,7 +193,17 @@
       "confirmHint": "Nu se schimbă nimic și va trebui să o spui din nou.",
       "keep": "Continuă verificarea",
       "discarded": "Nota vocală a fost eliminată",
-      "discardedHint": "Nu s-a schimbat nimic."
+      "discardedHint": "Nu s-a schimbat nimic.",
+      "pickList": "Alege mai întâi o listă"
+    },
+    "pickList": {
+      "label": "Lista pentru {{name}}",
+      "group": "Alege o listă",
+      "hint": "Alege Lista de cumpărături sau Cămara"
+    },
+    "putAll": {
+      "label": "Pune tot pe:",
+      "name": "Pune tot pe"
     }
   },
   "toast": {

@@ -1,13 +1,15 @@
 import {
   DOCK_BOTTOM,
   DOCK_HEIGHT,
+  DOCK_OVERHANG,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { LIFT_MS } from '../components/liftedBlock';
 
-/** The bottom of the viewport the Dock covers (its larger height, so it holds on every width). */
-const DOCK_ZONE = DOCK_BOTTOM + DOCK_HEIGHT.md;
+/** The bottom of the viewport the Dock covers (its larger height, so it holds on every width),
+ * with the capsule's overhang. */
+const DOCK_ZONE = DOCK_BOTTOM + DOCK_HEIGHT.md + DOCK_OVERHANG;
 /** Room left between the scrolled-in card and the Dock. */
 const BREATHING = 14;
 

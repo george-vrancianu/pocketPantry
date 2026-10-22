@@ -46,7 +46,7 @@ export type ResolveContext = {
 };
 
 export type Resolution = {
-  status: Exclude<VoiceActionStatus, 'notUnderstood'>;
+  status: Exclude<VoiceActionStatus, 'notUnderstood' | 'needsList'>;
   rows: ResolvedRows;
   defaults: { location?: VoiceLocation; expiresOn?: string };
 };

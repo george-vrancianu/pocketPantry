@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { SCAN_LANGUAGES, type ScanLanguage } from '../../i18n/resources';
 import { isPillUp, useVoiceNoteState } from '../../lib/voiceNote';
 import {
-  buttonBottom,
+  MIC_ROW,
+  micBottom,
   voiceToast,
   VOICE_LAYER,
 } from '../../lib/voicePlacement';
@@ -16,7 +17,7 @@ type Props = {
 };
 
 /**
- * The Scan Language chip left of the Voice Note button, and the menu it opens. It reads and
+ * The Scan Language chip above the Dock's mic, and the menu it opens. It reads and
  * writes the stored Scan Language (ADR 0003), so the camera's chip follows.
  */
 export function LanguageMenu({ value, disabled, onChange }: Props) {
@@ -129,10 +130,12 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
           onKeyDown={onMenuKeyDown}
           sx={{
             position: 'fixed',
-            right: 16,
+            left: 0,
+            right: 0,
+            mx: 'auto',
             bottom: {
-              xs: `calc(${buttonBottom.xs} + 72px)`,
-              md: `calc(${buttonBottom.md} + 72px)`,
+              xs: `calc(${micBottom.xs} + ${MIC_ROW}px)`,
+              md: `calc(${micBottom.md} + ${MIC_ROW}px)`,
             },
             width: 220,
             p: '6px',

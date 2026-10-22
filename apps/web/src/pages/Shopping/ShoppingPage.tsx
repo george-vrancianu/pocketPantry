@@ -19,7 +19,6 @@ import { ImportPill } from './components/ImportPill';
 import { ApplyTemplatesSheet } from './components/ApplyTemplatesSheet';
 import { SaveListRow } from './components/SaveListRow';
 import { EmptyListStart } from './components/EmptyListStart';
-import { VoiceNote } from '../../components/VoiceNote';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 
@@ -97,8 +96,6 @@ export function ShoppingPage() {
         }
       />
       <RowHintNote hint={hint} />
-      {/* Outside every conditional below: a read in flight must outlive the list reloading. */}
-      <VoiceNote />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
         {rowToggleErrors.message ? (

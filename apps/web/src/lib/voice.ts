@@ -14,9 +14,18 @@ export const MIN_VOICE_NOTE_MS = QUICK_TAP_MS;
 
 /** The list the page a Voice Note is recorded on acts on (ADR 0017). */
 export type VoiceList = 'shopping' | 'pantry';
+/** What a page sends as its Default List: a list, or `none` where the page has no list (ADR 0021). */
+export type VoiceDefaultTarget = VoiceList | 'none';
+
+/** Where the Listening card says a Voice Note goes, per Default List (voice namespace). */
+export const LISTENING_DESTINATION = {
+  shopping: 'listening.toShopping',
+  pantry: 'listening.toPantry',
+  none: 'listening.toNone',
+} as const satisfies Record<VoiceDefaultTarget, string>;
 
 export type VoiceActionStatus =
-  'ready' | 'needsBatch' | 'notFound' | 'notUnderstood';
+  'ready' | 'needsBatch' | 'notFound' | 'notUnderstood' | 'needsList';
 
 export type VoiceBatchRow = {
   id: string;
@@ -33,7 +42,7 @@ export type VoiceBatchRow = {
 export type VoiceReviewAction = {
   id: string;
   status: VoiceActionStatus;
-  /** Null for a Didn't understand entry. */
+  /** Null for a Didn't understand entry and for `needsList`, which waits for a pick in Review. */
   target: VoiceList | null;
   op:
     | 'add'
@@ -71,6 +80,11 @@ export type VoiceReviewAction = {
     } | null;
   };
   defaults: { location?: StorageLocation; expiresOn?: string };
+  /**
+   * A bare add or remove off the lists: the action resolved against each list, so picking swaps one in without a
+   * request. Kept after the pick so the Member can change it.
+   */
+  byList?: { shopping: VoiceReviewAction; pantry: VoiceReviewAction };
 };
 
 export type VoiceNoteResult = {
@@ -155,7 +169,7 @@ export type VoiceNoteRequest = {
   recording: Recording;
   scanLanguage: ScanLanguage;
   locale: Locale;
-  defaultTarget: VoiceList;
+  defaultTarget: VoiceDefaultTarget;
   /** The Member's local date, `YYYY-MM-DD`. */
   today: string;
   /** Aborting it abandons the request on this side only; the Voice Cap charge stands. */

@@ -44,7 +44,12 @@ export {
 } from './ingredientIcon/IngredientIcon';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
-export { aboveDock, DOCK_BOTTOM, DOCK_HEIGHT } from './theme/dock';
+export {
+  aboveDock,
+  DOCK_BOTTOM,
+  DOCK_HEIGHT,
+  DOCK_OVERHANG,
+} from './theme/dock';
 export { visuallyHidden } from './theme/visuallyHidden';
 
 export { Alert, type AlertProps } from './atoms/Alert';
@@ -195,6 +200,7 @@ export {
   type ToastOptions,
 } from './molecules/ToastProvider';
 export { Dock, type DockEntry, type DockProps } from './organisms/Dock';
+export { DockCapsule, type DockCapsuleProps } from './organisms/DockCapsule';
 
 export { CenteredLayout } from './templates/CenteredLayout';
 export { PageLayout, type PageLayoutProps } from './templates/PageLayout';

@@ -1,10 +1,11 @@
 import type { TFunction } from 'i18next';
 import type {
   VoiceApplyResult,
+  VoiceDefaultTarget,
   VoiceList,
   VoiceReviewAction,
 } from '../../lib/voice';
-import { displayName } from './reviewModel';
+import { displayName, leadingList } from './reviewModel';
 
 /** The longest the result names skipped actions before counting the rest. */
 const NAMED_SKIPS = 2;
@@ -22,7 +23,7 @@ const lower = (text: string, language: string) =>
 export function applyToast(
   result: VoiceApplyResult,
   actions: VoiceReviewAction[],
-  page: VoiceList,
+  target: VoiceDefaultTarget,
   t: TFunction,
   language: string,
 ): ApplyToast {
@@ -43,6 +44,7 @@ export function applyToast(
       : [];
   });
 
+  const page = leadingList(target);
   const per = (list: VoiceList) =>
     result.applied.filter((entry) => entry.list === list).length;
   const other: VoiceList = page === 'shopping' ? 'pantry' : 'shopping';

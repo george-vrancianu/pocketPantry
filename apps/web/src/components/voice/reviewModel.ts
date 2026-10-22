@@ -1,6 +1,7 @@
 import type { StorageLocation } from '../../lib/catalog';
 import type {
   VoiceBatchRow,
+  VoiceDefaultTarget,
   VoiceList,
   VoiceReviewAction,
 } from '../../lib/voice';
@@ -43,6 +44,9 @@ export function soonestFirst(batches: VoiceBatchRow[]): VoiceBatchRow[] {
 }
 
 export function kindOf(action: VoiceReviewAction): VoiceActionKind {
+  if (action.status === 'needsList') {
+    return action.op === 'remove' ? 'remove' : 'add';
+  }
   if (action.target === 'shopping') {
     switch (action.op) {
       case 'check':
@@ -88,11 +92,18 @@ export const isActionable = (action: VoiceReviewAction) =>
   action.status === 'ready' ||
   (action.status === 'needsBatch' && !!action.batchId);
 
+/** An add or remove still waiting for the Member to pick the Shopping List or the Pantry. */
+export const needsList = (action: VoiceReviewAction) =>
+  action.status === 'needsList';
+
 export const isChange = (action: VoiceReviewAction) =>
   action.status === 'ready' || action.status === 'needsBatch';
 
 /** What holds Apply back for this action, if anything. */
-export function blockOf(action: VoiceReviewAction): 'batch' | 'place' | null {
+export function blockOf(
+  action: VoiceReviewAction,
+): 'list' | 'batch' | 'place' | null {
+  if (action.status === 'needsList') return 'list';
   if (action.status === 'needsBatch' && !action.batchId) return 'batch';
   if (
     action.status === 'ready' &&
@@ -112,17 +123,32 @@ export type ReviewGroup = {
   actions: VoiceReviewAction[];
 };
 
-/** One group per list that has changes: the page's own list first, then the other. */
+/** The list that leads a Review and its toast: the page's own, or the Shopping List off the lists (`none`). */
+export const leadingList = (defaultTarget: VoiceDefaultTarget): VoiceList =>
+  defaultTarget === 'none' ? 'shopping' : defaultTarget;
+
+/**
+ * One group per list that has changes: the page's own list first, then the other. Off the lists (`none`) the
+ * Shopping List comes first and nothing counts as named, since the page had no list to differ from.
+ */
 export function groupsOf(
   actions: VoiceReviewAction[],
-  page: VoiceList,
+  defaultTarget: VoiceDefaultTarget,
 ): ReviewGroup[] {
   const order: VoiceList[] =
-    page === 'shopping' ? ['shopping', 'pantry'] : ['pantry', 'shopping'];
+    leadingList(defaultTarget) === 'pantry'
+      ? ['pantry', 'shopping']
+      : ['shopping', 'pantry'];
   return order.flatMap((list) => {
     const rows = actions.filter((a) => isChange(a) && a.target === list);
     return rows.length === 0
       ? []
-      : [{ list, named: list !== page, actions: rows }];
+      : [
+          {
+            list,
+            named: defaultTarget !== 'none' && list !== defaultTarget,
+            actions: rows,
+          },
+        ];
   });
 }

@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { dockStateFor } from './dockState';
 
 describe('dockStateFor', () => {
+  it('highlights Home on the dashboard', () => {
+    expect(dockStateFor('/')).toEqual({ visible: true, activeKey: 'home' });
+  });
+
   it.each(['/shopping', '/pantry', '/recipes'])(
     'highlights %s in the dock',
     (path) => {
@@ -24,11 +28,7 @@ describe('dockStateFor', () => {
     expect(dockStateFor('/scan/review').visible).toBe(false);
   });
 
-  it('shows the dock with nothing active on the dashboard and other screens', () => {
-    expect(dockStateFor('/')).toMatchObject({
-      visible: true,
-      activeKey: undefined,
-    });
+  it('shows the dock with nothing active on other screens', () => {
     expect(dockStateFor('/settings')).toMatchObject({
       visible: true,
       activeKey: undefined,
