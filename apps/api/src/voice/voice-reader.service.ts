@@ -18,7 +18,8 @@ export type VoiceReadInput = {
   shoppingItems: { name: string }[];
   memberId: string;
   transcript: string;
-  scanLanguage: ScanLanguage;
+  /** Null when the language spoken is not known. */
+  scanLanguage: ScanLanguage | null;
   locale: CatalogLocale;
   today: string;
   defaultTarget: VoiceTarget;

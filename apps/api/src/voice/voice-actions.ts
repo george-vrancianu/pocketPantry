@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   CATALOG_LOCALES,
   FALLBACK_LOCALE,
+  SCAN_LANGUAGES,
   type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
@@ -35,6 +36,8 @@ const modelAction = z.object({
   matchConfidence: z.number().min(0).max(1),
   /** A short generic Ingredient name in the UI locale. */
   fallbackIngredientName: z.string().trim().min(1).max(80),
+  /** The same short generic name in the language spoken, for an Assistant reply. */
+  spokenName: z.string().trim().min(1).max(80),
   quantity: z.number().positive().max(MAX_QUANTITY).nullable(),
   unit: z.enum(ingredientUnit.enumValues).nullable(),
   /** Removals only: one Batch (or the item) or all of them. */
@@ -47,6 +50,8 @@ export const voiceReadModelSchema = z.object({
   actions: z.array(modelAction),
   /** Phrases the model could not turn into a supported Voice Action. */
   unsupported: z.array(z.string().trim().min(1).max(200)),
+  /** The language the text was spoken in, or null when it can't be told. Only Assistant Requests use it. */
+  spokenLanguage: z.enum(SCAN_LANGUAGES).nullable(),
 });
 export type VoiceReadModelResult = z.infer<typeof voiceReadModelSchema>;
 export type ModelVoiceAction = z.infer<typeof modelAction>;

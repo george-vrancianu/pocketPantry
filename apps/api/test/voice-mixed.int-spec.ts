@@ -50,7 +50,10 @@ describe('Voice Notes across both lists (integration)', () => {
     const ai = {
       generate: (request: { prompt: string }) => {
         prompts.push(request.prompt);
-        return Promise.resolve({ data: reading, requestId: 'req-1' });
+        return Promise.resolve({
+          data: { spokenLanguage: null, ...reading },
+          requestId: 'req-1',
+        });
       },
     };
     const transcription = {
@@ -109,6 +112,7 @@ describe('Voice Notes across both lists (integration)', () => {
     matchedIngredientId: null,
     matchConfidence: 0,
     fallbackIngredientName: 'X',
+    spokenName: 'X',
     quantity: null,
     unit: null,
     scope: null,

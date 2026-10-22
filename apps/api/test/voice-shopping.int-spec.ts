@@ -23,7 +23,11 @@ describe('Shopping List Voice Actions (integration)', () => {
 
   beforeAll(async () => {
     const ai = {
-      generate: () => Promise.resolve({ data: reading, requestId: 'req-1' }),
+      generate: () =>
+        Promise.resolve({
+          data: { spokenLanguage: null, ...reading },
+          requestId: 'req-1',
+        }),
     };
     const transcription = {
       isConfigured: () => true,
@@ -106,6 +110,7 @@ describe('Shopping List Voice Actions (integration)', () => {
     matchedIngredientId: null,
     matchConfidence: 0,
     fallbackIngredientName: 'X',
+    spokenName: 'X',
     quantity: null,
     unit: null,
     scope: null,

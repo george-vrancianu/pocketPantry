@@ -264,7 +264,7 @@ The maximum number of Voice Notes a Member may record per day.
 _Avoid_: Voice quota, Scan Cap (a separate limit)
 
 **Assistant Request**:
-Text a Member dictates to a voice assistant (today only Siri, through an Apple Shortcut) and the Shortcut sends to the API with an Assistant Token. It is read into Voice Actions like a Voice Note, but the safe ones are applied at once with no Review and the rest are refused. The reply is one sentence for the assistant to speak, in the Member's UI language. Not a Voice Note (no recording, no transcription) and not a Scan; the text is not stored.
+Text a Member dictates to a voice assistant (today only Siri, through an Apple Shortcut) and the Shortcut sends to the API with an Assistant Token. It is read into Voice Actions like a Voice Note, but the safe ones are applied at once with no Review and the rest are refused. The reply is one sentence for the assistant to speak, in the language the Member spoke (the UI language when that can't be told); what is written stays in the UI language. Not a Voice Note (no recording, no transcription) and not a Scan; the text is not stored.
 _Avoid_: Siri command, assistant call, Voice Note
 
 **Assistant Cap**:

@@ -52,6 +52,7 @@ const modelAction = (
   matchedIngredientId: MILK,
   matchConfidence: 0.9,
   fallbackIngredientName: 'Milk',
+  spokenName: 'Milk',
   quantity: null,
   unit: null,
   scope: null,
@@ -64,7 +65,7 @@ const modelAction = (
 describe('normalizeActions', () => {
   it('names a confident Match by its Catalog name in the locale, as Review would show it', () => {
     const [action] = normalizeActions(
-      { actions: [modelAction()], unsupported: [] },
+      { actions: [modelAction()], unsupported: [], spokenLanguage: null },
       catalog,
       'ro',
       0.6,
@@ -79,7 +80,7 @@ describe('normalizeActions', () => {
       fallbackIngredientName: 'Quinoa crackers',
     });
     const out = normalizeActions(
-      { actions: [doubted, invented], unsupported: [] },
+      { actions: [doubted, invented], unsupported: [], spokenLanguage: null },
       catalog,
       'en',
       0.6,
@@ -114,6 +115,7 @@ describe('normalizeActions', () => {
           }),
         ],
         unsupported: [],
+        spokenLanguage: null,
       },
       catalog,
       'da',
@@ -137,6 +139,7 @@ describe('normalizeActions', () => {
           modelAction({ op: 'check', quantity: 2, unit: null }),
         ],
         unsupported: [],
+        spokenLanguage: null,
       },
       catalog,
       'en',
@@ -149,6 +152,7 @@ describe('normalizeActions', () => {
       {
         actions: [modelAction({ noExpiry: true, expiresOn: '2026-10-20' })],
         unsupported: [],
+        spokenLanguage: null,
       },
       catalog,
       'en',

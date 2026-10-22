@@ -40,6 +40,18 @@ describe('buildVoiceReadRequest', () => {
     expect(prompt).toContain('Pantry (spelling hints only): ["Rice"]');
   });
 
+  // Spec: #455. An Assistant Request does not know the language spoken.
+  it('asks the model which language was spoken when the Scan Language is unknown', () => {
+    const { prompt } = buildVoiceReadRequest({ ...input, scanLanguage: null });
+    expect(prompt).toContain(
+      'The note may be in any supported language (English, Romanian or Danish); the app is shown in English. Match catalog ingredients across languages.',
+    );
+    expect(prompt).not.toContain('The note was spoken in');
+    expect(prompt).not.toContain('other supported languages');
+    expect(prompt).toContain('spokenLanguage');
+    expect(prompt).toContain('spokenName');
+  });
+
   it('dedupes list names and caps them at 200', () => {
     const many = Array.from({ length: 300 }, (_, i) => `Item ${i}`);
     const { prompt } = buildVoiceReadRequest({
