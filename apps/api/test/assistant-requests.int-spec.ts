@@ -913,6 +913,42 @@ describe('Assistant Requests (integration)', () => {
       );
       expect(await used(ana.id)).toBe(1);
     });
+
+    it('speaks at most 8 answered Ingredients, then says how many more (#465)', async () => {
+      const ana = await member();
+      const names = [
+        'butter',
+        'flour',
+        'bread',
+        'carrot',
+        'onion',
+        'potato',
+        'yogurt',
+      ];
+      const asked = [
+        ['Milk', milk],
+        ['Eggs', eggs],
+        ['Rice', rice],
+        ...names.map(
+          (n) =>
+            [n[0].toUpperCase() + n.slice(1), seedId.ingredient(n)] as const,
+        ),
+      ] as const;
+      for (const [, id] of asked) await stock(ana.cookie, id);
+      reading = {
+        actions: [],
+        questions: asked.map(([name, id]) => question(id, name)),
+        unsupported: [],
+      };
+      const response = await ask(ana.secret, {
+        text: 'do we have all of these',
+      }).expect(200);
+      const body = reply(response);
+      expect(body.outcomes).toHaveLength(10);
+      expect(body.speech.match(/You have /g)).toHaveLength(8);
+      expect(body.speech.endsWith('And 2 more, check PantryGator.')).toBe(true);
+      expect(await used(ana.id)).toBe(1);
+    });
   });
 
   // Spec: #461, ADR 0020. The full answers.

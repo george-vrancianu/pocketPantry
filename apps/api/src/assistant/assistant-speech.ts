@@ -126,7 +126,11 @@ type Messages = {
     runningLow: string;
     /** Added to a no or only expired: `{items}` are the ones already on the Shopping List. */
     onShoppingList: string;
+    /** The same for a group of one, which would only repeat the name. */
+    onShoppingListSolo: string;
   };
+  /** The tail after the answers that were left out; `{n}` is the number left. */
+  answersMore: Forms;
   /** The unit word of a bare count beside other units ("milk: 2 litres and 3 pieces"). */
   pieces: Forms;
   states: Record<AssistantState, string>;
@@ -178,8 +182,10 @@ export const assistantMessages = {
       expiringSoon: 'some expiring soon',
       runningLow: 'running low',
       onShoppingList: 'already on your Shopping List: {items}',
+      onShoppingListSolo: 'already on your Shopping List',
     },
     pieces: plain('piece', 'pieces'),
+    answersMore: same('And {n} more, check PantryGator'),
     states: {
       capReached:
         'You have reached the daily limit for the assistant. Try again tomorrow.',
@@ -226,8 +232,14 @@ export const assistantMessages = {
       expiringSoon: 'o parte expiră curând',
       runningLow: 'pe cale să se termine',
       onShoppingList: 'deja pe Lista de cumpărături: {items}',
+      onShoppingListSolo: 'deja pe Lista de cumpărături',
     },
     pieces: { one: 'bucată', few: 'bucăți', other: 'bucăți' },
+    answersMore: {
+      one: 'Și încă unul, verifică în PantryGator',
+      few: 'Și încă {n}, verifică în PantryGator',
+      other: 'Și încă {n}, verifică în PantryGator',
+    },
     states: {
       capReached: 'Ai atins limita zilnică pentru asistent. Încearcă mâine.',
       providerFailed: 'Nu am putut citi cererea acum. Încearcă din nou.',
@@ -273,8 +285,10 @@ export const assistantMessages = {
       expiringSoon: 'noget udløber snart',
       runningLow: 'ved at løbe tør',
       onShoppingList: 'allerede på indkøbslisten: {items}',
+      onShoppingListSolo: 'allerede på indkøbslisten',
     },
     pieces: plain('stykke', 'stykker'),
+    answersMore: same('Og {n} mere, tjek PantryGator'),
     states: {
       capReached:
         'Du har nået dagens grænse for assistenten. Prøv igen i morgen.',
@@ -298,6 +312,16 @@ const LIST_TYPE: Record<
   no: 'disjunction',
   notSure: 'conjunction',
 };
+
+/**
+ * Siri speaks at most this many answered Ingredients, whatever their kind;
+ * the rest are left to the app ("And 3 more, check PantryGator"). The ones
+ * spoken are the first asked, whatever their kind; those are then grouped and
+ * spoken in `ANSWER_ORDER` as usual. So a "no" asked early is kept and a "yes"
+ * asked ninth is dropped, and a grouped kind is cut by Ingredient: "No butter
+ * or eggs" becomes "No butter" when only one of them fits.
+ */
+export const MAX_SPOKEN_ANSWERS = 8;
 
 /** Clause order of a reply. */
 const KIND_ORDER: readonly AssistantActionKind[] = [
@@ -428,10 +452,11 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
   const all = input.outcomes ?? [];
   if (all.length === 0) return messages.states.nothingUnderstood;
 
+  const asked = all.filter(isAnswer);
+  const spokenAnswers = asked.slice(0, MAX_SPOKEN_ANSWERS);
+  const leftOut = asked.length - spokenAnswers.length;
   const answerClauses = ANSWER_ORDER.flatMap((kind) => {
-    const answers = all
-      .filter(isAnswer)
-      .filter((outcome) => outcome.kind === kind);
+    const answers = spokenAnswers.filter((outcome) => outcome.kind === kind);
     if (answers.length === 0) return [];
     const say = (items: string) =>
       messages.answers[kind].replace('{items}', items);
@@ -456,7 +481,14 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
     );
     return [
       covered.length
-        ? `${grouped}, ${messages.answerDetails.onShoppingList.replace('{items}', joinList(locale, covered))}`
+        ? `${grouped}, ${
+            answers.length === 1
+              ? messages.answerDetails.onShoppingListSolo
+              : messages.answerDetails.onShoppingList.replace(
+                  '{items}',
+                  joinList(locale, covered),
+                )
+          }`
         : grouped,
     ];
   });
@@ -472,6 +504,14 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
   // Each answer is a sentence of its own, spoken before the outcome clauses.
   return [
     ...answerClauses.map((clause) => `${clause}.`),
+    ...(leftOut > 0
+      ? [
+          `${messages.answersMore[category(locale, leftOut)].replace(
+            '{n}',
+            leftOut.toLocaleString(locale),
+          )}.`,
+        ]
+      : []),
     ...(clauses.length ? [`${clauses.join(messages.clauseSeparator)}.`] : []),
   ].join(' ');
 }
