@@ -26,10 +26,10 @@ export type AssistantActionKind =
 
 /**
  * The answer to one Pantry Question (ADR 0020), mirroring the API's
- * `PantryAnswerKind`. A later kind (`notSure`) is added here, to `ANSWER_ORDER`
+ * `PantryAnswerKind`. A later kind is added here, to `ANSWER_ORDER`
  * and to every dictionary.
  */
-export type AssistantAnswerKind = 'yes' | 'onlyExpired' | 'no';
+export type AssistantAnswerKind = 'yes' | 'onlyExpired' | 'no' | 'notSure';
 
 /** An entry of the outcomes list: what happened to a Voice Action, or the answer to a Pantry Question. */
 export type AssistantOutcomeKind = AssistantActionKind | AssistantAnswerKind;
@@ -68,7 +68,9 @@ export type AssistantAnswerOutcome =
       kind: 'onlyExpired' | 'no';
       name: string;
       onShoppingList?: boolean;
-    };
+    }
+  /** The name matched nothing: neither yes nor no. */
+  | { kind: 'notSure'; name: string };
 
 export type AssistantOutcome = AssistantActionOutcome | AssistantAnswerOutcome;
 
@@ -77,6 +79,7 @@ const ANSWER_ORDER: readonly AssistantAnswerKind[] = [
   'yes',
   'onlyExpired',
   'no',
+  'notSure',
 ];
 const ANSWER_KINDS: ReadonlySet<string> = new Set<string>(ANSWER_ORDER);
 const isAnswer = (
@@ -163,6 +166,7 @@ export const assistantMessages = {
       yes: 'You have {items}',
       onlyExpired: 'Only expired {items}',
       no: 'No {items}',
+      notSure: 'Not sure about {items}',
     },
     answerDetails: {
       locations: {
@@ -210,6 +214,7 @@ export const assistantMessages = {
       yes: 'Ai {items}',
       onlyExpired: 'Doar produse expirate: {items}',
       no: 'Nu ai {items}',
+      notSure: 'Nu sunt sigur despre {items}',
     },
     answerDetails: {
       locations: {
@@ -256,6 +261,7 @@ export const assistantMessages = {
       yes: 'Du har {items}',
       onlyExpired: 'Kun udløbne varer: {items}',
       no: 'Du har ikke {items}',
+      notSure: 'Ikke sikker på {items}',
     },
     answerDetails: {
       locations: {
@@ -290,6 +296,7 @@ const LIST_TYPE: Record<
 > = {
   onlyExpired: 'conjunction',
   no: 'disjunction',
+  notSure: 'conjunction',
 };
 
 /** Clause order of a reply. */
@@ -438,7 +445,7 @@ export function assistantSpeech(input: AssistantSpeechInput): string {
       );
     }
     const covered = answers.flatMap((answer) =>
-      answer.kind !== 'yes' && answer.onShoppingList ? [answer.name] : [],
+      'onShoppingList' in answer && answer.onShoppingList ? [answer.name] : [],
     );
     const grouped = say(
       joinList(

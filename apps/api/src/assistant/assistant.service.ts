@@ -157,11 +157,13 @@ export class AssistantService {
                 expiringSoon: answer.expiringSoon,
                 runningLow: answer.runningLow,
               }
-            : {
-                kind: answer.kind,
-                name,
-                onShoppingList: answer.onShoppingList,
-              };
+            : answer.kind === 'notSure'
+              ? { kind: 'notSure', name }
+              : {
+                  kind: answer.kind,
+                  name,
+                  onShoppingList: answer.onShoppingList,
+                };
         }),
         ...resolved.map((action, index) =>
           outcomeOf(action, drafts[index], result, nameOf(action)),

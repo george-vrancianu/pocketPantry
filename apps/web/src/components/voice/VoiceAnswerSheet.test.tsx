@@ -26,6 +26,7 @@ const answers = [
     id: 'q1',
     kind: 'yes',
     text: 'do we have milk',
+    name: null,
     ingredient: milk,
     totals: [{ unit: 'l', quantity: 2 }],
     locations: ['fridge'],
@@ -201,6 +202,46 @@ describe('the answer sheet for Pantry Questions', () => {
     expect(rows[3]).toHaveTextContent('Not in your Pantry');
     expect(rows[3]).not.toHaveTextContent('Shopping List');
     expect(rows[4]).toHaveTextContent('Already on your Shopping List');
+  });
+
+  // Spec: #462. A name with no Match is an answer too: the sheet opens, never Review.
+  it('shows a not sure row beside matched ones, by the asked name, off-page (Home)', async () => {
+    setup({
+      actions: [],
+      answers: [
+        answers[0],
+        {
+          id: 'q2',
+          kind: 'notSure',
+          text: 'and zorblax',
+          ingredient: null,
+          name: 'zorblax',
+        },
+        {
+          id: 'q3',
+          kind: 'yes',
+          text: 'quux',
+          ingredient: null,
+          name: 'quux',
+          totals: [{ unit: 'pcs', quantity: 3 }],
+          locations: ['cupboard'],
+          expiringSoon: false,
+          runningLow: false,
+        },
+      ],
+    });
+    const dialog = within(await ask(<p>home</p>, '/'));
+
+    expect(dialog.getByRole('heading', { name: 'Your Pantry' })).toBeVisible();
+    expect(dialog.queryByRole('heading', { name: 'Review' })).toBeNull();
+    const rows = dialog.getAllByRole('listitem');
+    expect(rows).toHaveLength(3);
+    expect(rows[1]).toHaveTextContent('zorblax');
+    expect(rows[1]).toHaveTextContent('Not sure');
+    expect(rows[1]).not.toHaveTextContent('Not in your Pantry');
+    expect(rows[2]).toHaveTextContent('quux');
+    expect(rows[2]).toHaveTextContent('In your Pantry');
+    expect(rows[2]).toHaveTextContent('3 pcs · Cupboard');
   });
 
   describe('a note with actions and answers', () => {

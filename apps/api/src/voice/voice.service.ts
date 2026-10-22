@@ -29,6 +29,7 @@ import {
   type VoiceActionKind,
   type VoiceApplyBody,
   type VoiceApplyResult,
+  sameSubject,
   voiceActionKind,
 } from './voice-actions';
 import type { ResolveContext, VoiceActionHandler } from './voice-handlers';
@@ -69,7 +70,7 @@ export type VoiceReadTextInput = {
 
 export type VoiceReadTextResult = {
   actions: ResolvedVoiceAction[];
-  /** Answers to the Pantry Questions that matched an Ingredient (ADR 0020); never Voice Actions. Unmatched questions are in `actions` as Didn't understand. */
+  /** Answers to the Pantry Questions (ADR 0020); never Voice Actions. A name with no Match is answered from Unmatched rows, or not sure. */
   answers: PantryAnswer[];
   /** The language the text was spoken in, as the model read it; null when it can't be told. */
   spokenLanguage: ScanLanguage | null;
@@ -288,8 +289,9 @@ export class VoiceService {
       spokenNames.set(draft.id, action.spokenName);
       out.push(resolution);
     }
-    // Pantry Questions never reach a handler. A question that matched no Ingredient is
-    // not answered (never "no" for an unsure name, ADR 0020); #462 gives it "not sure".
+    // Pantry Questions never reach a handler. A question with no confident Match is looked up
+    // by name among the Unmatched Batches and Shopping Items, and is "not sure" when none has
+    // it: never "no" for an unsure name (ADR 0020).
     const asked: PantryQuestion[] = [];
     for (const [index, question] of read.questions.entries()) {
       const match = keepConfident(
@@ -297,15 +299,22 @@ export class VoiceService {
         question.matchConfidence,
         threshold,
       );
-      if (!match) {
-        out.push(this.notUnderstood(question.spokenText));
+      const name = match ? null : question.fallbackIngredientName;
+      // "Milk and milk" is one question; so are two spellings of one Unmatched name.
+      const sameAsked = sameSubject({ ingredientId: match?.id ?? null, name });
+      if (
+        asked.some((entry) =>
+          sameAsked({
+            ingredientId: entry.ingredient?.id ?? null,
+            name: entry.name ?? '',
+          }),
+        )
+      ) {
         continue;
       }
-      // "Milk and milk" is one question.
-      if (asked.some((entry) => entry.ingredient.id === match.id)) continue;
       const id = randomUUID();
       spokenNames.set(id, question.spokenName);
-      asked.push({ id, text: question.spokenText, ingredient: match });
+      asked.push({ id, text: question.spokenText, ingredient: match, name });
     }
     let answers: PantryAnswer[] = [];
     if (asked.length) {
@@ -315,7 +324,7 @@ export class VoiceService {
           this.runningLow.list(memberId),
           this.pantryBasicsAmong(
             scope,
-            asked.map((entry) => entry.ingredient.id),
+            asked.flatMap((entry) => entry.ingredient?.id ?? []),
           ),
           this.settings
             .familyIdOf(memberId)
@@ -323,6 +332,9 @@ export class VoiceService {
         ]);
       answers = answerPantryQuestions(asked, {
         batches,
+        unmatchedShoppingNames: shoppingItems.flatMap((item) =>
+          item.ingredientId ? [] : [item.name],
+        ),
         shoppingIngredientIds: new Set(
           shoppingItems.flatMap((item) =>
             item.ingredientId ? [item.ingredientId] : [],
@@ -350,6 +362,7 @@ export class VoiceService {
     scope: CatalogScope,
     ingredientIds: string[],
   ): Promise<Set<string>> {
+    if (ingredientIds.length === 0) return new Set();
     const ingredients = scope.ingredients(this.database);
     const rows = await this.database
       .select({ id: ingredients.id })

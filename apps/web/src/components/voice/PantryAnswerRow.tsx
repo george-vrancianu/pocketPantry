@@ -2,6 +2,7 @@ import {
   Box,
   CheckIcon,
   CloseIcon,
+  InfoIcon,
   Tag,
   WarningIcon,
   palette,
@@ -33,6 +34,11 @@ const ANSWER: Record<
   no: {
     icon: <CloseIcon size={18} />,
     verdict: 'answers.verdict.no',
+    tone: 'text-secondary',
+  },
+  notSure: {
+    icon: <InfoIcon size={18} />,
+    verdict: 'answers.verdict.notSure',
     tone: 'text-secondary',
   },
 };
@@ -71,12 +77,12 @@ export function PantryAnswerRow({ answer }: { answer: VoiceAnswer }) {
       }}
     >
       <IngredientIconSlot
-        ingredientId={answer.ingredient.id}
-        aisleId={answer.ingredient.parentCategory.aisle.id}
+        ingredientId={answer.ingredient?.id}
+        aisleId={answer.ingredient?.parentCategory.aisle.id}
       />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ fontSize: 15, fontWeight: 600 }}>
-          {answer.ingredient.name}
+          {answer.ingredient?.name ?? answer.name ?? answer.text}
         </Box>
         <Box
           sx={{
@@ -97,7 +103,7 @@ export function PantryAnswerRow({ answer }: { answer: VoiceAnswer }) {
             {where}
           </Box>
         )}
-        {answer.kind !== 'yes' && answer.onShoppingList && (
+        {'onShoppingList' in answer && answer.onShoppingList && (
           <Box sx={{ fontSize: 13, color: palette('text-secondary') }}>
             {t('answers.onShoppingList')}
           </Box>

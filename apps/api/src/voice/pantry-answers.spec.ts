@@ -40,9 +40,17 @@ const question = (id: string = MILK) => ({
   id: `q-${id}`,
   text: id,
   ingredient: ingredient(id),
+  name: null,
+});
+const unmatchedQuestion = (name: string) => ({
+  id: `q-${name}`,
+  text: name,
+  ingredient: null,
+  name,
 });
 const batch = (overrides: Partial<AnswerBatch> = {}): AnswerBatch => ({
   ingredientId: MILK,
+  name: 'Milk',
   quantity: 1,
   unit: 'l',
   location: 'fridge',
@@ -52,6 +60,7 @@ const batch = (overrides: Partial<AnswerBatch> = {}): AnswerBatch => ({
 const context = (overrides: Partial<AnswerContext> = {}): AnswerContext => ({
   batches: [],
   shoppingIngredientIds: new Set(),
+  unmatchedShoppingNames: [],
   runningLowIds: new Set(),
   pantryBasicIds: new Set(),
   staleThresholdDays: 3,
@@ -133,5 +142,49 @@ describe('answerPantryQuestions', () => {
         'salt',
       ),
     ).toMatchObject({ kind: 'onlyExpired' });
+  });
+
+  describe('a name with no Match', () => {
+    const zorblax = (overrides: Partial<AnswerBatch> = {}) =>
+      batch({ ingredientId: null, name: 'Zorblax', ...overrides });
+    const askName = (name: string, overrides: Partial<AnswerContext> = {}) =>
+      answerPantryQuestions([unmatchedQuestion(name)], context(overrides))[0];
+
+    it('is not sure with no Unmatched row, never no', () => {
+      // Matched rows of the same spelling do not count: only Unmatched rows are looked up.
+      expect(
+        askName('zorblax', {
+          batches: [batch({ name: 'zorblax' })],
+          shoppingIngredientIds: new Set(['zorblax']),
+        }),
+      ).toMatchObject({ kind: 'notSure', ingredient: null, name: 'zorblax' });
+    });
+
+    it('answers yes from an Unmatched Batch of the same normalised name', () => {
+      expect(
+        askName('  ZORBLAX ', {
+          batches: [zorblax({ quantity: 2, unit: 'kg' })],
+        }),
+      ).toMatchObject({
+        kind: 'yes',
+        totals: [{ unit: 'kg', quantity: 2 }],
+        locations: ['fridge'],
+        runningLow: false,
+      });
+    });
+
+    it('answers only expired when every Unmatched Batch is Expired', () => {
+      expect(
+        askName('zorblax', {
+          batches: [zorblax({ expiryDate: '2026-06-01' })],
+        }),
+      ).toMatchObject({ kind: 'onlyExpired', onShoppingList: false });
+    });
+
+    it('answers no on the Shopping List from an Unmatched Shopping Item alone', () => {
+      expect(
+        askName('Zorblax', { unmatchedShoppingNames: ['zorblax'] }),
+      ).toMatchObject({ kind: 'no', onShoppingList: true });
+    });
   });
 });

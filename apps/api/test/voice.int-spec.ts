@@ -568,6 +568,82 @@ describe('Voice Note (integration)', () => {
     ]);
   });
 
+  // Spec: #462. A name with no Match is answered from the Family's Unmatched rows, else not sure.
+  describe('a Pantry Question about a name that matched no Ingredient', () => {
+    const asked = (name: string) => ({
+      spokenText: name,
+      matchedIngredientId: null,
+      matchConfidence: 0,
+      fallbackIngredientName: name,
+      spokenName: name,
+    });
+    const post = (cookie: string, path: string, body: object) =>
+      request(app.getHttpServer())
+        .post(path)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send(body);
+    const answersTo = async (cookie: string, ...names: string[]) => {
+      reading = { actions: [], questions: names.map(asked), unsupported: [] };
+      const response = await note(cookie).expect(201);
+      return (response.body as { actions: object[]; answers: object[] })
+        .answers;
+    };
+
+    it('is not sure when no Unmatched row has the name, never no, and is not "Didn\'t understand"', async () => {
+      const { cookie, memberId } = await signUp();
+      reading = { actions: [], questions: [asked('zorblax')], unsupported: [] };
+      const response = await note(cookie).expect(201);
+      const body = response.body as { actions: object[]; answers: object[] };
+      expect(body.actions).toEqual([]);
+      expect(body.answers).toMatchObject([
+        { kind: 'notSure', ingredient: null, name: 'zorblax', text: 'zorblax' },
+      ]);
+      expect(await usage(memberId, 'voice')).toBe(1);
+    });
+
+    it('answers yes from an Unmatched Batch and no from an Unmatched Shopping Item, by normalised name', async () => {
+      const { cookie } = await signUp();
+      await post(cookie, '/api/pantry/batches?locale=en', {
+        rawName: 'Zorblax',
+        parentCategoryId: seedId.parent('dairy'),
+        quantity: 2,
+        unit: 'kg',
+        location: 'freezer',
+      }).expect(201);
+      await post(cookie, '/api/shopping-list/items?locale=en', {
+        name: 'Quux',
+        quantity: 1,
+        unit: 'pcs',
+      }).expect(200);
+      expect(
+        await answersTo(cookie, 'ZORBLAX', 'quux', 'cheese'),
+      ).toMatchObject([
+        {
+          kind: 'yes',
+          ingredient: null,
+          name: 'ZORBLAX',
+          totals: [{ unit: 'kg', quantity: 2 }],
+          locations: ['freezer'],
+        },
+        { kind: 'no', ingredient: null, name: 'quux', onShoppingList: true },
+        { kind: 'notSure', name: 'cheese' },
+      ]);
+    });
+
+    it("does not count another Family's Unmatched rows", async () => {
+      const ana = await signUp();
+      const ben = await signUp();
+      await post(ben.cookie, '/api/pantry/batches?locale=en', {
+        rawName: 'Zorblax',
+        parentCategoryId: seedId.parent('dairy'),
+      }).expect(201);
+      expect(await answersTo(ana.cookie, 'zorblax')).toMatchObject([
+        { kind: 'notSure' },
+      ]);
+    });
+  });
+
   it('returns an empty answers list when nothing was asked', async () => {
     const { cookie } = await signUp();
     reading = {
