@@ -375,10 +375,24 @@ describe('Voice Notes with no Default List (integration)', () => {
       },
     );
 
-    it("sends a targetless op that always has a list to Didn't understand", async () => {
+    it.each(['check', 'uncheck', 'setQuantity'] as const)(
+      'puts a targetless %s on the Shopping List',
+      async (op) => {
+        const { cookie } = await signUp();
+        const [action] = await read(cookie, [
+          bare(bread, { op, ...(op === 'setQuantity' ? { quantity: 2 } : {}) }),
+        ]);
+        expect(action).toMatchObject({ target: 'shopping', op });
+        expect(action.status).not.toBe('needsList');
+        expect(action.status).not.toBe('notUnderstood');
+      },
+    );
+
+    it('puts a targetless runningLow on the Pantry', async () => {
       const { cookie } = await signUp();
-      const [action] = await read(cookie, [bare(bread, { op: 'check' })]);
-      expect(action).toMatchObject({ status: 'notUnderstood', target: null });
+      const [action] = await read(cookie, [bare(bread, { op: 'runningLow' })]);
+      expect(action).toMatchObject({ target: 'pantry', op: 'runningLow' });
+      expect(action.status).not.toBe('needsList');
     });
   });
 });

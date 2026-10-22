@@ -20,6 +20,7 @@ import {
   amountOf,
   type ModelVoiceAction,
   type VoiceDefaultTarget,
+  type VoiceOp,
   type VoiceTarget,
   type ResolvedVoiceAction,
   type VoiceActionDraft,
@@ -94,6 +95,12 @@ class SkippedAction extends Error {
  * the edited Voice Actions in one transaction and is free. Neither audio nor
  * transcript is stored.
  */
+/** The list a model action with no target implies off the Shopping List and the Pantry; null for a bare add or remove, which needs the Member's pick. */
+function impliedTarget(op: VoiceOp): VoiceTarget | null {
+  if (op === 'add' || op === 'remove') return null;
+  return op === 'runningLow' ? 'pantry' : 'shopping';
+}
+
 @Injectable()
 export class VoiceService {
   constructor(
@@ -233,31 +240,17 @@ export class VoiceService {
         threshold,
       );
       // Off the Shopping List and the Pantry the model leaves a bare add or remove without a target.
+      // Other kinds imply one: running low is a Pantry flag, check, uncheck and setQuantity are on the list.
       const target =
         action.target ??
-        (input.defaultTarget === 'none' ? null : input.defaultTarget);
-      const draft = this.draftOf(
-        action,
-        target ?? 'shopping',
-        match?.id ?? null,
-        input.today,
-      );
+        (input.defaultTarget === 'none'
+          ? impliedTarget(action.op)
+          : input.defaultTarget);
+      const draft = this.draftOf(action, match?.id ?? null, input.today);
       if (target === null) {
-        if (draft.op !== 'add' && draft.op !== 'remove') {
-          out.push(this.notUnderstood(action.spokenText));
-          continue;
-        }
         const byList = {
-          shopping: await this.resolveDraft(
-            { ...draft, target: 'shopping' },
-            match,
-            ctx,
-          ),
-          pantry: await this.resolveDraft(
-            { ...draft, target: 'pantry' },
-            match,
-            ctx,
-          ),
+          shopping: await this.resolveDraft(draft, 'shopping', match, ctx),
+          pantry: await this.resolveDraft(draft, 'pantry', match, ctx),
         };
         if (!byList.shopping || !byList.pantry) {
           out.push(this.notUnderstood(action.spokenText));
@@ -274,7 +267,7 @@ export class VoiceService {
         });
         continue;
       }
-      const resolution = await this.resolveDraft(draft, match, ctx);
+      const resolution = await this.resolveDraft(draft, target, match, ctx);
       if (!resolution) {
         out.push(this.notUnderstood(action.spokenText));
         continue;
@@ -294,10 +287,12 @@ export class VoiceService {
 
   /** The draft resolved by its (target, op) handler; undefined when no handler is registered. */
   private async resolveDraft(
-    draft: VoiceActionDraft,
+    body: Omit<VoiceActionDraft, 'target'>,
+    target: VoiceTarget,
     match: CatalogSearchResult | null,
     ctx: ResolveContext,
   ): Promise<ResolvedVoiceAction | undefined> {
+    const draft = { ...body, target };
     const handler = this.handlers.for(draft);
     if (!handler) return undefined;
     const resolution = await handler.resolve(draft, ctx);
@@ -322,13 +317,11 @@ export class VoiceService {
 
   private draftOf(
     action: ModelVoiceAction,
-    target: VoiceTarget,
     ingredientId: string | null,
     today: string,
-  ): VoiceActionDraft {
+  ): Omit<VoiceActionDraft, 'target'> {
     return {
       id: randomUUID(),
-      target,
       op: action.op,
       text: action.spokenText,
       ingredientId,
