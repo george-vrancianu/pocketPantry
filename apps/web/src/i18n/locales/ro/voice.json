@@ -285,6 +285,9 @@
     },
     "done": "Gata",
     "onShoppingList": "Deja pe Lista de cumpărături",
-    "expiringSoon": "Expiră curând"
+    "expiringSoon": "Expiră curând",
+    "addToList_one": "Adaugă {{count}} pe lista de cumpărături",
+    "addToList_few": "Adaugă {{count}} pe lista de cumpărături",
+    "addToList_other": "Adaugă {{count}} pe lista de cumpărături"
   }
 }

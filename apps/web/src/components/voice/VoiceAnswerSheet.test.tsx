@@ -44,17 +44,43 @@ const answers = [
 describe('the answer sheet for Pantry Questions', () => {
   let sent: FormData[];
   let calls: string[];
-  let applyPayloads: { actions: { id: string; target?: string }[] }[];
+  let applyPayloads: {
+    actions: {
+      id: string;
+      target?: string;
+      op?: string;
+      ingredientId?: string | null;
+      name?: string | null;
+      quantity?: number | null;
+    }[];
+  }[];
 
-  function setup(body: Record<string, unknown>) {
+  function setup(
+    body: Record<string, unknown>,
+    onList: { ingredientId: string | null; name: string }[] = [],
+  ) {
     calls = [];
     applyPayloads = [];
     const { fetchMock } = stubApi({
       'GET /api/shopping-list': () =>
         Response.json({
           id: 'l1',
-          groups: [],
-          summary: { remaining: 0, checked: 0 },
+          groups: onList.length
+            ? [
+                {
+                  aisle: null,
+                  items: onList.map((item, i) => ({
+                    id: `item-${i}`,
+                    quantity: null,
+                    unit: null,
+                    checked: i % 2 === 1,
+                    unmatched: item.ingredientId === null,
+                    ...item,
+                  })),
+                },
+              ]
+            : [],
+          summary: { remaining: onList.length, checked: 0 },
         }),
       'GET /api/pantry/recently-stocked': () =>
         Response.json({ ingredients: [] }),
@@ -66,7 +92,15 @@ describe('the answer sheet for Pantry Questions', () => {
           { status: 201 },
         ),
       'POST /api/voice/apply': () =>
-        Response.json({ applied: [], skipped: [] }),
+        Response.json({
+          applied: (applyPayloads.at(-1)?.actions ?? []).map((a) => ({
+            actionId: a.id,
+            list: 'shopping',
+            rowId: `row-${a.id}`,
+            alreadyDone: false,
+          })),
+          skipped: [],
+        }),
     });
     ({ sent } = stubVoiceFetch(fetchMock, (input, init) => {
       calls.push(String(input));
@@ -248,8 +282,12 @@ describe('the answer sheet for Pantry Questions', () => {
         expect(rows[0]).toHaveTextContent('Milk');
         expect(rows[0]).toHaveTextContent('In your Pantry');
         expect(rows[1]).toHaveTextContent('Not in your Pantry');
-        // No editing, no removing: the card has no buttons or fields.
-        expect(within(card).queryAllByRole('button')).toHaveLength(0);
+        // No editing, no removing: the card has no fields, and its one button adds to the Shopping List (#464).
+        expect(
+          within(card)
+            .getAllByRole('button')
+            .map((b) => b.textContent),
+        ).toEqual(['Add 1 to shopping list']);
         expect(within(card).queryAllByRole('textbox')).toHaveLength(0);
         // Above the Voice Action rows.
         const rowsGroup = dialog.getByRole('region', { name: list });
@@ -325,6 +363,192 @@ describe('the answer sheet for Pantry Questions', () => {
       ]);
       expect(JSON.stringify(applyPayloads[0])).not.toContain('q1');
     });
+  });
+
+  // Spec: #464. "Add N to shopping list" on the sheet and on the Review answer card.
+  describe('Add N to shopping list', () => {
+    const eggs = voiceIngredient('ing-eggs', 'Eggs');
+    const flour = voiceIngredient('ing-flour', 'Flour');
+    const rice = voiceIngredient('ing-rice', 'Rice');
+    const oil = voiceIngredient('ing-oil', 'Oil');
+    const yes = (id: string, ingredient: typeof milk, runningLow: boolean) => ({
+      id,
+      kind: 'yes',
+      text: ingredient.name,
+      ingredient,
+      totals: [{ unit: 'l', quantity: 1 }],
+      locations: ['fridge'],
+      expiringSoon: false,
+      runningLow,
+    });
+    const short = (
+      id: string,
+      kind: 'no' | 'onlyExpired',
+      ingredient: typeof milk,
+      onShoppingList: boolean,
+    ) => ({ id, kind, text: ingredient.name, ingredient, onShoppingList });
+    // Counted: butter (no), eggs (only expired), rice (Running low). Skipped: milk (plain yes),
+    // flour (no, on the list), oil (Running low, on the list).
+    const mixed = [
+      yes('q1', milk, false),
+      short('q2', 'no', butter, false),
+      short('q3', 'onlyExpired', eggs, false),
+      short('q4', 'no', flour, true),
+      yes('q5', rice, true),
+      yes('q6', oil, true),
+    ];
+    const onList = [{ ingredientId: 'ing-oil', name: 'Oil' }];
+    const addButton = (n: number) =>
+      screen.findByRole('button', { name: `Add ${n} to shopping list` });
+
+    it.each([
+      ['the Pantry page', <PantryPage key="p" />, '/pantry'],
+      ['the Shopping List page', <ShoppingPage key="s" />, '/shopping'],
+      ['a page with no Default List', <p key="h">home</p>, '/'],
+    ])(
+      'adds the no, only expired and Running low Ingredients not on the list from the sheet on %s',
+      async (_name, page, path) => {
+        setup({ actions: [], answers: mixed }, onList);
+        const dialog = within(await ask(page, path));
+
+        await userEvent.click(await addButton(3));
+        await act(() => vi.advanceTimersByTimeAsync(10));
+
+        expect(applyPayloads).toHaveLength(1);
+        expect(
+          applyPayloads[0].actions.map((a) => [
+            a.target,
+            a.op,
+            a.ingredientId,
+            a.name,
+            a.quantity,
+          ]),
+        ).toEqual([
+          ['shopping', 'add', 'ing-butter', null, null],
+          ['shopping', 'add', 'ing-eggs', null, null],
+          ['shopping', 'add', 'ing-rice', null, null],
+        ]);
+        expect(await screen.findByText('3 applied')).toBeVisible();
+        expect(
+          screen.getByText('3 applied').closest('[role="status"]'),
+        ).not.toBeNull();
+        // No Undo (ADR 0017), and the sheet stays; the button is gone as nothing is left to add.
+        expect(screen.queryByRole('button', { name: /undo/i })).toBeNull();
+        expect(
+          dialog.queryByRole('button', { name: /to shopping list/ }),
+        ).toBeNull();
+        expect(
+          dialog.getByRole('heading', { name: 'Your Pantry' }),
+        ).toHaveFocus();
+        expect(dialog.getAllByRole('listitem')).toHaveLength(6);
+      },
+    );
+
+    it('counts one Ingredient, and says so in the singular', async () => {
+      setup({ actions: [], answers: [short('q1', 'no', butter, false)] });
+      await ask(<p>home</p>, '/');
+      expect(await addButton(1)).toBeVisible();
+    });
+
+    it('is hidden when nothing is short or everything is on the list already', async () => {
+      setup(
+        {
+          actions: [],
+          answers: [
+            yes('q1', milk, false),
+            short('q2', 'no', flour, true),
+            short('q3', 'onlyExpired', eggs, true),
+            yes('q4', oil, true),
+          ],
+        },
+        onList,
+      );
+      const dialog = within(await ask(<p>home</p>, '/'));
+      await act(() => vi.advanceTimersByTimeAsync(10));
+      expect(dialog.getAllByRole('listitem')).toHaveLength(4);
+      expect(
+        dialog.queryByRole('button', { name: /to shopping list/ }),
+      ).toBeNull();
+    });
+
+    it('adds from the Review answer card without applying or discarding the other Voice Actions', async () => {
+      const side = (list: string) =>
+        voiceAction({
+          id: 'a2',
+          target: list,
+          text: 'honey',
+          ingredient: eggs,
+          defaults: { location: 'fridge' },
+        });
+      setup(
+        {
+          actions: [
+            voiceAction({
+              id: 'a1',
+              target: 'shopping',
+              text: 'bread',
+              ingredient: flour,
+            }),
+            voiceAction({
+              id: 'a2',
+              status: 'needsList',
+              target: null,
+              text: 'honey',
+              ingredient: eggs,
+              byList: { shopping: side('shopping'), pantry: side('pantry') },
+            }),
+          ],
+          answers: mixed,
+        },
+        onList,
+      );
+      const dialog = within(await ask(<p>home</p>, '/'));
+      const card = within(dialog.getByRole('region', { name: 'Your Pantry' }));
+
+      await userEvent.click(
+        card.getByRole('button', { name: 'Add 3 to shopping list' }),
+      );
+      await act(() => vi.advanceTimersByTimeAsync(10));
+
+      // Only the three adds went out: not a1, not the undecided a2.
+      expect(applyPayloads).toHaveLength(1);
+      expect(applyPayloads[0].actions.map((a) => a.ingredientId)).toEqual([
+        'ing-butter',
+        'ing-eggs',
+        'ing-rice',
+      ]);
+      expect(await screen.findByText('3 applied')).toBeVisible();
+      // Review and the card are still there, with the rows untouched and no discard toast.
+      expect(dialog.getByRole('heading', { name: 'Review' })).toBeVisible();
+      expect(card.getAllByRole('listitem')).toHaveLength(6);
+      expect(
+        card.queryByRole('button', { name: /to shopping list/ }),
+      ).toBeNull();
+      expect(
+        dialog.getByRole('button', { name: 'Pick a list first' }),
+      ).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.queryByText(/Discarded/)).toBeNull();
+      expect(applyBodies()).toBe(1);
+
+      // The rest is still ready to apply once a list is picked.
+      await userEvent.click(
+        within(dialog.getByRole('group', { name: 'List for Eggs' })).getByRole(
+          'button',
+          {
+            name: 'Shopping List',
+          },
+        ),
+      );
+      await userEvent.click(
+        dialog.getByRole('button', { name: 'Apply 2 changes' }),
+      );
+      await act(() => vi.advanceTimersByTimeAsync(10));
+      expect(applyPayloads).toHaveLength(2);
+      expect(applyPayloads[1].actions.map((a) => a.id)).toEqual(['a1', 'a2']);
+    });
+
+    const applyBodies = () =>
+      calls.filter((url) => url.endsWith('/voice/apply')).length;
   });
 
   it('puts focus back on the voice button after Done', async () => {
