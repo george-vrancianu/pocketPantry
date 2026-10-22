@@ -112,6 +112,22 @@ describe('Scan Language on the Scan screen', () => {
     expect(languageChip()).toHaveTextContent('DA');
   });
 
+  it('forgets the device choice when the UI language changes, even if it changes back', async () => {
+    window.localStorage.setItem(
+      'pocket-pantry.scan-language',
+      JSON.stringify({ locale: 'da', language: 'ro' }),
+    );
+    const { i18n } = renderWithProviders(<ScanPage />, {
+      route: '/scan',
+      locale: 'da',
+    });
+    expect(languageChip()).toHaveTextContent('RO');
+    await act(() => i18n.changeLanguage('en'));
+    expect(languageChip()).toHaveTextContent('EN');
+    await act(() => i18n.changeLanguage('da'));
+    expect(languageChip()).toHaveTextContent('DA');
+  });
+
   it('changes the Scan Language without changing the UI language', async () => {
     renderScan('/scan');
     await pickScanLanguage('Dansk');
@@ -119,6 +135,19 @@ describe('Scan Language on the Scan screen', () => {
     expect(screen.getByRole('button', { name: 'Close scanner' })).toBeVisible();
     expect(document.documentElement.lang).toBe('en');
   });
+
+  it.each([
+    ['ro', 'Se citește în dansk'],
+    ['da', 'Læser på dansk'],
+    ['en', 'Reading in Dansk'],
+  ] as const)(
+    'says the pick in a sentence under a %s UI',
+    async (locale, text) => {
+      renderScan('/scan', {}, locale);
+      await pickScanLanguage('Dansk');
+      expect(await screen.findByText(text)).toBeVisible();
+    },
+  );
 
   it('has no picker for Plate Scan', () => {
     renderScan('/scan?mode=plate');

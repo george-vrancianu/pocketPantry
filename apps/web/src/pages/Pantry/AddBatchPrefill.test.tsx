@@ -174,6 +174,33 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     expect(cameraButton()).toHaveFocus();
   });
 
+  it('closes only the language menu on Escape, not the overlay', async () => {
+    const user = userEvent.setup();
+    stubProductScan(() => Response.json({ lines: [line()] }));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await user.click(languageChip());
+    expect(screen.getByRole('menu')).toBeVisible();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
+  });
+
+  it('remembers a pick on the device across closing and reopening the overlay', async () => {
+    const user = userEvent.setup();
+    stubProductScan(() => Response.json({ lines: [line()] }));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await pickScanLanguage('Dansk');
+    expect(languageChip()).toHaveTextContent('DA');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
+    await user.click(cameraButton());
+    expect(languageChip()).toHaveTextContent('DA');
+  });
+
   it('drops a photo still being prepared when the overlay is cancelled', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });

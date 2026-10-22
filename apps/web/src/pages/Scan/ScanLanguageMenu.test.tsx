@@ -194,6 +194,19 @@ describe('Scan Language menu on the Scan screen', () => {
     await vi.waitFor(() => expect(languageChip()).toBeEnabled());
   });
 
+  it('closes an open menu when the chip gets locked', async () => {
+    renderScan();
+    await userEvent.click(languageChip());
+    expect(screen.getByRole('menu')).toBeVisible();
+    prepared.hold = () => {};
+    takeScan();
+    await vi.waitFor(() => expect(languageChip()).toBeDisabled());
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    prepared.hold();
+    prepared.hold = null;
+    await vi.waitFor(() => expect(languageChip()).toBeEnabled());
+  });
+
   it.each(['plate', 'barcode'])('is gone in %s', (mode) => {
     renderScan(`/scan?mode=${mode}`);
     expect(queryLanguageChip()).not.toBeInTheDocument();
@@ -280,6 +293,19 @@ describe('Scan Language across the Scan Session', () => {
     await pickScanLanguage('Dansk');
     takeScan();
     await screen.findByRole('button', { name: /^Review \d+ / });
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close scanner' }),
+    );
+    await userEvent.click(
+      await screen.findByRole('link', { name: 'back to the camera' }),
+    );
+    expect(languageChip()).toHaveTextContent('EN');
+  });
+
+  it('is dropped by Close with no Scans taken', async () => {
+    renderScan();
+    await pickScanLanguage('Dansk');
+    expect(languageChip()).toHaveTextContent('DA');
     await userEvent.click(
       screen.getByRole('button', { name: 'Close scanner' }),
     );

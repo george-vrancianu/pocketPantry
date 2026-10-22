@@ -11,7 +11,12 @@
   },
   "scanLanguage": {
     "label": "Reading as",
-    "read": "Reading in {{language}}"
+    "read": "Reading in {{language}}",
+    "inSentence": {
+      "en": "English",
+      "ro": "Română",
+      "da": "Dansk"
+    }
   },
   "modes": "Scan mode",
   "shutter": {

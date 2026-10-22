@@ -24,7 +24,6 @@ import {
   clearScanLanguageOverride,
   useSessionScanLanguage,
 } from '../../../lib/sessionScanLanguage';
-import { SCAN_LANGUAGE_NAMES } from '../../../lib/scanLanguage';
 import type { ScanLanguage } from '../../../i18n/resources';
 import { measureView } from './useGuideRect';
 import {
@@ -355,7 +354,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
       overrideScanLanguage(language);
       setToast({
         text: t('scan:scanLanguage.read', {
-          language: SCAN_LANGUAGE_NAMES[language],
+          language: t(`scan:scanLanguage.inSentence.${language}`),
         }),
         severity: 'success',
       });

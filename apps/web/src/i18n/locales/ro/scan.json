@@ -11,7 +11,12 @@
   },
   "scanLanguage": {
     "label": "Citit ca",
-    "read": "Se citește în {{language}}"
+    "read": "Se citește în {{language}}",
+    "inSentence": {
+      "en": "English",
+      "ro": "română",
+      "da": "dansk"
+    }
   },
   "modes": "Mod de scanare",
   "shutter": {
