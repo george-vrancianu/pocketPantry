@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import { openFirstScanCard, scanViaGuide, fakeCamera } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
@@ -50,7 +50,6 @@ vi.mock('react-easy-crop', async () => {
 });
 
 describe('Receipt Scan on the Scan screen', () => {
-  beforeEach(() => {});
   afterEach(() => vi.unstubAllGlobals());
 
   it('sends the cropped receipt photo to the Receipt endpoint and reviews its lines on the Scan card', async () => {

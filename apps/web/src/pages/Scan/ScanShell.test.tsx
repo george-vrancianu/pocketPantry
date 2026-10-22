@@ -1,9 +1,9 @@
 import { THEMES } from '@pocket-pantry/ui';
-import { scanGuide, fakeCamera } from '../../test/scan';
+import { scanGuide, fakeCamera, setStatus } from '../../test/scan';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import { renderWithProviders } from '../../test/render';
 import { ScanPage } from './ScanPage';
@@ -26,8 +26,16 @@ function renderScan() {
 }
 
 describe('Scan screen shell', () => {
-  beforeEach(() => {});
   afterEach(() => vi.unstubAllGlobals());
+
+  it('shows the camera as unavailable when its status flips mid-test', () => {
+    renderScan();
+    expect(screen.queryByText(/The camera is not available/)).toBeNull();
+    setStatus('unavailable');
+    expect(screen.getByText(/The camera is not available/)).toBeInTheDocument();
+    setStatus('ready');
+    expect(screen.queryByText(/The camera is not available/)).toBeNull();
+  });
 
   it('is a full-screen, non-scrolling surface', () => {
     renderScan();

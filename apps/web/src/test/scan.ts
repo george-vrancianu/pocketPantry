@@ -1,6 +1,6 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { beforeEach, vi } from 'vitest';
 import type { CameraStatus, FocusPass } from '../lib/camera';
 
@@ -41,66 +41,58 @@ export async function openFirstScanCard() {
  * To add a capability (e.g. zoom): add the field here with its default in `defaults()`, and have
  * `fakeUseCamera` return it (e.g. `zoomSupported`). Nothing else changes.
  */
-export const fakeCamera = {
-  /** `'ready'`, or `'unavailable'` for a denied permission / no camera. Read when the screen renders. */
-  status: 'ready' as CameraStatus,
-  /** Whether the camera has a torch; the flash toggle shows only then. */
-  torchSupported: true,
-  /** Whether it supports `single-shot` focus. Off: a Scan's focus pass is the steady 400 ms pause. */
-  focusSupported: false,
-  /** The frame a Scan captures (null: no live frame, so the capture yields nothing). */
-  frame: null as Blob | null,
-  /** Barcodes in Barcode mode: the live watch. Emit a code with `emitBarcode`. */
-  emit: null as ((code: string) => void) | null,
-  /** How many barcode watches are running. */
-  watching: 0,
-  /**
-   * What `readBarcode` (a Scan's photo or frame) answers: the nth read runs `reads[n]`, then null.
-   * Set `deferReads` to answer by hand instead through `pendingReads` (resolve or reject each).
-   */
-  reads: [] as Array<() => Promise<string | null>>,
-  readCount: 0,
-  deferReads: false,
-  pendingReads: [] as Array<{
-    source: Blob;
-    resolve: (code: string | null) => void;
-    reject: (error: Error) => void;
-  }>,
-  /** Focus passes started, and cancelled; `finishFocus` ends the latest one (single-shot only). */
-  focuses: 0,
-  cancels: 0,
-  /** The camera stream's lifecycle: `useCamera` mounted / unmounted. */
-  starts: 0,
-  stops: 0,
-  /** The first argument of each `useCamera` call. */
-  calls: [] as unknown[],
-  finishFocus: () => {},
-};
+export const fakeCamera = defaults();
 
-const defaults = () => ({
-  status: 'ready' as CameraStatus,
-  torchSupported: true,
-  focusSupported: false,
-  frame: new Blob(['frame'], { type: 'image/jpeg' }),
-  emit: null,
-  watching: 0,
-  reads: [],
-  readCount: 0,
-  deferReads: false,
-  pendingReads: [],
-  focuses: 0,
-  cancels: 0,
-  starts: 0,
-  stops: 0,
-  calls: [],
-  finishFocus: () => {},
-});
+function defaults() {
+  return {
+    /** `'ready'`, or `'unavailable'` for a denied permission / no camera. Read on each render; flip it mid-test with `setStatus`. */
+    status: 'ready' as CameraStatus,
+    /** Whether the camera has a torch; the flash toggle shows only then. */
+    torchSupported: true,
+    /** Whether it supports `single-shot` focus. Off: a Scan's focus pass is the steady 400 ms pause. */
+    focusSupported: false,
+    /** The frame a Scan captures (null: no live frame, so the capture yields nothing). */
+    frame: new Blob(['frame'], { type: 'image/jpeg' }) as Blob | null,
+    /** Barcodes in Barcode mode: the live watch. Emit a code with `emitBarcode`. */
+    emit: null as ((code: string) => void) | null,
+    /** How many barcode watches are running. */
+    watching: 0,
+    /**
+     * What `readBarcode` (a Scan's photo or frame) answers: the nth read runs `reads[n]`, then null.
+     * Set `deferReads` to answer by hand instead through `pendingReads` (resolve or reject each).
+     */
+    reads: [] as Array<() => Promise<string | null>>,
+    readCount: 0,
+    deferReads: false,
+    pendingReads: [] as Array<{
+      source: Blob;
+      resolve: (code: string | null) => void;
+      reject: (error: Error) => void;
+    }>,
+    /** Focus passes started, and cancelled; `finishFocus` ends the latest one (single-shot only). */
+    focuses: 0,
+    cancels: 0,
+    /** The camera stream's lifecycle: `useCamera` mounted / unmounted. */
+    starts: 0,
+    stops: 0,
+    /** The first argument of each `useCamera` call. */
+    calls: [] as unknown[],
+    finishFocus: () => {},
+  };
+}
+
+const statusListeners = new Set<() => void>();
+
+/** Flips the camera status mid-test (e.g. ready to unavailable) and re-renders the screen using it. */
+export function setStatus(status: CameraStatus) {
+  fakeCamera.status = status;
+  act(() => statusListeners.forEach((listener) => listener()));
+}
 
 /** Puts the fake camera back to a ready, torch-equipped camera with no single-shot focus and no barcodes. */
 export function resetFakeCamera() {
   Object.assign(fakeCamera, defaults());
 }
-resetFakeCamera();
 
 /** The camera sees `code` in Barcode mode (waits for the page to start watching). The watch then ends, as the real one does. */
 export function emitBarcode(code: string) {
@@ -108,7 +100,8 @@ export function emitBarcode(code: string) {
 }
 
 const videoRef = { current: null };
-const FOCUS_PAUSE_MS = 400;
+// Set from the real module by `fakeCameraModule`, so the fake pause cannot drift from it.
+let focusPauseMs = 0;
 
 const capture = () => Promise.resolve(fakeCamera.frame);
 const setTorch = () => Promise.resolve(fakeCamera.torchSupported);
@@ -136,7 +129,7 @@ function focusForScan(): FocusPass {
   let finish: () => void = () => {};
   const done = new Promise<void>((resolve) => (finish = resolve));
   if (!fakeCamera.focusSupported) {
-    const timer = setTimeout(finish, FOCUS_PAUSE_MS);
+    const timer = setTimeout(finish, focusPauseMs);
     return {
       done,
       cancel: () => {
@@ -147,11 +140,23 @@ function focusForScan(): FocusPass {
     };
   }
   fakeCamera.finishFocus = finish;
-  return { done, cancel: () => void (fakeCamera.cancels += 1) };
+  return {
+    done,
+    cancel: () => {
+      fakeCamera.cancels += 1;
+      finish();
+    },
+  };
 }
 
 function fakeUseCamera(...args: unknown[]) {
   fakeCamera.calls.push(args[0]);
+  const [, rerender] = useState(0);
+  useEffect(() => {
+    const listener = () => rerender((n) => n + 1);
+    statusListeners.add(listener);
+    return () => void statusListeners.delete(listener);
+  }, []);
   useEffect(() => {
     fakeCamera.starts += 1;
     return () => {
@@ -186,6 +191,7 @@ function fakeReadBarcode(source: Blob | HTMLVideoElement) {
 export async function fakeCameraModule() {
   const actual =
     await vi.importActual<typeof import('../lib/camera')>('../lib/camera');
+  focusPauseMs = actual.FOCUS_PAUSE_MS;
   beforeEach(resetFakeCamera);
   return { ...actual, useCamera: fakeUseCamera, readBarcode: fakeReadBarcode };
 }
