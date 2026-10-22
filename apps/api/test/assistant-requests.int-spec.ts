@@ -41,6 +41,7 @@ describe('Assistant Requests (integration)', () => {
   let reading:
     | {
         actions: object[];
+        questions?: object[];
         unsupported: string[];
         spokenLanguage?: string | null;
       }
@@ -617,6 +618,177 @@ describe('Assistant Requests (integration)', () => {
         'Ai atins limita zilnică pentru asistent. Încearcă mâine.',
       );
       expect(reads).toBe(2);
+    });
+  });
+
+  // Spec: #459, ADR 0020. A Pantry Question is answered from the Pantry, never applied.
+  describe('Pantry Questions', () => {
+    const butter = seedId.ingredient('butter');
+    const question = (
+      id: string | null,
+      name: string,
+      overrides: Record<string, unknown> = {},
+    ) => ({
+      spokenText: name,
+      matchedIngredientId: id,
+      matchConfidence: id ? 0.95 : 0,
+      fallbackIngredientName: name,
+      spokenName: name,
+      ...overrides,
+    });
+    const stock = (cookie: string, ingredientId: string, expiryDate?: string) =>
+      client(app, cookie, '/api/pantry').post('/batches?locale=en', {
+        ingredientId,
+        ...(expiryDate ? { expiryDate } : {}),
+      });
+    const pantryOf = async (cookie: string) =>
+      (await client(app, cookie, '/api/pantry').get('?locale=en'))
+        .body as object;
+
+    it('says yes for an Ingredient in the Pantry and no for one that is not, and writes nothing', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk);
+      await client(app, ana.cookie, '/api/shopping-list').post(
+        '/items?locale=en',
+        { ingredientId: eggs, quantity: 6, unit: 'pcs' },
+      );
+      const before = await pantryOf(ana.cookie);
+      const listBefore = await list(ana.cookie);
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Milk'), question(butter, 'Butter')],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret, {
+        text: 'do we have milk and butter',
+      }).expect(200);
+      expect(reply(response).speech).toBe('You have Milk. No Butter.');
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'yes', name: 'Milk' },
+        { kind: 'no', name: 'Butter' },
+      ]);
+      expect(await list(ana.cookie)).toEqual(listBefore);
+      expect(await list(ana.cookie)).toMatchObject([
+        { name: 'Eggs', quantity: 6, checked: false },
+      ]);
+      expect(await pantryOf(ana.cookie)).toEqual(before);
+    });
+
+    it('charges the Assistant Cap once for a question-only request', async () => {
+      const ana = await member();
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Milk'), question(butter, 'Butter')],
+        unsupported: [],
+      };
+      await ask(ana.secret).expect(200);
+      expect(await used(ana.id)).toBe(1);
+      expect(reads).toBe(1);
+    });
+
+    it('counts a Batch expiring today as yes and only Expired Batches as no', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk, '2026-10-22');
+      await stock(ana.cookie, butter, '2026-10-21');
+      await stock(ana.cookie, eggs, '2026-10-01');
+      await stock(ana.cookie, eggs, '2026-11-01');
+      reading = {
+        actions: [],
+        questions: [
+          question(milk, 'Milk'),
+          question(butter, 'Butter'),
+          question(eggs, 'Eggs'),
+        ],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret, {
+        text: 'do we have milk, butter and eggs',
+        today: '2026-10-22',
+      }).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'yes', name: 'Milk' },
+        { kind: 'no', name: 'Butter' },
+        { kind: 'yes', name: 'Eggs' },
+      ]);
+      expect(reply(response).speech).toBe(
+        'You have Milk. You have Eggs. No Butter.',
+      );
+    });
+
+    it('answers from the whole Family Pantry', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk);
+      const ben = await member();
+      const { inviteCode } = (
+        await client(app, ana.cookie, '/api/family').get('')
+      ).body as { inviteCode: string };
+      await client(app, ben.cookie, '/api/family')
+        .post('/join', { code: inviteCode })
+        .expect(201);
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Milk')],
+        unsupported: [],
+      };
+      const response = await ask(ben.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([{ kind: 'yes' }]);
+    });
+
+    it('asks once for an Ingredient named twice', async () => {
+      const ana = await member();
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Milk'), question(milk, 'milk')],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toHaveLength(1);
+    });
+
+    it('does not answer a name that matched no Ingredient, and refunds when that is all', async () => {
+      const ana = await member();
+      reading = {
+        actions: [],
+        questions: [question(null, 'zorblax')],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toEqual([]);
+      expect(reply(response).speech).toContain('did not understand');
+      expect(await used(ana.id)).toBe(0);
+    });
+
+    it('still sends a wider question to unsupported, which is not answered', async () => {
+      const ana = await member();
+      reading = {
+        actions: [],
+        questions: [],
+        unsupported: ['what is expiring soon'],
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toEqual([]);
+      expect(await used(ana.id)).toBe(0);
+    });
+
+    it('speaks the answers in the language spoken', async () => {
+      const ana = await member();
+      await stock(ana.cookie, milk);
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Lapte'), question(butter, 'Unt')],
+        unsupported: [],
+        spokenLanguage: 'ro',
+      };
+      let response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toMatch(/^Ai .+\. Nu ai .+\.$/);
+      reading = {
+        actions: [],
+        questions: [question(milk, 'Mælk'), question(butter, 'Smør')],
+        unsupported: [],
+        spokenLanguage: 'da',
+      };
+      response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toMatch(/^Du har .+\. Du har ikke .+\.$/);
     });
   });
 

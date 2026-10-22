@@ -144,6 +144,7 @@ const goodAnswer = {
       location: null,
     },
   ],
+  questions: [],
   unsupported: [],
   spokenLanguage: null,
 };
