@@ -29,7 +29,8 @@ const isShort = (answer: VoiceAnswer) =>
 /**
  * The answers worth adding to the Shopping List: the ones that are short and not on it already.
  * `no` and `onlyExpired` answers say whether they are; a Running low `yes` does not, so `onList`
- * (the Ingredients on the Shopping List, any line) decides for it.
+ * (the Ingredients on the Shopping List, any line) decides for it. An answer with no Match (an
+ * Unmatched name) has no Ingredient to look up and is added by its name; `notSure` is never short.
  */
 function answersToAdd(
   answers: VoiceAnswer[],
@@ -42,7 +43,7 @@ function answersToAdd(
       !added.has(answer.id) &&
       (!answer.ingredient || !onList.has(answer.ingredient.id)) &&
       (answer.kind === 'yes' ||
-        (answer.kind !== 'notSure' && !answer.onShoppingList)),
+        ('onShoppingList' in answer && !answer.onShoppingList)),
   );
 }
 
