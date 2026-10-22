@@ -28,9 +28,6 @@ export function DockCapsule({
   cameraHref,
   micSlot,
 }: DockCapsuleProps) {
-  const CAMERA_RADIUS = micSlot
-    ? `${radius.pill} ${radius.pill} 0 0`
-    : radius.pill;
   const camera = (
     <ButtonBase
       href={cameraHref}
@@ -40,8 +37,14 @@ export function DockCapsule({
           flex: 1,
           width: '100%',
           color: 'inherit',
-          borderRadius: CAMERA_RADIUS,
+          borderRadius: radius.pill,
         },
+        // With a mic below, only the top corners are round.
+        micSlot
+          ? {
+              borderRadius: `${radius.pill} ${radius.pill} 0 0`,
+            }
+          : {},
         focusRing,
       ]}
     >
