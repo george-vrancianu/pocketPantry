@@ -1,8 +1,7 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, usePrefersReducedMotion } from '@pocket-pantry/ui';
 import { shade } from './glass';
 import { useCallback, useEffect, useState } from 'react';
 import type { Rect } from '../../../lib/scanGuides';
-import { useReducedMotion } from '../../../lib/useReducedMotion';
 
 const PULSE_MS = 360;
 const FLASH_MS = 420;
@@ -49,7 +48,7 @@ export function Viewfinder({ rect, shot, sliding = false }: Props) {
   const [flash, setFlash] = useState(false);
   // Under reduced motion the screen flash, the guide's fill and the pulse are not rendered at all;
   // the thicker brackets (which follow `flash`) and the haptic stay.
-  const reduced = useReducedMotion();
+  const reduced = usePrefersReducedMotion();
   const animated = !reduced;
   useEffect(() => {
     if (!shot) return;

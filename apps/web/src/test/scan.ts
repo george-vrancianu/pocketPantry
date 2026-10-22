@@ -1,9 +1,8 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
-import { beforeEach, vi } from 'vitest';
+import { beforeEach, expect, vi } from 'vitest';
 import type { CameraStatus, FocusPass } from '../lib/camera';
-import { getScanSession, scanDisplayState } from '../lib/scanSession';
 
 /** The shutter button, which takes a Scan. */
 export const shutter = () => screen.getByRole('button', { name: 'Take photo' });
@@ -13,15 +12,31 @@ export function takeScan() {
   fireEvent.click(shutter());
 }
 
-/** How each card of the Scan Session shows (uncropped, reading, failed, read), oldest first: what the thumbnail column used to show, now only the stack's badge does. */
-export const states = () => getScanSession().scans.map(scanDisplayState);
-
-/** The cards in the Scan Session. */
-export const cardCount = () => getScanSession().scans.length;
-
 /** The photo stack: its name starts with "Review" once the Scan Session holds a card. */
 export const photoStack = () =>
   screen.getByRole('button', { name: /^(Review|No photos yet)/ });
+
+/** The number on the photo stack's badge: how many cards the Scan Session holds (0 when the stack is empty). */
+export const stackCount = () =>
+  Number(
+    screen.queryByTestId('stack-badge')?.textContent?.replace(/\D/g, '') ?? 0,
+  );
+
+const STACK_STATUS = {
+  reading: (n: number) => new RegExp(`${n} still reading$`),
+  read: () => /all read$/,
+  failed: (n: number) => new RegExp(`${n} couldn't be read$`),
+  uncropped: (n: number) => new RegExp(`${n} receipts? to crop$`),
+};
+
+/**
+ * Expects the photo stack to announce `state` in its accessible name. `n` is the number the name
+ * carries for that state (still reading, failed, to crop); for `read` it is the badge's card count.
+ */
+export function expectStack(state: keyof typeof STACK_STATUS, n = 1): void {
+  expect(photoStack()).toHaveAccessibleName(STACK_STATUS[state](n));
+  if (state === 'read') expect(stackCount()).toBe(n);
+}
 
 /** The photo stack, then the first card once it is read: the line editor for that Scan. */
 export async function openFirstScanCard() {

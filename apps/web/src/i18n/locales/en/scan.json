@@ -20,7 +20,7 @@
     "announce": "{{mode}} mode"
   },
   "reading": "Reading your photo",
-  "noCamera": "The camera is not available. Choose a photo from your gallery instead.",
+  "noCamera": "The camera is not available. Import a photo instead.",
   "crop": {
     "title": "Crop receipt",
     "instruction": "Drag and zoom so the whole receipt fits the frame.",
@@ -76,10 +76,7 @@
     "pointAtBarcode": "Point the camera at the barcode.",
     "barcodeNotFound": "No product found for that barcode. Take a photo of the product instead."
   },
-  "torch": {
-    "on": "Torch on",
-    "off": "Torch off"
-  },
+  "torch": "Torch",
   "stack": {
     "empty": "No photos yet",
     "photos_one": "{{count}} photo",

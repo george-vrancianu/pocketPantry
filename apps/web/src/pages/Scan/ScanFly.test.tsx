@@ -3,9 +3,9 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
 import { stubMatchMedia } from '../../test/viewport';
-import { getScanSession, resetScanSession } from '../../lib/scanSession';
+import { resetScanSession } from '../../lib/scanSession';
 import { ScanPage } from './ScanPage';
-import { emitBarcode, fakeCamera, takeScan } from '../../test/scan';
+import { emitBarcode, fakeCamera, stackCount, takeScan } from '../../test/scan';
 
 vi.mock('../../lib/camera', async () =>
   (await import('../../test/scan')).fakeCameraModule(),
@@ -52,7 +52,7 @@ describe('Capture feedback and the fly to the stack', () => {
     takeScan();
     await flush();
     // The Scan is already in the Scan Session while the photo is still flying.
-    expect(getScanSession().scans).toHaveLength(1);
+    expect(stackCount()).toBe(1);
     const fly = screen.getByTestId('scan-fly');
     expect(fly).toHaveAttribute('src', 'data:image/jpeg;base64,YQ==');
     expect(screen.getByTestId('scan-flash')).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe('Capture feedback and the fly to the stack', () => {
     await vi.waitFor(() => expect(fakeCamera.emit).not.toBeNull());
     await act(async () => emitBarcode('4006381333931'));
     await flush();
-    expect(getScanSession().scans).toHaveLength(1);
+    expect(stackCount()).toBe(1);
     expect(screen.getByTestId('scan-fly')).toBeInTheDocument();
     expect(screen.queryByTestId('scan-flash')).toBeNull();
   });
@@ -80,7 +80,7 @@ describe('Capture feedback and the fly to the stack', () => {
       renderScan();
       takeScan();
       await flush();
-      expect(getScanSession().scans).toHaveLength(1);
+      expect(stackCount()).toBe(1);
       expect(screen.queryByTestId('scan-flash')).toBeNull();
       expect(screen.queryByTestId('scan-guide-fill')).toBeNull();
       expect(screen.queryByTestId('scan-fly')).toBeNull();
@@ -100,7 +100,7 @@ describe('Capture feedback and the fly to the stack', () => {
       await vi.waitFor(() => expect(fakeCamera.emit).not.toBeNull());
       await act(async () => emitBarcode('4006381333931'));
       await flush();
-      expect(getScanSession().scans).toHaveLength(1);
+      expect(stackCount()).toBe(1);
       expect(screen.queryByTestId('scan-fly')).toBeNull();
     });
   });

@@ -47,13 +47,10 @@ describe('The Scan page top bar', () => {
 
   it('shows the torch only when the camera has one, and lights it when on', async () => {
     renderScan();
-    const torch = bar().getByRole('button', { name: 'Torch off' });
+    const torch = bar().getByRole('button', { name: 'Torch' });
     expect(torch).toHaveAttribute('aria-pressed', 'false');
     await userEvent.click(torch);
-    expect(bar().getByRole('button', { name: 'Torch on' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(torch).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('has no torch button when the camera has no torch', () => {

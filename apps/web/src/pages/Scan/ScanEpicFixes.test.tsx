@@ -50,7 +50,7 @@ describe('Scan screen, epic review fixes', () => {
     vi.restoreAllMocks();
   });
 
-  it('requests 1080p in every mode, so the dial never restarts the stream (#2)', () => {
+  it('requests 1080p in every mode, so the mode slider never restarts the stream (#2)', () => {
     for (const mode of ['product', 'ingredients', 'plate']) {
       fakeCamera.calls = [];
       const { unmount } = renderScan(`/scan?mode=${mode}`);

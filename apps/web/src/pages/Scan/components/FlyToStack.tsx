@@ -1,4 +1,4 @@
-import { Box } from '@pocket-pantry/ui';
+import { Box, usePrefersReducedMotion } from '@pocket-pantry/ui';
 import {
   useCallback,
   useLayoutEffect,
@@ -7,7 +7,6 @@ import {
   type RefObject,
 } from 'react';
 import type { Rect } from '../../../lib/scanGuides';
-import { useReducedMotion } from '../../../lib/useReducedMotion';
 
 const FLY_MS = 460;
 
@@ -73,7 +72,7 @@ function Flying({
  * Under reduced motion `fly` does nothing, so no element is ever rendered.
  */
 export function useFlyToStack() {
-  const reduced = useReducedMotion();
+  const reduced = usePrefersReducedMotion();
   const target = useRef<HTMLElement | null>(null);
   const next = useRef(0);
   const [flights, setFlights] = useState<Flight[]>([]);

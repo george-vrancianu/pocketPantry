@@ -1,9 +1,8 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, usePrefersReducedMotion } from '@pocket-pantry/ui';
 import type { Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { summariseStack, type StackSummary } from '../../../lib/photoStack';
 import type { SessionScan } from '../../../lib/scanSession';
-import { useReducedMotion } from '../../../lib/useReducedMotion';
 import { BARCODE_GLYPH } from './barcodeGlyph';
 import { glassFocusRing, shade, translucent } from './glass';
 
@@ -106,7 +105,7 @@ type Props = {
  * no cards it is a dashed placeholder that does nothing.
  */
 export function PhotoStack({ scans, onOpen, stackRef }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = usePrefersReducedMotion();
   const summary = summariseStack(scans);
   const label = useStackLabel(summary);
   const empty = summary.count === 0;

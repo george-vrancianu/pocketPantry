@@ -9,15 +9,11 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetReads } from '../../lib/scanReads';
-import {
-  dispatchScanSession,
-  getScanSession,
-  resetScanSession,
-} from '../../lib/scanSession';
+import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ScanPage } from './ScanPage';
-import { fakeCamera, states, cardCount } from '../../test/scan';
+import { fakeCamera, expectStack, stackCount } from '../../test/scan';
 
 const image = vi.hoisted(() => ({ cropFails: false }));
 vi.mock('../../lib/camera', async () =>
@@ -127,7 +123,7 @@ describe('Gallery import into the Scan Session', () => {
   it('adds a picked file as a thumbnail and reads it in the background, staying on the camera', async () => {
     renderScan();
     await pick();
-    expect(states()).toEqual(['reading']);
+    expectStack('reading');
     expect(held.map((h) => h.key)).toEqual(['POST /api/scan/product']);
     expect(held[0].body).toEqual({
       productImage: 'data:image/jpeg;base64,YQ==',
@@ -140,14 +136,14 @@ describe('Gallery import into the Scan Session', () => {
     renderScan();
     await pick();
     await act(async () => held[0].respond());
-    expect(states()).toEqual(['read']);
+    expectStack('read');
   });
 
   it('adds every picked file, in the current Scan Mode, as its own Scan, and says how many', async () => {
     renderScan('/scan?mode=ingredients');
     expect(screen.getByTestId('import-input')).toHaveAttribute('multiple');
     await pick(3);
-    expect(cardCount()).toBe(3);
+    expect(stackCount()).toBe(3);
     expect(held.map((h) => h.key)).toEqual([
       'POST /api/scan/ingredients',
       'POST /api/scan/ingredients',
@@ -161,7 +157,7 @@ describe('Gallery import into the Scan Session', () => {
   it('joins the same Scan Session as frames taken with the camera', async () => {
     renderScan();
     await pick();
-    expect(cardCount()).toBe(1);
+    expect(stackCount()).toBe(1);
     expect(stack()).toHaveAccessibleName(/^Review 1 photo/);
   });
 
@@ -173,7 +169,7 @@ describe('Gallery import into the Scan Session', () => {
       screen.getByRole('button', { name: 'Import from photos' }),
     ).toBeEnabled();
     await pick();
-    expect(states()).toEqual(['reading']);
+    expectStack('reading');
     expect(held).toHaveLength(1);
   });
 
@@ -186,7 +182,7 @@ describe('Gallery import into the Scan Session', () => {
       });
     }
     await pick(3);
-    expect(getScanSession().scans).toHaveLength(20);
+    expect(stackCount()).toBe(20);
     expect(
       await screen.findByText(/at most 20 Scans and Barcode Lookups/),
     ).toBeInTheDocument();
@@ -199,7 +195,7 @@ describe('Gallery import into the Scan Session', () => {
     const add = screen.getByRole('button', { name: /^Crop 1 receipt first/ });
     expect(add).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Remove photo' }));
-    expect(getScanSession().scans).toHaveLength(0);
+    expect(stackCount()).toBe(0);
   });
 
   describe('a receipt from the gallery', () => {
@@ -211,7 +207,7 @@ describe('Gallery import into the Scan Session', () => {
       await pick();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect(held).toHaveLength(0);
-      expect(cardCount()).toBe(1);
+      expect(stackCount()).toBe(1);
     });
 
     it('is cropped from its card in Review, then read', async () => {
@@ -255,7 +251,7 @@ describe('Gallery import into the Scan Session', () => {
     it('is not shown as read on the stack until it has been cropped and read', async () => {
       renderScan('/scan?mode=receipt');
       await pick();
-      expect(states()).toEqual(['uncropped']);
+      expectStack('uncropped');
       expect(stack()).toHaveAccessibleName(/1 receipt to crop/);
     });
 

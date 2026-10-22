@@ -20,7 +20,7 @@
     "announce": "{{mode}}-tilstand"
   },
   "reading": "Læser dit foto",
-  "noCamera": "Kameraet er ikke tilgængeligt. Vælg i stedet et foto fra dit galleri.",
+  "noCamera": "Kameraet er ikke tilgængeligt. Importér i stedet et foto.",
   "crop": {
     "title": "Beskær kvittering",
     "instruction": "Træk og zoom, så hele kvitteringen er i rammen.",
@@ -76,10 +76,7 @@
     "pointAtBarcode": "Ret kameraet mod stregkoden.",
     "barcodeNotFound": "Der blev ikke fundet noget produkt til den stregkode. Tag i stedet et foto af produktet."
   },
-  "torch": {
-    "on": "Lommelygte tændt",
-    "off": "Lommelygte slukket"
-  },
+  "torch": "Lommelygte",
   "stack": {
     "empty": "Ingen fotos endnu",
     "photos_one": "{{count}} foto",

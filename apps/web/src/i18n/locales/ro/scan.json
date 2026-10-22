@@ -20,7 +20,7 @@
     "announce": "Modul {{mode}}"
   },
   "reading": "Citim fotografia",
-  "noCamera": "Camera nu este disponibilă. Alege în schimb o fotografie din galerie.",
+  "noCamera": "Camera nu este disponibilă. Importă în schimb o fotografie.",
   "crop": {
     "title": "Decupează bonul",
     "instruction": "Trage și mărește imaginea astfel încât tot bonul să încapă în cadru.",
@@ -80,10 +80,7 @@
     "pointAtBarcode": "Îndreaptă camera spre codul de bare.",
     "barcodeNotFound": "Nu am găsit niciun produs pentru acest cod de bare. Fă în schimb o poză produsului."
   },
-  "torch": {
-    "on": "Lanterna pornită",
-    "off": "Lanterna oprită"
-  },
+  "torch": "Lanterna",
   "stack": {
     "empty": "Nicio fotografie încă",
     "photos_one": "{{count}} fotografie",

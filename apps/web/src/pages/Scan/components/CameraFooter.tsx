@@ -36,8 +36,6 @@ export function CameraFooter({ stack, shutter, right, slider, status }: Props) {
             bottom: '100%',
             px: 2.5,
             pb: 1,
-            maxHeight: '30vh',
-            overflowY: 'auto',
             pointerEvents: 'none',
           }}
         >

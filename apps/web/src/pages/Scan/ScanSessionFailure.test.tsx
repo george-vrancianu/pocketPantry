@@ -4,7 +4,7 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { takeScan } from '../../test/scan';
+import { expectStack, stackCount, takeScan } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -97,10 +97,6 @@ function renderScan(route = '/scan?mode=product') {
   );
 }
 
-// What the photo stack's badge shows: the first matching state of the Scan Session, and its card count.
-const badge = () => screen.queryByTestId('stack-badge');
-const states = () => (badge() ? [badge()?.getAttribute('data-state')] : []);
-const cards = () => Number(badge()?.textContent?.replace(/\D/g, '') ?? 0);
 const flush = () => act(async () => {});
 const scanOnce = async () => {
   takeScan();
@@ -120,7 +116,7 @@ describe('Scan Session reads that fail', () => {
       outcome = (n) => (n === 1 ? 'network' : 'ok');
       renderScan();
       await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['read']));
+      await waitFor(() => expectStack('read'));
       expect(bodies).toHaveLength(2);
       expect(bodies[1]).toEqual(bodies[0]);
     });
@@ -129,7 +125,7 @@ describe('Scan Session reads that fail', () => {
       outcome = () => 'network';
       renderScan();
       await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expectStack('failed'));
       await flush();
       expect(bodies).toHaveLength(2);
     });
@@ -140,7 +136,7 @@ describe('Scan Session reads that fail', () => {
       outcome = () => 'server';
       renderScan();
       await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expectStack('failed'));
       await flush();
       expect(bodies).toHaveLength(1);
     });
@@ -149,7 +145,7 @@ describe('Scan Session reads that fail', () => {
       outcome = () => 'empty';
       renderScan();
       await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expectStack('failed'));
       expect(bodies).toHaveLength(1);
     });
 
@@ -159,7 +155,7 @@ describe('Scan Session reads that fail', () => {
         outcome = () => kind;
         renderScan();
         await scanOnce();
-        await waitFor(() => expect(states()).toEqual(['failed']));
+        await waitFor(() => expectStack('failed'));
         expect(bodies).toHaveLength(1);
       },
     );
@@ -168,7 +164,7 @@ describe('Scan Session reads that fail', () => {
       outcome = () => 'server';
       renderScan();
       await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expectStack('failed'));
       expect(
         screen
           .getAllByRole('status')
@@ -181,8 +177,8 @@ describe('Scan Session reads that fail', () => {
       renderScan();
       await scanOnce();
       await scanOnce();
-      await waitFor(() => expect(cards()).toBe(2));
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expect(stackCount()).toBe(2));
+      await waitFor(() => expectStack('failed'));
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
   });
@@ -192,13 +188,13 @@ describe('Scan Session reads that fail', () => {
       outcome = () => 'cap';
       renderScan();
       await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expectStack('failed'));
       expect(screen.getByText('Daily scan limit reached')).toBeInTheDocument();
       // Not retried by itself: the cap is not a network error.
       expect(bodies).toHaveLength(1);
       await scanOnce();
       await flush();
-      expect(cards()).toBe(1);
+      expect(stackCount()).toBe(1);
       expect(bodies).toHaveLength(1);
     });
 
@@ -206,7 +202,7 @@ describe('Scan Session reads that fail', () => {
       outcome = (n) => (n === 1 ? 'cap' : 'ok');
       renderScan();
       await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expectStack('failed'));
       await userEvent.click(
         screen.getByRole('button', { name: /^Review \d+ / }),
       );
@@ -220,14 +216,14 @@ describe('Scan Session reads that fail', () => {
         screen.queryByText('Daily scan limit reached'),
       ).not.toBeInTheDocument();
       await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['read']));
+      await waitFor(() => expectStack('read'));
     });
 
     it('does not show the limit message for other failures', async () => {
       outcome = () => 'server';
       renderScan();
       await scanOnce();
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expectStack('failed'));
       expect(
         screen.queryByText('Daily scan limit reached'),
       ).not.toBeInTheDocument();
@@ -243,7 +239,7 @@ describe('Scan Session reads that fail', () => {
       expect(
         await screen.findByText(/could not be added/i),
       ).toBeInTheDocument();
-      expect(badge()).toBeNull();
+      expect(stackCount()).toBe(0);
       expect(bodies).toHaveLength(0);
     });
   });

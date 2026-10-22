@@ -94,7 +94,7 @@ export function CameraTopBar({
             <Box
               component="button"
               type="button"
-              aria-label={t(torch.on ? 'torch.on' : 'torch.off')}
+              aria-label={t('torch')}
               aria-pressed={torch.on}
               onClick={torch.onToggle}
               sx={{
