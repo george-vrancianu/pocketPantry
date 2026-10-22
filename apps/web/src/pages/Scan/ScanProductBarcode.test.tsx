@@ -11,33 +11,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PHOTO_DECODE_TIMEOUT_MS, resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { scanViaGuide } from '../../test/scan';
+import { scanViaGuide, fakeCamera } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
-// jsdom has no camera: the camera module is the seam. Its photo barcode reader answers when the test says so.
-const camera = vi.hoisted(() => ({
-  decodes: [] as Array<{
-    source: Blob;
-    resolve: (code: string | null) => void;
-    reject: (error: Error) => void;
-  }>,
-}));
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: false,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-  readBarcode: (source: Blob) =>
-    new Promise<string | null>((resolve, reject) =>
-      camera.decodes.push({ source, resolve, reject }),
-    ),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
@@ -84,7 +65,7 @@ let calls: ReturnType<typeof stubApi>['calls'];
 let readLines: object[];
 
 function renderScan(route = '/scan?mode=product') {
-  camera.decodes = [];
+  fakeCamera.deferReads = true;
   readLines = [line('Yogurt')];
   const stub = stubApi({
     'POST /api/scan/product': () => Response.json({ lines: readLines }),
@@ -128,8 +109,10 @@ const saves = () =>
     .flatMap((call) => (call.body as { batches: object[] }).batches);
 /** The camera's frame is decoded: the nth pending decode answers. */
 const decoded = async (code: string | null, nth = 0) => {
-  await waitFor(() => expect(camera.decodes.length).toBeGreaterThan(nth));
-  await act(async () => camera.decodes[nth].resolve(code));
+  await waitFor(() =>
+    expect(fakeCamera.pendingReads.length).toBeGreaterThan(nth),
+  );
+  await act(async () => fakeCamera.pendingReads[nth].resolve(code));
 };
 async function addAll(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /^Done/ }));
@@ -172,8 +155,8 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
   it('decodes the full captured frame, not the resized photo', async () => {
     renderScan();
     scanViaGuide();
-    await waitFor(() => expect(camera.decodes).toHaveLength(1));
-    expect(await camera.decodes[0].source.text()).toBe('frame');
+    await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
+    expect(await fakeCamera.pendingReads[0].source.text()).toBe('frame');
   });
 
   it('keeps the barcode after the Member changes the Ingredient in Review', async () => {
@@ -261,7 +244,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     // The decode never answers, yet the card is read.
     await waitFor(() => expect(states()).toEqual(['read']));
     await act(async () =>
-      camera.decodes[0].reject(new Error('no detector here')),
+      fakeCamera.pendingReads[0].reject(new Error('no detector here')),
     );
     await flush();
     expect(states()).toEqual(['read']);
@@ -278,7 +261,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
       await waitFor(() => expect(states()).toEqual(['read']));
       scanViaGuide();
       await waitFor(() => expect(states()).toEqual(['read', 'read']));
-      await waitFor(() => expect(camera.decodes).toHaveLength(1));
+      await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
     }
     /** The first decode settles late; the second then settles without a barcode. */
     const settleLate = async () => {
@@ -328,11 +311,11 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
         target: { files: photos },
       });
     });
-    await waitFor(() => expect(camera.decodes).toHaveLength(1));
+    await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
     await flush();
-    expect(camera.decodes).toHaveLength(1);
+    expect(fakeCamera.pendingReads).toHaveLength(1);
     await decoded(null, 0);
-    await waitFor(() => expect(camera.decodes).toHaveLength(2));
+    await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(2));
   });
 
   it('gives up on a hung decode so the next photo is still decoded', async () => {
@@ -347,9 +330,9 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
       });
     });
     await act(() => vi.advanceTimersByTimeAsync(0));
-    expect(camera.decodes).toHaveLength(1);
+    expect(fakeCamera.pendingReads).toHaveLength(1);
     await act(() => vi.advanceTimersByTimeAsync(PHOTO_DECODE_TIMEOUT_MS));
-    expect(camera.decodes).toHaveLength(2);
+    expect(fakeCamera.pendingReads).toHaveLength(2);
   });
 
   it('skips the decode of a photo whose card was removed before its turn', async () => {
@@ -364,7 +347,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
       });
     });
     await waitFor(() => expect(states()).toEqual(['read', 'read', 'read']));
-    await waitFor(() => expect(camera.decodes).toHaveLength(1));
+    await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
     await user.click(screen.getByRole('button', { name: /^Done/ }));
     const removes = await screen.findAllByRole('button', {
       name: 'Remove photo',
@@ -373,7 +356,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     await decoded(null, 0);
     await decoded(null, 1);
     await flush();
-    expect(camera.decodes).toHaveLength(2);
+    expect(fakeCamera.pendingReads).toHaveLength(2);
   });
 
   it('does not pre-type the Match search of an Unmatched Product line carrying a decoded barcode', async () => {
@@ -452,8 +435,8 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
       });
     });
     await waitFor(() => expect(states()).toEqual(['read']));
-    await waitFor(() => expect(camera.decodes).toHaveLength(1));
-    expect(camera.decodes[0].source).toBe(photo);
+    await waitFor(() => expect(fakeCamera.pendingReads).toHaveLength(1));
+    expect(fakeCamera.pendingReads[0].source).toBe(photo);
     await decoded(CODE);
     await addAll(user);
 
@@ -469,7 +452,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
         expect(screen.queryAllByTestId('scan-thumbnail')).toHaveLength(1),
       );
       await flush();
-      expect(camera.decodes).toHaveLength(0);
+      expect(fakeCamera.pendingReads).toHaveLength(0);
     },
   );
 });

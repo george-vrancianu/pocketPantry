@@ -9,24 +9,12 @@ import {
   resetScanSession,
 } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { scanViaGuide } from '../../test/scan';
+import { scanViaGuide, fakeCamera } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
-const cameraCalls = vi.hoisted(() => ({ args: [] as unknown[] }));
-vi.mock('../../lib/camera', () => ({
-  useCamera: (highResolution?: boolean) => {
-    cameraCalls.args.push(highResolution);
-    return {
-      videoRef: { current: null },
-      status: 'ready',
-      torchSupported: true,
-      capture: () =>
-        Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-      setTorch: () => Promise.resolve(true),
-      watchBarcodes: () => () => {},
-    };
-  },
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
@@ -56,7 +44,6 @@ describe('Scan screen, epic review fixes', () => {
     resetScanSession();
     resetReads();
     localStorage.clear();
-    cameraCalls.args = [];
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -65,10 +52,10 @@ describe('Scan screen, epic review fixes', () => {
 
   it('requests 1080p in every mode, so the dial never restarts the stream (#2)', () => {
     for (const mode of ['product', 'ingredients', 'plate']) {
-      cameraCalls.args = [];
+      fakeCamera.calls = [];
       const { unmount } = renderScan(`/scan?mode=${mode}`);
-      expect(cameraCalls.args.length).toBeGreaterThan(0);
-      expect(cameraCalls.args.every((arg) => arg !== false)).toBe(true);
+      expect(fakeCamera.calls.length).toBeGreaterThan(0);
+      expect(fakeCamera.calls.every((arg) => arg !== false)).toBe(true);
       unmount();
     }
   });

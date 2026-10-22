@@ -6,16 +6,9 @@ import { renderWithProviders } from '../../test/render';
 import { ScanPage } from './ScanPage';
 
 // jsdom has no camera: the camera hook is the seam.
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'])),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 
 const ORDER = ['Receipt', 'Product', 'Barcode', 'Ingredients', 'Plate'];
 

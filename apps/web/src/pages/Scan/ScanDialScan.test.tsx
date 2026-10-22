@@ -4,34 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { ScanPage } from './ScanPage';
+import { fakeCamera } from '../../test/scan';
 
-const camera = vi.hoisted(() => ({
-  cancels: 0,
-  focuses: 0,
-  finish: () => {},
-  resize: null as null | Promise<string>,
-}));
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-    focusForScan: () => {
-      camera.focuses += 1;
-      return {
-        done: new Promise<void>((resolve) => (camera.finish = resolve)),
-        cancel: () => (camera.cancels += 1),
-      };
-    },
-  }),
-}));
+const image = vi.hoisted(() => ({ resize: null as null | Promise<string> }));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () =>
-    camera.resize ?? Promise.resolve('data:image/jpeg;base64,YQ=='),
+    image.resize ?? Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
 
 let fetchCalls: ReturnType<typeof stubApi>['calls'];
@@ -84,9 +66,8 @@ describe('Scan page: Scan by the mode dial', () => {
     localStorage.clear();
     resetScanSession();
     now = 1000;
-    camera.cancels = 0;
-    camera.focuses = 0;
-    camera.resize = null;
+    fakeCamera.focusSupported = true;
+    image.resize = null;
     vibrate.mockClear();
     Object.defineProperty(navigator, 'vibrate', {
       value: vibrate,
@@ -141,11 +122,11 @@ describe('Scan page: Scan by the mode dial', () => {
     await advance(301);
     expect(vibrate).toHaveBeenCalledWith(6);
     expect(hold()).toBeInTheDocument();
-    expect(camera.focuses).toBe(1);
+    expect(fakeCamera.focuses).toBe(1);
     lift();
     await flush();
     expect(scans()).toHaveLength(0);
-    camera.finish();
+    fakeCamera.finishFocus();
     await flush();
     expect(scans()).toHaveLength(1);
     expect(vibrate).toHaveBeenCalledWith(12);
@@ -159,9 +140,9 @@ describe('Scan page: Scan by the mode dial', () => {
     fireEvent.pointerMove(current(), { ...base, clientX: 150, clientY: 500 });
     fireEvent.pointerMove(current(), { ...base, clientX: 60, clientY: 500 });
     lift(60);
-    camera.finish();
+    fakeCamera.finishFocus();
     await flush();
-    expect(camera.cancels).toBe(1);
+    expect(fakeCamera.cancels).toBe(1);
     expect(scans()).toHaveLength(0);
     expect(
       within(dial()).getByRole('radio', { name: 'Product' }),
@@ -190,9 +171,9 @@ describe('Scan page: Scan by the mode dial', () => {
     press();
     await advance(500);
     expect(hold()).toBeNull();
-    expect(camera.focuses).toBe(0);
+    expect(fakeCamera.focuses).toBe(0);
     lift();
-    camera.finish();
+    fakeCamera.finishFocus();
     await flush();
     expect(vibrate).not.toHaveBeenCalled();
     expect(screen.queryByTestId('scan-flash')).toBeNull();
@@ -200,7 +181,7 @@ describe('Scan page: Scan by the mode dial', () => {
   });
 
   it('sends no Scan from a double tap or a hold while a Scan is being read', async () => {
-    camera.resize = new Promise<string>(() => {});
+    image.resize = new Promise<string>(() => {});
     renderScan();
     press();
     lift();
@@ -209,7 +190,7 @@ describe('Scan page: Scan by the mode dial', () => {
     lift();
     await flush();
     expect(screen.getByText('Reading your photo')).toBeInTheDocument();
-    const focusesBefore = camera.focuses;
+    const focusesBefore = fakeCamera.focuses;
     now += 1000;
     press();
     lift();
@@ -221,9 +202,9 @@ describe('Scan page: Scan by the mode dial', () => {
     await advance(500);
     expect(hold()).toBeNull();
     lift();
-    camera.finish();
+    fakeCamera.finishFocus();
     await flush();
-    expect(camera.focuses).toBe(focusesBefore);
+    expect(fakeCamera.focuses).toBe(focusesBefore);
     expect(scans()).toHaveLength(0);
   });
 

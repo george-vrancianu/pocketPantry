@@ -1,5 +1,10 @@
 import { screen, waitFor } from '@testing-library/react';
-import { scanGuide, openFirstScanCard, scanViaGuide } from '../../test/scan';
+import {
+  scanGuide,
+  openFirstScanCard,
+  scanViaGuide,
+  fakeCamera,
+} from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,35 +17,9 @@ import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
 // jsdom has no camera or canvas: the camera and the resizer are the seams.
-const camera = vi.hoisted(() => ({ torchSupported: true }));
-vi.mock('../../lib/camera', async () => {
-  const { useEffect, useState } = await import('react');
-  return {
-    // Like the real hook, restarts (status 'starting', then 'ready') when the resolution flips.
-    useCamera: (highResolution: boolean) => {
-      const [status, setStatus] = useState('ready');
-      useEffect(() => {
-        setStatus('starting');
-        let cancelled = false;
-        void Promise.resolve().then(() => {
-          if (!cancelled) setStatus('ready');
-        });
-        return () => {
-          cancelled = true;
-        };
-      }, [highResolution]);
-      return {
-        videoRef: { current: null },
-        status,
-        torchSupported: camera.torchSupported,
-        capture: () =>
-          Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-        setTorch: () => Promise.resolve(true),
-        watchBarcodes: () => () => {},
-      };
-    },
-  };
-});
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
@@ -95,9 +74,7 @@ function renderScan(
 }
 
 describe('ScanPage', () => {
-  beforeEach(() => {
-    camera.torchSupported = true;
-  });
+  beforeEach(() => {});
   afterEach(() => vi.unstubAllGlobals());
 
   it('has the camera controls, with Receipt selected among all four modes', () => {
@@ -116,7 +93,7 @@ describe('ScanPage', () => {
   });
 
   it('hides the flash toggle when the camera has no torch', () => {
-    camera.torchSupported = false;
+    fakeCamera.torchSupported = false;
     renderScan({});
     expect(
       screen.queryByRole('button', { name: 'Toggle flash' }),

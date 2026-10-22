@@ -1,5 +1,5 @@
 import { screen } from '@testing-library/react';
-import { openFirstScanCard, scanViaGuide } from '../../test/scan';
+import { openFirstScanCard, scanViaGuide, fakeCamera } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,21 +9,9 @@ import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
-const useCameraMock = vi.hoisted(() => vi.fn());
-vi.mock('../../lib/camera', () => ({
-  useCamera: (highResolution?: boolean) => {
-    useCameraMock(highResolution);
-    return {
-      videoRef: { current: null },
-      status: 'ready',
-      torchSupported: true,
-      capture: () =>
-        Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-      setTorch: () => Promise.resolve(true),
-      watchBarcodes: () => () => {},
-    };
-  },
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 const cropToReceiptAreaMock = vi.hoisted(() => vi.fn());
 /** When set, image preparation waits on it, so a test can change the screen mid-preparation. */
 const gate = vi.hoisted(() => ({ current: null as Promise<void> | null }));
@@ -62,9 +50,7 @@ vi.mock('react-easy-crop', async () => {
 });
 
 describe('Receipt Scan on the Scan screen', () => {
-  beforeEach(() => {
-    useCameraMock.mockClear();
-  });
+  beforeEach(() => {});
   afterEach(() => vi.unstubAllGlobals());
 
   it('sends the cropped receipt photo to the Receipt endpoint and reviews its lines on the Scan card', async () => {
@@ -118,7 +104,7 @@ describe('Receipt Scan on the Scan screen', () => {
   it('shows the guide and asks the camera for high resolution (as in every mode)', () => {
     renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
     expect(screen.getByTestId('scan-guide')).toBeInTheDocument();
-    expect(useCameraMock).toHaveBeenCalled();
+    expect(fakeCamera.calls.length).toBeGreaterThan(0);
   });
 
   it('leaves the mode description and receipt tips to the Info sheet', () => {
