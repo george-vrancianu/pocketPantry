@@ -78,7 +78,7 @@ function renderScan(route = '/scan?mode=product') {
   );
 }
 
-// The photo stack's badge: its state (reading, needsCrop, failed, read) and its card count.
+// The photo stack's badge: its card count.
 const badge = () => screen.getByTestId('stack-badge');
 const cards = () => Number(badge().textContent?.replace(/\D/g, ''));
 const answer = async (index: number, lines?: unknown[]) => {
@@ -217,7 +217,7 @@ describe('Scan Session on the Scan screen', () => {
   });
 
   describe('a read that fails', () => {
-    it('leaves the Scan as a failed thumbnail, also after leaving the screen', async () => {
+    it('leaves the Scan as a failed photo stack, also after leaving the screen', async () => {
       renderScan();
       await scanOnce();
       await userEvent.click(photoStack());

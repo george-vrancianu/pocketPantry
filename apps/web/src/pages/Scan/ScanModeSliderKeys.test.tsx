@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { languageChip, slider } from '../../test/scan';
+import { languageChip, selected, slider } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
 vi.mock('../../lib/camera', async () =>
@@ -31,12 +31,6 @@ function setup(route: string, routes: Record<string, () => Response> = {}) {
   );
 }
 
-const checked = () =>
-  within(slider())
-    .getAllByRole('radio')
-    .filter((r) => r.getAttribute('aria-checked') === 'true')
-    .map((r) => r.getAttribute('aria-label') ?? r.textContent);
-
 describe('Scan mode slider: when arrows must not change the mode', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -55,14 +49,14 @@ describe('Scan mode slider: when arrows must not change the mode', () => {
     );
     await userEvent.keyboard('{ArrowRight}');
     await userEvent.click(screen.getByRole('button', { name: 'Got it' }));
-    expect(checked()).toEqual(['Product']);
+    expect(selected()).toEqual(['Product']);
   });
 
   it('leaves arrows to the Scan Language menu while it is open', async () => {
     setup('/scan?mode=product');
     await userEvent.click(languageChip());
     await userEvent.keyboard('{ArrowDown}{ArrowRight}{ArrowLeft}');
-    expect(checked()).toEqual(['Product']);
+    expect(selected()).toEqual(['Product']);
   });
 
   it('leaves arrows to a textarea and an editable element', async () => {
@@ -75,7 +69,7 @@ describe('Scan mode slider: when arrows must not change the mode', () => {
       area.focus();
       await userEvent.keyboard('{ArrowRight}');
       fireEvent.keyDown(editable, { key: 'ArrowRight' });
-      expect(checked()).toEqual(['Product']);
+      expect(selected()).toEqual(['Product']);
     } finally {
       area.remove();
       editable.remove();
@@ -87,7 +81,7 @@ describe('Scan mode slider: when arrows must not change the mode', () => {
     (modifier) => {
       setup('/scan?mode=product');
       fireEvent.keyDown(document.body, { key: 'ArrowLeft', [modifier]: true });
-      expect(checked()).toEqual(['Product']);
+      expect(selected()).toEqual(['Product']);
     },
   );
 
@@ -100,7 +94,7 @@ describe('Scan mode slider: when arrows must not change the mode', () => {
     });
     handled.preventDefault();
     document.body.dispatchEvent(handled);
-    expect(checked()).toEqual(['Product']);
+    expect(selected()).toEqual(['Product']);
   });
 
   it('moves focus to the newly selected radio after an arrow press', async () => {

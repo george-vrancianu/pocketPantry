@@ -8,6 +8,7 @@ import {
   languageChip,
   pickScanLanguage,
   queryLanguageChip,
+  selected,
   takeScan,
 } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
@@ -83,11 +84,6 @@ const sendFile = async (testId: string) => {
 };
 const sent = async (calls: Parameters<typeof sentLanguages>[0], n: number) =>
   vi.waitFor(() => expect(sentLanguages(calls)).toHaveLength(n));
-const checkedMode = () =>
-  within(screen.getByRole('radiogroup', { name: 'Scan mode' }))
-    .getAllByRole('radio')
-    .filter((r) => r.getAttribute('aria-checked') === 'true')
-    .map((r) => r.getAttribute('aria-label') ?? r.textContent);
 
 describe('Scan Language menu on the Scan screen', () => {
   beforeEach(() => {
@@ -179,9 +175,18 @@ describe('Scan Language menu on the Scan screen', () => {
     await userEvent.click(languageChip());
     await userEvent.keyboard('{ArrowRight}{ArrowLeft}');
     await userEvent.keyboard('{Escape}');
-    expect(checkedMode()).toEqual(['Product']);
+    expect(selected()).toEqual(['Product']);
     await userEvent.keyboard('{ArrowRight}');
-    expect(checkedMode()).toEqual(['Barcode']);
+    expect(selected()).toEqual(['Barcode']);
+  });
+
+  it('keeps the arrow keys off the camera mode after a click on the menu itself', async () => {
+    renderScan();
+    await userEvent.click(languageChip());
+    await userEvent.click(screen.getByRole('menu'));
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('menu')).toBeVisible();
+    expect(selected()).toEqual(['Product']);
   });
 
   it('is locked while a photo is being prepared', async () => {

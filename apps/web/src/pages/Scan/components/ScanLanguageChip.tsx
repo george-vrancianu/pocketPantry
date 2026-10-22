@@ -16,8 +16,6 @@ type Props = {
   value: ScanLanguage;
   disabled: boolean;
   onChange: (language: ScanLanguage) => void;
-  /** Tells the host the menu opened or closed, so it can keep its own shortcuts quiet meanwhile. */
-  onOpenChange?: (open: boolean) => void;
 };
 
 /**
@@ -25,12 +23,7 @@ type Props = {
  * the Scan Languages (handoff 2.3). Self-contained (value + onChange), so a host with or without a
  * Scan Session can mount it; what a pick means is the host's business.
  */
-export function ScanLanguageChip({
-  value,
-  disabled,
-  onChange,
-  onOpenChange,
-}: Props) {
+export function ScanLanguageChip({ value, disabled, onChange }: Props) {
   const { t } = useTranslation('scan');
   const menuId = useId();
   const [open, setOpen] = useState(false);
@@ -39,12 +32,8 @@ export function ScanLanguageChip({
   const items = useRef<(HTMLDivElement | null)[]>([]);
   const isOpen = open && !disabled;
 
-  const setMenu = (next: boolean) => {
-    setOpen(next);
-    onOpenChange?.(next && !disabled);
-  };
   const close = (restoreFocus = true) => {
-    setMenu(false);
+    setOpen(false);
     if (restoreFocus) chip.current?.focus();
   };
 
@@ -63,22 +52,12 @@ export function ScanLanguageChip({
     };
     document.addEventListener('pointerdown', away);
     return () => document.removeEventListener('pointerdown', away);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // A lock while the menu is open closes it, and tells the host.
+  // A lock while the menu is open closes it.
   useEffect(() => {
-    if (disabled && open) {
-      setOpen(false);
-      onOpenChange?.(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (disabled) setOpen(false);
   }, [disabled]);
-
-  // Never leaves the host believing the menu is open after the chip goes away.
-  const hostRef = useRef(onOpenChange);
-  hostRef.current = onOpenChange;
-  useEffect(() => () => hostRef.current?.(false), []);
 
   const pick = (language: ScanLanguage) => {
     close();
@@ -138,7 +117,7 @@ export function ScanLanguageChip({
         aria-expanded={isOpen}
         aria-controls={isOpen ? menuId : undefined}
         disabled={disabled}
-        onClick={() => setMenu(!isOpen)}
+        onClick={() => setOpen(!isOpen)}
         sx={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -166,6 +145,7 @@ export function ScanLanguageChip({
         <Box
           id={menuId}
           role="menu"
+          tabIndex={-1}
           aria-label={t('scanLanguage.label')}
           onKeyDown={onMenuKey}
           sx={{

@@ -44,7 +44,7 @@ export const selected = () =>
   within(slider())
     .getAllByRole('radio')
     .filter((radio) => radio.getAttribute('aria-checked') === 'true')
-    .map((radio) => radio.textContent);
+    .map((radio) => radio.getAttribute('aria-label') ?? radio.textContent);
 
 /** Take a Scan as a Member does: press the shutter. */
 export function takeScan() {
