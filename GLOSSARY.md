@@ -248,12 +248,16 @@ _Avoid_: Quota, rate limit
 ### Voice
 
 **Voice Note**:
-A short recording a Member speaks into the Shopping List or the Pantry, read into Voice Actions. Not a Scan: nothing is photographed, and it counts against the Voice Cap, never the Scan Cap.
+A short recording a Member speaks into the Shopping List or the Pantry, read into Voice Actions and Pantry Questions. Not a Scan: nothing is photographed, and it counts against the Voice Cap, never the Scan Cap.
 _Avoid_: Voice scan, voice command, dictation
 
 **Voice Action**:
 One change read from spoken or dictated text: adding, removing, checking or unchecking a Shopping Item or setting its quantity, adding or removing Batches, or flagging an Ingredient Running low. From a Voice Note, nothing is applied until the Member confirms it in Review. An Assistant Request may apply a Voice Action without Review, but only the safe kinds: adding a Shopping Item and flagging an Ingredient Running low. Every other kind is refused.
 _Avoid_: Command, intent, voice line
+
+**Pantry Question**:
+A spoken or dictated question about whether named Ingredients are in the Pantry, such as "Do we have milk and butter?", read from a Voice Note or an Assistant Request alongside its Voice Actions. It is answered, never reviewed or applied, and changes nothing. Each answer is yes (with quantity, Location, Expiring Soon and Running low), only expired, no (saying whether it is on the Shopping List), or not sure, never "no" for a name that did not match.
+_Avoid_: Glance, stock check, query
 
 **Voice Cap**:
 The maximum number of Voice Notes a Member may record per day.
