@@ -14,7 +14,7 @@ In the shop, with a basket in one hand, Members want to tell the app what they d
   - Anything else asks for a Batch in Review.
   - Checking an Ingredient that is not on the Shopping List adds it checked. Checking it with a quantity sets the item to that quantity.
   - Running low on an Ingredient with no Batch becomes an add to the Shopping List.
-- **The page sets the default list.** On the Shopping List, Voice Actions target the Shopping List, and on the Pantry they target the Pantry, unless the Member names the other list for that action.
+- **The page sets the default list.** On the Shopping List, Voice Actions target the Shopping List, and on the Pantry they target the Pantry, unless the Member names the other list for that action. (Amended by ADR 0021: Voice Notes are recorded from the Dock, and other pages set no default list.)
 - **Dates are resolved against the Member's day.** The app sends its local date with the recording, and the model returns ISO dates. A date in the past or more than five years ahead is dropped, so the Default Expiry applies, as it does for an unspoken one.
 - **Review, then apply, with no Undo.** Review lists the Voice Actions by list under the collapsed transcript. Each one can be removed, edited (quantity, unit, expiry, Match) or kept. Apply writes them all in one transaction through the Shopping and Pantry services, so Batch deletes keep Used Up and Running low correct (ADR 0005). Every Voice Action is re-resolved on apply: one already done counts as applied, and one that can no longer happen is skipped and reported, without failing the rest.
 
