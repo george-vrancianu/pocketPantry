@@ -7,7 +7,7 @@ A Romanian living in Copenhagen may want the app in English, Ingredient names in
 - **UI Language:** the app's own text, and how dates and numbers are written. Nothing else.
 - **Catalog Language:** everything Admins curate and translate (Ingredients, Categories, Aisles, Allergens, Eating Moments, Cuisines, Methods, Catalog Recipes), plus names the AI makes up: `fallbackIngredientName` for Scans, Voice Notes and Plate Scans, and Plate Scan dish titles. Unmatched raw names and new Family Ingredients are tagged with it. If a name is missing, the fallback is Catalog Language, then English, then the canonical name. The UI Language is not added to that chain.
 - **Spoken Language:** the transcription hint and reading language for Voice Notes. It can be changed for a single Voice Note.
-- **Scan Language:** the printed text in a Scan only, as in ADR 0003. It can be changed for a single Scan.
+- **Scan Language:** the printed text in a Scan only, as in ADR 0003. It can be changed for one Scan Session (until the camera is closed or the Session is added or discarded), and the change is not saved.
 - **Catalog, Spoken and Scan Language start as "Same as UI Language"** and follow it until the Member picks a language. A one-language Member never notices the split.
 - **A one-use override is not remembered.** The device-local "last Scan Language" memory is removed. The stored Member Preference is the only default, and it is the same on every device.
 - **The API reads the Member's stored Preferences itself** instead of trusting a `locale` query sent by the browser. Only signed-out screens and Admin previews in another language send a language explicitly.
