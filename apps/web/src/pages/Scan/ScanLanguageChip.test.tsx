@@ -1,6 +1,11 @@
 import { screen, within } from '@testing-library/react';
-import { openFirstScanCard, takeScan } from '../../test/scan';
-import userEvent from '@testing-library/user-event';
+import {
+  languageChip,
+  openFirstScanCard,
+  pickScanLanguage,
+  queryLanguageChip,
+  takeScan,
+} from '../../test/scan';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -26,9 +31,6 @@ const line = {
   sourceText: 'OST 200G',
   productDescription: null,
 };
-
-const chipName = /Reading as|Citit ca|Læses på/;
-const chip = () => screen.getByRole('combobox', { name: chipName });
 
 function renderScan(route: string) {
   const { fetchMock, calls } = stubApi({
@@ -57,35 +59,32 @@ describe('Scan Language chip in the top bar', () => {
   it('sits in the top bar', () => {
     renderScan('/scan?mode=product');
     const bar = screen.getByTestId('scan-top-bar');
-    expect(within(bar).getByRole('combobox', { name: chipName })).toBe(chip());
+    expect(within(bar).getByRole('button', { name: /Reading as/ })).toBe(
+      languageChip(),
+    );
   });
 
-  it('is compact: the languages are EN, RO and DA, the UI language first', () => {
+  it('is compact: a globe and the code of the Scan Language', () => {
     renderScan('/scan?mode=product');
-    expect(
-      Array.from(chip().querySelectorAll('option')).map((o) => o.textContent),
-    ).toEqual(['EN', 'RO', 'DA']);
-    expect(chip()).toHaveValue('en');
+    expect(languageChip()).toHaveTextContent(/^EN$/);
   });
 
   it.each(['product', 'ingredients', 'receipt'])(
     'is shown in %s mode',
     (mode) => {
       renderScan(`/scan?mode=${mode}`);
-      expect(chip()).toBeVisible();
+      expect(languageChip()).toBeVisible();
     },
   );
 
   it('is hidden in Plate mode', () => {
     renderScan('/scan?mode=plate');
-    expect(
-      screen.queryByRole('combobox', { name: chipName }),
-    ).not.toBeInTheDocument();
+    expect(queryLanguageChip()).not.toBeInTheDocument();
   });
 
   it('sends the chosen Scan Language with the next Scan', async () => {
     const calls = renderScan('/scan?mode=product');
-    await userEvent.selectOptions(chip(), 'ro');
+    await pickScanLanguage('Română');
     takeScan();
     await openFirstScanCard();
     await screen.findByRole('button', { name: /Save 1 item/ });

@@ -10,7 +10,13 @@
     "barcode": "Ret kameraet mod en stregkode; hver kode tilføjes for sig"
   },
   "scanLanguage": {
-    "label": "Læses på"
+    "label": "Læses på",
+    "read": "Læser på {{language}}",
+    "inSentence": {
+      "en": "engelsk",
+      "ro": "rumænsk",
+      "da": "dansk"
+    }
   },
   "modes": "Scanningstilstand",
   "shutter": {

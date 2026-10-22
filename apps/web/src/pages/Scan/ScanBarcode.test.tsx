@@ -21,6 +21,8 @@ import {
   expectStack,
   stackCount,
   photoStack,
+  languageChip,
+  queryLanguageChip,
 } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
@@ -186,9 +188,7 @@ describe('Barcode on the Scan page', () => {
       expect(
         screen.getByText('Point the camera at the barcode.'),
       ).toBeInTheDocument();
-      expect(
-        screen.queryByRole('combobox', { name: 'Reading as' }),
-      ).not.toBeInTheDocument();
+      expect(queryLanguageChip()).not.toBeInTheDocument();
       expect(
         screen.queryByRole('button', { name: 'Import from photos' }),
       ).not.toBeInTheDocument();
@@ -201,9 +201,7 @@ describe('Barcode on the Scan page', () => {
       await waitFor(() => expect(fakeCamera.watching).toBe(1));
       await user.click(screen.getByRole('radio', { name: 'Product' }));
       expect(fakeCamera.watching).toBe(0);
-      expect(
-        screen.getByRole('combobox', { name: /Reading as/ }),
-      ).toBeInTheDocument();
+      expect(languageChip()).toBeInTheDocument();
     });
   });
 
@@ -224,13 +222,9 @@ describe('Barcode on the Scan page', () => {
       async (mode) => {
         const user = userEvent.setup();
         renderScan('/scan?mode=product');
-        expect(
-          screen.getByRole('combobox', { name: /Reading as/ }),
-        ).toBeInTheDocument();
+        expect(languageChip()).toBeInTheDocument();
         await user.click(screen.getByRole('radio', { name: mode }));
-        expect(
-          screen.queryByRole('combobox', { name: /Reading as/ }),
-        ).not.toBeInTheDocument();
+        expect(queryLanguageChip()).not.toBeInTheDocument();
       },
     );
   });

@@ -1,23 +1,17 @@
 import {
   isScanLanguage,
-  SCAN_LANGUAGES,
   type Locale,
   type ScanLanguage,
 } from '../i18n/resources';
 
 const STORAGE_KEY = 'pocket-pantry.scan-language';
 
-/** The UI language first, then the other Scan Languages. */
-export function scanLanguageOptions(locale: Locale) {
-  const ordered = [
-    locale,
-    ...SCAN_LANGUAGES.filter((language) => language !== locale),
-  ];
-  return ordered.map((value) => ({
-    value,
-    label: value.toUpperCase(),
-  }));
-}
+/** The Scan Languages the menu offers, in this fixed order, each named in its own language. */
+export const SCAN_LANGUAGE_NAMES: Record<ScanLanguage, string> = {
+  en: 'English',
+  ro: 'Română',
+  da: 'Dansk',
+};
 
 /** The last choice made under this UI language, else the UI language itself. */
 export function loadScanLanguage(locale: Locale): ScanLanguage {

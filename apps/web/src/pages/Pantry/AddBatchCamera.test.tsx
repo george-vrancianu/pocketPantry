@@ -58,7 +58,7 @@ describe('The add-Batch camera chrome', () => {
     await openOverlay('product');
     expect(bar().getByRole('button', { name: 'Close scanner' })).toBeVisible();
     expect(bar().getByRole('button', { name: /^Torch/ })).toBeVisible();
-    expect(bar().getByRole('combobox', { name: 'Reading as' })).toBeVisible();
+    expect(bar().getByRole('button', { name: 'Reading as' })).toBeVisible();
     expect(
       bar().getByRole('button', { name: 'How scanning works' }),
     ).toBeVisible();
@@ -75,7 +75,7 @@ describe('The add-Batch camera chrome', () => {
       bar().getByRole('button', { name: 'How scanning works' }),
     ).toBeVisible();
     expect(
-      screen.queryByRole('combobox', { name: 'Reading as' }),
+      screen.queryByRole('button', { name: 'Reading as' }),
     ).not.toBeInTheDocument();
     expect(screen.getByTestId('shutter-ring')).toBeInTheDocument();
   });

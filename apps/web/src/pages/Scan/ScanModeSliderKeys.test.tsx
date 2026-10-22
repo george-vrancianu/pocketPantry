@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { languageChip } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
 vi.mock('../../lib/camera', async () =>
@@ -58,9 +59,9 @@ describe('Scan mode slider: when arrows must not change the mode', () => {
     expect(checked()).toEqual(['Product']);
   });
 
-  it('leaves arrows to the Scan Language select', async () => {
+  it('leaves arrows to the Scan Language menu while it is open', async () => {
     setup('/scan?mode=product');
-    screen.getByRole('combobox').focus();
+    await userEvent.click(languageChip());
     await userEvent.keyboard('{ArrowDown}{ArrowRight}{ArrowLeft}');
     expect(checked()).toEqual(['Product']);
   });

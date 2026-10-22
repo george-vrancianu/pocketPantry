@@ -7,7 +7,7 @@ import type { Batch } from '../../lib/pantry';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
-import { fakeCamera } from '../../test/scan';
+import { fakeCamera, languageChip, pickScanLanguage } from '../../test/scan';
 
 // jsdom has no camera or canvas: the camera hook and image preparation are the seams.
 const image = vi.hoisted(() => ({
@@ -150,7 +150,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
 
     await user.click(cameraButton());
     expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
-    expect(screen.getByLabelText('Reading as')).toBeInTheDocument();
+    expect(languageChip()).toBeInTheDocument();
     // The host page's URL is left alone.
     expect(screen.getByTestId('where')).toHaveTextContent(
       '/pantry?mode=receipt&tab=x',
@@ -172,6 +172,33 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
     expect(cameraButton()).toHaveFocus();
+  });
+
+  it('closes only the language menu on Escape, not the overlay', async () => {
+    const user = userEvent.setup();
+    stubProductScan(() => Response.json({ lines: [line()] }));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await user.click(languageChip());
+    expect(screen.getByRole('menu')).toBeVisible();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
+  });
+
+  it('remembers a pick on the device across closing and reopening the overlay', async () => {
+    const user = userEvent.setup();
+    stubProductScan(() => Response.json({ lines: [line()] }));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await pickScanLanguage('Dansk');
+    expect(languageChip()).toHaveTextContent('DA');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
+    await user.click(cameraButton());
+    expect(languageChip()).toHaveTextContent('DA');
   });
 
   it('drops a photo still being prepared when the overlay is cancelled', async () => {
@@ -249,8 +276,8 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    expect(screen.getByLabelText('Reading as')).toHaveValue('ro');
-    await user.selectOptions(screen.getByLabelText('Reading as'), 'da');
+    expect(languageChip()).toHaveTextContent('RO');
+    await pickScanLanguage('Dansk');
     screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
 

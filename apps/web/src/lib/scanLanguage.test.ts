@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  loadScanLanguage,
-  saveScanLanguage,
-  scanLanguageOptions,
-} from './scanLanguage';
+import { loadScanLanguage, saveScanLanguage } from './scanLanguage';
 
 describe('scan language choice', () => {
   beforeEach(() => window.localStorage.clear());
@@ -34,28 +30,5 @@ describe('scan language choice', () => {
     expect(loadScanLanguage('en')).toBe('en');
     window.localStorage.setItem('pocket-pantry.scan-language', 'not json');
     expect(loadScanLanguage('en')).toBe('en');
-  });
-});
-
-describe('scanLanguageOptions', () => {
-  it('lists the UI language first, each as a compact code', () => {
-    expect(scanLanguageOptions('ro')).toEqual([
-      { value: 'ro', label: 'RO' },
-      { value: 'en', label: 'EN' },
-      { value: 'da', label: 'DA' },
-    ]);
-    expect(scanLanguageOptions('en').map((o) => o.value)).toEqual([
-      'en',
-      'ro',
-      'da',
-    ]);
-  });
-
-  it('puts DA first under a Danish UI', () => {
-    expect(scanLanguageOptions('da')).toEqual([
-      { value: 'da', label: 'DA' },
-      { value: 'en', label: 'EN' },
-      { value: 'ro', label: 'RO' },
-    ]);
   });
 });

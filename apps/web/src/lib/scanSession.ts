@@ -5,6 +5,7 @@ import { MAX_RECEIPT_SECTIONS } from './receiptSections';
 import { reviewLinesOf, type ReviewLine } from './review';
 import type { CameraMode } from './cameraMode';
 import type { ProposedLine } from './scan';
+import { clearScanLanguageOverride } from './sessionScanLanguage';
 
 /** How many Scans of a Scan Session are read at once. */
 export const MAX_CONCURRENT_READS = 2;
@@ -404,7 +405,11 @@ export const photoBarcodeOf = (state: SessionState, id: string) =>
 export const getScanSession = () => session;
 export const dispatchScanSession = (action: SessionAction) =>
   setSession(sessionReducer(session, action));
-export const resetScanSession = () => setSession(emptySession);
+/** Ends the Scan Session: its cards and its Scan Language pick go. */
+export const resetScanSession = () => {
+  clearScanLanguageOverride();
+  setSession(emptySession);
+};
 
 /** The Scan Session, re-rendering when it changes. It outlives the screens that show it. */
 export function useScanSession(): SessionState {

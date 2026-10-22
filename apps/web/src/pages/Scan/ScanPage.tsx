@@ -52,6 +52,7 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
   const { videoRef } = screen.camera;
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const { shot, fire } = useShotFeedback();
   const guide = useGuideRect(screen.mode);
   useLayoutEffect(() => {
@@ -123,9 +124,9 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
           <Fading hidden={!screen.scanLanguageShown}>
             <ScanLanguageChip
               value={screen.scanLanguage}
-              locale={screen.uiLocale}
               disabled={screen.scanLanguageLocked}
-              onChange={screen.setScanLanguage}
+              onChange={screen.pickScanLanguage}
+              onOpenChange={setLanguageMenuOpen}
             />
           </Fading>
         }
@@ -199,7 +200,12 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
             modes={screen.modes}
             mode={screen.mode}
             disabled={screen.modesDisabled || infoOpen}
-            keysDisabled={screen.modesDisabled || infoOpen || screen.reading}
+            keysDisabled={
+              screen.modesDisabled ||
+              infoOpen ||
+              screen.reading ||
+              languageMenuOpen
+            }
             onChange={screen.setMode}
             swipeSurface={viewfinder}
             onDragChange={setSliding}

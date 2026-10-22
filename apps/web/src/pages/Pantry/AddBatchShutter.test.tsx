@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
-import { fakeCamera } from '../../test/scan';
+import { fakeCamera, queryLanguageChip } from '../../test/scan';
 
 // jsdom has no camera or canvas: the camera hook and image preparation are the seams.
 vi.mock('../../lib/camera', async () =>
@@ -87,7 +87,7 @@ describe('Scanning from the add-Batch camera overlay by the shutter', () => {
     const bar = within(screen.getByTestId('scan-top-bar'));
     expect(bar.getByRole('button', { name: 'Close scanner' })).toBeVisible();
     expect(bar.getByRole('button', { name: /^Torch/ })).toBeVisible();
-    expect(bar.getByRole('combobox', { name: 'Reading as' })).toBeVisible();
+    expect(bar.getByRole('button', { name: 'Reading as' })).toBeVisible();
     const footer = within(screen.getByTestId('scan-footer'));
     expect(footer.getByRole('button', { name: 'Take photo' })).toBeVisible();
     expect(screen.queryByTestId('photo-stack')).toBeNull();
@@ -99,9 +99,7 @@ describe('Scanning from the add-Batch camera overlay by the shutter', () => {
   it('hides the Scan Language chip in Barcode', async () => {
     stubPantry();
     await openOverlay('barcode');
-    expect(
-      screen.queryByRole('combobox', { name: 'Reading as' }),
-    ).not.toBeInTheDocument();
+    expect(queryLanguageChip()).not.toBeInTheDocument();
   });
 
   it('a tap on the shutter sends a Scan, with the guide haptic', async () => {

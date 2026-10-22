@@ -87,7 +87,7 @@ export function CameraOverlay({
   const { t } = useTranslation('scan');
   useForcedThemeColor('dark');
   const camera = useCamera();
-  const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
+  const { scanLanguage, setScanLanguage } = useScanLanguage();
   const [mode, setMode] = useState<CameraMode>(
     modes.includes(defaultMode) ? defaultMode : modes[0],
   );
@@ -250,7 +250,6 @@ export function CameraOverlay({
           <Fading hidden={mode === 'barcode'}>
             <ScanLanguageChip
               value={scanLanguage}
-              locale={locale}
               disabled={preparing}
               onChange={setScanLanguage}
             />

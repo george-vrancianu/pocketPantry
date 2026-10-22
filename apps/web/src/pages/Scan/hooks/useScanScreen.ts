@@ -20,7 +20,11 @@ import {
   resizingImports,
 } from '../../../lib/importPhotos';
 import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
-import { useScanLanguage } from './useScanLanguage';
+import {
+  clearScanLanguageOverride,
+  useSessionScanLanguage,
+} from '../../../lib/sessionScanLanguage';
+import type { ScanLanguage } from '../../../i18n/resources';
 import { measureView } from './useGuideRect';
 import {
   CAMERA_MODES,
@@ -76,7 +80,11 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   }, [mode, remembersMode]);
 
   const camera = useCamera();
-  const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
+  const {
+    locale,
+    scanLanguage,
+    setOverride: overrideScanLanguage,
+  } = useSessionScanLanguage();
   const previousMode = useRef(mode);
   /**
    * Bumped whenever what a photo being prepared was meant for goes away (mode change, Scan Session
@@ -341,7 +349,16 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     mode,
     uiLocale: locale,
     scanLanguage,
-    setScanLanguage,
+    /** A pick on the screen: for the rest of the Scan Session only (never the preference). */
+    pickScanLanguage: (language: ScanLanguage) => {
+      overrideScanLanguage(language);
+      setToast({
+        text: t('scan:scanLanguage.read', {
+          language: t(`scan:scanLanguage.inSentence.${language}`),
+        }),
+        severity: 'success',
+      });
+    },
     /** Plate Scan has no Scan Language. */
     scanLanguageShown: mode !== 'plate' && mode !== 'barcode',
     scanLanguageLocked: reading,
@@ -390,6 +407,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
         navigate('/');
         return;
       }
+      clearScanLanguageOverride();
       if (location.key === 'default') navigate('/');
       else navigate(-1);
     },
