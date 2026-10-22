@@ -8,6 +8,7 @@ import {
   resetScanSession,
   capReached,
   canMerge,
+  canRetry,
   emptySession,
   pendingCount,
   sessionReducer,
@@ -1015,5 +1016,31 @@ describe('Barcode cards in the Scan Session reducer', () => {
       { type: 'retry', id: 'b' },
     );
     expect(state.scans[1].status).toBe('reading');
+  });
+});
+
+describe('canRetry, the one rule for the retry buttons', () => {
+  const failed = (errorCode?: string) => ({
+    id: 'x',
+    mode: 'product' as const,
+    thumbnail: '',
+    status: 'failed' as const,
+    errorCode,
+  });
+
+  it.each(['network_error', 'internal', 'barcode.rate_limited', undefined])(
+    'lets a failure with %s be retried',
+    (code) => {
+      expect(canRetry(failed(code))).toBe(true);
+    },
+  );
+
+  it.each([
+    'scan.too_many_items',
+    'scan.image_too_large',
+    'scan.image_invalid',
+    'scan.nothing_found',
+  ])('does not let a failure with %s be retried', (code) => {
+    expect(canRetry(failed(code))).toBe(false);
   });
 });

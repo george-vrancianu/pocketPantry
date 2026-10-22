@@ -7,6 +7,14 @@ import type { ScanMode } from './scan';
  */
 export type CameraMode = ScanMode | 'barcode';
 
+/**
+ * The Scan Mode a photo is read in for a camera mode. Barcode is not a Scan Mode and sends no photo,
+ * so a photo added while it is the camera mode (Import, Add from photos) is a Product Scan.
+ * Everything that needs a Scan Mode from a camera mode goes through this.
+ */
+export const scanModeOf = (mode: CameraMode): ScanMode =>
+  mode === 'barcode' ? 'product' : mode;
+
 /** How often the barcode watch looks at a frame. */
 export const SCAN_INTERVAL_MS = 250;
 
@@ -35,6 +43,9 @@ export function loadScanPageMode(): CameraMode {
   }
   return 'receipt';
 }
+
+/** The Scan Mode for photos added away from the camera: the last-used camera mode's, else Receipt. */
+export const loadLastScanMode = (): ScanMode => scanModeOf(loadScanPageMode());
 
 /** Remembers the Scan page's mode for the next visit, apart from the add-Batch overlay's. */
 export function saveScanPageMode(mode: CameraMode): void {
