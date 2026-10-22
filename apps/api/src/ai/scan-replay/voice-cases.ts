@@ -95,7 +95,7 @@ export const voiceCaseFileSchema = z.object({
 
 /** A Voice Action as the replay compares it. */
 export type ActionView = {
-  target: (typeof VOICE_LISTS)[number];
+  target: (typeof VOICE_LISTS)[number] | null;
   op: (typeof VOICE_OPS)[number];
   ingredient: string;
   quantity: number | null;

@@ -78,7 +78,7 @@ describe('buildVoiceReadRequest', () => {
       expect(prompt).toContain('runningLow is on the "pantry" list');
       expect(prompt).toContain('a location or an expiry date means "pantry"');
       expect(prompt).toContain('"need" or "buy" means "shopping"');
-      expect(prompt).toContain('put it in unsupported');
+      expect(prompt).toContain('with target null');
     });
   });
 
