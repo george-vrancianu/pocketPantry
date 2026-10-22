@@ -14,7 +14,7 @@ import {
   talkButton,
 } from '../../test/voice';
 import { holdFor, pressDown, useVoiceTimers } from '../../test/voiceHold';
-import { renderWithProviders, stubApi } from '../../test/render';
+import { renderInAppLayout, stubApi } from '../../test/render';
 import { ShoppingPage } from './ShoppingPage';
 
 function setup() {
@@ -45,7 +45,7 @@ describe('Voice Note microphone sheets', () => {
 
   describe('while the microphone has not been asked for', () => {
     it('opens the intro sheet with the Shopping examples, and records nothing', async () => {
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
 
       pressDown(await talkButton());
 
@@ -59,7 +59,7 @@ describe('Voice Note microphone sheets', () => {
     });
 
     it('can be pressed again after Not now, and changes nothing', async () => {
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       pressDown(button);
       await userEvent.click(
@@ -80,7 +80,7 @@ describe('Voice Note microphone sheets', () => {
       mic.request.mockImplementation(
         () => new Promise<void>((resolve) => (allowed = resolve)),
       );
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       pressDown(await talkButton());
       const allow = await screen.findByRole('button', {
         name: 'Allow microphone',
@@ -95,7 +95,7 @@ describe('Voice Note microphone sheets', () => {
     });
 
     it('asks for the microphone on Allow, then thanks without recording', async () => {
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       pressDown(await talkButton());
 
       await userEvent.click(
@@ -112,7 +112,7 @@ describe('Voice Note microphone sheets', () => {
 
     it('swaps to the blocked sheet when Allow is refused', async () => {
       mic.request.mockRejectedValue(new MicrophoneError('denied'));
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       pressDown(await talkButton());
 
       await userEvent.click(
@@ -130,7 +130,7 @@ describe('Voice Note microphone sheets', () => {
 
   it('skips the intro when the browser already granted the microphone', async () => {
     mic.permission.mockResolvedValue('granted');
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
 
     pressDown(await talkButton());
 
@@ -142,7 +142,7 @@ describe('Voice Note microphone sheets', () => {
     beforeEach(() => mic.permission.mockResolvedValue('denied'));
 
     it('shows the blocked button, and a press opens the blocked sheet', async () => {
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       await waitFor(() => expect(button).toHaveStyle({ opacity: '0.55' }));
 
@@ -154,7 +154,7 @@ describe('Voice Note microphone sheets', () => {
     });
 
     it('says the microphone is blocked to assistive technology', async () => {
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       await waitFor(() =>
         expect(button).toHaveAccessibleDescription(/Microphone blocked/),
@@ -162,7 +162,7 @@ describe('Voice Note microphone sheets', () => {
     });
 
     it('lists the steps for both browsers when the browser is not known', async () => {
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       pressDown(await talkButton());
 
       const dialog = await screen.findByRole('dialog');
@@ -176,7 +176,7 @@ describe('Voice Note microphone sheets', () => {
         userAgent:
           'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
       });
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       pressDown(await talkButton());
 
       const dialog = await screen.findByRole('dialog');
@@ -185,7 +185,7 @@ describe('Voice Note microphone sheets', () => {
     });
 
     it('closes with a thanks when "I\'ve allowed it" finds the microphone allowed', async () => {
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       pressDown(await talkButton());
       const dialog = await screen.findByRole('dialog');
 
@@ -201,7 +201,7 @@ describe('Voice Note microphone sheets', () => {
 
     it('stays, and shakes the hero once, while still blocked', async () => {
       mic.request.mockRejectedValue(new MicrophoneError('denied'));
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       pressDown(await talkButton());
       const dialog = await screen.findByRole('dialog');
       const hero = within(dialog).getByTestId('mic-hero');
@@ -226,7 +226,7 @@ describe('Voice Note microphone sheets', () => {
 
     it('reopens the blocked sheet fresh after a failed recheck and Close', async () => {
       mic.request.mockRejectedValue(new MicrophoneError('denied'));
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       pressDown(await talkButton());
       const dialog = await screen.findByRole('dialog');
       await userEvent.click(
@@ -253,7 +253,7 @@ describe('Voice Note microphone sheets', () => {
 
     it('says the microphone is not available when it cannot be asked for', async () => {
       mic.request.mockRejectedValue(new MicrophoneError('unavailable'));
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       pressDown(await talkButton());
       const dialog = await screen.findByRole('dialog');
 
@@ -267,7 +267,7 @@ describe('Voice Note microphone sheets', () => {
     });
 
     it('closes without changing anything on Close', async () => {
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       pressDown(await talkButton());
       await userEvent.click(
         await screen.findByRole('button', { name: 'Close' }),
@@ -278,7 +278,7 @@ describe('Voice Note microphone sheets', () => {
 
   it('skips the intro on a device that allowed the microphone before, though the browser says prompt', async () => {
     localStorage.setItem('pp.voice.micExplained', '1');
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
 
     pressDown(await talkButton());
 
@@ -292,7 +292,7 @@ describe('Voice Note microphone sheets', () => {
     mic.permission.mockImplementation(
       () => new Promise((resolve) => (answer = resolve)),
     );
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
     const button = await talkButton();
 
     pressDown(button);
@@ -309,7 +309,7 @@ describe('Voice Note microphone sheets', () => {
     mic.permission.mockImplementation(
       () => new Promise((resolve) => (answer = resolve)),
     );
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
     const button = await talkButton();
 
     pressDown(button);
@@ -322,7 +322,7 @@ describe('Voice Note microphone sheets', () => {
   it('opens the blocked sheet when the browser refuses mid-hold (no Permissions API)', async () => {
     mic.permission.mockResolvedValue('granted');
     mic.start.mockRejectedValue(new MicrophoneError('denied'));
-    renderWithProviders(<ShoppingPage />);
+    renderInAppLayout(<ShoppingPage />, '/shopping');
 
     pressDown(await talkButton());
 

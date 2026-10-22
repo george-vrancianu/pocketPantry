@@ -17,10 +17,8 @@ import {
   pressDown,
   useVoiceTimers,
 } from '../../test/voiceHold';
-import { renderWithProviders, stubApi } from '../../test/render';
+import { renderInAppLayout, stubApi } from '../../test/render';
 import { voiceNote } from '../../lib/voiceNote';
-import { Route, Routes } from 'react-router-dom';
-import { AppLayout } from '../../components/AppLayout';
 import { ShoppingPage } from './ShoppingPage';
 
 function setup() {
@@ -80,7 +78,7 @@ describe('the recording gesture on the Shopping List', () => {
   describe('slide to cancel', () => {
     it('does not arm within 72 px, arms beyond it, and disarms when back', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       vibrate.mockClear();
 
@@ -106,7 +104,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('arms by sliding down or up too', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       fireEvent.pointerMove(button, { clientX: 130, clientY: 700 });
       expect(screen.getByText('Slide back to keep recording')).toBeVisible();
@@ -117,7 +115,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('discards on release while armed, and says so', async () => {
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       fireEvent.pointerMove(button, { clientX: 10, clientY: 530 });
       fireEvent.pointerUp(button);
@@ -132,7 +130,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('keeps recording when the pointer leaves the button but not the margin', async () => {
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       fireEvent.pointerLeave(button);
       fireEvent.pointerMove(button, { clientX: 60, clientY: 530 });
@@ -144,7 +142,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('cancels on a pointer cancel (a system gesture)', async () => {
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       fireEvent.pointerCancel(button);
 
@@ -157,7 +155,7 @@ describe('the recording gesture on the Shopping List', () => {
   describe('a press that is no longer a recording', () => {
     it('does not arm, buzz or grey the button after Escape or the 60 s auto-stop while the finger is still down', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       await userEvent.keyboard('{Escape}');
       await screen.findByText(cancelledToast);
@@ -178,7 +176,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('still treats a later click with no press before it as assistive after a press that ended early', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       await userEvent.keyboard('{Escape}');
       await holdFor(1_000);
@@ -189,7 +187,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('ignores a second finger or a right click', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       pressDown(button, { isPrimary: false });
       pressDown(button, { button: 2 });
@@ -199,7 +197,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('is not ended by a second finger lifting or being cancelled', async () => {
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       fireEvent.pointerUp(button, { pointerId: 2, isPrimary: false });
       fireEvent.pointerCancel(button, { pointerId: 2, isPrimary: false });
@@ -215,7 +213,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('has the destination as the button description', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       expect(await talkButton()).toHaveAccessibleDescription(/shopping/i);
     });
 
@@ -225,7 +223,7 @@ describe('the recording gesture on the Shopping List', () => {
         () => new Promise((resolve) => (arrive = resolve)),
       );
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       pressDown(button, { clientX: 130, clientY: 530 });
       await screen.findByText('Starting…');
@@ -244,7 +242,7 @@ describe('the recording gesture on the Shopping List', () => {
         () => new Promise((resolve) => (arrive = resolve)),
       );
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       pressDown(button, { clientX: 130, clientY: 530 });
       await screen.findByText('Starting…');
@@ -263,7 +261,7 @@ describe('the recording gesture on the Shopping List', () => {
         () => new Promise((resolve) => (arrive = resolve)),
       );
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       pressDown(button, { clientX: 130, clientY: 530 });
       await screen.findByText('Starting…');
@@ -290,7 +288,7 @@ describe('the recording gesture on the Shopping List', () => {
         () => new Promise((resolve) => (answer = resolve)),
       );
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       pressDown(button, { clientX: 130, clientY: 530 });
       await holdLongEnough();
@@ -309,7 +307,7 @@ describe('the recording gesture on the Shopping List', () => {
         () => new Promise((resolve) => (arrive = resolve)),
       );
       const { sent } = setup();
-      const view = renderWithProviders(<ShoppingPage />);
+      const view = renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       pressDown(button);
       await screen.findByText('Starting…');
@@ -326,7 +324,7 @@ describe('the recording gesture on the Shopping List', () => {
   describe('time limit', () => {
     it('turns to "n s left" from 50 s, and stops and sends at 60 s with a toast', async () => {
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       await hold();
       expect(screen.queryByText(/s left/)).toBeNull();
 
@@ -353,7 +351,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('does not buzz when the recording fails mid-hold, only at the limit', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       await hold();
       vibrate.mockClear();
       act(() => voiceNote.fail('unavailable'));
@@ -365,7 +363,7 @@ describe('the recording gesture on the Shopping List', () => {
   describe('keyboard', () => {
     it('records while Space is down and sends on key up', async () => {
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       button.focus();
 
@@ -384,7 +382,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('records with Enter, and a quick Enter is only a tap', async () => {
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
 
       fireEvent.keyDown(button, { key: 'Enter' });
@@ -399,7 +397,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('cancels with Escape while recording', async () => {
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       fireEvent.keyDown(button, { key: ' ' });
       await screen.findByText('Listening');
@@ -418,7 +416,7 @@ describe('the recording gesture on the Shopping List', () => {
   describe('assistive activation', () => {
     it('toggles: one click starts, the next sends', async () => {
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
 
       fireEvent.click(button);
@@ -436,7 +434,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('cancels a toggled recording with Escape', async () => {
       const { sent } = setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       fireEvent.click(button);
       await screen.findByText('Listening');
@@ -450,7 +448,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('does not treat the click after a press as a toggle', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       fireEvent.pointerUp(button);
       fireEvent.click(button);
@@ -463,7 +461,7 @@ describe('the recording gesture on the Shopping List', () => {
   describe('live region', () => {
     it('announces Recording, Let go to cancel and 10 seconds left once each, never the ticking time', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       place(button);
       pressDown(button, { clientX: 130, clientY: 530 });
@@ -525,7 +523,7 @@ describe('the recording gesture on the Shopping List', () => {
 
     it('is held from the press until Review opens', async () => {
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       expect(request).toHaveBeenCalledWith('screen');
       expect(released).not.toHaveBeenCalled();
@@ -539,7 +537,7 @@ describe('the recording gesture on the Shopping List', () => {
     it('is skipped silently when the browser has none, or refuses', async () => {
       request.mockImplementation(() => Promise.reject(new Error('denied')));
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       fireEvent.pointerUp(button);
       expect(await screen.findByRole('dialog')).toBeInTheDocument();
@@ -549,7 +547,7 @@ describe('the recording gesture on the Shopping List', () => {
     it('works where wakeLock is unsupported', async () => {
       removeWakeLock();
       setup();
-      renderWithProviders(<ShoppingPage />);
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       fireEvent.pointerUp(button);
       expect(await screen.findByRole('dialog')).toBeInTheDocument();
@@ -559,14 +557,7 @@ describe('the recording gesture on the Shopping List', () => {
   describe('keyboard order', () => {
     it('tabs from the page to the Scan Language chip, then the button, then the Dock', async () => {
       setup();
-      renderWithProviders(
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/shopping" element={<ShoppingPage />} />
-          </Route>
-        </Routes>,
-        { route: '/shopping' },
-      );
+      renderInAppLayout(<ShoppingPage />, '/shopping');
       const chip = await screen.findByRole('button', {
         name: /Scan Language: English/,
       });

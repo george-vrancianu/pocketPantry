@@ -4,21 +4,29 @@ import { VoiceButton } from './voice/VoiceButton';
 import { StatusPill } from './voice/StatusPill';
 import { useVoiceConfigured, type VoiceList } from '../lib/voice';
 import { useVoiceNote } from '../lib/useVoiceNote';
+import { useLocation } from 'react-router-dom';
+
+/** The Default List of a route: the list its page acts on, or none where there is no mic. */
+export function defaultListFor(pathname: string): VoiceList | null {
+  const path = pathname.replace(/\/+$/, '');
+  if (path === '/shopping') return 'shopping';
+  if (path === '/pantry') return 'pantry';
+  return null;
+}
 
 /**
- * Voice Notes on the Shopping List and the Pantry: the floating hold-to-talk button with its
- * Scan Language chip, its notices, and the Review sheet that shows "What I heard". Hidden until the server says
+ * Voice Notes, hosted once in the app layout: the floating hold-to-talk button with its
+ * Scan Language chip, its notices, and the Review sheet that shows "What I heard". Shown on the
+ * Shopping List and the Pantry only, acting on that page's list. Hidden until the server says
  * transcription is configured.
  */
-export function VoiceNote({
-  defaultTarget = 'shopping',
-}: {
-  /** The list the page this sits on acts on. */
-  defaultTarget?: VoiceList;
-}) {
+export function VoiceNote() {
   const configured = useVoiceConfigured();
-  if (!configured) return null;
-  return <VoiceNoteControls defaultTarget={defaultTarget} />;
+  const defaultTarget = defaultListFor(useLocation().pathname);
+  if (!configured || !defaultTarget) return null;
+  return (
+    <VoiceNoteControls key={defaultTarget} defaultTarget={defaultTarget} />
+  );
 }
 
 function VoiceNoteControls({ defaultTarget }: { defaultTarget: VoiceList }) {

@@ -15,7 +15,7 @@ import {
   pressDown,
   useVoiceTimers,
 } from '../../test/voiceHold';
-import { renderWithProviders, stubApi } from '../../test/render';
+import { renderInAppLayout, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 
 const yogurt = ingredient('ing-yogurt', 'Yogurt');
@@ -91,7 +91,7 @@ describe('Voice Notes on the Pantry page', () => {
   }
 
   async function openReview() {
-    renderWithProviders(<PantryPage />);
+    renderInAppLayout(<PantryPage />, '/pantry');
     const button = await screen.findByRole('button', {
       name: /hold to record a voice note/i,
     });
@@ -122,7 +122,7 @@ describe('Voice Notes on the Pantry page', () => {
       locale: 'en',
       page: 'shopping',
     });
-    renderWithProviders(<PantryPage />);
+    renderInAppLayout(<PantryPage />, '/pantry');
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent("Couldn't send");
@@ -142,7 +142,7 @@ describe('Voice Notes on the Pantry page', () => {
       locale: 'en',
       page: 'pantry',
     });
-    renderWithProviders(<PantryPage />);
+    renderInAppLayout(<PantryPage />, '/pantry');
     await screen.findByText('Reading your note');
 
     await userEvent.click(screen.getByRole('button', { name: 'Add batch' }));
@@ -173,7 +173,7 @@ describe('Voice Notes on the Pantry page', () => {
   it('shows the Pantry examples in the microphone intro, and records nothing', async () => {
     setup([]);
     mic.permission.mockResolvedValue('prompt');
-    renderWithProviders(<PantryPage />);
+    renderInAppLayout(<PantryPage />, '/pantry');
 
     pressDown(
       await screen.findByRole('button', {
@@ -206,7 +206,7 @@ describe('Voice Notes on the Pantry page', () => {
 
   it('tells the Member the note goes to the Pantry while listening', async () => {
     setup([]);
-    renderWithProviders(<PantryPage />);
+    renderInAppLayout(<PantryPage />, '/pantry');
     pressDown(
       await screen.findByRole('button', {
         name: /hold to record a voice note/i,
