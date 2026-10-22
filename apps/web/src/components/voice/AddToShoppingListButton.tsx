@@ -40,8 +40,9 @@ function answersToAdd(
     (answer) =>
       isShort(answer) &&
       !added.has(answer.id) &&
-      !onList.has(answer.ingredient.id) &&
-      (answer.kind === 'yes' || !answer.onShoppingList),
+      (!answer.ingredient || !onList.has(answer.ingredient.id)) &&
+      (answer.kind === 'yes' ||
+        (answer.kind !== 'notSure' && !answer.onShoppingList)),
   );
 }
 
@@ -53,7 +54,7 @@ const addAction = (answer: VoiceAnswer): VoiceReviewAction => ({
   op: 'add',
   text: answer.text,
   ingredient: answer.ingredient,
-  name: null,
+  name: answer.ingredient ? null : answer.name,
   quantity: null,
   unit: null,
   scope: null,
