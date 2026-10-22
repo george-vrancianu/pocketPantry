@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import fixture from '../../../../fixtures/pantry-answers.json';
 import {
   defaultExpiryDate,
   expiryTagFor,
   countByLocation,
+  fromIso,
   groupByLocation,
   isExpiringSoon,
   matchesSearch,
@@ -218,6 +220,37 @@ describe('rollUp', () => {
       ['Rice', 1],
       ['Zorblax', 2],
     ]);
+  });
+});
+
+// Spec: #461. The API's Pantry answer (apps/api/src/voice/pantry-answers.spec.ts) reads the same fixture, so
+// the server-side totals and Expiring Soon cannot drift from this roll-up (ADR 0002, ADR 0020).
+describe('rollUp against the shared Pantry answer fixture', () => {
+  const fixtureToday = fromIso(fixture.today);
+
+  it.each(fixture.cases)('$name', (testCase) => {
+    const tagOf = (batch: Batch) =>
+      expiryTagFor(batch.expiryDate, fixtureToday, testCase.staleThresholdDays);
+    const batches = testCase.batches.map((entry) =>
+      make({
+        ...entry,
+        unit: entry.unit as Batch['unit'],
+        location: entry.location as Batch['location'],
+      }),
+    );
+    // The answer counts the Batches the Pantry does not tag Expired as stock.
+    const stock = batches.filter((batch) => tagOf(batch).kind !== 'expired');
+    expect(rollUp(stock)[0].totals).toEqual(testCase.expected.totals);
+    // The Pantry lists Locations in its own order.
+    expect(groupByLocation(stock).map((group) => group.location)).toEqual(
+      testCase.expected.locations,
+    );
+    // Expiring Soon is the amber and urgent not-yet-expired tags.
+    expect(
+      stock.some((batch) =>
+        ['today', 'tomorrow', 'daysLeft'].includes(tagOf(batch).kind),
+      ),
+    ).toBe(testCase.expected.expiringSoon);
   });
 });
 

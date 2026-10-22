@@ -4,14 +4,14 @@ import {
   assistantSpeech,
   type AssistantLocale,
   type AssistantOutcome,
-  type AssistantOutcomeKind,
+  type AssistantActionKind,
   type AssistantState,
 } from './assistant-speech';
 
 const say = (locale: AssistantLocale, outcomes: AssistantOutcome[]): string =>
   assistantSpeech({ locale, outcomes });
 
-const KINDS: AssistantOutcomeKind[] = [
+const KINDS: AssistantActionKind[] = [
   'added',
   'quantitySet',
   'alreadyOnList',
@@ -246,9 +246,9 @@ describe('assistantSpeech', () => {
 
   describe('refused', () => {
     it.each([
-      ['en', 'Open Pocket Pantry for', 'eggs and bread'],
-      ['ro', 'Deschide Pocket Pantry pentru', 'eggs și bread'],
-      ['da', 'Åbn Pocket Pantry for', 'eggs og bread'],
+      ['en', 'Open PantryGator for', 'eggs and bread'],
+      ['ro', 'Deschide PantryGator pentru', 'eggs și bread'],
+      ['da', 'Åbn PantryGator for', 'eggs og bread'],
     ] as const)(
       'names the items and points to the app in %s',
       (locale, open, expected) => {
@@ -299,5 +299,309 @@ describe('assistantSpeech', () => {
         expect(out.endsWith('.')).toBe(true);
       },
     );
+  });
+  // Spec: #459, ADR 0020. Pantry Question answers are spoken before the outcome clauses.
+  describe('answers', () => {
+    const yes = (name: string): AssistantOutcome => ({ kind: 'yes', name });
+    const no = (name: string): AssistantOutcome => ({ kind: 'no', name });
+
+    it('speaks yes and no as sentences of their own', () => {
+      expect(say('en', [yes('milk'), no('butter')])).toBe(
+        'You have milk. No butter.',
+      );
+    });
+
+    it('gives each yes its own sentence and groups the nos into one list', () => {
+      expect(
+        say('en', [yes('milk'), no('butter'), yes('rice'), no('eggs')]),
+      ).toBe('You have milk. You have rice. No butter or eggs.');
+    });
+
+    it('speaks the answers first, then the outcome clauses', () => {
+      expect(say('en', [{ kind: 'added', name: 'eggs' }, yes('milk')])).toBe(
+        'You have milk. Added to your Shopping List: eggs.',
+      );
+    });
+
+    it('is not "nothing understood" when only answers came back', () => {
+      expect(say('en', [no('butter')])).not.toBe(
+        assistantMessages.en.states.nothingUnderstood,
+      );
+    });
+
+    it('speaks Romanian', () => {
+      expect(say('ro', [yes('lapte'), no('unt'), no('ouă')])).toBe(
+        'Ai lapte. Nu ai unt sau ouă.',
+      );
+    });
+
+    it('speaks Danish', () => {
+      expect(say('da', [yes('mælk'), no('smør'), no('æg')])).toBe(
+        'Du har mælk. Du har ikke smør eller æg.',
+      );
+    });
+
+    it('leaves no placeholders in any locale', () => {
+      for (const locale of ASSISTANT_LOCALES) {
+        expect(say(locale, [yes('X'), no('Y')])).not.toMatch(/[{}]/);
+      }
+    });
+  });
+
+  // Spec: #462. A name with no Match is neither yes nor no.
+  describe('not sure', () => {
+    const notSure = (name: string): AssistantOutcome => ({
+      kind: 'notSure',
+      name,
+    });
+
+    it.each([
+      ['en', 'Not sure about zorblax.', 'Not sure about zorblax and kale.'],
+      [
+        'ro',
+        'Nu știu sigur dacă ai zorblax.',
+        'Nu știu sigur dacă ai zorblax și kale.',
+      ],
+      [
+        'da',
+        'Jeg ved ikke, om du har zorblax.',
+        'Jeg ved ikke, om du har zorblax og kale.',
+      ],
+    ] as const)('speaks %s, single and grouped', (locale, one, many) => {
+      expect(say(locale, [notSure('zorblax')])).toBe(one);
+      expect(say(locale, [notSure('zorblax'), notSure('kale')])).toBe(many);
+    });
+
+    it('comes after the yes and no sentences', () => {
+      expect(
+        say('en', [
+          notSure('zorblax'),
+          { kind: 'no', name: 'butter' },
+          { kind: 'yes', name: 'milk' },
+        ]),
+      ).toBe('You have milk. No butter. Not sure about zorblax.');
+    });
+  });
+
+  // Spec: #461. What a yes carries, only expired, and the Shopping List note.
+  describe('full answers', () => {
+    type Yes = Extract<AssistantOutcome, { kind: 'yes' }>;
+    const stock = (details: Partial<Yes>, name = 'milk'): AssistantOutcome => ({
+      kind: 'yes',
+      name,
+      ...details,
+    });
+    const litres = (quantity: number) => ({ unit: 'l', quantity });
+
+    it('speaks the quantity with its unit', () => {
+      expect(say('en', [stock({ totals: [litres(2)] })])).toBe(
+        'You have 2 litres of milk.',
+      );
+    });
+
+    it('uses the singular for one', () => {
+      expect(say('en', [stock({ totals: [litres(1)] })])).toBe(
+        'You have 1 litre of milk.',
+      );
+    });
+
+    it('speaks a bare count of pieces without a unit word', () => {
+      expect(
+        say('en', [stock({ totals: [{ unit: 'pcs', quantity: 6 }] }, 'eggs')]),
+      ).toBe('You have 6 eggs.');
+    });
+
+    it('reports mixed units separately, never converted', () => {
+      expect(
+        say('en', [
+          stock({
+            totals: [litres(1), { unit: 'pcs', quantity: 1 }],
+          }),
+        ]),
+      ).toBe('You have milk: 1 litre and 1 piece.');
+    });
+
+    it('speaks the Locations, Expiring Soon and Running low', () => {
+      expect(
+        say('en', [
+          stock({
+            totals: [litres(2)],
+            locations: ['fridge', 'freezer'],
+            expiringSoon: true,
+            runningLow: true,
+          }),
+        ]),
+      ).toBe(
+        'You have 2 litres of milk in the fridge and in the freezer, some expiring soon, running low.',
+      );
+    });
+
+    it('speaks Running low alone after a bare yes', () => {
+      expect(say('en', [stock({ runningLow: true }, 'salt')])).toBe(
+        'You have salt, running low.',
+      );
+    });
+
+    it('groups only expired into one list', () => {
+      expect(
+        say('en', [
+          { kind: 'onlyExpired', name: 'milk' },
+          { kind: 'onlyExpired', name: 'eggs' },
+        ]),
+      ).toBe('Only expired milk and eggs.');
+    });
+
+    it('says which of a no or an only expired are already on the Shopping List', () => {
+      expect(
+        say('en', [
+          { kind: 'no', name: 'butter' },
+          { kind: 'no', name: 'rice', onShoppingList: true },
+          { kind: 'no', name: 'oil', onShoppingList: true },
+          { kind: 'onlyExpired', name: 'milk', onShoppingList: true },
+        ]),
+      ).toBe(
+        'Only expired milk, already on your Shopping List. No butter, rice, or oil, already on your Shopping List: rice and oil.',
+      );
+    });
+
+    it('speaks yes, only expired and no in that order', () => {
+      expect(
+        say('en', [
+          { kind: 'no', name: 'butter' },
+          { kind: 'onlyExpired', name: 'milk' },
+          stock({}, 'rice'),
+        ]),
+      ).toBe('You have rice. Only expired milk. No butter.');
+    });
+
+    it('speaks every clause in Romanian', () => {
+      expect(
+        say('ro', [
+          stock(
+            {
+              totals: [{ unit: 'l', quantity: 21 }],
+              locations: ['fridge', 'spices'],
+              expiringSoon: true,
+              runningLow: true,
+            },
+            'lapte',
+          ),
+          stock({ totals: [litres(1), { unit: 'pcs', quantity: 3 }] }, 'unt'),
+          { kind: 'onlyExpired', name: 'ouă' },
+          { kind: 'no', name: 'pâine', onShoppingList: true },
+          { kind: 'no', name: 'orez' },
+        ]),
+      ).toBe(
+        'Ai 21 de litri de lapte în frigider și în dulapul cu condimente, o parte expiră curând, pe cale să se termine. ' +
+          'Ai unt: 1 litru și 3 bucăți. ' +
+          'Doar produse expirate: ouă. ' +
+          'Nu ai pâine sau orez, deja pe Lista de cumpărături: pâine.',
+      );
+    });
+
+    it('speaks every clause in Danish', () => {
+      expect(
+        say('da', [
+          stock(
+            {
+              totals: [litres(2)],
+              locations: ['cupboard'],
+              expiringSoon: true,
+              runningLow: true,
+            },
+            'mælk',
+          ),
+          stock({ totals: [litres(1), { unit: 'pcs', quantity: 2 }] }, 'smør'),
+          { kind: 'onlyExpired', name: 'æg' },
+          { kind: 'no', name: 'brød', onShoppingList: true },
+          { kind: 'no', name: 'ris' },
+        ]),
+      ).toBe(
+        'Du har 2 liter mælk i skabet, noget udløber snart, ved at løbe tør. ' +
+          'Du har smør: 1 liter og 2 stykker. ' +
+          'Kun udløbne varer: æg. ' +
+          'Du har ikke brød eller ris, allerede på indkøbslisten: brød.',
+      );
+    });
+
+    it('leaves no placeholders in any locale', () => {
+      for (const locale of ASSISTANT_LOCALES) {
+        expect(
+          say(locale, [
+            stock({
+              totals: [litres(2), { unit: 'pcs', quantity: 1 }],
+              locations: ['spices'],
+              expiringSoon: true,
+              runningLow: true,
+            }),
+            { kind: 'onlyExpired', name: 'Y', onShoppingList: true },
+            { kind: 'no', name: 'Z', onShoppingList: true },
+          ]),
+        ).not.toMatch(/[{}]/);
+      }
+    });
+  });
+  describe('the answer limit', () => {
+    const yesNames = (n: number): AssistantOutcome[] =>
+      Array.from({ length: n }, (_, i) => ({
+        kind: 'yes' as const,
+        name: `item${i + 1}`,
+      }));
+
+    it('speaks exactly 8 answered Ingredients without a tail', () => {
+      const speech = say('en', yesNames(8));
+      expect(speech).toContain('You have item8.');
+      expect(speech).not.toMatch(/more/);
+    });
+
+    it.each([
+      ['en', 9, 'And 1 more, check PantryGator.'],
+      ['en', 12, 'And 4 more, check PantryGator.'],
+      ['ro', 9, 'Și încă unul, verifică în PantryGator.'],
+      ['ro', 12, 'Și încă 4, verifică în PantryGator.'],
+      ['ro', 30, 'Și încă 22, verifică în PantryGator.'],
+      ['da', 9, 'Og 1 mere, tjek PantryGator.'],
+      ['da', 12, 'Og 4 mere, tjek PantryGator.'],
+    ] as const)('says the tail in %s for %i answers', (locale, total, tail) => {
+      const speech = say(locale, yesNames(total));
+      expect(speech.endsWith(tail)).toBe(true);
+      expect(speech).toContain('item8');
+      expect(speech).not.toContain('item9');
+    });
+
+    it('counts every kind and speaks the first 8 asked, in answer order', () => {
+      const speech = say('en', [
+        { kind: 'no', name: 'butter' },
+        { kind: 'no', name: 'rice' },
+        { kind: 'no', name: 'oil' },
+        { kind: 'onlyExpired', name: 'tea' },
+        ...yesNames(6),
+      ]);
+      expect(speech).toBe(
+        'You have item1. You have item2. You have item3. You have item4. ' +
+          'Only expired tea. No butter, rice, or oil. ' +
+          'And 2 more, check PantryGator.',
+      );
+    });
+
+    it('counts a not sure answer in the 8 and the tail', () => {
+      const speech = say('en', [
+        { kind: 'notSure', name: 'zorblax' },
+        ...yesNames(8),
+      ]);
+      expect(speech).toBe(
+        'You have item1. You have item2. You have item3. You have item4. ' +
+          'You have item5. You have item6. You have item7. ' +
+          'Not sure about zorblax. And 1 more, check PantryGator.',
+      );
+    });
+
+    it('puts the tail before the outcome clauses', () => {
+      expect(
+        say('en', [...yesNames(9), { kind: 'added', name: 'eggs' }]).endsWith(
+          'And 1 more, check PantryGator. Added to your Shopping List: eggs.',
+        ),
+      ).toBe(true);
+    });
   });
 });

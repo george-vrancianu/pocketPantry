@@ -265,5 +265,21 @@
     "tipBusy": "Læser stadig din sidste note",
     "tipFailed": "Prøv igen eller kassér den sidste note først",
     "noRecording": "Kan ikke optage her"
+  },
+  "answers": {
+    "title": "Dit spisekammer",
+    "subline": "Intet blev ændret",
+    "list": "Svar",
+    "verdict": {
+      "yes": "I dit spisekammer",
+      "no": "Ikke i dit spisekammer",
+      "onlyExpired": "Kun udløbet",
+      "notSure": "Ikke sikker"
+    },
+    "done": "Færdig",
+    "onShoppingList": "Allerede på indkøbslisten",
+    "expiringSoon": "Udløber snart",
+    "addToList_one": "Tilføj {{count}} til indkøbslisten",
+    "addToList_other": "Tilføj {{count}} til indkøbslisten"
   }
 }

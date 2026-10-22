@@ -17,6 +17,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AddToShoppingListButton } from './AddToShoppingListButton';
 import { applyToast } from './applyResult';
 import { focusVoiceButton } from '../../lib/voiceFocus';
 import { voiceToast } from '../../lib/voicePlacement';
@@ -48,6 +49,7 @@ import {
 } from '../../lib/voice';
 import { flashRows } from '../../lib/rowFlash';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
+import { PantryAnswerRow } from './PantryAnswerRow';
 
 /** How long the Apply result stays: long enough to read, no Undo (ADR 0017). */
 const APPLY_TOAST_MS = 5200;
@@ -81,7 +83,11 @@ function ReviewSheet() {
   const title = useRef<HTMLHeadingElement>(null);
 
   const actions = proposal?.actions ?? [];
+  // The Pantry Questions' answers: a read-only card above the rows; Apply never sends them.
+  const answers = proposal?.answers ?? [];
   const transcript = proposal?.transcript ?? '';
+  // Set once "Add N to the Shopping List" ran: a later Discard no longer changes nothing.
+  const [addedFromAnswers, setAddedFromAnswers] = useState(false);
   // What the server heard of each expiry, to tell it from one picked here.
   const [spoken] = useState(
     () => new Map(actions.map((a) => [a.id, a.expiresOn])),
@@ -156,8 +162,11 @@ function ReviewSheet() {
 
   const discard = () => {
     voiceNote.discard();
+    // After "Add N to the Shopping List" something was changed, so the hint would be false.
     toast.show(
-      `${t('voice:review.footer.discarded')} · ${t('voice:review.footer.discardedHint')}`,
+      addedFromAnswers
+        ? t('voice:review.footer.discarded')
+        : `${t('voice:review.footer.discarded')} · ${t('voice:review.footer.discardedHint')}`,
       voiceToast(),
     );
     focusVoiceButton();
@@ -318,6 +327,27 @@ function ReviewSheet() {
           defaultOpen={actions.every((a) => a.status === 'notUnderstood')}
         />
 
+        {answers.length > 0 ? (
+          <Group
+            label={t('voice:answers.title')}
+            count={answers.length}
+            tag={null}
+            after={
+              <AddToShoppingListButton
+                answers={answers}
+                onAdded={() => {
+                  setAddedFromAnswers(true);
+                  title.current?.focus();
+                }}
+              />
+            }
+          >
+            {answers.map((answer) => (
+              <PantryAnswerRow key={answer.id} answer={answer} />
+            ))}
+          </Group>
+        ) : null}
+
         {withPicker > 1 ? (
           <Box
             sx={{
@@ -394,12 +424,15 @@ function Group({
   icon,
   count,
   tag,
+  after,
   children,
 }: {
   label: string;
   icon?: React.ReactNode;
   count: number;
   tag: string | null;
+  /** Below the list, inside the region. */
+  after?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -457,6 +490,7 @@ function Group({
       >
         {children}
       </Box>
+      {after}
     </Box>
   );
 }

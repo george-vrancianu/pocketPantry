@@ -1,4 +1,5 @@
 import { VoiceReview } from './voice/VoiceReview';
+import { VoiceAnswers } from './voice/VoiceAnswerSheet';
 import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
 import { StatusPill } from './voice/StatusPill';
@@ -52,6 +53,8 @@ function VoiceNoteControls({
       <MicSheets mic={voice.mic} target={defaultTarget} />
 
       <VoiceReview />
+
+      <VoiceAnswers />
     </>
   );
 }

@@ -265,5 +265,21 @@
     "tipBusy": "Still reading your last note",
     "tipFailed": "Retry or discard the last note first",
     "noRecording": "Can't record here"
+  },
+  "answers": {
+    "title": "Your Pantry",
+    "subline": "Nothing was changed",
+    "list": "Answers",
+    "verdict": {
+      "yes": "In your Pantry",
+      "no": "Not in your Pantry",
+      "onlyExpired": "Only expired",
+      "notSure": "Not sure"
+    },
+    "done": "Done",
+    "onShoppingList": "Already on your Shopping List",
+    "expiringSoon": "Expiring soon",
+    "addToList_one": "Add {{count}} to the Shopping List",
+    "addToList_other": "Add {{count}} to the Shopping List"
   }
 }

@@ -6,3 +6,11 @@
 export function siriShortcutUrl(): string | undefined {
   return import.meta.env.VITE_SIRI_SHORTCUT_URL?.trim() || undefined;
 }
+
+/**
+ * The same for the "Pantry check" Shortcut, which asks the same Assistant Request endpoint
+ * (set at build time, read on each call, undefined while unset or blank).
+ */
+export function siriCheckShortcutUrl(): string | undefined {
+  return import.meta.env.VITE_SIRI_CHECK_SHORTCUT_URL?.trim() || undefined;
+}

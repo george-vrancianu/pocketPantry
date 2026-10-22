@@ -1,0 +1,211 @@
+{
+  "_about": "Shared by the API resolver spec (apps/api/src/voice/pantry-answers.spec.ts) and the web roll-up test (apps/web/src/lib/pantry.test.ts) so the server-side Pantry answer (ADR 0020) and the client Pantry roll-up (ADR 0002) cannot drift. Each case lists the Batches of ONE Ingredient and what a yes answer must say: quantities summed per unit and never converted, the Locations holding stock, and whether a Batch is Expiring Soon. Expired Batches are not stock and are left out.",
+  "today": "2026-06-10",
+  "cases": [
+    {
+      "name": "sums one unit across Batches and Locations",
+      "staleThresholdDays": 3,
+      "batches": [
+        {
+          "quantity": 1,
+          "unit": "l",
+          "location": "fridge",
+          "expiryDate": "2026-06-20"
+        },
+        {
+          "quantity": 0.5,
+          "unit": "l",
+          "location": "freezer",
+          "expiryDate": "2026-07-20"
+        },
+        {
+          "quantity": 0.25,
+          "unit": "l",
+          "location": "fridge",
+          "expiryDate": null
+        }
+      ],
+      "expected": {
+        "totals": [{ "unit": "l", "quantity": 1.75 }],
+        "locations": ["fridge", "freezer"],
+        "expiringSoon": false
+      }
+    },
+    {
+      "name": "never converts mixed units",
+      "staleThresholdDays": 3,
+      "batches": [
+        {
+          "quantity": 500,
+          "unit": "g",
+          "location": "cupboard",
+          "expiryDate": null
+        },
+        {
+          "quantity": 1,
+          "unit": "kg",
+          "location": "cupboard",
+          "expiryDate": null
+        },
+        {
+          "quantity": 3,
+          "unit": "pcs",
+          "location": "fridge",
+          "expiryDate": null
+        }
+      ],
+      "expected": {
+        "totals": [
+          { "unit": "g", "quantity": 500 },
+          { "unit": "kg", "quantity": 1 },
+          { "unit": "pcs", "quantity": 3 }
+        ],
+        "locations": ["fridge", "cupboard"],
+        "expiringSoon": false
+      }
+    },
+    {
+      "name": "rounds away float noise",
+      "staleThresholdDays": 3,
+      "batches": [
+        {
+          "quantity": 0.1,
+          "unit": "kg",
+          "location": "cupboard",
+          "expiryDate": null
+        },
+        {
+          "quantity": 0.2,
+          "unit": "kg",
+          "location": "cupboard",
+          "expiryDate": null
+        }
+      ],
+      "expected": {
+        "totals": [{ "unit": "kg", "quantity": 0.3 }],
+        "locations": ["cupboard"],
+        "expiringSoon": false
+      }
+    },
+    {
+      "name": "skips Batches with no quantity or no unit in the totals but keeps their Location",
+      "staleThresholdDays": 3,
+      "batches": [
+        {
+          "quantity": null,
+          "unit": null,
+          "location": "spices",
+          "expiryDate": null
+        },
+        {
+          "quantity": 2,
+          "unit": null,
+          "location": "spices",
+          "expiryDate": null
+        },
+        {
+          "quantity": 100,
+          "unit": "g",
+          "location": "cupboard",
+          "expiryDate": null
+        }
+      ],
+      "expected": {
+        "totals": [{ "unit": "g", "quantity": 100 }],
+        "locations": ["cupboard", "spices"],
+        "expiringSoon": false
+      }
+    },
+    {
+      "name": "a Batch expiring today is stock and Expiring Soon",
+      "staleThresholdDays": 3,
+      "batches": [
+        {
+          "quantity": 1,
+          "unit": "l",
+          "location": "fridge",
+          "expiryDate": "2026-06-10"
+        }
+      ],
+      "expected": {
+        "totals": [{ "unit": "l", "quantity": 1 }],
+        "locations": ["fridge"],
+        "expiringSoon": true
+      }
+    },
+    {
+      "name": "Expiring Soon includes the last day of the Stale Threshold",
+      "staleThresholdDays": 3,
+      "batches": [
+        {
+          "quantity": 1,
+          "unit": "l",
+          "location": "fridge",
+          "expiryDate": "2026-06-13"
+        }
+      ],
+      "expected": {
+        "totals": [{ "unit": "l", "quantity": 1 }],
+        "locations": ["fridge"],
+        "expiringSoon": true
+      }
+    },
+    {
+      "name": "one day past the Stale Threshold is not Expiring Soon",
+      "staleThresholdDays": 3,
+      "batches": [
+        {
+          "quantity": 1,
+          "unit": "l",
+          "location": "fridge",
+          "expiryDate": "2026-06-14"
+        }
+      ],
+      "expected": {
+        "totals": [{ "unit": "l", "quantity": 1 }],
+        "locations": ["fridge"],
+        "expiringSoon": false
+      }
+    },
+    {
+      "name": "a Family override of the Stale Threshold moves the line",
+      "staleThresholdDays": 10,
+      "batches": [
+        {
+          "quantity": 1,
+          "unit": "l",
+          "location": "fridge",
+          "expiryDate": "2026-06-18"
+        }
+      ],
+      "expected": {
+        "totals": [{ "unit": "l", "quantity": 1 }],
+        "locations": ["fridge"],
+        "expiringSoon": true
+      }
+    },
+    {
+      "name": "an Expired Batch is not stock: its quantity and Location are left out",
+      "staleThresholdDays": 3,
+      "batches": [
+        {
+          "quantity": 2,
+          "unit": "l",
+          "location": "freezer",
+          "expiryDate": "2026-06-09"
+        },
+        {
+          "quantity": 1,
+          "unit": "l",
+          "location": "fridge",
+          "expiryDate": "2026-06-30"
+        }
+      ],
+      "expected": {
+        "totals": [{ "unit": "l", "quantity": 1 }],
+        "locations": ["fridge"],
+        "expiringSoon": false
+      }
+    }
+  ]
+}

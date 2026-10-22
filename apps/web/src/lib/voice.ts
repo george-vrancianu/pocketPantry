@@ -87,10 +87,43 @@ export type VoiceReviewAction = {
   byList?: { shopping: VoiceReviewAction; pantry: VoiceReviewAction };
 };
 
+/**
+ * The answer to one Pantry Question (ADR 0020), as the server read it. Mirrors the API's
+ * `PantryAnswer`: `kind` is the discriminant (yes, only expired, no, not sure), and
+ * each kind is a member carrying its own details.
+ */
+type VoiceAnswerBase = {
+  id: string;
+  /** What was said. */
+  text: string;
+  /** The Match; null when the name matched no Ingredient with confidence (then `name` is the asked name). */
+  ingredient: CatalogSearchResult | null;
+  /** The name asked about when there is no Match; null when matched. */
+  name: string | null;
+};
+export type VoiceAnswer =
+  | (VoiceAnswerBase & {
+      kind: 'yes';
+      /** Quantity summed per unit over the Batches that are not Expired; never converted. Empty for a Pantry Basic with no Batch. */
+      totals: Array<{ unit: Unit; quantity: number }>;
+      /** Where the stock is, in Location order. */
+      locations: StorageLocation[];
+      /** A Batch expires within the Family's Stale Threshold. */
+      expiringSoon: boolean;
+      runningLow: boolean;
+    })
+  | (VoiceAnswerBase & { kind: 'onlyExpired'; onShoppingList: boolean })
+  | (VoiceAnswerBase & { kind: 'no'; onShoppingList: boolean })
+  /** Nothing matched with confidence and no Unmatched row has the name; never "no". */
+  | (VoiceAnswerBase & { kind: 'notSure' });
+export type VoiceAnswerKind = VoiceAnswer['kind'];
+
 export type VoiceNoteResult = {
   /** What was said. */
   transcript: string;
   actions: VoiceReviewAction[];
+  /** The answers to the Pantry Questions in it; read-only, nothing to apply. */
+  answers: VoiceAnswer[];
 };
 
 /** One applied Voice Action: the list it landed on and the row it touched. */

@@ -94,6 +94,38 @@ describe('buildVoiceReadRequest', () => {
     expect(prompt).toContain('spokenName');
   });
 
+  // Spec: #459, ADR 0020.
+  describe('Pantry Questions', () => {
+    it('asks for a questions entry per ingredient asked about, and no action', () => {
+      const { prompt } = buildVoiceReadRequest(input);
+      expect(prompt).toContain('Pantry Questions');
+      expect(prompt).toContain('"do we have milk?"');
+      expect(prompt).toContain('one questions entry per ingredient');
+      expect(prompt).toContain('A question is never an action');
+      expect(prompt).toContain(
+        'A Category word such as "cheese" is not one ingredient',
+      );
+    });
+
+    it('no longer sends them to unsupported, but still sends wider questions there', () => {
+      const { prompt } = buildVoiceReadRequest(input);
+      expect(prompt).toContain('a question is never put in unsupported');
+      expect(prompt).not.toContain('(questions, chat, recipes');
+      expect(prompt).toContain(
+        'wider questions such as what is expiring soon, what is on the shopping list or what is running low',
+      );
+    });
+
+    it('puts questions in the response schema beside actions and unsupported', () => {
+      const { schema } = buildVoiceReadRequest(input);
+      expect(Object.keys(schema.properties as object)).toEqual(
+        expect.arrayContaining(['actions', 'questions', 'unsupported']),
+      );
+      expect(schema.required).toContain('questions');
+      expect(JSON.stringify(schema)).not.toContain('"default"');
+    });
+  });
+
   it('dedupes list names and caps them at 200', () => {
     const many = Array.from({ length: 300 }, (_, i) => `Item ${i}`);
     const { prompt } = buildVoiceReadRequest({
