@@ -248,8 +248,12 @@ _Avoid_: Quota, rate limit
 ### Voice
 
 **Voice Note**:
-A short recording a Member speaks into the Shopping List or the Pantry, read into Voice Actions and Pantry Questions. Not a Scan: nothing is photographed, and it counts against the Voice Cap, never the Scan Cap.
+A short recording a Member makes from the Dock on any page that shows it, read into Voice Actions and Pantry Questions. Not a Scan: nothing is photographed, and it counts against the Voice Cap, never the Scan Cap.
 _Avoid_: Voice scan, voice command, dictation
+
+**Default List**:
+The list a Voice Note's Voice Actions target when they name none: the Shopping List when recorded on the Shopping List, the Pantry when recorded on the Pantry, and none on any other page. With no Default List, a Voice Action counts as naming a list when the Member says one or gives a clear cue, such as a Location or expiry date for the Pantry, or "need" or "buy" for the Shopping List; otherwise the Member picks the list in Review. An Assistant Request always has the Shopping List as its Default List.
+_Avoid_: Target, context, current list
 
 **Spoken Language**:
 The language a Voice Note is spoken in. Defaults to the Member's Spoken Language preference, which follows the UI Language until the Member sets it, and can be changed for a single Voice Note. Not the Scan Language: a Member may speak their own language while shopping in the local one. An Assistant Request has none; its language is told from the dictated text.
