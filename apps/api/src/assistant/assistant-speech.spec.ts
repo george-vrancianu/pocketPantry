@@ -584,6 +584,18 @@ describe('assistantSpeech', () => {
       );
     });
 
+    it('counts a not sure answer in the 8 and the tail', () => {
+      const speech = say('en', [
+        { kind: 'notSure', name: 'zorblax' },
+        ...yesNames(8),
+      ]);
+      expect(speech).toBe(
+        'You have item1. You have item2. You have item3. You have item4. ' +
+          'You have item5. You have item6. You have item7. ' +
+          'Not sure about zorblax. And 1 more, check PantryGator.',
+      );
+    });
+
     it('puts the tail before the outcome clauses', () => {
       expect(
         say('en', [...yesNames(9), { kind: 'added', name: 'eggs' }]).endsWith(
