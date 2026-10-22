@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { voiceToast } from './voicePlacement';
 import { focusPillAction, isInPill, returnFocusFromPill } from './voiceFocus';
 import { haptic } from './haptic';
-import { QUICK_TAP_MS, type VoiceList } from './voice';
+import { QUICK_TAP_MS, type VoiceDefaultTarget } from './voice';
 import { voiceNote, useVoiceNoteState } from './voiceNote';
 import { useMicPermission } from './useMicPermission';
 import { micExplained } from './micExplained';
@@ -22,7 +22,7 @@ import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
  * sends by itself. A recording that fails to send stays in memory for `retry`
  * until the page reloads.
  */
-export function useVoiceNote(defaultTarget: VoiceList) {
+export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   const { t } = useTranslation(['errors', 'voice']);
   const toast = useToast();
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();

@@ -11,7 +11,7 @@ import {
   VOICE_OPS,
   type VoiceReadModelResult,
 } from '../../voice/voice-actions';
-import { VOICE_LISTS } from '../../voice/voice.schemas';
+import { VOICE_DEFAULT_TARGETS, VOICE_LISTS } from '../../voice/voice.schemas';
 import {
   exactIngredient,
   nameIn,
@@ -72,7 +72,7 @@ export const voiceCaseSchema = z
     transcript: z.string().min(1),
     /** The recording, relative to the case file. Needed only to replay transcription. */
     audio: z.string().min(1).optional(),
-    defaultTarget: z.enum(VOICE_LISTS).default('shopping'),
+    defaultTarget: z.enum(VOICE_DEFAULT_TARGETS).default('shopping'),
     today: z.iso.date().default(DEFAULT_TODAY),
     /** Names already on the Shopping List / in the Pantry (spelling hints for the read). */
     shoppingList: z.array(z.string()).default([]),

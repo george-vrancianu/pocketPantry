@@ -18,7 +18,7 @@ import { TranscriptionService } from './transcription.service';
 import {
   amountOf,
   type ModelVoiceAction,
-  type VoiceTarget,
+  type VoiceDefaultTarget,
   type ResolvedVoiceAction,
   type VoiceActionDraft,
   type VoiceActionKind,
@@ -51,7 +51,7 @@ export type VoiceReadTextInput = {
   locale: CatalogLocale;
   /** The Member's local date, for resolving spoken dates. */
   today: string;
-  defaultTarget: VoiceTarget;
+  defaultTarget: VoiceDefaultTarget;
   /** Debug capture only: ties this read to a transcription. */
   captureId?: string;
 };

@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { defaultListFor } from './VoiceNote';
+import { defaultTargetFor } from './VoiceNote';
 
-describe('defaultListFor', () => {
+describe('defaultTargetFor', () => {
   it.each([
     ['/shopping', 'shopping'],
     ['/shopping/', 'shopping'],
     ['/pantry', 'pantry'],
-    ['/shopping/staples', null],
-    ['/pantry/x', null],
-    ['/', null],
+    ['/shopping/staples', 'none'],
+    ['/pantry/x', 'none'],
+    ['/', 'none'],
+    ['/recipes', 'none'],
   ])('%s gives %s', (pathname, list) => {
-    expect(defaultListFor(pathname)).toBe(list);
+    expect(defaultTargetFor(pathname)).toBe(list);
   });
 });

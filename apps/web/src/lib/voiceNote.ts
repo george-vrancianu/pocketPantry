@@ -14,7 +14,7 @@ import {
   MAX_VOICE_NOTE_MS,
   MIN_VOICE_NOTE_MS,
   sendVoiceNote,
-  type VoiceList,
+  type VoiceDefaultTarget,
   type VoiceNoteRequest,
   type VoiceNoteResult,
   type VoiceReviewAction,
@@ -44,7 +44,7 @@ export type VoiceErrorCode =
 export type VoiceNoteState = {
   phase: VoicePhase;
   /** The page that recorded: the default target of the Voice Note. */
-  page: VoiceList;
+  page: VoiceDefaultTarget;
   /** The audio, kept in memory while it is read and for Retry after a failed send. */
   recording?: {
     blob: Blob;
@@ -323,7 +323,7 @@ export function createVoiceNote(
     audio: Recording,
     scanLanguage: ScanLanguage,
     locale: Locale,
-    page: VoiceList,
+    page: VoiceDefaultTarget,
   ) {
     const request = new AbortController();
     reading = request;
@@ -372,7 +372,7 @@ export function createVoiceNote(
    * microphone is live, or why it is not. `scanLanguage` and `locale` are for the read.
    */
   async function start(options: {
-    page: VoiceList;
+    page: VoiceDefaultTarget;
     scanLanguage: ScanLanguage;
     locale: Locale;
   }): Promise<StartOutcome> {

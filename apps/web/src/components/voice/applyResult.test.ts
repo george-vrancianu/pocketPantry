@@ -70,3 +70,20 @@ describe('applyToast plurals', () => {
     );
   });
 });
+
+describe('applyToast off the lists', () => {
+  it('names the Shopping List first when both lists changed and the page had none', () => {
+    const i18n = createI18n('en');
+    const { message } = applyToast(
+      {
+        applied: [done('a1', 'pantry'), done('a2', 'shopping')],
+        skipped: [],
+      },
+      [act('a1', 'Milk'), act('a2', 'Eggs')],
+      'none',
+      i18n.t,
+      'en',
+    );
+    expect(message).toBe('2 applied: 1 on the list, 1 in the Pantry');
+  });
+});

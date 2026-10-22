@@ -13,7 +13,7 @@ import {
 import type { ReactNode } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { detectMobileBrowser } from '../../lib/browserKind';
-import type { VoiceList } from '../../lib/voice';
+import type { VoiceDefaultTarget } from '../../lib/voice';
 import type { useMicPermission } from '../../lib/useMicPermission';
 
 const bold = { b: <b /> };
@@ -80,7 +80,7 @@ function Intro({
   onAllow,
   open,
 }: {
-  target: VoiceList;
+  target: VoiceDefaultTarget;
   requesting: boolean;
   onClose: () => void;
   onAllow: () => void;
@@ -264,7 +264,7 @@ export function MicSheets({
   target,
 }: {
   mic: ReturnType<typeof useMicPermission>;
-  target: VoiceList;
+  target: VoiceDefaultTarget;
 }) {
   const { sheet, stillBlocked, requesting } = mic;
   const onClose = mic.close;

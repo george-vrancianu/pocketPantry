@@ -33,6 +33,20 @@
           "say": "Vi er ved at løbe tør for ris",
           "result": "Markerer ris som ved at løbe tør"
         }
+      },
+      "none": {
+        "one": {
+          "say": "Fik brødet",
+          "result": "Afkrydser brød på indkøbslisten"
+        },
+        "two": {
+          "say": "Vi skal bruge to liter mælk",
+          "result": "Tilføjer mælk, 2 l, til indkøbslisten"
+        },
+        "three": {
+          "say": "To yoghurter, de udløber fredag",
+          "result": "Går til Spisekammeret"
+        }
       }
     }
   },
@@ -65,6 +79,7 @@
     "hint": "Slip for at sende · træk væk for at annullere",
     "toShopping": "Går til din indkøbsliste. Sig “i spisekammeret” for at lægge på lager.",
     "toPantry": "Går til dit spisekammer. Sig “på listen” for indkøbslisten.",
+    "toNone": "Sig hvilken liste: “på listen” eller “i spisekammeret”.",
     "tip": "Hold for at tale, slip for at sende",
     "recording": "Optager",
     "cancelArmed": "Slip for at annullere",
