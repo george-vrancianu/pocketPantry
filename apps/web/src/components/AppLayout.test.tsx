@@ -624,4 +624,58 @@ describe('AppLayout Review for actions that need a list', () => {
       ['a2', 'shopping', 'add'],
     ]);
   });
+
+  it('opens the Batch picker of the first action that needs one when "Put all on" lands on Pantry', async () => {
+    const dialog = await openReview([
+      needsList('a1', 'add', milk),
+      needsList('a2', 'remove', eggs, {
+        status: 'needsBatch',
+        quantity: 5,
+        unit: 'pcs',
+        rows: {
+          batches: [batch('b1', '2099-05-20'), batch('b2', '2098-01-02')],
+        },
+      }),
+    ]);
+    const all = within(dialog.getByRole('group', { name: 'Put all on' }));
+    await userEvent.click(all.getByRole('button', { name: 'Pantry' }));
+    const group = dialog.getByRole('radiogroup', {
+      name: 'Which batch did you use up?',
+    });
+    expect(within(group).getAllByRole('radio')).toHaveLength(2);
+    expect(document.activeElement).toBe(
+      document.querySelector('[data-voice-picker="a2"]'),
+    );
+  });
+
+  it('keeps an amount typed on an action that has no list to pick when "Put all on" is used', async () => {
+    const bread = voiceIngredient('ing-bread', 'Bread');
+    const dialog = await openReview([
+      voiceAction({
+        id: 'r1',
+        target: 'shopping',
+        op: 'add',
+        text: 'bread',
+        ingredient: bread,
+        quantity: 2,
+        unit: 'pcs',
+      }),
+      needsList('a1', 'add', milk),
+      needsList('a2', 'add', eggs),
+    ]);
+    await userEvent.click(
+      sectionOf(dialog, 'Shopping List').getAllByRole('button', {
+        expanded: false,
+      })[0],
+    );
+    const amount = dialog.getByRole('textbox', { name: 'Amount of Bread' });
+    await userEvent.clear(amount);
+    await userEvent.type(amount, '9');
+
+    const all = within(dialog.getByRole('group', { name: 'Put all on' }));
+    await userEvent.click(all.getByRole('button', { name: 'Pantry' }));
+    expect(
+      dialog.getByRole('textbox', { name: 'Amount of Bread' }),
+    ).toHaveValue('9');
+  });
 });

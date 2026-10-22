@@ -21,7 +21,7 @@ import { applyToast } from './applyResult';
 import { focusVoiceButton } from '../../lib/voiceFocus';
 import { voiceToast } from '../../lib/voicePlacement';
 import { HeardCard } from './HeardCard';
-import { ListPicker } from './ListPicker';
+import { ListPicker, RowListPicker } from './ListPicker';
 import { ReviewFooter } from './ReviewFooter';
 import { VoiceActionRow } from './VoiceActionRow';
 import {
@@ -73,7 +73,7 @@ export function VoiceReview() {
 
 function ReviewSheet() {
   const { t, i18n } = useTranslation(['voice', 'common']);
-  const { proposal, page, phase, recording } = useVoiceNoteState();
+  const { proposal, defaultTarget, phase, recording } = useVoiceNoteState();
   const { locale, scanLanguage } = useScanLanguage();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -88,7 +88,7 @@ function ReviewSheet() {
   );
   const language = recording?.scanLanguage ?? scanLanguage;
 
-  const groups = groupsOf(actions, page);
+  const groups = groupsOf(actions, defaultTarget);
   const changes = actions.filter(isChange);
   const applicable = actions.filter(isActionable);
   const undecided = actions.filter(needsList);
@@ -122,7 +122,7 @@ function ReviewSheet() {
       const { message, detail } = applyToast(
         result,
         actions,
-        page,
+        defaultTarget,
         t,
         i18n.language,
       );
@@ -130,7 +130,7 @@ function ReviewSheet() {
       // Only this page's rows: the other list's rows are not on screen to flash.
       flashRows(
         result.applied.flatMap((entry) =>
-          entry.list !== page
+          entry.list !== defaultTarget
             ? []
             : (entry.rowIds ?? (entry.rowId ? [entry.rowId] : [])),
         ),
@@ -202,15 +202,30 @@ function ReviewSheet() {
           count,
         });
 
+  /** What was typed belonged to the other list's resolution; and a Pantry removal that needs a Batch opens on its picker. */
+  const settlePicks = (picked: VoiceReviewAction[], list: VoiceList) => {
+    const ids = new Set(picked.map((a) => a.id));
+    setTyped((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([id]) => !ids.has(id)),
+      ),
+    );
+    const needy = picked.find((a) => a.byList?.[list].status === 'needsBatch');
+    if (needy) {
+      setOpenId(needy.id);
+      setFocusId(needy.id);
+    }
+  };
   const pick = (action: VoiceReviewAction, list: VoiceList) => {
     voiceNote.pickList(action.id, list);
-    // What was typed belonged to the other list's resolution.
-    setTyped(({ [action.id]: _dropped, ...rest }) => rest);
-    // A Pantry removal that needs a Batch opens on its picker.
-    if (action.byList?.[list].status === 'needsBatch') {
-      setOpenId(action.id);
-      setFocusId(action.id);
-    }
+    settlePicks([action], list);
+  };
+  const pickAll = (list: VoiceList) => {
+    voiceNote.pickAllLists(list);
+    settlePicks(
+      actions.filter((a) => a.byList),
+      list,
+    );
   };
 
   const renderRow = (action: VoiceReviewAction) => (
@@ -320,10 +335,7 @@ function ReviewSheet() {
               <ListPicker
                 label={t('voice:review.putAll.name')}
                 value={allOn(actions)}
-                onChange={(list) => {
-                  voiceNote.pickAllLists(list);
-                  setTyped({});
-                }}
+                onChange={pickAll}
               />
             </Box>
           </Box>
@@ -510,11 +522,7 @@ function CouldntRow({
         </Box>
         {action.byList ? (
           <Box sx={{ pt: '8px' }}>
-            <ListPicker
-              label={t('review.pickList.label', { name })}
-              value={action.target ?? ''}
-              onChange={onPick}
-            />
+            <RowListPicker action={action} onPick={onPick} />
           </Box>
         ) : null}
       </Box>

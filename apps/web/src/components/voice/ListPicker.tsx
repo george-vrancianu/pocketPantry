@@ -1,6 +1,7 @@
 import { SegmentedControl } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { VoiceList } from '../../lib/voice';
+import type { VoiceList, VoiceReviewAction } from '../../lib/voice';
+import { displayName } from './reviewModel';
 
 /** The Shopping List / Pantry choice for an action that came back without a list; `value` is '' until one is picked. */
 export function ListPicker({
@@ -25,6 +26,24 @@ export function ListPicker({
       onChange={(list) => {
         if (list) onChange(list);
       }}
+    />
+  );
+}
+
+/** The picker of one action row: labelled with the action's name, showing its list once one is picked. */
+export function RowListPicker({
+  action,
+  onPick,
+}: {
+  action: VoiceReviewAction;
+  onPick: (list: VoiceList) => void;
+}) {
+  const { t } = useTranslation('voice');
+  return (
+    <ListPicker
+      label={t('review.pickList.label', { name: displayName(action) })}
+      value={action.target ?? ''}
+      onChange={onPick}
     />
   );
 }
