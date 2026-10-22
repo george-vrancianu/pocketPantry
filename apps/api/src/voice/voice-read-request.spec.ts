@@ -44,9 +44,10 @@ describe('buildVoiceReadRequest', () => {
   it('asks the model which language was spoken when the Scan Language is unknown', () => {
     const { prompt } = buildVoiceReadRequest({ ...input, scanLanguage: null });
     expect(prompt).toContain(
-      'The note was spoken in English, Romanian or Danish; the app is shown in English.',
+      'The note may be in any supported language (English, Romanian or Danish); the app is shown in English. Match catalog ingredients across languages.',
     );
-    expect(prompt).not.toContain('spoken in Romanian');
+    expect(prompt).not.toContain('The note was spoken in');
+    expect(prompt).not.toContain('other supported languages');
     expect(prompt).toContain('spokenLanguage');
     expect(prompt).toContain('spokenName');
   });

@@ -51,7 +51,9 @@ export function buildVoiceReadRequest(
     prompt: [
       `Application catalog: ${input.catalogText}`,
       'You turn a spoken grocery note into a list of actions on the Shopping List and the Pantry. Ingredient tuples in the catalog are [id, name, category].',
-      `The note was spoken in ${input.scanLanguage ? LANGUAGE_NAMES[input.scanLanguage] : 'English, Romanian or Danish'}; the app is shown in ${LANGUAGE_NAMES[input.locale]}. Words from the other supported languages (English, Romanian, Danish) may appear; match catalog ingredients across languages.`,
+      input.scanLanguage
+        ? `The note was spoken in ${LANGUAGE_NAMES[input.scanLanguage]}; the app is shown in ${LANGUAGE_NAMES[input.locale]}. Words from the other supported languages (English, Romanian, Danish) may appear; match catalog ingredients across languages.`
+        : `The note may be in any supported language (English, Romanian or Danish); the app is shown in ${LANGUAGE_NAMES[input.locale]}. Match catalog ingredients across languages.`,
       `Today is ${weekdayOf(input.today)} ${input.today}. The page the Member spoke on targets the ${input.defaultTarget} list: use target "${input.defaultTarget}" for each action unless that action names the other list ("shopping list" or "pantry"). An explicitly named list always wins over the page, and it applies to that action only: "got the bread, and put the yogurts straight in the pantry" is a shopping check and a pantry add.`,
       `Names currently on the Shopping List (spelling hints only): ${JSON.stringify(names(input.shoppingNames))}.`,
       `Names currently in the Pantry (spelling hints only): ${JSON.stringify(names(input.pantryNames))}.`,

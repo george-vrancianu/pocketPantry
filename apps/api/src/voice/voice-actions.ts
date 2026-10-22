@@ -127,8 +127,6 @@ export type ResolvedVoiceAction = {
   ingredient: CatalogSearchResult | null;
   /** The Unmatched name (UI locale); null when matched. */
   name: string | null;
-  /** A short generic name in the language spoken; null for a Didn't understand entry. */
-  spokenName: string | null;
   quantity: number | null;
   unit: VoiceUnit | null;
   scope: 'one' | 'all' | null;

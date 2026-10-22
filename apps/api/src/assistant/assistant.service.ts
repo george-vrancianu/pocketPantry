@@ -111,6 +111,13 @@ export class AssistantService {
       const drafts = resolved.map(toDraft);
       // An add onto an existing line sets the spoken quantity (ADR 0017) and
       // wants the line back on the list, rather than summing as in Review.
+      // Looked up before the writes: a failure here must not follow committed items.
+      const names = await this.namesIn(
+        member.id,
+        locale,
+        replyLocale,
+        resolved,
+      );
       const result = await this.voice.applyActions(member.id, {
         actions: drafts,
         locale,
@@ -118,13 +125,12 @@ export class AssistantService {
         allowedKinds: ASSISTANT_ALLOWED_KINDS,
         addSetsQuantity: true,
       });
-      const names = await this.namesIn(member.id, replyLocale, resolved);
       // The list keeps UI-locale names; the reply names things in the language spoken.
       const nameOf = (action: ResolvedVoiceAction): string =>
         action.ingredient
           ? (names.get(action.ingredient.id) ?? action.ingredient.name)
-          : replyLocale !== locale && action.spokenName
-            ? action.spokenName
+          : replyLocale !== locale && read.spokenNames.get(action.id)
+            ? (read.spokenNames.get(action.id) as string)
             : displayName(action);
       outcomes = resolved.map((action, index) =>
         outcomeOf(action, drafts[index], result, nameOf(action)),
@@ -152,9 +158,12 @@ export class AssistantService {
   /** Matched Ingredients' display names in the reply language, by id. */
   private async namesIn(
     memberId: string,
+    uiLocale: CatalogLocale,
     locale: CatalogLocale,
     actions: ResolvedVoiceAction[],
   ): Promise<Map<string, string>> {
+    // Ingredient names already come in the UI locale.
+    if (locale === uiLocale) return new Map();
     const ids = [
       ...new Set(actions.flatMap((action) => action.ingredient?.id ?? [])),
     ];

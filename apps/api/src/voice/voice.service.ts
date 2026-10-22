@@ -60,6 +60,8 @@ export type VoiceReadTextResult = {
   actions: ResolvedVoiceAction[];
   /** The language the text was spoken in, as the model read it; null when it can't be told. */
   spokenLanguage: ScanLanguage | null;
+  /** Each action's short generic name in the language spoken, by action id. Only Assistant Requests use it. */
+  spokenNames: Map<string, string>;
 };
 
 /** Voice Actions to apply on their own, without Review. */
@@ -221,6 +223,7 @@ export class VoiceService {
       },
     };
     const out: ResolvedVoiceAction[] = [];
+    const spokenNames = new Map<string, string>();
     for (const [index, action] of read.actions.entries()) {
       const match = keepConfident(
         resolved[index],
@@ -234,6 +237,7 @@ export class VoiceService {
         continue;
       }
       const resolution = await handler.resolve(draft, ctx);
+      spokenNames.set(draft.id, action.spokenName);
       out.push({
         id: draft.id,
         status: resolution.status,
@@ -242,7 +246,6 @@ export class VoiceService {
         text: draft.text,
         ingredient: match,
         name: match ? null : draft.name,
-        spokenName: action.spokenName,
         quantity: draft.quantity,
         unit: draft.unit,
         scope: draft.scope,
@@ -256,7 +259,11 @@ export class VoiceService {
     for (const phrase of read.unsupported) {
       out.push(this.notUnderstood(phrase));
     }
-    return { actions: out, spokenLanguage: read.spokenLanguage };
+    return {
+      actions: out,
+      spokenLanguage: read.spokenLanguage,
+      spokenNames,
+    };
   }
 
   private draftOf(
@@ -298,7 +305,6 @@ export class VoiceService {
       text,
       ingredient: null,
       name: null,
-      spokenName: null,
       quantity: null,
       unit: null,
       scope: null,

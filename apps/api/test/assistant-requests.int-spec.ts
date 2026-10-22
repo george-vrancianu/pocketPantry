@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import request from 'supertest';
 import { AssistantTokenService } from '../src/assistant-tokens/assistant-token.service';
+import { CatalogSearchService } from '../src/catalog/catalog-search.service';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
@@ -450,7 +451,98 @@ describe('Assistant Requests (integration)', () => {
       };
       const response = await ask(ana.secret).expect(200);
       expect(reply(response).speech).toBe('Added to your Shopping List: Milk.');
+      expect(reply(response).outcomes).toMatchObject([{ name: 'Milk' }]);
       expect(await list(ana.cookie, 'ro')).toMatchObject([{ name: 'Lapte' }]);
+    });
+
+    it('names a Family Ingredient from the Family scope, by its own name', async () => {
+      const ana = await romanian();
+      const name = `Gran ${stamp}`;
+      const created = (
+        await client(app, ana.cookie, '/api/catalog')
+          .post('/family-ingredients?locale=ro', {
+            name,
+            leafCategoryId: seedId.leaf('hard-cheese'),
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as { id: string };
+      // The name falls back to the Ingredient's own, so the speech alone can't
+      // tell a Family lookup from a global one: check what the lookup found.
+      const lookup = jest.spyOn(CatalogSearchService.prototype, 'mapByIds');
+      try {
+        reading = {
+          actions: [of(created.id, name, { spokenText: 'gran' })],
+          unsupported: [],
+          spokenLanguage: 'en',
+        };
+        const response = await ask(ana.secret).expect(200);
+        expect(reply(response).outcomes).toMatchObject([
+          { kind: 'added', name: `Gran ${stamp}` },
+        ]);
+        expect(reply(response).speech).toBe(
+          `Added to your Shopping List: Gran ${stamp}.`,
+        );
+        const found = await (lookup.mock.results[0].value as Promise<
+          Map<string, { name: string }>
+        >);
+        expect(found.get(created.id)?.name).toBe(`Gran ${stamp}`);
+      } finally {
+        lookup.mockRestore();
+      }
+    });
+
+    it('keeps the list name of an Unmatched item when the language spoken is the UI locale', async () => {
+      const ana = await romanian();
+      reading = {
+        actions: [
+          model({
+            spokenText: 'biscuiți de ovăz',
+            spokenName: 'oat crackers',
+            fallbackIngredientName: 'Biscuiți de ovăz',
+          }),
+        ],
+        unsupported: [],
+        spokenLanguage: 'ro',
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toBe(
+        'Am adăugat, dar nu am recunoscut: Biscuiți de ovăz.',
+      );
+      expect(reply(response).outcomes).toMatchObject([
+        { name: 'Biscuiți de ovăz' },
+      ]);
+    });
+
+    it('refuses an action in the language spoken', async () => {
+      const ana = await romanian();
+      reading = {
+        actions: [of(milk, 'Lapte', { op: 'remove', scope: 'one' })],
+        unsupported: [],
+        spokenLanguage: 'en',
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'refused', name: 'Milk' },
+      ]);
+      expect(reply(response).speech).toBe('Open Pocket Pantry for Milk.');
+    });
+
+    it('says an item is already on the list in the language spoken', async () => {
+      const ana = await romanian();
+      reading = {
+        actions: [of(milk, 'Lapte', { spokenText: 'milk' })],
+        unsupported: [],
+        spokenLanguage: 'en',
+      };
+      await ask(ana.secret).expect(200);
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'alreadyOnList', name: 'Milk' },
+      ]);
+      expect(reply(response).speech).toBe(
+        'Already on your Shopping List: Milk.',
+      );
     });
 
     it('names an Unmatched item by its spoken name, without the spoken amount', async () => {
