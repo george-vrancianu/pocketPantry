@@ -1,7 +1,6 @@
 import {
   Alert,
   Box,
-  SegmentedControl,
   Sheet,
   Typography,
   ShoppingIcon,
@@ -22,6 +21,7 @@ import { applyToast } from './applyResult';
 import { focusVoiceButton } from '../../lib/voiceFocus';
 import { voiceToast } from '../../lib/voicePlacement';
 import { HeardCard } from './HeardCard';
+import { ListPicker } from './ListPicker';
 import { ReviewFooter } from './ReviewFooter';
 import { VoiceActionRow } from './VoiceActionRow';
 import {
@@ -202,6 +202,17 @@ function ReviewSheet() {
           count,
         });
 
+  const pick = (action: VoiceReviewAction, list: VoiceList) => {
+    voiceNote.pickList(action.id, list);
+    // What was typed belonged to the other list's resolution.
+    setTyped(({ [action.id]: _dropped, ...rest }) => rest);
+    // A Pantry removal that needs a Batch opens on its picker.
+    if (action.byList?.[list].status === 'needsBatch') {
+      setOpenId(action.id);
+      setFocusId(action.id);
+    }
+  };
+
   const renderRow = (action: VoiceReviewAction) => (
     <VoiceActionRow
       key={action.id}
@@ -210,14 +221,7 @@ function ReviewSheet() {
       typed={textOf(action)}
       invalid={invalid.has(action.id)}
       spokenExpiry={spoken.get(action.id) ?? null}
-      onPick={(list) => {
-        voiceNote.pickList(action.id, list);
-        // A Pantry removal that needs a Batch opens on its picker.
-        if (action.byList?.[list].status === 'needsBatch') {
-          setOpenId(action.id);
-          setFocusId(action.id);
-        }
-      }}
+      onPick={(list) => pick(action, list)}
       onToggle={() => setOpenId((id) => (id === action.id ? null : action.id))}
       onTyped={(text) => {
         setTyped((current) => ({ ...current, [action.id]: text }));
@@ -313,19 +317,12 @@ function ReviewSheet() {
           >
             <span aria-hidden>{t('voice:review.putAll.label')}</span>
             <Box sx={{ flex: 1 }}>
-              <SegmentedControl<VoiceList | ''>
-                fullWidth
-                label={t('voice:review.putAll.label').replace(/:$/, '')}
+              <ListPicker
+                label={t('voice:review.putAll.name')}
                 value={allOn(actions)}
-                options={[
-                  {
-                    value: 'shopping',
-                    label: t('voice:review.lists.shopping'),
-                  },
-                  { value: 'pantry', label: t('voice:review.lists.pantry') },
-                ]}
                 onChange={(list) => {
-                  if (list) voiceNote.pickAllLists(list);
+                  voiceNote.pickAllLists(list);
+                  setTyped({});
                 }}
               />
             </Box>
@@ -367,7 +364,11 @@ function ReviewSheet() {
             tag={null}
           >
             {unclear.map((action) => (
-              <CouldntRow key={action.id} action={action} />
+              <CouldntRow
+                key={action.id}
+                action={action}
+                onPick={(list) => pick(action, list)}
+              />
             ))}
           </Group>
         ) : null}
@@ -449,7 +450,13 @@ function Group({
 }
 
 /** A Voice Action the server could not act on: what was said and why, with no editor. */
-function CouldntRow({ action }: { action: VoiceReviewAction }) {
+function CouldntRow({
+  action,
+  onPick,
+}: {
+  action: VoiceReviewAction;
+  onPick: (list: VoiceList) => void;
+}) {
   const { t } = useTranslation('voice');
   const notFound = action.status === 'notFound';
   const name = displayName(action);
@@ -501,6 +508,15 @@ function CouldntRow({ action }: { action: VoiceReviewAction }) {
         <Box sx={{ fontSize: 12.5, color: palette('text-secondary') }}>
           {reason}
         </Box>
+        {action.byList ? (
+          <Box sx={{ pt: '8px' }}>
+            <ListPicker
+              label={t('review.pickList.label', { name })}
+              value={action.target ?? ''}
+              onChange={onPick}
+            />
+          </Box>
+        ) : null}
       </Box>
       <Box sx={{ position: 'absolute', right: 8, top: 12 }}>
         <IconButton

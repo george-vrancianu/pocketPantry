@@ -197,7 +197,8 @@
       "hint": "Pick the Shopping List or the Pantry"
     },
     "putAll": {
-      "label": "Put all on:"
+      "label": "Put all on:",
+      "name": "Put all on"
     }
   },
   "toast": {

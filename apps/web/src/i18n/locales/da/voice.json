@@ -197,7 +197,8 @@
       "hint": "Vælg Indkøbsliste eller Spisekammer"
     },
     "putAll": {
-      "label": "Sæt alt på:"
+      "label": "Sæt alt på:",
+      "name": "Sæt alt på"
     }
   },
   "toast": {

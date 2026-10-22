@@ -8,7 +8,6 @@ import {
   IconButton,
   MinusIcon,
   PlusIcon,
-  SegmentedControl,
   focusRing,
   radius,
   palette,
@@ -18,6 +17,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { VoiceList, VoiceReviewAction } from '../../lib/voice';
 import { voiceNote } from '../../lib/voiceNote';
+import { ListPicker } from './ListPicker';
 import { ActionEditor } from './ActionEditor';
 import {
   blockOf,
@@ -226,17 +226,10 @@ export function VoiceActionRow({
           tabIndex={choosing ? -1 : undefined}
           sx={{ px: '12px', pb: '10px', outline: 'none' }}
         >
-          <SegmentedControl<VoiceList | ''>
-            fullWidth
+          <ListPicker
             label={t('review.pickList.label', { name })}
             value={action.target ?? ''}
-            options={[
-              { value: 'shopping', label: t('review.lists.shopping') },
-              { value: 'pantry', label: t('review.lists.pantry') },
-            ]}
-            onChange={(list) => {
-              if (list) onPick(list);
-            }}
+            onChange={onPick}
           />
         </Box>
       ) : null}

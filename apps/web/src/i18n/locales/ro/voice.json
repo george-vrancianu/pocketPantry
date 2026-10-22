@@ -202,7 +202,8 @@
       "hint": "Alege Lista de cumpărături sau Cămara"
     },
     "putAll": {
-      "label": "Pune tot pe:"
+      "label": "Pune tot pe:",
+      "name": "Pune tot pe"
     }
   },
   "toast": {

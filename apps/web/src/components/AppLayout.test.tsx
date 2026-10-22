@@ -378,6 +378,7 @@ describe('AppLayout Review for actions that need a list', () => {
     op: 'add' | 'remove',
     ingredient: object,
     pantry: Record<string, unknown> = {},
+    shopping: Record<string, unknown> = {},
   ) =>
     voiceAction({
       id,
@@ -387,7 +388,7 @@ describe('AppLayout Review for actions that need a list', () => {
       text: 'milk',
       ingredient,
       byList: {
-        shopping: shoppingSide(id, op, ingredient),
+        shopping: { ...shoppingSide(id, op, ingredient), ...shopping },
         pantry: voiceAction({
           id,
           target: 'pantry',
@@ -526,7 +527,55 @@ describe('AppLayout Review for actions that need a list', () => {
     ).toBeInTheDocument();
   });
 
-  it('offers "Put all on" only with two or more, and sets them all', async () => {
+  it('keeps the picker on a pick that finds nothing, so the pick can be changed', async () => {
+    const action = needsList(
+      'a1',
+      'remove',
+      milk,
+      {},
+      { status: 'notFound', rows: {} },
+    );
+    const dialog = await openReview([action]);
+
+    await userEvent.click(
+      pickerOf(dialog, 'Milk').getByRole('button', { name: 'Shopping List' }),
+    );
+    expect(dialog.getByText('No Milk on your list.')).toBeInTheDocument();
+    expect(
+      dialog.getByRole('button', { name: 'Shopping List' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    await userEvent.click(
+      pickerOf(dialog, 'Milk').getByRole('button', { name: 'Pantry' }),
+    );
+    const [row] = sectionOf(dialog, 'Pantry').getAllByRole('listitem');
+    expect(row).toHaveTextContent(/2099/);
+  });
+
+  it('drops an amount typed for one list when the pick changes', async () => {
+    const dialog = await openReview([
+      needsList('a1', 'add', milk, { quantity: 2, unit: 'l' }),
+    ]);
+    const picker = () => pickerOf(dialog, 'Milk');
+    await userEvent.click(picker().getByRole('button', { name: 'Pantry' }));
+    await userEvent.click(
+      sectionOf(dialog, 'Pantry').getByRole('button', { expanded: false }),
+    );
+    const amount = dialog.getByRole('textbox', { name: 'Amount of Milk' });
+    await userEvent.clear(amount);
+    await userEvent.type(amount, '9');
+
+    await userEvent.click(
+      picker().getByRole('button', { name: 'Shopping List' }),
+    );
+    await userEvent.click(picker().getByRole('button', { name: 'Pantry' }));
+    // The row stays open across the swap, now showing the server's amount.
+    expect(dialog.getByRole('textbox', { name: 'Amount of Milk' })).toHaveValue(
+      '2',
+    );
+  });
+
+  it('hides "Put all on" with only one action needing a list', async () => {
     const dialog = await openReview([needsList('a1', 'add', milk)]);
     expect(dialog.queryByRole('group', { name: 'Put all on' })).toBeNull();
   });
