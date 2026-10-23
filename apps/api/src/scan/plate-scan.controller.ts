@@ -1,14 +1,10 @@
-import { Body, Controller, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { MemberLanguageService } from '../member-language/member-language.service';
-import {
-  pantryLocaleQuery,
-  type PantryLocaleQuery,
-} from '../pantry/pantry.schemas';
 import { PlateScanFlowService } from './plate-scan-flow.service';
 import {
   plateDishSchema,
@@ -36,7 +32,6 @@ export class PlateScanController {
   })
   async dishes(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
     @Body(new ScanImagePipe(plateScanSchema, ['plateImage']))
     body: PlateScanInput,
   ): Promise<PlateDishesResponse> {
@@ -55,7 +50,6 @@ export class PlateScanController {
   })
   async ingredients(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
     @Body(new ZodValidationPipe(plateDishSchema)) body: PlateDishInput,
   ): Promise<ScanResponse> {
     return this.plate.dishLines(

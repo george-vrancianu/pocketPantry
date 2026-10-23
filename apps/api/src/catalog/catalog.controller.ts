@@ -36,7 +36,6 @@ import {
   type IdParam,
   catalogCategoriesQuery,
   familyIngredientBody,
-  familyIngredientQuery,
   familySynonymBody,
   type FamilySynonymBody,
   type CatalogCategoriesQuery,
@@ -167,8 +166,6 @@ export class CatalogController {
   })
   async createFamilyIngredient(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(familyIngredientQuery))
-    query: { locale: 'en' | 'ro' | 'da' },
     @Body(new ZodValidationPipe(familyIngredientBody))
     body: FamilyIngredientBody,
   ): Promise<CatalogSearchResult> {
@@ -206,8 +203,6 @@ export class CatalogController {
   async updateFamilyIngredient(
     @CurrentUser() member: CurrentUserValue,
     @Param(new ZodValidationPipe(idParam)) params: IdParam,
-    @Query(new ZodValidationPipe(familyIngredientQuery))
-    query: { locale: 'en' | 'ro' | 'da' },
     @Body(new ZodValidationPipe(familyIngredientPatchBody))
     body: FamilyIngredientPatchBody,
   ): Promise<CatalogSearchResult> {
@@ -277,8 +272,6 @@ export class CatalogController {
   })
   async createFamilySynonym(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(familyIngredientQuery))
-    query: { locale: 'en' | 'ro' | 'da' },
     @Body(new ZodValidationPipe(familySynonymBody))
     body: FamilySynonymBody,
   ): Promise<CatalogSearchResult> {

@@ -37,7 +37,7 @@ const withNetworkRetry = <T>(request: () => Promise<T>) =>
 /** A Plate Scan has no Scan Language; its photo yields dish guesses to pick from. */
 function readPlate(scan: SessionScan) {
   return withNetworkRetry(() =>
-    apiRequest<PlateDishes>(`/scan/plate?${scanQuery()}`, {
+    apiRequest<PlateDishes>(`/scan/plate${scanQuery()}`, {
       method: 'POST',
       body: { plateImage: scan.image },
     }),
@@ -49,7 +49,7 @@ function readPlate(scan: SessionScan) {
 async function send(scan: SessionScan, mode: keyof typeof READ) {
   const target = READ[mode];
   const { lines } = await withNetworkRetry(() =>
-    apiRequest<ScanResponse>(`${target.path}?${scanQuery(scan.scanLanguage)}`, {
+    apiRequest<ScanResponse>(`${target.path}${scanQuery(scan.scanLanguage)}`, {
       method: 'POST',
       body: { [target.field]: scan.image },
     }),

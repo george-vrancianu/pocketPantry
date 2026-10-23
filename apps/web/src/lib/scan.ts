@@ -50,16 +50,16 @@ export type ExclusionReason = 'not_food' | 'fee' | 'deposit' | 'other';
 
 export type ScanResponse = { lines: ProposedLine[] };
 
-/** The query string of a Scan or of saving its lines; `scanLanguage` is left out when the lines were not scanned. */
+/** The query string (with its `?`, or empty) of a Scan or of saving its lines; `scanLanguage` is left out when none is picked. */
 export function scanQuery(scanLanguage?: string) {
-  return new URLSearchParams(scanLanguage ? { scanLanguage } : {});
+  return scanLanguage ? `?${new URLSearchParams({ scanLanguage })}` : '';
 }
 
 /** Product Scan: the photo goes up as a data URL and is never stored. */
 export function useProductScan(scanLanguage: string) {
   return useMutation({
     mutationFn: (productImage: string) =>
-      apiRequest<ScanResponse>(`/scan/product?${scanQuery(scanLanguage)}`, {
+      apiRequest<ScanResponse>(`/scan/product${scanQuery(scanLanguage)}`, {
         method: 'POST',
         body: { productImage },
       }),
@@ -74,7 +74,7 @@ export function useProductRead() {
   return useMutation({
     mutationFn: async (read: { image: string; scanLanguage: string }) => {
       const { lines } = await apiRequest<ScanResponse>(
-        `/scan/product?${scanQuery(read.scanLanguage)}`,
+        `/scan/product${scanQuery(read.scanLanguage)}`,
         { method: 'POST', body: { productImage: read.image } },
       );
       if (lines.length === 0) throw new ApiError('scan.product_not_found', 0);
@@ -92,6 +92,6 @@ export const postBatches = (
   batches: NewBatch[],
 ) =>
   apiRequest<{ batches: Batch[] }>(
-    `/pantry/batches/bulk?${scanQuery(scanLanguage)}`,
+    `/pantry/batches/bulk${scanQuery(scanLanguage)}`,
     { method: 'POST', body: { batches } },
   );

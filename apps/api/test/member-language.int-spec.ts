@@ -450,7 +450,7 @@ describe('Member language: Catalog Language (integration)', () => {
       expect((await pantry(cookie, 'da'))[0].name).toBe('Lapte');
       const found = (
         await api('get', cookie, '/catalog/search', 'da')
-          .query({ q: 'lapte', locale: 'da' })
+          .query({ q: 'lapte' })
           .expect(200)
       ).body as { results: Array<{ name: string }> };
       expect(found.results.map((row) => row.name)).toContain('Lapte');
@@ -465,6 +465,10 @@ describe('Member language: Catalog Language (integration)', () => {
         .from(user)
         .where(eq(user.id, admin.userId));
       await promoteToAdmin(database, email);
+      await savePreferences(admin.cookie, {
+        locale: 'en',
+        catalogLanguage: 'ro',
+      }).expect(200);
       const adminApi = (method: 'get' | 'post', path: string) =>
         request(app.getHttpServer())
           [method](`/api/admin/catalog${path}`)

@@ -1,5 +1,6 @@
 import { act, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { changeLocale } from '../i18n';
 import { renderWithProviders, stubApi } from '../test/render';
 import { ApplyMemberLocale } from './ApplyMemberLocale';
 
@@ -86,5 +87,57 @@ describe('ApplyMemberLocale', () => {
     );
     await act(async () => {});
     expect(saves(calls)).toHaveLength(0);
+  });
+
+  it('does not switch the UI back when the Member picked another language while the save was in flight', async () => {
+    const preferences = {
+      locale: null,
+      catalogLanguage: null,
+      effectiveCatalogLanguage: 'en',
+      scanLanguage: null,
+      effectiveScanLanguage: 'en',
+      spokenLanguage: null,
+      effectiveSpokenLanguage: 'en',
+      theme: null,
+      hideRecipesWithAllergies: false,
+    };
+    let reply!: () => void;
+    const gate = new Promise<void>((resolve) => (reply = resolve));
+    const { fetchMock, calls } = stubApi({
+      'GET /api/settings/preferences': () => Response.json(preferences),
+      'PUT /api/settings/preferences': async () => {
+        await gate;
+        return Response.json({
+          ...preferences,
+          locale: 'ro',
+          effectiveCatalogLanguage: 'ro',
+        });
+      },
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const { queryClient, i18n } = renderWithProviders(<ApplyMemberLocale />, {
+      locale: 'ro',
+    });
+    await waitFor(() => expect(saves(calls)).toHaveLength(1));
+
+    // The Member picks Danish on the You tab; that save lands first.
+    queryClient.setQueryData(['settings', 'preferences'], {
+      ...preferences,
+      locale: 'da',
+      effectiveCatalogLanguage: 'da',
+    });
+    await act(async () => changeLocale(i18n, 'da'));
+    reply();
+
+    await waitFor(() => expect(queryClient.isMutating()).toBe(0));
+    expect(i18n.language).toBe('da');
+    expect(
+      (
+        queryClient.getQueryData([
+          'settings',
+          'preferences',
+        ]) as typeof preferences
+      ).locale,
+    ).toBe('da');
   });
 });

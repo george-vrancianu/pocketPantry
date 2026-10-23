@@ -192,6 +192,26 @@ export function useSaveLocale() {
   });
 }
 
+/**
+ * Saves the UI Language being shown, once, when the Member has none stored (sign-in). If the Member picked
+ * one while this was in flight, its reply is dropped so it cannot put the old language back.
+ */
+export function useSaveInitialLocale() {
+  const queryClient = useQueryClient();
+  const apply = useApplySavedLanguages();
+  return useMutation({
+    mutationFn: (locale: Locale) =>
+      apiRequest<MemberPreferences>('/settings/preferences', {
+        method: 'PUT',
+        body: { locale },
+      }),
+    onSuccess: (saved) =>
+      queryClient.getQueryData<MemberPreferences>(preferencesQueryKey)?.locale
+        ? undefined
+        : apply(saved),
+  });
+}
+
 /** Saves the Catalog Language; `null` is "Same as UI Language". */
 export function useSaveCatalogLanguage() {
   const apply = useApplySavedLanguages();

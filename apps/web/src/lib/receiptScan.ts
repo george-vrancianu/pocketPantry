@@ -9,7 +9,7 @@ export function useReceiptScan(scanLanguage: string) {
   return useMutation({
     mutationFn: (receiptImage: string) =>
       apiRequest<ReceiptSectionResult>(
-        `/scan/receipt?${scanQuery(scanLanguage)}`,
+        `/scan/receipt${scanQuery(scanLanguage)}`,
         { method: 'POST', body: { receiptImage } },
       ),
   });
@@ -57,7 +57,7 @@ export async function postReceiptConfirm(
   batches: NewBatch[],
 ): Promise<ReceiptConfirmResult> {
   const result = await apiRequest<ReceiptConfirmation>(
-    `/scan/receipt/confirm?${scanQuery(scanLanguage)}`,
+    `/scan/receipt/confirm${scanQuery(scanLanguage)}`,
     { method: 'POST', body: { batches } },
   );
   const outcomes = await Promise.allSettled(

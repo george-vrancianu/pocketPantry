@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { changeLocale } from '../i18n';
 import { isLocale } from '../i18n/resources';
-import { useMemberPreferences, useSaveLocale } from '../lib/settings';
+import { useMemberPreferences, useSaveInitialLocale } from '../lib/settings';
 
 /**
  * Applies the UI Language saved on the Member (a Member Preference) once it loads, so a sign-in on any
@@ -20,7 +20,7 @@ export function ApplyMemberLocale() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saved]);
 
-  const { mutate } = useSaveLocale();
+  const { mutate } = useSaveInitialLocale();
   const nothingStored = preferences !== undefined && saved === null;
   const tried = useRef(false);
   useEffect(() => {

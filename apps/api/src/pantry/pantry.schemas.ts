@@ -29,9 +29,9 @@ export type RecentlyStockedView = CatalogSearchResult & {
 };
 
 /**
- * Scan and save-from-Review endpoints: `locale` is only a fallback UI
- * Language; returned names follow the Member's Catalog Language. `scanLanguage` is what this one Scan is read in. Without it the
- * controller asks `MemberLanguageService.scanLanguageOf` (the Member's Scan
+ * Scan and save-from-Review endpoints: `locale` is accepted and ignored (signed-in languages come from
+ * stored Preferences; returned names follow the Member's Catalog Language). `scanLanguage` is what this one
+ * Scan is read in. Without it the controller asks `MemberLanguageService.scanLanguageOf` (the Member's Scan
  * Language Preference).
  */
 export const scanQuery = pantryLocaleQuery.extend({

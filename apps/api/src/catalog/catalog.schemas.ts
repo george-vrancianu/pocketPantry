@@ -47,10 +47,6 @@ export type CatalogAisle = {
 /** An empty-`q` Aisle listing returns at most this many Ingredients. */
 export const AISLE_LISTING_LIMIT = 50;
 
-export const familyIngredientQuery = z.object({
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
-});
-
 /** A set of Allergen ids. */
 export const allergenIdList = z
   .array(z.uuid())

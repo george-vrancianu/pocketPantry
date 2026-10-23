@@ -24,7 +24,6 @@ import {
   createBatchesBody,
   deleteBatchesBody,
   updateBatchBody,
-  pantryLocaleQuery,
   recentlyStockedQuery,
   type RecentlyStockedQuery,
   type RecentlyStockedView,
@@ -36,7 +35,6 @@ import {
   type CreateBatchesBody,
   type DeleteBatchesBody,
   type UpdateBatchBody,
-  type PantryLocaleQuery,
   type ScanQuery,
 } from './pantry.schemas';
 import { PantryService } from './pantry.service';
@@ -178,7 +176,6 @@ export class PantryController {
   async update(
     @CurrentUser() member: CurrentUserValue,
     @Param(new ZodValidationPipe(batchIdParam)) params: BatchIdParam,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
     @Body(new ZodValidationPipe(updateBatchBody)) body: UpdateBatchBody,
   ): Promise<BatchView> {
     return this.pantry.update(

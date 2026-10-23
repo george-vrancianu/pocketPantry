@@ -6,7 +6,7 @@ import { scanQuery, type ScanResponse } from './scan';
 export function useIngredientsScan(scanLanguage: string) {
   return useMutation({
     mutationFn: (ingredientsImage: string) =>
-      apiRequest<ScanResponse>(`/scan/ingredients?${scanQuery(scanLanguage)}`, {
+      apiRequest<ScanResponse>(`/scan/ingredients${scanQuery(scanLanguage)}`, {
         method: 'POST',
         body: { ingredientsImage },
       }),
