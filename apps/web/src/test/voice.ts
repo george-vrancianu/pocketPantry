@@ -170,7 +170,7 @@ export async function hold({
   const button = await talkButton();
   prepare?.(button);
   pressDown(button, init);
-  await screen.findByText('Listening');
+  await screen.findByText("Gator's listening");
   await holdLongEnough();
   return button;
 }

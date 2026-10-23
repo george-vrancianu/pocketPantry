@@ -84,7 +84,7 @@
       "tidy": "Tidy up"
     },
     "toDoFirst": "{{count}} to do · {{title}}",
-    "allDone": "Nothing to do. Everything is in date, stocked and accounted for.",
+    "allDone": "Nothing to do.",
     "moreNames": "{{names}} +{{count}}",
     "gainSpoken_one": "raises the score by {{count}}",
     "gainSpoken_other": "raises the score by {{count}}",
@@ -162,6 +162,12 @@
       "add": "Add {{name}}",
       "setDate": "Set date",
       "setDateName": "Set date for {{name}}"
+    },
+    "gator": {
+      "curious": "I'm still learning what you've got. Add a few more things and I can tell you how your Pantry is doing.",
+      "dapper": "Splendid. Everything's in date, stocked and accounted for.",
+      "hmm": "Hmm. Let's start here: {{title}}.",
+      "worried": "Let's sort this out. First up: {{title}}."
     }
   },
   "mealPlan": {

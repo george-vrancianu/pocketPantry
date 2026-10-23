@@ -133,7 +133,7 @@
     "stillReading": "{{count}} læses stadig",
     "allRead": "alle læst",
     "camera": "Kamera",
-    "reading": "Læser foto…",
+    "reading": "Gator læser den her…",
     "crop": "Beskær kvitteringsbilledet",
     "remove": "Fjern foto",
     "items_one": "{{count}} vare",
@@ -156,7 +156,13 @@
     "removeCard": "Fjern",
     "pickDish": "Vælg retten",
     "dishOption": "{{title}}, {{percent}} % sandsynlig",
-    "readAgain": "Læs igen"
+    "readAgain": "Læs igen",
+    "banner_one": "Alle læst! {{count}} vare.",
+    "banner_other": "Alle læst! {{count}} varer.",
+    "bannerCheck_one": "Tjek den, jeg var usikker på, og læg dem så til.",
+    "bannerCheck_other": "Tjek de {{count}}, jeg var usikker på, og læg dem så til.",
+    "bannerClear_one": "Intet at tjekke. Tilføj den, når du er klar.",
+    "bannerClear_other": "Intet at tjekke. Tilføj dem, når du er klar."
   },
   "plateRecipe": {
     "open": "Gem som opskrift",

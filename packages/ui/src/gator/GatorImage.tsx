@@ -69,6 +69,7 @@ export function GatorImage({
   return (
     <img
       src={ART[mood]}
+      data-mood={mood}
       alt={decorative ? '' : alt}
       aria-hidden={decorative ? true : undefined}
       width={size}

@@ -96,7 +96,7 @@ describe('Voice Notes on the Pantry page', () => {
       name: /hold to record a voice note/i,
     });
     pressDown(button);
-    await screen.findByText('Listening');
+    await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
     return screen.findByRole('dialog');
@@ -141,7 +141,7 @@ describe('Voice Notes on the Pantry page', () => {
       defaultTarget: 'pantry',
     });
     renderInAppLayout(<PantryPage />, '/pantry');
-    await screen.findByText('Reading your note');
+    await screen.findByText("Gator's reading your note…");
 
     await userEvent.click(screen.getByRole('button', { name: 'Add batch' }));
 
@@ -152,14 +152,14 @@ describe('Voice Notes on the Pantry page', () => {
     expect(
       screen.getByRole('button', { name: /hold to record a voice note/i }),
     ).toBeVisible();
-    expect(screen.getByText('Reading your note')).toBeVisible();
+    expect(screen.getByText("Gator's reading your note…")).toBeVisible();
 
     // Its Cancel still works over the form.
     const pill = screen
-      .getByText('Reading your note')
+      .getByText("Gator's reading your note…")
       .closest('[role="status"]') as HTMLElement;
     await userEvent.click(within(pill).getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByText('Reading your note')).toBeNull();
+    expect(screen.queryByText("Gator's reading your note…")).toBeNull();
   });
 
   it('puts the voice button on the Pantry page and records for the Pantry', async () => {
@@ -210,7 +210,7 @@ describe('Voice Notes on the Pantry page', () => {
         name: /hold to record a voice note/i,
       }),
     );
-    expect(await screen.findByText('Listening')).toBeVisible();
+    expect(await screen.findByText("Gator's listening")).toBeVisible();
     expect(screen.getByRole('status')).toHaveTextContent(
       'Goes to your Pantry. Say “on the list” for the Shopping List.',
     );

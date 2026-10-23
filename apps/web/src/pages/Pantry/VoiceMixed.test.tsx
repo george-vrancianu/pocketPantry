@@ -85,7 +85,7 @@ describe('A Voice Note across both lists', () => {
       name: /hold to record a voice note/i,
     });
     pressDown(button);
-    await screen.findByText('Listening');
+    await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
     return { ...view, dialog: await screen.findByRole('dialog') };

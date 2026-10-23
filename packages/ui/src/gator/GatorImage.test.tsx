@@ -39,6 +39,13 @@ describe('GatorImage', () => {
     },
   );
 
+  it('marks the image with its mood, for tests that must find a decorative one', () => {
+    const { container } = render(<GatorImage mood="chef" decorative />);
+    expect(container.querySelector('img')?.getAttribute('data-mood')).toBe(
+      'chef',
+    );
+  });
+
   it('has a described alt for every mood', () => {
     expect(Object.keys(ALTS).sort()).toEqual([...GATOR_MOODS].sort());
   });

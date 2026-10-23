@@ -73,7 +73,7 @@
     "blocked": "Microphone blocked"
   },
   "listening": {
-    "title": "Listening",
+    "title": "Gator's listening",
     "starting": "Starting…",
     "of": "/ 1:00",
     "hint": "Let go to send · slide off to cancel",
@@ -244,7 +244,7 @@
     "other": "could not be applied"
   },
   "send": {
-    "reading": "Reading your note",
+    "reading": "Gator's reading your note…",
     "readingMeta": "{{duration}} of speech · {{language}}",
     "cancel": "Cancel",
     "cancelled": "Cancelled. Nothing was saved.",
