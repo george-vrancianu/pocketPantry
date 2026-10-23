@@ -35,7 +35,7 @@ import {
   needsList,
 } from './reviewModel';
 import { translateApiError } from '../../i18n/translateApiError';
-import { useScanLanguage } from '../../lib/useScanLanguage';
+import { usePreferredSpokenLanguage } from '../../lib/useSpokenLanguage';
 import { parseAmountText } from '../../lib/pantry';
 import {
   catalogChangeQueryKeys,
@@ -76,7 +76,7 @@ export function VoiceReview() {
 function ReviewSheet() {
   const { t, i18n } = useTranslation(['voice', 'common']);
   const { proposal, defaultTarget, phase, recording } = useVoiceNoteState();
-  const { locale, scanLanguage } = useScanLanguage();
+  const { locale, spokenLanguage } = usePreferredSpokenLanguage();
   const toast = useToast();
   const queryClient = useQueryClient();
   const body = useRef<HTMLDivElement>(null);
@@ -92,7 +92,7 @@ function ReviewSheet() {
   const [spoken] = useState(
     () => new Map(actions.map((a) => [a.id, a.expiresOn])),
   );
-  const language = recording?.scanLanguage ?? scanLanguage;
+  const language = recording?.spokenLanguage ?? spokenLanguage;
 
   const groups = groupsOf(actions, defaultTarget);
   const changes = actions.filter(isChange);

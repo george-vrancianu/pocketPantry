@@ -7,10 +7,10 @@ import {
 } from '../catalog/catalog.schemas';
 
 /**
- * The jobs a Member's languages do (ADR 0022). Spoken Language joins
- * this list in its own ticket; it is one more case in `resolveLanguage`.
+ * The jobs a Member's languages do (ADR 0022): the UI Language, Catalog
+ * Language, Scan Language and Spoken Language.
  */
-export type LanguageRole = 'ui' | 'catalog' | 'scan';
+export type LanguageRole = 'ui' | 'catalog' | 'scan' | 'spoken';
 
 /** A Member's stored language Preferences, as read from the user row; `null` is "Same as UI Language" (or never chosen). */
 export type StoredLanguagePreferences = {
@@ -18,6 +18,7 @@ export type StoredLanguagePreferences = {
   locale: string | null;
   catalogLanguage: string | null;
   scanLanguage: string | null;
+  spokenLanguage: string | null;
 };
 
 /** The language list each role draws from; the lists are kept separate (ADR 0003) even while they match. */
@@ -25,6 +26,7 @@ export type RoleLanguage = {
   ui: CatalogLocale;
   catalog: CatalogLocale;
   scan: ScanLanguage;
+  spoken: ScanLanguage;
 };
 
 export type MemberLanguages = RoleLanguage;
@@ -47,8 +49,8 @@ export const asScanLanguage = (value: string | null): ScanLanguage | null =>
  *
  * Order: `override`; the stored Preference; "Same as UI Language" (empty)
  * takes the UI Language; with no stored UI Language, `requestLocale`; then
- * English. A Scan Language only takes values from the Scan Languages list: a
- * UI Language that is not on it falls back to English.
+ * English. A Scan or Spoken Language only takes values from the Scan
+ * Languages list: a UI Language that is not on it falls back to English.
  */
 export function resolveLanguage<Role extends LanguageRole>(
   role: Role,
@@ -74,6 +76,12 @@ export function resolveLanguage(
         asScanLanguage(ui) ??
         FALLBACK_LOCALE
       );
+    case 'spoken':
+      return (
+        asScanLanguage(stored.spokenLanguage) ??
+        asScanLanguage(ui) ??
+        FALLBACK_LOCALE
+      );
   }
 }
 
@@ -86,5 +94,6 @@ export function resolveLanguages(
     ui: resolveLanguage('ui', stored, options),
     catalog: resolveLanguage('catalog', stored, options),
     scan: resolveLanguage('scan', stored, options),
+    spoken: resolveLanguage('spoken', stored, options),
   };
 }

@@ -200,7 +200,7 @@ export function useVoiceConfigured(): boolean {
 
 export type VoiceNoteRequest = {
   recording: Recording;
-  scanLanguage: ScanLanguage;
+  spokenLanguage: ScanLanguage;
   locale: Locale;
   defaultTarget: VoiceDefaultTarget;
   /** The Member's local date, `YYYY-MM-DD`. */
@@ -211,14 +211,14 @@ export type VoiceNoteRequest = {
 
 export function sendVoiceNote({
   recording,
-  scanLanguage,
+  spokenLanguage,
   locale,
   defaultTarget,
   today,
   signal,
 }: VoiceNoteRequest): Promise<VoiceNoteResult> {
   const form = new FormData();
-  form.append('scanLanguage', scanLanguage);
+  form.append('spokenLanguage', spokenLanguage);
   form.append('locale', locale);
   form.append('defaultTarget', defaultTarget);
   form.append('today', today);

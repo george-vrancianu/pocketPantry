@@ -260,6 +260,13 @@
       "when": 1792760776448,
       "tag": "0036_member_scan_language",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792764805736,
+      "tag": "0037_member_spoken_language",
+      "breakpoints": true
     }
   ]
 }

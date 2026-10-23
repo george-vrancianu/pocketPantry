@@ -21,19 +21,16 @@ export const VOICE_LISTS = ['shopping', 'pantry'] as const;
 export const VOICE_DEFAULT_TARGETS = [...VOICE_LISTS, 'none'] as const;
 
 /** The text fields of a Voice Note request; the recording travels beside them. */
-export const voiceNoteFields = z
-  .object({
-    locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
-    scanLanguage: z.enum(SCAN_LANGUAGES).optional(),
-    defaultTarget: z.enum(VOICE_DEFAULT_TARGETS),
-    /** The Member's local date, for resolving spoken dates. */
-    today: z.iso.date(),
-    durationMs: z.coerce.number().int().min(0),
-  })
-  .transform((fields) => ({
-    ...fields,
-    scanLanguage: fields.scanLanguage ?? fields.locale,
-  }));
+export const voiceNoteFields = z.object({
+  /** The UI Language the page is shown in; the fallback until the Member has stored one. */
+  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+  /** This one Voice Note's Spoken Language; absent means the Member's Spoken Language Preference. */
+  spokenLanguage: z.enum(SCAN_LANGUAGES).optional(),
+  defaultTarget: z.enum(VOICE_DEFAULT_TARGETS),
+  /** The Member's local date, for resolving spoken dates. */
+  today: z.iso.date(),
+  durationMs: z.coerce.number().int().min(0),
+});
 export type VoiceNoteFields = z.infer<typeof voiceNoteFields>;
 
 export type VoiceNoteResponse = {

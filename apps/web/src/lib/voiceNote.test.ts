@@ -17,7 +17,7 @@ const recording = {
 };
 
 const options = {
-  scanLanguage: 'en',
+  spokenLanguage: 'en',
   locale: 'en',
   defaultTarget: 'shopping',
 } as const;
@@ -38,7 +38,7 @@ const settle = async () => {
 async function record(
   note: VoiceNote,
   startOptions: {
-    scanLanguage: 'en' | 'ro';
+    spokenLanguage: 'en' | 'ro';
     locale: 'en' | 'ro';
     defaultTarget: 'shopping' | 'pantry';
   } = options,
@@ -227,7 +227,7 @@ describe('Voice Note module', () => {
       try {
         const { note, requests, answer } = setup();
         await record(note, {
-          scanLanguage: 'ro',
+          spokenLanguage: 'ro',
           locale: 'ro',
           defaultTarget: 'pantry',
         });
@@ -237,7 +237,7 @@ describe('Voice Note module', () => {
         });
         expect(requests[0]).toMatchObject({
           recording,
-          scanLanguage: 'ro',
+          spokenLanguage: 'ro',
           locale: 'ro',
           defaultTarget: 'pantry',
           today: '2026-10-19',
@@ -248,7 +248,7 @@ describe('Voice Note module', () => {
           phase: 'review',
           defaultTarget: 'pantry',
           proposal: { transcript: 'milk and eggs' },
-          recording: { scanLanguage: 'ro', durationMs: 2000 },
+          recording: { spokenLanguage: 'ro', durationMs: 2000 },
         });
       } finally {
         vi.useRealTimers();
@@ -491,7 +491,7 @@ describe('Voice Note module', () => {
     it('resends the kept recording in its language and for its page', async () => {
       const ctx = setup();
       await record(ctx.note, {
-        scanLanguage: 'ro',
+        spokenLanguage: 'ro',
         locale: 'en',
         defaultTarget: 'pantry',
       });
@@ -502,7 +502,7 @@ describe('Voice Note module', () => {
       expect(ctx.note.getState().phase).toBe('reading');
       expect(ctx.requests[1]).toMatchObject({
         recording,
-        scanLanguage: 'ro',
+        spokenLanguage: 'ro',
         locale: 'ro',
         defaultTarget: 'pantry',
       });
@@ -610,7 +610,7 @@ describe('Voice Note module', () => {
     it('sends what it recorded when the Member lets go', async () => {
       const { note, requests } = setup();
       await note.start({
-        scanLanguage: 'ro',
+        spokenLanguage: 'ro',
         locale: 'ro',
         defaultTarget: 'pantry',
       });
@@ -622,7 +622,7 @@ describe('Voice Note module', () => {
       expect(note.getState().startedAt).toBeUndefined();
       expect(requests[0]).toMatchObject({
         recording,
-        scanLanguage: 'ro',
+        spokenLanguage: 'ro',
         locale: 'ro',
         defaultTarget: 'pantry',
       });

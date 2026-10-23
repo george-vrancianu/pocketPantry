@@ -76,7 +76,7 @@ export class VoiceController {
   @Post()
   @ApiOperation({
     summary:
-      'Voice Note: transcribe a held-to-talk recording (multipart: audio, durationMs, scanLanguage, locale, defaultTarget, today). Neither the audio nor the transcript is stored.',
+      'Voice Note: transcribe a held-to-talk recording (multipart: audio, durationMs, spokenLanguage, locale, defaultTarget, today). Neither the audio nor the transcript is stored.',
   })
   async note(
     @CurrentUser() member: CurrentUserValue,
@@ -99,8 +99,15 @@ export class VoiceController {
     const { ui, catalog } = await this.languages.languagesOf(member.id, {
       requestLocale: fields.data.locale,
     });
+    // The recording is read in the Spoken Language: the upload's own choice, else the Preference.
+    const spokenLanguage = await this.languages.spokenLanguageOf(
+      member.id,
+      fields.data.locale,
+      fields.data.spokenLanguage,
+    );
     return this.voice.read(member.id, {
       ...fields.data,
+      spokenLanguage,
       locale: catalog,
       uiLanguage: ui,
       audio: upload.audio.buffer,

@@ -54,7 +54,7 @@ export type VoiceNoteState = {
     blob: Blob;
     mimeType: string;
     durationMs: number;
-    scanLanguage: ScanLanguage;
+    spokenLanguage: ScanLanguage;
   };
   /** What the server read from the recording, then as the Member edits it. */
   proposal?: {
@@ -198,7 +198,8 @@ export function createVoiceNote(
   let starting: { cancelled: boolean } | undefined;
   let session: MicrophoneSession | undefined;
   let limitTimer: ReturnType<typeof setTimeout> | undefined;
-  let recordingFor: { scanLanguage: ScanLanguage; locale: Locale } | undefined;
+  let recordingFor:
+    { spokenLanguage: ScanLanguage; locale: Locale } | undefined;
   /** The audio of a stopped recording is being finalised. */
   let finishing = false;
 
@@ -347,7 +348,7 @@ export function createVoiceNote(
   /** Sends the audio and settles the note. Everything after an abort is ignored. */
   async function send(
     audio: Recording,
-    scanLanguage: ScanLanguage,
+    spokenLanguage: ScanLanguage,
     locale: Locale,
     defaultTarget: VoiceDefaultTarget,
   ) {
@@ -361,13 +362,13 @@ export function createVoiceNote(
         blob: audio.blob,
         mimeType: audio.mimeType,
         durationMs: audio.durationMs,
-        scanLanguage,
+        spokenLanguage,
       },
     });
     try {
       const result = await adapters.send({
         recording: audio,
-        scanLanguage,
+        spokenLanguage,
         locale,
         defaultTarget,
         today: localIso(new Date()),
@@ -402,11 +403,11 @@ export function createVoiceNote(
   /**
    * Turns the microphone on and keeps the screen awake until the note is settled. Enforces the
    * start guard again: a capped start moves the note to the Voice Cap failure. Resolves once the
-   * microphone is live, or why it is not. `scanLanguage` and `locale` are for the read.
+   * microphone is live, or why it is not. `spokenLanguage` and `locale` are for the read.
    */
   async function start(options: {
     defaultTarget: VoiceDefaultTarget;
-    scanLanguage: ScanLanguage;
+    spokenLanguage: ScanLanguage;
     locale: Locale;
   }): Promise<StartOutcome> {
     const blocker = startBlocker();
@@ -443,7 +444,7 @@ export function createVoiceNote(
     }
     session = live;
     recordingFor = {
-      scanLanguage: options.scanLanguage,
+      spokenLanguage: options.spokenLanguage,
       locale: options.locale,
     };
     limitTimer = setTimeout(() => {
@@ -496,7 +497,7 @@ export function createVoiceNote(
       letSleep();
       return 'notStarted';
     }
-    void send(audio, mine.scanLanguage, mine.locale, state.defaultTarget);
+    void send(audio, mine.spokenLanguage, mine.locale, state.defaultTarget);
     return 'sent';
   }
 
@@ -550,7 +551,7 @@ export function createVoiceNote(
           mimeType: kept.mimeType,
           durationMs: kept.durationMs,
         },
-        kept.scanLanguage,
+        kept.spokenLanguage,
         locale,
         defaultTarget,
       );

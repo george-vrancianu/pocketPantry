@@ -14,6 +14,8 @@ type Preferences = {
   effectiveCatalogLanguage: string;
   scanLanguage: string | null;
   effectiveScanLanguage: string;
+  spokenLanguage: string | null;
+  effectiveSpokenLanguage: string;
 };
 type Batch = {
   name: string;
@@ -254,6 +256,76 @@ describe('Member language: Catalog Language (integration)', () => {
       await joinFamilyOf(ana.userId, mihai.userId);
       await savePreferences(ana.cookie, { scanLanguage: 'ro' }).expect(200);
       expect((await preferences(mihai.cookie)).scanLanguage).toBeNull();
+    });
+  });
+
+  describe('Member Preferences: Spoken Language', () => {
+    it('start with no Spoken Language, which follows the UI Language (English when none)', async () => {
+      const { cookie } = await signUp();
+      expect(await preferences(cookie)).toMatchObject({
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
+      });
+      expect(await preferences(cookie, 'ro')).toMatchObject({
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'ro',
+      });
+      await savePreferences(cookie, { locale: 'da' }).expect(200);
+      expect(await preferences(cookie)).toMatchObject({
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'da',
+      });
+    });
+
+    it('save a Spoken Language apart from the Scan Language, and clear it again with null', async () => {
+      const { cookie } = await signUp();
+      await savePreferences(cookie, {
+        locale: 'en',
+        scanLanguage: 'da',
+      }).expect(200);
+      const saved = (
+        await savePreferences(cookie, { spokenLanguage: 'ro' }).expect(200)
+      ).body as Preferences;
+      expect(saved).toMatchObject({
+        scanLanguage: 'da',
+        effectiveScanLanguage: 'da',
+        spokenLanguage: 'ro',
+        effectiveSpokenLanguage: 'ro',
+      });
+      expect(await preferences(cookie)).toEqual(saved);
+
+      await savePreferences(cookie, { spokenLanguage: null }).expect(200);
+      expect(await preferences(cookie)).toMatchObject({
+        scanLanguage: 'da',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
+      });
+    });
+
+    it('keep the Spoken Language when only another preference is saved, and the Scan Language when it is saved', async () => {
+      const { cookie } = await signUp();
+      await savePreferences(cookie, { spokenLanguage: 'da' }).expect(200);
+      await savePreferences(cookie, { theme: 'dark', scanLanguage: 'ro' });
+      expect(await preferences(cookie)).toMatchObject({
+        spokenLanguage: 'da',
+        effectiveSpokenLanguage: 'da',
+        scanLanguage: 'ro',
+        theme: 'dark',
+      });
+    });
+
+    it('reject a language that is not a Scan Language', async () => {
+      const { cookie } = await signUp();
+      await savePreferences(cookie, { spokenLanguage: 'fr' }).expect(400);
+      expect((await preferences(cookie)).spokenLanguage).toBeNull();
+    });
+
+    it('are private to the Member, not shared with the Family', async () => {
+      const ana = await signUp();
+      const mihai = await signUp();
+      await joinFamilyOf(ana.userId, mihai.userId);
+      await savePreferences(ana.cookie, { spokenLanguage: 'ro' }).expect(200);
+      expect((await preferences(mihai.cookie)).spokenLanguage).toBeNull();
     });
   });
 

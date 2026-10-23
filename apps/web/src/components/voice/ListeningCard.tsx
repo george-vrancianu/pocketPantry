@@ -41,7 +41,7 @@ type Props = {
   /** When the microphone went live; the card keeps its own clock from it. */
   startedAt?: number;
   target: VoiceDefaultTarget;
-  scanLanguage: ScanLanguage;
+  spokenLanguage: ScanLanguage;
   /** The current input loudness, 0 to 1. */
   level: () => number;
   /** Letting go now would cancel (the pointer is far outside the button). */
@@ -53,7 +53,7 @@ export function ListeningCard({
   starting,
   startedAt,
   target,
-  scanLanguage,
+  spokenLanguage,
   level,
   armed = false,
 }: Props) {
@@ -225,7 +225,7 @@ export function ListeningCard({
               fontWeight: 700,
             }}
           >
-            {scanLanguage.toUpperCase()}
+            {spokenLanguage.toUpperCase()}
           </Box>
           <span>{armed ? t('listening.slideBack') : t('listening.hint')}</span>
           <Box sx={{ flexBasis: '100%' }}>

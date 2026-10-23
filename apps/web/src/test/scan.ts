@@ -288,6 +288,7 @@ export async function fakeCameraModule() {
  */
 export const scanLanguagePreference = (
   effectiveScanLanguage: 'en' | 'ro' | 'da',
+  effectiveSpokenLanguage: 'en' | 'ro' | 'da' = 'en',
 ) => ({
   'GET /api/settings/preferences': () =>
     Response.json({
@@ -296,6 +297,8 @@ export const scanLanguagePreference = (
       effectiveCatalogLanguage: 'en',
       scanLanguage: effectiveScanLanguage,
       effectiveScanLanguage,
+      spokenLanguage: effectiveSpokenLanguage,
+      effectiveSpokenLanguage,
       theme: null,
       hideRecipesWithAllergies: false,
     }),

@@ -1,6 +1,11 @@
 import { resolveLanguage, resolveLanguages } from './member-language';
 
-const none = { locale: null, catalogLanguage: null, scanLanguage: null };
+const none = {
+  locale: null,
+  catalogLanguage: null,
+  scanLanguage: null,
+  spokenLanguage: null,
+};
 
 describe('Member language resolver', () => {
   it('uses the stored UI Language, then the request locale, then English', () => {
@@ -92,9 +97,56 @@ describe('Member language resolver', () => {
     ).toBe('da');
   });
 
+  it('gives the Spoken Language the stored value, or the UI Language when empty', () => {
+    expect(
+      resolveLanguage('spoken', {
+        ...none,
+        locale: 'en',
+        spokenLanguage: 'ro',
+      }),
+    ).toBe('ro');
+    expect(resolveLanguage('spoken', { ...none, locale: 'da' })).toBe('da');
+    expect(resolveLanguage('spoken', none, { requestLocale: 'ro' })).toBe('ro');
+    expect(resolveLanguage('spoken', none)).toBe('en');
+  });
+
+  it('keeps the Spoken Language apart from the Scan and Catalog Languages', () => {
+    const stored = {
+      ...none,
+      locale: 'en',
+      catalogLanguage: 'ro',
+      scanLanguage: 'da',
+    };
+    expect(resolveLanguage('spoken', stored)).toBe('en');
+    expect(resolveLanguage('spoken', { ...stored, spokenLanguage: 'ro' })).toBe(
+      'ro',
+    );
+    expect(resolveLanguage('scan', { ...stored, spokenLanguage: 'ro' })).toBe(
+      'da',
+    );
+  });
+
+  it('ignores a stored Spoken Language that is not on the list, and lets an override win', () => {
+    expect(
+      resolveLanguage('spoken', {
+        ...none,
+        locale: 'ro',
+        spokenLanguage: 'xx',
+      }),
+    ).toBe('ro');
+    expect(resolveLanguage('spoken', { ...none, locale: 'fr' })).toBe('en');
+    expect(
+      resolveLanguage(
+        'spoken',
+        { ...none, spokenLanguage: 'ro' },
+        { override: 'da' },
+      ),
+    ).toBe('da');
+  });
+
   it('answers every role at once', () => {
     expect(
       resolveLanguages({ ...none, locale: 'en', catalogLanguage: 'ro' }),
-    ).toEqual({ ui: 'en', catalog: 'ro', scan: 'en' });
+    ).toEqual({ ui: 'en', catalog: 'ro', scan: 'en', spoken: 'en' });
   });
 });

@@ -17,8 +17,8 @@ type Props = {
 };
 
 /**
- * The Scan Language chip above the Dock's mic, and the menu it opens. It reads and
- * writes the stored Scan Language (ADR 0003), so the camera's chip follows.
+ * The Spoken Language chip above the Dock's mic, and the menu it opens. A pick is for one Voice Note
+ * (ADR 0022); it is not saved and the camera's Scan Language chip does not follow it.
  */
 export function LanguageMenu({ value, disabled, onChange }: Props) {
   const { t } = useTranslation(['voice', 'settings']);

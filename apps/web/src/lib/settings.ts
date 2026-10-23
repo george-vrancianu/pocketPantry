@@ -46,8 +46,12 @@ export type MemberPreferences = {
   effectiveCatalogLanguage: Locale;
   /** `null` is "Same as UI Language". */
   scanLanguage: ScanLanguage | null;
-  /** The language Scans and Voice Notes are read in by default, worked out by the API. */
+  /** The language Scans are read in by default, worked out by the API. */
   effectiveScanLanguage: ScanLanguage;
+  /** The language Voice Notes are spoken in; `null` is "Same as UI Language". */
+  spokenLanguage: ScanLanguage | null;
+  /** The language Voice Notes are spoken in by default, worked out by the API. */
+  effectiveSpokenLanguage: ScanLanguage;
   theme: ThemeId | null;
   /** Leave out Recipes with the Member's own or Family Allergies; off by default. */
   hideRecipesWithAllergies: boolean;
@@ -169,6 +173,8 @@ function useApplySavedLanguages() {
             effectiveCatalogLanguage: saved.effectiveCatalogLanguage,
             scanLanguage: saved.scanLanguage,
             effectiveScanLanguage: saved.effectiveScanLanguage,
+            spokenLanguage: saved.spokenLanguage,
+            effectiveSpokenLanguage: saved.effectiveSpokenLanguage,
           }
         : saved,
     );
@@ -215,6 +221,20 @@ export function useSaveScanLanguage() {
       apiRequest<MemberPreferences>(
         `/settings/preferences?${localeParams(i18n.resolvedLanguage ?? i18n.language)}`,
         { method: 'PUT', body: { scanLanguage } },
+      ),
+    onSuccess: apply,
+  });
+}
+
+/** Saves the Spoken Language; `null` is "Same as UI Language". */
+export function useSaveSpokenLanguage() {
+  const { i18n } = useTranslation();
+  const apply = useApplySavedLanguages();
+  return useMutation({
+    mutationFn: (spokenLanguage: ScanLanguage | null) =>
+      apiRequest<MemberPreferences>(
+        `/settings/preferences?${localeParams(i18n.resolvedLanguage ?? i18n.language)}`,
+        { method: 'PUT', body: { spokenLanguage } },
       ),
     onSuccess: apply,
   });

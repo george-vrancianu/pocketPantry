@@ -47,6 +47,15 @@ export class MemberLanguageService {
     return this.languageOf(memberId, 'scan', { requestLocale, override });
   }
 
+  /** The language a Voice Note is spoken in: the per-Voice Note `override` if sent, else the Spoken Language Preference. */
+  spokenLanguageOf(
+    memberId: string,
+    requestLocale?: CatalogLocale,
+    override?: ScanLanguage,
+  ): Promise<ScanLanguage> {
+    return this.languageOf(memberId, 'spoken', { requestLocale, override });
+  }
+
   async languagesOf(
     memberId: string,
     options: Pick<LanguageOptions, 'requestLocale'> = {},
@@ -60,10 +69,18 @@ export class MemberLanguageService {
         locale: user.locale,
         catalogLanguage: user.catalogLanguage,
         scanLanguage: user.scanLanguage,
+        spokenLanguage: user.spokenLanguage,
       })
       .from(user)
       .where(eq(user.id, memberId))
       .limit(1);
-    return row ?? { locale: null, catalogLanguage: null, scanLanguage: null };
+    return (
+      row ?? {
+        locale: null,
+        catalogLanguage: null,
+        scanLanguage: null,
+        spokenLanguage: null,
+      }
+    );
   }
 }

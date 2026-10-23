@@ -420,6 +420,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'en',
         scanLanguage: null,
         effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -463,6 +465,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'ro',
         scanLanguage: null,
         effectiveScanLanguage: 'ro',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'ro',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -483,6 +487,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'en',
         scanLanguage: null,
         effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -501,6 +507,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'da',
         scanLanguage: null,
         effectiveScanLanguage: 'da',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'da',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -527,6 +535,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'ro',
         scanLanguage: null,
         effectiveScanLanguage: 'ro',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'ro',
         theme: null,
         hideRecipesWithAllergies: true,
       });
@@ -567,6 +577,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'en',
         scanLanguage: null,
         effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: 'dark',
         hideRecipesWithAllergies: false,
       });
@@ -578,6 +590,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'en',
         scanLanguage: null,
         effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: 'dark',
         hideRecipesWithAllergies: false,
       });
@@ -604,6 +618,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'ro',
         scanLanguage: null,
         effectiveScanLanguage: 'ro',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'ro',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
       });
@@ -620,6 +636,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'da',
         scanLanguage: null,
         effectiveScanLanguage: 'da',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'da',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
       });
@@ -638,6 +656,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'en',
         scanLanguage: null,
         effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: 'warm',
         hideRecipesWithAllergies: false,
       });
@@ -667,6 +687,8 @@ describe('Settings (integration)', () => {
         effectiveCatalogLanguage: 'en',
         scanLanguage: null,
         effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });

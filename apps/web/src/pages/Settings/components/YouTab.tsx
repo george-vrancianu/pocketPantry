@@ -24,6 +24,7 @@ import {
   useSaveCatalogLanguage,
   useSaveLocale,
   useSaveScanLanguage,
+  useSaveSpokenLanguage,
 } from '../../../lib/settings';
 import { useLoadedUnmatchedCount } from '../hooks/useLoadedUnmatchedCount';
 import { AllergiesSection } from './AllergiesSection';
@@ -48,6 +49,7 @@ export function YouTab() {
   const saveLocale = useSaveLocale();
   const saveCatalogLanguage = useSaveCatalogLanguage();
   const saveScanLanguage = useSaveScanLanguage();
+  const saveSpokenLanguage = useSaveSpokenLanguage();
   const preferences = useMemberPreferences();
   const toast = useToast();
   const navigate = useNavigate();
@@ -140,6 +142,25 @@ export function YouTab() {
               }
               failed={saveScanLanguage.isError}
               failedLabel={t('scanLanguage.saveFailed')}
+            />
+            <LanguagePreferencePicker
+              label={t('spokenLanguage.label')}
+              sameAsUiLabel={t('spokenLanguage.sameAsUi')}
+              languages={SCAN_LANGUAGES}
+              value={preferences.data.spokenLanguage}
+              hint={t('spokenLanguage.hint', {
+                language: t(
+                  `languageNames.${preferences.data.effectiveSpokenLanguage}`,
+                ),
+              })}
+              onChange={(language) =>
+                saveSpokenLanguage.mutate(language, {
+                  onSuccess: () =>
+                    toast.show(t('spokenLanguage.saved'), { polite: true }),
+                })
+              }
+              failed={saveSpokenLanguage.isError}
+              failedLabel={t('spokenLanguage.saveFailed')}
             />
           </>
         ) : null}
