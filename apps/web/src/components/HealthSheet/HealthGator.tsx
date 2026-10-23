@@ -1,6 +1,7 @@
 import {
   Box,
   GatorImage,
+  radius,
   tokens,
   usePrefersReducedMotion,
   type GatorMood,
@@ -154,7 +155,9 @@ export function HealthGatorNote({
         display: 'block',
         fontSize: 12.5,
         lineHeight: 1.4,
-        ...(tint ? { ...tint, borderRadius: '8px', p: '6px 10px' } : {}),
+        ...(tint
+          ? { ...tint, borderRadius: radius.control, p: '6px 10px' }
+          : {}),
         ...sx,
       }}
     >
