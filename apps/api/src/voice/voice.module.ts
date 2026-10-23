@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CatalogModule } from '../catalog/catalog.module';
 import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
+import { MemberLanguageModule } from '../member-language/member-language.module';
 import { PantryModule } from '../pantry/pantry.module';
 import { ScanModule } from '../scan/scan.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -19,6 +20,7 @@ import { VoiceService } from './voice.service';
     SettingsModule,
     ShoppingModule,
     PantryModule,
+    MemberLanguageModule,
   ],
   controllers: [VoiceController],
   providers: [

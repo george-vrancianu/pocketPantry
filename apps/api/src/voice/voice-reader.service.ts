@@ -20,7 +20,10 @@ export type VoiceReadInput = {
   transcript: string;
   /** Null when the language spoken is not known. */
   scanLanguage: ScanLanguage | null;
+  /** The Catalog Language: names are looked up, matched and made up in it. */
   locale: CatalogLocale;
+  /** The UI Language, for the prompt only. */
+  uiLanguage?: CatalogLocale;
   today: string;
   defaultTarget: VoiceDefaultTarget;
   /** Debug capture only: ties this read to the recording's transcription. */
@@ -59,6 +62,7 @@ export class VoiceReaderService {
         transcript: input.transcript,
         scanLanguage: input.scanLanguage,
         locale: input.locale,
+        uiLanguage: input.uiLanguage,
         today: input.today,
         defaultTarget: input.defaultTarget,
         captureId: input.captureId,

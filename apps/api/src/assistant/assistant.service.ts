@@ -7,6 +7,7 @@ import {
 import type { AssistantTokenMember } from '../assistant-tokens/assistant-token.schemas';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import { ApiException } from '../common/api-exception';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import { ScanCapService } from '../scan/scan-cap.service';
 import { SettingsService } from '../settings/settings.service';
 import {
@@ -71,12 +72,14 @@ export class AssistantService {
     private readonly cap: ScanCapService,
     private readonly catalogSearch: CatalogSearchService,
     private readonly settings: SettingsService,
+    private readonly languages: MemberLanguageService,
   ) {}
 
   async handle(
     member: AssistantTokenMember,
     body: AssistantRequestBody,
   ): Promise<AssistantReply> {
+    // The UI Language: the reply falls back to it (ADR 0019).
     const locale = localeOf(member);
     const stateReply = (state: AssistantState): AssistantReply => ({
       state,
@@ -105,12 +108,15 @@ export class AssistantService {
     let outcomes: AssistantOutcome[];
     let replyLocale = locale;
     try {
+      // What the request writes (Unmatched names, Shopping Item names) is in the Catalog Language.
+      const catalog = await this.languages.catalogLanguageOf(member.id, locale);
       const today = body.today ?? new Date().toISOString().slice(0, 10);
       const read = await this.voice.readText(member.id, {
         text: body.text,
-        // Siri dictation may be in any language, whatever the UI locale.
+        // Siri dictation may be in any language, whatever the UI Language.
         scanLanguage: null,
-        locale,
+        locale: catalog,
+        uiLanguage: locale,
         today,
         defaultTarget: 'shopping',
       });
@@ -120,7 +126,7 @@ export class AssistantService {
       );
       const drafts = resolved.map(toDraft);
       // Looked up before the writes: a failure here must not follow committed items.
-      const names = await this.namesIn(member.id, locale, replyLocale, [
+      const names = await this.namesIn(member.id, catalog, replyLocale, [
         ...resolved,
         ...read.answers,
       ]);
@@ -132,16 +138,17 @@ export class AssistantService {
           ? { applied: [], skipped: [], refused: [] }
           : await this.voice.applyActions(member.id, {
               actions: drafts,
-              locale,
+              locale: catalog,
               today,
               allowedKinds: ASSISTANT_ALLOWED_KINDS,
               addSetsQuantity: true,
             });
-      // The list keeps UI-locale names; the reply names things in the language spoken.
+      // The list keeps Catalog Language names; the reply names things in the language spoken.
+      // An Unmatched item is named by what was said (spokenName) when the reply is not in the Catalog Language.
       const nameOf = (action: Named): string =>
         action.ingredient
           ? (names.get(action.ingredient.id) ?? action.ingredient.name)
-          : ((replyLocale !== locale
+          : ((replyLocale !== catalog
               ? read.spokenNames.get(action.id)
               : undefined) ?? displayName(action));
       // Answers to Pantry Questions come first, as they are spoken first.
@@ -196,12 +203,12 @@ export class AssistantService {
   /** Matched Ingredients' display names in the reply language, by id. */
   private async namesIn(
     memberId: string,
-    uiLocale: CatalogLocale,
+    catalogLocale: CatalogLocale,
     replyLocale: CatalogLocale,
     actions: { ingredient: { id: string } | null }[],
   ): Promise<Map<string, string>> {
-    // Ingredient names already come in the UI locale.
-    if (replyLocale === uiLocale) return new Map();
+    // Ingredient names already come in the Catalog Language.
+    if (replyLocale === catalogLocale) return new Map();
     const ids = [
       ...new Set(actions.flatMap((action) => action.ingredient?.id ?? [])),
     ];
