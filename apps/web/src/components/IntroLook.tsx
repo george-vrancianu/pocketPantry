@@ -16,6 +16,7 @@ export function IntroLook({
   useForcedThemeColor('warm');
   return (
     <Box
+      // `data-theme` and `data-ground` are also test hooks: the colours are theme variables jsdom cannot resolve.
       data-theme="warm"
       data-ground={ground}
       sx={{

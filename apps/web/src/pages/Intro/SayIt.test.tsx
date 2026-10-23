@@ -10,7 +10,7 @@ import {
   voiceAction,
 } from '../../test/voice';
 import { App } from '../../App';
-import { stubSetupMember, Where } from '../../test/intro';
+import { goToSayIt, stubSetupMember, Where } from '../../test/intro';
 import { renderWithProviders } from '../../test/render';
 import { scanLanguagePreference } from '../../test/scan';
 import {
@@ -23,7 +23,7 @@ const where = () => screen.getByLabelText('Where').textContent;
 
 type Options = Parameters<typeof stubSetupMember>[0];
 
-function openSayIt(options: Options = {}) {
+async function openSayIt(options: Options = {}) {
   const calls = stubSetupMember(options);
   // Wrap the stubbed API so every Voice Note upload (a FormData body) is kept.
   const { sent } = stubVoiceFetch(globalThis.fetch as never);
@@ -32,8 +32,9 @@ function openSayIt(options: Options = {}) {
       <App />
       <Where />
     </>,
-    { route: '/intro/say-it' },
+    { route: '/intro/setup' },
   );
+  await goToSayIt();
   return { calls, sent };
 }
 
@@ -47,7 +48,7 @@ describe('Setup 2, Say it', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('shows Gator, the two example phrases and where the mic is', async () => {
-    openSayIt();
+    await openSayIt();
     expect(
       await screen.findByText(
         "Now just tell me what's in the cupboard, or what to buy.",
@@ -78,13 +79,13 @@ describe('Setup 2, Say it', () => {
   });
 
   it('says nothing about the Pantry count when Setup has saved nothing', async () => {
-    openSayIt();
+    await openSayIt();
     await screen.findByText('Hold the mic, talk, let go');
     expect(screen.queryByText(/in your Pantry$/)).toBeNull();
   });
 
   it('lets only the mic be used: the camera and tabs are dimmed and out of the tab order', async () => {
-    openSayIt();
+    await openSayIt();
     const user = userEvent.setup();
     const talk = await talkButton();
     expect(talk).not.toHaveAttribute('aria-disabled');
@@ -100,7 +101,7 @@ describe('Setup 2, Say it', () => {
   });
 
   it('skips to All set', async () => {
-    const { calls } = openSayIt();
+    const { calls } = await openSayIt();
     const user = userEvent.setup();
     await user.click(await screen.findByRole('link', { name: 'Skip' }));
     expect(
@@ -113,7 +114,7 @@ describe('Setup 2, Say it', () => {
   });
 
   it('is on the olive ground in the light look', async () => {
-    openSayIt();
+    await openSayIt();
     await screen.findByText('Hold the mic, talk, let go');
     expect(document.querySelector('[data-ground="olive"]')).not.toBeNull();
     expect(document.querySelector('[data-theme="warm"]')).not.toBeNull();
@@ -121,7 +122,7 @@ describe('Setup 2, Say it', () => {
 
   describe('when the server cannot transcribe', () => {
     it('has no mic to teach: it says so and offers Continue to All set', async () => {
-      openSayIt({
+      await openSayIt({
         routes: {
           'GET /api/voice/config': () => Response.json({ configured: false }),
         },
@@ -168,7 +169,7 @@ describe('Setup 2, holding the mic', () => {
   };
 
   async function recordNote(options: Options = {}) {
-    const { sent } = openSayIt({
+    const { sent } = await openSayIt({
       routes: {
         'POST /api/voice': () => Response.json(heard, { status: 201 }),
         ...options?.routes,

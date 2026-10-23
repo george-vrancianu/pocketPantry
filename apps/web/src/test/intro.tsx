@@ -1,3 +1,4 @@
+import { fireEvent, screen } from '@testing-library/react';
 import { useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 import { stubApi } from './render';
@@ -49,3 +50,12 @@ export const preferenceSaves = (calls: ReturnType<typeof stubSetupMember>) =>
   calls
     .filter((call) => call.key === 'PUT /api/settings/preferences')
     .map((call) => call.body);
+
+/**
+ * From Set up or skip to Say it the way a Member gets there: "Show me how", then Snap's Skip. (Opening Say
+ * it fresh sends the Member back to Set up or skip, since Setup was not started in that visit.)
+ */
+export async function goToSayIt() {
+  fireEvent.click(await screen.findByRole('button', { name: /Show me how/ }));
+  fireEvent.click(await screen.findByRole('link', { name: 'Skip' }));
+}

@@ -43,7 +43,7 @@ export function SetupProgress({
         component="span"
         sx={{ fontWeight: 600, whiteSpace: 'nowrap', color: text }}
       >
-        {t('snap.progress', { step })}
+        {t('setupStep.progress', { step })}
       </Typography>
     </Box>
   );

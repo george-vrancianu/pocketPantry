@@ -37,9 +37,11 @@
     "skipHint": "Începe cu o Cămară goală",
     "languagesNotSaved": "Nu ți-am putut salva limbile. Ai ales {{choices}}. Le poți seta din nou în Setări."
   },
-  "snap": {
+  "setupStep": {
     "progress": "{{step}} din 2",
-    "skip": "Sari peste",
+    "skip": "Sari peste"
+  },
+  "snap": {
     "bubble": {
       "ingredients": "Pune niște mâncare pe blat și fă-i o poză. Îmi dau eu seama ce este.",
       "receipt": "Fotografiază bonul de la ultima ta cumpărătură. Pun eu toate produsele la locul lor."
@@ -61,7 +63,6 @@
     }
   },
   "sayIt": {
-    "skip": "Sari peste",
     "pill_one": "{{count}} lucru în Cămara ta",
     "pill_few": "{{count}} lucruri în Cămara ta",
     "pill_other": "{{count}} de lucruri în Cămara ta",
@@ -105,10 +106,12 @@
     "bannerCheck_one": "Verifică-l pe cel despre care nu eram sigur. Atinge orice rând ca să-l corectezi.",
     "bannerCheck_few": "Verifică cele {{count}} despre care nu eram sigur. Atinge orice rând ca să-l corectezi.",
     "bannerCheck_other": "Verifică cele {{count}} despre care nu eram sigur. Atinge orice rând ca să-l corectezi.",
-    "bannerClear": "N-a rămas nimic de care să nu fiu sigur. Atinge orice rând ca să-l corectezi.",
     "add_one": "Adaugă {{count}} în Cămară",
     "add_few": "Adaugă {{count}} în Cămară",
-    "add_other": "Adaugă {{count}} în Cămară"
+    "add_other": "Adaugă {{count}} în Cămară",
+    "bannerClear_one": "N-a rămas nimic de care să nu fiu sigur. Atinge rândul ca să-l corectezi.",
+    "bannerClear_few": "N-a rămas nimic de care să nu fiu sigur. Atinge orice rând ca să-l corectezi.",
+    "bannerClear_other": "N-a rămas nimic de care să nu fiu sigur. Atinge orice rând ca să-l corectezi."
   },
   "allSet": {
     "bubble": "Totul e gata! Am eu grijă de bucătăria ta.",

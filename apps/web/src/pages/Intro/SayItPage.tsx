@@ -3,8 +3,6 @@ import {
   Button,
   CheckIcon,
   color,
-  GatorImage,
-  Link,
   radius,
   tokens,
   Typography,
@@ -13,8 +11,10 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppDock } from '../../components/AppDock';
 import { IntroLook } from '../../components/IntroLook';
-import { SetupCallout } from '../../components/SetupReview/SetupCallout';
-import { SetupProgress } from '../../components/SetupReview/SetupProgress';
+import { creamFocus } from '../../components/Setup/creamFocus';
+import { GatorBubble } from '../../components/Setup/GatorBubble';
+import { SetupCallout } from '../../components/Setup/SetupCallout';
+import { SetupOliveTopRow } from '../../components/Setup/SetupOliveTopRow';
 import { VoiceNote } from '../../components/VoiceNote';
 import {
   useDockRaised,
@@ -22,7 +22,6 @@ import {
   VoiceHostSlot,
 } from '../../components/voice/VoiceHost';
 import { introPath, nextStep, savedByVoice, skipStep } from '../../lib/intro';
-import { useGatorAlt } from '../../lib/useGatorAlt';
 import { useIntro } from '../../lib/useIntro';
 import {
   useVoiceConfig,
@@ -33,15 +32,9 @@ import { useVoiceNoteState } from '../../lib/voiceNote';
 import { aboveMic, PILL_OFFSET, VOICE_LAYER } from '../../lib/voicePlacement';
 
 /** Where Skip goes: the Intro module's rule, never a path written here. */
-const SKIP_TO = introPath(skipStep('say-it') ?? 'all-set');
+const SKIP_TO = introPath(skipStep('say-it'));
 /** Where the step after Say it is: "Continue" when there is no mic, and "Do these N" once saved. */
 const CONTINUE_TO = introPath(nextStep('say-it'));
-
-/** Keyboard rings are the olive page colour by default, which vanishes on the olive ground: make them cream. */
-const creamFocus = {
-  '&& :focus-visible, && .Mui-focusVisible, && label:has(:focus-visible), && a:focus-visible':
-    { outlineColor: color.cardBg },
-} as const;
 
 /** The Setup Voice Note's Default List: the Pantry, whatever the route says (ADR 0021, Setup only). */
 const SETUP_DEFAULT_TARGET = 'pantry';
@@ -104,7 +97,6 @@ function CoachLine({ held }: { held: boolean }) {
 
 function SayItScreen() {
   const { t } = useTranslation('onboarding');
-  const gatorAlt = useGatorAlt();
   const { counts, recordSaved } = useIntro();
   const voice = useVoiceConfig();
   const holding = useDockRaised();
@@ -114,7 +106,7 @@ function SayItScreen() {
   const setup = {
     onApplied: (result: VoiceApplyResult, actions: VoiceReviewAction[]) => {
       recordSaved(savedByVoice(result.applied, actions));
-      void navigate(CONTINUE_TO);
+      void navigate(CONTINUE_TO, { replace: true });
     },
   };
 
@@ -135,21 +127,11 @@ function SayItScreen() {
           creamFocus,
         ]}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <SetupProgress tone="olive" step={2} />
-          <Link
-            href={SKIP_TO}
-            underline="always"
-            sx={{
-              color: color.cardBg,
-              fontWeight: 600,
-              fontSize: 15,
-              '&:hover': { color: color.cardBg },
-            }}
-          >
-            {t('sayIt.skip')}
-          </Link>
-        </Box>
+        <SetupOliveTopRow
+          step={2}
+          skipTo={SKIP_TO}
+          skipDisabled={phase === 'reading'}
+        />
 
         {counts.batches > 0 ? (
           <Box
@@ -184,27 +166,9 @@ function SayItScreen() {
           </Box>
         ) : null}
 
-        <Box
-          sx={{ display: 'flex', alignItems: 'center', gap: '8px', mt: '20px' }}
-        >
-          <Box sx={{ flexShrink: 0 }}>
-            <GatorImage mood="talking" size={132} alt={gatorAlt('talking')} />
-          </Box>
-          <Typography
-            sx={{
-              flex: 1,
-              px: '16px',
-              py: '14px',
-              borderRadius: radius.sheet,
-              backgroundColor: 'pp.cardBg',
-              color: 'text.primary',
-              fontSize: 15.5,
-              fontWeight: 600,
-            }}
-          >
-            {voice === 'off' ? t('sayIt.noVoice.bubble') : t('sayIt.bubble')}
-          </Typography>
-        </Box>
+        <GatorBubble>
+          {voice === 'off' ? t('sayIt.noVoice.bubble') : t('sayIt.bubble')}
+        </GatorBubble>
 
         {voice === 'off' ? null : (
           <Box

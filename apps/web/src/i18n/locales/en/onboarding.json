@@ -37,9 +37,11 @@
     "skipHint": "Start with an empty Pantry",
     "languagesNotSaved": "We couldn't save your languages. You chose {{choices}}. You can set them again in Settings."
   },
-  "snap": {
+  "setupStep": {
     "progress": "{{step}} of 2",
-    "skip": "Skip",
+    "skip": "Skip"
+  },
+  "snap": {
     "bubble": {
       "ingredients": "Put some food on the counter and snap it. I'll work out what it all is.",
       "receipt": "Snap the receipt from your last shop. I'll put the whole shop away."
@@ -61,7 +63,6 @@
     }
   },
   "sayIt": {
-    "skip": "Skip",
     "pill_one": "{{count}} thing in your Pantry",
     "pill_other": "{{count}} things in your Pantry",
     "bubble": "Now just tell me what's in the cupboard, or what to buy.",
@@ -101,9 +102,10 @@
     "banner_other": "I spotted {{count}} things!",
     "bannerCheck_one": "Check the one I wasn't sure about. Tap any line to fix it.",
     "bannerCheck_other": "Check the {{count}} I wasn't sure about. Tap any line to fix it.",
-    "bannerClear": "Nothing I wasn't sure about. Tap any line to fix it.",
     "add_one": "Add {{count}} to Pantry",
-    "add_other": "Add {{count}} to Pantry"
+    "add_other": "Add {{count}} to Pantry",
+    "bannerClear_one": "Nothing I wasn't sure about. Tap the line to fix it.",
+    "bannerClear_other": "Nothing I wasn't sure about. Tap any line to fix it."
   },
   "allSet": {
     "bubble": "You're all set! I'll keep an eye on your kitchen.",

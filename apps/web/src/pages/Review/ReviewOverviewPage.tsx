@@ -8,7 +8,6 @@ import {
   ImagePlusIcon,
   Link,
   Typography,
-  color,
   tokens,
   nestedRadius,
   radius,
@@ -20,6 +19,7 @@ import { readScans } from '../../lib/scanReads';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { translateApiError } from '../../i18n/translateApiError';
+import { GatorBanner } from '../../components/GatorBanner';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { PlateChoice, cardId } from './components/PlateChoice';
 import {
@@ -518,33 +518,15 @@ export function ReviewOverviewPage() {
         trailing={<Link href="/scan">{t('overview.camera')}</Link>}
       />
       {allRead ? (
-        <Box
-          role="status"
-          data-testid="all-read-banner"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            mb: 1.5,
-            py: 1.25,
-            pr: 2,
-            pl: 0.25,
-            borderRadius: radius.card,
-            backgroundColor: tokens.color.accent,
-            color: color.accentInk,
-          }}
-        >
-          <Box sx={{ flex: 'none' }}>
-            <GatorImage mood="happy" size={88} alt={gatorAlt('happy')} />
-          </Box>
-          <Typography sx={{ fontSize: 15, lineHeight: 1.4 }}>
-            <strong>{t('overview.banner', { count: readLines.length })}</strong>
-            <br />
-            {unsure > 0
+        <GatorBanner
+          testId="all-read-banner"
+          title={t('overview.banner', { count: readLines.length })}
+          detail={
+            unsure > 0
               ? t('overview.bannerCheck', { count: unsure })
-              : t('overview.bannerClear', { count: readLines.length })}
-          </Typography>
-        </Box>
+              : t('overview.bannerClear', { count: readLines.length })
+          }
+        />
       ) : null}
       {session.scans.length === 0 ? (
         <Typography color="text.secondary">{t('overview.empty')}</Typography>

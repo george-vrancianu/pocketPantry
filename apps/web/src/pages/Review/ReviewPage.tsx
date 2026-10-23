@@ -12,7 +12,7 @@ import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { MatchDialog } from '../../components/MatchDialog';
 import { ReviewActionBar } from '../../components/ReviewActionBar';
-import { SetupReviewView } from '../../components/SetupReview/SetupReviewView';
+import { SetupReviewView } from '../../components/Setup/SetupReviewView';
 import { PlateRecipeSave } from './components/PlateRecipeSave';
 import { ReviewCounters } from './components/ReviewCounters';
 import { ReviewTable } from './components/ReviewTable';

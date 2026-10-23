@@ -16,8 +16,8 @@ import {
 import { useGatorAlt } from '../../lib/useGatorAlt';
 import { useIntro } from '../../lib/useIntro';
 import { ReviewPage } from '../Review/ReviewPage';
-import { SetupReviewFrame } from '../../components/SetupReview/SetupReviewView';
-import { SetupTopRow } from '../../components/SetupReview/SetupTopRow';
+import { SetupReviewFrame } from '../../components/Setup/SetupReviewView';
+import { SetupTopRow } from '../../components/Setup/SetupTopRow';
 
 /** Setup's Review while the photo is still being read, or when the read failed. */
 function Waiting({
@@ -122,7 +122,7 @@ export function SetupReviewPage() {
   };
   const onSkip = () => {
     drop();
-    navigate(introPath(skipStep('setup-review') ?? 'all-set'), {
+    navigate(introPath(skipStep('setup-review')), {
       replace: true,
     });
   };

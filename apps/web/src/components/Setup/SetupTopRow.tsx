@@ -33,7 +33,7 @@ export function SetupTopRow({ onCamera, onSkip }: Props) {
       </Box>
       <SetupProgress tone="cream" />
       <Box component="button" type="button" onClick={onSkip} sx={linkButton}>
-        {t('snap.skip')}
+        {t('setupStep.skip')}
       </Box>
     </Box>
   );

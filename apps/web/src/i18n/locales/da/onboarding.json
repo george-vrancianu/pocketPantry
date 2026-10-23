@@ -37,9 +37,11 @@
     "skipHint": "Start med et tomt spisekammer",
     "languagesNotSaved": "Vi kunne ikke gemme dine sprog. Du valgte {{choices}}. Du kan indstille dem igen i Indstillinger."
   },
-  "snap": {
+  "setupStep": {
     "progress": "{{step}} af 2",
-    "skip": "Spring over",
+    "skip": "Spring over"
+  },
+  "snap": {
     "bubble": {
       "ingredients": "Stil noget mad på bordet og tag et billede af det. Jeg finder ud af, hvad det hele er.",
       "receipt": "Tag et billede af kvitteringen fra din sidste indkøbstur. Jeg lægger hele indkøbet på plads."
@@ -61,7 +63,6 @@
     }
   },
   "sayIt": {
-    "skip": "Spring over",
     "pill_one": "{{count}} ting i dit spisekammer",
     "pill_other": "{{count}} ting i dit spisekammer",
     "bubble": "Fortæl mig nu, hvad der er i skabet, eller hvad der skal købes.",
@@ -101,9 +102,10 @@
     "banner_other": "Jeg fandt {{count}} ting!",
     "bannerCheck_one": "Tjek den, jeg ikke var sikker på. Tryk på en linje for at rette den.",
     "bannerCheck_other": "Tjek de {{count}}, jeg ikke var sikker på. Tryk på en linje for at rette dem.",
-    "bannerClear": "Jeg var sikker på det hele. Tryk på en linje for at rette den.",
     "add_one": "Føj {{count}} til spisekammeret",
-    "add_other": "Føj {{count}} til spisekammeret"
+    "add_other": "Føj {{count}} til spisekammeret",
+    "bannerClear_one": "Jeg var sikker på den. Tryk på linjen for at rette den.",
+    "bannerClear_other": "Jeg var sikker på det hele. Tryk på en linje for at rette den."
   },
   "allSet": {
     "bubble": "Så er du klar! Jeg holder øje med dit køkken.",

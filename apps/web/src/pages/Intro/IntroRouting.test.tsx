@@ -112,6 +112,24 @@ describe('the Intro shell routing', () => {
     },
   );
 
+  it.each([
+    '/intro/snap',
+    '/intro/say-it',
+    '/intro/all-set',
+    '/intro/review/x',
+  ])(
+    'resumes Setup at Set up or skip when %s is opened fresh',
+    async (route) => {
+      stubIntroApi({ signedIn: true, introDone: false });
+      renderWithProviders(<App />, { route });
+      expect(
+        await screen.findByRole('heading', {
+          name: 'Fill your Pantry with Gator?',
+        }),
+      ).toBeInTheDocument();
+    },
+  );
+
   it('marks the Member done and lands on the Dashboard when they skip', async () => {
     const calls = stubIntroApi({ signedIn: true, introDone: false });
     renderWithProviders(<App />, { route: '/pantry' });

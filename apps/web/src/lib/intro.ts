@@ -13,15 +13,12 @@ import type { VoiceAppliedEntry, VoiceReviewAction } from './voice';
  * (tickets 497 to 499) read their next step from here instead of hard-coding paths.
  */
 export const INTRO_STEPS = [
-  'launch',
-  'log-in',
   'languages',
   'sign-up',
   'setup-or-skip',
   'snap',
   'setup-review',
   'say-it',
-  'what-gator-heard',
   'all-set',
   'dashboard',
 ] as const;
@@ -29,8 +26,8 @@ export const INTRO_STEPS = [
 export type IntroStep = (typeof INTRO_STEPS)[number];
 
 /**
- * Where a step lives. Launch has no path of its own (a signed-out visitor sees it on whatever route they
- * opened) and the Setup Review's path depends on the Scan, so ticket 498 builds it.
+ * Where a step lives. The Setup Review has no entry here because its path depends on the Scan
+ * (`setupReviewPath`). Launch is not a step: a signed-out visitor sees it on whatever route they opened.
  */
 export const INTRO_PATHS = {
   'log-in': '/sign-in',
@@ -41,7 +38,7 @@ export const INTRO_PATHS = {
   'say-it': '/intro/say-it',
   'all-set': '/intro/all-set',
   dashboard: '/',
-} as const satisfies Partial<Record<IntroStep, string>>;
+} as const;
 
 /** The Setup Review: the line editor of one Setup Scan. It has no step path of its own because it depends on the Scan. */
 export const setupReviewPath = (scanId: string) => `/intro/review/${scanId}`;
@@ -49,47 +46,27 @@ export const setupReviewPath = (scanId: string) => `/intro/review/${scanId}`;
 /** The Setup screens a signed-in Member who has not finished the Intro may be on. */
 export const INTRO_SETUP_PREFIX = '/intro/';
 
-/** The screen that follows when the Member carries on. */
+/** The screen that follows when the Member carries on: the next one in order, except that Say it is followed by All set. */
 export function nextStep(step: IntroStep): IntroStep {
-  switch (step) {
-    case 'launch':
-      return 'languages';
-    case 'log-in':
-      return 'dashboard';
-    // The Setup Review is followed by Say it, and Say it by All set (What Gator heard is a sheet on Say it).
-    case 'say-it':
-      return 'all-set';
-    default: {
-      const next = INTRO_STEPS[INTRO_STEPS.indexOf(step) + 1];
-      return next ?? 'dashboard';
-    }
-  }
+  return INTRO_STEPS[INTRO_STEPS.indexOf(step) + 1] ?? 'dashboard';
 }
 
-/** The path of a step that has one; throws for Launch and the Setup Review, which have none yet. */
+/** The path of a step that has one; throws for the Setup Review, whose path depends on the Scan. */
 export function introPath(step: IntroStep): string {
   const path = (INTRO_PATHS as Partial<Record<IntroStep, string>>)[step];
   if (!path) throw new Error(`The Intro step "${step}" has no path of its own`);
   return path;
 }
 
+/** The Setup screens that have a Skip next to the progress. */
+export type SkippableStep = 'snap' | 'setup-review' | 'say-it';
+
 /**
- * Where Skip goes, or `null` where the step has no Skip. Skip moves on one step only: Snap or its Review
- * go to Say it and Say it goes to All set. "Skip, take me to the app" leaves the Intro altogether.
+ * Where Skip goes. Skip moves on one step only: Snap or its Review go to Say it and Say it goes to All set.
+ * ("Skip, take me to the app" on Set up or skip leaves the Intro altogether, through `finishIntro`.)
  */
-export function skipStep(step: IntroStep): IntroStep | null {
-  switch (step) {
-    case 'setup-or-skip':
-      return 'dashboard';
-    case 'snap':
-    case 'setup-review':
-      return 'say-it';
-    case 'say-it':
-    case 'what-gator-heard':
-      return 'all-set';
-    default:
-      return null;
-  }
+export function skipStep(step: SkippableStep): IntroStep {
+  return step === 'say-it' ? 'all-set' : 'say-it';
 }
 
 /** What Setup really saved so far. */
@@ -150,9 +127,12 @@ export function introRedirect({
 }: RedirectInput): string | null {
   const onIntro = pathname.startsWith(INTRO_SETUP_PREFIX);
   if (introDone) return onIntro ? '/' : null;
-  if (onIntro) return null;
+  const setupPath = INTRO_PATHS['setup-or-skip'];
+  // Not started Setup in this visit (a reload, a reopened step): every Intro screen but Set up or skip
+  // sends the Member back to it, so Setup resumes there with its counts from zero.
+  if (onIntro) return setupStarted || pathname === setupPath ? null : setupPath;
   if (setupStarted && SCAN_PATHS.test(pathname)) return null;
-  return INTRO_PATHS['setup-or-skip'];
+  return setupPath;
 }
 
 /**

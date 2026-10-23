@@ -1,14 +1,7 @@
-import {
-  Box,
-  color,
-  GatorImage,
-  radius,
-  tokens,
-  Typography,
-} from '@pocket-pantry/ui';
+import { Box, tokens, Typography } from '@pocket-pantry/ui';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGatorAlt } from '../../lib/useGatorAlt';
+import { GatorBanner } from '../GatorBanner';
 import { ReviewActionBar } from '../ReviewActionBar';
 import { SetupTopRow } from './SetupTopRow';
 
@@ -70,7 +63,6 @@ export function SetupReviewView({
 }: Props) {
   const { t } = useTranslation('onboarding');
   const { t: tReview } = useTranslation('review');
-  const gatorAlt = useGatorAlt();
   // Read once: removing a line later must not rewrite what Gator said it spotted.
   const [count] = useState(spotted);
   return (
@@ -85,33 +77,15 @@ export function SetupReviewView({
         </Typography>
       </Box>
       {count > 0 ? (
-        <Box
-          role="status"
-          data-testid="setup-review-banner"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            mb: 1.5,
-            py: 1.25,
-            pr: 2,
-            pl: 0.25,
-            borderRadius: radius.card,
-            backgroundColor: tokens.color.accent,
-            color: color.accentInk,
-          }}
-        >
-          <Box sx={{ flex: 'none' }}>
-            <GatorImage mood="happy" size={88} alt={gatorAlt('happy')} />
-          </Box>
-          <Typography sx={{ fontSize: 15, lineHeight: 1.4 }}>
-            <strong>{t('review.banner', { count })}</strong>
-            <br />
-            {check > 0
+        <GatorBanner
+          testId="setup-review-banner"
+          title={t('review.banner', { count })}
+          detail={
+            check > 0
               ? t('review.bannerCheck', { count: check })
-              : t('review.bannerClear')}
-          </Typography>
-        </Box>
+              : t('review.bannerClear', { count })
+          }
+        />
       ) : null}
       {children}
       {count > 0 ? (

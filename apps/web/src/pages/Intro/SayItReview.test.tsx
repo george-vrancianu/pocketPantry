@@ -12,7 +12,12 @@ import {
   voiceIngredient,
 } from '../../test/voice';
 import { App } from '../../App';
-import { preferenceSaves, stubSetupMember, Where } from '../../test/intro';
+import {
+  goToSayIt,
+  preferenceSaves,
+  stubSetupMember,
+  Where,
+} from '../../test/intro';
 import { renderWithProviders } from '../../test/render';
 import { takeScan, shutter } from '../../test/scan';
 import {
@@ -103,11 +108,11 @@ const VOICE_ROUTES = (
 type Options = Parameters<typeof stubSetupMember>[0];
 
 /** The app at Say it, with a fake read of what was said. */
-function openSayIt(
+async function openSayIt(
   heard?: unknown,
   applied?: unknown,
   options: Options = {},
-  route = '/intro/say-it',
+  route?: string,
 ) {
   const calls = stubSetupMember({
     ...options,
@@ -120,8 +125,9 @@ function openSayIt(
       <Where />
       <ToSetup />
     </>,
-    { route },
+    { route: route ?? '/intro/setup' },
   );
+  if (!route) await goToSayIt();
   return { calls, sent };
 }
 
@@ -149,7 +155,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
   });
 
   it('goes from the hold to the Review, "Do these 3", All set with both counts and the Dashboard', async () => {
-    const { calls, sent } = openSayIt();
+    const { calls, sent } = await openSayIt();
     const user = userEvent.setup();
 
     const button = await talkButton();
@@ -228,7 +234,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
   });
 
   it('reads a bare "rice and tomatoes" as Pantry Batches and "milk on the list" as a Shopping Item', async () => {
-    const { sent } = openSayIt();
+    const { sent } = await openSayIt();
     const review = await speak();
     // The Pantry is the Default List, so nothing needs a list picked.
     expect(sent[0].get('defaultTarget')).toBe('pantry');
@@ -242,7 +248,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
   });
 
   it('keeps the normal Review as it was when no Setup is involved (no Gator title, Apply N changes)', async () => {
-    openSayIt(
+    await openSayIt(
       undefined,
       undefined,
       {
@@ -271,7 +277,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
   });
 
   it('Discard closes the Review and stays on Say it with nothing saved', async () => {
-    const { calls } = openSayIt();
+    const { calls } = await openSayIt();
     const user = userEvent.setup();
     const review = await speak();
 
@@ -294,7 +300,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
   });
 
   it('shows only the Shopping List tile when Setup added nothing to the Pantry', async () => {
-    const { calls } = openSayIt(
+    const { calls } = await openSayIt(
       {
         transcript: 'Put milk on the list.',
         actions: [HEARD.actions[2]],
@@ -318,7 +324,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
   });
 
   it('counts only what the server applied when some actions were skipped', async () => {
-    openSayIt(HEARD, {
+    await openSayIt(HEARD, {
       applied: [entry('a1', 'pantry'), entry('a3', 'shopping')],
       skipped: [{ id: 'a2', reason: 'other' }],
     });
@@ -337,7 +343,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
   });
 
   it('stays in the Review with its edits when the save fails, and counts nothing', async () => {
-    const { calls } = openSayIt(HEARD, undefined, {
+    const { calls } = await openSayIt(HEARD, undefined, {
       routes: {
         'POST /api/voice/apply': () =>
           Response.json({ code: 'unknown', params: {} }, { status: 500 }),
@@ -360,7 +366,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
   });
 
   it('lands back on Say it when the note reads nothing', async () => {
-    openSayIt({ transcript: 'um', actions: [] });
+    await openSayIt({ transcript: 'um', actions: [] });
     const user = userEvent.setup();
     const review = await speak();
     // Nothing to do: only a Discard, no "Do these 0".
@@ -374,7 +380,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
   });
 
   it('shows only the reading pill, not the callout, while Gator reads the note', async () => {
-    openSayIt(undefined, undefined, {
+    await openSayIt(undefined, undefined, {
       routes: { 'POST /api/voice': () => new Promise<Response>(() => {}) },
     });
     const button = await talkButton();
@@ -386,8 +392,23 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
   });
 
+  it('cannot be skipped while Gator is still reading the note, so that note is not lost', async () => {
+    await openSayIt(undefined, undefined, {
+      routes: { 'POST /api/voice': () => new Promise<Response>(() => {}) },
+    });
+    const button = await talkButton();
+    expect(screen.getByRole('link', { name: 'Skip' })).toBeVisible();
+    pressDown(button);
+    await screen.findByText("Gator's listening");
+    await holdLongEnough();
+    fireEvent.pointerUp(button);
+    await screen.findByText(/Gator's reading your note/);
+    expect(screen.queryByRole('link', { name: 'Skip' })).toBeNull();
+    expect(screen.getByText('Skip')).toHaveAttribute('aria-disabled', 'true');
+  });
+
   it('lands back on Say it when the Voice Note cannot be read', async () => {
-    openSayIt(undefined, undefined, {
+    await openSayIt(undefined, undefined, {
       routes: {
         'POST /api/voice': () =>
           Response.json({ code: 'unknown', params: {} }, { status: 500 }),
@@ -419,7 +440,7 @@ describe('Setup 2: the Voice Cap', () => {
   });
 
   it("says so when the day's Voice Notes are used up, and stays on Say it", async () => {
-    const { calls } = openSayIt(undefined, undefined, {
+    const { calls } = await openSayIt(undefined, undefined, {
       routes: {
         'POST /api/voice': () =>
           Response.json(
@@ -479,7 +500,7 @@ describe('Setup: counts across both steps', () => {
         productDescription: null,
       },
     ];
-    const { calls } = openSayIt(
+    const { calls } = await openSayIt(
       undefined,
       undefined,
       {

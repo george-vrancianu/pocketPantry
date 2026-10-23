@@ -159,7 +159,7 @@
     "readAgain": "Read again",
     "banner_one": "All read! {{count}} item.",
     "banner_other": "All read! {{count}} items.",
-    "bannerCheck_one": "Check the {{count}} I wasn't sure about, then add them.",
+    "bannerCheck_one": "Check the one I wasn't sure about, then add it.",
     "bannerCheck_other": "Check the {{count}} I wasn't sure about, then add them.",
     "bannerClear_one": "Nothing to check. Add it whenever you're ready.",
     "bannerClear_other": "Nothing to check. Add them whenever you're ready."

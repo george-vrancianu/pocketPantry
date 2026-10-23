@@ -68,7 +68,7 @@ Notes:
 1. In the Shortcut's settings, confirm the Import Question from step 1 is listed under Setup.
 2. Set the first **Text** action back to the placeholder `Assistant Token`. Never share with a real token in it: the action's current value is shared as the Import Question's default answer, so a real token would travel in the iCloud link to everyone who imports it.
 3. Share > **Copy iCloud Link**. The link carries the actions and the import question (with the placeholder as its default). An iCloud link is a snapshot: after any edit, copy a new link and update the matching variable in each environment: `VITE_SIRI_SHORTCUT_URL` ("Pantry add"), `VITE_SIRI_NEEDS_SHORTCUT_URL` ("Gator needs"), `VITE_SIRI_GOT_SHORTCUT_URL` ("Gator got") or `VITE_SIRI_HAVE_SHORTCUT_URL` ("Gator, do we have").
-4. Build the web app with `VITE_SIRI_SHORTCUT_URL=<the iCloud link>` (documented in [apps/web/README.md](../apps/web/README.md)). Settings > Siri then shows the link in its setup steps; while the variable is unset or empty the link is hidden. The same goes for the other three variables and their links; a Shortcut with no link shows "Link coming soon".
+4. Build the web app with `VITE_SIRI_SHORTCUT_URL=<the iCloud link>` (documented in [apps/web/README.md](../apps/web/README.md)). Settings > Siri then shows the link in its setup steps; while the variable is unset or empty the link is replaced by "Link coming soon". The same goes for the other three variables and their links.
 
 ## After installing
 
