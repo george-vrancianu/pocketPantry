@@ -7,10 +7,10 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { useGatorAlt } from '../../lib/useGatorAlt';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IntroLook } from '../../components/IntroLook';
 import { INTRO_PATHS } from '../../lib/intro';
+import { useGatorAlt } from '../../lib/useGatorAlt';
 
 /**
  * What a signed-out visitor sees on any route. "I already have an account" opens Log in and carries the

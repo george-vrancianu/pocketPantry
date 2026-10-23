@@ -30,14 +30,14 @@ type Props<T extends string> = {
   hideLabel?: boolean;
 };
 
-/**
- * A real radio group: native radio inputs sharing one name, so the arrow keys move and pick and Tab
- * enters and leaves the group. The look is on the label; the input is hidden but stays focusable.
- */
 function choiceRadius(layout: Props<string>['layout']) {
   return layout === 'rows' ? radius.control : radius.chip;
 }
 
+/**
+ * A real radio group: native radio inputs sharing one name, so the arrow keys move and pick and Tab
+ * enters and leaves the group. The look is on the label; the input is hidden but stays focusable.
+ */
 export function ChoiceRadioGroup<T extends string>({
   label,
   hint,

@@ -14,7 +14,9 @@ export function IntroGate() {
   const { setupStarted } = useIntro();
   const location = useLocation();
 
-  if (preferences.isPending) return <FullPageSpinner />;
+  // Only before the first answer: a refetch of a failed read goes back to pending, and must not unmount the app.
+  if (preferences.isPending && !preferences.isFetched)
+    return <FullPageSpinner />;
   const to = preferences.data
     ? introRedirect({
         pathname: location.pathname,

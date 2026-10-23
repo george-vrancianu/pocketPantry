@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addSetupCounts,
   initialLanguagePicks,
+  introPath,
   introRedirect,
   languagePicksBody,
   nextStep,
@@ -124,5 +125,12 @@ describe('the phone language', () => {
       catalogLanguage: null,
     });
     expect(initialLanguagePicks(null, null).locale).toBe('en');
+  });
+});
+
+describe('introPath', () => {
+  it('gives the path of a step and throws for one with none', () => {
+    expect(introPath('sign-up')).toBe('/sign-up');
+    expect(() => introPath('launch')).toThrow();
   });
 });

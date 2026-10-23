@@ -59,6 +59,13 @@ export function nextStep(step: IntroStep): IntroStep {
   }
 }
 
+/** The path of a step that has one; throws for Launch and the Setup Review, which have none yet. */
+export function introPath(step: IntroStep): string {
+  const path = (INTRO_PATHS as Partial<Record<IntroStep, string>>)[step];
+  if (!path) throw new Error(`The Intro step "${step}" has no path of its own`);
+  return path;
+}
+
 /**
  * Where Skip goes, or `null` where the step has no Skip. Skip moves on one step only: Snap or its Review
  * go to Say it and Say it goes to All set. "Skip, take me to the app" leaves the Intro altogether.

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
@@ -148,20 +148,36 @@ describe('the Intro shell routing', () => {
     },
   );
 
-  it('lets the app through when Preferences cannot be read', async () => {
-    const { fetchMock } = stubApi({
+  it('lets the app through when Preferences cannot be read, and keeps it through a refetch', async () => {
+    let reads = 0;
+    const { fetchMock, calls } = stubApi({
       'GET /api/auth/get-session': () =>
         Response.json({
           user: { id: '1', name: 'Ana', email: 'ana@example.com' },
         }),
-      'GET /api/settings/preferences': () =>
-        Response.json({ code: 'unknown', params: {} }, { status: 500 }),
+      'GET /api/settings/preferences': () => {
+        reads += 1;
+        // The refetch after the first failure never answers, so a spinner would stay up.
+        if (reads > 1) return new Promise<Response>(() => undefined);
+        return Response.json({ code: 'unknown', params: {} }, { status: 500 });
+      },
     });
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(<App />, { route: '/' });
     expect(
       await screen.findByRole('link', { name: 'Customise dashboard' }),
     ).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new Event('visibilitychange'));
+    });
+    await waitFor(() => expect(reads).toBe(2));
+    expect(
+      screen.getByRole('link', { name: 'Customise dashboard' }),
+    ).toBeInTheDocument();
+    expect(
+      calls.filter((c) => c.key === 'GET /api/settings/preferences').length,
+    ).toBeLessThanOrEqual(2);
   });
 
   it('keeps the deep link when Log in is left by Back and opened again', async () => {

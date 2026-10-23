@@ -14,9 +14,9 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGatorAlt } from '../../lib/useGatorAlt';
 import { IntroLook } from '../../components/IntroLook';
 import { translateApiError } from '../../i18n/translateApiError';
+import { useGatorAlt } from '../../lib/useGatorAlt';
 import { useIntro } from '../../lib/useIntro';
 import type { LanguagePicks } from '../../lib/intro';
 

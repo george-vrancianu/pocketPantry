@@ -12,7 +12,8 @@ import { IntroLook } from '../../components/IntroLook';
 import { changeLocale, LOCALES, type Locale } from '../../i18n';
 import {
   initialLanguagePicks,
-  INTRO_PATHS,
+  nextStep,
+  introPath,
   phoneLocale,
   readLanguagePicks,
   writeLanguagePicks,
@@ -124,7 +125,7 @@ export function LanguagesPage() {
           </Typography>
         </Stack>
 
-        <Button href={INTRO_PATHS['sign-up']}>
+        <Button href={introPath(nextStep('languages'))}>
           {t('onboarding:languages.continue')}
         </Button>
       </Stack>

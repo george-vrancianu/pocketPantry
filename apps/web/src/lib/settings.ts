@@ -145,9 +145,6 @@ export function useMemberPreferences() {
     queryKey: preferencesQueryKey,
     queryFn: () => apiRequest<MemberPreferences>('/settings/preferences'),
     retry: false,
-    // A failed read stays failed on a remount. Otherwise each observer that mounts under the Intro gate
-    // refetches, sends it back to pending and unmounts the app again, in a loop.
-    retryOnMount: false,
   });
 }
 
