@@ -8,7 +8,7 @@ export const LANGUAGE_NAMES: Record<ScanLanguage, string> = {
 
 /**
  * The prompt line that tells the model which language a Scan is read in, and
- * the one that fixes the language of `fallbackIngredientName` (the UI locale's,
+ * the one that fixes the language of `fallbackIngredientName` (the Catalog Language,
  * since it is shown in Review beside the Ingredient names). `productName`
  * stays in the language printed on the receipt or package.
  */

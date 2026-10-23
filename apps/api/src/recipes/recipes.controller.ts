@@ -151,7 +151,11 @@ export class RecipesController {
     @Body(new ZodValidationPipe(plateMatchesBody))
     body: PlateMatchesBody,
   ): Promise<PlateMatches> {
-    return this.plate.closestBases(member.id, body);
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      body.locale,
+    );
+    return this.plate.closestBases(member.id, { ...body, locale });
   }
 
   @Post('from-plate')
@@ -159,11 +163,15 @@ export class RecipesController {
     summary:
       'Save a Plate Scan as a Family Recipe for one serving: a Variant (parentId) or a standalone Recipe',
   })
-  saveFromPlate(
+  async saveFromPlate(
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(fromPlateBody)) body: FromPlateBody,
   ): Promise<FamilyRecipeEdit> {
-    return this.plate.save(member.id, body);
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      body.locale,
+    );
+    return this.plate.save(member.id, { ...body, locale });
   }
 
   @Get(':id/variant-draft')

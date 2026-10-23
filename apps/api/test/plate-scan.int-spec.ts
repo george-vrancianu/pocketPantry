@@ -598,4 +598,43 @@ describe('Plate Scan (integration)', () => {
       ).expect(400);
     });
   });
+
+  describe('with a Catalog Language Preference', () => {
+    // UI Language en, Catalog Language ro, Scan Language da: all three differ.
+    async function member() {
+      const cookie = await signUp();
+      await request(app.getHttpServer())
+        .put('/api/settings/preferences')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ locale: 'en', catalogLanguage: 'ro', scanLanguage: 'da' })
+        .expect(200);
+      return cookie;
+    }
+
+    it('asks for dish titles in the Catalog Language', async () => {
+      const cookie = await member();
+      respondWith({ matches: [{ title: 'Clatite', confidence: 0.8 }] });
+      prompts.length = 0;
+      await dishes(cookie).expect(201);
+      expect(prompts[0].prompt).toMatch(/recipe titles in Romanian/);
+    });
+
+    it('asks for the fallback name in the Catalog Language and names the match in it', async () => {
+      const cookie = await member();
+      respondWith({ items: [item()] });
+      const token = await tokenFor(cookie);
+      prompts.length = 0;
+      const response = await post(cookie, 'scan/plate/ingredients', {
+        dishTitle: 'Pancakes',
+        plateToken: token,
+      }).expect(201);
+      expect(prompts[0].prompt).toContain(
+        'fallbackIngredientName as a short generic ingredient name in Romanian',
+      );
+      expect((response.body as { lines: Line[] }).lines[0].match?.name).toBe(
+        'Lapte',
+      );
+    });
+  });
 });

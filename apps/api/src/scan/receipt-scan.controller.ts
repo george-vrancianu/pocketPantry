@@ -44,15 +44,14 @@ export class ReceiptScanController {
     @Body(new ScanImagePipe(receiptScanSchema, ['receiptImage']))
     body: ReceiptScanInput,
   ): Promise<ScanResponse> {
+    const languages = await this.languages.languagesOf(member.id, {
+      requestLocale: query.locale,
+    });
     return this.scan.scanReceipt(
       member.id,
       body,
-      query.locale,
-      await this.languages.scanLanguageOf(
-        member.id,
-        query.locale,
-        query.scanLanguage,
-      ),
+      languages.catalog,
+      query.scanLanguage ?? languages.scan,
     );
   }
 
@@ -66,15 +65,14 @@ export class ReceiptScanController {
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
   ): Promise<ReceiptConfirmation> {
+    const languages = await this.languages.languagesOf(member.id, {
+      requestLocale: query.locale,
+    });
     return this.confirmation.confirm(
       member.id,
       body.batches,
-      query.locale,
-      await this.languages.scanLanguageOf(
-        member.id,
-        query.locale,
-        query.scanLanguage,
-      ),
+      languages.catalog,
+      query.scanLanguage ?? languages.scan,
     );
   }
 }

@@ -1,10 +1,12 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
 import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
 import { ApiException } from '../src/common/api-exception';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
+import { unmatchedEntries } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
@@ -216,6 +218,64 @@ describe('Receipt Scan (integration)', () => {
       prompts.length = 0;
       await scan(cookie, 'en', 'ro').expect(201);
       expect(prompts[0].prompt).toMatch(/receipt is in Romanian/);
+    });
+  });
+
+  describe('with a Catalog Language Preference', () => {
+    // UI Language en, Catalog Language ro, Scan Language da: all three differ.
+    async function member() {
+      const cookie = await signUp();
+      await request(app.getHttpServer())
+        .put('/api/settings/preferences')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ locale: 'en', catalogLanguage: 'ro', scanLanguage: 'da' })
+        .expect(200);
+      return cookie;
+    }
+
+    it('asks for the fallback name in the Catalog Language and reads the receipt in the Scan Language', async () => {
+      const cookie = await member();
+      respondWith(receipt(product()));
+      prompts.length = 0;
+      await scan(cookie, 'en').expect(201);
+      expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
+      expect(prompts[0].prompt).toMatch(/receipt is in Danish/);
+    });
+
+    it('names the matched Ingredient in the Catalog Language', async () => {
+      const cookie = await member();
+      respondWith(receipt(product()));
+      const body = (await scan(cookie, 'en').expect(201)).body as unknown;
+      expect(body).toMatchObject({
+        lines: [{ match: { id: seedId.ingredient('milk'), name: 'Lapte' } }],
+      });
+    });
+
+    it('tags a confirmed Unmatched line with the Catalog Language and the printed text with the Scan Language', async () => {
+      const cookie = await member();
+      const rawName = `Sacosa catalog ${Date.now()}`;
+      await authed('post', '/scan/receipt/confirm?locale=en', cookie)
+        .send({
+          batches: [
+            {
+              rawName,
+              sourceText: 'SACOSE BIO',
+              source: 'receipt',
+              location: 'cupboard',
+            },
+          ],
+        })
+        .expect(201);
+      const rows = await app
+        .get<Database>(DATABASE)
+        .select({
+          locale: unmatchedEntries.locale,
+          sourceLanguage: unmatchedEntries.sourceLanguage,
+        })
+        .from(unmatchedEntries)
+        .where(eq(unmatchedEntries.rawName, rawName));
+      expect(rows).toEqual([{ locale: 'ro', sourceLanguage: 'da' }]);
     });
   });
 

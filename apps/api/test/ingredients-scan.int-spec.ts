@@ -79,6 +79,30 @@ describe('Ingredients Scan (integration)', () => {
       .set('cookie', cookie)
       .send(body);
 
+  describe('with a Catalog Language Preference', () => {
+    it('asks for fallback names in the Catalog Language, reads in the Scan Language and names Matches in the Catalog Language', async () => {
+      const cookie = await signUp();
+      await request(app.getHttpServer())
+        .put('/api/settings/preferences')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ locale: 'en', catalogLanguage: 'ro', scanLanguage: 'da' })
+        .expect(200);
+      respondWith([item()]);
+      prompts.length = 0;
+      const body = (
+        await scan(cookie, { ingredientsImage: IMAGE }, 'en').expect(201)
+      ).body as unknown;
+      expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
+      expect(prompts[0].prompt).toMatch(/labels in this photo is in Danish/);
+      expect(body).toMatchObject({
+        lines: [
+          { match: { id: seedId.ingredient('parmesan'), name: 'Parmezan' } },
+        ],
+      });
+    });
+  });
+
   it('requires authentication', async () => {
     await request(app.getHttpServer())
       .post('/api/scan/ingredients')
