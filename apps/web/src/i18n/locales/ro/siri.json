@@ -1,6 +1,6 @@
 {
   "title": "Siri",
-  "hint": "Creează un jeton de asistent pentru fiecare dispozitiv care vorbește cu listele tale prin voce. Un jeton poate adăuga în liste și poate citi Cămara și Lista de cumpărături ca să răspundă la întrebări, dar nimic altceva; revocă-l aici ca să nu mai funcționeze imediat.",
+  "hint": "Creează un jeton de asistent pentru fiecare dispozitiv care vorbește cu listele tale prin voce. Un jeton poate adăuga în liste, poate bifa articole deja aflate pe Lista de cumpărături și poate citi Cămara și Lista de cumpărături ca să răspundă la întrebări, dar nimic altceva; revocă-l aici ca să nu mai funcționeze imediat.",
   "nameLabel": "Numele jetonului",
   "namePlaceholder": "De exemplu, iPhone-ul meu",
   "create": "Creează jeton",
@@ -27,12 +27,33 @@
   "setup": {
     "title": "Configurează Siri",
     "create": "Creează mai sus un jeton și copiază-l.",
-    "add": "Adaugă comanda rapidă „Pantry add” în aplicația Comenzi rapide.",
-    "link": "Deschide comanda rapidă „Pantry add”",
+    "add": "Adaugă comenzile rapide dorite în aplicația Comenzi rapide.",
     "paste": "Lipește jetonul când comanda rapidă ți-l cere.",
-    "say": "Spune „Hey Siri, Pantry add”, apoi spune ce vrei să adaugi.",
-    "language": "Fraza pentru Siri este mereu în engleză, dar poți spune articolele în orice limbă acceptată de Pocket Pantry.",
-    "check": "Ca să întrebi ce ai în Cămară, spune „Hey Siri, Pantry check”. Și „Pantry add” răspunde la întrebări.",
-    "checkLink": "Deschide comanda rapidă „Pantry check”"
+    "say": "Spune „Hey Siri” și fraza unei comenzi rapide, apoi spune articolele.",
+    "language": "Fraza pentru Siri este mereu în engleză, dar poți spune articolele în orice limbă acceptată de PantryGator.",
+    "shortcutsTitle": "Comenzi rapide",
+    "pending": "Linkul vine în curând",
+    "shortcuts": {
+      "needs": {
+        "phrase": "Hey Siri, Gator needs",
+        "does": "Adaugă ce spui pe Lista ta de cumpărături.",
+        "link": "Deschide comanda rapidă „Gator needs”"
+      },
+      "got": {
+        "phrase": "Hey Siri, Gator got",
+        "does": "Bifează ce spui, dacă este pe Lista ta de cumpărături. Nu adaugă și nu șterge nimic, și îți spune când articolul nu este pe listă.",
+        "link": "Deschide comanda rapidă „Gator got”"
+      },
+      "have": {
+        "phrase": "Hey Siri, Gator, do we have",
+        "does": "Răspunde dacă ai un articol în Cămară sau dacă este pe Lista ta de cumpărături.",
+        "link": "Deschide comanda rapidă „Gator, do we have”"
+      },
+      "add": {
+        "phrase": "Hey Siri, Pantry add",
+        "does": "Prima comandă rapidă. Încă funcționează: adaugă pe Lista ta de cumpărături, marchează ce se termină, bifează ce ai luat și răspunde și la întrebări.",
+        "link": "Deschide comanda rapidă „Pantry add”"
+      }
+    }
   }
 }

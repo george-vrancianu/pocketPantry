@@ -1,15 +1,15 @@
 import { Alert, Box, Button, Stack } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { translateApiError } from '../i18n/translateApiError';
 import { useSession } from '../lib/auth';
+import { LaunchPage } from '../pages/Intro/LaunchPage';
 import { FullPageSpinner } from './FullPageSpinner';
 
-/** Route guard: signed-out visitors go to sign in and come back afterwards. */
+/** Route guard: a signed-out visitor sees Launch on whatever route they opened, and comes back to it after Log in. */
 export function RequireAuth() {
   const { t } = useTranslation('common');
   const session = useSession();
-  const location = useLocation();
 
   if (session.isPending) return <FullPageSpinner />;
 
@@ -24,10 +24,6 @@ export function RequireAuth() {
     );
   }
 
-  if (!session.data) {
-    return (
-      <Navigate to="/sign-in" state={{ from: location.pathname }} replace />
-    );
-  }
+  if (!session.data) return <LaunchPage />;
   return <Outlet />;
 }

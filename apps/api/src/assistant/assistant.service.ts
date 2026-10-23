@@ -25,12 +25,14 @@ import type {
 } from './assistant.schemas';
 
 /**
- * The Voice Action kinds an Assistant Request applies without Review (ADR 0019).
- * Adding a Shopping Item and flagging Running low are the safe kinds;
- * everything else, `shopping.setQuantity` included, is refused.
+ * The Voice Action kinds an Assistant Request applies without Review (ADR 0019,
+ * amended by ADR 0023). Adding a Shopping Item, flagging Running low and
+ * checking a Shopping Item already on the list are the safe kinds; everything
+ * else (unchecking, removing, `shopping.setQuantity`, Batch changes) is refused.
  */
 export const ASSISTANT_ALLOWED_KINDS: ReadonlySet<VoiceActionKind> = new Set([
   'shopping.add',
+  'shopping.check',
   'pantry.runningLow',
 ]);
 
@@ -134,6 +136,7 @@ export class AssistantService {
               today,
               allowedKinds: ASSISTANT_ALLOWED_KINDS,
               addSetsQuantity: true,
+              checkOnly: true,
             });
       // The list keeps Catalog Language names; the reply names things in the language spoken.
       // An Unmatched item is named by what was said (spokenName) when the reply is not in the Catalog Language.
@@ -143,6 +146,7 @@ export class AssistantService {
           : ((replyLocale !== catalog
               ? read.spokenNames.get(action.id)
               : undefined) ?? displayName(action));
+      const tickedHere = new Set<string>();
       // Answers to Pantry Questions come first, as they are spoken first.
       outcomes = [
         ...read.answers.map((answer): AssistantOutcome => {
@@ -168,9 +172,21 @@ export class AssistantService {
               };
           }
         }),
-        ...resolved.map((action, index) =>
-          outcomeOf(action, drafts[index], result, nameOf(action)),
-        ),
+        ...resolved.flatMap((action, index) => {
+          const outcome = outcomeOf(
+            action,
+            drafts[index],
+            result,
+            nameOf(action),
+          );
+          // "Got milk and milk": the second mention is the line the first just ticked, not a miss.
+          const key =
+            action.ingredient?.id ?? displayName(action).toLowerCase();
+          if (outcome.kind === 'checked') tickedHere.add(key);
+          else if (outcome.kind === 'notOnList' && tickedHere.has(key))
+            return [];
+          return [outcome];
+        }),
       ];
     } catch (error) {
       await this.cap.refund(member.id, day, 'assistant');
@@ -241,6 +257,17 @@ function outcomeOf(
 ): AssistantOutcome {
   const refused = { kind: 'refused', name } as const;
   const applied = result.applied.find((entry) => entry.actionId === draft.id);
+  // A check finds an unchecked line already on the list or it writes nothing (ADR 0023).
+  if (
+    !applied &&
+    voiceActionKind(draft) === 'shopping.check' &&
+    result.skipped.some(
+      (entry) =>
+        entry.id === draft.id && entry.reason === 'voice.item_not_found',
+    )
+  ) {
+    return { kind: 'notOnList', name };
+  }
   if (!applied) return refused; // refused by kind, or skipped (the Member is sent to the app)
   const amount = { quantity: action.quantity, unit: action.unit };
   switch (voiceActionKind(draft)) {
@@ -251,6 +278,8 @@ function outcomeOf(
           : 'flaggedRunningLow',
         name,
       };
+    case 'shopping.check':
+      return { kind: 'checked', name };
     case 'shopping.add':
       if (applied.alreadyDone) return { kind: 'alreadyOnList', name };
       if (applied.merged && action.quantity !== null) {

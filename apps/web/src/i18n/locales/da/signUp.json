@@ -8,5 +8,6 @@
   "submit": "Opret konto",
   "submitting": "Opretter konto",
   "haveAccount": "Har du allerede en konto?",
-  "signIn": "Log ind"
+  "signIn": "Log ind",
+  "back": "Tilbage"
 }

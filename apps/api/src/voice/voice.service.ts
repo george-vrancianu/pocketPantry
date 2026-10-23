@@ -97,6 +97,8 @@ export type VoiceApplyActionsInput = {
   allowedKinds?: ReadonlySet<VoiceActionKind>;
   /** An add onto an existing Shopping line sets its quantity (and unchecks it) instead of summing. Off for Review. */
   addSetsQuantity?: boolean;
+  /** A check only ticks an unchecked Shopping Item already on the list: it never adds one or changes an amount, and finding none is skipped as `voice.item_not_found`. Off for Review. */
+  checkOnly?: boolean;
 };
 
 type PantryBatches = Awaited<ReturnType<PantryService['list']>>;
@@ -523,6 +525,7 @@ export class VoiceService {
               today: input.today,
               tx: savepoint,
               ...(input.addSetsQuantity ? { addSetsQuantity: true } : {}),
+              ...(input.checkOnly ? { checkOnly: true } : {}),
             });
             if (!outcome.applied) throw new SkippedAction(outcome.reason);
             return outcome;

@@ -51,7 +51,7 @@ describe('SignInPage', () => {
     vi.stubGlobal('fetch', fetchMock);
     renderSignIn();
 
-    await fillAndSubmit('ana@example.com', 'correct-horse', 'Sign in');
+    await fillAndSubmit('ana@example.com', 'correct-horse', 'Log in');
 
     expect(await screen.findByText('Dashboard reached')).toBeInTheDocument();
     expect(
@@ -70,7 +70,7 @@ describe('SignInPage', () => {
     vi.stubGlobal('fetch', fetchMock);
     renderSignIn();
 
-    await fillAndSubmit('ana@example.com', 'nope', 'Sign in');
+    await fillAndSubmit('ana@example.com', 'nope', 'Log in');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Wrong email or password.',
@@ -99,7 +99,7 @@ describe('SignInPage', () => {
     );
     renderSignIn();
 
-    await fillAndSubmit('ana@example.com', 'pw', 'Sign in');
+    await fillAndSubmit('ana@example.com', 'pw', 'Log in');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       /could not reach the server/i,
@@ -124,8 +124,9 @@ describe('SignInPage', () => {
     expect(
       screen.getByRole('button', { name: 'Autentificare' }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('link', { name: 'Creează un cont' }),
-    ).toHaveAttribute('href', '/sign-up');
+    expect(screen.getByRole('link', { name: 'Începe' })).toHaveAttribute(
+      'href',
+      '/intro/languages',
+    );
   });
 });

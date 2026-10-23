@@ -30,8 +30,8 @@ async function bootstrap() {
   });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Pocket Pantry API')
-    .setDescription('Pocket Pantry API')
+    .setTitle('PantryGator API')
+    .setDescription('PantryGator API')
     .setVersion('1.0')
     .addCookieAuth('better-auth.session_token')
     .addBearerAuth({ type: 'http', scheme: 'bearer' }, 'assistant-token')

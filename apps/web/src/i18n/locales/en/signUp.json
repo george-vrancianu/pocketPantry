@@ -8,5 +8,6 @@
   "submit": "Create account",
   "submitting": "Creating account",
   "haveAccount": "Already have an account?",
-  "signIn": "Sign in"
+  "signIn": "Log in",
+  "back": "Back"
 }

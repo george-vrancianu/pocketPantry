@@ -11,8 +11,9 @@ import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { MatchDialog } from '../../components/MatchDialog';
+import { ReviewActionBar } from '../../components/ReviewActionBar';
+import { SetupReviewView } from '../../components/Setup/SetupReviewView';
 import { PlateRecipeSave } from './components/PlateRecipeSave';
-import { ReviewActionBar } from './components/ReviewActionBar';
 import { ReviewCounters } from './components/ReviewCounters';
 import { ReviewTable } from './components/ReviewTable';
 import {
@@ -23,15 +24,26 @@ import { TabletReviewTable } from './components/TabletReviewTable';
 import { useReviewScreen } from './hooks/useReviewScreen';
 
 /**
+ * What the Setup Review adds to the line editor (the Intro's Snap step): where Retake and Skip go and what
+ * happens once the Batches are saved. With it the page is the phone layout in the Intro's frame.
+ */
+export type SetupReview = {
+  onSaved: (saved: number) => void;
+  onRetake: () => void;
+  onSkip: () => void;
+};
+
+/**
  * The Review screen: where a Member confirms, edits, or discards Scan results
  * before anything is saved. Every Scan Mode lands here with the same proposed
  * lines (see `lib/review.ts`). Lines to check sort to the top, already open;
  * confident ones are single rows. Below 900 px it is the phone layout; from
  * 900 px a wide table with the same state, handlers and groups.
  */
-export function ReviewPage() {
+export function ReviewPage({ setup }: { setup?: SetupReview } = {}) {
   const { t } = useTranslation('review');
-  const screen = useReviewScreen();
+  const { t: tOnboarding } = useTranslation('onboarding');
+  const screen = useReviewScreen(setup);
   const wide = useBreakpointUp('md');
   // Callback ref: the result heading mounts with the tick-failure screen, so focus it then.
   const focusHeading = useCallback(
@@ -95,6 +107,66 @@ export function ReviewPage() {
       ) : null}
     </>
   );
+
+  // The phone layout's editor body: the Setup Review shows the same one in the Intro's frame.
+  const editor = (
+    <>
+      <ReviewTable
+        state={screen.state}
+        groups={groups}
+        parents={screen.parents}
+        shopping={screen.shopping}
+        onToggle={screen.toggle}
+        onChange={screen.change}
+        onSwapMatch={screen.openSwap}
+        onRemove={screen.remove}
+        onConfirm={screen.confirm}
+        onRestore={screen.restore}
+        onToggleSureGroup={screen.toggleSureGroup}
+        blocked={screen.blocked}
+        mode={screen.mode}
+      />
+      <Stack spacing={2} sx={{ mt: 2 }}>
+        {notices}
+      </Stack>
+      <MatchDialog
+        open={screen.swapOpen}
+        name={screen.swapName}
+        defaultQuery={screen.swapQuery}
+        newIngredientAllergenIds={screen.swapAllergenIds}
+        onSelect={screen.changeMatch}
+        onClose={screen.closeSwap}
+      />
+    </>
+  );
+
+  if (setup) {
+    return (
+      <SetupReviewView
+        subtitle={subtitle}
+        spotted={screen.included.length}
+        check={counts.check}
+        saveLabel={
+          screen.saving
+            ? t('pantry:form.saving')
+            : tOnboarding('review.add', { count: counts.save })
+        }
+        canSave={screen.canSave}
+        onSave={screen.save}
+        onRetake={setup.onRetake}
+        onSkip={setup.onSkip}
+      >
+        {read === 0 ? (
+          <Stack spacing={2}>
+            <Typography color="text.secondary">{t('empty')}</Typography>
+            <Button onClick={setup.onRetake}>{t('overview.retake')}</Button>
+          </Stack>
+        ) : (
+          editor
+        )}
+      </SetupReviewView>
+    );
+  }
 
   if (wide) {
     return (
@@ -162,32 +234,7 @@ export function ReviewPage() {
         // Room under the last row for the fixed action bar.
         <Box sx={{ pb: '100px' }}>
           <ReviewCounters {...counts} />
-          <ReviewTable
-            state={screen.state}
-            groups={groups}
-            parents={screen.parents}
-            shopping={screen.shopping}
-            onToggle={screen.toggle}
-            onChange={screen.change}
-            onSwapMatch={screen.openSwap}
-            onRemove={screen.remove}
-            onConfirm={screen.confirm}
-            onRestore={screen.restore}
-            onToggleSureGroup={screen.toggleSureGroup}
-            blocked={screen.blocked}
-            mode={screen.mode}
-          />
-          <Stack spacing={2} sx={{ mt: 2 }}>
-            {notices}
-          </Stack>
-          <MatchDialog
-            open={screen.swapOpen}
-            name={screen.swapName}
-            defaultQuery={screen.swapQuery}
-            newIngredientAllergenIds={screen.swapAllergenIds}
-            onSelect={screen.changeMatch}
-            onClose={screen.closeSwap}
-          />
+          {editor}
           <ReviewActionBar
             saveLabel={saveLabel}
             canSave={screen.canSave}

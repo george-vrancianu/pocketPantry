@@ -14,7 +14,7 @@ export type CreateAuthOptions = {
 /** The Better Auth instance; shared by AuthModule and the dev seed. */
 export function createAuth(database: Database, options: CreateAuthOptions) {
   return betterAuth({
-    appName: 'Pocket Pantry',
+    appName: 'PantryGator',
     baseURL: options.baseURL,
     basePath: '/api/auth',
     secret: options.secret,

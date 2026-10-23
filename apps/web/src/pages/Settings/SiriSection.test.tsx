@@ -221,119 +221,121 @@ describe('Settings Siri section', () => {
   describe('setup guide', () => {
     afterEach(() => vi.unstubAllEnvs());
 
-    it('links to the Pantry add Shortcut in a new tab when its URL is configured', async () => {
-      vi.stubEnv(
-        'VITE_SIRI_SHORTCUT_URL',
-        'https://www.icloud.com/shortcuts/abc',
+    const LINK_VARIABLES = {
+      needs: 'VITE_SIRI_NEEDS_SHORTCUT_URL',
+      got: 'VITE_SIRI_GOT_SHORTCUT_URL',
+      have: 'VITE_SIRI_HAVE_SHORTCUT_URL',
+      add: 'VITE_SIRI_SHORTCUT_URL',
+    } as const;
+    const clearLinks = () =>
+      Object.values(LINK_VARIABLES).forEach((name) =>
+        vi.stubEnv(name, undefined),
       );
-      stubTokens([]);
-      renderWithProviders(<SiriSection />);
-
-      const link = await screen.findByRole('link', {
-        name: /Open the “Pantry add” Shortcut/,
-      });
-      expect(link).toHaveAttribute(
-        'href',
-        'https://www.icloud.com/shortcuts/abc',
-      );
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    });
-
-    it('links to the Pantry check Shortcut in a new tab when its URL is configured', async () => {
-      vi.stubEnv(
-        'VITE_SIRI_CHECK_SHORTCUT_URL',
-        'https://www.icloud.com/shortcuts/check',
-      );
-      stubTokens([]);
-      renderWithProviders(<SiriSection />);
-
-      const link = await screen.findByRole('link', {
-        name: /Open the “Pantry check” Shortcut/,
-      });
-      expect(link).toHaveAttribute(
-        'href',
-        'https://www.icloud.com/shortcuts/check',
-      );
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-      // The Pantry add link stays hidden while its own variable is unset.
-      expect(screen.getAllByRole('link')).toHaveLength(1);
-    });
-
-    it.each(['unset', 'empty'])(
-      'hides the Pantry check link when its URL is %s',
-      async (kind) => {
-        vi.stubEnv(
-          'VITE_SIRI_SHORTCUT_URL',
-          'https://www.icloud.com/shortcuts/abc',
-        );
-        vi.stubEnv(
-          'VITE_SIRI_CHECK_SHORTCUT_URL',
-          kind === 'empty' ? '' : undefined,
-        );
-        stubTokens([]);
-        renderWithProviders(<SiriSection />);
-
-        await screen.findByText('No tokens yet.');
-        expect(
-          screen.queryByRole('link', { name: /Pantry check/ }),
-        ).not.toBeInTheDocument();
-        expect(
-          screen.getByRole('link', { name: /Pantry add/ }),
-        ).toBeInTheDocument();
-      },
-    );
 
     it.each([
       [
         'en',
-        /read your Pantry and Shopping List/,
-        /“Pantry add” answers questions too/,
+        [
+          /Hey Siri, Gator needs/,
+          /Hey Siri, Gator got/,
+          /Hey Siri, Gator, do we have/,
+          /Hey Siri, Pantry add/,
+        ],
+        /tick off items already on your Shopping List/,
+        /always English/,
       ],
-      ['ro', /poate citi Cămara/, /Și „Pantry add” răspunde la întrebări/],
-      ['da', /læse dit spisekammer/, /“Pantry add” svarer også på spørgsmål/],
+      [
+        'ro',
+        [
+          /Hey Siri, Gator needs/,
+          /Hey Siri, Gator got/,
+          /Hey Siri, Gator, do we have/,
+          /Hey Siri, Pantry add/,
+        ],
+        /poate bifa articole deja aflate pe Lista de cumpărături/,
+        /mereu în engleză/,
+      ],
+      [
+        'da',
+        [
+          /Hey Siri, Gator needs/,
+          /Hey Siri, Gator got/,
+          /Hey Siri, Gator, do we have/,
+          /Hey Siri, Pantry add/,
+        ],
+        /krydse varer af, der allerede står på din indkøbsliste/,
+        /altid på engelsk/,
+      ],
     ] as const)(
-      'says in %s what a token can read, and that Pantry add answers questions, with no Pantry check link',
-      async (locale, hint, note) => {
-        vi.stubEnv('VITE_SIRI_CHECK_SHORTCUT_URL', undefined);
+      'lists all four Shortcuts with their phrases in %s',
+      async (locale, phrases, hint, note) => {
+        clearLinks();
         stubTokens([]);
         renderWithProviders(<SiriSection />, { locale });
-        expect(await screen.findByText(hint)).toBeInTheDocument();
+
+        const shortcuts = await screen.findByRole('list', {
+          name: /Shortcuts|Comenzi rapide|Genveje/,
+        });
+        const items = within(shortcuts).getAllByRole('listitem');
+        expect(items).toHaveLength(4);
+        phrases.forEach((phrase, index) =>
+          expect(items[index]).toHaveTextContent(phrase),
+        );
+        expect(screen.getByText(hint)).toBeInTheDocument();
         expect(screen.getByText(note)).toBeInTheDocument();
+        // The steps list keeps its four steps.
+        const steps = screen.getByRole('list', { name: /Siri/ });
+        expect(within(steps).getAllByRole('listitem')).toHaveLength(4);
       },
     );
 
-    it.each(['unset', 'empty'])(
-      'hides the Shortcut link when the URL is %s',
-      async (kind) => {
-        vi.stubEnv('VITE_SIRI_SHORTCUT_URL', kind === 'empty' ? '' : undefined);
+    it('says each link is coming soon while no URL is configured, with no links', async () => {
+      clearLinks();
+      stubTokens([]);
+      renderWithProviders(<SiriSection />);
+
+      await screen.findByText('No tokens yet.');
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Link coming soon')).toHaveLength(4);
+    });
+
+    it.each([
+      ['needs', /Open the “Gator needs” Shortcut/],
+      ['got', /Open the “Gator got” Shortcut/],
+      ['have', /Open the “Gator, do we have” Shortcut/],
+      ['add', /Open the “Pantry add” Shortcut/],
+    ] as const)(
+      'links to the %s Shortcut in a new tab when its URL is configured',
+      async (key, name) => {
+        clearLinks();
+        vi.stubEnv(
+          LINK_VARIABLES[key],
+          `https://www.icloud.com/shortcuts/${key}`,
+        );
         stubTokens([]);
         renderWithProviders(<SiriSection />);
 
-        await screen.findByText('No tokens yet.');
-        expect(screen.queryByRole('link')).not.toBeInTheDocument();
-        expect(screen.getAllByRole('listitem').length).toBeGreaterThanOrEqual(
-          4,
+        const link = await screen.findByRole('link', { name });
+        expect(link).toHaveAttribute(
+          'href',
+          `https://www.icloud.com/shortcuts/${key}`,
         );
+        expect(link).toHaveAttribute('target', '_blank');
+        expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+        // The other three stay hidden while their own variables are unset.
+        expect(screen.getAllByRole('link')).toHaveLength(1);
+        expect(screen.getAllByText('Link coming soon')).toHaveLength(3);
       },
     );
 
-    it.each([
-      ['en', /Hey Siri, Pantry add/, /always English/],
-      ['ro', /Hey Siri, Pantry add/, /mereu în engleză/],
-      ['da', /Hey Siri, Pantry add/, /altid på engelsk/],
-    ] as const)(
-      'shows the setup steps and the language note in %s',
-      async (locale, phrase, note) => {
-        stubTokens([]);
-        renderWithProviders(<SiriSection />, { locale });
+    it('treats an empty URL like an unset one', async () => {
+      clearLinks();
+      vi.stubEnv('VITE_SIRI_GOT_SHORTCUT_URL', '  ');
+      stubTokens([]);
+      renderWithProviders(<SiriSection />);
 
-        const steps = await screen.findByRole('list', { name: /.+/ });
-        expect(within(steps).getAllByRole('listitem')).toHaveLength(4);
-        expect(within(steps).getByText(phrase)).toBeInTheDocument();
-        expect(screen.getByText(note)).toBeInTheDocument();
-      },
-    );
+      await screen.findByText('No tokens yet.');
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    });
   });
 });

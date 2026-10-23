@@ -209,15 +209,80 @@ describe('Review overview', () => {
     expect(screen.getByText('2 photos · all read')).toBeInTheDocument();
   });
 
-  it('shows a Scan still being read as "Reading photo…" with no remove button', async () => {
+  it('shows a Scan still being read as Gator reading it, with no remove button', async () => {
     vi.stubGlobal('fetch', () => new Promise<Response>(() => {}));
     await seed('a', 'product', 'reading');
     renderOverview();
     const card = cards()[0];
-    expect(within(card).getByText('Reading photo…')).toBeInTheDocument();
+    expect(
+      within(card).getByText("Gator's reading this one…"),
+    ).toBeInTheDocument();
     expect(
       within(card).queryByRole('button', { name: /remove/i }),
     ).not.toBeInTheDocument();
+    // The list-keeper Gator is decorative: the line beside it says what it does.
+    const gator = card.querySelector('img[data-mood="list-keeper"]');
+    expect(gator).not.toBeNull();
+    expect(gator).toHaveAttribute('alt', '');
+    expect(gator).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('shows the worried Gator, the reason and Retake on a card that failed', async () => {
+    await seedFailed('a', 'product', 'internal');
+    renderOverview();
+    const card = cards()[0];
+    expect(
+      within(card).getByRole('img', { name: 'Gator, worried' }),
+    ).toBeInTheDocument();
+    expect(card).toHaveTextContent("Couldn't read, retake");
+    expect(
+      within(card).getByRole('button', { name: 'Retake' }),
+    ).toBeInTheDocument();
+  });
+
+  describe('the all-read banner', () => {
+    it('shows the happy Gator with the item and unsure counts once every card is read', async () => {
+      await seed('a', 'product', [
+        yogurt,
+        line('Flour', { lowConfidence: true }),
+      ]);
+      await seed('b', 'product', [line('Mystery', { match: null }), yogurt]);
+      renderOverview();
+      const banner = screen.getByTestId('all-read-banner');
+      expect(
+        within(banner).getByRole('img', { name: 'Gator, happy' }),
+      ).toBeInTheDocument();
+      expect(banner).toHaveTextContent(
+        "All read! 4 items.Check the 2 I wasn't sure about, then add them.",
+      );
+      expect(screen.getByRole('button', { name: 'Add all' })).toBeEnabled();
+    });
+
+    it('says there is nothing to check when every line is sure', async () => {
+      await seed('a', 'product', [yogurt]);
+      renderOverview();
+      expect(screen.getByTestId('all-read-banner')).toHaveTextContent(
+        "All read! 1 item.Nothing to check. Add it whenever you're ready.",
+      );
+    });
+
+    it('is not there while a card is still being read, and Add all keeps waiting', async () => {
+      vi.stubGlobal('fetch', () => new Promise<Response>(() => {}));
+      await seed('a', 'product', [yogurt]);
+      await seed('b', 'product', 'reading');
+      renderOverview();
+      expect(screen.queryByTestId('all-read-banner')).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'Add all (waiting on 1)' }),
+      ).toBeDisabled();
+    });
+
+    it('is not there when a card failed', async () => {
+      await seed('a', 'product', [yogurt]);
+      await seedFailed('b', 'product', 'internal');
+      renderOverview();
+      expect(screen.queryByTestId('all-read-banner')).toBeNull();
+    });
   });
 
   it('removes a card with its ×', async () => {
@@ -579,7 +644,9 @@ describe('Review overview', () => {
       await waitFor(() => expect(cards()).toHaveLength(3));
       expect(cards()[0]).toHaveTextContent('Greek yogurt');
       for (const card of cards().slice(1)) {
-        expect(within(card).getByText('Reading photo…')).toBeInTheDocument();
+        expect(
+          within(card).getByText("Gator's reading this one…"),
+        ).toBeInTheDocument();
       }
       expect(screen.getByTestId('review-overview')).toBeInTheDocument();
       expect(screen.queryByTestId('scan-guide')).toBeNull();

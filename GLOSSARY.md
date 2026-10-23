@@ -260,7 +260,7 @@ The language a Voice Note is spoken in. Defaults to the Member's Spoken Language
 _Avoid_: Voice language, Scan Language (for Voice Notes)
 
 **Voice Action**:
-One change read from spoken or dictated text: adding, removing, checking or unchecking a Shopping Item or setting its quantity, adding or removing Batches, or flagging an Ingredient Running low. From a Voice Note, nothing is applied until the Member confirms it in Review. An Assistant Request may apply a Voice Action without Review, but only the safe kinds: adding a Shopping Item, checking a Shopping Item already on the list, and flagging an Ingredient Running low. Every other kind is refused.
+One change read from spoken or dictated text: adding, removing, checking or unchecking a Shopping Item or setting its quantity, adding or removing Batches, or flagging an Ingredient Running low. From a Voice Note, nothing is applied until the Member confirms it in Review. An Assistant Request may apply a Voice Action without Review, but only the safe kinds: adding a Shopping Item, ticking off an unchecked Shopping Item already on the list (a name that matches none writes nothing and is said aloud), and flagging an Ingredient Running low. Every other kind is refused.
 _Avoid_: Command, intent, voice line
 
 **Pantry Question**:

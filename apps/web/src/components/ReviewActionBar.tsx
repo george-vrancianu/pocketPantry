@@ -6,6 +6,8 @@ type Props = {
   canSave: boolean;
   onSave: () => void;
   onDiscard: () => void;
+  /** The left button's label; "Discard" unless a screen has its own word for leaving (Setup says "Retake"). */
+  discardLabel?: string;
 };
 
 /** Fixed to the bottom in place of the Dock; clear of the home indicator on phones. */
@@ -14,6 +16,7 @@ export function ReviewActionBar({
   canSave,
   onSave,
   onDiscard,
+  discardLabel,
 }: Props) {
   const { t } = useTranslation('review');
   return (
@@ -41,7 +44,7 @@ export function ReviewActionBar({
             fontWeight: 700,
           }}
         >
-          {t('discard')}
+          {discardLabel ?? t('discard')}
         </Button>
         <Button
           onClick={onSave}

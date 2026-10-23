@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CookTonightCard } from '../../lib/cookTonight';
 import type { RecipeListItem } from '../../lib/recipes';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubMotion } from '../../test/viewport';
 import { RecipesPage } from './RecipesPage';
 
 /*
@@ -91,7 +92,7 @@ const filters = {
 
 function setup(
   list: (url: URL) => RecipeListItem[],
-  cards: CookTonightCard[] = [],
+  cards: CookTonightCard[] | ((url: URL) => CookTonightCard[]) = [],
   /** Holds every filtered list response until it resolves. */
   gate?: Promise<void>,
   /** How many Recipes "Hide Recipes with my Allergies" left out, unless the request shows them. */
@@ -110,7 +111,7 @@ function setup(
     'GET /api/recipes/filters': () => Response.json(filters),
     'GET /api/recipes/cook-tonight': (url) =>
       Response.json({
-        cards,
+        cards: typeof cards === 'function' ? cards(url) : cards,
         hiddenByAllergiesCount: hiddenFor(url, hiddenCards),
       }),
   });
@@ -833,6 +834,146 @@ describe('RecipesPage', () => {
       )) {
         expect(new URLSearchParams(call.search).has('showHidden')).toBe(false);
       }
+    });
+  });
+
+  describe('Cook tonight card', () => {
+    const expiring = (id: string, title: string, count = 1) =>
+      card({
+        base: { id, title },
+        recipe: { id, title },
+        expiringCount: count,
+      });
+    const plain = (id: string, title: string) =>
+      card({ base: { id, title }, recipe: { id, title } });
+    const prompt = () => screen.queryByRole('region', { name: 'Cook tonight' });
+    const findPrompt = () =>
+      screen.findByRole('region', { name: 'Cook tonight' });
+
+    it('counts the Can Make cards that use something expiring soon, with the chef Gator', async () => {
+      setup(
+        () => [omelette, soup],
+        [expiring('o', 'Omelette'), expiring('s', 'Soup'), plain('p', 'Pie')],
+      );
+      const region = await findPrompt();
+      expect(within(region).getByText('Cook tonight')).toBeVisible();
+      expect(
+        within(region).getByText('2 Recipes use what expires soon'),
+      ).toBeVisible();
+      expect(within(region).getByAltText('Gator, cooking')).toBeVisible();
+      expect(
+        within(region).getByRole('button', { name: 'See them' }),
+      ).toBeVisible();
+    });
+
+    it('says "1 Recipe uses" in the singular', async () => {
+      setup(() => [omelette], [expiring('o', 'Omelette'), plain('p', 'Pie')]);
+      expect(
+        await screen.findByText('1 Recipe uses what expires soon'),
+      ).toBeVisible();
+    });
+
+    it('is hidden when no Can Make card uses anything expiring soon', async () => {
+      setup(() => [omelette], [plain('o', 'Omelette')]);
+      await findStrip();
+      expect(prompt()).toBeNull();
+      expect(screen.queryByAltText('Gator, cooking')).toBeNull();
+    });
+
+    it('does not count a near miss that uses something expiring soon', async () => {
+      const near = card({
+        canMake: false,
+        missing: { ingredientId: 'i-feta', name: 'Feta' },
+        expiringCount: 3,
+      });
+      setup(() => [omelette], [near]);
+      await findRow('Omelette');
+      expect(prompt()).toBeNull();
+    });
+
+    it('is hidden when there are no cards at all', async () => {
+      setup(() => [omelette], []);
+      await findRow('Omelette');
+      expect(prompt()).toBeNull();
+    });
+
+    it('leaves out Recipes hidden by Allergies until they are shown', async () => {
+      const user = userEvent.setup();
+      setup(
+        () => [omelette],
+        (url) =>
+          url.searchParams.get('showHidden') === 'true'
+            ? [expiring('o', 'Omelette'), expiring('s', 'Soup')]
+            : [expiring('o', 'Omelette')],
+        undefined,
+        1,
+      );
+      expect(
+        await screen.findByText('1 Recipe uses what expires soon'),
+      ).toBeVisible();
+      await user.click(await screen.findByRole('button', { name: 'Show' }));
+      expect(
+        await screen.findByText('2 Recipes use what expires soon'),
+      ).toBeVisible();
+    });
+
+    it('goes away while a search is active, as the strip does', async () => {
+      const user = userEvent.setup();
+      setup(
+        (url) => (filtered(url) ? [frittata] : [omelette]),
+        [expiring('o', 'Omelette')],
+      );
+      await findPrompt();
+      await user.type(screen.getByLabelText('Search Recipes'), 'frit');
+      await findRow('Frittata', MATCHES);
+      expect(prompt()).toBeNull();
+    });
+
+    describe('"See them"', () => {
+      afterEach(() => {
+        delete (Element.prototype as any).scrollIntoView;
+      });
+
+      it('scrolls to the "You can make this" strip', async () => {
+        const scrollIntoView = vi.fn();
+        Element.prototype.scrollIntoView = scrollIntoView;
+        setup(() => [omelette], [expiring('o', 'Omelette')]);
+        const strip = await findStrip();
+        await userEvent.click(
+          within(await findPrompt()).getByRole('button', { name: 'See them' }),
+        );
+        expect(scrollIntoView).toHaveBeenCalledTimes(1);
+        expect(scrollIntoView.mock.contexts[0]).toBe(strip.parentElement);
+      });
+
+      it('scrolls without animation under reduced motion', async () => {
+        stubMotion(true);
+        const scrollIntoView = vi.fn();
+        Element.prototype.scrollIntoView = scrollIntoView;
+        setup(() => [omelette], [expiring('o', 'Omelette')]);
+        await userEvent.click(
+          within(await findPrompt()).getByRole('button', { name: 'See them' }),
+        );
+        expect(scrollIntoView).toHaveBeenCalledWith(
+          expect.objectContaining({ behavior: 'auto' }),
+        );
+      });
+
+      it('lists the Recipes that expire soon first in the strip', async () => {
+        setup(
+          () => [omelette, soup],
+          [
+            plain('p', 'Pie'),
+            expiring('o', 'Omelette', 1),
+            plain('q', 'Quiche'),
+            expiring('s', 'Soup', 2),
+          ],
+        );
+        const strip = await findStrip();
+        expect(tilesOf(strip).map((link) => link.getAttribute('href'))).toEqual(
+          ['/recipes/o', '/recipes/s', '/recipes/p', '/recipes/q'],
+        );
+      });
     });
   });
 });

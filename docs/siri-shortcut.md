@@ -1,8 +1,8 @@
-# Building the "Pantry add" Shortcut
+# Building the Siri Shortcuts ("Pantry add" and the Gator Shortcuts)
 
 "Pantry add" is an Apple Shortcut that lets a Member say "Hey Siri, Pantry add", dictate what to add, and hear a one-sentence reply. It sends the dictated text to the API as an Assistant Request (see [ADR 0019](adr/0019-assistant-requests-apply-safe-voice-actions-without-review.md)). Build it on an iPhone or iPad in the Shortcuts app, then share it as an iCloud link.
 
-The name of the Shortcut is the Siri phrase, so it is "Pantry add" in every language. Siri's phrase is English; the dictated items can be in any language Pocket Pantry supports.
+The name of the Shortcut is the Siri phrase, so it is "Pantry add" in every language. Siri's phrase is English; the dictated items can be in any language PantryGator supports.
 
 ## The API contract
 
@@ -34,32 +34,41 @@ Response: `{ "outcomes": [...], "speech": string }`. The Shortcut only uses `spe
 6. **Get Dictionary Value**. Get **Value** for key `speech` in the **Contents of URL** result.
 7. **If**. Input: the **Dictionary Value** from step 6, condition **has any value**.
    - In the If branch: **Speak Text**, text = the **Dictionary Value** from step 6.
-   - In the **Otherwise** branch: **Speak Text**, text = `Pocket Pantry didn't answer. Try again, or check your Assistant Token in Settings.` (a fixed English fallback).
+   - In the **Otherwise** branch: **Speak Text**, text = `PantryGator didn't answer. Try again, or check your Assistant Token in Settings.` (a fixed English fallback).
 8. **End If**.
 
 The If is needed because some failures have no `speech`: a revoked, unknown or missing token gets HTTP 401, a text over 2000 characters or an invalid body gets HTTP 400, and an unexpected server error gets HTTP 500, all with no `speech`; a network failure returns nothing at all. Without the If, Speak Text would say nothing. As far as we know, Get Contents of URL returns the error body on non-2xx statuses rather than stopping the Shortcut, which is what lets the Otherwise branch run; verify this on a device with a revoked token.
 
 Finally, rename the Shortcut to exactly `Pantry add` (Shortcut name field at the top of the editor, or Rename in the menu). Shortcuts can be run by saying the name after "Hey Siri".
 
-## The "Pantry check" Shortcut
+## The Gator Shortcuts
 
-"Pantry check" is a second Shortcut for questions, so "Hey Siri, Pantry check" reads naturally ("do we have milk?", "is there any butter?"). It calls the same endpoint as "Pantry add" with the same contract, so the API treats both alike: there is nothing to configure on the server, and an Assistant Token works in either. Pantry Questions are answered from the Pantry and Shopping List (see [ADR 0020](adr/0020-voice-notes-and-assistant-requests-answer-pantry-questions.md)); Siri speaks at most 8 Ingredients, then "and N more, check PantryGator".
+Three more Shortcuts sit beside "Pantry add" (see [ADR 0023](adr/0023-assistant-requests-may-check-shopping-items.md)). All four call the same endpoint with the same contract and the same Assistant Token, so there is nothing to configure on the server and one token works in every one of them. "Pantry add" is kept for Members who already use it.
 
-Build it as a copy of "Pantry add" (Shortcuts app > duplicate), then change only:
+**How the API tells them apart.** It doesn't: the endpoint has no mode field. The API reads the sentence, so each Shortcut puts its verb in front of the dictated words, and the text model reads what was meant. The allow-list decides what may be applied without Review: adding a Shopping Item, ticking off a Shopping Item that is on the Shopping List and unchecked, and flagging Running low. Unchecking, removing and Batch changes are refused and named in the reply ("Open PantryGator for ...").
 
-1. **Dictate Text** prompt: `What do you want to check?`
-2. The Shortcut's name: exactly `Pantry check`.
+Build each as a copy of "Pantry add" (Shortcuts app > duplicate), then change only the three things in its row. The **Text** action is a new action placed right after **Dictate Text**: type the prefix, then insert the **Dictated Text** variable after it, and use this Text action's result (instead of **Dictated Text**) as `text` in the request body in step 5. Every other action (the token Text with its Import Question, Date, Format Date, Get Contents of URL, Get Dictionary Value, and the If with its fallback) stays as in "Actions, in order".
 
-Every other action (the token Text with its Import Question, Date, Format Date, Get Contents of URL, Get Dictionary Value, and the If with its fallback) stays as in "Actions, in order". Share it like "Pantry add" (see "Sharing it", with the placeholder token), then set `VITE_SIRI_CHECK_SHORTCUT_URL` to its iCloud link.
+| Shortcut name (the Siri phrase) | Dictate Text prompt | Text prefix sent | What the API does |
+| --- | --- | --- | --- |
+| `Gator needs` | `What do you need?` | `Add to the shopping list: ` | Adds each item to the Shopping List. Replies "Added to your Shopping List: ...". |
+| `Gator got` | `What did you get?` | `Got ` | Ticks off each item that is on the Shopping List and unchecked, and writes nothing else. An item that isn't there (or is already ticked) is never added; the reply says "Not on your Shopping List: ...". |
+| `Gator, do we have` | `What are you looking for?` | `Do we have ` | Answers Pantry Questions from the Pantry and Shopping List (see [ADR 0020](adr/0020-voice-notes-and-assistant-requests-answer-pantry-questions.md)); Siri speaks at most 8 Ingredients, then "and N more, check PantryGator". |
 
-"Pantry add" still answers questions: both Shortcuts send the dictated text to the same place, and a Pantry Question inside "Pantry add" is answered too. "Pantry check" only exists so the phrase fits the intent.
+Notes:
+
+- The prefix stays English whatever language the Member speaks, like Siri's phrase. The dictated words can be in any language PantryGator supports. The model is told the prefix is Shortcut text, not speech, so the language is judged from the words after it, and the reply comes back in that language (see "After installing").
+- With several unchecked lines for the same item (for example in different units), "Gator got" ticks the one in the spoken unit, otherwise the oldest. A spoken amount ("got two milks") is ignored: it never changes a quantity.
+- "Pantry add" still adds, flags Running low and answers questions, and now also ticks off an item when the words say so ("got milk"). "Gator got" exists so the phrase fits the intent.
+- The old "Pantry check" Shortcut is replaced by "Gator, do we have"; an installed "Pantry check" keeps working because it is the same endpoint. Its link variable `VITE_SIRI_CHECK_SHORTCUT_URL` is retired and no longer read: set `VITE_SIRI_HAVE_SHORTCUT_URL` to the new Shortcut's link, and remove the old variable from each environment.
+- **iCloud links are pending.** A maintainer builds the three Shortcuts on an iPhone and shares them (see "Sharing it"). Until then Settings > Siri says "Link coming soon" next to each Shortcut.
 
 ## Sharing it
 
 1. In the Shortcut's settings, confirm the Import Question from step 1 is listed under Setup.
 2. Set the first **Text** action back to the placeholder `Assistant Token`. Never share with a real token in it: the action's current value is shared as the Import Question's default answer, so a real token would travel in the iCloud link to everyone who imports it.
-3. Share > **Copy iCloud Link**. The link carries the actions and the import question (with the placeholder as its default). An iCloud link is a snapshot: after any edit, copy a new link and update `VITE_SIRI_SHORTCUT_URL` (or `VITE_SIRI_CHECK_SHORTCUT_URL` for "Pantry check") in each environment.
-4. Build the web app with `VITE_SIRI_SHORTCUT_URL=<the iCloud link>` (documented in [apps/web/README.md](../apps/web/README.md)). Settings > Siri then shows the link in its setup steps; while the variable is unset or empty the link is hidden. The same goes for `VITE_SIRI_CHECK_SHORTCUT_URL` and the "Pantry check" link.
+3. Share > **Copy iCloud Link**. The link carries the actions and the import question (with the placeholder as its default). An iCloud link is a snapshot: after any edit, copy a new link and update the matching variable in each environment: `VITE_SIRI_SHORTCUT_URL` ("Pantry add"), `VITE_SIRI_NEEDS_SHORTCUT_URL` ("Gator needs"), `VITE_SIRI_GOT_SHORTCUT_URL` ("Gator got") or `VITE_SIRI_HAVE_SHORTCUT_URL` ("Gator, do we have").
+4. Build the web app with `VITE_SIRI_SHORTCUT_URL=<the iCloud link>` (documented in [apps/web/README.md](../apps/web/README.md)). Settings > Siri then shows the link in its setup steps; while the variable is unset or empty the link is replaced by "Link coming soon". The same goes for the other three variables and their links.
 
 ## After installing
 

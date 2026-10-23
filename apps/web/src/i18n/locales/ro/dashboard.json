@@ -92,7 +92,7 @@
       "tidy": "Ordine"
     },
     "toDoFirst": "{{count}} de făcut · {{title}}",
-    "allDone": "Nimic de făcut. Totul este în termen, în stoc și la locul lui.",
+    "allDone": "Nimic de făcut.",
     "moreNames": "{{names}} +{{count}}",
     "gainSpoken_one": "crește scorul cu {{count}}",
     "gainSpoken_few": "crește scorul cu {{count}}",
@@ -183,6 +183,12 @@
       "add": "Adaugă {{name}}",
       "setDate": "Setează data",
       "setDateName": "Setează data pentru {{name}}"
+    },
+    "gator": {
+      "curious": "Încă învăț ce ai prin casă. Adaugă încă câteva lucruri și îți pot spune cum stă cămara.",
+      "dapper": "Splendid. Totul e în termen, aprovizionat și pus la socoteală.",
+      "hmm": "Hmm. Să începem de aici: {{title}}.",
+      "worried": "Hai să le punem în ordine. Mai întâi: {{title}}."
     }
   },
   "mealPlan": {

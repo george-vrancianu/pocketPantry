@@ -41,7 +41,13 @@ import { EXCLUDED_TOGGLE_ID, fieldId, rowId } from '../components/layout';
  * written back to the card as they are made, so leaving the editor keeps them. Saving goes
  * through `saveLines`, which routes by the card's Scan Mode.
  */
-export function useReviewScreen() {
+export function useReviewScreen(
+  /**
+   * The Setup Review: when the Batches are saved the Intro takes over (it counts them and moves on)
+   * instead of landing on the Pantry. A Receipt's unticked Shopping Items are not told: a new Member has none.
+   */
+  setup?: { onSaved: (saved: number) => void },
+) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   // A card of the Scan Session is edited at /scan/review/:scanId.
@@ -214,6 +220,10 @@ export function useReviewScreen() {
       {
         onSuccess: (failures) => {
           const landing = leaveCard(to);
+          if (setup) {
+            setup.onSaved(included.length);
+            return;
+          }
           if (
             failures &&
             failures.missing + failures.changed + failures.other > 0

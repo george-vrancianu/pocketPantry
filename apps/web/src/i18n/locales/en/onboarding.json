@@ -1,0 +1,119 @@
+{
+  "launch": {
+    "tagline": "Know what's in your kitchen.",
+    "taglineTwo": "Buy only what you need.",
+    "getStarted": "Get started",
+    "haveAccount": "I already have an account"
+  },
+  "languages": {
+    "title": "Your languages",
+    "continue": "Continue",
+    "back": "Back",
+    "app": "App language",
+    "fromPhone": "Picked from your phone's language",
+    "alsoUsedFor": "Also used for",
+    "voiceNotes": {
+      "label": "Voice Notes",
+      "hint": "What you say to Gator"
+    },
+    "receipts": {
+      "label": "Receipts & labels",
+      "hint": "What the camera reads"
+    },
+    "groceryNames": {
+      "label": "Grocery names",
+      "hint": "How items are named in your lists"
+    },
+    "same": "Same · <language>{{language}}</language>",
+    "abroad": "Shopping abroad? Set Receipts & labels to that country's language. You can change all of these later in Settings."
+  },
+  "setup": {
+    "title": "Fill your Pantry with Gator?",
+    "body": "Two quick tries and your kitchen is already in the app. About two minutes.",
+    "showMe": "Show me how",
+    "showMeSnap": "1 · Snap a photo",
+    "showMeSay": "2 · Say it",
+    "skip": "Skip, take me to the app",
+    "skipHint": "Start with an empty Pantry",
+    "languagesNotSaved": "We couldn't save your languages. You chose {{choices}}. You can set them again in Settings."
+  },
+  "setupStep": {
+    "progress": "{{step}} of 2",
+    "skip": "Skip"
+  },
+  "snap": {
+    "bubble": {
+      "ingredients": "Put some food on the counter and snap it. I'll work out what it all is.",
+      "receipt": "Snap the receipt from your last shop. I'll put the whole shop away."
+    },
+    "question": "What's in front of you?",
+    "choices": {
+      "ingredients": {
+        "label": "Ingredients",
+        "hint": "Fruit, veg, packets and tins on the counter"
+      },
+      "receipt": {
+        "label": "Receipt",
+        "hint": "The receipt from your last shop, laid flat"
+      }
+    },
+    "callout": {
+      "title": "Tap the camera to start",
+      "body": "It's always here, in the middle of the menu"
+    }
+  },
+  "sayIt": {
+    "pill_one": "{{count}} thing in your Pantry",
+    "pill_other": "{{count}} things in your Pantry",
+    "bubble": "Now just tell me what's in the cupboard, or what to buy.",
+    "examplesLabel": "Things you can say",
+    "examples": {
+      "pantry": {
+        "phrase": "“We have rice and two tins of tomatoes”",
+        "result": "Goes straight to the Pantry"
+      },
+      "shopping": {
+        "phrase": "“Put milk on the list”",
+        "result": "Adds it to the Shopping List"
+      }
+    },
+    "callout": {
+      "title": "Hold the mic, talk, let go",
+      "body": "Your phone will ask for the microphone. The recording is deleted once I've read it."
+    },
+    "coach": {
+      "keepHolding": "Keep holding while you talk.",
+      "letGo": "Let go when you're done."
+    },
+    "noVoice": {
+      "bubble": "Voice Notes aren't switched on here, so we'll skip this one.",
+      "callout": "Voice Notes need the server to be set up for them. You can add things by hand in the app.",
+      "continue": "Continue"
+    },
+    "heard": {
+      "title": "Here's what I heard",
+      "nothingSaved": "Nothing is saved until you say so. Tap a line to change it.",
+      "doThese_one": "Do this one",
+      "doThese_other": "Do these {{count}}"
+    }
+  },
+  "review": {
+    "banner_one": "I spotted {{count}} thing!",
+    "banner_other": "I spotted {{count}} things!",
+    "bannerCheck_one": "Check the one I wasn't sure about. Tap any line to fix it.",
+    "bannerCheck_other": "Check the {{count}} I wasn't sure about. Tap any line to fix it.",
+    "add_one": "Add {{count}} to Pantry",
+    "add_other": "Add {{count}} to Pantry",
+    "bannerClear_one": "Nothing I wasn't sure about. Tap the line to fix it.",
+    "bannerClear_other": "Nothing I wasn't sure about. Tap any line to fix it."
+  },
+  "allSet": {
+    "bubble": "You're all set! I'll keep an eye on your kitchen.",
+    "inPantry": "in your Pantry",
+    "onShoppingList": "on your Shopping List",
+    "tipReceipt": "After each shop, snap the receipt. It ticks off your list too.",
+    "tipMic": "The camera and mic are always in the middle of the menu.",
+    "go": "Go to my kitchen",
+    "error": "We couldn't finish just now. Try again."
+  }
+}

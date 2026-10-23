@@ -1,0 +1,125 @@
+{
+  "launch": {
+    "tagline": "Știi ce ai în bucătărie.",
+    "taglineTwo": "Cumperi doar ce îți trebuie.",
+    "getStarted": "Începe",
+    "haveAccount": "Am deja un cont"
+  },
+  "languages": {
+    "title": "Limbile tale",
+    "continue": "Continuă",
+    "back": "Înapoi",
+    "app": "Limba aplicației",
+    "fromPhone": "Aleasă după limba telefonului tău",
+    "alsoUsedFor": "Folosită și pentru",
+    "voiceNotes": {
+      "label": "Note vocale",
+      "hint": "Ce îi spui lui Gator"
+    },
+    "receipts": {
+      "label": "Bonuri și etichete",
+      "hint": "Ce citește camera"
+    },
+    "groceryNames": {
+      "label": "Numele alimentelor",
+      "hint": "Cum sunt numite produsele în listele tale"
+    },
+    "same": "La fel · <language>{{language}}</language>",
+    "abroad": "Faci cumpărături în străinătate? Setează Bonuri și etichete pe limba țării respective. Le poți schimba pe toate mai târziu, în Setări."
+  },
+  "setup": {
+    "title": "Umpli Cămara cu Gator?",
+    "body": "Două încercări rapide și bucătăria ta e deja în aplicație. Durează cam două minute.",
+    "showMe": "Arată-mi cum",
+    "showMeSnap": "1 · Fă o poză",
+    "showMeSay": "2 · Spune-o",
+    "skip": "Sari peste, du-mă în aplicație",
+    "skipHint": "Începe cu o Cămară goală",
+    "languagesNotSaved": "Nu ți-am putut salva limbile. Ai ales {{choices}}. Le poți seta din nou în Setări."
+  },
+  "setupStep": {
+    "progress": "{{step}} din 2",
+    "skip": "Sari peste"
+  },
+  "snap": {
+    "bubble": {
+      "ingredients": "Pune niște mâncare pe blat și fă-i o poză. Îmi dau eu seama ce este.",
+      "receipt": "Fotografiază bonul de la ultima ta cumpărătură. Pun eu toate produsele la locul lor."
+    },
+    "question": "Ce ai în fața ta?",
+    "choices": {
+      "ingredients": {
+        "label": "Ingrediente",
+        "hint": "Fructe, legume, pachete și conserve pe blat"
+      },
+      "receipt": {
+        "label": "Bon",
+        "hint": "Bonul de la ultima cumpărătură, întins pe masă"
+      }
+    },
+    "callout": {
+      "title": "Atinge camera ca să începi",
+      "body": "E mereu aici, în mijlocul meniului"
+    }
+  },
+  "sayIt": {
+    "pill_one": "{{count}} lucru în Cămara ta",
+    "pill_few": "{{count}} lucruri în Cămara ta",
+    "pill_other": "{{count}} de lucruri în Cămara ta",
+    "bubble": "Acum spune-mi ce e în dulap sau ce trebuie cumpărat.",
+    "examplesLabel": "Ce poți spune",
+    "examples": {
+      "pantry": {
+        "phrase": "„Avem orez și două conserve de roșii”",
+        "result": "Merge direct în Cămară"
+      },
+      "shopping": {
+        "phrase": "„Pune lapte pe listă”",
+        "result": "Îl adaugă pe Lista de cumpărături"
+      }
+    },
+    "callout": {
+      "title": "Ține apăsat pe microfon, vorbește, dă drumul",
+      "body": "Telefonul îți va cere accesul la microfon. Înregistrarea se șterge după ce o citesc."
+    },
+    "coach": {
+      "keepHolding": "Ține apăsat cât timp vorbești.",
+      "letGo": "Dă drumul când ai terminat."
+    },
+    "noVoice": {
+      "bubble": "Notele vocale nu sunt pornite aici, așa că sărim peste acest pas.",
+      "callout": "Notele vocale au nevoie ca serverul să fie configurat pentru ele. Poți adăuga produse manual în aplicație.",
+      "continue": "Continuă"
+    },
+    "heard": {
+      "title": "Iată ce am auzit",
+      "nothingSaved": "Nu se salvează nimic până nu spui tu. Atinge un rând ca să-l schimbi.",
+      "doThese_one": "Fă-o pe asta",
+      "doThese_few": "Aplică-le pe toate cele {{count}}",
+      "doThese_other": "Aplică-le pe toate cele {{count}}"
+    }
+  },
+  "review": {
+    "banner_one": "Am văzut {{count}} lucru!",
+    "banner_few": "Am văzut {{count}} lucruri!",
+    "banner_other": "Am văzut {{count}} de lucruri!",
+    "bannerCheck_one": "Verifică-l pe cel despre care nu eram sigur. Atinge orice rând ca să-l corectezi.",
+    "bannerCheck_few": "Verifică cele {{count}} despre care nu eram sigur. Atinge orice rând ca să-l corectezi.",
+    "bannerCheck_other": "Verifică cele {{count}} despre care nu eram sigur. Atinge orice rând ca să-l corectezi.",
+    "add_one": "Adaugă {{count}} în Cămară",
+    "add_few": "Adaugă {{count}} în Cămară",
+    "add_other": "Adaugă {{count}} în Cămară",
+    "bannerClear_one": "N-a rămas nimic de care să nu fiu sigur. Atinge rândul ca să-l corectezi.",
+    "bannerClear_few": "N-a rămas nimic de care să nu fiu sigur. Atinge orice rând ca să-l corectezi.",
+    "bannerClear_other": "N-a rămas nimic de care să nu fiu sigur. Atinge orice rând ca să-l corectezi."
+  },
+  "allSet": {
+    "bubble": "Totul e gata! Am eu grijă de bucătăria ta.",
+    "inPantry": "în Cămara ta",
+    "onShoppingList": "pe Lista ta de cumpărături",
+    "tipReceipt": "După fiecare cumpărătură, fotografiază bonul. Așa se bifează și lista ta.",
+    "tipMic": "Camera și microfonul sunt mereu în mijlocul meniului.",
+    "go": "Du-mă în bucătărie",
+    "error": "Nu am putut încheia acum. Încearcă din nou."
+  }
+}

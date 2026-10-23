@@ -30,6 +30,7 @@ import {
   Camera,
   Globe,
   ImagePlus,
+  ReceiptText,
   type LucideProps,
 } from 'lucide-react';
 
@@ -326,3 +327,4 @@ export const CameraIcon = lucide(Camera);
 export const GlobeIcon = lucide(Globe);
 /** Review overview: "Add from photos". */
 export const ImagePlusIcon = lucide(ImagePlus);
+export const ReceiptIcon = lucide(ReceiptText);

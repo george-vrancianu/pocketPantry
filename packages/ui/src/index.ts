@@ -42,6 +42,12 @@ export {
   IngredientIcon,
   type IngredientIconProps,
 } from './ingredientIcon/IngredientIcon';
+export {
+  GatorImage,
+  GATOR_MOODS,
+  type GatorImageProps,
+  type GatorMood,
+} from './gator/GatorImage';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
 export {
@@ -101,6 +107,7 @@ export {
   CheckIcon,
   ClockIcon,
   IngredientsScanIcon,
+  ReceiptIcon,
   CloseIcon,
   PlusIcon,
   BookPlusIcon,
@@ -203,7 +210,11 @@ export {
   type ToastOptions,
 } from './molecules/ToastProvider';
 export { Dock, type DockEntry, type DockProps } from './organisms/Dock';
-export { DockCapsule, type DockCapsuleProps } from './organisms/DockCapsule';
+export {
+  DockCapsule,
+  type DockCapsuleProps,
+  type DockTeach,
+} from './organisms/DockCapsule';
 
 export { CenteredLayout } from './templates/CenteredLayout';
 export { PageLayout, type PageLayoutProps } from './templates/PageLayout';

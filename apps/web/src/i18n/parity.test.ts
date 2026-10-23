@@ -244,8 +244,8 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
       'errors:auth.user_already_exists_use_another_email',
       'settings:account',
       'settings:allergies.noAccount',
+      'onboarding:launch.haveAccount',
       'settings:familyAllergies.hint',
-      'signIn:createAccount',
       'signUp:haveAccount',
       'signUp:submit',
       'signUp:submitting',
@@ -359,7 +359,12 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   [
     'settings',
     'the Settings page title, not a name for Member Preferences',
-    ['settings:tabs.label', 'settings:title'],
+    [
+      'settings:tabs.label',
+      'settings:title',
+      'onboarding:languages.abroad',
+      'onboarding:setup.languagesNotSaved',
+    ],
   ],
   ['side', '"on our side", an apology', ['errors:internal_server_error']],
   [
@@ -456,6 +461,18 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
     'a Recipe language, not the Scan Language',
   'dashboard:settings|settings': 'link to Settings',
   'voice:blocked.safariStep2|settings': 'Safari "Website Settings" menu name',
+  'onboarding:languages.app|app language':
+    'the first-screen name for the UI Language, before the Member has any Preferences (design handoff)',
+  'onboarding:languages.receipts.label|label':
+    'the printed labels the camera reads (the Scan Language row), not a Product Description',
+  'onboarding:languages.abroad|label':
+    'the printed labels the camera reads (the Scan Language row), not a Product Description',
+  'onboarding:snap.bubble.ingredients|food':
+    "Gator's line from the design handoff: loose food on the counter, before it is anything in the Pantry",
+  'onboarding:snap.callout.body|menu':
+    'the design handoff calls the Dock "the menu"; it is not a Meal Plan',
+  'onboarding:allSet.tipMic|menu':
+    'the design handoff calls the Dock "the menu"; it is not a Meal Plan',
 };
 
 const escape = (s: string) =>

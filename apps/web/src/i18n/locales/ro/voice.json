@@ -2,7 +2,7 @@
   "intro": {
     "title": "Spune ce ai făcut",
     "body": "Ține apăsat butonul, vorbește, apoi dă drumul. Verifici fiecare modificare înainte să se salveze ceva.",
-    "privacy": "<b>Pocket Pantry are nevoie de microfon</b> ca să audă notele vocale. Browserul te va întreba în continuare. Înregistrarea este transformată în text pentru a citi modificările tale, apoi ștearsă; nu se păstrează nimic.",
+    "privacy": "<b>PantryGator are nevoie de microfon</b> ca să audă notele vocale. Browserul te va întreba în continuare. Înregistrarea este transformată în text pentru a citi modificările tale, apoi ștearsă; nu se păstrează nimic.",
     "notNow": "Nu acum",
     "allow": "Permite microfonul",
     "examples": {
@@ -56,7 +56,7 @@
   },
   "blocked": {
     "title": "Microfonul este blocat",
-    "body": "Notele vocale au nevoie de el. Permite-l pentru Pocket Pantry în browser, apoi revino și ține din nou apăsat butonul.",
+    "body": "Notele vocale au nevoie de el. Permite-l pentru PantryGator în browser, apoi revino și ține din nou apăsat butonul.",
     "safari": "iPhone, Safari",
     "safariStep1": "Atinge <b>aA</b> în bara de adrese",
     "safariStep2": "<b>Setările site-ului</b> → <b>Microfon</b> → <b>Permite</b>",
@@ -73,7 +73,7 @@
     "blocked": "Microfon blocat"
   },
   "listening": {
-    "title": "Ascult",
+    "title": "Gator ascultă",
     "starting": "Pornește…",
     "of": "/ 1:00",
     "hint": "Eliberează pentru a trimite · glisează în afară pentru a anula",
@@ -252,7 +252,7 @@
     "other": "nu a putut fi aplicat"
   },
   "send": {
-    "reading": "Îți citesc nota",
+    "reading": "Gator îți citește nota…",
     "readingMeta": "{{duration}} de vorbire · {{language}}",
     "cancel": "Anulează",
     "cancelled": "Anulat. Nu s-a salvat nimic.",

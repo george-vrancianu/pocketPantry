@@ -1,0 +1,119 @@
+{
+  "launch": {
+    "tagline": "Vid, hvad du har i køkkenet.",
+    "taglineTwo": "Køb kun det, du har brug for.",
+    "getStarted": "Kom i gang",
+    "haveAccount": "Jeg har allerede en konto"
+  },
+  "languages": {
+    "title": "Dine sprog",
+    "continue": "Fortsæt",
+    "back": "Tilbage",
+    "app": "Appens sprog",
+    "fromPhone": "Valgt ud fra din telefons sprog",
+    "alsoUsedFor": "Bruges også til",
+    "voiceNotes": {
+      "label": "Stemmenoter",
+      "hint": "Det, du siger til Gator"
+    },
+    "receipts": {
+      "label": "Kvitteringer og etiketter",
+      "hint": "Det, kameraet læser"
+    },
+    "groceryNames": {
+      "label": "Varenavne",
+      "hint": "Hvordan varer hedder på dine lister"
+    },
+    "same": "Samme · <language>{{language}}</language>",
+    "abroad": "Handler du i udlandet? Sæt Kvitteringer og etiketter til landets sprog. Du kan ændre det hele senere i Indstillinger."
+  },
+  "setup": {
+    "title": "Fyld dit spisekammer med Gator?",
+    "body": "To hurtige forsøg, og dit køkken er allerede i appen. Det tager omkring to minutter.",
+    "showMe": "Vis mig hvordan",
+    "showMeSnap": "1 · Tag et billede",
+    "showMeSay": "2 · Sig det",
+    "skip": "Spring over, tag mig til appen",
+    "skipHint": "Start med et tomt spisekammer",
+    "languagesNotSaved": "Vi kunne ikke gemme dine sprog. Du valgte {{choices}}. Du kan indstille dem igen i Indstillinger."
+  },
+  "setupStep": {
+    "progress": "{{step}} af 2",
+    "skip": "Spring over"
+  },
+  "snap": {
+    "bubble": {
+      "ingredients": "Stil noget mad på bordet og tag et billede af det. Jeg finder ud af, hvad det hele er.",
+      "receipt": "Tag et billede af kvitteringen fra din sidste indkøbstur. Jeg lægger hele indkøbet på plads."
+    },
+    "question": "Hvad har du foran dig?",
+    "choices": {
+      "ingredients": {
+        "label": "Ingredienser",
+        "hint": "Frugt, grønt, pakker og dåser på bordet"
+      },
+      "receipt": {
+        "label": "Kvittering",
+        "hint": "Kvitteringen fra din sidste indkøbstur, lagt fladt"
+      }
+    },
+    "callout": {
+      "title": "Tryk på kameraet for at starte",
+      "body": "Det er altid her, midt i menuen"
+    }
+  },
+  "sayIt": {
+    "pill_one": "{{count}} ting i dit spisekammer",
+    "pill_other": "{{count}} ting i dit spisekammer",
+    "bubble": "Fortæl mig nu, hvad der er i skabet, eller hvad der skal købes.",
+    "examplesLabel": "Det kan du sige",
+    "examples": {
+      "pantry": {
+        "phrase": "“Vi har ris og to dåser tomater”",
+        "result": "Går direkte i spisekammeret"
+      },
+      "shopping": {
+        "phrase": "“Sæt mælk på listen”",
+        "result": "Lægger den på indkøbslisten"
+      }
+    },
+    "callout": {
+      "title": "Hold mikrofonen nede, tal, slip",
+      "body": "Din telefon spørger om adgang til mikrofonen. Optagelsen bliver slettet, når jeg har læst den."
+    },
+    "coach": {
+      "keepHolding": "Bliv ved med at holde, mens du taler.",
+      "letGo": "Slip, når du er færdig."
+    },
+    "noVoice": {
+      "bubble": "Stemmenoter er ikke slået til her, så vi springer det her over.",
+      "callout": "Stemmenoter kræver, at serveren er sat op til dem. Du kan tilføje ting i hånden i appen.",
+      "continue": "Fortsæt"
+    },
+    "heard": {
+      "title": "Det her hørte jeg",
+      "nothingSaved": "Intet bliver gemt, før du siger til. Tryk på en linje for at ændre den.",
+      "doThese_one": "Gør den her",
+      "doThese_other": "Gør de {{count}}"
+    }
+  },
+  "review": {
+    "banner_one": "Jeg fandt {{count}} ting!",
+    "banner_other": "Jeg fandt {{count}} ting!",
+    "bannerCheck_one": "Tjek den, jeg ikke var sikker på. Tryk på en linje for at rette den.",
+    "bannerCheck_other": "Tjek de {{count}}, jeg ikke var sikker på. Tryk på en linje for at rette dem.",
+    "add_one": "Føj {{count}} til spisekammeret",
+    "add_other": "Føj {{count}} til spisekammeret",
+    "bannerClear_one": "Jeg var sikker på den. Tryk på linjen for at rette den.",
+    "bannerClear_other": "Jeg var sikker på det hele. Tryk på en linje for at rette den."
+  },
+  "allSet": {
+    "bubble": "Så er du klar! Jeg holder øje med dit køkken.",
+    "inPantry": "i dit spisekammer",
+    "onShoppingList": "på din indkøbsliste",
+    "tipReceipt": "Tag et billede af kvitteringen efter hvert indkøb. Så afkrydser jeg også din liste.",
+    "tipMic": "Kameraet og mikrofonen er altid midt i menuen.",
+    "go": "Til mit køkken",
+    "error": "Vi kunne ikke afslutte lige nu. Prøv igen."
+  }
+}

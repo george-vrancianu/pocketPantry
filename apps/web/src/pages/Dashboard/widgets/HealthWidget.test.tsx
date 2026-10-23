@@ -1,3 +1,4 @@
+import { tokens } from '@pocket-pantry/ui';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
@@ -251,7 +252,7 @@ describe('HealthWidget', () => {
     renderWithProviders(<HealthWidget size="wide" columns={2} />);
 
     const card = await screen.findByRole('button', {
-      name: 'Pantry health, 100, In good shape, nothing to do',
+      name: "Pantry health, 100, In good shape, nothing to do. Splendid. Everything's in date, stocked and accounted for.",
     });
     expect(card).toHaveTextContent('Nothing to do');
   });
@@ -268,7 +269,7 @@ describe('HealthWidget', () => {
     renderWithProviders(<HealthWidget size="wide" columns={2} />);
 
     const card = await screen.findByRole('button', {
-      name: 'Pantry health, Add 6 more to the Pantry to get your score, 1 thing to do',
+      name: "Pantry health, Add 6 more to the Pantry to get your score, 1 thing to do. I'm still learning what you've got. Add a few more things and I can tell you how your Pantry is doing.",
     });
     expect(card).toHaveTextContent(
       'Add 6 more to the Pantry to get your score',
@@ -845,9 +846,9 @@ describe('HealthWidget', () => {
     it('says all done, with every pill, when there is nothing to do', async () => {
       const { sheet } = await open(filler(10));
 
-      expect(sheet).toHaveTextContent(
-        'Nothing to do. Everything is in date, stocked and accounted for.',
-      );
+      expect(sheet).toHaveTextContent('Nothing to do.');
+      // The dapper line says the rest; the body does not repeat it.
+      expect(within(sheet).getAllByText(/in date/i)).toHaveLength(1);
       expect(within(sheet).getAllByRole('listitem')).toHaveLength(6);
     });
 
@@ -1626,4 +1627,145 @@ describe('HealthWidget', () => {
       });
     },
   );
+});
+
+describe('HealthWidget Gator', () => {
+  const inDate = (n: number) => Array.from({ length: n }, () => batch());
+  const expired = (n: number) =>
+    Array.from({ length: n }, () => batch({ expiryDate: isoIn(-2) }));
+  const forgotten = (n: number) =>
+    Array.from({ length: n }, () =>
+      batch({ expiryDate: null, createdAt: '2020-01-01T00:00:00.000Z' }),
+    );
+
+  const CURIOUS = 'Gator, curious';
+  const DAPPER = 'Gator, dapper';
+  const HMM = 'Gator, with a raised eyebrow';
+  const WORRIED = 'Gator, worried';
+  const ALL_ALTS = [CURIOUS, DAPPER, HMM, WORRIED];
+  const STILL_LEARNING = /I'm still learning what you've got/;
+  const SPLENDID = /Splendid\. Everything's in date/;
+
+  async function renderBand(batches: Batch[]) {
+    stub({ batches, runningLow: [] }, []);
+    renderWithProviders(<HealthWidget size="wide" columns={2} />);
+    return screen.findByRole('button', { name: /^Pantry health/ });
+  }
+
+  /** The one mood Gator shows; every other mood's alt text is absent. */
+  const expectOnlyMood = (alt: string) => {
+    expect(screen.getAllByAltText(alt).length).toBeGreaterThan(0);
+    for (const other of ALL_ALTS.filter((a) => a !== alt)) {
+      expect(screen.queryByAltText(other)).toBeNull();
+    }
+  };
+
+  it('is curious with fewer than ten Batches, saying it is still learning', async () => {
+    const card = await renderBand(inDate(4));
+    expectOnlyMood(CURIOUS);
+    expect(card).toHaveTextContent(
+      'Add 6 more to the Pantry to get your score',
+    );
+    expect(screen.getByText(STILL_LEARNING)).toBeVisible();
+  });
+
+  it('is dapper and splendid with a score of 85 or more and nothing to do', async () => {
+    const card = await renderBand(inDate(10));
+    expectOnlyMood(DAPPER);
+    expect(card).toHaveTextContent('Nothing to do');
+    expect(screen.getByText(SPLENDID)).toBeVisible();
+  });
+
+  it('stays dapper but is not splendid while a Health To-do is left', async () => {
+    const card = await renderBand([...inDate(5), ...forgotten(5)]);
+    expectOnlyMood(DAPPER);
+    expect(card).toHaveTextContent('88');
+    expect(card).toHaveTextContent('1 to do');
+    expect(screen.queryByText(SPLENDID)).toBeNull();
+  });
+
+  it('raises an eyebrow from 65 to 84', async () => {
+    const card = await renderBand([
+      ...inDate(3),
+      ...forgotten(4),
+      ...expired(3),
+    ]);
+    expectOnlyMood(HMM);
+    expect(card).toHaveTextContent('75');
+    expect(card).toHaveTextContent('A few things to sort');
+    // The first To-do is named once, in Gator's note, not again in the subline.
+    expect(card).toHaveTextContent('2 to do');
+    expect(card).not.toHaveTextContent('2 to do · ');
+    expect(screen.getByTestId('health-gator-note')).toHaveStyle({
+      backgroundColor: tokens.color.soonBg,
+    });
+    expect(screen.queryByText(SPLENDID)).toBeNull();
+    expect(screen.queryByText(STILL_LEARNING)).toBeNull();
+    expect(
+      screen.getByText("Hmm. Let's start here: Toss 3 expired."),
+    ).toBeVisible();
+  });
+
+  it('is worried below 65, naming the real to-do and not the Member', async () => {
+    const card = await renderBand(expired(10));
+    expectOnlyMood(WORRIED);
+    expect(card).toHaveTextContent('45');
+    expect(card).toHaveTextContent('1 to do');
+    expect(card).not.toHaveTextContent('1 to do · ');
+    expect(screen.getByTestId('health-gator-note')).toHaveStyle({
+      backgroundColor: tokens.color.urgentBg,
+    });
+    expect(
+      screen.getByText("Let's sort this out. First up: Toss 10 expired."),
+    ).toBeVisible();
+    // Gator never promises a score it cannot compute.
+    expect(screen.queryByText(/back over/i)).toBeNull();
+  });
+
+  it("puts Gator's line in the card's accessible name", async () => {
+    const card = await renderBand(expired(10));
+    expect(card).toHaveAccessibleName(
+      /Pantry health.*Let's sort this out\. First up: Toss 10 expired\.$/,
+    );
+    expect(card).not.toHaveAccessibleName(/Toss 10 expired.*Toss 10 expired/);
+  });
+
+  it('puts the band note on the sheet as well', async () => {
+    const card = await renderBand(expired(10));
+    await userEvent.setup().click(card);
+    const sheet = await screen.findByRole('dialog', { name: 'Pantry health' });
+    expect(
+      within(sheet).getByText(
+        "Let's sort this out. First up: Toss 10 expired.",
+      ),
+    ).toBeVisible();
+  });
+
+  it.each([
+    ['curious', () => inDate(4), CURIOUS],
+    ['dapper', () => inDate(10), DAPPER],
+    ['hmm', () => [...inDate(3), ...forgotten(4), ...expired(3)], HMM],
+    ['worried', () => expired(10), WORRIED],
+  ])(
+    'shows the same %s Gator on the sheet as on the widget',
+    async (_n, make, alt) => {
+      const card = await renderBand(make());
+      await userEvent.setup().click(card);
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pantry health',
+      });
+      expect(within(sheet).getByAltText(alt)).toBeInTheDocument();
+      expect(within(card).getByAltText(alt)).toBeInTheDocument();
+      for (const other of ALL_ALTS.filter((a) => a !== alt)) {
+        expect(within(sheet).queryByAltText(other)).toBeNull();
+      }
+    },
+  );
+
+  it("puts Gator's line on the sheet as well", async () => {
+    const card = await renderBand(inDate(4));
+    await userEvent.setup().click(card);
+    const sheet = await screen.findByRole('dialog', { name: 'Pantry health' });
+    expect(within(sheet).getByText(STILL_LEARNING)).toBeVisible();
+  });
 });
