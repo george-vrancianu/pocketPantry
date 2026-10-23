@@ -492,6 +492,27 @@ describe('Member language: Catalog Language (integration)', () => {
           value: `Forhåndsvisning ${stamp}`,
         })
         .expect(201);
+      await adminApi('post', '/translations')
+        .send({
+          entityType: 'ingredient',
+          entityId: id,
+          locale: 'ro',
+          kind: 'name',
+          value: `Previzualizare ${stamp}`,
+        })
+        .expect(201);
+      // The same Admin, reading as a Member, gets their stored Catalog Language (Romanian), not Danish.
+      const found = (
+        await request(app.getHttpServer())
+          .get('/api/catalog/search')
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', admin.cookie)
+          .query({ q: `Previzualizare ${stamp}` })
+          .expect(200)
+      ).body as { results: Array<{ id: string; name: string }> };
+      expect(found.results.find((row) => row.id === id)?.name).toBe(
+        `Previzualizare ${stamp}`,
+      );
       const overview = (await adminApi('get', '').expect(200)).body as {
         ingredients: Array<{
           id: string;

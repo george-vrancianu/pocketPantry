@@ -1,5 +1,6 @@
 import type { ThemeId } from '@pocket-pantry/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from './api';
 import { catalogAllergensQueryKey, catalogSearchQueryKey } from './catalog';
 import { familyCatalogQueryKey } from './familyCatalog';
@@ -180,33 +181,34 @@ function useApplySavedLanguages() {
   };
 }
 
+const putLocale = (locale: Locale) =>
+  apiRequest<MemberPreferences>('/settings/preferences', {
+    method: 'PUT',
+    body: { locale },
+  });
+
 export function useSaveLocale() {
   const apply = useApplySavedLanguages();
   return useMutation({
-    mutationFn: (locale: Locale) =>
-      apiRequest<MemberPreferences>('/settings/preferences', {
-        method: 'PUT',
-        body: { locale },
-      }),
+    mutationFn: putLocale,
     onSuccess: apply,
   });
 }
 
 /**
  * Saves the UI Language being shown, once, when the Member has none stored (sign-in). If the Member picked
- * one while this was in flight, its reply is dropped so it cannot put the old language back.
+ * another one while this was in flight (its save already landed, or the UI has moved off the language sent),
+ * the reply is dropped so it cannot put the old language back.
  */
 export function useSaveInitialLocale() {
+  const { i18n } = useTranslation();
   const queryClient = useQueryClient();
   const apply = useApplySavedLanguages();
   return useMutation({
-    mutationFn: (locale: Locale) =>
-      apiRequest<MemberPreferences>('/settings/preferences', {
-        method: 'PUT',
-        body: { locale },
-      }),
-    onSuccess: (saved) =>
-      queryClient.getQueryData<MemberPreferences>(preferencesQueryKey)?.locale
+    mutationFn: putLocale,
+    onSuccess: (saved, sent) =>
+      queryClient.getQueryData<MemberPreferences>(preferencesQueryKey)
+        ?.locale || (i18n.resolvedLanguage ?? i18n.language) !== sent
         ? undefined
         : apply(saved),
   });
