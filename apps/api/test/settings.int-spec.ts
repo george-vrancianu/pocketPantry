@@ -418,6 +418,8 @@ describe('Settings (integration)', () => {
         locale: null,
         catalogLanguage: null,
         effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -459,6 +461,8 @@ describe('Settings (integration)', () => {
         locale: 'ro',
         catalogLanguage: null,
         effectiveCatalogLanguage: 'ro',
+        scanLanguage: null,
+        effectiveScanLanguage: 'ro',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -477,6 +481,8 @@ describe('Settings (integration)', () => {
         locale: null,
         catalogLanguage: null,
         effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -493,6 +499,8 @@ describe('Settings (integration)', () => {
         locale: 'da',
         catalogLanguage: null,
         effectiveCatalogLanguage: 'da',
+        scanLanguage: null,
+        effectiveScanLanguage: 'da',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -517,6 +525,8 @@ describe('Settings (integration)', () => {
         locale: 'ro',
         catalogLanguage: null,
         effectiveCatalogLanguage: 'ro',
+        scanLanguage: null,
+        effectiveScanLanguage: 'ro',
         theme: null,
         hideRecipesWithAllergies: true,
       });
@@ -555,6 +565,8 @@ describe('Settings (integration)', () => {
         locale: null,
         catalogLanguage: null,
         effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
         theme: 'dark',
         hideRecipesWithAllergies: false,
       });
@@ -564,6 +576,8 @@ describe('Settings (integration)', () => {
         locale: null,
         catalogLanguage: null,
         effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
         theme: 'dark',
         hideRecipesWithAllergies: false,
       });
@@ -588,6 +602,8 @@ describe('Settings (integration)', () => {
         locale: 'ro',
         catalogLanguage: null,
         effectiveCatalogLanguage: 'ro',
+        scanLanguage: null,
+        effectiveScanLanguage: 'ro',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
       });
@@ -602,6 +618,8 @@ describe('Settings (integration)', () => {
         locale: 'da',
         catalogLanguage: null,
         effectiveCatalogLanguage: 'da',
+        scanLanguage: null,
+        effectiveScanLanguage: 'da',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
       });
@@ -618,6 +636,8 @@ describe('Settings (integration)', () => {
         locale: 'en',
         catalogLanguage: null,
         effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
         theme: 'warm',
         hideRecipesWithAllergies: false,
       });
@@ -645,6 +665,8 @@ describe('Settings (integration)', () => {
         locale: null,
         catalogLanguage: null,
         effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });

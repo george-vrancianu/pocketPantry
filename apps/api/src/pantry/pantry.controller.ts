@@ -132,7 +132,11 @@ export class PantryController {
       member.id,
       body,
       await this.languages.catalogLanguageOf(member.id, query.locale),
-      query.scanLanguage,
+      await this.languages.scanLanguageOf(
+        member.id,
+        query.locale,
+        query.scanLanguage,
+      ),
     );
   }
 
@@ -151,7 +155,11 @@ export class PantryController {
         member.id,
         body.batches,
         await this.languages.catalogLanguageOf(member.id, query.locale),
-        query.scanLanguage,
+        await this.languages.scanLanguageOf(
+          member.id,
+          query.locale,
+          query.scanLanguage,
+        ),
       ),
     };
   }

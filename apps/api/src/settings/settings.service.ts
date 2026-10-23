@@ -7,6 +7,7 @@ import {
 import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import {
   CATALOG_LOCALES,
+  SCAN_LANGUAGES,
   type CatalogLocale,
 } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
@@ -210,6 +211,7 @@ export class SettingsService {
       .select({
         locale: user.locale,
         catalogLanguage: user.catalogLanguage,
+        scanLanguage: user.scanLanguage,
         theme: user.theme,
         hideRecipesWithAllergies: user.hideRecipesWithAllergies,
       })
@@ -226,6 +228,8 @@ export class SettingsService {
       effectiveCatalogLanguage: resolveLanguage('catalog', row, {
         requestLocale,
       }),
+      scanLanguage: SCAN_LANGUAGES.find((l) => l === row.scanLanguage) ?? null,
+      effectiveScanLanguage: resolveLanguage('scan', row, { requestLocale }),
       theme,
       hideRecipesWithAllergies: row.hideRecipesWithAllergies,
     };
@@ -241,6 +245,7 @@ export class SettingsService {
       .set({
         locale: preferences.locale,
         catalogLanguage: preferences.catalogLanguage,
+        scanLanguage: preferences.scanLanguage,
         theme: preferences.theme,
         hideRecipesWithAllergies: preferences.hideRecipesWithAllergies,
       })

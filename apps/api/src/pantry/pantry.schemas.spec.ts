@@ -1,15 +1,9 @@
 import { createBatchBody, scanQuery } from './pantry.schemas';
 
 describe('scanQuery', () => {
-  it('defaults the Scan Language to the UI locale', () => {
-    expect(scanQuery.parse({ locale: 'ro' })).toMatchObject({
-      locale: 'ro',
-      scanLanguage: 'ro',
-    });
-    expect(scanQuery.parse({})).toMatchObject({
-      locale: 'en',
-      scanLanguage: 'en',
-    });
+  it('leaves the Scan Language open when none is sent (the Member Preference applies)', () => {
+    expect(scanQuery.parse({ locale: 'ro' })).toEqual({ locale: 'ro' });
+    expect(scanQuery.parse({})).toEqual({ locale: 'en' });
   });
 
   it('takes a Scan Language that differs from the locale', () => {
@@ -23,10 +17,7 @@ describe('scanQuery', () => {
   });
 
   it('takes Danish as a UI locale', () => {
-    expect(scanQuery.parse({ locale: 'da' })).toMatchObject({
-      locale: 'da',
-      scanLanguage: 'da',
-    });
+    expect(scanQuery.parse({ locale: 'da' })).toEqual({ locale: 'da' });
   });
 
   it('rejects a UI locale outside the catalog locales', () => {
