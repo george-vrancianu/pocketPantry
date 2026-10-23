@@ -15,6 +15,7 @@ import type {
 } from '../src/settings/settings.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 jest.setTimeout(30_000);
@@ -26,6 +27,7 @@ const anyId = expect.any(String) as string;
 describe('Family Allergies and other Members Allergies (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
+  let memberCookie: string;
   let admin: ReturnType<typeof client>;
   let alphaSettings: ReturnType<typeof client>;
   let alphaRecipes: ReturnType<typeof client>;
@@ -68,6 +70,7 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
     database = app.get<Database>(DATABASE);
     const adminEmail = `fam-allergies-alpha-${stamp}@example.com`;
     const cookie = await signUp(app, adminEmail, 'Alpha');
+    memberCookie = cookie;
     await promoteToAdmin(database, adminEmail);
     admin = client(app, cookie, '/api/admin/recipes');
     alphaSettings = client(app, cookie, '/api/settings');
@@ -114,8 +117,10 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       const empty = await view();
       expect(empty.familyAllergies).toEqual([]);
       expect(empty.allergens).toHaveLength(14);
-      const ro = await view(alphaSettings, '?locale=ro');
+      await storeUiLanguage(app, memberCookie, 'ro');
+      const ro = await view(alphaSettings);
       expect(ro.allergens.find((a) => a.id === MILK)?.name).toBe('Lapte');
+      await storeUiLanguage(app, memberCookie, 'en');
     });
 
     it('lets any Member add one with a label, and the other Member sees it', async () => {
@@ -349,6 +354,33 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       await bens(GLUTEN);
       const recipe = await feast();
       expect(await warning(recipe.id, outsiderRecipes)).toBeNull();
+    });
+  });
+  describe('Catalog Language', () => {
+    it('names the Allergen list in the Catalog Language, or the UI Language when it is empty', async () => {
+      const email = `fam-allergies-lang-${stamp}@example.com`;
+      const cookie = await signUp(app, email, 'Lang');
+      const settings = client(app, cookie, '/api/settings');
+      const named = async () =>
+        (
+          (await settings.get('/allergies?locale=en').expect(200)).body as {
+            allergens: Array<{ id: string; name: string }>;
+          }
+        ).allergens.find((a) => a.id === MILK)?.name;
+
+      await settings
+        .put('/preferences', { locale: 'en', catalogLanguage: 'ro' })
+        .expect(200);
+      expect(await named()).toBe('Lapte');
+      const familyView = (
+        await settings.get('/family-allergies?locale=en').expect(200)
+      ).body as FamilyAllergiesView;
+      expect(familyView.allergens.find((a) => a.id === MILK)?.name).toBe(
+        'Lapte',
+      );
+
+      await settings.put('/preferences', { catalogLanguage: null }).expect(200);
+      expect(await named()).toBe('Milk');
     });
   });
 });

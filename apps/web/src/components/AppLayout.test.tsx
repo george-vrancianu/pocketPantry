@@ -154,7 +154,7 @@ describe('AppLayout Voice Note host', () => {
     },
   );
 
-  it('reserves room for the Scan Language chip row above the Dock when the mic shows', async () => {
+  it('reserves room for the Spoken Language chip row above the Dock when the mic shows', async () => {
     renderAt('/pantry');
     await talkButton();
     const page = (

@@ -8,6 +8,7 @@ import {
   ingredients,
   mealPlans,
   recipeIngredientLines,
+  recipeTranslations,
   recipes,
   user,
 } from '../src/database/schema';
@@ -715,6 +716,60 @@ describe('Meal Plans (integration)', () => {
       await bob.api
         .post(fillPath(plan.id), { onlyWhatIHave: false })
         .expect(404);
+    });
+  });
+  describe('Catalog Language', () => {
+    /** A Member with an English UI Language and the given Catalog Language. */
+    async function languageMember(catalogLanguage: string | null) {
+      const who = await member('catalog-language');
+      await client(app, who.cookie, '/api/settings')
+        .put('/preferences', { locale: 'en', catalogLanguage })
+        .expect(200);
+      return who;
+    }
+
+    /** A Catalog Recipe with a Romanian title that needs milk (named "Lapte" in Romanian). */
+    async function romanianRecipe() {
+      const id = await catalogRecipe();
+      await database.insert(recipeIngredientLines).values({
+        id: crypto.randomUUID(),
+        recipeId: id,
+        position: 0,
+        ingredientId: seedId.ingredient('milk'),
+        quantity: 100,
+        unit: 'ml',
+      });
+      await database
+        .insert(recipeTranslations)
+        .values({ recipeId: id, locale: 'ro', title: `Supă ${stamp}-${id}` });
+      return id;
+    }
+
+    async function slotView(api: Api, recipeId: string) {
+      const plan = await create(api, { days: 3 });
+      await api.put(`/${plan.id}/slots/1/dinner${q}`, { recipeId }).expect(200);
+      const res = await api.get(`/${plan.id}${q}`).expect(200);
+      return (res.body as PlanDetail).slots[0];
+    }
+
+    it('names the Recipe and the Ingredients it is short of in the Catalog Language, not the UI Language', async () => {
+      const { api } = await languageMember('ro');
+      const recipeId = await romanianRecipe();
+      const slot = await slotView(api, recipeId);
+      expect(slot.recipeTitle).toBe(`Supă ${stamp}-${recipeId}`);
+      expect((slot.issues as { name: string }[]).map((i) => i.name)).toEqual([
+        'Lapte',
+      ]);
+    });
+
+    it('uses the UI Language when the Catalog Language is the empty "Same as UI Language"', async () => {
+      const { api } = await languageMember(null);
+      const recipeId = await romanianRecipe();
+      const slot = await slotView(api, recipeId);
+      expect(slot.recipeTitle).toMatch(/^Catalog dish /);
+      expect((slot.issues as { name: string }[]).map((i) => i.name)).toEqual([
+        'Milk',
+      ]);
     });
   });
 });

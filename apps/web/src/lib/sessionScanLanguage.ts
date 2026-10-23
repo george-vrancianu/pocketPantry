@@ -1,18 +1,17 @@
 import { useSyncExternalStore } from 'react';
-import type { Locale, ScanLanguage } from '../i18n/resources';
-import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
+import type { ScanLanguage } from '../i18n/resources';
+import { usePreferredLanguage } from './preferredLanguage';
 
 /**
- * THE seam for "the Member's Scan Language preference" (ADR 0022). Today it is the app's device-local
- * default: the last choice made under the current UI language, else the UI language. ticket 473 swaps the
- * body of this hook for the server-side Member preference; nothing else needs to change.
+ * THE seam for "the Member's Scan Language preference" (ADR 0022): `scanLanguage` is what a chip shows,
+ * `scanLanguageToSend` what a request carries (nothing until the Preferences have loaded).
  */
 export function usePreferredScanLanguage(): {
-  locale: Locale;
   scanLanguage: ScanLanguage;
+  scanLanguageToSend: ScanLanguage | undefined;
 } {
-  const { locale, scanLanguage } = useScanLanguage();
-  return { locale, scanLanguage };
+  const { shown, sent } = usePreferredLanguage('effectiveScanLanguage');
+  return { scanLanguage: shown, scanLanguageToSend: sent };
 }
 
 /**
@@ -33,15 +32,17 @@ export const clearScanLanguageOverride = () => setScanLanguageOverride(null);
 
 /**
  * The Scan Language of the Scan Session: the pick if there is one, else the preference. A pick never
- * writes the preference or the device-local memory.
+ * writes the preference.
  */
 export function useSessionScanLanguage(): {
-  locale: Locale;
   scanLanguage: ScanLanguage;
+  /** What a Scan carries: the pick, else the preference, else nothing (the API resolves it). */
+  scanLanguageToSend: ScanLanguage | undefined;
   override: ScanLanguage | null;
   setOverride: (language: ScanLanguage) => void;
 } {
-  const { locale, scanLanguage: preferred } = usePreferredScanLanguage();
+  const { scanLanguage: preferred, scanLanguageToSend: preferredToSend } =
+    usePreferredScanLanguage();
   const picked = useSyncExternalStore(
     (listener) => {
       listeners.add(listener);
@@ -50,8 +51,8 @@ export function useSessionScanLanguage(): {
     () => override,
   );
   return {
-    locale,
     scanLanguage: picked ?? preferred,
+    scanLanguageToSend: picked ?? preferredToSend,
     override: picked,
     setOverride: setScanLanguageOverride,
   };

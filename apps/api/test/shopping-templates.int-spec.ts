@@ -12,6 +12,7 @@ import {
   user,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 type Line = {
@@ -84,6 +85,12 @@ describe('Shopping Templates (integration)', () => {
         .set('cookie', cookie);
     return {
       get: (path: string) => base('get', path),
+      request: (method: 'put', path: string, body: object) =>
+        request(app.getHttpServer())
+          [method](`/api${path}`)
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', cookie)
+          .send(body),
       post: (path: string, body: object = {}) => base('post', path).send(body),
       patch: (path: string, body: object = {}) =>
         base('patch', path).send(body),
@@ -222,14 +229,14 @@ describe('Shopping Templates (integration)', () => {
       ]);
       await create(ana, 'Empty');
 
-      const list = async (locale: string) =>
-        (
-          (
-            await as(ana)
-              .get(`/shopping-templates?locale=${locale}`)
-              .expect(200)
-          ).body as { templates: Summary[] }
+      const list = async (locale: string) => {
+        await storeUiLanguage(app, ana, locale);
+        return (
+          (await as(ana).get('/shopping-templates').expect(200)).body as {
+            templates: Summary[];
+          }
         ).templates;
+      };
 
       const en = await list('en');
       expect(en.map((t) => t.previewNames)).toEqual([
@@ -550,5 +557,25 @@ describe('Shopping Templates (integration)', () => {
       .from(shoppingTemplates)
       .where(eq(shoppingTemplates.id, made.id));
     expect(rows).toEqual([]);
+  });
+  describe('Catalog Language', () => {
+    it('names Template Lines in the Catalog Language, or the UI Language when it is empty', async () => {
+      const cookie = await signUp();
+      const made = await create(cookie, 'Language', [
+        { ingredientId: milk, quantity: 1, unit: 'l' },
+      ]);
+      await as(cookie)
+        .request('put', '/settings/preferences', {
+          locale: 'en',
+          catalogLanguage: 'ro',
+        })
+        .expect(200);
+      expect(lineNames(await read(cookie, made.id))).toEqual(['Lapte']);
+
+      await as(cookie)
+        .request('put', '/settings/preferences', { catalogLanguage: null })
+        .expect(200);
+      expect(lineNames(await read(cookie, made.id))).toEqual(['Milk']);
+    });
   });
 });

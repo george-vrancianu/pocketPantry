@@ -1,11 +1,7 @@
 import { z } from 'zod';
 import type { ResolvedVoiceAction } from './voice-actions';
 import type { PantryAnswer } from './pantry-answers';
-import {
-  CATALOG_LOCALES,
-  FALLBACK_LOCALE,
-  SCAN_LANGUAGES,
-} from '../catalog/catalog.schemas';
+import { SCAN_LANGUAGES } from '../catalog/catalog.schemas';
 
 /** A Voice Note lasts at most this long; the app stops itself here. */
 export const MAX_VOICE_NOTE_SECONDS = 60;
@@ -21,19 +17,14 @@ export const VOICE_LISTS = ['shopping', 'pantry'] as const;
 export const VOICE_DEFAULT_TARGETS = [...VOICE_LISTS, 'none'] as const;
 
 /** The text fields of a Voice Note request; the recording travels beside them. */
-export const voiceNoteFields = z
-  .object({
-    locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
-    scanLanguage: z.enum(SCAN_LANGUAGES).optional(),
-    defaultTarget: z.enum(VOICE_DEFAULT_TARGETS),
-    /** The Member's local date, for resolving spoken dates. */
-    today: z.iso.date(),
-    durationMs: z.coerce.number().int().min(0),
-  })
-  .transform((fields) => ({
-    ...fields,
-    scanLanguage: fields.scanLanguage ?? fields.locale,
-  }));
+export const voiceNoteFields = z.object({
+  /** This one Voice Note's Spoken Language; absent means the Member's Spoken Language Preference. */
+  spokenLanguage: z.enum(SCAN_LANGUAGES).optional(),
+  defaultTarget: z.enum(VOICE_DEFAULT_TARGETS),
+  /** The Member's local date, for resolving spoken dates. */
+  today: z.iso.date(),
+  durationMs: z.coerce.number().int().min(0),
+});
 export type VoiceNoteFields = z.infer<typeof voiceNoteFields>;
 
 export type VoiceNoteResponse = {

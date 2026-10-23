@@ -64,12 +64,12 @@ export function goneInOrder(suggestions: Suggestions): GoneEntry[] {
 }
 
 /** Refreshed on an interval, like the list, so other Members' changes show up. */
-export function useSuggestions(locale: string, today: string) {
+export function useSuggestions(today: string) {
   return useQuery({
-    queryKey: [...suggestionsQueryKey, locale, today],
+    queryKey: [...suggestionsQueryKey, today],
     queryFn: () =>
       apiRequest<Suggestions>(
-        `/shopping-list/suggestions?${new URLSearchParams({ locale, today })}`,
+        `/shopping-list/suggestions?${new URLSearchParams({ today })}`,
       ),
     refetchInterval: SHOPPING_POLL_INTERVAL_MS,
     refetchOnWindowFocus: 'always',

@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "spoken_language" text;

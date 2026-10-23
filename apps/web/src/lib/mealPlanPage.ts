@@ -120,8 +120,8 @@ export function planErrorMessage(
 }
 
 const plansKey = [...mealPlanQueryKey, 'list'] as const;
-const planKey = (id: string, locale: string, today: IsoDate) =>
-  [...mealPlanQueryKey, 'plan', id, locale, today] as const;
+const planKey = (id: string, today: IsoDate) =>
+  [...mealPlanQueryKey, 'plan', id, today] as const;
 
 export function useMealPlans() {
   return useQuery({
@@ -133,23 +133,22 @@ export function useMealPlans() {
   });
 }
 
-const query = (locale: string, today: IsoDate) =>
-  `?${new URLSearchParams({ locale, today })}`;
+const query = (today: IsoDate) => `?${new URLSearchParams({ today })}`;
 
-export function useMealPlan(id: string, locale: string, today: IsoDate) {
+export function useMealPlan(id: string, today: IsoDate) {
   return useQuery({
-    queryKey: planKey(id, locale, today),
+    queryKey: planKey(id, today),
     queryFn: () =>
-      apiRequest<MealPlanDetail>(`/meal-plans/${id}${query(locale, today)}`),
+      apiRequest<MealPlanDetail>(`/meal-plans/${id}${query(today)}`),
   });
 }
 
 /** Every Meal Plan write; each refreshes the plans, the open plan and the Widget. */
-export function useMealPlanMutations(locale: string, today: IsoDate) {
+export function useMealPlanMutations(today: IsoDate) {
   const queryClient = useQueryClient();
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: mealPlanQueryKey });
-  const q = query(locale, today);
+  const q = query(today);
   const options = { onSettled: refresh };
   return {
     create: useMutation({

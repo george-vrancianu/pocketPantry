@@ -91,10 +91,10 @@
     "stoppedHint": "Sending what you said."
   },
   "languageMenu": {
-    "chipLabel": "Scan Language: {{language}}. Change",
-    "title": "Scan Language",
-    "saved": "Scan Language: {{language}}",
-    "savedHint": "Used for Voice Notes and the camera."
+    "chipLabel": "Spoken Language: {{language}}. Change",
+    "title": "Spoken Language",
+    "saved": "Spoken Language: {{language}}",
+    "savedHint": "For this Voice Note only."
   },
   "review": {
     "title": "Review",

@@ -227,10 +227,9 @@ export const isFiltering = (browse: RecipeBrowse) =>
   browse.cuisineId !== '' ||
   browse.methodId !== '';
 
-/** The Recipe list in `locale`; the search is debounced, the shown rows stay while the next load runs. */
+/** The Recipe list; the search is debounced, the shown rows stay while the next load runs. */
 export function useRecipes(
   browse: RecipeBrowse,
-  locale: string,
   {
     searchOnly = false,
     includeVariants = false,
@@ -253,7 +252,6 @@ export function useRecipes(
     queryKey: [
       ...recipesQueryKey,
       'list',
-      locale,
       search,
       cuisineId,
       methodId,
@@ -261,7 +259,7 @@ export function useRecipes(
       ...(showHidden ? ['showHidden'] : []),
     ],
     queryFn: () => {
-      const params = new URLSearchParams({ locale });
+      const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (cuisineId) params.set('cuisineId', cuisineId);
       if (methodId) params.set('methodId', methodId);
@@ -275,26 +273,20 @@ export function useRecipes(
   });
 }
 
-/** Cuisines and Methods for the filter pickers, named in `locale`. */
-export function useRecipeFilters(locale: string, enabled = true) {
+/** Cuisines and Methods for the filter pickers. */
+export function useRecipeFilters(enabled = true) {
   return useQuery({
     enabled,
-    queryKey: [...recipesQueryKey, 'filters', locale],
-    queryFn: () =>
-      apiRequest<RecipeFilterOptions>(
-        `/recipes/filters?${new URLSearchParams({ locale })}`,
-      ),
+    queryKey: [...recipesQueryKey, 'filters'],
+    queryFn: () => apiRequest<RecipeFilterOptions>('/recipes/filters'),
   });
 }
 
-/** One Recipe with its text in `locale`, plus its base, Variants and ingredient diff. */
-export function useRecipe(id: string, locale: string) {
+/** One Recipe with its text, plus its base, Variants and ingredient diff. */
+export function useRecipe(id: string) {
   return useQuery({
-    queryKey: [...recipesQueryKey, 'detail', id, locale],
-    queryFn: () =>
-      apiRequest<RecipeDetail>(
-        `/recipes/${id}?${new URLSearchParams({ locale })}`,
-      ),
+    queryKey: [...recipesQueryKey, 'detail', id],
+    queryFn: () => apiRequest<RecipeDetail>(`/recipes/${id}`),
   });
 }
 
@@ -353,9 +345,9 @@ export function useRecipePantryMatch(
 }
 
 /** After an add: the answer is the updated Shopping List; Suggestions and the Pantry match are now out of date. */
-function shoppingListUpdated(queryClient: QueryClient, locale: string) {
+function shoppingListUpdated(queryClient: QueryClient) {
   return (list: ShoppingList) => {
-    queryClient.setQueryData([...shoppingListQueryKey, locale], list);
+    queryClient.setQueryData(shoppingListQueryKey, list);
     return Promise.all(
       shoppingListChangeQueryKeys.map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
@@ -365,33 +357,27 @@ function shoppingListUpdated(queryClient: QueryClient, locale: string) {
 }
 
 /** Adds the Recipe's short and missing lines to the Shopping List; the answer is the updated list. */
-export function useAddMissingToShoppingList(id: string, locale: string) {
+export function useAddMissingToShoppingList(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (servings: number) =>
-      apiRequest<ShoppingList>(
-        `/recipes/${id}/add-missing?${new URLSearchParams({ locale })}`,
-        {
-          method: 'POST',
-          body: { today: localIso(new Date()), servings },
-        },
-      ),
-    onSuccess: shoppingListUpdated(queryClient, locale),
+      apiRequest<ShoppingList>(`/recipes/${id}/add-missing`, {
+        method: 'POST',
+        body: { today: localIso(new Date()), servings },
+      }),
+    onSuccess: shoppingListUpdated(queryClient),
   });
 }
 
 /** Adds one Ingredient Line of the Recipe, at the Servings picked, to the Shopping List. */
-export function useAddLineToShoppingList(id: string, locale: string) {
+export function useAddLineToShoppingList(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ lineId, servings }: { lineId: string; servings: number }) =>
-      apiRequest<ShoppingList>(
-        `/recipes/${id}/add-line?${new URLSearchParams({ locale })}`,
-        {
-          method: 'POST',
-          body: { lineId, servings, today: localIso(new Date()) },
-        },
-      ),
-    onSuccess: shoppingListUpdated(queryClient, locale),
+      apiRequest<ShoppingList>(`/recipes/${id}/add-line`, {
+        method: 'POST',
+        body: { lineId, servings, today: localIso(new Date()) },
+      }),
+    onSuccess: shoppingListUpdated(queryClient),
   });
 }

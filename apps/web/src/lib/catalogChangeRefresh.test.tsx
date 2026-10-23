@@ -18,13 +18,13 @@ import { stubApi } from '../test/render';
 // Spec: ADR 0011. A Catalog change makes the same views stale, whoever made it.
 const STALE_AFTER_CATALOG_CHANGE = [
   ['catalog-search', 'x'],
-  ['family-catalog', 'en'],
+  ['family-catalog'],
   ['staples'],
   ['pantry', 'recently-stocked'],
   ['shopping-list'],
   ['shopping-templates', 'detail', 't1'],
   ['recipes', 'detail', 'r1'],
-  ['suggestions', 'en'],
+  ['suggestions'],
 ] as const;
 
 function setup() {
@@ -71,18 +71,18 @@ describe('a Catalog change refreshes every view that shows it', () => {
 
   it('after adding a Family Ingredient', () =>
     expectRefreshed(
-      () => useCreateFamilyIngredient('en'),
+      () => useCreateFamilyIngredient(),
       (m) =>
         m.mutateAsync({ name: 'x', leafCategoryId: 'l', defaultUnit: 'g' }),
     ));
   it('after adding a Family Synonym', () =>
     expectRefreshed(
-      () => useCreateFamilySynonym('en'),
+      () => useCreateFamilySynonym(),
       (m) => m.mutateAsync({ name: 'x', ingredientId: 'i1' }),
     ));
   it('after changing a Family Ingredient', () =>
     expectRefreshed(
-      () => useUpdateFamilyIngredient('en'),
+      () => useUpdateFamilyIngredient(),
       (m) => m.mutateAsync({ id: 'i1', name: 'x' }),
     ));
   it('after deleting a Family Ingredient', () =>

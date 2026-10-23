@@ -19,8 +19,11 @@ export type VoiceReadInput = {
   memberId: string;
   transcript: string;
   /** Null when the language spoken is not known. */
-  scanLanguage: ScanLanguage | null;
+  spokenLanguage: ScanLanguage | null;
+  /** The Catalog Language: names are looked up, matched and made up in it. */
   locale: CatalogLocale;
+  /** The UI Language, for the prompt only. */
+  uiLanguage?: CatalogLocale;
   today: string;
   defaultTarget: VoiceDefaultTarget;
   /** Debug capture only: ties this read to the recording's transcription. */
@@ -57,8 +60,9 @@ export class VoiceReaderService {
         shoppingNames: input.shoppingItems.map((item) => item.name),
         pantryNames: batches.map((batch) => batch.name),
         transcript: input.transcript,
-        scanLanguage: input.scanLanguage,
+        spokenLanguage: input.spokenLanguage,
         locale: input.locale,
+        uiLanguage: input.uiLanguage,
         today: input.today,
         defaultTarget: input.defaultTarget,
         captureId: input.captureId,

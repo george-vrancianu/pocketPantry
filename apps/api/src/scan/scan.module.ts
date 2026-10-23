@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { CatalogModule } from '../catalog/catalog.module';
 import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
+import { MemberLanguageModule } from '../member-language/member-language.module';
 import { PantryModule } from '../pantry/pantry.module';
 import { SettingsModule } from '../settings/settings.module';
 import { ShoppingModule } from '../shopping/shopping.module';
@@ -27,6 +28,7 @@ import { ScanService } from './scan.service';
     SettingsModule,
     PantryModule,
     ShoppingModule,
+    MemberLanguageModule,
   ],
   controllers: [ScanController, PlateScanController, ReceiptScanController],
   exports: [CatalogMatchService, ScanCapService, StructuredOutputAiService],

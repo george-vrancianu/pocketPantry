@@ -52,6 +52,27 @@
     "hideRecipesHint": "Udelader opskrifter med dine allergier eller familiens allergier fra opskriftslisten, Kan laves, Lav mad i aften og match for Scannet tallerken. Andre medlemmers allergier skjuler aldrig en opskrift. Du kan stadig åbne enhver opskrift, og madplanen viser alt.",
     "hideSaveFailed": "Indstillingen kunne ikke gemmes. Prøv igen."
   },
+  "catalogLanguage": {
+    "label": "Katalogsprog",
+    "sameAsUi": "Samme som appens sprog",
+    "hint": "Navne på ingredienser, kategorier og gange. Vises på {{language}}.",
+    "saveFailed": "Dit katalogsprog kunne ikke gemmes. Prøv igen.",
+    "saved": "Katalogsprog gemt"
+  },
+  "scanLanguage": {
+    "label": "Scansprog",
+    "sameAsUi": "Samme som appens sprog",
+    "hint": "Sproget fotos læses på. Læser på {{language}}.",
+    "saveFailed": "Dit scansprog kunne ikke gemmes. Prøv igen.",
+    "saved": "Scansprog gemt"
+  },
+  "spokenLanguage": {
+    "label": "Talesprog",
+    "sameAsUi": "Samme som appens sprog",
+    "hint": "Sproget stemmenoter tales på. Lytter på {{language}}.",
+    "saveFailed": "Dit talesprog kunne ikke gemmes. Prøv igen.",
+    "saved": "Talesprog gemt"
+  },
   "admin": "Katalog",
   "openAdmin": "Kurater kataloget",
   "account": "Konto",

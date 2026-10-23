@@ -99,7 +99,7 @@ async function main(): Promise<void> {
       if (!mimeType) {
         results.push({
           caseId: c.id,
-          scanLanguage: c.scanLanguage,
+          spokenLanguage: c.spokenLanguage,
           ok: false,
           error: `unsupported audio extension ${extname(c.audioPath!)}`,
           durationMs: 0,
@@ -113,12 +113,14 @@ async function main(): Promise<void> {
           const { text } = await service.transcribe({
             audio,
             mimeType,
-            language: c.scanLanguage,
-            otherLanguages: SCAN_LANGUAGES.filter((l) => l !== c.scanLanguage),
+            language: c.spokenLanguage,
+            otherLanguages: SCAN_LANGUAGES.filter(
+              (l) => l !== c.spokenLanguage,
+            ),
           });
           results.push({
             caseId: c.id,
-            scanLanguage: c.scanLanguage,
+            spokenLanguage: c.spokenLanguage,
             ok: true,
             transcript: text.trim(),
             expected: c.transcript,
@@ -128,7 +130,7 @@ async function main(): Promise<void> {
         } catch (error) {
           results.push({
             caseId: c.id,
-            scanLanguage: c.scanLanguage,
+            spokenLanguage: c.spokenLanguage,
             ok: false,
             error: describe(error),
             durationMs: Date.now() - started,

@@ -16,6 +16,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
@@ -29,7 +30,6 @@ import {
   fromPlateBody,
   plateMatchesBody,
   hiddenTipsBody,
-  localeQuery,
   recipeParam,
   recipeTipParam,
   tipCreate,
@@ -49,7 +49,6 @@ import {
   type BrowseQuery,
   type CookTonightQuery,
   type CookTonightView,
-  type LocaleQuery,
   type RecipeDetail,
   type RecipeFilters,
   type RecipeList,
@@ -57,7 +56,6 @@ import {
 
 const Id = () => Param(new ZodValidationPipe(recipeParam));
 const TipParams = () => Param(new ZodValidationPipe(recipeTipParam));
-const Locale = () => Query(new ZodValidationPipe(localeQuery));
 
 @ApiTags('recipes')
 @Controller('recipes')
@@ -68,6 +66,7 @@ export class RecipesController {
     private readonly family: FamilyRecipesService,
     private readonly cookTonight: CookTonightService,
     private readonly plate: PlateRecipesService,
+    private readonly languages: MemberLanguageService,
   ) {}
 
   @Get()
@@ -79,21 +78,22 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(browseQuery)) query: BrowseQuery,
   ): Promise<RecipeList> {
-    return this.browse.list(member.id, query);
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    return this.browse.list(member.id, query, locale);
   }
 
   @Get('filters')
   @ApiOperation({
-    summary: 'Cuisines and Methods for the filter pickers, named in the locale',
+    summary:
+      'Cuisines and Methods for the filter pickers, named in the Catalog Language',
   })
-  filters(
+  async filters(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(localeQuery))
-    query: {
-      locale: BrowseQuery['locale'];
-    },
   ): Promise<RecipeFilters> {
-    return this.browse.filters(member.id, query.locale);
+    return this.browse.filters(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id),
+    );
   }
 
   // Declared before `:id` so it is not read as a Recipe id.
@@ -102,11 +102,12 @@ export class RecipesController {
     summary:
       'Recipes the Family Pantry can make, or is one line short of, one card per Base Recipe, best match first',
   })
-  cookTonightView(
+  async cookTonightView(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(cookTonightQuery)) query: CookTonightQuery,
   ): Promise<CookTonightView> {
-    return this.cookTonight.view(member.id, query);
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    return this.cookTonight.view(member.id, query, locale);
   }
 
   @Post()
@@ -114,12 +115,12 @@ export class RecipesController {
     summary:
       "Create one of the Family's own Recipes: a Variant (parentId) or a standalone Base Recipe",
   })
-  create(
+  async create(
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(familyRecipeCreate)) body: FamilyRecipeCreate,
   ): Promise<FamilyRecipeEdit> {
-    const { locale, ...document } = body;
-    return this.family.create(member.id, document, locale);
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    return this.family.create(member.id, body, locale);
   }
 
   @Post('plate-matches')
@@ -133,7 +134,8 @@ export class RecipesController {
     @Body(new ZodValidationPipe(plateMatchesBody))
     body: PlateMatchesBody,
   ): Promise<PlateMatches> {
-    return this.plate.closestBases(member.id, body);
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    return this.plate.closestBases(member.id, { ...body, locale });
   }
 
   @Post('from-plate')
@@ -141,11 +143,12 @@ export class RecipesController {
     summary:
       'Save a Plate Scan as a Family Recipe for one serving: a Variant (parentId) or a standalone Recipe',
   })
-  saveFromPlate(
+  async saveFromPlate(
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(fromPlateBody)) body: FromPlateBody,
   ): Promise<FamilyRecipeEdit> {
-    return this.plate.save(member.id, body);
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    return this.plate.save(member.id, { ...body, locale });
   }
 
   @Get(':id/variant-draft')
@@ -153,32 +156,33 @@ export class RecipesController {
     summary:
       "An unsaved draft copying a visible Recipe's ingredients and Steps, under its Base Recipe",
   })
-  variantDraft(
+  async variantDraft(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
-    @Locale() { locale }: LocaleQuery,
   ): Promise<FamilyRecipeDraft> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.variantDraft(member.id, id, locale);
   }
 
   @Get(':id/edit')
   @ApiOperation({ summary: "The editable view of the Family's own Recipe" })
-  edit(
+  async edit(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
-    @Locale() { locale }: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.editFor(member.id, id, locale);
   }
 
   @Put(':id')
   @ApiOperation({ summary: "Replace the Family's own Recipe document" })
-  update(
+  async update(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(familyRecipeUpdate)) body: FamilyRecipeUpdate,
   ): Promise<FamilyRecipeEdit> {
-    return this.family.update(member.id, id, body);
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    return this.family.update(member.id, id, { ...body, locale });
   }
 
   @Post(':id/archive')
@@ -186,11 +190,11 @@ export class RecipesController {
   @ApiOperation({
     summary: "Archive (the UI's Delete) the Family's own Recipe; never removed",
   })
-  archive(
+  async archive(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
-    @Locale() { locale }: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.archive(member.id, id, locale);
   }
 
@@ -199,45 +203,45 @@ export class RecipesController {
     summary:
       "Replace the Family Recipe's guidance (Nutrition Note, Pairings, Eating Moments)",
   })
-  setGuidance(
+  async setGuidance(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(guidanceBody)) body: GuidanceBody,
-    @Locale() { locale }: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.setGuidance(member.id, id, body, locale);
   }
 
   @Post(':id/tips')
   @ApiOperation({ summary: "Add a Tip to the Family's own Recipe or a Step" })
-  createTip(
+  async createTip(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(tipCreate)) body: TipCreate,
-    @Locale() { locale }: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.createTip(member.id, id, body, locale);
   }
 
   @Put(':id/tips/order')
   @ApiOperation({ summary: 'Set the order of every Tip of the Recipe' })
-  reorderTips(
+  async reorderTips(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(tipOrder)) body: TipOrder,
-    @Locale() { locale }: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.reorderTips(member.id, id, body, locale);
   }
 
   @Patch(':id/tips/:tipId')
   @ApiOperation({ summary: 'Edit a Tip of the Family Recipe' })
-  updateTip(
+  async updateTip(
     @CurrentUser() member: CurrentUserValue,
     @TipParams() { id, tipId }: { id: string; tipId: string },
     @Body(new ZodValidationPipe(tipUpdate)) body: TipUpdate,
-    @Locale() { locale }: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.updateTip(member.id, id, tipId, body, locale);
   }
 
@@ -255,12 +259,12 @@ export class RecipesController {
   @ApiOperation({
     summary: "Set which of the base's Recipe-level Tips this Variant hides",
   })
-  setHiddenTips(
+  async setHiddenTips(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(hiddenTipsBody)) body: HiddenTipsBody,
-    @Locale() { locale }: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.setHiddenTips(member.id, id, body, locale);
   }
 
@@ -269,12 +273,14 @@ export class RecipesController {
     summary:
       'A Recipe with its base or Variants and, for a Variant, the ingredient diff against its base',
   })
-  detail(
+  async detail(
     @CurrentUser() member: CurrentUserValue,
     @Param(new ZodValidationPipe(recipeParam)) params: { id: string },
-    @Query(new ZodValidationPipe(localeQuery))
-    query: LocaleQuery,
   ): Promise<RecipeDetail> {
-    return this.browse.detail(member.id, params.id, query.locale);
+    return this.browse.detail(
+      member.id,
+      params.id,
+      await this.languages.catalogLanguageOf(member.id),
+    );
   }
 }

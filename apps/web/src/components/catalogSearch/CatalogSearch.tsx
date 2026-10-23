@@ -100,7 +100,7 @@ export function CatalogSearch({
   inputRef: hostInputRef,
   newIngredientAllergenIds,
 }: CatalogSearchProps) {
-  const { t, i18n } = useTranslation('catalog');
+  const { t } = useTranslation('catalog');
   const id = useId();
   const name = label ?? t('search.label');
   const listId = `${id}-list`;
@@ -126,7 +126,6 @@ export function CatalogSearch({
   const [parentCategoryId, setParentCategoryId] = useState<string | null>(null);
   const search = useCatalogSearch(
     query,
-    i18n.language,
     scope,
     aisle ? { aisleId: aisle.id, parentCategoryId } : null,
   );

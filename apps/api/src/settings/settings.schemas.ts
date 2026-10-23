@@ -1,10 +1,5 @@
 import { z } from 'zod';
-import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
-
-export const settingsLocaleQuery = z.object({
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
-});
-export type SettingsLocaleQuery = z.infer<typeof settingsLocaleQuery>;
+import { CATALOG_LOCALES, SCAN_LANGUAGES } from '../catalog/catalog.schemas';
 
 export const categoryIdParam = z.uuid();
 
@@ -26,12 +21,21 @@ export type ThemeId = (typeof THEME_IDS)[number];
 export const updatePreferencesBody = z
   .object({
     locale: z.enum(CATALOG_LOCALES).optional(),
+    /** A catalog locale, or `null` for "Same as UI Language". */
+    catalogLanguage: z.enum(CATALOG_LOCALES).nullable().optional(),
+    /** A Scan Language, or `null` for "Same as UI Language". */
+    scanLanguage: z.enum(SCAN_LANGUAGES).nullable().optional(),
+    /** A Spoken Language (Scan Languages list), or `null` for "Same as UI Language". */
+    spokenLanguage: z.enum(SCAN_LANGUAGES).nullable().optional(),
     theme: z.enum(THEME_IDS).optional(),
     hideRecipesWithAllergies: z.boolean().optional(),
   })
   .refine(
     (body) =>
       body.locale !== undefined ||
+      body.catalogLanguage !== undefined ||
+      body.scanLanguage !== undefined ||
+      body.spokenLanguage !== undefined ||
       body.theme !== undefined ||
       body.hideRecipesWithAllergies !== undefined,
     { message: 'Nothing to update' },
@@ -62,7 +66,20 @@ export type CategoryOptionsView = {
 };
 
 export type PreferencesView = {
+  /** The UI Language; `null` until chosen. */
   locale: (typeof CATALOG_LOCALES)[number] | null;
+  /** The Catalog Language; `null` is "Same as UI Language". */
+  catalogLanguage: (typeof CATALOG_LOCALES)[number] | null;
+  /** The Catalog Language the Member gets right now (resolved against the UI Language, then English). */
+  effectiveCatalogLanguage: (typeof CATALOG_LOCALES)[number];
+  /** The Scan Language; `null` is "Same as UI Language". */
+  scanLanguage: (typeof SCAN_LANGUAGES)[number] | null;
+  /** The Scan Language the Member gets right now (resolved against the UI Language, then English). */
+  effectiveScanLanguage: (typeof SCAN_LANGUAGES)[number];
+  /** The Spoken Language (Voice Notes); `null` is "Same as UI Language". */
+  spokenLanguage: (typeof SCAN_LANGUAGES)[number] | null;
+  /** The Spoken Language the Member gets right now (resolved against the UI Language, then English). */
+  effectiveSpokenLanguage: (typeof SCAN_LANGUAGES)[number];
   theme: ThemeId | null;
   /** Leave out Recipes with the Member's own or Family Allergies (#359). */
   hideRecipesWithAllergies: boolean;

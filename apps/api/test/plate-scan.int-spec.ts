@@ -10,6 +10,7 @@ import { unmatchedEntries } from '../src/database/schema';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { PLATE_TOKEN_TTL_MS } from '../src/scan/plate-token';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { signUpWithUiLanguage } from './support/stored-language';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
 const flour = seedId.ingredient('flour');
@@ -90,6 +91,11 @@ describe('Plate Scan (integration)', () => {
       .join('; ');
   }
 
+  /** A Member whose stored UI Language is `locale` (the API ignores the request's own `?locale=`). */
+  const signUpIn = (locale: string) =>
+    signUpWithUiLanguage(app, signUp, locale);
+
+  // `locale` is sent as the web used to; a signed-in request ignores it.
   const post = (cookie: string, path: string, body: object, locale = 'en') =>
     request(app.getHttpServer())
       .post(`/api/${path}`)
@@ -174,7 +180,12 @@ describe('Plate Scan (integration)', () => {
     it('asks for dish titles in the Member’s UI language, Danish included', async () => {
       respondWith({ matches: [{ title: 'Æbleskiver', confidence: 0.8 }] });
       prompts.length = 0;
-      await post(await signUp(), 'scan/plate', { plateImage: IMAGE }, 'da')
+      await post(
+        await signUpIn('da'),
+        'scan/plate',
+        { plateImage: IMAGE },
+        'da',
+      )
         .query({ locale: 'da' })
         .expect(201);
       expect(prompts[0].prompt).toMatch(/recipe titles in Danish/);
@@ -264,7 +275,7 @@ describe('Plate Scan (integration)', () => {
     it('names Ingredients in the Member locale', async () => {
       respondWith({ items: [item()] });
       const { lines } = (
-        await ingredients(await signUp(), 'Pancakes', 'ro').expect(201)
+        await ingredients(await signUpIn('ro'), 'Pancakes', 'ro').expect(201)
       ).body as { lines: Line[] };
       expect(lines[0].match?.name).not.toBe('Milk');
     });
@@ -544,8 +555,8 @@ describe('Plate Scan (integration)', () => {
           .from(unmatchedEntries)
           .where(ilike(unmatchedEntries.rawName, rawName));
 
-      it('queues a new free-text dish line once, with source plate and the request locale; a merge adds none; a matched line adds none', async () => {
-        const cookie = await signUp();
+      it('queues a new free-text dish line once, with source plate and the stored Catalog Language; a merge adds none; a matched line adds none', async () => {
+        const cookie = await signUpIn('ro');
         const raw = `Zzp pixie ${Date.now()}`;
         await post(
           cookie,
@@ -596,6 +607,45 @@ describe('Plate Scan (integration)', () => {
         cookie,
         Array.from({ length: 101 }, () => ({ ingredientId: milk })),
       ).expect(400);
+    });
+  });
+
+  describe('with a Catalog Language Preference', () => {
+    // UI Language en, Catalog Language ro, Scan Language da: all three differ.
+    async function member() {
+      const cookie = await signUp();
+      await request(app.getHttpServer())
+        .put('/api/settings/preferences')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ locale: 'en', catalogLanguage: 'ro', scanLanguage: 'da' })
+        .expect(200);
+      return cookie;
+    }
+
+    it('asks for dish titles in the Catalog Language', async () => {
+      const cookie = await member();
+      respondWith({ matches: [{ title: 'Clatite', confidence: 0.8 }] });
+      prompts.length = 0;
+      await dishes(cookie).expect(201);
+      expect(prompts[0].prompt).toMatch(/recipe titles in Romanian/);
+    });
+
+    it('asks for the fallback name in the Catalog Language and names the match in it', async () => {
+      const cookie = await member();
+      respondWith({ items: [item()] });
+      const token = await tokenFor(cookie);
+      prompts.length = 0;
+      const response = await post(cookie, 'scan/plate/ingredients', {
+        dishTitle: 'Pancakes',
+        plateToken: token,
+      }).expect(201);
+      expect(prompts[0].prompt).toContain(
+        'fallbackIngredientName as a short generic ingredient name in Romanian',
+      );
+      expect((response.body as { lines: Line[] }).lines[0].match?.name).toBe(
+        'Lapte',
+      );
     });
   });
 });

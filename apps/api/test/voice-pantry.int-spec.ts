@@ -122,7 +122,7 @@ describe('Voice Notes on the Pantry (integration)', () => {
   const readNote = async (cookie: string, actions: object[]) => {
     reading = { actions, unsupported: [] };
     const response = await api('post', cookie, '/voice')
-      .field('scanLanguage', 'en')
+      .field('spokenLanguage', 'en')
       .field('locale', 'en')
       .field('defaultTarget', 'pantry')
       .field('today', TODAY)

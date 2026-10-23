@@ -26,6 +26,7 @@ import {
   parentCategories,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 type SearchResult = {
   id: string;
@@ -67,9 +68,11 @@ describe('Catalog (integration)', () => {
   });
 
   async function search(q: string, locale?: string): Promise<SearchResult[]> {
+    // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+    await storeUiLanguage(app, cookie, locale ?? 'en');
     const response = await request(app.getHttpServer())
       .get('/api/catalog/search')
-      .query({ q, ...(locale ? { locale } : {}) })
+      .query({ q })
       .set('origin', TEST_ORIGIN)
       .set('cookie', cookie)
       .expect(200);
@@ -77,21 +80,23 @@ describe('Catalog (integration)', () => {
   }
 
   describe('parents', () => {
-    const parents = (locale: string) =>
-      request(app.getHttpServer())
+    const parents = async (locale: string) => {
+      await storeUiLanguage(app, cookie, locale);
+      return await request(app.getHttpServer())
         .get('/api/catalog/parents')
-        .query({ locale })
         .set('origin', TEST_ORIGIN)
-        .set('cookie', cookie);
+        .set('cookie', cookie)
+        .expect(200);
+    };
 
     it('lists the Parent Categories by name in the Member locale, for placing Unmatched Batches', async () => {
       const en = (
-        (await parents('en').expect(200)).body as {
+        (await parents('en')).body as {
           parents: { id: string; name: string }[];
         }
       ).parents;
       const ro = (
-        (await parents('ro').expect(200)).body as {
+        (await parents('ro')).body as {
           parents: { id: string; name: string }[];
         }
       ).parents;
@@ -106,7 +111,7 @@ describe('Catalog (integration)', () => {
 
     it('lists the Parent Categories in Danish, sorted by the Danish name', async () => {
       const da = (
-        (await parents('da').expect(200)).body as {
+        (await parents('da')).body as {
           parents: { id: string; name: string }[];
         }
       ).parents;
@@ -349,13 +354,13 @@ describe('Catalog (integration)', () => {
       expect(await search('   ')).toEqual([]);
     });
 
-    it('rejects unsupported locales and unauthenticated callers', async () => {
+    it('ignores a ?locale= and rejects unauthenticated callers', async () => {
       await request(app.getHttpServer())
         .get('/api/catalog/search')
         .query({ q: 'milk', locale: 'xx' })
         .set('origin', TEST_ORIGIN)
         .set('cookie', cookie)
-        .expect(400);
+        .expect(200);
       await request(app.getHttpServer())
         .get('/api/catalog/search')
         .query({ q: 'milk' })

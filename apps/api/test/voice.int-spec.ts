@@ -94,16 +94,20 @@ describe('Voice Note (integration)', () => {
     contentType?: string;
     audio?: Buffer;
     durationMs?: string;
-    language?: string;
+    /** The `spokenLanguage` field; `null` leaves it out. */
+    language?: string | null;
+    uiLocale?: string;
   };
 
-  const note = (cookie: string, options: Options = {}) =>
-    request(app.getHttpServer())
+  const note = (cookie: string, options: Options = {}) => {
+    const language = options.language === undefined ? 'ro' : options.language;
+    const upload = request(app.getHttpServer())
       .post('/api/voice')
       .set('origin', TEST_ORIGIN)
-      .set('cookie', cookie)
-      .field('scanLanguage', options.language ?? 'ro')
-      .field('locale', 'en')
+      .set('cookie', cookie);
+    if (language) upload.field('spokenLanguage', language);
+    return upload
+      .field('locale', options.uiLocale ?? 'en')
       .field('defaultTarget', 'shopping')
       .field('today', '2026-10-16')
       .field('durationMs', options.durationMs ?? '4200')
@@ -111,6 +115,7 @@ describe('Voice Note (integration)', () => {
         filename: 'note.webm',
         contentType: options.contentType ?? 'audio/webm;codecs=opus',
       });
+  };
 
   const usage = async (memberId: string, kind: 'voice' | 'scan') => {
     const rows = await app
@@ -132,7 +137,7 @@ describe('Voice Note (integration)', () => {
       .expect(401);
   });
 
-  it('transcribes the recording with the Scan Language as the main hint and the others as extra hints', async () => {
+  it('transcribes the recording with the Spoken Language as the main hint and the others as extra hints', async () => {
     const { cookie, memberId } = await signUp();
     reading = { actions: [], unsupported: ['do a dance'] };
     const response = await note(cookie).expect(201);
@@ -859,6 +864,251 @@ describe('Voice Note (integration)', () => {
       ]).expect(201);
       expect(await list(a.cookie)).toEqual([]);
       expect(await list(b.cookie)).toHaveLength(1);
+    });
+  });
+
+  // Spec 468 (ADR 0022): names the AI makes up are in the Catalog Language.
+  describe('Catalog Language', () => {
+    const setLanguages = async (
+      memberId: string,
+      languages: { locale: string; catalogLanguage?: string | null },
+    ) => {
+      await app
+        .get<Database>(DATABASE)
+        .update(user)
+        .set(languages)
+        .where(eq(user.id, memberId));
+    };
+    const queuedLocale = async (rawName: string) =>
+      (
+        await app
+          .get<Database>(DATABASE)
+          .select({ locale: unmatchedEntries.locale })
+          .from(unmatchedEntries)
+          .where(eq(unmatchedEntries.rawName, rawName))
+      ).map((row) => row.locale);
+    const readingOf = (unmatchedName: string) => ({
+      actions: [
+        {
+          target: 'shopping',
+          op: 'add',
+          spokenText: 'milk',
+          matchedIngredientId: seedId.ingredient('milk'),
+          matchConfidence: 0.95,
+          fallbackIngredientName: 'Lapte',
+          spokenName: 'milk',
+          quantity: null,
+          unit: null,
+          scope: null,
+          expiresOn: null,
+          noExpiry: false,
+          location: null,
+        },
+        {
+          target: 'shopping',
+          op: 'add',
+          spokenText: 'zorblax',
+          matchedIngredientId: null,
+          matchConfidence: 0,
+          fallbackIngredientName: unmatchedName,
+          spokenName: unmatchedName,
+          quantity: null,
+          unit: null,
+          scope: null,
+          expiresOn: null,
+          noExpiry: false,
+          location: null,
+        },
+      ],
+      unsupported: [],
+    });
+
+    it('asks for the fallback name in the Catalog Language and returns matched names in it', async () => {
+      const { cookie, memberId } = await signUp();
+      await setLanguages(memberId, { locale: 'en', catalogLanguage: 'ro' });
+      const name = `Zorblax ${Date.now()}`;
+      reading = readingOf(name);
+      const response = await note(cookie, { language: 'en' }).expect(201);
+      const prompt = aiCalls[0].prompt;
+      expect(prompt).toContain(
+        'fallbackIngredientName is a short generic ingredient name in Romanian',
+      );
+      expect(prompt).toContain('the app is shown in English');
+      expect(response.body).toMatchObject({
+        actions: [
+          { status: 'ready', ingredient: { name: 'Lapte' } },
+          { status: 'ready', ingredient: null, name },
+        ],
+      });
+      // The recording is still transcribed in the language the Member chose.
+      expect(calls[0].language).toBe('en');
+    });
+
+    it('tags an Unmatched name saved from Review with the Catalog Language', async () => {
+      const { cookie, memberId } = await signUp();
+      await setLanguages(memberId, { locale: 'en', catalogLanguage: 'ro' });
+      const name = `Zorblax ${Date.now()}`;
+      await request(app.getHttpServer())
+        .post('/api/voice/apply')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({
+          actions: [
+            {
+              id: 'a1',
+              target: 'shopping',
+              op: 'add',
+              ingredientId: null,
+              name,
+              quantity: null,
+              unit: null,
+            },
+          ],
+          locale: 'en',
+        })
+        .expect(201);
+      expect(await queuedLocale(name)).toEqual(['ro']);
+    });
+
+    it('tags an Unmatched pantry add saved from Review with the Catalog Language', async () => {
+      const { cookie, memberId } = await signUp();
+      await setLanguages(memberId, { locale: 'en', catalogLanguage: 'ro' });
+      const name = `Zorblax ${Date.now()} pantry`;
+      const response = await request(app.getHttpServer())
+        .post('/api/voice/apply')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({
+          actions: [
+            {
+              id: 'p1',
+              location: 'fridge',
+              target: 'pantry',
+              op: 'add',
+              ingredientId: null,
+              name,
+              quantity: null,
+              unit: null,
+            },
+          ],
+          locale: 'en',
+        })
+        .expect(201);
+      expect(response.body).toMatchObject({
+        applied: [{ actionId: 'p1', list: 'pantry' }],
+      });
+      expect(await queuedLocale(name)).toEqual(['ro']);
+    });
+
+    it('uses the UI Language when the Catalog Language is not set', async () => {
+      const { cookie, memberId } = await signUp();
+      await setLanguages(memberId, { locale: 'ro', catalogLanguage: null });
+      const name = `Zorblax ${Date.now()}`;
+      reading = readingOf(name);
+      const response = await note(cookie, { language: 'en' }).expect(201);
+      expect(aiCalls[0].prompt).toContain(
+        'fallbackIngredientName is a short generic ingredient name in Romanian',
+      );
+      expect(response.body).toMatchObject({
+        actions: [{ ingredient: { name: 'Lapte' } }, { name }],
+      });
+    });
+  });
+
+  describe('Spoken Language', () => {
+    const setPreferences = async (
+      memberId: string,
+      preferences: {
+        locale?: string | null;
+        scanLanguage?: string | null;
+        spokenLanguage?: string | null;
+      },
+    ) => {
+      await app
+        .get<Database>(DATABASE)
+        .update(user)
+        .set(preferences)
+        .where(eq(user.id, memberId));
+    };
+
+    it('uses the Spoken Language Preference, not the Scan Language, when the upload names none', async () => {
+      const { cookie, memberId } = await signUp();
+      await setPreferences(memberId, {
+        locale: 'en',
+        scanLanguage: 'da',
+        spokenLanguage: 'ro',
+      });
+      await note(cookie, { language: null }).expect(201);
+      expect(calls[0].language).toBe('ro');
+      expect(calls[0].otherLanguages.sort()).toEqual(['da', 'en']);
+      expect(aiCalls[0].prompt).toContain('The note was spoken in Romanian');
+    });
+
+    it('lets the upload field win over the Preference for that upload only', async () => {
+      const { cookie, memberId } = await signUp();
+      await setPreferences(memberId, {
+        locale: 'en',
+        scanLanguage: 'da',
+        spokenLanguage: 'ro',
+      });
+      await note(cookie, { language: 'da' }).expect(201);
+      expect(calls[0].language).toBe('da');
+      expect(aiCalls[0].prompt).toContain('The note was spoken in Danish');
+      // The next upload, without the field, is back at the Preference.
+      await note(cookie, { language: null }).expect(201);
+      expect(calls[1].language).toBe('ro');
+      expect(aiCalls[1].prompt).toContain('The note was spoken in Romanian');
+    });
+
+    it('follows the stored UI Language when the Preference is empty, not the request locale', async () => {
+      const { cookie, memberId } = await signUp();
+      await setPreferences(memberId, {
+        locale: 'da',
+        scanLanguage: 'ro',
+        spokenLanguage: null,
+      });
+      await note(cookie, { language: null, uiLocale: 'en' }).expect(201);
+      expect(calls[0].language).toBe('da');
+    });
+
+    it('ignores the request locale: a Member with nothing stored speaks English', async () => {
+      const { cookie } = await signUp();
+      await note(cookie, { language: null, uiLocale: 'ro' }).expect(201);
+      expect(calls[0].language).toBe('en');
+    });
+
+    it('rejects a spokenLanguage that is not a Scan Language, and no longer reads scanLanguage', async () => {
+      const { cookie, memberId } = await signUp();
+      await note(cookie, { language: 'fr' }).expect(400);
+      await setPreferences(memberId, { locale: 'en', spokenLanguage: 'ro' });
+      await request(app.getHttpServer())
+        .post('/api/voice')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .field('scanLanguage', 'da')
+        .field('locale', 'en')
+        .field('defaultTarget', 'shopping')
+        .field('today', '2026-10-16')
+        .field('durationMs', '4200')
+        .attach('audio', Buffer.from('fake-audio'), {
+          filename: 'note.webm',
+          contentType: 'audio/webm',
+        })
+        .expect(201);
+      expect(calls[0].language).toBe('ro');
+    });
+
+    it('keeps the language a retry names, even after the Preference changed', async () => {
+      const { cookie, memberId } = await signUp();
+      await setPreferences(memberId, { locale: 'en', spokenLanguage: 'ro' });
+      next = () => Promise.reject(new Error('provider down'));
+      await note(cookie, { language: 'ro' }).expect((r) =>
+        expect(r.status).toBeGreaterThanOrEqual(500),
+      );
+      await setPreferences(memberId, { spokenLanguage: 'da' });
+      next = () => Promise.resolve({ text: 'got the bread and sausages' });
+      await note(cookie, { language: 'ro' }).expect(201);
+      expect(calls.map((c) => c.language)).toEqual(['ro', 'ro']);
     });
   });
 });

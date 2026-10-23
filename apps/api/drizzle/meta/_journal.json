@@ -246,6 +246,27 @@
       "when": 1792616708824,
       "tag": "0034_wakeful_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792757021193,
+      "tag": "0035_member_catalog_language",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792760776448,
+      "tag": "0036_member_scan_language",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792764805736,
+      "tag": "0037_member_spoken_language",
+      "breakpoints": true
     }
   ]
 }

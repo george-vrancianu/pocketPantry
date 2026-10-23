@@ -12,13 +12,9 @@ import { useEmptyStateSearch } from './context';
  */
 export function BrowseByAisle() {
   const { color } = tokens;
-  const { t, i18n } = useTranslation('catalog');
+  const { t } = useTranslation('catalog');
   const browse = useEmptyStateSearch();
-  const aisles = useCatalogAisles(
-    i18n.language,
-    browse?.scope,
-    browse !== null,
-  );
+  const aisles = useCatalogAisles(browse?.scope, browse !== null);
   if (!browse || !aisles.data || aisles.data.length === 0) return null;
   return (
     <Box sx={{ borderTop: `1px solid ${color.divider}`, pt: 1.5 }}>

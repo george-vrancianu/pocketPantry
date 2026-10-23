@@ -22,10 +22,10 @@ import { SectionHeading } from './SectionHeading';
  * Any Member can add or remove one; they count as every Member's own Allergies (ADR 0014).
  */
 export function FamilyAllergiesSection() {
-  const { t, i18n } = useTranslation(['settings', 'common']);
+  const { t } = useTranslation(['settings', 'common']);
   const id = useId();
-  const query = useFamilyAllergies(i18n.language);
-  const add = useAddFamilyAllergy(i18n.language);
+  const query = useFamilyAllergies();
+  const add = useAddFamilyAllergy();
   const remove = useRemoveFamilyAllergy();
   const [allergenId, setAllergenId] = useState<string | null>(null);
   const [label, setLabel] = useState('');

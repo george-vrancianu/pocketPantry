@@ -30,16 +30,14 @@ export type BarcodeLookup =
       unit: Unit | null;
     };
 
-/** Looks a barcode up in Known Barcodes, then Open Food Facts, in the given locale. */
-export const lookupBarcode = (code: string, locale: string) =>
-  apiRequest<BarcodeLookup>(
-    `/barcode-lookup/${code}?${new URLSearchParams({ locale })}`,
-  );
+/** Looks a barcode up in Known Barcodes, then Open Food Facts. */
+export const lookupBarcode = (code: string) =>
+  apiRequest<BarcodeLookup>(`/barcode-lookup/${code}`);
 
 /** A Barcode Lookup owned by the form that asked for it. */
-export function useBarcodeLookup(locale: string) {
+export function useBarcodeLookup() {
   return useMutation({
-    mutationFn: (code: string) => lookupBarcode(code, locale),
+    mutationFn: (code: string) => lookupBarcode(code),
   });
 }
 

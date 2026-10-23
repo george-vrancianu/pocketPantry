@@ -30,7 +30,7 @@ import { ShutterButton } from './components/ShutterButton';
 import { ZoomPill } from './components/ZoomPill';
 import { Viewfinder, useShotFeedback } from './components/Viewfinder';
 import { measureView, useGuideRect } from './hooks/useGuideRect';
-import { useScanLanguage } from './hooks/useScanLanguage';
+import { useScanLanguage } from '../../lib/useScanLanguage';
 
 export type { CameraMode };
 
@@ -41,7 +41,7 @@ export type CameraResult =
       /** The prepared photo, as a JPEG data URL. */
       image: string;
       /** The language the Member chose to read it in. */
-      scanLanguage: ScanLanguage;
+      scanLanguage: ScanLanguage | undefined;
       /**
        * The barcode found in the captured frame, or null: decoded on the device alongside the
        * read, never awaited by it. Never rejects; a frame that cannot be decoded just has none.
@@ -87,7 +87,8 @@ export function CameraOverlay({
   const { t } = useTranslation('scan');
   useForcedThemeColor('dark');
   const camera = useCamera();
-  const { scanLanguage, setScanLanguage } = useScanLanguage();
+  const { scanLanguage, scanLanguageToSend, setScanLanguage } =
+    useScanLanguage();
   const [mode, setMode] = useState<CameraMode>(
     modes.includes(defaultMode) ? defaultMode : modes[0],
   );
@@ -170,7 +171,12 @@ export function CameraOverlay({
         measureView(camera.videoRef.current),
       );
       if (!closed.current) {
-        onResult({ kind: 'product', image, scanLanguage, barcode });
+        onResult({
+          kind: 'product',
+          image,
+          scanLanguage: scanLanguageToSend,
+          barcode,
+        });
         setTimeout(() => {
           readBarcode(frame).then(settle, () => settle(null));
         }, 0);

@@ -16,8 +16,7 @@ const readOn = (reply: () => Response | Promise<Response>) => {
 const start = async () => {
   await voiceNote.start({
     defaultTarget: 'shopping',
-    scanLanguage: 'en',
-    locale: 'en',
+    spokenLanguage: 'en',
   });
   await voiceNote.stop();
 };
@@ -39,8 +38,7 @@ describe('Voice Note notices at the app root', () => {
     await act(() =>
       voiceNote.start({
         defaultTarget: 'shopping',
-        scanLanguage: 'en',
-        locale: 'en',
+        spokenLanguage: 'en',
       }),
     );
     act(() => voiceNote.cancel({ quiet: true }));
@@ -49,8 +47,7 @@ describe('Voice Note notices at the app root', () => {
     await act(() =>
       voiceNote.start({
         defaultTarget: 'shopping',
-        scanLanguage: 'en',
-        locale: 'en',
+        spokenLanguage: 'en',
       }),
     );
     act(() => voiceNote.cancel());
@@ -65,8 +62,7 @@ describe('Voice Note notices at the app root', () => {
     await act(() =>
       voiceNote.start({
         defaultTarget: 'shopping',
-        scanLanguage: 'en',
-        locale: 'en',
+        spokenLanguage: 'en',
       }),
     );
     await act(() => vi.advanceTimersByTimeAsync(60_000));

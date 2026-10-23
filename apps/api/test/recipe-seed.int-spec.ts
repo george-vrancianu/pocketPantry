@@ -36,6 +36,7 @@ import {
 } from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 jest.setTimeout(60_000);
 
@@ -139,13 +140,16 @@ describe('Recipe seed (integration)', () => {
   });
 
   it('reads a seeded Variant through the Member API, in Romanian, with inherited Tips and guidance', async () => {
-    const member = client(
+    const cookie = await signUp(
       app,
-      await signUp(app, `recipe-seed-${Date.now()}@example.com`, 'Seed Reader'),
-      '/api/recipes',
+      `recipe-seed-${Date.now()}@example.com`,
+      'Seed Reader',
     );
+    const member = client(app, cookie, '/api/recipes');
+    // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+    await storeUiLanguage(app, cookie, 'ro');
     const res = await member
-      .get(`/${seedId.recipe('omelette-mediterranean')}?locale=ro`)
+      .get(`/${seedId.recipe('omelette-mediterranean')}`)
       .expect(200);
     const body = res.body as {
       title: string;

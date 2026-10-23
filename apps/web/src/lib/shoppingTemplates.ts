@@ -36,32 +36,31 @@ export const MAX_TEMPLATES = 50;
 export const MAX_TEMPLATE_LINES = 100;
 
 const templatesKey = ['shopping-templates'] as const;
-const withLocale = (locale: string) => `?${new URLSearchParams({ locale })}`;
 
-export function useTemplates(locale: string) {
+export function useTemplates() {
   return useQuery({
-    queryKey: [...templatesKey, 'list', locale],
+    queryKey: [...templatesKey, 'list'],
     queryFn: () =>
-      apiRequest<{ templates: TemplateSummary[] }>(
-        `/shopping-templates${withLocale(locale)}`,
-      ).then((body) => body.templates),
+      apiRequest<{ templates: TemplateSummary[] }>('/shopping-templates').then(
+        (body) => body.templates,
+      ),
   });
 }
 
 /** The query behind one Template's details; `useTemplates`-style callers fetching several share its cache. */
-export function templateQueryOptions(id: string, locale: string) {
+export function templateQueryOptions(id: string) {
   const today = localIso(new Date());
   return {
-    queryKey: [...templateDetailsQueryKey, id, locale, today],
+    queryKey: [...templateDetailsQueryKey, id, today],
     queryFn: () =>
       apiRequest<Template>(
-        `/shopping-templates/${id}?${new URLSearchParams({ locale, today })}`,
+        `/shopping-templates/${id}?${new URLSearchParams({ today })}`,
       ),
   };
 }
 
-export function useTemplate(id: string, locale: string) {
-  return useQuery(templateQueryOptions(id, locale));
+export function useTemplate(id: string) {
+  return useQuery(templateQueryOptions(id));
 }
 
 export type TemplateLineGroup = {
@@ -96,28 +95,22 @@ export const toLineBody = (line: TemplateLine): NewShoppingItem => ({
   ...(line.unit ? { unit: line.unit } : {}),
 });
 
-export function useTemplateMutations(locale: string) {
+export function useTemplateMutations() {
   const queryClient = useQueryClient();
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: templatesKey });
 
   const create = useMutation({
     mutationFn: (body: { name: string; lines?: NewShoppingItem[] }) =>
-      apiRequest<Template>(`/shopping-templates${withLocale(locale)}`, {
-        method: 'POST',
-        body,
-      }),
+      apiRequest<Template>('/shopping-templates', { method: 'POST', body }),
     onSuccess: refresh,
   });
   const createFromList = useMutation({
     mutationFn: (name: string) =>
-      apiRequest<Template>(
-        `/shopping-templates/from-list${withLocale(locale)}`,
-        {
-          method: 'POST',
-          body: { name },
-        },
-      ),
+      apiRequest<Template>('/shopping-templates/from-list', {
+        method: 'POST',
+        body: { name },
+      }),
     onSuccess: refresh,
   });
   const update = useMutation({
@@ -129,7 +122,7 @@ export function useTemplateMutations(locale: string) {
       name?: string;
       lines?: NewShoppingItem[];
     }) =>
-      apiRequest<Template>(`/shopping-templates/${id}${withLocale(locale)}`, {
+      apiRequest<Template>(`/shopping-templates/${id}`, {
         method: 'PATCH',
         body,
       }),
@@ -144,10 +137,10 @@ export function useTemplateMutations(locale: string) {
 }
 
 /** Adds the ticked lines through the bulk endpoint (all or none); the server merges by the usual rule. */
-export function useApplyTemplate(locale: string) {
+export function useApplyTemplate() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: NewShoppingItem[]) => postShoppingItems(locale, body),
+    mutationFn: (body: NewShoppingItem[]) => postShoppingItems(body),
     // Suggestions hide while the Ingredient is on the list; Recipe matches and the Meal Plan forecast show it too.
     onSuccess: () =>
       Promise.all(

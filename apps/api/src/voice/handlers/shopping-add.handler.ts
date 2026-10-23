@@ -48,8 +48,8 @@ export function shoppingAddHandler(
             // Queued for curation like any typed name.
             source: 'manual',
           },
-          // The Unmatched name is written in the UI locale (the read prompt asks
-          // for it), so that is the queue's source language.
+          // The Unmatched name is written in the Catalog Language (the read
+          // prompt asks for it), so that is the queue's source language.
           ctx.locale,
           setMode ? 'set' : 'sum',
         );

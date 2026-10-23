@@ -83,7 +83,7 @@ export function loadVoiceCaseSet(
     cases: cases.filter(
       (c) =>
         (!filter.only || filter.only.includes(c.id)) &&
-        (!filter.language || c.scanLanguage === filter.language),
+        (!filter.language || c.spokenLanguage === filter.language),
     ),
   };
 }
@@ -101,7 +101,7 @@ export function requestFor(
     shoppingNames: c.shoppingList,
     pantryNames: c.pantry,
     transcript: c.transcript,
-    scanLanguage: c.scanLanguage,
+    spokenLanguage: c.spokenLanguage,
     locale: c.locale,
     today: c.today,
     defaultTarget: c.defaultTarget,
@@ -110,7 +110,7 @@ export function requestFor(
 
 export type ReadRunResult = {
   caseId: string;
-  scanLanguage: ScanLanguage;
+  spokenLanguage: ScanLanguage;
   tags: CaseTag[];
   source: LoadedVoiceCase['source'];
   run: number;
@@ -131,7 +131,7 @@ export function evaluateReadRun(
 ): ReadRunResult {
   const base = {
     caseId: c.id,
-    scanLanguage: c.scanLanguage,
+    spokenLanguage: c.spokenLanguage,
     tags: c.tags,
     source: c.source,
     run,
@@ -174,7 +174,7 @@ export type ReadReportInput = {
   prices?: Price;
 };
 
-/** The read replay as Markdown: totals, per Scan Language, per tag, then every miss. */
+/** The read replay as Markdown: totals, per Spoken Language, per tag, then every miss. */
 export function renderReadReport({
   model,
   effort,
@@ -203,16 +203,16 @@ export function renderReadReport({
     );
   }
 
-  const languages = [...new Set(results.map((r) => r.scanLanguage))].sort();
+  const languages = [...new Set(results.map((r) => r.spokenLanguage))].sort();
   lines.push(
     '',
-    '## By Scan Language',
+    '## By Spoken Language',
     '',
     '| Language | Runs | Passed | Actions matched | Mismatched | Missing | Extra |',
     '|---|---|---|---|---|---|---|',
   );
   for (const language of languages) {
-    const rows = results.filter((r) => r.scanLanguage === language);
+    const rows = results.filter((r) => r.spokenLanguage === language);
     const c = rows.flatMap((r) => (r.comparison ? [r.comparison] : []));
     lines.push(
       `| ${language} | ${rows.length} | ${c.filter((x) => x.passed).length} | ${sum(c.map((x) => x.matched))} | ${sum(c.map((x) => x.mismatched.length))} | ${sum(c.map((x) => x.missing.length))} | ${sum(c.map((x) => x.extra.length))} |`,
@@ -270,7 +270,7 @@ const label = (a: {
 
 export type TranscriptionRunResult = {
   caseId: string;
-  scanLanguage: ScanLanguage;
+  spokenLanguage: ScanLanguage;
   ok: boolean;
   error?: string;
   /** What the provider heard. */
@@ -298,15 +298,15 @@ export function renderTranscriptionReport({
     '',
     `Replayed: ${results.length}, failed ${results.length - ok.length}, exact ${ok.filter((r) => r.comparison!.exact).length}. Word error rate: ${wer(errors, words)} (${errors} word errors in ${words} words). Mean latency (successful runs): ${meanLatency(results)}. Transcription is billed per audio, not per token: cost is not estimated here.`,
     '',
-    '## By Scan Language',
+    '## By Spoken Language',
     '',
     '| Language | Replayed | Word errors | WER |',
     '|---|---|---|---|',
   ];
   for (const language of [
-    ...new Set(results.map((r) => r.scanLanguage)),
+    ...new Set(results.map((r) => r.spokenLanguage)),
   ].sort()) {
-    const rows = ok.filter((r) => r.scanLanguage === language);
+    const rows = ok.filter((r) => r.spokenLanguage === language);
     const e = sum(rows.map((r) => r.comparison!.wordErrors));
     lines.push(
       `| ${language} | ${rows.length} | ${e} | ${wer(e, sum(rows.map((r) => r.comparison!.words)))} |`,

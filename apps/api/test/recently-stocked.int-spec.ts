@@ -3,6 +3,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 type Stocked = {
   id: string;
@@ -199,7 +200,8 @@ describe('Recently Stocked (integration)', () => {
   it('names Ingredients in the requested locale', async () => {
     const cookie = await signUp();
     await addBatch(cookie, { ingredientId: milk });
-    const ro = await recent(cookie, 'locale=ro');
+    await storeUiLanguage(app, cookie, 'ro');
+    const ro = await recent(cookie);
     expect(ro.ingredients[0].name).toBe('Lapte');
   });
 

@@ -1,6 +1,6 @@
 import { aboveDock, DOCK_HEIGHT } from '@pocket-pantry/ui';
 
-// The Voice Note's notices all hang above the Dock's mic: first the Scan Language chip's row, which
+// The Voice Note's notices all hang above the Dock's mic: first the Spoken Language chip's row, which
 // starts where `aboveDock` ends (clear of the capsule's overhang), then whatever sits above it.
 
 /** The chip's row: the 30 px chip plus air, px. */

@@ -55,6 +55,27 @@
     "hideRecipesHint": "Lasă deoparte rețetele cu alergiile tale sau cu alergiile familiei din lista de rețete, „Poți găti”, „Gătește diseară” și potrivirile pentru Farfurie scanată. Alergiile altor membri nu ascund niciodată o rețetă. Poți deschide oricând orice rețetă, iar planul de mese le arată pe toate.",
     "hideSaveFailed": "Setarea nu a putut fi salvată. Încearcă din nou."
   },
+  "catalogLanguage": {
+    "label": "Limba catalogului",
+    "sameAsUi": "La fel ca limba aplicației",
+    "hint": "Numele ingredientelor, categoriilor și culoarelor. Afișate în {{language}}.",
+    "saveFailed": "Nu am putut salva limba catalogului. Încearcă din nou.",
+    "saved": "Limba catalogului a fost salvată"
+  },
+  "scanLanguage": {
+    "label": "Limba de scanare",
+    "sameAsUi": "La fel ca limba aplicației",
+    "hint": "Limba în care se citesc pozele. Se citește în {{language}}.",
+    "saveFailed": "Nu am putut salva limba de scanare. Încearcă din nou.",
+    "saved": "Limba de scanare a fost salvată"
+  },
+  "spokenLanguage": {
+    "label": "Limba vorbită",
+    "sameAsUi": "La fel ca limba aplicației",
+    "hint": "Limba în care dictezi notele vocale. Se ascultă în {{language}}.",
+    "saveFailed": "Nu am putut salva limba vorbită. Încearcă din nou.",
+    "saved": "Limba vorbită a fost salvată"
+  },
   "admin": "Catalog",
   "openAdmin": "Administrează Catalogul",
   "account": "Cont",

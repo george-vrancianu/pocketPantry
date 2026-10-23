@@ -17,6 +17,7 @@ import { translateErrorCode } from '../../i18n/translateApiError';
 import { formatClock, NOTHING_HEARD_MS } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { useVoiceNoteState } from '../../lib/voiceNote';
+import { usePreferredSpokenLanguage } from '../../lib/useSpokenLanguage';
 import { useVoiceHost } from './VoiceHost';
 import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
 import { enter } from './enter';
@@ -48,6 +49,7 @@ type Look = {
  */
 export function StatusPill({ voice }: { voice: Voice }) {
   const { t } = useTranslation(['voice', 'errors']);
+  const { spokenLanguage } = usePreferredSpokenLanguage();
   const { phase, error, rawError, recording, voiceCap } = useVoiceNoteState();
   const host = useVoiceHost();
   const nothing = phase === 'failed' && error === 'nothingHeard';
@@ -68,7 +70,7 @@ export function StatusPill({ voice }: { voice: Voice }) {
         hint: t('send.readingMeta', {
           duration: formatClock(recording?.durationMs ?? 0),
           language: t(
-            `settings:languageNames.${recording?.scanLanguage ?? 'en'}`,
+            `settings:languageNames.${recording?.spokenLanguage ?? spokenLanguage}`,
           ),
         }),
         urgent: false,

@@ -15,6 +15,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   batchIdParam,
@@ -23,7 +24,6 @@ import {
   createBatchesBody,
   deleteBatchesBody,
   updateBatchBody,
-  pantryLocaleQuery,
   recentlyStockedQuery,
   type RecentlyStockedQuery,
   type RecentlyStockedView,
@@ -35,7 +35,6 @@ import {
   type CreateBatchesBody,
   type DeleteBatchesBody,
   type UpdateBatchBody,
-  type PantryLocaleQuery,
   type ScanQuery,
 } from './pantry.schemas';
 import { PantryService } from './pantry.service';
@@ -50,6 +49,7 @@ export class PantryController {
     private readonly pantry: PantryService,
     private readonly recentlyStocked: RecentlyStockedService,
     private readonly runningLow: RunningLowService,
+    private readonly languages: MemberLanguageService,
   ) {}
 
   @Get('recently-stocked')
@@ -65,7 +65,7 @@ export class PantryController {
     return {
       ingredients: await this.recentlyStocked.list(
         member.id,
-        query.locale,
+        await this.languages.catalogLanguageOf(member.id),
         query.limit,
       ),
     };
@@ -78,10 +78,12 @@ export class PantryController {
   })
   async list(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
   ): Promise<{ batches: BatchView[]; runningLow: string[] }> {
     return {
-      batches: await this.pantry.list(member.id, query.locale),
+      batches: await this.pantry.list(
+        member.id,
+        await this.languages.catalogLanguageOf(member.id),
+      ),
       runningLow: await this.runningLow.list(member.id),
     };
   }
@@ -118,17 +120,16 @@ export class PantryController {
     summary:
       'Add a Batch to the Family Pantry; location and expiry default from the Catalog',
   })
-  create(
+  async create(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchBody)) body: CreateBatchBody,
   ): Promise<BatchView> {
-    return this.pantry.create(
-      member.id,
-      body,
-      query.locale,
-      query.scanLanguage,
-    );
+    const [catalog, scanLanguage] = await Promise.all([
+      this.languages.catalogLanguageOf(member.id),
+      this.languages.scanLanguageOf(member.id, query.scanLanguage),
+    ]);
+    return this.pantry.create(member.id, body, catalog, scanLanguage);
   }
 
   @Post('batches/bulk')
@@ -141,12 +142,16 @@ export class PantryController {
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
   ): Promise<{ batches: BatchView[] }> {
+    const [catalog, scanLanguage] = await Promise.all([
+      this.languages.catalogLanguageOf(member.id),
+      this.languages.scanLanguageOf(member.id, query.scanLanguage),
+    ]);
     return {
       batches: await this.pantry.createMany(
         member.id,
         body.batches,
-        query.locale,
-        query.scanLanguage,
+        catalog,
+        scanLanguage,
       ),
     };
   }
@@ -169,13 +174,17 @@ export class PantryController {
     summary:
       'Edit a Batch of the Family Pantry (quantity, unit, expiry, Location, Product Description)',
   })
-  update(
+  async update(
     @CurrentUser() member: CurrentUserValue,
     @Param(new ZodValidationPipe(batchIdParam)) params: BatchIdParam,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
     @Body(new ZodValidationPipe(updateBatchBody)) body: UpdateBatchBody,
   ): Promise<BatchView> {
-    return this.pantry.update(member.id, params.id, body, query.locale);
+    return this.pantry.update(
+      member.id,
+      params.id,
+      body,
+      await this.languages.catalogLanguageOf(member.id),
+    );
   }
 
   @Delete('batches/:id')

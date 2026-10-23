@@ -3,6 +3,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 type Suggestion = {
   ingredientId: string;
@@ -311,12 +312,13 @@ describe('Expired Suggestions (integration)', () => {
   it('names the search result in the requested locale', async () => {
     const cookie = await signUp();
     await addBatch(cookie, milk, '2026-10-01');
+    await storeUiLanguage(app, cookie, 'ro');
 
     const body = (
       await api(
         'get',
         cookie,
-        `/shopping-list/suggestions?locale=ro&today=${TODAY}`,
+        `/shopping-list/suggestions?today=${TODAY}`,
       ).expect(200)
     ).body as Suggestions;
 

@@ -92,12 +92,23 @@ describe('Unmatched queue (integration)', () => {
         .set('origin', TEST_ORIGIN)
         .set('cookie', cookie)
         .send(body),
+    put: (path: string, body: object = {}) =>
+      request(app.getHttpServer())
+        .put(`/api${path}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send(body),
     del: (path: string) =>
       request(app.getHttpServer())
         .delete(`/api${path}`)
         .set('origin', TEST_ORIGIN)
         .set('cookie', cookie),
   });
+
+  /** A signed-in request's `?locale=` is ignored: the Member's stored UI Language decides. */
+  async function useLanguage(cookie: string, locale: string) {
+    await call(cookie).put('/settings/preferences', { locale }).expect(200);
+  }
 
   async function saveBatches(
     cookie: string,
@@ -106,7 +117,8 @@ describe('Unmatched queue (integration)', () => {
     scanLanguage?: string,
     path = '/pantry/batches/bulk',
   ) {
-    const query = new URLSearchParams({ locale });
+    await useLanguage(cookie, locale);
+    const query = new URLSearchParams();
     if (scanLanguage) query.set('scanLanguage', scanLanguage);
     const response = await call(cookie)
       .post(`${path}?${query.toString()}`, {
@@ -122,8 +134,9 @@ describe('Unmatched queue (integration)', () => {
   }
 
   async function addItem(cookie: string, itemName: string, locale = 'en') {
+    await useLanguage(cookie, locale);
     await call(cookie)
-      .post(`/shopping-list/items?locale=${locale}`, { name: itemName })
+      .post('/shopping-list/items', { name: itemName })
       .expect(200);
   }
 
@@ -279,7 +292,7 @@ describe('Unmatched queue (integration)', () => {
           '/scan/receipt/confirm',
         );
         await call(member)
-          .post('/pantry/batches?locale=ro&scanLanguage=da', {
+          .post('/pantry/batches?scanLanguage=da', {
             rawName: rawSingle,
             sourceText: 'Skyr vanilje',
             quantity: 1,
@@ -296,6 +309,37 @@ describe('Unmatched queue (integration)', () => {
           locale: 'ro',
           sourceText: 'Skyr vanilje',
           sourceLanguage: 'da',
+        });
+      });
+
+      it("tags the printed text with the Member's Scan Language preference when no ?scanLanguage= is sent, and the query wins when it is", async () => {
+        const member = await newMember();
+        await call(member)
+          .put('/settings/preferences', { locale: 'en', scanLanguage: 'da' })
+          .expect(200);
+        const rawBulk = name('pref bulk');
+        const rawConfirm = name('pref confirm');
+        const rawOverride = name('pref override');
+        await saveBatches(member, [{ rawName: rawBulk, sourceText: 'Mælk' }]);
+        await saveBatches(
+          member,
+          [{ rawName: rawConfirm, sourceText: 'Skyr' }],
+          'en',
+          undefined,
+          '/scan/receipt/confirm',
+        );
+        await saveBatches(
+          member,
+          [{ rawName: rawOverride, sourceText: 'Lapte' }],
+          'en',
+          'ro',
+        );
+        expect(await entryOf(rawBulk)).toMatchObject({ sourceLanguage: 'da' });
+        expect(await entryOf(rawConfirm)).toMatchObject({
+          sourceLanguage: 'da',
+        });
+        expect(await entryOf(rawOverride)).toMatchObject({
+          sourceLanguage: 'ro',
         });
       });
 
@@ -336,8 +380,9 @@ describe('Unmatched queue (integration)', () => {
     it('records plate Shopping Items and Finish Shopping Batches', async () => {
       const raw = name('finish');
       const member = await newMember();
+      await useLanguage(member, 'ro');
       await call(member)
-        .post('/shopping-list/items?locale=ro', { name: raw, source: 'plate' })
+        .post('/shopping-list/items', { name: raw, source: 'plate' })
         .expect(200);
       let entry = await entryFor(raw);
       expect(entry?.references[0]).toMatchObject({
@@ -604,9 +649,11 @@ describe('Unmatched queue (integration)', () => {
       const scanReceipt = async (sourceText: string, fallback: string) => {
         // The model finds no Match and its fallback name is no Synonym.
         scanned = receiptWith(sourceText, fallback);
+        const member = await newMember();
+        await useLanguage(member, 'ro');
         return (
-          await call(await newMember())
-            .post('/scan/receipt?locale=ro&scanLanguage=da', {
+          await call(member)
+            .post('/scan/receipt?scanLanguage=da', {
               receiptImage: 'data:image/jpeg;base64,YQ==',
             })
             .expect(201)

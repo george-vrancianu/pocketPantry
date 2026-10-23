@@ -85,14 +85,14 @@ const dashedButton = {
 export function ReviewOverviewPage() {
   const { t } = useTranslation('review');
   const { t: tScan } = useTranslation('scan');
-  const { t: tAll, i18n } = useTranslation();
-  const saveScan = useSaveScan(i18n.language);
+  const { t: tAll } = useTranslation();
+  const saveScan = useSaveScan();
   const [saving, setSaving] = useState(false);
   // Why each card's last save failed; the card stays until a later Add saves it.
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const toast = useToast();
-  const { scanLanguage } = useSessionScanLanguage();
+  const { scanLanguageToSend: scanLanguage } = useSessionScanLanguage();
   const photosInput = useRef<HTMLInputElement>(null);
   const session = useScanSession();
   const uncropped = uncroppedCount(session);
@@ -119,7 +119,7 @@ export function ReviewOverviewPage() {
       setCropFailed(null);
       dispatchScanSession({ type: 'crop', id: scan.id, image });
       setFocusId(scan.id);
-      readScans(i18n.language);
+      readScans();
     } catch {
       setCropFailed(scan.id);
     }
@@ -188,7 +188,6 @@ export function ReviewOverviewPage() {
     importPhotos(picked, {
       mode: loadLastScanMode(),
       scanLanguage,
-      uiLanguage: i18n.language,
       onFull: () =>
         toast.show(tScan('limit', { count: MAX_SESSION_SCANS }), {
           polite: true,
@@ -309,7 +308,7 @@ export function ReviewOverviewPage() {
                     disabled={saving}
                     onClick={() => {
                       dispatchScanSession({ type: 'retry', id: scan.id });
-                      readScans(i18n.language);
+                      readScans();
                       // The button goes while the read runs: keep focus on the card.
                       setFocusId(scan.id);
                     }}
@@ -325,7 +324,7 @@ export function ReviewOverviewPage() {
                   onClick={() => {
                     dispatchScanSession({ type: 'remove', id: scan.id });
                     // Scans held back by the Scan Cap can go on now.
-                    readScans(i18n.language);
+                    readScans();
                     if (!barcode) navigate('/scan');
                   }}
                   sx={linkButton}
@@ -482,7 +481,7 @@ export function ReviewOverviewPage() {
               dispatchScanSession({ type: 'remove', id: scan.id });
               setFocusId(next?.id ?? null);
               // Scans held back by the Scan Cap can go on now.
-              readScans(i18n.language);
+              readScans();
             }}
             sx={{
               position: 'relative',

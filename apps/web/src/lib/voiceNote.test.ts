@@ -17,8 +17,7 @@ const recording = {
 };
 
 const options = {
-  scanLanguage: 'en',
-  locale: 'en',
+  spokenLanguage: 'en',
   defaultTarget: 'shopping',
 } as const;
 
@@ -38,8 +37,7 @@ const settle = async () => {
 async function record(
   note: VoiceNote,
   startOptions: {
-    scanLanguage: 'en' | 'ro';
-    locale: 'en' | 'ro';
+    spokenLanguage: 'en' | 'ro';
     defaultTarget: 'shopping' | 'pantry';
   } = options,
 ) {
@@ -221,14 +219,13 @@ describe('Voice Note module', () => {
   });
 
   describe('sending', () => {
-    it('sends the recording with its language, locale, page and local date', async () => {
+    it('sends the recording with its language, page and local date', async () => {
       vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime(new Date(2026, 9, 19, 12));
       try {
         const { note, requests, answer } = setup();
         await record(note, {
-          scanLanguage: 'ro',
-          locale: 'ro',
+          spokenLanguage: 'ro',
           defaultTarget: 'pantry',
         });
         expect(note.getState()).toMatchObject({
@@ -237,8 +234,7 @@ describe('Voice Note module', () => {
         });
         expect(requests[0]).toMatchObject({
           recording,
-          scanLanguage: 'ro',
-          locale: 'ro',
+          spokenLanguage: 'ro',
           defaultTarget: 'pantry',
           today: '2026-10-19',
         });
@@ -248,7 +244,7 @@ describe('Voice Note module', () => {
           phase: 'review',
           defaultTarget: 'pantry',
           proposal: { transcript: 'milk and eggs' },
-          recording: { scanLanguage: 'ro', durationMs: 2000 },
+          recording: { spokenLanguage: 'ro', durationMs: 2000 },
         });
       } finally {
         vi.useRealTimers();
@@ -491,19 +487,17 @@ describe('Voice Note module', () => {
     it('resends the kept recording in its language and for its page', async () => {
       const ctx = setup();
       await record(ctx.note, {
-        scanLanguage: 'ro',
-        locale: 'en',
+        spokenLanguage: 'ro',
         defaultTarget: 'pantry',
       });
       ctx.refuse(new ApiError('network_error', 0));
       await settle();
 
-      const second = ctx.note.retry('ro');
+      const second = ctx.note.retry();
       expect(ctx.note.getState().phase).toBe('reading');
       expect(ctx.requests[1]).toMatchObject({
         recording,
-        scanLanguage: 'ro',
-        locale: 'ro',
+        spokenLanguage: 'ro',
         defaultTarget: 'pantry',
       });
       ctx.answer(result('a'));
@@ -521,7 +515,7 @@ describe('Voice Note module', () => {
       await settle();
       expect(ctx.released()).toEqual([1]);
 
-      const second = ctx.note.retry('en');
+      const second = ctx.note.retry();
       expect(ctx.released()).toEqual([1, 0]);
       ctx.answer(result('a'));
       await second;
@@ -530,7 +524,7 @@ describe('Voice Note module', () => {
 
     it('does nothing without a kept recording', async () => {
       const ctx = await failedWith(new ApiError('voice.too_long', 413));
-      void ctx.note.retry('en');
+      void ctx.note.retry();
       expect(ctx.send).toHaveBeenCalledOnce();
       expect(ctx.note.getState().phase).toBe('failed');
     });
@@ -610,8 +604,7 @@ describe('Voice Note module', () => {
     it('sends what it recorded when the Member lets go', async () => {
       const { note, requests } = setup();
       await note.start({
-        scanLanguage: 'ro',
-        locale: 'ro',
+        spokenLanguage: 'ro',
         defaultTarget: 'pantry',
       });
       expect(await note.stop()).toBe('sent');
@@ -622,8 +615,7 @@ describe('Voice Note module', () => {
       expect(note.getState().startedAt).toBeUndefined();
       expect(requests[0]).toMatchObject({
         recording,
-        scanLanguage: 'ro',
-        locale: 'ro',
+        spokenLanguage: 'ro',
         defaultTarget: 'pantry',
       });
     });
@@ -1095,7 +1087,7 @@ describe('Voice Note module', () => {
     it('takes the lock again for a Retry and releases it once', async () => {
       const ctx = await failedWith(new ApiError('network_error', 0));
       expect(ctx.released()).toEqual([1]);
-      void ctx.note.retry('en');
+      void ctx.note.retry();
       expect(ctx.released()).toEqual([1, 0]);
       ctx.answer(result('a'));
       await settle();

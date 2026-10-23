@@ -106,8 +106,11 @@ describe('Barcode Lookup (integration)', () => {
     await app.close();
   });
 
-  const lookup = (who: typeof a, barcode = code, locale = 'en') =>
-    who.get(`/barcode-lookup/${barcode}?locale=${locale}`);
+  // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+  const useLanguage = (who: typeof a, locale: string) =>
+    who.put('/settings/preferences', { locale }).expect(200);
+  const lookup = (who: typeof a, barcode = code) =>
+    who.get(`/barcode-lookup/${barcode}`);
 
   it('requires authentication', async () => {
     await request(app.getHttpServer())
@@ -252,9 +255,13 @@ describe('Barcode Lookup (integration)', () => {
       genericName: 'Generic Name',
       genericNames: { ro: 'Nume Generic' },
     });
-    const described = async (locale: string) =>
-      ((await lookup(a, freshBarcode(), locale).expect(200)).body as Json)
+    const described = async (locale: string) => {
+      await useLanguage(a, locale);
+      return ((await lookup(a, freshBarcode()).expect(200)).body as Json)
         .productDescription;
+    };
+
+    afterEach(() => useLanguage(a, 'en'));
 
     it("prefers the product name in the Member's locale", async () => {
       found = names;
@@ -332,7 +339,9 @@ describe('Barcode Lookup (integration)', () => {
         productName: 'Zorblax Crunch 500g',
         allergenTags: ['en:milk'],
       });
-      const body = (await lookup(a, code, 'da').expect(200)).body as Json;
+      await useLanguage(a, 'da');
+      const body = (await lookup(a, code).expect(200)).body as Json;
+      await useLanguage(a, 'en');
       expect(body.allergens).toEqual([
         { id: seedId.allergen('milk'), name: 'Mælk' },
       ]);
@@ -437,5 +446,29 @@ describe('Barcode Lookup (integration)', () => {
       })
       .expect(201);
     expect(aiCalls).toBe(1);
+  });
+
+  describe('with a Catalog Language Preference', () => {
+    // UI Language en, Catalog Language ro, Scan Language da: all three differ.
+    it('matches on the Catalog Language product name and returns the Ingredient name in it', async () => {
+      const cookie = await signUp(app, `bc-ro-${stamp}@example.com`, 'R');
+      const romanian = client(app, cookie, '/api');
+      await romanian
+        .put('/settings/preferences', {
+          locale: 'en',
+          catalogLanguage: 'ro',
+          scanLanguage: 'da',
+        })
+        .expect(200);
+      found = product({
+        productName: 'Unmatchable brand thing',
+        productNames: { en: 'Unmatchable brand thing', ro: 'Lapte' },
+      });
+      const body = (await lookup(romanian).expect(200)).body as Json;
+      expect(body.match).toMatchObject({
+        id: seedId.ingredient('milk'),
+        name: 'Lapte',
+      });
+    });
   });
 });

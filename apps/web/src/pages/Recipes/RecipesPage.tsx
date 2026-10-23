@@ -27,7 +27,7 @@ import { SectionLabel } from './components/SectionLabel';
 
 /** Browse Recipes: Base Recipes by default, Variants too once a search or filter is active. */
 export function RecipesPage() {
-  const { t, i18n } = useTranslation(['recipes', 'common']);
+  const { t } = useTranslation(['recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
     search: '',
     cuisineId: '',
@@ -35,10 +35,9 @@ export function RecipesPage() {
   });
   // "Show" in the hidden-by-Allergies note asks the list and the Can Make strip for everything.
   const [showHidden, setShowHidden] = useState(false);
-  const recipes = useRecipes(browse, i18n.language, { showHidden });
-  const filters = useRecipeFilters(i18n.language);
+  const recipes = useRecipes(browse, { showHidden });
+  const filters = useRecipeFilters();
   const cookTonight = useCookTonight(
-    i18n.language,
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     localIso(new Date()),
     showHidden,

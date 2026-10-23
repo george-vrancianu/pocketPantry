@@ -4,7 +4,7 @@
   "cases": [
     {
       "id": "en-01",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["basic"],
       "transcript": "Add milk, eggs and bread to the list.",
       "expected": {
@@ -29,7 +29,7 @@
     },
     {
       "id": "en-02",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["filler"],
       "transcript": "Um, so, uh, I need, like, butter, you know, and some cheddar.",
       "expected": {
@@ -49,7 +49,7 @@
     },
     {
       "id": "en-03",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["correction", "units"],
       "transcript": "Add two, no, three apples.",
       "expected": {
@@ -66,7 +66,7 @@
     },
     {
       "id": "en-04",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["correction"],
       "transcript": "Put onions on the list. Actually no, make that garlic.",
       "expected": {
@@ -81,7 +81,7 @@
     },
     {
       "id": "en-05",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["units"],
       "transcript": "Two litres of milk, half a kilo of flour, a dozen eggs and four tomatoes.",
       "expected": {
@@ -119,7 +119,7 @@
     },
     {
       "id": "en-06",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["relative-date", "units"],
       "transcript": "Add a kilo of salmon to the pantry, it expires in three days.",
       "expected": {
@@ -137,7 +137,7 @@
     },
     {
       "id": "en-07",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["relative-date"],
       "transcript": "Put two yoghurts in the fridge, they expire tomorrow.",
       "defaultTarget": "pantry",
@@ -157,7 +157,7 @@
     },
     {
       "id": "en-08",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["units", "relative-date"],
       "transcript": "Add one kilo of rice, it never expires.",
       "defaultTarget": "pantry",
@@ -176,7 +176,7 @@
     },
     {
       "id": "en-09",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["unsupported"],
       "transcript": "What's the weather like tomorrow? Add coffee.",
       "expected": {
@@ -192,7 +192,7 @@
     },
     {
       "id": "en-10",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["unsupported"],
       "transcript": "Tell me a recipe for lasagne.",
       "expected": {
@@ -202,7 +202,7 @@
     },
     {
       "id": "en-11",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["mixed-lists", "relative-date", "units"],
       "transcript": "Add spaghetti to the shopping list and put three lemons in the pantry, they expire on the twentieth.",
       "expected": {
@@ -225,7 +225,7 @@
     },
     {
       "id": "en-12",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["mixed-lists"],
       "transcript": "Tick off the bread, take milk off the list, and we're running low on rice in the pantry.",
       "shoppingList": ["Milk", "Bread"],
@@ -252,7 +252,7 @@
     },
     {
       "id": "en-13",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["sound-alike"],
       "transcript": "Add pears, peas and black pepper.",
       "expected": {
@@ -282,7 +282,7 @@
     },
     {
       "id": "en-14",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["sound-alike"],
       "transcript": "Spring onions please, and also onions, the normal ones.",
       "expected": {
@@ -302,7 +302,7 @@
     },
     {
       "id": "en-15",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["units"],
       "transcript": "Change the milk to three litres.",
       "shoppingList": ["Milk"],
@@ -320,7 +320,7 @@
     },
     {
       "id": "en-16",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["basic", "off-page"],
       "transcript": "Add milk and eggs.",
       "defaultTarget": "none",
@@ -341,7 +341,7 @@
     },
     {
       "id": "en-17",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["off-page"],
       "transcript": "Remove the eggs.",
       "defaultTarget": "none",
@@ -359,7 +359,7 @@
     },
     {
       "id": "en-18",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["filler", "off-page"],
       "transcript": "Um, add some butter, and take the flour off.",
       "defaultTarget": "none",
@@ -382,7 +382,7 @@
     },
     {
       "id": "en-19",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["off-page"],
       "transcript": "Put two yoghurts in the fridge.",
       "defaultTarget": "none",
@@ -401,7 +401,7 @@
     },
     {
       "id": "en-20",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["units", "relative-date", "off-page"],
       "transcript": "Add a kilo of salmon, it expires in three days.",
       "defaultTarget": "none",
@@ -420,7 +420,7 @@
     },
     {
       "id": "en-21",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["off-page"],
       "transcript": "We need milk and eggs.",
       "defaultTarget": "none",
@@ -441,7 +441,7 @@
     },
     {
       "id": "en-22",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["units", "off-page"],
       "transcript": "Buy two lemons and some butter.",
       "defaultTarget": "none",
@@ -464,7 +464,7 @@
     },
     {
       "id": "en-23",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["off-page"],
       "transcript": "Tick off the bread and the milk.",
       "defaultTarget": "none",
@@ -486,7 +486,7 @@
     },
     {
       "id": "en-24",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["off-page"],
       "transcript": "Uncheck the eggs.",
       "defaultTarget": "none",
@@ -503,7 +503,7 @@
     },
     {
       "id": "en-25",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["units", "off-page"],
       "transcript": "Change the milk to three litres.",
       "defaultTarget": "none",
@@ -522,7 +522,7 @@
     },
     {
       "id": "en-26",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["off-page"],
       "transcript": "We're running low on rice and coffee.",
       "defaultTarget": "none",
@@ -544,7 +544,7 @@
     },
     {
       "id": "en-27",
-      "scanLanguage": "en",
+      "spokenLanguage": "en",
       "tags": ["mixed-lists", "off-page"],
       "transcript": "Add butter, put two yoghurts in the fridge, and we need coffee. Oh, and add flour to the pantry.",
       "defaultTarget": "none",

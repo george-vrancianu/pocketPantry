@@ -67,7 +67,7 @@ describe('Shopping List Voice Actions (integration)', () => {
       .post('/api/voice')
       .set('origin', TEST_ORIGIN)
       .set('cookie', cookie)
-      .field('scanLanguage', 'en')
+      .field('spokenLanguage', 'en')
       .field('locale', 'en')
       .field('defaultTarget', 'shopping')
       .field('today', '2026-10-16')

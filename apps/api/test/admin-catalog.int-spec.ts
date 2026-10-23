@@ -20,6 +20,7 @@ import {
 } from '../src/database/schema';
 import { normalizeName } from '../src/catalog/normalize';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 type Body = { id: string; [key: string]: unknown };
@@ -1035,8 +1036,9 @@ describe('Admin role and Catalog curation (integration)', () => {
       ).body as List;
       shoppingListIds.push(added.id);
       const aisleName = async (locale: string) => {
-        const list = (await shopping('get', `?locale=${locale}`).expect(200))
-          .body as List;
+        // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+        await storeUiLanguage(app, adminCookie, locale);
+        const list = (await shopping('get', '').expect(200)).body as List;
         return list.groups.find((g) => g.aisle?.id === aisle.id)?.aisle?.name;
       };
       try {
@@ -1044,6 +1046,7 @@ describe('Admin role and Catalog curation (integration)', () => {
         // Romanian has no name yet: the English one stands in.
         expect(await aisleName('ro')).toBe(`Deli ${stamp}`);
       } finally {
+        await storeUiLanguage(app, adminCookie, 'en');
         await database
           .delete(shoppingItems)
           .where(eq(shoppingItems.ingredientId, ingredient.id));

@@ -58,7 +58,7 @@ const unmatchedLine = {
 
 function renderScan(
   route: string,
-  routes: Record<string, () => Response> = {},
+  routes: Record<string, () => Response | Promise<Response>> = {},
   locale: 'en' | 'ro' | 'da' = 'en',
 ) {
   const { fetchMock, calls } = stubApi({
@@ -96,6 +96,21 @@ describe('Scan Language on the Scan screen', () => {
     expect(languageChip()).toHaveTextContent('RO');
   });
 
+  it('sends no Scan Language before the Preferences have loaded, so the API uses the stored one', async () => {
+    const calls = renderScan(
+      '/scan?mode=product',
+      {
+        'GET /api/settings/preferences': () => new Promise<Response>(() => {}),
+      },
+      'en',
+    );
+    expect(languageChip()).toHaveTextContent('EN');
+    takeScan();
+    await openFirstScanCard();
+    const scan = calls.find((c) => c.key === 'POST /api/scan/product');
+    expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBeNull();
+  });
+
   it('starts at Dansk under a Danish UI', () => {
     renderScan('/scan', {}, 'da');
     expect(languageChip()).toHaveTextContent('DA');
@@ -106,22 +121,6 @@ describe('Scan Language on the Scan screen', () => {
       route: '/scan',
       locale: 'da',
     });
-    await act(() => i18n.changeLanguage('en'));
-    expect(languageChip()).toHaveTextContent('EN');
-    await act(() => i18n.changeLanguage('da'));
-    expect(languageChip()).toHaveTextContent('DA');
-  });
-
-  it('forgets the device choice when the UI language changes, even if it changes back', async () => {
-    window.localStorage.setItem(
-      'pocket-pantry.scan-language',
-      JSON.stringify({ locale: 'da', language: 'ro' }),
-    );
-    const { i18n } = renderWithProviders(<ScanPage />, {
-      route: '/scan',
-      locale: 'da',
-    });
-    expect(languageChip()).toHaveTextContent('RO');
     await act(() => i18n.changeLanguage('en'));
     expect(languageChip()).toHaveTextContent('EN');
     await act(() => i18n.changeLanguage('da'));
@@ -167,7 +166,6 @@ describe('Scan Language on the Scan screen', () => {
       await screen.findByText('pantry screen');
       const scan = calls.find((c) => c.key === `POST /api/scan/${mode}`);
       expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBe('da');
-      expect(new URLSearchParams(scan?.search).get('locale')).toBe('en');
       const save = calls.find((c) => c.key === 'POST /api/pantry/batches/bulk');
       expect(new URLSearchParams(save?.search).get('scanLanguage')).toBe('da');
       expect(save?.body).toMatchObject({

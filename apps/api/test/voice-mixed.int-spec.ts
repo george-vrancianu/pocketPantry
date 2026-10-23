@@ -131,7 +131,7 @@ describe('Voice Notes across both lists (integration)', () => {
   ) => {
     reading = { actions, unsupported: [] };
     const response = await api('post', cookie, '/voice')
-      .field('scanLanguage', 'en')
+      .field('spokenLanguage', 'en')
       .field('locale', 'en')
       .field('defaultTarget', defaultTarget)
       .field('today', TODAY)

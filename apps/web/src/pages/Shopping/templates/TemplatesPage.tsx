@@ -21,10 +21,10 @@ import {
 
 /** The Family's Shopping Templates: open one to edit it, or create a new one. */
 export function TemplatesPage() {
-  const { t, i18n } = useTranslation(['templates', 'common']);
+  const { t } = useTranslation(['templates', 'common']);
   const navigate = useNavigate();
-  const templates = useTemplates(i18n.language);
-  const { create } = useTemplateMutations(i18n.language);
+  const templates = useTemplates();
+  const { create } = useTemplateMutations();
   const [name, setName] = useState('');
 
   const submit = (event: FormEvent) => {

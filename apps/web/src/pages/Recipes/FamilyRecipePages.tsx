@@ -44,9 +44,9 @@ function namedGuidance(
 
 /** "New Recipe": the Family Recipe form, blank; saved as a Base Recipe (no parent). */
 export function NewRecipePage() {
-  const { t, i18n } = useTranslation(['recipes', 'common', 'errors']);
+  const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
-  const create = useCreateFamilyRecipe(i18n.language);
+  const create = useCreateFamilyRecipe();
   const momentOptions = useMomentOptions();
 
   return (
@@ -83,14 +83,14 @@ export function NewRecipePage() {
 
 /** "Make a variant": the editor opens on a copy of the Recipe being viewed. */
 export function NewVariantPage() {
-  const { t, i18n } = useTranslation(['recipes', 'common', 'errors']);
+  const { t } = useTranslation(['recipes', 'common', 'errors']);
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const draft = useVariantDraft(id, i18n.language);
-  const create = useCreateFamilyRecipe(i18n.language);
+  const draft = useVariantDraft(id);
+  const create = useCreateFamilyRecipe();
   const momentOptions = useMomentOptions();
   // The draft carries link ids only; the source's own view names them.
-  const source = useRecipe(id, i18n.language);
+  const source = useRecipe(id);
   const ready = draft.data !== undefined && !source.isPending;
 
   return (
@@ -134,12 +134,12 @@ export function NewVariantPage() {
 
 /** Edit one of the Family's own Recipes, with its own Tips below. */
 export function EditFamilyRecipePage() {
-  const { t, i18n } = useTranslation(['recipes', 'common', 'errors']);
+  const { t } = useTranslation(['recipes', 'common', 'errors']);
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const query = useFamilyRecipeEdit(id, i18n.language);
-  const update = useUpdateFamilyRecipe(id, i18n.language);
-  const tipWrites = useFamilyTipWrites(id, i18n.language);
+  const query = useFamilyRecipeEdit(id);
+  const update = useUpdateFamilyRecipe(id);
+  const tipWrites = useFamilyTipWrites(id);
   const recipe = query.data;
   /** Bumped after each save so the form reseeds with the new line and Step ids. */
   const [saves, setSaves] = useState(0);

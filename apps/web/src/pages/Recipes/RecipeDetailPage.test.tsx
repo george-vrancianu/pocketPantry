@@ -109,12 +109,11 @@ async function openTab(
 describe('RecipeDetailPage', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('shows the header and ingredients in the Member locale', async () => {
-    const calls = setup(recipe({}));
+  it('shows the header and ingredients', async () => {
+    setup(recipe({}));
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Omelette' }),
     ).toBeInTheDocument();
-    expect(calls[0]!.search).toContain('locale=en');
     const ingredients = screen.getByRole('list', { name: 'Ingredients' });
     expect(within(ingredients).getByText(/Egg/)).toBeInTheDocument();
     expect(within(ingredients).getByText(/optional/)).toBeInTheDocument();

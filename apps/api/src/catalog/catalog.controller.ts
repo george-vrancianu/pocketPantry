@@ -16,6 +16,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import { SettingsService } from '../settings/settings.service';
 import { catalogScope, SHARED_ONLY, type CatalogScope } from './catalog-scope';
 import { FamilyIngredientsService } from './family-ingredients.service';
@@ -35,18 +36,15 @@ import {
   type IdParam,
   catalogCategoriesQuery,
   familyIngredientBody,
-  familyIngredientQuery,
   familySynonymBody,
   type FamilySynonymBody,
   type CatalogCategoriesQuery,
   type CatalogCategory,
   type FamilyIngredientBody,
-  catalogParentsQuery,
   type CatalogAisle,
   type CatalogAislesQuery,
   catalogSearchQuery,
   type CatalogParent,
-  type CatalogParentsQuery,
   type CatalogSearchQuery,
   type CatalogSearchResult,
 } from './catalog.schemas';
@@ -61,22 +59,21 @@ export class CatalogController {
     private readonly familySynonyms: FamilySynonymsService,
     private readonly familyCatalog: FamilyCatalogService,
     private readonly settings: SettingsService,
+    private readonly languages: MemberLanguageService,
   ) {}
 
   @Get('parents')
   @ApiOperation({
     summary:
-      'List Parent Categories by name in the requested locale, for placing an Unmatched Batch',
+      'List Parent Categories by name in the Catalog Language, for placing an Unmatched Batch',
   })
   async parents(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(catalogParentsQuery))
-    query: CatalogParentsQuery,
   ): Promise<{ parents: CatalogParent[] }> {
     return {
       parents: await this.searchService.listParents(
         await this.settings.catalogScopeForMember(member.id),
-        query.locale,
+        await this.languages.catalogLanguageOf(member.id),
       ),
     };
   }
@@ -94,7 +91,7 @@ export class CatalogController {
     return {
       aisles: await this.searchService.listAisles(
         await this.scopeFor(query, member.id),
-        query.locale,
+        await this.languages.catalogLanguageOf(member.id),
       ),
     };
   }
@@ -102,17 +99,15 @@ export class CatalogController {
   @Get('allergens')
   @ApiOperation({
     summary:
-      'List the Allergens a Family Ingredient can be tagged with (retired ones left out), named in the requested locale',
+      'List the Allergens a Family Ingredient can be tagged with (retired ones left out), named in the Catalog Language',
   })
   async allergens(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(familyIngredientQuery))
-    query: { locale: 'en' | 'ro' | 'da' },
   ): Promise<{ allergens: CatalogAllergen[] }> {
     return {
       allergens: await this.searchService.listAllergens(
         await this.settings.catalogScopeForMember(member.id),
-        query.locale,
+        await this.languages.catalogLanguageOf(member.id),
       ),
     };
   }
@@ -120,7 +115,7 @@ export class CatalogController {
   @Get('search')
   @ApiOperation({
     summary:
-      'Search Ingredients by name or Synonym in any locale, names returned in the requested locale',
+      'Search Ingredients by name or Synonym in any language, names returned in the Catalog Language',
   })
   async search(
     @CurrentUser() member: CurrentUserValue,
@@ -131,7 +126,7 @@ export class CatalogController {
       results: await this.searchService.search(
         await this.scopeFor(query, member.id),
         query.q,
-        query.locale,
+        await this.languages.catalogLanguageOf(member.id),
         query.limit,
         await this.settings.expiryOverridesForMember(member.id),
         {
@@ -156,7 +151,7 @@ export class CatalogController {
       categories: await this.searchService.listCategories(
         await this.settings.catalogScopeForMember(member.id),
         query.q,
-        query.locale,
+        await this.languages.catalogLanguageOf(member.id),
         query.limit,
         await this.settings.expiryOverridesForMember(member.id),
       ),
@@ -171,8 +166,6 @@ export class CatalogController {
   })
   async createFamilyIngredient(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(familyIngredientQuery))
-    query: { locale: 'en' | 'ro' | 'da' },
     @Body(new ZodValidationPipe(familyIngredientBody))
     body: FamilyIngredientBody,
   ): Promise<CatalogSearchResult> {
@@ -182,7 +175,7 @@ export class CatalogController {
         memberId: member.id,
       },
       body,
-      query.locale,
+      await this.languages.catalogLanguageOf(member.id),
       await this.settings.expiryOverridesForMember(member.id),
     );
   }
@@ -194,12 +187,10 @@ export class CatalogController {
   })
   async family(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(familyIngredientQuery))
-    query: { locale: 'en' | 'ro' | 'da' },
   ): Promise<FamilyCatalog> {
     return this.familyCatalog.list(
       await this.settings.familyIdOf(member.id),
-      query.locale,
+      await this.languages.catalogLanguageOf(member.id),
       await this.settings.expiryOverridesForMember(member.id),
     );
   }
@@ -212,8 +203,6 @@ export class CatalogController {
   async updateFamilyIngredient(
     @CurrentUser() member: CurrentUserValue,
     @Param(new ZodValidationPipe(idParam)) params: IdParam,
-    @Query(new ZodValidationPipe(familyIngredientQuery))
-    query: { locale: 'en' | 'ro' | 'da' },
     @Body(new ZodValidationPipe(familyIngredientPatchBody))
     body: FamilyIngredientPatchBody,
   ): Promise<CatalogSearchResult> {
@@ -221,7 +210,7 @@ export class CatalogController {
       await this.settings.familyIdOf(member.id),
       params.id,
       body,
-      query.locale,
+      await this.languages.catalogLanguageOf(member.id),
       await this.settings.expiryOverridesForMember(member.id),
     );
   }
@@ -283,15 +272,13 @@ export class CatalogController {
   })
   async createFamilySynonym(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(familyIngredientQuery))
-    query: { locale: 'en' | 'ro' | 'da' },
     @Body(new ZodValidationPipe(familySynonymBody))
     body: FamilySynonymBody,
   ): Promise<CatalogSearchResult> {
     return this.familySynonyms.create(
       { id: await this.settings.familyIdOf(member.id) },
       body,
-      query.locale,
+      await this.languages.catalogLanguageOf(member.id),
       await this.settings.expiryOverridesForMember(member.id),
     );
   }

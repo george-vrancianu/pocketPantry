@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { MemberLanguageModule } from '../member-language/member-language.module';
 import { SettingsModule } from '../settings/settings.module';
 import { FamilyRecipesService } from './family-recipes.service';
 import { ShoppingModule } from '../shopping/shopping.module';
@@ -15,7 +16,7 @@ import { RecipesController } from './recipes.controller';
 import { RecipesService } from './recipes.service';
 
 @Module({
-  imports: [SettingsModule, ShoppingModule],
+  imports: [SettingsModule, ShoppingModule, MemberLanguageModule],
   controllers: [RecipesController, RecipePantryController],
   providers: [
     RecipesService,

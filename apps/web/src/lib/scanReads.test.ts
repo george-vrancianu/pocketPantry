@@ -70,7 +70,7 @@ describe('readScans', () => {
         releases.push(() => resolve(Response.json({ lines }))),
       );
     ['a', 'b', 'c'].forEach((id) => enqueue(id));
-    readScans('en');
+    readScans();
     await settle();
     expect(calls).toHaveLength(2);
     expect(scan('c').status).toBe('queued');
@@ -84,7 +84,7 @@ describe('readScans', () => {
   it('sends each Scan to its mode endpoint, in its own Scan Language', async () => {
     enqueue('a', 'product', 'ro');
     enqueue('b', 'receipt', 'da');
-    readScans('en');
+    readScans();
     await settle();
     expect(calls[0]).toMatchObject({
       path: '/api/scan/product',
@@ -104,7 +104,7 @@ describe('readScans', () => {
         ? Promise.reject(new TypeError('offline'))
         : Response.json({ lines });
     enqueue('a');
-    readScans('en');
+    readScans();
     await settle();
     expect(calls).toHaveLength(2);
     expect(scan('a').status).toBe('read');
@@ -113,7 +113,7 @@ describe('readScans', () => {
   it('fails the Scan when the retry fails too', async () => {
     answer = () => Promise.reject(new TypeError('offline'));
     enqueue('a');
-    readScans('en');
+    readScans();
     await settle();
     expect(calls).toHaveLength(2);
     expect(scan('a')).toMatchObject({
@@ -126,7 +126,7 @@ describe('readScans', () => {
   it('does not retry a 4xx answer', async () => {
     answer = () => error('scan.image_invalid', 400);
     enqueue('a');
-    readScans('en');
+    readScans();
     await settle();
     expect(calls).toHaveLength(1);
     expect(scan('a')).toMatchObject({
@@ -138,7 +138,7 @@ describe('readScans', () => {
   it('fails a read that finds nothing as scan.nothing_found', async () => {
     answer = () => Response.json({ lines: [] });
     enqueue('a');
-    readScans('en');
+    readScans();
     await settle();
     expect(scan('a')).toMatchObject({
       status: 'failed',
@@ -149,7 +149,7 @@ describe('readScans', () => {
   it('stops starting reads once a Scan hits the Scan Cap', async () => {
     answer = () => error('scan.cap_reached', 429);
     ['a', 'b', 'c', 'd'].forEach((id) => enqueue(id));
-    readScans('en');
+    readScans();
     await settle();
     expect(calls).toHaveLength(2);
     expect(scan('a').failure).toBe('cap');
@@ -163,7 +163,7 @@ describe('readScans', () => {
         token: 't',
       });
     enqueue('a', 'plate', undefined);
-    readScans('en');
+    readScans();
     await settle();
     expect(calls[0]).toMatchObject({
       path: '/api/scan/plate',
@@ -181,7 +181,7 @@ describe('readScans', () => {
             token: 't',
           });
     enqueue('a', 'plate', undefined);
-    readScans('en');
+    readScans();
     await settle();
     expect(calls).toHaveLength(2);
     expect(scan('a').status).toBe('read');

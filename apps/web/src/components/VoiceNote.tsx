@@ -18,7 +18,7 @@ export function defaultTargetFor(pathname: string): VoiceDefaultTarget {
 
 /**
  * Voice Notes, hosted once in the app layout: the hold-to-talk mic in the Dock's capsule with
- * the Scan Language chip above it, its notices, and the Review sheet that shows "What I heard".
+ * the Spoken Language chip above it, its notices, and the Review sheet that shows "What I heard".
  * Shown on every page with the Dock, acting on that page's list on the Shopping List and the Pantry and on no
  * list elsewhere. Hidden until the server says transcription is configured.
  */

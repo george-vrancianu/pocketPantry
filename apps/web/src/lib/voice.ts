@@ -3,7 +3,7 @@ import { apiRequest } from './api';
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import type { Recording } from './microphone';
 import { localIso } from './pantry';
-import type { Locale, ScanLanguage } from '../i18n/resources';
+import type { ScanLanguage } from '../i18n/resources';
 
 /** A Voice Note lasts at most this long; the recording stops and sends itself here. */
 export const MAX_VOICE_NOTE_MS = 60_000;
@@ -153,13 +153,11 @@ export type VoiceApplyResult = {
 /** Apply the Voice Actions as edited in Review. Free of the Voice Cap. */
 export function applyVoiceActions(
   actions: VoiceReviewAction[],
-  locale: Locale,
   today: string = localIso(new Date()),
 ): Promise<VoiceApplyResult> {
   return apiRequest<VoiceApplyResult>('/voice/apply', {
     method: 'POST',
     body: {
-      locale,
       today,
       actions: actions.map((a) => ({
         id: a.id,
@@ -200,8 +198,8 @@ export function useVoiceConfigured(): boolean {
 
 export type VoiceNoteRequest = {
   recording: Recording;
-  scanLanguage: ScanLanguage;
-  locale: Locale;
+  /** Left out when the Member's Preferences were not loaded yet: the API resolves it. */
+  spokenLanguage?: ScanLanguage;
   defaultTarget: VoiceDefaultTarget;
   /** The Member's local date, `YYYY-MM-DD`. */
   today: string;
@@ -211,15 +209,13 @@ export type VoiceNoteRequest = {
 
 export function sendVoiceNote({
   recording,
-  scanLanguage,
-  locale,
+  spokenLanguage,
   defaultTarget,
   today,
   signal,
 }: VoiceNoteRequest): Promise<VoiceNoteResult> {
   const form = new FormData();
-  form.append('scanLanguage', scanLanguage);
-  form.append('locale', locale);
+  if (spokenLanguage) form.append('spokenLanguage', spokenLanguage);
   form.append('defaultTarget', defaultTarget);
   form.append('today', today);
   form.append('durationMs', String(Math.round(recording.durationMs)));

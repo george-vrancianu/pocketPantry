@@ -135,7 +135,7 @@ export class PantryService {
           ? [
               {
                 rawName: value.rawName ?? '',
-                // The raw name is UI-locale text; the printed text is in the Scan Language.
+                // The raw name is in the Catalog Language; the printed text is in the Scan Language.
                 locale,
                 sourceText: bodies[index].sourceText,
                 sourceLanguage: scanLanguage,

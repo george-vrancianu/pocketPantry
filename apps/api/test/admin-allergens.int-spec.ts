@@ -20,6 +20,7 @@ import type {
 } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 type AllergenRow = {
@@ -41,6 +42,7 @@ describe('Admin Allergens (integration)', () => {
   let member: ReturnType<typeof client>;
   let recipes: ReturnType<typeof client>;
   let memberSettings: ReturnType<typeof client>;
+  let memberCookie: string;
   const stamp = Date.now();
   const ingredientIds: string[] = [];
   const recipeIds: string[] = [];
@@ -88,6 +90,7 @@ describe('Admin Allergens (integration)', () => {
     database = app.get<Database>(DATABASE);
     const email = `allergens-admin-${stamp}@example.com`;
     const cookie = await signUp(app, email, 'Allergen Admin');
+    memberCookie = cookie;
     await promoteToAdmin(database, email);
     admin = client(app, cookie, '/api/admin/catalog');
     recipes = client(app, cookie, '/api/admin/recipes');
@@ -170,13 +173,19 @@ describe('Admin Allergens (integration)', () => {
         ['en', `Guava ${stamp}`],
         ['ro', `Guava ro ${stamp}`],
       ]);
-      const ro = (await memberSettings.get('/allergies?locale=ro').expect(200))
-        .body as { allergens: { id: string; name: string }[] };
+      // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+      await storeUiLanguage(app, memberCookie, 'ro');
+      const ro = (await memberSettings.get('/allergies').expect(200)).body as {
+        allergens: { id: string; name: string }[];
+      };
       expect(ro.allergens.find((a) => a.id === kiwi.id)?.name).toBe(
         `Guava ro ${stamp}`,
       );
-      const da = (await memberSettings.get('/allergies?locale=da').expect(200))
-        .body as { allergens: { id: string; name: string }[] };
+      await storeUiLanguage(app, memberCookie, 'da');
+      const da = (await memberSettings.get('/allergies').expect(200)).body as {
+        allergens: { id: string; name: string }[];
+      };
+      await storeUiLanguage(app, memberCookie, 'en');
       // No Danish name yet: falls back to the English one.
       expect(da.allergens.find((a) => a.id === kiwi.id)?.name).toBe(
         `Guava ${stamp}`,

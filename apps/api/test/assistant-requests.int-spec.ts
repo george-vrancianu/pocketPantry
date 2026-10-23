@@ -8,7 +8,12 @@ import { AssistantTokenService } from '../src/assistant-tokens/assistant-token.s
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { ingredients, scanUsage, user } from '../src/database/schema';
+import {
+  ingredients,
+  scanUsage,
+  unmatchedEntries,
+  user,
+} from '../src/database/schema';
 import { ApiException } from '../src/common/api-exception';
 
 jest.setTimeout(30_000);
@@ -618,6 +623,96 @@ describe('Assistant Requests (integration)', () => {
         'Ai atins limita zilnică pentru asistent. Încearcă mâine.',
       );
       expect(reads).toBe(2);
+    });
+  });
+
+  // Spec 468 (ADR 0022): the reply language is unchanged; what the request writes follows the Catalog Language.
+  describe('Catalog Language', () => {
+    const memberWith = async (
+      locale: string,
+      catalogLanguage: string | null,
+    ) => {
+      const m = await member();
+      await database
+        .update(user)
+        .set({ locale, catalogLanguage })
+        .where(eq(user.id, m.id));
+      return m;
+    };
+    const queuedLocales = async (rawName: string) =>
+      (
+        await database
+          .select({ locale: unmatchedEntries.locale })
+          .from(unmatchedEntries)
+          .where(eq(unmatchedEntries.rawName, rawName))
+      ).map((row) => row.locale);
+    const readingOf = (
+      unmatchedName: string,
+      spokenLanguage: string | null,
+      unmatchedSpokenName = unmatchedName,
+    ) => ({
+      actions: [
+        of(milk, 'Lapte', { spokenText: 'milk', spokenName: 'Milk' }),
+        model({
+          spokenText: 'zorblax',
+          fallbackIngredientName: unmatchedName,
+          spokenName: unmatchedSpokenName,
+        }),
+      ],
+      unsupported: [],
+      spokenLanguage,
+    });
+
+    it('writes names in the Catalog Language, tags Unmatched with it, and replies in the language spoken', async () => {
+      const ana = await memberWith('en', 'ro');
+      const name = `Zorblax ${stamp} a`;
+      reading = readingOf(name, 'en');
+      const response = await ask(ana.secret).expect(200);
+      expect(prompts[0]).toContain(
+        'fallbackIngredientName is a short generic ingredient name in Romanian',
+      );
+      expect(prompts[0]).toContain('the app is shown in English');
+      expect(reply(response).speech).toContain('Milk');
+      expect(await list(ana.cookie)).toMatchObject([
+        { name: 'Lapte' },
+        { name },
+      ]);
+      expect(await queuedLocales(name)).toEqual(['ro']);
+    });
+
+    it('replies in the UI Language when the language spoken cannot be told, still writing in the Catalog Language', async () => {
+      const ana = await memberWith('da', 'ro');
+      const name = `Zorblax ${stamp} b`;
+      const spoken = `Sagt ${stamp}`;
+      reading = readingOf(name, null, spoken);
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toContain('Føjet til indkøbslisten');
+      expect(reply(response).outcomes).toMatchObject([
+        // The reply names the Ingredient in the reply language; the list keeps the Catalog Language.
+        { kind: 'added', name: 'Mælk' },
+        // An Unmatched item is named by what was said, not by its Catalog Language name.
+        { kind: 'addedUnmatched', name: spoken },
+      ]);
+      expect(await list(ana.cookie)).toMatchObject([
+        { name: 'Lapte' },
+        { name },
+      ]);
+      expect(await queuedLocales(name)).toEqual(['ro']);
+    });
+
+    it('uses the UI Language for what it writes when the Catalog Language is not set', async () => {
+      const ana = await memberWith('ro', null);
+      const name = `Zorblax ${stamp} c`;
+      reading = readingOf(name, 'ro');
+      await ask(ana.secret).expect(200);
+      expect(prompts[0]).toContain(
+        'fallbackIngredientName is a short generic ingredient name in Romanian',
+      );
+      expect(await list(ana.cookie)).toMatchObject([
+        { name: 'Lapte' },
+        { name },
+      ]);
+      expect(await queuedLocales(name)).toEqual(['ro']);
     });
   });
 

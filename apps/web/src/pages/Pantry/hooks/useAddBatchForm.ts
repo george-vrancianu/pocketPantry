@@ -53,7 +53,7 @@ export function useAddBatchForm({
   start?: AddBatchStart;
 }) {
   const { t, i18n } = useTranslation();
-  const addBatch = useAddBatch(i18n.language);
+  const addBatch = useAddBatch();
 
   const [startingIngredient] = useState(() =>
     start && 'ingredient' in start ? start.ingredient : null,
@@ -125,10 +125,7 @@ export function useAddBatchForm({
   // A starting Ingredient has only its id and name: its Catalog defaults come from searching its
   // name, which the search field has already asked for, and apply as if it had been picked there
   // (so it then shows as the picked token).
-  const startingLookup = useCatalogSearch(
-    startingIngredient?.name ?? '',
-    i18n.language,
-  );
+  const startingLookup = useCatalogSearch(startingIngredient?.name ?? '');
   const startingDefaults = startingLookup.data?.find(
     (result) => result.id === startingIngredient?.id,
   );
@@ -259,8 +256,8 @@ export function useAddBatchForm({
   // The barcode the Batch is saved with, so the Family learns it (a Known Barcode). Set by whatever
   // supplied one: a Barcode Lookup now, a barcode decoded from a Product photo. The Batch stores none.
   const [barcodeToSend, setBarcodeToSend] = useState<string | null>(null);
-  const productRead = useProductRead(i18n.language);
-  const barcodeLookup = useBarcodeLookup(i18n.language);
+  const productRead = useProductRead();
+  const barcodeLookup = useBarcodeLookup();
   const open = (mode: CameraMode, missed: boolean) => {
     setOpenMode(mode);
     setBarcodeMissed(missed);

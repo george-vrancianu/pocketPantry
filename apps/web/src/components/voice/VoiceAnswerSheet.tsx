@@ -10,7 +10,7 @@ import {
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { focusVoiceButton } from '../../lib/voiceFocus';
-import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
+import { usePreferredSpokenLanguage } from '../../lib/useSpokenLanguage';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { AddToShoppingListButton } from './AddToShoppingListButton';
 import { HeardCard } from './HeardCard';
@@ -25,7 +25,7 @@ export function VoiceAnswers() {
 function AnswerSheet() {
   const { t } = useTranslation('voice');
   const { proposal, recording } = useVoiceNoteState();
-  const { scanLanguage } = useScanLanguage();
+  const { spokenLanguage } = usePreferredSpokenLanguage();
   const title = useRef<HTMLHeadingElement>(null);
   const [added, setAdded] = useState(false);
   const answers = proposal?.answers ?? [];
@@ -78,7 +78,7 @@ function AnswerSheet() {
       >
         <HeardCard
           transcript={proposal?.transcript ?? ''}
-          language={recording?.scanLanguage ?? scanLanguage}
+          language={recording?.spokenLanguage ?? spokenLanguage}
           durationMs={recording?.durationMs}
           defaultOpen={false}
         />

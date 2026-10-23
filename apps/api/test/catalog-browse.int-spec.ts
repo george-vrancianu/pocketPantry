@@ -7,7 +7,9 @@ import {
   SEED_PARENTS,
 } from '../src/catalog/seed/catalog-seed-data';
 import { seedId } from '../src/catalog/seed/seed-catalog';
+import { client, signUp } from './support/admin-session';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 type Result = {
   id: string;
@@ -56,16 +58,17 @@ describe('Catalog browse by aisle (integration)', () => {
       .set('origin', TEST_ORIGIN)
       .set('cookie', cookie);
 
+  // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
   async function search(query: Record<string, string>): Promise<Result[]> {
-    const response = await get('/catalog/search', query).expect(200);
+    const { locale, ...rest } = query;
+    await storeUiLanguage(app, cookie, locale ?? 'en');
+    const response = await get('/catalog/search', rest).expect(200);
     return (response.body as { results: Result[] }).results;
   }
 
   async function aisleList(locale?: string): Promise<AisleListing[]> {
-    const response = await get(
-      '/catalog/aisles',
-      locale ? { locale } : {},
-    ).expect(200);
+    await storeUiLanguage(app, cookie, locale ?? 'en');
+    const response = await get('/catalog/aisles', {}).expect(200);
     return (response.body as { aisles: AisleListing[] }).aisles;
   }
 
@@ -250,6 +253,67 @@ describe('Catalog browse by aisle (integration)', () => {
 
     it('rejects an aisleId that is not a UUID', async () => {
       await get('/catalog/search', { q: '', aisleId: 'nope' }).expect(400);
+    });
+  });
+  describe('Catalog Language', () => {
+    // A Member whose UI Language is English; the request carries locale=en as the web does.
+    async function member(catalogLanguage: string | null) {
+      const memberCookie = await signUp(
+        app,
+        `catalog-language-${Date.now()}-${Math.random()}@example.com`,
+        'Catalog Language Member',
+      );
+      await client(app, memberCookie, '/api/settings')
+        .put('/preferences', { locale: 'en', catalogLanguage })
+        .expect(200);
+      const api = client(app, memberCookie, '/api');
+      return (path: string, query: Record<string, string>) =>
+        api.get(`${path}?${new URLSearchParams({ locale: 'en', ...query })}`);
+    }
+
+    const dairyAisle = SEED_AISLES.find((a) => a.slug === 'dairy-eggs');
+    const milkSeed = SEED_INGREDIENTS.find((i) => i.slug === 'milk');
+
+    it('names Aisles, search results and Allergens in the Catalog Language, not the UI Language', async () => {
+      const romanian = await member('ro');
+
+      const aisles = (
+        (await romanian('/catalog/aisles', {}).expect(200)).body as {
+          aisles: AisleListing[];
+        }
+      ).aisles;
+      expect(aisles.find((a) => a.id === DAIRY)?.name).toBe(dairyAisle?.ro);
+
+      const results = (
+        (
+          await romanian('/catalog/search', {
+            q: 'milk',
+            scope: 'shared',
+          }).expect(200)
+        ).body as { results: Result[] }
+      ).results;
+      expect(
+        results.find((r) => r.id === seedId.ingredient('milk'))?.name,
+      ).toBe(milkSeed?.ro);
+
+      const allergens = (
+        (await romanian('/catalog/allergens', {}).expect(200)).body as {
+          allergens: Array<{ id: string; name: string }>;
+        }
+      ).allergens;
+      expect(
+        allergens.find((a) => a.id === seedId.allergen('milk'))?.name,
+      ).toBe('Lapte');
+    });
+
+    it('uses the UI Language when the Catalog Language is the empty "Same as UI Language"', async () => {
+      const same = await member(null);
+      const aisles = (
+        (await same('/catalog/aisles', {}).expect(200)).body as {
+          aisles: AisleListing[];
+        }
+      ).aisles;
+      expect(aisles.find((a) => a.id === DAIRY)?.name).toBe(dairyAisle?.en);
     });
   });
 });

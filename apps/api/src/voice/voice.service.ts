@@ -49,7 +49,13 @@ import {
   type VoiceNoteResponse,
 } from './voice.schemas';
 
-export type VoiceNoteInput = VoiceNoteFields & {
+export type VoiceNoteInput = Omit<VoiceNoteFields, 'spokenLanguage'> & {
+  /** The Member's Catalog Language: the language of every name read, matched and written (the controller resolves it). */
+  locale: CatalogLocale;
+  /** The language the recording is spoken in (the controller resolves it from the upload or the Preference). */
+  spokenLanguage: ScanLanguage;
+  /** The UI Language, only told to the model. */
+  uiLanguage?: CatalogLocale;
   audio: Buffer;
   /** A bare, supported container type such as `audio/webm`. */
   mimeType: string;
@@ -59,8 +65,11 @@ export type VoiceNoteInput = VoiceNoteFields & {
 export type VoiceReadTextInput = {
   text: string;
   /** Null when the language spoken is not known: the model works it out and reports it. */
-  scanLanguage: ScanLanguage | null;
+  spokenLanguage: ScanLanguage | null;
+  /** The Member's Catalog Language: the language of every name read, matched and written (ADR 0022). */
   locale: CatalogLocale;
+  /** The UI Language, only told to the model; defaults to `locale`. */
+  uiLanguage?: CatalogLocale;
   /** The Member's local date, for resolving spoken dates. */
   today: string;
   defaultTarget: VoiceDefaultTarget;
@@ -156,16 +165,19 @@ export class VoiceService {
       const { text } = await this.transcription.transcribe({
         audio: input.audio,
         mimeType: input.mimeType,
-        language: input.scanLanguage,
-        otherLanguages: SCAN_LANGUAGES.filter((l) => l !== input.scanLanguage),
+        language: input.spokenLanguage,
+        otherLanguages: SCAN_LANGUAGES.filter(
+          (l) => l !== input.spokenLanguage,
+        ),
         captureId,
       });
       const transcript = text.trim();
       if (!transcript) throw new ApiException(422, 'voice.nothing_heard');
       const { actions, answers } = await this.readText(memberId, {
         text: transcript,
-        scanLanguage: input.scanLanguage,
+        spokenLanguage: input.spokenLanguage,
         locale: input.locale,
+        uiLanguage: input.uiLanguage,
         today: input.today,
         defaultTarget: input.defaultTarget,
         captureId,
@@ -201,8 +213,9 @@ export class VoiceService {
         shoppingItems,
         memberId,
         transcript: input.text,
-        scanLanguage: input.scanLanguage,
+        spokenLanguage: input.spokenLanguage,
         locale: input.locale,
+        uiLanguage: input.uiLanguage,
         today: input.today,
         defaultTarget: input.defaultTarget,
         captureId: input.captureId,
@@ -457,7 +470,10 @@ export class VoiceService {
   }
 
   /** Applies the Voice Actions as edited in Review. Free of the Voice Cap. */
-  apply(memberId: string, body: VoiceApplyBody): Promise<VoiceApplyResult> {
+  apply(
+    memberId: string,
+    body: VoiceApplyBody & { locale: CatalogLocale },
+  ): Promise<VoiceApplyResult> {
     return this.applyActions(memberId, {
       actions: body.actions,
       locale: body.locale,

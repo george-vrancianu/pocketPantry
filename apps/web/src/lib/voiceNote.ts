@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
-import type { Locale, ScanLanguage } from '../i18n/resources';
+import type { ScanLanguage } from '../i18n/resources';
 import { ApiError } from './api';
 import {
   MicrophoneError,
@@ -54,7 +54,8 @@ export type VoiceNoteState = {
     blob: Blob;
     mimeType: string;
     durationMs: number;
-    scanLanguage: ScanLanguage;
+    /** `undefined`: none was sent, the API used the Member's Spoken Language. */
+    spokenLanguage?: ScanLanguage;
   };
   /** What the server read from the recording, then as the Member edits it. */
   proposal?: {
@@ -198,7 +199,7 @@ export function createVoiceNote(
   let starting: { cancelled: boolean } | undefined;
   let session: MicrophoneSession | undefined;
   let limitTimer: ReturnType<typeof setTimeout> | undefined;
-  let recordingFor: { scanLanguage: ScanLanguage; locale: Locale } | undefined;
+  let recordingFor: { spokenLanguage?: ScanLanguage } | undefined;
   /** The audio of a stopped recording is being finalised. */
   let finishing = false;
 
@@ -347,8 +348,7 @@ export function createVoiceNote(
   /** Sends the audio and settles the note. Everything after an abort is ignored. */
   async function send(
     audio: Recording,
-    scanLanguage: ScanLanguage,
-    locale: Locale,
+    spokenLanguage: ScanLanguage | undefined,
     defaultTarget: VoiceDefaultTarget,
   ) {
     const request = new AbortController();
@@ -361,14 +361,13 @@ export function createVoiceNote(
         blob: audio.blob,
         mimeType: audio.mimeType,
         durationMs: audio.durationMs,
-        scanLanguage,
+        spokenLanguage,
       },
     });
     try {
       const result = await adapters.send({
         recording: audio,
-        scanLanguage,
-        locale,
+        spokenLanguage,
         defaultTarget,
         today: localIso(new Date()),
         signal: request.signal,
@@ -402,12 +401,11 @@ export function createVoiceNote(
   /**
    * Turns the microphone on and keeps the screen awake until the note is settled. Enforces the
    * start guard again: a capped start moves the note to the Voice Cap failure. Resolves once the
-   * microphone is live, or why it is not. `scanLanguage` and `locale` are for the read.
+   * microphone is live, or why it is not. `spokenLanguage` is for the read.
    */
   async function start(options: {
     defaultTarget: VoiceDefaultTarget;
-    scanLanguage: ScanLanguage;
-    locale: Locale;
+    spokenLanguage?: ScanLanguage;
   }): Promise<StartOutcome> {
     const blocker = startBlocker();
     if (blocker === 'active') return 'refused';
@@ -442,10 +440,7 @@ export function createVoiceNote(
       return 'cancelled';
     }
     session = live;
-    recordingFor = {
-      scanLanguage: options.scanLanguage,
-      locale: options.locale,
-    };
+    recordingFor = { spokenLanguage: options.spokenLanguage };
     limitTimer = setTimeout(() => {
       notify('stoppedAtLimit');
       void stopRecording();
@@ -496,7 +491,7 @@ export function createVoiceNote(
       letSleep();
       return 'notStarted';
     }
-    void send(audio, mine.scanLanguage, mine.locale, state.defaultTarget);
+    void send(audio, mine.spokenLanguage, state.defaultTarget);
     return 'sent';
   }
 
@@ -541,7 +536,7 @@ export function createVoiceNote(
     fail,
 
     /** Sends the kept recording again: the same audio, in the language and for the page it had. */
-    retry(locale: Locale): Promise<void> {
+    retry(): Promise<void> {
       const { phase, recording: kept, defaultTarget } = state;
       if (phase !== 'failed' || !kept) return Promise.resolve();
       return send(
@@ -550,8 +545,7 @@ export function createVoiceNote(
           mimeType: kept.mimeType,
           durationMs: kept.durationMs,
         },
-        kept.scanLanguage,
-        locale,
+        kept.spokenLanguage,
         defaultTarget,
       );
     },

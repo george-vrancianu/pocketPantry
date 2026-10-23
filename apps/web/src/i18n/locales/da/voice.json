@@ -91,10 +91,10 @@
     "stoppedHint": "Sender det, du sagde."
   },
   "languageMenu": {
-    "chipLabel": "Scansprog: {{language}}. Skift",
-    "title": "Scansprog",
-    "saved": "Scansprog: {{language}}",
-    "savedHint": "Bruges til stemmenoter og kameraet."
+    "chipLabel": "Talesprog: {{language}}. Skift",
+    "title": "Talesprog",
+    "saved": "Talesprog: {{language}}",
+    "savedHint": "Kun til denne stemmenote."
   },
   "review": {
     "title": "Gennemse",

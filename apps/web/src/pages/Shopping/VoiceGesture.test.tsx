@@ -555,11 +555,11 @@ describe('the recording gesture on the Shopping List', () => {
   });
 
   describe('keyboard order', () => {
-    it('tabs from the page to the Scan Language chip, then through the Dock, camera before mic', async () => {
+    it('tabs from the page to the Spoken Language chip, then through the Dock, camera before mic', async () => {
       setup();
       renderInAppLayout(<ShoppingPage />, '/shopping');
       const chip = await screen.findByRole('button', {
-        name: /Scan Language: English/,
+        name: /Spoken Language: English/,
       });
       const button = await talkButton();
       const dock = screen.getByRole('navigation');

@@ -45,7 +45,7 @@ export function EditMealPlanPage() {
   const { t, i18n } = useTranslation(['mealPlans', 'common']);
   const { id = '' } = useParams();
   const today = localIso(useToday());
-  const plan = useMealPlan(id, i18n.language, today);
+  const plan = useMealPlan(id, today);
   return (
     <>
       <AppScreenHeader
@@ -73,7 +73,7 @@ function MealPlanForm({
   const today = localIso(useToday());
   const lastStart = addDaysIso(today, MAX_START_AHEAD_DAYS);
   const family = useFamily();
-  const { create, update, remove } = useMealPlanMutations(i18n.language, today);
+  const { create, update, remove } = useMealPlanMutations(today);
 
   const prefilled =
     start && ISO.test(start) && start >= today && start <= lastStart

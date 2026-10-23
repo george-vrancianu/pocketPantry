@@ -190,7 +190,7 @@ describe('Family catalog: Allergens', () => {
     stub([kombucha]);
     const { queryClient } = renderWithProviders(<FamilyCatalogSection />);
     const user = userEvent.setup();
-    const detailKey = ['recipes', 'detail', 'r1', 'en'];
+    const detailKey = ['recipes', 'detail', 'r1'];
     queryClient.setQueryData(detailKey, { id: 'r1' });
 
     await user.click(

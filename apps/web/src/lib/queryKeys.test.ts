@@ -11,7 +11,7 @@ import {
 
 /** The Meal plan Widget's window is cached per locale and day; each list below must reach it. */
 describe('Meal plan forecast query keys', () => {
-  const windowKey = [...mealWindowQueryKey, 'en', '2026-10-15'];
+  const windowKey = [...mealWindowQueryKey, '2026-10-15'];
 
   it.each([
     ['a Pantry change', recipeMatchingQueryKeys],

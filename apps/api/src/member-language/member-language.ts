@@ -1,0 +1,96 @@
+import {
+  CATALOG_LOCALES,
+  FALLBACK_LOCALE,
+  SCAN_LANGUAGES,
+  type CatalogLocale,
+  type ScanLanguage,
+} from '../catalog/catalog.schemas';
+
+/**
+ * The jobs a Member's languages do (ADR 0022): the UI Language, Catalog
+ * Language, Scan Language and Spoken Language.
+ */
+export type LanguageRole = 'ui' | 'catalog' | 'scan' | 'spoken';
+
+/** A Member's stored language Preferences, as read from the user row; `null` is "Same as UI Language" (or never chosen). */
+export type StoredLanguagePreferences = {
+  /** The UI Language. */
+  locale: string | null;
+  catalogLanguage: string | null;
+  scanLanguage: string | null;
+  spokenLanguage: string | null;
+};
+
+/** The language list each role draws from; the lists are kept separate (ADR 0003) even while they match. */
+export type RoleLanguage = {
+  ui: CatalogLocale;
+  catalog: CatalogLocale;
+  scan: ScanLanguage;
+  spoken: ScanLanguage;
+};
+
+export type MemberLanguages = RoleLanguage;
+
+export type LanguageOptions = {
+  /** An explicit choice for this one job (say, this Scan Session); wins over everything stored. */
+  override?: RoleLanguage[LanguageRole];
+};
+
+const asCatalogLocale = (value: string | null): CatalogLocale | null =>
+  CATALOG_LOCALES.find((locale) => locale === value) ?? null;
+
+export const asScanLanguage = (value: string | null): ScanLanguage | null =>
+  SCAN_LANGUAGES.find((language) => language === value) ?? null;
+
+/**
+ * The language a Member has right now for `role`.
+ *
+ * Order: `override`; the stored Preference; "Same as UI Language" (empty)
+ * takes the UI Language; then English. The request's `?locale=` plays no
+ * part for a signed-in Member. A Scan or Spoken Language only takes values from the Scan
+ * Languages list: a UI Language that is not on it falls back to English.
+ */
+export function resolveLanguage<Role extends LanguageRole>(
+  role: Role,
+  stored: StoredLanguagePreferences,
+  options?: LanguageOptions,
+): RoleLanguage[Role];
+export function resolveLanguage(
+  role: LanguageRole,
+  stored: StoredLanguagePreferences,
+  options: LanguageOptions = {},
+): RoleLanguage[LanguageRole] {
+  const { override } = options;
+  if (override) return override;
+  const ui = asCatalogLocale(stored.locale) ?? FALLBACK_LOCALE;
+  switch (role) {
+    case 'ui':
+      return ui;
+    case 'catalog':
+      return asCatalogLocale(stored.catalogLanguage) ?? ui;
+    case 'scan':
+      return (
+        asScanLanguage(stored.scanLanguage) ??
+        asScanLanguage(ui) ??
+        FALLBACK_LOCALE
+      );
+    case 'spoken':
+      return (
+        asScanLanguage(stored.spokenLanguage) ??
+        asScanLanguage(ui) ??
+        FALLBACK_LOCALE
+      );
+  }
+}
+
+/** Every role at once, for callers that need more than one. */
+export function resolveLanguages(
+  stored: StoredLanguagePreferences,
+): MemberLanguages {
+  return {
+    ui: resolveLanguage('ui', stored),
+    catalog: resolveLanguage('catalog', stored),
+    scan: resolveLanguage('scan', stored),
+    spoken: resolveLanguage('spoken', stored),
+  };
+}

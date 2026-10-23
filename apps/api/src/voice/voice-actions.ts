@@ -1,7 +1,5 @@
 import { z } from 'zod';
 import {
-  CATALOG_LOCALES,
-  FALLBACK_LOCALE,
   SCAN_LANGUAGES,
   type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
@@ -36,7 +34,7 @@ const modelAction = z.object({
   spokenText: z.string().trim().min(1).max(200),
   matchedIngredientId: z.uuid().nullable(),
   matchConfidence: z.number().min(0).max(1),
-  /** A short generic Ingredient name in the UI locale. */
+  /** A short generic Ingredient name in the Catalog Language. */
   fallbackIngredientName: z.string().trim().min(1).max(80),
   /** The same short generic name in the language spoken, for an Assistant reply. */
   spokenName: z.string().trim().min(1).max(80),
@@ -58,7 +56,7 @@ const modelQuestion = z.object({
   spokenText: z.string().trim().min(1).max(200),
   matchedIngredientId: z.uuid().nullable(),
   matchConfidence: z.number().min(0).max(1),
-  /** A short generic Ingredient name in the UI locale. */
+  /** A short generic Ingredient name in the Catalog Language. */
   fallbackIngredientName: z.string().trim().min(1).max(80),
   /** The same short generic name in the language spoken, for an Assistant reply. */
   spokenName: z.string().trim().min(1).max(80),
@@ -148,7 +146,7 @@ export type ResolvedVoiceAction = {
   text: string;
   /** The Match, localised; null when Unmatched. */
   ingredient: CatalogSearchResult | null;
-  /** The Unmatched name (UI locale); null when matched. */
+  /** The Unmatched name (Catalog Language); null when matched. */
   name: string | null;
   quantity: number | null;
   unit: VoiceUnit | null;
@@ -190,7 +188,6 @@ export const voiceApplyBody = z.object({
       }),
     )
     .max(50),
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   /** The Member's local date, for a Pantry add that takes the Default Expiry. */
   today: z.iso.date().optional(),
 });

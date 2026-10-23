@@ -139,14 +139,12 @@ describe('Plate Scan: save as a Recipe', () => {
       (c) => c.key === 'POST /api/recipes/plate-matches',
     );
     expect(matchCall?.body).toEqual({
-      locale: 'en',
       dishTitle: 'Rice bowl',
       ingredientIds: ['rice-id'],
     });
     expect(
       calls.find((c) => c.key === 'POST /api/recipes/from-plate')?.body,
     ).toEqual({
-      locale: 'en',
       title: 'Our rice bowl',
       parentId: 'pilaf-id',
       lines: [

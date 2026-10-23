@@ -10,6 +10,7 @@ import {
   batches,
   catalogTranslations,
   ingredientStockHistory,
+  ingredients,
   recipeIngredientLines,
   shoppingItems,
   shoppingTemplateLines,
@@ -18,6 +19,7 @@ import {
 } from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 type Result = {
@@ -158,6 +160,22 @@ describe('Family Ingredients (integration)', () => {
         );
         expect(hit).toMatchObject({ name, owner: 'family' });
       }
+    });
+
+    it('records the Catalog Language as the name language, not the request language', async () => {
+      const cookie = await signUp(app, `fi-catalog-${stamp}@example.com`, 'C');
+      const member = client(app, cookie, '/api');
+      await member
+        .put('/settings/preferences', { locale: 'en', catalogLanguage: 'ro' })
+        .expect(200);
+      const name = unique('Chefir');
+      const created = (await create(member, body(name), 'en').expect(201))
+        .body as Result;
+      const [row] = await database
+        .select({ nameLocale: ingredients.nameLocale })
+        .from(ingredients)
+        .where(eq(ingredients.id, created.id));
+      expect(row.nameLocale).toBe('ro');
     });
 
     it('lets any Member of the Family create one, and every Member see it', async () => {
@@ -544,7 +562,10 @@ describe('Family Ingredients (integration)', () => {
         aisle: { name: 'Dairy & eggs' },
         defaults: { expiryDays: 60, location: 'fridge' },
       });
-      const [ro] = await categories(a, 'q=brânzeturi%20tari&locale=ro');
+      // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+      await storeUiLanguage(app, cookieA, 'ro');
+      const [ro] = await categories(a, 'q=brânzeturi%20tari');
+      await storeUiLanguage(app, cookieA, 'en');
       expect(ro).toMatchObject({ id: HARD_CHEESE, name: 'Brânzeturi tari' });
     });
 
@@ -584,8 +605,8 @@ describe('Family Ingredients (integration)', () => {
       expect(theirs.defaults.expiryDays).toBe(60);
     });
 
-    it('rejects an unknown locale', async () => {
-      await a.get('/catalog/categories?q=x&locale=xx').expect(400);
+    it('ignores an unknown locale', async () => {
+      await a.get('/catalog/categories?q=x&locale=xx').expect(200);
     });
   });
 

@@ -430,7 +430,6 @@ describe('Barcode on the Scan page', () => {
       await decode(A);
 
       expect(lookupCalls()).toHaveLength(1);
-      expect(lookupCalls()[0].search).toBe('?locale=en');
       expectStack('reading', 3);
     });
   });

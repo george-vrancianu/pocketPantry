@@ -9,6 +9,7 @@ import type { Database } from '../src/database/database.types';
 import { scanUsage } from '../src/database/schema';
 import { ScanCapService } from '../src/scan/scan-cap.service';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { signUpWithUiLanguage } from './support/stored-language';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
 
@@ -71,6 +72,11 @@ describe('Product Scan (integration)', () => {
       .join('; ');
   }
 
+  /** A Member whose stored UI Language is `locale` (the API ignores the request's own `?locale=`). */
+  const signUpIn = (locale: string) =>
+    signUpWithUiLanguage(app, signUp, locale);
+
+  // `locale` is sent as the web used to; a signed-in request ignores it.
   const scan = (
     cookie: string,
     body: object,
@@ -215,7 +221,9 @@ describe('Product Scan (integration)', () => {
     respondWith(parmesan());
     prompts.length = 0;
     const body = (
-      await scan(await signUp(), { productImage: IMAGE }, 'ro').expect(201)
+      await scan(await signUpIn('ro'), { productImage: IMAGE }, 'da').expect(
+        201,
+      )
     ).body as unknown;
     expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
     expect(prompts[0].images).toEqual([IMAGE]);
@@ -227,9 +235,12 @@ describe('Product Scan (integration)', () => {
     respondWith(parmesan());
     prompts.length = 0;
     const body = (
-      await scan(await signUp(), { productImage: IMAGE }, 'ro', 'da').expect(
-        201,
-      )
+      await scan(
+        await signUpIn('ro'),
+        { productImage: IMAGE },
+        'en',
+        'da',
+      ).expect(201)
     ).body as { lines: { match: { name: string } }[] };
     expect(prompts[0].prompt).toMatch(/package is in Danish/);
     expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
@@ -239,8 +250,94 @@ describe('Product Scan (integration)', () => {
   it('reads the package in the UI locale when no Scan Language is given', async () => {
     respondWith(parmesan());
     prompts.length = 0;
-    await scan(await signUp(), { productImage: IMAGE }, 'ro').expect(201);
+    await scan(await signUpIn('ro'), { productImage: IMAGE }, 'da').expect(201);
     expect(prompts[0].prompt).toMatch(/package is in Romanian/);
+  });
+
+  describe('with a Scan Language Preference', () => {
+    const readIn = async (
+      cookie: string,
+      locale: string,
+      scanLanguage?: string,
+    ) => {
+      respondWith(parmesan());
+      prompts.length = 0;
+      await scan(cookie, { productImage: IMAGE }, locale, scanLanguage).expect(
+        201,
+      );
+      return prompts[0].prompt;
+    };
+
+    const saveScanLanguage = (cookie: string, scanLanguage: string | null) =>
+      request(app.getHttpServer())
+        .put('/api/settings/preferences')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ scanLanguage })
+        .expect(200);
+
+    it('reads the package in the Member Preference when no Scan Language is sent', async () => {
+      const cookie = await signUp();
+      await saveScanLanguage(cookie, 'da');
+      expect(await readIn(cookie, 'ro')).toMatch(/package is in Danish/);
+    });
+
+    it('lets a Scan Language sent with the Scan win over the Preference', async () => {
+      const cookie = await signUp();
+      await saveScanLanguage(cookie, 'da');
+      expect(await readIn(cookie, 'en', 'ro')).toMatch(
+        /package is in Romanian/,
+      );
+    });
+
+    it('follows the stored UI Language while the Preference is empty', async () => {
+      const cookie = await signUp();
+      await saveScanLanguage(cookie, 'da');
+      await saveScanLanguage(cookie, null);
+      await request(app.getHttpServer())
+        .put('/api/settings/preferences')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ locale: 'ro' })
+        .expect(200);
+      expect(await readIn(cookie, 'en')).toMatch(/package is in Romanian/);
+    });
+  });
+
+  describe('with a Catalog Language Preference', () => {
+    // UI Language en, Catalog Language ro, Scan Language da: all three differ.
+    async function member() {
+      const cookie = await signUp();
+      await request(app.getHttpServer())
+        .put('/api/settings/preferences')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ locale: 'en', catalogLanguage: 'ro', scanLanguage: 'da' })
+        .expect(200);
+      return cookie;
+    }
+
+    it('asks for the fallback name in the Catalog Language and reads the package in the Scan Language', async () => {
+      const cookie = await member();
+      respondWith(parmesan());
+      prompts.length = 0;
+      await scan(cookie, { productImage: IMAGE }, 'en').expect(201);
+      expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
+      expect(prompts[0].prompt).toMatch(/package is in Danish/);
+    });
+
+    it('names the matched Ingredient in the Catalog Language', async () => {
+      const cookie = await member();
+      respondWith(parmesan());
+      const body = (
+        await scan(cookie, { productImage: IMAGE }, 'en').expect(201)
+      ).body as unknown;
+      expect(body).toMatchObject({
+        lines: [
+          { match: { id: seedId.ingredient('parmesan'), name: 'Parmezan' } },
+        ],
+      });
+    });
   });
 
   it('rejects a Scan Language outside the supported list', async () => {

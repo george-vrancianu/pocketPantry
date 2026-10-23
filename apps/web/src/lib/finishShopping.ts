@@ -44,14 +44,14 @@ export type FinishRequest = {
 };
 
 /** The proposal is a snapshot to edit, so it is fetched once per Review and never refetched. */
-export function useFinishProposal(locale: string) {
+export function useFinishProposal() {
   // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
   const today = defaultExpiryDate(0, new Date());
   return useQuery({
-    queryKey: ['finish-shopping-proposal', locale],
+    queryKey: ['finish-shopping-proposal'],
     queryFn: () =>
       apiRequest<FinishProposal>(
-        `/shopping-list/finish?${new URLSearchParams({ locale, today })}`,
+        `/shopping-list/finish?${new URLSearchParams({ today })}`,
       ),
     gcTime: 0,
     staleTime: Infinity,

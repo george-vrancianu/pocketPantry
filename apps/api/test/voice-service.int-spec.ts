@@ -108,7 +108,7 @@ describe('VoiceService without audio or Review (integration)', () => {
 
   const textInput = {
     text: 'add eggs to the list',
-    scanLanguage: 'en',
+    spokenLanguage: 'en',
     locale: 'en',
     today: '2026-10-16',
     defaultTarget: 'shopping',

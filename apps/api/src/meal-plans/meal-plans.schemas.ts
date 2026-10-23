@@ -1,8 +1,5 @@
 import { z } from 'zod';
-import {
-  localeQuery,
-  type CompactAllergyWarning,
-} from '../recipes/recipes.schemas';
+import { type CompactAllergyWarning } from '../recipes/recipes.schemas';
 import type { AisleView } from '../catalog/ingredient-placement';
 import { mealtime } from '../database/schema';
 import type {
@@ -23,7 +20,7 @@ export const MAX_NAME_LENGTH = 60;
 export const MAX_START_AHEAD_DAYS = 14;
 
 /** `today` is the Member's local date; it defaults to the server's UTC date. */
-export const mealPlanQuery = localeQuery.extend({
+export const mealPlanQuery = z.object({
   today: z.iso.date().optional(),
 });
 export type MealPlanQuery = z.infer<typeof mealPlanQuery>;

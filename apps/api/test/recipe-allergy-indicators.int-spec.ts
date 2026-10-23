@@ -15,6 +15,7 @@ import type {
 } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 jest.setTimeout(30_000);
@@ -26,6 +27,7 @@ const CROWD_PER_INGREDIENT = MAX_PLATE_MATCHES + 1;
 describe('Allergy indicators on Recipe lists and matches (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
+  let memberCookie: string;
   let admin: ReturnType<typeof client>;
   let settings: ReturnType<typeof client>;
   let recipesApi: ReturnType<typeof client>;
@@ -62,6 +64,7 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
     database = app.get<Database>(DATABASE);
     const email = `allergy-indicators-${stamp}@example.com`;
     const cookie = await signUp(app, email, 'Indy');
+    memberCookie = cookie;
     await promoteToAdmin(database, email);
     admin = client(app, cookie, '/api/admin/recipes');
     settings = client(app, cookie, '/api/settings');
@@ -143,12 +146,13 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
     it('names the Allergen in the requested locale', async () => {
       const recipe = await create([g('parmesan')]);
       await mine(MILK);
+      await storeUiLanguage(app, memberCookie, 'ro');
       const ro = (
-        (await recipesApi.get(`?locale=ro&search=${stamp}-`).expect(200))
-          .body as {
+        (await recipesApi.get(`?search=${stamp}-`).expect(200)).body as {
           recipes: { id: string; allergyWarning: CompactAllergyWarning }[];
         }
       ).recipes.find((r) => r.id === recipe.id)!;
+      await storeUiLanguage(app, memberCookie, 'en');
       expect(ro.allergyWarning.allergens[0].name).toBe('Lapte');
     });
 

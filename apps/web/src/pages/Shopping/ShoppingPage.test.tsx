@@ -2849,18 +2849,11 @@ describe('ShoppingPage', () => {
     expect(await screen.findByText('Chives')).toBeVisible();
   });
 
-  it('asks for the list in the Member locale and translates the copy', async () => {
+  it('translates the copy', async () => {
     stubShopping({}, list([{ aisle: dairy, items: [milk] }]));
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     renderWithProviders(<ShoppingPage />, { locale: 'ro' });
 
     expect(await screen.findByText('0 de cumpărat')).toBeVisible();
-    // The list request, wherever it falls among the page's requests.
-    const url = fetchSpy.mock.calls
-      .map(([input]) => new URL(String(input), window.location.origin))
-      .find((u) => u.pathname === '/api/shopping-list');
-    expect(url).toBeDefined();
-    expect(url?.searchParams.get('locale')).toBe('ro');
   });
 });
 

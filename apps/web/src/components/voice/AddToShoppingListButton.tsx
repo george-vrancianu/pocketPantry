@@ -14,7 +14,6 @@ import { voiceToast } from '../../lib/voicePlacement';
 import { shoppingListChangeQueryKeys } from '../../lib/queryKeys';
 import { shoppingListQueryKey, useShoppingList } from '../../lib/shopping';
 import { useVoiceNoteState } from '../../lib/voiceNote';
-import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
 import { applyToast } from './applyResult';
 
 /** How long the result stays, as after Apply in Review: no Undo (ADR 0017). */
@@ -81,11 +80,10 @@ export function AddToShoppingListButton({
   onAdded?: () => void;
 }) {
   const { t, i18n } = useTranslation('voice');
-  const { locale } = useScanLanguage();
   const { defaultTarget } = useVoiceNoteState();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const list = useShoppingList(locale);
+  const list = useShoppingList();
   const [added, setAdded] = useState<ReadonlySet<string>>(new Set());
 
   const onList = new Set(
@@ -99,7 +97,7 @@ export function AddToShoppingListButton({
 
   const add = useMutation({
     mutationFn: (batch: VoiceAnswer[]) =>
-      applyVoiceActions(batch.map(addAction), locale),
+      applyVoiceActions(batch.map(addAction)),
     onSuccess: async (result: VoiceApplyResult, batch) => {
       const { message, detail } = applyToast(
         result,

@@ -12,7 +12,9 @@ function stubYou(
   member: Member = { role: 'member' },
   saveLocale: { ok: boolean } = { ok: true },
 ) {
-  const { fetchMock, calls } = stubApi({
+  let calls: ReturnType<typeof stubApi>['calls'];
+  let catalogLanguage: string | null = null;
+  const api = stubApi({
     'GET /api/auth/get-session': () =>
       Response.json({
         user: {
@@ -22,18 +24,63 @@ function stubYou(
           role: member.role,
         },
       }),
+    // Like the API with nothing stored: English everywhere.
     'GET /api/settings/preferences': () =>
-      Response.json({ locale: null, theme: null }),
-    'PUT /api/settings/preferences': (url) => {
-      void url;
+      Response.json({
+        locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
+        theme: null,
+      }),
+    // Allergen names come back in the saved Catalog Language, like the API.
+    'GET /api/settings/allergies': () =>
+      Response.json({
+        allergens: [
+          { id: 'a-milk', name: catalogLanguage === 'ro' ? 'Lapte' : 'Milk' },
+        ],
+        allergenIds: [],
+      }),
+    'PUT /api/settings/preferences': () => {
+      const body = calls.at(-1)?.body as Record<string, unknown>;
+      if ('catalogLanguage' in body) {
+        catalogLanguage = body.catalogLanguage as string | null;
+      }
+      const uiLanguage = 'en';
       return saveLocale.ok
-        ? Response.json({ locale: 'ro', theme: null })
+        ? Response.json(
+            'locale' in body
+              ? {
+                  locale: 'ro',
+                  catalogLanguage: null,
+                  effectiveCatalogLanguage: 'ro',
+                  scanLanguage: null,
+                  effectiveScanLanguage: 'ro',
+                  spokenLanguage: null,
+                  effectiveSpokenLanguage: 'ro',
+                  theme: null,
+                }
+              : {
+                  locale: null,
+                  catalogLanguage: body.catalogLanguage ?? null,
+                  effectiveCatalogLanguage: body.catalogLanguage ?? uiLanguage,
+                  scanLanguage: body.scanLanguage ?? null,
+                  effectiveScanLanguage: body.scanLanguage ?? uiLanguage,
+                  spokenLanguage: body.spokenLanguage ?? null,
+                  effectiveSpokenLanguage: body.spokenLanguage ?? uiLanguage,
+                  theme: null,
+                },
+          )
         : Response.json({ code: 'server_error', params: {} }, { status: 500 });
     },
     'GET /api/admin/unmatched': () =>
       Response.json({ entries: [], nextCursor: null }),
   });
-  vi.stubGlobal('fetch', fetchMock);
+  calls = api.calls;
+  vi.stubGlobal('fetch', api.fetchMock);
   return calls;
 }
 
@@ -109,6 +156,328 @@ describe('Settings You tab', () => {
 
       expect(
         await screen.findByText('Dit sprog kunne ikke gemmes. Prøv igen.'),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('Catalog Language', () => {
+    it('offers "Same as UI Language" first, selected until one is chosen', async () => {
+      stubSystemScheme(false);
+      stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Catalog Language',
+      });
+      const buttons = within(control).getAllByRole('button');
+      expect(buttons.map((b) => b.textContent)).toEqual([
+        'Same as UI Language',
+        'English',
+        'Română',
+        'Dansk',
+      ]);
+      expect(buttons[0]).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText(/Shown in English/)).toBeInTheDocument();
+    });
+
+    it('updates the hint when the UI Language is switched', async () => {
+      stubSystemScheme(false);
+      stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      expect(await screen.findByText(/Shown in English/)).toBeInTheDocument();
+      const language = screen.getByRole('group', { name: 'Language' });
+      await userEvent.click(
+        within(language).getByRole('button', { name: 'Română' }),
+      );
+
+      expect(await screen.findByText(/Afișate în Română/)).toBeInTheDocument();
+    });
+
+    it('saves a chosen language and shows it as the effective one', async () => {
+      stubSystemScheme(false);
+      const calls = stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Catalog Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Română' }),
+      );
+
+      await vi.waitFor(() =>
+        expect(calls).toContainEqual(
+          expect.objectContaining({
+            key: 'PUT /api/settings/preferences',
+            body: { catalogLanguage: 'ro' },
+          }),
+        ),
+      );
+      expect(await screen.findByText(/Shown in Română/)).toBeInTheDocument();
+      expect(
+        within(control).getByRole('button', { name: 'Română' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText('Catalog Language saved')).toBeInTheDocument();
+    });
+
+    it('refetches the Allergen names in the new Catalog Language after a save', async () => {
+      stubSystemScheme(false);
+      stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      expect(await screen.findByText('Milk')).toBeInTheDocument();
+      const control = await screen.findByRole('group', {
+        name: 'Catalog Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Română' }),
+      );
+
+      expect(await screen.findByText('Lapte')).toBeInTheDocument();
+      expect(screen.queryByText('Milk')).toBeNull();
+    });
+
+    it('goes back to "Same as UI Language" by saving an empty language', async () => {
+      stubSystemScheme(false);
+      const calls = stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Catalog Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Dansk' }),
+      );
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Same as UI Language' }),
+      );
+
+      await vi.waitFor(() =>
+        expect(calls).toContainEqual(
+          expect.objectContaining({ body: { catalogLanguage: null } }),
+        ),
+      );
+    });
+
+    it('shows an error when the save fails', async () => {
+      stubSystemScheme(false);
+      stubYou({ role: 'member' }, { ok: false });
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Catalog Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Dansk' }),
+      );
+
+      expect(
+        await screen.findByText(
+          'Could not save your Catalog Language. Try again.',
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('Scan Language', () => {
+    it('offers "Same as UI Language" first, selected until one is chosen', async () => {
+      stubSystemScheme(false);
+      stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Scan Language',
+      });
+      const buttons = within(control).getAllByRole('button');
+      expect(buttons.map((b) => b.textContent)).toEqual([
+        'Same as UI Language',
+        'English',
+        'Română',
+        'Dansk',
+      ]);
+      expect(buttons[0]).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText(/Reading in English/)).toBeInTheDocument();
+    });
+
+    it('updates the hint when the UI Language is switched', async () => {
+      stubSystemScheme(false);
+      stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      expect(await screen.findByText(/Reading in English/)).toBeInTheDocument();
+      const language = screen.getByRole('group', { name: 'Language' });
+      await userEvent.click(
+        within(language).getByRole('button', { name: 'Română' }),
+      );
+
+      expect(
+        await screen.findByText(/Se citește în Română/),
+      ).toBeInTheDocument();
+    });
+
+    it('saves a chosen language and shows it as the effective one', async () => {
+      stubSystemScheme(false);
+      const calls = stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Scan Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Română' }),
+      );
+
+      await vi.waitFor(() =>
+        expect(calls).toContainEqual(
+          expect.objectContaining({
+            key: 'PUT /api/settings/preferences',
+            body: { scanLanguage: 'ro' },
+          }),
+        ),
+      );
+      expect(await screen.findByText(/Reading in Română/)).toBeInTheDocument();
+      expect(
+        within(control).getByRole('button', { name: 'Română' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText('Scan Language saved')).toBeInTheDocument();
+    });
+
+    it('goes back to "Same as UI Language" by saving an empty language', async () => {
+      stubSystemScheme(false);
+      const calls = stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Scan Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Dansk' }),
+      );
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Same as UI Language' }),
+      );
+
+      await vi.waitFor(() =>
+        expect(calls).toContainEqual(
+          expect.objectContaining({ body: { scanLanguage: null } }),
+        ),
+      );
+    });
+
+    it('shows an error when the save fails', async () => {
+      stubSystemScheme(false);
+      stubYou({ role: 'member' }, { ok: false });
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Scan Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Dansk' }),
+      );
+
+      expect(
+        await screen.findByText(
+          'Could not save your Scan Language. Try again.',
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('Spoken Language', () => {
+    it('comes after the Scan Language, with "Same as UI Language" first and selected', async () => {
+      stubSystemScheme(false);
+      stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Spoken Language',
+      });
+      const scan = screen.getByRole('group', { name: 'Scan Language' });
+      expect(
+        scan.compareDocumentPosition(control) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      const buttons = within(control).getAllByRole('button');
+      expect(buttons.map((b) => b.textContent)).toEqual([
+        'Same as UI Language',
+        'English',
+        'Română',
+        'Dansk',
+      ]);
+      expect(buttons[0]).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText(/Listening in English/)).toBeInTheDocument();
+    });
+
+    it('saves a chosen language, shows it as the effective one and leaves the Scan Language alone', async () => {
+      stubSystemScheme(false);
+      const calls = stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Spoken Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Română' }),
+      );
+
+      await vi.waitFor(() =>
+        expect(calls).toContainEqual(
+          expect.objectContaining({
+            key: 'PUT /api/settings/preferences',
+            body: { spokenLanguage: 'ro' },
+          }),
+        ),
+      );
+      expect(
+        await screen.findByText(/Listening in Română/),
+      ).toBeInTheDocument();
+      expect(
+        within(control).getByRole('button', { name: 'Română' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText('Spoken Language saved')).toBeInTheDocument();
+      expect(screen.getByText(/Reading in English/)).toBeInTheDocument();
+    });
+
+    it('goes back to "Same as UI Language" by saving an empty language', async () => {
+      stubSystemScheme(false);
+      const calls = stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Spoken Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Dansk' }),
+      );
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Same as UI Language' }),
+      );
+
+      await vi.waitFor(() =>
+        expect(calls).toContainEqual(
+          expect.objectContaining({ body: { spokenLanguage: null } }),
+        ),
+      );
+    });
+
+    it('shows an error when the save fails', async () => {
+      stubSystemScheme(false);
+      stubYou({ role: 'member' }, { ok: false });
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      const control = await screen.findByRole('group', {
+        name: 'Spoken Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Dansk' }),
+      );
+
+      expect(
+        await screen.findByText(
+          'Could not save your Spoken Language. Try again.',
+        ),
       ).toBeInTheDocument();
     });
   });

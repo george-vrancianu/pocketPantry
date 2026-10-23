@@ -28,10 +28,10 @@ type SheetState = { open: boolean; start: SheetStart; session: number };
  * change one. Every Member can edit it.
  */
 export function DefaultExpirySection() {
-  const { t, i18n } = useTranslation('settings');
+  const { t } = useTranslation('settings');
   const id = useId();
-  const settings = useFamilySettings(i18n.language);
-  const categories = useCategoryOptions(i18n.language);
+  const settings = useFamilySettings();
+  const categories = useCategoryOptions();
   const removeOverride = useRemoveExpiryOverride();
   const removal = useDeferredRemoval(
     familySettingsQueryKey,

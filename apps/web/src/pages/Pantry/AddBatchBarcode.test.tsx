@@ -178,7 +178,6 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       call.key.startsWith('GET /api/barcode'),
     );
     expect(lookup).toHaveLength(1);
-    expect(lookup[0].search).toBe('?locale=en');
     expect(calls.some((call) => call.key === 'POST /api/scan/product')).toBe(
       false,
     );

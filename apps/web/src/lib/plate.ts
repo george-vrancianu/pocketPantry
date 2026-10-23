@@ -10,22 +10,22 @@ export type DishGuess = { title: string; confidence: number };
 export type PlateDishes = { dishes: DishGuess[]; token: string };
 
 /** Plate Scan step two: the picked dish becomes proposed lines for one serving. */
-export function usePlateIngredients(locale: string) {
+export function usePlateIngredients() {
   return useMutation({
     mutationFn: (pick: { dishTitle: string; plateToken: string }) =>
-      apiRequest<ScanResponse>(
-        `/scan/plate/ingredients?${new URLSearchParams({ locale })}`,
-        { method: 'POST', body: pick },
-      ),
+      apiRequest<ScanResponse>('/scan/plate/ingredients', {
+        method: 'POST',
+        body: pick,
+      }),
   });
 }
 
 /** Adds reviewed Plate lines to the Shopping List, all or none; the server merges. */
-export const postShoppingItems = (locale: string, items: NewShoppingItem[]) =>
-  apiRequest<AddedShoppingItems>(
-    `/shopping-list/items/bulk?${new URLSearchParams({ locale })}`,
-    { method: 'POST', body: { items } },
-  );
+export const postShoppingItems = (items: NewShoppingItem[]) =>
+  apiRequest<AddedShoppingItems>('/shopping-list/items/bulk', {
+    method: 'POST',
+    body: { items },
+  });
 
 /** A reviewed line as a Shopping Item: by Ingredient id when matched, else by name. A blank quantity sends neither quantity nor unit. */
 export function toNewShoppingItem(line: ReviewLine): NewShoppingItem {

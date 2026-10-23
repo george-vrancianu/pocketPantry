@@ -416,6 +416,12 @@ describe('Settings (integration)', () => {
         (await call(cookie, 'get', '/preferences').expect(200)).body,
       ).toEqual({
         locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -455,6 +461,12 @@ describe('Settings (integration)', () => {
         (await call(otherDevice, 'get', '/preferences').expect(200)).body,
       ).toEqual({
         locale: 'ro',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'ro',
+        scanLanguage: null,
+        effectiveScanLanguage: 'ro',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'ro',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -471,6 +483,12 @@ describe('Settings (integration)', () => {
         (await call(mihai.cookie, 'get', '/preferences').expect(200)).body,
       ).toEqual({
         locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -483,7 +501,17 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({ locale: 'da', theme: null, hideRecipesWithAllergies: false });
+      ).toEqual({
+        locale: 'da',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'da',
+        scanLanguage: null,
+        effectiveScanLanguage: 'da',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'da',
+        theme: null,
+        hideRecipesWithAllergies: false,
+      });
       const [row] = await database
         .select({ locale: user.locale })
         .from(user)
@@ -503,6 +531,12 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(saved.body).toEqual({
         locale: 'ro',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'ro',
+        scanLanguage: null,
+        effectiveScanLanguage: 'ro',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'ro',
         theme: null,
         hideRecipesWithAllergies: true,
       });
@@ -539,6 +573,12 @@ describe('Settings (integration)', () => {
         ).body,
       ).toEqual({
         locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: 'dark',
         hideRecipesWithAllergies: false,
       });
@@ -546,6 +586,12 @@ describe('Settings (integration)', () => {
         (await call(cookie, 'get', '/preferences').expect(200)).body,
       ).toEqual({
         locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: 'dark',
         hideRecipesWithAllergies: false,
       });
@@ -568,6 +614,12 @@ describe('Settings (integration)', () => {
         (await call(cookie, 'get', '/preferences').expect(200)).body,
       ).toEqual({
         locale: 'ro',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'ro',
+        scanLanguage: null,
+        effectiveScanLanguage: 'ro',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'ro',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
       });
@@ -580,6 +632,12 @@ describe('Settings (integration)', () => {
         ).body,
       ).toEqual({
         locale: 'da',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'da',
+        scanLanguage: null,
+        effectiveScanLanguage: 'da',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'da',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
       });
@@ -594,6 +652,12 @@ describe('Settings (integration)', () => {
         (await call(cookie, 'get', '/preferences').expect(200)).body,
       ).toEqual({
         locale: 'en',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
         theme: 'warm',
         hideRecipesWithAllergies: false,
       });
@@ -617,7 +681,17 @@ describe('Settings (integration)', () => {
         .where(eq(user.id, userId));
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({ locale: null, theme: null, hideRecipesWithAllergies: false });
+      ).toEqual({
+        locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
+        spokenLanguage: null,
+        effectiveSpokenLanguage: 'en',
+        theme: null,
+        hideRecipesWithAllergies: false,
+      });
     });
   });
 });
