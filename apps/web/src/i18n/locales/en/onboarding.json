@@ -88,6 +88,12 @@
       "bubble": "Voice Notes aren't switched on here, so we'll skip this one.",
       "callout": "Voice Notes need the server to be set up for them. You can add things by hand in the app.",
       "continue": "Continue"
+    },
+    "heard": {
+      "title": "Here's what I heard",
+      "nothingSaved": "Nothing is saved until you say so. Tap a line to change it.",
+      "doThese_one": "Do these {{count}}",
+      "doThese_other": "Do these {{count}}"
     }
   },
   "review": {

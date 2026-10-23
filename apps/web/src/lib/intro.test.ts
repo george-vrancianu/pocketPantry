@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addSetupCounts,
+  savedByVoice,
   initialLanguagePicks,
   introPath,
   introRedirect,
@@ -145,5 +146,52 @@ describe('setupReviewPath', () => {
     expect(
       introRedirect({ pathname: path, introDone: false, setupStarted: false }),
     ).toBeNull();
+  });
+});
+
+describe('savedByVoice', () => {
+  const entry = (
+    actionId: string,
+    list: 'pantry' | 'shopping',
+    alreadyDone = false,
+  ) => ({ actionId, list, alreadyDone });
+
+  it('counts Pantry adds as Batches and Shopping adds as Shopping Items', () => {
+    expect(
+      savedByVoice(
+        [entry('a', 'pantry'), entry('b', 'pantry'), entry('c', 'shopping')],
+        [
+          { id: 'a', op: 'add' },
+          { id: 'b', op: 'add' },
+          { id: 'c', op: 'add' },
+        ],
+      ),
+    ).toEqual({ batches: 2, shoppingItems: 1 });
+  });
+
+  it('leaves out what was already done and anything that is not an add', () => {
+    expect(
+      savedByVoice(
+        [
+          entry('a', 'pantry', true),
+          entry('b', 'shopping'),
+          entry('c', 'pantry'),
+          entry('d', 'shopping'),
+        ],
+        [
+          { id: 'a', op: 'add' },
+          { id: 'b', op: 'check' },
+          { id: 'c', op: 'remove' },
+          { id: 'd', op: 'runningLow' },
+        ],
+      ),
+    ).toEqual({ batches: 0, shoppingItems: 1 });
+  });
+
+  it('counts nothing for actions that were skipped (not in applied)', () => {
+    expect(savedByVoice([], [{ id: 'a', op: 'add' }])).toEqual({
+      batches: 0,
+      shoppingItems: 0,
+    });
   });
 });

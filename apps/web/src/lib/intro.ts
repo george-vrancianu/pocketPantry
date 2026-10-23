@@ -107,6 +107,31 @@ export function addSetupCounts(
   };
 }
 
+/**
+ * What a Setup Voice Note really wrote: a Pantry add is a Batch, a Shopping add (or a "running low" that
+ * lands on the list) is a Shopping Item. Only Voice Actions the server applied count; skipped ones and
+ * ones already done (nothing new was written) do not, and a tick, remove or change adds nothing.
+ */
+export function savedByVoice(
+  applied: {
+    actionId: string;
+    list: 'pantry' | 'shopping';
+    alreadyDone: boolean;
+  }[],
+  actions: { id: string; op: string | null }[],
+): SetupCounts {
+  const ops = new Map(actions.map((a) => [a.id, a.op]));
+  const saved = { ...NO_SETUP_COUNTS };
+  for (const entry of applied) {
+    if (entry.alreadyDone) continue;
+    const op = ops.get(entry.actionId);
+    if (entry.list === 'pantry' && op === 'add') saved.batches += 1;
+    if (entry.list === 'shopping' && (op === 'add' || op === 'runningLow'))
+      saved.shoppingItems += 1;
+  }
+  return saved;
+}
+
 type RedirectInput = {
   pathname: string;
   introDone: boolean;

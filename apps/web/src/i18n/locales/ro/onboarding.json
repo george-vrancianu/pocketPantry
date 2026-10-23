@@ -89,6 +89,13 @@
       "bubble": "Notele vocale nu sunt pornite aici, așa că sărim peste acest pas.",
       "callout": "Notele vocale au nevoie ca serverul să fie configurat pentru ele. Poți adăuga produse manual în aplicație.",
       "continue": "Continuă"
+    },
+    "heard": {
+      "title": "Iată ce am auzit",
+      "nothingSaved": "Nu se salvează nimic până nu spui tu. Atinge un rând ca să-l schimbi.",
+      "doThese_one": "Fă-o pe asta",
+      "doThese_few": "Fă-le pe cele {{count}}",
+      "doThese_other": "Fă-le pe cele {{count}}"
     }
   },
   "review": {

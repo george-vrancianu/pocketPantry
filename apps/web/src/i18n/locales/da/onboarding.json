@@ -88,6 +88,12 @@
       "bubble": "Stemmenoter er ikke slået til her, så vi springer det her over.",
       "callout": "Stemmenoter kræver, at serveren er sat op til dem. Du kan tilføje ting i hånden i appen.",
       "continue": "Fortsæt"
+    },
+    "heard": {
+      "title": "Det her hørte jeg",
+      "nothingSaved": "Intet bliver gemt, før du siger til. Tryk på en linje for at ændre den.",
+      "doThese_one": "Gør den her",
+      "doThese_other": "Gør de {{count}}"
     }
   },
   "review": {

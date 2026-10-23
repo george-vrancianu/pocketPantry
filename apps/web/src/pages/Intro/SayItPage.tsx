@@ -10,6 +10,7 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { AppDock } from '../../components/AppDock';
 import { IntroLook } from '../../components/IntroLook';
 import { SetupCallout } from '../../components/SetupReview/SetupCallout';
@@ -20,15 +21,19 @@ import {
   VoiceHostProvider,
   VoiceHostSlot,
 } from '../../components/voice/VoiceHost';
-import { introPath, nextStep, skipStep } from '../../lib/intro';
+import { introPath, nextStep, savedByVoice, skipStep } from '../../lib/intro';
 import { useGatorAlt } from '../../lib/useGatorAlt';
 import { useIntro } from '../../lib/useIntro';
-import { useVoiceConfig } from '../../lib/voice';
+import {
+  useVoiceConfig,
+  type VoiceApplyResult,
+  type VoiceReviewAction,
+} from '../../lib/voice';
 import { aboveMic, PILL_OFFSET, VOICE_LAYER } from '../../lib/voicePlacement';
 
 /** Where Skip goes: the Intro module's rule, never a path written here. */
 const SKIP_TO = introPath(skipStep('say-it') ?? 'all-set');
-/** Where "Continue" goes when there is nothing to say it to. */
+/** Where the step after Say it is: "Continue" when there is no mic, and "Do these N" once saved. */
 const CONTINUE_TO = introPath(nextStep('say-it'));
 
 /** Keyboard rings are the olive page colour by default, which vanishes on the olive ground: make them cream. */
@@ -97,6 +102,15 @@ function SayItScreen() {
   const { counts } = useIntro();
   const voice = useVoiceConfig();
   const holding = useDockRaised();
+  const { recordSaved } = useIntro();
+  const navigate = useNavigate();
+  // "Do these N" ran: count only what was really saved, then on to All set.
+  const setup = {
+    onApplied: (result: VoiceApplyResult, actions: VoiceReviewAction[]) => {
+      recordSaved(savedByVoice(result.applied, actions));
+      void navigate(CONTINUE_TO);
+    },
+  };
 
   return (
     <>
@@ -232,7 +246,7 @@ function SayItScreen() {
             />
           )}
           <VoiceHostSlot />
-          <VoiceNote defaultTarget={SETUP_DEFAULT_TARGET} />
+          <VoiceNote defaultTarget={SETUP_DEFAULT_TARGET} setup={setup} />
           <AppDock teach="mic" />
         </>
       ) : null}
