@@ -207,7 +207,7 @@ describe('AppLayout Voice Note host', () => {
     const dock = screen.getByRole('navigation');
     expect(getComputedStyle(dock).zIndex).toBe('10');
     pressDown(await talkButton());
-    await screen.findByText('Listening');
+    await screen.findByText("Gator's listening");
     expect(Number(getComputedStyle(dock).zIndex)).toBeGreaterThan(
       VOICE_LAYER.scrim,
     );
@@ -312,7 +312,7 @@ describe('AppLayout Voice Notes off the Shopping List and the Pantry', () => {
   async function recordNote() {
     const button = await talkButton();
     pressDown(button);
-    await screen.findByText('Listening');
+    await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
     return screen.findByRole('dialog');
@@ -334,7 +334,7 @@ describe('AppLayout Voice Notes off the Shopping List and the Pantry', () => {
   it('tells the Member to name a list while listening off the lists', async () => {
     renderAt('/recipes');
     pressDown(await talkButton());
-    await screen.findByText('Listening');
+    await screen.findByText("Gator's listening");
     expect(screen.getByRole('status')).toHaveTextContent(
       'Say which list: “on the list” or “in the pantry”.',
     );
@@ -461,7 +461,7 @@ describe('AppLayout Review for actions that need a list', () => {
     renderAt('/recipes');
     const button = await talkButton();
     pressDown(button);
-    await screen.findByText('Listening');
+    await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
     return within(await screen.findByRole('dialog'));

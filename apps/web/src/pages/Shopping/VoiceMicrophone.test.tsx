@@ -55,7 +55,7 @@ describe('Voice Note microphone sheets', () => {
       expect(dialog).toHaveTextContent('Goes straight to the Pantry');
       expect(dialog).toHaveTextContent(/then deleted/i);
       expect(mic.start).not.toHaveBeenCalled();
-      expect(screen.queryByText('Listening')).toBeNull();
+      expect(screen.queryByText("Gator's listening")).toBeNull();
     });
 
     it('can be pressed again after Not now, and changes nothing', async () => {
@@ -134,7 +134,7 @@ describe('Voice Note microphone sheets', () => {
 
     pressDown(await talkButton());
 
-    await screen.findByText('Listening');
+    await screen.findByText("Gator's listening");
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
@@ -282,7 +282,7 @@ describe('Voice Note microphone sheets', () => {
 
     pressDown(await talkButton());
 
-    await screen.findByText('Listening');
+    await screen.findByText("Gator's listening");
     expect(mic.start).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog')).toBeNull();
   });

@@ -140,7 +140,7 @@
     "stillReading": "{{count}} în curs de citire",
     "allRead": "toate citite",
     "camera": "Cameră",
-    "reading": "Citim fotografia…",
+    "reading": "Gator citește fotografia aceasta…",
     "crop": "Decupează fotografia bonului",
     "remove": "Elimină fotografia",
     "items_one": "{{count}} articol",
@@ -166,7 +166,14 @@
     "removeCard": "Elimină",
     "pickDish": "Alege preparatul",
     "dishOption": "{{title}}, {{percent}}% probabil",
-    "readAgain": "Citește din nou"
+    "readAgain": "Citește din nou",
+    "banner_one": "Totul e citit! {{count}} articol.",
+    "banner_few": "Totul e citit! {{count}} articole.",
+    "banner_other": "Totul e citit! {{count}} de articole.",
+    "bannerCheck_one": "Verifică-l pe cel de care nu am fost sigur, apoi adaugă-l.",
+    "bannerCheck_few": "Verifică cele {{count}} de care nu am fost sigur, apoi adaugă-le.",
+    "bannerCheck_other": "Verifică cele {{count}} de care nu am fost sigur, apoi adaugă-le.",
+    "bannerClear": "Nu e nimic de verificat. Adaugă-le când ești gata."
   },
   "plateRecipe": {
     "open": "Salvează ca rețetă",

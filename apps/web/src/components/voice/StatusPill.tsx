@@ -3,9 +3,9 @@ import {
   Button,
   ClockIcon,
   EarIcon,
+  GatorImage,
   radius,
   shadow,
-  Spinner,
   MicOffIcon,
   WifiOffIcon,
   palette,
@@ -34,6 +34,8 @@ type Voice = ReturnType<typeof useVoiceNote>;
 
 type Look = {
   icon: ReactNode;
+  /** Gator's own picture, drawn without the round badge the other icons sit in. */
+  plain?: boolean;
   bg: string;
   fg: string;
   title: string;
@@ -63,7 +65,8 @@ export function StatusPill({ voice }: { voice: Voice }) {
   const look = ((): Look | null => {
     if (phase === 'reading') {
       return {
-        icon: <Spinner label={t('send.reading')} />,
+        // The title beside Gator says "Gator's reading your note…", so the image is decorative.
+        icon: <GatorImage mood="thinking" size={52} decorative />,
         bg: palette('pp-accentTint'),
         fg: palette('pp-accentOnTint'),
         title: t('send.reading'),
@@ -73,6 +76,7 @@ export function StatusPill({ voice }: { voice: Voice }) {
             `settings:languageNames.${recording?.spokenLanguage ?? spokenLanguage}`,
           ),
         }),
+        plain: true,
         urgent: false,
         actions: (
           <Button
@@ -212,23 +216,21 @@ export function StatusPill({ voice }: { voice: Voice }) {
     >
       <Box
         aria-hidden
-        sx={{
-          width: 30,
-          height: 30,
-          flex: 'none',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: look.bg,
-          color: look.fg,
-          // The spinner is 18 pt in the 30 pt circle.
-          '& .MuiCircularProgress-root': {
-            width: '18px !important',
-            height: '18px !important',
-            color: 'inherit',
-          },
-        }}
+        sx={
+          look.plain
+            ? { flex: 'none', display: 'flex', alignItems: 'center' }
+            : {
+                width: 30,
+                height: 30,
+                flex: 'none',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: look.bg,
+                color: look.fg,
+              }
+        }
       >
         {look.icon}
       </Box>

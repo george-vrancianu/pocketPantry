@@ -137,7 +137,7 @@ describe('the answer sheet for Pantry Questions', () => {
     renderInAppLayout(page, path);
     const button = await talkButton();
     pressDown(button);
-    await screen.findByText('Listening');
+    await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
     return screen.findByRole('dialog');

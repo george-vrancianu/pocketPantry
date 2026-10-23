@@ -73,7 +73,7 @@
     "blocked": "Mikrofon blokeret"
   },
   "listening": {
-    "title": "Lytter",
+    "title": "Gator lytter",
     "starting": "Starter…",
     "of": "/ 1:00",
     "hint": "Slip for at sende · træk væk for at annullere",
@@ -244,7 +244,7 @@
     "other": "kunne ikke anvendes"
   },
   "send": {
-    "reading": "Læser din note",
+    "reading": "Gator læser din note…",
     "readingMeta": "{{duration}} tale · {{language}}",
     "cancel": "Annuller",
     "cancelled": "Annulleret. Intet blev gemt.",

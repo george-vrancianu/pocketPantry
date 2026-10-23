@@ -1,6 +1,7 @@
 import {
   Box,
   CloseIcon,
+  GatorImage,
   color,
   palette,
   radius,
@@ -115,121 +116,147 @@ export function ListeningCard({
     >
       <Box
         aria-hidden
-        sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+        sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-          {armed ? (
-            <Box
-              component="span"
-              data-testid="cancel-mark"
-              sx={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'text.primary',
-                color: 'pp.cardBg',
-              }}
-            >
-              <CloseIcon size={14} />
-            </Box>
-          ) : (
-            <Box
-              component="span"
-              sx={{
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                backgroundColor: color.rec,
-                ...blink,
-              }}
-            />
-          )}
-          <Box component="span" sx={{ fontSize: 15, fontWeight: 700, flex: 1 }}>
-            {starting
-              ? t('listening.starting')
-              : armed
-                ? t('listening.cancelArmed')
-                : t('listening.title')}
-          </Box>
-          {starting ? null : (
-            <>
-              <Box
-                component="span"
-                data-testid="elapsed"
-                sx={{
-                  fontSize: 22,
-                  fontWeight: 700,
-                  fontVariantNumeric: 'tabular-nums',
-                  color: soon && !armed ? palette('warning-main') : 'inherit',
-                }}
-              >
-                {formatClock(elapsedMs)}
-              </Box>
-              <Box
-                component="span"
-                sx={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color:
-                    soon && !armed ? palette('warning-main') : 'text.secondary',
-                }}
-              >
-                {soon
-                  ? t('listening.left', { count: left })
-                  : t('listening.of')}
-              </Box>
-            </>
-          )}
-        </Box>
-        <Box
-          data-testid="level-meter"
-          sx={{ display: 'flex', alignItems: 'center', gap: '3px', height: 38 }}
-        >
-          {bars.map((value, index) => (
-            <Box
-              key={index}
-              sx={{
-                flex: 1,
-                borderRadius: radius.box,
-                backgroundColor: armed ? color.lineStrong : color.rec,
-                transition: 'height 90ms linear',
-              }}
-              style={{
-                height: armed ? 3 : 3 + Math.min(1, Math.max(0, value)) * 35,
-              }}
-            />
-          ))}
+        {/* The title beside Gator says "Gator's listening", so the image is decorative. */}
+        <Box sx={{ flex: 'none' }}>
+          <GatorImage mood="listening" size={72} decorative />
         </Box>
         <Box
           sx={{
             display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: '4px 8px',
-            fontSize: 12.5,
-            color: 'text.secondary',
+            flexDirection: 'column',
+            gap: '10px',
+            flex: 1,
+            minWidth: 0,
           }}
         >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+            {armed ? (
+              <Box
+                component="span"
+                data-testid="cancel-mark"
+                sx={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'text.primary',
+                  color: 'pp.cardBg',
+                }}
+              >
+                <CloseIcon size={14} />
+              </Box>
+            ) : (
+              <Box
+                component="span"
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: color.rec,
+                  ...blink,
+                }}
+              />
+            )}
+            <Box
+              component="span"
+              sx={{ fontSize: 15, fontWeight: 700, flex: 1 }}
+            >
+              {starting
+                ? t('listening.starting')
+                : armed
+                  ? t('listening.cancelArmed')
+                  : t('listening.title')}
+            </Box>
+            {starting ? null : (
+              <>
+                <Box
+                  component="span"
+                  data-testid="elapsed"
+                  sx={{
+                    fontSize: 22,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
+                    color: soon && !armed ? palette('warning-main') : 'inherit',
+                  }}
+                >
+                  {formatClock(elapsedMs)}
+                </Box>
+                <Box
+                  component="span"
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color:
+                      soon && !armed
+                        ? palette('warning-main')
+                        : 'text.secondary',
+                  }}
+                >
+                  {soon
+                    ? t('listening.left', { count: left })
+                    : t('listening.of')}
+                </Box>
+              </>
+            )}
+          </Box>
           <Box
-            component="span"
+            data-testid="level-meter"
             sx={{
-              px: '8px',
-              py: '2px',
-              borderRadius: radius.chip,
-              backgroundColor: 'pp.chip',
-              color: 'text.primary',
-              fontSize: 11.5,
-              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3px',
+              height: 38,
             }}
           >
-            {spokenLanguage.toUpperCase()}
+            {bars.map((value, index) => (
+              <Box
+                key={index}
+                sx={{
+                  flex: 1,
+                  borderRadius: radius.box,
+                  backgroundColor: armed ? color.lineStrong : color.rec,
+                  transition: 'height 90ms linear',
+                }}
+                style={{
+                  height: armed ? 3 : 3 + Math.min(1, Math.max(0, value)) * 35,
+                }}
+              />
+            ))}
           </Box>
-          <span>{armed ? t('listening.slideBack') : t('listening.hint')}</span>
-          <Box sx={{ flexBasis: '100%' }}>
-            {t(LISTENING_DESTINATION[target])}
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '4px 8px',
+              fontSize: 12.5,
+              color: 'text.secondary',
+            }}
+          >
+            <Box
+              component="span"
+              sx={{
+                px: '8px',
+                py: '2px',
+                borderRadius: radius.chip,
+                backgroundColor: 'pp.chip',
+                color: 'text.primary',
+                fontSize: 11.5,
+                fontWeight: 700,
+              }}
+            >
+              {spokenLanguage.toUpperCase()}
+            </Box>
+            <span>
+              {armed ? t('listening.slideBack') : t('listening.hint')}
+            </span>
+            <Box sx={{ flexBasis: '100%' }}>
+              {t(LISTENING_DESTINATION[target])}
+            </Box>
           </Box>
         </Box>
       </Box>
