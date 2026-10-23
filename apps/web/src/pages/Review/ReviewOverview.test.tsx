@@ -14,6 +14,7 @@ import { resetReads } from '../../lib/scanReads';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { saveScanPageMode, type CameraMode } from '../../lib/cameraMode';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { preferencesQueryKey } from '../../lib/settings';
 import { scanLanguagePreference } from '../../test/scan';
 import { ScanPage } from '../Scan/ScanPage';
 import { ReviewOverviewPage } from './ReviewOverviewPage';
@@ -128,7 +129,7 @@ function renderOverview(extra: Parameters<typeof stubApi>[0] = {}) {
       Response.json({ batches: [], matchedShoppingItemIds: [] }),
   });
   vi.stubGlobal('fetch', fetchMock);
-  renderWithProviders(
+  const { queryClient } = renderWithProviders(
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
       <Route path="/scan/review" element={<ReviewOverviewPage />} />
@@ -137,7 +138,7 @@ function renderOverview(extra: Parameters<typeof stubApi>[0] = {}) {
     </Routes>,
     { route: '/scan/review' },
   );
-  return calls;
+  return Object.assign(calls, { queryClient });
 }
 
 const cards = () => screen.getAllByTestId('review-card');
@@ -612,13 +613,12 @@ describe('Review overview', () => {
         ...later,
         ...scanLanguagePreference('ro'),
       });
-      // The Preference has loaded before the files are added.
+      // The Review page shows nothing of the Preference, so wait for it to be in the cache before the files are added.
       await waitFor(() =>
-        expect(calls.map((c) => c.key)).toContain(
-          'GET /api/settings/preferences',
-        ),
+        expect(
+          calls.queryClient.getQueryData(preferencesQueryKey),
+        ).toBeDefined(),
       );
-      await act(async () => {});
       await pick(1);
       await waitFor(() => expect(cards()).toHaveLength(2));
       await waitFor(() =>
