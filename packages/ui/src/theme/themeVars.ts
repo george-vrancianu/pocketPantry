@@ -67,6 +67,10 @@ export const color = {
   accentInk: palette('pp-accentInk'),
   /** Text and icons on an `accentTint` fill. */
   accentOnTint: palette('pp-accentOnTint'),
+  /** The butter fill: the lit half of a teaching Dock, primary buttons on the olive ground. */
+  butter: palette('secondary-main'),
+  /** Text and icons on `butter`. */
+  butterInk: palette('secondary-contrastText'),
   lineStrong: palette('pp-lineStrong'),
   /** The recording colour (Voice Notes): the urgent foreground. */
   rec: palette('error-main'),

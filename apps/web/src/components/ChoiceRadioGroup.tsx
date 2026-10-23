@@ -12,6 +12,10 @@ import { useId, type ReactNode } from 'react';
 export type Choice<T extends string> = {
   value: T;
   label: ReactNode;
+  /** A second line under the label, read as the radio's description. */
+  description?: ReactNode;
+  /** A mark before the text, decorative. */
+  icon?: ReactNode;
   /** Language of the label, when it differs from the page's. */
   lang?: string;
 };
@@ -28,6 +32,11 @@ type Props<T extends string> = {
   layout?: 'rows' | 'chips';
   /** Hide the visible name (the group keeps it for assistive technology). */
   hideLabel?: boolean;
+  /**
+   * `olive` is for the Intro's olive ground: the group's name is cream, the picked choice is a cream
+   * card with a thick butter border, the others are the darker olive.
+   */
+  tone?: 'plain' | 'olive';
 };
 
 function choiceRadius(layout: Props<string>['layout']) {
@@ -46,7 +55,9 @@ export function ChoiceRadioGroup<T extends string>({
   onChange,
   layout = 'rows',
   hideLabel = false,
+  tone = 'plain',
 }: Props<T>) {
+  const olive = tone === 'olive';
   const id = useId();
   const labelId = `${id}-label`;
   const hintId = `${id}-hint`;
@@ -60,13 +71,24 @@ export function ChoiceRadioGroup<T extends string>({
       <Typography
         id={labelId}
         variant="sectionLabel"
-        color="text.secondary"
-        sx={hideLabel ? visuallyHidden : undefined}
+        color={olive ? undefined : 'text.secondary'}
+        sx={
+          hideLabel
+            ? visuallyHidden
+            : olive
+              ? { color: color.cardBg }
+              : undefined
+        }
       >
         {label}
       </Typography>
       {hint ? (
-        <Typography id={hintId} variant="meta" color="text.secondary">
+        <Typography
+          id={hintId}
+          variant="meta"
+          color={olive ? undefined : 'text.secondary'}
+          sx={olive ? { color: color.cardBg } : undefined}
+        >
           {hint}
         </Typography>
       ) : null}
@@ -80,6 +102,7 @@ export function ChoiceRadioGroup<T extends string>({
       >
         {choices.map((choice) => {
           const selected = choice.value === value;
+          const textId = `${id}-${choice.value}`;
           return (
             <Box
               key={choice.value}
@@ -95,10 +118,22 @@ export function ChoiceRadioGroup<T extends string>({
                 minHeight: layout === 'rows' ? 50 : 44,
                 px: '16px',
                 borderRadius: choiceRadius(layout),
-                border: '2px solid',
-                borderColor: selected ? 'pp.accent' : 'pp.cardLine',
-                backgroundColor: selected ? 'pp.accentTint' : 'pp.cardBg',
-                color: selected ? color.accentOnTint : 'text.primary',
+                ...(olive
+                  ? {
+                      border: '3px solid',
+                      borderColor: selected ? color.butter : 'transparent',
+                      backgroundColor: selected
+                        ? 'pp.cardBg'
+                        : color.accentOnTint,
+                      color: selected ? 'text.primary' : color.cardBg,
+                      py: '14px',
+                    }
+                  : {
+                      border: '2px solid',
+                      borderColor: selected ? 'pp.accent' : 'pp.cardLine',
+                      backgroundColor: selected ? 'pp.accentTint' : 'pp.cardBg',
+                      color: selected ? color.accentOnTint : 'text.primary',
+                    }),
                 fontWeight: selected ? 700 : 600,
                 cursor: 'pointer',
                 '&:has(input:focus-visible)': focusRingStyle,
@@ -111,9 +146,52 @@ export function ChoiceRadioGroup<T extends string>({
                 value={choice.value}
                 checked={selected}
                 onChange={() => onChange(choice.value)}
+                aria-labelledby={
+                  choice.description ? `${textId}-name` : undefined
+                }
+                aria-describedby={
+                  choice.description ? `${textId}-hint` : undefined
+                }
                 sx={visuallyHidden}
               />
-              <span>{choice.label}</span>
+              {choice.icon ? (
+                <Box
+                  aria-hidden
+                  sx={{
+                    display: 'inline-flex',
+                    flexShrink: 0,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    backgroundColor: 'text.primary',
+                    color: color.cardBg,
+                  }}
+                >
+                  {choice.icon}
+                </Box>
+              ) : null}
+              {choice.description ? (
+                <Box component="span" sx={{ flex: 1, minWidth: 0 }}>
+                  <Box
+                    component="span"
+                    id={`${textId}-name`}
+                    sx={{ display: 'block', fontWeight: 700 }}
+                  >
+                    {choice.label}
+                  </Box>
+                  <Box
+                    component="span"
+                    id={`${textId}-hint`}
+                    sx={{ display: 'block', fontWeight: 400, mt: '2px' }}
+                  >
+                    {choice.description}
+                  </Box>
+                </Box>
+              ) : (
+                <span>{choice.label}</span>
+              )}
               {selected ? (
                 <Box
                   aria-hidden
@@ -126,6 +204,7 @@ export function ChoiceRadioGroup<T extends string>({
                     borderRadius: '50%',
                     backgroundColor: 'pp.accent',
                     color: color.accentInk,
+                    flexShrink: 0,
                   }}
                 >
                   <CheckIcon size={14} />

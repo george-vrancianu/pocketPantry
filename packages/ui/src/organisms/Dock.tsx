@@ -26,6 +26,11 @@ export type DockProps = {
   centre?: ReactNode;
   /** Stacking order; raised while a Voice Note is recorded so the scrim does not dim the mic. */
   zIndex?: number;
+  /**
+   * Teaching mode: the four tabs are dimmed, `aria-disabled`, out of the tab order and do nothing, and
+   * none is marked as the current page. The `centre` capsule lights its own half (`DockCapsule`'s `teach`).
+   */
+  teaching?: boolean;
 };
 
 /**
@@ -39,6 +44,7 @@ export function Dock({
   activeKey,
   centre,
   zIndex = 10,
+  teaching = false,
 }: DockProps) {
   const tab = (item: DockEntry) => (
     <DockItem
@@ -46,7 +52,8 @@ export function Dock({
       label={item.label}
       href={item.href}
       icon={item.icon}
-      active={item.key === activeKey}
+      active={!teaching && item.key === activeKey}
+      disabled={teaching}
     />
   );
   return (

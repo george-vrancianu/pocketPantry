@@ -35,7 +35,29 @@
     "showMeSay": "2 · Spune-o",
     "skip": "Sari peste, du-mă în aplicație",
     "skipHint": "Începe cu o Cămară goală",
-    "showMeSoon": "În curând",
     "languagesNotSaved": "Nu ți-am putut salva limbile. Ai ales {{choices}}. Le poți seta din nou în Setări."
+  },
+  "snap": {
+    "progress": "{{step}} din 2",
+    "skip": "Sari peste",
+    "bubble": {
+      "ingredients": "Pune niște mâncare pe blat și fă-i o poză. Îmi dau eu seama ce este.",
+      "receipt": "Fotografiază bonul de la ultima ta cumpărătură. Pun eu la loc tot ce ai cumpărat."
+    },
+    "question": "Ce ai în fața ta?",
+    "choices": {
+      "ingredients": {
+        "label": "Ingrediente",
+        "hint": "Fructe, legume, pachete și conserve pe blat"
+      },
+      "receipt": {
+        "label": "Bon",
+        "hint": "Bonul de la ultima cumpărătură, întins pe masă"
+      }
+    },
+    "callout": {
+      "title": "Atinge camera ca să începi",
+      "body": "E mereu aici, în mijlocul meniului"
+    }
   }
 }

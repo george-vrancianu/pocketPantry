@@ -18,13 +18,15 @@ describe('Intro steps', () => {
     expect(nextStep('languages')).toBe('sign-up');
     expect(nextStep('sign-up')).toBe('setup-or-skip');
     expect(nextStep('setup-or-skip')).toBe('snap');
+    expect(nextStep('setup-review')).toBe('all-set');
     expect(nextStep('all-set')).toBe('dashboard');
     expect(nextStep('log-in')).toBe('dashboard');
   });
 
   it('skips one step only', () => {
-    expect(skipStep('snap')).toBe('say-it');
-    expect(skipStep('setup-review')).toBe('say-it');
+    // Say it does not exist yet (ticket 499), so Snap and its Review skip to All set.
+    expect(skipStep('snap')).toBe('all-set');
+    expect(skipStep('setup-review')).toBe('all-set');
     expect(skipStep('say-it')).toBe('all-set');
     expect(skipStep('setup-or-skip')).toBe('dashboard');
     expect(skipStep('languages')).toBeNull();

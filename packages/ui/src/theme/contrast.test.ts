@@ -73,3 +73,19 @@ describe('Theme contrast (US25: 4.5:1 for every text and accent pair)', () => {
     }
   });
 });
+
+describe('The Intro ground (Warm, olive): text meets 4.5:1', () => {
+  const warm = THEMES.warm;
+  it.each([
+    ['cream text', warm.surface, warm.accent],
+    [
+      'cream text on the darker olive cards',
+      warm.surface,
+      warm['accent-on-tint'],
+    ],
+    ['butter-ink on butter buttons', warm['butter-ink'], warm.butter],
+    ['ink on the cream speech bubble', warm.ink, warm['card-bg']],
+  ])('%s', (_name, text, fill) => {
+    expect(contrast(text, fill)).toBeGreaterThanOrEqual(4.5);
+  });
+});

@@ -35,7 +35,29 @@
     "showMeSay": "2 · Say it",
     "skip": "Skip, take me to the app",
     "skipHint": "Start with an empty Pantry",
-    "showMeSoon": "Coming soon",
     "languagesNotSaved": "We couldn't save your languages. You chose {{choices}}. You can set them again in Settings."
+  },
+  "snap": {
+    "progress": "{{step}} of 2",
+    "skip": "Skip",
+    "bubble": {
+      "ingredients": "Put some food on the counter and snap it. I'll work out what it all is.",
+      "receipt": "Snap the receipt from your last shop. I'll put the whole shop away."
+    },
+    "question": "What's in front of you?",
+    "choices": {
+      "ingredients": {
+        "label": "Ingredients",
+        "hint": "Fruit, veg, packets and tins on the counter"
+      },
+      "receipt": {
+        "label": "Receipt",
+        "hint": "The receipt from your last shop, laid flat"
+      }
+    },
+    "callout": {
+      "title": "Tap the camera to start",
+      "body": "It's always here, in the middle of the menu"
+    }
   }
 }

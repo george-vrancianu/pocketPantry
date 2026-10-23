@@ -5,8 +5,10 @@ import { RequireAdmin } from './components/RequireAdmin';
 import { IntroGate } from './components/IntroGate';
 import { RequireAuth } from './components/RequireAuth';
 import { IntroProvider } from './lib/useIntro';
+import { AllSetPage } from './pages/Intro/AllSetPage';
 import { LanguagesPage } from './pages/Intro/LanguagesPage';
 import { SetupOrSkipPage } from './pages/Intro/SetupOrSkipPage';
+import { SnapPage } from './pages/Intro/SnapPage';
 import { AdminPage } from './pages/Admin/AdminPage';
 import { CustomisePage } from './pages/Customise/CustomisePage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
@@ -49,6 +51,8 @@ export function App() {
         <Route element={<RequireAuth />}>
           <Route element={<IntroGate />}>
             <Route path="/intro/setup" element={<SetupOrSkipPage />} />
+            <Route path="/intro/snap" element={<SnapPage />} />
+            <Route path="/intro/all-set" element={<AllSetPage />} />
             <Route element={<AppLayout />}>
               <Route index element={<DashboardPage />} />
               <Route path="customise" element={<CustomisePage />} />

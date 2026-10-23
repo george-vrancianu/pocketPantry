@@ -35,7 +35,29 @@
     "showMeSay": "2 · Sig det",
     "skip": "Spring over, tag mig til appen",
     "skipHint": "Start med et tomt spisekammer",
-    "showMeSoon": "Kommer snart",
     "languagesNotSaved": "Vi kunne ikke gemme dine sprog. Du valgte {{choices}}. Du kan indstille dem igen i Indstillinger."
+  },
+  "snap": {
+    "progress": "{{step}} af 2",
+    "skip": "Spring over",
+    "bubble": {
+      "ingredients": "Stil noget mad på bordet og tag et billede af det. Jeg finder ud af, hvad det hele er.",
+      "receipt": "Tag et billede af kvitteringen fra din sidste indkøbstur. Jeg lægger hele indkøbet på plads."
+    },
+    "question": "Hvad har du foran dig?",
+    "choices": {
+      "ingredients": {
+        "label": "Ingredienser",
+        "hint": "Frugt, grønt, pakker og dåser på bordet"
+      },
+      "receipt": {
+        "label": "Kvittering",
+        "hint": "Kvitteringen fra din sidste indkøbstur, lagt fladt"
+      }
+    },
+    "callout": {
+      "title": "Tryk på kameraet for at starte",
+      "body": "Det er altid her, midt i menuen"
+    }
   }
 }
