@@ -5,7 +5,7 @@ import { GATOR_MOODS, GatorImage } from './GatorImage';
 const meta: Meta<typeof GatorImage> = {
   title: 'Atoms/GatorImage',
   component: GatorImage,
-  args: { mood: 'happy', size: 160 },
+  args: { mood: 'happy', size: 160, alt: 'Gator, happy' },
   decorators: [
     (Story) => (
       <Box sx={{ p: 3 }}>
@@ -32,7 +32,7 @@ export const AllMoods: Story = {
     >
       {GATOR_MOODS.map((mood) => (
         <Box key={mood} sx={{ textAlign: 'center' }}>
-          <GatorImage mood={mood} size={140} />
+          <GatorImage mood={mood} size={140} decorative />
           <Typography variant="caption">{mood}</Typography>
         </Box>
       ))}
@@ -41,12 +41,16 @@ export const AllMoods: Story = {
 };
 
 /** Empty alt, hidden from assistive tech. */
-export const Decorative: Story = { args: { decorative: true } };
+export const Decorative: Story = { args: { decorative: true, alt: undefined } };
 
 /**
  * The gleaming tooth plays once when the image appears. With the system's
  * reduced-motion setting on, it never shows; reload to replay it.
  */
 export const DapperGlint: Story = {
-  args: { mood: 'health-dapper', size: 320 },
+  args: {
+    mood: 'health-dapper',
+    size: 320,
+    alt: 'Gator with a monocle, smiling contentedly',
+  },
 };

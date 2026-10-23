@@ -39,51 +39,40 @@ export type GatorMood = keyof typeof ART;
 /** Every Gator mood, in the order the handoff lists them. */
 export const GATOR_MOODS = Object.keys(ART) as readonly GatorMood[];
 
-/** The English alt text for each mood; pass `alt` to translate it. */
-const MOOD_LABELS: Readonly<Record<GatorMood, string>> = {
-  'shopping-buddy': 'shopping buddy',
-  'app-icon': 'app icon',
-  talking: 'talking',
-  happy: 'happy',
-  proud: 'proud',
-  listening: 'listening',
-  thinking: 'thinking',
-  'list-keeper': 'list keeper',
-  worried: 'worried',
-  'health-curious': 'health curious',
-  'health-dapper': 'health dapper',
-  'health-hmm': 'health hmm',
-  chef: 'chef',
-};
-
 export type GatorImageProps = {
   mood: GatorMood;
   /** Pixel width; the height follows the art's own proportions. */
   size?: number;
-  /**
-   * The alt text. The UI package has no i18n, so callers pass a translated
-   * text; it defaults to English ("Gator, happy").
-   */
-  alt?: string;
-  /** Empty alt, hidden from assistive tech: the text beside it already says it. */
-  decorative?: boolean;
-};
+} & (
+  | {
+      /**
+       * The alt text. The UI package has no i18n, so the caller passes a
+       * translated text describing the mood.
+       */
+      alt: string;
+      decorative?: false;
+    }
+  | {
+      /** Empty alt, hidden from assistive tech: the text beside it already says it. */
+      decorative: true;
+      alt?: never;
+    }
+);
 
 /** The Gator drawn in one of its moods. */
 export function GatorImage({
   mood,
   size = 96,
   alt,
-  decorative = false,
+  decorative,
 }: GatorImageProps) {
   return (
     <img
       src={ART[mood]}
-      alt={decorative ? '' : (alt ?? `Gator, ${MOOD_LABELS[mood]}`)}
+      alt={decorative ? '' : alt}
       aria-hidden={decorative ? true : undefined}
       width={size}
       style={{ width: size, height: 'auto', display: 'block' }}
-      data-gator-mood={mood}
       draggable={false}
     />
   );

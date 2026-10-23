@@ -1,7 +1,23 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import dapperArt from './art/gator-health-dapper.svg?raw';
-import { GATOR_MOODS, GatorImage } from './GatorImage';
+import { GATOR_MOODS, GatorImage, type GatorMood } from './GatorImage';
+
+const ALTS: Record<GatorMood, string> = {
+  'shopping-buddy': 'Gator waving, holding a shopping basket',
+  'app-icon': 'Gator, the app icon',
+  talking: 'Gator talking',
+  happy: 'Gator, happy',
+  proud: 'Gator beaming with pride, eyes closed in a big grin',
+  listening: 'Gator listening',
+  thinking: 'Gator thinking',
+  'list-keeper': 'Gator in glasses reading the receipt',
+  worried: 'Gator, worried',
+  'health-curious': 'Gator, raising an eyebrow',
+  'health-dapper': 'Gator with a monocle, smiling contentedly',
+  'health-hmm': 'Gator, unsure',
+  chef: 'Gator the chef stirring a pot',
+};
 
 afterEach(cleanup);
 
@@ -10,19 +26,23 @@ describe('GatorImage', () => {
     expect(GATOR_MOODS).toHaveLength(13);
   });
 
-  it.each(GATOR_MOODS)(
-    'renders %s with art and an alt naming the mood',
-    (mood) => {
-      render(<GatorImage mood={mood} />);
-      const img = screen.getByRole('img', { name: /^Gator, \w+/ });
-      expect(img.getAttribute('src')).toMatch(/svg/);
-      expect(img.getAttribute('data-gator-mood')).toBe(mood);
+  it.each(Object.entries(ALTS))(
+    'renders %s with an alt that describes it',
+    (mood, alt) => {
+      render(<GatorImage mood={mood as GatorMood} alt={alt} />);
+      expect(screen.getByRole('img', { name: alt })).toBeTruthy();
     },
   );
 
-  it('names the mood in the alt', () => {
+  it('has a described alt for every mood', () => {
+    expect(Object.keys(ALTS).sort()).toEqual([...GATOR_MOODS].sort());
+  });
+
+  it('requires an alt unless decorative', () => {
+    // @ts-expect-error alt is required when the image is not decorative
     render(<GatorImage mood="happy" />);
-    expect(screen.getByRole('img', { name: 'Gator, happy' })).toBeTruthy();
+    // @ts-expect-error a decorative image takes no alt
+    render(<GatorImage mood="happy" decorative alt="x" />);
   });
 
   it('takes a translated alt', () => {
@@ -39,7 +59,9 @@ describe('GatorImage', () => {
   });
 
   it('applies the size as the width', () => {
-    const { container } = render(<GatorImage mood="proud" size={160} />);
+    const { container } = render(
+      <GatorImage mood="proud" size={160} alt="Gator, proud" />,
+    );
     const img = container.querySelector('img')!;
     expect(img.getAttribute('width')).toBe('160');
     expect(img.style.width).toBe('160px');
@@ -57,7 +79,7 @@ describe('dapper Gator art', () => {
   it('has one star glint that plays once', () => {
     expect(dapperArt.match(/class="gator-glint"/g)).toHaveLength(1);
     const rule = /\.gator-glint\{[^}]*animation:([^;}]*)/.exec(dapperArt);
-    expect(rule?.[1]).toMatch(/\b1\b/);
+    expect(rule?.[1]).toMatch(/\s1\s+both\b/);
     expect(rule?.[1]).not.toMatch(/infinite/);
   });
 

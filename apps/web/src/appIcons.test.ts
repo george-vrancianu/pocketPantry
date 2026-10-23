@@ -35,8 +35,7 @@ describe('app icons', () => {
 
   it('links the favicon and a 180x180 apple-touch icon from index.html', () => {
     for (const href of ['/favicon.svg', '/favicon-48.png', '/favicon-32.png']) {
-      expect(html).toContain(`rel="icon"`);
-      expect(html).toContain(`href="${href}"`);
+      expect(html).toMatch(new RegExp(`<link rel="icon"[^>]*href="${href}"`));
       expect(() => readFileSync(publicFile(href))).not.toThrow();
     }
     expect(html).toContain('rel="apple-touch-icon"');
