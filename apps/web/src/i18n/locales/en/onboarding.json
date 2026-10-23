@@ -59,5 +59,23 @@
       "title": "Tap the camera to start",
       "body": "It's always here, in the middle of the menu"
     }
+  },
+  "review": {
+    "banner_one": "I spotted {{count}} thing!",
+    "banner_other": "I spotted {{count}} things!",
+    "bannerCheck_one": "Check the one I wasn't sure about. Tap any line to fix it.",
+    "bannerCheck_other": "Check the {{count}} I wasn't sure about. Tap any line to fix it.",
+    "bannerClear": "Nothing I wasn't sure about. Tap any line to fix it.",
+    "add_one": "Add {{count}} to Pantry",
+    "add_other": "Add {{count}} to Pantry"
+  },
+  "allSet": {
+    "bubble": "You're all set! I'll keep an eye on your kitchen.",
+    "inPantry": "in your Pantry",
+    "onShoppingList": "on your Shopping List",
+    "tipReceipt": "After each shop, snap the receipt. It ticks off your list too.",
+    "tipMic": "The camera and mic are always in the middle of the menu.",
+    "go": "Go to my kitchen",
+    "error": "We couldn't finish just now. Try again."
   }
 }

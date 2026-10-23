@@ -59,5 +59,23 @@
       "title": "Tryk på kameraet for at starte",
       "body": "Det er altid her, midt i menuen"
     }
+  },
+  "review": {
+    "banner_one": "Jeg fandt {{count}} ting!",
+    "banner_other": "Jeg fandt {{count}} ting!",
+    "bannerCheck_one": "Tjek den, jeg ikke var sikker på. Tryk på en linje for at rette den.",
+    "bannerCheck_other": "Tjek de {{count}}, jeg ikke var sikker på. Tryk på en linje for at rette dem.",
+    "bannerClear": "Jeg var sikker på det hele. Tryk på en linje for at rette den.",
+    "add_one": "Føj {{count}} til spisekammeret",
+    "add_other": "Føj {{count}} til spisekammeret"
+  },
+  "allSet": {
+    "bubble": "Så er du klar! Jeg holder øje med dit køkken.",
+    "inPantry": "i dit spisekammer",
+    "onShoppingList": "på din indkøbsliste",
+    "tipReceipt": "Tag et billede af kvitteringen efter hvert indkøb. Så afkrydser jeg også din liste.",
+    "tipMic": "Kameraet og mikrofonen er altid midt i menuen.",
+    "go": "Til mit køkken",
+    "error": "Vi kunne ikke afslutte lige nu. Prøv igen."
   }
 }

@@ -42,6 +42,9 @@ export const INTRO_PATHS = {
   dashboard: '/',
 } as const satisfies Partial<Record<IntroStep, string>>;
 
+/** The Setup Review: the line editor of one Setup Scan. It has no step path of its own because it depends on the Scan. */
+export const setupReviewPath = (scanId: string) => `/intro/review/${scanId}`;
+
 /** The Setup screens a signed-in Member who has not finished the Intro may be on. */
 export const INTRO_SETUP_PREFIX = '/intro/';
 

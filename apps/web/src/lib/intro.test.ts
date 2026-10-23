@@ -9,6 +9,7 @@ import {
   NO_SETUP_COUNTS,
   parseLanguagePicks,
   phoneLocale,
+  setupReviewPath,
   skipStep,
 } from './intro';
 
@@ -134,5 +135,15 @@ describe('introPath', () => {
   it('gives the path of a step and throws for one with none', () => {
     expect(introPath('sign-up')).toBe('/sign-up');
     expect(() => introPath('launch')).toThrow();
+  });
+});
+
+describe('setupReviewPath', () => {
+  it('is an Intro screen, so the guard lets it through before Setup state is known', () => {
+    const path = setupReviewPath('abc');
+    expect(path).toBe('/intro/review/abc');
+    expect(
+      introRedirect({ pathname: path, introDone: false, setupStarted: false }),
+    ).toBeNull();
   });
 });

@@ -8,6 +8,7 @@ import { IntroProvider } from './lib/useIntro';
 import { AllSetPage } from './pages/Intro/AllSetPage';
 import { LanguagesPage } from './pages/Intro/LanguagesPage';
 import { SetupOrSkipPage } from './pages/Intro/SetupOrSkipPage';
+import { SetupReviewPage } from './pages/Intro/SetupReviewPage';
 import { SnapPage } from './pages/Intro/SnapPage';
 import { AdminPage } from './pages/Admin/AdminPage';
 import { CustomisePage } from './pages/Customise/CustomisePage';
@@ -52,6 +53,7 @@ export function App() {
           <Route element={<IntroGate />}>
             <Route path="/intro/setup" element={<SetupOrSkipPage />} />
             <Route path="/intro/snap" element={<SnapPage />} />
+            <Route path="/intro/review/:scanId" element={<SetupReviewPage />} />
             <Route path="/intro/all-set" element={<AllSetPage />} />
             <Route element={<AppLayout />}>
               <Route index element={<DashboardPage />} />
