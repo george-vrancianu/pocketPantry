@@ -260,10 +260,8 @@ export function ModeSlider<Mode extends CameraMode>({
         overflow: 'hidden',
         touchAction: 'pan-y',
         cursor: isDragging ? 'grabbing' : 'grab',
-        maskImage:
-          'linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent)',
-        WebkitMaskImage:
-          'linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent)',
+        maskImage: `linear-gradient(90deg, transparent, ${tokens.color.ink} 22%, ${tokens.color.ink} 78%, transparent)`,
+        WebkitMaskImage: `linear-gradient(90deg, transparent, ${tokens.color.ink} 22%, ${tokens.color.ink} 78%, transparent)`,
       }}
     >
       <Box role="status" sx={visuallyHidden}>

@@ -1,7 +1,7 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, radius, tokens } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { glassFocusRing, translucent } from './glass';
+import { glassFocusRing, shade } from './glass';
 
 /** The two zoom levels of the pill (handoff 3.3). */
 const LEVELS = [1, 2] as const;
@@ -12,12 +12,12 @@ const button = {
   width: 32,
   p: 0,
   border: 0,
-  borderRadius: 16,
+  borderRadius: radius.card,
   fontFamily: 'inherit',
   fontSize: 11.5,
   fontWeight: 800,
   cursor: 'pointer',
-  backgroundColor: translucent('#000', 35),
+  backgroundColor: shade(35),
   color: tokens.color.ink,
   transition: 'width 200ms, color 200ms',
   '&[aria-pressed="true"]': { width: 38, color: tokens.color.accent },
@@ -49,8 +49,8 @@ export function ZoomPill({ onZoom }: Props) {
         display: 'flex',
         gap: '4px',
         p: '3px',
-        borderRadius: 999,
-        backgroundColor: translucent('#000', 28),
+        borderRadius: radius.pill,
+        backgroundColor: shade(28),
       }}
     >
       {LEVELS.map((item) => (

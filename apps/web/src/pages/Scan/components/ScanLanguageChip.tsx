@@ -156,8 +156,8 @@ export function ScanLanguageChip({ value, disabled, onChange }: Props) {
             minWidth: 150,
             boxSizing: 'border-box',
             p: '6px',
-            borderRadius: '16px',
-            border: '1px solid rgba(255,255,255,.12)',
+            borderRadius: radius.card,
+            border: `1px solid ${translucent(tokens.color.ink, 12)}`,
             backgroundColor: translucent(tokens.color.bg, 82),
             backdropFilter: 'blur(18px) saturate(1.2)',
             transformOrigin: 'top right',
@@ -193,11 +193,13 @@ export function ScanLanguageChip({ value, disabled, onChange }: Props) {
                   gap: '16px',
                   px: '12px',
                   py: '10px',
-                  borderRadius: '10px',
+                  borderRadius: radius.control,
                   fontSize: 14,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,.07)' },
+                  '&:hover': {
+                    backgroundColor: translucent(tokens.color.ink, 7),
+                  },
                   '&:focus-visible': glassFocusRing,
                 }}
               >

@@ -71,7 +71,7 @@ const linkButton = {
 const dashedButton = {
   minHeight: 56,
   height: 'auto',
-  borderRadius: '16px',
+  borderRadius: radius.card,
   border: `1.5px dashed ${tokens.color.line}`,
   fontSize: 14,
   fontWeight: 800,

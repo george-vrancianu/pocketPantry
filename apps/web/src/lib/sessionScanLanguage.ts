@@ -4,7 +4,7 @@ import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 
 /**
  * THE seam for "the Member's Scan Language preference" (ADR 0022). Today it is the app's device-local
- * default: the last choice made under the current UI language, else the UI language. #473 swaps the
+ * default: the last choice made under the current UI language, else the UI language. ticket 473 swaps the
  * body of this hook for the server-side Member preference; nothing else needs to change.
  */
 export function usePreferredScanLanguage(): {

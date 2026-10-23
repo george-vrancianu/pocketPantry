@@ -1,4 +1,9 @@
-import { Box, tokens, usePrefersReducedMotion } from '@pocket-pantry/ui';
+import {
+  Box,
+  radius,
+  tokens,
+  usePrefersReducedMotion,
+} from '@pocket-pantry/ui';
 import type { Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { summariseStack, type StackSummary } from '../../../lib/photoStack';
@@ -56,7 +61,7 @@ function Badge({ summary }: { summary: StackSummary }) {
         height: 22,
         boxSizing: 'border-box',
         px: '6px',
-        borderRadius: '11px',
+        borderRadius: radius.control,
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -124,7 +129,7 @@ export function PhotoStack({ scans, onOpen, stackRef }: Props) {
         height: SIZE,
         p: 0,
         border: empty ? `1.5px dashed ${translucent(tokens.color.ink, 30)}` : 0,
-        borderRadius: '12px',
+        borderRadius: radius.control,
         boxSizing: 'border-box',
         backgroundColor: 'transparent',
         color: tokens.color.ink,
@@ -144,7 +149,7 @@ export function PhotoStack({ scans, onOpen, stackRef }: Props) {
               position: 'absolute',
               inset: 0,
               boxSizing: 'border-box',
-              borderRadius: '12px',
+              borderRadius: radius.control,
               overflow: 'hidden',
               border: `2px solid ${translucent(tokens.color.ink, 85)}`,
               backgroundColor: tokens.color.surface,

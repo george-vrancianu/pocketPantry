@@ -1,4 +1,4 @@
-import { Box, usePrefersReducedMotion } from '@pocket-pantry/ui';
+import { Box, radius, usePrefersReducedMotion } from '@pocket-pantry/ui';
 import {
   useCallback,
   useLayoutEffect,
@@ -28,10 +28,10 @@ function Flying({
     if (to && to.width > 0) {
       el.current?.animate?.(
         [
-          { transform: 'none', borderRadius: '10px' },
+          { transform: 'none', borderRadius: radius.control },
           {
             transform: `translate(${to.left + to.width / 2 - (from.x + from.width / 2)}px, ${to.top + to.height / 2 - (from.y + from.height / 2)}px) scale(${to.width / from.width}, ${to.height / from.height})`,
-            borderRadius: '40px',
+            borderRadius: radius.pill,
           },
         ],
         {
@@ -59,7 +59,7 @@ function Flying({
         width: flight.from.width,
         height: flight.from.height,
         objectFit: 'cover',
-        borderRadius: '10px',
+        borderRadius: radius.control,
         pointerEvents: 'none',
       }}
     />
