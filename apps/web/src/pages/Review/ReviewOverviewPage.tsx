@@ -2,15 +2,18 @@ import {
   Alert,
   Box,
   Button,
+  CameraIcon,
   CloseIcon,
+  ImagePlusIcon,
   Link,
   Spinner,
   Typography,
   tokens,
   nestedRadius,
   radius,
+  useToast,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { readScans } from '../../lib/scanReads';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +26,9 @@ import {
 } from '../../components/ReceiptCropper';
 import { cropToReceiptArea } from '../../lib/image';
 import { MAX_BULK_BATCHES } from '../../lib/scan';
+import { loadLastScanMode } from '../../lib/cameraMode';
+import { importPhotos } from '../../lib/importPhotos';
+import { useSessionScanLanguage } from '../../lib/sessionScanLanguage';
 import {
   displayName,
   invalidFields,
@@ -33,6 +39,8 @@ import { savableLines, useSaveScan } from '../../lib/saveScan';
 import {
   showsErrorCopy,
   canMerge,
+  canRetry,
+  MAX_SESSION_SCANS,
   dispatchScanSession,
   getScanSession,
   isBarcodeCard,
@@ -59,8 +67,19 @@ const linkButton = {
   cursor: 'pointer',
 };
 
+/** "Take more" and "Add from photos" (handoff 7.1): two equal dashed buttons after the last card. */
+const dashedButton = {
+  minHeight: 56,
+  height: 'auto',
+  borderRadius: radius.card,
+  border: `1.5px dashed ${tokens.color.line}`,
+  fontSize: 14,
+  fontWeight: 800,
+  gap: '9px',
+};
+
 /**
- * The overview a Member lands on from Done: one card per Scan of the Scan Session, in the order
+ * The overview a Member reaches from the photo stack: one card per Scan of the Scan Session, in the order
  * the Scans were taken. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
  */
 export function ReviewOverviewPage() {
@@ -72,6 +91,9 @@ export function ReviewOverviewPage() {
   // Why each card's last save failed; the card stays until a later Add saves it.
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
+  const toast = useToast();
+  const { scanLanguage } = useSessionScanLanguage();
+  const photosInput = useRef<HTMLInputElement>(null);
   const session = useScanSession();
   const uncropped = uncroppedCount(session);
   // Uncropped receipts wait for the Member, not for a read.
@@ -157,6 +179,23 @@ export function ReviewOverviewPage() {
     if (getScanSession().scans.some((scan) => scan.status === 'read')) return;
     resetScanSession();
     navigate('/scan', { state: { added: added.current, notTicked } });
+  };
+  /** Files picked with Add from photos join the end of the Scan Session, read in the last-used Scan Mode. */
+  const addFromPhotos = (event: ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    if (picked.length === 0) return;
+    importPhotos(picked, {
+      mode: loadLastScanMode(),
+      scanLanguage,
+      uiLanguage: i18n.language,
+      onFull: () =>
+        toast.show(tScan('limit', { count: MAX_SESSION_SCANS }), {
+          polite: true,
+        }),
+      onInvalid: () =>
+        toast.show(tAll('errors:scan.image_invalid'), { polite: true }),
+    });
   };
   const discardAll = () => {
     resetScanSession();
@@ -263,7 +302,7 @@ export function ReviewOverviewPage() {
                 </Typography>
               ) : null}
               <Box sx={{ position: 'relative', zIndex: 1, mt: 0.75 }}>
-                {barcode ? (
+                {canRetry(scan) ? (
                   <Box
                     component="button"
                     type="button"
@@ -271,12 +310,12 @@ export function ReviewOverviewPage() {
                     onClick={() => {
                       dispatchScanSession({ type: 'retry', id: scan.id });
                       readScans(i18n.language);
-                      // The button goes while the lookup runs: keep focus on the card.
+                      // The button goes while the read runs: keep focus on the card.
                       setFocusId(scan.id);
                     }}
                     sx={linkButton}
                   >
-                    {tScan('session.retryLookup')}
+                    {tScan(barcode ? 'review.lookUpAgain' : 'review.readAgain')}
                   </Box>
                 ) : null}
                 <Box
@@ -493,6 +532,45 @@ export function ReviewOverviewPage() {
           {session.scans.map(card)}
         </Box>
       )}
+      {session.scans.length > 0 ? (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '10px',
+            mt: 1.5,
+          }}
+        >
+          <Button
+            variant="ghost"
+            startIcon={<CameraIcon size={20} />}
+            disabled={saving}
+            onClick={() => navigate('/scan')}
+            sx={dashedButton}
+          >
+            {tScan('review.takeMore')}
+          </Button>
+          <Button
+            variant="ghost"
+            startIcon={<ImagePlusIcon size={20} />}
+            disabled={saving}
+            onClick={() => photosInput.current?.click()}
+            sx={dashedButton}
+          >
+            {tScan('review.addFromPhotos')}
+          </Button>
+          <Box
+            component="input"
+            ref={photosInput}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={addFromPhotos}
+            data-testid="review-photos-input"
+            sx={{ display: 'none' }}
+          />
+        </Box>
+      ) : null}
       {session.scans.length > 0 ? (
         <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
           <Button

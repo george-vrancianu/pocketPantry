@@ -1,24 +1,30 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine, ScanMode } from '../../lib/scan';
+import { saveScanLanguage } from '../../lib/scanLanguage';
+import { resetReads } from '../../lib/scanReads';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
+import { saveScanPageMode, type CameraMode } from '../../lib/cameraMode';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ScanPage } from '../Scan/ScanPage';
 import { ReviewOverviewPage } from './ReviewOverviewPage';
 import { ReviewPage } from './ReviewPage';
 
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
+vi.mock('../../lib/image', async (importActual) => ({
+  ...(await importActual<typeof import('../../lib/image')>()),
+  resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
 
 const milk: CatalogSearchResult = {
@@ -81,8 +87,40 @@ const seed = (
     if (lines !== 'reading') dispatchScanSession({ type: 'read', id, lines });
   });
 
-function renderOverview() {
+/** Puts a failed Scan in the Scan Session: a photo Scan, or a Barcode card when `mode` is barcode. */
+const seedFailed = (
+  id: string,
+  mode: CameraMode,
+  errorCode?: string,
+  errorParams?: Record<string, unknown>,
+  scanLanguage: 'en' | 'ro' | 'da' = 'en',
+) =>
+  act(() => {
+    dispatchScanSession({
+      type: 'enqueue',
+      scan: {
+        id,
+        mode,
+        scanLanguage,
+        ...(mode === 'barcode'
+          ? { code: '5941234200017' }
+          : { image: 'data:image/jpeg;base64,YQ==' }),
+        thumbnail: 'data:image/jpeg;base64,YQ==',
+      },
+    });
+    dispatchScanSession({ type: 'start' });
+    dispatchScanSession({
+      type: 'fail',
+      id,
+      reason: 'error',
+      code: errorCode,
+      params: errorParams,
+    });
+  });
+
+function renderOverview(extra: Parameters<typeof stubApi>[0] = {}) {
   const { fetchMock, calls } = stubApi({
+    ...extra,
     'GET /api/catalog/parents': () =>
       Response.json({ parents: [{ id: 'other-id', name: 'Other' }] }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
@@ -106,6 +144,7 @@ const cards = () => screen.getAllByTestId('review-card');
 
 describe('Review overview', () => {
   beforeEach(() => {
+    resetReads();
     resetScanSession();
     localStorage.clear();
   });
@@ -197,7 +236,7 @@ describe('Review overview', () => {
     renderOverview();
     await userEvent.click(screen.getByRole('link', { name: 'Camera' }));
     expect(screen.getByTestId('scan-guide')).toBeInTheDocument();
-    expect(screen.getAllByTestId('scan-thumbnail')).toHaveLength(2);
+    expect(screen.getByTestId('stack-badge')).toHaveTextContent('2');
   });
 
   describe('opening a card', () => {
@@ -329,6 +368,276 @@ describe('Review overview', () => {
       expect(confirms).toHaveLength(1);
       expect((confirms[0].body as { batches: unknown[] }).batches).toHaveLength(
         3,
+      );
+    });
+  });
+
+  describe('retrying from the card', () => {
+    const readAgain = { name: 'Read again' };
+    const lookUpAgain = { name: 'Look up again' };
+
+    it('reads a failed photo again, from the same photo, when a retry can change the error', async () => {
+      await seedFailed('a', 'product', 'internal');
+      const calls = renderOverview({
+        'POST /api/scan/product': () => Response.json({ lines: [yogurt] }),
+      });
+      const card = cards()[0];
+      expect(card).toHaveTextContent("Couldn't read, retake");
+      await userEvent.click(within(card).getByRole('button', readAgain));
+      await waitFor(() =>
+        expect(within(cards()[0]).getByTestId('card-result')).toHaveTextContent(
+          'Greek yogurt',
+        ),
+      );
+      const reads = calls.filter((c) => c.key === 'POST /api/scan/product');
+      expect(reads).toHaveLength(1);
+      expect(reads[0].body).toEqual({
+        productImage: 'data:image/jpeg;base64,YQ==',
+      });
+      // Still on Review, same card.
+      expect(screen.queryByTestId('scan-guide')).toBeNull();
+      expect(cards()).toHaveLength(1);
+    });
+
+    it("reads again in the Scan Language the Scan was taken in, not the Member's current pick", async () => {
+      saveScanLanguage('en', 'da');
+      await seedFailed('a', 'product', 'internal', undefined, 'ro');
+      const calls = renderOverview({
+        'POST /api/scan/product': () => Response.json({ lines: [yogurt] }),
+      });
+      await userEvent.click(within(cards()[0]).getByRole('button', readAgain));
+      await waitFor(() =>
+        expect(
+          calls.find((c) => c.key === 'POST /api/scan/product')?.search,
+        ).toContain('scanLanguage=ro'),
+      );
+    });
+
+    it('keeps the focus on the card while the photo is read again', async () => {
+      await seedFailed('a', 'product', 'internal');
+      renderOverview({
+        'POST /api/scan/product': () => Response.json({ lines: [yogurt] }),
+      });
+      await userEvent.click(within(cards()[0]).getByRole('button', readAgain));
+      await waitFor(() => expect(cards()[0]).toHaveFocus());
+    });
+
+    it('offers Read again next to Retake, and Retake still goes back to the camera', async () => {
+      await seedFailed('a', 'ingredients', 'network_error');
+      renderOverview();
+      const card = cards()[0];
+      expect(within(card).getByRole('button', readAgain)).toBeInTheDocument();
+      await userEvent.click(
+        within(card).getByRole('button', { name: 'Retake' }),
+      );
+      expect(await screen.findByTestId('scan-guide')).toBeInTheDocument();
+    });
+
+    it.each([
+      'scan.too_many_items',
+      'scan.image_too_large',
+      'scan.image_invalid',
+      'scan.nothing_found',
+    ])(
+      'gives a photo failing with %s its reason and only Retake and Remove',
+      async (code) => {
+        await seedFailed('a', 'receipt', code, { max: 50 });
+        renderOverview();
+        const card = cards()[0];
+        expect(card).toHaveTextContent("Couldn't read, retake");
+        expect(
+          within(card).queryByRole('button', readAgain),
+        ).not.toBeInTheDocument();
+        expect(
+          within(card).queryByRole('button', lookUpAgain),
+        ).not.toBeInTheDocument();
+        expect(
+          within(card)
+            .getAllByRole('button')
+            .map((button) => button.textContent || button.ariaLabel),
+        ).toEqual(['Retake', 'Remove photo']);
+      },
+    );
+
+    it.each(['barcode.rate_limited', 'network_error'])(
+      'looks a failed Barcode card up again (%s) and stays on Review',
+      async (code) => {
+        await seedFailed('b', 'barcode', code);
+        const calls = renderOverview({
+          'GET /api/barcode-lookup/5941234200017': () =>
+            Response.json({ found: false, code: '5941234200017' }),
+        });
+        const card = cards()[0];
+        expect(
+          within(card).queryByRole('button', readAgain),
+        ).not.toBeInTheDocument();
+        await userEvent.click(within(card).getByRole('button', lookUpAgain));
+        await waitFor(() =>
+          expect(
+            calls.filter(
+              (c) => c.key === 'GET /api/barcode-lookup/5941234200017',
+            ),
+          ).toHaveLength(1),
+        );
+        expect(screen.queryByTestId('scan-guide')).toBeNull();
+        expect(cards()).toHaveLength(1);
+      },
+    );
+
+    it('offers no retry on a Barcode card whose error a retry cannot change', async () => {
+      await seedFailed('b', 'barcode', 'scan.image_invalid');
+      renderOverview();
+      expect(
+        within(cards()[0]).queryByRole('button', lookUpAgain),
+      ).not.toBeInTheDocument();
+      expect(
+        within(cards()[0]).getByRole('button', { name: 'Remove' }),
+      ).toBeInTheDocument();
+    });
+
+    it('shows neither retry on a card that was read', async () => {
+      await seed('a', 'product', [yogurt]);
+      renderOverview();
+      expect(
+        screen.queryByRole('button', { name: /again/ }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('end-of-list actions', () => {
+    const addFromPhotos = () => screen.getByTestId('review-photos-input');
+    const files = (count: number) =>
+      Array.from(
+        { length: count },
+        (_, i) => new File(['x'], `photo${i}.jpg`, { type: 'image/jpeg' }),
+      );
+    const pick = (count: number) =>
+      act(async () => {
+        fireEvent.change(addFromPhotos(), { target: { files: files(count) } });
+      });
+    const later = {
+      'POST /api/scan/product': () => new Promise<Response>(() => {}),
+    };
+
+    it('shows Take more and Add from photos after the last card, and not on an empty overview', async () => {
+      renderOverview();
+      expect(
+        screen.queryByRole('button', { name: 'Take more' }),
+      ).not.toBeInTheDocument();
+      await seed('a', 'product', [yogurt]);
+      expect(
+        screen.getByRole('button', { name: 'Take more' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Add from photos' }),
+      ).toBeInTheDocument();
+    });
+
+    it('also shows them while every card is still reading or has failed', async () => {
+      await seedFailed('a', 'product', 'scan.nothing_found');
+      renderOverview();
+      expect(
+        screen.getByRole('button', { name: 'Take more' }),
+      ).toBeInTheDocument();
+    });
+
+    it('opens the camera with every card still in the Scan Session on Take more', async () => {
+      await seed('a', 'product', [yogurt]);
+      await seed('b', 'ingredients', shelf);
+      renderOverview();
+      await userEvent.click(screen.getByRole('button', { name: 'Take more' }));
+      expect(await screen.findByTestId('scan-guide')).toBeInTheDocument();
+      expect(screen.getByTestId('stack-badge')).toHaveTextContent('2');
+    });
+
+    it('keeps the header Camera link', async () => {
+      await seed('a', 'product', [yogurt]);
+      renderOverview();
+      expect(screen.getByRole('link', { name: 'Camera' })).toBeInTheDocument();
+    });
+
+    it('opens a file picker for several images from Add from photos', async () => {
+      await seed('a', 'product', [yogurt]);
+      renderOverview();
+      const input = addFromPhotos() as HTMLInputElement;
+      expect(input.type).toBe('file');
+      expect(input.multiple).toBe(true);
+      expect(input.accept).toBe('image/*');
+      const click = vi.spyOn(input, 'click');
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Add from photos' }),
+      );
+      expect(click).toHaveBeenCalled();
+    });
+
+    it('adds one card per file at the end, reading, with the Member still on Review', async () => {
+      saveScanPageMode('product');
+      await seed('a', 'product', [yogurt]);
+      renderOverview(later);
+      await pick(2);
+      await waitFor(() => expect(cards()).toHaveLength(3));
+      expect(cards()[0]).toHaveTextContent('Greek yogurt');
+      for (const card of cards().slice(1)) {
+        expect(within(card).getByText('Reading photo…')).toBeInTheDocument();
+      }
+      expect(screen.getByTestId('review-overview')).toBeInTheDocument();
+      expect(screen.queryByTestId('scan-guide')).toBeNull();
+    });
+
+    it.each<[CameraMode | null, string]>([
+      ['ingredients', 'Ingredients'],
+      ['plate', 'Plate'],
+      ['product', 'Product'],
+      ['barcode', 'Product'],
+    ])(
+      'reads the added files in the last-used camera mode (%s) as %s',
+      async (last, label) => {
+        if (last) saveScanPageMode(last);
+        await seed('a', 'receipt', receipt);
+        renderOverview({
+          'POST /api/scan/ingredients': () => new Promise<Response>(() => {}),
+          'POST /api/scan/plate': () => new Promise<Response>(() => {}),
+          ...later,
+        });
+        await pick(1);
+        await waitFor(() => expect(cards()).toHaveLength(2));
+        expect(cards()[1]).toHaveTextContent(label);
+      },
+    );
+
+    it('reads the added files in the Scan Language, and a Plate Scan in none', async () => {
+      saveScanLanguage('en', 'ro');
+      saveScanPageMode('product');
+      await seed('a', 'receipt', receipt);
+      const calls = renderOverview(later);
+      await pick(1);
+      await waitFor(() => expect(cards()).toHaveLength(2));
+      await waitFor(() =>
+        expect(
+          calls.find((c) => c.key === 'POST /api/scan/product')?.search,
+        ).toContain('scanLanguage=ro'),
+      );
+    });
+
+    it('lets a receipt added from Review wait to be cropped', async () => {
+      saveScanPageMode('receipt');
+      await seed('a', 'product', [yogurt]);
+      renderOverview();
+      await pick(1);
+      await waitFor(() => expect(cards()).toHaveLength(2));
+      expect(
+        within(cards()[1]).getByRole('button', { name: 'Crop receipt photo' }),
+      ).toBeInTheDocument();
+    });
+
+    it('refuses the files over the 20-card limit with the usual message', async () => {
+      saveScanPageMode('receipt');
+      for (let i = 0; i < 19; i += 1) await seed(`s${i}`, 'product', [yogurt]);
+      renderOverview();
+      await pick(3);
+      await waitFor(() => expect(cards()).toHaveLength(20));
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        /A Scan Session holds at most 20 Scans and Barcode Lookups in total\. Add or discard these first\./,
       );
     });
   });

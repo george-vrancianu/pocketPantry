@@ -3,18 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { languageChip, selected, slider } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
@@ -37,14 +31,7 @@ function setup(route: string, routes: Record<string, () => Response> = {}) {
   );
 }
 
-const dial = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
-const checked = () =>
-  within(dial())
-    .getAllByRole('radio')
-    .filter((r) => r.getAttribute('aria-checked') === 'true')
-    .map((r) => r.getAttribute('aria-label') ?? r.textContent);
-
-describe('Scan mode dial: when arrows must not change the mode', () => {
+describe('Scan mode slider: when arrows must not change the mode', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:photo');
@@ -61,15 +48,15 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
       screen.getByRole('button', { name: 'How scanning works' }),
     );
     await userEvent.keyboard('{ArrowRight}');
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
-    expect(checked()).toEqual(['Product']);
+    await userEvent.click(screen.getByRole('button', { name: 'Got it' }));
+    expect(selected()).toEqual(['Product']);
   });
 
-  it('leaves arrows to the Scan Language select', async () => {
+  it('leaves arrows to the Scan Language menu while it is open', async () => {
     setup('/scan?mode=product');
-    screen.getByRole('combobox').focus();
+    await userEvent.click(languageChip());
     await userEvent.keyboard('{ArrowDown}{ArrowRight}{ArrowLeft}');
-    expect(checked()).toEqual(['Product']);
+    expect(selected()).toEqual(['Product']);
   });
 
   it('leaves arrows to a textarea and an editable element', async () => {
@@ -82,7 +69,7 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
       area.focus();
       await userEvent.keyboard('{ArrowRight}');
       fireEvent.keyDown(editable, { key: 'ArrowRight' });
-      expect(checked()).toEqual(['Product']);
+      expect(selected()).toEqual(['Product']);
     } finally {
       area.remove();
       editable.remove();
@@ -94,7 +81,7 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
     (modifier) => {
       setup('/scan?mode=product');
       fireEvent.keyDown(document.body, { key: 'ArrowLeft', [modifier]: true });
-      expect(checked()).toEqual(['Product']);
+      expect(selected()).toEqual(['Product']);
     },
   );
 
@@ -107,26 +94,28 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
     });
     handled.preventDefault();
     document.body.dispatchEvent(handled);
-    expect(checked()).toEqual(['Product']);
+    expect(selected()).toEqual(['Product']);
   });
 
   it('moves focus to the newly selected radio after an arrow press', async () => {
     setup('/scan?mode=product');
-    within(dial()).getByRole('radio', { name: 'Product' }).focus();
+    within(slider()).getByRole('radio', { name: 'Product' }).focus();
     await userEvent.keyboard('{ArrowRight}');
     await waitFor(() =>
       expect(
-        within(dial()).getByRole('radio', { name: 'Barcode' }),
+        within(slider()).getByRole('radio', { name: 'Barcode' }),
       ).toHaveFocus(),
     );
   });
 
-  it('announces the change in the dial status, naming the new mode', async () => {
+  it('announces the change in the slider status, naming the new mode', async () => {
     setup('/scan?mode=product');
-    await userEvent.click(within(dial()).getByRole('radio', { name: 'Plate' }));
+    await userEvent.click(
+      within(slider()).getByRole('radio', { name: 'Plate' }),
+    );
     const live = screen
       .getAllByRole('status')
-      .filter((el) => el.textContent?.trim() === 'Plate');
+      .filter((el) => el.textContent?.trim() === 'Plate mode');
     expect(live).toHaveLength(1);
   });
 });

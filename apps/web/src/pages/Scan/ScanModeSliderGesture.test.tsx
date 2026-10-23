@@ -2,18 +2,12 @@ import { act, fireEvent, screen, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
+import { selected, slider } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'])),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 
 function renderScan(route = '/scan') {
   return renderWithProviders(
@@ -24,13 +18,9 @@ function renderScan(route = '/scan') {
   );
 }
 
-const dial = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
-const item = (name: string) => within(dial()).getByRole('radio', { name });
-const selected = () =>
-  within(dial())
-    .getAllByRole('radio')
-    .filter((radio) => radio.getAttribute('aria-checked') === 'true')
-    .map((radio) => radio.getAttribute('aria-label'));
+const item = (name: string) => within(slider()).getByRole('radio', { name });
+/** Where the strip is: it moves with a finger and comes back on release. */
+const stripAt = () => getComputedStyle(slider()).transform;
 
 let now = 0;
 beforeEach(() => {
@@ -40,7 +30,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-/** Pointer drag on the dial: down at (0,0), move to (dx,dy), release after `ms`. */
+/** Pointer drag on the slider (or the viewfinder): down at (0,0), move to (dx,dy), release after `ms`. */
 function drag(
   target: Element,
   {
@@ -84,8 +74,8 @@ function drag(
     });
 }
 
-describe('Scan mode dial gestures', () => {
-  it('a slow horizontal drag of more than half an item moves to the next mode', () => {
+describe('Scan mode slider gestures', () => {
+  it('a slow horizontal drag past halfway to the next word moves to that mode', () => {
     renderScan('/scan?mode=product');
     drag(item('Product'), { dx: -50 });
     expect(selected()).toEqual(['Barcode']);
@@ -94,7 +84,7 @@ describe('Scan mode dial gestures', () => {
   it('dragging right moves to the previous mode', () => {
     renderScan('/scan?mode=product');
     drag(item('Product'), { dx: 120 });
-    expect(selected()).toEqual(['Receipt']);
+    expect(selected()).toEqual(['Ingredients']);
   });
 
   it('a short slow drag snaps back to the same mode', () => {
@@ -133,28 +123,54 @@ describe('Scan mode dial gestures', () => {
     expect(selected()).toEqual(['Receipt']);
   });
 
-  it('moves the strip one to one with the finger while dragging', () => {
+  it('moves the strip with the finger while dragging and settles on release', () => {
     renderScan('/scan?mode=product');
-    // Product is index 1: resting offset is -(42 + 84) px.
-    expect(dial()).toHaveStyle({ transform: 'translateX(-126px)' });
+    const rest = stripAt();
     drag(item('Product'), { dx: -40, release: false });
-    expect(dial()).toHaveStyle({ transform: 'translateX(-166px)' });
+    const dragged = stripAt();
+    expect(dragged).not.toBe(rest);
+    drag(item('Product'), { dx: -40, release: false });
+    expect(stripAt()).toBe(dragged);
   });
 
-  it('rubber-bands past the first item at 35 % of the finger', () => {
+  it('lets the strip stretch a little past the first word, then springs back', () => {
     renderScan('/scan?mode=receipt');
+    const rest = stripAt();
     drag(item('Receipt'), { dx: 100, release: false });
-    // rest -42, finger +100 -> strip +35
-    expect(dial()).toHaveStyle({ transform: 'translateX(-7px)' });
+    expect(stripAt()).not.toBe(rest);
+    fireEvent.pointerUp(item('Receipt'), {
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      clientX: 300,
+      clientY: 500,
+    });
+    expect(selected()).toEqual(['Receipt']);
+    expect(stripAt()).toBe(rest);
+  });
+
+  it('also changes mode from a swipe on the viewfinder', () => {
+    renderScan('/scan?mode=product');
+    drag(screen.getByTestId('scan-feed'), { dx: -50 });
+    expect(selected()).toEqual(['Barcode']);
+    drag(screen.getByTestId('scan-guide'), { dx: 150 });
+    expect(selected()).toEqual(['Ingredients']);
+  });
+
+  it('ignores a swipe that starts on the top bar', () => {
+    renderScan('/scan?mode=product');
+    drag(screen.getByRole('button', { name: 'Close scanner' }), { dx: -200 });
+    expect(selected()).toEqual(['Product']);
   });
 
   it('ignores the click that follows a drag', async () => {
     renderScan('/scan?mode=product');
     // The drag ends on Receipt (the browser then fires a click on the pressed icon).
     drag(item('Product'), { dx: 120 });
-    expect(selected()).toEqual(['Receipt']);
+    expect(selected()).toEqual(['Ingredients']);
     fireEvent.click(item('Plate'));
-    expect(selected()).toEqual(['Receipt']);
+    expect(selected()).toEqual(['Ingredients']);
   });
 
   it('selects by tap again once the drag is over', () => {
@@ -174,10 +190,11 @@ describe('Scan mode dial gestures', () => {
 
   it('a pointer cancel snaps back and changes nothing', () => {
     renderScan('/scan?mode=product');
+    const rest = stripAt();
     drag(item('Product'), { dx: -100, release: false });
     fireEvent.pointerCancel(item('Product'), { pointerId: 1 });
     expect(selected()).toEqual(['Product']);
-    expect(dial()).toHaveStyle({ transform: 'translateX(-126px)' });
+    expect(stripAt()).toBe(rest);
   });
 
   it('works with a mouse pointer', () => {
@@ -204,10 +221,10 @@ describe('Scan mode dial gestures', () => {
     fireEvent.pointerDown(radio, { ...first, clientX: 200, clientY: 500 });
     now += 300;
     fireEvent.pointerMove(radio, { ...first, clientX: 150, clientY: 500 });
-    expect(dial()).toHaveStyle({ transform: 'translateX(-176px)' });
+    const dragged = stripAt();
     fireEvent.pointerDown(radio, { ...second, clientX: 300, clientY: 500 });
     fireEvent.pointerMove(radio, { ...second, clientX: 0, clientY: 500 });
-    expect(dial()).toHaveStyle({ transform: 'translateX(-176px)' });
+    expect(stripAt()).toBe(dragged);
     fireEvent.pointerUp(radio, { ...second, clientX: 0, clientY: 500 });
     expect(selected()).toEqual(['Product']);
     // the first finger is still dragging and decides the release
@@ -228,23 +245,23 @@ describe('Scan mode dial gestures', () => {
     fireEvent.pointerDown(radio, { ...mouse, clientX: 200, clientY: 500 });
     now += 600;
     fireEvent.pointerMove(radio, { ...mouse, clientX: 180, clientY: 500 });
-    expect(dial()).toHaveStyle({ transform: 'translateX(-146px)' });
+    const dragged = stripAt();
     fireEvent.keyDown(document, { key: 'ArrowRight' });
     expect(selected()).toEqual(['Barcode']);
-    expect(dial()).toHaveStyle({ transform: 'translateX(-146px)' });
+    expect(stripAt()).toBe(dragged);
     fireEvent.pointerUp(radio, { ...mouse, clientX: 180, clientY: 500 });
     // 20 px from where the drag began snaps back to where it began
     expect(selected()).toEqual(['Product']);
   });
 
-  it('does not start a drag while the dial is disabled', () => {
+  it('does not start a drag while the slider is disabled', () => {
     renderScan('/scan?mode=product');
     fireEvent.click(screen.getByRole('button', { name: 'How scanning works' }));
-    drag(dial(), { dx: -150 });
+    drag(slider(), { dx: -150 });
     expect(selected()).toEqual(['Product']);
   });
 
-  it('does not change mode on release if the dial became disabled mid-drag', () => {
+  it('does not change mode on release if the slider became disabled mid-drag', () => {
     renderScan('/scan?mode=product');
     const radio = item('Product');
     const touch = {
@@ -259,5 +276,36 @@ describe('Scan mode dial gestures', () => {
     fireEvent.click(screen.getByRole('button', { name: 'How scanning works' }));
     fireEvent.pointerUp(radio, { ...touch, clientX: 120, clientY: 500 });
     expect(selected()).toEqual(['Product']);
+  });
+});
+
+describe('Scan mode slider with measured words', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  /** Words 80 pt wide with 130 pt between their centres, instead of the fallback spacing. */
+  const measureWords = () => {
+    const isWord = (el: HTMLElement) => el.getAttribute('role') === 'radio';
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return isWord(this) ? 80 : 0;
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, 'offsetLeft', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return isWord(this)
+          ? Array.from(this.parentElement?.children ?? []).indexOf(this) * 130
+          : 0;
+      },
+    );
+  };
+
+  it('settles on the word whose measured centre is nearest, not on a fixed spacing', () => {
+    measureWords();
+    renderScan('/scan?mode=product');
+    // 60 pt of a 130 pt gap is under halfway: back to Product (a fixed 84 pt spacing would move on).
+    drag(item('Product'), { dx: -60 });
+    expect(selected()).toEqual(['Product']);
+    drag(item('Product'), { dx: -70 });
+    expect(selected()).toEqual(['Barcode']);
   });
 });

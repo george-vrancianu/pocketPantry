@@ -5,6 +5,7 @@ import { MAX_RECEIPT_SECTIONS } from './receiptSections';
 import { reviewLinesOf, type ReviewLine } from './review';
 import type { CameraMode } from './cameraMode';
 import type { ProposedLine } from './scan';
+import { clearScanLanguageOverride } from './sessionScanLanguage';
 
 /** How many Scans of a Scan Session are read at once. */
 export const MAX_CONCURRENT_READS = 2;
@@ -16,7 +17,7 @@ export type ScanFailure = 'error' | 'cap';
 export const MAX_SESSION_SCANS = 20;
 
 /**
- * One card of the Scan Session, from the double-tap (or the accepted barcode) until it is saved or
+ * One card of the Scan Session, from the shutter press (or the accepted barcode) until it is saved or
  * removed. A Barcode card is a Barcode Lookup, not a Scan (ADR 0013, ADR 0016): it has a `code`
  * instead of an `image`, is looked up outside the read slots, and is exempt from the Scan Cap.
  */
@@ -330,7 +331,11 @@ const FINAL_ERRORS = [
   'scan.nothing_found',
 ];
 
-/** Whether tapping a failed Scan to read it again can change anything. */
+/**
+ * Whether reading a failed Scan again (or looking a Barcode card up again) can change anything.
+ * The one rule behind every retry: the photo stack's failed state and Review's "Read again" /
+ * "Look up again". Network, Lookup Limit, Scan Cap and unknown errors can be retried; `FINAL_ERRORS` cannot.
+ */
 export const canRetry = (scan: SessionScan) =>
   !FINAL_ERRORS.includes(scan.errorCode ?? '');
 
@@ -400,7 +405,11 @@ export const photoBarcodeOf = (state: SessionState, id: string) =>
 export const getScanSession = () => session;
 export const dispatchScanSession = (action: SessionAction) =>
   setSession(sessionReducer(session, action));
-export const resetScanSession = () => setSession(emptySession);
+/** Ends the Scan Session: its cards and its Scan Language pick go. */
+export const resetScanSession = () => {
+  clearScanLanguageOverride();
+  setSession(emptySession);
+};
 
 /** The Scan Session, re-rendering when it changes. It outlives the screens that show it. */
 export function useScanSession(): SessionState {

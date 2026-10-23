@@ -1,4 +1,10 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,54 +13,30 @@ import { resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
-import { scanViaGuide } from '../../test/scan';
+import {
+  emitBarcode,
+  expectStack,
+  fakeCamera,
+  languageChip,
+  photoStack,
+  queryLanguageChip,
+  selected,
+  shutter,
+  slider,
+  stackCount,
+  takeScan,
+} from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
-// jsdom has no camera: the camera module is the seam, and it yields decoded barcodes one per watch.
-const camera = vi.hoisted(() => ({
-  listener: null as null | ((code: string) => void),
-  watching: 0,
-}));
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: false,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: (onCode: (code: string) => void) => {
-      let active = true;
-      camera.watching += 1;
-      camera.listener = (code) => {
-        if (!active) return;
-        active = false;
-        camera.watching -= 1;
-        camera.listener = null;
-        onCode(code);
-      };
-      return () => {
-        if (!active) return;
-        active = false;
-        camera.watching -= 1;
-        camera.listener = null;
-      };
-    },
-  }),
-  readBarcode: () => Promise.resolve(null),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
-
-const dial = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
-const selected = () =>
-  within(dial())
-    .getAllByRole('radio')
-    .filter((radio) => radio.getAttribute('aria-checked') === 'true')
-    .map((radio) => radio.getAttribute('aria-label'));
 
 const yogurt = {
   owner: 'catalog',
@@ -141,12 +123,10 @@ function renderScan(route = '/scan') {
 const flush = () => act(async () => {});
 /** The camera decodes `code`: the Scan page accepts it and re-arms the watch. */
 async function decode(code: string) {
-  await waitFor(() => expect(camera.listener).not.toBeNull());
-  act(() => camera.listener?.(code));
+  await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
+  act(() => emitBarcode(code));
   await flush();
 }
-const thumbnails = () => screen.queryAllByTestId('scan-thumbnail');
-const states = () => thumbnails().map((t) => t.getAttribute('data-state'));
 const lookupCalls = () =>
   calls.filter((call) => call.key.startsWith('GET /api/barcode-lookup'));
 
@@ -155,12 +135,10 @@ describe('Barcode on the Scan page', () => {
     resetScanSession();
     resetReads();
     localStorage.clear();
-    camera.listener = null;
-    camera.watching = 0;
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  describe('the mode dial', () => {
+  describe('the mode slider', () => {
     it('opens on Receipt the first time', () => {
       renderScan();
       expect(selected()).toEqual(['Receipt']);
@@ -189,8 +167,15 @@ describe('Barcode on the Scan page', () => {
   });
 
   describe('the controls', () => {
-    it('disables the shutter, hides the guide from touch, shows the hint, and hides the language chip and gallery', async () => {
+    it('turns the shutter into a ring that takes no input, shows the hint, and hides the language chip and Import', async () => {
       renderScan('/scan?mode=barcode');
+      expect(
+        screen.queryByRole('button', { name: 'Take photo' }),
+      ).not.toBeInTheDocument();
+      const ring = screen.getByTestId('shutter-ring');
+      expect(ring).toHaveAttribute('aria-hidden', 'true');
+      expect(ring).not.toHaveAttribute('tabindex');
+      expect(ring.querySelector('button, [tabindex]')).toBeNull();
       expect(screen.getByTestId('scan-guide')).toHaveAttribute(
         'aria-hidden',
         'true',
@@ -198,54 +183,78 @@ describe('Barcode on the Scan page', () => {
       expect(
         screen.getByText('Point the camera at the barcode.'),
       ).toBeInTheDocument();
-      expect(screen.queryByLabelText('Reading as')).not.toBeInTheDocument();
+      expect(queryLanguageChip()).not.toBeInTheDocument();
       expect(
-        screen.queryByRole('button', { name: 'Choose from photos' }),
+        screen.queryByRole('button', { name: 'Import from photos' }),
       ).not.toBeInTheDocument();
-      await waitFor(() => expect(camera.watching).toBe(1));
+      await waitFor(() => expect(fakeCamera.watching).toBe(1));
     });
 
     it('stops reading barcodes in another mode', async () => {
       const user = userEvent.setup();
       renderScan('/scan?mode=barcode');
-      await waitFor(() => expect(camera.watching).toBe(1));
+      await waitFor(() => expect(fakeCamera.watching).toBe(1));
       await user.click(screen.getByRole('radio', { name: 'Product' }));
-      expect(camera.watching).toBe(0);
-      expect(screen.getByLabelText(/Reading as/)).toBeInTheDocument();
+      expect(fakeCamera.watching).toBe(0);
+      expect(languageChip()).toBeInTheDocument();
     });
   });
+
+  describe('changing mode', () => {
+    it('forgets the last code, so the pack still held up is taken again on coming back', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      await decode(A);
+      expect(stackCount()).toBe(1);
+      await user.click(screen.getByRole('radio', { name: 'Product' }));
+      await user.click(screen.getByRole('radio', { name: 'Barcode' }));
+      await decode(A);
+      expect(stackCount()).toBe(2);
+    });
+
+    it.each(['Plate', 'Barcode'])(
+      'hides the Scan Language chip in %s',
+      async (mode) => {
+        const user = userEvent.setup();
+        renderScan('/scan?mode=product');
+        expect(languageChip()).toBeInTheDocument();
+        await user.click(screen.getByRole('radio', { name: mode }));
+        expect(queryLanguageChip()).not.toBeInTheDocument();
+      },
+    );
+  });
+
   describe('accepting codes', () => {
     it('adds a card per accepted code with the frozen frame and a barcode badge, and keeps reading', async () => {
       renderScan('/scan?mode=barcode');
       await decode(A);
 
-      expect(thumbnails()).toHaveLength(1);
-      expect(thumbnails()[0]).toHaveAttribute('data-mode', 'barcode');
-      expect(thumbnails()[0].querySelector('img')).toHaveAttribute(
-        'src',
-        'data:image/jpeg;base64,YQ==',
-      );
-      expect(camera.watching).toBe(1);
+      expect(stackCount()).toBe(1);
+      expect(photoStack()).toHaveAccessibleName(/^Review 1 barcode/);
+      expect(
+        screen.getByTestId('photo-stack').querySelector('img'),
+      ).toHaveAttribute('src', 'data:image/jpeg;base64,YQ==');
+      expect(fakeCamera.watching).toBe(1);
 
       await decode(B);
-      expect(thumbnails()).toHaveLength(2);
+      expect(stackCount()).toBe(2);
     });
 
     it('watches again only after the scan interval, so a held pack is not decoded back to back', async () => {
       renderScan('/scan?mode=barcode');
-      await waitFor(() => expect(camera.listener).not.toBeNull());
+      await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
       vi.useFakeTimers();
       try {
-        act(() => camera.listener?.(A));
-        expect(camera.watching).toBe(0);
+        act(() => emitBarcode(A));
+        expect(fakeCamera.watching).toBe(0);
         act(() => {
           vi.advanceTimersByTime(SCAN_INTERVAL_MS - 1);
         });
-        expect(camera.watching).toBe(0);
+        expect(fakeCamera.watching).toBe(0);
         act(() => {
           vi.advanceTimersByTime(1);
         });
-        expect(camera.watching).toBe(1);
+        expect(fakeCamera.watching).toBe(1);
       } finally {
         vi.useRealTimers();
       }
@@ -255,30 +264,34 @@ describe('Barcode on the Scan page', () => {
       const user = userEvent.setup();
       renderScan('/scan?mode=barcode');
       await decode(A);
-      await user.click(within(dial()).getByRole('radio', { name: /Product/ }));
-      await user.click(within(dial()).getByRole('radio', { name: /Barcode/ }));
+      await user.click(
+        within(slider()).getByRole('radio', { name: /Product/ }),
+      );
+      await user.click(
+        within(slider()).getByRole('radio', { name: /Barcode/ }),
+      );
       await decode(A);
-      expect(thumbnails()).toHaveLength(2);
+      expect(stackCount()).toBe(2);
     });
 
     it('ignores a code identical to the last accepted one, but takes it again after another', async () => {
       renderScan('/scan?mode=barcode');
       await decode(A);
       await decode(A);
-      expect(thumbnails()).toHaveLength(1);
+      expect(stackCount()).toBe(1);
       await decode(B);
       await decode(A);
-      expect(thumbnails()).toHaveLength(3);
+      expect(stackCount()).toBe(3);
     });
 
     it('treats a UPC-A and its EAN-13 form as the same code', async () => {
       renderScan('/scan?mode=barcode');
       await decode('036000291452');
       await decode('0036000291452');
-      expect(thumbnails()).toHaveLength(1);
+      expect(stackCount()).toBe(1);
       await decode(B);
       await decode('0036000291452');
-      expect(thumbnails()).toHaveLength(3);
+      expect(stackCount()).toBe(3);
     });
 
     describe('the cooldown', () => {
@@ -304,15 +317,15 @@ describe('Barcode on the Scan page', () => {
         await act(async () => {
           await vi.advanceTimersByTimeAsync(ms);
         });
-        expect(camera.listener).not.toBeNull();
+        expect(fakeCamera.emit).not.toBeNull();
         await act(async () => {
-          camera.listener?.(code);
+          emitBarcode(code);
           await vi.advanceTimersByTimeAsync(0);
         });
       };
       const startWatching = async () => {
         renderScan('/scan?mode=barcode');
-        await waitFor(() => expect(camera.listener).not.toBeNull());
+        await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
         vi.useFakeTimers();
       };
 
@@ -321,7 +334,7 @@ describe('Barcode on the Scan page', () => {
         await seeAfter(0, A);
         // Seen every 1.4 s for 7 s: no gap reaches 1.5 s, so it is never taken again.
         for (let i = 0; i < 5; i++) await seeAfter(1400, A);
-        expect(thumbnails()).toHaveLength(1);
+        expect(stackCount()).toBe(1);
         expect(vibrate).toHaveBeenCalledTimes(1);
       });
 
@@ -329,9 +342,9 @@ describe('Barcode on the Scan page', () => {
         await startWatching();
         await seeAfter(0, A);
         await seeAfter(1499, A);
-        expect(thumbnails()).toHaveLength(1);
+        expect(stackCount()).toBe(1);
         await seeAfter(1500, A);
-        expect(thumbnails()).toHaveLength(2);
+        expect(stackCount()).toBe(2);
       });
 
       it('takes the same code again right after a different code was accepted', async () => {
@@ -339,7 +352,7 @@ describe('Barcode on the Scan page', () => {
         await seeAfter(0, A);
         await seeAfter(SCAN_INTERVAL_MS, B);
         await seeAfter(SCAN_INTERVAL_MS, A);
-        expect(thumbnails()).toHaveLength(3);
+        expect(stackCount()).toBe(3);
       });
 
       it('vibrates briefly and announces each accepted read, but not ignored sightings', async () => {
@@ -375,29 +388,39 @@ describe('Barcode on the Scan page', () => {
         await startWatching();
         for (let i = 0; i < 20; i++)
           await seeAfter(SCAN_INTERVAL_MS, `59400000000${10 + i}`);
-        expect(thumbnails()).toHaveLength(20);
+        expect(stackCount()).toBe(20);
         vibrate.mockClear();
         await seeAfter(SCAN_INTERVAL_MS, B);
-        expect(thumbnails()).toHaveLength(20);
+        expect(stackCount()).toBe(20);
         expect(vibrate).not.toHaveBeenCalled();
         expect(announced()).toContain('Barcode 20 added');
         expect(announced()).not.toContain('Barcode 21');
       });
     });
 
-    it('does not take a Scan when the guide is double-tapped', async () => {
+    it('does not take a Scan when the ring or the guide is tapped', async () => {
       renderScan('/scan?mode=barcode');
-      scanViaGuide();
+      fireEvent.click(screen.getByTestId('shutter-ring'));
+      fireEvent.pointerDown(screen.getByTestId('scan-guide'));
+      fireEvent.pointerUp(screen.getByTestId('scan-guide'));
       await flush();
-      expect(thumbnails()).toHaveLength(0);
+      expect(stackCount()).toBe(0);
+    });
+
+    it('brings the shutter back when the mode changes away from Barcode', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      await user.click(screen.getByRole('radio', { name: 'Product' }));
+      expect(shutter()).toBeInTheDocument();
+      expect(screen.queryByTestId('shutter-ring')).not.toBeInTheDocument();
     });
 
     it('looks the code up at once in the UI locale, even when both photo reads are busy', async () => {
       const user = userEvent.setup();
       renderScan('/scan?mode=product');
-      scanViaGuide();
+      takeScan();
       await flush();
-      scanViaGuide();
+      takeScan();
       await flush();
       expect(
         calls.filter((call) => call.key === 'POST /api/scan/product'),
@@ -408,7 +431,7 @@ describe('Barcode on the Scan page', () => {
 
       expect(lookupCalls()).toHaveLength(1);
       expect(lookupCalls()[0].search).toBe('?locale=en');
-      expect(states()).toEqual(['reading', 'reading', 'reading']);
+      expectStack('reading', 3);
     });
   });
 
@@ -418,9 +441,9 @@ describe('Barcode on the Scan page', () => {
       renderScan('/scan?mode=barcode');
       answers[A] = () => Response.json(found());
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read']));
+      await waitFor(() => expectStack('read'));
 
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       expect(await screen.findByTestId('card-result')).toHaveTextContent(
         'Yogurt',
       );
@@ -446,9 +469,9 @@ describe('Barcode on the Scan page', () => {
           }),
         );
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read']));
+      await waitFor(() => expectStack('read'));
 
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
       expect(screen.getByLabelText('Name')).toHaveValue('Greek yogurt');
       await user.click(
@@ -463,32 +486,40 @@ describe('Barcode on the Scan page', () => {
       renderScan('/scan?mode=barcode');
       answers[A] = () => Response.json({ found: false });
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read']));
+      await waitFor(() => expectStack('read'));
 
-      await userEvent.click(screen.getByRole('button', { name: /^Done/ }));
+      await userEvent.click(
+        screen.getByRole('button', { name: /^Review \d+ / }),
+      );
       expect(await screen.findByTestId('card-result')).toHaveTextContent(
         '1 item',
       );
     });
 
-    it('fails the card on an API error and repeats the lookup on Retry', async () => {
+    it('fails the card on an API error and repeats the lookup from its card in Review', async () => {
       const user = userEvent.setup();
       renderScan('/scan?mode=barcode');
       answers[A] = () =>
         Response.json({ code: 'internal', params: {} }, { status: 500 });
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expectStack('failed'));
       expect(screen.getByText('Barcode Lookup failed')).toBeInTheDocument();
 
       answers[A] = () => Response.json(found());
-      await user.click(screen.getByRole('button', { name: 'Retry lookup' }));
-      await waitFor(() => expect(states()).toEqual(['read']));
+      // Retry lives on the card in Review.
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
+      await user.click(
+        await screen.findByRole('button', { name: 'Look up again' }),
+      );
+      expect(await screen.findByTestId('card-result')).toHaveTextContent(
+        'Yogurt',
+      );
       expect(lookupCalls()).toHaveLength(2);
     });
   });
 
   describe('when Barcode Lookups are rate limited', () => {
-    it('fails the card with the rate-limit copy, never as not found, and repeats the lookup on Retry', async () => {
+    it('fails the card with the rate-limit copy, never as not found, and repeats the lookup from its card in Review', async () => {
       const user = userEvent.setup();
       renderScan('/scan?mode=barcode');
       answers[A] = () =>
@@ -497,14 +528,17 @@ describe('Barcode on the Scan page', () => {
           { status: 429, headers: { 'Retry-After': '30' } },
         );
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['failed']));
-      expect(
-        screen.getByLabelText(/Too many Barcode Lookups right now/),
-      ).toBeInTheDocument();
+      await waitFor(() => expectStack('failed'));
 
       answers[A] = () => Response.json(found());
-      await user.click(screen.getByRole('button', { name: 'Retry lookup' }));
-      await waitFor(() => expect(states()).toEqual(['read']));
+      // Retry lives on the card in Review.
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
+      await user.click(
+        await screen.findByRole('button', { name: 'Look up again' }),
+      );
+      expect(await screen.findByTestId('card-result')).toHaveTextContent(
+        'Yogurt',
+      );
       expect(lookupCalls()).toHaveLength(2);
     });
   });
@@ -530,14 +564,18 @@ describe('Barcode on the Scan page', () => {
         });
         return Promise.resolve(Response.json(found()));
       });
-      scanViaGuide();
+      takeScan();
       await flush();
-      await waitFor(() => expect(states()).toEqual(['failed']));
+      await waitFor(() => expectStack('failed'));
       expect(screen.getByText('Daily scan limit reached')).toBeInTheDocument();
 
       await user.click(screen.getByRole('radio', { name: 'Barcode' }));
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['failed', 'read']));
+      await waitFor(() =>
+        expect(photoStack()).toHaveAccessibleName(
+          "Review 1 photo and 1 barcode, 1 couldn't be read",
+        ),
+      );
       expect(lookupCalls()).toHaveLength(1);
     });
 
@@ -545,10 +583,10 @@ describe('Barcode on the Scan page', () => {
       renderScan('/scan?mode=barcode');
       for (let i = 0; i < 20; i += 1)
         await decode(`59412342${String(i).padStart(5, '0')}`);
-      expect(thumbnails()).toHaveLength(20);
+      expect(stackCount()).toBe(20);
 
       await decode(B);
-      expect(thumbnails()).toHaveLength(20);
+      expect(stackCount()).toBe(20);
       expect(
         await screen.findByText(
           'A Scan Session holds at most 20 Scans and Barcode Lookups in total. Add or discard these first.',
@@ -583,8 +621,8 @@ describe('Barcode on the Scan page', () => {
       renderScan('/scan?mode=barcode');
       answers[A] = () => Response.json(found());
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read']));
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await waitFor(() => expectStack('read'));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByRole('button', { name: 'Add all' }));
 
       await waitFor(() =>
@@ -605,8 +643,8 @@ describe('Barcode on the Scan page', () => {
       renderScan('/scan?mode=barcode');
       answers[A] = () => Response.json(found());
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read']));
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await waitFor(() => expectStack('read'));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
 
       await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
@@ -654,13 +692,15 @@ describe('Barcode on the Scan page', () => {
             },
           ],
         });
-      scanViaGuide();
-      await waitFor(() => expect(states()).toEqual(['read']));
-      await user.click(within(dial()).getByRole('radio', { name: /Barcode/ }));
+      takeScan();
+      await waitFor(() => expectStack('read'));
+      await user.click(
+        within(slider()).getByRole('radio', { name: /Barcode/ }),
+      );
       answers[A] = () => Response.json(found());
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read', 'read']));
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await waitFor(() => expectStack('read', 2));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByRole('button', { name: 'Add all' }));
 
       await waitFor(() =>
@@ -686,8 +726,8 @@ describe('Barcode on the Scan page', () => {
       renderScan('/scan?mode=barcode');
       answers[A] = () => Response.json({ found: false });
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read']));
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await waitFor(() => expectStack('read'));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
 
       await user.type(await screen.findByLabelText('Name'), 'Mystery jar');
@@ -724,8 +764,8 @@ describe('Barcode on the Scan page', () => {
           }),
         );
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read']));
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await waitFor(() => expectStack('read'));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
       expect(await screen.findByLabelText('Name')).toHaveValue('Grandma jam');
       await user.click(screen.getByRole('button', { name: /^Save/ }));
@@ -748,8 +788,8 @@ describe('Barcode on the Scan page', () => {
       renderScan('/scan?mode=barcode');
       answers[A] = () => Response.json(found());
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read']));
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await waitFor(() => expectStack('read'));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(
         await screen.findByRole('button', { name: 'Remove photo' }),
       );
@@ -764,8 +804,8 @@ describe('Barcode on the Scan page', () => {
       renderScan('/scan?mode=barcode');
       answers[A] = () => Response.json(answer);
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read']));
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await waitFor(() => expectStack('read'));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
       if (row)
         await user.click(await screen.findByRole('button', { name: row }));
@@ -826,8 +866,8 @@ describe('Barcode on the Scan page', () => {
           }),
         );
       await decode(A);
-      await waitFor(() => expect(states()).toEqual(['read']));
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await waitFor(() => expectStack('read'));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
 
       const row = (await screen.findByRole('table')).querySelector(
@@ -887,9 +927,9 @@ describe('Barcode on the Scan page', () => {
             },
           ],
         });
-      scanViaGuide();
-      await waitFor(() => expect(states()).toEqual(['read']));
-      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      takeScan();
+      await waitFor(() => expectStack('read'));
+      await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
       await user.click(await screen.findByRole('button', { name: /Milk/ }));
       await screen.findByLabelText('Quantity');

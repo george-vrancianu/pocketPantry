@@ -7,30 +7,19 @@ import type { Batch } from '../../lib/pantry';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
+import { fakeCamera, languageChip, pickScanLanguage } from '../../test/scan';
 
 // jsdom has no camera or canvas: the camera hook and image preparation are the seams.
-const camera = vi.hoisted(() => ({
-  status: 'ready' as string,
+const image = vi.hoisted(() => ({
   /** Holds image preparation until released. */
   prepare: null as Promise<void> | null,
-  /** What decoding each captured frame answers, in shot order; a frame past the end has no barcode. */
-  frames: [] as Array<() => Promise<string | null>>,
-  shots: 0,
 }));
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: camera.status,
-    torchSupported: false,
-    capture: () => Promise.resolve(new Blob(['frame'])),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-  readBarcode: () => camera.frames[camera.shots++]?.() ?? Promise.resolve(null),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', () => ({
   resizeImage: () =>
-    (camera.prepare ?? Promise.resolve()).then(
+    (image.prepare ?? Promise.resolve()).then(
       () => 'data:image/jpeg;base64,AAAA',
     ),
 }));
@@ -125,7 +114,7 @@ const cameraButton = () =>
 
 async function shoot(user: ReturnType<typeof userEvent.setup>) {
   await user.click(cameraButton());
-  screen.getByTestId('scan-guide').focus();
+  screen.getByRole('button', { name: 'Take photo' }).focus();
   await user.keyboard('{Enter}');
 }
 
@@ -134,10 +123,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     localStorage.clear();
     // These tests are about the Product mode; Barcode is covered in AddBatchBarcode.test.tsx.
     localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
-    camera.status = 'ready';
-    camera.prepare = null;
-    camera.frames = [];
-    camera.shots = 0;
+    image.prepare = null;
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -164,7 +150,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
 
     await user.click(cameraButton());
     expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
-    expect(screen.getByLabelText('Reading as')).toBeInTheDocument();
+    expect(languageChip()).toBeInTheDocument();
     // The host page's URL is left alone.
     expect(screen.getByTestId('where')).toHaveTextContent(
       '/pantry?mode=receipt&tab=x',
@@ -188,18 +174,45 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     expect(cameraButton()).toHaveFocus();
   });
 
+  it('closes only the language menu on Escape, not the overlay', async () => {
+    const user = userEvent.setup();
+    stubProductScan(() => Response.json({ lines: [line()] }));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await user.click(languageChip());
+    expect(screen.getByRole('menu')).toBeVisible();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
+  });
+
+  it('remembers a pick on the device across closing and reopening the overlay', async () => {
+    const user = userEvent.setup();
+    stubProductScan(() => Response.json({ lines: [line()] }));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await pickScanLanguage('Dansk');
+    expect(languageChip()).toHaveTextContent('DA');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
+    await user.click(cameraButton());
+    expect(languageChip()).toHaveTextContent('DA');
+  });
+
   it('drops a photo still being prepared when the overlay is cancelled', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     let finish: () => void = () => {};
-    camera.prepare = new Promise<void>((resolve) => (finish = resolve));
+    image.prepare = new Promise<void>((resolve) => (finish = resolve));
     const { calls, release } = stubProductScan(() =>
       Response.json({ lines: [line()] }),
     );
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    screen.getByTestId('scan-guide').focus();
+    screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
     await user.keyboard('{Escape}');
     finish();
@@ -233,14 +246,14 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     renderWithProviders(<PantryPage />, { locale: 'ro' });
     await user.click(await screen.findByRole('button', { name: /^Adaugă/ }));
     await user.click(screen.getByRole('button', { name: /camera/ }));
-    screen.getByTestId('scan-guide').focus();
+    screen.getByRole('button', { name: 'Fă o fotografie' }).focus();
     await user.keyboard('{Enter}');
     release();
     expect(await screen.findByDisplayValue('0,5')).toBeInTheDocument();
   });
 
   it('shows a clear message when the camera is denied', async () => {
-    camera.status = 'unavailable';
+    fakeCamera.status = 'unavailable';
     const user = userEvent.setup();
     stubProductScan(() => Response.json({ lines: [line()] }));
     renderWithProviders(<PantryPage />);
@@ -263,9 +276,9 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    expect(screen.getByLabelText('Reading as')).toHaveValue('ro');
-    await user.selectOptions(screen.getByLabelText('Reading as'), 'da');
-    screen.getByTestId('scan-guide').focus();
+    expect(languageChip()).toHaveTextContent('RO');
+    await pickScanLanguage('Dansk');
+    screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
 
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
@@ -515,10 +528,7 @@ describe('Learn barcodes from Product photos', () => {
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
-    camera.status = 'ready';
-    camera.prepare = null;
-    camera.frames = [];
-    camera.shots = 0;
+    image.prepare = null;
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -539,7 +549,7 @@ describe('Learn barcodes from Product photos', () => {
 
   it('sends a barcode decoded from the captured frame with the save, without another Scan', async () => {
     const user = userEvent.setup();
-    camera.frames = [() => Promise.resolve(CODE)];
+    fakeCamera.reads = [() => Promise.resolve(CODE)];
     const { calls, release } = stubProductScan(() =>
       Response.json({ lines: [line()] }),
     );
@@ -548,7 +558,7 @@ describe('Learn barcodes from Product photos', () => {
     await shoot(user);
     release();
     await screen.findByTestId('prefilled-ingredient');
-    await waitFor(() => expect(camera.shots).toBe(1));
+    await waitFor(() => expect(fakeCamera.readCount).toBe(1));
     await act(async () => {});
 
     expect(await save(user, calls)).toMatchObject({
@@ -568,7 +578,7 @@ describe('Learn barcodes from Product photos', () => {
     await shoot(user);
     release();
     await screen.findByTestId('prefilled-ingredient');
-    await waitFor(() => expect(camera.shots).toBe(1));
+    await waitFor(() => expect(fakeCamera.readCount).toBe(1));
     await act(async () => {});
 
     expect(await save(user, calls)).not.toHaveProperty('barcode');
@@ -576,7 +586,7 @@ describe('Learn barcodes from Product photos', () => {
 
   it('ignores a decode failure silently', async () => {
     const user = userEvent.setup();
-    camera.frames = [() => Promise.reject(new Error('no decoder'))];
+    fakeCamera.reads = [() => Promise.reject(new Error('no decoder'))];
     const { calls, release } = stubProductScan(() =>
       Response.json({ lines: [line()] }),
     );
@@ -586,7 +596,7 @@ describe('Learn barcodes from Product photos', () => {
     release();
     await screen.findByTestId('prefilled-ingredient');
 
-    await waitFor(() => expect(camera.shots).toBe(1));
+    await waitFor(() => expect(fakeCamera.readCount).toBe(1));
     await act(async () => {});
     expect(screen.queryByRole('alert')).toBeNull();
     expect(await save(user, calls)).not.toHaveProperty('barcode');
@@ -595,7 +605,7 @@ describe('Learn barcodes from Product photos', () => {
   it('does not let a slow decode overwrite a later photo', async () => {
     const user = userEvent.setup();
     let late: (code: string | null) => void = () => {};
-    camera.frames = [
+    fakeCamera.reads = [
       () => new Promise<string | null>((resolve) => (late = resolve)),
       () => Promise.resolve(null),
     ];
@@ -617,7 +627,10 @@ describe('Learn barcodes from Product photos', () => {
 
   it('drops an earlier photo barcode when the next photo has none', async () => {
     const user = userEvent.setup();
-    camera.frames = [() => Promise.resolve(CODE), () => Promise.resolve(null)];
+    fakeCamera.reads = [
+      () => Promise.resolve(CODE),
+      () => Promise.resolve(null),
+    ];
     const { calls, release } = stubProductScan(() =>
       Response.json({ lines: [line()] }),
     );
@@ -627,7 +640,7 @@ describe('Learn barcodes from Product photos', () => {
     release();
     await screen.findByTestId('prefilled-ingredient');
     await shoot(user);
-    await waitFor(() => expect(camera.shots).toBe(2));
+    await waitFor(() => expect(fakeCamera.readCount).toBe(2));
 
     expect(await save(user, calls)).not.toHaveProperty('barcode');
   });

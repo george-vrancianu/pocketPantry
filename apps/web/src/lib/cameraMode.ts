@@ -1,21 +1,29 @@
 import type { ScanMode } from './scan';
 
 /**
- * A mode on the camera's dial. Barcode is a camera mode, not a Scan Mode (ADR 0013): it never
+ * A mode of the camera's mode slider. Barcode is a camera mode, not a Scan Mode (ADR 0013): it never
  * joins the Scan Mode list. It can be the Scan page's remembered mode, and its Session cards ride
  * apart from the Scan Cap (ADR 0016).
  */
 export type CameraMode = ScanMode | 'barcode';
 
+/**
+ * The Scan Mode a photo is read in for a camera mode. Barcode is not a Scan Mode and sends no photo,
+ * so a photo added while it is the camera mode (Import, Add from photos) is a Product Scan.
+ * Everything that needs a Scan Mode from a camera mode goes through this.
+ */
+export const scanModeOf = (mode: CameraMode): ScanMode =>
+  mode === 'barcode' ? 'product' : mode;
+
 /** How often the barcode watch looks at a frame. */
 export const SCAN_INTERVAL_MS = 250;
 
-/** The Scan page's dial, in order: Barcode sits right after Product. */
+/** The Scan page's mode slider, in order: Barcode sits right after Product (ADR 0016). */
 export const CAMERA_MODES = [
   'receipt',
+  'ingredients',
   'product',
   'barcode',
-  'ingredients',
   'plate',
 ] as const satisfies readonly CameraMode[];
 
@@ -35,6 +43,9 @@ export function loadScanPageMode(): CameraMode {
   }
   return 'receipt';
 }
+
+/** The Scan Mode for photos added away from the camera: the last-used camera mode's, else Receipt. */
+export const loadLastScanMode = (): ScanMode => scanModeOf(loadScanPageMode());
 
 /** Remembers the Scan page's mode for the next visit, apart from the add-Batch overlay's. */
 export function saveScanPageMode(mode: CameraMode): void {

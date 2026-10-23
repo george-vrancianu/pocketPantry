@@ -1,5 +1,10 @@
-import { screen } from '@testing-library/react';
-import { scanGuide, openFirstScanCard, scanViaGuide } from '../../test/scan';
+import { waitFor } from '@testing-library/react';
+import {
+  expectStack,
+  shutter,
+  openFirstScanCard,
+  takeScan,
+} from '../../test/scan';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
@@ -12,16 +17,9 @@ import { ScanPage } from './ScanPage';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
 
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
@@ -71,7 +69,7 @@ describe('Ingredients Scan on the Scan screen', () => {
 
   it('enables the shutter', () => {
     renderIngredients({});
-    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
+    expect(shutter()).not.toHaveAttribute('aria-disabled');
   });
 
   it('sends the photo to the Ingredients endpoint and reviews one card per item', async () => {
@@ -81,7 +79,7 @@ describe('Ingredients Scan on the Scan screen', () => {
           lines: [line('tomato', 'Tomato'), line('onion', 'Onion')],
         }),
     });
-    scanViaGuide();
+    takeScan();
     await openFirstScanCard();
     expect(await findReviewRow('Tomato')).toBeInTheDocument();
     expect(await findReviewRow('Onion')).toBeInTheDocument();
@@ -94,14 +92,9 @@ describe('Ingredients Scan on the Scan screen', () => {
     renderIngredients({
       'POST /api/scan/ingredients': () => Response.json({ lines: [] }),
     });
-    scanViaGuide();
-    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
-      /We could not spot any ingredients/,
-    );
-    expect(
-      screen.queryByRole('button', { name: /retry/i }),
-    ).not.toBeInTheDocument();
-    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
+    takeScan();
+    await waitFor(() => expectStack('failed'));
+    expect(shutter()).not.toHaveAttribute('aria-disabled');
   });
 
   it('fails the Scan when there were too many items', async () => {
@@ -112,12 +105,7 @@ describe('Ingredients Scan on the Scan screen', () => {
           { status: 422 },
         ),
     });
-    scanViaGuide();
-    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
-      /more than 50 items/,
-    );
-    expect(
-      screen.queryByRole('button', { name: /retry/i }),
-    ).not.toBeInTheDocument();
+    takeScan();
+    await waitFor(() => expectStack('failed'));
   });
 });

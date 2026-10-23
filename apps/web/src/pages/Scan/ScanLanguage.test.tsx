@@ -1,5 +1,11 @@
-import { act, cleanup, screen } from '@testing-library/react';
-import { openFirstScanCard, scanViaGuide } from '../../test/scan';
+import { act, screen } from '@testing-library/react';
+import {
+  languageChip,
+  openFirstScanCard,
+  pickScanLanguage,
+  queryLanguageChip,
+  takeScan,
+} from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,16 +15,9 @@ import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
 // jsdom has no camera or canvas: the camera and the image preparation are the seams.
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
   cropToReceiptGuide: () => Promise.resolve('data:image/jpeg;base64,Y3JvcA=='),
@@ -57,9 +56,6 @@ const unmatchedLine = {
   productDescription: null,
 };
 
-const chip = () =>
-  screen.getByRole('combobox', { name: /Reading as|Citit ca|Læses på/ });
-
 function renderScan(
   route: string,
   routes: Record<string, () => Response> = {},
@@ -95,78 +91,75 @@ describe('Scan Language on the Scan screen', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('shows the UI language as the default, listed first among the three languages', () => {
+  it('starts at the UI language', () => {
     renderScan('/scan', {}, 'ro');
-    expect(chip()).toHaveValue('ro');
-    expect(
-      Array.from(chip().querySelectorAll('option')).map((o) => o.textContent),
-    ).toEqual(['RO', 'EN', 'DA']);
+    expect(languageChip()).toHaveTextContent('RO');
   });
 
-  it('defaults to Dansk under a Danish UI, listed first', () => {
+  it('starts at Dansk under a Danish UI', () => {
     renderScan('/scan', {}, 'da');
-    expect(chip()).toHaveValue('da');
-    expect(
-      Array.from(chip().querySelectorAll('option')).map((o) => o.textContent),
-    ).toEqual(['DA', 'EN', 'RO']);
+    expect(languageChip()).toHaveTextContent('DA');
   });
 
-  it('forgets a Scan Language chosen under a Danish UI when the UI language changes', async () => {
+  it('follows the UI language while nothing is picked', async () => {
     const { i18n } = renderWithProviders(<ScanPage />, {
       route: '/scan',
       locale: 'da',
     });
-    await userEvent.selectOptions(chip(), 'ro');
     await act(() => i18n.changeLanguage('en'));
-    expect(chip()).toHaveValue('en');
+    expect(languageChip()).toHaveTextContent('EN');
     await act(() => i18n.changeLanguage('da'));
-    expect(chip()).toHaveValue('da');
+    expect(languageChip()).toHaveTextContent('DA');
+  });
+
+  it('forgets the device choice when the UI language changes, even if it changes back', async () => {
+    window.localStorage.setItem(
+      'pocket-pantry.scan-language',
+      JSON.stringify({ locale: 'da', language: 'ro' }),
+    );
+    const { i18n } = renderWithProviders(<ScanPage />, {
+      route: '/scan',
+      locale: 'da',
+    });
+    expect(languageChip()).toHaveTextContent('RO');
+    await act(() => i18n.changeLanguage('en'));
+    expect(languageChip()).toHaveTextContent('EN');
+    await act(() => i18n.changeLanguage('da'));
+    expect(languageChip()).toHaveTextContent('DA');
   });
 
   it('changes the Scan Language without changing the UI language', async () => {
     renderScan('/scan');
-    await userEvent.selectOptions(chip(), 'da');
-    expect(chip()).toHaveValue('da');
+    await pickScanLanguage('Dansk');
+    expect(languageChip()).toHaveTextContent('DA');
     expect(screen.getByRole('button', { name: 'Close scanner' })).toBeVisible();
     expect(document.documentElement.lang).toBe('en');
   });
 
-  it('keeps the choice across a reload, and starts from the UI language again when that changes', async () => {
-    renderScan('/scan');
-    await userEvent.selectOptions(chip(), 'da');
-    cleanup();
-    renderScan('/scan');
-    expect(chip()).toHaveValue('da');
-    cleanup();
-    renderScan('/scan', {}, 'ro');
-    expect(chip()).toHaveValue('ro');
-  });
-
-  it('forgets the choice when the UI language changes, even if it changes back', async () => {
-    const { i18n } = renderWithProviders(<ScanPage />, {
-      route: '/scan',
-      locale: 'ro',
-    });
-    await userEvent.selectOptions(chip(), 'da');
-    await act(() => i18n.changeLanguage('en'));
-    expect(chip()).toHaveValue('en');
-    await act(() => i18n.changeLanguage('ro'));
-    expect(chip()).toHaveValue('ro');
-  });
+  it.each([
+    ['ro', 'Se citește în daneză'],
+    ['da', 'Læser på dansk'],
+    ['en', 'Reading in Dansk'],
+  ] as const)(
+    'says the pick in a sentence under a %s UI',
+    async (locale, text) => {
+      renderScan('/scan', {}, locale);
+      await pickScanLanguage('Dansk');
+      expect(await screen.findByText(text)).toBeVisible();
+    },
+  );
 
   it('has no picker for Plate Scan', () => {
     renderScan('/scan?mode=plate');
-    expect(
-      screen.queryByRole('combobox', { name: /Reading as|Citit ca|Læses på/ }),
-    ).not.toBeInTheDocument();
+    expect(queryLanguageChip()).not.toBeInTheDocument();
   });
 
   it.each(['product', 'ingredients'])(
     '%s Scan reads in the chosen language, and Review saves in it with the printed text',
     async (mode) => {
       const calls = renderScan(`/scan?mode=${mode}`);
-      await userEvent.selectOptions(chip(), 'da');
-      scanViaGuide();
+      await pickScanLanguage('Dansk');
+      takeScan();
       await openFirstScanCard();
       await userEvent.click(
         await screen.findByRole('button', { name: 'Save 1 item' }),
@@ -185,8 +178,8 @@ describe('Scan Language on the Scan screen', () => {
 
   it('reads a Receipt Scan in the chosen language and confirms in it', async () => {
     const calls = renderScan('/scan?mode=receipt');
-    await userEvent.selectOptions(chip(), 'da');
-    scanViaGuide();
+    await pickScanLanguage('Dansk');
+    takeScan();
     await openFirstScanCard();
     await userEvent.click(
       await screen.findByRole('button', { name: 'Save 1 item' }),

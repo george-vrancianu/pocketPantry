@@ -5,29 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetReads } from '../../lib/scanReads';
 import { getScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { scanViaGuide } from '../../test/scan';
+import { scanOnce } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
-
-const flush = () => act(async () => {});
-const scanOnce = async () => {
-  scanViaGuide();
-  await flush();
-};
 
 function renderScan() {
   // Reads never answer, so the Scans stay in the Scan Session.
@@ -58,7 +45,7 @@ describe('Scan Session limits', () => {
     vi.restoreAllMocks();
   });
 
-  it('refuses the 21st Scan with a toast and adds no thumbnail', async () => {
+  it('refuses the 21st Scan with a toast and adds no card', async () => {
     renderScan();
     for (let i = 0; i < 20; i += 1) await scanOnce();
     expect(getScanSession().scans).toHaveLength(20);
@@ -67,7 +54,7 @@ describe('Scan Session limits', () => {
     ).not.toBeInTheDocument();
     await scanOnce();
     expect(getScanSession().scans).toHaveLength(20);
-    expect(screen.getAllByTestId('scan-thumbnail')).toHaveLength(20);
+    expect(screen.getByTestId('stack-badge')).toHaveTextContent('20');
     const toast = await screen.findByText(/20 Scans and Barcode Lookups/);
     expect((toast.closest('.MuiAlert-root') as HTMLElement).className).toMatch(
       /MuiAlert-\w*Warning/,

@@ -1,30 +1,13 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, usePrefersReducedMotion } from '@pocket-pantry/ui';
 import { shade } from './glass';
-import {
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type MouseEvent,
-  type MutableRefObject,
-  type PointerEvent,
-} from 'react';
-import { useTranslation } from 'react-i18next';
-import type { CameraMode } from '../../../lib/cameraMode';
-import { GUIDE_CENTER_Y, guideFor } from '../../../lib/scanGuides';
-import { isDoubleTap, type Tap } from '../../../lib/doubleTap';
+import { useCallback, useEffect, useState } from 'react';
+import type { Rect } from '../../../lib/scanGuides';
 
-const ARMED_MS = 320;
 const PULSE_MS = 360;
 const FLASH_MS = 420;
 const HAPTIC_MS = 12;
-/** Pointer travel between press and release that still counts as a tap. */
-const TAP_SLOP = 10;
 const noMotion = {
   '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
-};
-const noAnimation = {
-  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
 };
 const CORNERS = [
   ['Top', 'Left'],
@@ -33,58 +16,43 @@ const CORNERS = [
   ['Bottom', 'Right'],
 ] as const;
 
+/**
+ * The capture feedback a Scan gives: bumps a counter the Viewfinder turns into its screen flash,
+ * guide fill, bracket thickening and pulse, and vibrates. Both camera hosts call `fire` when the
+ * shutter takes a Scan.
+ */
+export function useShotFeedback() {
+  const [shot, setShot] = useState(0);
+  const fire = useCallback(() => {
+    navigator.vibrate?.(HAPTIC_MS);
+    setShot((n) => n + 1);
+  }, []);
+  return { shot, fire };
+}
+
 type Props = {
-  mode: CameraMode;
-  /** Double-tap (or Enter / Space) on the guide. */
-  onScan: () => void;
-  disabled: boolean;
-  /** When the mode dial last finished a drag, so the tail of a drag is not read as a tap. */
-  dragEndedAt: MutableRefObject<number | null>;
-  /** Filled with the Scan action, so the mode dial's gestures give the same flash, pulse and haptic. */
-  scanRef: MutableRefObject<(() => void) | null>;
+  /** The guide, in screen pt (see `guideRect`). */
+  rect: Rect;
+  /** Counts Scans taken (`useShotFeedback`): each one restarts the flash, fill and pulse. */
+  shot: number;
+  /** True while the mode slider is being dragged: the guide shrinks slightly. */
+  sliding?: boolean;
 };
 
 /**
- * The guide brackets that follow the Scan Mode, centred over the full-screen feed. Double-tapping
- * the guide takes the Scan, with a white flash and a pulse.
+ * The guide brackets for the camera mode, over the full-screen feed. The guide takes no input: it
+ * is not a button, not focusable, and ignores the pointer. A Scan flashes the screen and the guide.
  */
-export function Viewfinder({
-  mode,
-  onScan,
-  disabled,
-  dragEndedAt,
-  scanRef,
-}: Props) {
-  const { t } = useTranslation('scan');
-  const { width, height } = guideFor(mode);
-  const [armed, setArmed] = useState(false);
-  const timer = useRef<number | undefined>(undefined);
+export function Viewfinder({ rect, shot, sliding = false }: Props) {
   const [pulse, setPulse] = useState(false);
   const [flash, setFlash] = useState(false);
-  /** Counts Scans so each one restarts the pulse and flash. */
-  const [shot, setShot] = useState(0);
-  const lastTap = useRef<Tap | null>(null);
-  const guideRef = useRef<HTMLDivElement>(null);
-  /** The press that may become the next tap: primary pointer, started inside the guide. */
-  const press = useRef<{ id: number; x: number; y: number } | null>(null);
-  useEffect(() => {
-    // A press that starts or ends outside the guide breaks the pairing of taps.
-    const outside = (event: globalThis.PointerEvent) => {
-      if (guideRef.current?.contains(event.target as Node)) return;
-      press.current = null;
-      if (event.type === 'pointerup') lastTap.current = null;
-    };
-    document.addEventListener('pointerdown', outside);
-    document.addEventListener('pointerup', outside);
-    return () => {
-      window.clearTimeout(timer.current);
-      document.removeEventListener('pointerdown', outside);
-      document.removeEventListener('pointerup', outside);
-    };
-  }, []);
+  // Under reduced motion the screen flash, the guide's fill and the pulse are not rendered at all;
+  // the thicker brackets (which follow `flash`) and the haptic stay.
+  const reduced = usePrefersReducedMotion();
+  const animated = !reduced;
   useEffect(() => {
     if (!shot) return;
-    // oxlint-disable-next-line react/set-state-in-effect -- starts the shutter pulse and flash animations when a Scan is taken; both end on timers
+    // oxlint-disable-next-line react/set-state-in-effect -- starts the pulse and flash animations when a Scan is taken; both end on timers
     setPulse(true);
     setFlash(true);
     const pending = [
@@ -93,64 +61,9 @@ export function Viewfinder({
     ];
     return () => pending.forEach(window.clearTimeout);
   }, [shot]);
-  const arm = () => {
-    setArmed(true);
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setArmed(false), ARMED_MS);
-  };
-  const scan = () => {
-    if (disabled) return;
-    onScan();
-    navigator.vibrate?.(HAPTIC_MS);
-    setShot((n) => n + 1);
-  };
-  useEffect(() => {
-    scanRef.current = scan;
-    return () => {
-      scanRef.current = null;
-    };
-  });
-  const onPointerDown = (event: PointerEvent) => {
-    arm();
-    press.current =
-      event.isPrimary && event.button === 0
-        ? { id: event.pointerId, x: event.clientX, y: event.clientY }
-        : null;
-  };
-  const onPointerUp = (event: PointerEvent) => {
-    const down = press.current;
-    press.current = null;
-    if (
-      !down ||
-      down.id !== event.pointerId ||
-      Math.hypot(event.clientX - down.x, event.clientY - down.y) > TAP_SLOP
-    ) {
-      lastTap.current = null;
-      return;
-    }
-    const tap = { x: event.clientX, y: event.clientY, t: performance.now() };
-    if (isDoubleTap(lastTap.current, tap, dragEndedAt.current)) {
-      lastTap.current = null;
-      scan();
-    } else {
-      lastTap.current = tap;
-    }
-  };
-  // Screen readers activate a button with a click that has no pointer behind it.
-  const onClick = (event: MouseEvent) => {
-    if (event.detail === 0) scan();
-  };
-  const onKeyDown = (event: KeyboardEvent) => {
-    if (event.target !== event.currentTarget || event.repeat) return;
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    event.preventDefault();
-    scan();
-  };
-  const bracketColour =
-    armed && !flash ? tokens.color.accent : tokens.color.ink;
   return (
     <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-      {flash ? (
+      {flash && animated ? (
         <Box
           data-testid="scan-flash"
           aria-hidden="true"
@@ -164,54 +77,37 @@ export function Viewfinder({
               from: { opacity: 0.55 },
               to: { opacity: 0 },
             },
-            ...noAnimation,
           }}
         />
       ) : null}
       <Box
         data-testid="scan-guide"
-        data-armed={armed ? 'true' : undefined}
-        data-pulse={pulse ? 'true' : undefined}
-        // Barcode reads on its own: the guide only shows where to aim.
-        role={mode === 'barcode' ? undefined : 'button'}
-        tabIndex={mode === 'barcode' ? undefined : 0}
-        aria-label={mode === 'barcode' ? undefined : t('guide.scan')}
-        aria-hidden={mode === 'barcode' ? true : undefined}
-        aria-disabled={disabled || undefined}
-        ref={guideRef}
-        onPointerDown={onPointerDown}
-        onClick={onClick}
-        onPointerUp={onPointerUp}
-        onKeyDown={onKeyDown}
+        data-pulse={pulse && animated ? 'true' : undefined}
+        // The brackets are thicker while a Scan flashes, with or without motion.
+        data-thick={flash ? 'true' : undefined}
+        aria-hidden="true"
         sx={{
           position: 'absolute',
-          left: '50%',
-          top: `${GUIDE_CENTER_Y * 100}%`,
-          width: `${width * 100}%`,
-          height: `${height * 100}%`,
-          transform: 'translate(-50%, -50%)',
-          pointerEvents: 'auto',
-          touchAction: 'manipulation',
+          left: rect.x,
+          top: rect.y,
+          width: rect.width,
+          height: rect.height,
+          pointerEvents: 'none',
           userSelect: 'none',
-          WebkitTapHighlightColor: 'transparent',
-          transition: `width 400ms cubic-bezier(.2,.8,.2,1), height 400ms cubic-bezier(.2,.8,.2,1)`,
+          transform: sliding ? 'scale(.985)' : 'none',
+          transition: `left 400ms cubic-bezier(.3,.7,.2,1), top 400ms cubic-bezier(.3,.7,.2,1), width 400ms cubic-bezier(.3,.7,.2,1), height 400ms cubic-bezier(.3,.7,.2,1), transform 200ms`,
           ...noMotion,
-          '&:focus-visible': {
-            outline: `2px solid ${tokens.color.accent}`,
-            outlineOffset: 8,
-          },
-          ...(pulse && {
-            animation: `pp-scan-pulse ${PULSE_MS}ms ease-out`,
-            '@keyframes pp-scan-pulse': {
-              '0%, 100%': { transform: 'translate(-50%, -50%) scale(1)' },
-              '40%': { transform: 'translate(-50%, -50%) scale(0.965)' },
-            },
-          }),
-          // Nested so it is its own rule next to the transition's.
-          '&': noAnimation,
+          ...(pulse &&
+            animated && {
+              animation: `pp-scan-pulse ${PULSE_MS}ms ease-out`,
+              '@keyframes pp-scan-pulse': {
+                '0%, 100%': { transform: 'scale(1)' },
+                '40%': { transform: 'scale(0.965)' },
+              },
+            }),
         }}
       >
-        {flash ? (
+        {flash && animated ? (
           <Box
             data-testid="scan-guide-fill"
             aria-hidden="true"
@@ -225,7 +121,6 @@ export function Viewfinder({
                 from: { opacity: 0.85 },
                 to: { opacity: 0 },
               },
-              ...noAnimation,
             }}
           />
         ) : null}
@@ -244,10 +139,9 @@ export function Viewfinder({
               [`border${v}`]: `${flash ? 6 : 3.5}px solid`,
               [`border${h}`]: `${flash ? 6 : 3.5}px solid`,
               [`border${v}${h}Radius`]: '10px',
-              [`border${v}Color`]: bracketColour,
-              [`border${h}Color`]: bracketColour,
+              [`border${v}Color`]: tokens.color.ink,
+              [`border${h}Color`]: tokens.color.ink,
               filter: `drop-shadow(0 1px 4px ${shade(50)})`,
-              transition: 'border-color 200ms',
               ...noMotion,
             }}
           />

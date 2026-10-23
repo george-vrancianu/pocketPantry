@@ -2,23 +2,34 @@ import {
   Alert,
   bodyFont,
   Box,
-  CloseIcon,
-  FlashIcon,
   tokens,
   Typography,
   useForcedThemeColor,
   visuallyHidden,
 } from '@pocket-pantry/ui';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
 import { readBarcode, useCamera } from '../../lib/camera';
 import type { CameraMode } from '../../lib/cameraMode';
 import { IMAGE_PREPARATION } from '../../lib/scanImage';
-import { glassControl, glassFocusRing, shade } from './components/glass';
-import { ModeDial } from './components/ModeDial';
+import { CameraFooter } from './components/CameraFooter';
+import { CameraTopBar } from './components/CameraTopBar';
+import { Fading } from './components/Fading';
+import { InfoSheet } from './components/InfoSheet';
+import { shade } from './components/glass';
+import { ModeSlider } from './components/ModeSlider';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
-import { Viewfinder } from './components/Viewfinder';
+import { ShutterButton } from './components/ShutterButton';
+import { ZoomPill } from './components/ZoomPill';
+import { Viewfinder, useShotFeedback } from './components/Viewfinder';
+import { measureView, useGuideRect } from './hooks/useGuideRect';
 import { useScanLanguage } from './hooks/useScanLanguage';
 
 export type { CameraMode };
@@ -44,30 +55,18 @@ export type CameraResult =
     };
 
 type Props = {
-  /** In dial order; the dial is hidden when there is only one. */
+  /** In slider order; the slider is hidden when there is only one. */
   modes: readonly CameraMode[];
   /** The mode the camera opens in; the first of `modes` when it is not one of them. */
   defaultMode: CameraMode;
-  /** The Member picked a mode on the dial: the opener may remember it. */
+  /** The Member picked a mode on the slider: the opener may remember it. */
   onModeChange?: (mode: CameraMode) => void;
-  /** A short message above the dial, such as why the overlay reopened. */
+  /** A short message above the footer, such as why the overlay reopened. */
   notice?: string;
   /** One shot was taken, or a barcode was read: the opener closes the overlay and owns the work that follows. */
   onResult: (result: CameraResult) => void;
   /** Closed without a shot; the opener is left as it was. */
   onCancel: () => void;
-};
-
-const roundButton = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: 40,
-  height: 40,
-  borderRadius: '50%',
-  border: 0,
-  ...glassControl(false),
-  '&:focus-visible': glassFocusRing,
 };
 
 /**
@@ -88,15 +87,19 @@ export function CameraOverlay({
   const { t } = useTranslation('scan');
   useForcedThemeColor('dark');
   const camera = useCamera();
-  const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
+  const { scanLanguage, setScanLanguage } = useScanLanguage();
   const [mode, setMode] = useState<CameraMode>(
     modes.includes(defaultMode) ? defaultMode : modes[0],
   );
+  const [infoOpen, setInfoOpen] = useState(false);
+  const closeInfo = useCallback(() => setInfoOpen(false), []);
   const [flash, setFlash] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [failed, setFailed] = useState(false);
-  const dragEndedAt = useRef<number | null>(null);
-  const scanRef = useRef<(() => void) | null>(null);
+  const { shot, fire } = useShotFeedback();
+  const guide = useGuideRect(mode);
+  const [viewfinder, setViewfinder] = useState<HTMLElement | null>(null);
+  const [sliding, setSliding] = useState(false);
   const shooting = useRef(false);
   const { videoRef } = camera;
 
@@ -106,8 +109,11 @@ export function CameraOverlay({
   // Set once the overlay is cancelled or gone: a photo still being prepared is then dropped.
   const closed = useRef(false);
   const cancelRef = useRef(onCancel);
+  // Escape closes the Info sheet first, not the camera under it.
+  const infoOpenRef = useRef(false);
   useLayoutEffect(() => {
     cancelRef.current = onCancel;
+    infoOpenRef.current = infoOpen;
   });
   const cancel = () => {
     closed.current = true;
@@ -116,7 +122,7 @@ export function CameraOverlay({
   useEffect(() => {
     closed.current = false;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !infoOpenRef.current) {
         closed.current = true;
         cancelRef.current();
       }
@@ -158,11 +164,11 @@ export function CameraOverlay({
         (resolve) => (settle = resolve),
       );
       setPreparing(true);
-      const feed = camera.videoRef.current;
-      const image = await IMAGE_PREPARATION[mode](frame, 'camera', {
-        width: feed?.clientWidth || window.innerWidth,
-        height: feed?.clientHeight || window.innerHeight,
-      });
+      const image = await IMAGE_PREPARATION[mode](
+        frame,
+        'camera',
+        measureView(camera.videoRef.current),
+      );
       if (!closed.current) {
         onResult({ kind: 'product', image, scanLanguage, barcode });
         setTimeout(() => {
@@ -203,130 +209,111 @@ export function CameraOverlay({
       }}
     >
       <Box
-        component="video"
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-        }}
-      />
-      <Box
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          backgroundImage: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${shade(45)} 100%)`,
-        }}
-      />
-      <Viewfinder
-        mode={mode}
-        disabled={mode === 'barcode' || preparing || camera.status !== 'ready'}
-        onScan={() => void shoot()}
-        dragEndedAt={dragEndedAt}
-        scanRef={scanRef}
-      />
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          px: 2,
-          pt: 'calc(22px + env(safe-area-inset-top))',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-        }}
+        ref={setViewfinder}
+        sx={{ position: 'absolute', inset: 0, touchAction: 'pan-y' }}
       >
         <Box
-          component="button"
-          type="button"
-          aria-label={t('close')}
-          onClick={cancel}
-          sx={roundButton}
-        >
-          <CloseIcon size={20} />
-        </Box>
-        {camera.torchSupported ? (
-          <Box
-            component="button"
-            type="button"
-            aria-label={t('flash')}
-            aria-pressed={flash}
-            onClick={() => void toggleFlash()}
-            sx={{
-              ...roundButton,
-              ...(flash && {
-                backgroundColor: tokens.color.ink,
-                color: tokens.color.bg,
-              }),
-            }}
-          >
-            <FlashIcon size={20} />
-          </Box>
-        ) : null}
-        <Box sx={{ flex: 1 }} />
-        {mode === 'barcode' ? null : (
-          <ScanLanguageChip
-            value={scanLanguage}
-            locale={locale}
-            disabled={preparing}
-            onChange={setScanLanguage}
-          />
-        )}
+          component="video"
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            backgroundImage: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${shade(45)} 100%)`,
+          }}
+        />
+        <Viewfinder rect={guide} shot={shot} sliding={sliding} />
       </Box>
-      <Box
-        sx={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          px: 2.5,
-          pb: 'calc(16px + env(safe-area-inset-bottom))',
-        }}
-      >
-        <Typography
-          role="status"
-          component="div"
-          sx={{ mt: '24px', minHeight: 24, textAlign: 'center', fontSize: 13 }}
-        >
-          {camera.status === 'unavailable'
-            ? t('overlay.noCamera')
-            : mode === 'barcode'
-              ? t('overlay.pointAtBarcode')
-              : null}
-        </Typography>
-        {notice ? <Alert severity="info">{notice}</Alert> : null}
-        {failed ? <Alert role="alert">{t('overlay.photoFailed')}</Alert> : null}
-        {modes.length > 1 ? (
-          <ModeDial
-            modes={modes}
-            mode={mode}
-            disabled={preparing}
-            keysDisabled={preparing}
-            dragEndedAt={dragEndedAt}
-            onScan={() => scanRef.current?.()}
-            scanDisabled={preparing || camera.status !== 'ready'}
+      <CameraTopBar
+        onClose={cancel}
+        torch={
+          camera.torchSupported
+            ? { on: flash, onToggle: () => void toggleFlash() }
+            : undefined
+        }
+        onInfo={() => setInfoOpen(true)}
+        language={
+          <Fading hidden={mode === 'barcode'}>
+            <ScanLanguageChip
+              value={scanLanguage}
+              disabled={preparing}
+              onChange={setScanLanguage}
+            />
+          </Fading>
+        }
+      />
+      <CameraFooter
+        zoom={
+          camera.zoomSupported ? <ZoomPill onZoom={camera.setZoom} /> : null
+        }
+        status={
+          <>
+            <Typography
+              role="status"
+              component="div"
+              sx={{ minHeight: 24, textAlign: 'center', fontSize: 13 }}
+            >
+              {camera.status === 'unavailable'
+                ? t('overlay.noCamera')
+                : mode === 'barcode'
+                  ? t('overlay.pointAtBarcode')
+                  : null}
+            </Typography>
+            {notice ? <Alert severity="info">{notice}</Alert> : null}
+            {failed ? (
+              <Alert role="alert">{t('overlay.photoFailed')}</Alert>
+            ) : null}
+          </>
+        }
+        shutter={
+          <ShutterButton
+            ring={mode === 'barcode'}
+            disabled={preparing || camera.status !== 'ready'}
+            onShoot={() => {
+              fire();
+              void shoot();
+            }}
             focusForScan={camera.focusForScan}
-            onChange={(next) => {
-              const picked = modes.find((item) => item === next);
-              if (!picked) return;
-              setMode(picked);
-              onModeChange?.(picked);
-            }}
           />
-        ) : (
-          <Box sx={visuallyHidden}>{t(`mode.${mode}`)}</Box>
-        )}
-      </Box>
+        }
+        slider={
+          modes.length > 1 ? (
+            <ModeSlider
+              modes={modes}
+              mode={mode}
+              disabled={preparing || infoOpen}
+              keysDisabled={preparing || infoOpen}
+              swipeSurface={viewfinder}
+              onDragChange={setSliding}
+              onChange={(next) => {
+                const picked = modes.find((item) => item === next);
+                if (!picked) return;
+                setMode(picked);
+                onModeChange?.(picked);
+              }}
+            />
+          ) : (
+            <Box sx={visuallyHidden}>{t(`mode.${mode}`)}</Box>
+          )
+        }
+      />
+      {infoOpen ? (
+        <InfoSheet onClose={closeInfo} modes={modes} stackTip={false} />
+      ) : null}
     </Box>
   );
 }

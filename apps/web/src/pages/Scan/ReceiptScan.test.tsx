@@ -1,36 +1,26 @@
-import { screen } from '@testing-library/react';
-import { openFirstScanCard, scanViaGuide } from '../../test/scan';
+import { act, screen } from '@testing-library/react';
+import { openFirstScanCard, takeScan, fakeCamera } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
-const useCameraMock = vi.hoisted(() => vi.fn());
-vi.mock('../../lib/camera', () => ({
-  useCamera: (highResolution?: boolean) => {
-    useCameraMock(highResolution);
-    return {
-      videoRef: { current: null },
-      status: 'ready',
-      torchSupported: true,
-      capture: () =>
-        Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-      setTorch: () => Promise.resolve(true),
-      watchBarcodes: () => () => {},
-    };
-  },
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 const cropToReceiptAreaMock = vi.hoisted(() => vi.fn());
+const cropToReceiptGuideMock = vi.hoisted(() => vi.fn());
 /** When set, image preparation waits on it, so a test can change the screen mid-preparation. */
 const gate = vi.hoisted(() => ({ current: null as Promise<void> | null }));
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
-  cropToReceiptGuide: async () => {
+  cropToReceiptGuide: async (...args: unknown[]) => {
+    cropToReceiptGuideMock(...args);
     await gate.current;
     return 'data:image/jpeg;base64,Y3JvcA==';
   },
@@ -62,9 +52,6 @@ vi.mock('react-easy-crop', async () => {
 });
 
 describe('Receipt Scan on the Scan screen', () => {
-  beforeEach(() => {
-    useCameraMock.mockClear();
-  });
   afterEach(() => vi.unstubAllGlobals());
 
   it('sends the cropped receipt photo to the Receipt endpoint and reviews its lines on the Scan card', async () => {
@@ -104,7 +91,7 @@ describe('Receipt Scan on the Scan screen', () => {
       </Routes>,
       { route: '/scan?mode=receipt' },
     );
-    scanViaGuide();
+    takeScan();
     await openFirstScanCard();
     expect(await findReviewRow('Eggs')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
@@ -115,10 +102,30 @@ describe('Receipt Scan on the Scan screen', () => {
     expect(calls.map((c) => c.key)).not.toContain('POST /api/scan/product');
   });
 
+  it('crops a receipt Scan to the guide: the camera frame and the screen it was framed on', async () => {
+    const { fetchMock } = stubApi({
+      'POST /api/scan/receipt': () => Response.json({ lines: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    cropToReceiptGuideMock.mockClear();
+    renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
+    takeScan();
+    await act(async () => {});
+    expect(cropToReceiptGuideMock).toHaveBeenCalledTimes(1);
+    const [frame, view] = cropToReceiptGuideMock.mock.calls[0];
+    expect(frame).toBe(fakeCamera.frame);
+    // The view carries the screen size and safe areas the guide is centred in.
+    expect(view).toMatchObject({
+      width: expect.any(Number),
+      height: expect.any(Number),
+      insets: { top: expect.any(Number), bottom: expect.any(Number) },
+    });
+  });
+
   it('shows the guide and asks the camera for high resolution (as in every mode)', () => {
     renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
     expect(screen.getByTestId('scan-guide')).toBeInTheDocument();
-    expect(useCameraMock).toHaveBeenCalled();
+    expect(fakeCamera.calls.length).toBeGreaterThan(0);
   });
 
   it('leaves the mode description and receipt tips to the Info sheet', () => {

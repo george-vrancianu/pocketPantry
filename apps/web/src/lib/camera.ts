@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SCAN_INTERVAL_MS } from './cameraMode';
 import { isValidBarcode } from './gtin';
-import { GUIDE_CENTER_Y } from './scanGuides';
 
-/** Ask for 1080p where the device can, in every Scan Mode so the dial never restarts the stream: a receipt's small print is unreadable at the 640x480 browsers often default to. */
+/** Ask for 1080p where the device can, in every Scan Mode so changing mode never restarts the stream: a receipt's small print is unreadable at the 640x480 browsers often default to. */
 export const HIGH_RESOLUTION_VIDEO = {
   width: { ideal: 1920 },
   height: { ideal: 1080 },
@@ -67,6 +66,8 @@ export type CameraStatus = 'starting' | 'ready' | 'unavailable';
 export const FOCUS_TIMEOUT_MS = 1000;
 /** The steady pause where the browser cannot focus on demand (iOS Safari). */
 export const FOCUS_PAUSE_MS = 400;
+/** Where a focus pass aims, as a fraction of the video height: about the guide's centre (approximate: the feed is object-fit: cover). */
+export const FOCUS_POINT_Y = 0.44;
 
 /** A focus pass started by a hold: `done` resolves once focus finishes, times out or is cancelled. */
 export type FocusPass = { done: Promise<void>; cancel: () => void };
@@ -82,9 +83,21 @@ type TorchConstraints = MediaTrackConstraints & {
   advanced?: Array<{ torch?: boolean }>;
 };
 
+type ZoomConstraints = MediaTrackConstraints & {
+  advanced?: Array<{ zoom?: number }>;
+};
+
+/** The zoom range a track reports in its capabilities. */
+export type ZoomRange = { min: number; max: number; step?: number };
+
+/** A zoom level inside the track's range: asking for 2 on a camera that tops out at 1.5 gives 1.5. */
+export function clampZoom(level: number, range: ZoomRange): number {
+  return Math.min(range.max, Math.max(range.min, level));
+}
+
 /**
  * The rear camera as a live preview. `unavailable` covers no camera, a denied
- * permission, and a non-secure page; the Scan screen then leans on the gallery.
+ * permission, and a non-secure page; the Scan screen then offers Import instead.
  */
 export function useCamera() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -94,6 +107,9 @@ export function useCamera() {
   const [torchSupported, setTorchSupported] = useState(false);
   // Best-effort focus: only browsers that expose single-shot focus (mostly Chrome on Android).
   const focusSupportedRef = useRef(false);
+  // Optical or sensor zoom of the track itself: never a digital crop, which would break the receipt crop.
+  const [zoomSupported, setZoomSupported] = useState(false);
+  const zoomRangeRef = useRef<ZoomRange | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,6 +117,8 @@ export function useCamera() {
     setStatus('starting');
     // The new stream's torch starts off and its support is not known yet.
     setTorchSupported(false);
+    setZoomSupported(false);
+    zoomRangeRef.current = null;
     focusSupportedRef.current = false;
     const devices = navigator.mediaDevices as MediaDevices | undefined;
     if (!devices?.getUserMedia) {
@@ -118,8 +136,22 @@ export function useCamera() {
         if (videoRef.current) videoRef.current.srcObject = stream;
         // `torch` is not in the DOM typings; `getCapabilities` itself is missing in some browsers.
         const capabilities = stream.getVideoTracks()[0]?.getCapabilities?.() as
-          { torch?: boolean; focusMode?: string[] } | undefined;
+          | {
+              torch?: boolean;
+              focusMode?: string[];
+              zoom?: Partial<ZoomRange>;
+            }
+          | undefined;
         setTorchSupported(capabilities?.torch === true);
+        const zoom = capabilities?.zoom;
+        if (
+          typeof zoom?.min === 'number' &&
+          typeof zoom.max === 'number' &&
+          zoom.max > zoom.min
+        ) {
+          zoomRangeRef.current = { min: zoom.min, max: zoom.max };
+          setZoomSupported(true);
+        }
         focusSupportedRef.current =
           capabilities?.focusMode?.includes('single-shot') === true;
         setStatus('ready');
@@ -153,6 +185,21 @@ export function useCamera() {
       await track.applyConstraints({
         advanced: [{ torch: on }],
       } as TorchConstraints);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  /** Zooms the track to `level`, clamped to its capability; resolves to whether the camera took it. */
+  const setZoom = useCallback(async (level: number): Promise<boolean> => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    const range = zoomRangeRef.current;
+    if (!track || !range) return false;
+    try {
+      await track.applyConstraints({
+        advanced: [{ zoom: clampZoom(level, range) }],
+      } as ZoomConstraints);
       return true;
     } catch {
       return false;
@@ -216,8 +263,8 @@ export function useCamera() {
           {
             focusMode: 'single-shot',
             // Approximate: the feed is object-fit: cover, so the guide centre in the video's own
-            // coordinates is not exactly (0.5, GUIDE_CENTER_Y).
-            pointsOfInterest: [{ x: 0.5, y: GUIDE_CENTER_Y }],
+            // coordinates is not exactly (0.5, FOCUS_POINT_Y).
+            pointsOfInterest: [{ x: 0.5, y: FOCUS_POINT_Y }],
           },
         ],
       } as FocusConstraints)
@@ -270,6 +317,8 @@ export function useCamera() {
     videoRef,
     status,
     torchSupported,
+    zoomSupported,
+    setZoom,
     focusForScan,
     capture,
     setTorch,

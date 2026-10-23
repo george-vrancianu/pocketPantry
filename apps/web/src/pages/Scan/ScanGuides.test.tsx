@@ -3,23 +3,29 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { GUIDE_CENTER_Y } from '../../lib/scanGuides';
 import { ScanPage } from './ScanPage';
 
 // jsdom has no camera or canvas: the camera hook and image preparation are the seams.
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: true,
-    capture: () => Promise.resolve(new Blob(['frame'])),
-    setTorch: () => Promise.resolve(true),
-    watchBarcodes: () => () => {},
-  }),
-}));
+vi.mock('../../lib/camera', async () =>
+  (await import('../../test/scan')).fakeCameraModule(),
+);
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,AAAA'),
 }));
+
+function renderScanWithCalls() {
+  const stub = stubApi({
+    'POST /api/scan/receipt': () => Response.json({ lines: [] }),
+  });
+  vi.stubGlobal('fetch', stub.fetchMock);
+  renderWithProviders(
+    <Routes>
+      <Route path="/scan" element={<ScanPage />} />
+    </Routes>,
+    { route: '/scan' },
+  );
+  return stub;
+}
 
 function renderScan(
   route = '/scan',
@@ -54,30 +60,20 @@ describe('Scan guides', () => {
     vi.unstubAllGlobals();
   });
 
-  it.each([
-    ['Receipt', '52%', '64%'],
-    ['Product', '60%', '48%'],
-    ['Ingredients', '88%', '42%'],
-    ['Plate', '80%', '50%'],
-  ])('sizes the %s guide to %s x %s of the screen', async (mode, w, h) => {
-    renderScan();
-    await userEvent.click(screen.getByRole('radio', { name: mode }));
-    const style = getComputedStyle(guide());
-    expect(style.width).toBe(w);
-    expect(style.height).toBe(h);
-  });
-
-  it('centres the guide at 46% of the screen height', () => {
-    renderScan();
-    const style = getComputedStyle(guide());
-    expect(style.top).toBe('46%');
-    expect(style.left).toBe('50%');
-  });
-
-  it('places the guide top from GUIDE_CENTER_Y', () => {
-    renderScan();
-    expect(getComputedStyle(guide()).top).toBe(`${GUIDE_CENTER_Y * 100}%`);
-  });
+  it.each(['Receipt', 'Ingredients', 'Product', 'Plate', 'Barcode'])(
+    'morphs to the %s guide when the mode changes',
+    async (mode) => {
+      renderScan();
+      const before = guide().getAttribute('class');
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('radio', { name: mode }));
+      // One guide element throughout: it changes shape in place instead of being replaced.
+      expect(guide()).toBeInTheDocument();
+      if (mode !== 'Receipt') {
+        expect(guide().getAttribute('class')).not.toBe(before);
+      }
+    },
+  );
 
   it('draws four corner brackets', () => {
     renderScan();
@@ -93,7 +89,7 @@ describe('Scan guides', () => {
     expect(className).toBeDefined();
   });
 
-  it('drops the morph and the armed colour fade for reduced motion', () => {
+  it('drops the morph for reduced motion', () => {
     renderScan();
     const rules = cssRules();
     const noTransition = (el: Element) =>
@@ -109,39 +105,63 @@ describe('Scan guides', () => {
   });
 });
 
-describe('Scan guide armed state', () => {
+describe('The guide takes no input', () => {
   beforeEach(() => {
     localStorage.clear();
-    vi.useFakeTimers();
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
-  it('flashes armed on pointer down for 320 ms', () => {
+  it('is not a button and not in the tab order, in every mode', async () => {
     renderScan();
-    expect(guide()).not.toHaveAttribute('data-armed', 'true');
-    fireEvent.pointerDown(guide());
-    expect(guide()).toHaveAttribute('data-armed', 'true');
-    act(() => {
-      vi.advanceTimersByTime(319);
-    });
-    expect(guide()).toHaveAttribute('data-armed', 'true');
-    act(() => {
-      vi.advanceTimersByTime(2);
-    });
-    expect(guide()).not.toHaveAttribute('data-armed', 'true');
+    for (const mode of [
+      'Receipt',
+      'Product',
+      'Ingredients',
+      'Plate',
+      'Barcode',
+    ]) {
+      await userEvent.click(screen.getByRole('radio', { name: mode }));
+      expect(guide()).not.toHaveAttribute('role');
+      expect(guide()).not.toHaveAttribute('tabindex');
+      expect(guide()).toHaveAttribute('aria-hidden', 'true');
+      expect(getComputedStyle(guide()).pointerEvents).toBe('none');
+    }
+    expect(
+      screen.queryByRole('button', { name: /double-tap/i }),
+    ).not.toBeInTheDocument();
   });
 
-  it('re-arms on the next press', () => {
-    renderScan();
-    fireEvent.pointerDown(guide());
-    act(() => {
-      vi.advanceTimersByTime(400);
-    });
-    fireEvent.pointerDown(guide());
-    expect(guide()).toHaveAttribute('data-armed', 'true');
+  it('does nothing when double-tapped', async () => {
+    const { calls } = renderScanWithCalls();
+    const pointer = {
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+    };
+    for (let i = 0; i < 2; i += 1) {
+      fireEvent.pointerDown(guide(), pointer);
+      fireEvent.pointerUp(guide(), pointer);
+      fireEvent.click(guide(), { detail: 0 });
+      fireEvent.keyDown(guide(), { key: 'Enter' });
+    }
+    await act(async () => {});
+    expect(screen.queryByTestId('scan-flash')).toBeNull();
+    expect(guide()).not.toHaveAttribute('data-pulse');
+    expect(calls.filter((c) => c.key.startsWith('POST /api/scan/'))).toEqual(
+      [],
+    );
+  });
+
+  it('flashes and pulses on a shutter Scan, and its brackets thicken', async () => {
+    renderScan('/scan?mode=product');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Take photo' }));
+    expect(screen.getByTestId('scan-flash')).toBeInTheDocument();
+    expect(guide()).toHaveAttribute('data-pulse', 'true');
+    expect(screen.getByTestId('scan-guide-fill')).toBeInTheDocument();
   });
 });
 
