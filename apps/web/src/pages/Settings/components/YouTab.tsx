@@ -31,7 +31,6 @@ import { SiriSection } from './SiriSection';
 import { ScopeCaption, SectionHeading } from './SectionHeading';
 
 const SAME_AS_UI = 'same-as-ui';
-const CATALOG_LANGUAGES = LOCALES;
 
 const initials = (name: string) =>
   name
@@ -94,6 +93,7 @@ export function YouTab() {
                 onSuccess: () =>
                   toast.show(
                     i18n.getFixedT(locale, 'settings')('languageSaved'),
+                    { polite: true },
                   ),
               })
             }
@@ -108,7 +108,7 @@ export function YouTab() {
               value={preferences.data.catalogLanguage ?? SAME_AS_UI}
               options={[
                 { value: SAME_AS_UI, label: t('catalogLanguage.sameAsUi') },
-                ...CATALOG_LANGUAGES.map((language) => ({
+                ...LOCALES.map((language) => ({
                   value: language,
                   label: t(`languageNames.${language}`),
                   lang: language,
@@ -118,7 +118,10 @@ export function YouTab() {
                 saveCatalogLanguage.mutate(
                   value === SAME_AS_UI ? null : value,
                   {
-                    onSuccess: () => toast.show(t('catalogLanguage.saved')),
+                    onSuccess: () =>
+                      toast.show(t('catalogLanguage.saved'), {
+                        polite: true,
+                      }),
                   },
                 )
               }

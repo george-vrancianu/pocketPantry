@@ -57,7 +57,7 @@ export class ShoppingTemplatesController {
   ): Promise<{ templates: TemplateSummaryView[] }> {
     return this.templates.list(
       member.id,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 
@@ -71,7 +71,7 @@ export class ShoppingTemplatesController {
     return this.templates.create(
       member.id,
       body,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 
@@ -88,7 +88,7 @@ export class ShoppingTemplatesController {
     return this.templates.createFromList(
       member.id,
       body.name,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 
@@ -105,7 +105,7 @@ export class ShoppingTemplatesController {
     return this.templates.get(
       member.id,
       id,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
       today,
     );
   }
@@ -122,7 +122,7 @@ export class ShoppingTemplatesController {
       member.id,
       id,
       body,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 

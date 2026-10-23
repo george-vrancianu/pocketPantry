@@ -111,8 +111,10 @@ export class SettingsController {
   @ApiOperation({ summary: "The signed-in Member's Member Preferences" })
   preferences(
     @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(settingsLocaleQuery))
+    { locale }: SettingsLocaleQuery,
   ): Promise<PreferencesView> {
-    return this.settings.getPreferences(member.id);
+    return this.settings.getPreferences(member.id, locale);
   }
 
   @Put('preferences')
@@ -124,9 +126,11 @@ export class SettingsController {
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(updatePreferencesBody))
     body: UpdatePreferencesBody,
+    @Query(new ZodValidationPipe(settingsLocaleQuery))
+    { locale }: SettingsLocaleQuery,
   ): Promise<PreferencesView> {
     await this.settings.setPreferences(member.id, body);
-    return this.settings.getPreferences(member.id);
+    return this.settings.getPreferences(member.id, locale);
   }
 
   @Get('allergies')

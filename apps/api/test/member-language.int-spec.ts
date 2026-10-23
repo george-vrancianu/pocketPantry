@@ -84,11 +84,11 @@ describe('Member language: Catalog Language (integration)', () => {
       .set('origin', TEST_ORIGIN)
       .set('cookie', cookie);
 
-  const savePreferences = (cookie: string, body: object) =>
-    api('put', cookie, '/settings/preferences').send(body);
+  const savePreferences = (cookie: string, body: object, locale?: string) =>
+    api('put', cookie, '/settings/preferences', locale).send(body);
 
-  const preferences = async (cookie: string) =>
-    (await api('get', cookie, '/settings/preferences').expect(200))
+  const preferences = async (cookie: string, locale?: string) =>
+    (await api('get', cookie, '/settings/preferences', locale).expect(200))
       .body as Preferences;
 
   const pantry = async (cookie: string, locale = 'en') =>
@@ -119,6 +119,17 @@ describe('Member language: Catalog Language (integration)', () => {
         catalogLanguage: null,
         effectiveCatalogLanguage: 'en',
       });
+    });
+
+    it('take the request locale as the UI Language when none is stored', async () => {
+      const { cookie } = await signUp();
+      expect(await preferences(cookie, 'ro')).toMatchObject({
+        locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'ro',
+      });
+      const saved = await savePreferences(cookie, { theme: 'dark' }, 'da');
+      expect(saved.body).toMatchObject({ effectiveCatalogLanguage: 'da' });
     });
 
     it('follow the UI Language while the Catalog Language is empty', async () => {
@@ -265,13 +276,17 @@ describe('Member language: Catalog Language (integration)', () => {
     it('follow the UI Language while the Catalog Language is empty', async () => {
       const { cookie } = await signUp();
       await stock(cookie, { ingredientId: seedId.ingredient('milk') });
+      await shop(cookie, { ingredientId: seedId.ingredient('milk') });
 
       await savePreferences(cookie, { locale: 'ro' });
       expect((await pantry(cookie, 'en'))[0].name).toBe('Lapte');
-      expect(shoppingNames(await shoppingList(cookie, 'en'))).toEqual([]);
+      expect(shoppingNames(await shoppingList(cookie, 'en'))).toEqual([
+        'Lapte',
+      ]);
 
       await savePreferences(cookie, { locale: 'da' });
       expect((await pantry(cookie, 'en'))[0].name).toBe('Mælk');
+      expect(shoppingNames(await shoppingList(cookie, 'en'))).toEqual(['Mælk']);
     });
 
     it('use the request locale only when the Member has stored no UI Language', async () => {

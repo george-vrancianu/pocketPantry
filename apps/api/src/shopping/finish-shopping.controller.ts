@@ -44,7 +44,7 @@ export class FinishShoppingController {
   ): Promise<FinishProposal> {
     return this.finishShopping.propose(
       member.id,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
       today,
     );
   }

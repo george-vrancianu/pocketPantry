@@ -23,14 +23,15 @@ function stubYou(
           role: member.role,
         },
       }),
-    'GET /api/settings/preferences': () =>
+    // Like the API: with no stored UI Language, the request's `locale` is the UI Language.
+    'GET /api/settings/preferences': (url) =>
       Response.json({
         locale: null,
         catalogLanguage: null,
-        effectiveCatalogLanguage: 'en',
+        effectiveCatalogLanguage: url.searchParams.get('locale'),
         theme: null,
       }),
-    'PUT /api/settings/preferences': () => {
+    'PUT /api/settings/preferences': (url) => {
       const body = calls.at(-1)?.body as Record<string, unknown>;
       return saveLocale.ok
         ? Response.json(
@@ -38,7 +39,8 @@ function stubYou(
               ? {
                   locale: null,
                   catalogLanguage: body.catalogLanguage,
-                  effectiveCatalogLanguage: body.catalogLanguage ?? 'en',
+                  effectiveCatalogLanguage:
+                    body.catalogLanguage ?? url.searchParams.get('locale'),
                   theme: null,
                 }
               : {
@@ -152,6 +154,20 @@ describe('Settings You tab', () => {
       ]);
       expect(buttons[0]).toHaveAttribute('aria-pressed', 'true');
       expect(screen.getByText(/Shown in English/)).toBeInTheDocument();
+    });
+
+    it('sends the UI Language so the effective language follows it while none is stored', async () => {
+      stubSystemScheme(false);
+      const calls = stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      await screen.findByText(/Shown in English/);
+      expect(calls).toContainEqual(
+        expect.objectContaining({
+          key: 'GET /api/settings/preferences',
+          search: '?locale=en',
+        }),
+      );
     });
 
     it('saves a chosen language and shows it as the effective one', async () => {

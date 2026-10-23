@@ -42,7 +42,7 @@ export class SuggestionsController {
   ): Promise<SuggestionsView> {
     return this.suggestions.list(
       member.id,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
       today,
     );
   }

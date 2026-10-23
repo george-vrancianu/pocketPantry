@@ -55,7 +55,7 @@
   "catalogLanguage": {
     "label": "Catalog Language",
     "sameAsUi": "Same as UI Language",
-    "hint": "Names of ingredients, categories and aisles. Shown in {{language}}.",
+    "hint": "Names of Ingredients, Categories and Aisles. Shown in {{language}}.",
     "saveFailed": "Could not save your Catalog Language. Try again.",
     "saved": "Catalog Language saved"
   },

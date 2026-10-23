@@ -52,7 +52,7 @@ export class StaplesController {
     return {
       staples: await this.staples.list(
         member.id,
-        await this.languages.languageOf(member.id, 'catalog', locale),
+        await this.languages.catalogLanguageOf(member.id, locale),
       ),
     };
   }
@@ -67,7 +67,7 @@ export class StaplesController {
     return this.staples.add(
       member.id,
       body,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 
@@ -83,7 +83,7 @@ export class StaplesController {
       member.id,
       id,
       body,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 

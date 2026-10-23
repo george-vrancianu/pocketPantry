@@ -37,7 +37,7 @@ import { ShoppingService } from './shopping.service';
 const localeQuery = new ZodValidationPipe(shoppingLocaleQuery);
 const idParam = new ZodValidationPipe(itemIdParam);
 
-/** Every route works on the signed-in Member's Family list; names come back in `locale`. */
+/** Every route works on the signed-in Member's Family list; names come back in the Member's Catalog Language. */
 @ApiTags('shopping-list')
 @UseGuards(AuthGuard)
 @Controller('shopping-list')
@@ -57,7 +57,7 @@ export class ShoppingController {
   ): Promise<ShoppingListView> {
     return this.shopping.getList(
       member.id,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 
@@ -75,7 +75,7 @@ export class ShoppingController {
     return this.shopping.addItem(
       member.id,
       body,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 
@@ -94,7 +94,7 @@ export class ShoppingController {
     return this.shopping.addItems(
       member.id,
       body.items,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 
@@ -110,7 +110,7 @@ export class ShoppingController {
       member.id,
       id,
       body.checked,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 
@@ -126,7 +126,7 @@ export class ShoppingController {
       member.id,
       id,
       body,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 
@@ -140,7 +140,7 @@ export class ShoppingController {
     return this.shopping.removeItem(
       member.id,
       id,
-      await this.languages.languageOf(member.id, 'catalog', locale),
+      await this.languages.catalogLanguageOf(member.id, locale),
     );
   }
 }

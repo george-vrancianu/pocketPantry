@@ -202,7 +202,10 @@ export class SettingsService {
     };
   }
 
-  async getPreferences(memberId: string): Promise<PreferencesView> {
+  async getPreferences(
+    memberId: string,
+    requestLocale?: CatalogLocale,
+  ): Promise<PreferencesView> {
     const [row] = await this.database
       .select({
         locale: user.locale,
@@ -220,7 +223,9 @@ export class SettingsService {
       locale,
       catalogLanguage:
         CATALOG_LOCALES.find((l) => l === row.catalogLanguage) ?? null,
-      effectiveCatalogLanguage: resolveLanguage('catalog', row),
+      effectiveCatalogLanguage: resolveLanguage('catalog', row, {
+        requestLocale,
+      }),
       theme,
       hideRecipesWithAllergies: row.hideRecipesWithAllergies,
     };

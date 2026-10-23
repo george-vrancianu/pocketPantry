@@ -67,7 +67,7 @@ export class PantryController {
     return {
       ingredients: await this.recentlyStocked.list(
         member.id,
-        await this.languages.languageOf(member.id, 'catalog', query.locale),
+        await this.languages.catalogLanguageOf(member.id, query.locale),
         query.limit,
       ),
     };
@@ -85,7 +85,7 @@ export class PantryController {
     return {
       batches: await this.pantry.list(
         member.id,
-        await this.languages.languageOf(member.id, 'catalog', query.locale),
+        await this.languages.catalogLanguageOf(member.id, query.locale),
       ),
       runningLow: await this.runningLow.list(member.id),
     };
@@ -131,7 +131,7 @@ export class PantryController {
     return this.pantry.create(
       member.id,
       body,
-      await this.languages.languageOf(member.id, 'catalog', query.locale),
+      await this.languages.catalogLanguageOf(member.id, query.locale),
       query.scanLanguage,
     );
   }
@@ -150,7 +150,7 @@ export class PantryController {
       batches: await this.pantry.createMany(
         member.id,
         body.batches,
-        await this.languages.languageOf(member.id, 'catalog', query.locale),
+        await this.languages.catalogLanguageOf(member.id, query.locale),
         query.scanLanguage,
       ),
     };
@@ -184,7 +184,7 @@ export class PantryController {
       member.id,
       params.id,
       body,
-      await this.languages.languageOf(member.id, 'catalog', query.locale),
+      await this.languages.catalogLanguageOf(member.id, query.locale),
     );
   }
 

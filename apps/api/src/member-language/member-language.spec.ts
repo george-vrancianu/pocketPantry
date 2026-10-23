@@ -4,13 +4,17 @@ const none = { locale: null, catalogLanguage: null };
 
 describe('Member language resolver', () => {
   it('uses the stored UI Language, then the request locale, then English', () => {
-    expect(resolveLanguage('ui', { ...none, locale: 'da' }, 'ro')).toBe('da');
-    expect(resolveLanguage('ui', none, 'ro')).toBe('ro');
+    expect(
+      resolveLanguage('ui', { ...none, locale: 'da' }, { requestLocale: 'ro' }),
+    ).toBe('da');
+    expect(resolveLanguage('ui', none, { requestLocale: 'ro' })).toBe('ro');
     expect(resolveLanguage('ui', none)).toBe('en');
   });
 
   it('ignores a stored value that is not a catalog language', () => {
-    expect(resolveLanguage('ui', { ...none, locale: 'fr' }, 'ro')).toBe('ro');
+    expect(
+      resolveLanguage('ui', { ...none, locale: 'fr' }, { requestLocale: 'ro' }),
+    ).toBe('ro');
     expect(
       resolveLanguage('catalog', { locale: 'da', catalogLanguage: 'xx' }),
     ).toBe('da');
@@ -20,11 +24,25 @@ describe('Member language resolver', () => {
     expect(
       resolveLanguage('catalog', { locale: 'en', catalogLanguage: 'ro' }),
     ).toBe('ro');
-    expect(resolveLanguage('catalog', { ...none, locale: 'da' }, 'ro')).toBe(
-      'da',
+    expect(
+      resolveLanguage(
+        'catalog',
+        { ...none, locale: 'da' },
+        { requestLocale: 'ro' },
+      ),
+    ).toBe('da');
+    expect(resolveLanguage('catalog', none, { requestLocale: 'ro' })).toBe(
+      'ro',
     );
-    expect(resolveLanguage('catalog', none, 'ro')).toBe('ro');
     expect(resolveLanguage('catalog', none)).toBe('en');
+  });
+
+  it('lets an explicit override win over everything stored', () => {
+    const stored = { locale: 'da', catalogLanguage: 'ro' };
+    expect(resolveLanguage('catalog', stored, { override: 'en' })).toBe('en');
+    expect(
+      resolveLanguage('ui', stored, { override: 'ro', requestLocale: 'en' }),
+    ).toBe('ro');
   });
 
   it('answers every role at once', () => {

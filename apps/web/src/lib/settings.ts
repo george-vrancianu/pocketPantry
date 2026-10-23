@@ -1,5 +1,6 @@
 import type { ThemeId } from '@pocket-pantry/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from './api';
 import { recipesQueryKey } from './recipes';
 import { recipeMatchingQueryKeys, suggestionsQueryKey } from './queryKeys';
@@ -127,10 +128,19 @@ export function useRemoveExpiryOverride() {
   });
 }
 
+/**
+ * The Member's Preferences. The device's UI Language goes along as `locale`, the way Pantry and Shopping
+ * send it, so `effectiveCatalogLanguage` is right while no UI Language is stored (ticket 475 removes both).
+ * `ApplyMemberLocale` refetches when the UI Language changes.
+ */
 export function useMemberPreferences() {
+  const { i18n } = useTranslation();
   return useQuery({
     queryKey: preferencesQueryKey,
-    queryFn: () => apiRequest<MemberPreferences>('/settings/preferences'),
+    queryFn: () =>
+      apiRequest<MemberPreferences>(
+        `/settings/preferences?${localeParams(i18n.resolvedLanguage ?? i18n.language)}`,
+      ),
     retry: false,
   });
 }
@@ -171,23 +181,24 @@ export function useSaveLocale() {
   const apply = useApplySavedLanguages();
   return useMutation({
     mutationFn: (locale: Locale) =>
-      apiRequest<MemberPreferences>('/settings/preferences', {
-        method: 'PUT',
-        body: { locale },
-      }),
+      apiRequest<MemberPreferences>(
+        `/settings/preferences?${localeParams(locale)}`,
+        { method: 'PUT', body: { locale } },
+      ),
     onSuccess: apply,
   });
 }
 
 /** Saves the Catalog Language; `null` is "Same as UI Language". */
 export function useSaveCatalogLanguage() {
+  const { i18n } = useTranslation();
   const apply = useApplySavedLanguages();
   return useMutation({
     mutationFn: (catalogLanguage: Locale | null) =>
-      apiRequest<MemberPreferences>('/settings/preferences', {
-        method: 'PUT',
-        body: { catalogLanguage },
-      }),
+      apiRequest<MemberPreferences>(
+        `/settings/preferences?${localeParams(i18n.resolvedLanguage ?? i18n.language)}`,
+        { method: 'PUT', body: { catalogLanguage } },
+      ),
     onSuccess: apply,
   });
 }

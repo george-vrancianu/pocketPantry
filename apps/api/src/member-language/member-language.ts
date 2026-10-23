@@ -19,21 +19,29 @@ export type StoredLanguagePreferences = {
 
 export type MemberLanguages = Record<LanguageRole, CatalogLocale>;
 
+export type LanguageOptions = {
+  /** An explicit choice for this one job (say, this Scan Session); wins over everything stored. */
+  override?: CatalogLocale;
+  /** The request's `?locale=`, kept until the contract ticket removes it. */
+  requestLocale?: CatalogLocale;
+};
+
 const asCatalogLocale = (value: string | null): CatalogLocale | null =>
   CATALOG_LOCALES.find((locale) => locale === value) ?? null;
 
 /**
  * The language a Member has right now for `role`.
  *
- * Order: the stored Preference; "Same as UI Language" (empty) takes the UI
- * Language; with no stored UI Language, `requestLocale` (the request's
- * `?locale=`, kept until the contract ticket removes it); then English.
+ * Order: `override`; the stored Preference; "Same as UI Language" (empty)
+ * takes the UI Language; with no stored UI Language, `requestLocale`; then
+ * English.
  */
 export function resolveLanguage(
   role: LanguageRole,
   stored: StoredLanguagePreferences,
-  requestLocale?: CatalogLocale,
+  { override, requestLocale }: LanguageOptions = {},
 ): CatalogLocale {
+  if (override) return override;
   const ui = asCatalogLocale(stored.locale) ?? requestLocale ?? FALLBACK_LOCALE;
   switch (role) {
     case 'ui':
@@ -46,10 +54,10 @@ export function resolveLanguage(
 /** Every role at once, for callers that need more than one. */
 export function resolveLanguages(
   stored: StoredLanguagePreferences,
-  requestLocale?: CatalogLocale,
+  options: LanguageOptions = {},
 ): MemberLanguages {
   return {
-    ui: resolveLanguage('ui', stored, requestLocale),
-    catalog: resolveLanguage('catalog', stored, requestLocale),
+    ui: resolveLanguage('ui', stored, options),
+    catalog: resolveLanguage('catalog', stored, options),
   };
 }

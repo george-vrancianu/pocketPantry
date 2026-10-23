@@ -5,6 +5,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { user } from '../database/schema';
 import {
+  type LanguageOptions,
   type LanguageRole,
   type MemberLanguages,
   resolveLanguage,
@@ -23,16 +24,24 @@ export class MemberLanguageService {
   async languageOf(
     memberId: string,
     role: LanguageRole,
+    options: LanguageOptions = {},
+  ): Promise<CatalogLocale> {
+    return resolveLanguage(role, await this.stored(memberId), options);
+  }
+
+  /** The Catalog Language, for the routes that return Ingredient, Category and Aisle names. */
+  catalogLanguageOf(
+    memberId: string,
     requestLocale?: CatalogLocale,
   ): Promise<CatalogLocale> {
-    return resolveLanguage(role, await this.stored(memberId), requestLocale);
+    return this.languageOf(memberId, 'catalog', { requestLocale });
   }
 
   async languagesOf(
     memberId: string,
-    requestLocale?: CatalogLocale,
+    options: LanguageOptions = {},
   ): Promise<MemberLanguages> {
-    return resolveLanguages(await this.stored(memberId), requestLocale);
+    return resolveLanguages(await this.stored(memberId), options);
   }
 
   private async stored(memberId: string) {

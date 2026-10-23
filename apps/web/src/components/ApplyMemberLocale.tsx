@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { changeLocale } from '../i18n';
-import { useMemberPreferences } from '../lib/settings';
+import { preferencesQueryKey, useMemberPreferences } from '../lib/settings';
 
 /**
  * Applies the locale saved on the Member (a Member Preference) once it loads, so
@@ -15,5 +16,13 @@ export function ApplyMemberLocale() {
     // Only react to the saved value changing, not to the Member switching language later.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saved]);
+  // The effective Catalog Language depends on the UI Language while none is stored.
+  const queryClient = useQueryClient();
+  const language = i18n.resolvedLanguage ?? i18n.language;
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) first.current = false;
+    else void queryClient.invalidateQueries({ queryKey: preferencesQueryKey });
+  }, [language, queryClient]);
   return null;
 }
