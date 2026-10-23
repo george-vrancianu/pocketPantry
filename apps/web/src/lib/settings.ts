@@ -11,6 +11,7 @@ import {
   suggestionsQueryKey,
 } from './queryKeys';
 import type { Locale, ScanLanguage } from '../i18n/resources';
+import { languagePicksBody, type LanguagePicks } from './intro';
 
 export type ExpiryOverride = {
   categoryId: string;
@@ -231,6 +232,17 @@ export function useSaveLanguagePreference(
         body: { [field]: language },
       }),
     onSuccess: apply,
+  });
+}
+
+/**
+ * Saves the language picks made on Languages, in one call, once the account exists. A row left on "Same"
+ * is not in the body, so it stores nothing.
+ */
+export function saveIntroLanguages(picks: LanguagePicks) {
+  return apiRequest<MemberPreferences>('/settings/preferences', {
+    method: 'PUT',
+    body: languagePicksBody(picks),
   });
 }
 

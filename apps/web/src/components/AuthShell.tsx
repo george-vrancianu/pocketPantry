@@ -16,11 +16,22 @@ type Props = {
   subtitle: string;
   /** The label of a link back to Launch (the Intro start); left out, there is none. */
   back?: string;
+  /** Where the back link goes; Launch by default. */
+  backHref?: string;
+  /** The EN/RO/DA switch; sign-up leaves it out, because Languages already chose the language. */
+  languageSwitcher?: boolean;
   children: ReactNode;
 };
 
 /** Frame shared by Log in and sign-up. Part of the Intro, so always in the light look. */
-export function AuthShell({ title, subtitle, back, children }: Props) {
+export function AuthShell({
+  title,
+  subtitle,
+  back,
+  backHref = '/',
+  languageSwitcher = true,
+  children,
+}: Props) {
   const { t } = useTranslation('common');
   return (
     <IntroLook>
@@ -37,9 +48,9 @@ export function AuthShell({ title, subtitle, back, children }: Props) {
             <Typography variant="sectionLabel" color="text.secondary">
               {t('appName')}
             </Typography>
-            <LanguageSwitcher />
+            {languageSwitcher ? <LanguageSwitcher /> : null}
           </Box>
-          {back ? <Link href="/">{back}</Link> : null}
+          {back ? <Link href={backHref}>{back}</Link> : null}
           <GatorImage mood="app-icon" size={64} decorative />
           <Stack spacing={0.5}>
             <Typography variant="h1">{title}</Typography>

@@ -10,7 +10,25 @@
   },
   "languages": {
     "title": "Limbile tale",
-    "continue": "Continuă"
+    "continue": "Continuă",
+    "back": "Înapoi",
+    "app": "Limba aplicației",
+    "fromPhone": "Aleasă după limba telefonului tău",
+    "alsoUsedFor": "Folosită și pentru",
+    "voiceNotes": {
+      "label": "Notițe vocale",
+      "hint": "Ce îi spui lui Gator"
+    },
+    "receipts": {
+      "label": "Bonuri și etichete",
+      "hint": "Ce citește camera"
+    },
+    "groceryNames": {
+      "label": "Numele alimentelor",
+      "hint": "Cum sunt numite produsele în listele tale"
+    },
+    "same": "La fel · <language>{{language}}</language>",
+    "abroad": "Faci cumpărături în străinătate? Setează Bonuri și etichete pe limba țării respective. Le poți schimba pe toate mai târziu, în Setări."
   },
   "setup": {
     "title": "Umpli Cămara cu Gator?",
@@ -19,6 +37,8 @@
     "showMeSnap": "1 · Fă o poză",
     "showMeSay": "2 · Spune-o",
     "skip": "Sari peste, du-mă în aplicație",
-    "skipHint": "Începe cu o Cămară goală"
+    "skipHint": "Începe cu o Cămară goală",
+    "showMeSoon": "În curând",
+    "languagesNotSaved": "Nu ți-am putut salva limbile. Ai ales {{choices}}. Le poți seta din nou în Setări."
   }
 }

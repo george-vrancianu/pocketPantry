@@ -1,4 +1,5 @@
 import {
+  FALLBACK_LOCALE,
   isLocale,
   isScanLanguage,
   type Locale,
@@ -198,4 +199,31 @@ export function languagePicksBody(picks: LanguagePicks) {
       ? { catalogLanguage: picks.catalogLanguage }
       : {}),
   };
+}
+
+/**
+ * The first language on the phone's list that the app speaks (`en-GB` counts as English), or `null` when
+ * none is supported, so Languages falls back to English without claiming the phone picked it.
+ */
+export function phoneLocale(languages: readonly string[]): Locale | null {
+  for (const language of languages) {
+    const base = language.slice(0, 2).toLowerCase();
+    if (isLocale(base)) return base;
+  }
+  return null;
+}
+
+/** What the Languages screen starts on: the picks kept on the device, else the phone's language, else English. */
+export function initialLanguagePicks(
+  kept: LanguagePicks | null,
+  phone: Locale | null,
+): LanguagePicks {
+  return (
+    kept ?? {
+      locale: phone ?? FALLBACK_LOCALE,
+      spokenLanguage: null,
+      scanLanguage: null,
+      catalogLanguage: null,
+    }
+  );
 }

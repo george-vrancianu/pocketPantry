@@ -10,7 +10,25 @@
   },
   "languages": {
     "title": "Your languages",
-    "continue": "Continue"
+    "continue": "Continue",
+    "back": "Back",
+    "app": "App language",
+    "fromPhone": "Picked from your phone's language",
+    "alsoUsedFor": "Also used for",
+    "voiceNotes": {
+      "label": "Voice Notes",
+      "hint": "What you say to Gator"
+    },
+    "receipts": {
+      "label": "Receipts & labels",
+      "hint": "What the camera reads"
+    },
+    "groceryNames": {
+      "label": "Grocery names",
+      "hint": "How items are named in your lists"
+    },
+    "same": "Same · <language>{{language}}</language>",
+    "abroad": "Shopping abroad? Set Receipts & labels to that country's language. You can change all of these later in Settings."
   },
   "setup": {
     "title": "Fill your Pantry with Gator?",
@@ -19,6 +37,8 @@
     "showMeSnap": "1 · Snap a photo",
     "showMeSay": "2 · Say it",
     "skip": "Skip, take me to the app",
-    "skipHint": "Start with an empty Pantry"
+    "skipHint": "Start with an empty Pantry",
+    "showMeSoon": "Coming soon",
+    "languagesNotSaved": "We couldn't save your languages. You chose {{choices}}. You can set them again in Settings."
   }
 }

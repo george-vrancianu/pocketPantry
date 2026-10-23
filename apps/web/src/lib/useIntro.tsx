@@ -11,6 +11,7 @@ import {
   addSetupCounts,
   INTRO_PATHS,
   NO_SETUP_COUNTS,
+  type LanguagePicks,
   type SetupCounts,
 } from './intro';
 import { useMarkIntroDone } from './settings';
@@ -25,6 +26,9 @@ type IntroApi = {
   /** The Member chose "Show me how": the Scan screen may be used from Setup. */
   setupStarted: boolean;
   startSetup: () => void;
+  /** Picks that sign-up could not save, so Set up or skip can say what the Member chose; in memory only. */
+  unsavedLanguages: LanguagePicks | null;
+  setUnsavedLanguages: (picks: LanguagePicks | null) => void;
   /** Reach the Dashboard from the Intro: marks the Member done, then goes there. */
   finishIntro: () => void;
   finishing: boolean;
@@ -39,6 +43,8 @@ export function IntroProvider({ children }: { children: ReactNode }) {
   const markDone = useMarkIntroDone();
   const [counts, setCounts] = useState(NO_SETUP_COUNTS);
   const [setupStarted, setSetupStarted] = useState(false);
+  const [unsavedLanguages, setUnsavedLanguages] =
+    useState<LanguagePicks | null>(null);
   const { mutate } = markDone;
 
   const recordSaved = useCallback(
@@ -67,6 +73,8 @@ export function IntroProvider({ children }: { children: ReactNode }) {
       resumeSetup,
       setupStarted,
       startSetup,
+      unsavedLanguages,
+      setUnsavedLanguages,
       finishIntro,
       finishing: markDone.isPending,
       finishError: markDone.error,
@@ -77,6 +85,7 @@ export function IntroProvider({ children }: { children: ReactNode }) {
       resumeSetup,
       setupStarted,
       startSetup,
+      unsavedLanguages,
       finishIntro,
       markDone.isPending,
       markDone.error,

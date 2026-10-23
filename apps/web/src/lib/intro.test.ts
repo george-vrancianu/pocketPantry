@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   addSetupCounts,
+  initialLanguagePicks,
   introRedirect,
   languagePicksBody,
   nextStep,
   NO_SETUP_COUNTS,
   parseLanguagePicks,
+  phoneLocale,
   skipStep,
 } from './intro';
 
@@ -92,5 +94,35 @@ describe('language picks', () => {
     expect(parseLanguagePicks('{"locale":"xx"}')).toBeNull();
     expect(parseLanguagePicks('nope')).toBeNull();
     expect(parseLanguagePicks(null)).toBeNull();
+  });
+});
+
+describe('the phone language', () => {
+  it('takes the first listed language the app speaks, by its base code', () => {
+    expect(phoneLocale(['fr-FR', 'ro-RO', 'en'])).toBe('ro');
+    expect(phoneLocale(['en-GB'])).toBe('en');
+    expect(phoneLocale(['DA'])).toBe('da');
+  });
+
+  it('is none when the phone speaks nothing the app does', () => {
+    expect(phoneLocale(['fr-FR', 'de'])).toBeNull();
+    expect(phoneLocale([])).toBeNull();
+  });
+
+  it('starts Languages on the kept picks, else the phone, else English with every other row on Same', () => {
+    const kept = {
+      locale: 'da',
+      spokenLanguage: 'en',
+      scanLanguage: null,
+      catalogLanguage: null,
+    } as const;
+    expect(initialLanguagePicks(kept, 'ro')).toEqual(kept);
+    expect(initialLanguagePicks(null, 'ro')).toEqual({
+      locale: 'ro',
+      spokenLanguage: null,
+      scanLanguage: null,
+      catalogLanguage: null,
+    });
+    expect(initialLanguagePicks(null, null).locale).toBe('en');
   });
 });
