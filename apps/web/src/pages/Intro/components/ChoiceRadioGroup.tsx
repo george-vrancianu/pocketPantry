@@ -34,6 +34,10 @@ type Props<T extends string> = {
  * A real radio group: native radio inputs sharing one name, so the arrow keys move and pick and Tab
  * enters and leaves the group. The look is on the label; the input is hidden but stays focusable.
  */
+function choiceRadius(layout: Props<string>['layout']) {
+  return layout === 'rows' ? radius.control : radius.chip;
+}
+
 export function ChoiceRadioGroup<T extends string>({
   label,
   hint,
@@ -46,7 +50,6 @@ export function ChoiceRadioGroup<T extends string>({
   const id = useId();
   const labelId = `${id}-label`;
   const hintId = `${id}-hint`;
-  const choiceRadius = layout === 'rows' ? radius.control : radius.chip;
   return (
     <Box
       role="radiogroup"
@@ -91,7 +94,7 @@ export function ChoiceRadioGroup<T extends string>({
                 boxSizing: 'border-box',
                 minHeight: layout === 'rows' ? 50 : 44,
                 px: '16px',
-                borderRadius: choiceRadius,
+                borderRadius: choiceRadius(layout),
                 border: '2px solid',
                 borderColor: selected ? 'pp.accent' : 'pp.cardLine',
                 backgroundColor: selected ? 'pp.accentTint' : 'pp.cardBg',
