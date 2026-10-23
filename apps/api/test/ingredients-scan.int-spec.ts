@@ -94,7 +94,7 @@ describe('Ingredients Scan (integration)', () => {
         await scan(cookie, { ingredientsImage: IMAGE }, 'en').expect(201)
       ).body as unknown;
       expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
-      expect(prompts[0].prompt).toMatch(/Danish/);
+      expect(prompts[0].prompt).toMatch(/labels in this photo is in Danish/);
       expect(body).toMatchObject({
         lines: [
           { match: { id: seedId.ingredient('parmesan'), name: 'Parmezan' } },

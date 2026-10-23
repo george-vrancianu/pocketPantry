@@ -29,8 +29,8 @@ export type RecentlyStockedView = CatalogSearchResult & {
 };
 
 /**
- * Scan and save-from-Review endpoints: `locale` still names the Ingredients
- * returned, `scanLanguage` is what this one Scan is read in. Without it the
+ * Scan and save-from-Review endpoints: `locale` is only a fallback UI
+ * Language; returned names follow the Member's Catalog Language. `scanLanguage` is what this one Scan is read in. Without it the
  * controller asks `MemberLanguageService.scanLanguageOf` (the Member's Scan
  * Language Preference).
  */
@@ -55,7 +55,7 @@ export const createBatchBody = z
     parentCategoryId: z.uuid().optional(),
     /** Unmatched only: where the name came from (a Scan Mode or typed); defaults to manual. */
     source: z.enum(BATCH_SOURCES).optional(),
-    /** Unmatched only: the text as printed on the receipt or package, in the query's Scan Language. `rawName` stays UI-locale text. */
+    /** Unmatched only: the text as printed on the receipt or package, in the query's Scan Language. `rawName` is in the Catalog Language. */
     sourceText: z.string().trim().min(1).max(200).optional(),
     quantity: batchQuantity.nullish(),
     unit: z.enum(ingredientUnit.enumValues).nullish(),
