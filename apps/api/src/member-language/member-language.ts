@@ -54,7 +54,7 @@ export function resolveLanguage(
 /** Every role at once, for callers that need more than one. */
 export function resolveLanguages(
   stored: StoredLanguagePreferences,
-  options: LanguageOptions = {},
+  options: Pick<LanguageOptions, 'requestLocale'> = {},
 ): MemberLanguages {
   return {
     ui: resolveLanguage('ui', stored, options),

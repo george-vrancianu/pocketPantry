@@ -156,18 +156,29 @@ describe('Settings You tab', () => {
       expect(screen.getByText(/Shown in English/)).toBeInTheDocument();
     });
 
-    it('sends the UI Language so the effective language follows it while none is stored', async () => {
+    it('follows the device language while no UI Language is stored', async () => {
       stubSystemScheme(false);
-      const calls = stubYou();
+      stubYou();
+      renderWithProviders(<SettingsPage />, {
+        route: '/settings',
+        locale: 'ro',
+      });
+
+      expect(await screen.findByText(/Afișate în Română/)).toBeInTheDocument();
+    });
+
+    it('updates the hint when the UI Language is switched', async () => {
+      stubSystemScheme(false);
+      stubYou();
       renderWithProviders(<SettingsPage />, { route: '/settings' });
 
-      await screen.findByText(/Shown in English/);
-      expect(calls).toContainEqual(
-        expect.objectContaining({
-          key: 'GET /api/settings/preferences',
-          search: '?locale=en',
-        }),
+      expect(await screen.findByText(/Shown in English/)).toBeInTheDocument();
+      const language = screen.getByRole('group', { name: 'Language' });
+      await userEvent.click(
+        within(language).getByRole('button', { name: 'Română' }),
       );
+
+      expect(await screen.findByText(/Afișate în Română/)).toBeInTheDocument();
     });
 
     it('saves a chosen language and shows it as the effective one', async () => {

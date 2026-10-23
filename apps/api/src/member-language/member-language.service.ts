@@ -39,7 +39,7 @@ export class MemberLanguageService {
 
   async languagesOf(
     memberId: string,
-    options: LanguageOptions = {},
+    options: Pick<LanguageOptions, 'requestLocale'> = {},
   ): Promise<MemberLanguages> {
     return resolveLanguages(await this.stored(memberId), options);
   }

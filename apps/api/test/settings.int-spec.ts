@@ -414,8 +414,10 @@ describe('Settings (integration)', () => {
       const { cookie } = await signUp();
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toMatchObject({
+      ).toEqual({
         locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -453,8 +455,10 @@ describe('Settings (integration)', () => {
         .join('; ');
       expect(
         (await call(otherDevice, 'get', '/preferences').expect(200)).body,
-      ).toMatchObject({
+      ).toEqual({
         locale: 'ro',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'ro',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -469,8 +473,10 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(mihai.cookie, 'get', '/preferences').expect(200)).body,
-      ).toMatchObject({
+      ).toEqual({
         locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -483,8 +489,10 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toMatchObject({
+      ).toEqual({
         locale: 'da',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'da',
         theme: null,
         hideRecipesWithAllergies: false,
       });
@@ -505,8 +513,10 @@ describe('Settings (integration)', () => {
       const saved = await call(ana.cookie, 'put', '/preferences')
         .send({ hideRecipesWithAllergies: true })
         .expect(200);
-      expect(saved.body).toMatchObject({
+      expect(saved.body).toEqual({
         locale: 'ro',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'ro',
         theme: null,
         hideRecipesWithAllergies: true,
       });
@@ -541,15 +551,19 @@ describe('Settings (integration)', () => {
             .send({ theme: 'dark' })
             .expect(200)
         ).body,
-      ).toMatchObject({
+      ).toEqual({
         locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
         theme: 'dark',
         hideRecipesWithAllergies: false,
       });
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toMatchObject({
+      ).toEqual({
         locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
         theme: 'dark',
         hideRecipesWithAllergies: false,
       });
@@ -570,8 +584,10 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toMatchObject({
+      ).toEqual({
         locale: 'ro',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'ro',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
       });
@@ -582,8 +598,10 @@ describe('Settings (integration)', () => {
             .send({ locale: 'da' })
             .expect(200)
         ).body,
-      ).toMatchObject({
+      ).toEqual({
         locale: 'da',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'da',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
       });
@@ -596,8 +614,10 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toMatchObject({
+      ).toEqual({
         locale: 'en',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
         theme: 'warm',
         hideRecipesWithAllergies: false,
       });
@@ -621,8 +641,10 @@ describe('Settings (integration)', () => {
         .where(eq(user.id, userId));
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toMatchObject({
+      ).toEqual({
         locale: null,
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
       });
