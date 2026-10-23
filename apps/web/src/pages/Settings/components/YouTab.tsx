@@ -21,10 +21,9 @@ import { SCAN_LANGUAGES } from '../../../i18n/resources';
 import { useSession, useSignOut } from '../../../lib/auth';
 import {
   useMemberPreferences,
-  useSaveCatalogLanguage,
+  useSaveLanguagePreference,
   useSaveLocale,
-  useSaveScanLanguage,
-  useSaveSpokenLanguage,
+  type MemberPreferences,
 } from '../../../lib/settings';
 import { useLoadedUnmatchedCount } from '../hooks/useLoadedUnmatchedCount';
 import { AllergiesSection } from './AllergiesSection';
@@ -41,15 +40,62 @@ const initials = (name: string) =>
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('');
 
+/** The three language Preferences after the UI Language: which field each is, and the languages it offers. */
+const LANGUAGE_PREFERENCES = [
+  {
+    field: 'catalogLanguage',
+    effective: 'effectiveCatalogLanguage',
+    languages: LOCALES,
+  },
+  {
+    field: 'scanLanguage',
+    effective: 'effectiveScanLanguage',
+    languages: SCAN_LANGUAGES,
+  },
+  {
+    field: 'spokenLanguage',
+    effective: 'effectiveSpokenLanguage',
+    languages: SCAN_LANGUAGES,
+  },
+] as const;
+
+/** One language Preference: its picker, its hint naming the effective language, and its save with a toast. */
+function LanguagePreferenceRow({
+  preference: { field, effective, languages },
+  preferences,
+}: {
+  preference: (typeof LANGUAGE_PREFERENCES)[number];
+  preferences: MemberPreferences;
+}) {
+  const { t } = useTranslation('settings');
+  const toast = useToast();
+  const save = useSaveLanguagePreference(field);
+  return (
+    <LanguagePreferencePicker
+      label={t(`${field}.label`)}
+      sameAsUiLabel={t(`${field}.sameAsUi`)}
+      languages={languages}
+      value={preferences[field]}
+      hint={t(`${field}.hint`, {
+        language: t(`languageNames.${preferences[effective]}`),
+      })}
+      onChange={(language) =>
+        save.mutate(language, {
+          onSuccess: () => toast.show(t(`${field}.saved`), { polite: true }),
+        })
+      }
+      failed={save.isError}
+      failedLabel={t(`${field}.saveFailed`)}
+    />
+  );
+}
+
 /** The You tab: the Member's own settings, each change saved as it is made. */
 export function YouTab() {
   const { t, i18n } = useTranslation('settings');
   const session = useSession();
   const signOut = useSignOut();
   const saveLocale = useSaveLocale();
-  const saveCatalogLanguage = useSaveCatalogLanguage();
-  const saveScanLanguage = useSaveScanLanguage();
-  const saveSpokenLanguage = useSaveSpokenLanguage();
   const preferences = useMemberPreferences();
   const toast = useToast();
   const navigate = useNavigate();
@@ -105,63 +151,13 @@ export function YouTab() {
         {saveLocale.isError ? <Alert>{t('localeSaveFailed')}</Alert> : null}
         {preferences.data ? (
           <>
-            <LanguagePreferencePicker
-              label={t('catalogLanguage.label')}
-              sameAsUiLabel={t('catalogLanguage.sameAsUi')}
-              languages={LOCALES}
-              value={preferences.data.catalogLanguage}
-              hint={t('catalogLanguage.hint', {
-                language: t(
-                  `languageNames.${preferences.data.effectiveCatalogLanguage}`,
-                ),
-              })}
-              onChange={(language) =>
-                saveCatalogLanguage.mutate(language, {
-                  onSuccess: () =>
-                    toast.show(t('catalogLanguage.saved'), { polite: true }),
-                })
-              }
-              failed={saveCatalogLanguage.isError}
-              failedLabel={t('catalogLanguage.saveFailed')}
-            />
-            <LanguagePreferencePicker
-              label={t('scanLanguage.label')}
-              sameAsUiLabel={t('scanLanguage.sameAsUi')}
-              languages={SCAN_LANGUAGES}
-              value={preferences.data.scanLanguage}
-              hint={t('scanLanguage.hint', {
-                language: t(
-                  `languageNames.${preferences.data.effectiveScanLanguage}`,
-                ),
-              })}
-              onChange={(language) =>
-                saveScanLanguage.mutate(language, {
-                  onSuccess: () =>
-                    toast.show(t('scanLanguage.saved'), { polite: true }),
-                })
-              }
-              failed={saveScanLanguage.isError}
-              failedLabel={t('scanLanguage.saveFailed')}
-            />
-            <LanguagePreferencePicker
-              label={t('spokenLanguage.label')}
-              sameAsUiLabel={t('spokenLanguage.sameAsUi')}
-              languages={SCAN_LANGUAGES}
-              value={preferences.data.spokenLanguage}
-              hint={t('spokenLanguage.hint', {
-                language: t(
-                  `languageNames.${preferences.data.effectiveSpokenLanguage}`,
-                ),
-              })}
-              onChange={(language) =>
-                saveSpokenLanguage.mutate(language, {
-                  onSuccess: () =>
-                    toast.show(t('spokenLanguage.saved'), { polite: true }),
-                })
-              }
-              failed={saveSpokenLanguage.isError}
-              failedLabel={t('spokenLanguage.saveFailed')}
-            />
+            {LANGUAGE_PREFERENCES.map((preference) => (
+              <LanguagePreferenceRow
+                key={preference.field}
+                preference={preference}
+                preferences={preferences.data}
+              />
+            ))}
           </>
         ) : null}
       </Stack>

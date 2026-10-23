@@ -54,7 +54,8 @@ export type VoiceNoteState = {
     blob: Blob;
     mimeType: string;
     durationMs: number;
-    spokenLanguage: ScanLanguage;
+    /** `undefined`: none was sent, the API used the Member's Spoken Language. */
+    spokenLanguage?: ScanLanguage;
   };
   /** What the server read from the recording, then as the Member edits it. */
   proposal?: {
@@ -198,7 +199,7 @@ export function createVoiceNote(
   let starting: { cancelled: boolean } | undefined;
   let session: MicrophoneSession | undefined;
   let limitTimer: ReturnType<typeof setTimeout> | undefined;
-  let recordingFor: { spokenLanguage: ScanLanguage } | undefined;
+  let recordingFor: { spokenLanguage?: ScanLanguage } | undefined;
   /** The audio of a stopped recording is being finalised. */
   let finishing = false;
 
@@ -347,7 +348,7 @@ export function createVoiceNote(
   /** Sends the audio and settles the note. Everything after an abort is ignored. */
   async function send(
     audio: Recording,
-    spokenLanguage: ScanLanguage,
+    spokenLanguage: ScanLanguage | undefined,
     defaultTarget: VoiceDefaultTarget,
   ) {
     const request = new AbortController();
@@ -404,7 +405,7 @@ export function createVoiceNote(
    */
   async function start(options: {
     defaultTarget: VoiceDefaultTarget;
-    spokenLanguage: ScanLanguage;
+    spokenLanguage?: ScanLanguage;
   }): Promise<StartOutcome> {
     const blocker = startBlocker();
     if (blocker === 'active') return 'refused';

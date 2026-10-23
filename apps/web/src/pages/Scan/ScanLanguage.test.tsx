@@ -58,7 +58,7 @@ const unmatchedLine = {
 
 function renderScan(
   route: string,
-  routes: Record<string, () => Response> = {},
+  routes: Record<string, () => Response | Promise<Response>> = {},
   locale: 'en' | 'ro' | 'da' = 'en',
 ) {
   const { fetchMock, calls } = stubApi({
@@ -94,6 +94,21 @@ describe('Scan Language on the Scan screen', () => {
   it('starts at the UI language', () => {
     renderScan('/scan', {}, 'ro');
     expect(languageChip()).toHaveTextContent('RO');
+  });
+
+  it('sends no Scan Language before the Preferences have loaded, so the API uses the stored one', async () => {
+    const calls = renderScan(
+      '/scan?mode=product',
+      {
+        'GET /api/settings/preferences': () => new Promise<Response>(() => {}),
+      },
+      'en',
+    );
+    expect(languageChip()).toHaveTextContent('EN');
+    takeScan();
+    await openFirstScanCard();
+    const scan = calls.find((c) => c.key === 'POST /api/scan/product');
+    expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBeNull();
   });
 
   it('starts at Dansk under a Danish UI', () => {

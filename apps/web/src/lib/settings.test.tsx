@@ -5,9 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stubApi } from '../test/render';
 import {
   preferencesQueryKey,
-  useSaveCatalogLanguage,
-  useSaveScanLanguage,
-  useSaveSpokenLanguage,
+  useSaveLanguagePreference,
   type MemberPreferences,
 } from './settings';
 
@@ -51,7 +49,10 @@ describe('saving a language Preference', () => {
       catalogLanguage: 'ro',
       effectiveCatalogLanguage: 'ro',
     });
-    const { result } = renderHook(() => useSaveCatalogLanguage(), { wrapper });
+    const { result } = renderHook(
+      () => useSaveLanguagePreference('catalogLanguage'),
+      { wrapper },
+    );
 
     await act(() => result.current.mutateAsync('ro'));
 
@@ -63,7 +64,10 @@ describe('saving a language Preference', () => {
       scanLanguage: 'da',
       effectiveScanLanguage: 'da',
     });
-    const { result } = renderHook(() => useSaveScanLanguage(), { wrapper });
+    const { result } = renderHook(
+      () => useSaveLanguagePreference('scanLanguage'),
+      { wrapper },
+    );
 
     await act(() => result.current.mutateAsync('da'));
 
@@ -75,7 +79,10 @@ describe('saving a language Preference', () => {
       spokenLanguage: 'ro',
       effectiveSpokenLanguage: 'ro',
     });
-    const { result } = renderHook(() => useSaveSpokenLanguage(), { wrapper });
+    const { result } = renderHook(
+      () => useSaveLanguagePreference('spokenLanguage'),
+      { wrapper },
+    );
 
     await act(() => result.current.mutateAsync('ro'));
 

@@ -25,7 +25,8 @@ import { useSpokenLanguage } from './useSpokenLanguage';
 export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   const { t } = useTranslation(['errors', 'voice']);
   const toast = useToast();
-  const { spokenLanguage, setSpokenLanguage, reset } = useSpokenLanguage();
+  const { spokenLanguage, spokenLanguageToSend, setSpokenLanguage, reset } =
+    useSpokenLanguage();
   // The Voice Note itself lives in the Voice Note module, so Review and the button on any page see it.
   const { phase, recording: keptRecording } = useVoiceNoteState();
   const recording = phase === 'recording';
@@ -56,9 +57,9 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   // The press was cancelled (not merely let go) while the permission was being read.
   const cancelled = useRef(false);
   const unmounted = useRef(false);
-  const options = useRef({ spokenLanguage, defaultTarget, t, toast });
+  const options = useRef({ spokenLanguageToSend, defaultTarget, t, toast });
   useLayoutEffect(() => {
-    options.current = { spokenLanguage, defaultTarget, t, toast };
+    options.current = { spokenLanguageToSend, defaultTarget, t, toast };
   });
   const say = (message: string) =>
     options.current.toast.show(message, voiceToast());
@@ -74,8 +75,11 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   const { refresh, showBlocked, showIntro } = mic;
 
   const begin = () => {
-    const { defaultTarget, spokenLanguage } = options.current;
-    return voiceNote.start({ defaultTarget, spokenLanguage });
+    const { defaultTarget, spokenLanguageToSend } = options.current;
+    return voiceNote.start({
+      defaultTarget,
+      spokenLanguage: spokenLanguageToSend,
+    });
   };
 
   // The module stops a recording at 60 seconds by itself: the pointer is still down, but the press is over.

@@ -80,8 +80,11 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   }, [mode, remembersMode]);
 
   const camera = useCamera();
-  const { scanLanguage, setOverride: overrideScanLanguage } =
-    useSessionScanLanguage();
+  const {
+    scanLanguage,
+    scanLanguageToSend,
+    setOverride: overrideScanLanguage,
+  } = useSessionScanLanguage();
   const previousMode = useRef(mode);
   /**
    * Bumped whenever what a photo being prepared was meant for goes away (mode change, Scan Session
@@ -206,7 +209,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
       scan: {
         id,
         mode,
-        scanLanguage: mode === 'plate' ? undefined : scanLanguage,
+        scanLanguage: mode === 'plate' ? undefined : scanLanguageToSend,
         image,
         thumbnail: image,
       },
@@ -247,7 +250,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
       });
     importPhotos(picked, {
       mode: scanModeOf(mode),
-      scanLanguage,
+      scanLanguage: scanLanguageToSend,
       onFull: warnSessionFull,
       onInvalid: () => setLocalError('scan.image_invalid'),
     });

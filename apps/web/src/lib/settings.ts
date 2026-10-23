@@ -214,40 +214,19 @@ export function useSaveInitialLocale() {
   });
 }
 
-/** Saves the Catalog Language; `null` is "Same as UI Language". */
-export function useSaveCatalogLanguage() {
+/**
+ * Saves one of the three language Preferences (Catalog, Scan or Spoken Language); `null` is "Same as UI
+ * Language".
+ */
+export function useSaveLanguagePreference(
+  field: 'catalogLanguage' | 'scanLanguage' | 'spokenLanguage',
+) {
   const apply = useApplySavedLanguages();
   return useMutation({
-    mutationFn: (catalogLanguage: Locale | null) =>
+    mutationFn: (language: ScanLanguage | null) =>
       apiRequest<MemberPreferences>('/settings/preferences', {
         method: 'PUT',
-        body: { catalogLanguage },
-      }),
-    onSuccess: apply,
-  });
-}
-
-/** Saves the Scan Language; `null` is "Same as UI Language". */
-export function useSaveScanLanguage() {
-  const apply = useApplySavedLanguages();
-  return useMutation({
-    mutationFn: (scanLanguage: ScanLanguage | null) =>
-      apiRequest<MemberPreferences>('/settings/preferences', {
-        method: 'PUT',
-        body: { scanLanguage },
-      }),
-    onSuccess: apply,
-  });
-}
-
-/** Saves the Spoken Language; `null` is "Same as UI Language". */
-export function useSaveSpokenLanguage() {
-  const apply = useApplySavedLanguages();
-  return useMutation({
-    mutationFn: (spokenLanguage: ScanLanguage | null) =>
-      apiRequest<MemberPreferences>('/settings/preferences', {
-        method: 'PUT',
-        body: { spokenLanguage },
+        body: { [field]: language },
       }),
     onSuccess: apply,
   });

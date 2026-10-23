@@ -198,7 +198,8 @@ export function useVoiceConfigured(): boolean {
 
 export type VoiceNoteRequest = {
   recording: Recording;
-  spokenLanguage: ScanLanguage;
+  /** Left out when the Member's Preferences were not loaded yet: the API resolves it. */
+  spokenLanguage?: ScanLanguage;
   defaultTarget: VoiceDefaultTarget;
   /** The Member's local date, `YYYY-MM-DD`. */
   today: string;
@@ -214,7 +215,7 @@ export function sendVoiceNote({
   signal,
 }: VoiceNoteRequest): Promise<VoiceNoteResult> {
   const form = new FormData();
-  form.append('spokenLanguage', spokenLanguage);
+  if (spokenLanguage) form.append('spokenLanguage', spokenLanguage);
   form.append('defaultTarget', defaultTarget);
   form.append('today', today);
   form.append('durationMs', String(Math.round(recording.durationMs)));

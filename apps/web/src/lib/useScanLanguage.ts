@@ -9,12 +9,16 @@ import { usePreferredScanLanguage } from './sessionScanLanguage';
  */
 export function useScanLanguage(): {
   scanLanguage: ScanLanguage;
+  /** What a Scan carries: the pick, else the preference, else nothing (the API resolves it). */
+  scanLanguageToSend: ScanLanguage | undefined;
   setScanLanguage: (language: ScanLanguage) => void;
 } {
-  const { scanLanguage: preferred } = usePreferredScanLanguage();
+  const { scanLanguage: preferred, scanLanguageToSend: preferredToSend } =
+    usePreferredScanLanguage();
   const [picked, setPicked] = useState<ScanLanguage | null>(null);
   return {
     scanLanguage: picked ?? preferred,
+    scanLanguageToSend: picked ?? preferredToSend,
     setScanLanguage: setPicked,
   };
 }

@@ -72,7 +72,10 @@ export function useProductScan(scanLanguage: string) {
  */
 export function useProductRead() {
   return useMutation({
-    mutationFn: async (read: { image: string; scanLanguage: string }) => {
+    mutationFn: async (read: {
+      image: string;
+      scanLanguage: string | undefined;
+    }) => {
       const { lines } = await apiRequest<ScanResponse>(
         `/scan/product${scanQuery(read.scanLanguage)}`,
         { method: 'POST', body: { productImage: read.image } },

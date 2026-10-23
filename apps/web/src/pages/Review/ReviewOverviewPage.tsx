@@ -92,7 +92,7 @@ export function ReviewOverviewPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const toast = useToast();
-  const { scanLanguage } = useSessionScanLanguage();
+  const { scanLanguageToSend: scanLanguage } = useSessionScanLanguage();
   const photosInput = useRef<HTMLInputElement>(null);
   const session = useScanSession();
   const uncropped = uncroppedCount(session);

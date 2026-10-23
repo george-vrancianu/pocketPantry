@@ -23,7 +23,7 @@ export type ImportOptions = {
   /** The Scan Mode every file is read in (see `scanModeOf` for a camera mode). */
   mode: ScanMode;
   /** What the Scans are read in; Plate has none, so it is dropped for a Plate Scan. */
-  scanLanguage: ScanLanguage;
+  scanLanguage: ScanLanguage | undefined;
   /** Some files did not fit under the Scan Session's limit and were left out. */
   onFull: () => void;
   /** A file could not be prepared. */

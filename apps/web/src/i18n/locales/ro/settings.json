@@ -72,7 +72,7 @@
   "spokenLanguage": {
     "label": "Limba vorbită",
     "sameAsUi": "La fel ca limba aplicației",
-    "hint": "Limba în care se vorbesc notele vocale. Se ascultă în {{language}}.",
+    "hint": "Limba în care dictezi notele vocale. Se ascultă în {{language}}.",
     "saveFailed": "Nu am putut salva limba vorbită. Încearcă din nou.",
     "saved": "Limba vorbită a fost salvată"
   },

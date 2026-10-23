@@ -1,26 +1,17 @@
 import { useSyncExternalStore } from 'react';
-import { useTranslation } from 'react-i18next';
-import {
-  FALLBACK_LOCALE,
-  isLocale,
-  type ScanLanguage,
-} from '../i18n/resources';
-import { useMemberPreferences } from './settings';
+import type { ScanLanguage } from '../i18n/resources';
+import { usePreferredLanguage } from './preferredLanguage';
 
 /**
- * THE seam for "the Member's Scan Language preference" (ADR 0022): the effective value the API works out
- * (the Preference, else the UI Language), the same on every device. Until the Preferences have loaded
- * (or if they cannot), it is the UI Language.
+ * THE seam for "the Member's Scan Language preference" (ADR 0022): `scanLanguage` is what a chip shows,
+ * `scanLanguageToSend` what a request carries (nothing until the Preferences have loaded).
  */
-export function usePreferredScanLanguage(): { scanLanguage: ScanLanguage } {
-  const { i18n } = useTranslation();
-  const locale = isLocale(i18n.resolvedLanguage)
-    ? i18n.resolvedLanguage
-    : FALLBACK_LOCALE;
-  const preferences = useMemberPreferences();
-  return {
-    scanLanguage: preferences.data?.effectiveScanLanguage ?? locale,
-  };
+export function usePreferredScanLanguage(): {
+  scanLanguage: ScanLanguage;
+  scanLanguageToSend: ScanLanguage | undefined;
+} {
+  const { shown, sent } = usePreferredLanguage('effectiveScanLanguage');
+  return { scanLanguage: shown, scanLanguageToSend: sent };
 }
 
 /**
@@ -45,10 +36,13 @@ export const clearScanLanguageOverride = () => setScanLanguageOverride(null);
  */
 export function useSessionScanLanguage(): {
   scanLanguage: ScanLanguage;
+  /** What a Scan carries: the pick, else the preference, else nothing (the API resolves it). */
+  scanLanguageToSend: ScanLanguage | undefined;
   override: ScanLanguage | null;
   setOverride: (language: ScanLanguage) => void;
 } {
-  const { scanLanguage: preferred } = usePreferredScanLanguage();
+  const { scanLanguage: preferred, scanLanguageToSend: preferredToSend } =
+    usePreferredScanLanguage();
   const picked = useSyncExternalStore(
     (listener) => {
       listeners.add(listener);
@@ -58,6 +52,7 @@ export function useSessionScanLanguage(): {
   );
   return {
     scanLanguage: picked ?? preferred,
+    scanLanguageToSend: picked ?? preferredToSend,
     override: picked,
     setOverride: setScanLanguageOverride,
   };

@@ -1,26 +1,17 @@
 import { useCallback, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import {
-  FALLBACK_LOCALE,
-  isLocale,
-  type ScanLanguage,
-} from '../i18n/resources';
-import { useMemberPreferences } from './settings';
+import type { ScanLanguage } from '../i18n/resources';
+import { usePreferredLanguage } from './preferredLanguage';
 
 /**
- * THE seam for "the Member's Spoken Language preference" (ADR 0022): the effective value the API works
- * out (the Preference, else the UI Language). Until the Preferences have loaded (or if they cannot), it
- * is the UI Language.
+ * THE seam for "the Member's Spoken Language preference" (ADR 0022): `spokenLanguage` is what a chip shows,
+ * `spokenLanguageToSend` what an upload carries (nothing until the Preferences have loaded).
  */
-export function usePreferredSpokenLanguage(): { spokenLanguage: ScanLanguage } {
-  const { i18n } = useTranslation();
-  const locale = isLocale(i18n.resolvedLanguage)
-    ? i18n.resolvedLanguage
-    : FALLBACK_LOCALE;
-  const preferences = useMemberPreferences();
-  return {
-    spokenLanguage: preferences.data?.effectiveSpokenLanguage ?? locale,
-  };
+export function usePreferredSpokenLanguage(): {
+  spokenLanguage: ScanLanguage;
+  spokenLanguageToSend: ScanLanguage | undefined;
+} {
+  const { shown, sent } = usePreferredLanguage('effectiveSpokenLanguage');
+  return { spokenLanguage: shown, spokenLanguageToSend: sent };
 }
 
 /**
@@ -30,14 +21,18 @@ export function usePreferredSpokenLanguage(): { spokenLanguage: ScanLanguage } {
  */
 export function useSpokenLanguage(): {
   spokenLanguage: ScanLanguage;
+  /** What the upload carries: the pick, else the preference, else nothing (the API resolves it). */
+  spokenLanguageToSend: ScanLanguage | undefined;
   setSpokenLanguage: (language: ScanLanguage) => void;
   reset: () => void;
 } {
-  const { spokenLanguage: preferred } = usePreferredSpokenLanguage();
+  const { spokenLanguage: preferred, spokenLanguageToSend: preferredToSend } =
+    usePreferredSpokenLanguage();
   const [picked, setPicked] = useState<ScanLanguage | null>(null);
   const reset = useCallback(() => setPicked(null), []);
   return {
     spokenLanguage: picked ?? preferred,
+    spokenLanguageToSend: picked ?? preferredToSend,
     setSpokenLanguage: setPicked,
     reset,
   };

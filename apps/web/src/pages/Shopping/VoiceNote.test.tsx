@@ -50,6 +50,7 @@ type Setup = {
   note?: () => Response | Promise<Response>;
   preferredScanLanguage?: 'en' | 'ro' | 'da';
   preferredSpokenLanguage?: 'en' | 'ro' | 'da';
+  preferences?: () => Promise<Response>;
 };
 
 function setup({
@@ -57,6 +58,7 @@ function setup({
   note,
   preferredScanLanguage,
   preferredSpokenLanguage,
+  preferences,
 }: Setup = {}) {
   const { fetchMock } = stubApi({
     ...(preferredScanLanguage || preferredSpokenLanguage
@@ -65,6 +67,7 @@ function setup({
           preferredSpokenLanguage,
         )
       : {}),
+    ...(preferences ? { 'GET /api/settings/preferences': preferences } : {}),
     'GET /api/shopping-list': () => Response.json(emptyList),
     'GET /api/voice/config': () => Response.json({ configured }),
     'POST /api/voice': () =>
@@ -119,7 +122,8 @@ describe('Voice Note on the Shopping List', () => {
     expect(dialog).toHaveTextContent('What I heard');
     expect(session.stop).toHaveBeenCalledTimes(1);
     expect(sent).toHaveLength(1);
-    expect(sent[0].get('spokenLanguage')).toBe('en');
+    // The Preferences did not load: no language goes along, the API uses the stored one.
+    expect(sent[0].has('spokenLanguage')).toBe(false);
     expect(sent[0].has('locale')).toBe(false);
     expect(sent[0].get('defaultTarget')).toBe('shopping');
     expect(sent[0].get('today')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -768,6 +772,18 @@ describe('Voice Note on the Shopping List', () => {
       await screen.findByRole('dialog');
       expect(sent[0].get('spokenLanguage')).toBe('ro');
       expect(sent[0].has('scanLanguage')).toBe(false);
+    });
+
+    it('sends no Spoken Language before the Preferences have loaded', async () => {
+      const { sent } = setup({
+        preferences: () => new Promise<Response>(() => {}),
+      });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+
+      await chipOf('English');
+      fireEvent.pointerUp(await hold());
+      await screen.findByRole('dialog');
+      expect(sent[0].has('spokenLanguage')).toBe(false);
     });
 
     it('applies a pick to that Voice Note only and starts the next one at the preference again', async () => {
