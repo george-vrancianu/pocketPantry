@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, eq, inArray, ne, sql } from 'drizzle-orm';
 import {
   resolveCatalogDefaults,
   type ExpiryOverride,
@@ -214,6 +214,7 @@ export class SettingsService {
         spokenLanguage: user.spokenLanguage,
         theme: user.theme,
         hideRecipesWithAllergies: user.hideRecipesWithAllergies,
+        introDoneAt: user.introDoneAt,
       })
       .from(user)
       .where(eq(user.id, memberId))
@@ -232,6 +233,7 @@ export class SettingsService {
       effectiveSpokenLanguage: resolveLanguage('spoken', row),
       theme,
       hideRecipesWithAllergies: row.hideRecipesWithAllergies,
+      introDone: row.introDoneAt !== null,
     };
   }
 
@@ -249,6 +251,10 @@ export class SettingsService {
         spokenLanguage: preferences.spokenLanguage,
         theme: preferences.theme,
         hideRecipesWithAllergies: preferences.hideRecipesWithAllergies,
+        // First time wins: a later call keeps the stored timestamp.
+        introDoneAt: preferences.introDone
+          ? sql`coalesce(${user.introDoneAt}, now())`
+          : undefined,
       })
       .where(eq(user.id, memberId));
   }

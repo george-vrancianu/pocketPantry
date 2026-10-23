@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { INTRO_PATHS } from '../../lib/intro';
 import { AuthShell } from '../../components/AuthShell';
 import { useSignUpForm } from './hooks/useSignUpForm';
 
@@ -16,7 +17,13 @@ export function SignUpPage() {
   const { submit, pending, error } = useSignUpForm();
 
   return (
-    <AuthShell title={t('title')} subtitle={t('subtitle')}>
+    <AuthShell
+      title={t('title')}
+      subtitle={t('subtitle')}
+      back={t('back')}
+      backHref={INTRO_PATHS.languages}
+      languageSwitcher={false}
+    >
       <Box component="form" onSubmit={submit} sx={{ display: 'contents' }}>
         <Stack spacing={2}>
           {error ? <Alert>{error}</Alert> : null}

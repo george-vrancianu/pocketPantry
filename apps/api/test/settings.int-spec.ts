@@ -424,6 +424,7 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
+        introDone: false,
       });
     });
 
@@ -469,6 +470,7 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'ro',
         theme: null,
         hideRecipesWithAllergies: false,
+        introDone: false,
       });
     });
 
@@ -491,6 +493,7 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
+        introDone: false,
       });
     });
 
@@ -511,6 +514,7 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'da',
         theme: null,
         hideRecipesWithAllergies: false,
+        introDone: false,
       });
       const [row] = await database
         .select({ locale: user.locale })
@@ -539,6 +543,7 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'ro',
         theme: null,
         hideRecipesWithAllergies: true,
+        introDone: false,
       });
       expect(
         (await call(mihai.cookie, 'get', '/preferences').expect(200)).body,
@@ -581,6 +586,7 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'en',
         theme: 'dark',
         hideRecipesWithAllergies: false,
+        introDone: false,
       });
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
@@ -594,6 +600,7 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'en',
         theme: 'dark',
         hideRecipesWithAllergies: false,
+        introDone: false,
       });
       const [row] = await database
         .select({ theme: user.theme })
@@ -622,6 +629,7 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'ro',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
+        introDone: false,
       });
 
       expect(
@@ -640,6 +648,104 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'da',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
+        introDone: false,
+      });
+    });
+
+    describe('done with the Intro', () => {
+      const introDoneAt = async (userId: string) =>
+        (
+          await database
+            .select({ at: user.introDoneAt })
+            .from(user)
+            .where(eq(user.id, userId))
+        )[0].at;
+
+      it('starts not done for a new Member, who still gets a Solo Family', async () => {
+        const { cookie, userId } = await signUp();
+        expect(
+          (
+            (await call(cookie, 'get', '/preferences').expect(200)).body as {
+              introDone: boolean;
+            }
+          ).introDone,
+        ).toBe(false);
+        expect(await introDoneAt(userId)).toBeNull();
+        const [row] = await database
+          .select({ familyId: user.familyId, familyRole: user.familyRole })
+          .from(user)
+          .where(eq(user.id, userId));
+        expect(row.familyId).toEqual(expect.any(String));
+        expect(row.familyRole).toBe('owner');
+      });
+
+      it('is set by saving introDone: true, and readable from any device', async () => {
+        const { cookie, userId } = await signUp();
+        const saved = await call(cookie, 'put', '/preferences')
+          .send({ introDone: true })
+          .expect(200);
+        expect((saved.body as { introDone: boolean }).introDone).toBe(true);
+        expect(await introDoneAt(userId)).toBeInstanceOf(Date);
+      });
+
+      it('saves the four languages and introDone in one call', async () => {
+        const { cookie } = await signUp();
+        const saved = await call(cookie, 'put', '/preferences')
+          .send({
+            locale: 'ro',
+            spokenLanguage: 'da',
+            scanLanguage: 'en',
+            catalogLanguage: 'da',
+            introDone: true,
+          })
+          .expect(200);
+        expect(saved.body).toMatchObject({
+          locale: 'ro',
+          spokenLanguage: 'da',
+          scanLanguage: 'en',
+          catalogLanguage: 'da',
+          introDone: true,
+        });
+      });
+
+      it('is idempotent: the first timestamp wins', async () => {
+        const { cookie, userId } = await signUp();
+        await call(cookie, 'put', '/preferences')
+          .send({ introDone: true })
+          .expect(200);
+        const first = new Date('2026-01-01T00:00:00Z');
+        await database
+          .update(user)
+          .set({ introDoneAt: first })
+          .where(eq(user.id, userId));
+        await call(cookie, 'put', '/preferences')
+          .send({ introDone: true })
+          .expect(200);
+        expect(await introDoneAt(userId)).toEqual(first);
+      });
+
+      it('cannot be undone, and other saves leave it alone', async () => {
+        const { cookie, userId } = await signUp();
+        await call(cookie, 'put', '/preferences')
+          .send({ introDone: false })
+          .expect(400);
+        await call(cookie, 'put', '/preferences')
+          .send({ introDone: true })
+          .expect(200);
+        const first = await introDoneAt(userId);
+        await call(cookie, 'put', '/preferences')
+          .send({ theme: 'dark' })
+          .expect(200);
+        expect(await introDoneAt(userId)).toEqual(first);
+      });
+
+      it('is private to the Member', async () => {
+        const ana = await signUp();
+        const mihai = await signUp();
+        await call(ana.cookie, 'put', '/preferences')
+          .send({ introDone: true })
+          .expect(200);
+        expect(await introDoneAt(mihai.userId)).toBeNull();
       });
     });
 
@@ -660,6 +766,7 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'en',
         theme: 'warm',
         hideRecipesWithAllergies: false,
+        introDone: false,
       });
     });
 
@@ -691,6 +798,7 @@ describe('Settings (integration)', () => {
         effectiveSpokenLanguage: 'en',
         theme: null,
         hideRecipesWithAllergies: false,
+        introDone: false,
       });
     });
   });

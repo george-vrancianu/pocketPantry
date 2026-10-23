@@ -30,11 +30,19 @@ export function useSignIn() {
   });
 }
 
-export function useSignUp() {
+/**
+ * Creates the account. `afterCreate` runs once the cookie is set and before the session reloads (which
+ * moves the Member on), for anything that has to be saved first; what it returns is the mutation's result.
+ */
+export function useSignUp<Result = undefined>(
+  afterCreate?: () => Promise<Result>,
+) {
   const refreshSession = useSessionRefresh();
   return useMutation({
-    mutationFn: (input: SignUpInput) =>
-      apiRequest('/auth/sign-up/email', { method: 'POST', body: input }),
+    mutationFn: async (input: SignUpInput) => {
+      await apiRequest('/auth/sign-up/email', { method: 'POST', body: input });
+      return afterCreate ? await afterCreate() : undefined;
+    },
     onSuccess: refreshSession,
   });
 }

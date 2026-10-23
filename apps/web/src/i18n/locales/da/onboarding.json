@@ -1,0 +1,41 @@
+{
+  "launch": {
+    "tagline": "Vid, hvad du har i køkkenet.",
+    "taglineTwo": "Køb kun det, du har brug for.",
+    "getStarted": "Kom i gang",
+    "haveAccount": "Jeg har allerede en konto"
+  },
+  "languages": {
+    "title": "Dine sprog",
+    "continue": "Fortsæt",
+    "back": "Tilbage",
+    "app": "Appens sprog",
+    "fromPhone": "Valgt ud fra din telefons sprog",
+    "alsoUsedFor": "Bruges også til",
+    "voiceNotes": {
+      "label": "Stemmenoter",
+      "hint": "Det, du siger til Gator"
+    },
+    "receipts": {
+      "label": "Kvitteringer og etiketter",
+      "hint": "Det, kameraet læser"
+    },
+    "groceryNames": {
+      "label": "Varenavne",
+      "hint": "Hvordan varer hedder på dine lister"
+    },
+    "same": "Samme · <language>{{language}}</language>",
+    "abroad": "Handler du i udlandet? Sæt Kvitteringer og etiketter til landets sprog. Du kan ændre det hele senere i Indstillinger."
+  },
+  "setup": {
+    "title": "Fyld dit spisekammer med Gator?",
+    "body": "To hurtige forsøg, og dit køkken er allerede i appen. Det tager omkring to minutter.",
+    "showMe": "Vis mig hvordan",
+    "showMeSnap": "1 · Tag et billede",
+    "showMeSay": "2 · Sig det",
+    "skip": "Spring over, tag mig til appen",
+    "skipHint": "Start med et tomt spisekammer",
+    "showMeSoon": "Kommer snart",
+    "languagesNotSaved": "Vi kunne ikke gemme dine sprog. Du valgte {{choices}}. Du kan indstille dem igen i Indstillinger."
+  }
+}
