@@ -457,6 +457,29 @@ describe('Member language: Catalog Language (integration)', () => {
     });
   });
 
+  describe('a signed-in ?locale= is ignored, not rejected', () => {
+    it.each([
+      ['/catalog/search', { q: 'lapte' }],
+      ['/catalog/aisles', {}],
+      ['/catalog/categories', {}],
+      ['/pantry', {}],
+      ['/pantry/recently-stocked', {}],
+      ['/recipes', {}],
+      ['/recipes/cook-tonight', {}],
+      ['/meal-plans', {}],
+    ])('%s answers 200 for ?locale=xx', async (path, query) => {
+      const { cookie } = await signUp();
+      await api('get', cookie, path, 'xx').query(query).expect(200);
+    });
+
+    it('names a Pantry Batch in the Catalog Language when the request names an unknown locale', async () => {
+      const { cookie } = await signUp();
+      await savePreferences(cookie, { catalogLanguage: 'ro' }).expect(200);
+      await stock(cookie, { ingredientId: seedId.ingredient('milk') });
+      expect((await pantry(cookie, 'xx'))[0].name).toBe('Lapte');
+    });
+  });
+
   describe('Admin routes keep the explicit locale', () => {
     it('honours the locale an Admin names, whatever the Admin has stored for their own screens', async () => {
       const admin = await signUp();

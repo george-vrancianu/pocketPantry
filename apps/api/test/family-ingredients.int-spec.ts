@@ -605,8 +605,8 @@ describe('Family Ingredients (integration)', () => {
       expect(theirs.defaults.expiryDays).toBe(60);
     });
 
-    it('rejects an unknown locale', async () => {
-      await a.get('/catalog/categories?q=x&locale=xx').expect(400);
+    it('ignores an unknown locale', async () => {
+      await a.get('/catalog/categories?q=x&locale=xx').expect(200);
     });
   });
 

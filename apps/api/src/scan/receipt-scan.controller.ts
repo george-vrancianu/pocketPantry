@@ -44,13 +44,11 @@ export class ReceiptScanController {
     @Body(new ScanImagePipe(receiptScanSchema, ['receiptImage']))
     body: ReceiptScanInput,
   ): Promise<ScanResponse> {
-    const languages = await this.languages.languagesOf(member.id);
-    return this.scan.scanReceipt(
-      member.id,
-      body,
-      languages.catalog,
-      query.scanLanguage ?? languages.scan,
-    );
+    const [catalog, scanLanguage] = await Promise.all([
+      this.languages.catalogLanguageOf(member.id),
+      this.languages.scanLanguageOf(member.id, query.scanLanguage),
+    ]);
+    return this.scan.scanReceipt(member.id, body, catalog, scanLanguage);
   }
 
   @Post('confirm')
@@ -63,12 +61,15 @@ export class ReceiptScanController {
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
   ): Promise<ReceiptConfirmation> {
-    const languages = await this.languages.languagesOf(member.id);
+    const [catalog, scanLanguage] = await Promise.all([
+      this.languages.catalogLanguageOf(member.id),
+      this.languages.scanLanguageOf(member.id, query.scanLanguage),
+    ]);
     return this.confirmation.confirm(
       member.id,
       body.batches,
-      languages.catalog,
-      query.scanLanguage ?? languages.scan,
+      catalog,
+      scanLanguage,
     );
   }
 }

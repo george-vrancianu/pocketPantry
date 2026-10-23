@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, inArray, isNull } from 'drizzle-orm';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import { DATABASE } from '../database/database.constants';
@@ -38,6 +39,7 @@ export class CookTonightService {
   async view(
     memberId: string,
     query: CookTonightQuery,
+    locale: CatalogLocale,
   ): Promise<CookTonightView> {
     const familyId = await this.settings.familyIdOf(memberId);
     const rows = await this.database
@@ -73,12 +75,12 @@ export class CookTonightService {
     const titles = await recipeTitles(
       this.database,
       [...qualifying, ...baseRows],
-      query.locale,
+      locale,
     );
     // Best first: the Pantry ranking, then title, then id for a stable order.
     const byRank = (a: Candidate, b: Candidate) =>
       compareRecipeMatches(a.match, b.match) ||
-      a.title.localeCompare(b.title, query.locale) ||
+      a.title.localeCompare(b.title, locale) ||
       a.row.id.localeCompare(b.row.id);
 
     const ranked = [...groups.entries()].flatMap(([baseId, members]) => {
@@ -107,7 +109,7 @@ export class CookTonightService {
       this.database,
       catalogScope(familyId),
       ranked.flatMap(({ candidates }) => candidates.map((c) => c.row.id)),
-      query.locale,
+      locale,
       allergies,
     );
     let hiddenByAllergiesCount = 0;
@@ -124,7 +126,7 @@ export class CookTonightService {
     const names = await this.missingNames(
       catalogScope(familyId),
       groupsRanked,
-      query.locale,
+      locale,
     );
     return {
       hiddenByAllergiesCount,
@@ -169,7 +171,7 @@ export class CookTonightService {
   private async missingNames(
     scope: CatalogScope,
     cards: { candidates: Candidate[] }[],
-    locale: CookTonightQuery['locale'],
+    locale: CatalogLocale,
   ): Promise<Map<string, string>> {
     const wanted = new Set<string>();
     for (const { candidates } of cards) {

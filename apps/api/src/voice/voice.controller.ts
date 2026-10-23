@@ -94,14 +94,15 @@ export class VoiceController {
     }
     const mimeType = supportedAudioType(upload.audio.mimeType);
     if (!mimeType) throw new ApiException(415, 'voice.unsupported_audio');
-    // Names are made up, matched and written in the Catalog Language; the
-    // prompt is only told the UI Language. Transcription is unchanged.
-    const { ui, catalog } = await this.languages.languagesOf(member.id);
+    // Names are made up, matched and written in the Catalog Language; the prompt is told the UI Language.
     // The recording is read in the Spoken Language: the upload's own choice, else the Preference.
-    const spokenLanguage = await this.languages.spokenLanguageOf(
-      member.id,
-      fields.data.spokenLanguage,
-    );
+    const {
+      ui,
+      catalog,
+      spoken: spokenLanguage,
+    } = await this.languages.languagesOf(member.id, {
+      spoken: fields.data.spokenLanguage,
+    });
     return this.voice.read(member.id, {
       ...fields.data,
       spokenLanguage,

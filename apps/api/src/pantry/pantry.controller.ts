@@ -125,13 +125,11 @@ export class PantryController {
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchBody)) body: CreateBatchBody,
   ): Promise<BatchView> {
-    const languages = await this.languages.languagesOf(member.id);
-    return this.pantry.create(
-      member.id,
-      body,
-      languages.catalog,
-      query.scanLanguage ?? languages.scan,
-    );
+    const [catalog, scanLanguage] = await Promise.all([
+      this.languages.catalogLanguageOf(member.id),
+      this.languages.scanLanguageOf(member.id, query.scanLanguage),
+    ]);
+    return this.pantry.create(member.id, body, catalog, scanLanguage);
   }
 
   @Post('batches/bulk')
@@ -144,13 +142,16 @@ export class PantryController {
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
   ): Promise<{ batches: BatchView[] }> {
-    const languages = await this.languages.languagesOf(member.id);
+    const [catalog, scanLanguage] = await Promise.all([
+      this.languages.catalogLanguageOf(member.id),
+      this.languages.scanLanguageOf(member.id, query.scanLanguage),
+    ]);
     return {
       batches: await this.pantry.createMany(
         member.id,
         body.batches,
-        languages.catalog,
-        query.scanLanguage ?? languages.scan,
+        catalog,
+        scanLanguage,
       ),
     };
   }

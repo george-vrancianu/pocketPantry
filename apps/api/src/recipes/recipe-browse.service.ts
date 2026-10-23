@@ -53,9 +53,12 @@ export class RecipeBrowseService {
    * with its base. A base matches on its own fields only. Variants of an
    * archived base stay listed (the archived base itself does not).
    */
-  async list(memberId: string, query: BrowseQuery): Promise<RecipeList> {
+  async list(
+    memberId: string,
+    query: BrowseQuery,
+    locale: CatalogLocale,
+  ): Promise<RecipeList> {
     const familyId = await this.settings.familyIdOf(memberId);
-    const { locale } = query;
     const needle = normalizeName(query.search ?? '');
     // Search and filters list Variants beside bases; so does asking for them outright.
     const listsVariants =

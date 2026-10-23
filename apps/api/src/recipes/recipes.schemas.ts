@@ -95,10 +95,11 @@ export const familyLineInput = lineInput.extend({
 
 /**
  * Carries the Member's Catalog Language into the services. The request's own
- * value is ignored (the controller overwrites it from the stored Preference),
- * so it may be left out; it is only here so the document keeps its shape.
+ * value is ignored, whatever it is (the controller overwrites it from the
+ * stored Preference), so it may be left out; it is only here so the document
+ * keeps its shape.
  */
-const memberLocale = z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE);
+const memberLocale = z.enum(CATALOG_LOCALES).catch(FALLBACK_LOCALE);
 
 /** Replacing a Family Recipe's document; its base is fixed at creation. */
 export const familyRecipeUpdate = recipeDocument
@@ -205,7 +206,6 @@ const showHiddenQuery = z
 
 /** Member browsing: no search or filter lists Base Recipes only. */
 export const browseQuery = z.object({
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   search: z.string().trim().max(100).optional(),
   cuisineId: id.optional(),
   methodId: id.optional(),
@@ -218,7 +218,6 @@ export const browseQuery = z.object({
    */
   showHidden: showHiddenQuery,
 });
-export const localeQuery = browseQuery.pick({ locale: true });
 
 export const recipeParam = z.object({ id });
 export const recipeTipParam = z.object({ id, tipId: id });
@@ -239,7 +238,6 @@ export type HiddenTipsBody = z.infer<typeof hiddenTipsBody>;
 export type TranslationsBody = z.infer<typeof translationsBody>;
 export type RecipeListQuery = z.infer<typeof recipeListQuery>;
 export type BrowseQuery = z.infer<typeof browseQuery>;
-export type LocaleQuery = z.infer<typeof localeQuery>;
 
 export type RecipeLineView = {
   id: string;
@@ -512,7 +510,7 @@ export type FamilyRecipeDraft = {
   guidance: GuidanceBody;
 };
 /** `today` is the Member's local date; it defaults to the server's UTC date. */
-export const cookTonightQuery = localeQuery.extend({
+export const cookTonightQuery = z.object({
   today: z.iso.date().optional(),
   /** The "show hidden" override for "Hide Recipes with my Allergies" (#359). */
   showHidden: showHiddenQuery,

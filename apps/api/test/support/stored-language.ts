@@ -33,3 +33,14 @@ export const storeUiLanguage = (
   cookie: string,
   locale: string,
 ) => storeLanguages(app, cookie, { locale });
+
+/** A new Member (made by the spec's own `signUp`) whose stored UI Language is `locale`; a request's `?locale=` plays no part. */
+export async function signUpWithUiLanguage(
+  app: NestFastifyApplication,
+  signUp: () => Promise<string>,
+  locale: string,
+): Promise<string> {
+  const cookie = await signUp();
+  await storeUiLanguage(app, cookie, locale);
+  return cookie;
+}

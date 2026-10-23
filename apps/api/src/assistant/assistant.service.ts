@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  CATALOG_LOCALES,
-  FALLBACK_LOCALE,
-  type CatalogLocale,
-} from '../catalog/catalog.schemas';
+import { type CatalogLocale } from '../catalog/catalog.schemas';
 import type { AssistantTokenMember } from '../assistant-tokens/assistant-token.schemas';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import { ApiException } from '../common/api-exception';
@@ -43,9 +39,6 @@ export type AssistantReply =
   | ({ state?: undefined } & AssistantRequestResponse)
   | { state: AssistantState; outcomes: []; speech: string };
 
-const localeOf = (member: AssistantTokenMember): CatalogLocale =>
-  CATALOG_LOCALES.find((locale) => locale === member.locale) ?? FALLBACK_LOCALE;
-
 /** Anything the reply names: a Voice Action or an answer. */
 type Named = {
   id: string;
@@ -79,8 +72,9 @@ export class AssistantService {
     member: AssistantTokenMember,
     body: AssistantRequestBody,
   ): Promise<AssistantReply> {
-    // The UI Language: the reply falls back to it (ADR 0019).
-    const locale = localeOf(member);
+    // The UI Language: the reply falls back to it (ADR 0019). What the request writes (Unmatched names,
+    // Shopping Item names) is in the Catalog Language.
+    const { ui: locale, catalog } = await this.languages.languagesOf(member.id);
     const stateReply = (state: AssistantState): AssistantReply => ({
       state,
       outcomes: [],
@@ -108,8 +102,6 @@ export class AssistantService {
     let outcomes: AssistantOutcome[];
     let replyLocale = locale;
     try {
-      // What the request writes (Unmatched names, Shopping Item names) is in the Catalog Language.
-      const catalog = await this.languages.catalogLanguageOf(member.id);
       const today = body.today ?? new Date().toISOString().slice(0, 10);
       const read = await this.voice.readText(member.id, {
         text: body.text,

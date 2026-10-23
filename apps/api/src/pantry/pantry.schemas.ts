@@ -1,10 +1,6 @@
 import { z } from 'zod';
 import { barcodeValue } from '../barcode/barcode.schemas';
-import {
-  CATALOG_LOCALES,
-  FALLBACK_LOCALE,
-  SCAN_LANGUAGES,
-} from '../catalog/catalog.schemas';
+import { SCAN_LANGUAGES } from '../catalog/catalog.schemas';
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { AisleView } from '../catalog/ingredient-placement';
 import type { AmountScale } from '../catalog/amount-scale';
@@ -12,12 +8,7 @@ import { ingredientUnit, storageLocation } from '../database/schema';
 import { BATCH_SOURCES } from '../unmatched/unmatched-entries';
 import { batchQuantity } from '../common/quantity';
 
-export const pantryLocaleQuery = z.object({
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
-});
-export type PantryLocaleQuery = z.infer<typeof pantryLocaleQuery>;
-
-export const recentlyStockedQuery = pantryLocaleQuery.extend({
+export const recentlyStockedQuery = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(8),
 });
 export type RecentlyStockedQuery = z.infer<typeof recentlyStockedQuery>;
@@ -29,12 +20,12 @@ export type RecentlyStockedView = CatalogSearchResult & {
 };
 
 /**
- * Scan and save-from-Review endpoints: `locale` is accepted and ignored (signed-in languages come from
+ * Scan and save-from-Review endpoints: a `?locale=` is ignored (signed-in languages come from
  * stored Preferences; returned names follow the Member's Catalog Language). `scanLanguage` is what this one
- * Scan is read in. Without it the controller asks `MemberLanguageService.scanLanguageOf` (the Member's Scan
- * Language Preference).
+ * Scan is read in. Without it the controller asks `MemberLanguageService.scanLanguageOf`
+ * (the Member's Scan Language Preference).
  */
-export const scanQuery = pantryLocaleQuery.extend({
+export const scanQuery = z.object({
   scanLanguage: z.enum(SCAN_LANGUAGES).optional(),
 });
 export type ScanQuery = z.infer<typeof scanQuery>;

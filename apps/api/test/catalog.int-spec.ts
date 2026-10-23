@@ -354,13 +354,13 @@ describe('Catalog (integration)', () => {
       expect(await search('   ')).toEqual([]);
     });
 
-    it('rejects unsupported locales and unauthenticated callers', async () => {
+    it('ignores a ?locale= and rejects unauthenticated callers', async () => {
       await request(app.getHttpServer())
         .get('/api/catalog/search')
         .query({ q: 'milk', locale: 'xx' })
         .set('origin', TEST_ORIGIN)
         .set('cookie', cookie)
-        .expect(400);
+        .expect(200);
       await request(app.getHttpServer())
         .get('/api/catalog/search')
         .query({ q: 'milk' })

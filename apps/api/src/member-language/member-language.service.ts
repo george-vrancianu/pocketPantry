@@ -42,16 +42,18 @@ export class MemberLanguageService {
     return this.languageOf(memberId, 'scan', { override });
   }
 
-  /** The language a Voice Note is spoken in: the per-Voice Note `override` if sent, else the Spoken Language Preference. */
-  spokenLanguageOf(
+  /**
+   * Every role at once, from one read. `overrides` are explicit choices for one job (say, this Voice Note's
+   * Spoken Language) and win over the Preference.
+   */
+  async languagesOf(
     memberId: string,
-    override?: ScanLanguage,
-  ): Promise<ScanLanguage> {
-    return this.languageOf(memberId, 'spoken', { override });
-  }
-
-  async languagesOf(memberId: string): Promise<MemberLanguages> {
-    return resolveLanguages(await this.stored(memberId));
+    overrides: { spoken?: ScanLanguage } = {},
+  ): Promise<MemberLanguages> {
+    const languages = resolveLanguages(await this.stored(memberId));
+    return overrides.spoken
+      ? { ...languages, spoken: overrides.spoken }
+      : languages;
   }
 
   private async stored(memberId: string) {

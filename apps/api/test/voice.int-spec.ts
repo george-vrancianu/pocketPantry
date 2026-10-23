@@ -1044,7 +1044,7 @@ describe('Voice Note (integration)', () => {
       expect(aiCalls[0].prompt).toContain('The note was spoken in Romanian');
     });
 
-    it('lets the upload field win over the Preference', async () => {
+    it('lets the upload field win over the Preference for that upload only', async () => {
       const { cookie, memberId } = await signUp();
       await setPreferences(memberId, {
         locale: 'en',
@@ -1054,6 +1054,10 @@ describe('Voice Note (integration)', () => {
       await note(cookie, { language: 'da' }).expect(201);
       expect(calls[0].language).toBe('da');
       expect(aiCalls[0].prompt).toContain('The note was spoken in Danish');
+      // The next upload, without the field, is back at the Preference.
+      await note(cookie, { language: null }).expect(201);
+      expect(calls[1].language).toBe('ro');
+      expect(aiCalls[1].prompt).toContain('The note was spoken in Romanian');
     });
 
     it('follows the stored UI Language when the Preference is empty, not the request locale', async () => {

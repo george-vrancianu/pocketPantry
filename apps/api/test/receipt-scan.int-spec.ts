@@ -8,7 +8,7 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { unmatchedEntries } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
-import { storeUiLanguage } from './support/stored-language';
+import { signUpWithUiLanguage } from './support/stored-language';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
 
@@ -112,11 +112,8 @@ describe('Receipt Scan (integration)', () => {
   }
 
   /** A Member whose stored UI Language is `locale` (the API ignores the request's own `?locale=`). */
-  async function signUpIn(locale: string) {
-    const cookie = await signUp();
-    await storeUiLanguage(app, cookie, locale);
-    return cookie;
-  }
+  const signUpIn = (locale: string) =>
+    signUpWithUiLanguage(app, signUp, locale);
 
   // `locale` is sent as the web used to; a signed-in request ignores it.
   const scan = (cookie: string, locale = 'en', scanLanguage?: string) =>

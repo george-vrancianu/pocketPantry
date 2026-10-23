@@ -23,7 +23,6 @@ export const catalogSearchQuery = z.object({
   // Browse by aisle: an empty `q` lists the Aisle's Ingredients A to Z (limit 50); with `q` it filters within.
   aisleId: z.uuid().optional(),
   parentCategoryId: z.uuid().optional(),
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   scope: catalogScopeParam,
 });
@@ -32,7 +31,6 @@ export type CatalogSearchQuery = z.infer<typeof catalogSearchQuery>;
 export type CatalogParent = { id: string; name: string };
 
 export const catalogAislesQuery = z.object({
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   scope: catalogScopeParam,
 });
 export type CatalogAislesQuery = z.infer<typeof catalogAislesQuery>;
@@ -134,7 +132,6 @@ export type FamilyCatalog = {
 
 export const catalogCategoriesQuery = z.object({
   q: z.string().max(100).default(''),
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 export type CatalogCategoriesQuery = z.infer<typeof catalogCategoriesQuery>;

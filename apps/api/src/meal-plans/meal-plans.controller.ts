@@ -66,14 +66,14 @@ export class MealPlansController {
   @ApiOperation({ summary: 'Create a Meal Plan' })
   async create(
     @CurrentUser() member: CurrentUserValue,
-    @Query(query) q: MealPlanQuery,
+    @Query(query) { today }: MealPlanQuery,
     @Body(new ZodValidationPipe(createMealPlanBody)) body: CreateMealPlanBody,
   ): Promise<MealPlanView> {
     return this.plans.create(
       member.id,
       body,
       await this.languages.catalogLanguageOf(member.id),
-      q.today,
+      today,
     );
   }
 
@@ -84,12 +84,12 @@ export class MealPlansController {
   })
   async window(
     @CurrentUser() member: CurrentUserValue,
-    @Query(query) q: MealPlanQuery,
+    @Query(query) { today }: MealPlanQuery,
   ): Promise<MealWindowView> {
     return this.plans.window(
       member.id,
       await this.languages.catalogLanguageOf(member.id),
-      q.today,
+      today,
     );
   }
 
@@ -100,14 +100,14 @@ export class MealPlansController {
   })
   async addMissing(
     @CurrentUser() member: CurrentUserValue,
-    @Query(query) q: MealPlanQuery,
+    @Query(query) { today }: MealPlanQuery,
     @Body(new ZodValidationPipe(addMissingBody)) body: AddMissingBody,
   ): Promise<AddedMissingView> {
     return this.plans.addMissing(
       member.id,
       body,
       await this.languages.catalogLanguageOf(member.id),
-      q.today,
+      today,
     );
   }
 
@@ -115,14 +115,14 @@ export class MealPlansController {
   @ApiOperation({ summary: 'A Meal Plan with its filled Plan Slots' })
   async get(
     @CurrentUser() member: CurrentUserValue,
-    @Query(query) q: MealPlanQuery,
+    @Query(query) { today }: MealPlanQuery,
     @Param(idParam) { id }: { id: string },
   ): Promise<MealPlanView> {
     return this.plans.get(
       member.id,
       id,
       await this.languages.catalogLanguageOf(member.id),
-      q.today,
+      today,
     );
   }
 
@@ -132,7 +132,7 @@ export class MealPlansController {
   })
   async update(
     @CurrentUser() member: CurrentUserValue,
-    @Query(query) q: MealPlanQuery,
+    @Query(query) { today }: MealPlanQuery,
     @Param(idParam) { id }: { id: string },
     @Body(new ZodValidationPipe(updateMealPlanBody)) body: UpdateMealPlanBody,
   ): Promise<MealPlanView> {
@@ -141,7 +141,7 @@ export class MealPlansController {
       id,
       body,
       await this.languages.catalogLanguageOf(member.id),
-      q.today,
+      today,
     );
   }
 
@@ -161,7 +161,7 @@ export class MealPlansController {
   })
   async setSlot(
     @CurrentUser() member: CurrentUserValue,
-    @Query(query) q: MealPlanQuery,
+    @Query(query) { today }: MealPlanQuery,
     @Param(slotParam) params: SlotParams,
     @Body(new ZodValidationPipe(setSlotBody)) body: SetSlotBody,
   ): Promise<MealPlanView> {
@@ -170,7 +170,7 @@ export class MealPlansController {
       params,
       body,
       await this.languages.catalogLanguageOf(member.id),
-      q.today,
+      today,
     );
   }
 
@@ -192,7 +192,7 @@ export class MealPlansController {
   })
   async fill(
     @CurrentUser() member: CurrentUserValue,
-    @Query(query) q: MealPlanQuery,
+    @Query(query) { today }: MealPlanQuery,
     @Param(idParam) { id }: { id: string },
     @Body(new ZodValidationPipe(fillBody)) body: FillBody,
   ): Promise<MealPlanView> {
@@ -201,7 +201,7 @@ export class MealPlansController {
       id,
       body,
       await this.languages.catalogLanguageOf(member.id),
-      q.today,
+      today,
     );
   }
 }

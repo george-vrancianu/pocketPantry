@@ -79,7 +79,7 @@ export class RecipesController {
     @Query(new ZodValidationPipe(browseQuery)) query: BrowseQuery,
   ): Promise<RecipeList> {
     const locale = await this.languages.catalogLanguageOf(member.id);
-    return this.browse.list(member.id, { ...query, locale });
+    return this.browse.list(member.id, query, locale);
   }
 
   @Get('filters')
@@ -107,7 +107,7 @@ export class RecipesController {
     @Query(new ZodValidationPipe(cookTonightQuery)) query: CookTonightQuery,
   ): Promise<CookTonightView> {
     const locale = await this.languages.catalogLanguageOf(member.id);
-    return this.cookTonight.view(member.id, { ...query, locale });
+    return this.cookTonight.view(member.id, query, locale);
   }
 
   @Post()

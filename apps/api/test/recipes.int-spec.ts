@@ -376,8 +376,8 @@ describe('Recipes browsing and detail (integration)', () => {
       await memberA.get(`/${live.id}`).expect(200);
     });
 
-    it('rejects an unknown locale', async () => {
-      await memberA.get('?locale=xx').expect(400);
+    it('ignores an unknown locale', async () => {
+      await memberA.get('?locale=xx').expect(200);
     });
   });
 
