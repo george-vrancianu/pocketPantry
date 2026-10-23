@@ -1,7 +1,4 @@
 {
-  "alt": {
-    "shoppingBuddy": "Gator, aligatorul, gata de cumpărături"
-  },
   "launch": {
     "tagline": "Știi ce ai în bucătărie.",
     "taglineTwo": "Cumperi doar ce îți trebuie.",
@@ -16,7 +13,7 @@
     "fromPhone": "Aleasă după limba telefonului tău",
     "alsoUsedFor": "Folosită și pentru",
     "voiceNotes": {
-      "label": "Notițe vocale",
+      "label": "Note vocale",
       "hint": "Ce îi spui lui Gator"
     },
     "receipts": {

@@ -31,7 +31,7 @@ export type IntroStep = (typeof INTRO_STEPS)[number];
  * Where a step lives. Launch has no path of its own (a signed-out visitor sees it on whatever route they
  * opened) and the Setup Review's path depends on the Scan, so ticket 498 builds it.
  */
-export const INTRO_PATHS: Partial<Record<IntroStep, string>> = {
+export const INTRO_PATHS = {
   'log-in': '/sign-in',
   languages: '/intro/languages',
   'sign-up': '/sign-up',
@@ -40,7 +40,7 @@ export const INTRO_PATHS: Partial<Record<IntroStep, string>> = {
   'say-it': '/intro/say-it',
   'all-set': '/intro/all-set',
   dashboard: '/',
-};
+} as const satisfies Partial<Record<IntroStep, string>>;
 
 /** The Setup screens a signed-in Member who has not finished the Intro may be on. */
 export const INTRO_SETUP_PREFIX = '/intro/';
@@ -117,7 +117,7 @@ export function introRedirect({
   if (introDone) return onIntro ? '/' : null;
   if (onIntro) return null;
   if (setupStarted && SCAN_PATHS.test(pathname)) return null;
-  return INTRO_PATHS['setup-or-skip'] ?? null;
+  return INTRO_PATHS['setup-or-skip'];
 }
 
 /**

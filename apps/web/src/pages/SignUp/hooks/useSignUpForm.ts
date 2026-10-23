@@ -53,7 +53,7 @@ export function useSignUpForm() {
       {
         onSuccess: (unsaved) => {
           setUnsavedLanguages(unsaved ?? null);
-          void navigate(INTRO_PATHS['setup-or-skip'] ?? '/', {
+          void navigate(INTRO_PATHS['setup-or-skip'], {
             replace: true,
           });
         },

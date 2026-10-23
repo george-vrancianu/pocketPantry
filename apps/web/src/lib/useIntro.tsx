@@ -60,8 +60,7 @@ export function IntroProvider({ children }: { children: ReactNode }) {
   const finishIntro = useCallback(
     () =>
       mutate(undefined, {
-        onSuccess: () =>
-          navigate(INTRO_PATHS.dashboard ?? '/', { replace: true }),
+        onSuccess: () => navigate(INTRO_PATHS.dashboard, { replace: true }),
       }),
     [mutate, navigate],
   );

@@ -7,6 +7,7 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { useGatorAlt } from '../../lib/useGatorAlt';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IntroLook } from '../../components/IntroLook';
 import { INTRO_PATHS } from '../../lib/intro';
@@ -17,10 +18,11 @@ import { INTRO_PATHS } from '../../lib/intro';
  */
 export function LaunchPage() {
   const { t } = useTranslation(['onboarding', 'common']);
+  const gatorAlt = useGatorAlt();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.pathname + location.search;
-  const logIn = INTRO_PATHS['log-in'] ?? '/sign-in';
+  const logIn = INTRO_PATHS['log-in'];
 
   return (
     <IntroLook>
@@ -42,7 +44,7 @@ export function LaunchPage() {
           <GatorImage
             mood="shopping-buddy"
             size={280}
-            alt={t('onboarding:alt.shoppingBuddy')}
+            alt={gatorAlt('shopping-buddy')}
           />
           <Typography variant="h1">{t('common:appName')}</Typography>
           <Typography color="text.secondary">

@@ -44,8 +44,8 @@ export function App() {
         <Route element={<RedirectIfSignedIn />}>
           <Route path="/sign-in" element={<SignInPage />} />
           <Route path="/sign-up" element={<SignUpPage />} />
+          <Route path="/intro/languages" element={<LanguagesPage />} />
         </Route>
-        <Route path="/intro/languages" element={<LanguagesPage />} />
         <Route element={<RequireAuth />}>
           <Route element={<IntroGate />}>
             <Route path="/intro/setup" element={<SetupOrSkipPage />} />

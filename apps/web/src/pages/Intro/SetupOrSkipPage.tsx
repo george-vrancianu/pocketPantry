@@ -14,6 +14,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useGatorAlt } from '../../lib/useGatorAlt';
 import { IntroLook } from '../../components/IntroLook';
 import { translateApiError } from '../../i18n/translateApiError';
 import { useIntro } from '../../lib/useIntro';
@@ -76,8 +77,8 @@ function ChoiceCard({ children, emphasised, disabled, onClick }: CardProps) {
 }
 
 /** What the Member chose on Languages, for the note when saving them failed. */
-function useChoices() {
-  const { t } = useTranslation(['onboarding', 'settings']);
+function useLanguagePicksSummary() {
+  const { t, i18n } = useTranslation(['onboarding', 'settings']);
   return (picks: LanguagePicks) => {
     const own = (locale: string) => t(`settings:languageNames.${locale}`);
     const rows: [string, string | null][] = [
@@ -86,10 +87,13 @@ function useChoices() {
       [t('onboarding:languages.receipts.label'), picks.scanLanguage],
       [t('onboarding:languages.groceryNames.label'), picks.catalogLanguage],
     ];
-    return rows
+    const parts = rows
       .filter((row): row is [string, string] => row[1] !== null)
-      .map(([name, locale]) => `${name}: ${own(locale)}`)
-      .join(', ');
+      .map(([name, locale]) => `${name}: ${own(locale)}`);
+    return new Intl.ListFormat(i18n.language, {
+      style: 'narrow',
+      type: 'conjunction',
+    }).format(parts);
   };
 }
 
@@ -98,10 +102,11 @@ function useChoices() {
  * resumes. "Show me how" is inert until Setup 1 (ticket 498): it says "Coming soon" and does nothing.
  */
 export function SetupOrSkipPage() {
+  const gatorAlt = useGatorAlt();
   const { t } = useTranslation(['onboarding', 'common']);
   const { resumeSetup, finishIntro, finishing, finishError, unsavedLanguages } =
     useIntro();
-  const choices = useChoices();
+  const summarise = useLanguagePicksSummary();
 
   useEffect(() => resumeSetup(), [resumeSetup]);
 
@@ -124,7 +129,7 @@ export function SetupOrSkipPage() {
           <GatorImage
             mood="shopping-buddy"
             size={220}
-            alt={t('onboarding:alt.shoppingBuddy')}
+            alt={gatorAlt('shopping-buddy')}
           />
         </Box>
         <Stack spacing={1}>
@@ -136,7 +141,7 @@ export function SetupOrSkipPage() {
         {unsavedLanguages ? (
           <Alert>
             {t('onboarding:setup.languagesNotSaved', {
-              choices: choices(unsavedLanguages),
+              choices: summarise(unsavedLanguages),
             })}
           </Alert>
         ) : null}
@@ -145,27 +150,53 @@ export function SetupOrSkipPage() {
         ) : null}
         <Stack spacing={2}>
           <ChoiceCard emphasised disabled>
-            <Stack spacing={0.5}>
-              <Typography variant="h2">
+            <Stack component="span" spacing={0.5}>
+              <Typography
+                variant="h2"
+                component="span"
+                sx={{ display: 'block' }}
+              >
                 {t('onboarding:setup.showMe')}
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Box
+                component="span"
+                sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
                 <ScanIcon size={18} aria-hidden />
                 <span>{t('onboarding:setup.showMeSnap')}</span>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Box
+                component="span"
+                sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
                 <MicIcon size={18} aria-hidden />
                 <span>{t('onboarding:setup.showMeSay')}</span>
               </Box>
-              <Typography variant="meta" color="text.secondary">
+              <Typography
+                variant="meta"
+                component="span"
+                color="text.secondary"
+                sx={{ display: 'block' }}
+              >
                 {t('onboarding:setup.showMeSoon')}
               </Typography>
             </Stack>
           </ChoiceCard>
           <ChoiceCard disabled={finishing} onClick={finishIntro}>
-            <Stack spacing={0.5}>
-              <Typography variant="h2">{t('onboarding:setup.skip')}</Typography>
-              <Typography variant="meta" color="text.secondary">
+            <Stack component="span" spacing={0.5}>
+              <Typography
+                variant="h2"
+                component="span"
+                sx={{ display: 'block' }}
+              >
+                {t('onboarding:setup.skip')}
+              </Typography>
+              <Typography
+                variant="meta"
+                component="span"
+                color="text.secondary"
+                sx={{ display: 'block' }}
+              >
                 {t('onboarding:setup.skipHint')}
               </Typography>
             </Stack>

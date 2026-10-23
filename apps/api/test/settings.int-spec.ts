@@ -713,8 +713,11 @@ describe('Settings (integration)', () => {
         await call(cookie, 'put', '/preferences')
           .send({ introDone: true })
           .expect(200);
-        const first = await introDoneAt(userId);
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        const first = new Date('2026-01-01T00:00:00Z');
+        await database
+          .update(user)
+          .set({ introDoneAt: first })
+          .where(eq(user.id, userId));
         await call(cookie, 'put', '/preferences')
           .send({ introDone: true })
           .expect(200);

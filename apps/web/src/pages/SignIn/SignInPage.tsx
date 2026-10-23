@@ -13,10 +13,15 @@ import { useSignInForm } from './hooks/useSignInForm';
 
 export function SignInPage() {
   const { t } = useTranslation('signIn');
-  const { submit, pending, error } = useSignInForm();
+  const { submit, pending, error, from } = useSignInForm();
 
   return (
-    <AuthShell title={t('title')} subtitle={t('subtitle')} back={t('back')}>
+    <AuthShell
+      title={t('title')}
+      subtitle={t('subtitle')}
+      back={t('back')}
+      backHref={from}
+    >
       <Box component="form" onSubmit={submit} sx={{ display: 'contents' }}>
         <Stack spacing={2}>
           {error ? <Alert>{error}</Alert> : null}

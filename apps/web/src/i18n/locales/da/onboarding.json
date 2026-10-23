@@ -1,7 +1,4 @@
 {
-  "alt": {
-    "shoppingBuddy": "Gator, alligatoren, klar til at handle"
-  },
   "launch": {
     "tagline": "Vid, hvad du har i køkkenet.",
     "taglineTwo": "Køb kun det, du har brug for.",
@@ -31,7 +28,7 @@
     "abroad": "Handler du i udlandet? Sæt Kvitteringer og etiketter til landets sprog. Du kan ændre det hele senere i Indstillinger."
   },
   "setup": {
-    "title": "Skal Gator fylde dit spisekammer?",
+    "title": "Fyld dit spisekammer med Gator?",
     "body": "To hurtige forsøg, og dit køkken er allerede i appen. Det tager omkring to minutter.",
     "showMe": "Vis mig hvordan",
     "showMeSnap": "1 · Tag et billede",

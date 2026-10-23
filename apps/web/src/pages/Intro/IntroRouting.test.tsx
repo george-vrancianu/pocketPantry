@@ -121,11 +121,66 @@ describe('the Intro shell routing', () => {
         await screen.findByRole('button', { name: /Skip, take me to the app/ }),
       );
     expect(
-      await screen.findByRole('navigation', { name: 'Main' }),
+      await screen.findByRole('link', { name: 'Customise dashboard' }),
     ).toBeInTheDocument();
     expect(
       calls.find((c) => c.key === 'PUT /api/settings/preferences')?.body,
     ).toEqual({ introDone: true });
+  });
+
+  it.each([true, false])(
+    'keeps a signed-in Member (done: %s) off Languages',
+    async (introDone) => {
+      stubIntroApi({ signedIn: true, introDone });
+      renderWithProviders(<App />, { route: '/intro/languages' });
+      if (introDone) {
+        expect(
+          await screen.findByRole('link', { name: 'Customise dashboard' }),
+        ).toBeInTheDocument();
+      } else {
+        expect(
+          await screen.findByRole('heading', {
+            name: 'Fill your Pantry with Gator?',
+          }),
+        ).toBeInTheDocument();
+      }
+      expect(screen.queryByRole('radiogroup')).toBeNull();
+    },
+  );
+
+  it('lets the app through when Preferences cannot be read', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/auth/get-session': () =>
+        Response.json({
+          user: { id: '1', name: 'Ana', email: 'ana@example.com' },
+        }),
+      'GET /api/settings/preferences': () =>
+        Response.json({ code: 'unknown', params: {} }, { status: 500 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<App />, { route: '/' });
+    expect(
+      await screen.findByRole('link', { name: 'Customise dashboard' }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the deep link when Log in is left by Back and opened again', async () => {
+    stubIntroApi();
+    renderWithProviders(<App />, { route: '/shopping?x=1' });
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole('link', { name: 'I already have an account' }),
+    );
+    await user.click(await screen.findByRole('link', { name: /back/i }));
+    await user.click(
+      await screen.findByRole('link', { name: 'I already have an account' }),
+    );
+    await user.type(await screen.findByLabelText(/^Email/), 'ana@example.com');
+    await user.type(screen.getByLabelText(/^Password/), 'correct-horse');
+    await user.click(screen.getByRole('button', { name: 'Log in' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Shopping', level: 1 }),
+    ).toBeInTheDocument();
   });
 
   it('keeps a done Member off the Intro screens', async () => {
