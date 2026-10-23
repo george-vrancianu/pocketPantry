@@ -2,7 +2,7 @@ import type { ThemeId } from '@pocket-pantry/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import { recipesQueryKey } from './recipes';
-import { recipeMatchingQueryKeys } from './queryKeys';
+import { recipeMatchingQueryKeys, suggestionsQueryKey } from './queryKeys';
 import type { Locale } from '../i18n/resources';
 
 export type ExpiryOverride = {
@@ -33,6 +33,10 @@ export type CategoryOptions = {
 /** `null` means never chosen: the default applies. */
 export type MemberPreferences = {
   locale: Locale | null;
+  /** `null` is "Same as UI Language". */
+  catalogLanguage: Locale | null;
+  /** The language Pantry and Shopping names are shown in, worked out by the API. */
+  effectiveCatalogLanguage: Locale;
   theme: ThemeId | null;
   /** Leave out Recipes with the Member's own or Family Allergies; off by default. */
   hideRecipesWithAllergies: boolean;
@@ -131,19 +135,60 @@ export function useMemberPreferences() {
   });
 }
 
-export function useSaveLocale() {
+/** Ingredient, Category and Aisle names in these come back in the Member's Catalog Language, which their keys do not name. */
+const catalogNameQueryKeys = [
+  ['pantry'],
+  ['shopping-list'],
+  ['shopping-templates'],
+  ['staples'],
+  suggestionsQueryKey,
+] as const;
+
+/** Patches the language fields a save returned into the cache and refetches everything named in them. */
+function useApplySavedLanguages() {
   const queryClient = useQueryClient();
+  return (saved: MemberPreferences) => {
+    // Only the language fields; a Theme save may have landed meanwhile.
+    queryClient.setQueryData<MemberPreferences>(preferencesQueryKey, (old) =>
+      old
+        ? {
+            ...old,
+            locale: saved.locale,
+            catalogLanguage: saved.catalogLanguage,
+            effectiveCatalogLanguage: saved.effectiveCatalogLanguage,
+          }
+        : saved,
+    );
+    return Promise.all(
+      catalogNameQueryKeys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
+    );
+  };
+}
+
+export function useSaveLocale() {
+  const apply = useApplySavedLanguages();
   return useMutation({
     mutationFn: (locale: Locale) =>
       apiRequest<MemberPreferences>('/settings/preferences', {
         method: 'PUT',
         body: { locale },
       }),
-    // Only the locale this request saved; a Theme save may have landed meanwhile.
-    onSuccess: (saved) =>
-      queryClient.setQueryData<MemberPreferences>(preferencesQueryKey, (old) =>
-        old ? { ...old, locale: saved.locale } : saved,
-      ),
+    onSuccess: apply,
+  });
+}
+
+/** Saves the Catalog Language; `null` is "Same as UI Language". */
+export function useSaveCatalogLanguage() {
+  const apply = useApplySavedLanguages();
+  return useMutation({
+    mutationFn: (catalogLanguage: Locale | null) =>
+      apiRequest<MemberPreferences>('/settings/preferences', {
+        method: 'PUT',
+        body: { catalogLanguage },
+      }),
+    onSuccess: apply,
   });
 }
 
