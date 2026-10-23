@@ -75,6 +75,8 @@ export const user = pgTable(
     hideRecipesWithAllergies: boolean('hide_recipes_with_allergies')
       .notNull()
       .default(false),
+    // When the Member was done with the Intro (reached the Dashboard from it); null = not yet. First time wins.
+    introDoneAt: timestamp('intro_done_at', { withTimezone: true }),
     ...timestamps,
   },
   (table) => [

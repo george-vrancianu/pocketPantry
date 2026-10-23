@@ -121,7 +121,7 @@ export class SettingsController {
   @Put('preferences')
   @ApiOperation({
     summary:
-      "Save the Member's UI Language, Catalog Language, Theme and/or hide-Allergies preference; omitted ones are kept",
+      "Save the Member's languages, Theme, hide-Allergies preference and/or being done with the Intro; omitted ones are kept",
   })
   async setPreferences(
     @CurrentUser() member: CurrentUserValue,

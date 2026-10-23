@@ -29,6 +29,8 @@ export const updatePreferencesBody = z
     spokenLanguage: z.enum(SCAN_LANGUAGES).nullable().optional(),
     theme: z.enum(THEME_IDS).optional(),
     hideRecipesWithAllergies: z.boolean().optional(),
+    /** The Member reached the Dashboard from the Intro. Only `true` is accepted: the Intro is never undone. */
+    introDone: z.literal(true).optional(),
   })
   .refine(
     (body) =>
@@ -37,7 +39,8 @@ export const updatePreferencesBody = z
       body.scanLanguage !== undefined ||
       body.spokenLanguage !== undefined ||
       body.theme !== undefined ||
-      body.hideRecipesWithAllergies !== undefined,
+      body.hideRecipesWithAllergies !== undefined ||
+      body.introDone !== undefined,
     { message: 'Nothing to update' },
   );
 export type UpdatePreferencesBody = z.infer<typeof updatePreferencesBody>;
@@ -83,6 +86,8 @@ export type PreferencesView = {
   theme: ThemeId | null;
   /** Leave out Recipes with the Member's own or Family Allergies (#359). */
   hideRecipesWithAllergies: boolean;
+  /** The Member has been through (or past) the Intro; `false` sends them to Set up or skip. */
+  introDone: boolean;
 };
 
 /** A Member replaces their own Allergies wholesale. */
