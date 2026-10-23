@@ -16,8 +16,8 @@ import {
 import { useGatorAlt } from '../../lib/useGatorAlt';
 import { useIntro } from '../../lib/useIntro';
 import { ReviewPage } from '../Review/ReviewPage';
-import { SetupReviewFrame } from './components/SetupReviewView';
-import { SetupTopRow } from './components/SetupTopRow';
+import { SetupReviewFrame } from '../../components/SetupReview/SetupReviewView';
+import { SetupTopRow } from '../../components/SetupReview/SetupTopRow';
 
 /** Setup's Review while the photo is still being read, or when the read failed. */
 function Waiting({

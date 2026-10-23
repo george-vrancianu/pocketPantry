@@ -1,32 +1,12 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
-import { renderWithProviders, stubApi } from '../../test/render';
-
-/** The router's current path and query, for asserting where a click went. */
-function Where() {
-  const { pathname, search } = useLocation();
-  return <output aria-label="Where">{pathname + search}</output>;
-}
-
-/** A signed-in Member who is not done with the Intro, on a server that can transcribe. */
-function stubMember() {
-  const { fetchMock } = stubApi({
-    'GET /api/auth/get-session': () =>
-      Response.json({
-        user: { id: '1', name: 'Ana', email: 'ana@example.com' },
-      }),
-    'GET /api/settings/preferences': () =>
-      Response.json({ introDone: false, theme: null, locale: 'en' }),
-    'GET /api/voice/config': () => Response.json({ configured: true }),
-  });
-  vi.stubGlobal('fetch', fetchMock);
-}
+import { stubSetupMember, Where } from '../../test/intro';
+import { renderWithProviders } from '../../test/render';
 
 async function openSnap() {
-  stubMember();
+  stubSetupMember();
   renderWithProviders(
     <>
       <App />
@@ -129,6 +109,8 @@ describe('Setup 1, Snap', () => {
 
   it('is on the olive ground in the light look', async () => {
     await openSnap();
+    expect(document.querySelector('[data-ground="olive"]')).not.toBeNull();
+    expect(document.querySelector('[data-ground="cream"]')).toBeNull();
     expect(document.querySelector('[data-theme="warm"]')).not.toBeNull();
   });
 });

@@ -7,6 +7,7 @@ import {
   MicIcon,
   radius,
   ReceiptIcon,
+  tokens,
   Typography,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
@@ -54,7 +55,10 @@ function Tip({ icon, children }: { icon: ReactNode; children: string }) {
         listStyle: 'none',
       }}
     >
-      <Box aria-hidden sx={{ flex: 'none', color: color.butter, mt: '2px' }}>
+      <Box
+        aria-hidden
+        sx={{ flex: 'none', color: tokens.color.butter, mt: '2px' }}
+      >
         {icon}
       </Box>
       <Typography sx={{ fontSize: 15.5, lineHeight: 1.45 }}>
@@ -164,11 +168,11 @@ export function AllSetPage() {
           onClick={finishIntro}
           sx={{
             mt: '32px',
-            backgroundColor: color.butter,
-            color: color.butterInk,
+            backgroundColor: tokens.color.butter,
+            color: tokens.color.butterInk,
             fontSize: 17,
             fontWeight: 700,
-            '&:hover': { backgroundColor: color.butter },
+            '&:hover': { backgroundColor: tokens.color.butter },
           }}
         >
           {t('allSet.go')}

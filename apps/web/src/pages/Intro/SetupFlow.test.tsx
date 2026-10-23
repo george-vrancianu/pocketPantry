@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useNavigate } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
 import type { CatalogSearchResult } from '../../lib/catalog';
@@ -70,6 +71,12 @@ const SCAN_ROUTES = {
     Response.json({ batches: [], matchedShoppingItemIds: [] }),
 };
 
+/** The browser's Back button, which the memory router has no UI for. */
+function BrowserBack() {
+  const navigate = useNavigate();
+  return <button onClick={() => navigate(-1)}>Browser back</button>;
+}
+
 const where = () => screen.getByLabelText('Where').textContent;
 
 /** Opens the app at Set up or skip and taps Show me how. */
@@ -82,6 +89,7 @@ async function openSnap(routes: Parameters<typeof stubSetupMember>[0] = {}) {
     <>
       <App />
       <Where />
+      <BrowserBack />
     </>,
     { route: '/intro/setup' },
   );
@@ -136,8 +144,9 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     expect(screen.queryByTestId('review-overview')).toBeNull();
     // The app's Dock is not on this screen: nothing leads away from Setup.
     expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull();
-    // The normal (cream) look, not the olive of the step screens.
-    expect(document.querySelector('[data-theme="warm"]')).not.toBeNull();
+    // The normal (cream) ground, not the olive of the step screens.
+    expect(document.querySelector('[data-ground="cream"]')).not.toBeNull();
+    expect(document.querySelector('[data-ground="olive"]')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Add 3 to Pantry' }));
 
@@ -218,6 +227,21 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     expect(screen.queryByTestId('stack-badge')).toBeNull();
   });
 
+  it('leaves no photo in the Scan Session when Back returns from the Setup Review to Snap', async () => {
+    const { user } = await openSnap();
+    await snapAPhoto(user);
+    await banner();
+
+    await user.click(screen.getByRole('button', { name: 'Browser back' }));
+    await screen.findByRole('radiogroup', { name: "What's in front of you?" });
+    expect(where()).toBe('/intro/snap');
+
+    // The camera opens on an empty Scan Session: the photo from before Back is not stacked under the next.
+    await user.click(screen.getByRole('link', { name: 'Camera' }));
+    await waitFor(() => expect(shutter()).toBeInTheDocument());
+    expect(screen.queryByTestId('stack-badge')).toBeNull();
+  });
+
   it('skips from Snap to All set with no tiles, and Go to my kitchen still finishes the Intro', async () => {
     const { user, calls } = await openSnap();
     await user.click(screen.getByRole('link', { name: 'Skip' }));
@@ -292,6 +316,25 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
 
     expect(await screen.findByText("Couldn't read, retake")).toBeVisible();
     expect(screen.getByRole('img', { name: 'Gator, worried' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Retake' }));
+    await waitFor(() => expect(where()).toBe('/scan?mode=ingredients'));
+  });
+
+  it('says so when the Scan Cap is reached, and Retake goes back to the camera', async () => {
+    const { user } = await openSnap({
+      routes: {
+        'POST /api/scan/ingredients': () =>
+          Response.json(
+            { code: 'scan.cap_reached', params: { cap: 30 } },
+            { status: 429 },
+          ),
+      },
+    });
+    await snapAPhoto(user);
+
+    expect(await screen.findByText("Couldn't read, retake")).toBeVisible();
+    expect(screen.getByText('Daily scan limit reached')).toBeVisible();
+    expect(where()).toMatch(/^\/intro\/review\/.+/);
     await user.click(screen.getByRole('button', { name: 'Retake' }));
     await waitFor(() => expect(where()).toBe('/scan?mode=ingredients'));
   });

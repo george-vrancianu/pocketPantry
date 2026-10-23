@@ -42,7 +42,7 @@
     "skip": "Sari peste",
     "bubble": {
       "ingredients": "Pune niște mâncare pe blat și fă-i o poză. Îmi dau eu seama ce este.",
-      "receipt": "Fotografiază bonul de la ultima ta cumpărătură. Pun eu la loc tot ce ai cumpărat."
+      "receipt": "Fotografiază bonul de la ultima ta cumpărătură. Pun eu toate produsele la locul lor."
     },
     "question": "Ce ai în fața ta?",
     "choices": {
@@ -73,10 +73,10 @@
     "add_other": "Adaugă {{count}} în Cămară"
   },
   "allSet": {
-    "bubble": "Totul e gata! Eu mă uit la bucătăria ta.",
+    "bubble": "Totul e gata! Am eu grijă de bucătăria ta.",
     "inPantry": "în Cămara ta",
     "onShoppingList": "pe Lista ta de cumpărături",
-    "tipReceipt": "După fiecare cumpărătură, fotografiază bonul. Bifează și lista ta.",
+    "tipReceipt": "După fiecare cumpărătură, fotografiază bonul. Așa se bifează și lista ta.",
     "tipMic": "Camera și microfonul sunt mereu în mijlocul meniului.",
     "go": "Du-mă în bucătărie",
     "error": "Nu am putut încheia acum. Încearcă din nou."

@@ -11,9 +11,9 @@ import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { MatchDialog } from '../../components/MatchDialog';
-import { SetupReviewView } from '../Intro/components/SetupReviewView';
+import { ReviewActionBar } from '../../components/ReviewActionBar';
+import { SetupReviewView } from '../../components/SetupReview/SetupReviewView';
 import { PlateRecipeSave } from './components/PlateRecipeSave';
-import { ReviewActionBar } from './components/ReviewActionBar';
 import { ReviewCounters } from './components/ReviewCounters';
 import { ReviewTable } from './components/ReviewTable';
 import {
@@ -108,6 +108,38 @@ export function ReviewPage({ setup }: { setup?: SetupReview } = {}) {
     </>
   );
 
+  // The phone layout's editor body: the Setup Review shows the same one in the Intro's frame.
+  const editor = (
+    <>
+      <ReviewTable
+        state={screen.state}
+        groups={groups}
+        parents={screen.parents}
+        shopping={screen.shopping}
+        onToggle={screen.toggle}
+        onChange={screen.change}
+        onSwapMatch={screen.openSwap}
+        onRemove={screen.remove}
+        onConfirm={screen.confirm}
+        onRestore={screen.restore}
+        onToggleSureGroup={screen.toggleSureGroup}
+        blocked={screen.blocked}
+        mode={screen.mode}
+      />
+      <Stack spacing={2} sx={{ mt: 2 }}>
+        {notices}
+      </Stack>
+      <MatchDialog
+        open={screen.swapOpen}
+        name={screen.swapName}
+        defaultQuery={screen.swapQuery}
+        newIngredientAllergenIds={screen.swapAllergenIds}
+        onSelect={screen.changeMatch}
+        onClose={screen.closeSwap}
+      />
+    </>
+  );
+
   if (setup) {
     return (
       <SetupReviewView
@@ -130,34 +162,7 @@ export function ReviewPage({ setup }: { setup?: SetupReview } = {}) {
             <Button onClick={setup.onRetake}>{t('overview.retake')}</Button>
           </Stack>
         ) : (
-          <>
-            <ReviewTable
-              state={screen.state}
-              groups={groups}
-              parents={screen.parents}
-              shopping={screen.shopping}
-              onToggle={screen.toggle}
-              onChange={screen.change}
-              onSwapMatch={screen.openSwap}
-              onRemove={screen.remove}
-              onConfirm={screen.confirm}
-              onRestore={screen.restore}
-              onToggleSureGroup={screen.toggleSureGroup}
-              blocked={screen.blocked}
-              mode={screen.mode}
-            />
-            <Stack spacing={2} sx={{ mt: 2 }}>
-              {notices}
-            </Stack>
-            <MatchDialog
-              open={screen.swapOpen}
-              name={screen.swapName}
-              defaultQuery={screen.swapQuery}
-              newIngredientAllergenIds={screen.swapAllergenIds}
-              onSelect={screen.changeMatch}
-              onClose={screen.closeSwap}
-            />
-          </>
+          editor
         )}
       </SetupReviewView>
     );
@@ -229,32 +234,7 @@ export function ReviewPage({ setup }: { setup?: SetupReview } = {}) {
         // Room under the last row for the fixed action bar.
         <Box sx={{ pb: '100px' }}>
           <ReviewCounters {...counts} />
-          <ReviewTable
-            state={screen.state}
-            groups={groups}
-            parents={screen.parents}
-            shopping={screen.shopping}
-            onToggle={screen.toggle}
-            onChange={screen.change}
-            onSwapMatch={screen.openSwap}
-            onRemove={screen.remove}
-            onConfirm={screen.confirm}
-            onRestore={screen.restore}
-            onToggleSureGroup={screen.toggleSureGroup}
-            blocked={screen.blocked}
-            mode={screen.mode}
-          />
-          <Stack spacing={2} sx={{ mt: 2 }}>
-            {notices}
-          </Stack>
-          <MatchDialog
-            open={screen.swapOpen}
-            name={screen.swapName}
-            defaultQuery={screen.swapQuery}
-            newIngredientAllergenIds={screen.swapAllergenIds}
-            onSelect={screen.changeMatch}
-            onClose={screen.closeSwap}
-          />
+          {editor}
           <ReviewActionBar
             saveLabel={saveLabel}
             canSave={screen.canSave}

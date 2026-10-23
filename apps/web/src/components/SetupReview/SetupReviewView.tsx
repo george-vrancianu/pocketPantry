@@ -8,8 +8,8 @@ import {
 } from '@pocket-pantry/ui';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGatorAlt } from '../../../lib/useGatorAlt';
-import { ReviewActionBar } from '../../Review/components/ReviewActionBar';
+import { useGatorAlt } from '../../lib/useGatorAlt';
+import { ReviewActionBar } from '../ReviewActionBar';
 import { SetupTopRow } from './SetupTopRow';
 
 /** The cream page frame of every Setup Review state (reading, failed, read): a phone-width column. */

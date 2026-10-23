@@ -4,6 +4,7 @@ import {
   color,
   focusRingStyle,
   radius,
+  tokens,
   Typography,
   visuallyHidden,
 } from '@pocket-pantry/ui';
@@ -121,7 +122,9 @@ export function ChoiceRadioGroup<T extends string>({
                 ...(olive
                   ? {
                       border: '3px solid',
-                      borderColor: selected ? color.butter : 'transparent',
+                      borderColor: selected
+                        ? tokens.color.butter
+                        : 'transparent',
                       backgroundColor: selected
                         ? 'pp.cardBg'
                         : color.accentOnTint,

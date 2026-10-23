@@ -17,6 +17,7 @@ export function IntroLook({
   return (
     <Box
       data-theme="warm"
+      data-ground={ground}
       sx={{
         minHeight: '100vh',
         backgroundColor:

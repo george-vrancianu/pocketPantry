@@ -8,6 +8,7 @@ import {
   Link,
   radius,
   ReceiptIcon,
+  shadow,
   Typography,
 } from '@pocket-pantry/ui';
 import { useEffect, useState } from 'react';
@@ -15,8 +16,10 @@ import { useTranslation } from 'react-i18next';
 import { AppDock } from '../../components/AppDock';
 import { ChoiceRadioGroup } from '../../components/ChoiceRadioGroup';
 import { IntroLook } from '../../components/IntroLook';
+import { SetupProgress } from '../../components/SetupReview/SetupProgress';
 import { introPath, skipStep } from '../../lib/intro';
 import { useGatorAlt } from '../../lib/useGatorAlt';
+import { resetScanSession } from '../../lib/scanSession';
 import { useIntro } from '../../lib/useIntro';
 
 type Pick = 'ingredients' | 'receipt';
@@ -29,39 +32,6 @@ const creamFocus = {
   '&& :focus-visible, && .Mui-focusVisible, && label:has(:focus-visible), && a:focus-visible':
     { outlineColor: color.cardBg },
 } as const;
-
-/** The step's progress: two bars (the first filled) and "1 of 2". */
-function Progress() {
-  const { t } = useTranslation('onboarding');
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-      <Box aria-hidden sx={{ display: 'flex', gap: '6px', flex: 1 }}>
-        <Box
-          sx={{
-            flex: 1,
-            height: 6,
-            borderRadius: radius.pill,
-            backgroundColor: color.butter,
-          }}
-        />
-        <Box
-          sx={{
-            flex: 1,
-            height: 6,
-            borderRadius: radius.pill,
-            backgroundColor: `color-mix(in srgb, ${color.cardBg} 28%, transparent)`,
-          }}
-        />
-      </Box>
-      <Typography
-        component="span"
-        sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}
-      >
-        {t('snap.progress', { step: 1 })}
-      </Typography>
-    </Box>
-  );
-}
 
 /** A cream card with a pointer at the bottom, aimed at the capsule below it. */
 function Callout({ title, body }: { title: string; body: string }) {
@@ -82,7 +52,7 @@ function Callout({ title, body }: { title: string; body: string }) {
         borderRadius: radius.card,
         backgroundColor: 'pp.cardBg',
         color: 'text.primary',
-        boxShadow: 'var(--pp-shadow-float)',
+        boxShadow: shadow.float,
         '&::after': {
           content: '""',
           position: 'absolute',
@@ -116,8 +86,12 @@ export function SnapPage() {
   const { startSetup } = useIntro();
   const [pick, setPick] = useState<Pick>('ingredients');
 
-  // Opening Snap on its own (a reload) must still let the camera through to the Scan screen.
-  useEffect(() => startSetup(), [startSetup]);
+  // Opening Snap on its own (a reload) must still let the camera through to the Scan screen. Setup takes one
+  // photo, so one left from before (browser Back from the Setup Review) must not be stacked under the next.
+  useEffect(() => {
+    resetScanSession();
+    return startSetup();
+  }, [startSetup]);
 
   return (
     <IntroLook ground="olive">
@@ -137,7 +111,7 @@ export function SnapPage() {
         ]}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Progress />
+          <SetupProgress tone="olive" />
           <Link
             href={SKIP_TO}
             underline="always"
