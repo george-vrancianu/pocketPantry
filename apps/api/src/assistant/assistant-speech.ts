@@ -19,6 +19,8 @@ export type AssistantActionKind =
   | 'added'
   | 'quantitySet'
   | 'alreadyOnList'
+  | 'checked'
+  | 'notOnList'
   | 'flaggedRunningLow'
   | 'addedBecauseRunningLowNoBatch'
   | 'addedUnmatched'
@@ -160,6 +162,8 @@ export const assistantMessages = {
       added: 'Added to your Shopping List: {items}',
       quantitySet: 'Updated on your Shopping List: {items}',
       alreadyOnList: 'Already on your Shopping List: {items}',
+      checked: 'Ticked off on your Shopping List: {items}',
+      notOnList: 'Not on your Shopping List: {items}',
       flaggedRunningLow: 'Marked as running low: {items}',
       addedBecauseRunningLowNoBatch:
         'Added to your Shopping List because there is no stock: {items}',
@@ -210,6 +214,8 @@ export const assistantMessages = {
       added: 'Am adăugat pe Lista de cumpărături: {items}',
       quantitySet: 'Am actualizat pe Lista de cumpărături: {items}',
       alreadyOnList: 'Deja pe Lista de cumpărături: {items}',
+      checked: 'Am bifat pe Lista de cumpărături: {items}',
+      notOnList: 'Nu este pe Lista de cumpărături: {items}',
       flaggedRunningLow: 'Am marcat ca pe cale să se termine: {items}',
       addedBecauseRunningLowNoBatch:
         'Am adăugat pe Lista de cumpărături, fiindcă nu mai este în stoc: {items}',
@@ -263,6 +269,8 @@ export const assistantMessages = {
       added: 'Føjet til indkøbslisten: {items}',
       quantitySet: 'Opdateret på indkøbslisten: {items}',
       alreadyOnList: 'Allerede på indkøbslisten: {items}',
+      checked: 'Afkrydset på indkøbslisten: {items}',
+      notOnList: 'Ikke på indkøbslisten: {items}',
       flaggedRunningLow: 'Markeret som ved at løbe tør: {items}',
       addedBecauseRunningLowNoBatch:
         'Føjet til indkøbslisten, fordi der ikke er mere på lager: {items}',
@@ -328,6 +336,8 @@ const KIND_ORDER: readonly AssistantActionKind[] = [
   'added',
   'quantitySet',
   'alreadyOnList',
+  'checked',
+  'notOnList',
   'flaggedRunningLow',
   'addedBecauseRunningLowNoBatch',
   'addedUnmatched',

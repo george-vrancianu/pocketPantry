@@ -31,11 +31,17 @@ type ShoppingRow = {
 function findShoppingTarget<T extends ShoppingRow>(
   items: readonly T[],
   draft: Pick<VoiceActionDraft, 'ingredientId' | 'name' | 'quantity' | 'unit'>,
-  prefer?: { checked: boolean },
+  prefer?: { checked: boolean; only?: boolean },
 ): T | null {
   const same = sameSubject(draft);
-  const candidates = items.filter((item) =>
-    same({ ingredientId: item.ingredientId, name: item.normalizedName ?? '' }),
+  const candidates = items.filter(
+    (item) =>
+      same({
+        ingredientId: item.ingredientId,
+        name: item.normalizedName ?? '',
+      }) &&
+      // `only`: lines in the other checked state are not candidates at all.
+      (!prefer?.only || item.checked === prefer.checked),
   );
   const unit = draft.quantity === null ? null : amountOf(draft).unit;
   const rank = (item: T) =>
@@ -89,7 +95,7 @@ export async function currentShoppingTarget(
   shopping: ShoppingService,
   draft: VoiceActionDraft,
   ctx: ApplyContext,
-  prefer?: { checked: boolean },
+  prefer?: { checked: boolean; only?: boolean },
 ): Promise<ShoppingRow | null> {
   const items = (await shopping.itemsInTransaction(ctx.tx, ctx.memberId)).map(
     toRow,

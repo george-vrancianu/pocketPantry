@@ -1258,6 +1258,207 @@ describe('Assistant Requests (integration)', () => {
     });
   });
 
+  // Spec: #491 / #500, ADR 0023.
+  describe('checking Shopping Items', () => {
+    const romanian = async () => {
+      const m = await member();
+      await database
+        .update(user)
+        .set({ locale: 'ro' })
+        .where(eq(user.id, m.id));
+      return m;
+    };
+    const addItem = (cookie: string, ingredientId: string) =>
+      client(app, cookie, '/api/shopping-list').post('/items?locale=en', {
+        ingredientId,
+        quantity: 1,
+        unit: 'pcs',
+      });
+    const tick = (cookie: string, id: string) =>
+      client(app, cookie, '/api/shopping-list').patch(
+        `/items/${id}?locale=en`,
+        { checked: true },
+      );
+    const got = (id: string, name: string, overrides = {}) =>
+      of(id, name, { op: 'check', ...overrides });
+
+    it('ticks an unchecked item on the list and says so', async () => {
+      const ana = await member();
+      await addItem(ana.cookie, milk);
+      await addItem(ana.cookie, eggs);
+      reading = { actions: [got(milk, 'Milk')], unsupported: [] };
+      const response = await ask(ana.secret, { text: 'got milk' }).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'checked', name: 'Milk' },
+      ]);
+      expect(reply(response).speech).toBe(
+        'Ticked off on your Shopping List: Milk.',
+      );
+      const items = await list(ana.cookie);
+      expect(items.find((i) => i.name === 'Milk')?.checked).toBe(true);
+      expect(items.find((i) => i.name === 'Eggs')?.checked).toBe(false);
+    });
+
+    it('writes nothing and says so when the name is not on the list, in the language spoken', async () => {
+      const ana = await romanian();
+      await addItem(ana.cookie, eggs);
+      reading = {
+        actions: [got(milk, 'Lapte')],
+        unsupported: [],
+        spokenLanguage: 'en',
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'notOnList', name: 'Milk' },
+      ]);
+      expect(reply(response).speech).toBe('Not on your Shopping List: Milk.');
+      expect(await list(ana.cookie, 'ro')).toMatchObject([{ checked: false }]);
+      expect(await list(ana.cookie, 'ro')).toHaveLength(1);
+    });
+
+    it('never adds an Unmatched name it cannot find', async () => {
+      const ana = await member();
+      reading = {
+        actions: [
+          model({
+            op: 'check',
+            spokenText: 'zorblax',
+            fallbackIngredientName: 'Zorblax',
+            spokenName: 'Zorblax',
+          }),
+        ],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'notOnList', name: 'Zorblax' },
+      ]);
+      expect(await list(ana.cookie)).toEqual([]);
+    });
+
+    it('treats an already checked item as not on the list and leaves it checked', async () => {
+      const ana = await member();
+      await addItem(ana.cookie, milk);
+      await tick(ana.cookie, (await list(ana.cookie))[0].id);
+      reading = { actions: [got(milk, 'Milk')], unsupported: [] };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([{ kind: 'notOnList' }]);
+      expect(await list(ana.cookie)).toMatchObject([
+        { name: 'Milk', checked: true },
+      ]);
+    });
+
+    it('ignores a spoken amount: it ticks and keeps the quantity', async () => {
+      const ana = await member();
+      await addItem(ana.cookie, milk);
+      reading = {
+        actions: [got(milk, 'Milk', { quantity: 5, unit: 'pcs' })],
+        unsupported: [],
+      };
+      await ask(ana.secret).expect(200);
+      expect(await list(ana.cookie)).toMatchObject([
+        { checked: true, quantity: 1 },
+      ]);
+    });
+
+    it('stays within the Family of the Member', async () => {
+      const ana = await member();
+      const ben = await member();
+      await addItem(ben.cookie, milk);
+      reading = { actions: [got(milk, 'Milk')], unsupported: [] };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes).toMatchObject([{ kind: 'notOnList' }]);
+      expect(await list(ben.cookie)).toMatchObject([{ checked: false }]);
+    });
+
+    it('does the allowed parts of a mixed request and names the refused ones', async () => {
+      const ana = await member();
+      await addItem(ana.cookie, milk);
+      reading = {
+        actions: [
+          got(milk, 'Milk'),
+          of(rice, 'Rice'),
+          of(eggs, 'Eggs', { op: 'remove', scope: 'one' }),
+        ],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes.map((o) => o.kind)).toEqual([
+        'checked',
+        'added',
+        'refused',
+      ]);
+      expect(reply(response).speech).toBe(
+        'Added to your Shopping List: Rice; Ticked off on your Shopping List: Milk; Open PantryGator for Eggs.',
+      );
+      expect(await list(ana.cookie)).toMatchObject([
+        { name: 'Milk', checked: true },
+        { name: 'Rice', checked: false },
+      ]);
+    });
+
+    it('still refuses unchecking, removing and Batch changes', async () => {
+      const ana = await member();
+      await addItem(ana.cookie, milk);
+      await tick(ana.cookie, (await list(ana.cookie))[0].id);
+      await addItem(ana.cookie, eggs);
+      await client(app, ana.cookie, '/api/pantry').post('/batches?locale=en', {
+        ingredientId: rice,
+      });
+      reading = {
+        actions: [
+          of(milk, 'Milk', { op: 'uncheck' }),
+          of(eggs, 'Eggs', { op: 'remove', scope: 'one' }),
+          of(rice, 'Rice', { target: 'pantry', op: 'remove', scope: 'all' }),
+          of(rice, 'Rice', { target: 'pantry', op: 'add' }),
+        ],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).outcomes.map((o) => o.kind)).toEqual([
+        'refused',
+        'refused',
+        'refused',
+        'refused',
+      ]);
+      expect(reply(response).speech).toContain('Open PantryGator for');
+      expect(await list(ana.cookie)).toMatchObject([
+        { name: 'Milk', checked: true },
+        { name: 'Eggs', checked: false },
+      ]);
+      const pantry = (
+        await client(app, ana.cookie, '/api/pantry').get('?locale=en')
+      ).body as { batches: { ingredientId: string }[] };
+      expect(pantry.batches).toHaveLength(1);
+    });
+
+    it.each([
+      [
+        'ro',
+        'Am bifat pe Lista de cumpărături: Lapte.',
+        'Nu este pe Lista de cumpărături: Ouă.',
+      ],
+      ['da', 'Afkrydset på indkøbslisten: Mælk.', 'Ikke på indkøbslisten: Æg.'],
+    ])('speaks both replies in %s', async (language, ticked, missing) => {
+      const ana = await member();
+      await addItem(ana.cookie, milk);
+      reading = {
+        actions: [got(milk, 'Milk', { spokenName: 'Milk' })],
+        unsupported: [],
+        spokenLanguage: language,
+      };
+      const response = await ask(ana.secret).expect(200);
+      expect(reply(response).speech).toMatch(ticked.split(':')[0]);
+      reading = {
+        actions: [got(eggs, 'Eggs')],
+        unsupported: [],
+        spokenLanguage: language,
+      };
+      const none = await ask(ana.secret).expect(200);
+      expect(reply(none).speech).toMatch(missing.split(':')[0]);
+    });
+  });
+
   describe('cap and failures', () => {
     it('charges the cap per request and answers 429 with speech when it is reached', async () => {
       const ana = await member();

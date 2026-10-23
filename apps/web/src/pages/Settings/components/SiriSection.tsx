@@ -24,6 +24,8 @@ import { formatDate } from '../../../lib/dateFormat';
 import { localIso } from '../../../lib/pantry';
 import {
   siriCheckShortcutUrl,
+  siriGotShortcutUrl,
+  siriNeedsShortcutUrl,
   siriShortcutUrl,
 } from '../../../lib/siriShortcut';
 import { ScopeCaption, SectionHeading } from './SectionHeading';
@@ -168,12 +170,19 @@ function TokenRow({
 
 const SETUP_STEPS = ['create', 'add', 'paste', 'say'] as const;
 
-/** The four steps from creating a token to talking to Siri; the Shortcut link joins step two. */
+/** The four Shortcuts, in the order Settings lists them, each with its optional iCloud link. */
+const SHORTCUTS = [
+  { key: 'needs', url: siriNeedsShortcutUrl },
+  { key: 'got', url: siriGotShortcutUrl },
+  { key: 'have', url: siriCheckShortcutUrl },
+  { key: 'add', url: siriShortcutUrl },
+] as const;
+
+/** The steps from creating a token to talking to Siri, then the four Shortcuts with their phrases and links (a link shows once its URL is configured). */
 function SetupGuide() {
   const { t } = useTranslation('siri');
-  const shortcutUrl = siriShortcutUrl();
-  const checkUrl = siriCheckShortcutUrl();
   const titleId = useId();
+  const shortcutsId = useId();
   return (
     <Stack spacing={1}>
       <Typography id={titleId} sx={{ fontWeight: 600 }}>
@@ -187,38 +196,48 @@ function SetupGuide() {
         {SETUP_STEPS.map((step) => (
           <Typography key={step} component="li" variant="body2">
             {t(`setup.${step}`)}
-            {step === 'add' && shortcutUrl ? (
-              <>
-                {' '}
-                <Link
-                  component="a"
-                  href={shortcutUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {t('setup.link')}
-                </Link>
-              </>
-            ) : null}
           </Typography>
         ))}
       </Box>
-      <Typography variant="body2">
-        {t('setup.check')}
-        {checkUrl ? (
-          <>
-            {' '}
-            <Link
-              component="a"
-              href={checkUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {t('setup.checkLink')}
-            </Link>
-          </>
-        ) : null}
+      <Typography id={shortcutsId} sx={{ fontWeight: 600 }}>
+        {t('setup.shortcutsTitle')}
       </Typography>
+      <Box
+        component="ul"
+        aria-labelledby={shortcutsId}
+        sx={{ m: 0, pl: 3, display: 'grid', gap: 1 }}
+      >
+        {SHORTCUTS.map(({ key, url }) => {
+          const href = url();
+          return (
+            <Typography key={key} component="li" variant="body2">
+              <Box component="span" sx={{ fontWeight: 600 }}>
+                {t(`setup.shortcuts.${key}.phrase`)}
+              </Box>
+              {'. '}
+              {t(`setup.shortcuts.${key}.does`)}{' '}
+              {href ? (
+                <Link
+                  component="a"
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t(`setup.shortcuts.${key}.link`)}
+                </Link>
+              ) : (
+                <Typography
+                  component="span"
+                  variant="meta"
+                  color="text.secondary"
+                >
+                  {t('setup.pending')}
+                </Typography>
+              )}
+            </Typography>
+          );
+        })}
+      </Box>
       <Typography variant="meta" color="text.secondary">
         {t('setup.language')}
       </Typography>
