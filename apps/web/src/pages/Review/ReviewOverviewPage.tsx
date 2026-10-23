@@ -1,6 +1,5 @@
 import {
   GatorImage,
-  palette,
   Alert,
   Box,
   Button,
@@ -9,6 +8,7 @@ import {
   ImagePlusIcon,
   Link,
   Typography,
+  color,
   tokens,
   nestedRadius,
   radius,
@@ -34,7 +34,7 @@ import { useSessionScanLanguage } from '../../lib/sessionScanLanguage';
 import {
   displayName,
   invalidFields,
-  reviewLinesOf,
+  unsureCount,
   type ReviewLine,
 } from '../../lib/review';
 import { savableLines, useSaveScan } from '../../lib/saveScan';
@@ -133,12 +133,8 @@ export function ReviewOverviewPage() {
   const anyRead = session.scans.some(savable);
   // Everything is read: the olive banner counts the lines Add all will save and the ones to check.
   const allRead = session.scans.length > 0 && session.scans.every(savable);
-  const readLines = session.scans.flatMap((scan) =>
-    reviewLinesOf(scan).filter((line) => !line.excluded),
-  );
-  const unsure = readLines.filter(
-    (line) => line.lowConfidence || line.match === null,
-  ).length;
+  const readLines = session.scans.flatMap(savableLines);
+  const unsure = unsureCount(readLines);
   // Photos saved over every press of Add, for the toast.
   const added = useRef(0);
 
@@ -218,12 +214,8 @@ export function ReviewOverviewPage() {
     const isReading = display === 'reading';
     const barcode = isBarcodeCard(scan);
     // Lines Receipt Scan left out are not saved, so they are not counted or shown.
-    const lines: ReviewLine[] = reviewLinesOf(scan).filter(
-      (line) => !line.excluded,
-    );
-    const check = lines.filter(
-      (line) => line.lowConfidence || line.match === null,
-    ).length;
+    const lines: ReviewLine[] = savableLines(scan);
+    const check = unsureCount(lines);
     const mergeable = canMerge(session, scan.id);
     // A not-found Barcode card's empty line has no name to show yet.
     const firstName = lines.length > 0 ? displayName(lines[0]).trim() : '';
@@ -539,7 +531,7 @@ export function ReviewOverviewPage() {
             pl: 0.25,
             borderRadius: radius.card,
             backgroundColor: tokens.color.accent,
-            color: palette('pp-accentInk'),
+            color: color.accentInk,
           }}
         >
           <Box sx={{ flex: 'none' }}>
@@ -550,7 +542,7 @@ export function ReviewOverviewPage() {
             <br />
             {unsure > 0
               ? t('overview.bannerCheck', { count: unsure })
-              : t('overview.bannerClear')}
+              : t('overview.bannerClear', { count: readLines.length })}
           </Typography>
         </Box>
       ) : null}

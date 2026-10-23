@@ -5,7 +5,6 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import listKeeperArt from '../../../../../packages/ui/src/gator/art/gator-list-keeper.svg';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -222,10 +221,8 @@ describe('Review overview', () => {
       within(card).queryByRole('button', { name: /remove/i }),
     ).not.toBeInTheDocument();
     // The list-keeper Gator is decorative: the line beside it says what it does.
-    const gator = Array.from(card.querySelectorAll('img')).find(
-      (img) => img.getAttribute('src') === listKeeperArt,
-    );
-    expect(gator).toBeDefined();
+    const gator = card.querySelector('img[data-mood="list-keeper"]');
+    expect(gator).not.toBeNull();
     expect(gator).toHaveAttribute('alt', '');
     expect(gator).toHaveAttribute('aria-hidden', 'true');
   });
@@ -265,7 +262,7 @@ describe('Review overview', () => {
       await seed('a', 'product', [yogurt]);
       renderOverview();
       expect(screen.getByTestId('all-read-banner')).toHaveTextContent(
-        "All read! 1 item.Nothing to check. Add them whenever you're ready.",
+        "All read! 1 item.Nothing to check. Add it whenever you're ready.",
       );
     });
 

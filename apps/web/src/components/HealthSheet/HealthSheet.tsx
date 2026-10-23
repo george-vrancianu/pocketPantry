@@ -26,7 +26,12 @@ export function HealthSheet({ open, onClose, state, today }: Props) {
   const { health, batchCount } = state;
   const { t } = useTranslation('dashboard');
   const closeButton = useRef<HTMLButtonElement>(null);
-  const gatorLine = useHealthGatorLine(health, state.todos.length);
+  const gatorLine = useHealthGatorLine(
+    health,
+    state.todos,
+    state.staleThresholdDays,
+    today,
+  );
   const missing = MIN_BATCHES_FOR_SCORE - batchCount;
 
   return (

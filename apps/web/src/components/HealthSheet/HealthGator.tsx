@@ -7,8 +7,9 @@ import {
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { keyframesSx } from '../../lib/keyframesSx';
-import type { PantryHealth } from '../../lib/health';
+import type { HealthTodo, PantryHealth } from '../../lib/health';
 import { useGatorAlt } from '../../lib/useGatorAlt';
+import { expiringSoonDay, todoTitle } from './todoText';
 
 const FADE_MS = 300;
 
@@ -23,18 +24,32 @@ export function healthMood(health: PantryHealth): GatorMood {
 }
 
 /**
- * Gator's line for the band, or null when Health has nothing true to add beside the to-do count. It
- * only describes real Health To-dos: "Splendid" needs a score of 85 or more and no Health To-do left.
+ * Gator's line for the band, or null when Health has nothing true to add. It only describes real
+ * Health To-dos: "Splendid" needs a score of 85 or more and no Health To-do left, and the hmm and
+ * worried notes name the first To-do. No score gain is ever promised.
  */
 export function useHealthGatorLine(
   health: PantryHealth,
-  todoCount: number,
+  todos: HealthTodo[],
+  staleThresholdDays: number,
+  today: Date,
 ): string | null {
-  const { t } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation('dashboard');
   if (!health.scored) return t('health.gator.curious');
-  if (health.verdict === 'good' && todoCount === 0)
-    return t('health.gator.dapper');
-  return null;
+  if (health.verdict === 'good') {
+    return todos.length === 0 ? t('health.gator.dapper') : null;
+  }
+  const first = todos[0];
+  if (!first) return null;
+  const title = todoTitle(
+    t,
+    first,
+    expiringSoonDay(today, staleThresholdDays, i18n.language),
+  );
+  return t(
+    health.verdict === 'some' ? 'health.gator.hmm' : 'health.gator.worried',
+    { title },
+  );
 }
 
 /**

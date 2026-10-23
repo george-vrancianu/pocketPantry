@@ -172,6 +172,10 @@ export function statusOf(line: ReviewLine, confirmed: boolean): RowStatus {
   return 'ok';
 }
 
+/** How many lines need a look at their Match: the ones `statusOf` calls `low`. */
+export const unsureCount = (lines: ReviewLine[]): number =>
+  lines.filter((line) => statusOf(line, false) === 'low').length;
+
 export type ReviewField = 'name' | 'quantity' | 'expiry';
 
 /** The fields holding an entered value that cannot be saved, in the order they appear on screen. A missing quantity or expiry is fine. */

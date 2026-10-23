@@ -43,7 +43,12 @@ export function HealthWidget({ size, columns }: WidgetProps) {
   const wide = size !== 'small';
 
   const todoCount = todos.length;
-  const gatorLine = useHealthGatorLine(health, todoCount);
+  const gatorLine = useHealthGatorLine(
+    health,
+    todos,
+    state.staleThresholdDays,
+    today,
+  );
   const subline =
     todoCount === 0
       ? t('health.nothingToDo')
@@ -88,7 +93,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
         isLoading={isPending}
         error={error ? translateApiError(t, error) : null}
         onPress={() => setOpen(true)}
-        pressLabel={cardName}
+        pressLabel={wide && gatorLine ? `${cardName}. ${gatorLine}` : cardName}
         padding="12px 14px 14px"
       >
         {wide ? (

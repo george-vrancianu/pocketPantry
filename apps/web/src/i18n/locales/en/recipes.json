@@ -175,8 +175,8 @@
   },
   "cookTonight": {
     "title": "Cook tonight",
-    "line_one": "{{count}} recipe uses what expires soon",
-    "line_other": "{{count}} recipes use what expires soon",
+    "line_one": "{{count}} Recipe uses what expires soon",
+    "line_other": "{{count}} Recipes use what expires soon",
     "seeThem": "See them"
   }
 }

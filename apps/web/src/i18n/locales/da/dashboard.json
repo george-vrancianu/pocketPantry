@@ -164,8 +164,10 @@
       "setDateName": "Sæt dato for {{name}}"
     },
     "gator": {
-      "curious": "Jeg er stadig ved at lære, hvad du har. Endnu en indkøbstur, så kan jeg fortælle, hvordan det går med dit spisekammer.",
-      "dapper": "Fremragende. Alt er inden for datoen, på lager og styr på."
+      "curious": "Jeg er stadig ved at lære, hvad du har. Læg et par ting mere ind, så kan jeg fortælle, hvordan det går med dit spisekammer.",
+      "dapper": "Fremragende. Alt er inden for datoen, på lager, og der er styr på det hele.",
+      "hmm": "Hmm. Lad os starte her: {{title}}.",
+      "worried": "Lad os få styr på det. Først: {{title}}."
     }
   },
   "mealPlan": {

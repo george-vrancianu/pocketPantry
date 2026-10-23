@@ -858,7 +858,7 @@ describe('RecipesPage', () => {
       const region = await findPrompt();
       expect(within(region).getByText('Cook tonight')).toBeVisible();
       expect(
-        within(region).getByText('2 recipes use what expires soon'),
+        within(region).getByText('2 Recipes use what expires soon'),
       ).toBeVisible();
       expect(within(region).getByAltText('Gator, cooking')).toBeVisible();
       expect(
@@ -866,10 +866,10 @@ describe('RecipesPage', () => {
       ).toBeVisible();
     });
 
-    it('says "1 recipe uses" in the singular', async () => {
+    it('says "1 Recipe uses" in the singular', async () => {
       setup(() => [omelette], [expiring('o', 'Omelette'), plain('p', 'Pie')]);
       expect(
-        await screen.findByText('1 recipe uses what expires soon'),
+        await screen.findByText('1 Recipe uses what expires soon'),
       ).toBeVisible();
     });
 
@@ -909,11 +909,11 @@ describe('RecipesPage', () => {
         1,
       );
       expect(
-        await screen.findByText('1 recipe uses what expires soon'),
+        await screen.findByText('1 Recipe uses what expires soon'),
       ).toBeVisible();
       await user.click(await screen.findByRole('button', { name: 'Show' }));
       expect(
-        await screen.findByText('2 recipes use what expires soon'),
+        await screen.findByText('2 Recipes use what expires soon'),
       ).toBeVisible();
     });
 

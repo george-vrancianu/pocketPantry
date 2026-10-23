@@ -1,7 +1,7 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { verdictOf, type PantryHealth } from '../../lib/health';
 import { renderWithProviders } from '../../test/render';
 import { stubMotion } from '../../test/viewport';
@@ -36,6 +36,10 @@ function Harness() {
 }
 
 describe('HealthGator', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it.each([
     ['fewer than ten Batches', unscored, ALT.curious],
     ['64', scored(64), ALT.worried],
@@ -52,6 +56,7 @@ describe('HealthGator', () => {
 
   it('fades the old mood out beside the new one', async () => {
     stubMotion(false);
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     renderWithProviders(<Harness />);
     expect(screen.queryByTestId('health-gator-leaving')).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: 'Change' }));
@@ -59,9 +64,10 @@ describe('HealthGator', () => {
     expect(screen.getByAltText(ALT.worried)).toBeInTheDocument();
     // The leaving face is decorative: only the current mood is announced.
     expect(screen.queryByAltText(ALT.dapper)).toBeNull();
-    await waitFor(() =>
-      expect(screen.queryByTestId('health-gator-leaving')).toBeNull(),
-    );
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(screen.queryByTestId('health-gator-leaving')).toBeNull();
   });
 
   it('swaps without a fade under reduced motion', async () => {

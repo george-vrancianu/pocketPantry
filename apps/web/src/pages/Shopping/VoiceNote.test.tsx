@@ -6,8 +6,6 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import listeningArt from '../../../../../packages/ui/src/gator/art/gator-listening.svg';
-import thinkingArt from '../../../../../packages/ui/src/gator/art/gator-thinking.svg';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -107,28 +105,26 @@ describe('Voice Note on the Shopping List', () => {
   it('draws Gator only while the mic is held and while the note is read', async () => {
     setup({ note: () => new Promise<Response>(() => undefined) });
     renderInAppLayout(<ShoppingPage />, '/shopping');
-    const gator = (art: string) =>
-      Array.from(document.querySelectorAll('img')).find(
-        (img) => img.getAttribute('src') === art,
-      ) ?? null;
+    const gator = (mood: string) =>
+      document.querySelector(`img[data-mood="${mood}"]`);
 
     // At rest the mic is plain: no Gator anywhere.
     await talkButton();
-    expect(gator(listeningArt)).toBeNull();
-    expect(gator(thinkingArt)).toBeNull();
+    expect(gator('listening')).toBeNull();
+    expect(gator('thinking')).toBeNull();
 
     // Held: the listening Gator sits in the Listening card, decorative beside its title.
     const button = await hold();
     expect(screen.getByRole('status')).toHaveTextContent("Gator's listening");
-    expect(gator(listeningArt)).not.toBeNull();
-    expect(gator(listeningArt)).toHaveAttribute('alt', '');
+    expect(gator('listening')).not.toBeNull();
+    expect(gator('listening')).toHaveAttribute('alt', '');
 
     // Let go: the thinking Gator replaces it in the pill.
     fireEvent.pointerUp(button);
     await screen.findByText("Gator's reading your note…");
-    expect(gator(listeningArt)).toBeNull();
-    expect(gator(thinkingArt)).not.toBeNull();
-    expect(gator(thinkingArt)).toHaveAttribute('alt', '');
+    expect(gator('listening')).toBeNull();
+    expect(gator('thinking')).not.toBeNull();
+    expect(gator('thinking')).toHaveAttribute('alt', '');
   });
 
   it('records while held, shows the elapsed time, and sends on release', async () => {

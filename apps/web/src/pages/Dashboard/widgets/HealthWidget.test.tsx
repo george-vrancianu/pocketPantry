@@ -251,7 +251,7 @@ describe('HealthWidget', () => {
     renderWithProviders(<HealthWidget size="wide" columns={2} />);
 
     const card = await screen.findByRole('button', {
-      name: 'Pantry health, 100, In good shape, nothing to do',
+      name: "Pantry health, 100, In good shape, nothing to do. Splendid. Everything's in date, stocked and accounted for.",
     });
     expect(card).toHaveTextContent('Nothing to do');
   });
@@ -268,7 +268,7 @@ describe('HealthWidget', () => {
     renderWithProviders(<HealthWidget size="wide" columns={2} />);
 
     const card = await screen.findByRole('button', {
-      name: 'Pantry health, Add 6 more to the Pantry to get your score, 1 thing to do',
+      name: "Pantry health, Add 6 more to the Pantry to get your score, 1 thing to do. I'm still learning what you've got. Add a few more things and I can tell you how your Pantry is doing.",
     });
     expect(card).toHaveTextContent(
       'Add 6 more to the Pantry to get your score',
@@ -1694,6 +1694,9 @@ describe('HealthWidget Gator', () => {
     expect(card).toHaveTextContent('A few things to sort');
     expect(screen.queryByText(SPLENDID)).toBeNull();
     expect(screen.queryByText(STILL_LEARNING)).toBeNull();
+    expect(
+      screen.getByText("Hmm. Let's start here: Toss 3 expired."),
+    ).toBeVisible();
   });
 
   it('is worried below 65, naming the real to-do and not the Member', async () => {
@@ -1701,6 +1704,29 @@ describe('HealthWidget Gator', () => {
     expectOnlyMood(WORRIED);
     expect(card).toHaveTextContent('45');
     expect(card).toHaveTextContent('1 to do · Toss 10 expired');
+    expect(
+      screen.getByText("Let's sort this out. First up: Toss 10 expired."),
+    ).toBeVisible();
+    // Gator never promises a score it cannot compute.
+    expect(screen.queryByText(/back over/i)).toBeNull();
+  });
+
+  it("puts Gator's line in the card's accessible name", async () => {
+    const card = await renderBand(expired(10));
+    expect(card).toHaveAccessibleName(
+      /Pantry health.*Let's sort this out\. First up: Toss 10 expired\.$/,
+    );
+  });
+
+  it('puts the band note on the sheet as well', async () => {
+    const card = await renderBand(expired(10));
+    await userEvent.setup().click(card);
+    const sheet = await screen.findByRole('dialog', { name: 'Pantry health' });
+    expect(
+      within(sheet).getByText(
+        "Let's sort this out. First up: Toss 10 expired.",
+      ),
+    ).toBeVisible();
   });
 
   it.each([

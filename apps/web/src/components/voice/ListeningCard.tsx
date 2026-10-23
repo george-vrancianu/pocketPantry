@@ -120,7 +120,7 @@ export function ListeningCard({
       >
         {/* The title beside Gator says "Gator's listening", so the image is decorative. */}
         <Box sx={{ flex: 'none' }}>
-          <GatorImage mood="listening" size={72} decorative />
+          <GatorImage mood="listening" size={92} decorative />
         </Box>
         <Box
           sx={{

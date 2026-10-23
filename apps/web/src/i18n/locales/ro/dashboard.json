@@ -185,8 +185,10 @@
       "setDateName": "Setează data pentru {{name}}"
     },
     "gator": {
-      "curious": "Încă învăț ce ai prin casă. Încă o rundă de cumpărături și îți pot spune cum stă cămara.",
-      "dapper": "Splendid. Totul e în termen, aprovizionat și pus la socoteală."
+      "curious": "Încă învăț ce ai prin casă. Adaugă încă câteva lucruri și îți pot spune cum stă cămara.",
+      "dapper": "Splendid. Totul e în termen, aprovizionat și pus la socoteală.",
+      "hmm": "Hmm. Să începem de aici: {{title}}.",
+      "worried": "Hai să le punem în ordine. Mai întâi: {{title}}."
     }
   },
   "mealPlan": {

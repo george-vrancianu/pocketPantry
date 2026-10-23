@@ -170,10 +170,12 @@
     "banner_one": "Totul e citit! {{count}} articol.",
     "banner_few": "Totul e citit! {{count}} articole.",
     "banner_other": "Totul e citit! {{count}} de articole.",
-    "bannerCheck_one": "Verifică-l pe cel de care nu am fost sigur, apoi adaugă-l.",
+    "bannerCheck_one": "Verifică-l pe cel de care nu am fost sigur, apoi adaugă-le.",
     "bannerCheck_few": "Verifică cele {{count}} de care nu am fost sigur, apoi adaugă-le.",
     "bannerCheck_other": "Verifică cele {{count}} de care nu am fost sigur, apoi adaugă-le.",
-    "bannerClear": "Nu e nimic de verificat. Adaugă-le când ești gata."
+    "bannerClear_one": "Nu e nimic de verificat. Adaugă-l când ești gata.",
+    "bannerClear_few": "Nu e nimic de verificat. Adaugă-le când ești gata.",
+    "bannerClear_other": "Nu e nimic de verificat. Adaugă-le când ești gata."
   },
   "plateRecipe": {
     "open": "Salvează ca rețetă",
