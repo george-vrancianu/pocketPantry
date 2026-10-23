@@ -9,6 +9,7 @@ import {
   toValidationIssues,
   ZodValidationPipe,
 } from '../common/zod-validation.pipe';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import {
   voiceApplyBody,
   type VoiceApplyBody,
@@ -59,7 +60,10 @@ async function readUpload(request: FastifyRequest): Promise<Upload> {
 @Controller('voice')
 @UseGuards(AuthGuard)
 export class VoiceController {
-  constructor(private readonly voice: VoiceService) {}
+  constructor(
+    private readonly voice: VoiceService,
+    private readonly languages: MemberLanguageService,
+  ) {}
 
   @Get('config')
   @ApiOperation({
@@ -90,8 +94,15 @@ export class VoiceController {
     }
     const mimeType = supportedAudioType(upload.audio.mimeType);
     if (!mimeType) throw new ApiException(415, 'voice.unsupported_audio');
+    // Names are made up, matched and written in the Catalog Language; the
+    // prompt is only told the UI Language. Transcription is unchanged.
+    const { ui, catalog } = await this.languages.languagesOf(member.id, {
+      requestLocale: fields.data.locale,
+    });
     return this.voice.read(member.id, {
       ...fields.data,
+      locale: catalog,
+      uiLanguage: ui,
       audio: upload.audio.buffer,
       mimeType,
     });
@@ -102,10 +113,15 @@ export class VoiceController {
     summary:
       'Apply the Voice Actions as edited in Review: each is re-checked against the current lists and all are written in one transaction. Does not count against the Voice Cap.',
   })
-  apply(
+  async apply(
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(voiceApplyBody)) body: VoiceApplyBody,
   ): Promise<VoiceApplyResult> {
-    return this.voice.apply(member.id, body);
+    // Unmatched names are written in the Catalog Language, as Review showed them.
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      body.locale,
+    );
+    return this.voice.apply(member.id, { ...body, locale });
   }
 }
