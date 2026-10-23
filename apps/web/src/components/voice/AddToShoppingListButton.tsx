@@ -14,7 +14,7 @@ import { voiceToast } from '../../lib/voicePlacement';
 import { shoppingListChangeQueryKeys } from '../../lib/queryKeys';
 import { shoppingListQueryKey, useShoppingList } from '../../lib/shopping';
 import { useVoiceNoteState } from '../../lib/voiceNote';
-import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
+import { useScanLanguage } from '../../lib/useScanLanguage';
 import { applyToast } from './applyResult';
 
 /** How long the result stays, as after Apply in Review: no Undo (ADR 0017). */

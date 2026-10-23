@@ -281,3 +281,22 @@ export async function fakeCameraModule() {
   beforeEach(resetFakeCamera);
   return { ...actual, useCamera: fakeUseCamera, readBarcode: fakeReadBarcode };
 }
+
+/**
+ * `stubApi` routes that answer the Member's Preferences with this Scan Language as the effective one
+ * (the chip and the Voice Note start there); spread them into the routes.
+ */
+export const scanLanguagePreference = (
+  effectiveScanLanguage: 'en' | 'ro' | 'da',
+) => ({
+  'GET /api/settings/preferences': () =>
+    Response.json({
+      locale: null,
+      catalogLanguage: null,
+      effectiveCatalogLanguage: 'en',
+      scanLanguage: effectiveScanLanguage,
+      effectiveScanLanguage,
+      theme: null,
+      hideRecipesWithAllergies: false,
+    }),
+});

@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { scanQuery, type ScanQuery } from '../pantry/pantry.schemas';
 import {
@@ -21,14 +22,17 @@ import { ScanService } from './scan.service';
 @Controller('scan')
 @UseGuards(AuthGuard)
 export class ScanController {
-  constructor(private readonly scan: ScanService) {}
+  constructor(
+    private readonly scan: ScanService,
+    private readonly languages: MemberLanguageService,
+  ) {}
 
   @Post('product')
   @ApiOperation({
     summary:
       'Product Scan: one proposed line (Match, Product Description, quantity, best-before date) for the Review screen. The image is forwarded, never stored.',
   })
-  product(
+  async product(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ScanImagePipe(productScanSchema, ['productImage']))
@@ -38,7 +42,11 @@ export class ScanController {
       member.id,
       body,
       query.locale,
-      query.scanLanguage,
+      await this.languages.scanLanguageOf(
+        member.id,
+        query.locale,
+        query.scanLanguage,
+      ),
     );
   }
 
@@ -47,7 +55,7 @@ export class ScanController {
     summary:
       'Ingredients Scan: one proposed line per loose ingredient in the photo, for the Review screen. The image is forwarded, never stored.',
   })
-  ingredients(
+  async ingredients(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ScanImagePipe(ingredientsScanSchema, ['ingredientsImage']))
@@ -57,7 +65,11 @@ export class ScanController {
       member.id,
       body,
       query.locale,
-      query.scanLanguage,
+      await this.languages.scanLanguageOf(
+        member.id,
+        query.locale,
+        query.scanLanguage,
+      ),
     );
   }
 }

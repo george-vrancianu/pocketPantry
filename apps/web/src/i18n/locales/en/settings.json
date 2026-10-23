@@ -59,6 +59,13 @@
     "saveFailed": "Could not save your Catalog Language. Try again.",
     "saved": "Catalog Language saved"
   },
+  "scanLanguage": {
+    "label": "Scan Language",
+    "sameAsUi": "Same as UI Language",
+    "hint": "What photos and Voice Notes are read as. Reading in {{language}}.",
+    "saveFailed": "Could not save your Scan Language. Try again.",
+    "saved": "Scan Language saved"
+  },
   "admin": "Catalog",
   "openAdmin": "Curate the Catalog",
   "account": "Account",

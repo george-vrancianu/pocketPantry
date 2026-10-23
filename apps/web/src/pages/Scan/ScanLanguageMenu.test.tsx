@@ -2,12 +2,12 @@ import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { loadScanLanguage } from '../../lib/scanLanguage';
 import { renderWithProviders, stubApi } from '../../test/render';
 import {
   languageChip,
   pickScanLanguage,
   queryLanguageChip,
+  scanLanguagePreference,
   selected,
   takeScan,
 } from '../../test/scan';
@@ -44,8 +44,12 @@ const line = {
   productDescription: null,
 };
 
-function renderScan(route = '/scan?mode=product') {
+function renderScan(
+  route = '/scan?mode=product',
+  preferred?: 'en' | 'ro' | 'da',
+) {
   const { fetchMock, calls } = stubApi({
+    ...(preferred ? scanLanguagePreference(preferred) : {}),
     'GET /api/catalog/parents': () => Response.json({ parents: [] }),
     'POST /api/scan/product': () => Response.json({ lines: [line] }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
@@ -115,11 +119,8 @@ describe('Scan Language menu on the Scan screen', () => {
   });
 
   it('focuses the checked item, and the arrow keys, Home and End move between items', async () => {
-    window.localStorage.setItem(
-      'pocket-pantry.scan-language',
-      JSON.stringify({ locale: 'en', language: 'ro' }),
-    );
-    renderScan();
+    renderScan(undefined, 'ro');
+    await vi.waitFor(() => expect(languageChip()).toHaveTextContent('RO'));
     await userEvent.click(languageChip());
     expect(screen.getByRole('menuitemradio', { name: 'Română' })).toHaveFocus();
     await userEvent.keyboard('{ArrowDown}');
@@ -218,18 +219,14 @@ describe('Scan Language menu on the Scan screen', () => {
   });
 
   it('starts at the preference: with no pick, Scans use it', async () => {
-    window.localStorage.setItem(
-      'pocket-pantry.scan-language',
-      JSON.stringify({ locale: 'en', language: 'da' }),
-    );
-    const calls = renderScan();
-    expect(languageChip()).toHaveTextContent('DA');
+    const calls = renderScan(undefined, 'da');
+    await vi.waitFor(() => expect(languageChip()).toHaveTextContent('DA'));
     takeScan();
     await sent(calls, 1);
     expect(sentLanguages(calls)).toEqual(['da']);
   });
 
-  it('a pick applies to every following Scan, shutter and Import, and leaves the device memory alone', async () => {
+  it('a pick applies to every following Scan, shutter and Import, and leaves the Preference alone', async () => {
     const calls = renderScan();
     await pickScanLanguage('Română');
     takeScan();
@@ -237,7 +234,9 @@ describe('Scan Language menu on the Scan screen', () => {
     await sendFile('import-input');
     await sent(calls, 2);
     expect(sentLanguages(calls)).toEqual(['ro', 'ro']);
-    expect(loadScanLanguage('en')).toBe('en');
+    expect(calls.map((c) => c.key)).not.toContain(
+      'PUT /api/settings/preferences',
+    );
     expect(
       window.localStorage.getItem('pocket-pantry.scan-language'),
     ).toBeNull();
@@ -257,7 +256,8 @@ describe('Scan Language across the Scan Session', () => {
   }
 
   it('applies to Add from photos in Review and survives Take more', async () => {
-    const calls = renderScan();
+    const calls = renderScan(undefined, 'da');
+    await vi.waitFor(() => expect(languageChip()).toHaveTextContent('DA'));
     await pickScanLanguage('Română');
     await toReview();
     await sendFile('review-photos-input');
@@ -270,30 +270,31 @@ describe('Scan Language across the Scan Session', () => {
   });
 
   it('is dropped by Discard all: the next Session starts at the preference', async () => {
-    const calls = renderScan();
+    const calls = renderScan(undefined, 'da');
+    await vi.waitFor(() => expect(languageChip()).toHaveTextContent('DA'));
     await pickScanLanguage('Română');
     await toReview();
     await userEvent.click(screen.getByRole('button', { name: 'Discard all' }));
     expect(await screen.findByTestId('scan-top-bar')).toBeVisible();
-    expect(languageChip()).toHaveTextContent('EN');
+    expect(languageChip()).toHaveTextContent('DA');
     takeScan();
     await sent(calls, 2);
-    expect(sentLanguages(calls)).toEqual(['ro', 'en']);
+    expect(sentLanguages(calls)).toEqual(['ro', 'da']);
   });
 
   it('is dropped by Add all', async () => {
-    renderScan();
+    renderScan(undefined, 'ro');
     await pickScanLanguage('Dansk');
     await toReview();
     await userEvent.click(
       await screen.findByRole('button', { name: /^Add all/ }),
     );
     expect(await screen.findByTestId('scan-top-bar')).toBeVisible();
-    expect(languageChip()).toHaveTextContent('EN');
+    expect(languageChip()).toHaveTextContent('RO');
   });
 
   it('is dropped by Close, after confirming the discard', async () => {
-    renderScan();
+    renderScan(undefined, 'ro');
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     await pickScanLanguage('Dansk');
     takeScan();
@@ -304,11 +305,11 @@ describe('Scan Language across the Scan Session', () => {
     await userEvent.click(
       await screen.findByRole('link', { name: 'back to the camera' }),
     );
-    expect(languageChip()).toHaveTextContent('EN');
+    expect(languageChip()).toHaveTextContent('RO');
   });
 
   it('is dropped by Close with no Scans taken', async () => {
-    renderScan();
+    renderScan(undefined, 'ro');
     await pickScanLanguage('Dansk');
     expect(languageChip()).toHaveTextContent('DA');
     await userEvent.click(
@@ -317,7 +318,7 @@ describe('Scan Language across the Scan Session', () => {
     await userEvent.click(
       await screen.findByRole('link', { name: 'back to the camera' }),
     );
-    expect(languageChip()).toHaveTextContent('EN');
+    expect(languageChip()).toHaveTextContent('RO');
   });
 
   it('is kept when the Member declines to discard on Close', async () => {

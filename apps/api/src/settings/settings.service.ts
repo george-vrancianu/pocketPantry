@@ -11,7 +11,10 @@ import {
 } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { ApiException } from '../common/api-exception';
-import { resolveLanguage } from '../member-language/member-language';
+import {
+  asScanLanguage,
+  resolveLanguage,
+} from '../member-language/member-language';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import {
@@ -210,6 +213,7 @@ export class SettingsService {
       .select({
         locale: user.locale,
         catalogLanguage: user.catalogLanguage,
+        scanLanguage: user.scanLanguage,
         theme: user.theme,
         hideRecipesWithAllergies: user.hideRecipesWithAllergies,
       })
@@ -226,6 +230,8 @@ export class SettingsService {
       effectiveCatalogLanguage: resolveLanguage('catalog', row, {
         requestLocale,
       }),
+      scanLanguage: asScanLanguage(row.scanLanguage),
+      effectiveScanLanguage: resolveLanguage('scan', row, { requestLocale }),
       theme,
       hideRecipesWithAllergies: row.hideRecipesWithAllergies,
     };
@@ -241,6 +247,7 @@ export class SettingsService {
       .set({
         locale: preferences.locale,
         catalogLanguage: preferences.catalogLanguage,
+        scanLanguage: preferences.scanLanguage,
         theme: preferences.theme,
         hideRecipesWithAllergies: preferences.hideRecipesWithAllergies,
       })

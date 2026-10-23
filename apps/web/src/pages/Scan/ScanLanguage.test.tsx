@@ -112,22 +112,6 @@ describe('Scan Language on the Scan screen', () => {
     expect(languageChip()).toHaveTextContent('DA');
   });
 
-  it('forgets the device choice when the UI language changes, even if it changes back', async () => {
-    window.localStorage.setItem(
-      'pocket-pantry.scan-language',
-      JSON.stringify({ locale: 'da', language: 'ro' }),
-    );
-    const { i18n } = renderWithProviders(<ScanPage />, {
-      route: '/scan',
-      locale: 'da',
-    });
-    expect(languageChip()).toHaveTextContent('RO');
-    await act(() => i18n.changeLanguage('en'));
-    expect(languageChip()).toHaveTextContent('EN');
-    await act(() => i18n.changeLanguage('da'));
-    expect(languageChip()).toHaveTextContent('DA');
-  });
-
   it('changes the Scan Language without changing the UI language', async () => {
     renderScan('/scan');
     await pickScanLanguage('Dansk');

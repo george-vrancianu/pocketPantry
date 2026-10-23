@@ -59,6 +59,13 @@
     "saveFailed": "Dit katalogsprog kunne ikke gemmes. Prøv igen.",
     "saved": "Katalogsprog gemt"
   },
+  "scanLanguage": {
+    "label": "Scansprog",
+    "sameAsUi": "Samme som appens sprog",
+    "hint": "Sproget fotos og talenoter læses på. Læser på {{language}}.",
+    "saveFailed": "Dit scansprog kunne ikke gemmes. Prøv igen.",
+    "saved": "Scansprog gemt"
+  },
   "admin": "Katalog",
   "openAdmin": "Kurater kataloget",
   "account": "Konto",

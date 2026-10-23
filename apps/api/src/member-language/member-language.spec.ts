@@ -1,6 +1,6 @@
 import { resolveLanguage, resolveLanguages } from './member-language';
 
-const none = { locale: null, catalogLanguage: null };
+const none = { locale: null, catalogLanguage: null, scanLanguage: null };
 
 describe('Member language resolver', () => {
   it('uses the stored UI Language, then the request locale, then English', () => {
@@ -16,13 +16,21 @@ describe('Member language resolver', () => {
       resolveLanguage('ui', { ...none, locale: 'fr' }, { requestLocale: 'ro' }),
     ).toBe('ro');
     expect(
-      resolveLanguage('catalog', { locale: 'da', catalogLanguage: 'xx' }),
+      resolveLanguage('catalog', {
+        ...none,
+        locale: 'da',
+        catalogLanguage: 'xx',
+      }),
     ).toBe('da');
   });
 
   it('gives the Catalog Language the stored value, or the UI Language when empty', () => {
     expect(
-      resolveLanguage('catalog', { locale: 'en', catalogLanguage: 'ro' }),
+      resolveLanguage('catalog', {
+        ...none,
+        locale: 'en',
+        catalogLanguage: 'ro',
+      }),
     ).toBe('ro');
     expect(
       resolveLanguage(
@@ -38,17 +46,55 @@ describe('Member language resolver', () => {
   });
 
   it('lets an explicit override win over everything stored', () => {
-    const stored = { locale: 'da', catalogLanguage: 'ro' };
+    const stored = { ...none, locale: 'da', catalogLanguage: 'ro' };
     expect(resolveLanguage('catalog', stored, { override: 'en' })).toBe('en');
     expect(
       resolveLanguage('ui', stored, { override: 'ro', requestLocale: 'en' }),
     ).toBe('ro');
   });
 
+  it('gives the Scan Language the stored value, or the UI Language when empty', () => {
+    expect(
+      resolveLanguage('scan', { ...none, locale: 'en', scanLanguage: 'da' }),
+    ).toBe('da');
+    expect(resolveLanguage('scan', { ...none, locale: 'ro' })).toBe('ro');
+    expect(resolveLanguage('scan', none, { requestLocale: 'da' })).toBe('da');
+    expect(resolveLanguage('scan', none)).toBe('en');
+  });
+
+  it('keeps the Scan Language apart from the Catalog Language', () => {
+    const stored = { ...none, locale: 'en', catalogLanguage: 'ro' };
+    expect(resolveLanguage('scan', stored)).toBe('en');
+    expect(resolveLanguage('scan', { ...stored, scanLanguage: 'da' })).toBe(
+      'da',
+    );
+    expect(resolveLanguage('catalog', { ...stored, scanLanguage: 'da' })).toBe(
+      'ro',
+    );
+  });
+
+  it('ignores a stored Scan Language that is not on the list, then falls back to English when the UI Language is not on it either', () => {
+    expect(
+      resolveLanguage('scan', { ...none, locale: 'ro', scanLanguage: 'xx' }),
+    ).toBe('ro');
+    expect(
+      resolveLanguage('scan', { ...none, locale: 'fr', scanLanguage: 'xx' }),
+    ).toBe('en');
+  });
+
+  it('lets a per-Scan override win for the Scan role', () => {
+    expect(
+      resolveLanguage(
+        'scan',
+        { ...none, scanLanguage: 'ro' },
+        { override: 'da' },
+      ),
+    ).toBe('da');
+  });
+
   it('answers every role at once', () => {
-    expect(resolveLanguages({ locale: 'en', catalogLanguage: 'ro' })).toEqual({
-      ui: 'en',
-      catalog: 'ro',
-    });
+    expect(
+      resolveLanguages({ ...none, locale: 'en', catalogLanguage: 'ro' }),
+    ).toEqual({ ui: 'en', catalog: 'ro', scan: 'en' });
   });
 });

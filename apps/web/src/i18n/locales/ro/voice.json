@@ -94,7 +94,7 @@
     "chipLabel": "Limba de scanare: {{language}}. Schimbă",
     "title": "Limba de scanare",
     "saved": "Limba de scanare: {{language}}",
-    "savedHint": "Folosită pentru notele vocale și pentru cameră."
+    "savedHint": "Pentru notele vocale de pe acest ecran."
   },
   "review": {
     "title": "Verificare",

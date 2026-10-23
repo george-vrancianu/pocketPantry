@@ -1,18 +1,31 @@
 import { useSyncExternalStore } from 'react';
-import type { Locale, ScanLanguage } from '../i18n/resources';
-import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
+import { useTranslation } from 'react-i18next';
+import {
+  FALLBACK_LOCALE,
+  isLocale,
+  type Locale,
+  type ScanLanguage,
+} from '../i18n/resources';
+import { useMemberPreferences } from './settings';
 
 /**
- * THE seam for "the Member's Scan Language preference" (ADR 0022). Today it is the app's device-local
- * default: the last choice made under the current UI language, else the UI language. ticket 473 swaps the
- * body of this hook for the server-side Member preference; nothing else needs to change.
+ * THE seam for "the Member's Scan Language preference" (ADR 0022): the effective value the API works out
+ * (the Preference, else the UI Language), the same on every device. Until the Preferences have loaded
+ * (or if they cannot), it is the UI Language. `locale` is the UI Language.
  */
 export function usePreferredScanLanguage(): {
   locale: Locale;
   scanLanguage: ScanLanguage;
 } {
-  const { locale, scanLanguage } = useScanLanguage();
-  return { locale, scanLanguage };
+  const { i18n } = useTranslation();
+  const locale = isLocale(i18n.resolvedLanguage)
+    ? i18n.resolvedLanguage
+    : FALLBACK_LOCALE;
+  const preferences = useMemberPreferences();
+  return {
+    locale,
+    scanLanguage: preferences.data?.effectiveScanLanguage ?? locale,
+  };
 }
 
 /**
@@ -33,7 +46,7 @@ export const clearScanLanguageOverride = () => setScanLanguageOverride(null);
 
 /**
  * The Scan Language of the Scan Session: the pick if there is one, else the preference. A pick never
- * writes the preference or the device-local memory.
+ * writes the preference.
  */
 export function useSessionScanLanguage(): {
   locale: Locale;
