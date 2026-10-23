@@ -38,15 +38,14 @@ export class ScanController {
     @Body(new ScanImagePipe(productScanSchema, ['productImage']))
     body: ProductScanInput,
   ): Promise<ScanResponse> {
+    const languages = await this.languages.languagesOf(member.id, {
+      requestLocale: query.locale,
+    });
     return this.scan.scanProduct(
       member.id,
       body,
-      query.locale,
-      await this.languages.scanLanguageOf(
-        member.id,
-        query.locale,
-        query.scanLanguage,
-      ),
+      languages.catalog,
+      query.scanLanguage ?? languages.scan,
     );
   }
 
@@ -61,15 +60,14 @@ export class ScanController {
     @Body(new ScanImagePipe(ingredientsScanSchema, ['ingredientsImage']))
     body: IngredientsScanInput,
   ): Promise<ScanResponse> {
+    const languages = await this.languages.languagesOf(member.id, {
+      requestLocale: query.locale,
+    });
     return this.scan.scanIngredients(
       member.id,
       body,
-      query.locale,
-      await this.languages.scanLanguageOf(
-        member.id,
-        query.locale,
-        query.scanLanguage,
-      ),
+      languages.catalog,
+      query.scanLanguage ?? languages.scan,
     );
   }
 }

@@ -10,6 +10,7 @@ import {
   batches,
   catalogTranslations,
   ingredientStockHistory,
+  ingredients,
   recipeIngredientLines,
   shoppingItems,
   shoppingTemplateLines,
@@ -158,6 +159,22 @@ describe('Family Ingredients (integration)', () => {
         );
         expect(hit).toMatchObject({ name, owner: 'family' });
       }
+    });
+
+    it('records the Catalog Language as the name language, not the request language', async () => {
+      const cookie = await signUp(app, `fi-catalog-${stamp}@example.com`, 'C');
+      const member = client(app, cookie, '/api');
+      await member
+        .put('/settings/preferences', { locale: 'en', catalogLanguage: 'ro' })
+        .expect(200);
+      const name = unique('Chefir');
+      const created = (await create(member, body(name), 'en').expect(201))
+        .body as Result;
+      const [row] = await database
+        .select({ nameLocale: ingredients.nameLocale })
+        .from(ingredients)
+        .where(eq(ingredients.id, created.id));
+      expect(row.nameLocale).toBe('ro');
     });
 
     it('lets any Member of the Family create one, and every Member see it', async () => {

@@ -293,6 +293,42 @@ describe('Product Scan (integration)', () => {
     });
   });
 
+  describe('with a Catalog Language Preference', () => {
+    // UI Language en, Catalog Language ro, Scan Language da: all three differ.
+    async function member() {
+      const cookie = await signUp();
+      await request(app.getHttpServer())
+        .put('/api/settings/preferences')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ locale: 'en', catalogLanguage: 'ro', scanLanguage: 'da' })
+        .expect(200);
+      return cookie;
+    }
+
+    it('asks for the fallback name in the Catalog Language and reads the package in the Scan Language', async () => {
+      const cookie = await member();
+      respondWith(parmesan());
+      prompts.length = 0;
+      await scan(cookie, { productImage: IMAGE }, 'en').expect(201);
+      expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
+      expect(prompts[0].prompt).toMatch(/package is in Danish/);
+    });
+
+    it('names the matched Ingredient in the Catalog Language', async () => {
+      const cookie = await member();
+      respondWith(parmesan());
+      const body = (
+        await scan(cookie, { productImage: IMAGE }, 'en').expect(201)
+      ).body as unknown;
+      expect(body).toMatchObject({
+        lines: [
+          { match: { id: seedId.ingredient('parmesan'), name: 'Parmezan' } },
+        ],
+      });
+    });
+  });
+
   it('rejects a Scan Language outside the supported list', async () => {
     await scan(await signUp(), { productImage: IMAGE }, 'en', 'fr').expect(400);
   });
