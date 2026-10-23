@@ -188,7 +188,7 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
         }
         right={
           <ImportButton
-            hidden={screen.mode === 'barcode'}
+            hidden={screen.mode === 'barcode' || screen.setup}
             disabled={screen.controlsDisabled}
             onFiles={screen.importFiles}
           />

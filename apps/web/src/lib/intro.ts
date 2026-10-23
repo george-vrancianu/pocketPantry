@@ -42,6 +42,9 @@ export const INTRO_PATHS = {
   dashboard: '/',
 } as const satisfies Partial<Record<IntroStep, string>>;
 
+/** The Setup Review: the line editor of one Setup Scan. It has no step path of its own because it depends on the Scan. */
+export const setupReviewPath = (scanId: string) => `/intro/review/${scanId}`;
+
 /** The Setup screens a signed-in Member who has not finished the Intro may be on. */
 export const INTRO_SETUP_PREFIX = '/intro/';
 
@@ -52,6 +55,9 @@ export function nextStep(step: IntroStep): IntroStep {
       return 'languages';
     case 'log-in':
       return 'dashboard';
+    // Ticket 499 (Say it) restores the plain order here: the Setup Review is followed by Say it.
+    case 'setup-review':
+      return 'all-set';
     default: {
       const next = INTRO_STEPS[INTRO_STEPS.indexOf(step) + 1];
       return next ?? 'dashboard';
@@ -69,6 +75,7 @@ export function introPath(step: IntroStep): string {
 /**
  * Where Skip goes, or `null` where the step has no Skip. Skip moves on one step only: Snap or its Review
  * go to Say it and Say it goes to All set. "Skip, take me to the app" leaves the Intro altogether.
+ * Until Say it exists (ticket 499) Snap and its Review skip to All set instead.
  */
 export function skipStep(step: IntroStep): IntroStep | null {
   switch (step) {
@@ -76,7 +83,8 @@ export function skipStep(step: IntroStep): IntroStep | null {
       return 'dashboard';
     case 'snap':
     case 'setup-review':
-      return 'say-it';
+      // Ticket 499 restores 'say-it' here.
+      return 'all-set';
     case 'say-it':
     case 'what-gator-heard':
       return 'all-set';

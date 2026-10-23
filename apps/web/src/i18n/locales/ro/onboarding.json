@@ -35,7 +35,50 @@
     "showMeSay": "2 · Spune-o",
     "skip": "Sari peste, du-mă în aplicație",
     "skipHint": "Începe cu o Cămară goală",
-    "showMeSoon": "În curând",
     "languagesNotSaved": "Nu ți-am putut salva limbile. Ai ales {{choices}}. Le poți seta din nou în Setări."
+  },
+  "snap": {
+    "progress": "{{step}} din 2",
+    "skip": "Sari peste",
+    "bubble": {
+      "ingredients": "Pune niște mâncare pe blat și fă-i o poză. Îmi dau eu seama ce este.",
+      "receipt": "Fotografiază bonul de la ultima ta cumpărătură. Pun eu toate produsele la locul lor."
+    },
+    "question": "Ce ai în fața ta?",
+    "choices": {
+      "ingredients": {
+        "label": "Ingrediente",
+        "hint": "Fructe, legume, pachete și conserve pe blat"
+      },
+      "receipt": {
+        "label": "Bon",
+        "hint": "Bonul de la ultima cumpărătură, întins pe masă"
+      }
+    },
+    "callout": {
+      "title": "Atinge camera ca să începi",
+      "body": "E mereu aici, în mijlocul meniului"
+    }
+  },
+  "review": {
+    "banner_one": "Am văzut {{count}} lucru!",
+    "banner_few": "Am văzut {{count}} lucruri!",
+    "banner_other": "Am văzut {{count}} de lucruri!",
+    "bannerCheck_one": "Verifică-l pe cel despre care nu eram sigur. Atinge orice rând ca să-l corectezi.",
+    "bannerCheck_few": "Verifică cele {{count}} despre care nu eram sigur. Atinge orice rând ca să-l corectezi.",
+    "bannerCheck_other": "Verifică cele {{count}} despre care nu eram sigur. Atinge orice rând ca să-l corectezi.",
+    "bannerClear": "N-a rămas nimic de care să nu fiu sigur. Atinge orice rând ca să-l corectezi.",
+    "add_one": "Adaugă {{count}} în Cămară",
+    "add_few": "Adaugă {{count}} în Cămară",
+    "add_other": "Adaugă {{count}} în Cămară"
+  },
+  "allSet": {
+    "bubble": "Totul e gata! Am eu grijă de bucătăria ta.",
+    "inPantry": "în Cămara ta",
+    "onShoppingList": "pe Lista ta de cumpărături",
+    "tipReceipt": "După fiecare cumpărătură, fotografiază bonul. Așa se bifează și lista ta.",
+    "tipMic": "Camera și microfonul sunt mereu în mijlocul meniului.",
+    "go": "Du-mă în bucătărie",
+    "error": "Nu am putut încheia acum. Încearcă din nou."
   }
 }

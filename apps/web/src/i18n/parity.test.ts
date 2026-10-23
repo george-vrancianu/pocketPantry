@@ -467,6 +467,12 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
     'the printed labels the camera reads (the Scan Language row), not a Product Description',
   'onboarding:languages.abroad|label':
     'the printed labels the camera reads (the Scan Language row), not a Product Description',
+  'onboarding:snap.bubble.ingredients|food':
+    "Gator's line from the design handoff: loose food on the counter, before it is anything in the Pantry",
+  'onboarding:snap.callout.body|menu':
+    'the design handoff calls the Dock "the menu"; it is not a Meal Plan',
+  'onboarding:allSet.tipMic|menu':
+    'the design handoff calls the Dock "the menu"; it is not a Meal Plan',
 };
 
 const escape = (s: string) =>

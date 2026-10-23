@@ -60,7 +60,11 @@ export function IntroProvider({ children }: { children: ReactNode }) {
   const finishIntro = useCallback(
     () =>
       mutate(undefined, {
-        onSuccess: () => navigate(INTRO_PATHS.dashboard, { replace: true }),
+        onSuccess: () => {
+          // Setup is over: the Scan screen is the normal one again.
+          setSetupStarted(false);
+          navigate(INTRO_PATHS.dashboard, { replace: true });
+        },
       }),
     [mutate, navigate],
   );
@@ -91,6 +95,14 @@ export function IntroProvider({ children }: { children: ReactNode }) {
     ],
   );
   return <IntroContext.Provider value={api}>{children}</IntroContext.Provider>;
+}
+
+/**
+ * Whether the Member is in Setup (chose "Show me how" in this visit). Unlike `useIntro` it works
+ * outside an `IntroProvider` (as `false`), so the Scan screen and the Review can ask it in their own tests.
+ */
+export function useSetupStarted(): boolean {
+  return useContext(IntroContext)?.setupStarted ?? false;
 }
 
 export function useIntro(): IntroApi {

@@ -14,11 +14,12 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { IntroLook } from '../../components/IntroLook';
 import { translateApiError } from '../../i18n/translateApiError';
 import { useGatorAlt } from '../../lib/useGatorAlt';
 import { useIntro } from '../../lib/useIntro';
-import type { LanguagePicks } from '../../lib/intro';
+import { INTRO_PATHS, type LanguagePicks } from '../../lib/intro';
 
 type CardProps = {
   children: ReactNode;
@@ -99,13 +100,20 @@ function useLanguagePicksSummary() {
 
 /**
  * Set up or skip: where a Member who is not done with the Intro lands, and where leaving Setup halfway
- * resumes. "Show me how" is inert until Setup 1 (ticket 498): it says "Coming soon" and does nothing.
+ * resumes. "Show me how" starts Setup at Snap.
  */
 export function SetupOrSkipPage() {
   const gatorAlt = useGatorAlt();
   const { t } = useTranslation(['onboarding', 'common']);
-  const { resumeSetup, finishIntro, finishing, finishError, unsavedLanguages } =
-    useIntro();
+  const navigate = useNavigate();
+  const {
+    resumeSetup,
+    startSetup,
+    finishIntro,
+    finishing,
+    finishError,
+    unsavedLanguages,
+  } = useIntro();
   const summarise = useLanguagePicksSummary();
 
   useEffect(() => resumeSetup(), [resumeSetup]);
@@ -149,7 +157,13 @@ export function SetupOrSkipPage() {
           <Alert>{translateApiError(t, finishError)}</Alert>
         ) : null}
         <Stack spacing={2}>
-          <ChoiceCard emphasised disabled>
+          <ChoiceCard
+            emphasised
+            onClick={() => {
+              startSetup();
+              void navigate(INTRO_PATHS.snap);
+            }}
+          >
             <Stack component="span" spacing={0.5}>
               <Typography
                 variant="h2"
@@ -172,14 +186,6 @@ export function SetupOrSkipPage() {
                 <MicIcon size={18} aria-hidden />
                 <span>{t('onboarding:setup.showMeSay')}</span>
               </Box>
-              <Typography
-                variant="meta"
-                component="span"
-                color="text.secondary"
-                sx={{ display: 'block' }}
-              >
-                {t('onboarding:setup.showMeSoon')}
-              </Typography>
             </Stack>
           </ChoiceCard>
           <ChoiceCard disabled={finishing} onClick={finishIntro}>

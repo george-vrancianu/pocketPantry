@@ -9,9 +9,20 @@ export type DockItemProps = {
   href: string;
   icon: ReactNode;
   active?: boolean;
+  /**
+   * Dimmed and inert, for the Dock's teaching mode: still announced (`aria-disabled`) but out of the
+   * tab order, and it goes nowhere.
+   */
+  disabled?: boolean;
 };
 
-export function DockItem({ label, href, icon, active = false }: DockItemProps) {
+export function DockItem({
+  label,
+  href,
+  icon,
+  active = false,
+  disabled = false,
+}: DockItemProps) {
   // The active tab: the whole button on the accent tint, icon and label in
   // the on-tint colour. Inactive tabs are muted.
   const colour = active ? 'pp.accentOnTint' : 'text.secondary';
@@ -19,8 +30,12 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
 
   return (
     <ButtonBase
-      href={href}
-      aria-current={active ? 'page' : undefined}
+      // Disabled: no href at all, so there is nothing to follow, and a click or Enter does nothing.
+      {...(disabled ? {} : { href })}
+      aria-current={active && !disabled ? 'page' : undefined}
+      aria-disabled={disabled || undefined}
+      tabIndex={disabled ? -1 : undefined}
+      onClick={disabled ? (event) => event.preventDefault() : undefined}
       sx={[
         {
           flexDirection: 'column',
@@ -33,6 +48,7 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
           fontWeight: active ? 700 : 600,
           fontFamily: bodyFont,
         },
+        disabled ? { opacity: 0.4, cursor: 'default' } : {},
         focusRing,
       ]}
     >

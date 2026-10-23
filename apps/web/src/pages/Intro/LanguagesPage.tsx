@@ -19,7 +19,10 @@ import {
   writeLanguagePicks,
   type LanguagePicks,
 } from '../../lib/intro';
-import { ChoiceRadioGroup, type Choice } from './components/ChoiceRadioGroup';
+import {
+  ChoiceRadioGroup,
+  type Choice,
+} from '../../components/ChoiceRadioGroup';
 
 const SAME = 'same';
 type RowKey = 'spokenLanguage' | 'scanLanguage' | 'catalogLanguage';
