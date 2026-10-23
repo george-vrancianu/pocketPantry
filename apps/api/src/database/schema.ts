@@ -63,6 +63,8 @@ export const user = pgTable(
     familyRole: familyRole('family_role').notNull().default('member'),
     // Member Preference: 'en' | 'ro' | 'da' (validated in the API); null until chosen.
     locale: text('locale'),
+    // Member Preference (Catalog Language): 'en' | 'ro' | 'da' (validated in the API); null = "Same as UI Language".
+    catalogLanguage: text('catalog_language'),
     // Member Preference: 'warm' | 'minimal' | 'dark' (validated in the API); null until chosen.
     theme: text('theme'),
     // Member Preference: leave out Recipes with the Member's own or Family Allergies (#359); off by default.

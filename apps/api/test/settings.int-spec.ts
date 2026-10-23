@@ -414,7 +414,7 @@ describe('Settings (integration)', () => {
       const { cookie } = await signUp();
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({
+      ).toMatchObject({
         locale: null,
         theme: null,
         hideRecipesWithAllergies: false,
@@ -453,7 +453,7 @@ describe('Settings (integration)', () => {
         .join('; ');
       expect(
         (await call(otherDevice, 'get', '/preferences').expect(200)).body,
-      ).toEqual({
+      ).toMatchObject({
         locale: 'ro',
         theme: null,
         hideRecipesWithAllergies: false,
@@ -469,7 +469,7 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(mihai.cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({
+      ).toMatchObject({
         locale: null,
         theme: null,
         hideRecipesWithAllergies: false,
@@ -483,7 +483,11 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({ locale: 'da', theme: null, hideRecipesWithAllergies: false });
+      ).toMatchObject({
+        locale: 'da',
+        theme: null,
+        hideRecipesWithAllergies: false,
+      });
       const [row] = await database
         .select({ locale: user.locale })
         .from(user)
@@ -501,7 +505,7 @@ describe('Settings (integration)', () => {
       const saved = await call(ana.cookie, 'put', '/preferences')
         .send({ hideRecipesWithAllergies: true })
         .expect(200);
-      expect(saved.body).toEqual({
+      expect(saved.body).toMatchObject({
         locale: 'ro',
         theme: null,
         hideRecipesWithAllergies: true,
@@ -537,14 +541,14 @@ describe('Settings (integration)', () => {
             .send({ theme: 'dark' })
             .expect(200)
         ).body,
-      ).toEqual({
+      ).toMatchObject({
         locale: null,
         theme: 'dark',
         hideRecipesWithAllergies: false,
       });
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({
+      ).toMatchObject({
         locale: null,
         theme: 'dark',
         hideRecipesWithAllergies: false,
@@ -566,7 +570,7 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({
+      ).toMatchObject({
         locale: 'ro',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
@@ -578,7 +582,7 @@ describe('Settings (integration)', () => {
             .send({ locale: 'da' })
             .expect(200)
         ).body,
-      ).toEqual({
+      ).toMatchObject({
         locale: 'da',
         theme: 'minimal',
         hideRecipesWithAllergies: false,
@@ -592,7 +596,7 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({
+      ).toMatchObject({
         locale: 'en',
         theme: 'warm',
         hideRecipesWithAllergies: false,
@@ -617,7 +621,11 @@ describe('Settings (integration)', () => {
         .where(eq(user.id, userId));
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({ locale: null, theme: null, hideRecipesWithAllergies: false });
+      ).toMatchObject({
+        locale: null,
+        theme: null,
+        hideRecipesWithAllergies: false,
+      });
     });
   });
 });

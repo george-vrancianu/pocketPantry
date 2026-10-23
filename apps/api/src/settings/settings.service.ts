@@ -11,6 +11,7 @@ import {
 } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { ApiException } from '../common/api-exception';
+import { resolveLanguage } from '../member-language/member-language';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import {
@@ -205,6 +206,7 @@ export class SettingsService {
     const [row] = await this.database
       .select({
         locale: user.locale,
+        catalogLanguage: user.catalogLanguage,
         theme: user.theme,
         hideRecipesWithAllergies: user.hideRecipesWithAllergies,
       })
@@ -216,6 +218,9 @@ export class SettingsService {
     const theme = THEME_IDS.find((t) => t === row.theme) ?? null;
     return {
       locale,
+      catalogLanguage:
+        CATALOG_LOCALES.find((l) => l === row.catalogLanguage) ?? null,
+      effectiveCatalogLanguage: resolveLanguage('catalog', row),
       theme,
       hideRecipesWithAllergies: row.hideRecipesWithAllergies,
     };
@@ -230,6 +235,7 @@ export class SettingsService {
       .update(user)
       .set({
         locale: preferences.locale,
+        catalogLanguage: preferences.catalogLanguage,
         theme: preferences.theme,
         hideRecipesWithAllergies: preferences.hideRecipesWithAllergies,
       })

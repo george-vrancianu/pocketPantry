@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { MemberLanguageModule } from '../member-language/member-language.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { SettingsModule } from '../settings/settings.module';
 import { PantryController } from './pantry.controller';
@@ -7,7 +8,7 @@ import { RecentlyStockedService } from './recently-stocked.service';
 import { RunningLowService } from './running-low.service';
 
 @Module({
-  imports: [SettingsModule, CatalogModule],
+  imports: [SettingsModule, CatalogModule, MemberLanguageModule],
   controllers: [PantryController],
   providers: [PantryService, RecentlyStockedService, RunningLowService],
   exports: [PantryService, RunningLowService],
