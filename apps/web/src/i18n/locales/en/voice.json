@@ -94,7 +94,7 @@
     "chipLabel": "Scan Language: {{language}}. Change",
     "title": "Scan Language",
     "saved": "Scan Language: {{language}}",
-    "savedHint": "Used for Voice Notes and the camera."
+    "savedHint": "For Voice Notes on this screen."
   },
   "review": {
     "title": "Review",

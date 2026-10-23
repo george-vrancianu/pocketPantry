@@ -65,6 +65,8 @@ export const user = pgTable(
     locale: text('locale'),
     // Member Preference (Catalog Language): 'en' | 'ro' | 'da' (validated in the API); null = "Same as UI Language".
     catalogLanguage: text('catalog_language'),
+    // Member Preference (Scan Language): 'en' | 'ro' | 'da' (validated in the API); null = "Same as UI Language".
+    scanLanguage: text('scan_language'),
     // Member Preference: 'warm' | 'minimal' | 'dark' (validated in the API); null until chosen.
     theme: text('theme'),
     // Member Preference: leave out Recipes with the Member's own or Family Allergies (#359); off by default.

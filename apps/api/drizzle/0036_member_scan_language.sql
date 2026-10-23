@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "scan_language" text;

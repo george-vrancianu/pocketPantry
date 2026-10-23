@@ -10,11 +10,11 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine, ScanMode } from '../../lib/scan';
-import { saveScanLanguage } from '../../lib/scanLanguage';
 import { resetReads } from '../../lib/scanReads';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { saveScanPageMode, type CameraMode } from '../../lib/cameraMode';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { scanLanguagePreference } from '../../test/scan';
 import { ScanPage } from '../Scan/ScanPage';
 import { ReviewOverviewPage } from './ReviewOverviewPage';
 import { ReviewPage } from './ReviewPage';
@@ -399,10 +399,10 @@ describe('Review overview', () => {
       expect(cards()).toHaveLength(1);
     });
 
-    it("reads again in the Scan Language the Scan was taken in, not the Member's current pick", async () => {
-      saveScanLanguage('en', 'da');
+    it("reads again in the Scan Language the Scan was taken in, not the Member's preference", async () => {
       await seedFailed('a', 'product', 'internal', undefined, 'ro');
       const calls = renderOverview({
+        ...scanLanguagePreference('da'),
         'POST /api/scan/product': () => Response.json({ lines: [yogurt] }),
       });
       await userEvent.click(within(cards()[0]).getByRole('button', readAgain));
@@ -606,10 +606,19 @@ describe('Review overview', () => {
     );
 
     it('reads the added files in the Scan Language, and a Plate Scan in none', async () => {
-      saveScanLanguage('en', 'ro');
       saveScanPageMode('product');
       await seed('a', 'receipt', receipt);
-      const calls = renderOverview(later);
+      const calls = renderOverview({
+        ...later,
+        ...scanLanguagePreference('ro'),
+      });
+      // The Preference has loaded before the files are added.
+      await waitFor(() =>
+        expect(calls.map((c) => c.key)).toContain(
+          'GET /api/settings/preferences',
+        ),
+      );
+      await act(async () => {});
       await pick(1);
       await waitFor(() => expect(cards()).toHaveLength(2));
       await waitFor(() =>

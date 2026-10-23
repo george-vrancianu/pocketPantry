@@ -191,6 +191,34 @@ describe('Receipt Scan (integration)', () => {
     expect(prompts[0].prompt).toMatch(/receipt is in Romanian/);
   });
 
+  describe('with a Scan Language Preference', () => {
+    const saveScanLanguage = (cookie: string, scanLanguage: string | null) =>
+      request(app.getHttpServer())
+        .put('/api/settings/preferences')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ scanLanguage })
+        .expect(200);
+
+    it('reads the receipt in the Member Preference when no Scan Language is sent', async () => {
+      const cookie = await signUp();
+      await saveScanLanguage(cookie, 'da');
+      respondWith(receipt(product()));
+      prompts.length = 0;
+      await scan(cookie, 'ro').expect(201);
+      expect(prompts[0].prompt).toMatch(/receipt is in Danish/);
+    });
+
+    it('lets a Scan Language sent with the Scan win over the Preference', async () => {
+      const cookie = await signUp();
+      await saveScanLanguage(cookie, 'da');
+      respondWith(receipt(product()));
+      prompts.length = 0;
+      await scan(cookie, 'en', 'ro').expect(201);
+      expect(prompts[0].prompt).toMatch(/receipt is in Romanian/);
+    });
+  });
+
   it('rejects a Scan Language outside the supported list', async () => {
     await scan(await signUp(), 'en', 'fr').expect(400);
   });

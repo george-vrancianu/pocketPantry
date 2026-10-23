@@ -62,6 +62,13 @@
     "saveFailed": "Nu am putut salva limba catalogului. Încearcă din nou.",
     "saved": "Limba catalogului a fost salvată"
   },
+  "scanLanguage": {
+    "label": "Limba de scanare",
+    "sameAsUi": "La fel ca limba aplicației",
+    "hint": "Limba în care se citesc pozele și notele vocale. Se citește în {{language}}.",
+    "saveFailed": "Nu am putut salva limba de scanare. Încearcă din nou.",
+    "saved": "Limba de scanare a fost salvată"
+  },
   "admin": "Catalog",
   "openAdmin": "Administrează Catalogul",
   "account": "Cont",

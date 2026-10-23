@@ -10,7 +10,7 @@ import {
   recipeMatchingQueryKeys,
   suggestionsQueryKey,
 } from './queryKeys';
-import type { Locale } from '../i18n/resources';
+import type { Locale, ScanLanguage } from '../i18n/resources';
 
 export type ExpiryOverride = {
   categoryId: string;
@@ -44,6 +44,10 @@ export type MemberPreferences = {
   catalogLanguage: Locale | null;
   /** The language Pantry and Shopping names are shown in, worked out by the API. */
   effectiveCatalogLanguage: Locale;
+  /** `null` is "Same as UI Language". */
+  scanLanguage: ScanLanguage | null;
+  /** The language Scans and Voice Notes are read in by default, worked out by the API. */
+  effectiveScanLanguage: ScanLanguage;
   theme: ThemeId | null;
   /** Leave out Recipes with the Member's own or Family Allergies; off by default. */
   hideRecipesWithAllergies: boolean;
@@ -163,6 +167,8 @@ function useApplySavedLanguages() {
             locale: saved.locale,
             catalogLanguage: saved.catalogLanguage,
             effectiveCatalogLanguage: saved.effectiveCatalogLanguage,
+            scanLanguage: saved.scanLanguage,
+            effectiveScanLanguage: saved.effectiveScanLanguage,
           }
         : saved,
     );
@@ -195,6 +201,20 @@ export function useSaveCatalogLanguage() {
       apiRequest<MemberPreferences>(
         `/settings/preferences?${localeParams(i18n.resolvedLanguage ?? i18n.language)}`,
         { method: 'PUT', body: { catalogLanguage } },
+      ),
+    onSuccess: apply,
+  });
+}
+
+/** Saves the Scan Language; `null` is "Same as UI Language". */
+export function useSaveScanLanguage() {
+  const { i18n } = useTranslation();
+  const apply = useApplySavedLanguages();
+  return useMutation({
+    mutationFn: (scanLanguage: ScanLanguage | null) =>
+      apiRequest<MemberPreferences>(
+        `/settings/preferences?${localeParams(i18n.resolvedLanguage ?? i18n.language)}`,
+        { method: 'PUT', body: { scanLanguage } },
       ),
     onSuccess: apply,
   });

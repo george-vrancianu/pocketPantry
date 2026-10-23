@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   createBatchesBody,
@@ -29,6 +30,7 @@ export class ReceiptScanController {
   constructor(
     private readonly scan: ScanService,
     private readonly confirmation: ReceiptConfirmService,
+    private readonly languages: MemberLanguageService,
   ) {}
 
   @Post()
@@ -36,7 +38,7 @@ export class ReceiptScanController {
     summary:
       'Receipt Scan: one proposed line per purchased item (Match, quantity, unit); non-food lines come back excluded with a reason. Images are forwarded, never stored.',
   })
-  receipt(
+  async receipt(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ScanImagePipe(receiptScanSchema, ['receiptImage']))
@@ -46,7 +48,11 @@ export class ReceiptScanController {
       member.id,
       body,
       query.locale,
-      query.scanLanguage,
+      await this.languages.scanLanguageOf(
+        member.id,
+        query.locale,
+        query.scanLanguage,
+      ),
     );
   }
 
@@ -55,7 +61,7 @@ export class ReceiptScanController {
     summary:
       'Confirm a reviewed Receipt Scan: saves the lines as Batches, all or none, and returns the unchecked Shopping Items on the active list that match them, for the client to tick',
   })
-  confirm(
+  async confirm(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
@@ -64,7 +70,11 @@ export class ReceiptScanController {
       member.id,
       body.batches,
       query.locale,
-      query.scanLanguage,
+      await this.languages.scanLanguageOf(
+        member.id,
+        query.locale,
+        query.scanLanguage,
+      ),
     );
   }
 }

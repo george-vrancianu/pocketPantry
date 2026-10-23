@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
+import {
+  CATALOG_LOCALES,
+  FALLBACK_LOCALE,
+  SCAN_LANGUAGES,
+} from '../catalog/catalog.schemas';
 
 export const settingsLocaleQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
@@ -28,6 +32,8 @@ export const updatePreferencesBody = z
     locale: z.enum(CATALOG_LOCALES).optional(),
     /** A catalog locale, or `null` for "Same as UI Language". */
     catalogLanguage: z.enum(CATALOG_LOCALES).nullable().optional(),
+    /** A Scan Language, or `null` for "Same as UI Language". */
+    scanLanguage: z.enum(SCAN_LANGUAGES).nullable().optional(),
     theme: z.enum(THEME_IDS).optional(),
     hideRecipesWithAllergies: z.boolean().optional(),
   })
@@ -35,6 +41,7 @@ export const updatePreferencesBody = z
     (body) =>
       body.locale !== undefined ||
       body.catalogLanguage !== undefined ||
+      body.scanLanguage !== undefined ||
       body.theme !== undefined ||
       body.hideRecipesWithAllergies !== undefined,
     { message: 'Nothing to update' },
@@ -71,6 +78,10 @@ export type PreferencesView = {
   catalogLanguage: (typeof CATALOG_LOCALES)[number] | null;
   /** The Catalog Language the Member gets right now (resolved against the UI Language, then English). */
   effectiveCatalogLanguage: (typeof CATALOG_LOCALES)[number];
+  /** The Scan Language; `null` is "Same as UI Language". */
+  scanLanguage: (typeof SCAN_LANGUAGES)[number] | null;
+  /** The Scan Language the Member gets right now (resolved against the UI Language, then English). */
+  effectiveScanLanguage: (typeof SCAN_LANGUAGES)[number];
   theme: ThemeId | null;
   /** Leave out Recipes with the Member's own or Family Allergies (#359). */
   hideRecipesWithAllergies: boolean;

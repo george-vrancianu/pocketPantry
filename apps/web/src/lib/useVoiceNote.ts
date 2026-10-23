@@ -14,7 +14,7 @@ import { QUICK_TAP_MS, type VoiceDefaultTarget } from './voice';
 import { voiceNote, useVoiceNoteState } from './voiceNote';
 import { useMicPermission } from './useMicPermission';
 import { micExplained } from './micExplained';
-import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
+import { useScanLanguage } from './useScanLanguage';
 
 /**
  * Hold-to-talk Voice Note: `press` starts recording, `release` stops and sends,

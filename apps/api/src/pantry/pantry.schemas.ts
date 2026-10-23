@@ -30,14 +30,13 @@ export type RecentlyStockedView = CatalogSearchResult & {
 
 /**
  * Scan and save-from-Review endpoints: `locale` still names the Ingredients
- * returned, `scanLanguage` is what the Scan is read in (default: `locale`).
+ * returned, `scanLanguage` is what this one Scan is read in. Without it the
+ * controller asks `MemberLanguageService.scanLanguageOf` (the Member's Scan
+ * Language Preference).
  */
-export const scanQuery = pantryLocaleQuery
-  .extend({ scanLanguage: z.enum(SCAN_LANGUAGES).optional() })
-  .transform((query) => ({
-    ...query,
-    scanLanguage: query.scanLanguage ?? query.locale,
-  }));
+export const scanQuery = pantryLocaleQuery.extend({
+  scanLanguage: z.enum(SCAN_LANGUAGES).optional(),
+});
 export type ScanQuery = z.infer<typeof scanQuery>;
 
 /** A real calendar date: `2026-02-31` is rejected rather than rolled over. */

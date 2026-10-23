@@ -12,6 +12,8 @@ type Preferences = {
   locale: string | null;
   catalogLanguage: string | null;
   effectiveCatalogLanguage: string;
+  scanLanguage: string | null;
+  effectiveScanLanguage: string;
 };
 type Batch = {
   name: string;
@@ -186,6 +188,72 @@ describe('Member language: Catalog Language (integration)', () => {
       await joinFamilyOf(ana.userId, mihai.userId);
       await savePreferences(ana.cookie, { catalogLanguage: 'ro' }).expect(200);
       expect((await preferences(mihai.cookie)).catalogLanguage).toBeNull();
+    });
+  });
+
+  describe('Member Preferences: Scan Language', () => {
+    it('start with no Scan Language, which follows the UI Language (English when none)', async () => {
+      const { cookie } = await signUp();
+      expect(await preferences(cookie)).toMatchObject({
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
+      });
+      expect(await preferences(cookie, 'ro')).toMatchObject({
+        scanLanguage: null,
+        effectiveScanLanguage: 'ro',
+      });
+      await savePreferences(cookie, { locale: 'da' }).expect(200);
+      expect(await preferences(cookie)).toMatchObject({
+        scanLanguage: null,
+        effectiveScanLanguage: 'da',
+      });
+    });
+
+    it('save a Scan Language apart from the UI and Catalog Languages, and clear it again with null', async () => {
+      const { cookie } = await signUp();
+      await savePreferences(cookie, { locale: 'en' }).expect(200);
+      const saved = (
+        await savePreferences(cookie, { scanLanguage: 'ro' }).expect(200)
+      ).body as Preferences;
+      expect(saved).toMatchObject({
+        locale: 'en',
+        catalogLanguage: null,
+        effectiveCatalogLanguage: 'en',
+        scanLanguage: 'ro',
+        effectiveScanLanguage: 'ro',
+      });
+      expect(await preferences(cookie)).toEqual(saved);
+
+      await savePreferences(cookie, { scanLanguage: null }).expect(200);
+      expect(await preferences(cookie)).toMatchObject({
+        scanLanguage: null,
+        effectiveScanLanguage: 'en',
+      });
+    });
+
+    it('keep the Scan Language when only another preference is saved', async () => {
+      const { cookie } = await signUp();
+      await savePreferences(cookie, { scanLanguage: 'da' }).expect(200);
+      await savePreferences(cookie, { theme: 'dark', catalogLanguage: 'ro' });
+      expect(await preferences(cookie)).toMatchObject({
+        scanLanguage: 'da',
+        effectiveScanLanguage: 'da',
+        theme: 'dark',
+      });
+    });
+
+    it('reject a language that is not a Scan Language', async () => {
+      const { cookie } = await signUp();
+      await savePreferences(cookie, { scanLanguage: 'fr' }).expect(400);
+      expect((await preferences(cookie)).scanLanguage).toBeNull();
+    });
+
+    it('are private to the Member, not shared with the Family', async () => {
+      const ana = await signUp();
+      const mihai = await signUp();
+      await joinFamilyOf(ana.userId, mihai.userId);
+      await savePreferences(ana.cookie, { scanLanguage: 'ro' }).expect(200);
+      expect((await preferences(mihai.cookie)).scanLanguage).toBeNull();
     });
   });
 

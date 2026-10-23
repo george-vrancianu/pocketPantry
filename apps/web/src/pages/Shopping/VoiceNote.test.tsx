@@ -27,6 +27,7 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { renderInAppLayout, stubApi } from '../../test/render';
+import { scanLanguagePreference } from '../../test/scan';
 import { stubMotion } from '../../test/viewport';
 import { resetRowFlash } from '../../lib/rowFlash';
 import { voiceNote } from '../../lib/voiceNote';
@@ -41,10 +42,14 @@ const emptyList = {
 type Setup = {
   configured?: boolean;
   note?: () => Response | Promise<Response>;
+  preferredScanLanguage?: 'en' | 'ro' | 'da';
 };
 
-function setup({ configured = true, note }: Setup = {}) {
+function setup({ configured = true, note, preferredScanLanguage }: Setup = {}) {
   const { fetchMock } = stubApi({
+    ...(preferredScanLanguage
+      ? scanLanguagePreference(preferredScanLanguage)
+      : {}),
     'GET /api/shopping-list': () => Response.json(emptyList),
     'GET /api/voice/config': () => Response.json({ configured }),
     'POST /api/voice': () =>
@@ -665,7 +670,7 @@ describe('Voice Note on the Shopping List', () => {
     });
   });
 
-  it('changes the stored Scan Language from the chip menu, with a toast', async () => {
+  it('changes the Scan Language for Voice Notes on the screen from the chip menu, with a toast', async () => {
     setup();
     renderInAppLayout(<ShoppingPage />, '/shopping');
 
@@ -685,7 +690,7 @@ describe('Voice Note on the Shopping List', () => {
 
     expect(
       await screen.findByText(
-        'Scan Language: Dansk · Used for Voice Notes and the camera.',
+        'Scan Language: Dansk · For Voice Notes on this screen.',
       ),
     ).toBeVisible();
     expect(screen.queryByRole('menu')).toBeNull();
@@ -693,10 +698,8 @@ describe('Voice Note on the Shopping List', () => {
       name: 'Scan Language: Dansk. Change',
     });
     expect(changed).toHaveFocus();
-    // The camera reads the same stored value.
-    expect(
-      JSON.parse(localStorage.getItem('pocket-pantry.scan-language') ?? '{}'),
-    ).toEqual({ locale: 'en', language: 'da' });
+    // Nothing is stored on the device.
+    expect(localStorage.getItem('pocket-pantry.scan-language')).toBeNull();
   });
 
   it('closes the language menu with Escape and returns focus to the chip', async () => {
@@ -711,12 +714,8 @@ describe('Voice Note on the Shopping List', () => {
     expect(chip).toHaveFocus();
   });
 
-  it('reads in the stored Scan Language and offers the chip', async () => {
-    localStorage.setItem(
-      'pocket-pantry.scan-language',
-      JSON.stringify({ locale: 'en', language: 'ro' }),
-    );
-    const { sent } = setup();
+  it("reads in the Member's Scan Language preference and offers the chip", async () => {
+    const { sent } = setup({ preferredScanLanguage: 'ro' });
     renderInAppLayout(<ShoppingPage />, '/shopping');
 
     const chip = await screen.findByRole('button', {
