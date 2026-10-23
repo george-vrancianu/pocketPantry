@@ -23,7 +23,7 @@ import {
 import { formatDate } from '../../../lib/dateFormat';
 import { localIso } from '../../../lib/pantry';
 import {
-  siriCheckShortcutUrl,
+  siriHaveShortcutUrl,
   siriGotShortcutUrl,
   siriNeedsShortcutUrl,
   siriShortcutUrl,
@@ -174,7 +174,7 @@ const SETUP_STEPS = ['create', 'add', 'paste', 'say'] as const;
 const SHORTCUTS = [
   { key: 'needs', url: siriNeedsShortcutUrl },
   { key: 'got', url: siriGotShortcutUrl },
-  { key: 'have', url: siriCheckShortcutUrl },
+  { key: 'have', url: siriHaveShortcutUrl },
   { key: 'add', url: siriShortcutUrl },
 ] as const;
 

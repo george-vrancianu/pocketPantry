@@ -13,7 +13,7 @@ elsewhere. The API only accepts browser origins on ports 5173 and 5174 (plus `CL
 Set `VITE_SIRI_SHORTCUT_URL` (build time) to the iCloud link of the "Pantry add" Shortcut to show it in
 Settings > Siri; the link is hidden while unset (Settings then says the link is coming soon).
 `VITE_SIRI_NEEDS_SHORTCUT_URL` ("Gator needs"), `VITE_SIRI_GOT_SHORTCUT_URL` ("Gator got") and
-`VITE_SIRI_CHECK_SHORTCUT_URL` ("Gator, do we have") do the same for the other three Shortcuts. See [docs/siri-shortcut.md](../../docs/siri-shortcut.md).
+`VITE_SIRI_HAVE_SHORTCUT_URL` ("Gator, do we have") do the same for the other three Shortcuts (the old `VITE_SIRI_CHECK_SHORTCUT_URL` for "Pantry check" is retired and no longer read). See [docs/siri-shortcut.md](../../docs/siri-shortcut.md).
 
 Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` (all with `-w @pocket-pantry/web`).
 

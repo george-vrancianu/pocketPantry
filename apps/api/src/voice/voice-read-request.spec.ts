@@ -109,6 +109,19 @@ describe('buildVoiceReadRequest', () => {
     expect(prompt).toContain('spokenName');
   });
 
+  // Spec: #500. The Siri Shortcuts prefix an English phrase to the dictated words.
+  it('tells the model a leading Shortcut phrase is not speech when judging the spoken language', () => {
+    const { prompt } = buildVoiceReadRequest({
+      ...input,
+      spokenLanguage: null,
+    });
+    expect(prompt).toContain(
+      '("Got ", "Do we have ", "Add to the shopping list: ")',
+    );
+    expect(prompt).toContain('is not part of what the Member said');
+    expect(prompt).toContain('judge the language from the words after it');
+  });
+
   // Spec: #459, ADR 0020.
   describe('Pantry Questions', () => {
     it('asks for a questions entry per ingredient asked about, and no action', () => {

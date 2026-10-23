@@ -224,7 +224,7 @@ describe('Settings Siri section', () => {
     const LINK_VARIABLES = {
       needs: 'VITE_SIRI_NEEDS_SHORTCUT_URL',
       got: 'VITE_SIRI_GOT_SHORTCUT_URL',
-      have: 'VITE_SIRI_CHECK_SHORTCUT_URL',
+      have: 'VITE_SIRI_HAVE_SHORTCUT_URL',
       add: 'VITE_SIRI_SHORTCUT_URL',
     } as const;
     const clearLinks = () =>

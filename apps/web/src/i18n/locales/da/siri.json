@@ -29,7 +29,7 @@
     "create": "Opret et token ovenfor, og kopiér det.",
     "add": "Føj de genveje, du vil have, til appen Genveje.",
     "paste": "Indsæt tokenet, når genvejen beder om det.",
-    "say": "Sig “Hey Siri” og en genvejs frase, og sig derefter, hvad du mangler.",
+    "say": "Sig “Hey Siri” og en genvejs frase, og sig derefter varerne.",
     "language": "Siris frase er altid på engelsk, men du kan sige varerne på ethvert sprog, PantryGator understøtter.",
     "shortcutsTitle": "Genveje",
     "pending": "Linket kommer snart",
@@ -51,7 +51,7 @@
       },
       "add": {
         "phrase": "Hey Siri, Pantry add",
-        "does": "Den første genvej. Den virker stadig: den føjer til din indkøbsliste og svarer også på spørgsmål.",
+        "does": "Den første genvej. Den virker stadig: den føjer til din indkøbsliste, markerer det, der er ved at løbe tør, krydser af, hvad du har fået, og svarer også på spørgsmål.",
         "link": "Åbn genvejen “Pantry add”"
       }
     }

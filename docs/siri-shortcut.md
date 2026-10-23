@@ -57,17 +57,17 @@ Build each as a copy of "Pantry add" (Shortcuts app > duplicate), then change on
 
 Notes:
 
-- The prefix is English text, like Siri's phrase; the dictated words can be in any language PantryGator supports, and the reply comes back in the language spoken (see "After installing").
+- The prefix stays English whatever language the Member speaks, like Siri's phrase. The dictated words can be in any language PantryGator supports. The model is told the prefix is Shortcut text, not speech, so the language is judged from the words after it, and the reply comes back in that language (see "After installing").
 - With several unchecked lines for the same item (for example in different units), "Gator got" ticks the one in the spoken unit, otherwise the oldest. A spoken amount ("got two milks") is ignored: it never changes a quantity.
 - "Pantry add" still adds, flags Running low and answers questions, and now also ticks off an item when the words say so ("got milk"). "Gator got" exists so the phrase fits the intent.
-- The old "Pantry check" Shortcut is replaced by "Gator, do we have"; an installed "Pantry check" keeps working because it is the same endpoint.
+- The old "Pantry check" Shortcut is replaced by "Gator, do we have"; an installed "Pantry check" keeps working because it is the same endpoint. Its link variable `VITE_SIRI_CHECK_SHORTCUT_URL` is retired and no longer read: set `VITE_SIRI_HAVE_SHORTCUT_URL` to the new Shortcut's link, and remove the old variable from each environment.
 - **iCloud links are pending.** A maintainer builds the three Shortcuts on an iPhone and shares them (see "Sharing it"). Until then Settings > Siri says "Link coming soon" next to each Shortcut.
 
 ## Sharing it
 
 1. In the Shortcut's settings, confirm the Import Question from step 1 is listed under Setup.
 2. Set the first **Text** action back to the placeholder `Assistant Token`. Never share with a real token in it: the action's current value is shared as the Import Question's default answer, so a real token would travel in the iCloud link to everyone who imports it.
-3. Share > **Copy iCloud Link**. The link carries the actions and the import question (with the placeholder as its default). An iCloud link is a snapshot: after any edit, copy a new link and update the matching variable in each environment: `VITE_SIRI_SHORTCUT_URL` ("Pantry add"), `VITE_SIRI_NEEDS_SHORTCUT_URL` ("Gator needs"), `VITE_SIRI_GOT_SHORTCUT_URL` ("Gator got") or `VITE_SIRI_CHECK_SHORTCUT_URL` ("Gator, do we have").
+3. Share > **Copy iCloud Link**. The link carries the actions and the import question (with the placeholder as its default). An iCloud link is a snapshot: after any edit, copy a new link and update the matching variable in each environment: `VITE_SIRI_SHORTCUT_URL` ("Pantry add"), `VITE_SIRI_NEEDS_SHORTCUT_URL` ("Gator needs"), `VITE_SIRI_GOT_SHORTCUT_URL` ("Gator got") or `VITE_SIRI_HAVE_SHORTCUT_URL` ("Gator, do we have").
 4. Build the web app with `VITE_SIRI_SHORTCUT_URL=<the iCloud link>` (documented in [apps/web/README.md](../apps/web/README.md)). Settings > Siri then shows the link in its setup steps; while the variable is unset or empty the link is hidden. The same goes for the other three variables and their links; a Shortcut with no link shows "Link coming soon".
 
 ## After installing

@@ -279,7 +279,7 @@ describe('assistantSpeech', () => {
 
     it.each([
       ['en', 'Not on your Shopping List: milk.'],
-      ['ro', 'Nu este pe Lista de cumpărături: milk.'],
+      ['ro', 'Nu se află pe Lista de cumpărături: milk.'],
       ['da', 'Ikke på indkøbslisten: milk.'],
     ] as const)('says a name is not on the list in %s', (locale, expected) => {
       expect(say(locale, [{ kind: 'notOnList', name: 'milk' }])).toBe(expected);

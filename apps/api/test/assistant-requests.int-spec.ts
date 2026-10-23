@@ -1316,6 +1316,63 @@ describe('Assistant Requests (integration)', () => {
       expect(await list(ana.cookie, 'ro')).toHaveLength(1);
     });
 
+    describe('several unchecked lines for one item', () => {
+      const addLine = (cookie: string, unit: string) =>
+        client(app, cookie, '/api/shopping-list').post('/items?locale=en', {
+          ingredientId: milk,
+          quantity: 1,
+          unit,
+        });
+      const milkLines = async (cookie: string) =>
+        (await list(cookie)).filter((item) => item.name === 'Milk');
+
+      it('ticks the line in the spoken unit', async () => {
+        const ana = await member();
+        await addLine(ana.cookie, 'pcs');
+        await addLine(ana.cookie, 'l');
+        reading = {
+          actions: [got(milk, 'Milk', { quantity: 1, unit: 'l' })],
+          unsupported: [],
+        };
+        await ask(ana.secret, { text: 'got 1 l milk' }).expect(200);
+        expect(await milkLines(ana.cookie)).toMatchObject([
+          { unit: 'pcs', checked: false },
+          { unit: 'l', checked: true },
+        ]);
+      });
+
+      it('ticks the oldest line when no unit is spoken', async () => {
+        const ana = await member();
+        await addLine(ana.cookie, 'pcs');
+        await addLine(ana.cookie, 'l');
+        reading = { actions: [got(milk, 'Milk')], unsupported: [] };
+        await ask(ana.secret, { text: 'got milk' }).expect(200);
+        expect(await milkLines(ana.cookie)).toMatchObject([
+          { unit: 'pcs', checked: true },
+          { unit: 'l', checked: false },
+        ]);
+      });
+    });
+
+    it('does not report a second mention of an item the request just ticked as missing', async () => {
+      const ana = await member();
+      await addItem(ana.cookie, milk);
+      reading = {
+        actions: [got(milk, 'Milk'), got(milk, 'Milk')],
+        unsupported: [],
+      };
+      const response = await ask(ana.secret, {
+        text: 'got milk and milk',
+      }).expect(200);
+      expect(reply(response).outcomes).toMatchObject([
+        { kind: 'checked', name: 'Milk' },
+      ]);
+      expect(reply(response).outcomes).toHaveLength(1);
+      expect(reply(response).speech).toBe(
+        'Ticked off on your Shopping List: Milk.',
+      );
+    });
+
     it('never adds an Unmatched name it cannot find', async () => {
       const ana = await member();
       reading = {
@@ -1436,7 +1493,7 @@ describe('Assistant Requests (integration)', () => {
       [
         'ro',
         'Am bifat pe Lista de cumpărături: Lapte.',
-        'Nu este pe Lista de cumpărături: Ouă.',
+        'Nu se află pe Lista de cumpărături: Ouă.',
       ],
       ['da', 'Afkrydset på indkøbslisten: Mælk.', 'Ikke på indkøbslisten: Æg.'],
     ])('speaks both replies in %s', async (language, ticked, missing) => {
@@ -1448,14 +1505,14 @@ describe('Assistant Requests (integration)', () => {
         spokenLanguage: language,
       };
       const response = await ask(ana.secret).expect(200);
-      expect(reply(response).speech).toMatch(ticked.split(':')[0]);
+      expect(reply(response).speech).toBe(ticked);
       reading = {
         actions: [got(eggs, 'Eggs')],
         unsupported: [],
         spokenLanguage: language,
       };
       const none = await ask(ana.secret).expect(200);
-      expect(reply(none).speech).toMatch(missing.split(':')[0]);
+      expect(reply(none).speech).toBe(missing);
     });
   });
 

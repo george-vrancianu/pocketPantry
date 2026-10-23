@@ -29,7 +29,7 @@
     "create": "Creează mai sus un jeton și copiază-l.",
     "add": "Adaugă comenzile rapide dorite în aplicația Comenzi rapide.",
     "paste": "Lipește jetonul când comanda rapidă ți-l cere.",
-    "say": "Spune „Hey Siri” și fraza unei comenzi rapide, apoi spune ce îți trebuie.",
+    "say": "Spune „Hey Siri” și fraza unei comenzi rapide, apoi spune articolele.",
     "language": "Fraza pentru Siri este mereu în engleză, dar poți spune articolele în orice limbă acceptată de PantryGator.",
     "shortcutsTitle": "Comenzi rapide",
     "pending": "Linkul vine în curând",
@@ -51,7 +51,7 @@
       },
       "add": {
         "phrase": "Hey Siri, Pantry add",
-        "does": "Prima comandă rapidă. Încă funcționează: adaugă pe Lista ta de cumpărături și răspunde și la întrebări.",
+        "does": "Prima comandă rapidă. Încă funcționează: adaugă pe Lista ta de cumpărături, marchează ce se termină, bifează ce ai luat și răspunde și la întrebări.",
         "link": "Deschide comanda rapidă „Pantry add”"
       }
     }

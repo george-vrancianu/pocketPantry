@@ -215,7 +215,7 @@ export const assistantMessages = {
       quantitySet: 'Am actualizat pe Lista de cumpărături: {items}',
       alreadyOnList: 'Deja pe Lista de cumpărături: {items}',
       checked: 'Am bifat pe Lista de cumpărături: {items}',
-      notOnList: 'Nu este pe Lista de cumpărături: {items}',
+      notOnList: 'Nu se află pe Lista de cumpărături: {items}',
       flaggedRunningLow: 'Am marcat ca pe cale să se termine: {items}',
       addedBecauseRunningLowNoBatch:
         'Am adăugat pe Lista de cumpărături, fiindcă nu mai este în stoc: {items}',

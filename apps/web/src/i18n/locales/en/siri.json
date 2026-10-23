@@ -29,7 +29,7 @@
     "create": "Create a token above and copy it.",
     "add": "Add the Shortcuts you want to the Shortcuts app.",
     "paste": "Paste the token when the Shortcut asks for it.",
-    "say": "Say “Hey Siri” and a Shortcut’s phrase, then say what you need.",
+    "say": "Say “Hey Siri” and a Shortcut’s phrase, then say the items.",
     "language": "Siri’s phrase is always English, but you can say the items in any language PantryGator supports.",
     "shortcutsTitle": "Shortcuts",
     "pending": "Link coming soon",
@@ -51,7 +51,7 @@
       },
       "add": {
         "phrase": "Hey Siri, Pantry add",
-        "does": "The first Shortcut. It still works: it adds to your Shopping List, and it answers questions too.",
+        "does": "The first Shortcut. It still works: it adds to your Shopping List, flags Running low, ticks off what you got, and answers questions too.",
         "link": "Open the “Pantry add” Shortcut"
       }
     }

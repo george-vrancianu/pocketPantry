@@ -146,6 +146,7 @@ export class AssistantService {
           : ((replyLocale !== catalog
               ? read.spokenNames.get(action.id)
               : undefined) ?? displayName(action));
+      const tickedHere = new Set<string>();
       // Answers to Pantry Questions come first, as they are spoken first.
       outcomes = [
         ...read.answers.map((answer): AssistantOutcome => {
@@ -171,9 +172,21 @@ export class AssistantService {
               };
           }
         }),
-        ...resolved.map((action, index) =>
-          outcomeOf(action, drafts[index], result, nameOf(action)),
-        ),
+        ...resolved.flatMap((action, index) => {
+          const outcome = outcomeOf(
+            action,
+            drafts[index],
+            result,
+            nameOf(action),
+          );
+          // "Got milk and milk": the second mention is the line the first just ticked, not a miss.
+          const key =
+            action.ingredient?.id ?? displayName(action).toLowerCase();
+          if (outcome.kind === 'checked') tickedHere.add(key);
+          else if (outcome.kind === 'notOnList' && tickedHere.has(key))
+            return [];
+          return [outcome];
+        }),
       ];
     } catch (error) {
       await this.cap.refund(member.id, day, 'assistant');
