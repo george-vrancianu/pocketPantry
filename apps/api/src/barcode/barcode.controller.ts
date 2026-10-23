@@ -5,6 +5,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import {
   pantryLocaleQuery,
   type PantryLocaleQuery,
@@ -17,7 +18,10 @@ import { barcodeParams, type BarcodeLookupResponse } from './barcode.schemas';
 @Controller('barcode-lookup')
 @UseGuards(AuthGuard)
 export class BarcodeController {
-  constructor(private readonly barcodeLookup: BarcodeLookupService) {}
+  constructor(
+    private readonly barcodeLookup: BarcodeLookupService,
+    private readonly languages: MemberLanguageService,
+  ) {}
 
   @Get(':barcode')
   @ApiOperation({
@@ -31,12 +35,13 @@ export class BarcodeController {
     query: PantryLocaleQuery,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<BarcodeLookupResponse> {
+    // Matching, returned names and Known Barcodes all follow the Catalog Language.
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
     try {
-      return await this.barcodeLookup.lookup(
-        member.id,
-        params.barcode,
-        query.locale,
-      );
+      return await this.barcodeLookup.lookup(member.id, params.barcode, locale);
     } catch (error) {
       if (error instanceof BarcodeRateLimitedException) {
         // header() is synchronous and returns the reply for chaining; the result is unused.

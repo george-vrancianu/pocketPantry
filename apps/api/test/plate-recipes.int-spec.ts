@@ -263,4 +263,58 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
         .expect(400);
     });
   });
+
+  describe('with a Catalog Language Preference', () => {
+    async function romanianCatalogMember(label: string) {
+      const cookie = await signUp(app, `${label}-${stamp}@example.com`, 'C');
+      await client(app, cookie, '/api/settings')
+        .put('/preferences', {
+          locale: 'en',
+          catalogLanguage: 'ro',
+          scanLanguage: 'da',
+        })
+        .expect(200);
+      return client(app, cookie, '/api/recipes');
+    }
+
+    it('tags an Unmatched name from a Plate Scan with the Catalog Language, not the request locale', async () => {
+      const romanian = await romanianCatalogMember('plate-rec-cl');
+      const raw = `Zq plate catalog herb ${stamp}`;
+      const saved = (
+        await romanian
+          .post('/from-plate', {
+            locale: 'en',
+            title: `Plate catalog ${stamp}`,
+            parentId: null,
+            lines: [{ rawName: raw, quantity: 1, unit: 'pcs' }],
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      const [queued] = await database
+        .select()
+        .from(unmatchedEntries)
+        .where(eq(unmatchedEntries.ingredientLineId, saved.lines[0].id));
+      expect(queued).toMatchObject({ rawName: raw, locale: 'ro' });
+    });
+
+    it('matches Plate Scan dishes with the Catalog Language titles', async () => {
+      const romanian = await romanianCatalogMember('plate-rec-cm');
+      const base = await catalogBase(`Plate ro base ${stamp}`, [0, 1]);
+      await admin
+        .put(`/${base.id}/translations/ro`, { title: `Placinta ${stamp}` })
+        .expect(200);
+      const { matches } = (
+        await romanian
+          .post('/plate-matches', {
+            locale: 'en',
+            dishTitle: `Placinta ${stamp}`,
+            ingredientIds: [ing[0], ing[1]],
+          })
+          .expect(200)
+      ).body as Matches;
+      expect(matches.find((m) => m.id === base.id)?.title).toBe(
+        `Placinta ${stamp}`,
+      );
+    });
+  });
 });
