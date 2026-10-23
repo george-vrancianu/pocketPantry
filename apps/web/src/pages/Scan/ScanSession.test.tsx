@@ -242,9 +242,11 @@ describe('Scan Session on the Scan screen', () => {
     renderScan();
     await scanOnce();
     await userEvent.click(photoStack());
-    expect(screen.getByText('Reading photo…')).toBeInTheDocument();
+    expect(screen.getByText("Gator's reading this one…")).toBeInTheDocument();
     await answer(0);
-    expect(screen.queryByText('Reading photo…')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Gator's reading this one…"),
+    ).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId('review-card')).getByTestId('card-result'),
     ).toHaveTextContent('Greek yogurt');
