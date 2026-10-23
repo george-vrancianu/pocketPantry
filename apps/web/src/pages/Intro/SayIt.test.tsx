@@ -1,0 +1,207 @@
+import { fireEvent, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+// The fake voice environment registers its mocks, so it comes before anything that reaches the microphone.
+import {
+  mic,
+  resetVoiceEnvironment,
+  stubVoiceFetch,
+  talkButton,
+  voiceAction,
+} from '../../test/voice';
+import { App } from '../../App';
+import { stubSetupMember, Where } from '../../test/intro';
+import { renderWithProviders } from '../../test/render';
+import { scanLanguagePreference } from '../../test/scan';
+import {
+  holdLongEnough,
+  pressDown,
+  useVoiceTimers,
+} from '../../test/voiceHold';
+
+const where = () => screen.getByLabelText('Where').textContent;
+
+type Options = Parameters<typeof stubSetupMember>[0];
+
+function openSayIt(options: Options = {}) {
+  const calls = stubSetupMember(options);
+  // Wrap the stubbed API so every Voice Note upload (a FormData body) is kept.
+  const { sent } = stubVoiceFetch(globalThis.fetch as never);
+  renderWithProviders(
+    <>
+      <App />
+      <Where />
+    </>,
+    { route: '/intro/say-it' },
+  );
+  return { calls, sent };
+}
+
+const dimmed = () =>
+  ['Home', 'Shopping', 'Pantry', 'Recipes', 'Camera'].map((name) =>
+    screen.getByRole('button', { name }),
+  );
+
+describe('Setup 2, Say it', () => {
+  beforeEach(() => resetVoiceEnvironment());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows Gator, the two example phrases and where the mic is', async () => {
+    openSayIt();
+    expect(
+      await screen.findByText(
+        "Now just tell me what's in the cupboard, or what to buy.",
+      ),
+    ).toBeVisible();
+    expect(where()).toBe('/intro/say-it');
+    expect(screen.getByText('2 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Gator, talking' })).toBeVisible();
+    const examples = screen.getByRole('list', { name: 'Things you can say' });
+    expect(
+      within(examples).getByText('“We have rice and two tins of tomatoes”'),
+    ).toBeInTheDocument();
+    expect(
+      within(examples).getByText('Goes straight to the Pantry'),
+    ).toBeInTheDocument();
+    expect(
+      within(examples).getByText('“Put milk on the list”'),
+    ).toBeInTheDocument();
+    expect(
+      within(examples).getByText('Adds it to the Shopping List'),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Hold the mic, talk, let go')).toBeVisible();
+    expect(
+      screen.getByText(
+        "Your phone will ask for the microphone. The recording is deleted once I've read it.",
+      ),
+    ).toBeVisible();
+  });
+
+  it('says nothing about the Pantry count when Setup has saved nothing', async () => {
+    openSayIt();
+    await screen.findByText('Hold the mic, talk, let go');
+    expect(screen.queryByText(/in your Pantry$/)).toBeNull();
+  });
+
+  it('lets only the mic be used: the camera and tabs are dimmed and out of the tab order', async () => {
+    openSayIt();
+    const user = userEvent.setup();
+    const talk = await talkButton();
+    expect(talk).not.toHaveAttribute('aria-disabled');
+    for (const control of dimmed()) {
+      expect(control).toHaveAttribute('aria-disabled', 'true');
+      expect(control).toHaveAttribute('tabindex', '-1');
+    }
+    await user.click(screen.getByRole('button', { name: 'Pantry' }));
+    expect(where()).toBe('/intro/say-it');
+  });
+
+  it('skips to All set', async () => {
+    const { calls } = openSayIt();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('link', { name: 'Skip' }));
+    expect(
+      await screen.findByText(
+        "You're all set! I'll keep an eye on your kitchen.",
+      ),
+    ).toBeInTheDocument();
+    expect(where()).toBe('/intro/all-set');
+    expect(calls.map((c) => c.key)).not.toContain('POST /api/voice');
+  });
+
+  it('is on the olive ground in the light look', async () => {
+    openSayIt();
+    await screen.findByText('Hold the mic, talk, let go');
+    expect(document.querySelector('[data-ground="olive"]')).not.toBeNull();
+    expect(document.querySelector('[data-theme="warm"]')).not.toBeNull();
+  });
+
+  describe('when the server cannot transcribe', () => {
+    it('has no mic to teach: it says so and offers Continue to All set', async () => {
+      openSayIt({
+        routes: {
+          'GET /api/voice/config': () => Response.json({ configured: false }),
+        },
+      });
+      expect(
+        await screen.findByText(
+          "Voice Notes aren't switched on here, so we'll skip this one.",
+        ),
+      ).toBeVisible();
+      expect(screen.queryByRole('navigation')).toBeNull();
+      expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
+      expect(
+        screen.queryByRole('list', { name: 'Things you can say' }),
+      ).toBeNull();
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('link', { name: 'Continue' }));
+      expect(
+        await screen.findByText(
+          "You're all set! I'll keep an eye on your kitchen.",
+        ),
+      ).toBeInTheDocument();
+      expect(where()).toBe('/intro/all-set');
+    });
+  });
+});
+
+describe('Setup 2, holding the mic', () => {
+  beforeEach(() => {
+    useVoiceTimers();
+    resetVoiceEnvironment();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const heard = {
+    transcript: 'we have rice and two tins of tomatoes, put milk on the list',
+    actions: [
+      voiceAction({ id: 'a1', target: 'pantry', op: 'add', text: 'rice' }),
+      voiceAction({ id: 'a2', target: 'shopping', op: 'add', text: 'milk' }),
+    ],
+  };
+
+  async function recordNote(options: Options = {}) {
+    const { sent } = openSayIt({
+      routes: {
+        'POST /api/voice': () => Response.json(heard, { status: 201 }),
+        ...options?.routes,
+      },
+    });
+    const button = await talkButton();
+    pressDown(button);
+    await screen.findByText("Gator's listening");
+    await holdLongEnough();
+    return { sent, button };
+  }
+
+  it('shows the coach line and the Listening card while held, and the permission is the real one', async () => {
+    await recordNote();
+    expect(screen.getByText('Keep holding while you talk.')).toBeVisible();
+    expect(screen.getByText("Let go when you're done.")).toBeVisible();
+    expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
+    expect(mic.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends the Voice Note with the Pantry as its Default List and opens the real Review', async () => {
+    const { sent, button } = await recordNote();
+    fireEvent.pointerUp(button);
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(sent).toHaveLength(1);
+    expect(sent[0].get('defaultTarget')).toBe('pantry');
+    expect(where()).toBe('/intro/say-it');
+  });
+
+  it("records in the Member's Spoken Language", async () => {
+    const { sent, button } = await recordNote({
+      routes: scanLanguagePreference('en', 'ro'),
+    });
+    fireEvent.pointerUp(button);
+    await screen.findByRole('dialog');
+    expect(sent[0].get('spokenLanguage')).toBe('ro');
+  });
+});

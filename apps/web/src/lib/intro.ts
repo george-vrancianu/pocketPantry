@@ -55,8 +55,8 @@ export function nextStep(step: IntroStep): IntroStep {
       return 'languages';
     case 'log-in':
       return 'dashboard';
-    // Ticket 499 (Say it) restores the plain order here: the Setup Review is followed by Say it.
-    case 'setup-review':
+    // The Setup Review is followed by Say it, and Say it by All set (What Gator heard is a sheet on Say it).
+    case 'say-it':
       return 'all-set';
     default: {
       const next = INTRO_STEPS[INTRO_STEPS.indexOf(step) + 1];
@@ -75,7 +75,6 @@ export function introPath(step: IntroStep): string {
 /**
  * Where Skip goes, or `null` where the step has no Skip. Skip moves on one step only: Snap or its Review
  * go to Say it and Say it goes to All set. "Skip, take me to the app" leaves the Intro altogether.
- * Until Say it exists (ticket 499) Snap and its Review skip to All set instead.
  */
 export function skipStep(step: IntroStep): IntroStep | null {
   switch (step) {
@@ -83,8 +82,7 @@ export function skipStep(step: IntroStep): IntroStep | null {
       return 'dashboard';
     case 'snap':
     case 'setup-review':
-      // Ticket 499 restores 'say-it' here.
-      return 'all-set';
+      return 'say-it';
     case 'say-it':
     case 'what-gator-heard':
       return 'all-set';

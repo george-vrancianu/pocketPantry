@@ -60,6 +60,36 @@
       "body": "It's always here, in the middle of the menu"
     }
   },
+  "sayIt": {
+    "skip": "Skip",
+    "pill_one": "{{count}} thing in your Pantry",
+    "pill_other": "{{count}} things in your Pantry",
+    "bubble": "Now just tell me what's in the cupboard, or what to buy.",
+    "examplesLabel": "Things you can say",
+    "examples": {
+      "pantry": {
+        "phrase": "“We have rice and two tins of tomatoes”",
+        "result": "Goes straight to the Pantry"
+      },
+      "shopping": {
+        "phrase": "“Put milk on the list”",
+        "result": "Adds it to the Shopping List"
+      }
+    },
+    "callout": {
+      "title": "Hold the mic, talk, let go",
+      "body": "Your phone will ask for the microphone. The recording is deleted once I've read it."
+    },
+    "coach": {
+      "keepHolding": "Keep holding while you talk.",
+      "letGo": "Let go when you're done."
+    },
+    "noVoice": {
+      "bubble": "Voice Notes aren't switched on here, so we'll skip this one.",
+      "callout": "Voice Notes need the server to be set up for them. You can add things by hand in the app.",
+      "continue": "Continue"
+    }
+  },
   "review": {
     "banner_one": "I spotted {{count}} thing!",
     "banner_other": "I spotted {{count}} things!",

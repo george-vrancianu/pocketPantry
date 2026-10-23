@@ -60,6 +60,37 @@
       "body": "E mereu aici, în mijlocul meniului"
     }
   },
+  "sayIt": {
+    "skip": "Sari peste",
+    "pill_one": "{{count}} lucru în Cămara ta",
+    "pill_few": "{{count}} lucruri în Cămara ta",
+    "pill_other": "{{count}} de lucruri în Cămara ta",
+    "bubble": "Acum spune-mi ce e în dulap sau ce trebuie cumpărat.",
+    "examplesLabel": "Ce poți spune",
+    "examples": {
+      "pantry": {
+        "phrase": "„Avem orez și două conserve de roșii”",
+        "result": "Merge direct în Cămară"
+      },
+      "shopping": {
+        "phrase": "„Pune lapte pe listă”",
+        "result": "Îl adaugă pe Lista de cumpărături"
+      }
+    },
+    "callout": {
+      "title": "Ține apăsat pe microfon, vorbește, dă drumul",
+      "body": "Telefonul îți va cere accesul la microfon. Înregistrarea se șterge după ce o citesc."
+    },
+    "coach": {
+      "keepHolding": "Ține apăsat cât timp vorbești.",
+      "letGo": "Dă drumul când ai terminat."
+    },
+    "noVoice": {
+      "bubble": "Notele vocale nu sunt pornite aici, așa că sărim peste acest pas.",
+      "callout": "Notele vocale au nevoie ca serverul să fie configurat pentru ele. Poți adăuga produse manual în aplicație.",
+      "continue": "Continuă"
+    }
+  },
   "review": {
     "banner_one": "Am văzut {{count}} lucru!",
     "banner_few": "Am văzut {{count}} lucruri!",

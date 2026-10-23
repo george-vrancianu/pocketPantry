@@ -188,12 +188,18 @@ export function applyVoiceActions(
 
 /** Whether the server can transcribe (AI key and transcription model set). Voice is hidden until it says so. */
 export function useVoiceConfigured(): boolean {
+  return useVoiceConfig() === 'on';
+}
+
+/** `useVoiceConfigured`, but telling "not asked yet" from "no": Say it waits before it falls back. */
+export function useVoiceConfig(): 'loading' | 'on' | 'off' {
   const config = useQuery({
     queryKey: ['voice', 'config'],
     queryFn: () => apiRequest<{ configured: boolean }>('/voice/config'),
     staleTime: 5 * 60_000,
   });
-  return config.data?.configured === true;
+  if (config.data) return config.data.configured ? 'on' : 'off';
+  return config.isPending ? 'loading' : 'off';
 }
 
 export type VoiceNoteRequest = {

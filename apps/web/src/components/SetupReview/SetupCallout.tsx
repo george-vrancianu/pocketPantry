@@ -1,0 +1,53 @@
+import { Box, radius, shadow, Typography } from '@pocket-pantry/ui';
+
+/** A cream card with a pointer at the bottom, aimed at the capsule below it. */
+export function SetupCallout({
+  title,
+  body,
+  bottom,
+}: {
+  title: string;
+  body: string;
+  /** CSS `bottom`: where the pointer's card sits above the capsule. */
+  bottom: string | { xs: string; md: string };
+}) {
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom,
+        mx: 'auto',
+        width: 'fit-content',
+        maxWidth: 'calc(100% - 32px)',
+        boxSizing: 'border-box',
+        px: '14px',
+        py: '10px',
+        textAlign: 'center',
+        borderRadius: radius.card,
+        backgroundColor: 'pp.cardBg',
+        color: 'text.primary',
+        boxShadow: shadow.float,
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          left: '50%',
+          bottom: -6,
+          width: 12,
+          height: 12,
+          transform: 'translateX(-50%) rotate(45deg)',
+          backgroundColor: 'pp.cardBg',
+        },
+      }}
+    >
+      <Typography sx={{ fontWeight: 700, fontSize: 15 }}>{title}</Typography>
+      <Typography
+        variant="meta"
+        sx={{ display: 'block', color: 'text.secondary' }}
+      >
+        {body}
+      </Typography>
+    </Box>
+  );
+}
