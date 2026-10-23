@@ -50,6 +50,8 @@ import {
 } from './voice.schemas';
 
 export type VoiceNoteInput = VoiceNoteFields & {
+  /** The UI Language, only told to the model. `locale` here is the Catalog Language (the controller resolves it). */
+  uiLocale?: CatalogLocale;
   audio: Buffer;
   /** A bare, supported container type such as `audio/webm`. */
   mimeType: string;
@@ -60,7 +62,10 @@ export type VoiceReadTextInput = {
   text: string;
   /** Null when the language spoken is not known: the model works it out and reports it. */
   scanLanguage: ScanLanguage | null;
+  /** The Member's Catalog Language: the language of every name read, matched and written (ADR 0022). */
   locale: CatalogLocale;
+  /** The UI Language, only told to the model; defaults to `locale`. */
+  uiLocale?: CatalogLocale;
   /** The Member's local date, for resolving spoken dates. */
   today: string;
   defaultTarget: VoiceDefaultTarget;
@@ -166,6 +171,7 @@ export class VoiceService {
         text: transcript,
         scanLanguage: input.scanLanguage,
         locale: input.locale,
+        uiLocale: input.uiLocale,
         today: input.today,
         defaultTarget: input.defaultTarget,
         captureId,
@@ -203,6 +209,7 @@ export class VoiceService {
         transcript: input.text,
         scanLanguage: input.scanLanguage,
         locale: input.locale,
+        uiLocale: input.uiLocale,
         today: input.today,
         defaultTarget: input.defaultTarget,
         captureId: input.captureId,

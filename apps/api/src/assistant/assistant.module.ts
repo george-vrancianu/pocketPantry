@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AssistantTokensModule } from '../assistant-tokens/assistant-tokens.module';
 import { CatalogModule } from '../catalog/catalog.module';
+import { MemberLanguageModule } from '../member-language/member-language.module';
 import { ScanModule } from '../scan/scan.module';
 import { SettingsModule } from '../settings/settings.module';
 import { VoiceModule } from '../voice/voice.module';
@@ -12,6 +13,7 @@ import { AssistantService } from './assistant.service';
   imports: [
     AssistantTokensModule,
     CatalogModule,
+    MemberLanguageModule,
     ScanModule,
     SettingsModule,
     VoiceModule,

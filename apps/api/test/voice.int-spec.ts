@@ -861,4 +861,122 @@ describe('Voice Note (integration)', () => {
       expect(await list(b.cookie)).toHaveLength(1);
     });
   });
+
+  // Spec 468 (ADR 0022): names the AI makes up are in the Catalog Language.
+  describe('Catalog Language', () => {
+    const setLanguages = async (
+      memberId: string,
+      languages: { locale: string; catalogLanguage?: string | null },
+    ) => {
+      await app
+        .get<Database>(DATABASE)
+        .update(user)
+        .set(languages)
+        .where(eq(user.id, memberId));
+    };
+    const queuedLocale = async (rawName: string) =>
+      (
+        await app
+          .get<Database>(DATABASE)
+          .select({ locale: unmatchedEntries.locale })
+          .from(unmatchedEntries)
+          .where(eq(unmatchedEntries.rawName, rawName))
+      ).map((row) => row.locale);
+    const readingOf = (unmatchedName: string) => ({
+      actions: [
+        {
+          target: 'shopping',
+          op: 'add',
+          spokenText: 'milk',
+          matchedIngredientId: seedId.ingredient('milk'),
+          matchConfidence: 0.95,
+          fallbackIngredientName: 'Lapte',
+          spokenName: 'milk',
+          quantity: null,
+          unit: null,
+          scope: null,
+          expiresOn: null,
+          noExpiry: false,
+          location: null,
+        },
+        {
+          target: 'shopping',
+          op: 'add',
+          spokenText: 'zorblax',
+          matchedIngredientId: null,
+          matchConfidence: 0,
+          fallbackIngredientName: unmatchedName,
+          spokenName: unmatchedName,
+          quantity: null,
+          unit: null,
+          scope: null,
+          expiresOn: null,
+          noExpiry: false,
+          location: null,
+        },
+      ],
+      unsupported: [],
+    });
+
+    it('asks for the fallback name in the Catalog Language and returns matched names in it', async () => {
+      const { cookie, memberId } = await signUp();
+      await setLanguages(memberId, { locale: 'en', catalogLanguage: 'ro' });
+      const name = `Zorblax ${Date.now()}`;
+      reading = readingOf(name);
+      const response = await note(cookie, { language: 'en' }).expect(201);
+      const prompt = aiCalls[0].prompt;
+      expect(prompt).toContain(
+        'fallbackIngredientName is a short generic ingredient name in Romanian',
+      );
+      expect(prompt).toContain('the app is shown in English');
+      expect(response.body).toMatchObject({
+        actions: [
+          { status: 'ready', ingredient: { name: 'Lapte' } },
+          { status: 'ready', ingredient: null, name },
+        ],
+      });
+      // The recording is still transcribed in the language the Member chose.
+      expect(calls[0].language).toBe('en');
+    });
+
+    it('tags an Unmatched name saved from Review with the Catalog Language', async () => {
+      const { cookie, memberId } = await signUp();
+      await setLanguages(memberId, { locale: 'en', catalogLanguage: 'ro' });
+      const name = `Zorblax ${Date.now()}`;
+      await request(app.getHttpServer())
+        .post('/api/voice/apply')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({
+          actions: [
+            {
+              id: 'a1',
+              target: 'shopping',
+              op: 'add',
+              ingredientId: null,
+              name,
+              quantity: null,
+              unit: null,
+            },
+          ],
+          locale: 'en',
+        })
+        .expect(201);
+      expect(await queuedLocale(name)).toEqual(['ro']);
+    });
+
+    it('uses the UI Language when the Catalog Language is not set', async () => {
+      const { cookie, memberId } = await signUp();
+      await setLanguages(memberId, { locale: 'ro', catalogLanguage: null });
+      const name = `Zorblax ${Date.now()}`;
+      reading = readingOf(name);
+      const response = await note(cookie, { language: 'en' }).expect(201);
+      expect(aiCalls[0].prompt).toContain(
+        'fallbackIngredientName is a short generic ingredient name in Romanian',
+      );
+      expect(response.body).toMatchObject({
+        actions: [{ ingredient: { name: 'Lapte' } }, { name }],
+      });
+    });
+  });
 });

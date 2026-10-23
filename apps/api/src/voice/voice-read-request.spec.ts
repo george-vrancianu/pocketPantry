@@ -31,6 +31,18 @@ describe('buildVoiceReadRequest', () => {
     ).toBe(true);
   });
 
+  it('asks for the fallback name in the Catalog Language, naming the UI Language only as what the app shows', () => {
+    const { prompt } = buildVoiceReadRequest({
+      ...input,
+      locale: 'ro',
+      uiLocale: 'en',
+    });
+    expect(prompt).toContain(
+      'fallbackIngredientName is a short generic ingredient name in Romanian',
+    );
+    expect(prompt).toContain('the app is shown in English');
+  });
+
   it('states the language, today, the default target and the list names', () => {
     const { prompt } = buildVoiceReadRequest(input);
     expect(prompt).toContain('spoken in Romanian; the app is shown in English');

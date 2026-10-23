@@ -56,8 +56,8 @@ export function pantryAddHandler(pantry: PantryService): VoiceActionHandler {
             },
           ],
           ctx.locale,
-          // The Unmatched name is written in the UI locale (the read prompt
-          // asks for it), so that is the queue's source language too.
+          // The Unmatched name is written in the Catalog Language (the read
+          // prompt asks for it), so that is the queue's source language too.
           ctx.locale,
           ctx.today,
         );
