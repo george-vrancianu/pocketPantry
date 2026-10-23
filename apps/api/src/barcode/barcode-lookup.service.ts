@@ -269,7 +269,7 @@ export class BarcodeLookupService {
 }
 
 /**
- * The names to try, best first: the product name in the Member's locale, then
+ * The names to try, best first: the product name in the Member's Catalog Language, then
  * the generic name, then English, then whatever Open Food Facts calls it.
  */
 function candidateNames(

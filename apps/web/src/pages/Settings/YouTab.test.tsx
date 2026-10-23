@@ -13,6 +13,7 @@ function stubYou(
   saveLocale: { ok: boolean } = { ok: true },
 ) {
   let calls: ReturnType<typeof stubApi>['calls'];
+  let catalogLanguage: string | null = null;
   const api = stubApi({
     'GET /api/auth/get-session': () =>
       Response.json({
@@ -35,8 +36,19 @@ function stubYou(
         effectiveSpokenLanguage: url.searchParams.get('locale'),
         theme: null,
       }),
+    // Allergen names come back in the saved Catalog Language, like the API.
+    'GET /api/settings/allergies': () =>
+      Response.json({
+        allergens: [
+          { id: 'a-milk', name: catalogLanguage === 'ro' ? 'Lapte' : 'Milk' },
+        ],
+        allergenIds: [],
+      }),
     'PUT /api/settings/preferences': (url) => {
       const body = calls.at(-1)?.body as Record<string, unknown>;
+      if ('catalogLanguage' in body) {
+        catalogLanguage = body.catalogLanguage as string | null;
+      }
       const uiLanguage = url.searchParams.get('locale');
       return saveLocale.ok
         ? Response.json(
@@ -218,6 +230,23 @@ describe('Settings You tab', () => {
         within(control).getByRole('button', { name: 'Română' }),
       ).toHaveAttribute('aria-pressed', 'true');
       expect(screen.getByText('Catalog Language saved')).toBeInTheDocument();
+    });
+
+    it('refetches the Allergen names in the new Catalog Language after a save', async () => {
+      stubSystemScheme(false);
+      stubYou();
+      renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+      expect(await screen.findByText('Milk')).toBeInTheDocument();
+      const control = await screen.findByRole('group', {
+        name: 'Catalog Language',
+      });
+      await userEvent.click(
+        within(control).getByRole('button', { name: 'Română' }),
+      );
+
+      expect(await screen.findByText('Lapte')).toBeInTheDocument();
+      expect(screen.queryByText('Milk')).toBeNull();
     });
 
     it('goes back to "Same as UI Language" by saving an empty language', async () => {

@@ -438,4 +438,28 @@ describe('Barcode Lookup (integration)', () => {
       .expect(201);
     expect(aiCalls).toBe(1);
   });
+
+  describe('with a Catalog Language Preference', () => {
+    // UI Language en, Catalog Language ro, Scan Language da: all three differ.
+    it('matches on the Catalog Language product name and returns the Ingredient name in it', async () => {
+      const cookie = await signUp(app, `bc-ro-${stamp}@example.com`, 'R');
+      const romanian = client(app, cookie, '/api');
+      await romanian
+        .put('/settings/preferences', {
+          locale: 'en',
+          catalogLanguage: 'ro',
+          scanLanguage: 'da',
+        })
+        .expect(200);
+      found = product({
+        productName: 'Unmatchable brand thing',
+        productNames: { en: 'Unmatchable brand thing', ro: 'Lapte' },
+      });
+      const body = (await lookup(romanian).expect(200)).body as Json;
+      expect(body.match).toMatchObject({
+        id: seedId.ingredient('milk'),
+        name: 'Lapte',
+      });
+    });
+  });
 });
