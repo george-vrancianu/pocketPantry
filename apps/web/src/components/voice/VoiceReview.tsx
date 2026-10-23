@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  GatorImage,
   Sheet,
   Typography,
   ShoppingIcon,
@@ -48,6 +49,7 @@ import {
   type VoiceReviewAction,
 } from '../../lib/voice';
 import { flashRows } from '../../lib/rowFlash';
+import { useGatorAlt } from '../../lib/useGatorAlt';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { PantryAnswerRow } from './PantryAnswerRow';
 
@@ -65,16 +67,29 @@ const quantityText = (action: VoiceReviewAction) =>
   action.quantity === null ? '' : String(action.quantity);
 
 /**
+ * What Setup's Say it does with its Review: the Review takes the happy Gator, "Here's what I heard" and
+ * "Do these N", and hands the result of Apply to the page instead of toasting it. Discard needs nothing:
+ * the Review closes and the Member is still on Say it.
+ */
+export type VoiceSetup = {
+  /** Apply succeeded (some actions may have been skipped): `actions` are what was sent, as edited. */
+  onApplied: (result: VoiceApplyResult, actions: VoiceReviewAction[]) => void;
+};
+
+/**
  * Review for a Voice Note, over the current page: the Voice Actions grouped by list, each edited in place, and
  * Discard and Apply. Mounted while there is a Voice Note to review, so each one starts with a clean sheet.
  */
-export function VoiceReview() {
+export function VoiceReview({ setup }: { setup?: VoiceSetup } = {}) {
   const { phase } = useVoiceNoteState();
-  return phase === 'review' || phase === 'applying' ? <ReviewSheet /> : null;
+  return phase === 'review' || phase === 'applying' ? (
+    <ReviewSheet setup={setup} />
+  ) : null;
 }
 
-function ReviewSheet() {
-  const { t, i18n } = useTranslation(['voice', 'common']);
+function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
+  const { t, i18n } = useTranslation(['voice', 'common', 'onboarding']);
+  const gatorAlt = useGatorAlt();
   const { proposal, defaultTarget, phase, recording } = useVoiceNoteState();
   const { spokenLanguage } = usePreferredSpokenLanguage();
   const toast = useToast();
@@ -120,11 +135,28 @@ function ReviewSheet() {
   );
 
   const applying = phase === 'applying';
+  const refreshLists = () =>
+    void Promise.all(
+      [
+        ['shopping-list'],
+        ['pantry'],
+        ...shoppingListChangeQueryKeys,
+        ...catalogChangeQueryKeys.filter(
+          (key) => key[0] === 'pantry' || key[0] === 'recipes',
+        ),
+      ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+    );
   const apply = useMutation({
     onMutate: () => voiceNote.applying(),
     mutationFn: () => applyVoiceActions(applicable),
     onError: () => voiceNote.applyFailed(),
     onSuccess: (result: VoiceApplyResult) => {
+      if (setup) {
+        voiceNote.applied();
+        refreshLists();
+        setup.onApplied(result, applicable);
+        return;
+      }
       const { message, detail } = applyToast(
         result,
         actions,
@@ -147,16 +179,7 @@ function ReviewSheet() {
         duration: APPLY_TOAST_MS,
       });
       focusVoiceButton();
-      void Promise.all(
-        [
-          ['shopping-list'],
-          ['pantry'],
-          ...shoppingListChangeQueryKeys,
-          ...catalogChangeQueryKeys.filter(
-            (key) => key[0] === 'pantry' || key[0] === 'recipes',
-          ),
-        ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
-      );
+      refreshLists();
     },
   });
 
@@ -202,6 +225,9 @@ function ReviewSheet() {
     if (focusPicker(focusId)) setFocusId(null);
   }, [focusId, openId]);
 
+  const heading = setup
+    ? t('onboarding:sayIt.heard.title')
+    : t('voice:review.title');
   const count = changes.length + undecided.length;
   const both = new Set(changes.map((a) => a.target)).size > 1;
   const subline =
@@ -266,21 +292,39 @@ function ReviewSheet() {
       onEntered={() => {
         if (!blocking || !focusPicker(blocking.id)) title.current?.focus();
       }}
-      label={t('voice:review.title')}
+      label={heading}
       header={
-        <Box sx={{ px: 2.5, pt: 1.5, pb: 1.5 }}>
-          <Typography
-            component="h2"
-            variant="h2"
-            tabIndex={-1}
-            ref={title}
-            sx={{ outline: 'none' }}
-          >
-            {t('voice:review.title')}
-          </Typography>
-          <Typography sx={{ fontSize: 13, color: palette('text-secondary') }}>
-            {subline}
-          </Typography>
+        <Box
+          sx={{
+            px: 2.5,
+            pt: 1.5,
+            pb: 1.5,
+            ...(setup
+              ? { display: 'flex', alignItems: 'center', gap: '12px' }
+              : {}),
+          }}
+        >
+          {setup ? (
+            <GatorImage mood="happy" size={72} alt={gatorAlt('happy')} />
+          ) : null}
+          <Box>
+            <Typography
+              component="h2"
+              variant="h2"
+              tabIndex={-1}
+              ref={title}
+              sx={{ outline: 'none' }}
+            >
+              {heading}
+            </Typography>
+            {setup ? null : (
+              <Typography
+                sx={{ fontSize: 13, color: palette('text-secondary') }}
+              >
+                {subline}
+              </Typography>
+            )}
+          </Box>
         </Box>
       }
       footer={
@@ -289,6 +333,13 @@ function ReviewSheet() {
           blocked={blocking ? blockOf(blocking) : null}
           invalid={invalid.size > 0}
           applying={applying}
+          applyLabel={
+            setup
+              ? t('onboarding:sayIt.heard.doThese', {
+                  count: applicable.length,
+                })
+              : undefined
+          }
           confirming={confirming}
           onAsk={() => setConfirming(true)}
           onKeep={() => {
@@ -324,7 +375,9 @@ function ReviewSheet() {
           transcript={transcript}
           language={language}
           durationMs={recording?.durationMs}
-          defaultOpen={actions.every((a) => a.status === 'notUnderstood')}
+          defaultOpen={
+            Boolean(setup) || actions.every((a) => a.status === 'notUnderstood')
+          }
         />
 
         {answers.length > 0 ? (
@@ -398,6 +451,14 @@ function ReviewSheet() {
             {group.actions.map(renderRow)}
           </Group>
         ))}
+
+        {setup ? (
+          <Typography
+            sx={{ px: '4px', fontSize: 13, color: palette('text-secondary') }}
+          >
+            {t('onboarding:sayIt.heard.nothingSaved')}
+          </Typography>
+        ) : null}
 
         {unclear.length > 0 ? (
           <Group

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addSetupCounts,
+  savedByVoice,
   initialLanguagePicks,
   introPath,
   introRedirect,
@@ -19,15 +20,15 @@ describe('Intro steps', () => {
     expect(nextStep('languages')).toBe('sign-up');
     expect(nextStep('sign-up')).toBe('setup-or-skip');
     expect(nextStep('setup-or-skip')).toBe('snap');
-    expect(nextStep('setup-review')).toBe('all-set');
+    expect(nextStep('setup-review')).toBe('say-it');
+    expect(nextStep('say-it')).toBe('all-set');
     expect(nextStep('all-set')).toBe('dashboard');
     expect(nextStep('log-in')).toBe('dashboard');
   });
 
   it('skips one step only', () => {
-    // Say it does not exist yet (ticket 499), so Snap and its Review skip to All set.
-    expect(skipStep('snap')).toBe('all-set');
-    expect(skipStep('setup-review')).toBe('all-set');
+    expect(skipStep('snap')).toBe('say-it');
+    expect(skipStep('setup-review')).toBe('say-it');
     expect(skipStep('say-it')).toBe('all-set');
     expect(skipStep('setup-or-skip')).toBe('dashboard');
     expect(skipStep('languages')).toBeNull();
@@ -145,5 +146,52 @@ describe('setupReviewPath', () => {
     expect(
       introRedirect({ pathname: path, introDone: false, setupStarted: false }),
     ).toBeNull();
+  });
+});
+
+describe('savedByVoice', () => {
+  const entry = (
+    actionId: string,
+    list: 'pantry' | 'shopping',
+    alreadyDone = false,
+  ) => ({ actionId, list, alreadyDone });
+
+  it('counts Pantry adds as Batches and Shopping adds as Shopping Items', () => {
+    expect(
+      savedByVoice(
+        [entry('a', 'pantry'), entry('b', 'pantry'), entry('c', 'shopping')],
+        [
+          { id: 'a', op: 'add' },
+          { id: 'b', op: 'add' },
+          { id: 'c', op: 'add' },
+        ],
+      ),
+    ).toEqual({ batches: 2, shoppingItems: 1 });
+  });
+
+  it('leaves out what was already done and anything that is not an add', () => {
+    expect(
+      savedByVoice(
+        [
+          entry('a', 'pantry', true),
+          entry('b', 'shopping'),
+          entry('c', 'pantry'),
+          entry('d', 'shopping'),
+        ],
+        [
+          { id: 'a', op: 'add' },
+          { id: 'b', op: 'check' },
+          { id: 'c', op: 'remove' },
+          { id: 'd', op: 'runningLow' },
+        ],
+      ),
+    ).toEqual({ batches: 0, shoppingItems: 1 });
+  });
+
+  it('counts nothing for actions that were skipped (not in applied)', () => {
+    expect(savedByVoice([], [{ id: 'a', op: 'add' }])).toEqual({
+      batches: 0,
+      shoppingItems: 0,
+    });
   });
 });

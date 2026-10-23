@@ -14,21 +14,27 @@ const TONES = {
   },
 } as const;
 
-/** The Setup step's progress: two bars (the first filled) and "1 of 2". `tone` is the ground it stands on. */
-export function SetupProgress({ tone }: { tone: 'olive' | 'cream' }) {
+/** The Setup step's progress: two bars (those up to `step` filled) and "1 of 2". `tone` is the ground it stands on. */
+export function SetupProgress({
+  tone,
+  step = 1,
+}: {
+  tone: 'olive' | 'cream';
+  step?: 1 | 2;
+}) {
   const { t } = useTranslation('onboarding');
   const { filled, empty, text } = TONES[tone];
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
       <Box aria-hidden sx={{ display: 'flex', gap: '6px', flex: 1 }}>
-        {[filled, empty].map((backgroundColor) => (
+        {[1, 2].map((bar) => (
           <Box
-            key={backgroundColor}
+            key={bar}
             sx={{
               flex: 1,
               height: 6,
               borderRadius: radius.pill,
-              backgroundColor,
+              backgroundColor: bar <= step ? filled : empty,
             }}
           />
         ))}
@@ -37,7 +43,7 @@ export function SetupProgress({ tone }: { tone: 'olive' | 'cream' }) {
         component="span"
         sx={{ fontWeight: 600, whiteSpace: 'nowrap', color: text }}
       >
-        {t('snap.progress', { step: 1 })}
+        {t('snap.progress', { step })}
       </Typography>
     </Box>
   );

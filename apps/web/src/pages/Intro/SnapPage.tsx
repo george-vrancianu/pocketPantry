@@ -8,7 +8,6 @@ import {
   Link,
   radius,
   ReceiptIcon,
-  shadow,
   Typography,
 } from '@pocket-pantry/ui';
 import { useEffect, useState } from 'react';
@@ -16,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { AppDock } from '../../components/AppDock';
 import { ChoiceRadioGroup } from '../../components/ChoiceRadioGroup';
 import { IntroLook } from '../../components/IntroLook';
+import { SetupCallout } from '../../components/SetupReview/SetupCallout';
 import { SetupProgress } from '../../components/SetupReview/SetupProgress';
 import { introPath, skipStep } from '../../lib/intro';
 import { useGatorAlt } from '../../lib/useGatorAlt';
@@ -32,49 +32,6 @@ const creamFocus = {
   '&& :focus-visible, && .Mui-focusVisible, && label:has(:focus-visible), && a:focus-visible':
     { outlineColor: color.cardBg },
 } as const;
-
-/** A cream card with a pointer at the bottom, aimed at the capsule below it. */
-function Callout({ title, body }: { title: string; body: string }) {
-  return (
-    <Box
-      sx={{
-        position: 'fixed',
-        left: 0,
-        right: 0,
-        bottom: aboveDock(DOCK_HEIGHT.xs),
-        mx: 'auto',
-        width: 'fit-content',
-        maxWidth: 'calc(100% - 32px)',
-        boxSizing: 'border-box',
-        px: '14px',
-        py: '10px',
-        textAlign: 'center',
-        borderRadius: radius.card,
-        backgroundColor: 'pp.cardBg',
-        color: 'text.primary',
-        boxShadow: shadow.float,
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          left: '50%',
-          bottom: -6,
-          width: 12,
-          height: 12,
-          transform: 'translateX(-50%) rotate(45deg)',
-          backgroundColor: 'pp.cardBg',
-        },
-      }}
-    >
-      <Typography sx={{ fontWeight: 700, fontSize: 15 }}>{title}</Typography>
-      <Typography
-        variant="meta"
-        sx={{ display: 'block', color: 'text.secondary' }}
-      >
-        {body}
-      </Typography>
-    </Box>
-  );
-}
 
 /**
  * Setup 1, Snap: the olive screen that teaches where the camera lives. Gator's line follows the pick,
@@ -172,7 +129,11 @@ export function SnapPage() {
           />
         </Box>
       </Box>
-      <Callout title={t('snap.callout.title')} body={t('snap.callout.body')} />
+      <SetupCallout
+        title={t('snap.callout.title')}
+        body={t('snap.callout.body')}
+        bottom={aboveDock(DOCK_HEIGHT.xs)}
+      />
       <AppDock teach="camera" cameraHref={`/scan?mode=${pick}`} />
     </IntroLook>
   );

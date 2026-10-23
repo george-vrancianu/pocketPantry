@@ -5,6 +5,7 @@ import {
   type Locale,
   type ScanLanguage,
 } from '../i18n/resources';
+import type { VoiceAppliedEntry, VoiceReviewAction } from './voice';
 
 /**
  * The Intro's rules, kept pure: which screens there are, where each lives, what Skip does, and the
@@ -55,8 +56,8 @@ export function nextStep(step: IntroStep): IntroStep {
       return 'languages';
     case 'log-in':
       return 'dashboard';
-    // Ticket 499 (Say it) restores the plain order here: the Setup Review is followed by Say it.
-    case 'setup-review':
+    // The Setup Review is followed by Say it, and Say it by All set (What Gator heard is a sheet on Say it).
+    case 'say-it':
       return 'all-set';
     default: {
       const next = INTRO_STEPS[INTRO_STEPS.indexOf(step) + 1];
@@ -75,7 +76,6 @@ export function introPath(step: IntroStep): string {
 /**
  * Where Skip goes, or `null` where the step has no Skip. Skip moves on one step only: Snap or its Review
  * go to Say it and Say it goes to All set. "Skip, take me to the app" leaves the Intro altogether.
- * Until Say it exists (ticket 499) Snap and its Review skip to All set instead.
  */
 export function skipStep(step: IntroStep): IntroStep | null {
   switch (step) {
@@ -83,8 +83,7 @@ export function skipStep(step: IntroStep): IntroStep | null {
       return 'dashboard';
     case 'snap':
     case 'setup-review':
-      // Ticket 499 restores 'say-it' here.
-      return 'all-set';
+      return 'say-it';
     case 'say-it':
     case 'what-gator-heard':
       return 'all-set';
@@ -107,6 +106,27 @@ export function addSetupCounts(
     batches: counts.batches + Math.max(0, saved.batches ?? 0),
     shoppingItems: counts.shoppingItems + Math.max(0, saved.shoppingItems ?? 0),
   };
+}
+
+/**
+ * What a Setup Voice Note really wrote: a Pantry add is a Batch, a Shopping add (or a "running low" that
+ * lands on the list) is a Shopping Item. Only Voice Actions the server applied count; skipped ones and
+ * ones already done (nothing new was written) do not, and a tick, remove or change adds nothing.
+ */
+export function savedByVoice(
+  applied: Pick<VoiceAppliedEntry, 'actionId' | 'list' | 'alreadyDone'>[],
+  actions: Pick<VoiceReviewAction, 'id' | 'op'>[],
+): SetupCounts {
+  const ops = new Map(actions.map((a) => [a.id, a.op]));
+  const saved = { ...NO_SETUP_COUNTS };
+  for (const entry of applied) {
+    if (entry.alreadyDone) continue;
+    const op = ops.get(entry.actionId);
+    if (entry.list === 'pantry' && op === 'add') saved.batches += 1;
+    if (entry.list === 'shopping' && (op === 'add' || op === 'runningLow'))
+      saved.shoppingItems += 1;
+  }
+  return saved;
 }
 
 type RedirectInput = {

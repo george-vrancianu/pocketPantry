@@ -101,10 +101,10 @@ describe('Setup 1, Snap', () => {
     expect(where()).toBe('/scan?mode=receipt');
   });
 
-  it('skips to All set', async () => {
+  it('skips to Say it', async () => {
     const user = await openSnap();
     await user.click(screen.getByRole('link', { name: 'Skip' }));
-    expect(where()).toBe('/intro/all-set');
+    expect(where()).toBe('/intro/say-it');
   });
 
   it('is on the olive ground in the light look', async () => {

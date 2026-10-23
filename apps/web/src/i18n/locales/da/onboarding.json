@@ -60,6 +60,42 @@
       "body": "Det er altid her, midt i menuen"
     }
   },
+  "sayIt": {
+    "skip": "Spring over",
+    "pill_one": "{{count}} ting i dit spisekammer",
+    "pill_other": "{{count}} ting i dit spisekammer",
+    "bubble": "Fortæl mig nu, hvad der er i skabet, eller hvad der skal købes.",
+    "examplesLabel": "Det kan du sige",
+    "examples": {
+      "pantry": {
+        "phrase": "“Vi har ris og to dåser tomater”",
+        "result": "Går direkte i spisekammeret"
+      },
+      "shopping": {
+        "phrase": "“Sæt mælk på listen”",
+        "result": "Lægger den på indkøbslisten"
+      }
+    },
+    "callout": {
+      "title": "Hold mikrofonen nede, tal, slip",
+      "body": "Din telefon spørger om adgang til mikrofonen. Optagelsen bliver slettet, når jeg har læst den."
+    },
+    "coach": {
+      "keepHolding": "Bliv ved med at holde, mens du taler.",
+      "letGo": "Slip, når du er færdig."
+    },
+    "noVoice": {
+      "bubble": "Stemmenoter er ikke slået til her, så vi springer det her over.",
+      "callout": "Stemmenoter kræver, at serveren er sat op til dem. Du kan tilføje ting i hånden i appen.",
+      "continue": "Fortsæt"
+    },
+    "heard": {
+      "title": "Det her hørte jeg",
+      "nothingSaved": "Intet bliver gemt, før du siger til. Tryk på en linje for at ændre den.",
+      "doThese_one": "Gør den her",
+      "doThese_other": "Gør de {{count}}"
+    }
+  },
   "review": {
     "banner_one": "Jeg fandt {{count}} ting!",
     "banner_other": "Jeg fandt {{count}} ting!",

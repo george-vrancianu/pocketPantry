@@ -1,4 +1,4 @@
-import { VoiceReview } from './voice/VoiceReview';
+import { VoiceReview, type VoiceSetup } from './voice/VoiceReview';
 import { VoiceAnswers } from './voice/VoiceAnswerSheet';
 import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
@@ -20,14 +20,27 @@ export function defaultTargetFor(pathname: string): VoiceDefaultTarget {
  * Voice Notes, hosted once in the app layout: the hold-to-talk mic in the Dock's capsule with
  * the Spoken Language chip above it, its notices, and the Review sheet that shows "What I heard".
  * Shown on every page with the Dock, acting on that page's list on the Shopping List and the Pantry and on no
- * list elsewhere. Hidden until the server says transcription is configured.
+ * list elsewhere (Setup's Say it is the one exception and passes its own). Hidden until the server says transcription is configured.
  */
-export function VoiceNote() {
+export function VoiceNote({
+  defaultTarget: override,
+  setup,
+}: {
+  /** The Default List this host forces over the route's: Setup's Say it passes the Pantry (ADR 0021). */
+  defaultTarget?: VoiceDefaultTarget;
+  /** Setup's Say it: what happens when its Review is applied. Absent everywhere else. */
+  setup?: VoiceSetup;
+} = {}) {
   const showsMic = useShowsDockMic();
-  const defaultTarget = defaultTargetFor(useLocation().pathname);
+  const routeTarget = defaultTargetFor(useLocation().pathname);
+  const defaultTarget = override ?? routeTarget;
   if (!showsMic) return null;
   return (
-    <VoiceNoteControls key={defaultTarget} defaultTarget={defaultTarget} />
+    <VoiceNoteControls
+      key={defaultTarget}
+      defaultTarget={defaultTarget}
+      setup={setup}
+    />
   );
 }
 
@@ -39,8 +52,10 @@ export function useShowsDockMic() {
 
 function VoiceNoteControls({
   defaultTarget,
+  setup,
 }: {
   defaultTarget: VoiceDefaultTarget;
+  setup?: VoiceSetup;
 }) {
   const voice = useVoiceNote(defaultTarget);
 
@@ -52,7 +67,7 @@ function VoiceNoteControls({
 
       <MicSheets mic={voice.mic} target={defaultTarget} />
 
-      <VoiceReview />
+      <VoiceReview setup={setup} />
 
       <VoiceAnswers />
     </>

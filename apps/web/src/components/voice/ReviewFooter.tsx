@@ -36,6 +36,7 @@ export function ReviewFooter({
   onDiscard,
   onApply,
   onBlockedApply,
+  applyLabel,
 }: {
   /** The changes Apply would send. */
   count: number;
@@ -50,6 +51,8 @@ export function ReviewFooter({
   onDiscard: () => void;
   onApply: () => void;
   onBlockedApply: () => void;
+  /** Words for the Apply button when it is ready, in place of "Apply N changes" (Setup says "Do these N"). */
+  applyLabel?: string;
 }) {
   const { t } = useTranslation('voice');
   const box = { p: '12px 16px calc(20px + env(safe-area-inset-bottom))' };
@@ -106,7 +109,7 @@ export function ReviewFooter({
         ? t('review.footer.pickBatch')
         : blocked === 'place'
           ? t('review.footer.pickPlace')
-          : t('review.footer.apply', { count });
+          : (applyLabel ?? t('review.footer.apply', { count }));
 
   return (
     <Box sx={{ ...box, display: 'flex', gap: '10px' }}>

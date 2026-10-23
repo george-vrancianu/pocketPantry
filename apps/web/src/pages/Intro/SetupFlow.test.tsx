@@ -150,6 +150,11 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
 
     await user.click(screen.getByRole('button', { name: 'Add 3 to Pantry' }));
 
+    // Saving the Pantry leads to Say it, which counts what is in the Pantry now.
+    expect(await screen.findByText('3 things in your Pantry')).toBeVisible();
+    expect(where()).toBe('/intro/say-it');
+    await user.click(screen.getByRole('link', { name: 'Skip' }));
+
     // All set shows what was really saved; the Shopping List tile is left out at 0.
     expect(
       await screen.findByText(
@@ -198,6 +203,8 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     expect(where()).toMatch(/^\/intro\/review\/.+/);
 
     await user.click(screen.getByRole('button', { name: 'Add 2 to Pantry' }));
+    expect(await screen.findByText('2 things in your Pantry')).toBeVisible();
+    await user.click(screen.getByRole('link', { name: 'Skip' }));
     expect(await screen.findByText('in your Pantry')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(
@@ -242,9 +249,11 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     expect(screen.queryByTestId('stack-badge')).toBeNull();
   });
 
-  it('skips from Snap to All set with no tiles, and Go to my kitchen still finishes the Intro', async () => {
+  it('skips from Snap, then Say it, to All set with no tiles, and Go to my kitchen still finishes the Intro', async () => {
     const { user, calls } = await openSnap();
     await user.click(screen.getByRole('link', { name: 'Skip' }));
+    expect(where()).toBe('/intro/say-it');
+    await user.click(await screen.findByRole('link', { name: 'Skip' }));
 
     expect(
       await screen.findByText(
@@ -266,12 +275,20 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     expect(preferenceSaves(calls)).toEqual([{ introDone: true }]);
   });
 
-  it('skips from the Setup Review to All set without saving anything', async () => {
+  it('skips from the Setup Review to Say it, then All set, without saving anything', async () => {
     const { user, calls } = await openSnap();
     await snapAPhoto(user);
     await banner();
 
     await user.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(
+      await screen.findByText(
+        "Now just tell me what's in the cupboard, or what to buy.",
+      ),
+    ).toBeInTheDocument();
+    expect(where()).toBe('/intro/say-it');
+    expect(screen.queryByText(/in your Pantry$/)).toBeNull();
+    await user.click(screen.getByRole('link', { name: 'Skip' }));
     expect(
       await screen.findByText(
         "You're all set! I'll keep an eye on your kitchen.",
@@ -365,6 +382,7 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
   it('stays on All set and says so when the Intro could not be marked done', async () => {
     const { user, calls } = await openSnap({ finishFails: true });
     await user.click(screen.getByRole('link', { name: 'Skip' }));
+    await user.click(await screen.findByRole('link', { name: 'Skip' }));
     await user.click(
       await screen.findByRole('button', { name: 'Go to my kitchen' }),
     );
@@ -382,6 +400,7 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
   it('is the normal Scan screen again once the Intro is done', async () => {
     const { user } = await openSnap();
     await user.click(screen.getByRole('link', { name: 'Skip' }));
+    await user.click(await screen.findByRole('link', { name: 'Skip' }));
     await user.click(
       await screen.findByRole('button', { name: 'Go to my kitchen' }),
     );
