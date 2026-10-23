@@ -55,7 +55,7 @@ export class AssistantController {
   @ApiBearerAuth('assistant-token')
   @ApiOperation({
     summary:
-      'Assistant Request: read dictated text into Voice Actions and apply the safe ones (add to the Shopping List, flag Running low) at once, with no Review. Every other kind is refused and reported. Charged to the Assistant Cap. The text is not stored.',
+      'Assistant Request: read dictated text into Voice Actions and apply the safe ones (add to the Shopping List, tick off a Shopping Item already on it, flag Running low) at once, with no Review. Every other kind is refused and reported. Charged to the Assistant Cap. The text is not stored.',
   })
   @ApiResponse({
     status: 200,

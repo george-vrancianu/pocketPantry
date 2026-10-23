@@ -9,10 +9,14 @@ interface ImportMetaEnv {
    */
   readonly VITE_SIRI_SHORTCUT_URL?: string;
   /**
-   * iCloud link to the "Pantry check" Shortcut (see docs/siri-shortcut.md). The Settings Siri
-   * section links to it; the link is hidden while this is unset or empty.
+   * iCloud link to the "Gator, do we have" Shortcut (see docs/siri-shortcut.md). Hidden while
+   * this is unset or empty. The old "Pantry check" variable is retired and no longer read.
    */
-  readonly VITE_SIRI_CHECK_SHORTCUT_URL?: string;
+  readonly VITE_SIRI_HAVE_SHORTCUT_URL?: string;
+  /** iCloud link to the "Gator needs" Shortcut. Hidden while unset or empty. */
+  readonly VITE_SIRI_NEEDS_SHORTCUT_URL?: string;
+  /** iCloud link to the "Gator got" Shortcut. Hidden while unset or empty. */
+  readonly VITE_SIRI_GOT_SHORTCUT_URL?: string;
 }
 
 interface ImportMeta {

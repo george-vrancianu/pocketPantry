@@ -15,6 +15,8 @@ const KINDS: AssistantActionKind[] = [
   'added',
   'quantitySet',
   'alreadyOnList',
+  'checked',
+  'notOnList',
   'flaggedRunningLow',
   'addedBecauseRunningLowNoBatch',
   'addedUnmatched',
@@ -259,6 +261,41 @@ describe('assistantSpeech', () => {
         expect(out).toBe(`${open} ${expected}.`);
       },
     );
+  });
+
+  describe('checked and not on the list', () => {
+    it.each([
+      ['en', 'Ticked off on your Shopping List: milk and eggs.'],
+      ['ro', 'Am bifat pe Lista de cumpărături: milk și eggs.'],
+      ['da', 'Afkrydset på indkøbslisten: milk og eggs.'],
+    ] as const)('lists what was ticked off in %s', (locale, expected) => {
+      expect(
+        say(locale, [
+          { kind: 'checked', name: 'milk' },
+          { kind: 'checked', name: 'eggs' },
+        ]),
+      ).toBe(expected);
+    });
+
+    it.each([
+      ['en', 'Not on your Shopping List: milk.'],
+      ['ro', 'Nu se află pe Lista de cumpărături: milk.'],
+      ['da', 'Ikke på indkøbslisten: milk.'],
+    ] as const)('says a name is not on the list in %s', (locale, expected) => {
+      expect(say(locale, [{ kind: 'notOnList', name: 'milk' }])).toBe(expected);
+    });
+
+    it('keeps ticked, missing and refused in one sentence', () => {
+      expect(
+        say('en', [
+          { kind: 'refused', name: 'bread' },
+          { kind: 'notOnList', name: 'rice' },
+          { kind: 'checked', name: 'milk' },
+        ]),
+      ).toBe(
+        'Ticked off on your Shopping List: milk; Not on your Shopping List: rice; Open PantryGator for bread.',
+      );
+    });
   });
 
   describe('whole-request states', () => {
