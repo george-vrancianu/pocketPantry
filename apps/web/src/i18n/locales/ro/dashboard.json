@@ -183,6 +183,10 @@
       "add": "Adaugă {{name}}",
       "setDate": "Setează data",
       "setDateName": "Setează data pentru {{name}}"
+    },
+    "gator": {
+      "curious": "Încă învăț ce ai prin casă. Încă o rundă de cumpărături și îți pot spune cum stă cămara.",
+      "dapper": "Splendid. Totul e în termen, aprovizionat și pus la socoteală."
     }
   },
   "mealPlan": {

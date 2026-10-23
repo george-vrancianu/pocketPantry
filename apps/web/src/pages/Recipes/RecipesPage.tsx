@@ -6,8 +6,9 @@ import {
   Stack,
   tokens,
   displayType,
+  usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
@@ -21,6 +22,7 @@ import {
   type RecipeBrowse,
 } from '../../lib/recipes';
 import { CanMakeStrip } from './components/CanMakeStrip';
+import { CookTonightPrompt } from './components/CookTonightPrompt';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
 import { SectionLabel } from './components/SectionLabel';
@@ -46,7 +48,15 @@ export function RecipesPage() {
   const items = recipes.data?.recipes ?? [];
   const filtering = isFiltering(browse);
   const cards = cookTonight.data?.cards ?? [];
-  const canMakeCards = cards.filter((card) => card.canMake);
+  // Expiring first, so the strip starts with what to cook before it expires; the rank decides within each group.
+  const canMakeCards = cards
+    .filter((card) => card.canMake)
+    .sort((a, b) => Number(b.expiringCount > 0) - Number(a.expiringCount > 0));
+  const expiringCount = canMakeCards.filter(
+    (card) => card.expiringCount > 0,
+  ).length;
+  const reduceMotion = usePrefersReducedMotion();
+  const stripRef = useRef<HTMLDivElement>(null);
   const index = indexCards(cards);
 
   return (
@@ -61,8 +71,21 @@ export function RecipesPage() {
       />
       {/* Flex gap leaves the children's margins alone, so the filters can bleed to the screen edges. */}
       <Stack spacing={1.5} useFlexGap>
+        {!filtering && expiringCount > 0 ? (
+          <CookTonightPrompt
+            count={expiringCount}
+            onSeeThem={() =>
+              stripRef.current?.scrollIntoView?.({
+                behavior: reduceMotion ? 'auto' : 'smooth',
+                block: 'start',
+              })
+            }
+          />
+        ) : null}
         {!filtering && canMakeCards.length > 0 ? (
-          <CanMakeStrip cards={canMakeCards} />
+          <div ref={stripRef}>
+            <CanMakeStrip cards={canMakeCards} />
+          </div>
         ) : null}
         <RecipeFilters
           value={browse}

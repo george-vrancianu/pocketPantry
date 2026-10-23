@@ -162,6 +162,10 @@
       "add": "Add {{name}}",
       "setDate": "Set date",
       "setDateName": "Set date for {{name}}"
+    },
+    "gator": {
+      "curious": "I'm still learning what you've got. One more shop and I can tell you how your Pantry is doing.",
+      "dapper": "Splendid. Everything's in date, stocked and accounted for."
     }
   },
   "mealPlan": {

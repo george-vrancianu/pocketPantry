@@ -172,5 +172,11 @@
     "note_one": "{{count}} opskrift skjult på grund af dine allergier",
     "note_other": "{{count}} opskrifter skjult på grund af dine allergier",
     "show": "Vis"
+  },
+  "cookTonight": {
+    "title": "Lav mad i aften",
+    "line_one": "{{count}} opskrift bruger det, der snart udløber",
+    "line_other": "{{count}} opskrifter bruger det, der snart udløber",
+    "seeThem": "Se dem"
   }
 }

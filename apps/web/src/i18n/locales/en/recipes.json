@@ -172,5 +172,11 @@
     "note_one": "{{count}} Recipe hidden by your Allergies",
     "note_other": "{{count}} Recipes hidden by your Allergies",
     "show": "Show"
+  },
+  "cookTonight": {
+    "title": "Cook tonight",
+    "line_one": "{{count}} recipe uses what expires soon",
+    "line_other": "{{count}} recipes use what expires soon",
+    "seeThem": "See them"
   }
 }

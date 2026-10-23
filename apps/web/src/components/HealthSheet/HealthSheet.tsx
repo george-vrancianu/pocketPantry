@@ -10,6 +10,7 @@ import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MIN_BATCHES_FOR_SCORE, presentFactors } from '../../lib/health';
 import type { PantryHealthState } from '../../lib/usePantryHealth';
+import { HealthGator, useHealthGatorLine } from './HealthGator';
 import { ScoreRing } from './HealthRing';
 import { HealthTodos } from './HealthTodos';
 
@@ -25,6 +26,7 @@ export function HealthSheet({ open, onClose, state, today }: Props) {
   const { health, batchCount } = state;
   const { t } = useTranslation('dashboard');
   const closeButton = useRef<HTMLButtonElement>(null);
+  const gatorLine = useHealthGatorLine(health, state.todos.length);
   const missing = MIN_BATCHES_FOR_SCORE - batchCount;
 
   return (
@@ -66,7 +68,11 @@ export function HealthSheet({ open, onClose, state, today }: Props) {
                 {t('health.progress', { count: missing })}
               </Box>
             )}
+            {gatorLine ? (
+              <Box sx={{ fontSize: 12.5, mt: '4px' }}>{gatorLine}</Box>
+            ) : null}
           </Box>
+          <HealthGator health={health} size={56} />
           <IconButton
             ref={closeButton}
             label={t('health.close')}

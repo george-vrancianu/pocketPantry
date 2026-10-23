@@ -185,5 +185,12 @@
     "note_few": "{{count}} rețete ascunse din cauza alergiilor tale",
     "note_other": "{{count}} de rețete ascunse din cauza alergiilor tale",
     "show": "Arată"
+  },
+  "cookTonight": {
+    "title": "Gătește diseară",
+    "line_one": "{{count}} rețetă folosește ce expiră curând",
+    "line_few": "{{count}} rețete folosesc ce expiră curând",
+    "line_other": "{{count}} de rețete folosesc ce expiră curând",
+    "seeThem": "Vezi-le"
   }
 }

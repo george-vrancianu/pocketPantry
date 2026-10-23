@@ -12,6 +12,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScoreRing } from '../../../components/HealthSheet/HealthRing';
 import { HealthSheet } from '../../../components/HealthSheet/HealthSheet';
+import {
+  HealthGator,
+  useHealthGatorLine,
+} from '../../../components/HealthSheet/HealthGator';
 import { VERDICT_COLOR } from '../../../components/HealthSheet/healthStyle';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
@@ -39,6 +43,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
   const wide = size !== 'small';
 
   const todoCount = todos.length;
+  const gatorLine = useHealthGatorLine(health, todoCount);
   const subline =
     todoCount === 0
       ? t('health.nothingToDo')
@@ -131,6 +136,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
                   {wideSubline}
                 </Box>
               </Box>
+              <HealthGator health={health} size={64} />
               <Box
                 component="span"
                 sx={{ color: tokens.color.muted, display: 'flex' }}
@@ -138,6 +144,14 @@ export function HealthWidget({ size, columns }: WidgetProps) {
                 <ChevronRightIcon size={18} />
               </Box>
             </Box>
+            {gatorLine ? (
+              <Box
+                component="span"
+                sx={{ display: 'block', fontSize: 12.5, lineHeight: 1.4 }}
+              >
+                {gatorLine}
+              </Box>
+            ) : null}
             {health.scored ? (
               <Box
                 component="span"
@@ -164,7 +178,17 @@ export function HealthWidget({ size, columns }: WidgetProps) {
             component="span"
             sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
           >
-            <ScoreRing health={health} batchCount={batchCount} size={56} />
+            <Box
+              component="span"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <ScoreRing health={health} batchCount={batchCount} size={56} />
+              <HealthGator health={health} size={52} />
+            </Box>
             <Box component="span">
               <Box
                 component="span"
