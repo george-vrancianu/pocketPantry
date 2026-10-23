@@ -7,7 +7,12 @@ import type { Batch } from '../../lib/pantry';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
-import { fakeCamera, languageChip, pickScanLanguage } from '../../test/scan';
+import {
+  fakeCamera,
+  languageChip,
+  pickScanLanguage,
+  scanLanguagePreference,
+} from '../../test/scan';
 
 // jsdom has no camera or canvas: the camera hook and image preparation are the seams.
 const image = vi.hoisted(() => ({
@@ -73,10 +78,16 @@ const milkBatch: Batch = {
 };
 
 /** The Product Scan answers when `release` is called with its response. */
-function stubProductScan(respond: () => Response | Promise<Response>) {
+function stubProductScan(
+  respond: () => Response | Promise<Response>,
+  preferredScanLanguage?: 'en' | 'ro' | 'da',
+) {
   let release: () => void = () => {};
   const gate = new Promise<void>((resolve) => (release = resolve));
   const { fetchMock, calls } = stubApi({
+    ...(preferredScanLanguage
+      ? scanLanguagePreference(preferredScanLanguage)
+      : {}),
     'GET /api/pantry': () =>
       Response.json({ batches: [milkBatch], runningLow: [] }),
     'GET /api/staples': () => Response.json({ staples: [] }),
@@ -264,19 +275,16 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     ).toBeInTheDocument();
   });
 
-  it('closes on a shot, shows reading, lets the Member edit, and reads in the shared Scan Language', async () => {
+  it('closes on a shot, shows reading, lets the Member edit, and reads in the Scan Language preference, unless the chip is changed', async () => {
     const user = userEvent.setup();
-    localStorage.setItem(
-      'pocket-pantry.scan-language',
-      JSON.stringify({ locale: 'en', language: 'ro' }),
-    );
-    const { calls, release } = stubProductScan(() =>
-      Response.json({ lines: [line()] }),
+    const { calls, release } = stubProductScan(
+      () => Response.json({ lines: [line()] }),
+      'ro',
     );
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    expect(languageChip()).toHaveTextContent('RO');
+    await vi.waitFor(() => expect(languageChip()).toHaveTextContent('RO'));
     await pickScanLanguage('Dansk');
     screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
@@ -314,10 +322,11 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     const [post] = scanCalls(calls);
     expect(post.search).toContain('scanLanguage=da');
     expect(post.body).toEqual({ productImage: 'data:image/jpeg;base64,AAAA' });
-    // The choice is the Scan page's remembered one too.
-    expect(
-      JSON.parse(localStorage.getItem('pocket-pantry.scan-language')!),
-    ).toMatchObject({ language: 'da' });
+    // The chip change is for this Batch only: nothing is remembered.
+    expect(localStorage.getItem('pocket-pantry.scan-language')).toBeNull();
+    expect(calls.map((c) => c.key)).not.toContain(
+      'PUT /api/settings/preferences',
+    );
   });
 
   it('fills every untouched field, marks them, and saves what was read', async () => {

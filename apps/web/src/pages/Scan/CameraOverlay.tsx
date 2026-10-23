@@ -30,7 +30,7 @@ import { ShutterButton } from './components/ShutterButton';
 import { ZoomPill } from './components/ZoomPill';
 import { Viewfinder, useShotFeedback } from './components/Viewfinder';
 import { measureView, useGuideRect } from './hooks/useGuideRect';
-import { useScanLanguage } from './hooks/useScanLanguage';
+import { useScanLanguage } from '../../lib/useScanLanguage';
 
 export type { CameraMode };
 

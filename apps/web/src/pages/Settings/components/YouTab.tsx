@@ -8,7 +8,6 @@ import {
   LogoutIcon,
   PantryIcon,
   radius,
-  SegmentedControl,
   Stack,
   Typography,
   useToast,
@@ -18,19 +17,20 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
 import { LOCALES } from '../../../i18n';
+import { SCAN_LANGUAGES } from '../../../i18n/resources';
 import { useSession, useSignOut } from '../../../lib/auth';
 import {
   useMemberPreferences,
   useSaveCatalogLanguage,
   useSaveLocale,
+  useSaveScanLanguage,
 } from '../../../lib/settings';
 import { useLoadedUnmatchedCount } from '../hooks/useLoadedUnmatchedCount';
 import { AllergiesSection } from './AllergiesSection';
 import { AppearanceCard } from './AppearanceCard';
+import { LanguagePreferencePicker } from './LanguagePreferencePicker';
 import { SiriSection } from './SiriSection';
 import { ScopeCaption, SectionHeading } from './SectionHeading';
-
-const SAME_AS_UI = 'same-as-ui';
 
 const initials = (name: string) =>
   name
@@ -47,6 +47,7 @@ export function YouTab() {
   const signOut = useSignOut();
   const saveLocale = useSaveLocale();
   const saveCatalogLanguage = useSaveCatalogLanguage();
+  const saveScanLanguage = useSaveScanLanguage();
   const preferences = useMemberPreferences();
   const toast = useToast();
   const navigate = useNavigate();
@@ -101,42 +102,46 @@ export function YouTab() {
         </Box>
         {saveLocale.isError ? <Alert>{t('localeSaveFailed')}</Alert> : null}
         {preferences.data ? (
-          <Stack spacing={0.5}>
-            <SegmentedControl
+          <>
+            <LanguagePreferencePicker
               label={t('catalogLanguage.label')}
-              fullWidth
-              value={preferences.data.catalogLanguage ?? SAME_AS_UI}
-              options={[
-                { value: SAME_AS_UI, label: t('catalogLanguage.sameAsUi') },
-                ...LOCALES.map((language) => ({
-                  value: language,
-                  label: t(`languageNames.${language}`),
-                  lang: language,
-                })),
-              ]}
-              onChange={(value) =>
-                saveCatalogLanguage.mutate(
-                  value === SAME_AS_UI ? null : value,
-                  {
-                    onSuccess: () =>
-                      toast.show(t('catalogLanguage.saved'), {
-                        polite: true,
-                      }),
-                  },
-                )
-              }
-            />
-            <Typography variant="meta" color="text.secondary">
-              {t('catalogLanguage.hint', {
+              sameAsUiLabel={t('catalogLanguage.sameAsUi')}
+              languages={LOCALES}
+              value={preferences.data.catalogLanguage}
+              hint={t('catalogLanguage.hint', {
                 language: t(
                   `languageNames.${preferences.data.effectiveCatalogLanguage}`,
                 ),
               })}
-            </Typography>
-            {saveCatalogLanguage.isError ? (
-              <Alert>{t('catalogLanguage.saveFailed')}</Alert>
-            ) : null}
-          </Stack>
+              onChange={(language) =>
+                saveCatalogLanguage.mutate(language, {
+                  onSuccess: () =>
+                    toast.show(t('catalogLanguage.saved'), { polite: true }),
+                })
+              }
+              failed={saveCatalogLanguage.isError}
+              failedLabel={t('catalogLanguage.saveFailed')}
+            />
+            <LanguagePreferencePicker
+              label={t('scanLanguage.label')}
+              sameAsUiLabel={t('scanLanguage.sameAsUi')}
+              languages={SCAN_LANGUAGES}
+              value={preferences.data.scanLanguage}
+              hint={t('scanLanguage.hint', {
+                language: t(
+                  `languageNames.${preferences.data.effectiveScanLanguage}`,
+                ),
+              })}
+              onChange={(language) =>
+                saveScanLanguage.mutate(language, {
+                  onSuccess: () =>
+                    toast.show(t('scanLanguage.saved'), { polite: true }),
+                })
+              }
+              failed={saveScanLanguage.isError}
+              failedLabel={t('scanLanguage.saveFailed')}
+            />
+          </>
         ) : null}
       </Stack>
       <AllergiesSection />

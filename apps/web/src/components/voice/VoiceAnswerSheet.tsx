@@ -10,7 +10,7 @@ import {
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { focusVoiceButton } from '../../lib/voiceFocus';
-import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
+import { useScanLanguage } from '../../lib/useScanLanguage';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { AddToShoppingListButton } from './AddToShoppingListButton';
 import { HeardCard } from './HeardCard';

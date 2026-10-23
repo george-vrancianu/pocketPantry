@@ -94,7 +94,7 @@
     "chipLabel": "Scansprog: {{language}}. Skift",
     "title": "Scansprog",
     "saved": "Scansprog: {{language}}",
-    "savedHint": "Bruges til stemmenoter og kameraet."
+    "savedHint": "Til stemmenoter på denne skærm."
   },
   "review": {
     "title": "Gennemse",

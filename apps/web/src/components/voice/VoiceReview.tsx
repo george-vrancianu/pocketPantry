@@ -35,7 +35,7 @@ import {
   needsList,
 } from './reviewModel';
 import { translateApiError } from '../../i18n/translateApiError';
-import { useScanLanguage } from '../../pages/Scan/hooks/useScanLanguage';
+import { useScanLanguage } from '../../lib/useScanLanguage';
 import { parseAmountText } from '../../lib/pantry';
 import {
   catalogChangeQueryKeys,
