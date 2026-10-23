@@ -1,10 +1,11 @@
 {
   "title": "Velkommen tilbage",
-  "subtitle": "Log ind på dit spisekammer.",
+  "subtitle": "Dit spisekammer, dine lister og din familie venter.",
   "email": "E-mail",
   "password": "Adgangskode",
   "submit": "Log ind",
   "submitting": "Logger ind",
+  "back": "Tilbage",
   "noAccount": "Ny her?",
-  "createAccount": "Opret en konto"
+  "getStarted": "Kom i gang"
 }

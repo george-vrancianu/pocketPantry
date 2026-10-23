@@ -1,0 +1,24 @@
+{
+  "alt": {
+    "shoppingBuddy": "Gator, alligatoren, klar til at handle"
+  },
+  "launch": {
+    "tagline": "Vid, hvad du har i køkkenet.",
+    "taglineTwo": "Køb kun det, du har brug for.",
+    "getStarted": "Kom i gang",
+    "haveAccount": "Jeg har allerede en konto"
+  },
+  "languages": {
+    "title": "Dine sprog",
+    "continue": "Fortsæt"
+  },
+  "setup": {
+    "title": "Skal Gator fylde dit spisekammer?",
+    "body": "To hurtige forsøg, og dit køkken er allerede i appen. Det tager omkring to minutter.",
+    "showMe": "Vis mig hvordan",
+    "showMeSnap": "1 · Tag et billede",
+    "showMeSay": "2 · Sig det",
+    "skip": "Spring over, tag mig til appen",
+    "skipHint": "Start med et tomt spisekammer"
+  }
+}

@@ -55,6 +55,8 @@ export type MemberPreferences = {
   theme: ThemeId | null;
   /** Leave out Recipes with the Member's own or Family Allergies; off by default. */
   hideRecipesWithAllergies: boolean;
+  /** The Member has been through the Intro and reached the Dashboard from it; never undone. */
+  introDone: boolean;
 };
 
 export const preferencesQueryKey = ['settings', 'preferences'] as const;
@@ -229,6 +231,22 @@ export function useSaveLanguagePreference(
         body: { [field]: language },
       }),
     onSuccess: apply,
+  });
+}
+
+/** Marks the Member done with the Intro (they reached the Dashboard from it). Idempotent on the API. */
+export function useMarkIntroDone() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiRequest<MemberPreferences>('/settings/preferences', {
+        method: 'PUT',
+        body: { introDone: true },
+      }),
+    onSuccess: () =>
+      queryClient.setQueryData<MemberPreferences>(preferencesQueryKey, (old) =>
+        old ? { ...old, introDone: true } : old,
+      ),
   });
 }
 

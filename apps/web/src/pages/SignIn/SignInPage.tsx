@@ -16,7 +16,7 @@ export function SignInPage() {
   const { submit, pending, error } = useSignInForm();
 
   return (
-    <AuthShell title={t('title')} subtitle={t('subtitle')}>
+    <AuthShell title={t('title')} subtitle={t('subtitle')} back={t('back')}>
       <Box component="form" onSubmit={submit} sx={{ display: 'contents' }}>
         <Stack spacing={2}>
           {error ? <Alert>{error}</Alert> : null}
@@ -40,7 +40,7 @@ export function SignInPage() {
         </Stack>
       </Box>
       <Typography variant="meta" color="text.secondary">
-        {t('noAccount')} <Link href="/sign-up">{t('createAccount')}</Link>
+        {t('noAccount')} <Link href="/intro/languages">{t('getStarted')}</Link>
       </Typography>
     </AuthShell>
   );

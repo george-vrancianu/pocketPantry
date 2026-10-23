@@ -10,6 +10,8 @@ function stubSession(signedIn: boolean) {
   const { fetchMock } = stubApi({
     'GET /api/auth/get-session': () =>
       signedIn ? member() : new Response('null'),
+    'GET /api/settings/preferences': () =>
+      Response.json({ introDone: true, theme: null, locale: null }),
   });
   vi.stubGlobal('fetch', fetchMock);
 }
@@ -34,6 +36,8 @@ describe('App shell', () => {
         Response.json({
           user: { id: '1', name: 'Ana', email: 'a@x.com', role: 'admin' },
         }),
+      'GET /api/settings/preferences': () =>
+        Response.json({ introDone: true, theme: null, locale: null }),
       'GET /api/admin/catalog': () =>
         Response.json({
           aisles: [],
@@ -52,11 +56,14 @@ describe('App shell', () => {
     ).toBeInTheDocument();
   });
 
-  it('sends signed-out visitors to sign in', async () => {
+  it('opens Launch for signed-out visitors, whatever route they asked for', async () => {
     stubSession(false);
     renderWithProviders(<App />, { route: '/pantry' });
     expect(
-      await screen.findByRole('heading', { name: 'Welcome back' }),
+      await screen.findByRole('heading', { name: 'PantryGator' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'I already have an account' }),
     ).toBeInTheDocument();
   });
 

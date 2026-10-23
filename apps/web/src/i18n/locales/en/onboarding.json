@@ -1,0 +1,24 @@
+{
+  "alt": {
+    "shoppingBuddy": "Gator the alligator, ready to go shopping"
+  },
+  "launch": {
+    "tagline": "Know what's in your kitchen.",
+    "taglineTwo": "Buy only what you need.",
+    "getStarted": "Get started",
+    "haveAccount": "I already have an account"
+  },
+  "languages": {
+    "title": "Your languages",
+    "continue": "Continue"
+  },
+  "setup": {
+    "title": "Fill your Pantry with Gator?",
+    "body": "Two quick tries and your kitchen is already in the app. About two minutes.",
+    "showMe": "Show me how",
+    "showMeSnap": "1 · Snap a photo",
+    "showMeSay": "2 · Say it",
+    "skip": "Skip, take me to the app",
+    "skipHint": "Start with an empty Pantry"
+  }
+}

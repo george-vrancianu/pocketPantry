@@ -1,0 +1,24 @@
+{
+  "alt": {
+    "shoppingBuddy": "Gator, aligatorul, gata de cumpărături"
+  },
+  "launch": {
+    "tagline": "Știi ce ai în bucătărie.",
+    "taglineTwo": "Cumperi doar ce îți trebuie.",
+    "getStarted": "Începe",
+    "haveAccount": "Am deja un cont"
+  },
+  "languages": {
+    "title": "Limbile tale",
+    "continue": "Continuă"
+  },
+  "setup": {
+    "title": "Umpli Cămara cu Gator?",
+    "body": "Două încercări rapide și bucătăria ta e deja în aplicație. Durează cam două minute.",
+    "showMe": "Arată-mi cum",
+    "showMeSnap": "1 · Fă o poză",
+    "showMeSay": "2 · Spune-o",
+    "skip": "Sari peste, du-mă în aplicație",
+    "skipHint": "Începe cu o Cămară goală"
+  }
+}

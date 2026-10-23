@@ -19,6 +19,7 @@ const stored: MemberPreferences = {
   effectiveSpokenLanguage: 'en',
   theme: null,
   hideRecipesWithAllergies: false,
+  introDone: true,
 };
 
 function setup(answer: Partial<MemberPreferences>) {

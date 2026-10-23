@@ -1,10 +1,11 @@
 {
   "title": "Bine ai revenit",
-  "subtitle": "Autentifică-te în cămara ta.",
+  "subtitle": "Cămara, listele și familia ta te așteaptă.",
   "email": "E-mail",
   "password": "Parolă",
   "submit": "Autentificare",
   "submitting": "Se autentifică",
+  "back": "Înapoi",
   "noAccount": "Ești nou aici?",
-  "createAccount": "Creează un cont"
+  "getStarted": "Începe"
 }
