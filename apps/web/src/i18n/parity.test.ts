@@ -471,6 +471,8 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
     "Gator's line from the design handoff: loose food on the counter, before it is anything in the Pantry",
   'onboarding:snap.callout.body|menu':
     'the design handoff calls the Dock "the menu"; it is not a Meal Plan',
+  'onboarding:allSet.tipMic|menu':
+    'the design handoff calls the Dock "the menu"; it is not a Meal Plan',
 };
 
 const escape = (s: string) =>
