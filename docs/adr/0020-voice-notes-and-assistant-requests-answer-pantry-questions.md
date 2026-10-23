@@ -1,5 +1,7 @@
 # Voice Notes and Assistant Requests answer Pantry Questions
 
+> Amended by ADR 0023: the "Pantry check" Shortcut is retired; "Gator, do we have" answers Pantry Questions instead.
+
 Standing in the shop, a Member wants to ask "Do we have milk and butter?" and hear the answer without opening the Pantry and scrolling. Today the read sends every question to `unsupported`, and ADR 0019 lists questions answered aloud as out of scope. This record adds Pantry Questions to both Voice Notes and Assistant Requests. It amends ADR 0019, and ADR 0017 for Voice Notes.
 
 ## Decision

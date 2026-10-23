@@ -60,6 +60,8 @@ export type ApplyContext = {
   tx: Tx;
   /** Assistant Request only: an add onto an existing line sets its quantity instead of summing. */
   addSetsQuantity?: boolean;
+  /** Assistant Request only (ADR 0023): a check ticks an unchecked Shopping Item already on the list, and writes nothing else. */
+  checkOnly?: boolean;
 };
 
 /** `skipped` carries the stable error code or reason Review names. */

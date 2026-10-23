@@ -1,6 +1,6 @@
 {
   "title": "Siri",
-  "hint": "Opret et assistent-token til hver enhed, der taler med dine lister via stemmen. Et token kan tilføje til dine lister og læse dit spisekammer og din indkøbsliste for at svare på spørgsmål, men intet andet; tilbagekald det her for at stoppe det med det samme.",
+  "hint": "Opret et assistent-token til hver enhed, der taler med dine lister via stemmen. Et token kan tilføje til dine lister, krydse varer af, der allerede står på din indkøbsliste, og læse dit spisekammer og din indkøbsliste for at svare på spørgsmål, men intet andet; tilbagekald det her for at stoppe det med det samme.",
   "nameLabel": "Tokenets navn",
   "namePlaceholder": "For eksempel min iPhone",
   "create": "Opret token",
@@ -27,12 +27,33 @@
   "setup": {
     "title": "Opsæt Siri",
     "create": "Opret et token ovenfor, og kopiér det.",
-    "add": "Føj genvejen “Pantry add” til appen Genveje.",
-    "link": "Åbn genvejen “Pantry add”",
+    "add": "Føj de genveje, du vil have, til appen Genveje.",
     "paste": "Indsæt tokenet, når genvejen beder om det.",
-    "say": "Sig “Hey Siri, Pantry add”, og sig derefter, hvad der skal tilføjes.",
+    "say": "Sig “Hey Siri” og en genvejs frase, og sig derefter varerne.",
     "language": "Siris frase er altid på engelsk, men du kan sige varerne på ethvert sprog, PantryGator understøtter.",
-    "check": "Hvis du vil spørge, hvad du har i spisekammeret, så sig “Hey Siri, Pantry check”. “Pantry add” svarer også på spørgsmål.",
-    "checkLink": "Åbn genvejen “Pantry check”"
+    "shortcutsTitle": "Genveje",
+    "pending": "Linket kommer snart",
+    "shortcuts": {
+      "needs": {
+        "phrase": "Hey Siri, Gator needs",
+        "does": "Føjer det, du siger, til din indkøbsliste.",
+        "link": "Åbn genvejen “Gator needs”"
+      },
+      "got": {
+        "phrase": "Hey Siri, Gator got",
+        "does": "Krydser det af, du siger, hvis det står på din indkøbsliste. Den tilføjer eller fjerner aldrig noget, og den siger til, når varen ikke står på listen.",
+        "link": "Åbn genvejen “Gator got”"
+      },
+      "have": {
+        "phrase": "Hey Siri, Gator, do we have",
+        "does": "Svarer på, om du har en vare i spisekammeret, eller om den står på din indkøbsliste.",
+        "link": "Åbn genvejen “Gator, do we have”"
+      },
+      "add": {
+        "phrase": "Hey Siri, Pantry add",
+        "does": "Den første genvej. Den virker stadig: den føjer til din indkøbsliste, markerer det, der er ved at løbe tør, krydser af, hvad du har fået, og svarer også på spørgsmål.",
+        "link": "Åbn genvejen “Pantry add”"
+      }
+    }
   }
 }
