@@ -39,7 +39,7 @@ export type LanguageOptions = {
 const asCatalogLocale = (value: string | null): CatalogLocale | null =>
   CATALOG_LOCALES.find((locale) => locale === value) ?? null;
 
-const asScanLanguage = (value: string | null): ScanLanguage | null =>
+export const asScanLanguage = (value: string | null): ScanLanguage | null =>
   SCAN_LANGUAGES.find((language) => language === value) ?? null;
 
 /**

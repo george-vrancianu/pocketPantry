@@ -92,6 +92,12 @@ describe('Unmatched queue (integration)', () => {
         .set('origin', TEST_ORIGIN)
         .set('cookie', cookie)
         .send(body),
+    put: (path: string, body: object = {}) =>
+      request(app.getHttpServer())
+        .put(`/api${path}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send(body),
     del: (path: string) =>
       request(app.getHttpServer())
         .delete(`/api${path}`)
@@ -296,6 +302,37 @@ describe('Unmatched queue (integration)', () => {
           locale: 'ro',
           sourceText: 'Skyr vanilje',
           sourceLanguage: 'da',
+        });
+      });
+
+      it("tags the printed text with the Member's Scan Language preference when no ?scanLanguage= is sent, and the query wins when it is", async () => {
+        const member = await newMember();
+        await call(member)
+          .put('/settings/preferences', { locale: 'en', scanLanguage: 'da' })
+          .expect(200);
+        const rawBulk = name('pref bulk');
+        const rawConfirm = name('pref confirm');
+        const rawOverride = name('pref override');
+        await saveBatches(member, [{ rawName: rawBulk, sourceText: 'Mælk' }]);
+        await saveBatches(
+          member,
+          [{ rawName: rawConfirm, sourceText: 'Skyr' }],
+          'en',
+          undefined,
+          '/scan/receipt/confirm',
+        );
+        await saveBatches(
+          member,
+          [{ rawName: rawOverride, sourceText: 'Lapte' }],
+          'en',
+          'ro',
+        );
+        expect(await entryOf(rawBulk)).toMatchObject({ sourceLanguage: 'da' });
+        expect(await entryOf(rawConfirm)).toMatchObject({
+          sourceLanguage: 'da',
+        });
+        expect(await entryOf(rawOverride)).toMatchObject({
+          sourceLanguage: 'ro',
         });
       });
 

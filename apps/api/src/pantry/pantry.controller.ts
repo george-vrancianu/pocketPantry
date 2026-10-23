@@ -128,15 +128,14 @@ export class PantryController {
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchBody)) body: CreateBatchBody,
   ): Promise<BatchView> {
+    const languages = await this.languages.languagesOf(member.id, {
+      requestLocale: query.locale,
+    });
     return this.pantry.create(
       member.id,
       body,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
-      await this.languages.scanLanguageOf(
-        member.id,
-        query.locale,
-        query.scanLanguage,
-      ),
+      languages.catalog,
+      query.scanLanguage ?? languages.scan,
     );
   }
 
@@ -150,16 +149,15 @@ export class PantryController {
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
   ): Promise<{ batches: BatchView[] }> {
+    const languages = await this.languages.languagesOf(member.id, {
+      requestLocale: query.locale,
+    });
     return {
       batches: await this.pantry.createMany(
         member.id,
         body.batches,
-        await this.languages.catalogLanguageOf(member.id, query.locale),
-        await this.languages.scanLanguageOf(
-          member.id,
-          query.locale,
-          query.scanLanguage,
-        ),
+        languages.catalog,
+        query.scanLanguage ?? languages.scan,
       ),
     };
   }

@@ -7,12 +7,14 @@ import {
 import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import {
   CATALOG_LOCALES,
-  SCAN_LANGUAGES,
   type CatalogLocale,
 } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { ApiException } from '../common/api-exception';
-import { resolveLanguage } from '../member-language/member-language';
+import {
+  asScanLanguage,
+  resolveLanguage,
+} from '../member-language/member-language';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import {
@@ -228,7 +230,7 @@ export class SettingsService {
       effectiveCatalogLanguage: resolveLanguage('catalog', row, {
         requestLocale,
       }),
-      scanLanguage: SCAN_LANGUAGES.find((l) => l === row.scanLanguage) ?? null,
+      scanLanguage: asScanLanguage(row.scanLanguage),
       effectiveScanLanguage: resolveLanguage('scan', row, { requestLocale }),
       theme,
       hideRecipesWithAllergies: row.hideRecipesWithAllergies,
