@@ -90,7 +90,8 @@ export class RecipesController {
 
   @Get('filters')
   @ApiOperation({
-    summary: 'Cuisines and Methods for the filter pickers, named in the locale',
+    summary:
+      'Cuisines and Methods for the filter pickers, named in the Catalog Language',
   })
   async filters(
     @CurrentUser() member: CurrentUserValue,
@@ -127,11 +128,15 @@ export class RecipesController {
     summary:
       "Create one of the Family's own Recipes: a Variant (parentId) or a standalone Base Recipe",
   })
-  create(
+  async create(
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(familyRecipeCreate)) body: FamilyRecipeCreate,
   ): Promise<FamilyRecipeEdit> {
-    const { locale, ...document } = body;
+    const { locale: requestLocale, ...document } = body;
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      requestLocale,
+    );
     return this.family.create(member.id, document, locale);
   }
 
@@ -166,32 +171,44 @@ export class RecipesController {
     summary:
       "An unsaved draft copying a visible Recipe's ingredients and Steps, under its Base Recipe",
   })
-  variantDraft(
+  async variantDraft(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
-    @Locale() { locale }: LocaleQuery,
+    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeDraft> {
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
     return this.family.variantDraft(member.id, id, locale);
   }
 
   @Get(':id/edit')
   @ApiOperation({ summary: "The editable view of the Family's own Recipe" })
-  edit(
+  async edit(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
-    @Locale() { locale }: LocaleQuery,
+    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
     return this.family.editFor(member.id, id, locale);
   }
 
   @Put(':id')
   @ApiOperation({ summary: "Replace the Family's own Recipe document" })
-  update(
+  async update(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(familyRecipeUpdate)) body: FamilyRecipeUpdate,
   ): Promise<FamilyRecipeEdit> {
-    return this.family.update(member.id, id, body);
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      body.locale,
+    );
+    return this.family.update(member.id, id, { ...body, locale });
   }
 
   @Post(':id/archive')
@@ -199,11 +216,15 @@ export class RecipesController {
   @ApiOperation({
     summary: "Archive (the UI's Delete) the Family's own Recipe; never removed",
   })
-  archive(
+  async archive(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
-    @Locale() { locale }: LocaleQuery,
+    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
     return this.family.archive(member.id, id, locale);
   }
 
@@ -212,45 +233,61 @@ export class RecipesController {
     summary:
       "Replace the Family Recipe's guidance (Nutrition Note, Pairings, Eating Moments)",
   })
-  setGuidance(
+  async setGuidance(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(guidanceBody)) body: GuidanceBody,
-    @Locale() { locale }: LocaleQuery,
+    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
     return this.family.setGuidance(member.id, id, body, locale);
   }
 
   @Post(':id/tips')
   @ApiOperation({ summary: "Add a Tip to the Family's own Recipe or a Step" })
-  createTip(
+  async createTip(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(tipCreate)) body: TipCreate,
-    @Locale() { locale }: LocaleQuery,
+    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
     return this.family.createTip(member.id, id, body, locale);
   }
 
   @Put(':id/tips/order')
   @ApiOperation({ summary: 'Set the order of every Tip of the Recipe' })
-  reorderTips(
+  async reorderTips(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(tipOrder)) body: TipOrder,
-    @Locale() { locale }: LocaleQuery,
+    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
     return this.family.reorderTips(member.id, id, body, locale);
   }
 
   @Patch(':id/tips/:tipId')
   @ApiOperation({ summary: 'Edit a Tip of the Family Recipe' })
-  updateTip(
+  async updateTip(
     @CurrentUser() member: CurrentUserValue,
     @TipParams() { id, tipId }: { id: string; tipId: string },
     @Body(new ZodValidationPipe(tipUpdate)) body: TipUpdate,
-    @Locale() { locale }: LocaleQuery,
+    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
     return this.family.updateTip(member.id, id, tipId, body, locale);
   }
 
@@ -268,12 +305,16 @@ export class RecipesController {
   @ApiOperation({
     summary: "Set which of the base's Recipe-level Tips this Variant hides",
   })
-  setHiddenTips(
+  async setHiddenTips(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(hiddenTipsBody)) body: HiddenTipsBody,
-    @Locale() { locale }: LocaleQuery,
+    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
     return this.family.setHiddenTips(member.id, id, body, locale);
   }
 

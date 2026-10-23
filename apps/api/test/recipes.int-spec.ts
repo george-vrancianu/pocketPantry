@@ -12,10 +12,13 @@ import {
   ingredients,
   methods,
   recipes,
+  unmatchedEntries,
   user,
 } from '../src/database/schema';
 import type {
   AdminRecipeDetail,
+  FamilyRecipeDraft,
+  FamilyRecipeEdit,
   RecipeDetail,
   RecipeFilters,
   RecipeListItem,
@@ -734,6 +737,61 @@ describe('Recipes browsing and detail (integration)', () => {
         .body as RecipeDetail;
       expect(d.title).toBe(created.title);
       expect(d.steps.map((s) => s.text)).toEqual(['Mix well']);
+    });
+
+    it('prefills a Variant draft of a Catalog Recipe in the Catalog Language', async () => {
+      const b = await translatedRecipe();
+      const { api } = await member('ro', 'draft');
+      const draft = (
+        await api.get(`/${b.id}/variant-draft?locale=en`).expect(200)
+      ).body as FamilyRecipeDraft;
+      expect(draft.title).toBe(`Titlu ro ${stamp}`);
+      expect(draft.steps.map((s) => s.text)).toEqual(['Amestecă', 'Bake']);
+    });
+
+    it('names linked Ingredients of a Family Recipe edit view in the Catalog Language, keeping its own text', async () => {
+      const { api } = await member('ro', 'edit');
+      const familyTitle = `Family dish ${stamp}-${++n}`;
+      const created = (
+        await api
+          .post('', {
+            title: familyTitle,
+            servings: 2,
+            locale: 'en',
+            parentId: null,
+            lines: [{ ingredientId: milk, quantity: 100, unit: 'ml' }],
+            steps: [{ text: 'Mix well' }],
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      expect(created.lines[0].ingredientName).toBe('Lapte');
+      const edit = (await api.get(`/${created.id}/edit?locale=en`).expect(200))
+        .body as FamilyRecipeEdit;
+      expect(edit.title).toBe(familyTitle);
+      expect(edit.steps.map((s) => s.text)).toEqual(['Mix well']);
+      expect(edit.lines[0].ingredientName).toBe('Lapte');
+    });
+
+    it('tags the Unmatched names of a new Family Recipe with the Catalog Language', async () => {
+      const { api } = await member('ro', 'unmatched');
+      const rawName = `Zmeură ${stamp}-${++n}`;
+      const created = (
+        await api
+          .post('', {
+            title: `Family dish ${stamp}-${++n}`,
+            servings: 2,
+            locale: 'en',
+            parentId: null,
+            lines: [{ rawName, quantity: 1, unit: 'pcs' }],
+            steps: [{ text: 'Mix well' }],
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      const entries = await database
+        .select({ locale: unmatchedEntries.locale })
+        .from(unmatchedEntries)
+        .where(eq(unmatchedEntries.ingredientLineId, created.lines[0].id));
+      expect(entries).toEqual([{ locale: 'ro' }]);
     });
 
     it('uses the UI Language when the Catalog Language is the empty "Same as UI Language"', async () => {

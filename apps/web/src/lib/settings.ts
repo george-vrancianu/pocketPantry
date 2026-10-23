@@ -2,8 +2,14 @@ import type { ThemeId } from '@pocket-pantry/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { apiRequest } from './api';
+import { catalogAllergensQueryKey, catalogSearchQueryKey } from './catalog';
+import { familyCatalogQueryKey } from './familyCatalog';
 import { recipesQueryKey } from './recipes';
-import { recipeMatchingQueryKeys, suggestionsQueryKey } from './queryKeys';
+import {
+  mealPlanQueryKey,
+  recipeMatchingQueryKeys,
+  suggestionsQueryKey,
+} from './queryKeys';
 import type { Locale } from '../i18n/resources';
 
 export type ExpiryOverride = {
@@ -144,15 +150,6 @@ export function useMemberPreferences() {
     retry: false,
   });
 }
-
-/** Ingredient, Category and Aisle names in these come back in the Member's Catalog Language, which their keys do not name. */
-const catalogNameQueryKeys = [
-  ['pantry'],
-  ['shopping-list'],
-  ['shopping-templates'],
-  ['staples'],
-  suggestionsQueryKey,
-] as const;
 
 /** Patches the language fields a save returned into the cache and refetches everything named in them. */
 function useApplySavedLanguages() {
@@ -326,3 +323,24 @@ export function useRemoveFamilyAllergy() {
     onSuccess: changed,
   });
 }
+
+/** Ingredient, Category and Aisle names in these come back in the Member's Catalog Language, which their keys do not name. Declared last: it reads keys defined further down. */
+const catalogNameQueryKeys = [
+  ['pantry'],
+  ['shopping-list'],
+  ['shopping-templates'],
+  ['staples'],
+  suggestionsQueryKey,
+  recipesQueryKey,
+  mealPlanQueryKey,
+  catalogSearchQueryKey,
+  ['catalog-parents'],
+  ['catalog-aisles'],
+  ['catalog-categories'],
+  catalogAllergensQueryKey,
+  familyCatalogQueryKey,
+  familySettingsQueryKey,
+  ['settings', 'categories'],
+  allergiesQueryKey,
+  familyAllergiesQueryKey,
+] as const;

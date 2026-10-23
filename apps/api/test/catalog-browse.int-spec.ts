@@ -7,6 +7,7 @@ import {
   SEED_PARENTS,
 } from '../src/catalog/seed/catalog-seed-data';
 import { seedId } from '../src/catalog/seed/seed-catalog';
+import { client, signUp } from './support/admin-session';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type Result = {
@@ -255,35 +256,17 @@ describe('Catalog browse by aisle (integration)', () => {
   describe('Catalog Language', () => {
     // A Member whose UI Language is English; the request carries locale=en as the web does.
     async function member(catalogLanguage: string | null) {
-      const response = await request(app.getHttpServer())
-        .post('/api/auth/sign-up/email')
-        .set('origin', TEST_ORIGIN)
-        .set(
-          'x-forwarded-for',
-          `10.12.${Math.floor(Date.now() % 250)}.${Math.floor(Math.random() * 250)}`,
-        )
-        .send({
-          name: 'Catalog Language Member',
-          email: `catalog-language-${Date.now()}-${Math.random()}@example.com`,
-          password: 'correct-horse-staple',
-        })
+      const memberCookie = await signUp(
+        app,
+        `catalog-language-${Date.now()}-${Math.random()}@example.com`,
+        'Catalog Language Member',
+      );
+      await client(app, memberCookie, '/api/settings')
+        .put('/preferences', { locale: 'en', catalogLanguage })
         .expect(200);
-      const memberCookie = [response.headers['set-cookie'] ?? []]
-        .flat()
-        .map((value) => value.split(';')[0])
-        .join('; ');
-      await request(app.getHttpServer())
-        .put('/api/settings/preferences')
-        .set('origin', TEST_ORIGIN)
-        .set('cookie', memberCookie)
-        .send({ locale: 'en', catalogLanguage })
-        .expect(200);
+      const api = client(app, memberCookie, '/api');
       return (path: string, query: Record<string, string>) =>
-        request(app.getHttpServer())
-          .get(`/api${path}`)
-          .query({ locale: 'en', ...query })
-          .set('origin', TEST_ORIGIN)
-          .set('cookie', memberCookie);
+        api.get(`${path}?${new URLSearchParams({ locale: 'en', ...query })}`);
     }
 
     const dairyAisle = SEED_AISLES.find((a) => a.slug === 'dairy-eggs');

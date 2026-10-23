@@ -68,7 +68,7 @@ export class CatalogController {
   @Get('parents')
   @ApiOperation({
     summary:
-      'List Parent Categories by name in the requested locale, for placing an Unmatched Batch',
+      'List Parent Categories by name in the Catalog Language, for placing an Unmatched Batch',
   })
   async parents(
     @CurrentUser() member: CurrentUserValue,
@@ -104,7 +104,7 @@ export class CatalogController {
   @Get('allergens')
   @ApiOperation({
     summary:
-      'List the Allergens a Family Ingredient can be tagged with (retired ones left out), named in the requested locale',
+      'List the Allergens a Family Ingredient can be tagged with (retired ones left out), named in the Catalog Language',
   })
   async allergens(
     @CurrentUser() member: CurrentUserValue,
@@ -122,7 +122,7 @@ export class CatalogController {
   @Get('search')
   @ApiOperation({
     summary:
-      'Search Ingredients by name or Synonym in any locale, names returned in the requested locale',
+      'Search Ingredients by name or Synonym in any language, names returned in the Catalog Language',
   })
   async search(
     @CurrentUser() member: CurrentUserValue,
