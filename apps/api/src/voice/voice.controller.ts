@@ -4,12 +4,12 @@ import type { FastifyRequest } from 'fastify';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { MemberLanguageService } from '../member-language/member-language.service';
 import { ApiException } from '../common/api-exception';
 import {
   toValidationIssues,
   ZodValidationPipe,
 } from '../common/zod-validation.pipe';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import {
   voiceApplyBody,
   type VoiceApplyBody,
@@ -102,7 +102,7 @@ export class VoiceController {
     return this.voice.read(member.id, {
       ...fields.data,
       locale: catalog,
-      uiLocale: ui,
+      uiLanguage: ui,
       audio: upload.audio.buffer,
       mimeType,
     });

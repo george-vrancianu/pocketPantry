@@ -965,6 +965,36 @@ describe('Voice Note (integration)', () => {
       expect(await queuedLocale(name)).toEqual(['ro']);
     });
 
+    it('tags an Unmatched pantry add saved from Review with the Catalog Language', async () => {
+      const { cookie, memberId } = await signUp();
+      await setLanguages(memberId, { locale: 'en', catalogLanguage: 'ro' });
+      const name = `Zorblax ${Date.now()} pantry`;
+      const response = await request(app.getHttpServer())
+        .post('/api/voice/apply')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({
+          actions: [
+            {
+              id: 'p1',
+              location: 'fridge',
+              target: 'pantry',
+              op: 'add',
+              ingredientId: null,
+              name,
+              quantity: null,
+              unit: null,
+            },
+          ],
+          locale: 'en',
+        })
+        .expect(201);
+      expect(response.body).toMatchObject({
+        applied: [{ actionId: 'p1', list: 'pantry' }],
+      });
+      expect(await queuedLocale(name)).toEqual(['ro']);
+    });
+
     it('uses the UI Language when the Catalog Language is not set', async () => {
       const { cookie, memberId } = await signUp();
       await setLanguages(memberId, { locale: 'ro', catalogLanguage: null });

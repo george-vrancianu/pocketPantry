@@ -113,10 +113,10 @@ export class AssistantService {
       const today = body.today ?? new Date().toISOString().slice(0, 10);
       const read = await this.voice.readText(member.id, {
         text: body.text,
-        // Siri dictation may be in any language, whatever the UI locale.
+        // Siri dictation may be in any language, whatever the UI Language.
         scanLanguage: null,
         locale: catalog,
-        uiLocale: locale,
+        uiLanguage: locale,
         today,
         defaultTarget: 'shopping',
       });
@@ -144,6 +144,7 @@ export class AssistantService {
               addSetsQuantity: true,
             });
       // The list keeps Catalog Language names; the reply names things in the language spoken.
+      // An Unmatched item is named by what was said (spokenName) when the reply is not in the Catalog Language.
       const nameOf = (action: Named): string =>
         action.ingredient
           ? (names.get(action.ingredient.id) ?? action.ingredient.name)

@@ -35,7 +35,7 @@ describe('buildVoiceReadRequest', () => {
     const { prompt } = buildVoiceReadRequest({
       ...input,
       locale: 'ro',
-      uiLocale: 'en',
+      uiLanguage: 'en',
     });
     expect(prompt).toContain(
       'fallbackIngredientName is a short generic ingredient name in Romanian',

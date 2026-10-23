@@ -18,7 +18,7 @@ type VoiceReadRequestInput = {
   /** The Member's Catalog Language: the language of the names the model makes up (ADR 0022). */
   locale: CatalogLocale;
   /** The UI Language, only to tell the model what the app is shown in; defaults to `locale`. */
-  uiLocale?: CatalogLocale;
+  uiLanguage?: CatalogLocale;
   today: string;
   defaultTarget: VoiceDefaultTarget;
   /** Debug capture only: shared with the recording's transcription capture. */
@@ -58,7 +58,7 @@ const defaultListRules = (defaultTarget: VoiceDefaultTarget) =>
 export function buildVoiceReadRequest(
   input: VoiceReadRequestInput,
 ): StructuredOutputRequest {
-  const uiLanguage = LANGUAGE_NAMES[input.uiLocale ?? input.locale];
+  const uiLanguage = LANGUAGE_NAMES[input.uiLanguage ?? input.locale];
   const names = (list: string[]) => [...new Set(list)].slice(0, MAX_HINT_NAMES);
   return {
     model: 'text',

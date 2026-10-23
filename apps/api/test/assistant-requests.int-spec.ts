@@ -649,13 +649,14 @@ describe('Assistant Requests (integration)', () => {
     const readingOf = (
       unmatchedName: string,
       spokenLanguage: string | null,
+      unmatchedSpokenName = unmatchedName,
     ) => ({
       actions: [
         of(milk, 'Lapte', { spokenText: 'milk', spokenName: 'Milk' }),
         model({
           spokenText: 'zorblax',
           fallbackIngredientName: unmatchedName,
-          spokenName: unmatchedName,
+          spokenName: unmatchedSpokenName,
         }),
       ],
       unsupported: [],
@@ -682,13 +683,15 @@ describe('Assistant Requests (integration)', () => {
     it('replies in the UI Language when the language spoken cannot be told, still writing in the Catalog Language', async () => {
       const ana = await memberWith('da', 'ro');
       const name = `Zorblax ${stamp} b`;
-      reading = readingOf(name, null);
+      const spoken = `Sagt ${stamp}`;
+      reading = readingOf(name, null, spoken);
       const response = await ask(ana.secret).expect(200);
       expect(reply(response).speech).toContain('Føjet til indkøbslisten');
       expect(reply(response).outcomes).toMatchObject([
         // The reply names the Ingredient in the reply language; the list keeps the Catalog Language.
         { kind: 'added', name: 'Mælk' },
-        { kind: 'addedUnmatched', name },
+        // An Unmatched item is named by what was said, not by its Catalog Language name.
+        { kind: 'addedUnmatched', name: spoken },
       ]);
       expect(await list(ana.cookie)).toMatchObject([
         { name: 'Lapte' },
