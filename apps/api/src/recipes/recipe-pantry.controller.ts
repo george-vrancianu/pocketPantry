@@ -13,6 +13,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import type {
   ShoppingListView,
   ShoppingLocaleQuery,
@@ -37,7 +38,10 @@ const IdParam = () => Param(new ZodValidationPipe(recipeIdParam));
 @UseGuards(AuthGuard)
 @Controller('recipes')
 export class RecipePantryController {
-  constructor(private readonly pantry: RecipePantryService) {}
+  constructor(
+    private readonly pantry: RecipePantryService,
+    private readonly languages: MemberLanguageService,
+  ) {}
 
   @Get(':id/pantry-match')
   @ApiOperation({
@@ -58,14 +62,19 @@ export class RecipePantryController {
     summary:
       "Add the Recipe's short and missing lines to the Shopping List, with the Recipe as Source Recipe; returns the updated list",
   })
-  addMissing(
+  async addMissing(
     @CurrentUser() member: CurrentUserValue,
     @IdParam() { id }: { id: string },
     @Query(new ZodValidationPipe(addToListQuery))
     { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addMissingBody)) body: AddMissingBody,
   ): Promise<ShoppingListView> {
-    return this.pantry.addMissing(member.id, id, body, locale);
+    return this.pantry.addMissing(
+      member.id,
+      id,
+      body,
+      await this.languages.catalogLanguageOf(member.id, locale),
+    );
   }
 
   @Post(':id/add-line')
@@ -74,13 +83,18 @@ export class RecipePantryController {
     summary:
       'Add one line of the Recipe to the Shopping List (the shortfall if short, else the whole quantity), with the Recipe as Source Recipe; returns the updated list',
   })
-  addLine(
+  async addLine(
     @CurrentUser() member: CurrentUserValue,
     @IdParam() { id }: { id: string },
     @Query(new ZodValidationPipe(addToListQuery))
     { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addLineBody)) body: AddLineBody,
   ): Promise<ShoppingListView> {
-    return this.pantry.addLine(member.id, id, body, locale);
+    return this.pantry.addLine(
+      member.id,
+      id,
+      body,
+      await this.languages.catalogLanguageOf(member.id, locale),
+    );
   }
 }

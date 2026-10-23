@@ -16,6 +16,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
@@ -68,6 +69,7 @@ export class RecipesController {
     private readonly family: FamilyRecipesService,
     private readonly cookTonight: CookTonightService,
     private readonly plate: PlateRecipesService,
+    private readonly languages: MemberLanguageService,
   ) {}
 
   @Get()
@@ -79,21 +81,28 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(browseQuery)) query: BrowseQuery,
   ): Promise<RecipeList> {
-    return this.browse.list(member.id, query);
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
+    return this.browse.list(member.id, { ...query, locale });
   }
 
   @Get('filters')
   @ApiOperation({
     summary: 'Cuisines and Methods for the filter pickers, named in the locale',
   })
-  filters(
+  async filters(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(localeQuery))
     query: {
       locale: BrowseQuery['locale'];
     },
   ): Promise<RecipeFilters> {
-    return this.browse.filters(member.id, query.locale);
+    return this.browse.filters(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id, query.locale),
+    );
   }
 
   // Declared before `:id` so it is not read as a Recipe id.
@@ -102,11 +111,15 @@ export class RecipesController {
     summary:
       'Recipes the Family Pantry can make, or is one line short of, one card per Base Recipe, best match first',
   })
-  cookTonightView(
+  async cookTonightView(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(cookTonightQuery)) query: CookTonightQuery,
   ): Promise<CookTonightView> {
-    return this.cookTonight.view(member.id, query);
+    const locale = await this.languages.catalogLanguageOf(
+      member.id,
+      query.locale,
+    );
+    return this.cookTonight.view(member.id, { ...query, locale });
   }
 
   @Post()
@@ -269,12 +282,16 @@ export class RecipesController {
     summary:
       'A Recipe with its base or Variants and, for a Variant, the ingredient diff against its base',
   })
-  detail(
+  async detail(
     @CurrentUser() member: CurrentUserValue,
     @Param(new ZodValidationPipe(recipeParam)) params: { id: string },
     @Query(new ZodValidationPipe(localeQuery))
     query: LocaleQuery,
   ): Promise<RecipeDetail> {
-    return this.browse.detail(member.id, params.id, query.locale);
+    return this.browse.detail(
+      member.id,
+      params.id,
+      await this.languages.catalogLanguageOf(member.id, query.locale),
+    );
   }
 }

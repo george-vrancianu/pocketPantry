@@ -747,4 +747,27 @@ describe('Recipe Pantry matching (integration)', () => {
       expect(await m.items()).toEqual([]);
     });
   });
+  describe('Catalog Language', () => {
+    it('adds the missing Ingredients to the Shopping List named in the Catalog Language, not the UI Language', async () => {
+      const email = `pantry-cl-${stamp}@example.com`;
+      const cookie = await signUp(app, email, 'Catalog Language');
+      await client(app, cookie, '/api/settings')
+        .put('/preferences', { locale: 'en', catalogLanguage: 'ro' })
+        .expect(200);
+      const r = await makeRecipe([
+        { ingredientId: milk, quantity: 500, unit: 'ml' },
+      ]);
+      await client(app, cookie, '/api/recipes')
+        .post(`/${r.id}/add-missing?locale=en`, { today })
+        .expect(200);
+      const list = (
+        await client(app, cookie, '/api/shopping-list')
+          .get('?locale=en')
+          .expect(200)
+      ).body as ListView;
+      expect(list.groups.flatMap((g) => g.items).map((i) => i.name)).toEqual([
+        'Lapte',
+      ]);
+    });
+  });
 });

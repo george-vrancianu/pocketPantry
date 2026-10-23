@@ -3,8 +3,12 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike, isNull } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
+import { seedId } from '../src/catalog/seed/seed-catalog';
 import {
+  batches,
+  catalogTranslations,
   cuisines,
+  eatingMoments,
   ingredients,
   methods,
   recipes,
@@ -565,6 +569,208 @@ describe('Recipes browsing and detail (integration)', () => {
       );
       expect(res.methods.find((m) => m.id === methodId)?.name).toBe(
         `Method ${stamp}`,
+      );
+    });
+  });
+  describe('Catalog Language', () => {
+    const milk = seedId.ingredient('milk');
+
+    /** A Member whose UI Language is English and whose Catalog Language is `catalogLanguage`. */
+    async function member(catalogLanguage: string | null, label: string) {
+      const email = `recipes-cl-${label}-${stamp}-${++n}@example.com`;
+      const cookie = await signUp(app, email, `Catalog Language ${label}`);
+      await client(app, cookie, '/api/settings')
+        .put('/preferences', { locale: 'en', catalogLanguage })
+        .expect(200);
+      const [row] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, email));
+      return {
+        cookie,
+        api: client(app, cookie, '/api/recipes'),
+        familyId: row.familyId,
+      };
+    }
+
+    /** A Catalog Recipe with a Romanian title, step, Tip and Cuisine, and one Romanian-named milk line. */
+    async function translatedRecipe(withTip = true) {
+      await database.insert(catalogTranslations).values({
+        id: crypto.randomUUID(),
+        entityType: 'cuisine',
+        entityId: cuisineId,
+        locale: 'ro',
+        kind: 'name',
+        value: `Bucătărie ${stamp}`,
+        normalizedValue: `bucatarie ${stamp}`,
+      });
+      const b = await base({
+        lines: [{ ingredientId: milk, quantity: 100, unit: 'ml' }],
+        cuisineId,
+      });
+      if (withTip) {
+        await admin.post(`/${b.id}/tips`, { text: 'Stir slowly' }).expect(201);
+      }
+      const tipId = withTip
+        ? ((await admin.get(`/${b.id}`).expect(200)).body as AdminRecipeDetail)
+            .tips[0].id
+        : null;
+      await admin
+        .put(`/${b.id}/translations/ro`, {
+          title: `Titlu ro ${stamp}`,
+          steps: { [b.steps[0].id]: 'Amestecă' },
+          tips: tipId ? { [tipId]: 'Amestecă încet' } : {},
+        })
+        .expect(200);
+      return b;
+    }
+
+    afterEach(async () => {
+      await database
+        .delete(catalogTranslations)
+        .where(ilike(catalogTranslations.value, `%${stamp}%`));
+    });
+
+    it('shows a Catalog Recipe in the Catalog Language in browse and detail, not the UI Language', async () => {
+      const b = await translatedRecipe();
+      const { api } = await member('ro', 'detail');
+
+      const listed = (
+        (await api.get('?locale=en&search=Titlu').expect(200)).body as {
+          recipes: RecipeListItem[];
+        }
+      ).recipes.find((r) => r.id === b.id);
+      expect(listed?.title).toBe(`Titlu ro ${stamp}`);
+      expect(listed?.cuisine?.name).toBe(`Bucătărie ${stamp}`);
+
+      const d = (await api.get(`/${b.id}?locale=en`).expect(200))
+        .body as RecipeDetail;
+      expect(d.title).toBe(`Titlu ro ${stamp}`);
+      expect(d.steps.map((s) => s.text)).toEqual(['Amestecă', 'Bake']);
+      expect(d.lines[0].ingredientName).toBe('Lapte');
+      expect(d.tips.map((t) => t.text)).toEqual(['Amestecă încet']);
+      expect(d.cuisine?.name).toBe(`Bucătărie ${stamp}`);
+    });
+
+    it('names Cuisines and Methods in the Catalog Language in the filters', async () => {
+      await translatedRecipe(false);
+      const { api } = await member('ro', 'filters');
+      const filters = (await api.get('/filters?locale=en').expect(200))
+        .body as RecipeFilters;
+      expect(filters.cuisines.find((c) => c.id === cuisineId)?.name).toBe(
+        `Bucătărie ${stamp}`,
+      );
+    });
+
+    it('names Eating Moments in the Catalog Language in the filters', async () => {
+      const momentId = crypto.randomUUID();
+      await database.insert(eatingMoments).values({
+        id: momentId,
+        name: `Brunch ${stamp}`,
+        normalizedName: `brunch ${stamp}`,
+        sortOrder: 2000,
+      });
+      await database.insert(catalogTranslations).values({
+        id: crypto.randomUUID(),
+        entityType: 'eating_moment',
+        entityId: momentId,
+        locale: 'ro',
+        kind: 'name',
+        value: `Gustare ${stamp}`,
+        normalizedValue: `gustare ${stamp}`,
+      });
+      try {
+        const { api } = await member('ro', 'moments');
+        const filters = (await api.get('/filters?locale=en').expect(200))
+          .body as RecipeFilters;
+        expect(filters.eatingMoments.find((m) => m.id === momentId)?.name).toBe(
+          `Gustare ${stamp}`,
+        );
+        const english = await member('en', 'moments-en');
+        const filtersEn = (
+          await english.api.get('/filters?locale=ro').expect(200)
+        ).body as RecipeFilters;
+        expect(
+          filtersEn.eatingMoments.find((m) => m.id === momentId)?.name,
+        ).toBe(`Brunch ${stamp}`);
+      } finally {
+        await database
+          .delete(eatingMoments)
+          .where(eq(eatingMoments.id, momentId));
+      }
+    });
+
+    it('falls back to the source text for a field with no translation', async () => {
+      const b = await base({
+        lines: [{ ingredientId: milk, quantity: 100, unit: 'ml' }],
+      });
+      await admin
+        .put(`/${b.id}/translations/ro`, {
+          steps: { [b.steps[0].id]: 'Amestecă' },
+        })
+        .expect(200);
+      const { api } = await member('ro', 'fallback');
+      const d = (await api.get(`/${b.id}?locale=en`).expect(200))
+        .body as RecipeDetail;
+      expect(d.title).toBe(b.title);
+      expect(d.steps.map((s) => s.text)).toEqual(['Amestecă', 'Bake']);
+    });
+
+    it('returns a Family Recipe as written whatever the Catalog Language', async () => {
+      const { api } = await member('ro', 'family');
+      const created = (
+        await api
+          .post('', {
+            title: `Family dish ${stamp}-${++n}`,
+            servings: 2,
+            locale: 'en',
+            parentId: null,
+            lines: [{ ingredientId: milk, quantity: 100, unit: 'ml' }],
+            steps: [{ text: 'Mix well' }],
+          })
+          .expect(201)
+      ).body as { id: string; title: string };
+      const d = (await api.get(`/${created.id}?locale=en`).expect(200))
+        .body as RecipeDetail;
+      expect(d.title).toBe(created.title);
+      expect(d.steps.map((s) => s.text)).toEqual(['Mix well']);
+    });
+
+    it('uses the UI Language when the Catalog Language is the empty "Same as UI Language"', async () => {
+      const b = await translatedRecipe(false);
+      const { api, cookie } = await member(null, 'same');
+      const english = (await api.get(`/${b.id}?locale=en`).expect(200))
+        .body as RecipeDetail;
+      expect(english.title).toBe(b.title);
+      await client(app, cookie, '/api/settings')
+        .put('/preferences', { locale: 'ro' })
+        .expect(200);
+      const romanian = (await api.get(`/${b.id}?locale=en`).expect(200))
+        .body as RecipeDetail;
+      expect(romanian.title).toBe(`Titlu ro ${stamp}`);
+    });
+
+    it('names Cook tonight cards in the Catalog Language', async () => {
+      const b = await translatedRecipe(false);
+      const { api, familyId } = await member('ro', 'cook');
+      const [{ leaf }] = await database
+        .select({ leaf: ingredients.leafCategoryId })
+        .from(ingredients)
+        .where(eq(ingredients.id, milk));
+      await database.insert(batches).values({
+        familyId,
+        ingredientId: milk,
+        leafCategoryId: leaf,
+        location: 'fridge',
+        quantity: 1000,
+        unit: 'ml',
+        expiryDate: '2099-01-01',
+      });
+      const view = (
+        await api.get('/cook-tonight?locale=en&today=2030-01-10').expect(200)
+      ).body as { cards: { base: { id: string; title: string } }[] };
+      expect(view.cards.find((c) => c.base.id === b.id)?.base.title).toBe(
+        `Titlu ro ${stamp}`,
       );
     });
   });
