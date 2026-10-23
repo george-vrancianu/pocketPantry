@@ -198,18 +198,19 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
   });
 
-  it('remembers a pick on the device across closing and reopening the overlay', async () => {
+  it('starts again at the Scan Language preference when the overlay is reopened', async () => {
     const user = userEvent.setup();
-    stubProductScan(() => Response.json({ lines: [line()] }));
+    stubProductScan(() => Response.json({ lines: [line()] }), 'ro');
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
+    await vi.waitFor(() => expect(languageChip()).toHaveTextContent('RO'));
     await pickScanLanguage('Dansk');
     expect(languageChip()).toHaveTextContent('DA');
     await user.keyboard('{Escape}');
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
     await user.click(cameraButton());
-    expect(languageChip()).toHaveTextContent('DA');
+    expect(languageChip()).toHaveTextContent('RO');
   });
 
   it('drops a photo still being prepared when the overlay is cancelled', async () => {
