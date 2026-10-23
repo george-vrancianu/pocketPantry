@@ -58,7 +58,7 @@ export type ScanScreenModes = {
 export function useScanScreen(config: ScanScreenModes = {}) {
   const modes = config.modes ?? CAMERA_MODES;
   const remembersMode = config.rememberMode ?? true;
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
@@ -80,11 +80,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   }, [mode, remembersMode]);
 
   const camera = useCamera();
-  const {
-    locale,
-    scanLanguage,
-    setOverride: overrideScanLanguage,
-  } = useSessionScanLanguage();
+  const { scanLanguage, setOverride: overrideScanLanguage } =
+    useSessionScanLanguage();
   const previousMode = useRef(mode);
   /**
    * Bumped whenever what a photo being prepared was meant for goes away (mode change, Scan Session
@@ -215,7 +212,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
       },
     });
     cardAdded.current?.(image, mode);
-    readScans(i18n.language);
+    readScans();
     // The full frame, before it was resized for the read: barcodes need the resolution.
     if (mode === 'product')
       decodePhotoBarcode(id, frame, (photo) => readBarcode(photo));
@@ -251,7 +248,6 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     importPhotos(picked, {
       mode: scanModeOf(mode),
       scanLanguage,
-      uiLanguage: i18n.language,
       onFull: warnSessionFull,
       onInvalid: () => setLocalError('scan.image_invalid'),
     });
@@ -302,7 +298,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     setBarcodesRead((n) => n + 1);
     cardAdded.current?.(thumbnail, 'barcode');
     // The lookup starts at once, outside the read slots.
-    readScans(i18n.language);
+    readScans();
   };
   const onCode = useRef(acceptCode);
   useLayoutEffect(() => {
@@ -341,7 +337,6 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   return {
     modes,
     mode,
-    uiLocale: locale,
     scanLanguage,
     /** A pick on the screen: for the rest of the Scan Session only (never the preference). */
     pickScanLanguage: (language: ScanLanguage) => {

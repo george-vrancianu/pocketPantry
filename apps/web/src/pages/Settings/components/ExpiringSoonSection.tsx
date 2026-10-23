@@ -46,11 +46,11 @@ const stepperButton = {
  * save lands, so taps move the value and the preview at once, and one save follows the last tap.
  */
 export function ExpiringSoonSection() {
-  const { t, i18n } = useTranslation('settings');
+  const { t } = useTranslation('settings');
   const id = useId();
   const toast = useToast();
   const today = useToday();
-  const settings = useFamilySettings(i18n.language);
+  const settings = useFamilySettings();
   const save = useSetStaleThreshold();
   const saved = settings.data?.staleThresholdDays;
 

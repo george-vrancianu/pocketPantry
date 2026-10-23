@@ -9,6 +9,7 @@ import {
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { client, signUp } from './support/admin-session';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 type Result = {
   id: string;
@@ -57,16 +58,17 @@ describe('Catalog browse by aisle (integration)', () => {
       .set('origin', TEST_ORIGIN)
       .set('cookie', cookie);
 
+  // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
   async function search(query: Record<string, string>): Promise<Result[]> {
-    const response = await get('/catalog/search', query).expect(200);
+    const { locale, ...rest } = query;
+    await storeUiLanguage(app, cookie, locale ?? 'en');
+    const response = await get('/catalog/search', rest).expect(200);
     return (response.body as { results: Result[] }).results;
   }
 
   async function aisleList(locale?: string): Promise<AisleListing[]> {
-    const response = await get(
-      '/catalog/aisles',
-      locale ? { locale } : {},
-    ).expect(200);
+    await storeUiLanguage(app, cookie, locale ?? 'en');
+    const response = await get('/catalog/aisles', {}).expect(200);
     return (response.body as { aisles: AisleListing[] }).aisles;
   }
 

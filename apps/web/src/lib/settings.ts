@@ -58,16 +58,12 @@ export type MemberPreferences = {
 };
 
 export const preferencesQueryKey = ['settings', 'preferences'] as const;
-/** Family Settings in every locale; add the locale for one query. */
 export const familySettingsQueryKey = ['settings', 'family'] as const;
 
-const localeParams = (locale: string) => new URLSearchParams({ locale });
-
-export function useFamilySettings(locale: string) {
+export function useFamilySettings() {
   return useQuery({
-    queryKey: [...familySettingsQueryKey, locale],
-    queryFn: () =>
-      apiRequest<FamilySettings>(`/settings/family?${localeParams(locale)}`),
+    queryKey: familySettingsQueryKey,
+    queryFn: () => apiRequest<FamilySettings>('/settings/family'),
   });
 }
 
@@ -75,20 +71,18 @@ export function useFamilySettings(locale: string) {
 const DEFAULT_STALE_THRESHOLD_DAYS = 3;
 
 /** The Family's Stale Threshold, which colours every expiry tag. Changing it re-colours them on the next render. */
-export function useStaleThresholdDays(locale: string): number {
+export function useStaleThresholdDays(): number {
   return (
-    useFamilySettings(locale).data?.staleThresholdDays ??
-    DEFAULT_STALE_THRESHOLD_DAYS
+    useFamilySettings().data?.staleThresholdDays ?? DEFAULT_STALE_THRESHOLD_DAYS
   );
 }
 
-export function useCategoryOptions(locale: string) {
+const categoryOptionsQueryKey = ['settings', 'categories'] as const;
+
+export function useCategoryOptions() {
   return useQuery({
-    queryKey: ['settings', 'categories', locale],
-    queryFn: () =>
-      apiRequest<CategoryOptions>(
-        `/settings/categories?${localeParams(locale)}`,
-      ),
+    queryKey: categoryOptionsQueryKey,
+    queryFn: () => apiRequest<CategoryOptions>('/settings/categories'),
     staleTime: 5 * 60_000,
   });
 }
@@ -142,27 +136,27 @@ export function useRemoveExpiryOverride() {
   });
 }
 
-/**
- * The Member's Preferences. The device's UI Language goes along as `locale`, the way Pantry and Shopping
- * send it, so `effectiveCatalogLanguage` is right while no UI Language is stored (ticket 475 removes both).
- * `ApplyMemberLocale` refetches when the UI Language changes.
- */
+/** The Member's Preferences. The API works the effective languages out from what is stored, so nothing about the device goes along. */
 export function useMemberPreferences() {
-  const { i18n } = useTranslation();
   return useQuery({
     queryKey: preferencesQueryKey,
-    queryFn: () =>
-      apiRequest<MemberPreferences>(
-        `/settings/preferences?${localeParams(i18n.resolvedLanguage ?? i18n.language)}`,
-      ),
+    queryFn: () => apiRequest<MemberPreferences>('/settings/preferences'),
     retry: false,
   });
 }
 
-/** Patches the language fields a save returned into the cache and refetches everything named in them. */
+/**
+ * Patches the language fields a save returned into the cache. Names come back in the Catalog Language, which
+ * the query keys do not name, so they refetch when the effective one changed (a Scan or Spoken Language save
+ * leaves it alone).
+ */
 function useApplySavedLanguages() {
   const queryClient = useQueryClient();
   return (saved: MemberPreferences) => {
+    const before =
+      queryClient.getQueryData<MemberPreferences>(
+        preferencesQueryKey,
+      )?.effectiveCatalogLanguage;
     // Only the language fields; a Theme save may have landed meanwhile.
     queryClient.setQueryData<MemberPreferences>(preferencesQueryKey, (old) =>
       old
@@ -178,6 +172,7 @@ function useApplySavedLanguages() {
           }
         : saved,
     );
+    if (before === saved.effectiveCatalogLanguage) return undefined;
     return Promise.all(
       catalogNameQueryKeys.map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
@@ -186,56 +181,74 @@ function useApplySavedLanguages() {
   };
 }
 
+const putLocale = (locale: Locale) =>
+  apiRequest<MemberPreferences>('/settings/preferences', {
+    method: 'PUT',
+    body: { locale },
+  });
+
 export function useSaveLocale() {
   const apply = useApplySavedLanguages();
   return useMutation({
-    mutationFn: (locale: Locale) =>
-      apiRequest<MemberPreferences>(
-        `/settings/preferences?${localeParams(locale)}`,
-        { method: 'PUT', body: { locale } },
-      ),
+    mutationFn: putLocale,
     onSuccess: apply,
+  });
+}
+
+/**
+ * Saves the UI Language being shown, once, when the Member has none stored (sign-in). If the Member picked
+ * another one while this was in flight (its save already landed, or the UI has moved off the language sent),
+ * the reply is dropped so it cannot put the old language back.
+ */
+export function useSaveInitialLocale() {
+  const { i18n } = useTranslation();
+  const queryClient = useQueryClient();
+  const apply = useApplySavedLanguages();
+  return useMutation({
+    mutationFn: putLocale,
+    onSuccess: (saved, sent) =>
+      queryClient.getQueryData<MemberPreferences>(preferencesQueryKey)
+        ?.locale || (i18n.resolvedLanguage ?? i18n.language) !== sent
+        ? undefined
+        : apply(saved),
   });
 }
 
 /** Saves the Catalog Language; `null` is "Same as UI Language". */
 export function useSaveCatalogLanguage() {
-  const { i18n } = useTranslation();
   const apply = useApplySavedLanguages();
   return useMutation({
     mutationFn: (catalogLanguage: Locale | null) =>
-      apiRequest<MemberPreferences>(
-        `/settings/preferences?${localeParams(i18n.resolvedLanguage ?? i18n.language)}`,
-        { method: 'PUT', body: { catalogLanguage } },
-      ),
+      apiRequest<MemberPreferences>('/settings/preferences', {
+        method: 'PUT',
+        body: { catalogLanguage },
+      }),
     onSuccess: apply,
   });
 }
 
 /** Saves the Scan Language; `null` is "Same as UI Language". */
 export function useSaveScanLanguage() {
-  const { i18n } = useTranslation();
   const apply = useApplySavedLanguages();
   return useMutation({
     mutationFn: (scanLanguage: ScanLanguage | null) =>
-      apiRequest<MemberPreferences>(
-        `/settings/preferences?${localeParams(i18n.resolvedLanguage ?? i18n.language)}`,
-        { method: 'PUT', body: { scanLanguage } },
-      ),
+      apiRequest<MemberPreferences>('/settings/preferences', {
+        method: 'PUT',
+        body: { scanLanguage },
+      }),
     onSuccess: apply,
   });
 }
 
 /** Saves the Spoken Language; `null` is "Same as UI Language". */
 export function useSaveSpokenLanguage() {
-  const { i18n } = useTranslation();
   const apply = useApplySavedLanguages();
   return useMutation({
     mutationFn: (spokenLanguage: ScanLanguage | null) =>
-      apiRequest<MemberPreferences>(
-        `/settings/preferences?${localeParams(i18n.resolvedLanguage ?? i18n.language)}`,
-        { method: 'PUT', body: { spokenLanguage } },
-      ),
+      apiRequest<MemberPreferences>('/settings/preferences', {
+        method: 'PUT',
+        body: { spokenLanguage },
+      }),
     onSuccess: apply,
   });
 }
@@ -275,25 +288,24 @@ export type Allergies = {
 
 export const allergiesQueryKey = ['settings', 'allergies'] as const;
 
-export function useAllergies(locale: string) {
+export function useAllergies() {
   return useQuery({
-    queryKey: [...allergiesQueryKey, locale],
-    queryFn: () =>
-      apiRequest<Allergies>(`/settings/allergies?${localeParams(locale)}`),
+    queryKey: allergiesQueryKey,
+    queryFn: () => apiRequest<Allergies>('/settings/allergies'),
   });
 }
 
 /** Replaces the Member's own Allergies. Every Recipe's Allergy Warning depends on them. */
-export function useSaveAllergies(locale: string) {
+export function useSaveAllergies() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (allergenIds: string[]) =>
-      apiRequest<Allergies>(`/settings/allergies?${localeParams(locale)}`, {
+      apiRequest<Allergies>('/settings/allergies', {
         method: 'PUT',
         body: { allergenIds },
       }),
     onSuccess: (saved) => {
-      queryClient.setQueryData([...allergiesQueryKey, locale], saved);
+      queryClient.setQueryData(allergiesQueryKey, saved);
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: allergiesQueryKey }),
         queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
@@ -321,13 +333,10 @@ export const familyAllergiesQueryKey = [
   'family-allergies',
 ] as const;
 
-export function useFamilyAllergies(locale: string) {
+export function useFamilyAllergies() {
   return useQuery({
-    queryKey: [...familyAllergiesQueryKey, locale],
-    queryFn: () =>
-      apiRequest<FamilyAllergies>(
-        `/settings/family-allergies?${localeParams(locale)}`,
-      ),
+    queryKey: familyAllergiesQueryKey,
+    queryFn: () => apiRequest<FamilyAllergies>('/settings/family-allergies'),
   });
 }
 
@@ -341,14 +350,14 @@ function useChangedFamilyAllergies() {
     ]);
 }
 
-export function useAddFamilyAllergy(locale: string) {
+export function useAddFamilyAllergy() {
   const changed = useChangedFamilyAllergies();
   return useMutation({
     mutationFn: (body: { allergenId: string; label: string | null }) =>
-      apiRequest<FamilyAllergy>(
-        `/settings/family-allergies?${localeParams(locale)}`,
-        { method: 'POST', body },
-      ),
+      apiRequest<FamilyAllergy>('/settings/family-allergies', {
+        method: 'POST',
+        body,
+      }),
     onSuccess: changed,
   });
 }
@@ -380,7 +389,7 @@ const catalogNameQueryKeys = [
   catalogAllergensQueryKey,
   familyCatalogQueryKey,
   familySettingsQueryKey,
-  ['settings', 'categories'],
+  categoryOptionsQueryKey,
   allergiesQueryKey,
   familyAllergiesQueryKey,
 ] as const;

@@ -20,7 +20,7 @@ import {
 } from './voice-catalog';
 import { ingredientUnit, storageLocation } from '../../database/schema';
 
-/** What a case exercises; the seed set must cover each one in every Scan Language. */
+/** What a case exercises; the seed set must cover each one in every Spoken Language. */
 export const CASE_TAGS = [
   'basic',
   'filler',
@@ -67,8 +67,8 @@ export const voiceCaseSchema = z
   .object({
     id: z.string().min(1),
     /** The language the note is spoken in. */
-    scanLanguage: z.enum(SCAN_LANGUAGES),
-    /** The app's language; defaults to the Scan Language. */
+    spokenLanguage: z.enum(SCAN_LANGUAGES),
+    /** The app's language; defaults to the Spoken Language. */
     locale: z.enum(CATALOG_LOCALES).optional(),
     tags: z.array(z.enum(CASE_TAGS)).min(1),
     /** What was said. For a recording this is the correct transcript, typed by hand. */
@@ -86,7 +86,7 @@ export const voiceCaseSchema = z
       unsupported: z.number().int().nonnegative().default(0),
     }),
   })
-  .transform((c) => ({ ...c, locale: c.locale ?? c.scanLanguage }));
+  .transform((c) => ({ ...c, locale: c.locale ?? c.spokenLanguage }));
 export type VoiceCase = z.infer<typeof voiceCaseSchema>;
 
 export const voiceCaseFileSchema = z.object({

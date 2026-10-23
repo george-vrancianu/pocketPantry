@@ -90,6 +90,5 @@ describe('Scan Language chip in the top bar', () => {
     await screen.findByRole('button', { name: /Save 1 item/ });
     const scan = calls.find((c) => c.key === 'POST /api/scan/product');
     expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBe('ro');
-    expect(new URLSearchParams(scan?.search).get('locale')).toBe('en');
   });
 });

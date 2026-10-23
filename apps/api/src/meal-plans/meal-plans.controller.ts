@@ -72,7 +72,7 @@ export class MealPlansController {
     return this.plans.create(
       member.id,
       body,
-      await this.languages.catalogLanguageOf(member.id, q.locale),
+      await this.languages.catalogLanguageOf(member.id),
       q.today,
     );
   }
@@ -88,7 +88,7 @@ export class MealPlansController {
   ): Promise<MealWindowView> {
     return this.plans.window(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, q.locale),
+      await this.languages.catalogLanguageOf(member.id),
       q.today,
     );
   }
@@ -106,7 +106,7 @@ export class MealPlansController {
     return this.plans.addMissing(
       member.id,
       body,
-      await this.languages.catalogLanguageOf(member.id, q.locale),
+      await this.languages.catalogLanguageOf(member.id),
       q.today,
     );
   }
@@ -121,7 +121,7 @@ export class MealPlansController {
     return this.plans.get(
       member.id,
       id,
-      await this.languages.catalogLanguageOf(member.id, q.locale),
+      await this.languages.catalogLanguageOf(member.id),
       q.today,
     );
   }
@@ -140,7 +140,7 @@ export class MealPlansController {
       member.id,
       id,
       body,
-      await this.languages.catalogLanguageOf(member.id, q.locale),
+      await this.languages.catalogLanguageOf(member.id),
       q.today,
     );
   }
@@ -169,7 +169,7 @@ export class MealPlansController {
       member.id,
       params,
       body,
-      await this.languages.catalogLanguageOf(member.id, q.locale),
+      await this.languages.catalogLanguageOf(member.id),
       q.today,
     );
   }
@@ -200,7 +200,7 @@ export class MealPlansController {
       member.id,
       id,
       body,
-      await this.languages.catalogLanguageOf(member.id, q.locale),
+      await this.languages.catalogLanguageOf(member.id),
       q.today,
     );
   }

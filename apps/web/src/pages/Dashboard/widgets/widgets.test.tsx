@@ -511,7 +511,7 @@ describe('CookTonightWidget', () => {
     ).toBeInTheDocument();
   });
 
-  it('asks the API with the locale and today', async () => {
+  it('asks the API for today', async () => {
     const { fetchMock, calls } = stubApi(cookTonight([]));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -520,7 +520,6 @@ describe('CookTonightWidget', () => {
     await screen.findByText(/Nothing to cook/);
     const search = new URLSearchParams(calls[0]?.search);
     expect(calls[0]?.key).toBe('GET /api/recipes/cook-tonight');
-    expect(search.get('locale')).toBe('en');
     expect(search.get('today')).toBe(isoIn(0));
   });
 

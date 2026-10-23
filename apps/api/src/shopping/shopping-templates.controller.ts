@@ -17,10 +17,8 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { MemberLanguageService } from '../member-language/member-language.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
-  shoppingLocaleQuery,
-  shoppingLocaleTodayQuery,
-  type ShoppingLocaleQuery,
-  type ShoppingLocaleTodayQuery,
+  shoppingTodayQuery,
+  type ShoppingTodayQuery,
 } from './shopping.schemas';
 import {
   createTemplateBody,
@@ -35,8 +33,7 @@ import {
 } from './shopping-templates.schemas';
 import { ShoppingTemplatesService } from './shopping-templates.service';
 
-const localeQuery = new ZodValidationPipe(shoppingLocaleQuery);
-const getQuery = new ZodValidationPipe(shoppingLocaleTodayQuery);
+const getQuery = new ZodValidationPipe(shoppingTodayQuery);
 const idParam = new ZodValidationPipe(templateIdParam);
 
 /** Every route works on the signed-in Member's Family Templates. */
@@ -53,11 +50,10 @@ export class ShoppingTemplatesController {
   @ApiOperation({ summary: "List the Family's Shopping Templates" })
   async list(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
   ): Promise<{ templates: TemplateSummaryView[] }> {
     return this.templates.list(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -65,13 +61,12 @@ export class ShoppingTemplatesController {
   @ApiOperation({ summary: 'Create a Shopping Template from scratch' })
   async create(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(createTemplateBody)) body: CreateTemplateBody,
   ): Promise<TemplateView> {
     return this.templates.create(
       member.id,
       body,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -81,14 +76,13 @@ export class ShoppingTemplatesController {
   })
   async createFromList(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(createTemplateFromListBody))
     body: CreateTemplateFromListBody,
   ): Promise<TemplateView> {
     return this.templates.createFromList(
       member.id,
       body.name,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -99,13 +93,13 @@ export class ShoppingTemplatesController {
   })
   async get(
     @CurrentUser() member: CurrentUserValue,
-    @Query(getQuery) { locale, today }: ShoppingLocaleTodayQuery,
+    @Query(getQuery) { today }: ShoppingTodayQuery,
     @Param(idParam) { id }: { id: string },
   ): Promise<TemplateView> {
     return this.templates.get(
       member.id,
       id,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
       today,
     );
   }
@@ -114,7 +108,6 @@ export class ShoppingTemplatesController {
   @ApiOperation({ summary: 'Rename a Shopping Template or replace its lines' })
   async update(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Param(idParam) { id }: { id: string },
     @Body(new ZodValidationPipe(updateTemplateBody)) body: UpdateTemplateBody,
   ): Promise<TemplateView> {
@@ -122,7 +115,7 @@ export class ShoppingTemplatesController {
       member.id,
       id,
       body,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 

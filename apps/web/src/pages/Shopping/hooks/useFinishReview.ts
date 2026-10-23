@@ -41,8 +41,8 @@ const usualDaysOf = (line: FinishProposalLine, today: Date): number | null =>
 
 /** Review state for Finish Shopping: proposed Batches the Member can edit or drop before confirming. */
 export function useFinishReview({ onDone }: { onDone: () => void }) {
-  const { t, i18n } = useTranslation();
-  const proposal = useFinishProposal(i18n.language);
+  const { t } = useTranslation();
+  const proposal = useFinishProposal();
   const finish = useFinishShopping();
   const queryClient = useQueryClient();
   const [edits, setEdits] = useState<Record<string, Partial<ReviewEdit>>>({});

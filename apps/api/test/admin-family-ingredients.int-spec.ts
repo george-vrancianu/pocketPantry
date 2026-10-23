@@ -105,7 +105,11 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
     leafCategoryId = GROUND_SPICES,
     locale = 'en',
   ): Promise<Made> {
-    const res = await who.post(`/catalog/family-ingredients?locale=${locale}`, {
+    // A signed-in request's `?locale=` is ignored: the Member's stored languages decide.
+    await who
+      .put('/settings/preferences', { locale, catalogLanguage: locale })
+      .expect(200);
+    const res = await who.post('/catalog/family-ingredients', {
       name,
       leafCategoryId,
       defaultUnit: 'g',

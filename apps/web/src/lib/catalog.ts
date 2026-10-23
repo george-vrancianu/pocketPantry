@@ -39,14 +39,14 @@ export const catalogSearchQueryKey = ['catalog-search'] as const;
 
 export type CatalogParent = { id: string; name: string };
 
-/** The Catalog's Parent Categories by name in `locale`; `enabled` holds the request back until a screen needs it. */
-export function useCatalogParents(locale: string, enabled = true) {
+/** The Catalog's Parent Categories by name; `enabled` holds the request back until a screen needs it. */
+export function useCatalogParents(enabled = true) {
   return useQuery({
-    queryKey: ['catalog-parents', locale],
+    queryKey: ['catalog-parents'],
     queryFn: () =>
-      apiRequest<{ parents: CatalogParent[] }>(
-        `/catalog/parents?${new URLSearchParams({ locale })}`,
-      ).then((body) => body.parents),
+      apiRequest<{ parents: CatalogParent[] }>('/catalog/parents').then(
+        (body) => body.parents,
+      ),
     enabled,
     staleTime: 5 * 60_000,
   });
@@ -63,15 +63,14 @@ export type CatalogAisle = {
 
 /** The Aisles in shop order with their Parent Categories, for Browse by aisle. */
 export function useCatalogAisles(
-  locale: string,
   scope: CatalogScopeName = 'family',
   enabled = true,
 ) {
   return useQuery({
-    queryKey: ['catalog-aisles', locale, scope],
+    queryKey: ['catalog-aisles', scope],
     enabled,
     queryFn: () => {
-      const params = new URLSearchParams({ locale });
+      const params = new URLSearchParams();
       if (scope === 'shared') params.set('scope', 'shared');
       return apiRequest<{ aisles: CatalogAisle[] }>(
         `/catalog/aisles?${params}`,
@@ -89,13 +88,12 @@ const aisleOfKey = (key: readonly unknown[]) =>
   (key.at(-1) as { aisleId: string }).aisleId;
 
 /**
- * Catalog search, with names in `locale`. Idle for a blank query unless
+ * Catalog search. Idle for a blank query unless
  * `within` names an Aisle, which then lists it A to Z. `shared` searches the
  * shared Catalog only (Admin); `family` adds the Family's own.
  */
 export function useCatalogSearch(
   query: string,
-  locale: string,
   scope: CatalogScopeName = 'family',
   within: SearchWithin | null = null,
 ) {
@@ -105,13 +103,12 @@ export function useCatalogSearch(
   const result = useQuery({
     queryKey: [
       ...catalogSearchQueryKey,
-      locale,
       scope,
       debounced,
       { aisleId, parentCategoryId },
     ],
     queryFn: () => {
-      const params = new URLSearchParams({ q: debounced, locale });
+      const params = new URLSearchParams({ q: debounced });
       if (scope === 'shared') params.set('scope', 'shared');
       if (aisleId) params.set('aisleId', aisleId);
       if (parentCategoryId) params.set('parentCategoryId', parentCategoryId);
@@ -148,20 +145,16 @@ export type CatalogCategory = {
 };
 
 /**
- * Leaf Categories matching `query` in `locale` (an empty query offers Other
+ * Leaf Categories matching `query` (an empty query offers Other
  * only). Held back until `enabled`, so a closed form makes no request.
  */
-export function useCatalogCategories(
-  query: string,
-  locale: string,
-  enabled = true,
-) {
+export function useCatalogCategories(query: string, enabled = true) {
   const debounced = useDebounced(query.trim(), 150);
   const result = useQuery({
-    queryKey: ['catalog-categories', locale, debounced],
+    queryKey: ['catalog-categories', debounced],
     queryFn: () =>
       apiRequest<{ categories: CatalogCategory[] }>(
-        `/catalog/categories?${new URLSearchParams({ q: debounced, locale })}`,
+        `/catalog/categories?${new URLSearchParams({ q: debounced })}`,
       ).then((body) => body.categories),
     enabled,
     placeholderData: (previous) => previous,
@@ -187,30 +180,30 @@ export type CatalogAllergen = { id: string; name: string };
 export const catalogAllergensQueryKey = ['catalog-allergens'] as const;
 
 /** The Allergens on offer for tagging (retired ones left out), in the Admin-curated order. */
-export function useAllergenOptions(locale: string) {
+export function useAllergenOptions() {
   return useQuery({
-    queryKey: [...catalogAllergensQueryKey, locale],
+    queryKey: catalogAllergensQueryKey,
     queryFn: () =>
-      apiRequest<{ allergens: CatalogAllergen[] }>(
-        `/catalog/allergens?${new URLSearchParams({ locale })}`,
-      ).then((body) => body.allergens),
+      apiRequest<{ allergens: CatalogAllergen[] }>('/catalog/allergens').then(
+        (body) => body.allergens,
+      ),
     staleTime: 5 * 60_000,
   });
 }
 
 /**
- * Adds a Family Ingredient (named in `locale`, the locale it was typed in).
+ * Adds a Family Ingredient.
  * A name that is taken fails with `catalog.family_ingredient_exists` and the
  * existing result in `params.existing`.
  */
-export function useCreateFamilyIngredient(locale: string) {
+export function useCreateFamilyIngredient() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: FamilyIngredientInput) =>
-      apiRequest<CatalogSearchResult>(
-        `/catalog/family-ingredients?${new URLSearchParams({ locale })}`,
-        { method: 'POST', body: input },
-      ),
+      apiRequest<CatalogSearchResult>('/catalog/family-ingredients', {
+        method: 'POST',
+        body: input,
+      }),
     // The Family's Unmatched items of this name were relinked to it as well.
     onSuccess: () =>
       Promise.all(
@@ -224,13 +217,13 @@ export function useCreateFamilyIngredient(locale: string) {
 export type FamilySynonymInput = { name: string; ingredientId: string };
 
 /** Alias-picker search: the Family's Catalog, a handful of rows (no scope, no Aisle). */
-export function useAliasSearch(query: string, locale: string) {
+export function useAliasSearch(query: string) {
   const debounced = useDebounced(query.trim(), 150);
   const result = useQuery({
-    queryKey: [...catalogSearchQueryKey, 'alias', locale, debounced],
+    queryKey: [...catalogSearchQueryKey, 'alias', debounced],
     queryFn: () =>
       apiRequest<{ results: CatalogSearchResult[] }>(
-        `/catalog/search?${new URLSearchParams({ q: debounced, locale, limit: '5' })}`,
+        `/catalog/search?${new URLSearchParams({ q: debounced, limit: '5' })}`,
       ).then((body) => body.results),
     enabled: debounced.length > 0,
     placeholderData: (previous) => previous,
@@ -244,18 +237,17 @@ export function useAliasSearch(query: string, locale: string) {
 }
 
 /**
- * Declares a name another name for an Ingredient, for the Family (named in
- * `locale`, the Member's UI locale). A name that already means it fails with
+ * Declares a name another name for an Ingredient, for the Family. A name that already means it fails with
  * `catalog.family_synonym_exists` and the Ingredient in `params.existing`.
  */
-export function useCreateFamilySynonym(locale: string) {
+export function useCreateFamilySynonym() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: FamilySynonymInput) =>
-      apiRequest<CatalogSearchResult>(
-        `/catalog/family-synonyms?${new URLSearchParams({ locale })}`,
-        { method: 'POST', body: input },
-      ),
+      apiRequest<CatalogSearchResult>('/catalog/family-synonyms', {
+        method: 'POST',
+        body: input,
+      }),
     // The Family's Unmatched items of this name were relinked to it.
     onSuccess: () =>
       Promise.all(

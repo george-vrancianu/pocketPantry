@@ -24,16 +24,16 @@ function stubYou(
           role: member.role,
         },
       }),
-    // Like the API: with no stored UI Language, the request's `locale` is the UI Language.
-    'GET /api/settings/preferences': (url) =>
+    // Like the API with nothing stored: English everywhere.
+    'GET /api/settings/preferences': () =>
       Response.json({
         locale: null,
         catalogLanguage: null,
-        effectiveCatalogLanguage: url.searchParams.get('locale'),
+        effectiveCatalogLanguage: 'en',
         scanLanguage: null,
-        effectiveScanLanguage: url.searchParams.get('locale'),
+        effectiveScanLanguage: 'en',
         spokenLanguage: null,
-        effectiveSpokenLanguage: url.searchParams.get('locale'),
+        effectiveSpokenLanguage: 'en',
         theme: null,
       }),
     // Allergen names come back in the saved Catalog Language, like the API.
@@ -44,12 +44,12 @@ function stubYou(
         ],
         allergenIds: [],
       }),
-    'PUT /api/settings/preferences': (url) => {
+    'PUT /api/settings/preferences': () => {
       const body = calls.at(-1)?.body as Record<string, unknown>;
       if ('catalogLanguage' in body) {
         catalogLanguage = body.catalogLanguage as string | null;
       }
-      const uiLanguage = url.searchParams.get('locale');
+      const uiLanguage = 'en';
       return saveLocale.ok
         ? Response.json(
             'locale' in body
@@ -180,17 +180,6 @@ describe('Settings You tab', () => {
       expect(screen.getByText(/Shown in English/)).toBeInTheDocument();
     });
 
-    it('follows the device language while no UI Language is stored', async () => {
-      stubSystemScheme(false);
-      stubYou();
-      renderWithProviders(<SettingsPage />, {
-        route: '/settings',
-        locale: 'ro',
-      });
-
-      expect(await screen.findByText(/Afișate în Română/)).toBeInTheDocument();
-    });
-
     it('updates the hint when the UI Language is switched', async () => {
       stubSystemScheme(false);
       stubYou();
@@ -309,19 +298,6 @@ describe('Settings You tab', () => {
       ]);
       expect(buttons[0]).toHaveAttribute('aria-pressed', 'true');
       expect(screen.getByText(/Reading in English/)).toBeInTheDocument();
-    });
-
-    it('follows the device language while no UI Language is stored', async () => {
-      stubSystemScheme(false);
-      stubYou();
-      renderWithProviders(<SettingsPage />, {
-        route: '/settings',
-        locale: 'ro',
-      });
-
-      expect(
-        await screen.findByText(/Se citește în Română/),
-      ).toBeInTheDocument();
     });
 
     it('updates the hint when the UI Language is switched', async () => {

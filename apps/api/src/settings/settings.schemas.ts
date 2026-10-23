@@ -1,14 +1,5 @@
 import { z } from 'zod';
-import {
-  CATALOG_LOCALES,
-  FALLBACK_LOCALE,
-  SCAN_LANGUAGES,
-} from '../catalog/catalog.schemas';
-
-export const settingsLocaleQuery = z.object({
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
-});
-export type SettingsLocaleQuery = z.infer<typeof settingsLocaleQuery>;
+import { CATALOG_LOCALES, SCAN_LANGUAGES } from '../catalog/catalog.schemas';
 
 export const categoryIdParam = z.uuid();
 

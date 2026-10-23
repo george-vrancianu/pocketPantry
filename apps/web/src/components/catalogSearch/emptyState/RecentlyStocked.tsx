@@ -8,9 +8,9 @@ import { MAX_TILES, TileSection } from './TileSection';
 
 /** The Pantry search's empty state: what the Family most recently added, in the Pantry or not. Hidden until something was stocked. */
 export function RecentlyStocked() {
-  const { t, i18n } = useTranslation('catalog');
+  const { t } = useTranslation('catalog');
   const search = useEmptyStateSearch();
-  const recent = useRecentlyStocked(i18n.language, MAX_TILES);
+  const recent = useRecentlyStocked(MAX_TILES);
   const ago = useShortAgo();
   if (!search || !recent.data || recent.data.length === 0) return null;
   return (

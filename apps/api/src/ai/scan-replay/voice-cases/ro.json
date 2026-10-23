@@ -4,7 +4,7 @@
   "cases": [
     {
       "id": "ro-01",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["basic"],
       "transcript": "Adaugă lapte, ouă și pâine pe listă.",
       "expected": {
@@ -29,7 +29,7 @@
     },
     {
       "id": "ro-02",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["filler"],
       "transcript": "Păi, deci, adică, aș vrea, știi tu, niște unt și, ăă, cheddar.",
       "expected": {
@@ -49,7 +49,7 @@
     },
     {
       "id": "ro-03",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["correction", "units"],
       "transcript": "Pune două, nu, trei mere.",
       "expected": {
@@ -66,7 +66,7 @@
     },
     {
       "id": "ro-04",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["correction"],
       "transcript": "Adaugă ceapă. Stai, nu, mai bine usturoi.",
       "expected": {
@@ -81,7 +81,7 @@
     },
     {
       "id": "ro-05",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["units"],
       "transcript": "Doi litri de lapte, jumătate de kil de făină, o duzină de ouă și patru roșii.",
       "expected": {
@@ -119,7 +119,7 @@
     },
     {
       "id": "ro-06",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["relative-date", "units"],
       "transcript": "Pune în cămară un kilogram de somon, expiră peste trei zile.",
       "expected": {
@@ -137,7 +137,7 @@
     },
     {
       "id": "ro-07",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["relative-date"],
       "transcript": "Pune două iaurturi în frigider, expiră mâine.",
       "defaultTarget": "pantry",
@@ -157,7 +157,7 @@
     },
     {
       "id": "ro-08",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["units", "relative-date"],
       "transcript": "Adaugă un kil de orez, nu expiră niciodată.",
       "defaultTarget": "pantry",
@@ -176,7 +176,7 @@
     },
     {
       "id": "ro-09",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["unsupported"],
       "transcript": "Cât costă un kilogram de roșii? Adaugă cafea.",
       "expected": {
@@ -192,7 +192,7 @@
     },
     {
       "id": "ro-10",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["unsupported"],
       "transcript": "Spune-mi o rețetă de sarmale.",
       "expected": {
@@ -202,7 +202,7 @@
     },
     {
       "id": "ro-11",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["mixed-lists", "relative-date", "units"],
       "transcript": "Adaugă spaghete pe lista de cumpărături și pune trei lămâi în cămară, expiră pe douăzeci.",
       "expected": {
@@ -225,7 +225,7 @@
     },
     {
       "id": "ro-12",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["mixed-lists"],
       "transcript": "Bifează pâinea, scoate laptele de pe listă și ni se termină orezul din cămară.",
       "shoppingList": ["Lapte", "Pâine"],
@@ -252,7 +252,7 @@
     },
     {
       "id": "ro-13",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["sound-alike"],
       "transcript": "Adaugă orez, orz și orzo.",
       "expected": {
@@ -277,7 +277,7 @@
     },
     {
       "id": "ro-14",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["sound-alike"],
       "transcript": "Ceapă verde și ceapă, cea normală.",
       "expected": {
@@ -297,7 +297,7 @@
     },
     {
       "id": "ro-15",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["units"],
       "transcript": "Schimbă laptele la trei litri.",
       "shoppingList": ["Lapte"],
@@ -315,7 +315,7 @@
     },
     {
       "id": "ro-16",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["basic", "off-page"],
       "transcript": "Adaugă lapte și ouă.",
       "defaultTarget": "none",
@@ -336,7 +336,7 @@
     },
     {
       "id": "ro-17",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["off-page"],
       "transcript": "Scoate ouăle.",
       "defaultTarget": "none",
@@ -354,7 +354,7 @@
     },
     {
       "id": "ro-18",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["filler", "off-page"],
       "transcript": "Păi, adaugă niște unt și scoate făina.",
       "defaultTarget": "none",
@@ -377,7 +377,7 @@
     },
     {
       "id": "ro-19",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["off-page"],
       "transcript": "Pune două iaurturi în frigider.",
       "defaultTarget": "none",
@@ -396,7 +396,7 @@
     },
     {
       "id": "ro-20",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["units", "relative-date", "off-page"],
       "transcript": "Adaugă un kilogram de somon, expiră peste trei zile.",
       "defaultTarget": "none",
@@ -415,7 +415,7 @@
     },
     {
       "id": "ro-21",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["off-page"],
       "transcript": "Avem nevoie de lapte și ouă.",
       "defaultTarget": "none",
@@ -436,7 +436,7 @@
     },
     {
       "id": "ro-22",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["units", "off-page"],
       "transcript": "Cumpără două lămâi și niște unt.",
       "defaultTarget": "none",
@@ -459,7 +459,7 @@
     },
     {
       "id": "ro-23",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["off-page"],
       "transcript": "Bifează pâinea și laptele.",
       "defaultTarget": "none",
@@ -481,7 +481,7 @@
     },
     {
       "id": "ro-24",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["off-page"],
       "transcript": "Debifează ouăle.",
       "defaultTarget": "none",
@@ -498,7 +498,7 @@
     },
     {
       "id": "ro-25",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["units", "off-page"],
       "transcript": "Schimbă laptele la trei litri.",
       "defaultTarget": "none",
@@ -517,7 +517,7 @@
     },
     {
       "id": "ro-26",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["off-page"],
       "transcript": "Ni se termină orezul și cafeaua.",
       "defaultTarget": "none",
@@ -539,7 +539,7 @@
     },
     {
       "id": "ro-27",
-      "scanLanguage": "ro",
+      "spokenLanguage": "ro",
       "tags": ["mixed-lists", "off-page"],
       "transcript": "Adaugă unt, pune două iaurturi în frigider și avem nevoie de cafea. Ah, și adaugă făină în cămară.",
       "defaultTarget": "none",

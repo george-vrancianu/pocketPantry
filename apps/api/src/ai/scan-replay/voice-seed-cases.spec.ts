@@ -11,13 +11,13 @@ const { catalog, cases } = loadVoiceCaseSet(join(__dirname, 'voice-cases'));
 describe('seed Voice Note cases', () => {
   it.each(SCAN_LANGUAGES)('has at least 10 %s cases', (language) => {
     expect(
-      cases.filter((c) => c.scanLanguage === language).length,
+      cases.filter((c) => c.spokenLanguage === language).length,
     ).toBeGreaterThanOrEqual(10);
   });
 
   it.each(SCAN_LANGUAGES)('covers every category in %s: %s', (language) => {
     const tags = new Set(
-      cases.filter((c) => c.scanLanguage === language).flatMap((c) => c.tags),
+      cases.filter((c) => c.spokenLanguage === language).flatMap((c) => c.tags),
     );
     expect([...tags].sort()).toEqual([...CASE_TAGS].sort());
   });
@@ -27,10 +27,10 @@ describe('seed Voice Note cases', () => {
     expect(cases.every((c) => c.audioPath === undefined)).toBe(true);
   });
 
-  it('keeps each case in the file and the Scan Language its id says', () => {
+  it('keeps each case in the file and the Spoken Language its id says', () => {
     for (const c of cases) {
-      expect(c.id.startsWith(`${c.scanLanguage}-`)).toBe(true);
-      expect(c.file).toBe(`${c.scanLanguage}.json`);
+      expect(c.id.startsWith(`${c.spokenLanguage}-`)).toBe(true);
+      expect(c.file).toBe(`${c.spokenLanguage}.json`);
     }
   });
 
@@ -67,7 +67,7 @@ describe('seed Voice Note cases', () => {
   it('has a mixed-lists case that uses both lists', () => {
     for (const language of SCAN_LANGUAGES) {
       const mixed = cases.filter(
-        (c) => c.scanLanguage === language && c.tags.includes('mixed-lists'),
+        (c) => c.spokenLanguage === language && c.tags.includes('mixed-lists'),
       );
       expect(
         mixed.some(

@@ -60,12 +60,12 @@ function SaveForm({
   onClose,
   title,
 }: SaveTemplateSheetProps & { title: string }) {
-  const { t, i18n } = useTranslation(['templates', 'common', 'errors']);
+  const { t } = useTranslation(['templates', 'common', 'errors']);
   const toast = useToast();
   const navigate = useNavigate();
-  const shoppingList = useShoppingList(i18n.language);
-  const templates = useTemplates(i18n.language);
-  const { createFromList } = useTemplateMutations(i18n.language);
+  const shoppingList = useShoppingList();
+  const templates = useTemplates();
+  const { createFromList } = useTemplateMutations();
   const [name, setName] = useState('');
 
   const items: ShoppingItem[] = (shoppingList.data?.groups ?? []).flatMap(

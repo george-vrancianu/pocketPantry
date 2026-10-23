@@ -19,6 +19,7 @@ import {
 } from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 type Result = {
@@ -561,7 +562,10 @@ describe('Family Ingredients (integration)', () => {
         aisle: { name: 'Dairy & eggs' },
         defaults: { expiryDays: 60, location: 'fridge' },
       });
-      const [ro] = await categories(a, 'q=brânzeturi%20tari&locale=ro');
+      // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+      await storeUiLanguage(app, cookieA, 'ro');
+      const [ro] = await categories(a, 'q=brânzeturi%20tari');
+      await storeUiLanguage(app, cookieA, 'en');
       expect(ro).toMatchObject({ id: HARD_CHEESE, name: 'Brânzeturi tari' });
     });
 

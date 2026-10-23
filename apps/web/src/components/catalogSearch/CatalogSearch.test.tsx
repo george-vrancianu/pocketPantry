@@ -45,13 +45,16 @@ const cheddar: CatalogSearchResult = {
   defaults: { expiryDays: 30, location: 'fridge' },
 };
 
-function stubSearch(results: (locale: 'en' | 'ro') => CatalogSearchResult[]) {
+/** The API names results in the Member's Catalog Language, which the request does not carry: `language` is that one. */
+function stubSearch(
+  results: (locale: 'en' | 'ro') => CatalogSearchResult[],
+  language: 'en' | 'ro' = 'en',
+) {
   const requests: URL[] = [];
   vi.stubGlobal('fetch', (input: RequestInfo | URL) => {
     const url = new URL(String(input), window.location.origin);
     requests.push(url);
-    const locale = url.searchParams.get('locale') === 'ro' ? 'ro' : 'en';
-    return Promise.resolve(Response.json({ results: results(locale) }));
+    return Promise.resolve(Response.json({ results: results(language) }));
   });
   return requests;
 }
@@ -61,17 +64,14 @@ describe('CatalogSearch', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows localised names with the Parent and Leaf Category', async () => {
-    const requests = stubSearch((locale) => [parmesan(locale)]);
-    renderWithProviders(<CatalogSearch onSelect={() => {}} />, {
-      locale: 'ro',
-    });
+  it('shows the names in the Catalog Language with the Parent and Leaf Category', async () => {
+    const requests = stubSearch((locale) => [parmesan(locale)], 'ro');
+    renderWithProviders(<CatalogSearch onSelect={() => {}} />);
 
     await userEvent.setup().type(screen.getByRole('combobox'), 'parmezan');
 
     const option = await screen.findByRole('option', { name: /Parmezan/ });
     expect(option).toHaveTextContent('Brânzeturi tari · Dairy & eggs');
-    expect(requests.at(-1)?.searchParams.get('locale')).toBe('ro');
     expect(requests.at(-1)?.searchParams.get('q')).toBe('parmezan');
   });
 

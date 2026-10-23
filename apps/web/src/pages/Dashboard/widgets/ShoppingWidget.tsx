@@ -8,8 +8,8 @@ import type { WidgetProps } from './types';
 
 /** Unchecked Shopping Items on the butter card: the count and the first few names. */
 export function ShoppingWidget({ size, columns }: WidgetProps) {
-  const { t, i18n } = useTranslation('dashboard');
-  const list = useShoppingList(i18n.language);
+  const { t } = useTranslation('dashboard');
+  const list = useShoppingList();
   const { names, hasMore } = list.data
     ? firstUncheckedNames(list.data)
     : { names: [], hasMore: false };

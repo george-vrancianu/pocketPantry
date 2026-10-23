@@ -44,9 +44,7 @@ export class ReceiptScanController {
     @Body(new ScanImagePipe(receiptScanSchema, ['receiptImage']))
     body: ReceiptScanInput,
   ): Promise<ScanResponse> {
-    const languages = await this.languages.languagesOf(member.id, {
-      requestLocale: query.locale,
-    });
+    const languages = await this.languages.languagesOf(member.id);
     return this.scan.scanReceipt(
       member.id,
       body,
@@ -65,9 +63,7 @@ export class ReceiptScanController {
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
   ): Promise<ReceiptConfirmation> {
-    const languages = await this.languages.languagesOf(member.id, {
-      requestLocale: query.locale,
-    });
+    const languages = await this.languages.languagesOf(member.id);
     return this.confirmation.confirm(
       member.id,
       body.batches,

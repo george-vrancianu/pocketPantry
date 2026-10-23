@@ -119,7 +119,6 @@ describe('Voice Notes on the Pantry page', () => {
     const { sent } = setup([], undefined, [], 'fails');
     await recordAndSend({
       spokenLanguage: 'ro',
-      locale: 'en',
       defaultTarget: 'shopping',
     });
     renderInAppLayout(<PantryPage />, '/pantry');
@@ -139,7 +138,6 @@ describe('Voice Notes on the Pantry page', () => {
     setup([], undefined, [], 'hangs');
     await recordAndSend({
       spokenLanguage: 'en',
-      locale: 'en',
       defaultTarget: 'pantry',
     });
     renderInAppLayout(<PantryPage />, '/pantry');

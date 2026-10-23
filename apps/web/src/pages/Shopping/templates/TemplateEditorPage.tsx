@@ -46,8 +46,8 @@ import { ApplyTemplatePicker } from './ApplyTemplatePicker';
 /** Rename a Template, add lines with Catalog search, remove lines, delete it, or apply it. */
 export function TemplateEditorPage() {
   const { id = '' } = useParams();
-  const { t, i18n } = useTranslation(['templates', 'common']);
-  const template = useTemplate(id, i18n.language);
+  const { t } = useTranslation(['templates', 'common']);
+  const template = useTemplate(id);
   const [applying, setApplying] = useState(false);
 
   if (applying) {
@@ -88,9 +88,9 @@ function Editor({
   template: Template;
   onApply: () => void;
 }) {
-  const { t, i18n } = useTranslation(['templates', 'common']);
+  const { t } = useTranslation(['templates', 'common']);
   const navigate = useNavigate();
-  const { update, remove } = useTemplateMutations(i18n.language);
+  const { update, remove } = useTemplateMutations();
   const [name, setName] = useState(template.name);
 
   const lines = template.lines;

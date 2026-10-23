@@ -76,7 +76,7 @@ export class VoiceController {
   @Post()
   @ApiOperation({
     summary:
-      'Voice Note: transcribe a held-to-talk recording (multipart: audio, durationMs, spokenLanguage, locale, defaultTarget, today). Neither the audio nor the transcript is stored.',
+      'Voice Note: transcribe a held-to-talk recording (multipart: audio, durationMs, spokenLanguage, defaultTarget, today). Neither the audio nor the transcript is stored.',
   })
   async note(
     @CurrentUser() member: CurrentUserValue,
@@ -96,13 +96,10 @@ export class VoiceController {
     if (!mimeType) throw new ApiException(415, 'voice.unsupported_audio');
     // Names are made up, matched and written in the Catalog Language; the
     // prompt is only told the UI Language. Transcription is unchanged.
-    const { ui, catalog } = await this.languages.languagesOf(member.id, {
-      requestLocale: fields.data.locale,
-    });
+    const { ui, catalog } = await this.languages.languagesOf(member.id);
     // The recording is read in the Spoken Language: the upload's own choice, else the Preference.
     const spokenLanguage = await this.languages.spokenLanguageOf(
       member.id,
-      fields.data.locale,
       fields.data.spokenLanguage,
     );
     return this.voice.read(member.id, {
@@ -125,10 +122,7 @@ export class VoiceController {
     @Body(new ZodValidationPipe(voiceApplyBody)) body: VoiceApplyBody,
   ): Promise<VoiceApplyResult> {
     // Unmatched names are written in the Catalog Language, as Review showed them.
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      body.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.voice.apply(member.id, { ...body, locale });
   }
 }

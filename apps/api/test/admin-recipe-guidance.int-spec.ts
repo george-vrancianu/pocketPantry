@@ -19,6 +19,7 @@ import type { ResolvedGuidance } from '../src/recipes/recipe-guidance.schemas';
 import type { AdminRecipeDetail } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 const code = (res: { body: unknown }) => (res.body as { code: string }).code;
@@ -28,6 +29,7 @@ jest.setTimeout(30_000);
 describe('Recipe guidance (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
+  let memberCookie: string;
   let admin: ReturnType<typeof client>;
   let catalog: ReturnType<typeof client>;
   let member: ReturnType<typeof client>;
@@ -71,6 +73,7 @@ describe('Recipe guidance (integration)', () => {
     database = app.get<Database>(DATABASE);
     const email = `guidance-admin-${stamp}@example.com`;
     const cookie = await signUp(app, email, 'Guidance Admin');
+    memberCookie = cookie;
     admin = client(app, cookie, '/api/admin/recipes');
     catalog = client(app, cookie, '/api/admin/catalog');
     member = client(app, cookie, '/api/recipes');
@@ -575,8 +578,10 @@ describe('Recipe guidance (integration)', () => {
           nutritionNote: 'Bogat in grasimi.',
         })
         .expect(200);
-      const open = (await member.get(`/${base.id}?locale=ro`).expect(200))
-        .body as { guidance: ResolvedGuidance };
+      await storeUiLanguage(app, memberCookie, 'ro');
+      const open = (await member.get(`/${base.id}`).expect(200)).body as {
+        guidance: ResolvedGuidance;
+      };
       expect(open.guidance.nutritionNote).toBe('Bogat in grasimi.');
       expect(open.guidance.pairings[1].link).toMatchObject({
         type: 'recipe',
@@ -586,8 +591,10 @@ describe('Recipe guidance (integration)', () => {
 
       await admin.post(`/${other.id}/archive`).expect(200);
       await catalog.post(`/eating-moments/${snack}/archive`).expect(200);
-      const hidden = (await member.get(`/${base.id}?locale=en`).expect(200))
-        .body as { guidance: ResolvedGuidance };
+      await storeUiLanguage(app, memberCookie, 'en');
+      const hidden = (await member.get(`/${base.id}`).expect(200)).body as {
+        guidance: ResolvedGuidance;
+      };
       expect(hidden.guidance.pairings[1]).toMatchObject({
         label: 'steamed greens',
         link: null,

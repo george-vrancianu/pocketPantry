@@ -30,7 +30,6 @@ import {
   fromPlateBody,
   plateMatchesBody,
   hiddenTipsBody,
-  localeQuery,
   recipeParam,
   recipeTipParam,
   tipCreate,
@@ -50,7 +49,6 @@ import {
   type BrowseQuery,
   type CookTonightQuery,
   type CookTonightView,
-  type LocaleQuery,
   type RecipeDetail,
   type RecipeFilters,
   type RecipeList,
@@ -58,7 +56,6 @@ import {
 
 const Id = () => Param(new ZodValidationPipe(recipeParam));
 const TipParams = () => Param(new ZodValidationPipe(recipeTipParam));
-const Locale = () => Query(new ZodValidationPipe(localeQuery));
 
 @ApiTags('recipes')
 @Controller('recipes')
@@ -81,10 +78,7 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(browseQuery)) query: BrowseQuery,
   ): Promise<RecipeList> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.browse.list(member.id, { ...query, locale });
   }
 
@@ -95,14 +89,10 @@ export class RecipesController {
   })
   async filters(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(localeQuery))
-    query: {
-      locale: BrowseQuery['locale'];
-    },
   ): Promise<RecipeFilters> {
     return this.browse.filters(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -116,10 +106,7 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(cookTonightQuery)) query: CookTonightQuery,
   ): Promise<CookTonightView> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.cookTonight.view(member.id, { ...query, locale });
   }
 
@@ -132,12 +119,8 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(familyRecipeCreate)) body: FamilyRecipeCreate,
   ): Promise<FamilyRecipeEdit> {
-    const { locale: requestLocale, ...document } = body;
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      requestLocale,
-    );
-    return this.family.create(member.id, document, locale);
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    return this.family.create(member.id, body, locale);
   }
 
   @Post('plate-matches')
@@ -151,10 +134,7 @@ export class RecipesController {
     @Body(new ZodValidationPipe(plateMatchesBody))
     body: PlateMatchesBody,
   ): Promise<PlateMatches> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      body.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.plate.closestBases(member.id, { ...body, locale });
   }
 
@@ -167,10 +147,7 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(fromPlateBody)) body: FromPlateBody,
   ): Promise<FamilyRecipeEdit> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      body.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.plate.save(member.id, { ...body, locale });
   }
 
@@ -182,12 +159,8 @@ export class RecipesController {
   async variantDraft(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
-    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeDraft> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.variantDraft(member.id, id, locale);
   }
 
@@ -196,12 +169,8 @@ export class RecipesController {
   async edit(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
-    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.editFor(member.id, id, locale);
   }
 
@@ -212,10 +181,7 @@ export class RecipesController {
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(familyRecipeUpdate)) body: FamilyRecipeUpdate,
   ): Promise<FamilyRecipeEdit> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      body.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.update(member.id, id, { ...body, locale });
   }
 
@@ -227,12 +193,8 @@ export class RecipesController {
   async archive(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
-    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.archive(member.id, id, locale);
   }
 
@@ -245,12 +207,8 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(guidanceBody)) body: GuidanceBody,
-    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.setGuidance(member.id, id, body, locale);
   }
 
@@ -260,12 +218,8 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(tipCreate)) body: TipCreate,
-    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.createTip(member.id, id, body, locale);
   }
 
@@ -275,12 +229,8 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(tipOrder)) body: TipOrder,
-    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.reorderTips(member.id, id, body, locale);
   }
 
@@ -290,12 +240,8 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @TipParams() { id, tipId }: { id: string; tipId: string },
     @Body(new ZodValidationPipe(tipUpdate)) body: TipUpdate,
-    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.updateTip(member.id, id, tipId, body, locale);
   }
 
@@ -317,12 +263,8 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
     @Body(new ZodValidationPipe(hiddenTipsBody)) body: HiddenTipsBody,
-    @Locale() query: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.setHiddenTips(member.id, id, body, locale);
   }
 
@@ -334,13 +276,11 @@ export class RecipesController {
   async detail(
     @CurrentUser() member: CurrentUserValue,
     @Param(new ZodValidationPipe(recipeParam)) params: { id: string },
-    @Query(new ZodValidationPipe(localeQuery))
-    query: LocaleQuery,
   ): Promise<RecipeDetail> {
     return this.browse.detail(
       member.id,
       params.id,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 }

@@ -9,6 +9,7 @@ import type { Database } from '../src/database/database.types';
 import { scanUsage } from '../src/database/schema';
 import { ScanCapService } from '../src/scan/scan-cap.service';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
 
@@ -71,6 +72,14 @@ describe('Product Scan (integration)', () => {
       .join('; ');
   }
 
+  /** A Member whose stored UI Language is `locale` (the API ignores the request's own `?locale=`). */
+  async function signUpIn(locale: string) {
+    const cookie = await signUp();
+    await storeUiLanguage(app, cookie, locale);
+    return cookie;
+  }
+
+  // `locale` is sent as the web used to; a signed-in request ignores it.
   const scan = (
     cookie: string,
     body: object,
@@ -215,7 +224,9 @@ describe('Product Scan (integration)', () => {
     respondWith(parmesan());
     prompts.length = 0;
     const body = (
-      await scan(await signUp(), { productImage: IMAGE }, 'ro').expect(201)
+      await scan(await signUpIn('ro'), { productImage: IMAGE }, 'da').expect(
+        201,
+      )
     ).body as unknown;
     expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
     expect(prompts[0].images).toEqual([IMAGE]);
@@ -227,9 +238,12 @@ describe('Product Scan (integration)', () => {
     respondWith(parmesan());
     prompts.length = 0;
     const body = (
-      await scan(await signUp(), { productImage: IMAGE }, 'ro', 'da').expect(
-        201,
-      )
+      await scan(
+        await signUpIn('ro'),
+        { productImage: IMAGE },
+        'en',
+        'da',
+      ).expect(201)
     ).body as { lines: { match: { name: string } }[] };
     expect(prompts[0].prompt).toMatch(/package is in Danish/);
     expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
@@ -239,7 +253,7 @@ describe('Product Scan (integration)', () => {
   it('reads the package in the UI locale when no Scan Language is given', async () => {
     respondWith(parmesan());
     prompts.length = 0;
-    await scan(await signUp(), { productImage: IMAGE }, 'ro').expect(201);
+    await scan(await signUpIn('ro'), { productImage: IMAGE }, 'da').expect(201);
     expect(prompts[0].prompt).toMatch(/package is in Romanian/);
   });
 

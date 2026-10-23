@@ -56,13 +56,13 @@ export function AddToCatalogAlias({
   onCancel,
 }: AddToCatalogAliasProps) {
   const { color } = tokens;
-  const { t, i18n } = useTranslation('catalog');
+  const { t } = useTranslation('catalog');
   const id = useId();
   const [query, setQuery] = useState('');
   const [target, setTarget] = useState<CatalogSearchResult | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const search = useAliasSearch(query, i18n.language);
-  const link = useCreateFamilySynonym(i18n.language);
+  const search = useAliasSearch(query);
+  const link = useCreateFamilySynonym();
   const existing = link.error ? existingOf(link.error) : null;
   // Editing the Name makes an earlier answer stale.
   const reset = link.reset;

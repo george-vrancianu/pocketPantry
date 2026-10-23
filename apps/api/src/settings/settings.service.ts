@@ -205,10 +205,7 @@ export class SettingsService {
     };
   }
 
-  async getPreferences(
-    memberId: string,
-    requestLocale?: CatalogLocale,
-  ): Promise<PreferencesView> {
+  async getPreferences(memberId: string): Promise<PreferencesView> {
     const [row] = await this.database
       .select({
         locale: user.locale,
@@ -228,15 +225,11 @@ export class SettingsService {
       locale,
       catalogLanguage:
         CATALOG_LOCALES.find((l) => l === row.catalogLanguage) ?? null,
-      effectiveCatalogLanguage: resolveLanguage('catalog', row, {
-        requestLocale,
-      }),
+      effectiveCatalogLanguage: resolveLanguage('catalog', row),
       scanLanguage: asScanLanguage(row.scanLanguage),
-      effectiveScanLanguage: resolveLanguage('scan', row, { requestLocale }),
+      effectiveScanLanguage: resolveLanguage('scan', row),
       spokenLanguage: asScanLanguage(row.spokenLanguage),
-      effectiveSpokenLanguage: resolveLanguage('spoken', row, {
-        requestLocale,
-      }),
+      effectiveSpokenLanguage: resolveLanguage('spoken', row),
       theme,
       hideRecipesWithAllergies: row.hideRecipesWithAllergies,
     };

@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { apiRequest } from './api';
 import {
   recipeMatchingQueryKeys,
@@ -116,8 +115,7 @@ export function useExpiryTags(today: Date): {
   staleThresholdDays: number;
   tagFor: (expiryDate: IsoDate | null) => ExpiryTagState;
 } {
-  const { i18n } = useTranslation();
-  const staleThresholdDays = useStaleThresholdDays(i18n.language);
+  const staleThresholdDays = useStaleThresholdDays();
   return {
     staleThresholdDays,
     tagFor: (expiryDate) => expiryTagFor(expiryDate, today, staleThresholdDays),
@@ -295,31 +293,27 @@ export function rollUp(batches: Batch[]): RollUp[] {
 /** The Pantry read: the Family's Batches, and the Ids of Ingredients flagged running low. */
 export type PantryResponse = { batches: Batch[]; runningLow: string[] };
 
-const pantryQueryKey = (locale: string) => ['pantry', locale] as const;
+const pantryQueryKey = ['pantry'] as const;
 
 const batchesOf = (body: PantryResponse) => body.batches;
 const runningLowOf = (body: PantryResponse) => new Set(body.runningLow);
 
 /** One cached Pantry read; the hooks below select from it, so they share one request. */
-function usePantryQuery<T>(
-  locale: string,
-  select: (body: PantryResponse) => T,
-) {
+function usePantryQuery<T>(select: (body: PantryResponse) => T) {
   return useQuery({
-    queryKey: pantryQueryKey(locale),
-    queryFn: () =>
-      apiRequest<PantryResponse>(`/pantry?${new URLSearchParams({ locale })}`),
+    queryKey: pantryQueryKey,
+    queryFn: () => apiRequest<PantryResponse>('/pantry'),
     select,
   });
 }
 
-export function useBatches(locale: string) {
-  return usePantryQuery(locale, batchesOf);
+export function useBatches() {
+  return usePantryQuery(batchesOf);
 }
 
 /** The Ingredient ids flagged running low for the Family, from the same read as the Batches. */
-export function useRunningLow(locale: string) {
-  return usePantryQuery(locale, runningLowOf);
+export function useRunningLow() {
+  return usePantryQuery(runningLowOf);
 }
 
 /**
@@ -327,15 +321,13 @@ export function useRunningLow(locale: string) {
  * the Ingredient, in every Location section, shows the new state; a failed save undoes that one
  * Ingredient's flag, leaving any other toggle made in the meantime as it is.
  */
-export function useSetRunningLow(locale: string) {
+export function useSetRunningLow() {
   const queryClient = useQueryClient();
   const setFlag = (ingredientId: string, on: boolean) => {
-    const current = queryClient.getQueryData<PantryResponse>(
-      pantryQueryKey(locale),
-    );
+    const current = queryClient.getQueryData<PantryResponse>(pantryQueryKey);
     if (!current) return;
     const others = current.runningLow.filter((id) => id !== ingredientId);
-    queryClient.setQueryData<PantryResponse>(pantryQueryKey(locale), {
+    queryClient.setQueryData<PantryResponse>(pantryQueryKey, {
       ...current,
       runningLow: on ? [...others, ingredientId] : others,
     });
@@ -359,14 +351,11 @@ export function useSetRunningLow(locale: string) {
   });
 }
 
-export function useAddBatch(locale: string) {
+export function useAddBatch() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (batch: NewBatch) =>
-      apiRequest<Batch>(`/pantry/batches?${new URLSearchParams({ locale })}`, {
-        method: 'POST',
-        body: batch,
-      }),
+      apiRequest<Batch>('/pantry/batches', { method: 'POST', body: batch }),
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),
@@ -410,14 +399,14 @@ export type BatchEdit = {
   productDescription?: string | null;
 };
 
-export function useUpdateBatch(locale: string) {
+export function useUpdateBatch() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, edit }: { id: string; edit: BatchEdit }) =>
-      apiRequest<Batch>(
-        `/pantry/batches/${id}?${new URLSearchParams({ locale })}`,
-        { method: 'PATCH', body: edit },
-      ),
+      apiRequest<Batch>(`/pantry/batches/${id}`, {
+        method: 'PATCH',
+        body: edit,
+      }),
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),

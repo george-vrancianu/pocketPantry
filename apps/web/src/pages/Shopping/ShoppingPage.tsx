@@ -23,8 +23,8 @@ import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 
 export function ShoppingPage() {
-  const { t, i18n } = useTranslation(['shopping', 'common']);
-  const templates = useTemplates(i18n.language);
+  const { t } = useTranslation(['shopping', 'common']);
+  const templates = useTemplates();
   const screen = useShoppingScreen();
   const rowToggleErrors = useRowToggleErrors();
   const [reviewing, setReviewing] = useState(false);

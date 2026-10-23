@@ -28,10 +28,9 @@ function cardsFor(size: WidgetSize, columns: GridColumns): number {
 
 /** Cards for the Recipes the Family can make tonight (or nearly), one per Base Recipe. */
 export function CookTonightWidget({ size, columns }: WidgetProps) {
-  const { t, i18n } = useTranslation('dashboard');
+  const { t } = useTranslation('dashboard');
   const [showHidden, setShowHidden] = useState(false);
   const cookTonight = useCookTonight(
-    i18n.language,
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     localIso(new Date()),
     showHidden,

@@ -364,7 +364,6 @@ describe('NewVariantPage', () => {
     const post = calls.find((call) => call.key === 'POST /api/recipes')!;
     expect(post.body).toMatchObject({
       parentId: 'base',
-      locale: 'en',
       title: "Grandma's omelette",
       cuisineId: 'c-fr',
       lines: [
@@ -513,7 +512,6 @@ describe('EditFamilyRecipePage', () => {
     const put = calls.find((call) => call.key === 'PUT /api/recipes/g')!;
     expect(put.body).toMatchObject({
       title: 'Better omelette',
-      locale: 'en',
       lines: [
         { id: 'l1', ingredientId: 'egg', rawName: null },
         { id: 'l2', ingredientId: null, rawName: 'Gran’s herbs' },
@@ -563,7 +561,6 @@ describe('EditFamilyRecipePage', () => {
     await user.click(screen.getByRole('button', { name: 'Save guidance' }));
     expect(await screen.findByText('Guidance saved.')).toBeInTheDocument();
     const put = calls.find((c) => c.key === 'PUT /api/recipes/g/guidance')!;
-    expect(put.search).toContain('locale=en');
     expect(put.body).toEqual({
       nutritionNote: 'Light',
       pairings: [
@@ -704,9 +701,7 @@ describe('EditFamilyRecipePage', () => {
         calls.find((c) => c.key === 'PUT /api/recipes/g/hidden-tips')?.body,
       ).toEqual({ tipIds: ['bt1'] }),
     );
-    expect(
-      calls.find((c) => c.key === 'POST /api/recipes/g/tips')!.search,
-    ).toContain('locale=en');
+    expect(calls.some((c) => c.key === 'POST /api/recipes/g/tips')).toBe(true);
   });
 });
 

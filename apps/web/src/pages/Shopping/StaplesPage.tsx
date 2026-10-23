@@ -32,9 +32,9 @@ import { RowHintNote } from '../../components/RowHintNote';
 
 /** The Family's Staples: add by Catalog search, set a preferred quantity and unit, or remove. */
 export function StaplesPage() {
-  const { t, i18n } = useTranslation(['staples', 'common']);
-  const staples = useStaples(i18n.language);
-  const { add, update, remove } = useStapleMutations(i18n.language);
+  const { t } = useTranslation(['staples', 'common']);
+  const staples = useStaples();
+  const { add, update, remove } = useStapleMutations();
   const [formKey, setFormKey] = useState(0);
   const removal = useDeferredRemoval(staplesQueryKey, remove.mutateAsync);
   // A removed Staple stays out of the list, refetches included, until its delete has settled.

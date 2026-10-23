@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   Put,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -21,7 +20,6 @@ import {
   expiryOverrideBody,
   familyAllergyIdParam,
   replaceAllergiesBody,
-  settingsLocaleQuery,
   updateFamilySettingsBody,
   updatePreferencesBody,
   type AddFamilyAllergyBody,
@@ -33,7 +31,6 @@ import {
   type FamilySettingsView,
   type PreferencesView,
   type ReplaceAllergiesBody,
-  type SettingsLocaleQuery,
   type UpdateFamilySettingsBody,
   type UpdatePreferencesBody,
 } from './settings.schemas';
@@ -55,12 +52,10 @@ export class SettingsController {
   })
   async family(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(settingsLocaleQuery))
-    query: SettingsLocaleQuery,
   ): Promise<FamilySettingsView> {
     return this.settings.getFamilySettings(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -81,12 +76,10 @@ export class SettingsController {
   })
   async categories(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(settingsLocaleQuery))
-    query: SettingsLocaleQuery,
   ): Promise<CategoryOptionsView> {
     return this.settings.categoryOptions(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -121,10 +114,8 @@ export class SettingsController {
   @ApiOperation({ summary: "The signed-in Member's Member Preferences" })
   preferences(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(settingsLocaleQuery))
-    { locale }: SettingsLocaleQuery,
   ): Promise<PreferencesView> {
-    return this.settings.getPreferences(member.id, locale);
+    return this.settings.getPreferences(member.id);
   }
 
   @Put('preferences')
@@ -136,11 +127,9 @@ export class SettingsController {
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(updatePreferencesBody))
     body: UpdatePreferencesBody,
-    @Query(new ZodValidationPipe(settingsLocaleQuery))
-    { locale }: SettingsLocaleQuery,
   ): Promise<PreferencesView> {
     await this.settings.setPreferences(member.id, body);
-    return this.settings.getPreferences(member.id, locale);
+    return this.settings.getPreferences(member.id);
   }
 
   @Get('allergies')
@@ -149,12 +138,10 @@ export class SettingsController {
   })
   async allergies(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(settingsLocaleQuery))
-    query: SettingsLocaleQuery,
   ): Promise<AllergiesView> {
     return this.settings.getAllergies(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -166,13 +153,11 @@ export class SettingsController {
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(replaceAllergiesBody))
     body: ReplaceAllergiesBody,
-    @Query(new ZodValidationPipe(settingsLocaleQuery))
-    query: SettingsLocaleQuery,
   ): Promise<AllergiesView> {
     await this.settings.setAllergies(member.id, body.allergenIds);
     return this.settings.getAllergies(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -183,12 +168,10 @@ export class SettingsController {
   })
   async familyAllergies(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(settingsLocaleQuery))
-    query: SettingsLocaleQuery,
   ): Promise<FamilyAllergiesView> {
     return this.settings.getFamilyAllergies(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -200,14 +183,12 @@ export class SettingsController {
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(addFamilyAllergyBody))
     body: AddFamilyAllergyBody,
-    @Query(new ZodValidationPipe(settingsLocaleQuery))
-    query: SettingsLocaleQuery,
   ): Promise<FamilyAllergyView> {
     return this.settings.addFamilyAllergy(
       member.id,
       body.allergenId,
       body.label,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 

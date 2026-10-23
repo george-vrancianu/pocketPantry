@@ -7,7 +7,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -16,10 +15,6 @@ import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { MemberLanguageService } from '../member-language/member-language.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import {
-  shoppingLocaleQuery,
-  type ShoppingLocaleQuery,
-} from './shopping.schemas';
 import {
   addStapleBody,
   stapleIdParam,
@@ -30,7 +25,6 @@ import {
 } from './staples.schemas';
 import { StaplesService } from './staples.service';
 
-const localeQuery = new ZodValidationPipe(shoppingLocaleQuery);
 const idParam = new ZodValidationPipe(stapleIdParam);
 
 /** The Family's Staples; any Member may edit them. */
@@ -47,12 +41,11 @@ export class StaplesController {
   @ApiOperation({ summary: "List the Family's Staples in shop order" })
   async list(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
   ): Promise<{ staples: StapleView[] }> {
     return {
       staples: await this.staples.list(
         member.id,
-        await this.languages.catalogLanguageOf(member.id, locale),
+        await this.languages.catalogLanguageOf(member.id),
       ),
     };
   }
@@ -61,13 +54,12 @@ export class StaplesController {
   @ApiOperation({ summary: 'Mark a Catalog Ingredient as a Staple' })
   async add(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addStapleBody)) body: AddStapleBody,
   ): Promise<StapleView> {
     return this.staples.add(
       member.id,
       body,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -76,14 +68,13 @@ export class StaplesController {
   async update(
     @CurrentUser() member: CurrentUserValue,
     @Param(idParam) { id }: { id: string },
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(updateStapleBody)) body: UpdateStapleBody,
   ): Promise<StapleView> {
     return this.staples.update(
       member.id,
       id,
       body,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 

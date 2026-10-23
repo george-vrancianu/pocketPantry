@@ -42,7 +42,7 @@ import { EXCLUDED_TOGGLE_ID, fieldId, rowId } from '../components/layout';
  * through `saveLines`, which routes by the card's Scan Mode.
  */
 export function useReviewScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   // A card of the Scan Session is edited at /scan/review/:scanId.
   const { scanId = '' } = useParams();
@@ -83,7 +83,7 @@ export function useReviewScreen() {
     if (photoBarcode && lineCount === 1 && firstBarcode === undefined)
       dispatch({ type: 'attachBarcode', key: firstKey, barcode: photoBarcode });
   }, [photoBarcode, lineCount, firstKey, firstBarcode]);
-  const saver = useSaveLines(i18n.language);
+  const saver = useSaveLines();
   // Plate lines are things to buy, not things in the Pantry.
   const mode = draft?.mode ?? 'product';
   const shopping = mode === 'plate';
@@ -93,7 +93,6 @@ export function useReviewScreen() {
   const included = state.lines.filter((line) => line.excluded === null);
   // Only Unmatched Pantry lines choose a category; Plate lines go to the Shopping List, which has no category picker.
   const parents = useCatalogParents(
-    i18n.language,
     !shopping && included.some((line) => line.match === null),
   );
   // Receipt Scan: ticking Shopping Items happens after the save; if any tick failed, say so here before leaving.

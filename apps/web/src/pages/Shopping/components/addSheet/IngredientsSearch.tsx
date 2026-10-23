@@ -112,7 +112,7 @@ export function IngredientsSearch({
     );
 
   // The loaded list (shared with the screen behind), for the "On list" hint.
-  const list = useShoppingList(i18n.language);
+  const list = useShoppingList();
   const unchecked = uncheckedItems(list.data);
   const pick = open?.pick;
   const pickName = pick

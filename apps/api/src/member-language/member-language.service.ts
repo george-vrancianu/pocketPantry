@@ -15,8 +15,7 @@ import {
 
 /**
  * The one place that answers which language a Member has for a role. Callers
- * pass the Member's id (and the request's `locale` while that fallback lives)
- * and never read the language columns themselves.
+ * pass the Member's id and never read the language columns themselves.
  */
 @Injectable()
 export class MemberLanguageService {
@@ -31,36 +30,28 @@ export class MemberLanguageService {
   }
 
   /** The Catalog Language, for the routes that return Ingredient, Category and Aisle names. */
-  catalogLanguageOf(
-    memberId: string,
-    requestLocale?: CatalogLocale,
-  ): Promise<CatalogLocale> {
-    return this.languageOf(memberId, 'catalog', { requestLocale });
+  catalogLanguageOf(memberId: string): Promise<CatalogLocale> {
+    return this.languageOf(memberId, 'catalog');
   }
 
   /** The language a Scan is read in: the per-Scan `override` if sent, else the Scan Language Preference. */
   scanLanguageOf(
     memberId: string,
-    requestLocale?: CatalogLocale,
     override?: ScanLanguage,
   ): Promise<ScanLanguage> {
-    return this.languageOf(memberId, 'scan', { requestLocale, override });
+    return this.languageOf(memberId, 'scan', { override });
   }
 
   /** The language a Voice Note is spoken in: the per-Voice Note `override` if sent, else the Spoken Language Preference. */
   spokenLanguageOf(
     memberId: string,
-    requestLocale?: CatalogLocale,
     override?: ScanLanguage,
   ): Promise<ScanLanguage> {
-    return this.languageOf(memberId, 'spoken', { requestLocale, override });
+    return this.languageOf(memberId, 'spoken', { override });
   }
 
-  async languagesOf(
-    memberId: string,
-    options: Pick<LanguageOptions, 'requestLocale'> = {},
-  ): Promise<MemberLanguages> {
-    return resolveLanguages(await this.stored(memberId), options);
+  async languagesOf(memberId: string): Promise<MemberLanguages> {
+    return resolveLanguages(await this.stored(memberId));
   }
 
   private async stored(memberId: string) {

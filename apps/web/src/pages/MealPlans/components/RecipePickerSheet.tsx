@@ -32,7 +32,7 @@ export function RecipePickerSheet({
   onPick,
   onClose,
 }: Props) {
-  const { t, i18n } = useTranslation(['mealPlans', 'recipes', 'common']);
+  const { t } = useTranslation(['mealPlans', 'recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
     search: '',
     cuisineId: '',
@@ -40,12 +40,12 @@ export function RecipePickerSheet({
   });
   // Plan Slots never hide (ADR 0012): "Hide Recipes with my Allergies" must not narrow what
   // a Member can plan, so the picker always asks for the hidden Recipes too.
-  const recipes = useRecipes(browse, i18n.language, {
+  const recipes = useRecipes(browse, {
     includeVariants: true,
     showHidden: true,
     enabled: open,
   });
-  const filters = useRecipeFilters(i18n.language, open);
+  const filters = useRecipeFilters(open);
   const items = recipes.data?.recipes ?? [];
   const filtering = isFiltering(browse);
   return (

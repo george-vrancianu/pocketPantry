@@ -100,15 +100,25 @@ describe('Family Synonyms (integration)', () => {
     await app.close();
   });
 
-  const link = (who: typeof a, body: object, locale = 'en') =>
-    who.post(`/catalog/family-synonyms?locale=${locale}`, body);
+  // A signed-in request's `?locale=` is ignored: the Synonym takes the stored Catalog Language.
+  const useLanguage = (who: typeof a, locale: string) =>
+    who
+      .put('/settings/preferences', { locale, catalogLanguage: locale })
+      .expect(200);
+  const link = (who: typeof a, body: object) =>
+    who.post('/catalog/family-synonyms', body);
+  afterEach(async () => {
+    await useLanguage(a, 'en');
+    await useLanguage(b, 'en');
+  });
   async function linked(
     who: typeof a,
     name: string,
     ingredientId = parmesan,
     locale = 'en',
   ) {
-    const res = await link(who, { name, ingredientId }, locale);
+    await useLanguage(who, locale);
+    const res = await link(who, { name, ingredientId });
     expect([res.status, res.body]).toEqual([201, expect.anything()]);
     return res.body as Result;
   }
@@ -173,11 +183,11 @@ describe('Family Synonyms (integration)', () => {
   describe('creating', () => {
     it('answers 201 with the target Ingredient as a search result, and records the Family and the locale on the Synonym', async () => {
       const name = unique('Fsyn Created');
-      const res = await link(
-        a,
-        { name: `  ${name}  `, ingredientId: parmesan },
-        'ro',
-      );
+      await useLanguage(a, 'ro');
+      const res = await link(a, {
+        name: `  ${name}  `,
+        ingredientId: parmesan,
+      });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({
@@ -282,11 +292,11 @@ describe('Family Synonyms (integration)', () => {
       const name = unique('Fsyn Twice');
       await linked(a, name, parmesan, 'en');
 
-      const again = await link(
-        a,
-        { name: name.toUpperCase(), ingredientId: parmesan },
-        'da',
-      );
+      await useLanguage(a, 'da');
+      const again = await link(a, {
+        name: name.toUpperCase(),
+        ingredientId: parmesan,
+      });
 
       expect(again.status).toBe(409);
       expect(again.body).toMatchObject({

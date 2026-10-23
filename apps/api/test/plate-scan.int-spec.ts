@@ -10,6 +10,7 @@ import { unmatchedEntries } from '../src/database/schema';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { PLATE_TOKEN_TTL_MS } from '../src/scan/plate-token';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
 const flour = seedId.ingredient('flour');
@@ -90,6 +91,14 @@ describe('Plate Scan (integration)', () => {
       .join('; ');
   }
 
+  /** A Member whose stored UI Language is `locale` (the API ignores the request's own `?locale=`). */
+  async function signUpIn(locale: string) {
+    const cookie = await signUp();
+    await storeUiLanguage(app, cookie, locale);
+    return cookie;
+  }
+
+  // `locale` is sent as the web used to; a signed-in request ignores it.
   const post = (cookie: string, path: string, body: object, locale = 'en') =>
     request(app.getHttpServer())
       .post(`/api/${path}`)
@@ -174,7 +183,12 @@ describe('Plate Scan (integration)', () => {
     it('asks for dish titles in the Member’s UI language, Danish included', async () => {
       respondWith({ matches: [{ title: 'Æbleskiver', confidence: 0.8 }] });
       prompts.length = 0;
-      await post(await signUp(), 'scan/plate', { plateImage: IMAGE }, 'da')
+      await post(
+        await signUpIn('da'),
+        'scan/plate',
+        { plateImage: IMAGE },
+        'da',
+      )
         .query({ locale: 'da' })
         .expect(201);
       expect(prompts[0].prompt).toMatch(/recipe titles in Danish/);
@@ -264,7 +278,7 @@ describe('Plate Scan (integration)', () => {
     it('names Ingredients in the Member locale', async () => {
       respondWith({ items: [item()] });
       const { lines } = (
-        await ingredients(await signUp(), 'Pancakes', 'ro').expect(201)
+        await ingredients(await signUpIn('ro'), 'Pancakes', 'ro').expect(201)
       ).body as { lines: Line[] };
       expect(lines[0].match?.name).not.toBe('Milk');
     });
@@ -544,8 +558,8 @@ describe('Plate Scan (integration)', () => {
           .from(unmatchedEntries)
           .where(ilike(unmatchedEntries.rawName, rawName));
 
-      it('queues a new free-text dish line once, with source plate and the request locale; a merge adds none; a matched line adds none', async () => {
-        const cookie = await signUp();
+      it('queues a new free-text dish line once, with source plate and the stored Catalog Language; a merge adds none; a matched line adds none', async () => {
+        const cookie = await signUpIn('ro');
         const raw = `Zzp pixie ${Date.now()}`;
         await post(
           cookie,

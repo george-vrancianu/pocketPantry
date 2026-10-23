@@ -18,8 +18,8 @@ export type RunningLowChange = {
  * Undo for 5 s, which sends the opposite change. A failed save is reported to the page's Alert.
  */
 export function useRunningLowToggle() {
-  const { t, i18n } = useTranslation('pantry');
-  const save = useSetRunningLow(i18n.language);
+  const { t } = useTranslation('pantry');
+  const save = useSetRunningLow();
   const toast = useToast();
   const outcome = useRowToggleOutcome();
 

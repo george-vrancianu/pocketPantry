@@ -21,8 +21,7 @@ import {
 
 /** The live Eating Moments the Member can pick, named in their locale. */
 export function useMomentOptions(): MomentOption[] {
-  const { i18n } = useTranslation();
-  const filters = useRecipeFilters(i18n.language).data;
+  const filters = useRecipeFilters().data;
   return (filters?.eatingMoments ?? []).map((m) => ({
     id: m.id,
     name: m.name,
@@ -38,12 +37,11 @@ function FamilyRecipePicker({
   onChange,
   excludeId,
 }: RecipePickerProps & { excludeId?: string }) {
-  const { t, i18n } = useTranslation(['recipes', 'admin']);
+  const { t } = useTranslation(['recipes', 'admin']);
   const [search, setSearch] = useState('');
   // Pairing links never hide a Recipe, whatever "Hide Recipes with my Allergies" says.
   const results = useRecipes(
     { search, cuisineId: '', methodId: '' },
-    i18n.language,
     { showHidden: true },
   );
   const options = (results.data?.recipes ?? []).filter(
@@ -119,8 +117,8 @@ export function FamilyGuidanceFields({
 
 /** Guidance of a saved Family Recipe, with its own Save. */
 export function FamilyGuidance({ recipe }: { recipe: FamilyRecipeEdit }) {
-  const { t, i18n } = useTranslation(['admin', 'errors']);
-  const save = useSetFamilyGuidance(recipe.id, i18n.language);
+  const { t } = useTranslation(['admin', 'errors']);
+  const save = useSetFamilyGuidance(recipe.id);
   const momentOptions = useMomentOptions();
   const [draft, setDraft] = useState<GuidanceDraft>(() =>
     toGuidanceDraft(recipe),

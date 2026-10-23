@@ -30,7 +30,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe('Shopping List writes refresh the "on your list" hints', () => {
   it('invalidates every Recipe pantry match when an item is added', async () => {
     const { wrapper, isStale } = setup();
-    const { result } = renderHook(() => useShoppingMutations('en'), {
+    const { result } = renderHook(() => useShoppingMutations(), {
       wrapper,
     });
     await act(() => result.current.add.mutateAsync({ name: 'Eggs' }));
@@ -39,12 +39,9 @@ describe('Shopping List writes refresh the "on your list" hints', () => {
 
   it('invalidates every Recipe pantry match when missing lines are added', async () => {
     const { wrapper, isStale } = setup();
-    const { result } = renderHook(
-      () => useAddMissingToShoppingList('r1', 'en'),
-      {
-        wrapper,
-      },
-    );
+    const { result } = renderHook(() => useAddMissingToShoppingList('r1'), {
+      wrapper,
+    });
     await act(() => result.current.mutateAsync(2));
     expect(isStale()).toBe(true);
   });

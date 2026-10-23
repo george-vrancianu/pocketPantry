@@ -8,18 +8,13 @@ const none = {
 };
 
 describe('Member language resolver', () => {
-  it('uses the stored UI Language, then the request locale, then English', () => {
-    expect(
-      resolveLanguage('ui', { ...none, locale: 'da' }, { requestLocale: 'ro' }),
-    ).toBe('da');
-    expect(resolveLanguage('ui', none, { requestLocale: 'ro' })).toBe('ro');
+  it('uses the stored UI Language, then English', () => {
+    expect(resolveLanguage('ui', { ...none, locale: 'da' })).toBe('da');
     expect(resolveLanguage('ui', none)).toBe('en');
   });
 
   it('ignores a stored value that is not a catalog language', () => {
-    expect(
-      resolveLanguage('ui', { ...none, locale: 'fr' }, { requestLocale: 'ro' }),
-    ).toBe('ro');
+    expect(resolveLanguage('ui', { ...none, locale: 'fr' })).toBe('en');
     expect(
       resolveLanguage('catalog', {
         ...none,
@@ -37,25 +32,14 @@ describe('Member language resolver', () => {
         catalogLanguage: 'ro',
       }),
     ).toBe('ro');
-    expect(
-      resolveLanguage(
-        'catalog',
-        { ...none, locale: 'da' },
-        { requestLocale: 'ro' },
-      ),
-    ).toBe('da');
-    expect(resolveLanguage('catalog', none, { requestLocale: 'ro' })).toBe(
-      'ro',
-    );
+    expect(resolveLanguage('catalog', { ...none, locale: 'da' })).toBe('da');
     expect(resolveLanguage('catalog', none)).toBe('en');
   });
 
   it('lets an explicit override win over everything stored', () => {
     const stored = { ...none, locale: 'da', catalogLanguage: 'ro' };
     expect(resolveLanguage('catalog', stored, { override: 'en' })).toBe('en');
-    expect(
-      resolveLanguage('ui', stored, { override: 'ro', requestLocale: 'en' }),
-    ).toBe('ro');
+    expect(resolveLanguage('ui', stored, { override: 'ro' })).toBe('ro');
   });
 
   it('gives the Scan Language the stored value, or the UI Language when empty', () => {
@@ -63,7 +47,6 @@ describe('Member language resolver', () => {
       resolveLanguage('scan', { ...none, locale: 'en', scanLanguage: 'da' }),
     ).toBe('da');
     expect(resolveLanguage('scan', { ...none, locale: 'ro' })).toBe('ro');
-    expect(resolveLanguage('scan', none, { requestLocale: 'da' })).toBe('da');
     expect(resolveLanguage('scan', none)).toBe('en');
   });
 
@@ -106,7 +89,6 @@ describe('Member language resolver', () => {
       }),
     ).toBe('ro');
     expect(resolveLanguage('spoken', { ...none, locale: 'da' })).toBe('da');
-    expect(resolveLanguage('spoken', none, { requestLocale: 'ro' })).toBe('ro');
     expect(resolveLanguage('spoken', none)).toBe('en');
   });
 

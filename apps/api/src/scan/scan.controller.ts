@@ -38,9 +38,7 @@ export class ScanController {
     @Body(new ScanImagePipe(productScanSchema, ['productImage']))
     body: ProductScanInput,
   ): Promise<ScanResponse> {
-    const languages = await this.languages.languagesOf(member.id, {
-      requestLocale: query.locale,
-    });
+    const languages = await this.languages.languagesOf(member.id);
     return this.scan.scanProduct(
       member.id,
       body,
@@ -60,9 +58,7 @@ export class ScanController {
     @Body(new ScanImagePipe(ingredientsScanSchema, ['ingredientsImage']))
     body: IngredientsScanInput,
   ): Promise<ScanResponse> {
-    const languages = await this.languages.languagesOf(member.id, {
-      requestLocale: query.locale,
-    });
+    const languages = await this.languages.languagesOf(member.id);
     return this.scan.scanIngredients(
       member.id,
       body,

@@ -318,7 +318,6 @@ describe('Add to your catalog: Another name for…', () => {
         name: 'Kombucha',
         ingredientId: 'parmesan-id',
       });
-      expect(new URLSearchParams(post?.search).get('locale')).toBe('en');
       expect(
         calls.some((c) => c.key === 'POST /api/catalog/family-ingredients'),
       ).toBe(false);

@@ -12,6 +12,7 @@ import type {
 } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 jest.setTimeout(30_000);
@@ -35,6 +36,7 @@ type AdminIngredient = {
 describe('Family Ingredient Allergens (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
+  let cookieOfA: string;
   const stamp = Date.now();
   let n = 0;
   const unique = (label: string) => `${label} ${stamp}-${++n}`;
@@ -54,6 +56,7 @@ describe('Family Ingredient Allergens (integration)', () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
     const cookieA = await signUp(app, `fia-a-${stamp}@example.com`, 'A');
+    cookieOfA = cookieA;
     const cookieA2 = await signUp(app, `fia-a2-${stamp}@example.com`, 'A2');
     a = client(app, cookieA, '/api');
     a2 = client(app, cookieA2, '/api');
@@ -151,8 +154,11 @@ describe('Family Ingredient Allergens (integration)', () => {
 
   describe('the Allergen options', () => {
     it('lists the Allergens in the locale and leaves out retired ones', async () => {
-      const list = (await a.get('/catalog/allergens?locale=ro').expect(200))
-        .body as { allergens: { id: string; name: string }[] };
+      await storeUiLanguage(app, cookieOfA, 'ro');
+      const list = (await a.get('/catalog/allergens').expect(200)).body as {
+        allergens: { id: string; name: string }[];
+      };
+      await storeUiLanguage(app, cookieOfA, 'en');
       expect(list.allergens).toContainEqual({ id: MILK, name: 'Lapte' });
       // The one test that needs a live Allergen; it is retired again straight after the check.
       const lychee = await newAllergen(false);

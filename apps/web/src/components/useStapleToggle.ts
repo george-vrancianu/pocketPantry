@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import {
   isPendingStaple,
   useStapleMutations,
@@ -17,9 +16,8 @@ export function useStapleToggle(
   name: string,
   onSaved?: (isStaple: boolean) => void,
 ) {
-  const { i18n } = useTranslation();
-  const staples = useStaples(i18n.language);
-  const { add, remove } = useStapleMutations(i18n.language);
+  const staples = useStaples();
+  const { add, remove } = useStapleMutations();
   const outcome = useRowToggleOutcome();
   const staple = staples.data?.find((s) => s.ingredientId === ingredientId);
   // An add started from another row of this Ingredient shows as a placeholder: not ready either.

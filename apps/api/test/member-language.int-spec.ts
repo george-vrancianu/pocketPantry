@@ -7,6 +7,7 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { catalogTranslations, ingredients, user } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { promoteToAdmin } from './support/promote-to-admin';
 
 type Preferences = {
   locale: string | null;
@@ -125,15 +126,15 @@ describe('Member language: Catalog Language (integration)', () => {
       });
     });
 
-    it('take the request locale as the UI Language when none is stored', async () => {
+    it('ignore the request locale: with nothing stored the Catalog Language is English', async () => {
       const { cookie } = await signUp();
       expect(await preferences(cookie, 'ro')).toMatchObject({
         locale: null,
         catalogLanguage: null,
-        effectiveCatalogLanguage: 'ro',
+        effectiveCatalogLanguage: 'en',
       });
       const saved = await savePreferences(cookie, { theme: 'dark' }, 'da');
-      expect(saved.body).toMatchObject({ effectiveCatalogLanguage: 'da' });
+      expect(saved.body).toMatchObject({ effectiveCatalogLanguage: 'en' });
     });
 
     it('follow the UI Language while the Catalog Language is empty', async () => {
@@ -202,7 +203,7 @@ describe('Member language: Catalog Language (integration)', () => {
       });
       expect(await preferences(cookie, 'ro')).toMatchObject({
         scanLanguage: null,
-        effectiveScanLanguage: 'ro',
+        effectiveScanLanguage: 'en',
       });
       await savePreferences(cookie, { locale: 'da' }).expect(200);
       expect(await preferences(cookie)).toMatchObject({
@@ -268,7 +269,7 @@ describe('Member language: Catalog Language (integration)', () => {
       });
       expect(await preferences(cookie, 'ro')).toMatchObject({
         spokenLanguage: null,
-        effectiveSpokenLanguage: 'ro',
+        effectiveSpokenLanguage: 'en',
       });
       await savePreferences(cookie, { locale: 'da' }).expect(200);
       expect(await preferences(cookie)).toMatchObject({
@@ -429,10 +430,100 @@ describe('Member language: Catalog Language (integration)', () => {
       expect(shoppingNames(await shoppingList(cookie, 'en'))).toEqual(['Mælk']);
     });
 
-    it('use the request locale only when the Member has stored no UI Language', async () => {
+    it('ignore the request locale: a Member with nothing stored gets English', async () => {
       const { cookie } = await signUp();
       await stock(cookie, { ingredientId: seedId.ingredient('milk') });
-      expect((await pantry(cookie, 'ro'))[0].name).toBe('Lapte');
+      expect((await pantry(cookie, 'da'))[0].name).toBe('Milk');
+    });
+
+    it('ignore the request locale: a Member with only a UI Language gets that one', async () => {
+      const { cookie } = await signUp();
+      await savePreferences(cookie, { locale: 'ro' }).expect(200);
+      await stock(cookie, { ingredientId: seedId.ingredient('milk') });
+      expect((await pantry(cookie, 'da'))[0].name).toBe('Lapte');
+    });
+
+    it('ignore the request locale: a Romanian Catalog Language beats ?locale=da', async () => {
+      const { cookie } = await signUp();
+      await savePreferences(cookie, { catalogLanguage: 'ro' }).expect(200);
+      await stock(cookie, { ingredientId: seedId.ingredient('milk') });
+      expect((await pantry(cookie, 'da'))[0].name).toBe('Lapte');
+      const found = (
+        await api('get', cookie, '/catalog/search', 'da')
+          .query({ q: 'lapte' })
+          .expect(200)
+      ).body as { results: Array<{ name: string }> };
+      expect(found.results.map((row) => row.name)).toContain('Lapte');
+    });
+  });
+
+  describe('Admin routes keep the explicit locale', () => {
+    it('honours the locale an Admin names, whatever the Admin has stored for their own screens', async () => {
+      const admin = await signUp();
+      const [{ email }] = await database
+        .select({ email: user.email })
+        .from(user)
+        .where(eq(user.id, admin.userId));
+      await promoteToAdmin(database, email);
+      await savePreferences(admin.cookie, {
+        locale: 'en',
+        catalogLanguage: 'ro',
+      }).expect(200);
+      const adminApi = (method: 'get' | 'post', path: string) =>
+        request(app.getHttpServer())
+          [method](`/api/admin/catalog${path}`)
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', admin.cookie);
+      const stamp = Date.now();
+      const created = await adminApi('post', '/ingredients')
+        .send({
+          leafCategoryId: seedId.leaf('hard-cheese'),
+          name: `Preview ${stamp}`,
+          defaultUnit: 'g',
+        })
+        .expect(201);
+      const id = (created.body as { id: string }).id;
+      await adminApi('post', '/translations')
+        .send({
+          entityType: 'ingredient',
+          entityId: id,
+          locale: 'da',
+          kind: 'name',
+          value: `Forhåndsvisning ${stamp}`,
+        })
+        .expect(201);
+      await adminApi('post', '/translations')
+        .send({
+          entityType: 'ingredient',
+          entityId: id,
+          locale: 'ro',
+          kind: 'name',
+          value: `Previzualizare ${stamp}`,
+        })
+        .expect(201);
+      // The same Admin, reading as a Member, gets their stored Catalog Language (Romanian), not Danish.
+      const found = (
+        await request(app.getHttpServer())
+          .get('/api/catalog/search')
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', admin.cookie)
+          .query({ q: `Previzualizare ${stamp}` })
+          .expect(200)
+      ).body as { results: Array<{ id: string; name: string }> };
+      expect(found.results.find((row) => row.id === id)?.name).toBe(
+        `Previzualizare ${stamp}`,
+      );
+      const overview = (await adminApi('get', '').expect(200)).body as {
+        ingredients: Array<{
+          id: string;
+          translations: Array<{ locale: string; value: string }>;
+        }>;
+      };
+      expect(
+        overview.ingredients
+          .find((row) => row.id === id)
+          ?.translations.map((t) => [t.locale, t.value]),
+      ).toContainEqual(['da', `Forhåndsvisning ${stamp}`]);
     });
   });
 });

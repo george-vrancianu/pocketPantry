@@ -109,7 +109,7 @@ export class AssistantService {
     let replyLocale = locale;
     try {
       // What the request writes (Unmatched names, Shopping Item names) is in the Catalog Language.
-      const catalog = await this.languages.catalogLanguageOf(member.id, locale);
+      const catalog = await this.languages.catalogLanguageOf(member.id);
       const today = body.today ?? new Date().toISOString().slice(0, 10);
       const read = await this.voice.readText(member.id, {
         text: body.text,

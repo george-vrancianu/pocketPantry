@@ -24,7 +24,6 @@ import {
   createBatchesBody,
   deleteBatchesBody,
   updateBatchBody,
-  pantryLocaleQuery,
   recentlyStockedQuery,
   type RecentlyStockedQuery,
   type RecentlyStockedView,
@@ -36,7 +35,6 @@ import {
   type CreateBatchesBody,
   type DeleteBatchesBody,
   type UpdateBatchBody,
-  type PantryLocaleQuery,
   type ScanQuery,
 } from './pantry.schemas';
 import { PantryService } from './pantry.service';
@@ -67,7 +65,7 @@ export class PantryController {
     return {
       ingredients: await this.recentlyStocked.list(
         member.id,
-        await this.languages.catalogLanguageOf(member.id, query.locale),
+        await this.languages.catalogLanguageOf(member.id),
         query.limit,
       ),
     };
@@ -80,12 +78,11 @@ export class PantryController {
   })
   async list(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
   ): Promise<{ batches: BatchView[]; runningLow: string[] }> {
     return {
       batches: await this.pantry.list(
         member.id,
-        await this.languages.catalogLanguageOf(member.id, query.locale),
+        await this.languages.catalogLanguageOf(member.id),
       ),
       runningLow: await this.runningLow.list(member.id),
     };
@@ -128,9 +125,7 @@ export class PantryController {
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchBody)) body: CreateBatchBody,
   ): Promise<BatchView> {
-    const languages = await this.languages.languagesOf(member.id, {
-      requestLocale: query.locale,
-    });
+    const languages = await this.languages.languagesOf(member.id);
     return this.pantry.create(
       member.id,
       body,
@@ -149,9 +144,7 @@ export class PantryController {
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
   ): Promise<{ batches: BatchView[] }> {
-    const languages = await this.languages.languagesOf(member.id, {
-      requestLocale: query.locale,
-    });
+    const languages = await this.languages.languagesOf(member.id);
     return {
       batches: await this.pantry.createMany(
         member.id,
@@ -183,14 +176,13 @@ export class PantryController {
   async update(
     @CurrentUser() member: CurrentUserValue,
     @Param(new ZodValidationPipe(batchIdParam)) params: BatchIdParam,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
     @Body(new ZodValidationPipe(updateBatchBody)) body: UpdateBatchBody,
   ): Promise<BatchView> {
     return this.pantry.update(
       member.id,
       params.id,
       body,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 

@@ -9,9 +9,9 @@ import { SectionHeading } from './SectionHeading';
  * the Family can see them (ADR 0014). Absent when the Member is alone in the Family.
  */
 export function MemberAllergiesSection() {
-  const { t, i18n } = useTranslation('settings');
+  const { t } = useTranslation('settings');
   const id = useId();
-  const query = useFamilyAllergies(i18n.language);
+  const query = useFamilyAllergies();
   const members = query.data?.members ?? [];
   if (!query.isError && members.length === 0) return null;
   return (

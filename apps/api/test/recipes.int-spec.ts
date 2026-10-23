@@ -25,6 +25,7 @@ import type {
 } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 const code = (res: { body: unknown }) => (res.body as { code: string }).code;
@@ -47,15 +48,30 @@ describe('Recipes browsing and detail (integration)', () => {
   let n = 0;
   const title = (label: string) => `${label} ${stamp}-${++n}`;
 
+  const cookies = new Map<object, string>();
+  /**
+   * A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+   * Tests keep naming the language in the query; this stores it and drops it.
+   */
+  const asLocale = async (who: object, query: string) => {
+    const params = new URLSearchParams(query.replace(/^\?/, ''));
+    const locale = params.get('locale');
+    params.delete('locale');
+    await storeUiLanguage(app, cookies.get(who) as string, locale ?? 'en');
+    return params.toString();
+  };
   const list = async (query = '', who = memberA) =>
     (
-      (await who.get(`?${query}`).expect(200)).body as {
+      (await who.get(`?${await asLocale(who, query)}`).expect(200)).body as {
         recipes: RecipeListItem[];
       }
     ).recipes.filter((r) => r.title.includes(String(stamp)));
   const titles = (items: RecipeListItem[]) => items.map((r) => r.title);
-  const detail = async (id: string, query = '') =>
-    (await memberA.get(`/${id}${query}`).expect(200)).body as RecipeDetail;
+  const detail = async (id: string, query = '') => {
+    const rest = await asLocale(memberA, query);
+    return (await memberA.get(`/${id}${rest ? `?${rest}` : ''}`).expect(200))
+      .body as RecipeDetail;
+  };
 
   const line = (i: number, quantity = 100) => ({
     ingredientId: ing[i],
@@ -109,11 +125,14 @@ describe('Recipes browsing and detail (integration)', () => {
     await promoteToAdmin(database, adminEmail);
     admin = client(app, cookie, '/api/admin/recipes');
     memberA = client(app, cookie, '/api/recipes');
-    memberB = client(
+    cookies.set(memberA, cookie);
+    const cookieB = await signUp(
       app,
-      await signUp(app, `recipes-browse-b-${stamp}@example.com`, 'Member B'),
-      '/api/recipes',
+      `recipes-browse-b-${stamp}@example.com`,
+      'Member B',
     );
+    memberB = client(app, cookieB, '/api/recipes');
+    cookies.set(memberB, cookieB);
     const [a] = await database
       .select({ familyId: user.familyId })
       .from(user)

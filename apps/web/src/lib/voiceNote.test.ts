@@ -18,7 +18,6 @@ const recording = {
 
 const options = {
   spokenLanguage: 'en',
-  locale: 'en',
   defaultTarget: 'shopping',
 } as const;
 
@@ -39,7 +38,6 @@ async function record(
   note: VoiceNote,
   startOptions: {
     spokenLanguage: 'en' | 'ro';
-    locale: 'en' | 'ro';
     defaultTarget: 'shopping' | 'pantry';
   } = options,
 ) {
@@ -221,14 +219,13 @@ describe('Voice Note module', () => {
   });
 
   describe('sending', () => {
-    it('sends the recording with its language, locale, page and local date', async () => {
+    it('sends the recording with its language, page and local date', async () => {
       vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime(new Date(2026, 9, 19, 12));
       try {
         const { note, requests, answer } = setup();
         await record(note, {
           spokenLanguage: 'ro',
-          locale: 'ro',
           defaultTarget: 'pantry',
         });
         expect(note.getState()).toMatchObject({
@@ -238,7 +235,6 @@ describe('Voice Note module', () => {
         expect(requests[0]).toMatchObject({
           recording,
           spokenLanguage: 'ro',
-          locale: 'ro',
           defaultTarget: 'pantry',
           today: '2026-10-19',
         });
@@ -492,18 +488,16 @@ describe('Voice Note module', () => {
       const ctx = setup();
       await record(ctx.note, {
         spokenLanguage: 'ro',
-        locale: 'en',
         defaultTarget: 'pantry',
       });
       ctx.refuse(new ApiError('network_error', 0));
       await settle();
 
-      const second = ctx.note.retry('ro');
+      const second = ctx.note.retry();
       expect(ctx.note.getState().phase).toBe('reading');
       expect(ctx.requests[1]).toMatchObject({
         recording,
         spokenLanguage: 'ro',
-        locale: 'ro',
         defaultTarget: 'pantry',
       });
       ctx.answer(result('a'));
@@ -521,7 +515,7 @@ describe('Voice Note module', () => {
       await settle();
       expect(ctx.released()).toEqual([1]);
 
-      const second = ctx.note.retry('en');
+      const second = ctx.note.retry();
       expect(ctx.released()).toEqual([1, 0]);
       ctx.answer(result('a'));
       await second;
@@ -530,7 +524,7 @@ describe('Voice Note module', () => {
 
     it('does nothing without a kept recording', async () => {
       const ctx = await failedWith(new ApiError('voice.too_long', 413));
-      void ctx.note.retry('en');
+      void ctx.note.retry();
       expect(ctx.send).toHaveBeenCalledOnce();
       expect(ctx.note.getState().phase).toBe('failed');
     });
@@ -611,7 +605,6 @@ describe('Voice Note module', () => {
       const { note, requests } = setup();
       await note.start({
         spokenLanguage: 'ro',
-        locale: 'ro',
         defaultTarget: 'pantry',
       });
       expect(await note.stop()).toBe('sent');
@@ -623,7 +616,6 @@ describe('Voice Note module', () => {
       expect(requests[0]).toMatchObject({
         recording,
         spokenLanguage: 'ro',
-        locale: 'ro',
         defaultTarget: 'pantry',
       });
     });
@@ -1095,7 +1087,7 @@ describe('Voice Note module', () => {
     it('takes the lock again for a Retry and releases it once', async () => {
       const ctx = await failedWith(new ApiError('network_error', 0));
       expect(ctx.released()).toEqual([1]);
-      void ctx.note.retry('en');
+      void ctx.note.retry();
       expect(ctx.released()).toEqual([1, 0]);
       ctx.answer(result('a'));
       await settle();

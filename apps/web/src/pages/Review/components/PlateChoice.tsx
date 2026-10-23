@@ -43,9 +43,9 @@ const focusCard = (id: string) =>
  * card. When the Plate token has expired the guesses are no use: the Member reads the photo again.
  */
 export function PlateChoice({ scan }: { scan: SessionScan }) {
-  const { t, i18n } = useTranslation('review');
+  const { t } = useTranslation('review');
   const headingId = useId();
-  const ingredients = usePlateIngredients(i18n.language);
+  const ingredients = usePlateIngredients();
   const [expired, setExpired] = useState(false);
 
   if (expired) {
@@ -56,7 +56,7 @@ export function PlateChoice({ scan }: { scan: SessionScan }) {
         autoFocus
         onClick={() => {
           dispatchScanSession({ type: 'reread', id: scan.id });
-          readScans(i18n.language);
+          readScans();
           focusCard(scan.id);
         }}
         sx={{ ...buttonSx, mt: 0.5 }}

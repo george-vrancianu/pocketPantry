@@ -8,7 +8,6 @@ import {
   Patch,
   Post,
   Put,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -23,18 +22,15 @@ import {
   itemIdParam,
   setAmountBody,
   setCheckedBody,
-  shoppingLocaleQuery,
   type AddShoppingItemBody,
   type AddShoppingItemsBody,
   type SetAmountBody,
   type SetCheckedBody,
   type ShoppingListView,
   type AddedShoppingItemsView,
-  type ShoppingLocaleQuery,
 } from './shopping.schemas';
 import { ShoppingService } from './shopping.service';
 
-const localeQuery = new ZodValidationPipe(shoppingLocaleQuery);
 const idParam = new ZodValidationPipe(itemIdParam);
 
 /** Every route works on the signed-in Member's Family list; names come back in the Member's Catalog Language. */
@@ -53,11 +49,10 @@ export class ShoppingController {
   })
   async get(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
   ): Promise<ShoppingListView> {
     return this.shopping.getList(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -69,13 +64,12 @@ export class ShoppingController {
   })
   async add(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addShoppingItemBody)) body: AddShoppingItemBody,
   ): Promise<ShoppingListView> {
     return this.shopping.addItem(
       member.id,
       body,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -87,14 +81,13 @@ export class ShoppingController {
   })
   async addMany(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addShoppingItemsBody))
     body: AddShoppingItemsBody,
   ): Promise<AddedShoppingItemsView> {
     return this.shopping.addItems(
       member.id,
       body.items,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -102,7 +95,6 @@ export class ShoppingController {
   @ApiOperation({ summary: 'Check or uncheck a Shopping Item' })
   async setChecked(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Param(idParam) { id }: { id: string },
     @Body(new ZodValidationPipe(setCheckedBody)) body: SetCheckedBody,
   ): Promise<ShoppingListView> {
@@ -110,7 +102,7 @@ export class ShoppingController {
       member.id,
       id,
       body.checked,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -118,7 +110,6 @@ export class ShoppingController {
   @ApiOperation({ summary: "Set a Shopping Item's quantity and unit" })
   async setAmount(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Param(idParam) { id }: { id: string },
     @Body(new ZodValidationPipe(setAmountBody)) body: SetAmountBody,
   ): Promise<ShoppingListView> {
@@ -126,7 +117,7 @@ export class ShoppingController {
       member.id,
       id,
       body,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -134,13 +125,12 @@ export class ShoppingController {
   @ApiOperation({ summary: 'Remove a Shopping Item' })
   async remove(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Param(idParam) { id }: { id: string },
   ): Promise<ShoppingListView> {
     return this.shopping.removeItem(
       member.id,
       id,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 }

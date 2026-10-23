@@ -10,14 +10,14 @@ vi.mock('./plate', () => ({ postShoppingItems: vi.fn(async () => []) }));
 describe('useApplyTemplate', () => {
   it('makes the Meal plan forecast and Recipe matches stale', async () => {
     const queryClient = new QueryClient();
-    const windowKey = [...mealWindowQueryKey, 'en', '2026-10-15'];
+    const windowKey = [...mealWindowQueryKey, '2026-10-15'];
     const matchKey = ['recipes', 'pantry-match', 'r1'];
     queryClient.setQueryData(windowKey, { days: [] });
     queryClient.setQueryData(matchKey, {});
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
-    const { result } = renderHook(() => useApplyTemplate('en'), { wrapper });
+    const { result } = renderHook(() => useApplyTemplate(), { wrapper });
     result.current.mutate([]);
     await waitFor(() =>
       expect(queryClient.getQueryState(windowKey)?.isInvalidated).toBe(true),

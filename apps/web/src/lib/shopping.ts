@@ -96,28 +96,26 @@ export const isOnList = (
 /** How often the list refetches, so other Members' changes show up without a reload. */
 export const SHOPPING_POLL_INTERVAL_MS = 10_000;
 
-/** Every locale's Shopping List; one locale's is `[...shoppingListQueryKey, locale]`. */
+/** The Family's Shopping List. */
 export const shoppingListQueryKey = ['shopping-list'] as const;
 
-const listKey = (locale: string) => [...shoppingListQueryKey, locale] as const;
-const path = (locale: string, suffix = '') =>
-  `/shopping-list${suffix}?${new URLSearchParams({ locale })}`;
+const path = (suffix = '') => `/shopping-list${suffix}`;
 
 /** The Family's Shopping List, refreshed on an interval and whenever the window regains focus. */
-export function useShoppingList(locale: string) {
+export function useShoppingList() {
   return useQuery({
-    queryKey: listKey(locale),
-    queryFn: () => apiRequest<ShoppingList>(path(locale)),
+    queryKey: shoppingListQueryKey,
+    queryFn: () => apiRequest<ShoppingList>(path()),
     refetchInterval: SHOPPING_POLL_INTERVAL_MS,
     refetchOnWindowFocus: 'always',
   });
 }
 
 /** Mutations answer with the whole updated list, which replaces the cached one. */
-export function useShoppingMutations(locale: string) {
+export function useShoppingMutations() {
   const queryClient = useQueryClient();
   const onSuccess = (list: ShoppingList) => {
-    queryClient.setQueryData(listKey(locale), list);
+    queryClient.setQueryData(shoppingListQueryKey, list);
     // Items on the list are hidden from Suggestions and flagged on Recipe lines.
     return Promise.all(
       shoppingListChangeQueryKeys.map((queryKey) =>
@@ -128,7 +126,7 @@ export function useShoppingMutations(locale: string) {
 
   const add = useMutation({
     mutationFn: (item: NewShoppingItem) =>
-      apiRequest<ShoppingList>(path(locale, '/items'), {
+      apiRequest<ShoppingList>(path('/items'), {
         method: 'POST',
         body: item,
       }),
@@ -136,7 +134,7 @@ export function useShoppingMutations(locale: string) {
   });
   const addMany = useMutation({
     mutationFn: (items: NewShoppingItem[]) =>
-      apiRequest<AddedShoppingItems>(path(locale, '/items/bulk'), {
+      apiRequest<AddedShoppingItems>(path('/items/bulk'), {
         method: 'POST',
         body: { items },
       }),
@@ -145,7 +143,7 @@ export function useShoppingMutations(locale: string) {
   });
   const setChecked = useMutation({
     mutationFn: ({ id, checked }: { id: string; checked: boolean }) =>
-      apiRequest<ShoppingList>(path(locale, `/items/${id}`), {
+      apiRequest<ShoppingList>(path(`/items/${id}`), {
         method: 'PATCH',
         body: { checked },
       }),
@@ -159,7 +157,7 @@ export function useShoppingMutations(locale: string) {
     }: {
       id: string;
     } & Pick<ShoppingItem, 'quantity' | 'unit'>) =>
-      apiRequest<ShoppingList>(path(locale, `/items/${id}/amount`), {
+      apiRequest<ShoppingList>(path(`/items/${id}/amount`), {
         method: 'PUT',
         // Left out means none.
         body: {
@@ -171,7 +169,7 @@ export function useShoppingMutations(locale: string) {
   });
   const remove = useMutation({
     mutationFn: (id: string) =>
-      apiRequest<ShoppingList>(path(locale, `/items/${id}`), {
+      apiRequest<ShoppingList>(path(`/items/${id}`), {
         method: 'DELETE',
       }),
     onSuccess,

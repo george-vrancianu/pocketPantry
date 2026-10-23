@@ -39,14 +39,11 @@ export type FamilyCatalog = {
 
 export const familyCatalogQueryKey = ['family-catalog'] as const;
 
-/** The Family's own Ingredients and Synonyms, names in `locale`. */
-export function useFamilyCatalog(locale: string) {
+/** The Family's own Ingredients and Synonyms, names in the Catalog Language. */
+export function useFamilyCatalog() {
   return useQuery({
-    queryKey: [...familyCatalogQueryKey, locale],
-    queryFn: () =>
-      apiRequest<FamilyCatalog>(
-        `/catalog/family?${new URLSearchParams({ locale })}`,
-      ),
+    queryKey: familyCatalogQueryKey,
+    queryFn: () => apiRequest<FamilyCatalog>('/catalog/family'),
   });
 }
 
@@ -71,14 +68,14 @@ export type FamilyIngredientChange = {
  * Renames and/or recategorises a Family Ingredient. A taken name fails with
  * `catalog.family_ingredient_exists` and the existing result in `params.existing`.
  */
-export function useUpdateFamilyIngredient(locale: string) {
+export function useUpdateFamilyIngredient() {
   const refresh = useRefreshAfterCatalogChange();
   return useMutation({
     mutationFn: ({ id, ...changes }: FamilyIngredientChange) =>
-      apiRequest<CatalogSearchResult>(
-        `/catalog/family-ingredients/${id}?${new URLSearchParams({ locale })}`,
-        { method: 'PATCH', body: changes },
-      ),
+      apiRequest<CatalogSearchResult>(`/catalog/family-ingredients/${id}`, {
+        method: 'PATCH',
+        body: changes,
+      }),
     onSuccess: refresh,
   });
 }

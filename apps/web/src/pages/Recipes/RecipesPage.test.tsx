@@ -343,7 +343,6 @@ describe('RecipesPage', () => {
       await waitFor(() => {
         const query = lastQuery(calls);
         expect(query.get('cuisineId')).toBe('c-it');
-        expect(query.get('locale')).toBe('en');
       });
 
       await user.click(italian);

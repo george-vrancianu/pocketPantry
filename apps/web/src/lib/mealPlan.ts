@@ -233,12 +233,12 @@ export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
 export const mealWindowQueryKey = [...mealPlanQueryKey, 'window'] as const;
 
 /** The Plan Forecast for the next 7 days from the Member's `today` (local date). */
-export function useMealWindow(locale: string, today: IsoDate) {
+export function useMealWindow(today: IsoDate) {
   return useQuery({
-    queryKey: [...mealWindowQueryKey, locale, today],
+    queryKey: [...mealWindowQueryKey, today],
     queryFn: () =>
       apiRequest<MealWindow>(
-        `/meal-plans/window?${new URLSearchParams({ locale, today })}`,
+        `/meal-plans/window?${new URLSearchParams({ today })}`,
       ),
   });
 }

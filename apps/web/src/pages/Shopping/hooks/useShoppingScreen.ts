@@ -14,11 +14,9 @@ import { noSuggestions, useSuggestions } from '../../../lib/suggestions';
 import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
 
 export function useShoppingScreen() {
-  const { t, i18n } = useTranslation();
-  const list = useShoppingList(i18n.language);
-  const { add, setChecked, setAmount, remove } = useShoppingMutations(
-    i18n.language,
-  );
+  const { t } = useTranslation();
+  const list = useShoppingList();
+  const { add, setChecked, setAmount, remove } = useShoppingMutations();
   const removal = useDeferredRemoval(shoppingListQueryKey, remove.mutateAsync);
   // A removed item stays out of the list, refetches included, until its delete has settled.
   const visible = useMemo(
@@ -27,7 +25,7 @@ export function useShoppingScreen() {
   );
   // A failed Suggestions request just hides the section; the list still works.
   // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
-  const suggestions = useSuggestions(i18n.language, localIso(new Date()));
+  const suggestions = useSuggestions(localIso(new Date()));
 
   // A failed add is shown by the Add sheet, next to what was typed.
   const error = list.error ?? setChecked.error;
