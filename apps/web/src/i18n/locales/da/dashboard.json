@@ -84,7 +84,7 @@
       "tidy": "Ryd op"
     },
     "toDoFirst": "{{count}} at gøre · {{title}}",
-    "allDone": "Intet at gøre. Alt er inden for datoen, på lager og styr på.",
+    "allDone": "Intet at gøre.",
     "moreNames": "{{names}} +{{count}}",
     "gainSpoken_one": "hæver scoren med {{count}}",
     "gainSpoken_other": "hæver scoren med {{count}}",
@@ -162,6 +162,12 @@
       "add": "Tilføj {{name}}",
       "setDate": "Sæt dato",
       "setDateName": "Sæt dato for {{name}}"
+    },
+    "gator": {
+      "curious": "Jeg er stadig ved at lære, hvad du har. Læg et par ting mere ind, så kan jeg fortælle, hvordan det går med dit spisekammer.",
+      "dapper": "Fremragende. Alt er inden for datoen, på lager, og der er styr på det hele.",
+      "hmm": "Hmm. Lad os starte her: {{title}}.",
+      "worried": "Lad os få styr på det. Først: {{title}}."
     }
   },
   "mealPlan": {

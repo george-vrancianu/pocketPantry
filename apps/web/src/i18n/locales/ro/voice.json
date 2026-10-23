@@ -73,7 +73,7 @@
     "blocked": "Microfon blocat"
   },
   "listening": {
-    "title": "Ascult",
+    "title": "Gator ascultă",
     "starting": "Pornește…",
     "of": "/ 1:00",
     "hint": "Eliberează pentru a trimite · glisează în afară pentru a anula",
@@ -252,7 +252,7 @@
     "other": "nu a putut fi aplicat"
   },
   "send": {
-    "reading": "Îți citesc nota",
+    "reading": "Gator îți citește nota…",
     "readingMeta": "{{duration}} de vorbire · {{language}}",
     "cancel": "Anulează",
     "cancelled": "Anulat. Nu s-a salvat nimic.",

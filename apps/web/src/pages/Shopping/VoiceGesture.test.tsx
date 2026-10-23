@@ -99,7 +99,7 @@ describe('the recording gesture on the Shopping List', () => {
       fireEvent.pointerMove(button, { clientX: 130, clientY: 530 });
       expect(screen.queryByText('Slide back to keep recording')).toBeNull();
       expect(vibrate).toHaveBeenCalledTimes(2);
-      expect(screen.getByText('Listening')).toBeVisible();
+      expect(screen.getByText("Gator's listening")).toBeVisible();
     });
 
     it('arms by sliding down or up too', async () => {
@@ -124,7 +124,7 @@ describe('the recording gesture on the Shopping List', () => {
       expect(session.cancel).toHaveBeenCalledTimes(1);
       expect(session.stop).not.toHaveBeenCalled();
       expect(sent).toHaveLength(0);
-      expect(screen.queryByText('Listening')).toBeNull();
+      expect(screen.queryByText("Gator's listening")).toBeNull();
       expect(screen.queryByRole('dialog')).toBeNull();
     });
 
@@ -147,7 +147,7 @@ describe('the recording gesture on the Shopping List', () => {
       fireEvent.pointerCancel(button);
 
       await waitFor(() => expect(session.cancel).toHaveBeenCalledTimes(1));
-      expect(screen.queryByText('Listening')).toBeNull();
+      expect(screen.queryByText("Gator's listening")).toBeNull();
       expect(sent).toHaveLength(0);
     });
   });
@@ -181,7 +181,7 @@ describe('the recording gesture on the Shopping List', () => {
       await userEvent.keyboard('{Escape}');
       await holdFor(1_000);
       fireEvent.click(button);
-      await screen.findByText('Listening');
+      await screen.findByText("Gator's listening");
       expect(mic.start).toHaveBeenCalledTimes(2);
     });
 
@@ -203,7 +203,7 @@ describe('the recording gesture on the Shopping List', () => {
       fireEvent.pointerCancel(button, { pointerId: 2, isPrimary: false });
       fireEvent.lostPointerCapture(button, { pointerId: 2 });
       expect(session.cancel).not.toHaveBeenCalled();
-      expect(screen.getByText('Listening')).toBeVisible();
+      expect(screen.getByText("Gator's listening")).toBeVisible();
       expect(sent).toHaveLength(0);
 
       fireEvent.pointerUp(button);
@@ -251,7 +251,7 @@ describe('the recording gesture on the Shopping List', () => {
       expect(await screen.findByText(cancelledToast)).toBeVisible();
       await act(async () => arrive(session));
       expect(session.cancel).toHaveBeenCalledTimes(1);
-      expect(screen.queryByText('Listening')).toBeNull();
+      expect(screen.queryByText("Gator's listening")).toBeNull();
       expect(sent).toHaveLength(0);
     });
 
@@ -355,7 +355,9 @@ describe('the recording gesture on the Shopping List', () => {
       await hold();
       vibrate.mockClear();
       act(() => voiceNote.fail('unavailable'));
-      await waitFor(() => expect(screen.queryByText('Listening')).toBeNull());
+      await waitFor(() =>
+        expect(screen.queryByText("Gator's listening")).toBeNull(),
+      );
       expect(vibrate).not.toHaveBeenCalledWith(14);
     });
   });
@@ -368,7 +370,7 @@ describe('the recording gesture on the Shopping List', () => {
       button.focus();
 
       fireEvent.keyDown(button, { key: ' ' });
-      await screen.findByText('Listening');
+      await screen.findByText("Gator's listening");
       fireEvent.keyDown(button, { key: ' ', repeat: true });
       await holdLongEnough();
       fireEvent.keyUp(button, { key: ' ' });
@@ -386,7 +388,7 @@ describe('the recording gesture on the Shopping List', () => {
       const button = await talkButton();
 
       fireEvent.keyDown(button, { key: 'Enter' });
-      await screen.findByText('Listening');
+      await screen.findByText("Gator's listening");
       fireEvent.keyUp(button, { key: 'Enter' });
 
       expect(
@@ -400,7 +402,7 @@ describe('the recording gesture on the Shopping List', () => {
       renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       fireEvent.keyDown(button, { key: ' ' });
-      await screen.findByText('Listening');
+      await screen.findByText("Gator's listening");
       await holdLongEnough();
 
       await userEvent.keyboard('{Escape}');
@@ -420,7 +422,7 @@ describe('the recording gesture on the Shopping List', () => {
       const button = await talkButton();
 
       fireEvent.click(button);
-      await screen.findByText('Listening');
+      await screen.findByText("Gator's listening");
       expect(button).toHaveAttribute('aria-pressed', 'true');
       await holdFor(1_000);
       expect(sent).toHaveLength(0);
@@ -437,7 +439,7 @@ describe('the recording gesture on the Shopping List', () => {
       renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
       fireEvent.click(button);
-      await screen.findByText('Listening');
+      await screen.findByText("Gator's listening");
       await holdLongEnough();
 
       await userEvent.keyboard('{Escape}');
@@ -465,7 +467,7 @@ describe('the recording gesture on the Shopping List', () => {
       const button = await talkButton();
       place(button);
       pressDown(button, { clientX: 130, clientY: 530 });
-      const card = (await screen.findByText('Listening')).closest(
+      const card = (await screen.findByText("Gator's listening")).closest(
         '[role="status"]',
       )!;
       expect(card).toHaveAttribute('role', 'status');

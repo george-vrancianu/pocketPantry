@@ -1,4 +1,5 @@
 import {
+  GatorImage,
   Alert,
   Box,
   Button,
@@ -6,14 +7,15 @@ import {
   CloseIcon,
   ImagePlusIcon,
   Link,
-  Spinner,
   Typography,
+  color,
   tokens,
   nestedRadius,
   radius,
   useToast,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useGatorAlt } from '../../lib/useGatorAlt';
 import { readScans } from '../../lib/scanReads';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -32,7 +34,7 @@ import { useSessionScanLanguage } from '../../lib/sessionScanLanguage';
 import {
   displayName,
   invalidFields,
-  reviewLinesOf,
+  unsureCount,
   type ReviewLine,
 } from '../../lib/review';
 import { savableLines, useSaveScan } from '../../lib/saveScan';
@@ -86,6 +88,7 @@ export function ReviewOverviewPage() {
   const { t } = useTranslation('review');
   const { t: tScan } = useTranslation('scan');
   const { t: tAll } = useTranslation();
+  const gatorAlt = useGatorAlt();
   const saveScan = useSaveScan();
   const [saving, setSaving] = useState(false);
   // Why each card's last save failed; the card stays until a later Add saves it.
@@ -128,6 +131,10 @@ export function ReviewOverviewPage() {
   // A Plate Scan still showing its dish guesses has nothing to save yet.
   const savable = (scan: SessionScan) => scan.status === 'read' && !scan.dishes;
   const anyRead = session.scans.some(savable);
+  // Everything is read: the olive banner counts the lines Add all will save and the ones to check.
+  const allRead = session.scans.length > 0 && session.scans.every(savable);
+  const readLines = session.scans.flatMap(savableLines);
+  const unsure = unsureCount(readLines);
   // Photos saved over every press of Add, for the toast.
   const added = useRef(0);
 
@@ -207,12 +214,8 @@ export function ReviewOverviewPage() {
     const isReading = display === 'reading';
     const barcode = isBarcodeCard(scan);
     // Lines Receipt Scan left out are not saved, so they are not counted or shown.
-    const lines: ReviewLine[] = reviewLinesOf(scan).filter(
-      (line) => !line.excluded,
-    );
-    const check = lines.filter(
-      (line) => line.lowConfidence || line.match === null,
-    ).length;
+    const lines: ReviewLine[] = savableLines(scan);
+    const check = unsureCount(lines);
     const mergeable = canMerge(session, scan.id);
     // A not-found Barcode card's empty line has no name to show yet.
     const firstName = lines.length > 0 ? displayName(lines[0]).trim() : '';
@@ -271,26 +274,26 @@ export function ReviewOverviewPage() {
               role="status"
               sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}
             >
-              <Box
-                sx={{
-                  display: 'flex',
-                  '& .MuiCircularProgress-root': {
-                    width: '18px !important',
-                    height: '18px !important',
-                  },
-                }}
-              >
-                <Spinner label={t('overview.reading')} />
-              </Box>
+              {/* The line beside Gator says what it is doing, so the image is decorative. */}
+              <GatorImage mood="list-keeper" size={64} decorative />
               <Typography>{t('overview.reading')}</Typography>
             </Box>
           ) : scan.dishes ? (
             <PlateChoice scan={scan} />
           ) : isFailed ? (
             <>
-              <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
-                {t(`overview.${failedCopyKey(scan)}`)}
-              </Typography>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}
+              >
+                <GatorImage
+                  mood="worried"
+                  size={48}
+                  alt={gatorAlt('worried')}
+                />
+                <Typography sx={{ fontWeight: 700 }}>
+                  {t(`overview.${failedCopyKey(scan)}`)}
+                </Typography>
+              </Box>
               {scan.failure === 'cap' ? (
                 <Typography sx={{ fontSize: 13 }}>
                   {tScan('capReached')}
@@ -514,6 +517,35 @@ export function ReviewOverviewPage() {
         ].join(' · ')}
         trailing={<Link href="/scan">{t('overview.camera')}</Link>}
       />
+      {allRead ? (
+        <Box
+          role="status"
+          data-testid="all-read-banner"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            mb: 1.5,
+            py: 1.25,
+            pr: 2,
+            pl: 0.25,
+            borderRadius: radius.card,
+            backgroundColor: tokens.color.accent,
+            color: color.accentInk,
+          }}
+        >
+          <Box sx={{ flex: 'none' }}>
+            <GatorImage mood="happy" size={88} alt={gatorAlt('happy')} />
+          </Box>
+          <Typography sx={{ fontSize: 15, lineHeight: 1.4 }}>
+            <strong>{t('overview.banner', { count: readLines.length })}</strong>
+            <br />
+            {unsure > 0
+              ? t('overview.bannerCheck', { count: unsure })
+              : t('overview.bannerClear', { count: readLines.length })}
+          </Typography>
+        </Box>
+      ) : null}
       {session.scans.length === 0 ? (
         <Typography color="text.secondary">{t('overview.empty')}</Typography>
       ) : (

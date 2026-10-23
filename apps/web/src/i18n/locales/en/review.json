@@ -133,7 +133,7 @@
     "stillReading": "{{count}} still reading",
     "allRead": "all read",
     "camera": "Camera",
-    "reading": "Reading photo…",
+    "reading": "Gator's reading this one…",
     "crop": "Crop receipt photo",
     "remove": "Remove photo",
     "items_one": "{{count}} item",
@@ -156,7 +156,13 @@
     "removeCard": "Remove",
     "pickDish": "Pick the dish",
     "dishOption": "{{title}}, {{percent}}% likely",
-    "readAgain": "Read again"
+    "readAgain": "Read again",
+    "banner_one": "All read! {{count}} item.",
+    "banner_other": "All read! {{count}} items.",
+    "bannerCheck_one": "Check the {{count}} I wasn't sure about, then add them.",
+    "bannerCheck_other": "Check the {{count}} I wasn't sure about, then add them.",
+    "bannerClear_one": "Nothing to check. Add it whenever you're ready.",
+    "bannerClear_other": "Nothing to check. Add them whenever you're ready."
   },
   "plateRecipe": {
     "open": "Save as a Recipe",
