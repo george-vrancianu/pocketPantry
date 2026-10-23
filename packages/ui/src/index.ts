@@ -42,6 +42,12 @@ export {
   IngredientIcon,
   type IngredientIconProps,
 } from './ingredientIcon/IngredientIcon';
+export {
+  GatorImage,
+  GATOR_MOODS,
+  type GatorImageProps,
+  type GatorMood,
+} from './gator/GatorImage';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
 export {

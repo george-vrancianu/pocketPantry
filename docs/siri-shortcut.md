@@ -2,7 +2,7 @@
 
 "Pantry add" is an Apple Shortcut that lets a Member say "Hey Siri, Pantry add", dictate what to add, and hear a one-sentence reply. It sends the dictated text to the API as an Assistant Request (see [ADR 0019](adr/0019-assistant-requests-apply-safe-voice-actions-without-review.md)). Build it on an iPhone or iPad in the Shortcuts app, then share it as an iCloud link.
 
-The name of the Shortcut is the Siri phrase, so it is "Pantry add" in every language. Siri's phrase is English; the dictated items can be in any language Pocket Pantry supports.
+The name of the Shortcut is the Siri phrase, so it is "Pantry add" in every language. Siri's phrase is English; the dictated items can be in any language PantryGator supports.
 
 ## The API contract
 
@@ -34,7 +34,7 @@ Response: `{ "outcomes": [...], "speech": string }`. The Shortcut only uses `spe
 6. **Get Dictionary Value**. Get **Value** for key `speech` in the **Contents of URL** result.
 7. **If**. Input: the **Dictionary Value** from step 6, condition **has any value**.
    - In the If branch: **Speak Text**, text = the **Dictionary Value** from step 6.
-   - In the **Otherwise** branch: **Speak Text**, text = `Pocket Pantry didn't answer. Try again, or check your Assistant Token in Settings.` (a fixed English fallback).
+   - In the **Otherwise** branch: **Speak Text**, text = `PantryGator didn't answer. Try again, or check your Assistant Token in Settings.` (a fixed English fallback).
 8. **End If**.
 
 The If is needed because some failures have no `speech`: a revoked, unknown or missing token gets HTTP 401, a text over 2000 characters or an invalid body gets HTTP 400, and an unexpected server error gets HTTP 500, all with no `speech`; a network failure returns nothing at all. Without the If, Speak Text would say nothing. As far as we know, Get Contents of URL returns the error body on non-2xx statuses rather than stopping the Shortcut, which is what lets the Otherwise branch run; verify this on a device with a revoked token.

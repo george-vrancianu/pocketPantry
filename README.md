@@ -1,19 +1,19 @@
-# Pocket Pantry
+# PantryGator
 
 **Know what's in your kitchen, buy only what you need, and stop throwing food away.**
 
 You come home from the shop, put everything away, and a week later the spinach has gone off at the back of the fridge. Meanwhile someone buys a third jar of paprika because nobody remembered the other two. The shopping list is in one person's head or lost in a group chat.
 
-Pocket Pantry fixes that for you and everyone you live with. Snap a photo of your receipt and your whole shop is in the app in seconds. Everyone at home sees the same pantry and the same shopping list, and the app tells you what to use up before it goes off.
+PantryGator fixes that for you and everyone you live with. Snap a photo of your receipt and your whole shop is in the app in seconds. Everyone at home sees the same pantry and the same shopping list, and the app tells you what to use up before it goes off.
 
 ## Why you'll love it
 
 ### Your groceries, in with one photo
 
-Nobody wants to type in a week of shopping. With Pocket Pantry you don't have to:
+Nobody wants to type in a week of shopping. With PantryGator you don't have to:
 
 - **Photograph your receipt** and every item lands in your pantry, with quantities. Long receipt? Fold it and take a few photos. Bags and other non-food items are left out for you.
-- **Photograph a product** and Pocket Pantry reads what it is and its best-before date.
+- **Photograph a product** and PantryGator reads what it is and its best-before date.
 - **Photograph loose fruit and veg** on the counter and each one is recognised.
 - **Photograph a dish** you love and get the ingredients you need to make it again, ready to add to your shopping list.
 

@@ -6,7 +6,7 @@ import request from 'supertest';
 import { serveWebApp } from '../src/web-app';
 import { createTestApp } from './support/create-test-app';
 
-const INDEX_HTML = '<!doctype html><title>Pocket Pantry</title>';
+const INDEX_HTML = '<!doctype html><title>PantryGator</title>';
 const BUNDLE = 'console.log("app");';
 
 describe('Web app served from the API origin (integration)', () => {

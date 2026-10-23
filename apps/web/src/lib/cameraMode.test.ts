@@ -22,6 +22,15 @@ describe('the camera overlay mode', () => {
     expect(loadOverlayMode()).toBe('barcode');
   });
 
+  it('reads and writes the key saved before the PantryGator rename', () => {
+    localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
+    expect(loadOverlayMode()).toBe('product');
+    saveOverlayMode('barcode');
+    expect(localStorage.getItem('pocket-pantry.camera-overlay-mode')).toBe(
+      'barcode',
+    );
+  });
+
   it('ignores a Scan Mode that is not in the overlay mode slider', () => {
     localStorage.setItem('pocket-pantry.camera-overlay-mode', 'receipt');
     expect(loadOverlayMode()).toBe('barcode');

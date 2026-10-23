@@ -2,7 +2,7 @@
   "intro": {
     "title": "Say what you did",
     "body": "Hold the button, speak, let go. You check every change before anything is saved.",
-    "privacy": "<b>Pocket Pantry needs your microphone</b> to hear Voice Notes. Your browser will ask next. The recording is turned into text to read your changes, then deleted; nothing is kept.",
+    "privacy": "<b>PantryGator needs your microphone</b> to hear Voice Notes. Your browser will ask next. The recording is turned into text to read your changes, then deleted; nothing is kept.",
     "notNow": "Not now",
     "allow": "Allow microphone",
     "examples": {
@@ -56,7 +56,7 @@
   },
   "blocked": {
     "title": "The microphone is blocked",
-    "body": "Voice Notes need it. Allow it for Pocket Pantry in your browser, then come back and hold the button again.",
+    "body": "Voice Notes need it. Allow it for PantryGator in your browser, then come back and hold the button again.",
     "safari": "iPhone, Safari",
     "safariStep1": "Tap <b>aA</b> in the address bar",
     "safariStep2": "<b>Website Settings</b> → <b>Microphone</b> → <b>Allow</b>",

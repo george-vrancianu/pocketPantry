@@ -20,4 +20,11 @@ describe('detectLocale', () => {
     vi.spyOn(window.navigator, 'language', 'get').mockReturnValue('fr-FR');
     expect(detectLocale()).toBe('en');
   });
+
+  it('reads and writes the key saved before the PantryGator rename', () => {
+    window.localStorage.setItem('pocket-pantry.locale', 'da');
+    expect(detectLocale()).toBe('da');
+    saveLocale('ro');
+    expect(window.localStorage.getItem('pocket-pantry.locale')).toBe('ro');
+  });
 });
