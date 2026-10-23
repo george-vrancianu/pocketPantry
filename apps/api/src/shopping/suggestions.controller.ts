@@ -11,6 +11,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { ingredientIdParam, type SuggestionsView } from './suggestions.schemas';
 import {
@@ -24,19 +25,26 @@ import { SuggestionsService } from './suggestions.service';
 @UseGuards(AuthGuard)
 @Controller('shopping-list/suggestions')
 export class SuggestionsController {
-  constructor(private readonly suggestions: SuggestionsService) {}
+  constructor(
+    private readonly suggestions: SuggestionsService,
+    private readonly languages: MemberLanguageService,
+  ) {}
 
   @Get()
   @ApiOperation({
     summary:
       'List Suggestions: missing Staples, then Used Up Ingredients, then running low Ingredients, each in Aisle order, hidden while dismissed or on the list (running low: while flagged, with a Batch)',
   })
-  list(
+  async list(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(shoppingLocaleTodayQuery))
     { locale, today }: ShoppingLocaleTodayQuery,
   ): Promise<SuggestionsView> {
-    return this.suggestions.list(member.id, locale, today);
+    return this.suggestions.list(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id, locale),
+      today,
+    );
   }
 
   @Post(':ingredientId/dismiss')

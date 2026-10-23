@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { MemberLanguageModule } from '../member-language/member-language.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { PantryModule } from '../pantry/pantry.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -14,7 +15,7 @@ import { ShoppingTemplatesController } from './shopping-templates.controller';
 import { ShoppingTemplatesService } from './shopping-templates.service';
 
 @Module({
-  imports: [SettingsModule, PantryModule, CatalogModule],
+  imports: [SettingsModule, PantryModule, CatalogModule, MemberLanguageModule],
   controllers: [
     ShoppingController,
     FinishShoppingController,

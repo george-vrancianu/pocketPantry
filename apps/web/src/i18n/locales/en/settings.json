@@ -52,6 +52,13 @@
     "hideRecipesHint": "Leaves out Recipes with your Allergies, or your Family Allergies, from the Recipes list, Can Make, Cook tonight and Plate Scan matches. Other members' Allergies never hide a Recipe. You can still open any Recipe, and the Meal Plan shows everything.",
     "hideSaveFailed": "Could not save this setting. Try again."
   },
+  "catalogLanguage": {
+    "label": "Catalog Language",
+    "sameAsUi": "Same as UI Language",
+    "hint": "Names of Ingredients, Categories and Aisles. Shown in {{language}}.",
+    "saveFailed": "Could not save your Catalog Language. Try again.",
+    "saved": "Catalog Language saved"
+  },
   "admin": "Catalog",
   "openAdmin": "Curate the Catalog",
   "account": "Account",

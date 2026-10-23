@@ -8,6 +8,7 @@ import {
   LogoutIcon,
   PantryIcon,
   radius,
+  SegmentedControl,
   Stack,
   Typography,
   useToast,
@@ -16,13 +17,20 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
+import { LOCALES } from '../../../i18n';
 import { useSession, useSignOut } from '../../../lib/auth';
-import { useSaveLocale } from '../../../lib/settings';
+import {
+  useMemberPreferences,
+  useSaveCatalogLanguage,
+  useSaveLocale,
+} from '../../../lib/settings';
 import { useLoadedUnmatchedCount } from '../hooks/useLoadedUnmatchedCount';
 import { AllergiesSection } from './AllergiesSection';
 import { AppearanceCard } from './AppearanceCard';
 import { SiriSection } from './SiriSection';
 import { ScopeCaption, SectionHeading } from './SectionHeading';
+
+const SAME_AS_UI = 'same-as-ui';
 
 const initials = (name: string) =>
   name
@@ -38,6 +46,8 @@ export function YouTab() {
   const session = useSession();
   const signOut = useSignOut();
   const saveLocale = useSaveLocale();
+  const saveCatalogLanguage = useSaveCatalogLanguage();
+  const preferences = useMemberPreferences();
   const toast = useToast();
   const navigate = useNavigate();
   const id = useId();
@@ -83,12 +93,51 @@ export function YouTab() {
                 onSuccess: () =>
                   toast.show(
                     i18n.getFixedT(locale, 'settings')('languageSaved'),
+                    { polite: true },
                   ),
               })
             }
           />
         </Box>
         {saveLocale.isError ? <Alert>{t('localeSaveFailed')}</Alert> : null}
+        {preferences.data ? (
+          <Stack spacing={0.5}>
+            <SegmentedControl
+              label={t('catalogLanguage.label')}
+              fullWidth
+              value={preferences.data.catalogLanguage ?? SAME_AS_UI}
+              options={[
+                { value: SAME_AS_UI, label: t('catalogLanguage.sameAsUi') },
+                ...LOCALES.map((language) => ({
+                  value: language,
+                  label: t(`languageNames.${language}`),
+                  lang: language,
+                })),
+              ]}
+              onChange={(value) =>
+                saveCatalogLanguage.mutate(
+                  value === SAME_AS_UI ? null : value,
+                  {
+                    onSuccess: () =>
+                      toast.show(t('catalogLanguage.saved'), {
+                        polite: true,
+                      }),
+                  },
+                )
+              }
+            />
+            <Typography variant="meta" color="text.secondary">
+              {t('catalogLanguage.hint', {
+                language: t(
+                  `languageNames.${preferences.data.effectiveCatalogLanguage}`,
+                ),
+              })}
+            </Typography>
+            {saveCatalogLanguage.isError ? (
+              <Alert>{t('catalogLanguage.saveFailed')}</Alert>
+            ) : null}
+          </Stack>
+        ) : null}
       </Stack>
       <AllergiesSection />
       <SiriSection />

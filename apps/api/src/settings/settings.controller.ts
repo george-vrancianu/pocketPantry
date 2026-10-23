@@ -111,22 +111,26 @@ export class SettingsController {
   @ApiOperation({ summary: "The signed-in Member's Member Preferences" })
   preferences(
     @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(settingsLocaleQuery))
+    { locale }: SettingsLocaleQuery,
   ): Promise<PreferencesView> {
-    return this.settings.getPreferences(member.id);
+    return this.settings.getPreferences(member.id, locale);
   }
 
   @Put('preferences')
   @ApiOperation({
     summary:
-      "Save the Member's locale, Theme and/or hide-Allergies preference; omitted ones are kept",
+      "Save the Member's UI Language, Catalog Language, Theme and/or hide-Allergies preference; omitted ones are kept",
   })
   async setPreferences(
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(updatePreferencesBody))
     body: UpdatePreferencesBody,
+    @Query(new ZodValidationPipe(settingsLocaleQuery))
+    { locale }: SettingsLocaleQuery,
   ): Promise<PreferencesView> {
     await this.settings.setPreferences(member.id, body);
-    return this.settings.getPreferences(member.id);
+    return this.settings.getPreferences(member.id, locale);
   }
 
   @Get('allergies')
