@@ -46,9 +46,9 @@ export function MealPlanPage() {
   const [params] = useSearchParams();
   const focusDay = params.get('day');
   const today = localIso(useToday());
-  const plan = useMealPlan(id, language, today);
-  const mutations = useMealPlanMutations(language, today);
-  const addMissing = useAddMissing(language, today);
+  const plan = useMealPlan(id, today);
+  const mutations = useMealPlanMutations(today);
+  const addMissing = useAddMissing(today);
   const [onlyWhatIHave, setOnlyWhatIHave] = useState(false);
   const [detail, setDetail] = useState<SlotKey | null>(null);
   const [picking, setPicking] = useState<SlotKey | null>(null);

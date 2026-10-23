@@ -57,9 +57,9 @@ export function AllergenContainsRow({
   disabled,
   known = [],
 }: AllergenContainsRowProps) {
-  const { t, i18n } = useTranslation('catalog');
+  const { t } = useTranslation('catalog');
   const labelId = useId();
-  const options = useAllergenOptions(i18n.language);
+  const options = useAllergenOptions();
   const picked = new Set(value.allergenIds);
   // Keep the list's order so what is sent reads the same everywhere.
   const order = options.data ?? [];

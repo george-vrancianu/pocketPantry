@@ -12,9 +12,9 @@ import type { WidgetProps } from './types';
 
 /** How many Ingredients are gone from the Pantry, and the first few by name; the card opens the Shopping List. */
 export function SuggestionsWidget({ size, columns }: WidgetProps) {
-  const { t, i18n } = useTranslation('dashboard');
+  const { t } = useTranslation('dashboard');
   // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
-  const suggestions = useSuggestions(i18n.language, localIso(new Date()));
+  const suggestions = useSuggestions(localIso(new Date()));
   // Named in the order of the Shopping add sheet: expired, Used Up, then missing Staples.
   const all = suggestions.data
     ? goneInOrder(suggestions.data).map((entry) => entry.suggestion)

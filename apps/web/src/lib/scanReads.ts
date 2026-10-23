@@ -35,9 +35,9 @@ const withNetworkRetry = <T>(request: () => Promise<T>) =>
   );
 
 /** A Plate Scan has no Scan Language; its photo yields dish guesses to pick from. */
-function readPlate(scan: SessionScan, locale: string) {
+function readPlate(scan: SessionScan) {
   return withNetworkRetry(() =>
-    apiRequest<PlateDishes>(`/scan/plate?${scanQuery(locale)}`, {
+    apiRequest<PlateDishes>(`/scan/plate?${scanQuery()}`, {
       method: 'POST',
       body: { plateImage: scan.image },
     }),
@@ -46,17 +46,13 @@ function readPlate(scan: SessionScan, locale: string) {
   );
 }
 
-async function send(
-  scan: SessionScan,
-  mode: keyof typeof READ,
-  locale: string,
-) {
+async function send(scan: SessionScan, mode: keyof typeof READ) {
   const target = READ[mode];
   const { lines } = await withNetworkRetry(() =>
-    apiRequest<ScanResponse>(
-      `${target.path}?${scanQuery(locale, scan.scanLanguage)}`,
-      { method: 'POST', body: { [target.field]: scan.image } },
-    ),
+    apiRequest<ScanResponse>(`${target.path}?${scanQuery(scan.scanLanguage)}`, {
+      method: 'POST',
+      body: { [target.field]: scan.image },
+    }),
   );
   if (lines.length === 0) throw new ApiError('scan.nothing_found', 0);
   return lines;
@@ -108,7 +104,7 @@ export function resetReads() {
 }
 
 /** Starts the Barcode Lookup of every Barcode card waiting for one, outside the read slots and the Scan Cap. */
-function startLookups(locale: string) {
+function startLookups() {
   for (const scan of getScanSession().scans) {
     if (
       !isBarcodeCard(scan) ||
@@ -119,7 +115,7 @@ function startLookups(locale: string) {
       continue;
     const code = scan.code;
     lookups.add(scan.id);
-    lookupBarcode(code, locale)
+    lookupBarcode(code)
       .then((lookup) =>
         dispatchScanSession({
           type: 'read',
@@ -147,8 +143,8 @@ function startLookups(locale: string) {
  * Scan Cap as its own reason. The slots are counted by requests still out, not by the Scans'
  * status, so removing a reading Scan does not let a third request start.
  */
-export function readScans(locale: string) {
-  startLookups(locale);
+export function readScans() {
+  startLookups();
   // Past the Scan Cap every read would fail; the rest wait until the capped Scan is retried or removed.
   if (inFlight.size >= MAX_CONCURRENT_READS || capReached(getScanSession()))
     return;
@@ -163,8 +159,8 @@ export function readScans(locale: string) {
       continue;
     inFlight.add(scan.id);
     (scan.mode === 'plate'
-      ? readPlate(scan, locale)
-      : send(scan, scan.mode, locale).then((lines) =>
+      ? readPlate(scan)
+      : send(scan, scan.mode).then((lines) =>
           dispatchScanSession({ type: 'read', id: scan.id, lines }),
         )
     )
@@ -180,7 +176,7 @@ export function readScans(locale: string) {
       })
       .finally(() => {
         inFlight.delete(scan.id);
-        readScans(locale);
+        readScans();
       });
   }
 }

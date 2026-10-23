@@ -17,7 +17,7 @@ function setup(
   vi.stubGlobal('fetch', stub.fetchMock);
   const queryClient = new QueryClient();
   queryClient.setQueryData(suggestionsQueryKey, {});
-  queryClient.setQueryData(['pantry', 'en'], { batches: [], runningLow: [] });
+  queryClient.setQueryData(['pantry'], { batches: [], runningLow: [] });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
@@ -31,17 +31,17 @@ afterEach(() => vi.unstubAllGlobals());
 describe('Turning Running low on or off refreshes the suggestions', () => {
   it('invalidates the Running low suggestions when the flag is turned off', async () => {
     const { wrapper, isStale } = setup();
-    const { result } = renderHook(() => useSetRunningLow('en'), { wrapper });
+    const { result } = renderHook(() => useSetRunningLow(), { wrapper });
     await act(() =>
       result.current.mutateAsync({ ingredientId: 'i1', on: false }),
     );
     expect(isStale(suggestionsQueryKey)).toBe(true);
-    expect(isStale(['pantry', 'en'])).toBe(true);
+    expect(isStale(['pantry'])).toBe(true);
   });
 
   it('invalidates the Running low suggestions when the flag is turned on', async () => {
     const { wrapper, isStale } = setup();
-    const { result } = renderHook(() => useSetRunningLow('en'), { wrapper });
+    const { result } = renderHook(() => useSetRunningLow(), { wrapper });
     await act(() =>
       result.current.mutateAsync({ ingredientId: 'i1', on: true }),
     );
@@ -55,7 +55,7 @@ describe('Turning Running low on or off refreshes the suggestions', () => {
       'PUT /api/pantry/running-low/i2': () =>
         new Response(null, { status: 204 }),
     });
-    const { result } = renderHook(() => useSetRunningLow('en'), { wrapper });
+    const { result } = renderHook(() => useSetRunningLow(), { wrapper });
     const first = result.current
       .mutateAsync({ ingredientId: 'i1', on: true })
       .catch(() => undefined);
@@ -64,7 +64,7 @@ describe('Turning Running low on or off refreshes the suggestions', () => {
     );
     await first;
     expect(
-      queryClient.getQueryData<{ runningLow: string[] }>(['pantry', 'en'])
+      queryClient.getQueryData<{ runningLow: string[] }>(['pantry'])
         ?.runningLow,
     ).toEqual(['i2']);
   });

@@ -62,7 +62,7 @@ function setup() {
       {children}
     </QueryClientProvider>
   );
-  const { result } = renderHook(() => useSaveScan('en'), { wrapper });
+  const { result } = renderHook(() => useSaveScan(), { wrapper });
   return { save: result.current, calls: stub.calls };
 }
 

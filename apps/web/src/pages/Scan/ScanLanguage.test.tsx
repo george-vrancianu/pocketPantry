@@ -151,7 +151,6 @@ describe('Scan Language on the Scan screen', () => {
       await screen.findByText('pantry screen');
       const scan = calls.find((c) => c.key === `POST /api/scan/${mode}`);
       expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBe('da');
-      expect(new URLSearchParams(scan?.search).get('locale')).toBe('en');
       const save = calls.find((c) => c.key === 'POST /api/pantry/batches/bulk');
       expect(new URLSearchParams(save?.search).get('scanLanguage')).toBe('da');
       expect(save?.body).toMatchObject({

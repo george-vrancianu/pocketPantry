@@ -17,13 +17,11 @@ export type Staple = {
 
 export const staplesQueryKey = ['staples'] as const;
 
-const query = (locale: string) => `?${new URLSearchParams({ locale })}`;
-
-export function useStaples(locale: string) {
+export function useStaples() {
   return useQuery({
-    queryKey: [...staplesQueryKey, locale],
+    queryKey: staplesQueryKey,
     queryFn: () =>
-      apiRequest<{ staples: Staple[] }>(`/staples${query(locale)}`).then(
+      apiRequest<{ staples: Staple[] }>('/staples').then(
         (body) => body.staples,
       ),
   });
@@ -49,9 +47,9 @@ export const isPendingStaple = (staple: Pick<Staple, 'id'>) =>
  * Add, edit and remove Staples. Add and remove show in the cache at once and are taken back if
  * the server refuses; add and remove refresh the Staples and the suggestions once they settle.
  */
-export function useStapleMutations(locale: string) {
+export function useStapleMutations() {
   const queryClient = useQueryClient();
-  const key = [...staplesQueryKey, locale];
+  const key = staplesQueryKey;
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: staplesQueryKey }),
@@ -65,7 +63,7 @@ export function useStapleMutations(locale: string) {
 
   const add = useMutation({
     mutationFn: ({ ingredientId, quantity, unit }: NewStaple) =>
-      apiRequest<Staple>(`/staples${query(locale)}`, {
+      apiRequest<Staple>('/staples', {
         method: 'POST',
         body: { ingredientId, quantity, unit } satisfies StapleDraft,
       }),
@@ -104,7 +102,7 @@ export function useStapleMutations(locale: string) {
       quantity: number | null;
       unit: Unit | null;
     }) =>
-      apiRequest<Staple>(`/staples/${id}${query(locale)}`, {
+      apiRequest<Staple>(`/staples/${id}`, {
         method: 'PATCH',
         body: { quantity, unit },
       }),

@@ -133,7 +133,6 @@ describe('Browse by aisle', () => {
     expect(await screen.findAllByTestId('search-skeleton')).toHaveLength(4);
     expect(catalog.last().searchParams.get('aisleId')).toBe(DAIRY_AISLE);
     expect(catalog.last().searchParams.get('q')).toBe('');
-    expect(catalog.last().searchParams.get('locale')).toBe('en');
 
     await catalog.respond(`|${DAIRY_AISLE}|`, [butter, eggs, milk]);
 

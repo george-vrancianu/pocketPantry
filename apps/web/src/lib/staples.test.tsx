@@ -34,14 +34,14 @@ function setup(
   vi.stubGlobal('fetch', stub.fetchMock);
   const queryClient = new QueryClient();
   queryClient.setQueryData(suggestionsQueryKey, {});
-  queryClient.setQueryData(['staples', 'en'], staples);
+  queryClient.setQueryData(['staples'], staples);
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
   const isStale = (key: readonly unknown[]) =>
     queryClient.getQueryState(key)?.isInvalidated;
-  const cached = () => queryClient.getQueryData<Staple[]>(['staples', 'en']);
-  const { result } = renderHook(() => useStapleMutations('en'), { wrapper });
+  const cached = () => queryClient.getQueryData<Staple[]>(['staples']);
+  const { result } = renderHook(() => useStapleMutations(), { wrapper });
   return { result, isStale, cached, calls: stub.calls };
 }
 
@@ -125,7 +125,7 @@ describe('Making an Ingredient a Staple, or no longer one, shows at once', () =>
         .mutateAsync({ ingredientId: 'milk-id' })
         .catch(() => undefined),
     );
-    expect(isStale(['staples', 'en'])).toBe(true);
+    expect(isStale(['staples'])).toBe(true);
     expect(isStale(suggestionsQueryKey)).toBe(true);
   });
 
@@ -138,7 +138,7 @@ describe('Making an Ingredient a Staple, or no longer one, shows at once', () =>
       [milk, eggs],
     );
     await act(() => result.current.remove.mutateAsync('staple-milk'));
-    expect(isStale(['staples', 'en'])).toBe(true);
+    expect(isStale(['staples'])).toBe(true);
     expect(isStale(suggestionsQueryKey)).toBe(true);
   });
 });

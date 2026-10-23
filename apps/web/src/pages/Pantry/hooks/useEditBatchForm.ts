@@ -28,9 +28,9 @@ export function useEditBatchForm(
   batch: Batch,
   { onSaved }: { onSaved: (edit: BatchEdit) => void },
 ) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [opened] = useState(batch);
-  const update = useUpdateBatch(i18n.language);
+  const update = useUpdateBatch();
 
   const [quantity, setQuantity] = useState(
     batch.quantity === null ? '' : String(batch.quantity),

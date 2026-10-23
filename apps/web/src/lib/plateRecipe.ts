@@ -28,7 +28,6 @@ export const matchedIngredientIds = (lines: ReviewLine[]): string[] => [
 /** The closest Catalog Base Recipes to the picked dish, once the panel is open. */
 export function usePlateMatches(
   input: {
-    locale: string;
     dishTitle: string;
     ingredientIds: string[];
     /** Also ask for the matches "Hide Recipes with my Allergies" would leave out. */
@@ -66,7 +65,7 @@ export function toRecipeLine(line: ReviewLine): Line {
 }
 
 /** Saves the dish as a Family Recipe: a Variant of `parentId`, or standalone when it is null. */
-export function useSaveFromPlate(locale: string) {
+export function useSaveFromPlate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: {
@@ -77,7 +76,6 @@ export function useSaveFromPlate(locale: string) {
       apiRequest<FamilyRecipeEdit>('/recipes/from-plate', {
         method: 'POST',
         body: {
-          locale,
           title: input.title.trim(),
           parentId: input.parentId,
           lines: input.lines.map(toRecipeLine),

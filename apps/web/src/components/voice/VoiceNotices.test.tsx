@@ -17,7 +17,6 @@ const start = async () => {
   await voiceNote.start({
     defaultTarget: 'shopping',
     spokenLanguage: 'en',
-    locale: 'en',
   });
   await voiceNote.stop();
 };
@@ -40,7 +39,6 @@ describe('Voice Note notices at the app root', () => {
       voiceNote.start({
         defaultTarget: 'shopping',
         spokenLanguage: 'en',
-        locale: 'en',
       }),
     );
     act(() => voiceNote.cancel({ quiet: true }));
@@ -50,7 +48,6 @@ describe('Voice Note notices at the app root', () => {
       voiceNote.start({
         defaultTarget: 'shopping',
         spokenLanguage: 'en',
-        locale: 'en',
       }),
     );
     act(() => voiceNote.cancel());
@@ -66,7 +63,6 @@ describe('Voice Note notices at the app root', () => {
       voiceNote.start({
         defaultTarget: 'shopping',
         spokenLanguage: 'en',
-        locale: 'en',
       }),
     );
     await act(() => vi.advanceTimersByTimeAsync(60_000));

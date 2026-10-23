@@ -41,11 +41,11 @@ export const openIngredientKey = (
 ): OpenIngredientKey => `${location}/${rowKey}`;
 
 export function usePantryScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const today = useToday();
-  const batches = useBatches(i18n.language);
+  const batches = useBatches();
   // One observer for the screen, so each row reads its flag from props rather than its own query.
-  const runningLow = useRunningLow(i18n.language);
+  const runningLow = useRunningLow();
   const flagged = runningLow.data ?? new Set<string>();
   const { mutateAsync: sendDelete } = useDeleteBatch();
   const removal = useDeferredRemoval(['pantry'], sendDelete);

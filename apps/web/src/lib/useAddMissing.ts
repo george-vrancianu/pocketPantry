@@ -20,13 +20,13 @@ import { useHealthToast } from './useHealthToast';
  * (put back if the add fails), a toast "{n} added to the Shopping List" whose Undo deletes exactly the
  * Shopping Items the add created, and a refetch of the Shopping List and the Widget.
  */
-export function useAddMissing(locale: string, today: IsoDate) {
+export function useAddMissing(today: IsoDate) {
   const { t } = useTranslation('dashboard');
   const { undoOptions } = useHealthToast();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const { remove } = useShoppingMutations(locale);
-  const windowKey = [...mealWindowQueryKey, locale, today];
+  const { remove } = useShoppingMutations();
+  const windowKey = [...mealWindowQueryKey, today];
 
   const refetch = () =>
     Promise.all(
@@ -53,7 +53,7 @@ export function useAddMissing(locale: string, today: IsoDate) {
   const mutation = useMutation({
     mutationFn: (scope: AddMissingScope) =>
       apiRequest<AddedMissing>(
-        `/meal-plans/add-missing?${new URLSearchParams({ locale, today })}`,
+        `/meal-plans/add-missing?${new URLSearchParams({ today })}`,
         { method: 'POST', body: scope },
       ),
     onMutate: async (scope) => {

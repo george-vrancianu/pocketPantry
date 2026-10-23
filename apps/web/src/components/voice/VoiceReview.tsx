@@ -76,7 +76,7 @@ export function VoiceReview() {
 function ReviewSheet() {
   const { t, i18n } = useTranslation(['voice', 'common']);
   const { proposal, defaultTarget, phase, recording } = useVoiceNoteState();
-  const { locale, spokenLanguage } = usePreferredSpokenLanguage();
+  const { spokenLanguage } = usePreferredSpokenLanguage();
   const toast = useToast();
   const queryClient = useQueryClient();
   const body = useRef<HTMLDivElement>(null);
@@ -122,7 +122,7 @@ function ReviewSheet() {
   const applying = phase === 'applying';
   const apply = useMutation({
     onMutate: () => voiceNote.applying(),
-    mutationFn: () => applyVoiceActions(applicable, locale),
+    mutationFn: () => applyVoiceActions(applicable),
     onError: () => voiceNote.applyFailed(),
     onSuccess: (result: VoiceApplyResult) => {
       const { message, detail } = applyToast(

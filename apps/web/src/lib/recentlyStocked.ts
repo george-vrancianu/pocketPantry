@@ -9,15 +9,12 @@ export type RecentlyStocked = CatalogSearchResult & {
   inPantry: boolean;
 };
 
-export function useRecentlyStocked(locale: string, limit: number) {
+export function useRecentlyStocked(limit: number) {
   return useQuery({
-    queryKey: [...recentlyStockedQueryKey, locale, limit],
+    queryKey: [...recentlyStockedQueryKey, limit],
     queryFn: () =>
       apiRequest<{ ingredients: RecentlyStocked[] }>(
-        `/pantry/recently-stocked?${new URLSearchParams({
-          locale,
-          limit: String(limit),
-        })}`,
+        `/pantry/recently-stocked?${new URLSearchParams({ limit: String(limit) })}`,
       ).then((body) => body.ingredients),
   });
 }

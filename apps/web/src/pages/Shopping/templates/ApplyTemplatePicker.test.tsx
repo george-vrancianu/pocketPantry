@@ -47,7 +47,7 @@ const template: Template = {
 
 /** Keeps a Suggestions query mounted, as the Shopping List does. */
 function SuggestionsProbe() {
-  useSuggestions('en', '2026-10-11');
+  useSuggestions('2026-10-11');
   return null;
 }
 

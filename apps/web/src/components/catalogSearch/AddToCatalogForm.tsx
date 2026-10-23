@@ -83,7 +83,7 @@ export function AddToCatalogForm({
   initialAllergenIds,
 }: AddToCatalogFormProps) {
   const { color } = tokens;
-  const { t, i18n } = useTranslation('catalog');
+  const { t } = useTranslation('catalog');
   const id = useId();
   const [name, setName] = useState(typed);
   const [mode, setMode] = useState<Mode>('new');
@@ -95,8 +95,8 @@ export function AddToCatalogForm({
   const [category, setCategory] = useState<CatalogCategory | null>(null);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(-1);
-  const categories = useCatalogCategories(query, i18n.language, !category);
-  const create = useCreateFamilyIngredient(i18n.language);
+  const categories = useCatalogCategories(query, !category);
+  const create = useCreateFamilyIngredient();
   const existing = create.error ? existingOf(create.error) : null;
   const failed = create.isError && !existing;
   const rows = categories.data ?? [];

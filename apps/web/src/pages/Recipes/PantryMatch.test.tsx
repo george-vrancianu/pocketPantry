@@ -286,7 +286,6 @@ describe('Recipe detail Pantry status', () => {
       return c!;
     });
     expect(post.body).toMatchObject({ servings: 3 });
-    expect(post.search).toContain('locale=en');
     expect(
       await screen.findByText('Added 3 items to your Shopping List'),
     ).toBeVisible();
@@ -737,7 +736,6 @@ describe('Recipe detail per-line add', () => {
       return c!;
     });
     expect(post.body).toMatchObject({ lineId: 'l-egg', servings: 2 });
-    expect(post.search).toContain('locale=en');
     expect(
       await screen.findByText('Added Egg to your Shopping List'),
     ).toBeVisible();
@@ -908,11 +906,11 @@ describe('Recipe detail per-line add', () => {
 function CacheProbe() {
   const queryClient = useQueryClient();
   useQuery({
-    queryKey: [...suggestionsQueryKey, 'en', 'today'],
+    queryKey: [...suggestionsQueryKey, 'today'],
     queryFn: () => apiRequest('/shopping-list/suggestions'),
   });
   const list = useQuery({
-    queryKey: [...shoppingListQueryKey, 'en'],
+    queryKey: shoppingListQueryKey,
     queryFn: () => new Promise<{ items: unknown[] }>(() => {}),
     enabled: false,
   });

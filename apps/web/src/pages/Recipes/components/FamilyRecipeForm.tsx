@@ -57,8 +57,8 @@ export function FamilyRecipeForm({
   onSave,
   onCancel,
 }: Props) {
-  const { t, i18n } = useTranslation(['recipes', 'admin', 'common']);
-  const filters = useRecipeFilters(i18n.language);
+  const { t } = useTranslation(['recipes', 'admin', 'common']);
+  const filters = useRecipeFilters();
   const [draft, setDraft] = useState<FamilyDraft>(initial);
   const [searchKey, setSearchKey] = useState(0);
   const [guidanceDraft, setGuidanceDraft] = useState<GuidanceDraft | null>(

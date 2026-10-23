@@ -74,7 +74,7 @@ export function PlateRecipeSave({
   hasInvalidLine,
   onSaved,
 }: Props) {
-  const { t, i18n } = useTranslation('review');
+  const { t } = useTranslation('review');
   const groupName = useId();
   // The Ingredients are read when the panel opens, so editing lines does not reshuffle the matches.
   const [ingredientIds, setIngredientIds] = useState<string[] | null>(null);
@@ -93,12 +93,11 @@ export function PlateRecipeSave({
     else if (wasOpen.current) openerRef.current?.focus();
     wasOpen.current = open;
   }, [open]);
-  const save = useSaveFromPlate(i18n.language);
+  const save = useSaveFromPlate();
   // "Show" in the hidden-by-Allergies note asks for the closest matches again, hidden ones too.
   const [showHidden, setShowHidden] = useState(false);
   const matches = usePlateMatches(
     {
-      locale: i18n.language,
       dishTitle,
       ingredientIds: ingredientIds ?? [],
       ...(showHidden ? { showHidden: true as const } : {}),
@@ -108,7 +107,6 @@ export function PlateRecipeSave({
   const searching = open && search.trim() !== '';
   const found = useRecipes(
     { search: searching ? search : '', cuisineId: '', methodId: '' },
-    i18n.language,
     // A title search is a deliberate look-up with no note to show, so it lists every Recipe
     // (each still carries its Allergy indicator); only the suggested matches hide (ADR 0014 records this exception).
     { searchOnly: true, showHidden: true },

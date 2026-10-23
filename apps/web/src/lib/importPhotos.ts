@@ -24,8 +24,6 @@ export type ImportOptions = {
   mode: ScanMode;
   /** What the Scans are read in; Plate has none, so it is dropped for a Plate Scan. */
   scanLanguage: ScanLanguage;
-  /** The UI language, for the read. */
-  uiLanguage: string;
   /** Some files did not fit under the Scan Session's limit and were left out. */
   onFull: () => void;
   /** A file could not be prepared. */
@@ -39,7 +37,7 @@ export type ImportOptions = {
  */
 export function importPhotos(
   picked: File[],
-  { mode, scanLanguage, uiLanguage, onFull, onInvalid }: ImportOptions,
+  { mode, scanLanguage, onFull, onInvalid }: ImportOptions,
 ): void {
   const room = importRoom();
   if (picked.length > room) onFull();
@@ -71,7 +69,7 @@ export function importPhotos(
             type: 'enqueue',
             scan: { ...base, id, image, thumbnail: image },
           });
-          readScans(uiLanguage);
+          readScans();
           if (mode === 'product')
             decodePhotoBarcode(id, file, (photo) => readBarcode(photo));
         },

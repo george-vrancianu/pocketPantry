@@ -35,7 +35,6 @@ export type CookTonightView = {
 
 /** Cards arrive ranked best first. */
 export function useCookTonight(
-  locale: string,
   today: string,
   /** Also ask for the Recipes "Hide Recipes with my Allergies" would leave out. */
   showHidden = false,
@@ -44,12 +43,11 @@ export function useCookTonight(
     queryKey: [
       ...recipesQueryKey,
       'cook-tonight',
-      locale,
       today,
       ...(showHidden ? ['showHidden'] : []),
     ],
     queryFn: () => {
-      const params = new URLSearchParams({ locale, today });
+      const params = new URLSearchParams({ today });
       if (showHidden) params.set('showHidden', 'true');
       return apiRequest<CookTonightView>(`/recipes/cook-tonight?${params}`);
     },

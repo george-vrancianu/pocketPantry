@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   healthTodos,
   pantryHealth,
@@ -47,17 +46,15 @@ export type PantryHealthState = {
 
 /** The Family's Pantry Health and Health To-dos, from the Pantry, Staples, Shopping List, Suggestions (dismissed ids) and Stale Threshold reads. */
 export function usePantryHealth(): PantryHealthState {
-  const { i18n } = useTranslation();
   const { messageWithScore } = useHealthToast();
-  const locale = i18n.language;
   const today = localIso(useToday());
-  const batches = useBatches(locale);
-  const runningLow = useRunningLow(locale);
-  const staples = useStaples(locale);
-  const shopping = useShoppingList(locale);
-  const suggestions = useSuggestions(locale, today);
-  const settings = useFamilySettings(locale);
-  const staleThresholdDays = useStaleThresholdDays(locale);
+  const batches = useBatches();
+  const runningLow = useRunningLow();
+  const staples = useStaples();
+  const shopping = useShoppingList();
+  const suggestions = useSuggestions(today);
+  const settings = useFamilySettings();
+  const staleThresholdDays = useStaleThresholdDays();
 
   const { mutateAsync: sendDeleteMany } = useDeleteBatches();
   const removal = useDeferredRemoval(['pantry'], undefined, sendDeleteMany);

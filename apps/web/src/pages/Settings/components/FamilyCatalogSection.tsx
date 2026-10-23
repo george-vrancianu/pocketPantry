@@ -39,8 +39,8 @@ const USAGE_KINDS: Array<keyof FamilyIngredientUsage> = [
 export function FamilyCatalogSection() {
   const { t, i18n } = useTranslation(['settings', 'common']);
   const id = useId();
-  const catalog = useFamilyCatalog(i18n.language);
-  const updateIngredient = useUpdateFamilyIngredient(i18n.language);
+  const catalog = useFamilyCatalog();
+  const updateIngredient = useUpdateFamilyIngredient();
   const deleteIngredient = useDeleteFamilyIngredient();
   const deleteSynonym = useDeleteFamilySynonym();
   const setAllergens = useSetFamilyIngredientAllergens();
@@ -387,9 +387,9 @@ function IngredientEditor({
   onCancel: () => void;
   onSave: (changes: { name?: string; leafCategoryId?: string }) => void;
 }) {
-  const { t, i18n } = useTranslation(['settings', 'common']);
+  const { t } = useTranslation(['settings', 'common']);
   const id = useId();
-  const categories = useCategoryOptions(i18n.language);
+  const categories = useCategoryOptions();
   const [name, setName] = useState(ingredient.name);
   const [leafId, setLeafId] = useState(ingredient.leafCategory.id);
   const trimmed = name.trim();

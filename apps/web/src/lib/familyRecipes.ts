@@ -95,16 +95,12 @@ export type FamilyRecipeDocument = {
   guidance?: GuidanceInput;
 };
 
-const localeQuery = (locale: string) => new URLSearchParams({ locale });
-
 /** The copy of a visible Recipe to start a Family Variant from. */
-export function useVariantDraft(sourceId: string, locale: string) {
+export function useVariantDraft(sourceId: string) {
   return useQuery({
-    queryKey: [...recipesQueryKey, 'variant-draft', sourceId, locale],
+    queryKey: [...recipesQueryKey, 'variant-draft', sourceId],
     queryFn: () =>
-      apiRequest<FamilyRecipeDraft>(
-        `/recipes/${sourceId}/variant-draft?${localeQuery(locale)}`,
-      ),
+      apiRequest<FamilyRecipeDraft>(`/recipes/${sourceId}/variant-draft`),
     // A draft is a snapshot the Member is editing: never refetch under them.
     staleTime: Infinity,
     gcTime: 0,
@@ -112,13 +108,10 @@ export function useVariantDraft(sourceId: string, locale: string) {
 }
 
 /** The Family's own Recipe for editing. */
-export function useFamilyRecipeEdit(id: string, locale: string) {
+export function useFamilyRecipeEdit(id: string) {
   return useQuery({
-    queryKey: [...recipesQueryKey, 'edit', id, locale],
-    queryFn: () =>
-      apiRequest<FamilyRecipeEdit>(
-        `/recipes/${id}/edit?${localeQuery(locale)}`,
-      ),
+    queryKey: [...recipesQueryKey, 'edit', id],
+    queryFn: () => apiRequest<FamilyRecipeEdit>(`/recipes/${id}/edit`),
     // Unsaved edits live in the form: never refetch under them.
     refetchOnWindowFocus: false,
   });
@@ -155,50 +148,48 @@ function useFamilyWrite<Input, Result>(
 }
 
 /** Create a Variant under `parentId` (or, with null, a standalone Base Recipe). */
-export function useCreateFamilyRecipe(locale: string) {
+export function useCreateFamilyRecipe() {
   return useFamilyWrite(
     (input: { parentId: string | null; document: FamilyRecipeDocument }) =>
       apiRequest<FamilyRecipeEdit>('/recipes', {
         method: 'POST',
-        body: { ...input.document, parentId: input.parentId, locale },
+        body: { ...input.document, parentId: input.parentId },
       }),
   );
 }
 
-export function useUpdateFamilyRecipe(id: string, locale: string) {
+export function useUpdateFamilyRecipe(id: string) {
   return useFamilyWrite((document: FamilyRecipeDocument) =>
     apiRequest<FamilyRecipeEdit>(`/recipes/${id}`, {
       method: 'PUT',
-      body: { ...document, locale },
+      body: document,
     }),
   );
 }
 
 /** The UI's Delete: the Recipe is archived, never removed. */
-export function useArchiveFamilyRecipe(id: string, locale: string) {
+export function useArchiveFamilyRecipe(id: string) {
   return useFamilyWrite(
     () =>
-      apiRequest<FamilyRecipeEdit>(
-        `/recipes/${id}/archive?${localeQuery(locale)}`,
-        { method: 'POST' },
-      ),
+      apiRequest<FamilyRecipeEdit>(`/recipes/${id}/archive`, {
+        method: 'POST',
+      }),
     { refetchNow: false },
   );
 }
 
 /** Same shape as the Admin's `useTipWrites`, so the Tips editor serves both. */
-export function useFamilyTipWrites(id: string, locale: string) {
+export function useFamilyTipWrites(id: string) {
   const path = `/recipes/${id}`;
-  const query = `?${localeQuery(locale)}`;
   const add = useFamilyWrite((input: { text: string; stepId: string | null }) =>
-    apiRequest<unknown>(`${path}/tips${query}`, {
+    apiRequest<unknown>(`${path}/tips`, {
       method: 'POST',
       body: input,
     }),
   );
   const update = useFamilyWrite(
     ({ tipId, text }: { tipId: string; text: string }) =>
-      apiRequest<unknown>(`${path}/tips/${tipId}${query}`, {
+      apiRequest<unknown>(`${path}/tips/${tipId}`, {
         method: 'PATCH',
         body: { text },
       }),
@@ -207,13 +198,13 @@ export function useFamilyTipWrites(id: string, locale: string) {
     apiRequest<unknown>(`${path}/tips/${tipId}`, { method: 'DELETE' }),
   );
   const reorder = useFamilyWrite((ids: string[]) =>
-    apiRequest<unknown>(`${path}/tips/order${query}`, {
+    apiRequest<unknown>(`${path}/tips/order`, {
       method: 'PUT',
       body: { ids },
     }),
   );
   const hide = useFamilyWrite((tipIds: string[]) =>
-    apiRequest<unknown>(`${path}/hidden-tips${query}`, {
+    apiRequest<unknown>(`${path}/hidden-tips`, {
       method: 'PUT',
       body: { tipIds },
     }),
@@ -222,11 +213,11 @@ export function useFamilyTipWrites(id: string, locale: string) {
 }
 
 /** Replace the guidance of the Family's own Recipe (its own save, apart from the document). */
-export function useSetFamilyGuidance(id: string, locale: string) {
+export function useSetFamilyGuidance(id: string) {
   return useFamilyWrite((input: GuidanceInput) =>
-    apiRequest<FamilyRecipeEdit>(
-      `/recipes/${id}/guidance?${localeQuery(locale)}`,
-      { method: 'PUT', body: input },
-    ),
+    apiRequest<FamilyRecipeEdit>(`/recipes/${id}/guidance`, {
+      method: 'PUT',
+      body: input,
+    }),
   );
 }

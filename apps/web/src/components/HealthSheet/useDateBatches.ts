@@ -23,11 +23,11 @@ type Change = { id: string; expiryDate: IsoDate | null };
  * whose Undo PATCHes every Batch back to the date it had.
  */
 export function useDateBatches(state: PantryHealthState): DateFix {
-  const { t, i18n } = useTranslation('dashboard');
+  const { t } = useTranslation('dashboard');
   const { messageWithScore, undoOptions } = useHealthToast();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const update = useUpdateBatch(i18n.language);
+  const update = useUpdateBatch();
   // One mutation tracks only its latest call, so the whole batch of PATCHes is counted here.
   const [running, setRunning] = useState(0);
 

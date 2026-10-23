@@ -5,11 +5,11 @@ import type { Batch, NewBatch } from './pantry';
 import type { ReceiptSectionResult } from './receiptSections';
 
 /** Receipt Scan: the photo goes up as a data URL and is never stored. */
-export function useReceiptScan(locale: string, scanLanguage: string) {
+export function useReceiptScan(scanLanguage: string) {
   return useMutation({
     mutationFn: (receiptImage: string) =>
       apiRequest<ReceiptSectionResult>(
-        `/scan/receipt?${scanQuery(locale, scanLanguage)}`,
+        `/scan/receipt?${scanQuery(scanLanguage)}`,
         { method: 'POST', body: { receiptImage } },
       ),
   });
@@ -53,23 +53,19 @@ export function countTickFailures(
  * counted by kind so Review can say so.
  */
 export async function postReceiptConfirm(
-  locale: string,
   scanLanguage: string | undefined,
   batches: NewBatch[],
 ): Promise<ReceiptConfirmResult> {
   const result = await apiRequest<ReceiptConfirmation>(
-    `/scan/receipt/confirm?${scanQuery(locale, scanLanguage)}`,
+    `/scan/receipt/confirm?${scanQuery(scanLanguage)}`,
     { method: 'POST', body: { batches } },
   );
   const outcomes = await Promise.allSettled(
     result.matchedShoppingItemIds.map((id) =>
-      apiRequest(
-        `/shopping-list/items/${id}?${new URLSearchParams({ locale })}`,
-        {
-          method: 'PATCH',
-          body: { checked: true },
-        },
-      ),
+      apiRequest(`/shopping-list/items/${id}`, {
+        method: 'PATCH',
+        body: { checked: true },
+      }),
     ),
   );
   return { ...result, tickFailures: countTickFailures(outcomes) };

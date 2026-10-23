@@ -20,7 +20,7 @@ describe('useRecentlyStocked', () => {
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
-    const { result } = renderHook(() => useRecentlyStocked('en', 8), {
+    const { result } = renderHook(() => useRecentlyStocked(8), {
       wrapper,
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

@@ -120,7 +120,7 @@ describe('Voice Note on the Shopping List', () => {
     expect(session.stop).toHaveBeenCalledTimes(1);
     expect(sent).toHaveLength(1);
     expect(sent[0].get('spokenLanguage')).toBe('en');
-    expect(sent[0].get('locale')).toBe('en');
+    expect(sent[0].has('locale')).toBe(false);
     expect(sent[0].get('defaultTarget')).toBe('shopping');
     expect(sent[0].get('today')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(sent[0].get('durationMs')).toBe('3000');

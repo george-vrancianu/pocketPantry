@@ -32,9 +32,9 @@ type Props = {
  * everything else starts ticked. Only the ticked lines are added.
  */
 export function ApplyTemplatePicker({ templateId, onDone, onCancel }: Props) {
-  const { t, i18n } = useTranslation(['templates', 'common']);
-  const template = useTemplate(templateId, i18n.language);
-  const shoppingList = useShoppingList(i18n.language);
+  const { t } = useTranslation(['templates', 'common']);
+  const template = useTemplate(templateId);
+  const shoppingList = useShoppingList();
 
   // Defaults depend on the trolley, so wait for the list (an error falls back to none).
   if (template.isPending || shoppingList.isPending)
@@ -69,8 +69,8 @@ function Picker({
   template: Template;
   list: ShoppingList | undefined;
 }) {
-  const { t, i18n } = useTranslation(['templates', 'common', 'shopping']);
-  const apply = useApplyTemplate(i18n.language);
+  const { t } = useTranslation(['templates', 'common', 'shopping']);
+  const apply = useApplyTemplate();
   const { name, lines } = template;
   const { selection, isTicked, ticked, toggle } = useSingleTemplateSelection(
     template,

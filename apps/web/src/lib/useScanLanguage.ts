@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Locale, ScanLanguage } from '../i18n/resources';
+import type { ScanLanguage } from '../i18n/resources';
 import { usePreferredScanLanguage } from './sessionScanLanguage';
 
 /**
@@ -8,14 +8,12 @@ import { usePreferredScanLanguage } from './sessionScanLanguage';
  * as the component that asked and is never saved.
  */
 export function useScanLanguage(): {
-  locale: Locale;
   scanLanguage: ScanLanguage;
   setScanLanguage: (language: ScanLanguage) => void;
 } {
-  const { locale, scanLanguage: preferred } = usePreferredScanLanguage();
+  const { scanLanguage: preferred } = usePreferredScanLanguage();
   const [picked, setPicked] = useState<ScanLanguage | null>(null);
   return {
-    locale,
     scanLanguage: picked ?? preferred,
     setScanLanguage: setPicked,
   };

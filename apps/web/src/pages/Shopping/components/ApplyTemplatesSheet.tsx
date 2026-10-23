@@ -80,11 +80,11 @@ export function ApplyTemplatesSheet({
 }
 
 function ApplyForm({ open, onClose, onExited }: ApplyTemplatesSheetProps) {
-  const { t, i18n } = useTranslation(['shopping', 'templates', 'common']);
+  const { t } = useTranslation(['shopping', 'templates', 'common']);
   const toast = useToast();
-  const templates = useTemplates(i18n.language);
-  const shoppingList = useShoppingList(i18n.language);
-  const apply = useApplyTemplate(i18n.language);
+  const templates = useTemplates();
+  const shoppingList = useShoppingList();
+  const apply = useApplyTemplate();
   const [selection, setSelection] = useState<Selection>(emptySelection);
   // Templates ticked while their lines are still loading.
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
@@ -95,7 +95,7 @@ function ApplyForm({ open, onClose, onExited }: ApplyTemplatesSheetProps) {
   // Details are fetched only for Templates the Member has ticked or opened.
   const detailQueries = useQueries({
     queries: summaries.map((summary) => ({
-      ...templateQueryOptions(summary.id, i18n.language),
+      ...templateQueryOptions(summary.id),
       enabled:
         pending.has(summary.id) ||
         selection.has(summary.id) ||

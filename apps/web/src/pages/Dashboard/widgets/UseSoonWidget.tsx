@@ -11,9 +11,9 @@ import type { WidgetProps } from './types';
 
 /** The three soonest-expiring Batches (Expired ones first) with their ExpiryTags. */
 export function UseSoonWidget({ size, columns }: WidgetProps) {
-  const { t, i18n } = useTranslation('dashboard');
+  const { t } = useTranslation('dashboard');
   const today = useToday();
-  const batches = useBatches(i18n.language);
+  const batches = useBatches();
   const soonest = soonestExpiring(batches.data ?? []);
   const { tagFor } = useExpiryTags(today);
 

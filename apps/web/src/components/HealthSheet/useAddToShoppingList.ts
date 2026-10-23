@@ -22,11 +22,11 @@ export type ShoppingFix = {
  * whose Undo deletes exactly the Shopping Items the add newly inserted (not lines it merged into).
  */
 export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
-  const { t, i18n } = useTranslation('dashboard');
+  const { t } = useTranslation('dashboard');
   const { messageWithScore, undoOptions } = useHealthToast();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const { addMany, remove } = useShoppingMutations(i18n.language);
+  const { addMany, remove } = useShoppingMutations();
 
   const itemsFor = (
     key: HealthTodoKey,

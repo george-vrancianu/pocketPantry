@@ -20,33 +20,31 @@ import { shoppingListQueryKey } from './shopping';
  */
 export async function saveLines(
   mode: CameraMode,
-  locale: string,
   scanLanguage: ScanLanguage | undefined,
   lines: ReviewLine[],
 ): Promise<TickFailures | undefined> {
   if (mode === 'plate') {
-    await postShoppingItems(locale, lines.map(toNewShoppingItem));
+    await postShoppingItems(lines.map(toNewShoppingItem));
   } else if (mode === 'receipt') {
     const { tickFailures } = await postReceiptConfirm(
-      locale,
       scanLanguage,
       toSaveBatches(lines, mode),
     );
     return tickFailures;
   } else {
-    await postBatches(locale, scanLanguage, toSaveBatches(lines, mode));
+    await postBatches(scanLanguage, toSaveBatches(lines, mode));
   }
 }
 
 /** The save as a mutation: it refreshes the Pantry and the Shopping List when it lands. */
-export function useSaveLines(locale: string) {
+export function useSaveLines() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (save: {
       mode: CameraMode;
       scanLanguage?: ScanLanguage;
       lines: ReviewLine[];
-    }) => saveLines(save.mode, locale, save.scanLanguage, save.lines),
+    }) => saveLines(save.mode, save.scanLanguage, save.lines),
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),
@@ -68,8 +66,8 @@ export const savableLines = (scan: SessionScan): ReviewLine[] =>
  * Saves a read Scan the way the line editor would. Resolves with the Shopping Items it failed
  * to tick; rejects when the save fails, leaving the Scan unsaved.
  */
-export function useSaveScan(locale: string) {
-  const { mutateAsync } = useSaveLines(locale);
+export function useSaveScan() {
+  const { mutateAsync } = useSaveLines();
   return (scan: SessionScan) =>
     mutateAsync({
       mode: scan.mode,

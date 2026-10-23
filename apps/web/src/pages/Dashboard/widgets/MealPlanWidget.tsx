@@ -150,9 +150,9 @@ export function MealPlanWidget({ columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const language = i18n.language;
   const todayIso = localIso(useToday());
-  const mealWindow = useMealWindow(language, todayIso);
+  const mealWindow = useMealWindow(todayIso);
   const legend = useMealPlanLegend();
-  const addMissing = useAddMissing(language, todayIso);
+  const addMissing = useAddMissing(todayIso);
   // Keyed by date, not column, so a refetch that shifts the window keeps the same day open.
   const [openDate, setOpenDate] = useState<IsoDate | null>(null);
   const columnRefs = useRef<Array<HTMLButtonElement | null>>([]);

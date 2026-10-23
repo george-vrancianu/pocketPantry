@@ -25,8 +25,7 @@ import { useSpokenLanguage } from './useSpokenLanguage';
 export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   const { t } = useTranslation(['errors', 'voice']);
   const toast = useToast();
-  const { locale, spokenLanguage, setSpokenLanguage, reset } =
-    useSpokenLanguage();
+  const { spokenLanguage, setSpokenLanguage, reset } = useSpokenLanguage();
   // The Voice Note itself lives in the Voice Note module, so Review and the button on any page see it.
   const { phase, recording: keptRecording } = useVoiceNoteState();
   const recording = phase === 'recording';
@@ -57,9 +56,9 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   // The press was cancelled (not merely let go) while the permission was being read.
   const cancelled = useRef(false);
   const unmounted = useRef(false);
-  const options = useRef({ locale, spokenLanguage, defaultTarget, t, toast });
+  const options = useRef({ spokenLanguage, defaultTarget, t, toast });
   useLayoutEffect(() => {
-    options.current = { locale, spokenLanguage, defaultTarget, t, toast };
+    options.current = { spokenLanguage, defaultTarget, t, toast };
   });
   const say = (message: string) =>
     options.current.toast.show(message, voiceToast());
@@ -75,8 +74,8 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   const { refresh, showBlocked, showIntro } = mic;
 
   const begin = () => {
-    const { defaultTarget, spokenLanguage, locale } = options.current;
-    return voiceNote.start({ defaultTarget, spokenLanguage, locale });
+    const { defaultTarget, spokenLanguage } = options.current;
+    return voiceNote.start({ defaultTarget, spokenLanguage });
   };
 
   // The module stops a recording at 60 seconds by itself: the pointer is still down, but the press is over.
@@ -206,7 +205,7 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   const retry = useCallback(() => {
     // The Reading pill replaces this one: its Cancel takes the focus (the voice button is disabled).
     if (isInPill()) focusPillAction();
-    void voiceNote.retry(options.current.locale);
+    void voiceNote.retry();
   }, []);
 
   const dismiss = useCallback(() => {

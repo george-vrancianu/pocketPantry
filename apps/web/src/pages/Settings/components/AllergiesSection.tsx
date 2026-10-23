@@ -21,10 +21,10 @@ import { SectionHeading } from './SectionHeading';
  * Allergy is not a Member Preference: the Family can see it, and it stays with the Member.
  */
 export function AllergiesSection() {
-  const { t, i18n } = useTranslation('settings');
+  const { t } = useTranslation('settings');
   const id = useId();
-  const query = useAllergies(i18n.language);
-  const save = useSaveAllergies(i18n.language);
+  const query = useAllergies();
+  const save = useSaveAllergies();
   const view = query.data;
   const preferences = useMemberPreferences();
   const saveHide = useSaveHideRecipesWithAllergies();

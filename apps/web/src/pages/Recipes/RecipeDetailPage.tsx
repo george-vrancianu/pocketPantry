@@ -36,15 +36,15 @@ export function RecipeDetailPage() {
 
 /** Header, then the sections; a Variant links back to its base. */
 function RecipeDetail({ id }: { id: string }) {
-  const { t, i18n } = useTranslation(['recipes', 'common']);
-  const query = useRecipe(id, i18n.language);
+  const { t } = useTranslation(['recipes', 'common']);
+  const query = useRecipe(id);
   const recipe = query.data;
   const [picked, setPicked] = useState<number | null>(null);
   const servings = picked ?? recipe?.servings ?? 1;
   const matchQuery = useRecipePantryMatch(id, servings, recipe !== undefined);
   const match = matchQuery.data;
-  const addMissing = useAddMissingToShoppingList(id, i18n.language);
-  const addLine = useAddLineToShoppingList(id, i18n.language);
+  const addMissing = useAddMissingToShoppingList(id);
+  const addLine = useAddLineToShoppingList(id);
   const [toast, setToast] = useState<string | null>(null);
   // The bulk add was done for the Servings picked; picking others re-opens it.
   const [addedList, setAddedList] = useState(false);

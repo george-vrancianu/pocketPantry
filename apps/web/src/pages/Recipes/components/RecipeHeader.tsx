@@ -22,9 +22,9 @@ import type { RecipeDetail } from '../../../lib/recipes';
  * Recipe keeps Make a Variant, Edit and Delete (archive) in a menu.
  */
 export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
-  const { t, i18n } = useTranslation(['recipes', 'errors']);
+  const { t } = useTranslation(['recipes', 'errors']);
   const navigate = useNavigate();
-  const archive = useArchiveFamilyRecipe(recipe?.id ?? '', i18n.language);
+  const archive = useArchiveFamilyRecipe(recipe?.id ?? '');
   const [asking, setAsking] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const back = { label: t('recipes:back'), href: '/recipes' };

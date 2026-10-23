@@ -251,7 +251,7 @@ describe('Add to your catalog', () => {
     });
 
     it('moves focus to the category search and offers Other with a hint while it is empty', async () => {
-      const { dialog, calls } = await open();
+      const { dialog } = await open();
       const category = within(dialog).getByRole('combobox', {
         name: 'Category',
       });
@@ -261,10 +261,6 @@ describe('Add to your catalog', () => {
       expect(
         await within(dialog).findByRole('option', { name: /Other/ }),
       ).toBeVisible();
-      const request = calls.find(
-        (c) => c.key === 'GET /api/catalog/categories',
-      );
-      expect(new URLSearchParams(request?.search).get('locale')).toBe('en');
     });
 
     it("shows each category's Default Expiry as a chip", async () => {
