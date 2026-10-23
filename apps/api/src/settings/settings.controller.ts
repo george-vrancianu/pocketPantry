@@ -37,24 +37,31 @@ import {
   type UpdateFamilySettingsBody,
   type UpdatePreferencesBody,
 } from './settings.schemas';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import { SettingsService } from './settings.service';
 
 @ApiTags('settings')
 @Controller('settings')
 @UseGuards(AuthGuard)
 export class SettingsController {
-  constructor(private readonly settings: SettingsService) {}
+  constructor(
+    private readonly settings: SettingsService,
+    private readonly languages: MemberLanguageService,
+  ) {}
 
   @Get('family')
   @ApiOperation({
     summary: 'Family Settings: Stale Threshold and Default Expiry overrides',
   })
-  family(
+  async family(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(settingsLocaleQuery))
     query: SettingsLocaleQuery,
   ): Promise<FamilySettingsView> {
-    return this.settings.getFamilySettings(member.id, query.locale);
+    return this.settings.getFamilySettings(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id, query.locale),
+    );
   }
 
   @Patch('family')
@@ -72,12 +79,15 @@ export class SettingsController {
   @ApiOperation({
     summary: 'Parent and Leaf Categories a Default Expiry override can target',
   })
-  categories(
+  async categories(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(settingsLocaleQuery))
     query: SettingsLocaleQuery,
   ): Promise<CategoryOptionsView> {
-    return this.settings.categoryOptions(member.id, query.locale);
+    return this.settings.categoryOptions(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id, query.locale),
+    );
   }
 
   @Put('family/expiry-overrides/:categoryId')
@@ -137,12 +147,15 @@ export class SettingsController {
   @ApiOperation({
     summary: "The Allergen list and the signed-in Member's own Allergies",
   })
-  allergies(
+  async allergies(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(settingsLocaleQuery))
     query: SettingsLocaleQuery,
   ): Promise<AllergiesView> {
-    return this.settings.getAllergies(member.id, query.locale);
+    return this.settings.getAllergies(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id, query.locale),
+    );
   }
 
   @Put('allergies')
@@ -157,7 +170,10 @@ export class SettingsController {
     query: SettingsLocaleQuery,
   ): Promise<AllergiesView> {
     await this.settings.setAllergies(member.id, body.allergenIds);
-    return this.settings.getAllergies(member.id, query.locale);
+    return this.settings.getAllergies(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id, query.locale),
+    );
   }
 
   @Get('family-allergies')
@@ -165,19 +181,22 @@ export class SettingsController {
     summary:
       "The Family's Allergies and the other Members' Allergies (read-only)",
   })
-  familyAllergies(
+  async familyAllergies(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(settingsLocaleQuery))
     query: SettingsLocaleQuery,
   ): Promise<FamilyAllergiesView> {
-    return this.settings.getFamilyAllergies(member.id, query.locale);
+    return this.settings.getFamilyAllergies(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id, query.locale),
+    );
   }
 
   @Post('family-allergies')
   @ApiOperation({
     summary: 'Any Member: add a Family Allergy (Allergen and optional label)',
   })
-  addFamilyAllergy(
+  async addFamilyAllergy(
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(addFamilyAllergyBody))
     body: AddFamilyAllergyBody,
@@ -188,7 +207,7 @@ export class SettingsController {
       member.id,
       body.allergenId,
       body.label,
-      query.locale,
+      await this.languages.catalogLanguageOf(member.id, query.locale),
     );
   }
 
