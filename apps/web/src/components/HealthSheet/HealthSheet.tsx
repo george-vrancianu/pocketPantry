@@ -10,7 +10,11 @@ import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MIN_BATCHES_FOR_SCORE, presentFactors } from '../../lib/health';
 import type { PantryHealthState } from '../../lib/usePantryHealth';
-import { HealthGator, useHealthGatorLine } from './HealthGator';
+import {
+  HealthGator,
+  HealthGatorNote,
+  useHealthGatorLine,
+} from './HealthGator';
 import { ScoreRing } from './HealthRing';
 import { HealthTodos } from './HealthTodos';
 
@@ -74,7 +78,11 @@ export function HealthSheet({ open, onClose, state, today }: Props) {
               </Box>
             )}
             {gatorLine ? (
-              <Box sx={{ fontSize: 12.5, mt: '4px' }}>{gatorLine}</Box>
+              <HealthGatorNote
+                health={health}
+                line={gatorLine}
+                sx={{ mt: '4px' }}
+              />
             ) : null}
           </Box>
           <HealthGator health={health} size={56} />

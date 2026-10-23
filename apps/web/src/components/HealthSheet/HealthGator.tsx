@@ -1,6 +1,7 @@
 import {
   Box,
   GatorImage,
+  tokens,
   usePrefersReducedMotion,
   type GatorMood,
 } from '@pocket-pantry/ui';
@@ -122,6 +123,42 @@ export function HealthGator({
       >
         <GatorImage mood={mood} size={size} alt={gatorAlt(mood)} />
       </Box>
+    </Box>
+  );
+}
+
+/**
+ * Gator's line under the score. The hmm note sits on the soon tint and the worried note on the urgent
+ * tint; the other bands stay plain.
+ */
+export function HealthGatorNote({
+  health,
+  line,
+  sx,
+}: {
+  health: PantryHealth;
+  line: string;
+  sx?: Record<string, unknown>;
+}) {
+  const tint =
+    health.scored && health.verdict === 'some'
+      ? { bgcolor: tokens.color.soonBg, color: tokens.color.soonFg }
+      : health.scored && health.verdict === 'attention'
+        ? { bgcolor: tokens.color.urgentBg, color: tokens.color.urgentFg }
+        : null;
+  return (
+    <Box
+      component="span"
+      data-testid="health-gator-note"
+      sx={{
+        display: 'block',
+        fontSize: 12.5,
+        lineHeight: 1.4,
+        ...(tint ? { ...tint, borderRadius: '8px', p: '6px 10px' } : {}),
+        ...sx,
+      }}
+    >
+      {line}
     </Box>
   );
 }

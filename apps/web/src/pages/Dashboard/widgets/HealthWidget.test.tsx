@@ -1,3 +1,4 @@
+import { tokens } from '@pocket-pantry/ui';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
@@ -845,9 +846,9 @@ describe('HealthWidget', () => {
     it('says all done, with every pill, when there is nothing to do', async () => {
       const { sheet } = await open(filler(10));
 
-      expect(sheet).toHaveTextContent(
-        'Nothing to do. Everything is in date, stocked and accounted for.',
-      );
+      expect(sheet).toHaveTextContent('Nothing to do.');
+      // The dapper line says the rest; the body does not repeat it.
+      expect(within(sheet).getAllByText(/in date/i)).toHaveLength(1);
       expect(within(sheet).getAllByRole('listitem')).toHaveLength(6);
     });
 
@@ -1692,6 +1693,12 @@ describe('HealthWidget Gator', () => {
     expectOnlyMood(HMM);
     expect(card).toHaveTextContent('75');
     expect(card).toHaveTextContent('A few things to sort');
+    // The first To-do is named once, in Gator's note, not again in the subline.
+    expect(card).toHaveTextContent('2 to do');
+    expect(card).not.toHaveTextContent('2 to do · ');
+    expect(screen.getByTestId('health-gator-note')).toHaveStyle({
+      backgroundColor: tokens.color.soonBg,
+    });
     expect(screen.queryByText(SPLENDID)).toBeNull();
     expect(screen.queryByText(STILL_LEARNING)).toBeNull();
     expect(
@@ -1703,7 +1710,11 @@ describe('HealthWidget Gator', () => {
     const card = await renderBand(expired(10));
     expectOnlyMood(WORRIED);
     expect(card).toHaveTextContent('45');
-    expect(card).toHaveTextContent('1 to do · Toss 10 expired');
+    expect(card).toHaveTextContent('1 to do');
+    expect(card).not.toHaveTextContent('1 to do · ');
+    expect(screen.getByTestId('health-gator-note')).toHaveStyle({
+      backgroundColor: tokens.color.urgentBg,
+    });
     expect(
       screen.getByText("Let's sort this out. First up: Toss 10 expired."),
     ).toBeVisible();
@@ -1716,6 +1727,7 @@ describe('HealthWidget Gator', () => {
     expect(card).toHaveAccessibleName(
       /Pantry health.*Let's sort this out\. First up: Toss 10 expired\.$/,
     );
+    expect(card).not.toHaveAccessibleName(/Toss 10 expired.*Toss 10 expired/);
   });
 
   it('puts the band note on the sheet as well', async () => {

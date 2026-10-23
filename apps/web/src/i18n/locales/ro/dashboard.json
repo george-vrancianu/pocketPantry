@@ -92,7 +92,7 @@
       "tidy": "Ordine"
     },
     "toDoFirst": "{{count}} de făcut · {{title}}",
-    "allDone": "Nimic de făcut. Totul este în termen, în stoc și la locul lui.",
+    "allDone": "Nimic de făcut.",
     "moreNames": "{{names}} +{{count}}",
     "gainSpoken_one": "crește scorul cu {{count}}",
     "gainSpoken_few": "crește scorul cu {{count}}",

@@ -14,6 +14,7 @@ import { ScoreRing } from '../../../components/HealthSheet/HealthRing';
 import { HealthSheet } from '../../../components/HealthSheet/HealthSheet';
 import {
   HealthGator,
+  HealthGatorNote,
   useHealthGatorLine,
 } from '../../../components/HealthSheet/HealthGator';
 import { VERDICT_COLOR } from '../../../components/HealthSheet/healthStyle';
@@ -54,16 +55,17 @@ export function HealthWidget({ size, columns }: WidgetProps) {
       ? t('health.nothingToDo')
       : t('health.toDo', { count: todoCount });
   const firstTodo = todos[0];
-  const wideSubline = firstTodo
-    ? t('health.toDoFirst', {
-        count: todoCount,
-        title: todoTitle(
-          t,
-          firstTodo,
-          expiringSoonDay(today, state.staleThresholdDays, i18n.language),
-        ),
-      })
-    : subline;
+  const wideSubline =
+    firstTodo && !gatorLine
+      ? t('health.toDoFirst', {
+          count: todoCount,
+          title: todoTitle(
+            t,
+            firstTodo,
+            expiringSoonDay(today, state.staleThresholdDays, i18n.language),
+          ),
+        })
+      : subline;
   const spokenTodos =
     todoCount === 0
       ? t('health.nothingToDoSpoken')
@@ -150,12 +152,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
               </Box>
             </Box>
             {gatorLine ? (
-              <Box
-                component="span"
-                sx={{ display: 'block', fontSize: 12.5, lineHeight: 1.4 }}
-              >
-                {gatorLine}
-              </Box>
+              <HealthGatorNote health={health} line={gatorLine} />
             ) : null}
             {health.scored ? (
               <Box

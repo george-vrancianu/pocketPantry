@@ -84,7 +84,7 @@
       "tidy": "Ryd op"
     },
     "toDoFirst": "{{count}} at gøre · {{title}}",
-    "allDone": "Intet at gøre. Alt er inden for datoen, på lager og styr på.",
+    "allDone": "Intet at gøre.",
     "moreNames": "{{names}} +{{count}}",
     "gainSpoken_one": "hæver scoren med {{count}}",
     "gainSpoken_other": "hæver scoren med {{count}}",

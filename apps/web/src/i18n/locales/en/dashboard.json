@@ -84,7 +84,7 @@
       "tidy": "Tidy up"
     },
     "toDoFirst": "{{count}} to do · {{title}}",
-    "allDone": "Nothing to do. Everything is in date, stocked and accounted for.",
+    "allDone": "Nothing to do.",
     "moreNames": "{{names}} +{{count}}",
     "gainSpoken_one": "raises the score by {{count}}",
     "gainSpoken_other": "raises the score by {{count}}",
