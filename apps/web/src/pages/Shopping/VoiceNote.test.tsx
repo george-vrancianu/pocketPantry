@@ -733,6 +733,10 @@ describe('Voice Note on the Shopping List', () => {
     const chipOf = (name: string) =>
       screen.findByRole('button', { name: `Spoken Language: ${name}. Change` });
 
+    const error = (code: string, status: number) =>
+      Response.json({ code, params: {} }, { status });
+    const never = () => new Promise<Response>(() => undefined);
+
     const pick = async (name: RegExp) => {
       await userEvent.click(
         await screen.findByRole('button', { name: /Spoken Language/ }),
@@ -793,6 +797,69 @@ describe('Voice Note on the Shopping List', () => {
       expect(sent[1].get('spokenLanguage')).toBe('ro');
     });
 
+    it('keeps a pick when the recording is cancelled', async () => {
+      const { sent } = setup({ preferredSpokenLanguage: 'ro' });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      await chipOf('Română');
+      await pick(/English/);
+      await chipOf('English');
+
+      await hold();
+      act(() => voiceNote.cancel());
+      await waitFor(() => expect(screen.queryByText('Listening')).toBeNull());
+      await chipOf('English');
+
+      fireEvent.pointerUp(await hold());
+      await screen.findByRole('dialog');
+      expect(sent).toHaveLength(1);
+      expect(sent[0].get('spokenLanguage')).toBe('en');
+    });
+
+    it('keeps a pick when the hold is too short to be a note', async () => {
+      const { sent } = setup({ preferredSpokenLanguage: 'ro' });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      await chipOf('Română');
+      await pick(/English/);
+      await chipOf('English');
+
+      const button = await talkButton();
+      pressDown(button);
+      await screen.findByText('Listening');
+      await act(() => vi.advanceTimersByTimeAsync(150));
+      fireEvent.pointerUp(button);
+      await screen.findByText('Hold to talk, let go to send');
+      expect(sent).toHaveLength(0);
+      await chipOf('English');
+
+      fireEvent.pointerUp(await hold());
+      await screen.findByRole('dialog');
+      expect(sent[0].get('spokenLanguage')).toBe('en');
+    });
+
+    it('sends a failed note again in the language it was recorded in, though the chip is back at the preference', async () => {
+      let attempt = 0;
+      const { sent } = setup({
+        preferredSpokenLanguage: 'ro',
+        note: () =>
+          ++attempt === 1 ? error('voice.provider_unavailable', 502) : never(),
+      });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      await chipOf('Română');
+      await pick(/English/);
+      await chipOf('English');
+      fireEvent.pointerUp(await hold());
+
+      const alert = await screen.findByRole('alert');
+      await chipOf('Română');
+      await userEvent.click(
+        within(alert).getByRole('button', { name: 'Retry' }),
+      );
+
+      await waitFor(() => expect(sent).toHaveLength(2));
+      expect(sent[0].get('spokenLanguage')).toBe('en');
+      expect(sent[1].get('spokenLanguage')).toBe('en');
+    });
+
     it('does not move the camera chips, and they do not move it', async () => {
       setup({ preferredScanLanguage: 'da', preferredSpokenLanguage: 'ro' });
       renderInAppLayout(
@@ -806,6 +873,12 @@ describe('Voice Note on the Shopping List', () => {
       await waitFor(() =>
         expect(screen.getByTestId('camera')).toHaveTextContent('da/da'),
       );
+
+      // No pick on the Voice Note chip: a camera move does not reach it.
+      act(() => setScanLanguageOverride('en'));
+      expect(screen.getByTestId('camera')).toHaveTextContent('en/da');
+      await chipOf('Română');
+      act(() => clearScanLanguageOverride());
 
       await pick(/English/);
       await chipOf('English');

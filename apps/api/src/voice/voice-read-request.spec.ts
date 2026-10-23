@@ -95,7 +95,7 @@ describe('buildVoiceReadRequest', () => {
   });
 
   // Spec: #455. An Assistant Request does not know the language spoken.
-  it('asks the model which language was spoken when the Scan Language is unknown', () => {
+  it('asks the model which language was spoken when the Spoken Language is unknown', () => {
     const { prompt } = buildVoiceReadRequest({
       ...input,
       spokenLanguage: null,

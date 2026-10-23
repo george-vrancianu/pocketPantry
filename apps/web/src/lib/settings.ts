@@ -40,10 +40,11 @@ export type MemberPreferences = {
   effectiveCatalogLanguage: Locale;
   /** `null` is "Same as UI Language". */
   scanLanguage: ScanLanguage | null;
-  /** The language Scans and Voice Notes are read in by default, worked out by the API. */
+  /** The language Scans are read in by default, worked out by the API. */
   effectiveScanLanguage: ScanLanguage;
   /** The language Voice Notes are spoken in; `null` is "Same as UI Language". */
   spokenLanguage: ScanLanguage | null;
+  /** The language Voice Notes are spoken in by default, worked out by the API. */
   effectiveSpokenLanguage: ScanLanguage;
   theme: ThemeId | null;
   /** Leave out Recipes with the Member's own or Family Allergies; off by default. */

@@ -22,7 +22,7 @@ export type TranscriptionRequest = {
   mimeType: string;
   /** The main hint: the language the Member speaks. */
   language: ScanLanguage;
-  /** The other Scan Languages, as extra hints. */
+  /** The other languages on the Scan Languages list, as extra hints. */
   otherLanguages: ScanLanguage[];
   /** Debug capture only: ties this recording to its transcript read. */
   captureId?: string;

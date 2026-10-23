@@ -88,10 +88,16 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
       held.current = false;
       haptic(14);
     }
-    // A pick is for one Voice Note: once it has been recorded the chip is back at the preference.
-    if (wasRecording.current && !recording) reset();
     wasRecording.current = recording;
-  }, [recording, phase, reset]);
+  }, [recording, phase]);
+
+  // A pick is for one Voice Note: once that note is sent (its language is kept for the upload and Retry) the chip is back at the
+  // preference. A cancelled or too-short recording sends nothing, so it keeps the pick.
+  const wasSending = useRef(false);
+  useEffect(() => {
+    if (sending && !wasSending.current) reset();
+    wasSending.current = sending;
+  }, [sending, reset]);
 
   /** Ends the recording and sends it; a recording too short to read gets the tip. */
   const finish = useCallback(async () => {

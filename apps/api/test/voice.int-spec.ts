@@ -1067,7 +1067,7 @@ describe('Voice Note (integration)', () => {
       expect(calls[0].language).toBe('da');
     });
 
-    it('falls back to the request locale, then English, for a Member with no stored UI Language', async () => {
+    it('falls back to the request locale for a Member with no stored UI Language', async () => {
       const { cookie } = await signUp();
       await note(cookie, { language: null, uiLocale: 'ro' }).expect(201);
       expect(calls[0].language).toBe('ro');
