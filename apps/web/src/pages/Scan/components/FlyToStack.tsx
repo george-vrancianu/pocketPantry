@@ -31,7 +31,7 @@ function Flying({
           { transform: 'none', borderRadius: radius.control },
           {
             transform: `translate(${to.left + to.width / 2 - (from.x + from.width / 2)}px, ${to.top + to.height / 2 - (from.y + from.height / 2)}px) scale(${to.width / from.width}, ${to.height / from.height})`,
-            borderRadius: radius.pill,
+            borderRadius: `calc(${radius.control} * ${from.width / to.width})`,
           },
         ],
         {
