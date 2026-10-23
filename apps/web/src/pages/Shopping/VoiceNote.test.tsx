@@ -277,7 +277,7 @@ describe('Voice Note on the Shopping List', () => {
     expect(card).toHaveTextContent(
       'Goes to your Shopping List. Say “in the pantry” to add stock.',
     );
-    expect(card).toHaveTextContent(/English · /);
+    expect(card).toHaveTextContent('EN');
   });
 
   describe('the status pill', () => {
