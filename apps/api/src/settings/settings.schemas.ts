@@ -34,6 +34,8 @@ export const updatePreferencesBody = z
     catalogLanguage: z.enum(CATALOG_LOCALES).nullable().optional(),
     /** A Scan Language, or `null` for "Same as UI Language". */
     scanLanguage: z.enum(SCAN_LANGUAGES).nullable().optional(),
+    /** A Spoken Language (Scan Languages list), or `null` for "Same as UI Language". */
+    spokenLanguage: z.enum(SCAN_LANGUAGES).nullable().optional(),
     theme: z.enum(THEME_IDS).optional(),
     hideRecipesWithAllergies: z.boolean().optional(),
   })
@@ -42,6 +44,7 @@ export const updatePreferencesBody = z
       body.locale !== undefined ||
       body.catalogLanguage !== undefined ||
       body.scanLanguage !== undefined ||
+      body.spokenLanguage !== undefined ||
       body.theme !== undefined ||
       body.hideRecipesWithAllergies !== undefined,
     { message: 'Nothing to update' },
@@ -82,6 +85,10 @@ export type PreferencesView = {
   scanLanguage: (typeof SCAN_LANGUAGES)[number] | null;
   /** The Scan Language the Member gets right now (resolved against the UI Language, then English). */
   effectiveScanLanguage: (typeof SCAN_LANGUAGES)[number];
+  /** The Spoken Language (Voice Notes); `null` is "Same as UI Language". */
+  spokenLanguage: (typeof SCAN_LANGUAGES)[number] | null;
+  /** The Spoken Language the Member gets right now (resolved against the UI Language, then English). */
+  effectiveSpokenLanguage: (typeof SCAN_LANGUAGES)[number];
   theme: ThemeId | null;
   /** Leave out Recipes with the Member's own or Family Allergies (#359). */
   hideRecipesWithAllergies: boolean;

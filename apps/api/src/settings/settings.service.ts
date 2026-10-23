@@ -214,6 +214,7 @@ export class SettingsService {
         locale: user.locale,
         catalogLanguage: user.catalogLanguage,
         scanLanguage: user.scanLanguage,
+        spokenLanguage: user.spokenLanguage,
         theme: user.theme,
         hideRecipesWithAllergies: user.hideRecipesWithAllergies,
       })
@@ -232,6 +233,10 @@ export class SettingsService {
       }),
       scanLanguage: asScanLanguage(row.scanLanguage),
       effectiveScanLanguage: resolveLanguage('scan', row, { requestLocale }),
+      spokenLanguage: asScanLanguage(row.spokenLanguage),
+      effectiveSpokenLanguage: resolveLanguage('spoken', row, {
+        requestLocale,
+      }),
       theme,
       hideRecipesWithAllergies: row.hideRecipesWithAllergies,
     };
@@ -248,6 +253,7 @@ export class SettingsService {
         locale: preferences.locale,
         catalogLanguage: preferences.catalogLanguage,
         scanLanguage: preferences.scanLanguage,
+        spokenLanguage: preferences.spokenLanguage,
         theme: preferences.theme,
         hideRecipesWithAllergies: preferences.hideRecipesWithAllergies,
       })

@@ -14,7 +14,7 @@ type VoiceReadRequestInput = {
   pantryNames: string[];
   transcript: string;
   /** Null when the language spoken is not known (an Assistant Request): the model works it out. */
-  scanLanguage: ScanLanguage | null;
+  spokenLanguage: ScanLanguage | null;
   /** The Member's Catalog Language: the language of the names the model makes up (ADR 0022). */
   locale: CatalogLocale;
   /** The UI Language, only to tell the model what the app is shown in; defaults to `locale`. */
@@ -65,8 +65,8 @@ export function buildVoiceReadRequest(
     prompt: [
       `Application catalog: ${input.catalogText}`,
       'You turn a spoken grocery note into a list of actions on the Shopping List and the Pantry, and of questions about whether the Pantry has an ingredient. Ingredient tuples in the catalog are [id, name, category].',
-      input.scanLanguage
-        ? `The note was spoken in ${LANGUAGE_NAMES[input.scanLanguage]}; the app is shown in ${uiLanguage}. Words from the other supported languages (English, Romanian, Danish) may appear; match catalog ingredients across languages.`
+      input.spokenLanguage
+        ? `The note was spoken in ${LANGUAGE_NAMES[input.spokenLanguage]}; the app is shown in ${uiLanguage}. Words from the other supported languages (English, Romanian, Danish) may appear; match catalog ingredients across languages.`
         : `The note may be in any supported language (English, Romanian or Danish); the app is shown in ${uiLanguage}. Match catalog ingredients across languages.`,
       `Today is ${weekdayOf(input.today)} ${input.today}. ${defaultListRules(input.defaultTarget)}`,
       `Names currently on the Shopping List (spelling hints only): ${JSON.stringify(names(input.shoppingNames))}.`,

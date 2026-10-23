@@ -121,7 +121,7 @@ describe('Voice Notes with no Default List (integration)', () => {
 
   const sendNote = (cookie: string, defaultTarget?: string) => {
     const req = api('post', cookie, '/voice')
-      .field('scanLanguage', 'en')
+      .field('spokenLanguage', 'en')
       .field('locale', 'en')
       .field('today', TODAY)
       .field('durationMs', '3000');

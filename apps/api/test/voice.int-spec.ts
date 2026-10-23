@@ -94,16 +94,20 @@ describe('Voice Note (integration)', () => {
     contentType?: string;
     audio?: Buffer;
     durationMs?: string;
-    language?: string;
+    /** The `spokenLanguage` field; `null` leaves it out. */
+    language?: string | null;
+    uiLocale?: string;
   };
 
-  const note = (cookie: string, options: Options = {}) =>
-    request(app.getHttpServer())
+  const note = (cookie: string, options: Options = {}) => {
+    const language = options.language === undefined ? 'ro' : options.language;
+    const upload = request(app.getHttpServer())
       .post('/api/voice')
       .set('origin', TEST_ORIGIN)
-      .set('cookie', cookie)
-      .field('scanLanguage', options.language ?? 'ro')
-      .field('locale', 'en')
+      .set('cookie', cookie);
+    if (language) upload.field('spokenLanguage', language);
+    return upload
+      .field('locale', options.uiLocale ?? 'en')
       .field('defaultTarget', 'shopping')
       .field('today', '2026-10-16')
       .field('durationMs', options.durationMs ?? '4200')
@@ -111,6 +115,7 @@ describe('Voice Note (integration)', () => {
         filename: 'note.webm',
         contentType: options.contentType ?? 'audio/webm;codecs=opus',
       });
+  };
 
   const usage = async (memberId: string, kind: 'voice' | 'scan') => {
     const rows = await app
@@ -132,7 +137,7 @@ describe('Voice Note (integration)', () => {
       .expect(401);
   });
 
-  it('transcribes the recording with the Scan Language as the main hint and the others as extra hints', async () => {
+  it('transcribes the recording with the Spoken Language as the main hint and the others as extra hints', async () => {
     const { cookie, memberId } = await signUp();
     reading = { actions: [], unsupported: ['do a dance'] };
     const response = await note(cookie).expect(201);
@@ -1007,6 +1012,99 @@ describe('Voice Note (integration)', () => {
       expect(response.body).toMatchObject({
         actions: [{ ingredient: { name: 'Lapte' } }, { name }],
       });
+    });
+  });
+
+  describe('Spoken Language', () => {
+    const setPreferences = async (
+      memberId: string,
+      preferences: {
+        locale?: string | null;
+        scanLanguage?: string | null;
+        spokenLanguage?: string | null;
+      },
+    ) => {
+      await app
+        .get<Database>(DATABASE)
+        .update(user)
+        .set(preferences)
+        .where(eq(user.id, memberId));
+    };
+
+    it('uses the Spoken Language Preference, not the Scan Language, when the upload names none', async () => {
+      const { cookie, memberId } = await signUp();
+      await setPreferences(memberId, {
+        locale: 'en',
+        scanLanguage: 'da',
+        spokenLanguage: 'ro',
+      });
+      await note(cookie, { language: null }).expect(201);
+      expect(calls[0].language).toBe('ro');
+      expect(calls[0].otherLanguages.sort()).toEqual(['da', 'en']);
+      expect(aiCalls[0].prompt).toContain('The note was spoken in Romanian');
+    });
+
+    it('lets the upload field win over the Preference', async () => {
+      const { cookie, memberId } = await signUp();
+      await setPreferences(memberId, {
+        locale: 'en',
+        scanLanguage: 'da',
+        spokenLanguage: 'ro',
+      });
+      await note(cookie, { language: 'da' }).expect(201);
+      expect(calls[0].language).toBe('da');
+      expect(aiCalls[0].prompt).toContain('The note was spoken in Danish');
+    });
+
+    it('follows the stored UI Language when the Preference is empty, not the request locale', async () => {
+      const { cookie, memberId } = await signUp();
+      await setPreferences(memberId, {
+        locale: 'da',
+        scanLanguage: 'ro',
+        spokenLanguage: null,
+      });
+      await note(cookie, { language: null, uiLocale: 'en' }).expect(201);
+      expect(calls[0].language).toBe('da');
+    });
+
+    it('falls back to the request locale, then English, for a Member with no stored UI Language', async () => {
+      const { cookie } = await signUp();
+      await note(cookie, { language: null, uiLocale: 'ro' }).expect(201);
+      expect(calls[0].language).toBe('ro');
+    });
+
+    it('rejects a spokenLanguage that is not a Scan Language, and no longer reads scanLanguage', async () => {
+      const { cookie, memberId } = await signUp();
+      await note(cookie, { language: 'fr' }).expect(400);
+      await setPreferences(memberId, { locale: 'en', spokenLanguage: 'ro' });
+      await request(app.getHttpServer())
+        .post('/api/voice')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .field('scanLanguage', 'da')
+        .field('locale', 'en')
+        .field('defaultTarget', 'shopping')
+        .field('today', '2026-10-16')
+        .field('durationMs', '4200')
+        .attach('audio', Buffer.from('fake-audio'), {
+          filename: 'note.webm',
+          contentType: 'audio/webm',
+        })
+        .expect(201);
+      expect(calls[0].language).toBe('ro');
+    });
+
+    it('keeps the language a retry names, even after the Preference changed', async () => {
+      const { cookie, memberId } = await signUp();
+      await setPreferences(memberId, { locale: 'en', spokenLanguage: 'ro' });
+      next = () => Promise.reject(new Error('provider down'));
+      await note(cookie, { language: 'ro' }).expect((r) =>
+        expect(r.status).toBeGreaterThanOrEqual(500),
+      );
+      await setPreferences(memberId, { spokenLanguage: 'da' });
+      next = () => Promise.resolve({ text: 'got the bread and sausages' });
+      await note(cookie, { language: 'ro' }).expect(201);
+      expect(calls.map((c) => c.language)).toEqual(['ro', 'ro']);
     });
   });
 });

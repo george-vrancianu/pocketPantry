@@ -114,7 +114,7 @@ export class AssistantService {
       const read = await this.voice.readText(member.id, {
         text: body.text,
         // Siri dictation may be in any language, whatever the UI Language.
-        scanLanguage: null,
+        spokenLanguage: null,
         locale: catalog,
         uiLanguage: locale,
         today,

@@ -101,7 +101,7 @@ export function requestFor(
     shoppingNames: c.shoppingList,
     pantryNames: c.pantry,
     transcript: c.transcript,
-    scanLanguage: c.scanLanguage,
+    spokenLanguage: c.scanLanguage,
     locale: c.locale,
     today: c.today,
     defaultTarget: c.defaultTarget,
