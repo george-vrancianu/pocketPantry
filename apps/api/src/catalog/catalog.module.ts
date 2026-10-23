@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
+import { MemberLanguageModule } from '../member-language/member-language.module';
 import { SettingsModule } from '../settings/settings.module';
 import { CatalogController } from './catalog.controller';
 import { FamilyCatalogService } from './family-catalog.service';
@@ -8,7 +9,7 @@ import { FamilySynonymsService } from './family-synonyms.service';
 import { CatalogSearchService } from './catalog-search.service';
 
 @Module({
-  imports: [SettingsModule, IngredientCatalogModule],
+  imports: [SettingsModule, MemberLanguageModule, IngredientCatalogModule],
   controllers: [CatalogController],
   providers: [
     CatalogSearchService,

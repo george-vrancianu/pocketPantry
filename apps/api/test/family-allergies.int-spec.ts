@@ -351,4 +351,31 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       expect(await warning(recipe.id, outsiderRecipes)).toBeNull();
     });
   });
+  describe('Catalog Language', () => {
+    it('names the Allergen list in the Catalog Language, or the UI Language when it is empty', async () => {
+      const email = `fam-allergies-lang-${stamp}@example.com`;
+      const cookie = await signUp(app, email, 'Lang');
+      const settings = client(app, cookie, '/api/settings');
+      const named = async () =>
+        (
+          (await settings.get('/allergies?locale=en').expect(200)).body as {
+            allergens: Array<{ id: string; name: string }>;
+          }
+        ).allergens.find((a) => a.id === MILK)?.name;
+
+      await settings
+        .put('/preferences', { locale: 'en', catalogLanguage: 'ro' })
+        .expect(200);
+      expect(await named()).toBe('Lapte');
+      const familyView = (
+        await settings.get('/family-allergies?locale=en').expect(200)
+      ).body as FamilyAllergiesView;
+      expect(familyView.allergens.find((a) => a.id === MILK)?.name).toBe(
+        'Lapte',
+      );
+
+      await settings.put('/preferences', { catalogLanguage: null }).expect(200);
+      expect(await named()).toBe('Milk');
+    });
+  });
 });

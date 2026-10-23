@@ -252,4 +252,83 @@ describe('Catalog browse by aisle (integration)', () => {
       await get('/catalog/search', { q: '', aisleId: 'nope' }).expect(400);
     });
   });
+  describe('Catalog Language', () => {
+    // A Member whose UI Language is English; the request carries locale=en as the web does.
+    async function member(catalogLanguage: string | null) {
+      const response = await request(app.getHttpServer())
+        .post('/api/auth/sign-up/email')
+        .set('origin', TEST_ORIGIN)
+        .set(
+          'x-forwarded-for',
+          `10.12.${Math.floor(Date.now() % 250)}.${Math.floor(Math.random() * 250)}`,
+        )
+        .send({
+          name: 'Catalog Language Member',
+          email: `catalog-language-${Date.now()}-${Math.random()}@example.com`,
+          password: 'correct-horse-staple',
+        })
+        .expect(200);
+      const memberCookie = [response.headers['set-cookie'] ?? []]
+        .flat()
+        .map((value) => value.split(';')[0])
+        .join('; ');
+      await request(app.getHttpServer())
+        .put('/api/settings/preferences')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', memberCookie)
+        .send({ locale: 'en', catalogLanguage })
+        .expect(200);
+      return (path: string, query: Record<string, string>) =>
+        request(app.getHttpServer())
+          .get(`/api${path}`)
+          .query({ locale: 'en', ...query })
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', memberCookie);
+    }
+
+    const dairyAisle = SEED_AISLES.find((a) => a.slug === 'dairy-eggs');
+    const milkSeed = SEED_INGREDIENTS.find((i) => i.slug === 'milk');
+
+    it('names Aisles, search results and Allergens in the Catalog Language, not the UI Language', async () => {
+      const romanian = await member('ro');
+
+      const aisles = (
+        (await romanian('/catalog/aisles', {}).expect(200)).body as {
+          aisles: AisleListing[];
+        }
+      ).aisles;
+      expect(aisles.find((a) => a.id === DAIRY)?.name).toBe(dairyAisle?.ro);
+
+      const results = (
+        (
+          await romanian('/catalog/search', {
+            q: 'milk',
+            scope: 'shared',
+          }).expect(200)
+        ).body as { results: Result[] }
+      ).results;
+      expect(
+        results.find((r) => r.id === seedId.ingredient('milk'))?.name,
+      ).toBe(milkSeed?.ro);
+
+      const allergens = (
+        (await romanian('/catalog/allergens', {}).expect(200)).body as {
+          allergens: Array<{ id: string; name: string }>;
+        }
+      ).allergens;
+      expect(
+        allergens.find((a) => a.id === seedId.allergen('milk'))?.name,
+      ).toBe('Lapte');
+    });
+
+    it('uses the UI Language when the Catalog Language is the empty "Same as UI Language"', async () => {
+      const same = await member(null);
+      const aisles = (
+        (await same('/catalog/aisles', {}).expect(200)).body as {
+          aisles: AisleListing[];
+        }
+      ).aisles;
+      expect(aisles.find((a) => a.id === DAIRY)?.name).toBe(dairyAisle?.en);
+    });
+  });
 });
