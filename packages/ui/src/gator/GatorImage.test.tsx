@@ -1,7 +1,12 @@
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, expectTypeOf, it } from 'vitest';
 import dapperArt from './art/gator-health-dapper.svg?raw';
-import { GATOR_MOODS, GatorImage, type GatorMood } from './GatorImage';
+import {
+  GATOR_MOODS,
+  GatorImage,
+  type GatorImageProps,
+  type GatorMood,
+} from './GatorImage';
 
 const ALTS: Record<GatorMood, string> = {
   'shopping-buddy': 'Gator waving, holding a shopping basket',
@@ -39,10 +44,31 @@ describe('GatorImage', () => {
   });
 
   it('requires an alt unless decorative', () => {
-    // @ts-expect-error alt is required when the image is not decorative
-    render(<GatorImage mood="happy" />);
-    // @ts-expect-error a decorative image takes no alt
-    render(<GatorImage mood="happy" decorative alt="x" />);
+    // Compile-time only (checked by the ui typecheck); nothing is rendered.
+    expectTypeOf<{ mood: 'happy' }>().not.toExtend<GatorImageProps>();
+    expectTypeOf<{ mood: 'happy'; alt: string }>().toExtend<GatorImageProps>();
+    expectTypeOf<{
+      mood: 'happy';
+      decorative: true;
+    }>().toExtend<GatorImageProps>();
+    expectTypeOf<{
+      mood: 'happy';
+      decorative: true;
+      alt: string;
+    }>().not.toExtend<GatorImageProps>();
+  });
+
+  it('maps every mood to its own art', () => {
+    const srcs = GATOR_MOODS.map((mood) => {
+      const { container, unmount } = render(
+        <GatorImage mood={mood} decorative />,
+      );
+      const src = container.querySelector('img')!.getAttribute('src');
+      unmount();
+      return src;
+    });
+    for (const src of srcs) expect(src).toBeTruthy();
+    expect(new Set(srcs).size).toBe(GATOR_MOODS.length);
   });
 
   it('takes a translated alt', () => {
