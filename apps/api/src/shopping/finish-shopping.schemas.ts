@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import type { AmountScale } from '../catalog/amount-scale';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { batchQuantity } from '../common/quantity';
@@ -7,7 +6,6 @@ import { batchQuantity } from '../common/quantity';
 const isoDate = z.iso.date();
 
 export const finishProposalQuery = z.object({
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   /** The Member's local date (YYYY-MM-DD) Default Expiry counts from; defaults to the server's UTC date. */
   today: isoDate.optional(),
 });

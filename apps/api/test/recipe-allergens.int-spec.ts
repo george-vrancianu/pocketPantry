@@ -16,6 +16,7 @@ import type {
 } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 jest.setTimeout(30_000);
@@ -24,6 +25,7 @@ jest.setTimeout(30_000);
 describe('Recipe detail Allergens (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
+  let memberCookie: string;
   let admin: ReturnType<typeof client>;
   let member: ReturnType<typeof client>;
   let family: ReturnType<typeof client>;
@@ -64,6 +66,7 @@ describe('Recipe detail Allergens (integration)', () => {
     database = app.get<Database>(DATABASE);
     const adminEmail = `allergens-admin-${stamp}@example.com`;
     const cookie = await signUp(app, adminEmail, 'Admin');
+    memberCookie = cookie;
     await promoteToAdmin(database, adminEmail);
     admin = client(app, cookie, '/api/admin/recipes');
     member = client(app, cookie, '/api/recipes');
@@ -152,10 +155,13 @@ describe('Recipe detail Allergens (integration)', () => {
 
     it('names Allergens in the requested locale', async () => {
       const created = await catalogRecipe([g(PARMESAN)]);
-      const ro = await detail(created.id, '?locale=ro');
+      await storeUiLanguage(app, memberCookie, 'ro');
+      const ro = await detail(created.id);
       expect(ro.allergens.items[0].allergen.name).toBe('Lapte');
-      const da = await detail(created.id, '?locale=da');
+      await storeUiLanguage(app, memberCookie, 'da');
+      const da = await detail(created.id);
       expect(da.allergens.items[0].allergen.name).toBe('Mælk');
+      await storeUiLanguage(app, memberCookie, 'en');
     });
   });
 

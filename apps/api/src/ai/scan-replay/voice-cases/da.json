@@ -4,7 +4,7 @@
   "cases": [
     {
       "id": "da-01",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["basic"],
       "transcript": "Tilføj mælk, æg og brød til listen.",
       "expected": {
@@ -29,7 +29,7 @@
     },
     {
       "id": "da-02",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["filler"],
       "transcript": "Øh, altså, jeg skal lige have, øh, noget smør og, ja, cheddar.",
       "expected": {
@@ -49,7 +49,7 @@
     },
     {
       "id": "da-03",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["correction", "units"],
       "transcript": "Skriv to, nej, tre æbler.",
       "expected": {
@@ -66,7 +66,7 @@
     },
     {
       "id": "da-04",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["correction"],
       "transcript": "Sæt løg på listen. Nej vent, hellere hvidløg.",
       "expected": {
@@ -81,7 +81,7 @@
     },
     {
       "id": "da-05",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["units"],
       "transcript": "To liter mælk, et halvt kilo mel, et dusin æg og fire tomater.",
       "expected": {
@@ -119,7 +119,7 @@
     },
     {
       "id": "da-06",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["relative-date", "units"],
       "transcript": "Læg et kilo laks i spisekammeret, den udløber om tre dage.",
       "expected": {
@@ -137,7 +137,7 @@
     },
     {
       "id": "da-07",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["relative-date"],
       "transcript": "Læg to yoghurt i køleskabet, de udløber i morgen.",
       "defaultTarget": "pantry",
@@ -157,7 +157,7 @@
     },
     {
       "id": "da-08",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["units", "relative-date"],
       "transcript": "Tilføj et kilo ris til spisekammeret, den udløber aldrig.",
       "defaultTarget": "pantry",
@@ -176,7 +176,7 @@
     },
     {
       "id": "da-09",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["unsupported"],
       "transcript": "Hvad er klokken? Tilføj kaffe.",
       "expected": {
@@ -192,7 +192,7 @@
     },
     {
       "id": "da-10",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["unsupported"],
       "transcript": "Fortæl mig en opskrift på frikadeller.",
       "expected": {
@@ -202,7 +202,7 @@
     },
     {
       "id": "da-11",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["mixed-lists", "relative-date", "units"],
       "transcript": "Tilføj spaghetti til indkøbslisten og læg tre citroner i spisekammeret, de udløber den tyvende.",
       "expected": {
@@ -225,7 +225,7 @@
     },
     {
       "id": "da-12",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["mixed-lists"],
       "transcript": "Sæt flueben ved brødet, fjern mælken fra listen, og vi er ved at løbe tør for ris i spisekammeret.",
       "shoppingList": ["Mælk", "Brød"],
@@ -252,7 +252,7 @@
     },
     {
       "id": "da-13",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["sound-alike"],
       "transcript": "Tilføj peber, peberfrugt og pærer.",
       "expected": {
@@ -277,7 +277,7 @@
     },
     {
       "id": "da-14",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["sound-alike"],
       "transcript": "Mel og mælk, og så løg og forårsløg.",
       "expected": {
@@ -307,7 +307,7 @@
     },
     {
       "id": "da-15",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["units"],
       "transcript": "Ret mælken til tre liter.",
       "shoppingList": ["Mælk"],
@@ -325,7 +325,7 @@
     },
     {
       "id": "da-16",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["basic", "off-page"],
       "transcript": "Tilføj mælk og æg.",
       "defaultTarget": "none",
@@ -346,7 +346,7 @@
     },
     {
       "id": "da-17",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["off-page"],
       "transcript": "Fjern æggene.",
       "defaultTarget": "none",
@@ -364,7 +364,7 @@
     },
     {
       "id": "da-18",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["filler", "off-page"],
       "transcript": "Øh, tilføj noget smør og fjern melet.",
       "defaultTarget": "none",
@@ -387,7 +387,7 @@
     },
     {
       "id": "da-19",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["off-page"],
       "transcript": "Læg to yoghurt i køleskabet.",
       "defaultTarget": "none",
@@ -406,7 +406,7 @@
     },
     {
       "id": "da-20",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["units", "relative-date", "off-page"],
       "transcript": "Tilføj et kilo laks, den udløber om tre dage.",
       "defaultTarget": "none",
@@ -425,7 +425,7 @@
     },
     {
       "id": "da-21",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["off-page"],
       "transcript": "Vi mangler mælk og æg.",
       "defaultTarget": "none",
@@ -446,7 +446,7 @@
     },
     {
       "id": "da-22",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["units", "off-page"],
       "transcript": "Køb to citroner og noget smør.",
       "defaultTarget": "none",
@@ -469,7 +469,7 @@
     },
     {
       "id": "da-23",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["off-page"],
       "transcript": "Sæt flueben ved brødet og mælken.",
       "defaultTarget": "none",
@@ -491,7 +491,7 @@
     },
     {
       "id": "da-24",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["off-page"],
       "transcript": "Fjern fluebenet ved æggene.",
       "defaultTarget": "none",
@@ -508,7 +508,7 @@
     },
     {
       "id": "da-25",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["units", "off-page"],
       "transcript": "Ret mælken til tre liter.",
       "defaultTarget": "none",
@@ -527,7 +527,7 @@
     },
     {
       "id": "da-26",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["off-page"],
       "transcript": "Vi er ved at løbe tør for ris og kaffe.",
       "defaultTarget": "none",
@@ -549,7 +549,7 @@
     },
     {
       "id": "da-27",
-      "scanLanguage": "da",
+      "spokenLanguage": "da",
       "tags": ["mixed-lists", "off-page"],
       "transcript": "Tilføj smør, læg to yoghurt i køleskabet, og vi mangler kaffe. Ah, og tilføj mel til spisekammeret.",
       "defaultTarget": "none",

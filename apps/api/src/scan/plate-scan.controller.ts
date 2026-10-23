@@ -44,7 +44,7 @@ export class PlateScanController {
     return this.plate.scanDishes(
       member.id,
       body,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -61,7 +61,7 @@ export class PlateScanController {
     return this.plate.dishLines(
       member.id,
       body,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 }

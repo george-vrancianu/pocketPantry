@@ -52,6 +52,18 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
         .expect(200)
     ).body as Matches;
 
+  async function romanianCatalogMember(label: string) {
+    const cookie = await signUp(app, `${label}-${stamp}@example.com`, 'C');
+    await client(app, cookie, '/api/settings')
+      .put('/preferences', {
+        locale: 'en',
+        catalogLanguage: 'ro',
+        scanLanguage: 'da',
+      })
+      .expect(200);
+    return client(app, cookie, '/api/recipes');
+  }
+
   beforeAll(async () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
@@ -132,9 +144,10 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
       await admin
         .put(`/${base.id}/translations/ro`, { title: `Tocana ${stamp}` })
         .expect(200);
-      const { matches } = await member
+      // A signed-in request's `?locale=` is ignored: the stored languages decide.
+      const romanian = await romanianCatalogMember('plate-rec-ro1');
+      const { matches } = await romanian
         .post('/plate-matches', {
-          locale: 'ro',
           dishTitle: `${word} source`,
           ingredientIds: [],
         })
@@ -162,9 +175,9 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
     it('saves a Variant under a chosen Catalog base with servings 1 and queues an Unmatched name', async () => {
       const base = await catalogBase(`Plate base ${stamp}`, [0, 1]);
       const raw = `Zq plate herb ${stamp}`;
-      const res = await member
+      const romanian = await romanianCatalogMember('plate-rec-ro2');
+      const res = await romanian
         .post('/from-plate', {
-          locale: 'ro',
           title: `Plate variant ${stamp}`,
           parentId: base.id,
           lines: [line(0, 150), { rawName: raw, quantity: 1, unit: 'pcs' }],
@@ -265,18 +278,6 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
   });
 
   describe('with a Catalog Language Preference', () => {
-    async function romanianCatalogMember(label: string) {
-      const cookie = await signUp(app, `${label}-${stamp}@example.com`, 'C');
-      await client(app, cookie, '/api/settings')
-        .put('/preferences', {
-          locale: 'en',
-          catalogLanguage: 'ro',
-          scanLanguage: 'da',
-        })
-        .expect(200);
-      return client(app, cookie, '/api/recipes');
-    }
-
     it('tags an Unmatched name from a Plate Scan with the Catalog Language, not the request locale', async () => {
       const romanian = await romanianCatalogMember('plate-rec-cl');
       const raw = `Zq plate catalog herb ${stamp}`;

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { shoppingLocaleQuery } from '../shopping/shopping.schemas';
 import type { LineMatch } from './matching/pantry-match';
 
 /** The most Servings a Member can ask a match or add-missing for. */
@@ -15,9 +14,6 @@ export const pantryMatchQuery = z.object({
   servings: z.coerce.number().pipe(servings).optional(),
 });
 export type PantryMatchQuery = z.infer<typeof pantryMatchQuery>;
-
-/** The locale query of both add-to-list endpoints (bulk and per line). */
-export const addToListQuery = shoppingLocaleQuery;
 
 export const addMissingBody = z.object({
   today: z.iso.date().optional(),

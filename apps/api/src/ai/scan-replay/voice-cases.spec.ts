@@ -352,7 +352,7 @@ describe('voiceCaseFileSchema', () => {
     cases: [
       {
         id: 'en-01',
-        scanLanguage: 'en',
+        spokenLanguage: 'en',
         tags: ['units'],
         transcript: 'add milk',
         expected: { actions: [expected()] },

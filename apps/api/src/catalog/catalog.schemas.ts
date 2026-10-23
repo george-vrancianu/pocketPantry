@@ -29,11 +29,6 @@ export const catalogSearchQuery = z.object({
 });
 export type CatalogSearchQuery = z.infer<typeof catalogSearchQuery>;
 
-export const catalogParentsQuery = z.object({
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
-});
-export type CatalogParentsQuery = z.infer<typeof catalogParentsQuery>;
-
 export type CatalogParent = { id: string; name: string };
 
 export const catalogAislesQuery = z.object({

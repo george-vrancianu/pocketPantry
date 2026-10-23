@@ -17,7 +17,7 @@ const MILK = catalog.ingredients.find((i) => i.names.en === 'Milk')!.id;
 
 const caseJson = (id: string, overrides: Record<string, unknown> = {}) => ({
   id,
-  scanLanguage: 'en',
+  spokenLanguage: 'en',
   tags: ['basic'],
   transcript: 'add milk',
   expected: {
@@ -64,7 +64,7 @@ describe('loadVoiceCaseSet', () => {
       cases: [
         caseJson('en-1'),
         caseJson('en-2'),
-        caseJson('ro-1', { scanLanguage: 'ro' }),
+        caseJson('ro-1', { spokenLanguage: 'ro' }),
       ],
     });
     expect(loadVoiceCaseSet(dir, { only: ['en-2'] }).cases).toHaveLength(1);
@@ -100,7 +100,7 @@ const loaded = (
   tags: LoadedVoiceCase['tags'] = ['basic'],
 ): LoadedVoiceCase => ({
   id,
-  scanLanguage: language,
+  spokenLanguage: language,
   locale: language,
   tags,
   transcript: 'add milk',
@@ -165,7 +165,7 @@ describe('renderReadReport latency', () => {
   it('averages over the runs that answered, not the failed ones', () => {
     const run = (ok: boolean, durationMs: number) => ({
       caseId: 'en-1',
-      scanLanguage: 'en' as const,
+      spokenLanguage: 'en' as const,
       tags: ['basic' as const],
       source: 'synthetic' as const,
       run: 1,
@@ -261,7 +261,7 @@ describe('renderReadReport', () => {
     ],
   });
 
-  it('totals passed cases and actions overall and per Scan Language', () => {
+  it('totals passed cases and actions overall and per Spoken Language', () => {
     expect(report).toContain(
       '# Voice Note read replay: gpt-5-nano, effort low',
     );
@@ -318,7 +318,7 @@ describe('renderTranscriptionReport', () => {
       results: [
         {
           caseId: 'en-1',
-          scanLanguage: 'en',
+          spokenLanguage: 'en',
           ok: true,
           transcript: 'add milk',
           expected: 'add milk',
@@ -327,7 +327,7 @@ describe('renderTranscriptionReport', () => {
         },
         {
           caseId: 'ro-1',
-          scanLanguage: 'ro',
+          spokenLanguage: 'ro',
           ok: true,
           transcript: 'adauga lapte',
           expected: 'adaugă lapte',
@@ -336,7 +336,7 @@ describe('renderTranscriptionReport', () => {
         },
         {
           caseId: 'da-1',
-          scanLanguage: 'da',
+          spokenLanguage: 'da',
           ok: false,
           error: 'voice.provider_unavailable (HTTP 413)',
           durationMs: 100,

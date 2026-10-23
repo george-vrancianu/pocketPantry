@@ -42,12 +42,10 @@ import {
   type CatalogCategoriesQuery,
   type CatalogCategory,
   type FamilyIngredientBody,
-  catalogParentsQuery,
   type CatalogAisle,
   type CatalogAislesQuery,
   catalogSearchQuery,
   type CatalogParent,
-  type CatalogParentsQuery,
   type CatalogSearchQuery,
   type CatalogSearchResult,
 } from './catalog.schemas';
@@ -72,13 +70,11 @@ export class CatalogController {
   })
   async parents(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(catalogParentsQuery))
-    query: CatalogParentsQuery,
   ): Promise<{ parents: CatalogParent[] }> {
     return {
       parents: await this.searchService.listParents(
         await this.settings.catalogScopeForMember(member.id),
-        await this.languages.catalogLanguageOf(member.id, query.locale),
+        await this.languages.catalogLanguageOf(member.id),
       ),
     };
   }
@@ -96,7 +92,7 @@ export class CatalogController {
     return {
       aisles: await this.searchService.listAisles(
         await this.scopeFor(query, member.id),
-        await this.languages.catalogLanguageOf(member.id, query.locale),
+        await this.languages.catalogLanguageOf(member.id),
       ),
     };
   }
@@ -108,13 +104,11 @@ export class CatalogController {
   })
   async allergens(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(familyIngredientQuery))
-    query: { locale: 'en' | 'ro' | 'da' },
   ): Promise<{ allergens: CatalogAllergen[] }> {
     return {
       allergens: await this.searchService.listAllergens(
         await this.settings.catalogScopeForMember(member.id),
-        await this.languages.catalogLanguageOf(member.id, query.locale),
+        await this.languages.catalogLanguageOf(member.id),
       ),
     };
   }
@@ -133,7 +127,7 @@ export class CatalogController {
       results: await this.searchService.search(
         await this.scopeFor(query, member.id),
         query.q,
-        await this.languages.catalogLanguageOf(member.id, query.locale),
+        await this.languages.catalogLanguageOf(member.id),
         query.limit,
         await this.settings.expiryOverridesForMember(member.id),
         {
@@ -158,7 +152,7 @@ export class CatalogController {
       categories: await this.searchService.listCategories(
         await this.settings.catalogScopeForMember(member.id),
         query.q,
-        await this.languages.catalogLanguageOf(member.id, query.locale),
+        await this.languages.catalogLanguageOf(member.id),
         query.limit,
         await this.settings.expiryOverridesForMember(member.id),
       ),
@@ -184,7 +178,7 @@ export class CatalogController {
         memberId: member.id,
       },
       body,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
       await this.settings.expiryOverridesForMember(member.id),
     );
   }
@@ -196,12 +190,10 @@ export class CatalogController {
   })
   async family(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(familyIngredientQuery))
-    query: { locale: 'en' | 'ro' | 'da' },
   ): Promise<FamilyCatalog> {
     return this.familyCatalog.list(
       await this.settings.familyIdOf(member.id),
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
       await this.settings.expiryOverridesForMember(member.id),
     );
   }
@@ -223,7 +215,7 @@ export class CatalogController {
       await this.settings.familyIdOf(member.id),
       params.id,
       body,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
       await this.settings.expiryOverridesForMember(member.id),
     );
   }
@@ -293,7 +285,7 @@ export class CatalogController {
     return this.familySynonyms.create(
       { id: await this.settings.familyIdOf(member.id) },
       body,
-      await this.languages.catalogLanguageOf(member.id, query.locale),
+      await this.languages.catalogLanguageOf(member.id),
       await this.settings.expiryOverridesForMember(member.id),
     );
   }

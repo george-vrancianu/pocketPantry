@@ -36,10 +36,7 @@ export class BarcodeController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<BarcodeLookupResponse> {
     // Matching, returned names and Known Barcodes all follow the Catalog Language.
-    const locale = await this.languages.catalogLanguageOf(
-      member.id,
-      query.locale,
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
     try {
       return await this.barcodeLookup.lookup(member.id, params.barcode, locale);
     } catch (error) {

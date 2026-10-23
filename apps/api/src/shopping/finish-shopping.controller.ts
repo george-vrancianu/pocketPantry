@@ -40,11 +40,11 @@ export class FinishShoppingController {
   async propose(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(finishProposalQuery))
-    { locale, today }: FinishProposalQuery,
+    { today }: FinishProposalQuery,
   ): Promise<FinishProposal> {
     return this.finishShopping.propose(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
       today,
     );
   }

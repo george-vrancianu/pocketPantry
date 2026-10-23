@@ -11,6 +11,7 @@ import {
 } from '../src/database/schema';
 import { ShoppingService } from '../src/shopping/shopping.service';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 type Item = {
   id: string;
@@ -76,8 +77,11 @@ describe('Shopping List (integration)', () => {
       .set('origin', TEST_ORIGIN)
       .set('cookie', cookie);
 
-  const getList = async (cookie: string, locale = 'en') =>
-    (await call('get', cookie, `?locale=${locale}`).expect(200)).body as List;
+  // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+  const getList = async (cookie: string, locale = 'en') => {
+    await storeUiLanguage(app, cookie, locale);
+    return (await call('get', cookie, '').expect(200)).body as List;
+  };
 
   const add = async (
     cookie: string,

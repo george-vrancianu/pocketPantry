@@ -1067,10 +1067,10 @@ describe('Voice Note (integration)', () => {
       expect(calls[0].language).toBe('da');
     });
 
-    it('falls back to the request locale for a Member with no stored UI Language', async () => {
+    it('ignores the request locale: a Member with nothing stored speaks English', async () => {
       const { cookie } = await signUp();
       await note(cookie, { language: null, uiLocale: 'ro' }).expect(201);
-      expect(calls[0].language).toBe('ro');
+      expect(calls[0].language).toBe('en');
     });
 
     it('rejects a spokenLanguage that is not a Scan Language, and no longer reads scanLanguage', async () => {

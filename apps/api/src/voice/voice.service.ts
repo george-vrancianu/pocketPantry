@@ -50,9 +50,11 @@ import {
 } from './voice.schemas';
 
 export type VoiceNoteInput = Omit<VoiceNoteFields, 'spokenLanguage'> & {
+  /** The Member's Catalog Language: the language of every name read, matched and written (the controller resolves it). */
+  locale: CatalogLocale;
   /** The language the recording is spoken in (the controller resolves it from the upload or the Preference). */
   spokenLanguage: ScanLanguage;
-  /** The UI Language, only told to the model. `locale` here is the Catalog Language (the controller resolves it). */
+  /** The UI Language, only told to the model. */
   uiLanguage?: CatalogLocale;
   audio: Buffer;
   /** A bare, supported container type such as `audio/webm`. */
@@ -468,7 +470,10 @@ export class VoiceService {
   }
 
   /** Applies the Voice Actions as edited in Review. Free of the Voice Cap. */
-  apply(memberId: string, body: VoiceApplyBody): Promise<VoiceApplyResult> {
+  apply(
+    memberId: string,
+    body: VoiceApplyBody & { locale: CatalogLocale },
+  ): Promise<VoiceApplyResult> {
     return this.applyActions(memberId, {
       actions: body.actions,
       locale: body.locale,

@@ -13,6 +13,7 @@ import type {
 import type { AllergiesView } from '../src/settings/settings.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 jest.setTimeout(30_000);
@@ -21,6 +22,7 @@ jest.setTimeout(30_000);
 describe('Allergies and the Allergy Warning (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
+  let memberCookie: string;
   let admin: ReturnType<typeof client>;
   let recipes: ReturnType<typeof client>;
   let settings: ReturnType<typeof client>;
@@ -65,6 +67,7 @@ describe('Allergies and the Allergy Warning (integration)', () => {
     database = app.get<Database>(DATABASE);
     const adminEmail = `allergies-admin-${stamp}@example.com`;
     const cookie = await signUp(app, adminEmail, 'Admin');
+    memberCookie = cookie;
     await promoteToAdmin(database, adminEmail);
     admin = client(app, cookie, '/api/admin/recipes');
     recipes = client(app, cookie, '/api/recipes');
@@ -97,9 +100,11 @@ describe('Allergies and the Allergy Warning (integration)', () => {
       expect(view.allergenIds).toEqual([]);
       expect(view.allergens).toHaveLength(14);
       expect(view.allergens[0].name).toBe('Gluten');
-      const ro = (await settings.get('/allergies?locale=ro').expect(200))
+      await storeUiLanguage(app, memberCookie, 'ro');
+      const ro = (await settings.get('/allergies').expect(200))
         .body as AllergiesView;
       expect(ro.allergens.find((a) => a.id === MILK)?.name).toBe('Lapte');
+      await storeUiLanguage(app, memberCookie, 'en');
     });
 
     it('set, replace and clear the Member own Allergies', async () => {
@@ -208,8 +213,10 @@ describe('Allergies and the Allergy Warning (integration)', () => {
     it('names the Allergen in the requested locale', async () => {
       await setAllergies(MILK);
       const created = await catalogRecipe([g(PARMESAN)]);
-      const ro = await detail(created.id, '?locale=ro');
+      await storeUiLanguage(app, memberCookie, 'ro');
+      const ro = await detail(created.id);
       expect(ro.allergyWarning?.entries[0].allergen.name).toBe('Lapte');
+      await storeUiLanguage(app, memberCookie, 'en');
     });
 
     it('is soft when only an optional line contains the Allergy', async () => {

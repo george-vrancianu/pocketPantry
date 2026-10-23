@@ -25,6 +25,7 @@ import type {
 } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 import { waitForBlockedBackend } from './support/wait-for-blocked-backend';
 
@@ -600,10 +601,13 @@ describe('Family Recipes (integration)', () => {
   });
 
   describe('Unmatched names', () => {
+    afterEach(() => storeUiLanguage(app, cookieOf.a1, 'en'));
+
     it('queues raw lines, replaces the entry on rename and drops it when matched or deleted', async () => {
       const raw = `Zq rare herb ${stamp}`;
+      // A signed-in request's `?locale=` is ignored: the stored Catalog Language tags the entry.
+      await storeUiLanguage(app, cookieOf.a1, 'ro');
       const created = await familyRecipe(a1, null, {
-        locale: 'ro',
         lines: [{ rawName: raw, quantity: 1, unit: 'pcs' }, line(0)],
       });
       const first = await unmatchedFor(created.lines[0].id);
@@ -621,7 +625,6 @@ describe('Family Recipes (integration)', () => {
             .put(`/${created.id}`, {
               title: created.title,
               servings: 2,
-              locale: 'ro',
               lines,
               steps: [],
             })
@@ -716,11 +719,11 @@ describe('Family Recipes (integration)', () => {
       expect(second.archivedAt).toBe(first.archivedAt);
     });
 
-    it('requires the locale in Family bodies', async () => {
+    it('does not need the locale in Family bodies: the stored Catalog Language is used', async () => {
       const { locale, ...noLocale } = doc(null);
       // Marks the destructured locale as intentionally unused (omitted from the body).
       void locale;
-      await a1.post('', noLocale).expect(400);
+      await a1.post('', noLocale).expect(201);
     });
 
     it('refuses bad hidden Tips and foreign Tips with coded errors', async () => {
@@ -1081,9 +1084,10 @@ describe('Family Recipes (integration)', () => {
           },
         })
         .expect(200);
-      const draft = (
-        await a1.get(`/${base.id}/variant-draft?locale=ro`).expect(200)
-      ).body as FamilyRecipeDraft;
+      await storeUiLanguage(app, cookieOf.a1, 'ro');
+      const draft = (await a1.get(`/${base.id}/variant-draft`).expect(200))
+        .body as FamilyRecipeDraft;
+      await storeUiLanguage(app, cookieOf.a1, 'en');
       expect(draft.guidance.nutritionNote).toBe('Notă');
       expect(draft.guidance.pairings[0]).toMatchObject({
         label: 'Vin',

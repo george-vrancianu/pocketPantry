@@ -15,6 +15,7 @@ import {
 } from '../src/database/schema';
 import { PantryService } from '../src/pantry/pantry.service';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 type Batch = {
   id: string;
@@ -80,17 +81,19 @@ describe('Pantry (integration)', () => {
       .set('cookie', cookie)
       .send(body);
 
-  const list = async (cookie: string, locale = 'en') =>
-    (
+  // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+  const list = async (cookie: string, locale = 'en') => {
+    await storeUiLanguage(app, cookie, locale);
+    return (
       (
         await request(app.getHttpServer())
           .get('/api/pantry')
-          .query({ locale })
           .set('origin', TEST_ORIGIN)
           .set('cookie', cookie)
           .expect(200)
       ).body as { batches: Batch[] }
     ).batches;
+  };
 
   it('requires authentication', async () => {
     await request(app.getHttpServer()).get('/api/pantry').expect(401);

@@ -12,6 +12,7 @@ import {
   user,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 type Line = {
@@ -228,14 +229,14 @@ describe('Shopping Templates (integration)', () => {
       ]);
       await create(ana, 'Empty');
 
-      const list = async (locale: string) =>
-        (
-          (
-            await as(ana)
-              .get(`/shopping-templates?locale=${locale}`)
-              .expect(200)
-          ).body as { templates: Summary[] }
+      const list = async (locale: string) => {
+        await storeUiLanguage(app, ana, locale);
+        return (
+          (await as(ana).get('/shopping-templates').expect(200)).body as {
+            templates: Summary[];
+          }
         ).templates;
+      };
 
       const en = await list('en');
       expect(en.map((t) => t.previewNames)).toEqual([

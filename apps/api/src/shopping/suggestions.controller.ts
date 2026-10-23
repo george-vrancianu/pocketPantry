@@ -15,8 +15,8 @@ import { MemberLanguageService } from '../member-language/member-language.servic
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { ingredientIdParam, type SuggestionsView } from './suggestions.schemas';
 import {
-  shoppingLocaleTodayQuery,
-  type ShoppingLocaleTodayQuery,
+  shoppingTodayQuery,
+  type ShoppingTodayQuery,
 } from './shopping.schemas';
 import { SuggestionsService } from './suggestions.service';
 
@@ -37,12 +37,12 @@ export class SuggestionsController {
   })
   async list(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(shoppingLocaleTodayQuery))
-    { locale, today }: ShoppingLocaleTodayQuery,
+    @Query(new ZodValidationPipe(shoppingTodayQuery))
+    { today }: ShoppingTodayQuery,
   ): Promise<SuggestionsView> {
     return this.suggestions.list(
       member.id,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
       today,
     );
   }

@@ -93,8 +93,12 @@ export const familyLineInput = lineInput.extend({
   rawName: z.string().trim().min(1).max(100).nullable().default(null),
 });
 
-/** The Member's locale (required): the Unmatched queue entries of new names record it. */
-const memberLocale = z.enum(CATALOG_LOCALES);
+/**
+ * Carries the Member's Catalog Language into the services. The request's own
+ * value is ignored (the controller overwrites it from the stored Preference),
+ * so it may be left out; it is only here so the document keeps its shape.
+ */
+const memberLocale = z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE);
 
 /** Replacing a Family Recipe's document; its base is fixed at creation. */
 export const familyRecipeUpdate = recipeDocument

@@ -15,6 +15,7 @@ import {
 } from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 type Unit = 'g' | 'kg' | 'ml' | 'l' | 'pcs';
 type LineSpec = {
@@ -111,14 +112,16 @@ describe('Cook Tonight (integration)', () => {
     });
   }
 
-  const cardsOf = async (as: typeof ana, locale = 'en') =>
-    (
-      (
-        await as
-          .get(`/cook-tonight?locale=${locale}&today=${today}`)
-          .expect(200)
-      ).body as { cards: Card[] }
+  const cookieOf = new Map<object, string>();
+  const cardsOf = async (as: typeof ana, locale = 'en') => {
+    // A signed-in request's `?locale=` is ignored: the stored UI Language decides.
+    await storeUiLanguage(app, cookieOf.get(as) as string, locale);
+    return (
+      (await as.get(`/cook-tonight?today=${today}`).expect(200)).body as {
+        cards: Card[];
+      }
     ).cards;
+  };
   const cardFor = async (baseId: string, as = ana) =>
     (await cardsOf(as)).find((c) => c.base.id === baseId);
 
@@ -126,9 +129,13 @@ describe('Cook Tonight (integration)', () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
     const anaEmail = `tonight-ana-${stamp}@example.com`;
-    ana = client(app, await signUp(app, anaEmail, 'Ana'), '/api/recipes');
+    const anaCookie = await signUp(app, anaEmail, 'Ana');
+    ana = client(app, anaCookie, '/api/recipes');
+    cookieOf.set(ana, anaCookie);
     const benEmail = `tonight-ben-${stamp}@example.com`;
-    ben = client(app, await signUp(app, benEmail, 'Ben'), '/api/recipes');
+    const benCookie = await signUp(app, benEmail, 'Ben');
+    ben = client(app, benCookie, '/api/recipes');
+    cookieOf.set(ben, benCookie);
     const familyOf = async (email: string) =>
       (
         await database

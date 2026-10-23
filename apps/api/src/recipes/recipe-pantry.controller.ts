@@ -14,14 +14,10 @@ import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { MemberLanguageService } from '../member-language/member-language.service';
-import type {
-  ShoppingListView,
-  ShoppingLocaleQuery,
-} from '../shopping/shopping.schemas';
+import type { ShoppingListView } from '../shopping/shopping.schemas';
 import {
   addLineBody,
   addMissingBody,
-  addToListQuery,
   pantryMatchQuery,
   recipeIdParam,
   type AddLineBody,
@@ -65,15 +61,13 @@ export class RecipePantryController {
   async addMissing(
     @CurrentUser() member: CurrentUserValue,
     @IdParam() { id }: { id: string },
-    @Query(new ZodValidationPipe(addToListQuery))
-    { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addMissingBody)) body: AddMissingBody,
   ): Promise<ShoppingListView> {
     return this.pantry.addMissing(
       member.id,
       id,
       body,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 
@@ -86,15 +80,13 @@ export class RecipePantryController {
   async addLine(
     @CurrentUser() member: CurrentUserValue,
     @IdParam() { id }: { id: string },
-    @Query(new ZodValidationPipe(addToListQuery))
-    { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addLineBody)) body: AddLineBody,
   ): Promise<ShoppingListView> {
     return this.pantry.addLine(
       member.id,
       id,
       body,
-      await this.languages.catalogLanguageOf(member.id, locale),
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 }

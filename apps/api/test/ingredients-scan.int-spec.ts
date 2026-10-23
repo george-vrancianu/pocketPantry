@@ -7,6 +7,7 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { INGREDIENTS_SCAN_MAX_ITEMS } from '../src/scan/ingredients-scan.schemas';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { storeUiLanguage } from './support/stored-language';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
 
@@ -66,6 +67,14 @@ describe('Ingredients Scan (integration)', () => {
       .join('; ');
   }
 
+  /** A Member whose stored UI Language is `locale` (the API ignores the request's own `?locale=`). */
+  async function signUpIn(locale: string) {
+    const cookie = await signUp();
+    await storeUiLanguage(app, cookie, locale);
+    return cookie;
+  }
+
+  // `locale` is sent as the web used to; a signed-in request ignores it.
   const scan = (
     cookie: string,
     body: object,
@@ -188,7 +197,11 @@ describe('Ingredients Scan (integration)', () => {
     respondWith([item()]);
     prompts.length = 0;
     const body = (
-      await scan(await signUp(), { ingredientsImage: IMAGE }, 'ro').expect(201)
+      await scan(
+        await signUpIn('ro'),
+        { ingredientsImage: IMAGE },
+        'ro',
+      ).expect(201)
     ).body as { lines: { match: { name: string } }[] };
     expect(prompts[0].images).toEqual([IMAGE]);
     expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
@@ -200,7 +213,7 @@ describe('Ingredients Scan (integration)', () => {
     prompts.length = 0;
     const body = (
       await scan(
-        await signUp(),
+        await signUpIn('ro'),
         { ingredientsImage: IMAGE },
         'ro',
         'da',
@@ -214,7 +227,9 @@ describe('Ingredients Scan (integration)', () => {
   it('reads the labels in the UI locale when no Scan Language is given', async () => {
     respondWith([item()]);
     prompts.length = 0;
-    await scan(await signUp(), { ingredientsImage: IMAGE }, 'ro').expect(201);
+    await scan(await signUpIn('ro'), { ingredientsImage: IMAGE }, 'ro').expect(
+      201,
+    );
     expect(prompts[0].prompt).toMatch(/photo is in Romanian/);
   });
 

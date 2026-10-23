@@ -1,7 +1,5 @@
 import { z } from 'zod';
 import {
-  CATALOG_LOCALES,
-  FALLBACK_LOCALE,
   SCAN_LANGUAGES,
   type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
@@ -190,7 +188,6 @@ export const voiceApplyBody = z.object({
       }),
     )
     .max(50),
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   /** The Member's local date, for a Pantry add that takes the Default Expiry. */
   today: z.iso.date().optional(),
 });
