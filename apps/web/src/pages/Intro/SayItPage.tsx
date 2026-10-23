@@ -29,6 +29,7 @@ import {
   type VoiceApplyResult,
   type VoiceReviewAction,
 } from '../../lib/voice';
+import { useVoiceNoteState } from '../../lib/voiceNote';
 import { aboveMic, PILL_OFFSET, VOICE_LAYER } from '../../lib/voicePlacement';
 
 /** Where Skip goes: the Intro module's rule, never a path written here. */
@@ -67,8 +68,9 @@ function ExampleCard({ phrase, result }: { phrase: string; result: string }) {
 }
 
 /** "Keep holding while you talk. / Let go when you're done." over the scrim while the mic is held. */
-function CoachLine() {
+function CoachLine({ held }: { held: boolean }) {
   const { t } = useTranslation('onboarding');
+  // Always mounted so the live region exists before its text arrives and the line is announced.
   return (
     <Typography
       role="status"
@@ -86,12 +88,16 @@ function CoachLine() {
         fontWeight: 700,
       }}
     >
-      <Box component="span" sx={{ display: 'block' }}>
-        {t('sayIt.coach.keepHolding')}
-      </Box>
-      <Box component="span" sx={{ display: 'block' }}>
-        {t('sayIt.coach.letGo')}
-      </Box>
+      {held ? (
+        <>
+          <Box component="span" sx={{ display: 'block' }}>
+            {t('sayIt.coach.keepHolding')}
+          </Box>
+          <Box component="span" sx={{ display: 'block' }}>
+            {t('sayIt.coach.letGo')}
+          </Box>
+        </>
+      ) : null}
     </Typography>
   );
 }
@@ -99,10 +105,10 @@ function CoachLine() {
 function SayItScreen() {
   const { t } = useTranslation('onboarding');
   const gatorAlt = useGatorAlt();
-  const { counts } = useIntro();
+  const { counts, recordSaved } = useIntro();
   const voice = useVoiceConfig();
   const holding = useDockRaised();
-  const { recordSaved } = useIntro();
+  const { phase } = useVoiceNoteState();
   const navigate = useNavigate();
   // "Do these N" ran: count only what was really saved, then on to All set.
   const setup = {
@@ -147,7 +153,6 @@ function SayItScreen() {
 
         {counts.batches > 0 ? (
           <Box
-            role="status"
             sx={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -236,15 +241,15 @@ function SayItScreen() {
 
       {voice === 'on' ? (
         <>
-          {holding ? (
-            <CoachLine />
-          ) : (
+          <CoachLine held={holding} />
+          {/* Only at rest: after release the status pill owns the space above the mic. */}
+          {!holding && phase === 'idle' ? (
             <SetupCallout
               title={t('sayIt.callout.title')}
               body={t('sayIt.callout.body')}
               bottom={aboveMic(10)}
             />
-          )}
+          ) : null}
           <VoiceHostSlot />
           <VoiceNote defaultTarget={SETUP_DEFAULT_TARGET} setup={setup} />
           <AppDock teach="mic" />

@@ -94,8 +94,8 @@
       "title": "Iată ce am auzit",
       "nothingSaved": "Nu se salvează nimic până nu spui tu. Atinge un rând ca să-l schimbi.",
       "doThese_one": "Fă-o pe asta",
-      "doThese_few": "Fă-le pe cele {{count}}",
-      "doThese_other": "Fă-le pe cele {{count}}"
+      "doThese_few": "Aplică-le pe toate cele {{count}}",
+      "doThese_other": "Aplică-le pe toate cele {{count}}"
     }
   },
   "review": {

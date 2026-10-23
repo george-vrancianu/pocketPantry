@@ -5,6 +5,7 @@ import {
   type Locale,
   type ScanLanguage,
 } from '../i18n/resources';
+import type { VoiceAppliedEntry, VoiceReviewAction } from './voice';
 
 /**
  * The Intro's rules, kept pure: which screens there are, where each lives, what Skip does, and the
@@ -113,12 +114,8 @@ export function addSetupCounts(
  * ones already done (nothing new was written) do not, and a tick, remove or change adds nothing.
  */
 export function savedByVoice(
-  applied: {
-    actionId: string;
-    list: 'pantry' | 'shopping';
-    alreadyDone: boolean;
-  }[],
-  actions: { id: string; op: string | null }[],
+  applied: Pick<VoiceAppliedEntry, 'actionId' | 'list' | 'alreadyDone'>[],
+  actions: Pick<VoiceReviewAction, 'id' | 'op'>[],
 ): SetupCounts {
   const ops = new Map(actions.map((a) => [a.id, a.op]));
   const saved = { ...NO_SETUP_COUNTS };

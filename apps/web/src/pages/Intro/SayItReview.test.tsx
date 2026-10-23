@@ -304,7 +304,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     const user = userEvent.setup();
     const review = await speak();
     await user.click(
-      within(review).getByRole('button', { name: 'Do these 1' }),
+      within(review).getByRole('button', { name: 'Do this one' }),
     );
 
     await screen.findByText(
@@ -373,6 +373,19 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     expect(where()).toBe('/intro/say-it');
   });
 
+  it('shows only the reading pill, not the callout, while Gator reads the note', async () => {
+    openSayIt(undefined, undefined, {
+      routes: { 'POST /api/voice': () => new Promise<Response>(() => {}) },
+    });
+    const button = await talkButton();
+    pressDown(button);
+    await screen.findByText("Gator's listening");
+    await holdLongEnough();
+    fireEvent.pointerUp(button);
+    expect(await screen.findByText(/Gator's reading your note/)).toBeVisible();
+    expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
+  });
+
   it('lands back on Say it when the Voice Note cannot be read', async () => {
     openSayIt(undefined, undefined, {
       routes: {
@@ -386,6 +399,8 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     await holdLongEnough();
     fireEvent.pointerUp(button);
     expect(await screen.findByText("Couldn't send")).toBeVisible();
+    // The pill owns the space above the mic: the resting callout stays out of its way.
+    expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
     expect(
       screen.queryByRole('dialog', { name: "Here's what I heard" }),
     ).toBeNull();
@@ -422,6 +437,7 @@ describe('Setup 2: the Voice Cap', () => {
     expect(
       await screen.findByText("That's today's 30 Voice Notes"),
     ).toBeVisible();
+    expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
     expect(
       screen.queryByRole('dialog', { name: "Here's what I heard" }),
     ).toBeNull();

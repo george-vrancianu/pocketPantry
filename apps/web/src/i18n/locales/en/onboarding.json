@@ -92,7 +92,7 @@
     "heard": {
       "title": "Here's what I heard",
       "nothingSaved": "Nothing is saved until you say so. Tap a line to change it.",
-      "doThese_one": "Do these {{count}}",
+      "doThese_one": "Do this one",
       "doThese_other": "Do these {{count}}"
     }
   },

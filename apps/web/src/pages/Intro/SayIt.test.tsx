@@ -88,6 +88,9 @@ describe('Setup 2, Say it', () => {
     const user = userEvent.setup();
     const talk = await talkButton();
     expect(talk).not.toHaveAttribute('aria-disabled');
+    expect(
+      screen.getByRole('button', { name: 'Spoken Language: English. Change' }),
+    ).toBeVisible();
     for (const control of dimmed()) {
       expect(control).toHaveAttribute('aria-disabled', 'true');
       expect(control).toHaveAttribute('tabindex', '-1');
@@ -183,6 +186,11 @@ describe('Setup 2, holding the mic', () => {
     expect(screen.getByText('Keep holding while you talk.')).toBeVisible();
     expect(screen.getByText("Let go when you're done.")).toBeVisible();
     expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
+    expect(
+      screen
+        .getByText('Keep holding while you talk.')
+        .closest('[role="status"]'),
+    ).not.toBeNull();
     expect(mic.start).toHaveBeenCalledTimes(1);
   });
 
