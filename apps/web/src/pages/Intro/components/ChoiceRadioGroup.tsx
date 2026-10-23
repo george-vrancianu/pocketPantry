@@ -46,6 +46,7 @@ export function ChoiceRadioGroup<T extends string>({
   const id = useId();
   const labelId = `${id}-label`;
   const hintId = `${id}-hint`;
+  const CHOICE_RADIUS = layout === 'rows' ? radius.control : radius.chip;
   return (
     <Box
       role="radiogroup"
@@ -90,7 +91,7 @@ export function ChoiceRadioGroup<T extends string>({
                 boxSizing: 'border-box',
                 minHeight: layout === 'rows' ? 50 : 44,
                 px: '16px',
-                borderRadius: layout === 'rows' ? '14px' : radius.chip,
+                borderRadius: CHOICE_RADIUS,
                 border: '2px solid',
                 borderColor: selected ? 'pp.accent' : 'pp.cardLine',
                 backgroundColor: selected ? 'pp.accentTint' : 'pp.cardBg',

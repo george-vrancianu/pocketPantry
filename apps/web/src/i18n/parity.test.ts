@@ -359,7 +359,12 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   [
     'settings',
     'the Settings page title, not a name for Member Preferences',
-    ['settings:tabs.label', 'settings:title'],
+    [
+      'settings:tabs.label',
+      'settings:title',
+      'onboarding:languages.abroad',
+      'onboarding:setup.languagesNotSaved',
+    ],
   ],
   ['side', '"on our side", an apology', ['errors:internal_server_error']],
   [
@@ -456,6 +461,12 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
     'a Recipe language, not the Scan Language',
   'dashboard:settings|settings': 'link to Settings',
   'voice:blocked.safariStep2|settings': 'Safari "Website Settings" menu name',
+  'onboarding:languages.app|app language':
+    'the first-screen name for the UI Language, before the Member has any Preferences (design handoff)',
+  'onboarding:languages.receipts.label|label':
+    'the printed labels the camera reads (the Scan Language row), not a Product Description',
+  'onboarding:languages.abroad|label':
+    'the printed labels the camera reads (the Scan Language row), not a Product Description',
 };
 
 const escape = (s: string) =>

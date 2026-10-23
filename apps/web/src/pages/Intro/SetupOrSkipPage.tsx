@@ -48,7 +48,7 @@ function ChoiceCard({ children, emphasised, disabled, onClick }: CardProps) {
         backgroundColor: 'pp.cardBg',
         border: emphasised ? '2px solid' : '1px solid',
         borderColor: emphasised ? 'pp.accent' : 'pp.cardLine',
-        borderRadius: '16px',
+        borderRadius: radius.card,
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.7 : 1,
         '&:focus-visible': focusRingStyle,
