@@ -62,9 +62,16 @@
   "scanLanguage": {
     "label": "Scan Language",
     "sameAsUi": "Same as UI Language",
-    "hint": "What photos and Voice Notes are read as. Reading in {{language}}.",
+    "hint": "What photos are read as. Reading in {{language}}.",
     "saveFailed": "Could not save your Scan Language. Try again.",
     "saved": "Scan Language saved"
+  },
+  "spokenLanguage": {
+    "label": "Spoken Language",
+    "sameAsUi": "Same as UI Language",
+    "hint": "What Voice Notes are spoken in. Listening in {{language}}.",
+    "saveFailed": "Could not save your Spoken Language. Try again.",
+    "saved": "Spoken Language saved"
   },
   "admin": "Catalog",
   "openAdmin": "Curate the Catalog",

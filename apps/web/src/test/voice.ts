@@ -136,7 +136,7 @@ export const recording: Recording = {
 
 /** Records a Voice Note from the fake microphone and lets go, as another page would have: it is sent to be read. */
 export async function recordAndSend(options: {
-  scanLanguage: 'en' | 'ro';
+  spokenLanguage: 'en' | 'ro';
   locale: 'en' | 'ro';
   defaultTarget: 'shopping' | 'pantry';
 }) {

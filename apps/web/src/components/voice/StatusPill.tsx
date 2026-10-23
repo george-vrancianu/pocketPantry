@@ -68,7 +68,7 @@ export function StatusPill({ voice }: { voice: Voice }) {
         hint: t('send.readingMeta', {
           duration: formatClock(recording?.durationMs ?? 0),
           language: t(
-            `settings:languageNames.${recording?.scanLanguage ?? 'en'}`,
+            `settings:languageNames.${recording?.spokenLanguage ?? 'en'}`,
           ),
         }),
         urgent: false,

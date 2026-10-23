@@ -118,7 +118,7 @@ describe('Voice Notes on the Pantry page', () => {
     // Recorded on the Shopping List, then the Member moved to the Pantry (not a reload).
     const { sent } = setup([], undefined, [], 'fails');
     await recordAndSend({
-      scanLanguage: 'ro',
+      spokenLanguage: 'ro',
       locale: 'en',
       defaultTarget: 'shopping',
     });
@@ -131,14 +131,14 @@ describe('Voice Notes on the Pantry page', () => {
     await userEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
 
     expect(await screen.findByRole('dialog')).toBeVisible();
-    expect(sent[0].get('scanLanguage')).toBe('ro');
+    expect(sent[0].get('spokenLanguage')).toBe('ro');
     expect(sent[0].get('defaultTarget')).toBe('shopping');
   });
 
   it('keeps the voice button, the pill and a read going while a Batch is added', async () => {
     setup([], undefined, [], 'hangs');
     await recordAndSend({
-      scanLanguage: 'en',
+      spokenLanguage: 'en',
       locale: 'en',
       defaultTarget: 'pantry',
     });

@@ -91,10 +91,10 @@
     "stoppedHint": "Se trimite ce ai spus."
   },
   "languageMenu": {
-    "chipLabel": "Limba de scanare: {{language}}. Schimbă",
-    "title": "Limba de scanare",
-    "saved": "Limba de scanare: {{language}}",
-    "savedHint": "Pentru notele vocale de pe acest ecran."
+    "chipLabel": "Limba vorbită: {{language}}. Schimbă",
+    "title": "Limba vorbită",
+    "saved": "Limba vorbită: {{language}}",
+    "savedHint": "Doar pentru această notă vocală."
   },
   "review": {
     "title": "Verificare",

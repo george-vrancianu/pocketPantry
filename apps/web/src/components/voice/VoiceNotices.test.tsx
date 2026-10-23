@@ -16,7 +16,7 @@ const readOn = (reply: () => Response | Promise<Response>) => {
 const start = async () => {
   await voiceNote.start({
     defaultTarget: 'shopping',
-    scanLanguage: 'en',
+    spokenLanguage: 'en',
     locale: 'en',
   });
   await voiceNote.stop();
@@ -39,7 +39,7 @@ describe('Voice Note notices at the app root', () => {
     await act(() =>
       voiceNote.start({
         defaultTarget: 'shopping',
-        scanLanguage: 'en',
+        spokenLanguage: 'en',
         locale: 'en',
       }),
     );
@@ -49,7 +49,7 @@ describe('Voice Note notices at the app root', () => {
     await act(() =>
       voiceNote.start({
         defaultTarget: 'shopping',
-        scanLanguage: 'en',
+        spokenLanguage: 'en',
         locale: 'en',
       }),
     );
@@ -65,7 +65,7 @@ describe('Voice Note notices at the app root', () => {
     await act(() =>
       voiceNote.start({
         defaultTarget: 'shopping',
-        scanLanguage: 'en',
+        spokenLanguage: 'en',
         locale: 'en',
       }),
     );

@@ -14,7 +14,7 @@ import { formatClock } from '../../lib/voice';
 
 /**
  * "What I heard": a card that shows the first line of the transcript and opens to
- * all of it, in the Scan Language it was read in, with that language and its length.
+ * all of it, in the Spoken Language it was read in, with that language and its length.
  */
 export function HeardCard({
   transcript,

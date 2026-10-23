@@ -65,9 +65,16 @@
   "scanLanguage": {
     "label": "Limba de scanare",
     "sameAsUi": "La fel ca limba aplicației",
-    "hint": "Limba în care se citesc pozele și notele vocale. Se citește în {{language}}.",
+    "hint": "Limba în care se citesc pozele. Se citește în {{language}}.",
     "saveFailed": "Nu am putut salva limba de scanare. Încearcă din nou.",
     "saved": "Limba de scanare a fost salvată"
+  },
+  "spokenLanguage": {
+    "label": "Limba vorbită",
+    "sameAsUi": "La fel ca limba aplicației",
+    "hint": "Limba în care se vorbesc notele vocale. Se ascultă în {{language}}.",
+    "saveFailed": "Nu am putut salva limba vorbită. Încearcă din nou.",
+    "saved": "Limba vorbită a fost salvată"
   },
   "admin": "Catalog",
   "openAdmin": "Administrează Catalogul",

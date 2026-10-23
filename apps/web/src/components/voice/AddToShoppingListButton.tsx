@@ -14,7 +14,7 @@ import { voiceToast } from '../../lib/voicePlacement';
 import { shoppingListChangeQueryKeys } from '../../lib/queryKeys';
 import { shoppingListQueryKey, useShoppingList } from '../../lib/shopping';
 import { useVoiceNoteState } from '../../lib/voiceNote';
-import { useScanLanguage } from '../../lib/useScanLanguage';
+import { usePreferredSpokenLanguage } from '../../lib/useSpokenLanguage';
 import { applyToast } from './applyResult';
 
 /** How long the result stays, as after Apply in Review: no Undo (ADR 0017). */
@@ -81,7 +81,7 @@ export function AddToShoppingListButton({
   onAdded?: () => void;
 }) {
   const { t, i18n } = useTranslation('voice');
-  const { locale } = useScanLanguage();
+  const { locale } = usePreferredSpokenLanguage();
   const { defaultTarget } = useVoiceNoteState();
   const toast = useToast();
   const queryClient = useQueryClient();

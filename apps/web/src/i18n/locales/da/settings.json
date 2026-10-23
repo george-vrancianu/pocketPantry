@@ -62,9 +62,16 @@
   "scanLanguage": {
     "label": "Scansprog",
     "sameAsUi": "Samme som appens sprog",
-    "hint": "Sproget fotos og talenoter læses på. Læser på {{language}}.",
+    "hint": "Sproget fotos læses på. Læser på {{language}}.",
     "saveFailed": "Dit scansprog kunne ikke gemmes. Prøv igen.",
     "saved": "Scansprog gemt"
+  },
+  "spokenLanguage": {
+    "label": "Talesprog",
+    "sameAsUi": "Samme som appens sprog",
+    "hint": "Sproget stemmenoter tales på. Lytter på {{language}}.",
+    "saveFailed": "Dit talesprog kunne ikke gemmes. Prøv igen.",
+    "saved": "Talesprog gemt"
   },
   "admin": "Katalog",
   "openAdmin": "Kurater kataloget",

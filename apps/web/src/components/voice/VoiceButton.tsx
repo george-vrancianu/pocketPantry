@@ -114,7 +114,7 @@ export function VoiceButton({
           starting={!voice.recording}
           startedAt={startedAt}
           target={target}
-          scanLanguage={voice.scanLanguage}
+          spokenLanguage={voice.spokenLanguage}
           level={voiceNote.level}
           armed={armed}
         />
@@ -134,9 +134,9 @@ export function VoiceButton({
         }}
       >
         <LanguageMenu
-          value={voice.scanLanguage}
+          value={voice.spokenLanguage}
           disabled={active || voice.sending}
-          onChange={voice.setScanLanguage}
+          onChange={voice.setSpokenLanguage}
         />
       </Box>
     </>,

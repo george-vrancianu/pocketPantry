@@ -31,6 +31,12 @@ import { scanLanguagePreference } from '../../test/scan';
 import { stubMotion } from '../../test/viewport';
 import { resetRowFlash } from '../../lib/rowFlash';
 import { voiceNote } from '../../lib/voiceNote';
+import {
+  clearScanLanguageOverride,
+  setScanLanguageOverride,
+  useSessionScanLanguage,
+} from '../../lib/sessionScanLanguage';
+import { useScanLanguage } from '../../lib/useScanLanguage';
 import { ShoppingPage } from './ShoppingPage';
 
 const emptyList = {
@@ -43,12 +49,21 @@ type Setup = {
   configured?: boolean;
   note?: () => Response | Promise<Response>;
   preferredScanLanguage?: 'en' | 'ro' | 'da';
+  preferredSpokenLanguage?: 'en' | 'ro' | 'da';
 };
 
-function setup({ configured = true, note, preferredScanLanguage }: Setup = {}) {
+function setup({
+  configured = true,
+  note,
+  preferredScanLanguage,
+  preferredSpokenLanguage,
+}: Setup = {}) {
   const { fetchMock } = stubApi({
-    ...(preferredScanLanguage
-      ? scanLanguagePreference(preferredScanLanguage)
+    ...(preferredScanLanguage || preferredSpokenLanguage
+      ? scanLanguagePreference(
+          preferredScanLanguage ?? 'en',
+          preferredSpokenLanguage,
+        )
       : {}),
     'GET /api/shopping-list': () => Response.json(emptyList),
     'GET /api/voice/config': () => Response.json({ configured }),
@@ -104,7 +119,7 @@ describe('Voice Note on the Shopping List', () => {
     expect(dialog).toHaveTextContent('What I heard');
     expect(session.stop).toHaveBeenCalledTimes(1);
     expect(sent).toHaveLength(1);
-    expect(sent[0].get('scanLanguage')).toBe('en');
+    expect(sent[0].get('spokenLanguage')).toBe('en');
     expect(sent[0].get('locale')).toBe('en');
     expect(sent[0].get('defaultTarget')).toBe('shopping');
     expect(sent[0].get('today')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -262,7 +277,7 @@ describe('Voice Note on the Shopping List', () => {
     expect(card).toHaveTextContent(
       'Goes to your Shopping List. Say “in the pantry” to add stock.',
     );
-    expect(card).toHaveTextContent('EN');
+    expect(card).toHaveTextContent(/English · /);
   });
 
   describe('the status pill', () => {
@@ -486,14 +501,14 @@ describe('Voice Note on the Shopping List', () => {
       await screen.findByRole('alert');
 
       await userEvent.click(
-        screen.getByRole('button', { name: /Scan Language: English/ }),
+        screen.getByRole('button', { name: /Spoken Language: English/ }),
       );
       await userEvent.click(
         await screen.findByRole('menuitemradio', { name: /Dansk/ }),
       );
 
       const snackbar = (
-        await screen.findByText(/Scan Language: Dansk/)
+        await screen.findByText(/Spoken Language: Dansk/)
       ).closest('.MuiSnackbar-root') as HTMLElement;
       const own = snackbar.className.split(' ').pop() as string;
       const rule = cssText()
@@ -508,7 +523,7 @@ describe('Voice Note on the Shopping List', () => {
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       await screen.findByText("Didn't catch anything, try again");
-      const chip = screen.getByRole('button', { name: /Scan Language/ });
+      const chip = screen.getByRole('button', { name: /Spoken Language/ });
       chip.focus();
 
       await holdFor(3700);
@@ -670,12 +685,12 @@ describe('Voice Note on the Shopping List', () => {
     });
   });
 
-  it('changes the Scan Language for Voice Notes on the screen from the chip menu, with a toast', async () => {
+  it('changes the Spoken Language of the next Voice Note from the chip menu, with a toast', async () => {
     setup();
     renderInAppLayout(<ShoppingPage />, '/shopping');
 
     const chip = await screen.findByRole('button', {
-      name: 'Scan Language: English. Change',
+      name: 'Spoken Language: English. Change',
     });
     await userEvent.click(chip);
     const items = screen.getAllByRole('menuitemradio');
@@ -690,12 +705,12 @@ describe('Voice Note on the Shopping List', () => {
 
     expect(
       await screen.findByText(
-        'Scan Language: Dansk · For Voice Notes on this screen.',
+        'Spoken Language: Dansk · For this Voice Note only.',
       ),
     ).toBeVisible();
     expect(screen.queryByRole('menu')).toBeNull();
     const changed = screen.getByRole('button', {
-      name: 'Scan Language: Dansk. Change',
+      name: 'Spoken Language: Dansk. Change',
     });
     expect(changed).toHaveFocus();
     // Nothing is stored on the device.
@@ -706,7 +721,7 @@ describe('Voice Note on the Shopping List', () => {
     setup();
     renderInAppLayout(<ShoppingPage />, '/shopping');
     const chip = await screen.findByRole('button', {
-      name: 'Scan Language: English. Change',
+      name: 'Spoken Language: English. Change',
     });
     await userEvent.click(chip);
     await userEvent.keyboard('{Escape}');
@@ -714,17 +729,98 @@ describe('Voice Note on the Shopping List', () => {
     expect(chip).toHaveFocus();
   });
 
-  it("reads in the Member's Scan Language preference and offers the chip", async () => {
-    const { sent } = setup({ preferredScanLanguage: 'ro' });
-    renderInAppLayout(<ShoppingPage />, '/shopping');
+  describe('Spoken Language chip', () => {
+    const chipOf = (name: string) =>
+      screen.findByRole('button', { name: `Spoken Language: ${name}. Change` });
 
-    const chip = await screen.findByRole('button', {
-      name: 'Scan Language: Română. Change',
+    const pick = async (name: RegExp) => {
+      await userEvent.click(
+        await screen.findByRole('button', { name: /Spoken Language/ }),
+      );
+      await userEvent.click(screen.getByRole('menuitemradio', { name }));
+    };
+
+    /** The camera's two chips, read where the Voice Note chip must not reach. */
+    function CameraProbe() {
+      const session = useSessionScanLanguage();
+      const addBatch = useScanLanguage();
+      return (
+        <output data-testid="camera">
+          {session.scanLanguage}/{addBatch.scanLanguage}
+        </output>
+      );
+    }
+
+    it("starts at the Member's Spoken Language preference, not the Scan Language", async () => {
+      const { sent } = setup({
+        preferredScanLanguage: 'da',
+        preferredSpokenLanguage: 'ro',
+      });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+
+      const chip = await chipOf('Română');
+      expect(chip).toHaveTextContent('ro');
+      fireEvent.pointerUp(await hold());
+      await screen.findByRole('dialog');
+      expect(sent[0].get('spokenLanguage')).toBe('ro');
+      expect(sent[0].has('scanLanguage')).toBe(false);
     });
-    expect(chip).toHaveTextContent('ro');
-    fireEvent.pointerUp(await hold());
-    await screen.findByRole('dialog');
-    expect(sent[0].get('scanLanguage')).toBe('ro');
+
+    it('applies a pick to that Voice Note only and starts the next one at the preference again', async () => {
+      const { sent } = setup({
+        preferredScanLanguage: 'da',
+        preferredSpokenLanguage: 'ro',
+      });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      await chipOf('Română');
+
+      await pick(/English/);
+      await chipOf('English');
+      fireEvent.pointerUp(await hold());
+      await screen.findByRole('dialog');
+      expect(sent[0].get('spokenLanguage')).toBe('en');
+      // The language actually used wins in Review.
+      expect(screen.getByRole('dialog')).toHaveTextContent(/English · /);
+
+      await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      // The pick ended with that Voice Note: the chip is back at the preference.
+      await chipOf('Română');
+      fireEvent.pointerUp(await hold());
+      await screen.findByRole('dialog');
+      expect(sent).toHaveLength(2);
+      expect(sent[1].get('spokenLanguage')).toBe('ro');
+    });
+
+    it('does not move the camera chips, and they do not move it', async () => {
+      setup({ preferredScanLanguage: 'da', preferredSpokenLanguage: 'ro' });
+      renderInAppLayout(
+        <>
+          <ShoppingPage />
+          <CameraProbe />
+        </>,
+        '/shopping',
+      );
+      await chipOf('Română');
+      await waitFor(() =>
+        expect(screen.getByTestId('camera')).toHaveTextContent('da/da'),
+      );
+
+      await pick(/English/);
+      await chipOf('English');
+      expect(screen.getByTestId('camera')).toHaveTextContent('da/da');
+
+      act(() => setScanLanguageOverride('en'));
+      expect(screen.getByTestId('camera')).toHaveTextContent('en/da');
+      await chipOf('English');
+      act(() => clearScanLanguageOverride());
+      await pick(/Dansk/);
+      await chipOf('Dansk');
+      act(() => setScanLanguageOverride('ro'));
+      await chipOf('Dansk');
+      act(() => clearScanLanguageOverride());
+    });
   });
 });
 
