@@ -1,6 +1,6 @@
 {
-  "name": "Pocket Pantry",
-  "short_name": "Pantry",
+  "name": "PantryGator",
+  "short_name": "PantryGator",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
