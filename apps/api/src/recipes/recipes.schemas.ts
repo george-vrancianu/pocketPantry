@@ -528,8 +528,10 @@ export type RecipeFromLink = {
    * null when it is the same or unknown, and always with the "source" language choice. Send it back on create.
    */
   sourceLanguage: string | null;
-  /** The Catalog Base Recipes closest to the draft; empty until ticket 516. */
+  /** The Catalog Base Recipes closest to the draft, ranked as for a Plate Scan. */
   closestBases: PlateMatchView[];
+  /** How many of the closest were left out by "Hide Recipes with my Allergies". */
+  hiddenByAllergiesCount: number;
 };
 
 /** What `createIn` takes: the create body without the transport-level locale default. */

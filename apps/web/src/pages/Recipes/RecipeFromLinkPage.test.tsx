@@ -56,6 +56,7 @@ const read = (over: Partial<RecipeFromLink['draft']> = {}): RecipeFromLink => ({
   sourceLink: 'https://www.example.com/pancakes',
   sourceLanguage: null,
   closestBases: [],
+  hiddenByAllergiesCount: 0,
 });
 
 const saved = {
@@ -316,6 +317,78 @@ describe('RecipeFromLinkPage', () => {
       title: 'Blog pancakes',
       servings: 4,
       sourceLink: 'https://www.example.com/pancakes',
+    });
+  });
+
+  describe('closest Base Recipes', () => {
+    const bases = [
+      {
+        id: 'base-omelette',
+        title: 'Omelette',
+        score: 0.8,
+        allergyWarning: null,
+      },
+      { id: 'base-crepes', title: 'Crepes', score: 0.4, allergyWarning: null },
+    ];
+
+    it('offers them in the picker and saves a Variant of the closest with the Source Link', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        'POST /api/recipes/from-link': () =>
+          Response.json({ ...read({ servings: 4 }), closestBases: bases }),
+        'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+      });
+      await submit(user, 'https://www.example.com/pancakes');
+      expect(
+        await screen.findByRole('radio', { name: /Omelette/ }),
+      ).toBeChecked();
+      expect(screen.getByRole('radio', { name: 'Crepes' })).not.toBeChecked();
+      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({
+        parentId: 'base-omelette',
+        sourceLink: 'https://www.example.com/pancakes',
+      });
+    });
+
+    it('saves a Base Recipe with the Source Link when standalone is picked', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        'POST /api/recipes/from-link': () =>
+          Response.json({ ...read({ servings: 4 }), closestBases: bases }),
+        'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+      });
+      await submit(user, 'https://www.example.com/pancakes');
+      await user.click(
+        await screen.findByRole('radio', { name: /standalone/i }),
+      );
+      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({
+        parentId: null,
+        sourceLink: 'https://www.example.com/pancakes',
+      });
+    });
+
+    it('carries the hidden-by-Allergies count to the picker note', async () => {
+      const user = userEvent.setup({ delay: null });
+      setup({
+        'POST /api/recipes/from-link': () =>
+          Response.json({
+            ...read({ servings: 4 }),
+            closestBases: [],
+            hiddenByAllergiesCount: 1,
+          }),
+      });
+      await submit(user, 'https://www.example.com/pancakes');
+      expect(
+        await screen.findByText('1 Recipe hidden by your Allergies'),
+      ).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Show' })).toBeVisible();
     });
   });
 

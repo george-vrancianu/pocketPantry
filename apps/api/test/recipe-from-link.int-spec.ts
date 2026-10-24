@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq } from 'drizzle-orm';
+import { eq, ilike } from 'drizzle-orm';
 import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
 import { StructuredOutputAiError } from '../src/ai/structured-output-ai.service';
 import { seedId } from '../src/catalog/seed/seed-catalog';
@@ -9,9 +9,13 @@ import type { Database } from '../src/database/database.types';
 import { recipes, scanUsage } from '../src/database/schema';
 import { PageFetchError } from '../src/page-fetch/page-fetcher';
 import type { PageFetcher } from '../src/page-fetch/page-fetcher';
-import type { RecipeFromLink } from '../src/recipes/recipes.schemas';
+import type {
+  AdminRecipeDetail,
+  RecipeFromLink,
+} from '../src/recipes/recipes.schemas';
 import { ScanCapService } from '../src/scan/scan-cap.service';
 import { client, signUp } from './support/admin-session';
+import { promoteToAdmin } from './support/promote-to-admin';
 import { createTestApp } from './support/create-test-app';
 
 jest.setTimeout(30_000);
@@ -149,7 +153,7 @@ describe('Recipe from Link (integration)', () => {
     expect(body).toMatchObject({
       kind: 'draft',
       sourceLink: 'https://example.com/pancakes',
-      closestBases: [],
+      hiddenByAllergiesCount: 0,
     });
     expect(body.draft).toMatchObject({
       title: 'Pancakes',
@@ -553,6 +557,166 @@ describe('Recipe from Link (integration)', () => {
     const { draft } = (await read('https://example.com/confident').expect(200))
       .body as RecipeFromLink;
     expect(draft.lines[0]).toMatchObject({ ingredientId: flour });
+  });
+
+  describe('the closest Base Recipes', () => {
+    const parmesan = seedId.ingredient('parmesan');
+    const MILK = seedId.allergen('milk');
+    let admin: ReturnType<typeof client>;
+    let tag = 0;
+    const word = () => `Zqx${stamp}t${++tag}`;
+    const catalogBase = async (title: string, ingredientIds: string[]) =>
+      (
+        await admin
+          .post('', {
+            title,
+            servings: 4,
+            lines: ingredientIds.map((ingredientId) => ({
+              ingredientId,
+              quantity: 100,
+              unit: 'g',
+            })),
+            steps: [{ text: 'Cook' }],
+          })
+          .expect(201)
+      ).body as AdminRecipeDetail;
+    // A reading with a title and no ingredient lines, so only the title can match.
+    const readTitled = async (title: string, who = member) => {
+      respondWith(reading({ title, ingredients: [] }));
+      return (await read('https://example.com/x', who).expect(200))
+        .body as RecipeFromLink;
+    };
+
+    beforeAll(async () => {
+      const email = `link-admin-${stamp}@example.com`;
+      const cookie = await signUp(app, email, 'Admin');
+      await promoteToAdmin(database, email);
+      admin = client(app, cookie, '/api/admin/recipes');
+    });
+    afterAll(async () => {
+      await database
+        .delete(recipes)
+        .where(ilike(recipes.title, `Zqx${stamp}%`));
+    });
+
+    it('offers the Catalog Base Recipe the title and matched lines resemble, shaped as plate matches', async () => {
+      const dish = word();
+      const base = await catalogBase(`${dish} soup`, [flour, milk]);
+      respondWith(reading({ title: `${dish} soup` }));
+      const body = (await read('https://example.com/x').expect(200))
+        .body as RecipeFromLink;
+      const first = body.closestBases[0];
+      expect(first).toMatchObject({
+        id: base.id,
+        title: `${dish} soup`,
+        allergyWarning: null,
+      });
+      expect(first.score).toBeGreaterThan(0);
+      expect(body.closestBases.length).toBeLessThanOrEqual(5);
+      expect(body.hiddenByAllergiesCount).toBe(0);
+    });
+
+    it('is empty, with a zero count, when nothing is close', async () => {
+      const body = await readTitled(word());
+      expect(body.closestBases).toEqual([]);
+      expect(body.hiddenByAllergiesCount).toBe(0);
+    });
+
+    it('never offers a Family Recipe, a Variant or an archived Recipe', async () => {
+      const dish = word();
+      const base = await catalogBase(`${dish} base`, [flour]);
+      const archived = await catalogBase(`${dish} archived`, [flour]);
+      await admin.post(`/${archived.id}/archive`).expect(200);
+      const variant = (
+        await admin
+          .post(`/${base.id}/variants`, { title: `${dish} variant` })
+          .expect(201)
+      ).body as AdminRecipeDetail;
+      const family = (
+        await member
+          .post('', {
+            title: `${dish} family`,
+            servings: 2,
+            locale: 'en',
+            parentId: null,
+            lines: [{ ingredientId: flour, quantity: 1, unit: 'g' }],
+          })
+          .expect(201)
+      ).body as { id: string };
+
+      const body = await readTitled(dish);
+      const offered = body.closestBases.map((b) => b.id);
+      expect(offered).toContain(base.id);
+      expect(offered).not.toContain(archived.id);
+      expect(offered).not.toContain(variant.id);
+      expect(offered).not.toContain(family.id);
+    });
+
+    it('leaves out a base with the own Allergen under "Hide Recipes with my Allergies" and counts it', async () => {
+      const dish = word();
+      const milky = await catalogBase(`${dish} cheesy`, [parmesan]);
+      const settings = (who: string) => client(app, who, '/api/settings');
+      const cookie = await signUp(
+        app,
+        `link-hide-${stamp}-${tag}@example.com`,
+        'H',
+      );
+      const hider = client(app, cookie, '/api/recipes');
+      await settings(cookie)
+        .put('/allergies', { allergenIds: [MILK] })
+        .expect(200);
+      await settings(cookie)
+        .put('/preferences', { hideRecipesWithAllergies: true })
+        .expect(200);
+
+      const body = await readTitled(`${dish} cheesy`, hider);
+      expect(body.closestBases.map((b) => b.id)).not.toContain(milky.id);
+      expect(body.hiddenByAllergiesCount).toBe(1);
+
+      await settings(cookie)
+        .put('/preferences', { hideRecipesWithAllergies: false })
+        .expect(200);
+      const shown = await readTitled(`${dish} cheesy`, hider);
+      expect(shown.closestBases.find((b) => b.id === milky.id)).toMatchObject({
+        allergyWarning: { severity: 'strong' },
+      });
+      expect(shown.hiddenByAllergiesCount).toBe(0);
+    });
+
+    it('creates a Variant that keeps the Source Link and language when saved with a returned base', async () => {
+      const dish = word();
+      const base = await catalogBase(`${dish} omelette`, [flour]);
+      respondWith(reading({ title: `${dish} omelette`, sourceLanguage: 'fr' }));
+      const body = (await read('https://example.com/tortilla').expect(200))
+        .body as RecipeFromLink;
+      const parent = body.closestBases.find((b) => b.id === base.id);
+      expect(parent).toBeDefined();
+
+      const created = (
+        await member
+          .post('', {
+            title: `${dish} tortilla`,
+            servings: 2,
+            locale: 'en',
+            parentId: parent!.id,
+            sourceLink: body.sourceLink,
+            sourceLanguage: body.sourceLanguage,
+            lines: [{ ingredientId: flour, quantity: 1, unit: 'g' }],
+          })
+          .expect(201)
+      ).body as { id: string };
+      const detail = (await member.get(`/${created.id}?locale=en`).expect(200))
+        .body as {
+        parentId: string | null;
+        sourceLink: string | null;
+        sourceLanguage: string | null;
+      };
+      expect(detail).toMatchObject({
+        parentId: base.id,
+        sourceLink: 'https://example.com/tortilla',
+        sourceLanguage: 'fr',
+      });
+    });
   });
 
   describe('errors', () => {

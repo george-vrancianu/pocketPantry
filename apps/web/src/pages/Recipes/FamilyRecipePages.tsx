@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   BaseRecipePicker,
+  STANDALONE,
   noBasePick,
   type BaseRecipeOption,
 } from '../../components/BaseRecipePicker';
@@ -21,6 +22,7 @@ import {
 import { TipsEditor } from '../../components/recipeEditor/RecipeTips';
 import { emptyDraft } from '../../lib/recipeDraft';
 import { toGuidanceDraft, type GuidanceDraft } from '../../lib/guidanceDraft';
+import { usePlateMatches } from '../../lib/plateRecipe';
 import { useRecipe, type RecipeDetail } from '../../lib/recipes';
 import { FamilyGuidance, useMomentOptions } from './components/FamilyGuidance';
 import {
@@ -60,6 +62,8 @@ function namedGuidance(
 export type NewRecipeState = {
   draft: NewRecipeDraft;
   closestBases?: BaseRecipeOption[];
+  /** How many of the closest "Hide Recipes with my Allergies" left out; with it, the picker offers Show. */
+  hiddenByAllergiesCount?: number;
   /** The page the draft was read from; kept on the Recipe unless the Member removes it. */
   sourceLink?: string | null;
   /** The language the page was translated from (a code like "fr"); only kept with the Source Link. */
@@ -83,11 +87,21 @@ export function NewRecipePage() {
 /** The route state if it is a supplied draft; anything else is ignored. */
 function suppliedOf(state: unknown): NewRecipeState | null {
   if (typeof state !== 'object' || state === null) return null;
-  const { draft, closestBases, sourceLink, sourceLanguage } =
-    state as Partial<NewRecipeState>;
+  const {
+    draft,
+    closestBases,
+    hiddenByAllergiesCount,
+    sourceLink,
+    sourceLanguage,
+  } = state as Partial<NewRecipeState>;
   if (typeof draft !== 'object' || draft === null) return null;
   if (!Array.isArray(draft.lines) || !Array.isArray(draft.steps)) return null;
   if (closestBases !== undefined && !Array.isArray(closestBases)) return null;
+  if (
+    hiddenByAllergiesCount !== undefined &&
+    typeof hiddenByAllergiesCount !== 'number'
+  )
+    return null;
   // A Source Link that is not a web address would show a Remove button with nothing to remove.
   if (
     sourceLink !== undefined &&
@@ -114,8 +128,30 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
   // The Member may drop the Source Link before saving, but not change it.
   const [sourceLink, setSourceLink] = useState(supplied?.sourceLink ?? null);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  // No closest Base Recipes (none found, or not matched yet): no picker, a Base Recipe.
-  const hasBases = (supplied?.closestBases?.length ?? 0) > 0;
+  // "Show" in the hidden-by-Allergies note asks the ranking again, hidden ones too, for the draft as it arrived.
+  const [showHidden, setShowHidden] = useState(false);
+  const revealed = usePlateMatches(
+    {
+      dishTitle: supplied?.draft.title ?? '',
+      ingredientIds: [
+        ...new Set(
+          (supplied?.draft.lines ?? []).flatMap((line) =>
+            line.ingredientId ? [line.ingredientId] : [],
+          ),
+        ),
+      ],
+      showHidden: true,
+    },
+    showHidden,
+  );
+  const suppliedBases = supplied?.closestBases ?? [];
+  const suppliedHidden = supplied?.hiddenByAllergiesCount ?? 0;
+  const closestBases = revealed.data?.matches ?? suppliedBases;
+  const hiddenCount = revealed.data
+    ? revealed.data.hiddenByAllergiesCount
+    : suppliedHidden;
+  // Nothing close and nothing hidden (or not matched yet): no picker, a Base Recipe.
+  const hasBases = suppliedBases.length > 0 || suppliedHidden > 0;
   const [initial] = useState(() =>
     supplied ? draftOfVariantDraft(supplied.draft) : emptyDraft(),
   );
@@ -127,11 +163,18 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
         titleRef={headingRef}
       />
       <Stack spacing={2.5}>
-        {supplied?.closestBases && hasBases ? (
+        {hasBases ? (
           <BaseRecipePicker
             pick={basePick}
             onPick={setBasePick}
-            closest={supplied.closestBases}
+            closest={closestBases}
+            loading={showHidden && revealed.isPending}
+            hiddenByAllergiesCount={hiddenCount}
+            onShowHidden={() => {
+              // Keep the current pick: the revealed bases may rank above it.
+              setBasePick({ ...basePick, chosen: parentId ?? STANDALONE });
+              setShowHidden(true);
+            }}
             onChange={setParentId}
           />
         ) : null}

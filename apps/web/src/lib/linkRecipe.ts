@@ -14,8 +14,10 @@ export type RecipeFromLink = {
   sourceLink: string;
   /** The page's language (a lower-case code like "fr") when the draft was translated from it; null when not. */
   sourceLanguage: string | null;
-  /** The closest Base Recipes to offer as the base; empty until matching them is built. */
+  /** The closest Base Recipes to offer as the base, ranked as for a Plate Scan. */
   closestBases: BaseRecipeOption[];
+  /** How many of the closest "Hide Recipes with my Allergies" left out. */
+  hiddenByAllergiesCount: number;
 };
 
 /** `catalog`: write the Recipe in the Member's Catalog Language; `source`: keep the page's language. */

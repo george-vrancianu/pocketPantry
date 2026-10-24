@@ -97,13 +97,20 @@ export function RecipeFromLinkPage() {
     read.mutate(
       { url: url.trim(), language, signal: attempt.signal },
       {
-        onSuccess: ({ draft, closestBases, sourceLink, sourceLanguage }) => {
+        onSuccess: ({
+          draft,
+          closestBases,
+          hiddenByAllergiesCount,
+          sourceLink,
+          sourceLanguage,
+        }) => {
           // Defensive: Cancel resets the mutation and leaving unmounts it, so this callback should not run for an aborted read.
           if (attempt.signal.aborted) return;
           navigate('/recipes/new', {
             state: {
               draft,
               closestBases,
+              hiddenByAllergiesCount,
               sourceLink,
               sourceLanguage,
             } satisfies NewRecipeState,
