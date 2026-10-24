@@ -54,11 +54,11 @@ export function DashboardPage() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: '8px' }}>
-          <IconButton label={t('settings')} href="/settings">
-            <SettingsIcon size={20} />
-          </IconButton>
           <IconButton label={t('customise')} href="/customise">
             <CustomiseIcon size={20} />
+          </IconButton>
+          <IconButton label={t('screenHeader:settings')} href="/settings">
+            <SettingsIcon size={20} />
           </IconButton>
         </Box>
       </Box>

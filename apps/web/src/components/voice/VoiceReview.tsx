@@ -202,7 +202,13 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
     );
     if (!picker) return false;
     picker.scrollIntoView?.({ block: 'center' });
-    picker.focus();
+    // A picker that cannot take focus itself (the Location toggle group) hands it to its pressed button, else its first control.
+    const control =
+      picker.hasAttribute('tabindex') || picker.matches('button, input')
+        ? picker
+        : (picker.querySelector<HTMLElement>('[aria-pressed="true"]') ??
+          picker.querySelector<HTMLElement>('button, input'));
+    (control ?? picker).focus();
     return true;
   };
   // Declining the Discard question hands focus back to the Discard button.

@@ -2,6 +2,7 @@ import type { ComponentType, SVGProps } from 'react';
 import {
   House,
   LayoutGrid,
+  Settings,
   LogOut,
   Image,
   Pencil,
@@ -31,6 +32,10 @@ import {
   Globe,
   ImagePlus,
   ReceiptText,
+  Refrigerator,
+  Snowflake,
+  SquareSplitHorizontal,
+  LeafyGreen,
   type LucideProps,
 } from 'lucide-react';
 
@@ -274,7 +279,6 @@ export const ScanIcon = handoff('scan');
 export const InfoIcon = handoff('info');
 export const DeleteIcon = handoff('trash');
 export const MoreIcon = handoff('more');
-export const SettingsIcon = handoff('sliders');
 export const TemplateIcon = handoff('template');
 export const ImportIcon = handoff('import');
 export const UndoIcon = handoff('undo');
@@ -288,6 +292,7 @@ export const SubItemIcon = handoff('sub-item');
 
 export const HomeIcon = lucide(House);
 export const CustomiseIcon = lucide(LayoutGrid);
+export const SettingsIcon = lucide(Settings);
 export const SignOutIcon = lucide(LogOut);
 export const GalleryIcon = lucide(Image);
 export const ManualEntryIcon = lucide(Pencil);
@@ -328,3 +333,8 @@ export const GlobeIcon = lucide(Globe);
 /** Review overview: "Add from photos". */
 export const ImagePlusIcon = lucide(ImagePlus);
 export const ReceiptIcon = lucide(ReceiptText);
+/** The four Locations, drawn above their labels where the label alone would not fit. */
+export const FridgeIcon = lucide(Refrigerator);
+export const FreezerIcon = lucide(Snowflake);
+export const CupboardIcon = lucide(SquareSplitHorizontal);
+export const SpicesIcon = lucide(LeafyGreen);

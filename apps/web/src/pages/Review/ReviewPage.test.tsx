@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine } from '../../lib/scan';
 import { calendarDay, sheetButton } from '../../test/expirySheet';
+import { pickLocation, pressedLocation } from '../../test/location';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
 import { REVIEW_ROUTE, startReview } from '../../test/review';
@@ -331,11 +332,22 @@ describe('ReviewPage', () => {
     expect(screen.getByLabelText('Quantity')).toHaveFocus();
   });
 
+  it('picks a Location in the phone panel with the full-width toggle', async () => {
+    renderReview([sure()]);
+    await userEvent.click(row('Parmesan'));
+    const panel = screen.getByRole('group', { name: 'Parmesan' });
+    expect(
+      within(panel).queryByRole('combobox', { name: 'Location' }),
+    ).toBeNull();
+    await pickLocation(userEvent.setup(), 'Freezer', panel);
+    expect(pressedLocation(panel)).toBe('Freezer');
+  });
+
   it('pre-fills a matched line from the proposal and the Catalog defaults', async () => {
     renderReview([sure()]);
     await userEvent.click(row('Parmesan'));
     const panel = screen.getByRole('group', { name: 'Parmesan' });
-    expect(within(panel).getByLabelText('Location')).toHaveValue('fridge');
+    expect(pressedLocation(panel)).toBe('Fridge');
     expect(within(panel).getByLabelText('Unit')).toHaveValue('g');
     expect(within(panel).getByLabelText('Product description')).toHaveValue(
       'Grana Padano 200g',
@@ -534,7 +546,7 @@ describe('ReviewPage', () => {
       // The phone's expiry cell is a button that shows the date.
       const values = () => [
         (screen.getByLabelText('Unit') as HTMLSelectElement).value,
-        (screen.getByLabelText('Location') as HTMLSelectElement).value,
+        pressedLocation(),
         screen.getByLabelText(/^Expiry date/).textContent,
       ];
       const before = values();
@@ -801,7 +813,9 @@ describe('ReviewPage', () => {
       );
       await userEvent.click(row('Parmesan'));
       expect(screen.getByLabelText('Quantity')).toBeInTheDocument();
-      expect(screen.queryByLabelText('Location')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('group', { name: 'Location' }),
+      ).not.toBeInTheDocument();
       expect(screen.queryByLabelText('Expiry date')).not.toBeInTheDocument();
       expect(
         screen.queryByLabelText('Product description'),

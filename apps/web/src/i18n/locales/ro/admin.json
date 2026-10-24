@@ -214,7 +214,7 @@
     },
     "variant": {
       "title": "Creează o variantă",
-      "hint": "Copiază liniile de ingredient, Pașii și Sfaturile pe pas ca schiță. Apoi Varianta se editează separat.",
+      "hint": "Copiază liniile de ingredient, Pașii și Sfaturile pe pas ca punct de plecare. Apoi Varianta se editează separat.",
       "name": "Titlul Variantei",
       "make": "Creează o variantă",
       "making": "Se creează…"
