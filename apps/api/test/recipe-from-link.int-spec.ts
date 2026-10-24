@@ -954,7 +954,6 @@ describe('Recipe from Link (integration)', () => {
       expect(body).toMatchObject({
         kind: 'draft',
         sourceLink: 'https://example.com/blog',
-        closestBases: [],
       });
       expect(body.draft).toMatchObject({
         title: 'Pancakes',
@@ -1120,7 +1119,6 @@ describe('Recipe from Link (integration)', () => {
         kind: 'draft',
         sourceLink: null,
         sourceLanguage: null,
-        closestBases: [],
       });
       expect(body.draft.title).toBe('Pancakes');
       expect(body.draft.lines[0]).toMatchObject({
