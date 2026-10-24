@@ -12,6 +12,7 @@ import {
   type FetchedPage,
   type PageFetcher,
 } from '../page-fetch/page-fetcher';
+import { ScanCapService } from '../scan/scan-cap.service';
 import { LANGUAGE_NAMES } from '../scan/scan-language';
 import { SettingsService } from '../settings/settings.service';
 import { extractJsonLdRecipe } from './json-ld-recipe';
@@ -44,6 +45,7 @@ export class LinkRecipesService {
   constructor(
     @InjectPageFetcher() private readonly pages: PageFetcher,
     private readonly ai: StructuredOutputAiService,
+    private readonly caps: ScanCapService,
     private readonly ingredientCatalog: IngredientCatalogService,
     private readonly browse: RecipeBrowseService,
     private readonly settings: SettingsService,
@@ -62,7 +64,7 @@ export class LinkRecipesService {
     const catalog = await this.ingredientCatalog.getCatalogIn(familyId, locale);
     const lists = await this.browse.filters(memberId, locale);
 
-    const reading = await this.ask({
+    const reading = await this.ask(memberId, {
       prompt: readingPrompt(
         input,
         locale,
@@ -75,7 +77,6 @@ export class LinkRecipesService {
       maxOutputTokens: 8000,
       model: 'text',
     });
-    if (!reading.recipeFound) throw linkNoRecipe();
 
     const draft = draftOfReading(reading, {
       ingredientNames: new Map(catalog.ingredients.map((i) => [i.id, i.name])),
@@ -114,16 +115,32 @@ export class LinkRecipesService {
     return { kind: 'json-ld', json };
   }
 
-  /** One provider call, its output validated; anything unusable is `scan.result_invalid`, as for Plate Scan. */
+  /**
+   * The one place the model is called, so every way of reading (a link now, pasted text later)
+   * is charged to the Link Cap right before it: a use is counted here and handed back if the
+   * provider fails or finds no recipe. Its output is validated; anything unusable is `scan.result_invalid`, as for Plate Scan.
+   */
   private async ask(
+    memberId: string,
     request: Parameters<StructuredOutputAiService['generate']>[0],
   ): Promise<LinkReading> {
-    try {
-      return linkReadingSchema.parse((await this.ai.generate(request)).data);
-    } catch (error) {
-      if (error instanceof ApiException) throw error;
-      throw new ApiException(502, 'scan.result_invalid');
-    }
+    return this.caps.withinCap(
+      memberId,
+      async () => {
+        try {
+          const reading = linkReadingSchema.parse(
+            (await this.ai.generate(request)).data,
+          );
+          // A page with no recipe is not a use: throwing hands the charge back.
+          if (!reading.recipeFound) throw linkNoRecipe();
+          return reading;
+        } catch (error) {
+          if (error instanceof ApiException) throw error;
+          throw new ApiException(502, 'scan.result_invalid');
+        }
+      },
+      'link',
+    );
   }
 }
 

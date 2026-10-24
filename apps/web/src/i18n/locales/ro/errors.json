@@ -169,6 +169,13 @@
     "unreadable": "Nu am putut deschide pagina. Verifică linkul sau încearcă din nou peste puțin timp.",
     "no_recipe": "Nu am găsit nicio rețetă pe pagina aceea. Încearcă o pagină care arată rețeta completă.",
     "reading_unavailable": "Citirea rețetelor din linkuri nu este disponibilă acum. Încearcă din nou peste puțin timp.",
-    "reading_failed": "Nu am putut citi o rețetă de pe pagina aceea. Încearcă din nou sau încearcă alt link."
+    "reading_failed": "Nu am putut citi o rețetă de pe pagina aceea. Încearcă din nou sau încearcă alt link.",
+    "cap_reached_one": "Ai folosit singura citire de rețetă dintr-un link de azi. Citirile se reînnoiesc {{when}}.",
+    "cap_reached_few": "Ai folosit toate cele {{count}} citiri de rețete din linkuri de azi. Citirile se reînnoiesc {{when}}.",
+    "cap_reached_other": "Ai folosit toate cele {{count}} de citiri de rețete din linkuri de azi. Citirile se reînnoiesc {{when}}.",
+    "cap_reached_no_time_one": "Ai folosit singura citire de rețetă dintr-un link de azi. Încearcă mâine.",
+    "cap_reached_no_time_few": "Ai folosit toate cele {{count}} citiri de rețete din linkuri de azi. Încearcă mâine.",
+    "cap_reached_no_time_other": "Ai folosit toate cele {{count}} de citiri de rețete din linkuri de azi. Încearcă mâine.",
+    "cap_reached_unknown": "Ai folosit toate citirile de rețete din linkuri de azi. Încearcă mâine."
   }
 }

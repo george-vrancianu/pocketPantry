@@ -288,6 +288,13 @@
       "when": 1792818438482,
       "tag": "0040_outgoing_johnny_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792820770829,
+      "tag": "0041_red_amphibian",
+      "breakpoints": true
     }
   ]
 }

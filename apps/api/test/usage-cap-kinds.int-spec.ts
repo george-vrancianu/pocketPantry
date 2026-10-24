@@ -101,6 +101,49 @@ describe('Daily caps counted by kind (integration)', () => {
     });
   });
 
+  it('caps Recipe from Link reads with the reset time, apart from every other kind', async () => {
+    const memberId = await signUp('link');
+    await cap.consume(memberId, now, 'link');
+    await cap.consume(memberId, now, 'link');
+    await expect(cap.consume(memberId, now, 'link')).rejects.toMatchObject({
+      code: 'link.cap_reached',
+      params: { cap: 2, resetsAt: '2020-05-02T00:00:00.000Z' },
+    });
+
+    // The other kinds are untouched by a full Link Cap, and a full Scan Cap leaves links alone.
+    for (let i = 0; i < 3; i++) await cap.consume(memberId, now, 'scan');
+    await expect(cap.consume(memberId, now, 'scan')).rejects.toMatchObject({
+      code: 'scan.cap_reached',
+    });
+    await cap.consume(memberId, now, 'voice');
+    await cap.consume(memberId, now, 'assistant');
+
+    // A refund gives one read back, and only for its own kind.
+    await cap.refund(memberId, '2020-05-01', 'link');
+    await cap.consume(memberId, now, 'link');
+    await expect(cap.consume(memberId, now, 'link')).rejects.toMatchObject({
+      code: 'link.cap_reached',
+    });
+    await cap.consume(memberId, now, 'voice');
+    await expect(cap.consume(memberId, now, 'voice')).rejects.toMatchObject({
+      code: 'voice.cap_reached',
+    });
+  });
+
+  it('treats a link cap of 0 as no cap and counts nothing', async () => {
+    const memberId = await signUp('linknocap');
+    const uncapped = new ScanCapService(app.get<Database>(DATABASE), {
+      get: (key: string) => (key === 'LINK_DAILY_CAP' ? 0 : 3),
+    } as unknown as ConfigService<AppConfig, true>);
+    for (let i = 0; i < 5; i++) await uncapped.consume(memberId, now, 'link');
+    const rows = await app
+      .get<Database>(DATABASE)
+      .select()
+      .from(scanUsage)
+      .where(eq(scanUsage.memberId, memberId));
+    expect(rows).toEqual([]);
+  });
+
   it('refunds a voice use when the provider call fails, leaving scans alone', async () => {
     const memberId = await signUp('refund');
     for (let i = 0; i < 5; i++) {
