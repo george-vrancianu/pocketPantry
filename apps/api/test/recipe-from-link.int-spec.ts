@@ -589,7 +589,7 @@ describe('Recipe from Link (integration)', () => {
       await read('https://example.com/three').expect(429);
     });
 
-    it('counts a read the AI answered with no recipe, and hands back one the provider failed', async () => {
+    it('hands back a read the AI found no recipe in, and one the provider failed', async () => {
       respondWith(reading({ recipeFound: false }));
       await read('https://example.com/odd').expect(422);
       answer = () =>
@@ -598,9 +598,10 @@ describe('Recipe from Link (integration)', () => {
       respondWith({ nope: true });
       await read('https://example.com/bad').expect(502);
 
-      // Only the no-recipe read stayed counted: one use is left.
+      // None stayed counted: the whole cap is left.
       respondWith(reading());
       await read('https://example.com/ok').expect(200);
+      await read('https://example.com/ok2').expect(200);
       const res = await read('https://example.com/over').expect(429);
       expect(code(res)).toBe('link.cap_reached');
     });

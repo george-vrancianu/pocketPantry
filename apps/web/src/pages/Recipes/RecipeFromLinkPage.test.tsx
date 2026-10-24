@@ -353,7 +353,7 @@ describe('RecipeFromLinkPage', () => {
           ),
       });
       await submit(user, 'https://example.com/a');
-      const when = new Intl.DateTimeFormat('en', {
+      const when = new Intl.DateTimeFormat('en-GB', {
         weekday: 'long',
         hour: 'numeric',
         minute: '2-digit',
@@ -363,6 +363,21 @@ describe('RecipeFromLinkPage', () => {
         `You have used all 20 recipe reads from links for today. Your reads reset on ${when}.`,
       );
       expect(linkField()).toHaveFocus();
+    });
+
+    it('leaves the number out when the cap is missing', async () => {
+      const user = userEvent.setup({ delay: null });
+      setup({
+        'POST /api/recipes/from-link': () =>
+          Response.json(
+            { code: 'link.cap_reached', params: {} },
+            { status: 429 },
+          ),
+      });
+      await submit(user, 'https://example.com/a');
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "You have used all of today's recipe reads from links. Try again tomorrow.",
+      );
     });
 
     it('says to try tomorrow when the reset time is missing', async () => {
