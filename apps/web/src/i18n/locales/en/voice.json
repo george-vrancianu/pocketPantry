@@ -286,6 +286,8 @@
     "failed_one": "{{count}} failed",
     "failed_other": "{{count}} failed",
     "retryNote": "Retry: {{preview}}",
+    "retryOtherNote": "Retry in another language: {{preview}}",
+    "currentLanguage": "{{language}} (current)",
     "discardNote": "Discard: {{preview}}",
     "review": "Review",
     "full": "Review your notes first",

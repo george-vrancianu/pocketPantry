@@ -286,6 +286,8 @@
     "failed_one": "{{count}} mislykkedes",
     "failed_other": "{{count}} mislykkedes",
     "retryNote": "Prøv igen: {{preview}}",
+    "retryOtherNote": "Prøv igen på et andet sprog: {{preview}}",
+    "currentLanguage": "{{language}} (nuværende)",
     "discardNote": "Kassér: {{preview}}",
     "review": "Gennemse",
     "full": "Gennemse dine noter først",

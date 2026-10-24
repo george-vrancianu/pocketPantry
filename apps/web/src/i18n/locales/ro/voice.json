@@ -297,6 +297,8 @@
     "failed_few": "{{count}} eșuate",
     "failed_other": "{{count}} de eșuate",
     "retryNote": "Reîncearcă: {{preview}}",
+    "retryOtherNote": "Reîncearcă în altă limbă: {{preview}}",
+    "currentLanguage": "{{language}} (curentă)",
     "discardNote": "Șterge: {{preview}}",
     "review": "Verificare",
     "full": "Verifică mai întâi notele",

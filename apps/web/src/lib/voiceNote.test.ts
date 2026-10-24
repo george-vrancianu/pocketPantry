@@ -808,7 +808,7 @@ describe('Voice Note module', () => {
   });
 
   describe('nothing heard', () => {
-    it('leaves the Voice Inbox on its own', async () => {
+    it('stays in the Voice Inbox until retried or discarded', async () => {
       vi.useFakeTimers();
       try {
         const ctx = setup();
@@ -816,8 +816,8 @@ describe('Voice Note module', () => {
         ctx.answer({ transcript: '', actions: [] } as never);
         await settle();
         expect(ctx.note.getState().inbox.failed).toBe(1);
-        vi.advanceTimersByTime(3600);
-        expect(ctx.note.getState().inbox.total).toBe(0);
+        vi.advanceTimersByTime(60_000);
+        expect(ctx.note.getState().inbox.total).toBe(1);
       } finally {
         vi.useRealTimers();
       }
