@@ -15,6 +15,7 @@ import { FamilyModule } from './family/family.module';
 import { HealthModule } from './health/health.module';
 import { ShoppingModule } from './shopping/shopping.module';
 import { MealPlansModule } from './meal-plans/meal-plans.module';
+import { PageFetchModule } from './page-fetch/page-fetch.module';
 import { PantryModule } from './pantry/pantry.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { ScanModule } from './scan/scan.module';
@@ -38,6 +39,7 @@ import { SettingsModule } from './settings/settings.module';
     ScanModule,
     VoiceModule,
     BarcodeModule,
+    PageFetchModule,
     DashboardModule,
     SettingsModule,
     AssistantTokensModule,
