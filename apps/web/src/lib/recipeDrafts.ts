@@ -103,10 +103,11 @@ export function useRecipeDrafts(enabled = true) {
   });
 }
 
-/** One Recipe Draft to resume; null waits. It is a snapshot the form takes over: never refetched, never kept. */
-export function useRecipeDraft(id: string | null) {
+/** One Recipe Draft to resume; null waits. Pass the form's `instance` so each visit fetches afresh. It is a snapshot the form takes over: never refetched, never kept. */
+export function useRecipeDraft(id: string | null, instance = '') {
   return useQuery({
-    queryKey: [...recipeDraftsQueryKey, 'detail', id],
+    // `instance` (one per visit to the form) keeps a re-entered Recipe Draft from reusing an older snapshot and version.
+    queryKey: [...recipeDraftsQueryKey, 'detail', id, instance],
     queryFn: () => apiRequest<RecipeDraftView>(`/recipe-drafts/${id}`),
     enabled: id !== null,
     staleTime: Infinity,
@@ -129,10 +130,16 @@ export function useCreateRecipeDraft() {
       kind: RecipeDraftKind;
       baseRecipeId?: string | null;
       content: RecipeDraftContent;
+      keepalive?: boolean;
     }) =>
       apiRequest<{ id: string; version: number }>('/recipe-drafts', {
         method: 'POST',
-        body: input,
+        body: {
+          kind: input.kind,
+          baseRecipeId: input.baseRecipeId,
+          content: input.content,
+        },
+        keepalive: input.keepalive,
       }),
   );
 }
@@ -140,12 +147,18 @@ export function useCreateRecipeDraft() {
 /** `version` is the one last seen; a stale one is a 409. */
 export function useUpdateRecipeDraft() {
   return useDraftWrite(
-    (input: { id: string; version: number; content: RecipeDraftContent }) =>
+    (input: {
+      id: string;
+      version: number;
+      content: RecipeDraftContent;
+      keepalive?: boolean;
+    }) =>
       apiRequest<{ id: string; version: number }>(
         `/recipe-drafts/${input.id}`,
         {
           method: 'PUT',
           body: { version: input.version, content: input.content },
+          keepalive: input.keepalive,
         },
       ),
   );

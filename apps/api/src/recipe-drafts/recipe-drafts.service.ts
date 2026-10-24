@@ -33,10 +33,6 @@ const expiresAtOf = (updatedAt: Date) =>
   new Date(updatedAt.getTime() + RECIPE_DRAFT_TTL_DAYS * DAY_MS);
 
 /**
- * Deletes the Member's Recipe Drafts not edited for 30 days. Expiry is lazy
- * (no scheduler): every list, count, update and read of one calls this first.
- */
-/**
  * A line whose Ingredient was deleted since it was typed comes back with no
  * Ingredient (an Unmatched name); its typed name stays.
  */
@@ -69,6 +65,10 @@ async function withoutMissingIngredients(
   };
 }
 
+/**
+ * Deletes the Member's Recipe Drafts not edited for 30 days. Expiry is lazy
+ * (no scheduler): every list, count, update and read of one calls this first.
+ */
 export async function deleteExpiredRecipeDrafts(
   executor: Executor,
   memberId: string,

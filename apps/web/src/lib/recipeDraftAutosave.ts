@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   useCreateRecipeDraft,
   useUpdateRecipeDraft,
@@ -35,6 +41,10 @@ export type Autosave = {
   draftId: string | null;
   /** Sends what is pending now (after a request in flight); resolves to the Recipe Draft id, or null if there is none. Never rejects. */
   flush: () => Promise<string | null>;
+  /** The Recipe is being created: send nothing until `resume` (a Recipe Draft being consumed must not be updated). */
+  pause: () => void;
+  /** The create failed: carry on, sending whatever changed meanwhile. */
+  resume: () => void;
   /** The Recipe was saved and ended the Recipe Draft: send nothing more. */
   stop: () => void;
 };
@@ -43,7 +53,7 @@ export type Autosave = {
  * Keeps the form as a Recipe Draft on the server (ADR 0028): created on the
  * first real content, then updated `AUTOSAVE_DELAY_MS` after the last edit,
  * one request at a time (edits made meanwhile go out together afterwards),
- * and flushed when the form unmounts and on `pagehide`.
+ * and flushed when the form unmounts and on `pagehide` (that one with `keepalive`: the browser caps such a body at 64 KB, and an edit queued behind a request in flight is lost at unload).
  */
 export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
   const create = useCreateRecipeDraft();
@@ -54,12 +64,15 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
   );
   const json = JSON.stringify(options.content);
   const latest = useRef(options);
-  latest.current = options;
   const writes = useRef({
     create: create.mutateAsync,
     update: update.mutateAsync,
   });
-  writes.current = { create: create.mutateAsync, update: update.mutateAsync };
+  // Before any other effect of this render reads them.
+  useLayoutEffect(() => {
+    latest.current = options;
+    writes.current = { create: create.mutateAsync, update: update.mutateAsync };
+  });
 
   const run = useRef({
     id: options.resumed?.id ?? null,
@@ -70,6 +83,7 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     again: false,
     timer: null as ReturnType<typeof setTimeout> | null,
     stopped: false,
+    paused: false,
   });
 
   const isUnchanged = (current: string) => {
@@ -82,17 +96,17 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     );
   };
 
-  const drain = useCallback((): Promise<void> => {
+  const drain = useCallback((keepalive = false): Promise<void> => {
     const state = run.current;
     if (state.timer) clearTimeout(state.timer);
     state.timer = null;
-    if (state.stopped) return Promise.resolve();
+    if (state.stopped || state.paused) return Promise.resolve();
     if (state.busy) {
       // Something is in flight: send the newest right after it.
       state.again = true;
       return state.busy;
     }
-    state.busy = (async () => {
+    const send = async () => {
       try {
         do {
           state.again = false;
@@ -105,6 +119,7 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
               kind,
               baseRecipeId,
               content,
+              keepalive,
             });
             state.id = made.id;
             state.version = made.version;
@@ -114,6 +129,7 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
               id: state.id,
               version: state.version,
               content,
+              keepalive,
             });
             state.version = saved.version;
           }
@@ -129,31 +145,41 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
       } catch {
         // Failure handling (notice, retry, conflicts) is not here yet.
         setStatus('idle');
-      } finally {
-        state.busy = null;
       }
-    })();
+    };
+    // Cleared after the assignment, even when `send` finishes without waiting.
+    state.busy = send().finally(() => {
+      state.busy = null;
+    });
     return state.busy;
   }, []);
 
   // Each edit restarts the quiet period.
-  useEffect(() => {
+  const schedule = useCallback(() => {
     const state = run.current;
-    if (state.stopped) return;
     if (state.timer) clearTimeout(state.timer);
     state.timer = null;
-    if (isUnchanged(json)) return;
+    if (state.stopped || state.paused) return;
+    if (isUnchanged(JSON.stringify(latest.current.content))) {
+      // Back to what the server holds (or to blank): nothing is pending any more.
+      if (!state.busy) {
+        setStatus((now) =>
+          now === 'saving' ? (state.id ? 'saved' : 'idle') : now,
+        );
+      }
+      return;
+    }
     setStatus('saving');
     state.timer = setTimeout(() => {
       state.timer = null;
       void drain();
     }, AUTOSAVE_DELAY_MS);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [json]);
+  }, [drain]);
+  useEffect(schedule, [json, schedule]);
 
-  // Leaving the form or the page sends what is pending.
+  // Leaving the form sends what is pending; so does the page going away, which must outlive it.
   useEffect(() => {
-    const onHide = () => void drain();
+    const onHide = () => void drain(true);
     window.addEventListener('pagehide', onHide);
     return () => {
       window.removeEventListener('pagehide', onHide);
@@ -173,5 +199,17 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     state.timer = null;
   }, []);
 
-  return { status, draftId, flush, stop };
+  const pause = useCallback(() => {
+    const state = run.current;
+    state.paused = true;
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = null;
+  }, []);
+
+  const resume = useCallback(() => {
+    run.current.paused = false;
+    schedule();
+  }, [schedule]);
+
+  return { status, draftId, flush, pause, resume, stop };
 }

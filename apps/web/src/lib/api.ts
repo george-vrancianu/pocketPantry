@@ -25,6 +25,8 @@ type RequestOptions = {
   body?: unknown;
   /** Aborting it abandons the request on this side only; the server is not told. */
   signal?: AbortSignal;
+  /** Lets the request finish after the page is gone (unload). The browser caps such bodies at 64 KB. */
+  keepalive?: boolean;
 };
 
 function isErrorBody(
@@ -39,7 +41,7 @@ function isErrorBody(
 
 export async function apiRequest<T>(
   path: string,
-  { method = 'GET', body, signal }: RequestOptions = {},
+  { method = 'GET', body, signal, keepalive }: RequestOptions = {},
 ): Promise<T> {
   let response: Response;
   try {
@@ -47,6 +49,7 @@ export async function apiRequest<T>(
       method,
       credentials: 'include',
       ...(signal ? { signal } : {}),
+      ...(keepalive ? { keepalive } : {}),
       // A FormData body sets its own multipart content type (with the boundary).
       headers:
         body === undefined || body instanceof FormData

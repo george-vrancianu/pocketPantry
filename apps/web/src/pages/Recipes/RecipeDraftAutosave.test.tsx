@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   Link,
@@ -82,6 +82,7 @@ function setup(
         element={
           <>
             <Link to="/recipes">leave</Link>
+            <Link to={`/recipes/new?draft=${DRAFT_ID}`}>reopen</Link>
             <Where />
             <NewRecipePage />
           </>
@@ -127,9 +128,9 @@ describe('Recipe Drafts autosave on New Recipe', () => {
         Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }),
     });
     await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
-    await elapse(1000);
+    await elapse(500);
     expect(sent(calls, 'POST /api/recipe-drafts')).toHaveLength(0);
-    await elapse(600);
+    await elapse(1100);
     expect(sent(calls, 'POST /api/recipe-drafts')).toHaveLength(1);
     expect(sent(calls, 'POST /api/recipe-drafts')[0].body).toEqual({
       kind: 'new_recipe',
@@ -138,7 +139,32 @@ describe('Recipe Drafts autosave on New Recipe', () => {
     });
   });
 
-  it('creates a Recipe Draft from a first line or a first Step', async () => {
+  it('creates a Recipe Draft from a first Ingredient Line', async () => {
+    const user = typer();
+    const calls = setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+      'POST /api/recipe-drafts': () =>
+        Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }),
+    });
+    await user.type(
+      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+      'Dragon fruit',
+    );
+    await user.click(
+      await screen.findByRole('option', {
+        name: /Use “Dragon fruit” as typed/,
+      }),
+    );
+    await elapse(1600);
+    expect(sent(calls, 'POST /api/recipe-drafts')[0].body).toMatchObject({
+      content: {
+        title: '',
+        lines: [{ ingredientId: '', name: 'Dragon fruit' }],
+      },
+    });
+  });
+
+  it('creates a Recipe Draft from a first Step', async () => {
     const user = typer();
     const calls = setup('/recipes/new', {
       'POST /api/recipe-drafts': () =>
@@ -370,5 +396,146 @@ describe('Recipe Drafts autosave on New Recipe', () => {
     expect(calls.filter((c) => c.key.includes('recipe-drafts'))).toHaveLength(
       1,
     );
+  });
+
+  it('stops saying Saving… when the form goes back to blank before anything was sent', async () => {
+    const user = typer();
+    const calls = setup('/recipes/new', {});
+    const title = await screen.findByLabelText(/^Title/);
+    await user.type(title, 'G');
+    expect(screen.getByText('Saving…')).toBeVisible();
+    await user.clear(title);
+    expect(screen.queryByText('Saving…')).toBeNull();
+    await elapse(5000);
+    expect(calls.filter((c) => c.key.includes('recipe-drafts'))).toEqual([]);
+  });
+
+  it('goes back to Draft saved when an edit is undone before it is sent', async () => {
+    const user = typer();
+    const calls = setup('/recipes/new', {
+      'POST /api/recipe-drafts': () =>
+        Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }),
+    });
+    const title = await screen.findByLabelText(/^Title/);
+    await user.type(title, 'Gran');
+    await elapse(1600);
+    expect(await screen.findByText('Draft saved')).toBeVisible();
+    await user.type(title, 'x');
+    expect(screen.getByText('Saving…')).toBeVisible();
+    await user.type(title, '{Backspace}');
+    expect(screen.getByText('Draft saved')).toBeVisible();
+    await elapse(5000);
+    expect(calls.filter((c) => c.key.startsWith('PUT'))).toEqual([]);
+  });
+
+  it('sends the pagehide update so it can outlive the page', async () => {
+    const user = typer();
+    const inits: Array<RequestInit | undefined> = [];
+    const calls = setup('/recipes/new', {
+      'POST /api/recipe-drafts': () =>
+        Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }),
+    });
+    const inner = globalThis.fetch;
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+      inits.push(init);
+      return inner(input, init);
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await act(async () => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    expect(sent(calls, 'POST /api/recipe-drafts')).toHaveLength(1);
+    const post = inits.find((init) => init?.method === 'POST');
+    expect(post?.keepalive).toBe(true);
+  });
+
+  it('makes one Recipe from two quick taps on Save', async () => {
+    const user = typer();
+    let release: (response: Response) => void = () => {};
+    const calls = setup('/recipes/new', {
+      'POST /api/recipe-drafts': () =>
+        new Promise<Response>((resolve) => {
+          release = resolve;
+        }),
+      'POST /api/recipes': () => Response.json(savedRecipe, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    const save = screen.getByRole('button', { name: /^Save Recipe/ });
+    await user.click(save);
+    // The button is disabled for the whole save; a second tap does nothing.
+    fireEvent.click(save);
+    await act(async () => {
+      release(Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }));
+    });
+    await elapse(100);
+    expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+    expect(sent(calls, 'POST /api/recipes')).toHaveLength(1);
+  });
+
+  it('sends no update while the Recipe is being created, and carries on if the create fails', async () => {
+    const user = typer();
+    let finish: (response: Response) => void = () => {};
+    const calls = setup('/recipes/new', {
+      'POST /api/recipe-drafts': () =>
+        Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }),
+      [`PUT /api/recipe-drafts/${DRAFT_ID}`]: () =>
+        Response.json({ id: DRAFT_ID, version: 2 }),
+      'POST /api/recipes': () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve;
+        }),
+    });
+    const title = await screen.findByLabelText(/^Title/);
+    await user.type(title, 'Gran');
+    await elapse(1600);
+    await user.click(screen.getByRole('button', { name: /^Save Recipe/ }));
+    await elapse(10);
+    await user.type(title, ' stew');
+    await elapse(5000);
+    expect(calls.filter((c) => c.key.startsWith('PUT'))).toEqual([]);
+    await act(async () => {
+      finish(Response.json({ code: 'unknown', params: {} }, { status: 500 }));
+    });
+    // The failure reaches the page a moment later, then the quiet period runs.
+    for (
+      let i = 0;
+      i < 12 && !calls.some((c) => c.key.startsWith('PUT'));
+      i++
+    ) {
+      await elapse(500);
+    }
+    const puts = calls.filter((c) => c.key.startsWith('PUT'));
+    expect(puts).toHaveLength(1);
+    expect(puts[0].body).toMatchObject({ content: { title: 'Gran stew' } });
+  });
+
+  it('fetches the Recipe Draft afresh when its address is opened again', async () => {
+    const user = typer();
+    let version = 3;
+    const calls = setup(`/recipes/new?draft=${DRAFT_ID}`, {
+      [`GET /api/recipe-drafts/${DRAFT_ID}`]: () =>
+        Response.json({
+          id: DRAFT_ID,
+          kind: 'new_recipe',
+          baseRecipeId: null,
+          baseRecipeName: null,
+          baseAvailable: false,
+          content: titled('Gran'),
+          version: version++ === 3 ? 3 : 9,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          expiresAt: '2026-01-31T00:00:00.000Z',
+        }),
+      [`PUT /api/recipe-drafts/${DRAFT_ID}`]: () =>
+        Response.json({ id: DRAFT_ID, version: 10 }),
+    });
+    await screen.findByDisplayValue('Gran');
+    await user.click(screen.getByRole('link', { name: 'reopen' }));
+    const title = await screen.findByDisplayValue('Gran');
+    await user.type(title, ' stew');
+    await elapse(1600);
+    expect(calls.filter((c) => c.key.startsWith('PUT'))[0].body).toMatchObject({
+      version: 9,
+    });
   });
 });

@@ -8,8 +8,9 @@ import {
   formOfContent,
   type RecipeDraftForm,
 } from '../../lib/recipeDraftContent';
+import { useRecipeDraftRoute } from './useRecipeDraftRoute';
 import { useRecipeDraftAutosave } from '../../lib/recipeDraftAutosave';
-import { useRecipeDraft, type RecipeDraftView } from '../../lib/recipeDrafts';
+import { type RecipeDraftView } from '../../lib/recipeDrafts';
 import {
   BaseRecipePicker,
   STANDALONE,
@@ -80,55 +81,19 @@ export type NewRecipeState = {
 
 const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
 
-/** The query parameter that carries the Recipe Draft id once it exists, so a reload resumes it. */
-export const DRAFT_PARAM = 'draft';
-
 /** "New Recipe": the Family Recipe form, blank or filled from a supplied draft or a resumed Recipe Draft; saved as a Base Recipe, or a Variant of the picked base. */
 export function NewRecipePage() {
   const location = useLocation();
-  const navigate = useNavigate();
   const { t } = useTranslation(['common', 'errors']);
-  const draftParam = new URLSearchParams(location.search).get(DRAFT_PARAM);
-  // `own` is the Recipe Draft this form created itself (it already holds it).
-  // A new navigation (even to this same route) starts the form afresh, but not our own `draft` param.
-  const [form, setForm] = useState({
-    key: location.key,
-    seen: location.key,
-    own: null as string | null,
-  });
-  if (form.seen !== location.key) {
-    const ours = form.own !== null && draftParam === form.own;
-    setForm({
-      key: ours ? form.key : location.key,
-      seen: location.key,
-      own: ours ? form.own : null,
-    });
-  }
-  const resumeId =
-    draftParam !== null && draftParam !== form.own ? draftParam : null;
-  const resuming = useRecipeDraft(resumeId);
-  if (resumeId !== null) {
-    if (resuming.error) {
-      return <Alert>{translateApiError(t, resuming.error)}</Alert>;
-    }
-    if (!resuming.data) return <Spinner label={t('common:loading')} />;
-  }
+  const route = useRecipeDraftRoute();
+  if (route.error) return <Alert>{translateApiError(t, route.error)}</Alert>;
+  if (route.loading) return <Spinner label={t('common:loading')} />;
   return (
     <NewRecipeContent
-      key={form.key}
+      key={route.formKey}
       supplied={suppliedOf(location.state)}
-      resumed={resumeId !== null ? resuming.data : undefined}
-      onDraftId={(id) => {
-        if (id === draftParam) return;
-        setForm((current) => ({ ...current, own: id }));
-        // Replace: the Recipe Draft is the same page, not a new step in the history.
-        const search = new URLSearchParams(location.search);
-        search.set(DRAFT_PARAM, id);
-        navigate(
-          { pathname: location.pathname, search: `?${search}` },
-          { replace: true, state: location.state },
-        );
-      }}
+      resumed={route.resumed}
+      onDraftId={route.onDraftId}
     />
   );
 }
@@ -183,6 +148,8 @@ function NewRecipeContent({
   const navigate = useNavigate();
   const [basePick, setBasePick] = useState(noBasePick);
   const create = useCreateFamilyRecipe();
+  // True from the tap on Save until the create answers, so a second tap cannot make a second Recipe.
+  const [finishing, setFinishing] = useState(false);
   const momentOptions = useMomentOptions();
   const [parentId, setParentId] = useState<string | null>(null);
   // The Member may drop the Source Link before saving, but not change it.
@@ -252,10 +219,10 @@ function NewRecipeContent({
   });
   const { draftId } = autosave;
   useEffect(() => {
-    if (draftId) onDraftId(draftId);
-    // Only a new id goes to the URL.
+    // Only a new id goes to the URL, and not while the Recipe is being saved: the page is about to leave.
+    if (draftId && !finishing) onDraftId(draftId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftId]);
+  }, [draftId, finishing]);
 
   return (
     <>
@@ -306,13 +273,17 @@ function NewRecipeContent({
           description={t('recipes:family.newRecipeHint')}
           initial={initial}
           saveLabel={t('recipes:family.save')}
-          saving={create.isPending}
+          saving={create.isPending || finishing}
           error={create.error}
           guidance={{ initial: initialGuidance, momentOptions }}
           onChange={setFormState}
           onSave={async (document, guidance) => {
+            if (finishing) return;
+            setFinishing(true);
             // The Recipe Draft ends with the create, so it must be known first.
             const recipeDraftId = await autosave.flush();
+            // It is being consumed: no update may go out meanwhile.
+            autosave.pause();
             create.mutate(
               {
                 parentId: hasBases ? parentId : null,
@@ -329,6 +300,10 @@ function NewRecipeContent({
                 onSuccess: (saved) => {
                   autosave.stop();
                   navigate(`/recipes/${saved.id}`);
+                },
+                onError: () => {
+                  setFinishing(false);
+                  autosave.resume();
                 },
               },
             );
