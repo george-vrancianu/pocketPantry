@@ -13,7 +13,7 @@ Members want to save a recipe they found online without typing it in. Recipe fro
 ## Considered Options
 
 - **Adding cup, tbsp and tsp to the unit list.** This is faithful to the source, but Pantry matching, the Plan Forecast and Shopping amounts all compare in g, ml and pcs, and none of them could judge a cup of flour against a 1 kg Batch.
-- **Letting the AI write the guidance too.** Cheap to add, but it would sit beside the source's text as if the source said it, and ADR 0008 keeps guidance hand-written. Generating it can be a separate, explicit action later.
+- **Letting the AI write the guidance too.** Cheap to add, but it would sit beside the source's text as if the source said it, and ADR 0008 keeps guidance hand-written. Generating it can be a separate, explicit action later (ADR 0026: Suggest Guidance).
 - **Keeping the page's language by default.** Most Members paste a link to cook from it in their own language.
 - **Structured data only, with no AI.** Sites fill JSON-LD inconsistently, and it still leaves units, matching and timers to do.
 
