@@ -2,6 +2,7 @@ import {
   ActionMenu,
   Box,
   Button,
+  GlobeIcon,
   Sheet,
   Typography,
   palette,
@@ -85,6 +86,7 @@ export function VoiceInboxSheet({
       >
         {inbox.notes.map((note) => {
           const { phase } = note;
+          const noteLanguage = note.spokenLanguage ?? spokenLanguage;
           const isReady = phase === 'review' || phase === 'answers';
           const preview = note.transcript
             ? note.transcript.split('\n')[0]
@@ -96,9 +98,7 @@ export function VoiceInboxSheet({
             note.defaultTarget === 'none'
               ? t('voice:inbox.noList')
               : t(`voice:review.lists.${note.defaultTarget}`),
-            t(
-              `settings:languageNames.${note.spokenLanguage ?? spokenLanguage}`,
-            ),
+            t(`settings:languageNames.${noteLanguage}`),
           ].join(' · ');
           return (
             <Box
@@ -190,38 +190,41 @@ export function VoiceInboxSheet({
                     {t('voice:send.discard')}
                   </Button>
                   {note.canRetry ? (
-                    <ActionMenu
-                      label={t('voice:inbox.retryOtherNote', { preview })}
-                      icon={<span aria-hidden>🌐</span>}
-                      items={SCAN_LANGUAGES.map((language) => {
-                        const name = t(`settings:languageNames.${language}`);
-                        return {
-                          label:
-                            language === (note.spokenLanguage ?? spokenLanguage)
-                              ? t('voice:inbox.currentLanguage', {
-                                  language: name,
-                                })
-                              : name,
-                          onClick: () => {
-                            title.current?.focus();
-                            void voiceNote.retry(note.id, language);
-                          },
-                        };
-                      })}
-                    />
-                  ) : null}
-                  {note.canRetry ? (
-                    <Button
-                      size="sm"
-                      shape="pill"
-                      aria-label={t('voice:inbox.retryNote', { preview })}
-                      onClick={() => {
-                        title.current?.focus();
-                        void voiceNote.retry(note.id);
-                      }}
-                    >
-                      {t('voice:send.retry')}
-                    </Button>
+                    <>
+                      <ActionMenu
+                        label={t('voice:inbox.retryOtherNote', { preview })}
+                        icon={<GlobeIcon size={20} aria-hidden="true" />}
+                        items={SCAN_LANGUAGES.map((language) => {
+                          const name = t(`settings:languageNames.${language}`);
+                          return {
+                            label:
+                              language === noteLanguage
+                                ? t('voice:inbox.currentLanguage', {
+                                    language: name,
+                                  })
+                                : name,
+                            onClick: () => {
+                              // The menu returns focus to its trigger, which is gone once the row is read again.
+                              requestAnimationFrame(() =>
+                                title.current?.focus(),
+                              );
+                              void voiceNote.retry(note.id, language);
+                            },
+                          };
+                        })}
+                      />
+                      <Button
+                        size="sm"
+                        shape="pill"
+                        aria-label={t('voice:inbox.retryNote', { preview })}
+                        onClick={() => {
+                          title.current?.focus();
+                          void voiceNote.retry(note.id);
+                        }}
+                      >
+                        {t('voice:send.retry')}
+                      </Button>
+                    </>
                   ) : null}
                 </Box>
               ) : null}

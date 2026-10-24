@@ -706,6 +706,57 @@ describe('Voice Note on the Shopping List', () => {
         expect(spoken(reads[1].body)).toBe('ro');
       });
 
+      it('puts focus on the sheet title after a language is picked', async () => {
+        const { dialog } = await failFirst('en');
+        await userEvent.click(
+          within(dialog).getByRole('button', {
+            name: /^Retry in another language/,
+          }),
+        );
+        await userEvent.click(
+          await screen.findByRole('menuitem', { name: 'Dansk' }),
+        );
+        await waitFor(() =>
+          expect(
+            within(dialog).getByRole('heading', { name: 'Voice Inbox' }),
+          ).toHaveFocus(),
+        );
+      });
+
+      it('gives only the picked note the new language when several fail on the Voice Cap', async () => {
+        const { reads, holdReads } = setup({ note: never });
+        holdReads();
+        renderInAppLayout(<ShoppingPage />, '/shopping');
+        for (let i = 0; i < 3; i++) {
+          fireEvent.pointerUp(await hold());
+          await screen.findByRole('button', { name: 'Open' });
+        }
+        await waitFor(() => expect(reads).toHaveLength(2));
+        act(() =>
+          reads[0].resolve(error('voice.cap_reached', 429, { cap: 5 })),
+        );
+        const dialog = await openSheet();
+        await waitFor(() =>
+          expect(
+            within(dialog).getAllByRole('button', { name: /^Retry:/ }),
+          ).toHaveLength(2),
+        );
+        const before = reads.length;
+        fireEvent.click(
+          within(dialog).getAllByRole('button', {
+            name: /^Retry in another language/,
+          })[0],
+        );
+        fireEvent.click(await screen.findByRole('menuitem', { name: 'Dansk' }));
+        await waitFor(() => expect(reads.length).toBeGreaterThan(before));
+        const languages = reads.slice(before).map((r) => spoken(r.body));
+        expect(languages).toContain('da');
+        expect(languages.filter((l) => l !== 'da')).toEqual(
+          languages.filter((l) => l !== 'da').map(() => 'en'),
+        );
+        expect(languages.filter((l) => l === 'da')).toHaveLength(1);
+      });
+
       it("plain Retry re-sends in the note's own language", async () => {
         const { dialog, reads } = await failFirst('ro');
         fireEvent.click(

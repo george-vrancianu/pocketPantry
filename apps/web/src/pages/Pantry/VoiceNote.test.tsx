@@ -144,7 +144,7 @@ describe('Voice Notes on the Pantry page', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Voice Inbox' });
 
     await userEvent.click(
-      within(dialog).getByRole('button', { name: /^Retry/ }),
+      within(dialog).getByRole('button', { name: /^Retry:/ }),
     );
     await userEvent.keyboard('{Escape}');
 
