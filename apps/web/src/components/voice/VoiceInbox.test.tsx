@@ -397,13 +397,13 @@ describe('the Voice Inbox strip', () => {
   });
 
   it('has its copy in English, Romanian and Danish', () => {
-    const keys = (voice: typeof en) => Object.keys(voice.inbox).sort();
-    expect(keys(ro).filter((k) => !k.startsWith('title'))).toEqual(
-      keys(en).filter((k) => !k.startsWith('title')),
-    );
-    expect(keys(da).filter((k) => !k.startsWith('title'))).toEqual(
-      keys(en).filter((k) => !k.startsWith('title')),
-    );
+    // Plural forms differ per language.
+    const keys = (voice: typeof en) =>
+      Object.keys(voice.inbox)
+        .filter((k) => !k.startsWith('title') && !k.startsWith('failed'))
+        .sort();
+    expect(keys(ro)).toEqual(keys(en));
+    expect(keys(da)).toEqual(keys(en));
     for (const voice of [en, ro, da]) {
       expect(voice.inbox.full).toBeTruthy();
       expect(voice.inbox.review).toBeTruthy();

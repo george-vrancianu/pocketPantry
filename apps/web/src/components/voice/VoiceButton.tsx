@@ -101,7 +101,7 @@ export function VoiceButton({
             fontWeight: 600,
           }}
         >
-          {voice.tip === 'failed' ? t('send.tipFailed') : t('listening.tip')}
+          {t('listening.tip')}
         </Box>
       ) : null}
       {active ? (
@@ -173,24 +173,6 @@ export function VoiceButton({
             ) : (
               <MicIcon size={26} />
             )}
-            {voice.kept ? (
-              <Box
-                aria-hidden
-                data-testid="failed-dot"
-                component="span"
-                sx={{
-                  position: 'absolute',
-                  top: 6,
-                  right: 8,
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  backgroundColor: palette('warning-main'),
-                  border: `2px solid ${color.cardBg}`,
-                  boxSizing: 'content-box',
-                }}
-              />
-            ) : null}
           </Box>
         </>,
         micSlot,

@@ -1,4 +1,11 @@
-import { Box, Button, GatorImage, radius, shadow } from '@pocket-pantry/ui';
+import {
+  Box,
+  Button,
+  GatorImage,
+  palette,
+  radius,
+  shadow,
+} from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +16,7 @@ import {
   type VoiceNoteState,
 } from '../../lib/voiceNote';
 import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
-import { VOICE_PILL_ATTRIBUTE } from '../../lib/voiceFocus';
+import { focusVoiceButton, VOICE_PILL_ATTRIBUTE } from '../../lib/voiceFocus';
 import { enter } from './enter';
 import { VoiceInboxSheet } from './VoiceInboxSheet';
 import { useVoiceHost } from './VoiceHost';
@@ -23,31 +30,66 @@ const oneLine = {
 /**
  * The Voice Inbox strip, where the status pill was: Gator, how many Voice Notes there are, what
  * state they are in, and a button: Review when exactly one is ready (it opens that note), else Open,
- * which opens the Voice Inbox sheet.
- * Hidden while recording, while a sheet or a failure is up, and when nothing is being read or ready.
+ * which opens the Voice Inbox sheet. A failed note outlines it in the warning colour and makes it an alert.
+ * Hidden while recording or while a sheet is up, and when the Voice Inbox is empty.
+ *
+ * The sheet is hosted here, outside the strip: when the last note leaves while it is open, the sheet
+ * closes with its animation and focus goes to the voice button, not to the page behind.
  */
 export function VoiceInboxStrip() {
   const state = useVoiceNoteState();
-  return isStripUp(state) ? <Strip state={state} /> : null;
+  const [wantSheet, setWantSheet] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const up = isStripUp(state);
+  return (
+    <>
+      {up ? (
+        <Strip
+          state={state}
+          openSheet={() => {
+            setMounted(true);
+            setWantSheet(true);
+          }}
+        />
+      ) : null}
+      {mounted ? (
+        <VoiceInboxSheet
+          open={wantSheet && state.inbox.total > 0 && state.phase === 'idle'}
+          onClose={() => setWantSheet(false)}
+          onExited={() => {
+            setMounted(false);
+            setWantSheet(false);
+            // The opener went with the last note.
+            if (!isStripUp(voiceNote.getState())) focusVoiceButton();
+          }}
+        />
+      ) : null}
+    </>
+  );
 }
 
-/** Mounted only while the strip is up, so the sheet's open state goes with it. */
-function Strip({ state }: { state: VoiceNoteState }) {
+function Strip({
+  state,
+  openSheet,
+}: {
+  state: VoiceNoteState;
+  openSheet: () => void;
+}) {
   const { t } = useTranslation('voice');
   const host = useVoiceHost();
-  const [sheet, setSheet] = useState(false);
   const { reading, ready, failed } = state.inbox;
   const total = reading + ready + failed;
   const summary = [
     reading > 0 ? t('inbox.reading', { count: reading }) : null,
     ready > 0 ? t('inbox.ready', { count: ready }) : null,
+    failed > 0 ? t('inbox.failed', { count: failed }) : null,
   ]
     .filter(Boolean)
     .join(' · ');
 
   const open = () => {
     if (ready === 1) voiceNote.openReady();
-    else setSheet(true);
+    else openSheet();
   };
 
   return createPortal(
@@ -72,6 +114,7 @@ function Strip({ state }: { state: VoiceNoteState }) {
           borderRadius: radius.control,
           boxShadow: shadow.float,
           cursor: 'pointer',
+          border: failed > 0 ? `2px solid ${palette('warning-main')}` : 'none',
           ...enter,
         }}
       >
@@ -85,7 +128,12 @@ function Strip({ state }: { state: VoiceNoteState }) {
             decorative
           />
         </Box>
-        <Box role="status" sx={{ flex: 1, minWidth: 0 }}>
+        <Box
+          // A fresh node when a note fails, so it is announced as an alert.
+          key={failed > 0 ? 'alert' : 'status'}
+          role={failed > 0 ? 'alert' : 'status'}
+          sx={{ flex: 1, minWidth: 0 }}
+        >
           <Box sx={{ fontSize: 14, fontWeight: 600, ...oneLine }}>
             {t('inbox.title', { count: total })}
           </Box>
@@ -109,7 +157,6 @@ function Strip({ state }: { state: VoiceNoteState }) {
               : t('inbox.open')}
         </Button>
       </Box>
-      {sheet ? <VoiceInboxSheet onClose={() => setSheet(false)} /> : null}
     </>,
     host,
   );

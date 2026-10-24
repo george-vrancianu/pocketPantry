@@ -117,8 +117,23 @@ async function failedWith(error: unknown) {
   await record(ctx.note, options);
   ctx.refuse(error);
   await settle();
+  // A network error is tried once more by itself before it fails.
+  if (error instanceof ApiError && error.code === 'network_error') {
+    ctx.refuse(error);
+    await settle();
+  }
   return ctx;
 }
+
+/** The first failed note in the Voice Inbox. */
+const failure = (note: VoiceNote) =>
+  note.getState().inbox.notes.find((n) => n.phase === 'failed');
+/** Dismisses every failed note in the Voice Inbox. */
+const dismissFailures = (note: VoiceNote) => {
+  for (const n of note.getState().inbox.notes) {
+    if (n.phase === 'failed') note.dismiss(n.id);
+  }
+};
 
 /** Cancels the oldest Voice Note being read. */
 const cancelFirst = (note: VoiceNote) =>
@@ -414,11 +429,14 @@ describe('Voice Note module', () => {
       expect(note.getState().inbox.reading).toBe(2);
     });
 
-    it('does not read while a failure waits', async () => {
+    it('keeps recording and reading while a failed note waits in the Voice Inbox', async () => {
       const { note, send } = await failedWith(new ApiError('network_error', 0));
+      expect(note.startBlocker()).toBe('none');
       await record(note, options);
-      expect(send).toHaveBeenCalledOnce();
-      expect(note.getState().phase).toBe('failed');
+      // Two tries for the failed note, one for the new one.
+      expect(send).toHaveBeenCalledTimes(3);
+      expect(note.getState().phase).toBe('idle');
+      expect(note.getState().inbox).toMatchObject({ reading: 1, failed: 1 });
     });
   });
 
@@ -428,38 +446,43 @@ describe('Voice Note module', () => {
       await record(ctx.note, options);
       ctx.answer({ transcript: '  ', actions: [] } as never);
       await settle();
-      expect(ctx.note.getState()).toMatchObject({
-        phase: 'failed',
+      // The note stays in the Voice Inbox with its own Spoken Language and its recording.
+      expect(failure(ctx.note)).toMatchObject({
         error: 'nothingHeard',
-        recording: undefined,
+        spokenLanguage: 'en',
+        canRetry: true,
       });
+      expect(ctx.note.getState().phase).toBe('idle');
       expect(ctx.released()).toEqual([1]);
     });
 
     it.each([
-      ['voice.nothing_heard', 'nothingHeard'],
-      ['voice.too_long', 'tooLong'],
-      ['voice.unsupported_audio', 'unsupported'],
-    ] as const)('maps %s to %s and keeps no recording', async (code, error) => {
-      vi.spyOn(console, 'error').mockImplementation(() => undefined);
-      const { note, released } = await failedWith(new ApiError(code, 422));
-      expect(note.getState()).toMatchObject({
-        phase: 'failed',
-        error,
-        recording: undefined,
-        rawError: undefined,
-      });
-      expect(released()).toEqual([1]);
-    });
+      ['voice.nothing_heard', 'nothingHeard', true],
+      ['voice.too_long', 'tooLong', false],
+      ['voice.unsupported_audio', 'unsupported', false],
+    ] as const)(
+      'maps %s to %s (recording kept: %s)',
+      async (code, error, kept) => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const { note, released } = await failedWith(new ApiError(code, 422));
+        expect(failure(note)).toMatchObject({
+          error,
+          canRetry: kept,
+          rawError: undefined,
+          spokenLanguage: 'en',
+          durationMs: 2000,
+        });
+        expect(released()).toEqual([1]);
+      },
+    );
 
     it.each(['network_error', 'voice.provider_unavailable'])(
       'keeps the recording for Retry when %s, with no raw error',
       async (code) => {
         const { note } = await failedWith(new ApiError(code, 503));
-        const state = note.getState();
-        expect(state).toMatchObject({ phase: 'failed', error: 'failed' });
-        expect(state.rawError).toBeUndefined();
-        expect(state.recording).toMatchObject({ durationMs: 2000 });
+        const failed = failure(note);
+        expect(failed).toMatchObject({ error: 'failed', canRetry: true });
+        expect(failed?.rawError).toBeUndefined();
       },
     );
 
@@ -467,16 +490,16 @@ describe('Voice Note module', () => {
       const { note } = await failedWith(
         new ApiError('voice.audio_unreadable', 422, { limit: 3 }),
       );
-      expect(note.getState()).toMatchObject({
+      expect(failure(note)).toMatchObject({
         error: 'failed',
         rawError: { code: 'voice.audio_unreadable', params: { limit: 3 } },
-        recording: { durationMs: 2000 },
+        canRetry: true,
       });
     });
 
     it('keeps an unknown code for an error that is not an API error', async () => {
       const { note } = await failedWith(new TypeError('boom'));
-      expect(note.getState()).toMatchObject({
+      expect(failure(note)).toMatchObject({
         error: 'failed',
         rawError: { code: 'unknown', params: {} },
       });
@@ -498,9 +521,9 @@ describe('Voice Note module', () => {
     it('fails before a read, for a browser that cannot record', () => {
       const { note, notices } = setup();
       note.fail('unavailable');
-      expect(note.getState()).toMatchObject({
-        phase: 'failed',
+      expect(failure(note)).toMatchObject({
         error: 'unavailable',
+        canRetry: false,
       });
       expect(notices).toEqual([]);
     });
@@ -521,9 +544,8 @@ describe('Voice Note module', () => {
       const { note, notices } = await failedWith(
         new ApiError('network_error', 0),
       );
-      note.dismiss();
-      expect(note.getState()).toMatchObject({ phase: 'idle' });
-      expect(note.getState().recording).toBeUndefined();
+      note.dismiss(failure(note)?.id);
+      expect(note.getState().inbox.total).toBe(0);
       expect(notices).toEqual([]);
     });
 
@@ -531,8 +553,8 @@ describe('Voice Note module', () => {
       const { note, notices } = await failedWith(
         new ApiError('network_error', 0),
       );
-      note.discardFailed();
-      expect(note.getState().phase).toBe('idle');
+      note.discardFailed(failure(note)?.id);
+      expect(note.getState().inbox.total).toBe(0);
       expect(notices).toEqual(['discarded']);
     });
 
@@ -552,11 +574,8 @@ describe('Voice Note module', () => {
     it('is in force until the reset time the server gave', async () => {
       const { note } = await capped('2999-01-01T00:00:00.000Z');
       const reset = Date.parse('2999-01-01T00:00:00.000Z');
-      expect(note.getState()).toMatchObject({
-        phase: 'failed',
-        error: 'capReached',
-        voiceCap: { cap: 5, resetsAt: reset },
-      });
+      expect(failure(note)).toMatchObject({ error: 'capReached' });
+      expect(note.getState().voiceCap).toEqual({ cap: 5, resetsAt: reset });
       vi.useFakeTimers({ toFake: ['Date'] });
       try {
         vi.setSystemTime(reset - 1);
@@ -593,7 +612,7 @@ describe('Voice Note module', () => {
 
     it('keeps the cap through a new Voice Note', async () => {
       const { note } = await capped('2999-01-01T00:00:00.000Z');
-      note.dismiss();
+      dismissFailures(note);
       await record(note, options);
       expect(note.isCapReached()).toBe(true);
     });
@@ -605,7 +624,7 @@ describe('Voice Note module', () => {
         const { note } = await capped(
           new Date(Date.UTC(2026, 9, 19, 11)).toISOString(),
         );
-        note.dismiss();
+        dismissFailures(note);
         const before = note.getState();
         const listener = vi.fn();
         note.subscribe(listener);
@@ -639,6 +658,172 @@ describe('Voice Note module', () => {
     });
   });
 
+  describe('automatic retry', () => {
+    it('sends a network error once more by itself, and reads the note if that works', async () => {
+      const ctx = setup();
+      await record(ctx.note, options);
+      ctx.refuse(new ApiError('network_error', 0));
+      await settle();
+      expect(ctx.send).toHaveBeenCalledTimes(2);
+      expect(ctx.requests[1]).toMatchObject({
+        recording,
+        spokenLanguage: 'en',
+      });
+      expect(ctx.note.getState().inbox).toMatchObject({
+        reading: 1,
+        failed: 0,
+      });
+      ctx.answer(result('a'));
+      await settle();
+      expect(ctx.note.getState().inbox).toMatchObject({ ready: 1, failed: 0 });
+      // One lock for the whole read, released once.
+      expect(ctx.released()).toEqual([1]);
+    });
+
+    it('fails with the recording kept when the second try fails too, and does not try a third', async () => {
+      const ctx = await failedWith(new ApiError('network_error', 0));
+      expect(ctx.send).toHaveBeenCalledTimes(2);
+      expect(failure(ctx.note)).toMatchObject({
+        error: 'failed',
+        canRetry: true,
+      });
+    });
+
+    it.each([
+      ['voice.provider_unavailable'],
+      ['voice.audio_unreadable'],
+      ['voice.too_long'],
+    ])('does not retry %s by itself', async (code) => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const ctx = await failedWith(new ApiError(code, 500));
+      expect(ctx.send).toHaveBeenCalledOnce();
+    });
+
+    it('gives a Member Retry a fresh automatic retry', async () => {
+      const ctx = await failedWith(new ApiError('network_error', 0));
+      void ctx.note.retry(failure(ctx.note)?.id);
+      ctx.refuse(new ApiError('network_error', 0));
+      await settle();
+      expect(ctx.send).toHaveBeenCalledTimes(4);
+    });
+
+    it('stops at an abort between the tries', async () => {
+      const ctx = setup();
+      await record(ctx.note, options);
+      cancelFirst(ctx.note);
+      ctx.refuse(new ApiError('network_error', 0));
+      await settle();
+      expect(ctx.send).toHaveBeenCalledOnce();
+      expect(ctx.note.getState().inbox.total).toBe(0);
+    });
+  });
+
+  describe('Voice Cap across the Voice Inbox', () => {
+    const cap = () =>
+      new ApiError('voice.cap_reached', 429, {
+        cap: 5,
+        resetsAt: '2999-01-01T00:00:00.000Z',
+      });
+
+    /** Three notes: the first two are in flight, the third waits. */
+    async function threeNotes() {
+      const ctx = setup();
+      for (let i = 0; i < 3; i++) await record(ctx.note, options);
+      return ctx;
+    }
+
+    it('fails the note that reached the cap and those waiting behind it, and leaves earlier notes usable', async () => {
+      const ctx = setup();
+      for (let i = 0; i < 4; i++) await record(ctx.note, options);
+      // The first is read, so the third starts; the second reaches the cap while the fourth waits.
+      ctx.answer(result('a'), 0);
+      await settle();
+      ctx.refuse(cap(), 1);
+      await settle();
+      const { notes } = ctx.note.getState().inbox;
+      expect(notes.map((n) => n.phase)).toEqual([
+        'review',
+        'failed',
+        'reading',
+        'failed',
+      ]);
+      expect(notes.map((n) => n.error)).toEqual([
+        undefined,
+        'capReached',
+        undefined,
+        'capReached',
+      ]);
+      expect(notes.filter((n) => n.error).every((n) => n.canRetry)).toBe(true);
+      // The fourth was never sent.
+      expect(ctx.send).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not send the waiting note once the cap failed it', async () => {
+      const ctx = setup();
+      for (let i = 0; i < 4; i++) await record(ctx.note, options);
+      ctx.refuse(cap(), 0);
+      await settle();
+      // Note 2 is still in flight; 3 and 4 failed with the cap without being sent.
+      expect(ctx.send).toHaveBeenCalledTimes(2);
+      expect(ctx.note.getState().inbox.notes.map((n) => n.error)).toEqual([
+        'capReached',
+        undefined,
+        'capReached',
+        'capReached',
+      ]);
+    });
+
+    it('releases every note that failed with the cap when one is retried', async () => {
+      const ctx = await threeNotes();
+      ctx.refuse(cap(), 0);
+      await settle();
+      ctx.refuse(cap(), 1);
+      await settle();
+      expect(ctx.note.getState().inbox).toMatchObject({
+        failed: 3,
+        reading: 0,
+      });
+      void ctx.note.retry(ctx.note.getState().inbox.notes[1].id);
+      expect(ctx.note.getState().inbox).toMatchObject({
+        failed: 0,
+        reading: 3,
+      });
+      // Two read at once again; the cap is no longer assumed.
+      expect(ctx.send).toHaveBeenCalledTimes(4);
+      expect(ctx.note.isCapReached()).toBe(false);
+    });
+
+    it('does not release a note that failed for another reason', async () => {
+      const ctx = setup();
+      await record(ctx.note, options);
+      await record(ctx.note, options);
+      ctx.refuse(new ApiError('voice.audio_unreadable', 422), 0);
+      await settle();
+      ctx.refuse(cap(), 1);
+      await settle();
+      void ctx.note.retry(ctx.note.getState().inbox.notes[1].id);
+      const { notes } = ctx.note.getState().inbox;
+      expect(notes.map((n) => n.phase)).toEqual(['failed', 'reading']);
+    });
+  });
+
+  describe('nothing heard', () => {
+    it('leaves the Voice Inbox on its own', async () => {
+      vi.useFakeTimers();
+      try {
+        const ctx = setup();
+        await record(ctx.note, options);
+        ctx.answer({ transcript: '', actions: [] } as never);
+        await settle();
+        expect(ctx.note.getState().inbox.failed).toBe(1);
+        vi.advanceTimersByTime(3600);
+        expect(ctx.note.getState().inbox.total).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
   describe('Retry', () => {
     it('resends the kept recording in its language and for its page', async () => {
       const ctx = setup();
@@ -649,9 +834,11 @@ describe('Voice Note module', () => {
       ctx.refuse(new ApiError('network_error', 0));
       await settle();
 
-      const second = ctx.note.retry();
+      ctx.refuse(new ApiError('network_error', 0));
+      await settle();
+      const second = ctx.note.retry(failure(ctx.note)?.id);
       expect(ctx.note.getState().inbox.reading).toBe(1);
-      expect(ctx.requests[1]).toMatchObject({
+      expect(ctx.requests[2]).toMatchObject({
         recording,
         spokenLanguage: 'ro',
         defaultTarget: 'pantry',
@@ -666,14 +853,26 @@ describe('Voice Note module', () => {
       });
     });
 
+    it('retries the open failed note when no id is given (Setup)', async () => {
+      const ctx = setup();
+      await record(ctx.note, { ...options, openWhenReady: true });
+      ctx.refuse(new ApiError('voice.audio_unreadable', 422));
+      await settle();
+      expect(ctx.note.getState().phase).toBe('failed');
+      void ctx.note.retry();
+      expect(ctx.note.getState().phase).toBe('reading');
+    });
+
     it('takes the screen lock again and releases it once', async () => {
       const ctx = setup();
       await record(ctx.note, options);
       ctx.refuse(new ApiError('network_error', 0));
       await settle();
+      ctx.refuse(new ApiError('network_error', 0));
+      await settle();
       expect(ctx.released()).toEqual([1]);
 
-      const second = ctx.note.retry();
+      const second = ctx.note.retry(failure(ctx.note)?.id);
       expect(ctx.released()).toEqual([1, 0]);
       ctx.answer(result('a'));
       await second;
@@ -682,9 +881,9 @@ describe('Voice Note module', () => {
 
     it('does nothing without a kept recording', async () => {
       const ctx = await failedWith(new ApiError('voice.too_long', 413));
-      void ctx.note.retry();
+      void ctx.note.retry(failure(ctx.note)?.id);
       expect(ctx.send).toHaveBeenCalledOnce();
-      expect(ctx.note.getState().phase).toBe('failed');
+      expect(failure(ctx.note)).toBeDefined();
     });
   });
 
@@ -732,7 +931,7 @@ describe('Voice Note module', () => {
         new ApiError('network_error', 0),
       );
       cancelFirst(note);
-      expect(note.getState().phase).toBe('failed');
+      expect(failure(note)).toBeDefined();
       expect(notices).toEqual([]);
     });
   });
@@ -821,10 +1020,7 @@ describe('Voice Note module', () => {
       startMicrophone.mockResolvedValueOnce(broken);
       await note.start(options);
       expect(await note.stop()).toBe('notStarted');
-      expect(note.getState()).toMatchObject({
-        phase: 'failed',
-        error: 'unavailable',
-      });
+      expect(failure(note)).toMatchObject({ error: 'unavailable' });
       expect(released()).toEqual([1]);
     });
 
@@ -842,7 +1038,7 @@ describe('Voice Note module', () => {
       await note.start(options);
       note.fail('unavailable');
       expect(sessions[0].cancel).toHaveBeenCalledOnce();
-      expect(note.getState().phase).toBe('failed');
+      expect(failure(note)).toBeDefined();
       expect(released()).toEqual([1]);
     });
 
@@ -858,7 +1054,7 @@ describe('Voice Note module', () => {
       finish(recording);
       expect(await stopped).toBe('notStarted');
       expect(send).not.toHaveBeenCalled();
-      expect(note.getState().phase).toBe('failed');
+      expect(failure(note)).toBeDefined();
       expect(released()).toEqual([1]);
     });
   });
@@ -949,10 +1145,7 @@ describe('Voice Note module', () => {
       const { note, startMicrophone, released } = setup();
       startMicrophone.mockRejectedValueOnce(error);
       expect(await note.start(options)).toBe('unavailable');
-      expect(note.getState()).toMatchObject({
-        phase: 'failed',
-        error: 'unavailable',
-      });
+      expect(failure(note)).toMatchObject({ error: 'unavailable' });
       expect(released()).toEqual([1]);
     });
   });
@@ -1014,17 +1207,23 @@ describe('Voice Note module', () => {
       expect(note.getState().inbox.reading).toBe(1);
     });
 
-    it('is kept while a failed note waits for Retry, and a start is refused', async () => {
+    it('is none while a failed note waits for Retry: it never blocks recording', async () => {
       const { note, startMicrophone } = await failedWith(
         new ApiError('network_error', 0),
       );
-      expect(note.startBlocker()).toBe('kept');
-      expect(await note.start(options)).toBe('refused');
-      expect(startMicrophone).toHaveBeenCalledOnce();
-      expect(note.getState()).toMatchObject({
-        phase: 'failed',
-        error: 'failed',
-      });
+      expect(note.startBlocker()).toBe('none');
+      expect(await note.start(options)).toBe('started');
+      expect(startMicrophone).toHaveBeenCalledTimes(2);
+      expect(failure(note)).toMatchObject({ error: 'failed' });
+    });
+
+    it('counts failures with a kept recording toward the limit, and others not', async () => {
+      const { note } = setup();
+      // Four failures with no recording (the Voice Cap on a press) do not fill the Voice Inbox.
+      for (let i = 0; i < 4; i++) note.fail('unavailable');
+      for (let i = 0; i < 5; i++) await record(note, options);
+      expect(note.getState().inbox.total).toBe(6);
+      expect(note.startBlocker()).toBe('full');
     });
 
     it('is capped after the Voice Cap, and a capped start fails the note', async () => {
@@ -1034,13 +1233,13 @@ describe('Voice Note module', () => {
           resetsAt: '2999-01-01T00:00:00.000Z',
         }),
       );
-      note.dismiss();
+      dismissFailures(note);
       expect(note.startBlocker()).toBe('capped');
       expect(await note.start(options)).toBe('refused');
       expect(startMicrophone).toHaveBeenCalledOnce();
-      expect(note.getState()).toMatchObject({
-        phase: 'failed',
+      expect(failure(note)).toMatchObject({
         error: 'capReached',
+        canRetry: false,
       });
     });
 
@@ -1051,17 +1250,18 @@ describe('Voice Note module', () => {
           resetsAt: '2999-01-01T00:00:00.000Z',
         }),
       );
-      ctx.note.dismiss();
+      dismissFailures(ctx.note);
       await ctx.note.start(options);
       expect(ctx.keepScreenAwake).toHaveBeenCalledOnce();
       expect(ctx.released()).toEqual([1]);
     });
 
-    it('starts after a failure with no kept recording, dropping it', async () => {
+    it('starts after a failure with no kept recording', async () => {
       const { note } = await failedWith(new ApiError('voice.too_long', 413));
       expect(await note.start(options)).toBe('started');
       expect(note.getState().phase).toBe('recording');
-      expect(note.getState().error).toBeUndefined();
+      // Not blocking, and not hidden by the next press either.
+      expect(failure(note)).toMatchObject({ error: 'tooLong' });
     });
 
     it('refuses to start over Review', async () => {
@@ -1228,6 +1428,10 @@ describe('Voice Note module', () => {
       await record(note);
       refuse(error);
       await settle();
+      if (error.code === 'network_error') {
+        refuse(error);
+        await settle();
+      }
       expect(released()).toEqual([1]);
     });
 
@@ -1257,7 +1461,7 @@ describe('Voice Note module', () => {
     it('takes the lock again for a Retry and releases it once', async () => {
       const ctx = await failedWith(new ApiError('network_error', 0));
       expect(ctx.released()).toEqual([1]);
-      void ctx.note.retry();
+      void ctx.note.retry(failure(ctx.note)?.id);
       expect(ctx.released()).toEqual([1, 0]);
       ctx.answer(result('a'));
       await settle();
@@ -1285,12 +1489,6 @@ describe('Voice Note module', () => {
       expect(ctx.keepScreenAwake).toHaveBeenCalledOnce();
       expect(ctx.released()).toEqual([1]);
 
-      // A start while a failure waits for Retry is refused before it takes a lock.
-      const kept = await failedWith(new ApiError('network_error', 0));
-      await kept.note.start(options);
-      expect(kept.keepScreenAwake).toHaveBeenCalledOnce();
-      expect(kept.released()).toEqual([1]);
-
       // A start while one is already starting takes no second lock.
       const busy = setup();
       busy.startMicrophone.mockReturnValueOnce(new Promise(() => {}));
@@ -1311,7 +1509,7 @@ describe('Voice Note module', () => {
       open();
       expect(await started).toBe('cancelled');
       expect(ctx.released()).toEqual([1]);
-      expect(ctx.note.getState().phase).toBe('failed');
+      expect(failure(ctx.note)).toBeDefined();
     });
 
     it('lets a cancelled read release nothing of a newer note', async () => {

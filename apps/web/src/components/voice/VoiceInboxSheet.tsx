@@ -8,6 +8,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { translateErrorCode } from '../../i18n/translateApiError';
 import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 import { formatClock } from '../../lib/voice';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
@@ -25,16 +26,48 @@ type VoiceInboxPhase = ReturnType<
 >['inbox']['notes'][number]['phase'];
 
 /** The Voice Inbox sheet: one row per Voice Note in recording order, with Review / See or Cancel. */
-export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
-  const { t } = useTranslation(['voice', 'settings']);
-  const { inbox } = useVoiceNoteState();
+export function VoiceInboxSheet({
+  open,
+  onClose,
+  onExited,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onExited: () => void;
+}) {
+  const { t } = useTranslation(['voice', 'settings', 'errors']);
+  const { inbox, voiceCap } = useVoiceNoteState();
   const { spokenLanguage } = usePreferredSpokenLanguage();
   const title = useRef<HTMLHeadingElement>(null);
 
+  /** Why a note failed, in the words the pill used. */
+  const failureReason = (note: (typeof inbox.notes)[number]) => {
+    if (note.phase !== 'failed') return undefined;
+    switch (note.error) {
+      case 'failed':
+        return note.rawError
+          ? translateErrorCode(t, note.rawError.code, note.rawError.params)
+          : t('voice:send.failedHint');
+      case 'unavailable':
+        return t('voice:unavailable');
+      case 'tooLong':
+        return t('voice:send.tooLong');
+      case 'unsupported':
+        return t('voice:send.unsupported');
+      case 'nothingHeard':
+        return `${t('voice:send.nothing')}. ${t('voice:send.nothingHint')}`;
+      case 'capReached':
+        return `${t('voice:send.cap', { cap: voiceCap?.cap ?? 0 })}. ${t('voice:send.capHint')}`;
+      default:
+        return undefined;
+    }
+  };
+
   return (
     <Sheet
-      open
+      open={open}
       onClose={onClose}
+      onExited={onExited}
       onEntered={() => title.current?.focus()}
       label={t('voice:inbox.sheetTitle')}
       header={
@@ -64,6 +97,7 @@ export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
             : t('voice:inbox.preview', {
                 duration: formatClock(note.durationMs ?? 0),
               });
+          const reason = failureReason(note);
           const meta = [
             note.defaultTarget === 'none'
               ? t('voice:inbox.noList')
@@ -113,7 +147,7 @@ export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
                 </Box>
                 <Box sx={{ fontSize: 12, color: 'text.secondary' }}>{meta}</Box>
                 <Box sx={{ fontSize: 12, color: 'text.secondary' }}>
-                  {t(`voice:inbox.state.${phase}`)}
+                  {reason ?? t(`voice:inbox.state.${phase}`)}
                 </Box>
               </Box>
               {isReady ? (
@@ -145,6 +179,34 @@ export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
                 >
                   {t('voice:inbox.cancel')}
                 </Button>
+              ) : phase === 'failed' ? (
+                <Box sx={{ display: 'flex', gap: '8px', flex: 'none' }}>
+                  <Button
+                    size="sm"
+                    shape="pill"
+                    variant="secondary"
+                    aria-label={t('voice:inbox.discardNote', { preview })}
+                    onClick={() => {
+                      title.current?.focus();
+                      voiceNote.discardFailed(note.id);
+                    }}
+                  >
+                    {t('voice:inbox.discard')}
+                  </Button>
+                  {note.canRetry && note.error !== 'nothingHeard' ? (
+                    <Button
+                      size="sm"
+                      shape="pill"
+                      aria-label={t('voice:inbox.retryNote', { preview })}
+                      onClick={() => {
+                        title.current?.focus();
+                        void voiceNote.retry(note.id);
+                      }}
+                    >
+                      {t('voice:inbox.retry')}
+                    </Button>
+                  ) : null}
+                </Box>
               ) : null}
             </Box>
           );

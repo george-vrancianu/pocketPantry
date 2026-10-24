@@ -141,7 +141,7 @@ export function StatusPill({ voice }: { voice: Voice }) {
           rawError
             ? translateErrorCode(t, rawError.code, rawError.params)
             : t('send.failedHint'),
-          voice.kept,
+          recording !== undefined,
         );
       case 'unavailable':
         // This browser cannot record at all: nothing to retry, only to close.

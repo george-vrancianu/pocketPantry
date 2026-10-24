@@ -256,7 +256,6 @@
     "tooLong": "That recording was too long. Try a shorter one.",
     "unsupportedTitle": "Can't read this recording",
     "unsupported": "This browser's recording format isn't supported",
-    "tipFailed": "Retry or discard the last note first",
     "noRecording": "Can't record here"
   },
   "answers": {
@@ -280,6 +279,12 @@
     "title_other": "{{count}} Voice Notes",
     "reading": "Reading {{count}}",
     "ready": "{{count}} ready",
+    "failed_one": "{{count}} failed",
+    "failed_other": "{{count}} failed",
+    "retry": "Retry",
+    "discard": "Discard",
+    "retryNote": "Retry: {{preview}}",
+    "discardNote": "Discard: {{preview}}",
     "review": "Review",
     "full": "Review your notes first",
     "sheetTitle": "Voice Inbox",
