@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -72 296 236" width="296" height="236" class="gator g-proud" data-v="enter" role="img" aria-label="Gator beaming with pride"><style>.gator g[class]:not([transform]), .gator .arc{transform-box:fill-box}
+.rig{transform-origin:50% 100%}
+.eye{transform-origin:50% 55%}
+.hat{transform-origin:50% 100%}
+.tail{transform-origin:95% 80%}
+.sparkle, .dot, .bubble, .arc{transform-origin:50% 50%}
+.jaw{transform-origin:13% 8%}
+.head{transform-origin:45% 95%}
+.qmark{transform-origin:40% 100%}
+.basket{transform-origin:50% 12%}
+.whisk{transform-origin:100% 100%}
+.spoon{transform-origin:0% 100%}
+.rack{transform-origin:50% 0%}
+.tick path{stroke-dasharray:1; stroke-dashoffset:0}
+.drop{transform-origin:50% 0%}
+[data-v="enter"] .rig{animation:popInOnce 1.2s linear 1 both}
+.g-icon[data-v="enter"] .rig{animation:tileInOnce 1.3s linear 1 both;transform-origin:50% 50%}
+.g-icon[data-v="enter"] .head{animation:riseUpOnce 1.3s linear 1 both}
+[data-v="enter"] .sparkle,[data-v="enter"] .dot,[data-v="enter"] .bubble,[data-v="enter"] .arc,[data-v="enter"] .qmark,[data-v="enter"] .drop{animation:lateInOnce 1.3s linear 1 both}
+@keyframes popInOnce{0%{opacity:0;transform:translateY(30px) scale(.4)}19%{opacity:1}38%{transform:translateY(-14px) scale(.94,1.1)}62%{transform:translateY(0) scale(1.1,.9)}81%{transform:scale(.97,1.03)}100%{transform:none;opacity:1}}
+@keyframes tileInOnce{0%{opacity:0;transform:scale(.6)}18%{opacity:1}40%{transform:scale(1.06)}60%,100%{transform:none;opacity:1}}
+@keyframes riseUpOnce{0%,30%{transform:translateY(70%)}68%{transform:translateY(-6%)}86%{transform:translateY(2%)}100%{transform:none}}
+@keyframes lateInOnce{0%,65%{opacity:0;transform:scale(.3)}88%{opacity:1;transform:scale(1.15)}100%{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){svg *{animation:none !important}}</style><g class="rig"><g transform="translate(22 16) rotate(-9 128 90)"><circle cx="124" cy="46" r="17" fill="#5E9A3C"/><path d="M116 49 Q125 38 134 49" fill="none" stroke="#2E3A1F" stroke-width="4.5" stroke-linecap="round"/><path d="M28 100 C26 62 56 40 92 42 C118 44 134 56 150 62 L198 68 C218 70 228 84 226 98 C224 112 214 122 198 124 L112 136 C78 142 30 138 28 100 Z" fill="#6FAE48"/><path d="M78 116 L218 98 C214 114 208 121 198 124 L112 136 C92 138 80 130 78 116 Z" fill="#E8E2B0"/><path d="M40 70 l-8 -6 l2 10 Z M50 58 l-6 -8 l0 11 Z M62 50 l-3 -9 l-3 10 Z" fill="#5E9A3C"/><path d="M150 78 q6 4 12 0 M170 80 q6 4 12 0" fill="none" stroke="#5E9A3C" stroke-width="3" stroke-linecap="round"/><circle cx="206" cy="74" r="9" fill="#6FAE48"/><ellipse cx="209" cy="72" rx="3.5" ry="2.5" fill="#3E6B2E"/><g class="hat"><g transform="rotate(-14 64 40)"><g fill="#fff" stroke="#CFC6B4" stroke-width="5"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><g fill="#fff"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><path d="M54 22 v12 M64 20 v14 M74 22 v12" stroke="#E2DACB" stroke-width="2.5" stroke-linecap="round"/><rect x="36" y="34" width="56" height="14" rx="5" fill="#F4EFE4" stroke="#CFC6B4" stroke-width="2.5"/></g></g><circle cx="92" cy="46" r="24" fill="#5E9A3C"/><path d="M77 52 Q93 30 109 52" fill="none" stroke="#2E3A1F" stroke-width="5.5" stroke-linecap="round"/><path d="M60 96 Q62 122 86 118 C130 113 180 106 220 92" fill="none" stroke="#3E6B2E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M100 116 l4 7 l4 -8 Z M122 113 l4 7 l4 -8 Z M144 110 l4 7 l4 -8 Z M166 107 l4 7 l4 -8 Z M188 102 l4 7 l4 -8 Z" fill="#fff"/><g class="blush"><circle cx="64" cy="100" r="10" fill="#F2A08B" opacity=".6"/></g><circle cx="150" cy="70" r="0" fill="none"/></g><g fill="#F0C96B"><g class="sparkle" style="--i:0"><path d="M22 40 l4 -12 l4 12 l12 4 l-12 4 l-4 12 l-4 -12 l-12 -4 Z"/></g><g class="sparkle" style="--i:1"><path d="M252 6 l3 -9 l3 9 l9 3 l-9 3 l-3 9 l-3 -9 l-9 -3 Z"/></g><g class="sparkle" style="--i:2"><path d="M262 150 l3 -8 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 Z"/></g><g class="sparkle" style="--i:3"><path d="M196 -26 l2 -6 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 Z"/></g></g></g></svg>

@@ -1,11 +1,4 @@
-import {
-  Box,
-  Button,
-  GatorImage,
-  Link,
-  Stack,
-  Typography,
-} from '@pocket-pantry/ui';
+import { Box, Button, Gator, Link, Stack, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IntroLook } from '../../components/IntroLook';
@@ -41,9 +34,10 @@ export function LaunchPage() {
         }}
       >
         <Stack spacing={2} sx={{ alignItems: 'center', textAlign: 'center' }}>
-          <GatorImage
+          <Gator
             mood="shopping-buddy"
             size={280}
+            loop="signature"
             alt={gatorAlt('shopping-buddy')}
           />
           <Typography variant="h1">{t('common:appName')}</Typography>
