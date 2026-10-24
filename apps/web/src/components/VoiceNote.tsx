@@ -2,6 +2,7 @@ import { VoiceReview, type VoiceSetup } from './voice/VoiceReview';
 import { VoiceAnswers } from './voice/VoiceAnswerSheet';
 import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
+import { VoiceInboxStrip } from './voice/VoiceInboxStrip';
 import { StatusPill } from './voice/StatusPill';
 import { useVoiceConfigured, type VoiceDefaultTarget } from '../lib/voice';
 import { useVoiceNote } from '../lib/useVoiceNote';
@@ -57,13 +58,17 @@ function VoiceNoteControls({
   defaultTarget: VoiceDefaultTarget;
   setup?: VoiceSetup;
 }) {
-  const voice = useVoiceNote(defaultTarget);
+  const voice = useVoiceNote(defaultTarget, {
+    openWhenReady: setup !== undefined,
+  });
 
   return (
     <>
       <VoiceButton voice={voice} target={defaultTarget} />
 
       <StatusPill voice={voice} />
+
+      {setup ? null : <VoiceInboxStrip />}
 
       <MicSheets mic={voice.mic} target={defaultTarget} />
 

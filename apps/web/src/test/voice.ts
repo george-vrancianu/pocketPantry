@@ -55,8 +55,7 @@ vi.mock('../lib/voiceNote', async (importOriginal) => {
   });
   fakes.voice.replace = () => {
     // Settle what the last test left under way, then start over.
-    current.cancelReading();
-    current.cancel({ quiet: true });
+    current.clear();
     unsubscribe();
     current = actual.createVoiceNote();
     unsubscribe = current.subscribe(emit);

@@ -22,7 +22,12 @@ import { useDockMicSlot, useReportRecording, useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
 import { useElapsedMs } from './useElapsed';
 import { abovePill, aboveMic, VOICE_LAYER } from '../../lib/voicePlacement';
-import { isPillUp, useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
+import {
+  isPillUp,
+  isStripUp,
+  useVoiceNoteState,
+  voiceNote,
+} from '../../lib/voiceNote';
 import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 
 type Voice = ReturnType<typeof useVoiceNote>;
@@ -40,8 +45,9 @@ export function VoiceButton({
   const { t } = useTranslation('voice');
   const active = voice.recording || voice.pressing;
   // While the status pill is up (reading, a failure) the tip must not cover its buttons.
-  const { phase, startedAt } = useVoiceNoteState();
-  const pillUp = isPillUp(phase);
+  const state = useVoiceNoteState();
+  const { phase, startedAt } = state;
+  const pillUp = isPillUp(phase) || isStripUp(state);
 
   const host = useVoiceHost();
   const micSlot = useDockMicSlot();
@@ -95,11 +101,7 @@ export function VoiceButton({
             fontWeight: 600,
           }}
         >
-          {voice.tip === 'busy'
-            ? t('send.tipBusy')
-            : voice.tip === 'failed'
-              ? t('send.tipFailed')
-              : t('listening.tip')}
+          {voice.tip === 'failed' ? t('send.tipFailed') : t('listening.tip')}
         </Box>
       ) : null}
       {active ? (
