@@ -248,12 +248,12 @@ function LocationEditor({ action }: { action: VoiceReviewAction }) {
           captionSx={eyebrow}
           voicePicker={action.id}
         />
+        {action.location === null && action.defaults.location ? (
+          <Typography sx={note}>
+            {t('voice:review.edit.locationDefault')}
+          </Typography>
+        ) : null}
       </Box>
-      {action.location === null && action.defaults.location ? (
-        <Typography sx={note}>
-          {t('voice:review.edit.locationDefault')}
-        </Typography>
-      ) : null}
     </Box>
   );
 }

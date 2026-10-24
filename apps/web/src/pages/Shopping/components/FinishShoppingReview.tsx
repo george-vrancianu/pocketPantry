@@ -47,7 +47,8 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
           aria-label={line.name}
           spacing={1.5}
           sx={{
-            p: 2,
+            py: 2,
+            px: { xs: 1, sm: 2 },
             border: 1,
             borderColor: 'divider',
             borderRadius: radius.card,

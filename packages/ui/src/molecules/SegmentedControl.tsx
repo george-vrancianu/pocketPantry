@@ -33,8 +33,8 @@ const BOLD_EXTRA = 0.1;
  * A dense label's size: the track's width shared out over every label's
  * characters (about 0.6 em each, plus 10 % of the longest label for the
  * pressed option drawn bold), from 13 px down to 11 px, so the longest labels
- * (Romanian Locations) fit whole in the 262 px a 320 px phone gives the Voice review's toggle (the
- * Finish Shopping card, the narrowest host, gives 246 px).
+ * (Romanian Locations) fit whole in the 256 px a 320 px phone gives them in the narrowest host, the Review
+ * panel (the Voice review and Finish Shopping give 262 px).
  * Never cut or shortened: a label still too long at the 11 px floor overflows
  * its segment (a single word cannot wrap; labels of several words wrap
  * between words).

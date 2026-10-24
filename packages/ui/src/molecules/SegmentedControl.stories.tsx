@@ -75,11 +75,11 @@ const LABELS: Record<Lang, Record<Location, string>> = {
   },
 };
 
-function DenseSegments({ lang, width = 246 }: { lang: Lang; width?: number }) {
+function DenseSegments({ lang, width = 256 }: { lang: Lang; width?: number }) {
   const [value, setValue] = useState<Location>('fridge');
   const labels = LABELS[lang];
   return (
-    // The narrowest form on a 320 px phone: the Finish Shopping card, about 246 px.
+    // The narrowest form on a 320 px phone: the phone Review panel, about 256 px.
     <Box sx={{ width }} lang={lang}>
       <SegmentedControl
         label={CAPTIONS[lang]}
