@@ -173,6 +173,7 @@
     "reading_failed": "Vi kunne ikke læse en opskrift fra den side. Prøv igen, eller prøv et andet link.",
     "reading_unavailable_text": "Det er ikke muligt at læse opskrifter lige nu. Prøv igen om et øjeblik.",
     "reading_failed_text": "Vi kunne ikke læse en opskrift fra den tekst. Prøv igen, eller tjek, at du har indsat hele opskriften.",
+    "read_in_progress": "En opskrift bliver allerede læst. Vent, til den er færdig.",
     "cap_reached_one": "Du har brugt din {{count}} opskriftslæsning fra links i dag. Dine læsninger nulstilles {{when}}.",
     "cap_reached_other": "Du har brugt alle {{count}} opskriftslæsninger fra links i dag. Dine læsninger nulstilles {{when}}.",
     "cap_reached_no_time_one": "Du har brugt din {{count}} opskriftslæsning fra links i dag. Prøv igen i morgen.",

@@ -1,5 +1,5 @@
 import { Inject } from '@nestjs/common';
-import { lookup as dnsLookup } from 'node:dns/promises';
+import { Resolver } from 'node:dns/promises';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import { isIP } from 'node:net';
@@ -67,9 +67,49 @@ export type PageFetcherOptions = {
  * here is always a non-default one. No env var or flag relaxes this; tests
  * pass their own options.
  */
+/** The slice of `dns.promises.Resolver` the lookup uses; tests pass a fake. */
+export type AddressResolver = Pick<Resolver, 'resolve4' | 'resolve6'>;
+
+/**
+ * Every A and AAAA address of a host. Unlike `dns.lookup`, which runs on the libuv
+ * threadpool (a few slow lookups starve file and crypto work), a `Resolver` talks to
+ * the nameserver through c-ares on the event loop. A family with no records
+ * (`ENODATA`) is fine; NXDOMAIN, a timeout or any other failure rejects, which the
+ * fetcher reports as `unreadable`. It does not read `/etc/hosts`.
+ */
+export async function resolveAddresses(
+  resolver: AddressResolver,
+  hostname: string,
+): Promise<ResolvedAddress[]> {
+  const settled = await Promise.allSettled([
+    resolver.resolve4(hostname),
+    resolver.resolve6(hostname),
+  ]);
+  const found: ResolvedAddress[] = [];
+  const families = [4, 6];
+  settled.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      for (const address of result.value) {
+        found.push({ address, family: families[index] });
+      }
+    } else if ((result.reason as { code?: string })?.code !== 'ENODATA') {
+      throw result.reason;
+    }
+  });
+  return found;
+}
+
+let sharedResolver: Resolver | undefined;
+
+/** The production lookup: c-ares through one shared `Resolver` with a short timeout and two tries. */
+export function resolverLookup(hostname: string): Promise<ResolvedAddress[]> {
+  sharedResolver ??= new Resolver({ timeout: 2500, tries: 2 });
+  return resolveAddresses(sharedResolver, hostname);
+}
+
 export const STRICT_PAGE_FETCHER_OPTIONS: Readonly<PageFetcherOptions> =
   Object.freeze({
-    lookup: (hostname) => dnsLookup(hostname, { all: true, verbatim: true }),
+    lookup: resolverLookup,
     isAddressAllowed: isPublicAddress,
     isPortAllowed: (port) => port === '',
     timeoutMs: 10_000,

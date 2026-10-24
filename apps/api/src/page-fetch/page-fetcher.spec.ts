@@ -6,6 +6,8 @@ import {
   PAGE_FETCHER_USER_AGENT,
   PageFetchError,
   STRICT_PAGE_FETCHER_OPTIONS,
+  resolveAddresses,
+  resolverLookup,
   type PageFetcherOptions,
 } from './page-fetcher';
 
@@ -493,6 +495,7 @@ describe('page fetcher', () => {
       expect(Date.now() - started).toBeLessThan(1500);
     });
 
+    // Fake timers can't drive real sockets, so this short real deadline is deliberate.
     it('cuts off a chunked body with no Content-Length once over the cap', async () => {
       let closed: Promise<void> = Promise.resolve();
       routes['/r'] = (req, res) => {
@@ -520,6 +523,7 @@ describe('page fetcher', () => {
       expect(Date.now() - started).toBeLessThan(1500);
     });
 
+    // Fake timers can't drive real sockets, so this short real deadline is deliberate.
     it('times out a slow-drip body', async () => {
       routes['/r'] = (_req, res) => {
         res.setHeader('Content-Type', 'text/html');
@@ -542,6 +546,7 @@ describe('page fetcher', () => {
       expect(await kindOf(fetcher.fetchPage(`${base()}/r`))).toBe('unreadable');
     });
 
+    // Fake timers can't drive real sockets, so this short real deadline is deliberate.
     it('shares one deadline across redirect hops', async () => {
       for (let i = 0; i < 4; i += 1) {
         routes[`/s${i}`] = (_req, res) => {
@@ -605,5 +610,74 @@ describe('page fetcher', () => {
         false,
       );
     });
+  });
+});
+
+describe('the production lookup', () => {
+  const fake = (v4: () => Promise<string[]>, v6: () => Promise<string[]>) => ({
+    resolve4: jest.fn(v4),
+    resolve6: jest.fn(v6),
+  });
+  const kindOf = async (promise: Promise<unknown>) => {
+    const error: unknown = await promise.then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(PageFetchError);
+    return (error as PageFetchError).kind;
+  };
+  const failure = (code: string) => Object.assign(new Error(code), { code });
+
+  it('is the c-ares Resolver lookup, not dns.lookup on the threadpool', () => {
+    expect(STRICT_PAGE_FETCHER_OPTIONS.lookup).toBe(resolverLookup);
+  });
+
+  it('returns every A and AAAA address', async () => {
+    const resolver = fake(
+      () => Promise.resolve(['93.184.216.34', '10.0.0.1']),
+      () => Promise.resolve(['2606:2800::1']),
+    );
+    expect(await resolveAddresses(resolver as never, 'example.com')).toEqual([
+      { address: '93.184.216.34', family: 4 },
+      { address: '10.0.0.1', family: 4 },
+      { address: '2606:2800::1', family: 6 },
+    ]);
+  });
+
+  it('accepts NODATA for one family', async () => {
+    const resolver = fake(
+      () => Promise.resolve(['93.184.216.34']),
+      () => Promise.reject(failure('ENODATA')),
+    );
+    expect(await resolveAddresses(resolver as never, 'example.com')).toEqual([
+      { address: '93.184.216.34', family: 4 },
+    ]);
+  });
+
+  it.each(['ENOTFOUND', 'ETIMEOUT', 'ESERVFAIL'])(
+    'rejects on %s, which the fetcher reports as unreadable',
+    async (code) => {
+      const resolver = fake(
+        () => Promise.reject(failure(code)),
+        () => Promise.reject(failure('ENODATA')),
+      );
+      const fetcher = createPageFetcher({
+        ...STRICT_PAGE_FETCHER_OPTIONS,
+        lookup: (host) => resolveAddresses(resolver as never, host),
+      });
+      expect(await kindOf(fetcher.fetchPage('https://example.com/'))).toBe(
+        'unreadable',
+      );
+    },
+  );
+
+  it('rejects when one family times out even if the other answered', async () => {
+    const resolver = fake(
+      () => Promise.resolve(['93.184.216.34']),
+      () => Promise.reject(failure('ETIMEOUT')),
+    );
+    await expect(
+      resolveAddresses(resolver as never, 'example.com'),
+    ).rejects.toMatchObject({ code: 'ETIMEOUT' });
   });
 });

@@ -817,6 +817,18 @@ describe('Recipe from Link (integration)', () => {
       expect(prompts).toHaveLength(2);
     });
 
+    it('answers link.cap_reached before any fetch for a Member already at the cap, and a duplicate stays free', async () => {
+      await read('https://example.com/one').expect(200);
+      await read('https://example.com/two').expect(200);
+      fetched.length = 0;
+      const res = await read('https://example.com/three').expect(429);
+      expect(code(res)).toBe('link.cap_reached');
+      expect(res.body).toMatchObject({ params: { cap: 2 } });
+      expect(fetched).toEqual([]);
+      // Pasted text is still charged inside the AI step, so it is refused too.
+      await member.post('/from-link', { text: 'Soup' }).expect(429);
+    });
+
     it('answers link.cap_reached with the cap and the next UTC midnight', async () => {
       await read('https://example.com/one').expect(200);
       await read('https://example.com/two').expect(200);
@@ -1094,6 +1106,12 @@ describe('Recipe from Link (integration)', () => {
           '&#'.repeat(500_000) + '&#x'.repeat(100_000),
         ],
         ['a 3 MB page', '<p>some recipe words</p>'.repeat(130_000)],
+        [
+          'a Recipe node with deeply nested arrays',
+          ldScript(
+            `{"@type":"Recipe","name":"x","recipeInstructions":${'['.repeat(400_000)}${']'.repeat(400_000)}}`,
+          ) + '<body>Some visible words</body>',
+        ],
       ];
       it.each(cases)('%s', async (_name, html) => {
         serve(html);
@@ -1102,6 +1120,40 @@ describe('Recipe from Link (integration)', () => {
         expect(Date.now() - started).toBeLessThan(5000);
         expect([200, 422]).toContain(res.status);
       });
+    });
+  });
+
+  describe('one read in flight per Member', () => {
+    it('answers link.read_in_progress to a second concurrent read, and the first succeeds', async () => {
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      let started: () => void = () => undefined;
+      const firstStarted = new Promise<void>((resolve) => {
+        started = resolve;
+      });
+      page = async () => {
+        started();
+        await gate;
+        return { finalUrl: 'https://example.com/', html: jsonLdPage(PANCAKES) };
+      };
+      const first = read('https://example.com/slow-one').then((r) => r);
+      await firstStarted;
+      const second = await read('https://example.com/slow-two').expect(429);
+      expect(code(second)).toBe('link.read_in_progress');
+      expect(fetched).toHaveLength(1);
+      release();
+      expect((await first).status).toBe(200);
+      // Released: the Member can read again.
+      serve(jsonLdPage(PANCAKES));
+      await read('https://example.com/after').expect(200);
+    });
+
+    it('releases the Member after a failed read', async () => {
+      page = () => Promise.reject(new PageFetchError('unreadable', 'timeout'));
+      await read('https://example.com/slow').expect(422);
+      await read('https://example.com/slow').expect(422);
     });
   });
 
@@ -1313,6 +1365,21 @@ describe('Already in your Recipes (integration)', () => {
     await read('https://example.com/other').expect(200);
     await read('https://example.com/another').expect(200);
     expect(prompts).toHaveLength(2);
+  });
+
+  it('refuses a sourceLanguage without a sourceLink', async () => {
+    const res = await member
+      .post('', {
+        title: `Lang ${stamp}-${++count}`,
+        servings: 2,
+        locale: 'en',
+        parentId: null,
+        lines: [{ ingredientId: flour, quantity: 50, unit: 'g' }],
+        steps: [{ text: 'Whisk' }],
+        sourceLanguage: 'ro',
+      })
+      .expect(400);
+    expect(code(res)).toBe('validation_failed');
   });
 
   it('keeps the Source Link normalised on create', async () => {

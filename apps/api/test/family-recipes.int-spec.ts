@@ -1430,7 +1430,10 @@ describe('Family Recipes (integration)', () => {
       });
 
     it('is saved lower-cased, returned on the detail, and kept by an update', async () => {
-      const created = await familyRecipe(a1, null, { sourceLanguage: ' RO ' });
+      const created = await familyRecipe(a1, null, {
+        sourceLink: link,
+        sourceLanguage: ' RO ',
+      });
       expect(created.sourceLanguage).toBe('ro');
       const detail = (await a1.get(`/${created.id}`).expect(200))
         .body as RecipeDetail;
@@ -1491,7 +1494,10 @@ describe('Family Recipes (integration)', () => {
 
     it('is not copied into a Variant draft', async () => {
       const base = await catalogBase();
-      const variant = await familyRecipe(a1, base.id, { sourceLanguage: 'ro' });
+      const variant = await familyRecipe(a1, base.id, {
+        sourceLink: link,
+        sourceLanguage: 'ro',
+      });
       const draft = (await a1.get(`/${variant.id}/variant-draft`).expect(200))
         .body as FamilyRecipeDraft;
       expect(draft).not.toHaveProperty('sourceLanguage');

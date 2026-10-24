@@ -96,6 +96,9 @@ function suppliedOf(state: unknown): NewRecipeState | null {
   } = state as Partial<NewRecipeState>;
   if (typeof draft !== 'object' || draft === null) return null;
   if (!Array.isArray(draft.lines) || !Array.isArray(draft.steps)) return null;
+  if (!Array.isArray(draft.tips)) return null;
+  if (typeof draft.guidance !== 'object' || draft.guidance === null)
+    return null;
   if (closestBases !== undefined && !Array.isArray(closestBases)) return null;
   if (
     hiddenByAllergiesCount !== undefined &&

@@ -137,21 +137,26 @@ export const sourceLanguageInput = z
   .regex(/^[a-z]{2,3}(-[a-z0-9]{2,5})?$/);
 
 /** Creating a Family Recipe: `parentId` makes it a Variant, null/absent a standalone Base Recipe. */
-export const familyRecipeCreate = familyRecipeUpdate.extend({
-  parentId: id.nullable().default(null),
-  /** Optional: a saved draft brings its guidance along; edits go through the guidance endpoint. */
-  guidance: guidanceBody.optional(),
-  /**
-   * Optional step Tips for a new Recipe (a Variant draft brings the source's).
-   * `stepIndex` is the position of a Step in `steps` of this same document;
-   * the array order is the Tip order. Later edits use the Tip endpoints.
-   */
-  tips: z.array(newStepTip).max(MAX_TIPS).optional(),
-  /** Optional: the page a Recipe from Link was read from, normalised on the way in. Set at creation only; an update can only clear it. */
-  sourceLink: sourceLinkInput.optional(),
-  /** Optional: the language a translated Recipe from Link was read in. Set at creation only. */
-  sourceLanguage: sourceLanguageInput.optional(),
-});
+export const familyRecipeCreate = familyRecipeUpdate
+  .extend({
+    parentId: id.nullable().default(null),
+    /** Optional: a saved draft brings its guidance along; edits go through the guidance endpoint. */
+    guidance: guidanceBody.optional(),
+    /**
+     * Optional step Tips for a new Recipe (a Variant draft brings the source's).
+     * `stepIndex` is the position of a Step in `steps` of this same document;
+     * the array order is the Tip order. Later edits use the Tip endpoints.
+     */
+    tips: z.array(newStepTip).max(MAX_TIPS).optional(),
+    /** Optional: the page a Recipe from Link was read from, normalised on the way in. Set at creation only; an update can only clear it. */
+    sourceLink: sourceLinkInput.optional(),
+    /** Optional: the language a translated Recipe from Link was read in. Set at creation only. */
+    sourceLanguage: sourceLanguageInput.optional(),
+  })
+  .refine(
+    (body) => body.sourceLanguage === undefined || Boolean(body.sourceLink),
+    { message: 'sourceLanguage needs a sourceLink', path: ['sourceLanguage'] },
+  );
 
 /** The most pasted recipe text one read takes. */
 export const MAX_PASTED_TEXT_CHARS = 50_000;

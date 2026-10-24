@@ -76,12 +76,17 @@ export function extractJsonLdRecipe(html: string): string | null {
     } catch {
       continue;
     }
-    const recipe = findRecipe(parsed);
-    if (!recipe) continue;
-    const slim = Object.fromEntries(
-      Object.entries(recipe).filter(([key]) => !BULKY_KEYS.includes(key)),
-    );
-    return JSON.stringify(slim).slice(0, MAX_JSON_LD_CHARS);
+    // A hostile block (deeply nested arrays) can overflow the stack here: skip it, never 500.
+    try {
+      const recipe = findRecipe(parsed);
+      if (!recipe) continue;
+      const slim = Object.fromEntries(
+        Object.entries(recipe).filter(([key]) => !BULKY_KEYS.includes(key)),
+      );
+      return JSON.stringify(slim).slice(0, MAX_JSON_LD_CHARS);
+    } catch {
+      continue;
+    }
   }
   return null;
 }

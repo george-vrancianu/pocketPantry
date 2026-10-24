@@ -60,7 +60,29 @@ export class LinkRecipesService {
     private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
+  /**
+   * Members with a read in flight: one at a time each, so fetches are not a free flood.
+   * In memory, so this holds per API process (a second process would not see it).
+   */
+  private readonly reading = new Set<string>();
+
   async read(
+    memberId: string,
+    body: Pick<FromLinkBody, 'url' | 'text' | 'language' | 'force'>,
+    locale: CatalogLocale,
+  ): Promise<RecipeFromLink> {
+    if (this.reading.has(memberId)) {
+      throw new ApiException(429, 'link.read_in_progress');
+    }
+    this.reading.add(memberId);
+    try {
+      return await this.readOne(memberId, body, locale);
+    } finally {
+      this.reading.delete(memberId);
+    }
+  }
+
+  private async readOne(
     memberId: string,
     body: Pick<FromLinkBody, 'url' | 'text' | 'language' | 'force'>,
     locale: CatalogLocale,
@@ -77,6 +99,8 @@ export class LinkRecipesService {
         const existing = await this.liveRecipeOfLink(familyId, sourceLink);
         if (existing !== null) return { kind: 'duplicate', recipeId: existing };
       }
+      // Already at the cap: refuse before the fetch. The use itself is still counted only in `ask`.
+      await this.caps.assertBelowCap(memberId, 'link');
       input = await this.readingInput(sourceLink);
     } else if (body.text !== undefined) {
       input = { kind: 'pasted-text', text: body.text };
@@ -165,9 +189,20 @@ export class LinkRecipesService {
       }
       throw error;
     }
-    const json = extractJsonLdRecipe(page.html);
+    // Hostile markup must never become a 500: a parser that throws counts as finding nothing.
+    let json: string | null = null;
+    try {
+      json = extractJsonLdRecipe(page.html);
+    } catch {
+      json = null;
+    }
     if (json !== null) return { kind: 'json-ld', json };
-    const text = visibleText(page.html);
+    let text = '';
+    try {
+      text = visibleText(page.html);
+    } catch {
+      text = '';
+    }
     if (text === '') throw linkNoRecipe();
     return { kind: 'page-text', text };
   }

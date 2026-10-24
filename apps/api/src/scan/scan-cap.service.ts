@@ -77,6 +77,41 @@ export class ScanCapService {
     return day;
   }
 
+  /**
+   * Throws the cap's `*.cap_reached` (same shape as `consume`) when the Member is already at the
+   * `kind` cap today, without counting a use. A cheap early refusal before slow work; `consume`
+   * stays the one place a use is counted.
+   */
+  async assertBelowCap(
+    memberId: string,
+    kind: UsageKind = 'scan',
+    now = new Date(),
+  ): Promise<void> {
+    const limit = LIMITS[kind];
+    const cap = this.config.get(limit.setting, { infer: true });
+    if (cap === 0) return;
+    const day = utcDay(now);
+    const [row] = await this.database
+      .select({ count: scanUsage.count })
+      .from(scanUsage)
+      .where(
+        and(
+          eq(scanUsage.memberId, memberId),
+          eq(scanUsage.day, day),
+          eq(scanUsage.kind, kind),
+        ),
+      );
+    if ((row?.count ?? 0) >= cap) {
+      throw new ApiException(
+        429,
+        limit.code,
+        kind === 'voice' || kind === 'link'
+          ? { cap, resetsAt: nextUtcMidnight(day) }
+          : { cap },
+      );
+    }
+  }
+
   /** Counts one use of `kind` before calling the provider, and hands it back if the provider fails. */
   async withinCap<T>(
     memberId: string,

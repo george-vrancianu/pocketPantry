@@ -173,6 +173,7 @@
     "reading_failed": "Nu am putut citi o rețetă de pe pagina aceea. Încearcă din nou sau încearcă alt link.",
     "reading_unavailable_text": "Citirea rețetelor nu este disponibilă acum. Încearcă din nou peste puțin timp.",
     "reading_failed_text": "Nu am putut citi o rețetă din textul acela. Încearcă din nou sau verifică dacă ai lipit rețeta completă.",
+    "read_in_progress": "O rețetă este deja în curs de citire. Așteaptă să se termine.",
     "cap_reached_one": "Ai folosit singura citire de rețetă dintr-un link de azi. Citirile se reînnoiesc {{when}}.",
     "cap_reached_few": "Ai folosit toate cele {{count}} citiri de rețete din linkuri de azi. Citirile se reînnoiesc {{when}}.",
     "cap_reached_other": "Ai folosit toate cele {{count}} de citiri de rețete din linkuri de azi. Citirile se reînnoiesc {{when}}.",

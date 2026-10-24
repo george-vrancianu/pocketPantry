@@ -230,6 +230,7 @@ describe('RecipeFromLinkPage', () => {
     ['scan.provider_refused', 502, /could not read a recipe from that page/],
     ['scan.provider_incomplete', 502, /could not read a recipe from that page/],
     ['scan.result_invalid', 502, /could not read a recipe from that page/],
+    ['link.read_in_progress', 429, /recipe is already being read/],
   ])(
     'says what went wrong for %s and keeps the link',
     async (code, status, copy) => {
