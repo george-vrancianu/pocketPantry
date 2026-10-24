@@ -112,6 +112,18 @@ describe('Gator', () => {
     expect(motion(container)).toBe('idle');
   });
 
+  it('does not replay a cut-short Entrance when the mood changes back', () => {
+    const { container, rerender } = render(<Gator mood="happy" decorative />);
+    advance(500);
+    rerender(<Gator mood="worried" decorative />);
+    expect(motion(container)).toBe('idle');
+    advance(300);
+    rerender(<Gator mood="happy" decorative />);
+    expect(motion(container)).toBe('idle');
+    advance(1000);
+    expect(motion(container)).toBe('idle');
+  });
+
   it('switches loops when the loop changes', () => {
     const { container, rerender } = render(
       <Gator mood="happy" decorative entrance={false} />,
@@ -150,6 +162,14 @@ describe('Gator', () => {
       advance(ONE_SHOT_MS.entrance);
       expect(motion(container)).toBe('signature');
       rerender(<Gator mood="worried" decorative />);
+      expect(motion(container)).toBe('idle');
+    });
+
+    it('shows no half-played Entrance if reduced motion is turned off later', () => {
+      const { container, rerender } = render(<Gator mood="happy" decorative />);
+      stubReducedMotion(false);
+      advance(500);
+      rerender(<Gator mood="happy" decorative />);
       expect(motion(container)).toBe('idle');
     });
   });

@@ -37,6 +37,8 @@ export function gatorLayout(mood: AnimatedGatorMood, size: number) {
   const { drawing, view } = GATOR_GEOMETRY[mood];
   const scale = size / drawing[2];
   return {
+    /** The layout box: what the old static art took up. */
+    box: { width: drawing[2] * scale, height: drawing[3] * scale },
     width: view[2] * scale,
     height: view[3] * scale,
     marginTop: (view[1] - drawing[1]) * scale,

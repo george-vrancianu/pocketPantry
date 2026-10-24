@@ -45,8 +45,8 @@ export type GatorProps = {
     }
 );
 
-/** A one-shot in progress, tied to the mood it started on. */
-type Shot = { kind: OneShot; mood: AnimatedGatorMood };
+/** A one-shot in progress. */
+type Shot = { kind: OneShot };
 
 /**
  * Gator in motion: an Entrance on mount, then the caller's loop. The motion
@@ -63,8 +63,15 @@ export function Gator({
 }: GatorProps) {
   const reduceMotion = usePrefersReducedMotion();
   const [shot, setShot] = useState<Shot | null>(() =>
-    entrance ? { kind: 'entrance', mood } : null,
+    entrance && !reduceMotion ? { kind: 'entrance' } : null,
   );
+  const [shotMood, setShotMood] = useState(mood);
+  if (shotMood !== mood) {
+    // A one-shot belongs to the mood it started on: a new mood goes straight
+    // to its loop, and the cut-short one-shot never comes back.
+    setShotMood(mood);
+    setShot(null);
+  }
 
   useEffect(() => {
     if (!shot) return;
@@ -72,9 +79,8 @@ export function Gator({
     return () => clearTimeout(id);
   }, [shot]);
 
-  // A one-shot belongs to the mood it started on: a new mood goes straight to
-  // its loop. With reduced motion there are no one-shots at all.
-  const active = !reduceMotion && shot?.mood === mood ? shot.kind : null;
+  // With reduced motion there are no one-shots at all.
+  const active = !reduceMotion && shot ? shot.kind : null;
   const motion: GatorMotion = active ?? loop;
   const files = ART[mood]!;
   const layout = gatorLayout(mood, size);
@@ -87,15 +93,33 @@ export function Gator({
   }, [loopSrc]);
 
   return (
-    <img
-      src={files[motion]}
-      data-mood={mood}
-      data-motion={motion}
-      alt={decorative ? '' : alt}
-      aria-hidden={decorative ? true : undefined}
-      width={layout.width}
-      style={{ ...layout, display: 'block', maxWidth: 'none' }}
-      draggable={false}
-    />
+    <span
+      style={{
+        display: 'block',
+        width: layout.box.width,
+        height: layout.box.height,
+      }}
+    >
+      <img
+        src={files[motion]}
+        data-mood={mood}
+        data-motion={motion}
+        alt={decorative ? '' : alt}
+        aria-hidden={decorative ? true : undefined}
+        width={Math.round(layout.width)}
+        style={{
+          display: 'block',
+          maxWidth: 'none',
+          overflow: 'visible',
+          width: layout.width,
+          height: layout.height,
+          marginTop: layout.marginTop,
+          marginLeft: layout.marginLeft,
+          marginRight: layout.marginRight,
+          marginBottom: layout.marginBottom,
+        }}
+        draggable={false}
+      />
+    </span>
   );
 }
