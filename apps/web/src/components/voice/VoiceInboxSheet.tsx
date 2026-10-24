@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   Sheet,
@@ -6,11 +7,15 @@ import {
   palette,
   radius,
 } from '@pocket-pantry/ui';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 import { formatClock } from '../../lib/voice';
-import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
+import {
+  MAX_APPLY_ACTIONS,
+  useVoiceNoteState,
+  voiceNote,
+} from '../../lib/voiceNote';
 import { failureReason } from './failureReason';
 
 const glyph: Record<VoiceInboxPhase, string> = {
@@ -39,6 +44,11 @@ export function VoiceInboxSheet({
   const { inbox, voiceCap } = useVoiceNoteState();
   const { spokenLanguage } = usePreferredSpokenLanguage();
   const title = useRef<HTMLHeadingElement>(null);
+  // "Review all" was refused: too many Voice Actions for one Apply.
+  const [refusedAt, setRefusedAt] = useState<number | null>(null);
+  const reviewable = inbox.notes.filter((n) => n.phase === 'review').length;
+  // The refusal holds only for the notes it was made for.
+  const tooMany = refusedAt === reviewable;
 
   /** Why a note failed, in the words the pill used. */
   const failureText = (note: (typeof inbox.notes)[number]) => {
@@ -62,6 +72,31 @@ export function VoiceInboxSheet({
       onExited={onExited}
       onEntered={() => title.current?.focus()}
       label={t('voice:inbox.sheetTitle')}
+      footer={
+        reviewable > 1 ? (
+          <Box sx={{ p: '12px 16px calc(20px + env(safe-area-inset-bottom))' }}>
+            {tooMany ? (
+              <Box sx={{ mb: '10px' }}>
+                <Alert>
+                  {t('voice:inbox.reviewAllTooMany', {
+                    max: MAX_APPLY_ACTIONS,
+                  })}
+                </Alert>
+              </Box>
+            ) : null}
+            <Button
+              fullWidth
+              onClick={() => {
+                const outcome = voiceNote.openMerged();
+                setRefusedAt(outcome === 'tooMany' ? reviewable : null);
+                if (outcome === 'opened') onClose();
+              }}
+            >
+              {t('voice:inbox.reviewAll', { count: reviewable })}
+            </Button>
+          </Box>
+        ) : null
+      }
       header={
         <Box sx={{ px: 2.5, pt: 1.5, pb: 1.5 }}>
           <Typography

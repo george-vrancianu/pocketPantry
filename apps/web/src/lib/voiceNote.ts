@@ -46,6 +46,15 @@ export type VoiceErrorCode =
   /** The Voice Cap is used up; the number is in `voiceCap`. */
   | 'capReached';
 
+/** One Voice Note in a merged Review: what "What I heard" shows of it. */
+export type MergedNote = {
+  id: number;
+  defaultTarget: VoiceDefaultTarget;
+  spokenLanguage?: ScanLanguage;
+  durationMs?: number;
+  transcript: string;
+};
+
 export type VoiceNoteState = {
   phase: VoicePhase;
   /** The page that recorded: the default target of the Voice Note. */
@@ -75,6 +84,11 @@ export type VoiceNoteState = {
   voiceCap?: { cap: number; resetsAt: number };
   /** When the microphone went live (ms since the epoch), while recording. The clock is the card's. */
   startedAt?: number;
+  /**
+   * Set while "Review all" is open: the Voice Notes merged into this one Review, in recording order. The
+   * `proposal` is then all of their transcripts, Voice Actions and answers together.
+   */
+  merged?: MergedNote[];
   /** The Voice Inbox: how many Voice Notes are being read (or waiting), ready, failed, and in all. */
   inbox: {
     reading: number;
@@ -173,6 +187,11 @@ const MAX_TIMEOUT = 2 ** 31 - 1;
 export const MAX_READS = 2;
 /** How many Voice Notes the Voice Inbox holds. */
 export const MAX_NOTES = 5;
+/** The most Voice Actions one Apply takes (the API's limit); a merged Review over it is refused. */
+export const MAX_APPLY_ACTIONS = 50;
+
+/** What `openMerged` came to. */
+export type MergeOutcome = 'opened' | 'tooMany' | 'refused';
 
 /** One Voice Note in the list: its own phase, audio, Default List, Spoken Language, proposal and error. */
 type VoiceNoteEntry = {
@@ -202,6 +221,8 @@ type VoiceNoteStore = {
   /** The Default List of the last note, kept for the idle view. */
   lastTarget: VoiceDefaultTarget;
   voiceCap?: { cap: number; resetsAt: number };
+  /** The ids of the Voice Notes in the open merged Review ("Review all"), in recording order. */
+  merged?: number[];
 };
 
 const initial: VoiceNoteStore = { notes: [], lastTarget: 'shopping' };
@@ -273,6 +294,30 @@ export function createVoiceNote(
         inbox,
       };
     }
+    if (store.merged) {
+      const notes = store.notes.filter((n) => store.merged?.includes(n.id));
+      return {
+        phase: notes.every((n) => n.phase === 'applying')
+          ? 'applying'
+          : 'review',
+        // The notes may come from different pages: no list is the page's own.
+        defaultTarget: 'none',
+        proposal: {
+          transcript: notes.map((n) => n.proposal?.transcript ?? '').join('\n'),
+          actions: notes.flatMap((n) => n.proposal?.actions ?? []),
+          answers: notes.flatMap((n) => n.proposal?.answers ?? []),
+        },
+        merged: notes.map((n) => ({
+          id: n.id,
+          defaultTarget: n.defaultTarget,
+          spokenLanguage: n.spokenLanguage ?? n.recording?.spokenLanguage,
+          durationMs: n.durationMs ?? n.recording?.durationMs,
+          transcript: n.proposal?.transcript ?? '',
+        })),
+        voiceCap,
+        inbox,
+      };
+    }
     const open = openNote();
     if (!open) {
       return {
@@ -332,12 +377,6 @@ export function createVoiceNote(
       notes: store.notes.map((n) => (n.id === id ? patch(n) : n)),
     };
   }
-  /** Changes the open Voice Note in place. */
-  function patchOpen(patch: (note: VoiceNoteEntry) => VoiceNoteEntry) {
-    if (store.openId === undefined) return;
-    patchNote(store.openId, patch);
-    emit();
-  }
   /** Takes a Voice Note out of the list; a waiting failure, if any, comes up. */
   function removeNote(id: number) {
     store = {
@@ -347,22 +386,48 @@ export function createVoiceNote(
     };
     emit();
   }
+  /** The Voice Notes the Review on screen is made of: the merged ones, else the open one. */
+  const reviewIds = () =>
+    store.merged ?? (store.openId === undefined ? [] : [store.openId]);
+  /** Review: changes the Voice Actions of every note in it; each edit lands in the note it came from. */
+  const mapActions = (
+    change: (actions: VoiceReviewAction[]) => VoiceReviewAction[],
+  ) => {
+    const ids = reviewIds();
+    if (phase() !== 'review' || ids.length === 0) return;
+    store = {
+      ...store,
+      notes: store.notes.map((n) =>
+        ids.includes(n.id) && n.proposal
+          ? {
+              ...n,
+              proposal: { ...n.proposal, actions: change(n.proposal.actions) },
+            }
+          : n,
+      ),
+    };
+    emit();
+  };
   /** Review: swaps the chosen list's resolution into each action with a list to pick that `matches`. `byList` stays, so the pick can change. */
   const swapLists = (
     list: VoiceList,
     matches: (action: VoiceReviewAction) => boolean,
-  ) => {
-    const proposal = openNote()?.proposal;
-    if (phase() !== 'review' || !proposal) return;
-    patchOpen((n) => ({
-      ...n,
-      proposal: {
-        ...proposal,
-        actions: proposal.actions.map((a) =>
-          a.byList && matches(a) ? { ...a.byList[list], byList: a.byList } : a,
-        ),
-      },
-    }));
+  ) =>
+    mapActions((actions) =>
+      actions.map((a) =>
+        a.byList && matches(a) ? { ...a.byList[list], byList: a.byList } : a,
+      ),
+    );
+  /** Review: moves every note in it to a phase. */
+  const phaseAll = (next: 'review' | 'applying') => {
+    const ids = reviewIds();
+    store = {
+      ...store,
+      notes: store.notes.map((n) =>
+        ids.includes(n.id) ? { ...n, phase: next } : n,
+      ),
+    };
+    emit();
   };
   /** A failed Voice Note by id, else the open one. */
   const failedNote = (id?: number) => {
@@ -370,9 +435,16 @@ export function createVoiceNote(
       id === undefined ? openNote() : store.notes.find((n) => n.id === id);
     return note?.phase === 'failed' ? note : undefined;
   };
-  /** Closes the open Voice Note's sheet by taking it out of the list. */
+  /** Closes the Review on screen by taking every note in it out of the list. */
   const removeOpen = () => {
-    if (store.openId !== undefined) removeNote(store.openId);
+    const ids = reviewIds();
+    store = {
+      ...store,
+      notes: store.notes.filter((n) => !ids.includes(n.id)),
+      openId: undefined,
+      merged: undefined,
+    };
+    emit();
   };
 
   /**
@@ -553,7 +625,7 @@ export function createVoiceNote(
     if (starting || session || finishing) return 'active';
     const open = openNote();
     // The mic is not offered while the open note is a Review or answer sheet, or still being read (Setup's single note).
-    if (open && open.phase !== 'failed') return 'review';
+    if (store.merged || (open && open.phase !== 'failed')) return 'review';
     // Failures with no recording kept (Voice Cap on the press, no microphone, too long, unsupported) cannot
     // be retried and do not count toward the limit; Setup's open failure is dropped by this press.
     const counted = store.notes.filter(
@@ -750,7 +822,7 @@ export function createVoiceNote(
     }
     starting = undefined;
     // Stopped or cancelled on the way (its lock is already let go): the stream is not wanted.
-    if (attempt.cancelled || isSheet(openNote())) {
+    if (attempt.cancelled || isSheet(openNote()) || store.merged) {
       live.cancel();
       if (!attempt.cancelled) letSleep('mic');
       return 'cancelled';
@@ -948,7 +1020,7 @@ export function createVoiceNote(
     },
     /** Opens one Voice Note that is ready (its Review or answer sheet). Nothing else is open already. */
     open(id: number) {
-      if (store.live || isSheet(openNote())) return;
+      if (store.live || store.merged || isSheet(openNote())) return;
       const next = store.notes.find((n) => n.id === id);
       if (!next || !isReady(next)) return;
       store = { ...store, openId: next.id };
@@ -968,17 +1040,27 @@ export function createVoiceNote(
     },
     isCapReached,
 
+    /**
+     * Opens one Review of every Voice Note that is waiting for one ("Review all"), in recording order. Needs
+     * two or more and nothing else on screen. Over MAX_APPLY_ACTIONS Voice Actions it is refused.
+     */
+    openMerged(): MergeOutcome {
+      if (store.live || store.merged || isSheet(openNote())) return 'refused';
+      const notes = store.notes.filter((n) => n.phase === 'review');
+      if (notes.length < 2) return 'refused';
+      const total = notes.reduce(
+        (sum, n) => sum + (n.proposal?.actions.length ?? 0),
+        0,
+      );
+      if (total > MAX_APPLY_ACTIONS) return 'tooMany';
+      store = { ...store, merged: notes.map((n) => n.id) };
+      emit();
+      return 'opened';
+    },
+
     /** Review: drops a Voice Action. */
     remove(id: string) {
-      const proposal = openNote()?.proposal;
-      if (phase() !== 'review' || !proposal) return;
-      patchOpen((n) => ({
-        ...n,
-        proposal: {
-          ...proposal,
-          actions: proposal.actions.filter((a) => a.id !== id),
-        },
-      }));
+      mapActions((actions) => actions.filter((a) => a.id !== id));
     },
     /** Review: puts a `needsList` action on a list, swapping in that list's resolution. The pick can change. */
     pickList(id: string, list: VoiceList) {
@@ -990,29 +1072,21 @@ export function createVoiceNote(
     },
     /** Review: changes a Voice Action. */
     edit(id: string, patch: VoiceNoteEdit) {
-      const proposal = openNote()?.proposal;
-      if (phase() !== 'review' || !proposal) return;
-      patchOpen((n) => ({
-        ...n,
-        proposal: {
-          ...proposal,
-          actions: proposal.actions.map((a) =>
-            a.id === id ? { ...a, ...patch } : a,
-          ),
-        },
-      }));
+      mapActions((actions) =>
+        actions.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+      );
     },
     /** Apply was sent: Review stays open, its buttons disabled. Only from Review. */
     applying() {
       if (phase() !== 'review') return;
-      patchOpen((n) => ({ ...n, phase: 'applying' }));
+      phaseAll('applying');
     },
     /** Apply failed: back to Review with every edit kept. */
     applyFailed() {
       if (phase() !== 'applying') return;
-      patchOpen((n) => ({ ...n, phase: 'review' }));
+      phaseAll('review');
     },
-    /** Closes Review once Apply has succeeded. */
+    /** Closes Review once Apply has succeeded (every merged note leaves with it). */
     applied() {
       if (phase() !== 'applying') return;
       removeOpen();

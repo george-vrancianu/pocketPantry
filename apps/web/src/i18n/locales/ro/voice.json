@@ -188,7 +188,10 @@
       "keep": "Continuă verificarea",
       "discarded": "Nota vocală a fost eliminată",
       "discardedHint": "Nu s-a schimbat nimic.",
-      "pickList": "Alege mai întâi o listă"
+      "pickList": "Alege mai întâi o listă",
+      "confirmAll": "Renunți la toate aceste note vocale?",
+      "confirmAllHint": "Nu se schimbă nimic și va trebui să le spui din nou.",
+      "discardedAll": "Notele vocale au fost eliminate"
     },
     "pickList": {
       "label": "Lista pentru {{name}}",
@@ -198,7 +201,8 @@
     "putAll": {
       "label": "Pune tot pe:",
       "name": "Pune tot pe"
-    }
+    },
+    "titleAll": "Verifică toate"
   },
   "toast": {
     "applied_one": "{{count}} modificare aplicată",
@@ -312,6 +316,8 @@
       "answers": "Răspunsuri gata",
       "applying": "Se aplică",
       "failed": "Nu a putut fi citită"
-    }
+    },
+    "reviewAll": "Verifică toate ({{count}})",
+    "reviewAllTooMany": "Sunt mai mult de {{max}} de modificări pentru o singură aplicare. Verifică unele dintre notele vocale separat."
   }
 }
