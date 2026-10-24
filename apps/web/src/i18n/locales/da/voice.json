@@ -285,6 +285,8 @@
     "ready": "{{count}} klar",
     "failed_one": "{{count}} mislykkedes",
     "failed_other": "{{count}} mislykkedes",
+    "failedAlert_one": "{{count}} stemmenote mislykkedes",
+    "failedAlert_other": "{{count}} stemmenoter mislykkedes",
     "retryNote": "Prøv igen: {{preview}}",
     "retryOtherNote": "Prøv igen på et andet sprog: {{preview}}",
     "currentLanguage": "{{language}} (nuværende)",

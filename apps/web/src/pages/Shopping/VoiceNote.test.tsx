@@ -417,7 +417,9 @@ describe('Voice Note on the Shopping List', () => {
 
       fireEvent.pointerUp(await hold());
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        '1 Voice Note failed',
+      );
       const strip = screen.getByRole('status');
       expect(strip).toHaveTextContent('1 Voice Note');
       expect(strip).toHaveTextContent('1 failed');
@@ -445,7 +447,9 @@ describe('Voice Note on the Shopping List', () => {
       fireEvent.pointerUp(await hold());
       await screen.findByText('2 Voice Notes');
       await waitFor(() =>
-        expect(screen.getByRole('alert')).toHaveTextContent('2 failed'),
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          '2 Voice Notes failed',
+        ),
       );
 
       const dialog = await openSheet();
@@ -475,7 +479,9 @@ describe('Voice Note on the Shopping List', () => {
       await screen.findByRole('button', { name: /^Open/ });
       fireEvent.pointerUp(await hold());
       await waitFor(() =>
-        expect(screen.getByRole('alert')).toHaveTextContent('1 failed'),
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          '1 Voice Note failed',
+        ),
       );
       fireEvent.click(screen.getByRole('button', { name: /^Open/ }));
       const sheet = await screen.findByRole('dialog', { name: 'Voice Inbox' });
@@ -527,11 +533,33 @@ describe('Voice Note on the Shopping List', () => {
       await screen.findByRole('alert');
       fireEvent.pointerUp(await hold());
 
-      await screen.findByRole('alert');
-      const strip = screen.getByRole('status');
+      const strip = await screen.findByRole('status');
       await waitFor(() => expect(strip).toHaveTextContent('1 ready'));
       expect(strip).toHaveTextContent('1 failed');
       expect(await openReady()).toBeVisible();
+    });
+
+    it('announces a failed note once, not again when the strip returns after recording', async () => {
+      let attempt = 0;
+      setup({
+        note: () =>
+          ++attempt === 1
+            ? error('voice.provider_unavailable', 502)
+            : undefined!,
+      });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      fireEvent.pointerUp(await hold());
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        '1 Voice Note failed',
+      );
+
+      // Recording hides the strip; it comes back with the same failed note.
+      fireEvent.pointerUp(await hold());
+      const strip = await screen.findByRole('status');
+      await waitFor(() => expect(strip).toHaveTextContent('1 ready'));
+
+      expect(strip).toHaveTextContent('1 failed');
+      expect(screen.queryByRole('alert')).toBeNull();
     });
 
     it('retries a failed note from its row in the same Spoken Language', async () => {
@@ -818,7 +846,9 @@ describe('Voice Note on the Shopping List', () => {
 
         pressDown(await talkButton());
 
-        expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          '1 Voice Note failed',
+        );
         expect(mic.start).not.toHaveBeenCalled();
 
         await holdFor(60_000);
@@ -879,7 +909,9 @@ describe('Voice Note on the Shopping List', () => {
 
       pressDown(await talkButton());
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        '1 Voice Note failed',
+      );
       const dialog = await openSheet();
       expect(dialog).toHaveTextContent('This browser cannot record audio');
       expect(

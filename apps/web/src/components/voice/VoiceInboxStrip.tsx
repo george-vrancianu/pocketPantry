@@ -7,7 +7,7 @@ import {
   shadow,
   visuallyHidden,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -43,11 +43,23 @@ export function VoiceInboxStrip() {
   const [wantSheet, setWantSheet] = useState(false);
   const [mounted, setMounted] = useState(false);
   const up = isStripUp(state);
+
+  // Announced assertively once, when a note fails, even if it fails while the strip is hidden. Kept
+  // here, not in the strip, which unmounts whenever it hides and would announce the same failure again.
+  const failed = state.inbox.failed;
+  const [seenFailed, setSeenFailed] = useState(0);
+  const [alertPending, setAlertPending] = useState(false);
+  if (failed !== seenFailed) {
+    setSeenFailed(failed);
+    setAlertPending(failed > seenFailed);
+  }
   return (
     <>
       {up ? (
         <Strip
           state={state}
+          alertPending={alertPending}
+          onAlerted={() => setAlertPending(false)}
           openSheet={() => {
             setMounted(true);
             setWantSheet(true);
@@ -72,9 +84,13 @@ export function VoiceInboxStrip() {
 
 function Strip({
   state,
+  alertPending,
+  onAlerted,
   openSheet,
 }: {
   state: VoiceNoteState;
+  alertPending: boolean;
+  onAlerted: () => void;
   openSheet: () => void;
 }) {
   const { t } = useTranslation('voice');
@@ -89,13 +105,13 @@ function Strip({
     .filter(Boolean)
     .join(' · ');
 
-  // Announced assertively only when a note fails; every other change is read politely.
-  const [seenFailed, setSeenFailed] = useState(0);
-  const [failedRose, setFailedRose] = useState(false);
-  if (failed !== seenFailed) {
-    setSeenFailed(failed);
-    setFailedRose(failed > seenFailed);
-  }
+  // The alert stays up while this strip is, once a failure has put it there.
+  const [alerting, setAlerting] = useState(alertPending);
+  if (alertPending && !alerting) setAlerting(true);
+  if (failed === 0 && alerting) setAlerting(false);
+  useEffect(() => {
+    if (alertPending) onAlerted();
+  }, [alertPending, onAlerted]);
 
   const open = () => {
     if (ready === 1) voiceNote.openReady();
@@ -146,9 +162,9 @@ function Strip({
             {summary}
           </Box>
         </Box>
-        {failedRose && failed > 0 ? (
+        {alerting ? (
           <Box role="alert" sx={visuallyHidden}>
-            {t('inbox.failed', { count: failed })}
+            {t('inbox.failedAlert', { count: failed })}
           </Box>
         ) : null}
         <Button

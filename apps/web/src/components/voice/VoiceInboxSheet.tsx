@@ -20,7 +20,7 @@ import {
   voiceNote,
 } from '../../lib/voiceNote';
 import { failureReason } from './failureReason';
-import { noteMeta } from './noteMeta';
+import { noteListMeta } from './noteMeta';
 
 const glyph: Record<VoiceInboxPhase, string> = {
   reading: '…',
@@ -130,7 +130,7 @@ export function VoiceInboxSheet({
                 duration: formatClock(note.durationMs ?? 0),
               });
           const reason = failureText(note);
-          const meta = noteMeta(t, note.defaultTarget, noteLanguage);
+          const meta = noteListMeta(t, note.defaultTarget, noteLanguage);
           return (
             <Box
               component="li"

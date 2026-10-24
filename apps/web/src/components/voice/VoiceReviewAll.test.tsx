@@ -148,9 +148,10 @@ describe('Review all in the Voice Inbox', () => {
   }
   const reviewAll = async (
     sheet: ReturnType<typeof within>,
+    count = 2,
   ): Promise<ReturnType<typeof within>> => {
     await userEvent.click(
-      sheet.getByRole('button', { name: /^Review all \(\d\)$/ }),
+      sheet.getByRole('button', { name: `Review all (${count})` }),
     );
     return within(await screen.findByRole('dialog', { name: 'Review all' }));
   };
@@ -368,7 +369,7 @@ describe('Review all in the Voice Inbox', () => {
       Array.from({ length: count }, (_, i) => shop(`${prefix}${i}`, bread));
     const sheet = await twoNotes(many('a', 26), many('b', 25));
     await userEvent.click(
-      sheet.getByRole('button', { name: /^Review all \(\d\)$/ }),
+      sheet.getByRole('button', { name: 'Review all (2)' }),
     );
 
     expect(
@@ -403,7 +404,7 @@ describe('Review all in the Voice Inbox', () => {
       await screen.findByRole('dialog', { name: 'Voice Inbox' }),
     );
     await userEvent.click(
-      await sheet.findByRole('button', { name: /^Review all \(\d\)$/ }),
+      await sheet.findByRole('button', { name: 'Review all (2)' }),
     );
     expect(await sheet.findByText(/more than 50 changes/)).toBeVisible();
 

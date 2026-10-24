@@ -261,7 +261,9 @@ describe('Voice Note microphone sheets', () => {
         within(dialog).getByRole('button', { name: "I've allowed it" }),
       );
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        '1 Voice Note failed',
+      );
       fireEvent.click(screen.getByRole('button', { name: 'Open' }));
       expect(await screen.findByRole('dialog')).toHaveTextContent(
         /cannot record audio/i,

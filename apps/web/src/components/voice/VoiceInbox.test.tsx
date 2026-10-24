@@ -334,7 +334,9 @@ describe('the Voice Inbox strip', () => {
     fake.reads[1].reject(new TypeError('Failed to fetch'));
     await waitFor(() => expect(fake.reads.length).toBeGreaterThan(2));
     fake.reads[2].reject(new TypeError('Failed to fetch'));
-    expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '1 Voice Note failed',
+    );
     expect(strip()).toHaveTextContent('1 ready · 1 failed');
   });
 

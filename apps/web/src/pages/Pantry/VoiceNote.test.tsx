@@ -139,7 +139,9 @@ describe('Voice Notes on the Pantry page', () => {
     });
     renderInAppLayout(<PantryPage />, '/pantry');
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '1 Voice Note failed',
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
     const dialog = await screen.findByRole('dialog', { name: 'Voice Inbox' });
 

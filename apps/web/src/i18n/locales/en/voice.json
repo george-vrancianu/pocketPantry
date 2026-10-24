@@ -285,6 +285,8 @@
     "ready": "{{count}} ready",
     "failed_one": "{{count}} failed",
     "failed_other": "{{count}} failed",
+    "failedAlert_one": "{{count}} Voice Note failed",
+    "failedAlert_other": "{{count}} Voice Notes failed",
     "retryNote": "Retry: {{preview}}",
     "retryOtherNote": "Retry in another language: {{preview}}",
     "currentLanguage": "{{language}} (current)",
