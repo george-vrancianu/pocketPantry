@@ -28,10 +28,12 @@ type Props = {
   filtering: boolean;
   /** Choose the Recipe instead of opening it, as the Meal plan's Recipe picker does. */
   onSelect?: () => void;
+  /** Where the row opens, when not the Recipe itself (Cook Tonight opens the card's best match). */
+  to?: string;
 };
 
 /** A list row: title, meta and status pills on the left, total time and a chevron on the right. */
-export function RecipeRow({ recipe, card, filtering, onSelect }: Props) {
+export function RecipeRow({ recipe, card, filtering, onSelect, to }: Props) {
   const { t } = useTranslation('recipes');
   const meta = [
     recipe.cuisine?.name,
@@ -68,7 +70,7 @@ export function RecipeRow({ recipe, card, filtering, onSelect }: Props) {
           />
         ) : null
       }
-      to={onSelect ? undefined : `/recipes/${recipe.id}`}
+      to={onSelect ? undefined : (to ?? `/recipes/${recipe.id}`)}
       onClick={onSelect}
     />
   );

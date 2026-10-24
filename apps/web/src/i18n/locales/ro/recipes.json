@@ -193,6 +193,11 @@
     "line_other": "{{count}} de rețete folosesc ce expiră curând",
     "seeThem": "Vezi-le"
   },
+  "cookTonightPage": {
+    "title": "Gătește diseară",
+    "canMake": "Poți găti acestea",
+    "oneShort": "Îți lipsește un ingredient"
+  },
   "add": "Adaugă o rețetă",
   "fromLink": {
     "menuItem": "Dintr-un link",

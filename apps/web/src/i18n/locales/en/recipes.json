@@ -179,6 +179,11 @@
     "line_other": "{{count}} Recipes use what expires soon",
     "seeThem": "See them"
   },
+  "cookTonightPage": {
+    "title": "Cook tonight",
+    "canMake": "You can make this",
+    "oneShort": "One ingredient short"
+  },
   "add": "Add a Recipe",
   "fromLink": {
     "menuItem": "From a link",

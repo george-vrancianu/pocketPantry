@@ -179,6 +179,11 @@
     "line_other": "{{count}} opskrifter bruger det, der snart udløber",
     "seeThem": "Se dem"
   },
+  "cookTonightPage": {
+    "title": "Lav mad i aften",
+    "canMake": "Det kan du lave",
+    "oneShort": "Mangler én ingrediens"
+  },
   "add": "Tilføj en opskrift",
   "fromLink": {
     "menuItem": "Fra et link",
