@@ -11,6 +11,7 @@ import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { AlreadyInRecipes } from './AlreadyInRecipes';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
@@ -68,7 +69,10 @@ export function RecipeFromLinkPage() {
   const navigate = useNavigate();
   const read = useReadRecipeLink();
   const [url, setUrl] = useState('');
-  const [language, setLanguage] = useState<ReadingLanguage>('catalog');
+  const [language, setLanguageValue] = useState<ReadingLanguage>('catalog');
+  // The Recipe the link already is; shown instead of reading until the Member picks Open or Read again.
+  const [duplicate, setDuplicate] = useState<string | null>(null);
+  const duplicateHeading = useRef<HTMLHeadingElement>(null);
   const controller = useRef<AbortController | null>(null);
   const field = useRef<HTMLInputElement>(null);
   const cancelButton = useRef<HTMLButtonElement>(null);
@@ -86,26 +90,51 @@ export function RecipeFromLinkPage() {
     if (read.isError) field.current?.focus();
   }, [read.isError]);
 
+  // After the effects above (an ended read hands focus to the field), the panel's heading takes it.
+  useEffect(() => {
+    if (duplicate !== null) duplicateHeading.current?.focus();
+  }, [duplicate]);
+
   // Leaving the step abandons the read in progress.
   useEffect(() => () => controller.current?.abort(), []);
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  // A different link or language is a different question: the old answer no longer applies.
+  const editUrl = (value: string) => {
+    setUrl(value);
+    setDuplicate(null);
+  };
+  const setLanguage = (value: ReadingLanguage) => {
+    setLanguageValue(value);
+    setDuplicate(null);
+  };
+
+  const start = (force: boolean) => {
     if (url.trim() === '' || read.isPending) return;
+    setDuplicate(null);
     const attempt = new AbortController();
     controller.current = attempt;
     read.mutate(
-      { url: url.trim(), language, signal: attempt.signal },
       {
-        onSuccess: ({
-          draft,
-          closestBases,
-          hiddenByAllergiesCount,
-          sourceLink,
-          sourceLanguage,
-        }) => {
+        url: url.trim(),
+        language,
+        ...(force ? { force } : {}),
+        signal: attempt.signal,
+      },
+      {
+        onSuccess: (result) => {
           // Defensive: Cancel resets the mutation and leaving unmounts it, so this callback should not run for an aborted read.
           if (attempt.signal.aborted) return;
+          if (result.kind === 'duplicate') {
+            setDuplicate(result.recipeId);
+            return;
+          }
+          const {
+            draft,
+            closestBases,
+            hiddenByAllergiesCount,
+            sourceLink,
+            sourceLanguage,
+          } = result;
           navigate('/recipes/new', {
             state: {
               draft,
@@ -118,6 +147,11 @@ export function RecipeFromLinkPage() {
         },
       },
     );
+  };
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    start(false);
   };
 
   const cancel = () => {
@@ -158,7 +192,7 @@ export function RecipeFromLinkPage() {
           value={url}
           inputRef={field}
           disabled={read.isPending}
-          onChange={(event) => setUrl(event.target.value)}
+          onChange={(event) => editUrl(event.target.value)}
           slotProps={{
             htmlInput: {
               maxLength: 2048,
@@ -184,6 +218,12 @@ export function RecipeFromLinkPage() {
           <Button variant="secondary" onClick={cancel} ref={cancelButton}>
             {t('common:cancel')}
           </Button>
+        ) : duplicate !== null ? (
+          <AlreadyInRecipes
+            ref={duplicateHeading}
+            onOpen={() => navigate(`/recipes/${duplicate}`)}
+            onReadAgain={() => start(true)}
+          />
         ) : (
           <Button type="submit" disabled={url.trim() === ''}>
             {t('recipes:fromLink.submit')}

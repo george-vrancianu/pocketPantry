@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FamilyRecipeEdit } from '../../lib/familyRecipes';
-import type { RecipeFromLink } from '../../lib/linkRecipe';
+import type { RecipeFromLink, RecipeFromLinkDraft } from '../../lib/linkRecipe';
 import type { Locale } from '../../i18n';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { NewRecipePage } from './FamilyRecipePages';
@@ -15,7 +15,9 @@ const filters = {
   eatingMoments: [],
 };
 
-const read = (over: Partial<RecipeFromLink['draft']> = {}): RecipeFromLink => ({
+const read = (
+  over: Partial<RecipeFromLinkDraft['draft']> = {},
+): RecipeFromLinkDraft => ({
   kind: 'draft',
   draft: {
     title: 'Blog pancakes',
@@ -600,5 +602,100 @@ describe('RecipeFromLinkPage', () => {
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
     expect(body).not.toHaveProperty('sourceLink');
     expect(body).not.toHaveProperty('sourceLanguage');
+  });
+});
+
+describe('Already in your Recipes', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const duplicate = { kind: 'duplicate', recipeId: 'r-1' };
+  const link = 'https://www.example.com/pancakes';
+
+  it('offers Open and Read again instead of the form, with focus on the heading', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup({ 'POST /api/recipes/from-link': () => Response.json(duplicate) });
+    await submit(user, link);
+    const heading = await screen.findByRole('heading', {
+      name: 'Already in your Recipes',
+    });
+    expect(heading).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Open' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Read again' })).toBeVisible();
+    expect(screen.getByText('at /recipes/from-link')).toBeVisible();
+  });
+
+  it('Open goes to that Recipe', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { calls } = setup({
+      'POST /api/recipes/from-link': () => Response.json(duplicate),
+    });
+    await submit(user, link);
+    await user.click(await screen.findByRole('button', { name: 'Open' }));
+    expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+    expect(screen.getByText('at /recipes/r-1')).toBeVisible();
+    expect(
+      calls.filter((c) => c.key === 'POST /api/recipes/from-link'),
+    ).toHaveLength(1);
+  });
+
+  it('Read again sends the same request with force and opens the draft', async () => {
+    const user = userEvent.setup({ delay: null });
+    let first = true;
+    const { calls } = setup({
+      'POST /api/recipes/from-link': () => {
+        const answer = first ? duplicate : read({ servings: 4 });
+        first = false;
+        return Response.json(answer);
+      },
+    });
+    await submit(user, link);
+    await user.click(await screen.findByRole('button', { name: 'Read again' }));
+    expect(await screen.findByDisplayValue('Blog pancakes')).toBeVisible();
+    const bodies = calls
+      .filter((c) => c.key === 'POST /api/recipes/from-link')
+      .map((c) => c.body);
+    expect(bodies[0]).toEqual({ url: link, language: 'catalog' });
+    expect(bodies[1]).toEqual({ url: link, language: 'catalog', force: true });
+  });
+
+  it('Read again that fails shows the error and clears the panel', async () => {
+    const user = userEvent.setup({ delay: null });
+    let first = true;
+    setup({
+      'POST /api/recipes/from-link': () => {
+        if (first) {
+          first = false;
+          return Response.json(duplicate);
+        }
+        return Response.json(
+          { code: 'link.unreadable', message: 'x' },
+          { status: 422 },
+        );
+      },
+    });
+    await submit(user, link);
+    await user.click(await screen.findByRole('button', { name: 'Read again' }));
+    expect(await screen.findByRole('alert')).toBeVisible();
+    expect(screen.queryByText('Already in your Recipes')).toBeNull();
+    expect(linkField()).toHaveFocus();
+  });
+
+  it('editing the link or the language clears the panel', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup({ 'POST /api/recipes/from-link': () => Response.json(duplicate) });
+    await submit(user, link);
+    await screen.findByText('Already in your Recipes');
+    await user.type(linkField(), '2');
+    expect(screen.queryByText('Already in your Recipes')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Read the recipe' }),
+    ).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+    await screen.findByText('Already in your Recipes');
+    await user.click(
+      screen.getByRole('radio', { name: "Keep the page's language" }),
+    );
+    expect(screen.queryByText('Already in your Recipes')).toBeNull();
   });
 });

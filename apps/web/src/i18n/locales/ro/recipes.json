@@ -200,7 +200,13 @@
     "hint": "Lipește linkul unei pagini cu o rețetă. PantryGator o transformă într-o rețetă nouă, pe care o verifici înainte de a o salva.",
     "label": "Linkul rețetei",
     "submit": "Citește rețeta",
-    "reading": "Se citește rețeta…"
+    "reading": "Se citește rețeta…",
+    "duplicate": {
+      "heading": "Deja în Rețetele tale",
+      "body": "Acest link este deja una dintre rețetele tale. Deschide-o sau citește pagina din nou pentru a face a doua copie.",
+      "open": "Deschide",
+      "readAgain": "Citește din nou"
+    }
   },
   "readingLanguage": {
     "label": "Limba rețetei",

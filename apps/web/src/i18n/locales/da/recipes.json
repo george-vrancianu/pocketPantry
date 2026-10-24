@@ -186,7 +186,13 @@
     "hint": "Indsæt linket til en side med en opskrift. PantryGator læser den ind i en ny opskrift, som du kan tjekke, før du gemmer.",
     "label": "Link til opskriften",
     "submit": "Læs opskriften",
-    "reading": "Læser opskriften…"
+    "reading": "Læser opskriften…",
+    "duplicate": {
+      "heading": "Allerede i dine opskrifter",
+      "body": "Dette link er allerede en af dine opskrifter. Åbn den, eller læs siden igen for at lave en ekstra kopi.",
+      "open": "Åbn",
+      "readAgain": "Læs igen"
+    }
   },
   "readingLanguage": {
     "label": "Opskriftens sprog",

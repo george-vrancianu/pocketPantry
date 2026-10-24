@@ -186,7 +186,13 @@
     "hint": "Paste the link to a page with a recipe. PantryGator reads it into a new Recipe for you to check before saving.",
     "label": "Link to the recipe",
     "submit": "Read the recipe",
-    "reading": "Reading the recipe…"
+    "reading": "Reading the recipe…",
+    "duplicate": {
+      "heading": "Already in your Recipes",
+      "body": "This link is already one of your Recipes. Open it, or read the page again to make a second copy.",
+      "open": "Open",
+      "readAgain": "Read again"
+    }
   },
   "readingLanguage": {
     "label": "Language of the recipe",
