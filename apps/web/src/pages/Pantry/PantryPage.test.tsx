@@ -470,11 +470,13 @@ describe('PantryPage', () => {
 
     expect(amount).toHaveValue('1.5');
     await user.click(screen.getByRole('button', { name: 'Unit: kg' }));
+    // Every unit is offered, and never "No unit": a Batch amount needs one.
     expect(
-      within(screen.getByRole('group', { name: 'Units' }))
-        .getAllByRole('button')
-        .map((button) => button.textContent),
-    ).toEqual(['g', 'kg']);
+      within(screen.getByRole('menu', { name: 'Units' }))
+        .getAllByRole('menuitemradio')
+        .map((entry) => entry.textContent),
+    ).toEqual(['g', 'kg', 'ml', 'L', 'pcs']);
+    await user.keyboard('{Escape}');
 
     await user.type(amount, '{Enter}');
     await waitFor(() =>
@@ -612,9 +614,10 @@ describe('PantryPage', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Unit: g' }));
     await user.click(
-      within(screen.getByRole('group', { name: 'Units' })).getByRole('button', {
-        name: 'kg',
-      }),
+      within(screen.getByRole('menu', { name: 'Units' })).getByRole(
+        'menuitemradio',
+        { name: 'kg' },
+      ),
     );
     await user.click(screen.getByRole('button', { name: 'Change ingredient' }));
     const search = screen.getByRole('combobox', { name: 'Search ingredients' });
@@ -649,9 +652,10 @@ describe('PantryPage', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Unit: g' }));
     await user.click(
-      within(screen.getByRole('group', { name: 'Units' })).getByRole('button', {
-        name: 'kg',
-      }),
+      within(screen.getByRole('menu', { name: 'Units' })).getByRole(
+        'menuitemradio',
+        { name: 'kg' },
+      ),
     );
     expect(
       screen.getByRole('button', { name: 'Unit: kg' }),
@@ -3023,7 +3027,7 @@ describe('PantryPage', () => {
       );
     });
 
-    it('saves on Enter in the amount, and Escape closes only the unit popover', async () => {
+    it('saves on Enter in the amount, and Escape closes only the unit menu', async () => {
       const user = userEvent.setup();
       const calls = stubManaged(stock());
       renderWithProviders(<PantryPage />);
@@ -3032,9 +3036,9 @@ describe('PantryPage', () => {
       const form = screen.getByRole('form', { name: 'Edit Milk batch' });
 
       await user.click(within(form).getByRole('button', { name: /^Unit: / }));
-      expect(within(form).getByRole('group', { name: 'Units' })).toBeVisible();
+      expect(within(form).getByRole('menu', { name: 'Units' })).toBeVisible();
       await user.keyboard('{Escape}');
-      expect(within(form).queryByRole('group', { name: 'Units' })).toBeNull();
+      expect(within(form).queryByRole('menu', { name: 'Units' })).toBeNull();
       expect(form).toBeInTheDocument();
 
       const amount = within(form).getByRole('textbox', {

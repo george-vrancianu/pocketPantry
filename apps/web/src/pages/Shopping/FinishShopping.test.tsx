@@ -418,7 +418,7 @@ describe('Finish Shopping review', () => {
     expect(body.lines.find((l) => l.itemId === 'i1')?.quantity).toBe(1.5);
   });
 
-  it("opens a line with no unit on its Ingredient's unit, and offers that unit's family", async () => {
+  it('opens a line with no unit on its Ingredient\'s unit, and offers every unit but never "No unit"', async () => {
     const noUnit: FinishProposal = {
       listId: 'l1',
       lines: [
@@ -453,13 +453,32 @@ describe('Finish Shopping review', () => {
     );
     const milk = within(await review.findByRole('region', { name: 'Milk' }));
 
+    const menuEntries = (menu: HTMLElement) =>
+      within(menu)
+        .getAllByRole('menuitemradio')
+        .map((entry) => entry.textContent);
+
     await user.click(parmesan.getByRole('button', { name: 'Unit: g' }));
-    expect(parmesan.getByRole('button', { name: 'kg' })).toBeInTheDocument();
-    expect(parmesan.queryByRole('button', { name: 'ml' })).toBeNull();
+    expect(menuEntries(parmesan.getByRole('menu', { name: 'Units' }))).toEqual([
+      'g',
+      'kg',
+      'ml',
+      'L',
+      'pcs',
+    ]);
+    expect(parmesan.getByRole('menuitemradio', { name: 'g' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
 
     await user.click(milk.getByRole('button', { name: 'Unit: L' }));
-    expect(milk.getByRole('button', { name: 'ml' })).toBeInTheDocument();
-    expect(milk.queryByRole('button', { name: 'g' })).toBeNull();
+    expect(menuEntries(milk.getByRole('menu', { name: 'Units' }))).toEqual([
+      'g',
+      'kg',
+      'ml',
+      'L',
+      'pcs',
+    ]);
   });
 });
 

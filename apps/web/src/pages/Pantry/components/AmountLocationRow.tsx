@@ -12,7 +12,7 @@ import type { AmountScale } from '../../../lib/usualAmounts';
 type Props = {
   /** Name of the Ingredient, for the amount's accessible name. */
   name: string;
-  /** The Ingredient's Amount Scale; null or left out for an Unmatched name (no chips). */
+  /** The Ingredient's Amount Scale; null or left out for an Unmatched name (Usual Amounts from the unit alone). */
   amountScale?: AmountScale | null;
   quantity: string;
   unit: Unit;
@@ -71,7 +71,6 @@ export function AmountLocationRow({
           amountScale={amountScale}
           label={t('common:amount.placeholder')}
           height={56}
-          popoverAlign="start"
         />
       </Box>
       <TextField

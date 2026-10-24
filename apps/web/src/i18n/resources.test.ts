@@ -80,6 +80,17 @@ describe('translation resources', () => {
     expect(amount.chip).toEqual(expect.any(String));
   });
 
+  it.each(LOCALES)(
+    '%s has the amount field strip and menu strings',
+    (locale) => {
+      const amount = resources[locale].common.amount as Record<string, string>;
+      expect(amount.chooseUnit).toEqual(expect.any(String));
+      expect(amount.noUnit).toEqual(expect.any(String));
+      expect(amount.unit).toContain('{{unit}}');
+      expect(amount.units).toEqual(expect.any(String));
+    },
+  );
+
   it('has no empty strings', () => {
     for (const locale of LOCALES) {
       expect(JSON.stringify(resources[locale])).not.toContain('""');
