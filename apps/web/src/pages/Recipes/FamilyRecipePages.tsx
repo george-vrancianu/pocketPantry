@@ -168,7 +168,7 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
             pick={basePick}
             onPick={setBasePick}
             closest={closestBases}
-            loading={showHidden && revealed.isPending}
+            loading={showHidden && (revealed.isPending || revealed.isFetching)}
             hiddenByAllergiesCount={hiddenCount}
             onShowHidden={() => {
               // A failed Show leaves the answer in error (it never goes stale): ask again.

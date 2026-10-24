@@ -483,25 +483,35 @@ describe('NewRecipePage with a supplied draft', () => {
   it('asks again when Show failed and is pressed again', async () => {
     const user = userEvent.setup({ delay: null });
     let asked = 0;
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
     setup(newRecipeWith({ ...fromLink, hiddenByAllergiesCount: 1 }), {
       'POST /api/recipes/plate-matches': () =>
         ++asked === 1
           ? Response.json({ code: 'boom' }, { status: 500 })
-          : Response.json({
-              matches: [
-                {
-                  id: 'base-satay',
-                  title: 'Satay',
-                  score: 1,
-                  allergyWarning: null,
-                },
-              ],
-              hiddenByAllergiesCount: 0,
-            }),
+          : gate.then(() =>
+              Response.json({
+                matches: [
+                  {
+                    id: 'base-satay',
+                    title: 'Satay',
+                    score: 1,
+                    allergyWarning: null,
+                  },
+                ],
+                hiddenByAllergiesCount: 0,
+              }),
+            ),
     });
     await user.click(await screen.findByRole('button', { name: 'Show' }));
     await vi.waitFor(() => expect(asked).toBeGreaterThanOrEqual(1));
+    // Settled in error: the loading text is gone before Show is pressed again.
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Finding Base Recipes…')).toBeNull(),
+    );
     await user.click(await screen.findByRole('button', { name: 'Show' }));
+    expect(await screen.findByText('Finding Base Recipes…')).toBeVisible();
+    release();
     expect(await screen.findByRole('radio', { name: /Satay/ })).toBeVisible();
   });
 
