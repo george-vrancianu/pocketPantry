@@ -239,13 +239,16 @@ function LocationEditor({ action }: { action: VoiceReviewAction }) {
   const { t } = useTranslation(['voice', 'common']);
   return (
     <Box>
-      <LocationToggle
-        label={t('voice:review.edit.location')}
-        value={effectiveLocation(action)}
-        onChange={(location) => voiceNote.edit(action.id, { location })}
-        captionSx={eyebrow}
-        voicePicker={action.id}
-      />
+      {/* Pulled out of the editor's 57 px indent (to 12 px from the row edge) so the Romanian labels fit whole at 320 px. */}
+      <Box sx={{ ml: '-45px' }}>
+        <LocationToggle
+          label={t('voice:review.edit.location')}
+          value={effectiveLocation(action)}
+          onChange={(location) => voiceNote.edit(action.id, { location })}
+          captionSx={eyebrow}
+          voicePicker={action.id}
+        />
+      </Box>
       {action.location === null && action.defaults.location ? (
         <Typography sx={note}>
           {t('voice:review.edit.locationDefault')}

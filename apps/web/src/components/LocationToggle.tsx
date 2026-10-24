@@ -7,7 +7,7 @@ import {
   SpicesIcon,
   Typography,
 } from '@pocket-pantry/ui';
-import { useId, type ComponentProps, type ReactNode } from 'react';
+import { type ComponentProps, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LOCATIONS, type StorageLocation } from '../lib/catalog';
 
@@ -19,7 +19,7 @@ const ICONS: Record<StorageLocation, ReactNode> = {
 };
 
 type Props = {
-  /** The visible caption above the toggle, also the group's accessible name. */
+  /** The visible caption above the toggle, also the group's accessible name (set as an aria-label, so a CSS-uppercased caption cannot change its case). */
   label: string;
   /** The pressed Location; null when none is chosen yet. */
   value: StorageLocation | null;
@@ -43,12 +43,10 @@ export function LocationToggle({
   voicePicker,
 }: Props) {
   const { t } = useTranslation('common');
-  const captionId = useId();
   return (
     <Box data-voice-picker={voicePicker}>
       <Typography
         component="div"
-        id={captionId}
         sx={[
           { fontSize: 12, fontWeight: 600, color: 'text.secondary', mb: '4px' },
           ...(Array.isArray(captionSx) ? captionSx : [captionSx]),
@@ -57,7 +55,7 @@ export function LocationToggle({
         {label}
       </Typography>
       <SegmentedControl
-        labelledBy={captionId}
+        label={label}
         dense
         value={value}
         onChange={onChange}

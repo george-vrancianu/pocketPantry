@@ -15,8 +15,9 @@ describe('LocationToggle', () => {
     const group = screen.getByRole('group', { name: 'Location' });
     const caption = screen.getByText('Location');
     expect(caption).toBeVisible();
-    // The caption itself names the group, rather than a copy of its text.
-    expect(group.getAttribute('aria-labelledby')).toBe(caption.id);
+    // An aria-label, so a CSS-uppercased caption cannot change the name's case.
+    expect(group.getAttribute('aria-label')).toBe('Location');
+    expect(group).not.toHaveAttribute('aria-labelledby');
     expect(caption).not.toHaveAttribute('aria-hidden');
     expect(
       within(group)

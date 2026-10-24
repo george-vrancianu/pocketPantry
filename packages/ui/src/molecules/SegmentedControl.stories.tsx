@@ -75,12 +75,12 @@ const LABELS: Record<Lang, Record<Location, string>> = {
   },
 };
 
-function DenseSegments({ lang }: { lang: Lang }) {
+function DenseSegments({ lang, width = 246 }: { lang: Lang; width?: number }) {
   const [value, setValue] = useState<Location>('fridge');
   const labels = LABELS[lang];
   return (
     // The narrowest form on a 320 px phone: the Finish Shopping card, about 246 px.
-    <Box sx={{ width: 246 }} lang={lang}>
+    <Box sx={{ width }} lang={lang}>
       <SegmentedControl
         label={CAPTIONS[lang]}
         options={(Object.keys(labels) as Location[]).map((location) => ({
@@ -104,6 +104,11 @@ export const Dense: StoryObj<typeof SegmentedControl> = {
 /** The longest labels, Romanian: shrunk towards 11 px to fit whole, never shortened. */
 export const DenseRomanian: StoryObj<typeof SegmentedControl> = {
   render: () => <DenseSegments lang="ro" />,
+};
+
+/** Romanian in the Voice review at 320 px: the toggle pulled out of the 57 px indent leaves about 262 px. */
+export const DenseRomanianVoice: StoryObj<typeof SegmentedControl> = {
+  render: () => <DenseSegments lang="ro" width={262} />,
 };
 
 /** Danish, whose "Krydderier" and "Køleskab" are the next longest. */
