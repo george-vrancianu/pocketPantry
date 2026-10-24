@@ -5,7 +5,8 @@ import { useRecipes, type CompactAllergyWarning } from '../lib/recipes';
 import { AllergenIndicator } from './AllergenIndicator';
 import { HiddenByAllergiesNote } from './HiddenByAllergiesNote';
 
-const STANDALONE = 'standalone';
+/** The `chosen` value of "standalone". */
+export const STANDALONE = 'standalone';
 
 /** A Catalog Base Recipe offered as the base of a new Family Recipe. */
 export type BaseRecipeOption = {

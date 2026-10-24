@@ -25,6 +25,7 @@ import {
   linkReadingSchema,
   type LinkReading,
 } from './link-reading.schemas';
+import { PlateRecipesService } from './plate-recipes.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import { linkInvalid, linkNoRecipe, linkUnreadable } from './recipe-errors';
 import type {
@@ -49,6 +50,7 @@ export class LinkRecipesService {
     private readonly caps: ScanCapService,
     private readonly ingredientCatalog: IngredientCatalogService,
     private readonly browse: RecipeBrowseService,
+    private readonly plates: PlateRecipesService,
     private readonly settings: SettingsService,
     private readonly config: ConfigService<AppConfig, true>,
   ) {}
@@ -100,12 +102,25 @@ export class LinkRecipesService {
     const detected = detectedLanguage(reading.sourceLanguage);
     const sourceLanguage =
       body.language === 'catalog' && detected !== locale ? detected : null;
+    // The same ranking as Plate Scan, over the draft's title and matched lines (limits as `plateMatchesBody`).
+    const closest = await this.plates.closestBases(memberId, {
+      locale,
+      dishTitle: draft.title.slice(0, 200),
+      ingredientIds: [
+        ...new Set(
+          draft.lines.flatMap((l) =>
+            l.ingredientId === null ? [] : [l.ingredientId],
+          ),
+        ),
+      ].slice(0, 100),
+    });
     return {
       kind: 'draft',
       draft,
       sourceLink,
       sourceLanguage,
-      closestBases: [],
+      closestBases: closest.matches,
+      hiddenByAllergiesCount: closest.hiddenByAllergiesCount,
     };
   }
 
