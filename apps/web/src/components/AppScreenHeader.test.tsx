@@ -4,24 +4,27 @@ import { renderWithProviders } from '../test/render';
 import { AppScreenHeader } from './AppScreenHeader';
 
 describe('AppScreenHeader', () => {
-  it('links to Settings with the gear', () => {
+  it('leaves Home and the Settings gear out where the Dock shows', () => {
     renderWithProviders(<AppScreenHeader title="Pantry" />, {
       route: '/pantry',
     });
 
-    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute(
-      'href',
-      '/settings',
-    );
-  });
-
-  it('leaves the gear out on Settings itself', () => {
-    renderWithProviders(<AppScreenHeader title="Settings" />, {
-      route: '/settings',
-    });
-
+    expect(
+      screen.queryByRole('link', { name: 'Home' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: 'Settings' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('links Home where the Dock is hidden', () => {
+    renderWithProviders(<AppScreenHeader title="Customise" />, {
+      route: '/customise',
+    });
+
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute(
+      'href',
+      '/',
+    );
   });
 });

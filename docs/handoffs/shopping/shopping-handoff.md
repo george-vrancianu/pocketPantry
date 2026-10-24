@@ -1,5 +1,7 @@
 # Shopping List — design handoff
 
+> Superseded in part by ADR 0027: the Import pill now sits in the summary card and the `+` (Add items) in the header.
+
 Status: approved design, ready for implementation. Date: 2026-10-13.
 Reference prototype: `shopping-prototypes.html` (self-contained HTML, open in a browser; the same file is live at https://claude.ai/artifact/KHqzZjDsay1gkHUBCsoaAQ). It opens on **Variant C "One sheet"**, which is the approved design. A and B are kept for context only. The prototype is the source of truth for look, spacing and interaction; the numbers below are copied from it.
 
