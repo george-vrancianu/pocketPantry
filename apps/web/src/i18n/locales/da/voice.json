@@ -183,7 +183,10 @@
       "keep": "Bliv ved at gennemse",
       "discarded": "Stemmenote kasseret",
       "discardedHint": "Intet blev ændret.",
-      "pickList": "Vælg først en liste"
+      "pickList": "Vælg først en liste",
+      "confirmAll": "Kassér alle disse stemmenoter?",
+      "confirmAllHint": "Intet ændres, og du må sige dem igen.",
+      "discardedAll": "Stemmenoter kasseret"
     },
     "pickList": {
       "label": "Liste til {{name}}",
@@ -193,7 +196,8 @@
     "putAll": {
       "label": "Sæt alt på:",
       "name": "Sæt alt på"
-    }
+    },
+    "titleAll": "Gennemse alle"
   },
   "toast": {
     "applied_one": "{{count}} anvendt",
@@ -303,6 +307,8 @@
       "answers": "Svar klar",
       "applying": "Anvender",
       "failed": "Kunne ikke læses"
-    }
+    },
+    "reviewAll": "Gennemse alle ({{count}})",
+    "reviewAllTooMany": "Det er mere end {{max}} ændringer på én gang. Gennemse nogle af stemmenoterne for sig."
   }
 }

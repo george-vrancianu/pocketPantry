@@ -37,6 +37,7 @@ export function ReviewFooter({
   onApply,
   onBlockedApply,
   applyLabel,
+  merged = false,
 }: {
   /** The changes Apply would send. */
   count: number;
@@ -53,20 +54,29 @@ export function ReviewFooter({
   onBlockedApply: () => void;
   /** Words for the Apply button when it is ready, in place of "Apply N changes" (Setup says "Do these N"). */
   applyLabel?: string;
+  /** Review all: the Discard question is about all the merged Voice Notes. */
+  merged?: boolean;
 }) {
   const { t } = useTranslation('voice');
+  const confirmKey = merged
+    ? 'review.footer.confirmAll'
+    : 'review.footer.confirm';
   const box = { p: '12px 16px calc(20px + env(safe-area-inset-bottom))' };
 
   if (confirming) {
     return (
-      <Box sx={box} role="group" aria-label={t('review.footer.confirm')}>
+      <Box sx={box} role="group" aria-label={t(confirmKey)}>
         <Typography sx={{ fontSize: 14, fontWeight: 600 }}>
-          {t('review.footer.confirm')}
+          {t(confirmKey)}
         </Typography>
         <Typography
           sx={{ fontSize: 12.5, color: palette('text-secondary'), mb: '10px' }}
         >
-          {t('review.footer.confirmHint')}
+          {t(
+            merged
+              ? 'review.footer.confirmAllHint'
+              : 'review.footer.confirmHint',
+          )}
         </Typography>
         <Box sx={{ display: 'flex', gap: '10px' }}>
           <Button
