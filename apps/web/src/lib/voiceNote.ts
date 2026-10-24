@@ -81,7 +81,16 @@ export type VoiceNoteState = {
     failed: number;
     total: number;
     /** Every Voice Note in recording order: its id (for `cancelReading` and the like) and phase. */
-    notes: Array<{ id: number; phase: VoicePhase }>;
+    notes: Array<{
+      id: number;
+      phase: Exclude<VoicePhase, 'idle' | 'recording'>;
+      defaultTarget: VoiceDefaultTarget;
+      /** `undefined`: the Member's Spoken Language preference was used. */
+      spokenLanguage?: ScanLanguage;
+      durationMs?: number;
+      /** The first line the server heard, once the note is read. */
+      transcript?: string;
+    }>;
   };
 };
 
@@ -231,7 +240,14 @@ export function createVoiceNote(
       .length,
     failed: store.notes.filter((n) => n.phase === 'failed').length,
     total: store.notes.length,
-    notes: store.notes.map((n) => ({ id: n.id, phase: n.phase })),
+    notes: store.notes.map((n) => ({
+      id: n.id,
+      phase: n.phase,
+      defaultTarget: n.defaultTarget,
+      spokenLanguage: n.recording?.spokenLanguage,
+      durationMs: n.recording?.durationMs,
+      transcript: n.proposal?.transcript,
+    })),
   });
   /** The flat view of what is on screen: the recording in progress, else the open Voice Note, else idle. */
   const project = (): VoiceNoteState => {
@@ -823,9 +839,14 @@ export function createVoiceNote(
     clear,
     /** Opens the oldest Voice Note that is ready: its Review, or its answer sheet. Nothing is open already. */
     openReady() {
-      if (store.live || isSheet(openNote())) return;
       const next = store.notes.find(isReady);
-      if (!next) return;
+      if (next) this.open(next.id);
+    },
+    /** Opens one Voice Note that is ready (its Review or answer sheet). Nothing else is open already. */
+    open(id: number) {
+      if (store.live || isSheet(openNote())) return;
+      const next = store.notes.find((n) => n.id === id);
+      if (!next || !isReady(next)) return;
       store = { ...store, openId: next.id };
       emit();
     },

@@ -291,7 +291,23 @@
     "reading": "Citesc {{count}}",
     "ready": "{{count}} gata",
     "review": "Verificare",
-    "reviewOldest": "Verifică cea mai veche",
-    "full": "Verifică mai întâi notele"
+    "full": "Verifică mai întâi notele",
+    "sheetTitle": "Inbox vocal",
+    "preview": "Notă vocală · {{duration}}",
+    "noList": "Fără listă",
+    "open": "Deschide",
+    "openCount": "Deschide ({{count}})",
+    "see": "Vezi",
+    "cancel": "Anulează",
+    "reviewNote": "Verifică: {{preview}}",
+    "seeNote": "Vezi: {{preview}}",
+    "cancelNote": "Anulează citirea: {{preview}}",
+    "state": {
+      "reading": "Se citește",
+      "review": "Gata de verificat",
+      "answers": "Răspunsuri gata",
+      "applying": "Se aplică",
+      "failed": "Nu a putut fi citită"
+    }
   }
 }

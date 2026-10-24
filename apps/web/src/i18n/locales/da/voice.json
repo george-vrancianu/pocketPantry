@@ -281,7 +281,23 @@
     "reading": "Læser {{count}}",
     "ready": "{{count}} klar",
     "review": "Gennemse",
-    "reviewOldest": "Gennemse den ældste",
-    "full": "Gennemse dine noter først"
+    "full": "Gennemse dine noter først",
+    "sheetTitle": "Stemmeindbakke",
+    "preview": "Stemmenote · {{duration}}",
+    "noList": "Ingen liste",
+    "open": "Åbn",
+    "openCount": "Åbn ({{count}})",
+    "see": "Se",
+    "cancel": "Annuller",
+    "reviewNote": "Gennemse: {{preview}}",
+    "seeNote": "Se: {{preview}}",
+    "cancelNote": "Annuller læsning: {{preview}}",
+    "state": {
+      "reading": "Læses",
+      "review": "Klar til at gennemse",
+      "answers": "Svar klar",
+      "applying": "Anvender",
+      "failed": "Kunne ikke læses"
+    }
   }
 }
