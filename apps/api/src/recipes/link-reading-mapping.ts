@@ -1,4 +1,5 @@
 import { MAX_QUANTITY } from '../common/quantity';
+import { confidentMatch } from '../scan/catalog-matching';
 import type { LinkReading } from './link-reading.schemas';
 import { MAX_LINES, MAX_STEPS, type LinkRecipeDraft } from './recipes.schemas';
 
@@ -53,10 +54,13 @@ export function draftOfReading(
   for (const line of reading.ingredients.slice(0, MAX_LINES)) {
     const name = clean(line.nameAsWritten).slice(0, NAME_MAX);
     const catalogName =
-      line.ingredientId !== null &&
-      line.matchConfidence >= context.matchThreshold
-        ? context.ingredientNames.get(line.ingredientId)
-        : undefined;
+      confidentMatch(
+        line.ingredientId === null
+          ? null
+          : (context.ingredientNames.get(line.ingredientId) ?? null),
+        Math.min(1, Math.max(0, line.matchConfidence)),
+        context.matchThreshold,
+      ) ?? undefined;
     if (catalogName === undefined && name === '') continue;
     const note = [clean(line.originalAmount), clean(line.preparation)]
       .filter((part) => part !== '')

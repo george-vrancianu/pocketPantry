@@ -23,6 +23,11 @@ const mediterranean = seedId.cuisine('mediterranean');
 const jsonLdPage = (recipe: object, wrap: (r: object) => object = (r) => r) =>
   `<html><head><script type="application/ld+json">${JSON.stringify(wrap(recipe))}</script></head><body>x</body></html>`;
 
+const ldScript = (json: string, attributes = 'type="application/ld+json"') =>
+  `<script ${attributes}>${json}</script>`;
+const htmlPage = (...scripts: string[]) =>
+  `<html><head>${scripts.join('')}</head><body>Blog chatter 5521</body></html>`;
+
 const PANCAKES = {
   '@type': 'Recipe',
   name: 'Fluffy pancakes',
@@ -189,6 +194,111 @@ describe('Recipe from Link (integration)', () => {
     expect(prompts[0].prompt).toContain('Graph Pancakes 7731');
     expect(prompts[0].prompt).toContain('2 cups flour');
     expect(prompts[0].prompt).toContain(flour);
+    expect(prompts[0].prompt).not.toContain('Blog chatter 5521');
+  });
+
+  describe('finding the Recipe in the page', () => {
+    const promptAfter = async (html: string, path: string) => {
+      serve(html);
+      await read(`https://example.com/${path}`).expect(200);
+      return prompts[0].prompt;
+    };
+
+    it('drops bulky keys before the prompt', async () => {
+      const prompt = await promptAfter(
+        jsonLdPage({
+          ...PANCAKES,
+          image: 'https://cdn.example.com/IMG-8842.jpg',
+          video: { name: 'VIDEO-8843' },
+          review: [{ reviewBody: 'REVIEW-8844' }],
+          comment: [{ text: 'COMMENT-8845' }],
+          aggregateRating: { ratingValue: 'RATING-8846' },
+        }),
+        'bulky',
+      );
+      expect(prompt).toContain('Fluffy pancakes');
+      for (const gone of ['IMG-8842', 'VIDEO-8843', 'REVIEW-8844']) {
+        expect(prompt).not.toContain(gone);
+      }
+      expect(prompt).not.toContain('COMMENT-8845');
+      expect(prompt).not.toContain('RATING-8846');
+      expect(prompt).not.toContain('Blog chatter 5521');
+    });
+
+    it('also reads the graph form with the image beside it', async () => {
+      const prompt = await promptAfter(
+        jsonLdPage({ ...PANCAKES, image: 'IMG-9001.jpg' }, (r) => ({
+          '@graph': [{ '@type': 'ImageObject' }, r],
+        })),
+        'graph-image',
+      );
+      expect(prompt).not.toContain('IMG-9001');
+    });
+
+    it.each([
+      ['an @type array', { ...PANCAKES, '@type': ['Thing', 'Recipe'] }],
+      ['schema:Recipe', { ...PANCAKES, '@type': 'schema:Recipe' }],
+      [
+        'a full schema.org URL type',
+        { ...PANCAKES, '@type': 'https://schema.org/Recipe' },
+      ],
+    ])('finds a Recipe typed as %s', async (_label, recipe) => {
+      const prompt = await promptAfter(jsonLdPage(recipe), 'typed');
+      expect(prompt).toContain('Fluffy pancakes');
+    });
+
+    it('finds a Recipe in a top-level array of nodes', async () => {
+      const prompt = await promptAfter(
+        htmlPage(ldScript(JSON.stringify([{ '@type': 'WebSite' }, PANCAKES]))),
+        'array',
+      );
+      expect(prompt).toContain('Fluffy pancakes');
+    });
+
+    it('finds a Recipe that is the mainEntity of a WebPage', async () => {
+      const prompt = await promptAfter(
+        jsonLdPage({ ...PANCAKES, name: 'Main Entity Soup 3310' }, (r) => ({
+          '@type': 'WebPage',
+          mainEntity: r,
+        })),
+        'main-entity',
+      );
+      expect(prompt).toContain('Main Entity Soup 3310');
+    });
+
+    it('finds a Recipe in mainEntityOfPage when it is an object', async () => {
+      const prompt = await promptAfter(
+        jsonLdPage({ ...PANCAKES, name: 'Page Entity Soup 3311' }, (r) => ({
+          '@type': 'WebPage',
+          mainEntityOfPage: r,
+        })),
+        'main-entity-of-page',
+      );
+      expect(prompt).toContain('Page Entity Soup 3311');
+    });
+
+    it('skips other scripts and invalid blocks before a valid one, in any attribute order and quoting', async () => {
+      const prompt = await promptAfter(
+        htmlPage(
+          '<script>var a=1</script>',
+          ldScript('{oops'),
+          ldScript('{"@type":"Article"}'),
+          `<script data-x='1' TYPE='application/ld+json' id=a>${JSON.stringify({ ...PANCAKES, name: 'Quoted Soup 4410' })}</script>`,
+        ),
+        'attributes',
+      );
+      expect(prompt).toContain('Quoted Soup 4410');
+    });
+
+    it('reads an unquoted type attribute and an upper-case tag', async () => {
+      const prompt = await promptAfter(
+        htmlPage(
+          `<SCRIPT type=application/ld+json>${JSON.stringify({ ...PANCAKES, name: 'Unquoted Soup 4411' })}</SCRIPT >`,
+        ),
+        'unquoted',
+      );
+      expect(prompt).toContain('Unquoted Soup 4411');
+    });
   });
 
   it('asks in the Catalog Language of the Member', async () => {
@@ -298,6 +408,55 @@ describe('Recipe from Link (integration)', () => {
     ]);
   });
 
+  it('keeps quantity and unit together, folds wording into the note, and drops empty Steps', async () => {
+    const line = reading().ingredients[0];
+    respondWith(
+      reading({
+        steps: [
+          { text: ' Mix. ', timerMinutes: 1.5 },
+          { text: '   ', timerMinutes: 3 },
+          { text: 'Cook', timerMinutes: 0 },
+        ],
+        ingredients: [
+          { ...line, unit: null, nameAsWritten: 'no unit' },
+          { ...line, quantity: null, nameAsWritten: 'no quantity' },
+          {
+            ...line,
+            quantity: null,
+            unit: null,
+            originalAmount: 'a pinch',
+            preparation: null,
+            nameAsWritten: 'pinch',
+          },
+          { ...line, ingredientId: flour, preparation: 'sifted' },
+        ],
+      }),
+    );
+    const { draft } = (await read('https://example.com/amounts').expect(200))
+      .body as RecipeFromLink;
+    expect(draft.lines.map((l) => [l.quantity, l.unit, l.note])).toEqual([
+      [null, null, '2 cups'],
+      [null, null, '2 cups'],
+      [null, null, 'a pinch'],
+      [250, 'g', '2 cups, sifted'],
+    ]);
+    expect(draft.steps).toEqual([
+      { text: 'Mix.', timerSeconds: 90 },
+      { text: 'Cook', timerSeconds: null },
+    ]);
+  });
+
+  it('does not fail the read when a confidence is out of range', async () => {
+    respondWith(
+      reading({
+        ingredients: [{ ...reading().ingredients[0], matchConfidence: 1.01 }],
+      }),
+    );
+    const { draft } = (await read('https://example.com/confident').expect(200))
+      .body as RecipeFromLink;
+    expect(draft.lines[0]).toMatchObject({ ingredientId: flour });
+  });
+
   describe('errors', () => {
     it.each([['ftp://example.com/a'], ['javascript:alert(1)'], ['not a link']])(
       'link.invalid for %s, without fetching',
@@ -328,6 +487,30 @@ describe('Recipe from Link (integration)', () => {
       const res = await read('https://example.com/blog').expect(422);
       expect(code(res)).toBe('link.no_recipe');
       expect(prompts).toEqual([]);
+    });
+
+    it('link.no_recipe for JSON-LD without a Recipe', async () => {
+      serve(jsonLdPage({ '@type': 'Article', name: 'News' }));
+      const res = await read('https://example.com/article').expect(422);
+      expect(code(res)).toBe('link.no_recipe');
+      expect(prompts).toEqual([]);
+    });
+
+    it('link.no_recipe quickly for a huge page of unclosed script tags', async () => {
+      serve(`<html>${'<script type="application/ld+json">'.repeat(40_000)}`);
+      const started = Date.now();
+      const res = await read('https://example.com/unclosed').expect(422);
+      expect(Date.now() - started).toBeLessThan(2000);
+      expect(code(res)).toBe('link.no_recipe');
+      expect(prompts).toEqual([]);
+    });
+
+    it('link.invalid for a link over the length limit', async () => {
+      const res = await read(`https://example.com/${'a'.repeat(2100)}`).expect(
+        400,
+      );
+      expect(code(res)).toBe('link.invalid');
+      expect(fetched).toEqual([]);
     });
 
     it('link.no_recipe when the AI finds none', async () => {

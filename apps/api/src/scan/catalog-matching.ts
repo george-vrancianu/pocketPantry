@@ -55,11 +55,11 @@ export type ResolvedMatch = { match: CatalogSearchResult; exact: boolean };
  * The Match to keep: one whose confidence falls below `threshold` is dropped
  * (the item is Unmatched), as is a missing one.
  */
-export function confidentMatch(
-  match: CatalogSearchResult | null,
+export function confidentMatch<T>(
+  match: T | null,
   matchConfidence: number,
   threshold: number,
-): CatalogSearchResult | null {
+): T | null {
   return match !== null && matchConfidence >= threshold ? match : null;
 }
 

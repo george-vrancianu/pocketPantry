@@ -27,9 +27,10 @@ export const linkReadingSchema = z.object({
   ),
   ingredients: z.array(
     z.object({
+      /** The ingredient's name as the page writes it, translated into the Catalog Language. */
       nameAsWritten: z.string(),
       ingredientId: z.string().nullable(),
-      matchConfidence: z.number().min(0).max(1),
+      matchConfidence: z.number(),
       quantity: z.number().nullable(),
       unit: z.enum(ingredientUnit.enumValues).nullable(),
       originalAmount: z.string().nullable(),

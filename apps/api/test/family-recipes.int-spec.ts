@@ -1274,6 +1274,18 @@ describe('Family Recipes (integration)', () => {
         .post('', doc(null, { sourceLink: 'ftp://example.com/a' }))
         .expect(400);
       await a1.post('', doc(null, { sourceLink: 'nonsense' })).expect(400);
+      await a1
+        .post('', doc(null, { sourceLink: 'javascript:alert(1)' }))
+        .expect(400);
+    });
+
+    it('refuses a Source Link over the length limit', async () => {
+      await a1
+        .post(
+          '',
+          doc(null, { sourceLink: `https://example.com/${'a'.repeat(2100)}` }),
+        )
+        .expect(400);
     });
 
     it('is not copied into a Variant draft', async () => {
