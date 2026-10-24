@@ -319,7 +319,7 @@ _Avoid_: Catalog browser, discover, library
 
 **Add to Family**:
 Copying a Catalog Recipe into a Family Recipe that remembers which Catalog Recipe it was Copied From. The copy is the Family's to change, and later Admin edits to the Catalog Recipe never reach it. A Family has at most one live copy of each Catalog Recipe; a Variant made from a Catalog Recipe is not a copy.
-_Avoid_: Import, save, clone, adopt
+_Avoid_: Import, save (as the name of the action), clone, adopt
 
 **Family Recipe**:
 A Recipe owned by one Family, which its Members can edit and delete. Either a Base Recipe or a Variant, possibly of a Catalog Recipe.
