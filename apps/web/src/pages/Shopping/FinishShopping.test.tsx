@@ -127,7 +127,7 @@ describe('Finish Shopping review', () => {
     expect(screen.queryByText(/ticked off/)).not.toBeInTheDocument();
   });
 
-  it('offers each matched line the usual amounts of its Ingredient, and none for an Unmatched line', async () => {
+  it('offers each line usual amounts once it has a unit, from its Amount Scale or the unit alone', async () => {
     mockChipRow();
     stubFinish();
     renderWithProviders(<ShoppingPage />);
@@ -144,10 +144,22 @@ describe('Finish Shopping review', () => {
         }),
       ),
     ).toEqual(['500 g', '1,000 g', '2,000 g', '5,000 g']);
+    // Milk has no Amount Scale, so its values come from the unit alone.
+    const milk = within(review).getByRole('region', { name: 'Milk' });
+    expect(
+      chipLabels(
+        within(milk).getByRole('group', { name: 'Usual amounts for Milk' }),
+      ),
+    ).toEqual(['1 L', '2 L', '3 L', '4 L']);
+    // The Unmatched line starts in pieces, so it gets the pieces values.
     const dragon = within(review).getByRole('region', { name: 'Dragon fruit' });
     expect(
-      within(dragon).queryByRole('group', { name: /Usual amounts/ }),
-    ).not.toBeInTheDocument();
+      chipLabels(
+        within(dragon).getByRole('group', {
+          name: 'Usual amounts for Dragon fruit',
+        }),
+      ),
+    ).toEqual(['1 pcs', '2 pcs', '3 pcs', '4 pcs']);
   });
 
   it('pre-fills a Batch per checked item with Location and expiry', async () => {
@@ -417,7 +429,7 @@ describe('Finish Shopping review', () => {
     expect(body.lines.find((l) => l.itemId === 'i1')?.quantity).toBe(1.5);
   });
 
-  it("opens a line with no unit on its Ingredient's unit, and offers that unit's family", async () => {
+  it('opens a line with no unit on its Ingredient\'s unit, and offers every unit but never "No unit"', async () => {
     const noUnit: FinishProposal = {
       listId: 'l1',
       lines: [
@@ -452,13 +464,32 @@ describe('Finish Shopping review', () => {
     );
     const milk = within(await review.findByRole('region', { name: 'Milk' }));
 
+    const menuEntries = (menu: HTMLElement) =>
+      within(menu)
+        .getAllByRole('menuitemradio')
+        .map((entry) => entry.textContent);
+
     await user.click(parmesan.getByRole('button', { name: 'Unit: g' }));
-    expect(parmesan.getByRole('button', { name: 'kg' })).toBeInTheDocument();
-    expect(parmesan.queryByRole('button', { name: 'ml' })).toBeNull();
+    expect(menuEntries(parmesan.getByRole('menu', { name: 'Units' }))).toEqual([
+      'g',
+      'kg',
+      'ml',
+      'L',
+      'pcs',
+    ]);
+    expect(parmesan.getByRole('menuitemradio', { name: 'g' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
 
     await user.click(milk.getByRole('button', { name: 'Unit: L' }));
-    expect(milk.getByRole('button', { name: 'ml' })).toBeInTheDocument();
-    expect(milk.queryByRole('button', { name: 'g' })).toBeNull();
+    expect(menuEntries(milk.getByRole('menu', { name: 'Units' }))).toEqual([
+      'g',
+      'kg',
+      'ml',
+      'L',
+      'pcs',
+    ]);
   });
 });
 

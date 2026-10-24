@@ -76,6 +76,16 @@ const chipLabels = (group: HTMLElement) =>
     .getAllByRole('button')
     .map((chip) => chip.getAttribute('aria-label'));
 
+/** Location sits after the amount field, on its own row: their shared container stacks them, so neither is squeezed. */
+function expectLocationBelowAmount(amount: HTMLElement, location: HTMLElement) {
+  expect(
+    amount.compareDocumentPosition(location) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  let shared = amount.parentElement!;
+  while (!shared.contains(location)) shared = shared.parentElement!;
+  expect(getComputedStyle(shared).flexDirection).toBe('column');
+}
+
 /** The Family Settings response, with the Stale Threshold the tags are coloured by. */
 const familySettings = (staleThresholdDays: number) => () =>
   Response.json({ staleThresholdDays, expiryOverrides: [] });
@@ -395,6 +405,11 @@ describe('PantryPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
 
+    expectLocationBelowAmount(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      screen.getByLabelText('Location'),
+    );
+
     await pickLocation(user, 'Freezer');
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
@@ -460,11 +475,13 @@ describe('PantryPage', () => {
 
     expect(amount).toHaveValue('1.5');
     await user.click(screen.getByRole('button', { name: 'Unit: kg' }));
+    // Every unit is offered, and never "No unit": a Batch amount needs one.
     expect(
-      within(screen.getByRole('group', { name: 'Units' }))
-        .getAllByRole('button')
-        .map((button) => button.textContent),
-    ).toEqual(['g', 'kg']);
+      within(screen.getByRole('menu', { name: 'Units' }))
+        .getAllByRole('menuitemradio')
+        .map((entry) => entry.textContent),
+    ).toEqual(['g', 'kg', 'ml', 'L', 'pcs']);
+    await user.keyboard('{Escape}');
 
     await user.type(amount, '{Enter}');
     await waitFor(() =>
@@ -602,9 +619,10 @@ describe('PantryPage', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Unit: g' }));
     await user.click(
-      within(screen.getByRole('group', { name: 'Units' })).getByRole('button', {
-        name: 'kg',
-      }),
+      within(screen.getByRole('menu', { name: 'Units' })).getByRole(
+        'menuitemradio',
+        { name: 'kg' },
+      ),
     );
     await user.click(screen.getByRole('button', { name: 'Change ingredient' }));
     const search = screen.getByRole('combobox', { name: 'Search ingredients' });
@@ -639,9 +657,10 @@ describe('PantryPage', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Unit: g' }));
     await user.click(
-      within(screen.getByRole('group', { name: 'Units' })).getByRole('button', {
-        name: 'kg',
-      }),
+      within(screen.getByRole('menu', { name: 'Units' })).getByRole(
+        'menuitemradio',
+        { name: 'kg' },
+      ),
     );
     expect(
       screen.getByRole('button', { name: 'Unit: kg' }),
@@ -2952,7 +2971,10 @@ describe('PantryPage', () => {
           screen.getByRole('group', { name: 'Usual amounts for Paprika' }),
         ),
       ).toEqual(['10 g', '20 g', '50 g', '100 g']);
-      expect(screen.getByText('usual amount')).toBeVisible();
+      expect(screen.getByRole('button', { name: '50 g' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
     });
 
     it('shows and leaves unchanged a stored amount that matches no chip', async () => {
@@ -2975,7 +2997,12 @@ describe('PantryPage', () => {
       expect(
         screen.getByRole('textbox', { name: /Amount of Paprika/ }),
       ).toHaveValue('333');
-      expect(screen.queryByText('usual amount')).not.toBeInTheDocument();
+      const chips = within(
+        screen.getByRole('group', { name: 'Usual amounts for Paprika' }),
+      ).getAllByRole('button');
+      for (const chip of chips) {
+        expect(chip).toHaveAttribute('aria-pressed', 'false');
+      }
       await user.click(screen.getByRole('button', { name: 'Save changes' }));
       expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
     });
@@ -2987,6 +3014,7 @@ describe('PantryPage', () => {
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
       await openEditor(user);
       const amount = screen.getByRole('textbox', { name: /Amount of Milk/ });
+      expectLocationBelowAmount(amount, screen.getByLabelText('Location'));
       await user.clear(amount);
       await user.type(amount, '500 ml');
       await pickLocation(user, 'Freezer');
@@ -3001,7 +3029,7 @@ describe('PantryPage', () => {
       );
     });
 
-    it('saves on Enter in the amount, and Escape closes only the unit popover', async () => {
+    it('saves on Enter in the amount, and Escape closes only the unit menu', async () => {
       const user = userEvent.setup();
       const calls = stubManaged(stock());
       renderWithProviders(<PantryPage />);
@@ -3010,9 +3038,9 @@ describe('PantryPage', () => {
       const form = screen.getByRole('form', { name: 'Edit Milk batch' });
 
       await user.click(within(form).getByRole('button', { name: /^Unit: / }));
-      expect(within(form).getByRole('group', { name: 'Units' })).toBeVisible();
+      expect(within(form).getByRole('menu', { name: 'Units' })).toBeVisible();
       await user.keyboard('{Escape}');
-      expect(within(form).queryByRole('group', { name: 'Units' })).toBeNull();
+      expect(within(form).queryByRole('menu', { name: 'Units' })).toBeNull();
       expect(form).toBeInTheDocument();
 
       const amount = within(form).getByRole('textbox', {

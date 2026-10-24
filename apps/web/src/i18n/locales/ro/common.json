@@ -47,11 +47,11 @@
     "label": "Cantitatea de {{name}}, de exemplu 2 sau 500 g",
     "labelNoName": "Cantitate, de exemplu 2 sau 500 g",
     "unit": "Unitate: {{unit}}",
-    "noUnit": "unitate",
+    "noUnit": "Fără unitate",
     "units": "Unități",
+    "chooseUnit": "Alege unitatea",
     "invalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale.",
     "unitRequired": "Alege o unitate pentru cantitate.",
-    "usual": "de obicei",
     "usualAmounts": "Cantități obișnuite pentru {{name}}",
     "chip": "{{value}} {{unit}}"
   },

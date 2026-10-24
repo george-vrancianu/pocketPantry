@@ -46,11 +46,11 @@
     "label": "Amount of {{name}}, for example 2 or 500 g",
     "labelNoName": "Amount, for example 2 or 500 g",
     "unit": "Unit: {{unit}}",
-    "noUnit": "unit",
+    "noUnit": "No unit",
     "units": "Units",
+    "chooseUnit": "Choose a unit",
     "invalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals.",
     "unitRequired": "Choose a unit for the amount.",
-    "usual": "usual amount",
     "usualAmounts": "Usual amounts for {{name}}",
     "chip": "{{value}} {{unit}}"
   },
