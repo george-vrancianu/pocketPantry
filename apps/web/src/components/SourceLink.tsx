@@ -1,4 +1,4 @@
-import { Box, Link, Typography } from '@pocket-pantry/ui';
+import { Box, Button, Link, Stack, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { languageName } from '../lib/languageName';
 
@@ -45,5 +45,29 @@ export function SourceLink({
         })}
       </Typography>
     </Box>
+  );
+}
+
+/**
+ * A Source Link the Member may drop but never change: the link row with a "Remove link" button.
+ * The button unmounts with the row, so `onRemove` should move focus somewhere on the page.
+ */
+export function RemovableSourceLink({
+  href,
+  translatedFrom,
+  onRemove,
+}: {
+  href: string;
+  translatedFrom?: string | null;
+  onRemove: () => void;
+}) {
+  const { t } = useTranslation('recipes');
+  return (
+    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+      <SourceLink href={href} translatedFrom={translatedFrom} />
+      <Button variant="ghost" onClick={onRemove}>
+        {t('sourceLink.remove')}
+      </Button>
+    </Stack>
   );
 }

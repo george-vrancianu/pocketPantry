@@ -55,6 +55,10 @@ export type FamilyRecipeEdit = {
   cuisineId: string | null;
   methodId: string | null;
   archived: boolean;
+  /** The page the Recipe was read from; null otherwise. It can be removed, never changed. */
+  sourceLink: string | null;
+  /** The language the page was translated from; null otherwise. */
+  sourceLanguage: string | null;
   lines: {
     id: string;
     ingredientId: string | null;
@@ -93,8 +97,8 @@ export type FamilyRecipeDocument = {
   tips?: { stepIndex: number; text: string }[];
   /** Only on create: a saved draft brings its guidance along. */
   guidance?: GuidanceInput;
-  /** Only on create: the page the Recipe was read from. */
-  sourceLink?: string;
+  /** On create: the page the Recipe was read from. On update: `null` removes the Source Link (and its language); it can't be set or changed. */
+  sourceLink?: string | null;
   /** Only on create, with `sourceLink`: the language the page was translated from. */
   sourceLanguage?: string;
 };

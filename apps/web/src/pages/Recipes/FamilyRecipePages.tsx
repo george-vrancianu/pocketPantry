@@ -1,11 +1,4 @@
-import {
-  Alert,
-  Button,
-  Link,
-  Spinner,
-  Stack,
-  Typography,
-} from '@pocket-pantry/ui';
+import { Alert, Link, Spinner, Stack, Typography } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -15,7 +8,7 @@ import {
   type BaseRecipeOption,
 } from '../../components/BaseRecipePicker';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
-import { SourceLink, isSourceLink } from '../../components/SourceLink';
+import { RemovableSourceLink, isSourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
 import {
   useCreateFamilyRecipe,
@@ -143,22 +136,15 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
           />
         ) : null}
         {sourceLink ? (
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-            <SourceLink
-              href={sourceLink}
-              translatedFrom={supplied?.sourceLanguage}
-            />
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setSourceLink(null);
-                // The button unmounts with the row: keep focus on the page.
-                headingRef.current?.focus();
-              }}
-            >
-              {t('recipes:sourceLink.remove')}
-            </Button>
-          </Stack>
+          <RemovableSourceLink
+            href={sourceLink}
+            translatedFrom={supplied?.sourceLanguage}
+            onRemove={() => {
+              setSourceLink(null);
+              // The button unmounts with the row: keep focus on the page.
+              headingRef.current?.focus();
+            }}
+          />
         ) : null}
         <FamilyRecipeForm
           heading={t('recipes:family.newRecipeHeading')}
@@ -259,10 +245,16 @@ export function EditFamilyRecipePage() {
   const recipe = query.data;
   /** Bumped after each save so the form reseeds with the new line and Step ids. */
   const [saves, setSaves] = useState(0);
+  /** The Member dropped the Source Link; it is only sent (and gone) once they save. */
+  const [linkRemoved, setLinkRemoved] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
     <>
-      <AppScreenHeader title={recipe?.title ?? t('recipes:title')} />
+      <AppScreenHeader
+        title={recipe?.title ?? t('recipes:title')}
+        titleRef={headingRef}
+      />
       <Stack spacing={3}>
         {query.error ? (
           <Alert>{translateApiError(t, query.error)}</Alert>
@@ -270,6 +262,17 @@ export function EditFamilyRecipePage() {
         {query.isPending ? <Spinner label={t('common:loading')} /> : null}
         {recipe && !recipe.archived ? (
           <>
+            {recipe.sourceLink && !linkRemoved ? (
+              <RemovableSourceLink
+                href={recipe.sourceLink}
+                translatedFrom={recipe.sourceLanguage}
+                onRemove={() => {
+                  setLinkRemoved(true);
+                  // The button unmounts with the row: keep focus on the page.
+                  headingRef.current?.focus();
+                }}
+              />
+            ) : null}
             <FamilyRecipeForm
               // Tip writes refresh `recipe` but must not reset unsaved edits; a save reseeds.
               key={`${recipe.id}-${saves}`}
@@ -282,9 +285,16 @@ export function EditFamilyRecipePage() {
                 recipe.tips.filter((tip) => tip.stepId === stepId).length
               }
               onSave={(document) =>
-                update.mutate(document, {
-                  onSuccess: () => setSaves((count) => count + 1),
-                })
+                update.mutate(
+                  // `null` clears the link (and its language); leaving it out keeps both.
+                  linkRemoved ? { ...document, sourceLink: null } : document,
+                  {
+                    onSuccess: () => {
+                      setSaves((count) => count + 1);
+                      setLinkRemoved(false);
+                    },
+                  },
+                )
               }
               onCancel={() => navigate(`/recipes/${id}`)}
             />
