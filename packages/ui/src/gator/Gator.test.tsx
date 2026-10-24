@@ -184,6 +184,12 @@ describe('Gator', () => {
         const img = image(container);
         const { drawing } = GATOR_GEOMETRY[mood];
         const scale = 200 / drawing[2];
+        const box = img.parentElement!;
+        expect(box.style.display).toBe('flow-root');
+        expect(Number.parseFloat(box.style.width)).toBeCloseTo(200);
+        expect(Number.parseFloat(box.style.height)).toBeCloseTo(
+          drawing[3] * scale,
+        );
         const px = (v: string) => Number.parseFloat(v);
         const {
           width,

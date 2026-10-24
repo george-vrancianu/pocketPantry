@@ -95,7 +95,9 @@ export function Gator({
   return (
     <span
       style={{
-        display: 'block',
+        // flow-root: the img's negative margin-top must not collapse out of
+        // the span, or the art and the content after it shift up.
+        display: 'flow-root',
         width: layout.box.width,
         height: layout.box.height,
       }}

@@ -54,7 +54,7 @@ export {
   type GatorMotion,
   type GatorProps,
 } from './gator/Gator';
-export { GATOR_GEOMETRY, type AnimatedGatorMood } from './gator/gatorGeometry';
+export { type AnimatedGatorMood } from './gator/gatorGeometry';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
 export {
