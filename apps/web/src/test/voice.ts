@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { vi } from 'vitest';
 import type { Recording } from '../lib/microphone';
 import { voiceNote } from '../lib/voiceNote';
@@ -55,8 +55,7 @@ vi.mock('../lib/voiceNote', async (importOriginal) => {
   });
   fakes.voice.replace = () => {
     // Settle what the last test left under way, then start over.
-    current.cancelReading();
-    current.cancel({ quiet: true });
+    current.clear();
     unsubscribe();
     current = actual.createVoiceNote();
     unsubscribe = current.subscribe(emit);
@@ -247,3 +246,12 @@ export const voiceAction = (overrides: Record<string, unknown> = {}) => ({
   defaults: {},
   ...overrides,
 });
+
+/**
+ * Opens the Voice Note that is ready from the Voice Inbox strip (its Review button) and returns
+ * the Review sheet, or the answer sheet for a note of only Pantry Questions.
+ */
+export async function openReady(name?: { name: string }) {
+  fireEvent.click(await screen.findByRole('button', { name: 'Review' }));
+  return screen.findByRole('dialog', name);
+}

@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
+  openReady,
   resetVoiceEnvironment,
   stubVoiceFetch,
   talkButton,
@@ -327,7 +328,7 @@ describe('AppLayout Voice Notes off the Shopping List and the Pantry', () => {
     await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
-    return screen.findByRole('dialog');
+    return openReady();
   }
 
   it.each([
@@ -476,7 +477,7 @@ describe('AppLayout Review for actions that need a list', () => {
     await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
-    return within(await screen.findByRole('dialog'));
+    return within(await openReady());
   }
   const pickerOf = (dialog: ReturnType<typeof within>, name: string) =>
     within(dialog.getByRole('group', { name: `List for ${name}` }));

@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  openReady,
   mic,
   recordAndSend,
   resetVoiceEnvironment,
@@ -104,7 +105,7 @@ describe('Voice Notes on the Pantry page', () => {
     await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
-    return screen.findByRole('dialog');
+    return openReady();
   }
 
   beforeEach(() => {
@@ -143,19 +144,19 @@ describe('Voice Notes on the Pantry page', () => {
 
     await userEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
 
-    expect(await screen.findByRole('dialog')).toBeVisible();
+    expect(await openReady()).toBeVisible();
     expect(sent[0].get('spokenLanguage')).toBe('ro');
     expect(sent[0].get('defaultTarget')).toBe('shopping');
   });
 
-  it('keeps the voice button, the pill and a read going while a Batch is added', async () => {
+  it('keeps the voice button, the strip and a read going while a Batch is added', async () => {
     setup([], undefined, [], 'hangs');
     await recordAndSend({
       spokenLanguage: 'en',
       defaultTarget: 'pantry',
     });
     renderInAppLayout(<PantryPage />, '/pantry');
-    await screen.findByText("Gator's reading your note…");
+    await screen.findByText('Reading 1');
 
     await userEvent.click(screen.getByRole('button', { name: 'Add batch' }));
 
@@ -166,14 +167,7 @@ describe('Voice Notes on the Pantry page', () => {
     expect(
       screen.getByRole('button', { name: /hold to record a voice note/i }),
     ).toBeVisible();
-    expect(screen.getByText("Gator's reading your note…")).toBeVisible();
-
-    // Its Cancel still works over the form.
-    const pill = screen
-      .getByText("Gator's reading your note…")
-      .closest('[role="status"]') as HTMLElement;
-    await userEvent.click(within(pill).getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByText("Gator's reading your note…")).toBeNull();
+    expect(screen.getByText('Reading 1')).toBeVisible();
   });
 
   it('puts the voice button on the Pantry page and records for the Pantry', async () => {

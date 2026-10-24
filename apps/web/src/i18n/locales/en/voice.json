@@ -256,7 +256,6 @@
     "tooLong": "That recording was too long. Try a shorter one.",
     "unsupportedTitle": "Can't read this recording",
     "unsupported": "This browser's recording format isn't supported",
-    "tipBusy": "Still reading your last note",
     "tipFailed": "Retry or discard the last note first",
     "noRecording": "Can't record here"
   },
@@ -275,5 +274,14 @@
     "expiringSoon": "Expiring soon",
     "addToList_one": "Add {{count}} to the Shopping List",
     "addToList_other": "Add {{count}} to the Shopping List"
+  },
+  "inbox": {
+    "title_one": "{{count}} Voice Note",
+    "title_other": "{{count}} Voice Notes",
+    "reading": "Reading {{count}}",
+    "ready": "{{count}} ready",
+    "review": "Review",
+    "reviewOldest": "Review the oldest",
+    "full": "Review your notes first"
   }
 }

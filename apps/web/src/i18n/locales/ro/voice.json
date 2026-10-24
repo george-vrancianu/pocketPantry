@@ -264,7 +264,6 @@
     "tooLong": "Înregistrarea a fost prea lungă. Încearcă una mai scurtă.",
     "unsupportedTitle": "Nu se poate citi înregistrarea",
     "unsupported": "Formatul de înregistrare al acestui browser nu este acceptat",
-    "tipBusy": "Încă citesc ultima notă",
     "tipFailed": "Reîncearcă sau șterge mai întâi ultima notă",
     "noRecording": "Nu se poate înregistra aici"
   },
@@ -284,5 +283,15 @@
     "addToList_one": "Adaugă {{count}} în Lista de cumpărături",
     "addToList_few": "Adaugă {{count}} în Lista de cumpărături",
     "addToList_other": "Adaugă {{count}} în Lista de cumpărături"
+  },
+  "inbox": {
+    "title_one": "{{count}} notă vocală",
+    "title_few": "{{count}} note vocale",
+    "title_other": "{{count}} de note vocale",
+    "reading": "Citesc {{count}}",
+    "ready": "{{count}} gata",
+    "review": "Verificare",
+    "reviewOldest": "Verifică cea mai veche",
+    "full": "Verifică mai întâi notele"
   }
 }

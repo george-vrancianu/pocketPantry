@@ -256,7 +256,6 @@
     "tooLong": "Optagelsen var for lang. Prøv en kortere.",
     "unsupportedTitle": "Kan ikke læse optagelsen",
     "unsupported": "Denne browsers optageformat understøttes ikke",
-    "tipBusy": "Læser stadig din sidste note",
     "tipFailed": "Prøv igen eller kassér den sidste note først",
     "noRecording": "Kan ikke optage her"
   },
@@ -275,5 +274,14 @@
     "expiringSoon": "Udløber snart",
     "addToList_one": "Tilføj {{count}} til indkøbslisten",
     "addToList_other": "Tilføj {{count}} til indkøbslisten"
+  },
+  "inbox": {
+    "title_one": "{{count}} stemmenote",
+    "title_other": "{{count}} stemmenoter",
+    "reading": "Læser {{count}}",
+    "ready": "{{count}} klar",
+    "review": "Gennemse",
+    "reviewOldest": "Gennemse den ældste",
+    "full": "Gennemse dine noter først"
   }
 }

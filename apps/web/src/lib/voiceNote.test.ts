@@ -39,6 +39,7 @@ async function record(
   startOptions: {
     spokenLanguage: 'en' | 'ro';
     defaultTarget: 'shopping' | 'pantry';
+    openWhenReady?: boolean;
   } = options,
 ) {
   await note.start(startOptions);
@@ -105,6 +106,8 @@ async function inReview(...ids: string[]) {
   await record(ctx.note, options);
   ctx.answer(result(...ids));
   await settle();
+  // A note that is ready waits in the Voice Inbox until it is opened.
+  ctx.note.openReady();
   return ctx;
 }
 
@@ -116,6 +119,12 @@ async function failedWith(error: unknown) {
   await settle();
   return ctx;
 }
+
+/** Cancels the oldest Voice Note being read. */
+const cancelFirst = (note: VoiceNote) =>
+  note.cancelReading(
+    note.getState().inbox.notes.find((n) => n.phase === 'reading')?.id,
+  );
 
 const ids = (note: ReturnType<typeof createVoiceNote>) =>
   note.getState().proposal?.actions.map((a) => a.id);
@@ -158,9 +167,13 @@ describe('Voice Note module', () => {
       expect(note.getState().phase).toBe('idle');
       await record(note, options);
       note.applying();
-      expect(note.getState().phase).toBe('reading');
+      expect(note.getState().inbox.reading).toBe(1);
       answer(result('a'));
       await settle();
+      // Ready, but not opened yet.
+      note.applying();
+      expect(note.getState().phase).toBe('idle');
+      note.openReady();
       note.applying();
       expect(note.getState().phase).toBe('applying');
     });
@@ -228,10 +241,7 @@ describe('Voice Note module', () => {
           spokenLanguage: 'ro',
           defaultTarget: 'pantry',
         });
-        expect(note.getState()).toMatchObject({
-          phase: 'reading',
-          defaultTarget: 'pantry',
-        });
+        expect(note.getState().inbox.reading).toBe(1);
         expect(requests[0]).toMatchObject({
           recording,
           spokenLanguage: 'ro',
@@ -240,6 +250,7 @@ describe('Voice Note module', () => {
         });
         answer(result('a'));
         await settle();
+        note.openReady();
         expect(note.getState()).toMatchObject({
           phase: 'review',
           defaultTarget: 'pantry',
@@ -251,11 +262,156 @@ describe('Voice Note module', () => {
       }
     });
 
-    it('reads one note at a time', async () => {
-      const { note, send } = setup();
+    it('reads two notes at once and starts the rest in recording order', async () => {
+      const { note, send, requests, answer } = setup();
+      for (const defaultTarget of ['shopping', 'pantry', 'shopping'] as const) {
+        await record(note, { spokenLanguage: 'en', defaultTarget });
+      }
+      expect(send).toHaveBeenCalledTimes(2);
+      expect(note.getState().inbox).toMatchObject({ reading: 3, ready: 0 });
+      answer(result('a'), 1);
+      await settle();
+      // The second one was ready first, and the waiting third took its place.
+      expect(send).toHaveBeenCalledTimes(3);
+      expect(requests.map((r) => r.defaultTarget)).toEqual([
+        'shopping',
+        'pantry',
+        'shopping',
+      ]);
+      expect(note.getState().inbox).toMatchObject({ reading: 2, ready: 1 });
+    });
+
+    it('sends each note with its own Default List and Spoken Language', async () => {
+      const { note, requests, answer } = setup();
+      await record(note, { spokenLanguage: 'ro', defaultTarget: 'pantry' });
+      await record(note, { spokenLanguage: 'en', defaultTarget: 'shopping' });
+      answer(result('a'), 1);
+      answer(result('b'), 0);
+      await settle();
+      expect(requests.map((r) => [r.spokenLanguage, r.defaultTarget])).toEqual([
+        ['ro', 'pantry'],
+        ['en', 'shopping'],
+      ]);
+      // Oldest first, whichever was read first.
+      note.openReady();
+      expect(note.getState()).toMatchObject({
+        defaultTarget: 'pantry',
+        recording: { spokenLanguage: 'ro' },
+      });
+      expect(ids(note)).toEqual(['b']);
+    });
+
+    it('refuses a sixth Voice Note and says so', async () => {
+      const { note, startMicrophone, notices } = setup();
+      for (let i = 0; i < 5; i++) await record(note, options);
+      expect(note.startBlocker()).toBe('full');
+      expect(await note.start(options)).toBe('refused');
+      expect(startMicrophone).toHaveBeenCalledTimes(5);
+      expect(notices).toEqual(['inboxFull']);
+    });
+
+    it('records again once a note is out of the Voice Inbox', async () => {
+      const { note, answer } = setup();
+      for (let i = 0; i < 5; i++) await record(note, options);
+      answer(result('a'), 0);
+      await settle();
+      note.openReady();
+      note.discard();
+      expect(note.startBlocker()).toBe('none');
+    });
+
+    it('refuses to start while a Review is open, and works again once it closes', async () => {
+      const { note, startMicrophone } = await inReview('a');
+      expect(note.startBlocker()).toBe('review');
+      expect(await note.start(options)).toBe('refused');
+      expect(startMicrophone).toHaveBeenCalledOnce();
+      note.discard();
+      expect(note.startBlocker()).toBe('none');
+    });
+
+    it('refuses to start while a note that opens itself is still being read', async () => {
+      const { note, startMicrophone } = setup();
+      await record(note, { ...options, openWhenReady: true });
+      expect(note.startBlocker()).toBe('review');
+      expect(await note.start(options)).toBe('refused');
+      expect(startMicrophone).toHaveBeenCalledOnce();
+    });
+
+    it('discarding or applying removes only that note', async () => {
+      const { note, answer } = setup();
       await record(note, options);
       await record(note, options);
-      expect(send).toHaveBeenCalledOnce();
+      answer(result('a'), 0);
+      answer(result('b'), 1);
+      await settle();
+      note.openReady();
+      expect(ids(note)).toEqual(['a']);
+      note.applying();
+      note.applied();
+      expect(note.getState().inbox).toMatchObject({ total: 1, ready: 1 });
+      note.openReady();
+      expect(ids(note)).toEqual(['b']);
+    });
+
+    it('vibrates through the notifier once per note that becomes ready', async () => {
+      const { note, notices, answer, refuse } = setup();
+      await record(note, options);
+      await record(note, options);
+      answer(result('a'), 0);
+      await settle();
+      expect(notices).toEqual(['noteReady']);
+      refuse(new ApiError('network_error', 0), 1);
+      await settle();
+      expect(notices).toEqual(['noteReady']);
+    });
+
+    it('registers a beforeunload prompt while a note is unapplied, and drops it when empty', async () => {
+      const add = vi.spyOn(window, 'addEventListener');
+      const remove = vi.spyOn(window, 'removeEventListener');
+      const calls = (spy: typeof add) =>
+        spy.mock.calls.filter(([type]) => type === 'beforeunload').length;
+      const { note, answer } = setup();
+      expect(calls(add)).toBe(0);
+      await record(note, options);
+      await record(note, options);
+      expect(calls(add)).toBe(1);
+      answer(result('a'), 0);
+      answer(result('b'), 1);
+      await settle();
+      note.openReady();
+      note.discard();
+      expect(calls(remove)).toBe(0);
+      note.openReady();
+      note.discard();
+      expect(calls(remove)).toBe(1);
+      add.mockRestore();
+      remove.mockRestore();
+    });
+
+    it('is emptied by clear: reads aborted, lock released, prompt removed', async () => {
+      const remove = vi.spyOn(window, 'removeEventListener');
+      const { note, requests, released } = setup();
+      await record(note, options);
+      await record(note, options);
+      note.clear();
+      expect(requests.every((r) => r.signal?.aborted)).toBe(true);
+      expect(released()).toEqual([1]);
+      expect(note.getState().inbox.total).toBe(0);
+      expect(remove.mock.calls.some(([type]) => type === 'beforeunload')).toBe(
+        true,
+      );
+      remove.mockRestore();
+    });
+
+    it('cancels one read by its own handle and starts the next waiting one', async () => {
+      const { note, send, requests } = setup();
+      for (let i = 0; i < 3; i++) await record(note, options);
+      const [first] = note.getState().inbox.notes;
+      note.cancelReading(first.id);
+      expect(requests[0].signal?.aborted).toBe(true);
+      expect(requests[1].signal?.aborted).toBe(false);
+      expect(send).toHaveBeenCalledTimes(3);
+      expect(note.getState().inbox.reading).toBe(2);
     });
 
     it('does not read while a failure waits', async () => {
@@ -336,7 +492,7 @@ describe('Voice Note module', () => {
       const { note } = setup();
       await record(note, options);
       note.fail('unavailable');
-      expect(note.getState().phase).toBe('reading');
+      expect(note.getState().inbox.reading).toBe(1);
     });
 
     it('fails before a read, for a browser that cannot record', () => {
@@ -385,7 +541,7 @@ describe('Voice Note module', () => {
       note.dismiss();
       note.discardFailed();
       expect(note.getState().phase).toBe('review');
-      expect(notices).toEqual([]);
+      expect(notices).toEqual(['noteReady']);
     });
   });
 
@@ -494,7 +650,7 @@ describe('Voice Note module', () => {
       await settle();
 
       const second = ctx.note.retry();
-      expect(ctx.note.getState().phase).toBe('reading');
+      expect(ctx.note.getState().inbox.reading).toBe(1);
       expect(ctx.requests[1]).toMatchObject({
         recording,
         spokenLanguage: 'ro',
@@ -502,6 +658,8 @@ describe('Voice Note module', () => {
       });
       ctx.answer(result('a'));
       await second;
+      await settle();
+      ctx.note.openReady();
       expect(ctx.note.getState()).toMatchObject({
         phase: 'review',
         defaultTarget: 'pantry',
@@ -534,7 +692,7 @@ describe('Voice Note module', () => {
     it('aborts the request, drops the note and tells the Member', async () => {
       const { note, requests, notices, released } = setup();
       await record(note, options);
-      note.cancelReading();
+      cancelFirst(note);
       expect(requests[0].signal?.aborted).toBe(true);
       expect(note.getState()).toMatchObject({ phase: 'idle' });
       expect(note.getState().recording).toBeUndefined();
@@ -545,7 +703,7 @@ describe('Voice Note module', () => {
     it('ignores a late answer', async () => {
       const { note, answer } = setup();
       await record(note, options);
-      note.cancelReading();
+      cancelFirst(note);
       answer(result('a'));
       await settle();
       expect(note.getState()).toMatchObject({ phase: 'idle' });
@@ -555,7 +713,7 @@ describe('Voice Note module', () => {
     it('ignores a late failure', async () => {
       const { note, refuse, notices } = setup();
       await record(note, options);
-      note.cancelReading();
+      cancelFirst(note);
       refuse(new ApiError('voice.not_configured', 503));
       await settle();
       expect(note.getState().phase).toBe('idle');
@@ -564,16 +722,16 @@ describe('Voice Note module', () => {
 
     it('does nothing outside a read', async () => {
       const { note, notices } = await inReview('a');
-      note.cancelReading();
+      cancelFirst(note);
       expect(note.getState().phase).toBe('review');
-      expect(notices).toEqual([]);
+      expect(notices).toEqual(['noteReady']);
     });
 
     it('leaves a read that settled alone', async () => {
       const { note, notices } = await failedWith(
         new ApiError('network_error', 0),
       );
-      note.cancelReading();
+      cancelFirst(note);
       expect(note.getState().phase).toBe('failed');
       expect(notices).toEqual([]);
     });
@@ -608,10 +766,7 @@ describe('Voice Note module', () => {
         defaultTarget: 'pantry',
       });
       expect(await note.stop()).toBe('sent');
-      expect(note.getState()).toMatchObject({
-        phase: 'reading',
-        defaultTarget: 'pantry',
-      });
+      expect(note.getState().inbox.reading).toBe(1);
       expect(note.getState().startedAt).toBeUndefined();
       expect(requests[0]).toMatchObject({
         recording,
@@ -846,16 +1001,17 @@ describe('Voice Note module', () => {
       expect(await ctx.note.start(options)).toBe('refused');
       finish();
       expect(await stopped).toBe('sent');
-      expect(ctx.note.startBlocker()).toBe('busy');
+      expect(ctx.note.startBlocker()).toBe('none');
     });
 
-    it('is busy while a note is being read, and a start is refused', async () => {
+    it('is free while notes are being read: a start begins a new note', async () => {
       const { note, startMicrophone } = setup();
       await record(note);
-      expect(note.startBlocker()).toBe('busy');
-      expect(await note.start(options)).toBe('refused');
-      expect(startMicrophone).toHaveBeenCalledOnce();
-      expect(note.getState().phase).toBe('reading');
+      expect(note.startBlocker()).toBe('none');
+      expect(await note.start(options)).toBe('started');
+      expect(startMicrophone).toHaveBeenCalledTimes(2);
+      expect(note.getState().phase).toBe('recording');
+      expect(note.getState().inbox.reading).toBe(1);
     });
 
     it('is kept while a failed note waits for Retry, and a start is refused', async () => {
@@ -929,7 +1085,7 @@ describe('Voice Note module', () => {
       await vi.advanceTimersByTimeAsync(1);
       expect(notices).toEqual(['stoppedAtLimit']);
       expect(sessions[0].stop).toHaveBeenCalledOnce();
-      expect(note.getState().phase).toBe('reading');
+      expect(note.getState().inbox.reading).toBe(1);
       expect(requests).toHaveLength(1);
     });
 
@@ -999,7 +1155,7 @@ describe('Voice Note module', () => {
         const { note, requests, notices, released } = setup();
         await record(note);
         note.cancel({ quiet });
-        expect(note.getState().phase).toBe('reading');
+        expect(note.getState().inbox.reading).toBe(1);
         expect(requests[0].signal?.aborted).toBe(false);
         expect(notices).toEqual([]);
         expect(released()).toEqual([0]);
@@ -1046,7 +1202,21 @@ describe('Voice Note module', () => {
       expect(released()).toEqual([0]);
       answer(result('a'));
       await settle();
+      note.openReady();
       expect(note.getState().phase).toBe('review');
+      expect(released()).toEqual([1]);
+    });
+
+    it('is held while any read is in flight, released when the last settles', async () => {
+      const { note, answer, keepScreenAwake, released } = setup();
+      await record(note);
+      await record(note);
+      expect(keepScreenAwake).toHaveBeenCalledOnce();
+      answer(result('a'), 0);
+      await settle();
+      expect(released()).toEqual([0]);
+      answer(result('b'), 1);
+      await settle();
       expect(released()).toEqual([1]);
     });
 
@@ -1147,7 +1317,7 @@ describe('Voice Note module', () => {
     it('lets a cancelled read release nothing of a newer note', async () => {
       const ctx = setup();
       await record(ctx.note);
-      ctx.note.cancelReading();
+      cancelFirst(ctx.note);
       expect(ctx.released()).toEqual([1]);
 
       // A new note takes its own lock before the old answer arrives.
@@ -1163,15 +1333,16 @@ describe('Voice Note module', () => {
     it('lets a cancelled read that answers late release nothing of a newer read', async () => {
       const ctx = setup();
       await record(ctx.note);
-      ctx.note.cancelReading();
+      cancelFirst(ctx.note);
       await record(ctx.note);
       ctx.answer(result('a'), 0);
       await settle();
       expect(ctx.released()).toEqual([1, 0]);
-      expect(ctx.note.getState().phase).toBe('reading');
+      expect(ctx.note.getState().inbox.reading).toBe(1);
       ctx.answer(result('b'), 1);
       await settle();
       expect(ctx.released()).toEqual([1, 1]);
+      ctx.note.openReady();
       expect(ids(ctx.note)).toEqual(['b']);
     });
   });
@@ -1186,10 +1357,10 @@ describe('Voice Note module', () => {
       const heard: VoiceNotice[] = [];
       const detach = note.attachNotifier((notice) => heard.push(notice));
       await record(note, options);
-      note.cancelReading();
+      cancelFirst(note);
       detach();
       await record(note, options);
-      note.cancelReading();
+      cancelFirst(note);
       expect(heard).toEqual(['readCancelled']);
     });
   });
