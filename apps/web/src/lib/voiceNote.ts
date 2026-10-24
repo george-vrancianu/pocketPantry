@@ -475,10 +475,9 @@ export function createVoiceNote(
   function startBlocker(): StartBlocker {
     // A note is already under way (the microphone starting, recording, audio being finalised): ignore silently.
     if (starting || session || finishing) return 'active';
-    // The mic is not offered while a Review or answer sheet is open.
     const open = openNote();
-    // Also while the note that opens itself (Setup's) is still being read: it is the only one.
-    if (isSheet(open) || (open && open.phase !== 'failed')) return 'review';
+    // The mic is not offered while the open note is a Review or answer sheet, or still being read (Setup's single note).
+    if (open && open.phase !== 'failed') return 'review';
     if (open?.phase === 'failed' && open.recording) return 'kept';
     // A failure with nothing kept is dropped by this press, so it does not count.
     const dropped = open?.phase === 'failed' && !open.recording ? 1 : 0;

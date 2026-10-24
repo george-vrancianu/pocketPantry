@@ -61,7 +61,10 @@ export function VoiceInboxStrip() {
           component="button"
           type="button"
           aria-label={t('inbox.reviewOldest')}
-          onClick={() => voiceNote.openReady()}
+          onClick={(event) => {
+            event.stopPropagation();
+            voiceNote.openReady();
+          }}
           sx={{
             position: 'absolute',
             inset: 0,
@@ -92,19 +95,17 @@ export function VoiceInboxStrip() {
         </Box>
       </Box>
       {ready === 1 ? (
-        <Box sx={{ position: 'relative' }}>
-          <Button
-            variant="primary"
-            size="sm"
-            shape="pill"
-            onClick={(event) => {
-              event.stopPropagation();
-              voiceNote.openReady();
-            }}
-          >
-            {t('inbox.review')}
-          </Button>
-        </Box>
+        <Button
+          variant="primary"
+          size="sm"
+          shape="pill"
+          onClick={(event) => {
+            event.stopPropagation();
+            voiceNote.openReady();
+          }}
+        >
+          {t('inbox.review')}
+        </Button>
       ) : null}
     </Box>,
     host,

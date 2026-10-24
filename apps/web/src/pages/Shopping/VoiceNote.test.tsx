@@ -320,9 +320,7 @@ describe('Voice Note on the Shopping List', () => {
       const strip = await screen.findByRole('status');
       expect(strip).toHaveTextContent('1 Voice Note');
       expect(strip).toHaveTextContent('Reading 1');
-      expect(
-        within(strip).queryByRole('button', { name: 'Review' }),
-      ).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
       expect(screen.queryByRole('alert')).toBeNull();
       expect(screen.getByText('Your list is empty')).toBeVisible();
     });
@@ -426,7 +424,7 @@ describe('Voice Note on the Shopping List', () => {
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       const strip = await screen.findByRole('status');
-      await within(strip).findByRole('button', { name: 'Review' });
+      await screen.findByRole('button', { name: 'Review' });
       expect(strip).toHaveTextContent('1 ready');
       expect(await openReady()).toBeVisible();
       // The strip steps aside while the sheet is up.
