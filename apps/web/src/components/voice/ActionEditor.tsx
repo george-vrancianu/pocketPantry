@@ -12,15 +12,11 @@ import { soonBorder } from './soonBorder';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpiryTag } from '../ExpiryTag';
+import { LocationToggle } from '../LocationToggle';
 import { CatalogSearch } from '../catalogSearch/CatalogSearch';
 import { ExpirySheet } from '../ExpiryPicker';
 import { QuickPicks } from '../ExpiryPicker/QuickPicks';
-import {
-  LOCATIONS,
-  UNITS,
-  type CatalogSearchResult,
-  type StorageLocation,
-} from '../../lib/catalog';
+import { UNITS, type CatalogSearchResult } from '../../lib/catalog';
 import {
   dateAndRelativeDay,
   defaultExpiryDate,
@@ -241,26 +237,21 @@ function ExpiresEditor({
 
 function LocationEditor({ action }: { action: VoiceReviewAction }) {
   const { t } = useTranslation(['voice', 'common']);
-  const location = effectiveLocation(action);
   return (
-    <Field label={t('voice:review.edit.location')}>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-        {LOCATIONS.map((value: StorageLocation, index) => (
-          <Chip
-            key={value}
-            label={t(`common:locations.${value}`)}
-            selected={location === value}
-            data-voice-picker={index === 0 ? action.id : undefined}
-            onClick={() => voiceNote.edit(action.id, { location: value })}
-          />
-        ))}
-      </Box>
+    <Box>
+      <LocationToggle
+        label={t('voice:review.edit.location')}
+        value={effectiveLocation(action)}
+        onChange={(location) => voiceNote.edit(action.id, { location })}
+        captionSx={eyebrow}
+        voicePicker={action.id}
+      />
       {action.location === null && action.defaults.location ? (
         <Typography sx={note}>
           {t('voice:review.edit.locationDefault')}
         </Typography>
       ) : null}
-    </Field>
+    </Box>
   );
 }
 

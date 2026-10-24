@@ -3,14 +3,13 @@ import {
   Button,
   Spinner,
   Stack,
-  TextField,
   Typography,
   radius,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { AmountField } from '../../../components/AmountField';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
-import { LOCATIONS } from '../../../lib/catalog';
+import { LocationToggle } from '../../../components/LocationToggle';
 import { useFinishReview } from '../hooks/useFinishReview';
 
 type Props = { onDone: () => void; onCancel: () => void };
@@ -97,23 +96,11 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
                 allowNoUnit={false}
                 amountScale={line.amountScale}
               />
-              <TextField
-                select
+              <LocationToggle
                 label={t('pantry:form.location')}
                 value={edit.location}
-                onChange={(event) =>
-                  review.edit(line.itemId, {
-                    location: event.target.value as typeof edit.location,
-                  })
-                }
-                slotProps={{ select: { native: true } }}
-              >
-                {LOCATIONS.map((location) => (
-                  <option key={location} value={location}>
-                    {t(`common:locations.${location}`)}
-                  </option>
-                ))}
-              </TextField>
+                onChange={(location) => review.edit(line.itemId, { location })}
+              />
               <ExpiryField
                 label={t('pantry:picker.label')}
                 value={edit.expiryDate}

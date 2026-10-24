@@ -12,6 +12,7 @@ import {
   quickPickTiles,
   sheetButton,
 } from '../../test/expirySheet';
+import { pickLocation, pressedLocation } from '../../test/location';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ShoppingPage } from './ShoppingPage';
 
@@ -162,7 +163,9 @@ describe('Finish Shopping review', () => {
       parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
     ).toHaveValue('200');
     expect(parmesan.getByRole('button', { name: 'Unit: g' })).toBeVisible();
-    expect(parmesan.getByLabelText('Location')).toHaveValue('fridge');
+    expect(
+      pressedLocation(within(review).getByRole('region', { name: 'Parmesan' })),
+    ).toBe('Fridge');
     expect(
       parmesan.getByRole('button', { name: /^Expires, Sunday, November 1\b/ }),
     ).toHaveAttribute('aria-haspopup', 'dialog');
@@ -170,7 +173,11 @@ describe('Finish Shopping review', () => {
       within(review).getByRole('region', { name: 'Dragon fruit' }),
     );
     expect(unmatched.getByText(/Unmatched/)).toBeVisible();
-    expect(unmatched.getByLabelText('Location')).toHaveValue('cupboard');
+    expect(
+      pressedLocation(
+        within(review).getByRole('region', { name: 'Dragon fruit' }),
+      ),
+    ).toBe('Cupboard');
   });
 
   it('sends edited and dropped lines on confirm, then returns to the list', async () => {
@@ -185,7 +192,11 @@ describe('Finish Shopping review', () => {
     const parmesan = within(
       await review.findByRole('region', { name: 'Parmesan' }),
     );
-    await user.selectOptions(parmesan.getByLabelText('Location'), 'freezer');
+    await pickLocation(
+      user,
+      'Freezer',
+      review.getByRole('region', { name: 'Parmesan' }),
+    );
     await user.clear(
       parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
     );

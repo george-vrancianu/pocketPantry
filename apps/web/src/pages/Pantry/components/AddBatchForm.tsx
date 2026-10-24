@@ -9,6 +9,7 @@ import {
   OpenFoodFactsCredit,
 } from '../../../components/BarcodeLookupNotes';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
+import { LocationToggle } from '../../../components/LocationToggle';
 import { StatusIcon } from '../../../components/StatusIcon';
 import { saveOverlayMode } from '../../../lib/cameraMode';
 import { CameraOverlay } from '../../Scan/CameraOverlay';
@@ -17,7 +18,7 @@ import {
   type AddBatchStart,
   type PrefillField,
 } from '../hooks/useAddBatchForm';
-import { AmountLocationRow } from './AmountLocationRow';
+import { BatchAmountField } from './BatchAmountField';
 
 type Props = {
   onSaved: () => void;
@@ -134,20 +135,23 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
       ) : null}
       {picked ? (
         <>
-          <AmountLocationRow
+          <BatchAmountField
             name={picked}
             amountScale={form.ingredient?.amountScale}
             quantity={form.quantity}
             unit={form.unit}
-            location={form.location}
             quantityValid={form.quantityValid}
             onQuantityChange={form.setQuantity}
             onUnitChange={form.setUnit}
-            onLocationChange={form.setLocation}
             onSubmit={() => formRef.current?.requestSubmit()}
           />
 
           {mark('amount')}
+          <LocationToggle
+            label={t('form.location')}
+            value={form.location}
+            onChange={form.setLocation}
+          />
           <ExpiryField
             id={`${id}-expiry`}
             label={t('picker.label')}
