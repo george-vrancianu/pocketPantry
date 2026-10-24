@@ -310,8 +310,12 @@ A Recipe owned by one Family, which its Members can edit and delete. Either a Ba
 _Avoid_: Custom recipe, my recipe, user recipe
 
 **Recipe from Link**:
-Reading a recipe from a web page a Member links to, or from recipe text they paste in, into a new Family Recipe in our own format. It fills the New Family Recipe page and nothing is saved until the Member saves it. Only what the source states is filled in; Guidance is never made up while reading, though the Member can Suggest Guidance on the draft afterwards. Not a Scan and not a Shopping Template being applied.
+Reading a recipe from a web page a Member links to, or from recipe text they paste in, into a new Family Recipe in our own format. It fills the New Family Recipe page and nothing is saved until the Member saves it. Only what the source states is filled in; Guidance is never made up while reading, though the Member can Suggest Guidance on the filled page afterwards. Not a Scan and not a Shopping Template being applied.
 _Avoid_: Recipe import, clip, scrape
+
+**Recipe Draft**:
+A Member's unsaved New Recipe or new Variant, kept automatically so they can finish it later, on any device. Private to that Member, and not a Recipe: it is never browsed, matched, planned or shopped from, only resumed or discarded. Saving it makes the Recipe and ends the Recipe Draft.
+_Avoid_: Draft Recipe, unsaved recipe, draft (alone)
 
 **Source Link**:
 The web page a Family Recipe was read from by Recipe from Link, kept on the Recipe and shown as where it came from, with the source language when the Recipe was translated. A Member can remove it but not change it, and a Variant made from the Recipe does not copy it.
