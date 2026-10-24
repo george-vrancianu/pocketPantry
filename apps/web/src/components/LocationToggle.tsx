@@ -32,8 +32,8 @@ type Props = {
 
 /**
  * The four Locations as one full-width row of toggle buttons, an icon above
- * each label. Labels too long for a 320 px phone (Romanian) show their short
- * form; the button keeps the full name.
+ * each full label. On a narrow phone the dense toggle shrinks the labels
+ * (down to 11 px) so even the Romanian ones fit whole.
  */
 export function LocationToggle({
   label,
@@ -62,16 +62,11 @@ export function LocationToggle({
         dense
         value={value}
         onChange={onChange}
-        options={LOCATIONS.map((location) => {
-          const full = t(`locations.${location}`);
-          const short = t(`locationsShort.${location}`);
-          return {
-            value: location,
-            label: short,
-            accessibleLabel: short === full ? undefined : full,
-            icon: ICONS[location],
-          };
-        })}
+        options={LOCATIONS.map((location) => ({
+          value: location,
+          label: t(`locations.${location}`),
+          icon: ICONS[location],
+        }))}
       />
     </Box>
   );

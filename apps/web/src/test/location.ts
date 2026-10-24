@@ -15,7 +15,7 @@ export function pressedLocation(scope?: HTMLElement, name = 'Location') {
     .filter((button) => button.getAttribute('aria-pressed') === 'true');
   if (pressed.length !== 1)
     throw new Error(`expected one pressed Location, got ${pressed.length}`);
-  return pressed[0].getAttribute('aria-label') ?? pressed[0].textContent;
+  return pressed[0].textContent;
 }
 
 /** Press a Location (by its full name, e.g. "Freezer") in the toggle. */

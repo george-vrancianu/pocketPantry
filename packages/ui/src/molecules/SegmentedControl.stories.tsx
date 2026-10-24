@@ -38,32 +38,43 @@ export const Interactive: StoryObj<typeof SegmentedControl> = {
   render: () => <Segments />,
 };
 
-const LOCATIONS = [
-  { value: 'fridge', label: 'Frigider', icon: <FridgeIcon size={18} /> },
-  {
-    value: 'freezer',
-    label: 'Congel',
-    accessibleLabel: 'Congelator',
-    icon: <FreezerIcon size={18} />,
-  },
-  { value: 'cupboard', label: 'Dulap', icon: <CupboardIcon size={18} /> },
-  {
-    value: 'spices',
-    label: 'Condim',
-    accessibleLabel: 'Condimente',
-    icon: <SpicesIcon size={18} />,
-  },
-] as const;
+type Location = 'fridge' | 'freezer' | 'cupboard' | 'spices';
 
-function DenseSegments() {
-  const [value, setValue] =
-    useState<(typeof LOCATIONS)[number]['value']>('fridge');
+const ICONS = {
+  fridge: <FridgeIcon size={18} />,
+  freezer: <FreezerIcon size={18} />,
+  cupboard: <CupboardIcon size={18} />,
+  spices: <SpicesIcon size={18} />,
+};
+
+const LABELS: Record<'en' | 'ro', Record<Location, string>> = {
+  en: {
+    fridge: 'Fridge',
+    freezer: 'Freezer',
+    cupboard: 'Cupboard',
+    spices: 'Spices',
+  },
+  ro: {
+    fridge: 'Frigider',
+    freezer: 'Congelator',
+    cupboard: 'Dulap',
+    spices: 'Condimente',
+  },
+};
+
+function DenseSegments({ lang }: { lang: 'en' | 'ro' }) {
+  const [value, setValue] = useState<Location>('fridge');
+  const labels = LABELS[lang];
   return (
-    // The narrowest phone: 320 px less the page padding.
-    <Box sx={{ width: 280, p: 0 }} lang="ro">
+    // The narrowest form on a 320 px phone: the Finish Shopping card, about 246 px.
+    <Box sx={{ width: 246 }} lang={lang}>
       <SegmentedControl
-        label="Locație"
-        options={[...LOCATIONS]}
+        label={lang === 'ro' ? 'Locație' : 'Location'}
+        options={(Object.keys(labels) as Location[]).map((location) => ({
+          value: location,
+          label: labels[location],
+          icon: ICONS[location],
+        }))}
         value={value}
         onChange={setValue}
         fullWidth
@@ -73,7 +84,12 @@ function DenseSegments() {
   );
 }
 
-/** `dense` with icons: the four Locations in Romanian, the longest labels, on a 320 px phone. */
+/** `dense` with icons: the four Locations at the narrowest width a 320 px phone gives them. */
 export const Dense: StoryObj<typeof SegmentedControl> = {
-  render: () => <DenseSegments />,
+  render: () => <DenseSegments lang="en" />,
+};
+
+/** The longest labels, Romanian: shrunk towards 11 px to fit whole, never shortened. */
+export const DenseRomanian: StoryObj<typeof SegmentedControl> = {
+  render: () => <DenseSegments lang="ro" />,
 };

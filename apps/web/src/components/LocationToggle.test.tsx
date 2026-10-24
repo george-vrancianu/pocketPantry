@@ -25,7 +25,7 @@ describe('LocationToggle', () => {
     expect(onChange).toHaveBeenCalledWith('spices');
   });
 
-  it('shortens the long Romanian labels on screen and keeps their full names', () => {
+  it('shows the Romanian labels whole, never shortened', () => {
     renderWithProviders(
       <LocationToggle label="Locație" value="spices" onChange={() => {}} />,
       { locale: 'ro' },
@@ -35,7 +35,7 @@ describe('LocationToggle', () => {
       within(group)
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual(['Frigider', 'Congel', 'Dulap', 'Condim']);
+    ).toEqual(['Frigider', 'Congelator', 'Dulap', 'Condimente']);
     expect(pressed('Congelator')).toBe('false');
     expect(pressed('Condimente')).toBe('true');
   });

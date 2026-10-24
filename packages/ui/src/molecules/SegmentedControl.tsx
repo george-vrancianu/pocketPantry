@@ -17,9 +17,24 @@ export type SegmentedControlOption<T extends string> = {
   lang?: string;
   /** A decorative icon drawn above the label. */
   icon?: ReactNode;
-  /** The option's full name, when `label` is a shortened form of it. */
-  accessibleLabel?: string;
 };
+
+/** Dense padding on each side of a label, and the gap between segments. */
+const DENSE_PAD = 2;
+const DENSE_GAP = 2;
+
+/**
+ * A dense full-width label's size: the track's width shared out over every
+ * label's characters (about 0.6 em each in the Theme fonts), from 13 px down
+ * to 11 px, so the longest labels (Romanian Locations) still fit whole on a
+ * 320 px phone. Never truncated: below 11 px the label wraps between words.
+ */
+function denseFontSize(labels: string[]) {
+  const chars = labels.reduce((sum, label) => sum + label.length, 0);
+  const room = DENSE_GAP * (labels.length - 1) + DENSE_PAD * 2 * labels.length;
+  const perEm = Number((0.6 * chars).toFixed(2));
+  return `clamp(11px, calc((100cqi - ${room}px) / ${perEm}), 13px)`;
+}
 
 export type SegmentedControlProps<T extends string> = {
   /** Accessible name of the group. */
@@ -33,7 +48,8 @@ export type SegmentedControlProps<T extends string> = {
   /**
    * Less padding, no minimum width and a smaller label, for long labels on a
    * narrow phone. With `fullWidth` the width is shared by label length, so a
-   * long label gets more of it than a short one.
+   * long label gets more of it than a short one, and the label shrinks with
+   * the track (down to 11 px) rather than being cut.
    */
   dense?: boolean;
 };
@@ -47,14 +63,22 @@ export function SegmentedControl<T extends string>({
   fullWidth = false,
   dense = false,
 }: SegmentedControlProps<T>) {
+  // Only a full-width track has a width of its own to measure the labels against.
+  const fluid = dense && fullWidth;
+  const fontSize = fluid
+    ? denseFontSize(options.map((option) => option.label))
+    : dense
+      ? 12
+      : 14;
   return (
     <Box
       role="group"
       aria-label={label}
       sx={(theme) => ({
         display: fullWidth ? 'flex' : 'inline-flex',
-        gap: '4px',
-        p: '4px',
+        gap: dense ? `${DENSE_GAP}px` : '4px',
+        p: dense ? '2px' : '4px',
+        ...(fluid ? { containerType: 'inline-size' } : {}),
         backgroundColor: themePalette(theme).pp.chip,
         borderRadius: radius.control,
       })}
@@ -65,7 +89,6 @@ export function SegmentedControl<T extends string>({
           <ButtonBase
             key={option.value}
             aria-pressed={selected}
-            aria-label={option.accessibleLabel}
             lang={option.lang}
             onClick={() => onChange(option.value)}
             sx={[
@@ -75,12 +98,12 @@ export function SegmentedControl<T extends string>({
                   minHeight: 36,
                   minWidth: dense ? 0 : 56,
                   flex: fullWidth ? (dense ? '1 1 auto' : 1) : undefined,
-                  px: dense ? '4px' : '16px',
+                  px: dense ? `${DENSE_PAD}px` : '16px',
                   ...(option.icon
                     ? { flexDirection: 'column', gap: '2px', py: '6px' }
                     : {}),
-                  borderRadius: nestedRadius(radius.control, 4),
-                  fontSize: dense ? 12 : 14,
+                  borderRadius: nestedRadius(radius.control, dense ? 2 : 4),
+                  fontSize,
                   fontWeight: selected ? 700 : 600,
                   fontFamily: bodyFont,
                   backgroundColor: selected ? p.pp.segOn : 'transparent',

@@ -4,6 +4,21 @@ import { SegmentedControl } from '../index';
 import { paintedColour } from '../test/colour';
 import { renderWithTheme as render } from '../test/render';
 
+/** The value a property has in the element's own Emotion rule, as written. */
+function ownRule(element: HTMLElement, property: string) {
+  const css = [...document.querySelectorAll('style')]
+    .map((style) => style.textContent ?? '')
+    .join('');
+  for (const name of element.classList) {
+    const rule = new RegExp(`\\.${name}\\{([^}]*)\\}`).exec(css);
+    const value = rule
+      ? new RegExp(`(?:^|;)${property}:([^;]*)`).exec(rule[1])
+      : null;
+    if (value) return value[1];
+  }
+  return null;
+}
+
 const options = [
   { value: 'ingredients', label: 'Ingredients' },
   { value: 'templates', label: 'Templates' },
@@ -83,23 +98,61 @@ describe('SegmentedControl', () => {
     const style = getComputedStyle(
       screen.getByRole('button', { name: 'Templates' }),
     );
-    expect(style.paddingLeft).toBe('4px');
-    expect(style.paddingRight).toBe('4px');
+    expect(style.paddingLeft).toBe('2px');
+    expect(style.paddingRight).toBe('2px');
     expect(style.minWidth).toBe('0px');
-    expect(style.fontSize).toBe('12px');
     expect(style.flexBasis).toBe('auto');
     expect(style.flexGrow).toBe('1');
+    expect(style.whiteSpace).not.toBe('nowrap');
+    expect(style.textOverflow).not.toBe('ellipsis');
   });
 
-  it('draws an option icon above its label and names a shortened label in full', () => {
+  it('shrinks a dense full-width label with the track width, from 13 px down to no less than 11 px', () => {
+    render(
+      <SegmentedControl
+        label="Location"
+        options={[...options]}
+        value="ingredients"
+        onChange={() => undefined}
+        fullWidth
+        dense
+      />,
+    );
+    const track = screen.getByRole('group', { name: 'Location' });
+    expect(getComputedStyle(track).containerType).toBe('inline-size');
+    // 'Ingredients' + 'Templates' is 20 characters; 2 segments of 2 px padding a side and one 2 px gap.
+    // jsdom cannot compute clamp() or cqi, so read the rule as written.
+    expect(
+      ownRule(screen.getByRole('button', { name: 'Templates' }), 'font-size'),
+    ).toBe('clamp(11px, calc((100cqi - 10px) / 12), 13px)');
+  });
+
+  it('keeps a dense label at 12 px when it does not fill the width', () => {
+    render(
+      <SegmentedControl
+        label="Location"
+        options={[...options]}
+        value="ingredients"
+        onChange={() => undefined}
+        dense
+      />,
+    );
+    const track = screen.getByRole('group', { name: 'Location' });
+    expect(getComputedStyle(track).containerType).not.toBe('inline-size');
+    expect(
+      getComputedStyle(screen.getByRole('button', { name: 'Templates' }))
+        .fontSize,
+    ).toBe('12px');
+  });
+
+  it('draws an option icon above its full label', () => {
     render(
       <SegmentedControl
         label="Location"
         options={[
           {
             value: 'freezer',
-            label: 'Congel',
-            accessibleLabel: 'Congelator',
+            label: 'Congelator',
             icon: <svg data-testid="snowflake" />,
           },
           { value: 'fridge', label: 'Frigider' },
@@ -109,9 +162,8 @@ describe('SegmentedControl', () => {
       />,
     );
     const freezer = screen.getByRole('button', { name: 'Congelator' });
-    expect(freezer.textContent).toBe('Congel');
+    expect(freezer.textContent).toBe('Congelator');
     expect(freezer.getAttribute('aria-pressed')).toBe('true');
     expect(within(freezer).getByTestId('snowflake')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Frigider' })).toBeTruthy();
   });
 });
