@@ -336,4 +336,48 @@ describe('RecipeFromLinkPage', () => {
     expect(body).toMatchObject({ servings: 4 });
     expect(body).not.toHaveProperty('sourceLink');
   });
+
+  describe('the Link Cap', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it("says when the reads start again, in the Member's own time", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date('2026-05-01T10:00:00Z'));
+      const user = userEvent.setup({ delay: null });
+      const resetsAt = '2026-05-02T00:00:00.000Z';
+      setup({
+        'POST /api/recipes/from-link': () =>
+          Response.json(
+            { code: 'link.cap_reached', params: { cap: 20, resetsAt } },
+            { status: 429 },
+          ),
+      });
+      await submit(user, 'https://example.com/a');
+      const when = new Intl.DateTimeFormat('en', {
+        weekday: 'long',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(Date.parse(resetsAt));
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent(
+        `You have used all 20 recipe reads from links for today. Your reads reset on ${when}.`,
+      );
+      expect(linkField()).toHaveFocus();
+    });
+
+    it('says to try tomorrow when the reset time is missing', async () => {
+      const user = userEvent.setup({ delay: null });
+      setup({
+        'POST /api/recipes/from-link': () =>
+          Response.json(
+            { code: 'link.cap_reached', params: { cap: 20 } },
+            { status: 429 },
+          ),
+      });
+      await submit(user, 'https://example.com/a');
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'You have used all 20 recipe reads from links for today. Try again tomorrow.',
+      );
+    });
+  });
 });

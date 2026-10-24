@@ -169,6 +169,8 @@
     "unreadable": "We could not open that page. Check the link, or try again in a moment.",
     "no_recipe": "We could not find a recipe on that page. Try a page that shows the full recipe.",
     "reading_unavailable": "We cannot read recipes from links right now. Please try again in a moment.",
-    "reading_failed": "We could not read a recipe from that page. Try again, or try another link."
+    "reading_failed": "We could not read a recipe from that page. Try again, or try another link.",
+    "cap_reached": "You have used all {{cap}} recipe reads from links for today. Your reads reset on {{when}}.",
+    "cap_reached_no_time": "You have used all {{cap}} recipe reads from links for today. Try again tomorrow."
   }
 }
