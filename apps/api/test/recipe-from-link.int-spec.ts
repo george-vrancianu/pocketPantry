@@ -748,8 +748,8 @@ describe('Recipe from Link (integration)', () => {
   describe('a page without JSON-LD', () => {
     const TEXT_ONLY = `<!DOCTYPE html><html><head><title>Blog title 7001</title>
       <style>.x { color: red } /* css 7002 */</style>
-      <script>var tracker = "script 7003";</script></head>
-      <body><header>Header 7004</header><nav><ul><li>Nav 7005</li></ul></nav>
+      <SCRIPT>var tracker = "script 7003";</SCRIPT></head>
+      <body><header>Header 7004</header><NAV><ul><li>Nav 7005</li></ul></NAV>
       <!-- comment 7006 -->
       <aside>Aside 7007</aside><noscript>Noscript 7008</noscript>
       <svg><text>Svg 7009</text></svg><template><p>Template 7010</p></template>
@@ -822,6 +822,44 @@ describe('Recipe from Link (integration)', () => {
       serve('<html><head><body><nav>Menu<p>Salt and pepper 7020</p>');
       await read('https://example.com/loose').expect(200);
       expect(prompts[0].prompt).toContain('Salt and pepper 7020');
+    });
+
+    it('does not stop an unclosed head at a header, and keeps custom elements', async () => {
+      serve(
+        '<head><title>T</title><body><p>Before header</p><header>Site 7050</header><p>Recipe</p>',
+      );
+      await read('https://example.com/minified').expect(200);
+      expect(prompts[0].prompt).toContain('Before header');
+      expect(prompts[0].prompt).toContain('Recipe');
+      expect(prompts[0].prompt).not.toContain('Site 7050');
+
+      serve(
+        '<body><nav-bar>Bar text 7051</nav-bar><script-x>Custom 7052</script-x><p>Rest 7053</p>',
+      );
+      await read('https://example.com/custom').expect(200);
+      const prompt = prompts[1].prompt;
+      expect(prompt).toContain('Bar text 7051');
+      expect(prompt).toContain('Custom 7052');
+      expect(prompt).toContain('Rest 7053');
+    });
+
+    it('keeps the header and footer of an article, and drops the site ones', async () => {
+      serve(
+        '<body><header>Site header 7060</header><article><header class="entry-header"><h1>Title 7061</h1></header><p>Body</p><footer>Entry footer 7062</footer></article><footer>Site footer 7063</footer></body>',
+      );
+      await read('https://example.com/article').expect(200);
+      const prompt = prompts[0].prompt;
+      expect(prompt).toContain('Title 7061');
+      expect(prompt).toContain('Entry footer 7062');
+      expect(prompt).not.toContain('Site header 7060');
+      expect(prompt).not.toContain('Site footer 7063');
+    });
+
+    it('does not treat a slash on script as self-closing', async () => {
+      serve('<body><script src=x />leak 7070</script><p>Visible 7071</p>');
+      await read('https://example.com/slash').expect(200);
+      expect(prompts[0].prompt).toContain('Visible 7071');
+      expect(prompts[0].prompt).not.toContain('leak 7070');
     });
 
     it('gives the model the JSON-LD and not the page text when the page has it', async () => {

@@ -67,8 +67,19 @@ const BLOCK = new Set([
 const asciiLower = (text: string) =>
   text.replace(/[A-Z]/g, (c) => c.toLowerCase());
 
+/** A letter, digit or "-" (so `<nav-bar>` is a custom element, not `<nav>`). */
 const isNameChar = (code: number) =>
-  (code >= 97 && code <= 122) || (code >= 48 && code <= 57);
+  (code >= 97 && code <= 122) || (code >= 48 && code <= 57) || code === 45;
+
+/** Where `</name` closes an element: not a longer name (`</header` is not `</head`). -1 when there is none. */
+function findClose(lower: string, name: string, from: number): number {
+  const needle = `</${name}`;
+  for (let at = lower.indexOf(needle, from); at !== -1;) {
+    if (!isNameChar(lower.charCodeAt(at + needle.length))) return at;
+    at = lower.indexOf(needle, at + 1);
+  }
+  return -1;
+}
 
 const ENTITY =
   /&(?:#x([0-9a-f]{1,6})|#([0-9]{1,7})|(amp|lt|gt|quot|apos|nbsp));/gi;
@@ -109,7 +120,10 @@ function collapse(text: string, limit: number): string {
       out += ch;
     }
   }
-  return out.slice(0, limit);
+  const cut = out.slice(0, limit);
+  // Do not end on half of a surrogate pair.
+  const last = cut.charCodeAt(cut.length - 1);
+  return last >= 0xd800 && last <= 0xdbff ? cut.slice(0, -1) : cut;
 }
 
 export function visibleText(html: string): string {
@@ -118,6 +132,8 @@ export function visibleText(html: string): string {
   /** Names with no closing tag anywhere ahead, so nobody searches for one again. */
   const unclosed = new Set<string>();
   let noMoreTagEnds = false;
+  /** Open `<article>` / `<main>`: a `<header>` or `<footer>` inside holds the recipe's own title, so it is kept. */
+  let contentDepth = 0;
   let from = 0;
   let i = 0;
 
@@ -167,14 +183,21 @@ export function visibleText(html: string): string {
     from = i = gt + 1;
 
     if (special || isSlash) {
+      if (isSlash && (name === 'article' || name === 'main')) {
+        contentDepth = Math.max(0, contentDepth - 1);
+      }
       chunks.push(BLOCK.has(name) ? '\n' : ' ');
       continue;
     }
-    const selfClosing = lower.charCodeAt(gt - 1) === 47;
-    if (DROPPED.has(name) && !selfClosing) {
-      const close = unclosed.has(name)
-        ? -1
-        : lower.indexOf(`</${name}`, gt + 1);
+    if (name === 'article' || name === 'main') contentDepth++;
+    // HTML ignores a "/" on every dropped element but svg.
+    const selfClosing = name === 'svg' && lower.charCodeAt(gt - 1) === 47;
+    const keptHere =
+      (name === 'header' || name === 'footer') && contentDepth > 0;
+    // A same-name element nested in a dropped one (`<aside><aside>a</aside>LEAK</aside>`)
+    // ends at the first close and leaks its tail: the accepted cost of staying linear without a parser.
+    if (DROPPED.has(name) && !selfClosing && !keptHere) {
+      const close = unclosed.has(name) ? -1 : findClose(lower, name, gt + 1);
       if (close === -1) {
         unclosed.add(name);
         if (RAW.has(name)) {
