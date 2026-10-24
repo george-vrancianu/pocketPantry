@@ -23,10 +23,20 @@ export type ActionMenuProps = {
   items: ActionMenuItem[];
   /** Ref to the "…" button, e.g. to return focus to it after an action is cancelled. */
   buttonRef?: Ref<HTMLButtonElement>;
+  /** The button's icon; "…" by default. */
+  icon?: ReactNode;
+  /** The button's tone, as on `IconButton`; the header action's `accent` for a "+" menu. */
+  tone?: 'surface' | 'accent';
 };
 
 /** A "…" icon button that opens a dropdown of actions. Escape, outside click and focus are handled by the MUI menu. */
-export function ActionMenu({ label, items, buttonRef }: ActionMenuProps) {
+export function ActionMenu({
+  label,
+  items,
+  buttonRef,
+  icon,
+  tone,
+}: ActionMenuProps) {
   const reduceMotion = usePrefersReducedMotion();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const menuId = useId();
@@ -36,12 +46,13 @@ export function ActionMenu({ label, items, buttonRef }: ActionMenuProps) {
       <IconButton
         ref={buttonRef}
         label={label}
+        tone={tone}
         aria-haspopup="menu"
         aria-expanded={anchor !== null}
         aria-controls={anchor ? menuId : undefined}
         onClick={(event) => setAnchor(event.currentTarget)}
       >
-        <MoreIcon size={20} />
+        {icon ?? <MoreIcon size={20} />}
       </IconButton>
       <Menu
         id={menuId}

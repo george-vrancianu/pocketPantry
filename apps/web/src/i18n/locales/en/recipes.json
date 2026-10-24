@@ -178,5 +178,18 @@
     "line_one": "{{count}} Recipe uses what expires soon",
     "line_other": "{{count}} Recipes use what expires soon",
     "seeThem": "See them"
+  },
+  "add": "Add a Recipe",
+  "fromLink": {
+    "menuItem": "From a link",
+    "heading": "From a link",
+    "hint": "Paste the link to a page with a Recipe. PantryGator reads it into a new Recipe for you to check before saving.",
+    "label": "Link to the Recipe",
+    "submit": "Read the Recipe",
+    "reading": "Reading the Recipe…"
+  },
+  "sourceLink": {
+    "from": "From {{host}} ↗",
+    "remove": "Remove link"
   }
 }

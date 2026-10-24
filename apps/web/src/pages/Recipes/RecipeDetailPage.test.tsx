@@ -56,6 +56,7 @@ const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
   allergens: { items: [], uncheckedCount: 0 },
   allergyWarning: null,
+  sourceLink: null,
   ...over,
 });
 
@@ -117,6 +118,27 @@ describe('RecipeDetailPage', () => {
     const ingredients = screen.getByRole('list', { name: 'Ingredients' });
     expect(within(ingredients).getByText(/Egg/)).toBeInTheDocument();
     expect(within(ingredients).getByText(/optional/)).toBeInTheDocument();
+  });
+
+  it('links a Recipe read from a page to its Source Link', async () => {
+    setup(
+      recipe({
+        owner: 'family',
+        sourceLink: 'https://www.example.com/pancakes',
+      }),
+    );
+    const link = await screen.findByRole('link', {
+      name: 'From example.com ↗',
+    });
+    expect(link).toHaveAttribute('href', 'https://www.example.com/pancakes');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('shows no Source Link on a Recipe without one', async () => {
+    setup(recipe({}));
+    await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+    expect(screen.queryByRole('link', { name: /^From / })).toBeNull();
   });
 
   it('puts the family pill in the H1 of a Family Recipe', async () => {

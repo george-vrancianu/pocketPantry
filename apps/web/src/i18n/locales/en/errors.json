@@ -163,5 +163,12 @@
   },
   "assistantTokens": {
     "not_found": "That token is no longer there. It may already be revoked."
+  },
+  "link": {
+    "invalid": "That is not a web address we can open. Check the link and try again.",
+    "unreadable": "We could not open that page. Check the link, or try again in a moment.",
+    "no_recipe": "We could not find a Recipe on that page. Try a page that shows the full Recipe.",
+    "reading_unavailable": "Reading Recipes from links is not available right now. Please try again in a moment.",
+    "reading_failed": "We could not read a Recipe from that page. Try again, or try another link."
   }
 }

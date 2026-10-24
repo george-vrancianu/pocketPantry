@@ -93,6 +93,8 @@ export type FamilyRecipeDocument = {
   tips?: { stepIndex: number; text: string }[];
   /** Only on create: a saved draft brings its guidance along. */
   guidance?: GuidanceInput;
+  /** Only on create: the page the Recipe was read from. */
+  sourceLink?: string;
 };
 
 /** The copy of a visible Recipe to start a Family Variant from. */

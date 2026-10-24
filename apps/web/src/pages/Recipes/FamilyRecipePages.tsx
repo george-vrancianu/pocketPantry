@@ -1,4 +1,11 @@
-import { Alert, Link, Spinner, Stack, Typography } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Button,
+  Link,
+  Spinner,
+  Stack,
+  Typography,
+} from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -8,6 +15,7 @@ import {
   type BaseRecipeOption,
 } from '../../components/BaseRecipePicker';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { SourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
 import {
   useCreateFamilyRecipe,
@@ -59,6 +67,8 @@ function namedGuidance(
 export type NewRecipeState = {
   draft: NewRecipeDraft;
   closestBases?: BaseRecipeOption[];
+  /** The page the draft was read from; kept on the Recipe unless the Member removes it. */
+  sourceLink?: string | null;
 };
 
 const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
@@ -78,10 +88,16 @@ export function NewRecipePage() {
 /** The route state if it is a supplied draft; anything else is ignored. */
 function suppliedOf(state: unknown): NewRecipeState | null {
   if (typeof state !== 'object' || state === null) return null;
-  const { draft, closestBases } = state as Partial<NewRecipeState>;
+  const { draft, closestBases, sourceLink } = state as Partial<NewRecipeState>;
   if (typeof draft !== 'object' || draft === null) return null;
   if (!Array.isArray(draft.lines) || !Array.isArray(draft.steps)) return null;
   if (closestBases !== undefined && !Array.isArray(closestBases)) return null;
+  if (
+    sourceLink !== undefined &&
+    sourceLink !== null &&
+    typeof sourceLink !== 'string'
+  )
+    return null;
   return state as NewRecipeState;
 }
 
@@ -92,6 +108,10 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
   const create = useCreateFamilyRecipe();
   const momentOptions = useMomentOptions();
   const [parentId, setParentId] = useState<string | null>(null);
+  // The Member may drop the Source Link before saving, but not change it.
+  const [sourceLink, setSourceLink] = useState(supplied?.sourceLink ?? null);
+  // No closest Base Recipes (none found, or not matched yet): no picker, a Base Recipe.
+  const hasBases = (supplied?.closestBases?.length ?? 0) > 0;
   const [initial] = useState(() =>
     supplied ? draftOfVariantDraft(supplied.draft) : emptyDraft(),
   );
@@ -100,13 +120,21 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
     <>
       <AppScreenHeader title={t('recipes:family.newRecipeHeading')} />
       <Stack spacing={2.5}>
-        {supplied?.closestBases ? (
+        {supplied?.closestBases && hasBases ? (
           <BaseRecipePicker
             pick={basePick}
             onPick={setBasePick}
             closest={supplied.closestBases}
             onChange={setParentId}
           />
+        ) : null}
+        {sourceLink ? (
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <SourceLink href={sourceLink} />
+            <Button variant="ghost" onClick={() => setSourceLink(null)}>
+              {t('recipes:sourceLink.remove')}
+            </Button>
+          </Stack>
         ) : null}
         <FamilyRecipeForm
           heading={t('recipes:family.newRecipeHeading')}
@@ -124,8 +152,12 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
           onSave={(document, guidance) =>
             create.mutate(
               {
-                parentId: supplied?.closestBases ? parentId : null,
-                document: { ...document, guidance },
+                parentId: hasBases ? parentId : null,
+                document: {
+                  ...document,
+                  guidance,
+                  ...(sourceLink ? { sourceLink } : {}),
+                },
               },
               { onSuccess: (saved) => navigate(`/recipes/${saved.id}`) },
             )

@@ -28,6 +28,7 @@ import {
   NewVariantPage,
 } from './pages/Recipes/FamilyRecipePages';
 import { RecipeDetailPage } from './pages/Recipes/RecipeDetailPage';
+import { RecipeFromLinkPage } from './pages/Recipes/RecipeFromLinkPage';
 import { RecipesPage } from './pages/Recipes/RecipesPage';
 import { ReviewOverviewPage } from './pages/Review/ReviewOverviewPage';
 import { ReviewPage } from './pages/Review/ReviewPage';
@@ -80,6 +81,10 @@ export function App() {
               <Route path="scan/review/:scanId" element={<ReviewPage />} />
               <Route path="recipes" element={<RecipesPage />} />
               <Route path="recipes/new" element={<NewRecipePage />} />
+              <Route
+                path="recipes/from-link"
+                element={<RecipeFromLinkPage />}
+              />
               <Route path="recipes/:id" element={<RecipeDetailPage />} />
               <Route
                 path="recipes/:id/edit"

@@ -289,6 +289,45 @@ describe('NewRecipePage with a supplied draft', () => {
     );
   });
 
+  it('shows the Source Link on the filled form', async () => {
+    setup(
+      newRecipeWith({ ...sourced, sourceLink: 'https://www.example.com/p' }),
+      {},
+    );
+    const link = await screen.findByRole('link', {
+      name: 'From example.com ↗',
+    });
+    expect(link).toHaveAttribute('href', 'https://www.example.com/p');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('ignores route state whose Source Link is not text', async () => {
+    setup(
+      {
+        pathname: '/recipes/new',
+        state: { ...sourced, sourceLink: { href: 'x' } },
+      },
+      {},
+    );
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('');
+  });
+
+  it('shows no Base Recipe picker when there are no closest Base Recipes', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup(newRecipeWith({ ...sourced, closestBases: [] }), {
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    expect(screen.queryByRole('radio')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({ parentId: null }),
+    );
+  });
+
   it('ignores route state that is not a supplied draft', async () => {
     setup({ pathname: '/recipes/new', state: { from: 'elsewhere' } }, {});
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('');
