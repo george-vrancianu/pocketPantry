@@ -1,18 +1,5 @@
-import {
-  Box,
-  color as themeColor,
-  focusRing,
-  radius,
-  tokens,
-} from '@pocket-pantry/ui';
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react';
+import { Box } from '@pocket-pantry/ui';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Unit } from '../lib/catalog';
 import { fitChips } from '../lib/fitChips';
@@ -22,26 +9,27 @@ import {
   usualAmountsInPriority,
   type AmountScale,
 } from '../lib/usualAmounts';
+import { segmentSx, stripSx, STRIP_DIVIDER } from './amountStrip';
 
 const HAPTIC_MS = 6;
-const { color } = tokens;
 
 export type UsualAmountRowProps = {
   /** The Ingredient's name, for the group's accessible name. */
   name: string;
   /** The Ingredient's Amount Scale; null or left out offers values from the unit alone. */
   scale?: AmountScale | null;
-  unit: Unit | '';
-  /** The field's text; the chip matching it is selected. */
+  unit: Unit;
+  /** The field's text; the value matching it is pressed. */
   quantity: string;
-  /** A chip was tapped, with its value in the unit shown. */
+  /** A value was tapped, with its number in the unit shown. */
   onPick: (value: number) => void;
 };
 
 /**
- * The row of Usual Amount chips under the amount field. Chips that do not fit the row are hidden,
- * keeping the one that matches the amount and then the highest-priority ones; the row never scrolls.
- * It shows once a unit is chosen, even while the quantity is empty, and is hidden while there is no unit.
+ * The Usual Amount values in the amount field's strip, as edge-to-edge segments with dividers.
+ * Values that do not fit the strip are hidden, keeping the one that matches the amount and then
+ * the highest-priority ones; the kept ones read smallest to largest and the strip never scrolls.
+ * Each segment shows only the number, since the unit sits above it; its accessible name has the unit.
  */
 export function UsualAmountRow({
   name,
@@ -52,18 +40,17 @@ export function UsualAmountRow({
 }: UsualAmountRowProps) {
   const { t, i18n } = useTranslation('common');
   const group = useRef<HTMLDivElement>(null);
-  // Bumped when the row resizes, so the chips are fitted again.
+  // Bumped when the strip resizes, so the values are fitted again.
   const [resizes, setResizes] = useState(0);
-  // Indexes into `values` (priority order) of the chips that fit.
+  // Indexes into `values` (priority order) of the segments that fit.
   const [kept, setKept] = useState<number[]>([]);
 
   const values = useMemo(
-    () => (unit ? usualAmountsInPriority(unit, scale) : []),
+    () => usualAmountsInPriority(unit, scale),
     [unit, scale],
   );
   const current = parseTypedNumber(quantity);
   const pinned = current === null ? -1 : values.indexOf(current);
-  const visible = unit !== '';
 
   useEffect(() => {
     const el = group.current;
@@ -73,22 +60,24 @@ export function UsualAmountRow({
     return () => observer.disconnect();
   }, []);
 
-  // Measure every chip at its natural width (all shown, none grown), then keep the ones that fit.
+  // Measure every segment at its natural width (all shown, none grown), then keep the ones that fit.
   useLayoutEffect(() => {
     const el = group.current;
-    if (!el || !visible) return;
-    const chips = Array.from(el.querySelectorAll<HTMLElement>('[data-chip]'));
-    const wasHidden = chips.map((chip) => chip.hidden);
+    if (!el) return;
+    const segments = Array.from(
+      el.querySelectorAll<HTMLElement>('[data-value]'),
+    );
+    const wasHidden = segments.map((segment) => segment.hidden);
     el.dataset.measuring = '';
-    chips.forEach((chip) => {
-      chip.hidden = false;
+    segments.forEach((segment) => {
+      segment.hidden = false;
     });
     const widths = values.map(() => 0);
-    chips.forEach((chip) => {
-      widths[Number(chip.dataset.chip)] = chip.offsetWidth;
+    segments.forEach((segment) => {
+      widths[Number(segment.dataset.value)] = segment.offsetWidth;
     });
-    chips.forEach((chip, index) => {
-      chip.hidden = wasHidden[index];
+    segments.forEach((segment, index) => {
+      segment.hidden = wasHidden[index];
     });
     delete el.dataset.measuring;
     setKept(
@@ -96,114 +85,54 @@ export function UsualAmountRow({
         widths,
         rowWidth: el.clientWidth,
         pinned: pinned >= 0 ? pinned : null,
+        gap: STRIP_DIVIDER,
       }),
     );
-    // The language is in the deps: a longer label in another locale needs its own fit.
-  }, [visible, values, pinned, resizes, i18n.language]);
+    // The language is in the deps: a longer number format in another locale needs its own fit.
+  }, [values, pinned, resizes, i18n.language]);
 
   const format = (value: number) =>
     new Intl.NumberFormat(i18n.language).format(value);
-  const unitLabel = unit ? t(`units.${unit}`) : '';
-  // Chips read smallest to largest, whichever ones are kept.
-  const order = unit
-    ? usualAmountsAscending(unit, scale).map((value) => values.indexOf(value))
-    : [];
-
-  const moveFocus = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    const shown = Array.from(
-      group.current?.querySelectorAll<HTMLElement>(
-        '[data-chip]:not([hidden])',
-      ) ?? [],
-    );
-    const at = shown.indexOf(event.target as HTMLElement);
-    if (at < 0) return;
-    event.preventDefault();
-    const next =
-      event.key === 'ArrowRight'
-        ? Math.min(at + 1, shown.length - 1)
-        : Math.max(at - 1, 0);
-    shown[next].focus();
-  };
+  const unitLabel = t(`units.${unit}`);
+  const order = usualAmountsAscending(unit, scale).map((value) =>
+    values.indexOf(value),
+  );
 
   return (
-    <Box>
-      <Box
-        ref={group}
-        role="group"
-        aria-label={t('amount.usualAmounts', { name })}
-        hidden={!visible}
-        onKeyDown={moveFocus}
-        sx={{
-          display: 'flex',
-          gap: '6px',
-          mt: '8px',
-          height: 36,
-          overflow: 'hidden',
-          '&[hidden]': { display: 'none' },
-          '&[data-measuring] [data-chip]': { flex: 'none' },
-        }}
-      >
-        {order.map((index) => {
-          const value = values[index];
-          const selected = index === pinned;
-          return (
-            <Box
-              key={index}
-              component="button"
-              type="button"
-              data-chip={index}
-              hidden={!kept.includes(index)}
-              aria-pressed={selected}
-              aria-label={t('amount.chip', {
-                value: format(value),
-                unit: unitLabel,
-              })}
-              onClick={() => {
-                navigator.vibrate?.(HAPTIC_MS);
-                onPick(value);
-              }}
-              sx={{
-                flex: '1 1 auto',
-                minWidth: 44,
-                height: '100%',
-                px: '10px',
-                border: 0,
-                borderRadius: radius.chip,
-                cursor: 'pointer',
-                font: 'inherit',
-                fontSize: 13.5,
-                fontWeight: 600,
-                fontVariantNumeric: 'tabular-nums',
-                backgroundColor: selected ? color.accent : color.chipNeutral,
-                color: selected ? themeColor.accentInk : color.ink,
-                transition: 'background-color .12s, transform .08s',
-                '&:active': { transform: 'scale(.96)' },
-                '&[hidden]': { display: 'none' },
-                ...focusRing,
-                '@media (prefers-reduced-motion: reduce)': {
-                  transition: 'none',
-                  '&:active': { transform: 'none' },
-                },
-              }}
-            >
-              {format(value)}
-              <Box
-                component="span"
-                sx={{
-                  ml: '3px',
-                  fontSize: 11.5,
-                  fontWeight: 500,
-                  opacity: selected ? 0.85 : 1,
-                  color: selected ? 'inherit' : color.muted,
-                }}
-              >
-                {unitLabel}
-              </Box>
-            </Box>
-          );
-        })}
-      </Box>
+    <Box
+      ref={group}
+      role="group"
+      aria-label={t('amount.usualAmounts', { name })}
+      sx={{
+        ...stripSx,
+        '&[data-measuring] [data-value]': { flex: 'none' },
+      }}
+    >
+      {order.map((index) => {
+        const value = values[index];
+        const selected = index === pinned;
+        return (
+          <Box
+            key={index}
+            component="button"
+            type="button"
+            data-value={index}
+            hidden={!kept.includes(index)}
+            aria-pressed={selected}
+            aria-label={t('amount.chip', {
+              value: format(value),
+              unit: unitLabel,
+            })}
+            onClick={() => {
+              navigator.vibrate?.(HAPTIC_MS);
+              onPick(value);
+            }}
+            sx={segmentSx(selected)}
+          >
+            {format(value)}
+          </Box>
+        );
+      })}
     </Box>
   );
 }
