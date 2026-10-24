@@ -17,7 +17,11 @@ import {
 } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
-import { itemNotFound, recipeNotFound } from './recipe-errors';
+import {
+  itemNotFound,
+  recipeNotFound,
+  sourceLinkLocked,
+} from './recipe-errors';
 import {
   assertLiveCatalogBase,
   recipeColumns,
@@ -230,6 +234,14 @@ export class FamilyRecipesService {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
       await lockRecipeForWrite(tx, id, familyId);
+      // Set at creation only: an update may clear them, never set or change them.
+      if (
+        (document.sourceLink !== undefined && document.sourceLink !== null) ||
+        (document.sourceLanguage !== undefined &&
+          document.sourceLanguage !== null)
+      ) {
+        throw sourceLinkLocked();
+      }
       await this.validate(tx, familyId, document);
       const existingLines = await tx
         .select()
@@ -241,7 +253,15 @@ export class FamilyRecipesService {
         .where(eq(recipeSteps.recipeId, id));
       await tx
         .update(recipes)
-        .set(recipeColumns(document))
+        .set({
+          ...recipeColumns(document),
+          // `null` clears; the link goes with its language, absent leaves both.
+          ...(document.sourceLink === null
+            ? { sourceLink: null, sourceLanguage: null }
+            : document.sourceLanguage === null
+              ? { sourceLanguage: null }
+              : {}),
+        })
         .where(eq(recipes.id, id));
       await this.writeLines(
         tx,

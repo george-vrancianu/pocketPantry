@@ -34,6 +34,7 @@ import { ApiException } from '../common/api-exception';
  * - `recipes.pairing_self_link` (400): a Pairing linking its own Recipe.
  * - `recipes.nutrition_note_too_long` (400, `{ max }`): over 500 characters, source or translation.
  * - `recipes.nothing_to_translate` (400): a translation of a Nutrition Note or Eating Moment reason the Recipe has no source text for.
+ * - `recipes.source_link_locked` (400): an update tried to set or change the Source Link or source language; they are set at creation and can only be cleared (with `null`).
  * - `catalog.not_found` (404, `{ entity }`): unknown Ingredient, Cuisine or Method.
  */
 export const recipeNotFound = () => new ApiException(404, 'recipes.not_found');
@@ -43,6 +44,9 @@ export const recipeLineNotFound = () =>
 
 export const nothingToTranslate = () =>
   new ApiException(400, 'recipes.nothing_to_translate');
+
+export const sourceLinkLocked = () =>
+  new ApiException(400, 'recipes.source_link_locked');
 
 export const itemNotFound = (
   kind: 'line' | 'step' | 'tip' | 'pairing' | 'eating_moment',

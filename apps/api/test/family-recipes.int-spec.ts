@@ -1297,6 +1297,92 @@ describe('Family Recipes (integration)', () => {
       expect(variant.sourceLink).not.toBeNull();
     });
 
+    describe('clearing and locking on update', () => {
+      const put = (id: string, extra: object = {}) =>
+        a1.put(`/${id}`, {
+          title: title('Renamed'),
+          servings: 3,
+          locale: 'en',
+          lines: [line(0, 10)],
+          steps: [{ text: 'Stir' }],
+          ...extra,
+        });
+      const linked = () =>
+        familyRecipe(a1, null, { sourceLink: link, sourceLanguage: 'ro' });
+      const stored = async (id: string) =>
+        (await a1.get(`/${id}`).expect(200)).body as RecipeDetail;
+
+      it('sourceLink: null clears the link and the language, nothing else', async () => {
+        const created = await linked();
+        const updated = (
+          await put(created.id, { sourceLink: null }).expect(200)
+        ).body as FamilyRecipeEdit;
+        expect(updated.sourceLink).toBeNull();
+        expect(updated.sourceLanguage).toBeNull();
+        const detail = await stored(created.id);
+        expect(detail.sourceLink).toBeNull();
+        expect(detail.sourceLanguage).toBeNull();
+        expect(detail.servings).toBe(3);
+        expect(detail.steps.map((s) => s.text)).toEqual(['Stir']);
+      });
+
+      it('refuses setting a link on a Recipe without one', async () => {
+        const created = await familyRecipe(a1, null);
+        const res = await put(created.id, {
+          sourceLink: 'https://example.com/new',
+        }).expect(400);
+        expect(res.body).toMatchObject({ code: 'recipes.source_link_locked' });
+        expect((await stored(created.id)).sourceLink).toBeNull();
+      });
+
+      it('refuses changing the link or resending the same one', async () => {
+        const created = await linked();
+        for (const sourceLink of [
+          'https://example.com/other',
+          'https://example.com/soup',
+          link,
+        ]) {
+          const res = await put(created.id, { sourceLink }).expect(400);
+          expect(res.body).toMatchObject({
+            code: 'recipes.source_link_locked',
+          });
+        }
+        const detail = await stored(created.id);
+        expect(detail.sourceLink).toBe('https://example.com/soup');
+        expect(detail.sourceLanguage).toBe('ro');
+        expect(detail.title).not.toBe('Renamed');
+      });
+
+      it('still refuses an unknown field', async () => {
+        const created = await linked();
+        await put(created.id, { sourceLinks: null }).expect(400);
+      });
+
+      it('Make a variant from a linked Variant saves with neither', async () => {
+        const catalog = await catalogBase();
+        const source = await familyRecipe(a1, catalog.id, {
+          sourceLink: link,
+          sourceLanguage: 'ro',
+        });
+        const draft = (await a1.get(`/${source.id}/variant-draft`).expect(200))
+          .body as FamilyRecipeDraft;
+        const posted = {
+          ...draft,
+          locale: 'en',
+          lines: draft.lines.map((l) => ({ ...l, ingredientName: undefined })),
+        };
+        const made = (await a1.post('', posted).expect(201))
+          .body as FamilyRecipeEdit;
+        expect(made.parentId).toBe(catalog.id);
+        const detail = await stored(made.id);
+        expect(detail.sourceLink).toBeNull();
+        expect(detail.sourceLanguage).toBeNull();
+        const parent = await stored(source.id);
+        expect(parent.sourceLink).toBe('https://example.com/soup');
+        expect(parent.sourceLanguage).toBe('ro');
+      });
+    });
+
     it('queues Unmatched lines for curation on save, as for any Family Recipe', async () => {
       const created = await familyRecipe(a1, null, {
         sourceLink: link,
@@ -1310,6 +1396,7 @@ describe('Family Recipes (integration)', () => {
     });
   });
   describe('Source language', () => {
+    const link = 'https://Example.com/soup#top';
     const put = (id: string, extra: object = {}) =>
       a1.put(`/${id}`, {
         title: title('Renamed'),
@@ -1351,12 +1438,33 @@ describe('Family Recipes (integration)', () => {
       }
     });
 
-    it('is not accepted by an update, which leaves it untouched', async () => {
-      const created = await familyRecipe(a1, null, { sourceLanguage: 'ro' });
-      await put(created.id, { sourceLanguage: 'en' }).expect(400);
+    it('is refused by an update with its own code, leaving it untouched', async () => {
+      const created = await familyRecipe(a1, null, {
+        sourceLink: link,
+        sourceLanguage: 'ro',
+      });
+      const res = await put(created.id, { sourceLanguage: 'fr' }).expect(400);
+      expect(res.body).toMatchObject({ code: 'recipes.source_link_locked' });
       const detail = (await a1.get(`/${created.id}`).expect(200))
         .body as RecipeDetail;
       expect(detail.sourceLanguage).toBe('ro');
+      expect(detail.sourceLink).toBe('https://example.com/soup');
+    });
+
+    it('is cleared alone by sourceLanguage: null, keeping the link', async () => {
+      const created = await familyRecipe(a1, null, {
+        sourceLink: link,
+        sourceLanguage: 'ro',
+      });
+      const updated = (
+        await put(created.id, { sourceLanguage: null }).expect(200)
+      ).body as FamilyRecipeEdit;
+      expect(updated.sourceLanguage).toBeNull();
+      expect(updated.sourceLink).toBe('https://example.com/soup');
+      const detail = (await a1.get(`/${created.id}`).expect(200))
+        .body as RecipeDetail;
+      expect(detail.sourceLanguage).toBeNull();
+      expect(detail.sourceLink).toBe('https://example.com/soup');
     });
 
     it('is not copied into a Variant draft', async () => {
@@ -1366,6 +1474,19 @@ describe('Family Recipes (integration)', () => {
         .body as FamilyRecipeDraft;
       expect(draft).not.toHaveProperty('sourceLanguage');
       expect(variant.sourceLanguage).toBe('ro');
+    });
+
+    it('is not on the variant draft of a Recipe that has both', async () => {
+      const source = await familyRecipe(a1, (await catalogBase()).id, {
+        sourceLink: link,
+        sourceLanguage: 'ro',
+      });
+      expect(source.sourceLink).not.toBeNull();
+      expect(source.sourceLanguage).toBe('ro');
+      const draft = (await a1.get(`/${source.id}/variant-draft`).expect(200))
+        .body as FamilyRecipeDraft;
+      expect(draft).not.toHaveProperty('sourceLink');
+      expect(draft).not.toHaveProperty('sourceLanguage');
     });
   });
 });
