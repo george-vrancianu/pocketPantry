@@ -8,7 +8,12 @@ import {
 import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { voiceToast } from './voicePlacement';
-import { focusPillAction, isInPill, returnFocusFromPill } from './voiceFocus';
+import {
+  focusPillAction,
+  focusVoiceButton,
+  isInPill,
+  returnFocusFromPill,
+} from './voiceFocus';
 import { haptic } from './haptic';
 import { QUICK_TAP_MS, type VoiceDefaultTarget } from './voice';
 import { voiceNote, useVoiceNoteState } from './voiceNote';
@@ -216,8 +221,12 @@ export function useVoiceNote(
 
   /** Sends the kept recording again: the same audio, in the language it was recorded in. */
   const retry = useCallback(() => {
-    // The Reading pill replaces this one: its Cancel takes the focus (the voice button is disabled).
-    if (isInPill()) focusPillAction();
+    // Setup's Reading pill replaces this one and its Cancel takes the focus; elsewhere the strip has no
+    // button while reading, so the focus goes back to the voice button.
+    if (isInPill()) {
+      if (options.current.openWhenReady) focusPillAction();
+      else focusVoiceButton();
+    }
     void voiceNote.retry();
   }, []);
 

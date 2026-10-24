@@ -9,6 +9,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  openReady,
   MicrophoneError,
   fakeSession,
   hold,
@@ -113,9 +114,9 @@ describe('Voice Note on the Shopping List', () => {
     expect(gator('listening')).not.toBeNull();
     expect(gator('listening')).toHaveAttribute('alt', '');
 
-    // Let go: the thinking Gator replaces it in the pill.
+    // Let go: the thinking Gator replaces it in the Voice Inbox strip.
     fireEvent.pointerUp(button);
-    await screen.findByText("Gator's reading your note…");
+    await screen.findByText('1 Voice Note');
     expect(gator('listening')).toBeNull();
     expect(gator('thinking')).not.toBeNull();
     expect(gator('thinking')).toHaveAttribute('alt', '');
@@ -139,7 +140,7 @@ describe('Voice Note on the Shopping List', () => {
 
     fireEvent.pointerUp(button);
 
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await openReady();
     expect(dialog).toHaveTextContent('What I heard');
     expect(session.stop).toHaveBeenCalledTimes(1);
     expect(sent).toHaveLength(1);
@@ -310,36 +311,20 @@ describe('Voice Note on the Shopping List', () => {
       Response.json({ code, params }, { status });
     const never = () => new Promise<Response>(() => undefined);
 
-    it('reads in a polite pill with the speech length and language, and the page stays usable', async () => {
+    it('reads in a polite strip with the note count, and the page stays usable', async () => {
       setup({ note: never });
       renderInAppLayout(<ShoppingPage />, '/shopping');
 
       fireEvent.pointerUp(await hold());
 
+      const strip = await screen.findByRole('status');
+      expect(strip).toHaveTextContent('1 Voice Note');
+      expect(strip).toHaveTextContent('Reading 1');
       expect(
-        await screen.findByText("Gator's reading your note…"),
-      ).toBeVisible();
-      expect(screen.getByText('0:03 of speech · English')).toBeVisible();
+        within(strip).queryByRole('button', { name: 'Review' }),
+      ).toBeNull();
       expect(screen.queryByRole('alert')).toBeNull();
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeVisible();
       expect(screen.getByText('Your list is empty')).toBeVisible();
-    });
-
-    it('Cancel aborts the request, closes the pill and says nothing was saved', async () => {
-      const { signals } = setup({ note: never });
-      renderInAppLayout(<ShoppingPage />, '/shopping');
-      fireEvent.pointerUp(await hold());
-      await screen.findByText("Gator's reading your note…");
-
-      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-
-      expect(signals.at(-1)?.aborted).toBe(true);
-      expect(screen.queryByText("Gator's reading your note…")).toBeNull();
-      expect(screen.getByText('Cancelled. Nothing was saved.')).toBeVisible();
-      expect(voiceNote.getState().phase).toBe('idle');
-      // A new note can start at once.
-      pressDown(await talkButton());
-      expect(await screen.findByText("Gator's listening")).toBeVisible();
     });
 
     /** jsdom ignores responsive rules in computed style, so the injected rule text is where `bottom` shows. */
@@ -351,15 +336,18 @@ describe('Voice Note on the Shopping List', () => {
     // 10 px gap + 60 px pill + 8 px air above the capsule.
     const clearOfPill = /bottom: calc\(78px \+/;
 
-    it('lets taps through the tip and lifts it clear of the pill while reading', async () => {
+    it('lets taps through the tip and lifts it clear of the strip while reading', async () => {
       setup({ note: never });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
-      await screen.findByText("Gator's reading your note…");
+      await screen.findByText('1 Voice Note');
 
-      pressDown(await talkButton());
+      // A tap too quick to be a note.
+      const button = await talkButton();
+      pressDown(button);
+      fireEvent.pointerUp(button);
 
-      const tip = await screen.findByText(/still reading your last note/i);
+      const tip = await screen.findByText('Hold to talk, let go to send');
       expect(tip).toHaveStyle({ pointerEvents: 'none' });
       const own = tip.className.split(' ').pop() as string;
       const rules = cssText()
@@ -369,13 +357,13 @@ describe('Voice Note on the Shopping List', () => {
       expect(rules).toMatch(clearOfPill);
     });
 
-    it('puts the 60 second stop toast clear of the Reading pill and its Cancel', async () => {
+    it('puts the 60 second stop toast clear of the Voice Inbox strip', async () => {
       setup({ note: never });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       await hold();
       await act(() => vi.advanceTimersByTimeAsync(60_000));
 
-      await screen.findByText("Gator's reading your note…");
+      await screen.findByText('1 Voice Note');
       const toast = await screen.findByText(/Stopped at 1 minute/);
       expect(toast).toBeVisible();
       const rule = cssText()
@@ -416,40 +404,33 @@ describe('Voice Note on the Shopping List', () => {
       await waitFor(() => expect(button).toHaveFocus());
     });
 
-    it('puts focus back on the voice button when Cancel ends a read', async () => {
-      setup({ note: never });
+    it('records a new note while one is being read', async () => {
+      const { sent } = setup({ note: never });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
-      const button = await talkButton();
-
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Cancel' }),
-      );
-
-      await waitFor(() => expect(button).toHaveFocus());
-    });
-
-    it('tells a press while reading that the last note is still being read', async () => {
-      setup({ note: never });
-      renderInAppLayout(<ShoppingPage />, '/shopping');
-      fireEvent.pointerUp(await hold());
-      await screen.findByText("Gator's reading your note…");
+      await screen.findByText('Reading 1');
       mic.start.mockClear();
 
-      pressDown(await talkButton());
+      const button = await hold();
+      expect(mic.start).toHaveBeenCalledOnce();
+      expect(screen.getByRole('status')).toHaveTextContent("Gator's listening");
+      fireEvent.pointerUp(button);
 
-      expect(
-        await screen.findByText('Still reading your last note'),
-      ).toBeVisible();
-      expect(mic.start).not.toHaveBeenCalled();
+      expect(await screen.findByText('2 Voice Notes')).toBeVisible();
+      expect(screen.getByText('Reading 2')).toBeVisible();
+      expect(sent).toHaveLength(2);
     });
 
-    it('closes the pill and opens Review on success', async () => {
+    it('shows the strip with Review on success, and Review opens from it', async () => {
       setup();
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
-      expect(await screen.findByRole('dialog')).toBeVisible();
-      expect(screen.queryByText("Gator's reading your note…")).toBeNull();
+      const strip = await screen.findByRole('status');
+      await within(strip).findByRole('button', { name: 'Review' });
+      expect(strip).toHaveTextContent('1 ready');
+      expect(await openReady()).toBeVisible();
+      // The strip steps aside while the sheet is up.
+      expect(screen.queryByText('1 ready')).toBeNull();
     });
 
     it('keeps a recording that failed to send in an alert with Discard and Retry', async () => {
@@ -502,7 +483,7 @@ describe('Voice Note on the Shopping List', () => {
       );
     });
 
-    it("moves focus to the Reading pill's Cancel when Retry starts the read", async () => {
+    it('puts focus back on the voice button when Retry starts the read', async () => {
       let attempt = 0;
       setup({
         note: () =>
@@ -510,6 +491,7 @@ describe('Voice Note on the Shopping List', () => {
       });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
+      const button = await talkButton();
 
       await userEvent.click(
         within(await screen.findByRole('alert')).getByRole('button', {
@@ -517,8 +499,8 @@ describe('Voice Note on the Shopping List', () => {
         }),
       );
 
-      const cancel = await screen.findByRole('button', { name: 'Cancel' });
-      await waitFor(() => expect(cancel).toHaveFocus());
+      await screen.findByText('Reading 1');
+      await waitFor(() => expect(button).toHaveFocus());
     });
 
     it('leaves focus alone when the pill closes with focus outside it', async () => {
@@ -707,7 +689,7 @@ describe('Voice Note on the Shopping List', () => {
       renderInAppLayout(<ShoppingPage />, '/shopping');
       await talkButton();
       fireEvent.pointerUp(await hold());
-      await screen.findByRole('dialog');
+      await openReady();
       expect(sent[0].get('spokenLanguage')).toBe('ro');
       expect(sent[0].has('scanLanguage')).toBe(false);
     });
@@ -718,7 +700,7 @@ describe('Voice Note on the Shopping List', () => {
       });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
-      await screen.findByRole('dialog');
+      await openReady();
       expect(sent[0].has('spokenLanguage')).toBe(false);
     });
   });
@@ -836,7 +818,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
-    return screen.findByRole('dialog');
+    return openReady();
   }
 
   beforeEach(() => {

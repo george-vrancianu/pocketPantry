@@ -13,11 +13,12 @@ describe('the fake voice environment: pending reads', () => {
 
     await recordAndSend({ spokenLanguage: 'en', defaultTarget: 'shopping' });
     await vi.waitFor(() => expect(fake.reads).toHaveLength(1));
-    expect(voiceNote.getState().phase).toBe('reading');
+    expect(voiceNote.getState().inbox.reading).toBe(1);
     expect(fetchMock).not.toHaveBeenCalled();
 
     fake.reads[0].resolve(Response.json({ transcript: 'milk', actions: [] }));
-    await vi.waitFor(() => expect(voiceNote.getState().phase).toBe('review'));
+    await vi.waitFor(() => expect(voiceNote.getState().inbox.ready).toBe(1));
+    voiceNote.openReady();
     expect(voiceNote.getState().proposal?.transcript).toBe('milk');
   });
 
@@ -42,11 +43,11 @@ describe('the fake voice environment: pending reads', () => {
     await recordAndSend({ spokenLanguage: 'en', defaultTarget: 'shopping' });
     await vi.waitFor(() => expect(fake.reads).toHaveLength(1));
     fake.releaseReads();
-    expect(voiceNote.getState().phase).toBe('reading');
+    expect(voiceNote.getState().inbox.reading).toBe(1);
 
     voiceNote.cancelReading();
     await recordAndSend({ spokenLanguage: 'en', defaultTarget: 'shopping' });
-    await vi.waitFor(() => expect(voiceNote.getState().phase).toBe('review'));
+    await vi.waitFor(() => expect(voiceNote.getState().inbox.ready).toBe(1));
     expect(fake.reads).toHaveLength(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });

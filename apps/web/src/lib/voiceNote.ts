@@ -744,9 +744,13 @@ export function createVoiceNote(
     if (!options.quiet) notify('recordingCancelled');
   }
 
-  /** Gives up waiting for one read (or the open one): the late answer is ignored. */
-  function cancelRead(id: number | undefined = store.openId) {
-    const note = store.notes.find((n) => n.id === id);
+  /** Gives up waiting for one read (without an id: the open one, else the oldest): the late answer is ignored. */
+  function cancelRead(id?: number) {
+    const note =
+      store.notes.find((n) => n.id === id) ??
+      (id === undefined
+        ? [openNote(), ...store.notes].find((n) => n?.phase === 'reading')
+        : undefined);
     if (!note || note.phase !== 'reading') return;
     reads.get(note.id)?.abort();
     reads.delete(note.id);

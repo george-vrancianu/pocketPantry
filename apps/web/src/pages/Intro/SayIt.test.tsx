@@ -200,6 +200,8 @@ describe('Setup 2, holding the mic', () => {
     fireEvent.pointerUp(button);
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    // One note, reviewed straight away: no Voice Inbox strip.
+    expect(screen.queryByText('1 Voice Note')).toBeNull();
     expect(sent).toHaveLength(1);
     expect(sent[0].get('defaultTarget')).toBe('pantry');
     expect(where()).toBe('/intro/say-it');
