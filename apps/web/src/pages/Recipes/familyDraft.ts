@@ -22,7 +22,6 @@ export type FamilyDraft = RecipeDraft;
 type Source = Pick<
   FamilyRecipeDraft,
   | 'title'
-  | 'servings'
   | 'prepMinutes'
   | 'cookMinutes'
   | 'difficulty'
@@ -30,9 +29,9 @@ type Source = Pick<
   | 'methodId'
 >;
 
-const metaOf = (source: Source) => ({
+const metaOf = (source: Source & { servings: number | null }) => ({
   title: source.title,
-  servings: String(source.servings),
+  servings: source.servings === null ? '' : String(source.servings),
   prepMinutes: minutesText(source.prepMinutes),
   cookMinutes: minutesText(source.cookMinutes),
   difficulty: source.difficulty ?? ('' as const),
@@ -62,8 +61,16 @@ const lineOf = (line: LineSource): LineDraft => ({
   note: line.note ?? '',
 });
 
-/** A "Make a variant" draft: lines and Steps have no ids yet. */
-export function draftOfVariantDraft(draft: FamilyRecipeDraft): FamilyDraft {
+/** A draft with no ids yet, as the New Recipe page takes it: "Make a variant", or one read from a source (Servings may be unknown). */
+export type NewRecipeDraft = Omit<
+  FamilyRecipeDraft,
+  'parentId' | 'servings'
+> & {
+  servings: number | null;
+};
+
+/** A "Make a variant" or sourced draft: lines and Steps have no ids yet. */
+export function draftOfVariantDraft(draft: NewRecipeDraft): FamilyDraft {
   return {
     ...metaOf(draft),
     lines: draft.lines.map(lineOf),

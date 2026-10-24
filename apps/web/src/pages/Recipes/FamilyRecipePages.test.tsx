@@ -1,6 +1,8 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
+import type { InitialEntry } from 'react-router-dom';
+import type { NewRecipeState } from './FamilyRecipePages';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type {
   FamilyRecipeDraft,
@@ -136,7 +138,7 @@ const sourceDetail = {
   guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
 };
 
-function setup(route: string, routes: Parameters<typeof stubApi>[0]) {
+function setup(route: InitialEntry, routes: Parameters<typeof stubApi>[0]) {
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes/filters': () => Response.json(filters),
     ...routes,
@@ -153,6 +155,138 @@ function setup(route: string, routes: Parameters<typeof stubApi>[0]) {
   );
   return calls;
 }
+
+/** What a read-from-source flow hands the New Recipe page: a draft without a Servings count, and the closest Base Recipes. */
+const sourced: NewRecipeState = {
+  draft: {
+    title: 'Pancakes from a blog',
+    servings: null,
+    prepMinutes: 10,
+    cookMinutes: 15,
+    difficulty: null,
+    cuisineId: 'c-fr',
+    methodId: 'm-pan',
+    lines: [
+      {
+        ingredientId: 'egg',
+        rawName: null,
+        ingredientName: 'Egg',
+        quantity: 2,
+        unit: 'pcs',
+        optional: false,
+        note: null,
+      },
+      {
+        ingredientId: null,
+        rawName: 'Maple syrup',
+        ingredientName: 'Maple syrup',
+        quantity: null,
+        unit: null,
+        optional: false,
+        note: 'to serve',
+      },
+    ],
+    steps: [{ text: 'Whisk and fry', timerSeconds: 120 }],
+    tips: [],
+    guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
+  },
+  closestBases: [
+    { id: 'base-crepes', title: 'Crepes', allergyWarning: null },
+    { id: 'base-waffles', title: 'Waffles', allergyWarning: null },
+  ],
+};
+
+const newRecipeWith = (state: NewRecipeState) => ({
+  pathname: '/recipes/new',
+  state,
+});
+
+describe('NewRecipePage with a supplied draft', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('opens filled from the draft and requires Servings before saving', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup(newRecipeWith(sourced), {
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue(
+      'Pancakes from a blog',
+    );
+    expect(screen.getByLabelText('Quantity of Egg')).toHaveValue('2');
+    expect(screen.getByText('Maple syrup')).toBeVisible();
+    expect(screen.getByDisplayValue('Whisk and fry')).toBeVisible();
+    const servings = screen.getByLabelText(/^Servings/);
+    expect(servings).toHaveValue('');
+    const save = screen.getByRole('button', { name: 'Save Recipe' });
+    expect(save).toBeDisabled();
+
+    await user.type(servings, '4');
+    expect(save).toBeEnabled();
+    await user.click(save);
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({
+        title: 'Pancakes from a blog',
+        servings: 4,
+        prepMinutes: 10,
+        cookMinutes: 15,
+        cuisineId: 'c-fr',
+        methodId: 'm-pan',
+      }),
+    );
+  });
+
+  it('saves a Variant of the closest Base Recipe by default', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup(newRecipeWith(sourced), {
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    expect(screen.getByRole('radio', { name: /Crepes/ })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+    expect(
+      calls.find((c) => c.key === 'POST /api/recipes')?.body,
+    ).toMatchObject({ parentId: 'base-crepes' });
+  });
+
+  it('saves a Variant of another picked Base Recipe', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup(newRecipeWith(sourced), {
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.click(screen.getByRole('radio', { name: 'Waffles' }));
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({ parentId: 'base-waffles' }),
+    );
+  });
+
+  it('saves a standalone Base Recipe when standalone is picked', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup(newRecipeWith(sourced), {
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.click(screen.getByRole('radio', { name: /standalone/i }));
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({ parentId: null }),
+    );
+  });
+
+  it('shows no Base Recipe picker on the blank page', async () => {
+    setup('/recipes/new', {});
+    await screen.findByLabelText(/^Title/);
+    expect(screen.queryByRole('radio')).toBeNull();
+  });
+});
 
 describe('NewRecipePage', () => {
   afterEach(() => vi.unstubAllGlobals());

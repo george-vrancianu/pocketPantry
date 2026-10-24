@@ -1,7 +1,11 @@
 import { Alert, Link, Spinner, Stack, Typography } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import {
+  BaseRecipePicker,
+  type BaseRecipeOption,
+} from '../../components/BaseRecipePicker';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { translateApiError } from '../../i18n/translateApiError';
 import {
@@ -17,12 +21,16 @@ import { emptyDraft } from '../../lib/recipeDraft';
 import { toGuidanceDraft, type GuidanceDraft } from '../../lib/guidanceDraft';
 import { useRecipe, type RecipeDetail } from '../../lib/recipes';
 import { FamilyGuidance, useMomentOptions } from './components/FamilyGuidance';
-import { draftOfEdit, draftOfVariantDraft } from './familyDraft';
+import {
+  draftOfEdit,
+  draftOfVariantDraft,
+  type NewRecipeDraft,
+} from './familyDraft';
 import { FamilyRecipeForm } from './components/FamilyRecipeForm';
 
 /** The draft's guidance with its Pairing links named from the source Recipe (same order). */
 function namedGuidance(
-  draft: FamilyRecipeDraft,
+  draft: Pick<FamilyRecipeDraft, 'guidance'>,
   source: RecipeDetail | undefined,
 ): GuidanceDraft {
   const guidance = toGuidanceDraft(draft.guidance);
@@ -42,35 +50,59 @@ function namedGuidance(
   };
 }
 
-/** "New Recipe": the Family Recipe form, blank; saved as a Base Recipe (no parent). */
+/**
+ * What can be handed to the New Recipe page (react-router `location.state`) to open it filled:
+ * a draft, and the closest Base Recipes to offer as its base. Without `closestBases` the page
+ * saves a Base Recipe and shows no picker.
+ */
+export type NewRecipeState = {
+  draft: NewRecipeDraft;
+  closestBases?: BaseRecipeOption[];
+};
+
+const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
+
+/** "New Recipe": the Family Recipe form, blank or filled from a supplied draft; saved as a Base Recipe, or a Variant of the picked base. */
 export function NewRecipePage() {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
+  const supplied = (useLocation().state as NewRecipeState | null) ?? null;
   const create = useCreateFamilyRecipe();
   const momentOptions = useMomentOptions();
+  const [parentId, setParentId] = useState<string | null>(null);
+  const [initial] = useState(() =>
+    supplied ? draftOfVariantDraft(supplied.draft) : emptyDraft(),
+  );
 
   return (
     <>
       <AppScreenHeader title={t('recipes:family.newRecipeHeading')} />
       <Stack spacing={2.5}>
+        {supplied?.closestBases ? (
+          <BaseRecipePicker
+            closest={supplied.closestBases}
+            onChange={setParentId}
+          />
+        ) : null}
         <FamilyRecipeForm
           heading={t('recipes:family.newRecipeHeading')}
           description={t('recipes:family.newRecipeHint')}
-          initial={emptyDraft()}
+          initial={initial}
           saveLabel={t('recipes:family.save')}
           saving={create.isPending}
           error={create.error}
           guidance={{
-            initial: toGuidanceDraft({
-              nutritionNote: null,
-              pairings: [],
-              eatingMoments: [],
-            }),
+            initial: supplied
+              ? namedGuidance(supplied.draft, undefined)
+              : toGuidanceDraft(blankGuidance),
             momentOptions,
           }}
           onSave={(document, guidance) =>
             create.mutate(
-              { parentId: null, document: { ...document, guidance } },
+              {
+                parentId: supplied?.closestBases ? parentId : null,
+                document: { ...document, guidance },
+              },
               { onSuccess: (saved) => navigate(`/recipes/${saved.id}`) },
             )
           }
