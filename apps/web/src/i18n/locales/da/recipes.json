@@ -53,8 +53,6 @@
   "method": "Metode",
   "empty": "Ingen opskrifter endnu.",
   "noMatches": "Ingen opskrifter passer.",
-  "canMakeThis": "Det kan du lave",
-  "fromYourPantry": "Fra dit spisekammer",
   "allRecipes": "Alle opskrifter",
   "matches": "Resultater",
   "clear": "Ryd",
@@ -64,8 +62,6 @@
   "missingOne": "Mangler {{name}}",
   "expiring_one": "{{count}} udløber snart",
   "expiring_other": "{{count}} udløber snart",
-  "otherVariants_one": "+{{count}} variant",
-  "otherVariants_other": "+{{count}} varianter",
   "emptyHint": "Scan en tallerken eller lav en ud fra et foto.",
   "noMatchesHint": "Prøv et andet ord, eller ryd et filter.",
   "variantsHint": "Søg eller vælg et filter for at se varianter for sig.",
@@ -175,9 +171,10 @@
   },
   "cookTonight": {
     "title": "Lav mad i aften",
-    "line_one": "{{count}} opskrift bruger det, der snart udløber",
-    "line_other": "{{count}} opskrifter bruger det, der snart udløber",
-    "seeThem": "Se dem"
+    "canMake_one": "{{count}} opskrift, du kan lave",
+    "canMake_other": "{{count}} opskrifter, du kan lave",
+    "expiring_one": "{{count}} bruger det, der snart udløber",
+    "expiring_other": "{{count}} bruger det, der snart udløber"
   },
   "cookTonightPage": {
     "title": "Lav mad i aften",

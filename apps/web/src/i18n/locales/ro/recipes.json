@@ -58,8 +58,6 @@
   "method": "Metodă",
   "empty": "Nicio rețetă încă.",
   "noMatches": "Nicio rețetă nu se potrivește.",
-  "canMakeThis": "Poți găti acestea",
-  "fromYourPantry": "Din Cămara ta",
   "allRecipes": "Toate rețetele",
   "matches": "Rezultate",
   "clear": "Șterge",
@@ -70,9 +68,6 @@
   "expiring_one": "{{count}} expiră curând",
   "expiring_few": "{{count}} expiră curând",
   "expiring_other": "{{count}} expiră curând",
-  "otherVariants_one": "+{{count}} variantă",
-  "otherVariants_few": "+{{count}} variante",
-  "otherVariants_other": "+{{count}} de variante",
   "emptyHint": "Scanează o farfurie sau fă una dintr-o fotografie.",
   "noMatchesHint": "Încearcă alt cuvânt sau șterge un filtru.",
   "variantsHint": "Caută sau alege un filtru ca să vezi variantele separat.",
@@ -188,10 +183,12 @@
   },
   "cookTonight": {
     "title": "Gătește diseară",
-    "line_one": "{{count}} rețetă folosește ce expiră curând",
-    "line_few": "{{count}} rețete folosesc ce expiră curând",
-    "line_other": "{{count}} de rețete folosesc ce expiră curând",
-    "seeThem": "Vezi-le"
+    "canMake_one": "{{count}} rețetă pe care o poți găti",
+    "canMake_few": "{{count}} rețete pe care le poți găti",
+    "canMake_other": "{{count}} de rețete pe care le poți găti",
+    "expiring_one": "{{count}} folosește ce expiră curând",
+    "expiring_few": "{{count}} folosesc ce expiră curând",
+    "expiring_other": "{{count}} folosesc ce expiră curând"
   },
   "cookTonightPage": {
     "title": "Gătește diseară",

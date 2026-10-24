@@ -1,18 +1,18 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { QueryClient } from '@tanstack/react-query';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CookTonightCard } from '../../lib/cookTonight';
 import type { RecipeListItem } from '../../lib/recipes';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { stubMotion } from '../../test/viewport';
 import { RecipesPage } from './RecipesPage';
 
 /*
  * DOM contract these tests assume (the implementation must provide it):
- * - The "You can make this" strip is a landmark `region` with that accessible name. Each
- *   tile is a link inside it (href `/recipes/{card.recipe.id}`), with the title, total time
- *   and footer as its text content; "From your Pantry" is another link in the region.
+ * - The Cook Tonight card is one `link` whose accessible name is its visible lines joined
+ *   with ", ", starting "Cook tonight". Its Gator is an `img` inside it, named by the Gator's
+ *   alt text and marked with `data-mood`.
  * - The list is a `list` named by its heading, so its name starts with "All Recipes" or
  *   "Matches"; the count is part of that heading's text. Each row is a `listitem` whose
  *   text holds the title, family pill, "Variant of", meta, pills and time; the row also
@@ -90,9 +90,20 @@ const filters = {
   ],
 };
 
+/** The last render's query cache, to know when a request has settled with nothing on screen to show it. */
+let queryClient: QueryClient;
+
 function setup(
   list: (url: URL) => RecipeListItem[],
-  cards: CookTonightCard[] | ((url: URL) => CookTonightCard[]) = [],
+  /** The cook-tonight cards, or a function answering with the cards or a whole response. */
+  cards:
+    | CookTonightCard[]
+    | ((
+        url: URL,
+      ) =>
+        | CookTonightCard[]
+        | Response
+        | Promise<CookTonightCard[] | Response>) = [],
   /** Holds every filtered list response until it resolves. */
   gate?: Promise<void>,
   /** How many Recipes "Hide Recipes with my Allergies" left out, unless the request shows them. */
@@ -109,11 +120,15 @@ function setup(
         hiddenByAllergiesCount: hiddenFor(url),
       }),
     'GET /api/recipes/filters': () => Response.json(filters),
-    'GET /api/recipes/cook-tonight': (url) =>
-      Response.json({
-        cards: typeof cards === 'function' ? cards(url) : cards,
-        hiddenByAllergiesCount: hiddenFor(url, hiddenCards),
-      }),
+    'GET /api/recipes/cook-tonight': async (url) => {
+      const answer = typeof cards === 'function' ? await cards(url) : cards;
+      return answer instanceof Response
+        ? answer
+        : Response.json({
+            cards: answer,
+            hiddenByAllergiesCount: hiddenFor(url, hiddenCards),
+          });
+    },
   });
   vi.stubGlobal(
     'fetch',
@@ -126,15 +141,16 @@ function setup(
         }
       : fetchMock,
   );
-  renderWithProviders(
+  ({ queryClient } = renderWithProviders(
     <Routes>
       <Route path="/recipes" element={<RecipesPage />} />
       <Route path="/recipes/new" element={<p>new recipe page</p>} />
       <Route path="/recipes/from-link" element={<p>link step</p>} />
+      <Route path="/recipes/cook-tonight" element={<p>cook tonight page</p>} />
       <Route path="/recipes/:id" element={<p>detail page</p>} />
     </Routes>,
     { route: '/recipes' },
-  );
+  ));
   return calls;
 }
 
@@ -158,14 +174,10 @@ async function findRow(title: string, name: RegExp = ALL) {
   return text.closest('li')!;
 }
 
-const findStrip = () =>
-  screen.findByRole('region', { name: 'You can make this' });
-const queryStrip = () =>
-  screen.queryByRole('region', { name: 'You can make this' });
-const tilesOf = (strip: HTMLElement) =>
-  within(strip)
-    .queryAllByRole('link')
-    .filter((link) => link.getAttribute('href')?.startsWith('/recipes/'));
+const COOK_TONIGHT = /^Cook tonight/;
+const findCookTonight = () => screen.findByRole('link', { name: COOK_TONIGHT });
+const queryCookTonight = () =>
+  screen.queryByRole('link', { name: COOK_TONIGHT });
 const chip = (name: string) => screen.findByRole('button', { name });
 
 describe('RecipesPage', () => {
@@ -482,132 +494,6 @@ describe('RecipesPage', () => {
     });
   });
 
-  describe('"You can make this" strip', () => {
-    const spicy = card({
-      recipe: { id: 'v1', title: 'Spicy omelette', parentId: 'o' },
-      expiringCount: 2,
-      otherVariantsCount: 3,
-    });
-    const soupCard = card({
-      base: { id: 's', title: 'Soup' },
-      recipe: { id: 's', title: 'Soup', prepMinutes: null, cookMinutes: null },
-    });
-
-    it("has a tile for each Can Make card, linking to the card's Recipe (which may be a Variant)", async () => {
-      setup(() => [omelette, soup], [spicy, soupCard]);
-      const strip = await findStrip();
-      expect(tilesOf(strip)).toHaveLength(2);
-      expect(
-        within(strip).getByRole('link', { name: /Spicy omelette/ }),
-      ).toHaveAttribute('href', '/recipes/v1');
-      expect(within(strip).getByRole('link', { name: /Soup/ })).toHaveAttribute(
-        'href',
-        '/recipes/s',
-      );
-    });
-
-    it('leaves a card that is one ingredient short out of the strip but marks its row', async () => {
-      const near = card({
-        base: { id: 's', title: 'Soup' },
-        recipe: { id: 's', title: 'Soup' },
-        canMake: false,
-        missing: { ingredientId: 'i-feta', name: 'Feta' },
-      });
-      setup(() => [omelette, soup], [card(), near]);
-      const strip = await findStrip();
-      expect(tilesOf(strip)).toHaveLength(1);
-      expect(within(strip).queryByText(/Soup/)).not.toBeInTheDocument();
-      expect(within(strip).queryByText(/Feta/)).not.toBeInTheDocument();
-      expect(await findRow('Soup')).toHaveTextContent('Missing Feta');
-    });
-
-    it('shows the total time and the expiring count, preferring it to the Variants count', async () => {
-      setup(() => [omelette], [spicy]);
-      const tile = within(await findStrip()).getByRole('link', {
-        name: /Spicy omelette/,
-      });
-      expect(tile).toHaveTextContent(/25\s*min/);
-      expect(tile).toHaveTextContent('2 expiring');
-      expect(tile).not.toHaveTextContent('Variants');
-    });
-
-    it('shows the other Variants count when nothing is expiring', async () => {
-      setup(
-        () => [omelette],
-        [card({ expiringCount: 0, otherVariantsCount: 3 })],
-      );
-      const tile = within(await findStrip()).getByRole('link', {
-        name: /Omelette/,
-      });
-      expect(tile).toHaveTextContent('+3 Variants');
-      expect(tile).not.toHaveTextContent('expiring');
-    });
-
-    it('shows neither an expiring nor a Variants footer when there is nothing to say', async () => {
-      setup(() => [omelette], [card()]);
-      const tile = within(await findStrip()).getByRole('link', {
-        name: /Omelette/,
-      });
-      expect(tile).toHaveTextContent(/25\s*min/);
-      expect(tile).not.toHaveTextContent('expiring');
-      expect(tile).not.toHaveTextContent('Variant');
-    });
-
-    it('omits the time when the Recipe has none', async () => {
-      setup(() => [soup], [soupCard]);
-      const tile = within(await findStrip()).getByRole('link', {
-        name: /Soup/,
-      });
-      expect(tile).not.toHaveTextContent('min');
-    });
-
-    it('links to the Pantry', async () => {
-      setup(() => [omelette], [card()]);
-      const strip = await findStrip();
-      expect(
-        within(strip).getByRole('link', { name: 'From your Pantry' }),
-      ).toHaveAttribute('href', '/pantry');
-    });
-
-    it('is hidden when no card can be made', async () => {
-      setup(
-        () => [omelette],
-        [
-          card({
-            canMake: false,
-            missing: { ingredientId: null, name: 'Feta' },
-          }),
-        ],
-      );
-      await findRow('Omelette');
-      expect(queryStrip()).not.toBeInTheDocument();
-      expect(screen.queryByText('You can make this')).not.toBeInTheDocument();
-    });
-
-    it('is hidden when there are no cards', async () => {
-      setup(() => [omelette], []);
-      await findRow('Omelette');
-      expect(queryStrip()).not.toBeInTheDocument();
-    });
-
-    it('is hidden while searching and while a chip filters, and returns after Clear', async () => {
-      setup((url) => (filtered(url) ? [frittata] : [omelette]), [card()]);
-      const user = userEvent.setup();
-      await findStrip();
-
-      await user.type(screen.getByLabelText('Search Recipes'), 'frit');
-      await waitFor(() => expect(queryStrip()).not.toBeInTheDocument());
-
-      await user.click(await chip('Clear'));
-      await findStrip();
-
-      await user.click(await chip('Italian'));
-      await waitFor(() => expect(queryStrip()).not.toBeInTheDocument());
-      await user.click(await chip('Italian'));
-      await findStrip();
-    });
-  });
-
   describe('status pills on rows', () => {
     it('marks a Recipe that is itself the best match as "Can Make"', async () => {
       setup(() => [omelette, soup], [card()]);
@@ -688,7 +574,7 @@ describe('RecipesPage', () => {
 
     it('shows no pill on a row without a card', async () => {
       setup(() => [omelette, soup], [card()]);
-      await findStrip();
+      await findCookTonight();
       const row = await findRow('Soup');
       expect(row).not.toHaveTextContent('Can Make');
       expect(row).not.toHaveTextContent('Missing');
@@ -764,20 +650,6 @@ describe('RecipesPage', () => {
         }),
       ).toBeVisible();
     });
-
-    it('marks a Can Make tile, and names the Allergen in the tile link', async () => {
-      setup(
-        () => [omelette],
-        [card({ recipe: { allergyWarning: peanuts('strong') } })],
-      );
-      const strip = await findStrip();
-      expect(
-        within(strip).getByRole('img', { name: 'Contains Peanuts, Milk' }),
-      ).toHaveAttribute('data-severity', 'strong');
-      expect(tilesOf(strip)[0].getAttribute('aria-label')).toContain(
-        'Contains Peanuts, Milk',
-      );
-    });
   });
 
   describe('hidden by Allergies', () => {
@@ -790,7 +662,7 @@ describe('RecipesPage', () => {
       expect(screen.getByRole('button', { name: 'Show' })).toBeVisible();
     });
 
-    it("counts the Can Make strip's hidden cards when they outnumber the list's", async () => {
+    it("counts Cook Tonight's hidden cards when they outnumber the list's", async () => {
       setup(() => [omelette], [], undefined, 1, 4);
       expect(await note('4 Recipes')).toBeVisible();
     });
@@ -822,7 +694,7 @@ describe('RecipesPage', () => {
       expect(screen.queryByRole('button', { name: 'Show' })).toBeNull();
     });
 
-    it('asks for the hidden Recipes, in the list and the Can Make strip, when Show is pressed', async () => {
+    it('asks for the hidden Recipes, in the list and Cook Tonight, when Show is pressed', async () => {
       const user = userEvent.setup();
       const calls = setup(
         (url) =>
@@ -855,7 +727,7 @@ describe('RecipesPage', () => {
     });
   });
 
-  describe('Cook tonight card', () => {
+  describe('Cook Tonight card', () => {
     const expiring = (id: string, title: string, count = 1) =>
       card({
         base: { id, title },
@@ -864,134 +736,164 @@ describe('RecipesPage', () => {
       });
     const plain = (id: string, title: string) =>
       card({ base: { id, title }, recipe: { id, title } });
-    const prompt = () => screen.queryByRole('region', { name: 'Cook tonight' });
-    const findPrompt = () =>
-      screen.findByRole('region', { name: 'Cook tonight' });
+    const near = (id: string, title: string, expiringCount = 0) =>
+      card({
+        base: { id, title },
+        recipe: { id, title },
+        canMake: false,
+        missing: { ingredientId: null, name: 'Feta' },
+        expiringCount,
+      });
 
-    it('counts the Can Make cards that use something expiring soon, with the chef Gator', async () => {
+    it('shows the chef Gator, how many Recipes the Family Can Make and how many use what expires soon', async () => {
       setup(
         () => [omelette, soup],
-        [expiring('o', 'Omelette'), expiring('s', 'Soup'), plain('p', 'Pie')],
+        [expiring('o', 'Omelette'), plain('s', 'Soup'), plain('p', 'Pie')],
       );
-      const region = await findPrompt();
-      expect(within(region).getByText('Cook tonight')).toBeVisible();
+      const link = await findCookTonight();
+      expect(link).toHaveAccessibleName(
+        'Cook tonight, 3 Recipes you can make, 1 uses what expires soon',
+      );
+      expect(link).toHaveTextContent('3 Recipes you can make');
+      expect(link).toHaveTextContent('1 uses what expires soon');
       expect(
-        within(region).getByText('2 Recipes use what expires soon'),
-      ).toBeVisible();
-      expect(within(region).getByAltText('Gator, cooking')).toBeVisible();
-      expect(
-        within(region).getByRole('button', { name: 'See them' }),
-      ).toBeVisible();
+        within(link).getByRole('img', { name: 'Gator, cooking' }),
+      ).toHaveAttribute('data-mood', 'chef');
     });
 
-    it('says "1 Recipe uses" in the singular', async () => {
-      setup(() => [omelette], [expiring('o', 'Omelette'), plain('p', 'Pie')]);
-      expect(
-        await screen.findByText('1 Recipe uses what expires soon'),
-      ).toBeVisible();
+    it('says "1 Recipe" in the singular and "2 use" in the plural', async () => {
+      setup(() => [omelette], [expiring('o', 'Omelette'), near('s', 'Soup')]);
+      expect(await findCookTonight()).toHaveAccessibleName(
+        'Cook tonight, 1 Recipe you can make, 1 uses what expires soon',
+      );
+      cleanup();
+      setup(
+        () => [omelette],
+        [expiring('o', 'Omelette'), expiring('s', 'Soup', 3)],
+      );
+      expect(await findCookTonight()).toHaveAccessibleName(
+        'Cook tonight, 2 Recipes you can make, 2 use what expires soon',
+      );
     });
 
-    it('is hidden when no Can Make card uses anything expiring soon', async () => {
+    it('leaves out the expiring line when no Recipe it counts uses what expires soon', async () => {
+      setup(() => [omelette], [plain('o', 'Omelette'), near('s', 'Soup', 3)]);
+      const link = await findCookTonight();
+      expect(link).toHaveAccessibleName('Cook tonight, 1 Recipe you can make');
+      expect(link).not.toHaveTextContent('expires soon');
+    });
+
+    it('counts a Base Recipe once, whichever of its Variants is the best match', async () => {
+      setup(
+        () => [omelette, soup],
+        [
+          card({
+            recipe: { id: 'v1', title: 'Spicy omelette', parentId: 'o' },
+            otherVariantsCount: 3,
+          }),
+          plain('s', 'Soup'),
+        ],
+      );
+      expect(await findCookTonight()).toHaveTextContent(
+        '2 Recipes you can make',
+      );
+    });
+
+    it('opens the Cook Tonight page when tapped', async () => {
       setup(() => [omelette], [plain('o', 'Omelette')]);
-      await findStrip();
-      expect(prompt()).toBeNull();
+      const link = await findCookTonight();
+      expect(link).toHaveAttribute('href', '/recipes/cook-tonight');
+      await userEvent.click(link);
+      expect(await screen.findByText('cook tonight page')).toBeInTheDocument();
+    });
+
+    it('is hidden when nothing can be made', async () => {
+      setup(() => [omelette], [near('o', 'Omelette')]);
+      await findRow('Omelette');
+      expect(queryCookTonight()).toBeNull();
+    });
+
+    it('is hidden when there are no cards', async () => {
+      setup(() => [omelette], []);
+      await findRow('Omelette');
+      expect(queryCookTonight()).toBeNull();
+    });
+
+    it('is hidden while Cook Tonight loads', async () => {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      setup(
+        () => [omelette],
+        async () => {
+          await gate;
+          return [plain('o', 'Omelette')];
+        },
+      );
+      await findRow('Omelette');
+      expect(queryCookTonight()).toBeNull();
+      expect(screen.queryByAltText('Gator, cooking')).toBeNull();
+      release();
+      expect(await findCookTonight()).toBeVisible();
+    });
+
+    it('is hidden when Cook Tonight fails to load', async () => {
+      setup(
+        () => [omelette],
+        () => Response.json({ code: 'internal', params: {} }, { status: 500 }),
+      );
+      await findRow('Omelette');
+      await waitFor(() =>
+        expect(
+          queryClient
+            .getQueryCache()
+            .findAll({ queryKey: ['recipes', 'cook-tonight'] })
+            .some((query) => query.state.status === 'error'),
+        ).toBe(true),
+      );
+      expect(queryCookTonight()).toBeNull();
       expect(screen.queryByAltText('Gator, cooking')).toBeNull();
     });
 
-    it('does not count a near miss that uses something expiring soon', async () => {
-      const near = card({
-        canMake: false,
-        missing: { ingredientId: 'i-feta', name: 'Feta' },
-        expiringCount: 3,
-      });
-      setup(() => [omelette], [near]);
-      await findRow('Omelette');
-      expect(prompt()).toBeNull();
+    it('is hidden while searching and while a chip filters, and returns after Clear', async () => {
+      setup(
+        (url) => (filtered(url) ? [frittata] : [omelette]),
+        [plain('o', 'Omelette')],
+      );
+      const user = userEvent.setup();
+      await findCookTonight();
+
+      await user.type(screen.getByLabelText('Search Recipes'), 'frit');
+      await waitFor(() => expect(queryCookTonight()).toBeNull());
+
+      await user.click(await chip('Clear'));
+      await findCookTonight();
+
+      await user.click(await chip('Italian'));
+      await waitFor(() => expect(queryCookTonight()).toBeNull());
+      await user.click(await chip('Italian'));
+      await findCookTonight();
     });
 
-    it('is hidden when there are no cards at all', async () => {
-      setup(() => [omelette], []);
-      await findRow('Omelette');
-      expect(prompt()).toBeNull();
-    });
-
-    it('leaves out Recipes hidden by Allergies until they are shown', async () => {
+    it('counts the Recipes hidden by Allergies once Show is pressed', async () => {
       const user = userEvent.setup();
       setup(
         () => [omelette],
         (url) =>
           url.searchParams.get('showHidden') === 'true'
-            ? [expiring('o', 'Omelette'), expiring('s', 'Soup')]
-            : [expiring('o', 'Omelette')],
+            ? [plain('o', 'Omelette'), expiring('s', 'Soup')]
+            : [plain('o', 'Omelette')],
         undefined,
         1,
       );
-      expect(
-        await screen.findByText('1 Recipe uses what expires soon'),
-      ).toBeVisible();
-      await user.click(await screen.findByRole('button', { name: 'Show' }));
-      expect(
-        await screen.findByText('2 Recipes use what expires soon'),
-      ).toBeVisible();
-    });
-
-    it('goes away while a search is active, as the strip does', async () => {
-      const user = userEvent.setup();
-      setup(
-        (url) => (filtered(url) ? [frittata] : [omelette]),
-        [expiring('o', 'Omelette')],
+      expect(await findCookTonight()).toHaveAccessibleName(
+        'Cook tonight, 1 Recipe you can make',
       );
-      await findPrompt();
-      await user.type(screen.getByLabelText('Search Recipes'), 'frit');
-      await findRow('Frittata', MATCHES);
-      expect(prompt()).toBeNull();
-    });
-
-    describe('"See them"', () => {
-      afterEach(() => {
-        delete (Element.prototype as any).scrollIntoView;
-      });
-
-      it('scrolls to the "You can make this" strip', async () => {
-        const scrollIntoView = vi.fn();
-        Element.prototype.scrollIntoView = scrollIntoView;
-        setup(() => [omelette], [expiring('o', 'Omelette')]);
-        const strip = await findStrip();
-        await userEvent.click(
-          within(await findPrompt()).getByRole('button', { name: 'See them' }),
-        );
-        expect(scrollIntoView).toHaveBeenCalledTimes(1);
-        expect(scrollIntoView.mock.contexts[0]).toBe(strip.parentElement);
-      });
-
-      it('scrolls without animation under reduced motion', async () => {
-        stubMotion(true);
-        const scrollIntoView = vi.fn();
-        Element.prototype.scrollIntoView = scrollIntoView;
-        setup(() => [omelette], [expiring('o', 'Omelette')]);
-        await userEvent.click(
-          within(await findPrompt()).getByRole('button', { name: 'See them' }),
-        );
-        expect(scrollIntoView).toHaveBeenCalledWith(
-          expect.objectContaining({ behavior: 'auto' }),
-        );
-      });
-
-      it('lists the Recipes that expire soon first in the strip', async () => {
-        setup(
-          () => [omelette, soup],
-          [
-            plain('p', 'Pie'),
-            expiring('o', 'Omelette', 1),
-            plain('q', 'Quiche'),
-            expiring('s', 'Soup', 2),
-          ],
-        );
-        const strip = await findStrip();
-        expect(tilesOf(strip).map((link) => link.getAttribute('href'))).toEqual(
-          ['/recipes/o', '/recipes/s', '/recipes/p', '/recipes/q'],
-        );
-      });
+      await user.click(await screen.findByRole('button', { name: 'Show' }));
+      await waitFor(async () =>
+        expect(await findCookTonight()).toHaveAccessibleName(
+          'Cook tonight, 2 Recipes you can make, 1 uses what expires soon',
+        ),
+      );
     });
   });
 });
