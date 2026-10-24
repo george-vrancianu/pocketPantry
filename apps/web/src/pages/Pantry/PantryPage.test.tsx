@@ -71,6 +71,16 @@ const chipLabels = (group: HTMLElement) =>
     .getAllByRole('button')
     .map((chip) => chip.getAttribute('aria-label'));
 
+/** Location sits after the amount field, on its own row: their shared container stacks them, so neither is squeezed. */
+function expectLocationBelowAmount(amount: HTMLElement, location: HTMLElement) {
+  expect(
+    amount.compareDocumentPosition(location) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  let shared = amount.parentElement!;
+  while (!shared.contains(location)) shared = shared.parentElement!;
+  expect(getComputedStyle(shared).flexDirection).toBe('column');
+}
+
 /** The Family Settings response, with the Stale Threshold the tags are coloured by. */
 const familySettings = (staleThresholdDays: number) => () =>
   Response.json({ staleThresholdDays, expiryOverrides: [] });
@@ -389,6 +399,11 @@ describe('PantryPage', () => {
       screen.getByRole('button', { name: /^Expires, .*, in 30 days$/ }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
+
+    expectLocationBelowAmount(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      screen.getByLabelText('Location'),
+    );
 
     await user.selectOptions(screen.getByLabelText('Location'), 'freezer');
     await user.type(
@@ -2978,13 +2993,14 @@ describe('PantryPage', () => {
       expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
     });
 
-    it('edits the amount and unit in one input, next to the Location', async () => {
+    it('edits the amount and unit in one input, above the Location', async () => {
       const user = userEvent.setup();
       const calls = stubManaged(stock());
       renderWithProviders(<PantryPage />);
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
       await openEditor(user);
       const amount = screen.getByRole('textbox', { name: /Amount of Milk/ });
+      expectLocationBelowAmount(amount, screen.getByLabelText('Location'));
       await user.clear(amount);
       await user.type(amount, '500 ml');
       await user.selectOptions(screen.getByLabelText('Location'), 'freezer');

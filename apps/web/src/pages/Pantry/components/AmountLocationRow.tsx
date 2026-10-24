@@ -25,7 +25,7 @@ type Props = {
   onSubmit: () => void;
 };
 
-/** The Batch amount and its Location on one line. A Batch amount always has a unit. */
+/** The Batch amount across the full width, with its Location on its own row below. A Batch amount always has a unit. */
 export function AmountLocationRow({
   name,
   amountScale,
@@ -44,9 +44,8 @@ export function AmountLocationRow({
   const [touched, setTouched] = useState(false);
 
   return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+    <Stack spacing={2}>
       <Box
-        sx={{ flex: 1, minWidth: 0 }}
         onBlur={(event: FocusEvent<HTMLElement>) => {
           if (!event.currentTarget.contains(event.relatedTarget))
             setTouched(true);
@@ -84,8 +83,7 @@ export function AmountLocationRow({
           onLocationChange(event.target.value as StorageLocation)
         }
         slotProps={{ select: { native: true } }}
-        // Room for "Congelator" and "Frigider" on a 320 px phone.
-        sx={{ flex: '0 0 40%', minWidth: 136 }}
+        fullWidth
       >
         {LOCATIONS.map((value) => (
           <option key={value} value={value}>
