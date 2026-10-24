@@ -21,3 +21,9 @@ The Pantry, the Shopping List and Recipes each put their add button somewhere di
 - Getting to Settings from a sub-screen takes two taps (Home in the Dock, then the gear).
 - A future header button needs a reason to break the one-button rule; search and share stay possible as the single action on screens that add nothing.
 - A Recipe editor (New, Variant, Edit) adds nothing, so its single header button is Save. It has no Dock and no Home button: Back is its exit.
+
+## Amendment (2026-10-24): Explore on Recipes
+
+- **Recipes' header gets a second button, the Explore pill, before the `+`.** Once Catalog Recipes leave the Recipes list (ADR 0029), Explore is the only way to find them, so it can't sit only inside the `+` menu. The `+` menu also gains From Explore, and the empty Recipes page links to it.
+- **Explore and its Recipe preview have no gear.** The Explore header holds Back and the title only. On the preview, the actions are in a bottom bar that replaces the Dock.
+- This is the one exception so far; the other sub-screens keep one button.
