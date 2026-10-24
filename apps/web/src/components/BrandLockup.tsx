@@ -6,9 +6,9 @@ export function BrandLockup() {
   const { t } = useTranslation('common');
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <GatorImage mood="app-icon" size={48} decorative />
-      {/* Not a heading: the screen's own title is its heading. */}
-      <Typography variant="h2" component="p">
+      <GatorImage mood="app-icon" size={44} decorative />
+      {/* Not a heading, and smaller than one: the screen's own title is its heading. */}
+      <Typography variant="h4" component="p">
         {t('appName')}
       </Typography>
     </Box>

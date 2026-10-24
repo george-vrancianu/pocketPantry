@@ -44,8 +44,12 @@ export function AuthShell({
                 gap: 2,
               }}
             >
-              {back ? <Link href={backHref}>{back}</Link> : <span />}
-              {languageSwitcher ? <LanguageSwitcher /> : null}
+              {back ? <Link href={backHref}>{back}</Link> : null}
+              {languageSwitcher ? (
+                <Box sx={{ ml: 'auto' }}>
+                  <LanguageSwitcher />
+                </Box>
+              ) : null}
             </Box>
           ) : null}
           <BrandLockup />

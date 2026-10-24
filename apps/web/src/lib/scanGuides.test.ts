@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CAMERA_MODES } from './cameraMode';
 import {
-  FOOTER_BOTTOM_GAP,
   FOOTER_HEIGHT,
+  FOOTER_MIN_BOTTOM,
   GUIDE_LIFT,
   MODE_SLIDER_HEIGHT,
   SCAN_GUIDES,
@@ -13,12 +13,12 @@ import {
 } from './scanGuides';
 
 describe('bar heights', () => {
-  it('follow the handoff: a 52 pt top bar and a 104 + 40 + 20 pt footer', () => {
+  it('follow the handoff: a 52 pt top bar, a 104 + 40 pt footer and at least 20 pt under it', () => {
     expect(TOP_BAR_HEIGHT).toBe(52);
     expect(SHUTTER_ROW_HEIGHT).toBe(104);
     expect(MODE_SLIDER_HEIGHT).toBe(40);
-    expect(FOOTER_BOTTOM_GAP).toBe(20);
-    expect(FOOTER_HEIGHT).toBe(164);
+    expect(FOOTER_HEIGHT).toBe(144);
+    expect(FOOTER_MIN_BOTTOM).toBe(20);
     expect(GUIDE_LIFT).toBe(14);
   });
 });
@@ -45,14 +45,23 @@ describe('clearArea', () => {
       insets: { top: 47, bottom: 34 },
     });
     expect(clear.top).toBe(47 + 52);
-    expect(clear.top + clear.height).toBe(844 - (34 + 164));
+    expect(clear.top + clear.height).toBe(844 - (34 + 144));
   });
 
-  it('treats missing insets as zero', () => {
+  it('treats missing insets as zero, keeping the least room under the footer', () => {
     expect(clearArea({ width: 390, height: 844 })).toEqual({
       top: 52,
-      height: 844 - 164 - 52,
+      height: 844 - (20 + 144) - 52,
     });
+  });
+
+  it('keeps the least room under the footer when the bottom inset is smaller', () => {
+    const clear = clearArea({
+      width: 390,
+      height: 844,
+      insets: { top: 0, bottom: 8 },
+    });
+    expect(clear.top + clear.height).toBe(844 - (20 + 144));
   });
 });
 
@@ -93,9 +102,9 @@ describe('guideRect', () => {
       height: 844,
       insets: { top: 47, bottom: 34 },
     });
-    // Centre shifts by half the difference of the insets: (47 - 34) / 2.
+    // Centre shifts by half the difference of the insets, the bottom one floored at 20: (47 - (34 - 20)) / 2.
     expect(notched.y + notched.height / 2).toBeCloseTo(
-      plain.y + plain.height / 2 + (47 - 34) / 2,
+      plain.y + plain.height / 2 + (47 - (34 - 20)) / 2,
       0,
     );
   });

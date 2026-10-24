@@ -194,3 +194,4 @@ These override the sections above where they differ. Terms are in `GLOSSARY.md` 
 - **Health**: no pipe. The dapper Gator keeps the monocle and gets a gleaming tooth (one star glint, played once on appear, not under reduced motion). Face changes crossfade. The health handoff is `docs/handoffs/pantry-health-widget-handoff/`.
 - **Gator's voice** only where Gator is drawn (`CODING_STANDARDS.md`).
 - **Siri**: Shortcuts "Pantry add", "Gator needs", "Gator got" (checks a Shopping Item, ADR 0023) and "Gator, do we have". Spoken replies name the app, PantryGator.
+- **App name beside the logo** (2026-10-24): wherever the app icon shows (Log in, sign-up, Languages) it is a lockup, the 44 pt icon with "PantryGator" beside it in display 20, not a heading; the screen's title stays its only heading, below the lockup. Replaces the lone icon of §3.1b and §3.2. Launch keeps its name under the shopping-buddy Gator (§3.1).

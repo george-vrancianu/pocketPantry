@@ -1,4 +1,4 @@
-import { Box, useForcedThemeColor, tokens } from '@pocket-pantry/ui';
+import { bodyFont, Box, useForcedThemeColor, tokens } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 
 /**
@@ -25,6 +25,7 @@ export function IntroLook({
           ground === 'olive' ? tokens.color.accent : tokens.color.bg,
         // Resolved under this subtree's Theme: inherited text would keep the root's colour (light on cream in Dark).
         color: tokens.color.ink,
+        fontFamily: bodyFont,
       }}
     >
       {children}

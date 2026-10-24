@@ -1,13 +1,7 @@
-import {
-  Box,
-  Button,
-  GatorImage,
-  Link,
-  Stack,
-  Typography,
-} from '@pocket-pantry/ui';
+import { Button, Link, Stack, Typography } from '@pocket-pantry/ui';
 import { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { BrandLockup } from '../../components/BrandLockup';
 import { IntroLook } from '../../components/IntroLook';
 import { changeLocale, LOCALES, type Locale } from '../../i18n';
 import {
@@ -82,12 +76,8 @@ export function LanguagesPage() {
         sx={{ p: '24px', maxWidth: 420, mx: 'auto' }}
       >
         <Link href="/">{t('onboarding:languages.back')}</Link>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <GatorImage mood="app-icon" size={44} decorative />
-          <Typography variant="h1">
-            {t('onboarding:languages.title')}
-          </Typography>
-        </Box>
+        <BrandLockup />
+        <Typography variant="h1">{t('onboarding:languages.title')}</Typography>
 
         <Stack spacing={0.5}>
           <ChoiceRadioGroup
