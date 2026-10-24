@@ -39,6 +39,13 @@ export const Interactive: StoryObj<typeof SegmentedControl> = {
 };
 
 type Location = 'fridge' | 'freezer' | 'cupboard' | 'spices';
+type Lang = 'en' | 'ro' | 'da';
+
+const CAPTIONS: Record<Lang, string> = {
+  en: 'Location',
+  ro: 'Locație',
+  da: 'Placering',
+};
 
 const ICONS = {
   fridge: <FridgeIcon size={18} />,
@@ -47,7 +54,7 @@ const ICONS = {
   spices: <SpicesIcon size={18} />,
 };
 
-const LABELS: Record<'en' | 'ro', Record<Location, string>> = {
+const LABELS: Record<Lang, Record<Location, string>> = {
   en: {
     fridge: 'Fridge',
     freezer: 'Freezer',
@@ -60,16 +67,22 @@ const LABELS: Record<'en' | 'ro', Record<Location, string>> = {
     cupboard: 'Dulap',
     spices: 'Condimente',
   },
+  da: {
+    fridge: 'Køleskab',
+    freezer: 'Fryser',
+    cupboard: 'Skab',
+    spices: 'Krydderier',
+  },
 };
 
-function DenseSegments({ lang }: { lang: 'en' | 'ro' }) {
+function DenseSegments({ lang }: { lang: Lang }) {
   const [value, setValue] = useState<Location>('fridge');
   const labels = LABELS[lang];
   return (
     // The narrowest form on a 320 px phone: the Finish Shopping card, about 246 px.
     <Box sx={{ width: 246 }} lang={lang}>
       <SegmentedControl
-        label={lang === 'ro' ? 'Locație' : 'Location'}
+        label={CAPTIONS[lang]}
         options={(Object.keys(labels) as Location[]).map((location) => ({
           value: location,
           label: labels[location],
@@ -77,7 +90,6 @@ function DenseSegments({ lang }: { lang: 'en' | 'ro' }) {
         }))}
         value={value}
         onChange={setValue}
-        fullWidth
         dense
       />
     </Box>
@@ -92,4 +104,9 @@ export const Dense: StoryObj<typeof SegmentedControl> = {
 /** The longest labels, Romanian: shrunk towards 11 px to fit whole, never shortened. */
 export const DenseRomanian: StoryObj<typeof SegmentedControl> = {
   render: () => <DenseSegments lang="ro" />,
+};
+
+/** Danish, whose "Krydderier" and "Køleskab" are the next longest. */
+export const DenseDanish: StoryObj<typeof SegmentedControl> = {
+  render: () => <DenseSegments lang="da" />,
 };

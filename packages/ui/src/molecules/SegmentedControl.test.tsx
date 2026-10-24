@@ -107,42 +107,43 @@ describe('SegmentedControl', () => {
     expect(style.textOverflow).not.toBe('ellipsis');
   });
 
-  it('shrinks a dense full-width label with the track width, from 13 px down to no less than 11 px', () => {
+  it('shrinks a dense label with the track width, from 13 px down to no less than 11 px, leaving room for the bold pressed option', () => {
     render(
       <SegmentedControl
         label="Location"
         options={[...options]}
         value="ingredients"
         onChange={() => undefined}
-        fullWidth
         dense
       />,
     );
     const track = screen.getByRole('group', { name: 'Location' });
+    // Dense always stretches to the width it sizes its labels against.
+    expect(getComputedStyle(track).display).toBe('flex');
     expect(getComputedStyle(track).containerType).toBe('inline-size');
-    // 'Ingredients' + 'Templates' is 20 characters; 2 segments of 2 px padding a side and one 2 px gap.
+    // 'Ingredients' + 'Templates' is 20 characters at 0.6 em, plus 10 % of the longest (11) for bold;
+    // 2 segments of 2 px padding a side and one 2 px gap.
     // jsdom cannot compute clamp() or cqi, so read the rule as written.
     expect(
       ownRule(screen.getByRole('button', { name: 'Templates' }), 'font-size'),
-    ).toBe('clamp(11px, calc((100cqi - 10px) / 12), 13px)');
+    ).toBe('clamp(11px, calc((100cqi - 10px) / 12.66), 13px)');
   });
 
-  it('keeps a dense label at 12 px when it does not fill the width', () => {
+  it('can be named by a visible caption elsewhere on the page', () => {
     render(
-      <SegmentedControl
-        label="Location"
-        options={[...options]}
-        value="ingredients"
-        onChange={() => undefined}
-        dense
-      />,
+      <>
+        <div id="caption">Location</div>
+        <SegmentedControl
+          labelledBy="caption"
+          options={[...options]}
+          value="ingredients"
+          onChange={() => undefined}
+        />
+      </>,
     );
     const track = screen.getByRole('group', { name: 'Location' });
-    expect(getComputedStyle(track).containerType).not.toBe('inline-size');
-    expect(
-      getComputedStyle(screen.getByRole('button', { name: 'Templates' }))
-        .fontSize,
-    ).toBe('12px');
+    expect(track.getAttribute('aria-labelledby')).toBe('caption');
+    expect(track.hasAttribute('aria-label')).toBe(false);
   });
 
   it('draws an option icon above its full label', () => {

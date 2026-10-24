@@ -13,7 +13,11 @@ describe('LocationToggle', () => {
       <LocationToggle label="Location" value="freezer" onChange={onChange} />,
     );
     const group = screen.getByRole('group', { name: 'Location' });
-    expect(screen.getByText('Location')).toBeVisible();
+    const caption = screen.getByText('Location');
+    expect(caption).toBeVisible();
+    // The caption itself names the group, rather than a copy of its text.
+    expect(group.getAttribute('aria-labelledby')).toBe(caption.id);
+    expect(caption).not.toHaveAttribute('aria-hidden');
     expect(
       within(group)
         .getAllByRole('button')
