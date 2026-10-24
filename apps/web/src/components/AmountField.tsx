@@ -71,7 +71,7 @@ export type AmountFieldProps = {
   height?: number;
   /** The edge the unit popover lines up with: 'end' when the field reaches the right edge, 'start' when something sits to its right. */
   popoverAlign?: 'start' | 'end';
-  /** The Ingredient's Amount Scale; given, the field draws its Usual Amount chips under it. Null or left out (an Unmatched name) means no chips. */
+  /** The Ingredient's Amount Scale, which decides its Usual Amount chips. Null or left out (an Unmatched name, the amount sheet) offers chips from the unit alone. */
   amountScale?: AmountScale | null;
 };
 
@@ -266,8 +266,7 @@ export function AmountField({
               if (event.key === 'Enter') {
                 event.preventDefault();
                 onSubmit();
-              } else if (amountScale) {
-                // Only fields with Usual Amount chips step; the others keep the arrow keys.
+              } else {
                 step(event);
               }
             }}
@@ -381,15 +380,13 @@ export function AmountField({
           </Box>
         ) : null}
       </Box>
-      {amountScale ? (
-        <UsualAmountRow
-          name={name}
-          scale={amountScale}
-          unit={unit}
-          quantity={quantity}
-          onPick={pick}
-        />
-      ) : null}
+      <UsualAmountRow
+        name={name}
+        scale={amountScale}
+        unit={unit}
+        quantity={quantity}
+        onPick={pick}
+      />
       {error ? (
         <Typography
           id={errorId}

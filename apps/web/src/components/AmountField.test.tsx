@@ -21,7 +21,7 @@ afterEach(() => {
 type HarnessProps = {
   start?: string;
   unit?: Unit | '';
-  scale?: AmountScale;
+  scale?: AmountScale | null;
   onQuantity?: (quantity: string, typedUnit?: Unit | '') => void;
   onUnit?: (unit: Unit | '') => void;
 };
@@ -68,11 +68,29 @@ const chip = (name: string) =>
 const field = () => screen.getByRole('textbox');
 
 describe('AmountField usual amount chips', () => {
-  it('hides the chip row while the field is empty', () => {
+  it('shows the chips with an empty quantity once a unit is chosen', () => {
     renderWithProviders(<Harness unit="g" start="" />);
+    expect(chipNames()).toEqual(['100 g', '250 g', '500 g', '1,000 g']);
+    for (const name of chipNames()) {
+      expect(chip(name ?? '')).toHaveAttribute('aria-pressed', 'false');
+    }
+  });
+
+  it('hides the chip row while there is no unit', () => {
+    renderWithProviders(<Harness unit="" start="250" />);
     expect(
       screen.queryByRole('group', { name: 'Usual amounts for Paprika' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows the chips once a unit is picked in an empty field', async () => {
+    renderWithProviders(<Harness unit="" start="" scale={null} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Unit: unit' }));
+    await user.click(screen.getByRole('button', { name: 'pcs' }));
+
+    expect(chipNames()).toEqual(['1 pcs', '2 pcs', '3 pcs', '4 pcs']);
   });
 
   it('shows the kept chips in ascending order when the field has a value', () => {
@@ -95,8 +113,6 @@ describe('AmountField usual amount chips', () => {
     renderWithProviders(<Harness unit="g" start="" onQuantity={onQuantity} />);
     const user = userEvent.setup();
 
-    // Hidden while empty; type a value so the row shows, then tap a chip.
-    await user.type(field(), '7');
     await user.click(chip('500 g'));
 
     expect(onQuantity).toHaveBeenLastCalledWith('500', undefined);
@@ -119,14 +135,11 @@ describe('AmountField usual amount chips', () => {
     }
   });
 
-  it('shows the usual amount hint only while a chip matches', async () => {
+  it('shows no hint label above the chips, only the matching chip pressed', () => {
     renderWithProviders(<Harness unit="g" start="250" />);
-    const user = userEvent.setup();
 
-    expect(screen.getByText('usual amount')).toBeVisible();
-
-    await user.type(field(), '3');
     expect(screen.queryByText('usual amount')).not.toBeInTheDocument();
+    expect(chip('250 g')).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('keeps the chip matching a typed value even when the row narrows', () => {
@@ -213,24 +226,30 @@ describe('AmountField usual amount chips', () => {
     expect(onQuantity).toHaveBeenLastCalledWith('210', undefined);
   });
 
-  it('ignores the arrow keys when the field has no Amount Scale', async () => {
-    const onQuantityChange = vi.fn();
+  it('steps the amount with the arrow keys when the field has no Amount Scale', async () => {
+    const onQuantity = vi.fn();
     renderWithProviders(
-      <AmountField
-        name="Paprika"
-        quantity="250"
-        unit="g"
-        onQuantityChange={onQuantityChange}
-        onUnitChange={() => {}}
-        error={null}
-        onSubmit={() => {}}
-      />,
+      <Harness unit="g" start="250" scale={null} onQuantity={onQuantity} />,
     );
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('textbox'));
-    await user.keyboard('{ArrowUp}{Shift>}{ArrowDown}{/Shift}');
-    expect(onQuantityChange).not.toHaveBeenCalled();
+    await user.click(field());
+    await user.keyboard('{ArrowUp}');
+    expect(onQuantity).toHaveBeenLastCalledWith('260', undefined);
+    await user.keyboard('{Shift>}{ArrowDown}{/Shift}');
+    expect(onQuantity).toHaveBeenLastCalledWith('210', undefined);
+  });
+
+  it('steps a field with no Amount Scale and no unit by one', async () => {
+    const onQuantity = vi.fn();
+    renderWithProviders(
+      <Harness unit="" start="" scale={null} onQuantity={onQuantity} />,
+    );
+    const user = userEvent.setup();
+
+    await user.click(field());
+    await user.keyboard('{ArrowUp}');
+    expect(onQuantity).toHaveBeenLastCalledWith('1', undefined);
   });
 
   it('keeps a zero amount at zero when stepping down', async () => {
@@ -246,7 +265,6 @@ describe('AmountField usual amount chips', () => {
   it('moves between chips with the arrow keys and selects with Enter', async () => {
     renderWithProviders(<Harness unit="g" start="" />);
     const user = userEvent.setup();
-    await user.type(field(), '5');
 
     chip('100 g').focus();
     await user.keyboard('{ArrowRight}');
@@ -257,21 +275,35 @@ describe('AmountField usual amount chips', () => {
     expect(chip('250 g')).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('keeps chips out of the amount when no scale is given', () => {
-    renderWithProviders(
-      <AmountField
-        name="Paprika"
-        quantity="250"
-        unit="g"
-        onQuantityChange={() => {}}
-        onUnitChange={() => {}}
-        error={null}
-        onSubmit={() => {}}
-      />,
-    );
-    expect(
-      screen.queryByRole('group', { name: 'Usual amounts for Paprika' }),
-    ).not.toBeInTheDocument();
+  it.each([
+    ['g', ['100 g', '250 g', '500 g', '1,000 g']],
+    ['ml', ['100 ml', '250 ml', '500 ml', '1,000 ml']],
+    ['kg', ['1 kg', '2 kg', '3 kg', '4 kg']],
+    ['l', ['1 L', '2 L', '3 L', '4 L']],
+    ['pcs', ['1 pcs', '2 pcs', '3 pcs', '4 pcs']],
+  ] as const)(
+    'offers %s chips from the unit alone when no Amount Scale is given',
+    (unit, expected) => {
+      renderWithProviders(
+        <AmountField
+          name="Paprika"
+          quantity=""
+          unit={unit}
+          onQuantityChange={() => {}}
+          onUnitChange={() => {}}
+          error={null}
+          onSubmit={() => {}}
+        />,
+      );
+      expect(chipNames()).toEqual(expected);
+    },
+  );
+
+  it('keeps the matching unit-only chip pressed in a narrow row', () => {
+    renderWithProviders(<Harness unit="pcs" start="12" scale={null} />);
+    // 12 is the last priority, so it is kept first; then 1, 2 and 3 fill the rest.
+    expect(chipNames()).toEqual(['1 pcs', '2 pcs', '3 pcs', '12 pcs']);
+    expect(chip('12 pcs')).toHaveAttribute('aria-pressed', 'true');
   });
 });
 
@@ -279,7 +311,6 @@ describe('AmountField usual amount keyboard access', () => {
   it('selects the focused chip with Space', async () => {
     renderWithProviders(<Harness unit="g" start="" />);
     const user = userEvent.setup();
-    await user.type(field(), '5');
 
     chip('250 g').focus();
     await user.keyboard(' ');

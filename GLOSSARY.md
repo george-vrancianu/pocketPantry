@@ -64,6 +64,14 @@ _Avoid_: Alias, keyword
 The number of days after purchase a Batch of an Ingredient is assumed to last, taken from the Leaf Category, falling back to the Parent Category, and overridable per Family.
 _Avoid_: Shelf life
 
+**Amount Scale**:
+How a catalog Ingredient is bought: low, medium or large, which decides its Usual Amounts.
+_Avoid_: Size, pack size, bucket
+
+**Usual Amount**:
+A quick-pick quantity offered under the amount field once a unit is chosen, from the Ingredient's Amount Scale or, when there is none, from the unit alone.
+_Avoid_: Preset, suggestion (a Suggestion is a Shopping term), chip
+
 **Unmatched**:
 The state of a scanned or typed name that could not be matched to an Ingredient with confidence. Unmatched Batches are saved under an "Other" Leaf Category and queued for Admin curation.
 _Avoid_: Unknown, custom, uncategorised
