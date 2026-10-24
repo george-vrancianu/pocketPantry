@@ -65,7 +65,7 @@ The number of days after purchase a Batch of an Ingredient is assumed to last, t
 _Avoid_: Shelf life
 
 **Unmatched**:
-The state of a scanned or typed name that could not be matched to an Ingredient with confidence. Unmatched Batches are saved under an "Other" Leaf Category and queued for Admin curation.
+The state of a scanned or typed name, on a Batch or an Ingredient Line, that could not be matched to an Ingredient with confidence. Both are queued for Admin curation; Unmatched Batches are saved under an "Other" Leaf Category.
 _Avoid_: Unknown, custom, uncategorised
 
 **Pantry Basic**:
