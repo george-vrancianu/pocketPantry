@@ -4,6 +4,7 @@ import {
   fireEvent,
   screen,
   waitFor,
+  waitForElementToBeRemoved,
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -271,7 +272,7 @@ describe('Voice Note on the Shopping List', () => {
 
     pressDown(button);
     await screen.findByText('Starting…');
-    await holdFor(2000);
+    await holdFor(400);
     fireEvent.pointerUp(button);
     await act(async () => ready(session));
 
@@ -476,9 +477,7 @@ describe('Voice Note on the Shopping List', () => {
       fireEvent.click(screen.getByRole('button', { name: /^Open/ }));
       const sheet = await screen.findByRole('dialog', { name: 'Voice Inbox' });
 
-      const onFocus = vi.fn();
-      const voiceButton = document.querySelector('[data-voice-button]');
-      voiceButton?.addEventListener('focus', onFocus);
+      const focus = vi.spyOn(HTMLElement.prototype, 'focus');
       await userEvent.click(
         within(sheet).getAllByRole('button', { name: /^Review/ })[0],
       );
@@ -487,10 +486,15 @@ describe('Voice Note on the Shopping List', () => {
       await waitFor(() =>
         expect(review).toContainElement(document.activeElement as HTMLElement),
       );
-      await holdFor(2000);
+      await waitForElementToBeRemoved(sheet);
+      await holdFor(100);
       expect(review).toContainElement(document.activeElement as HTMLElement);
       // The sheet closing for a note that opens does not hand focus to the voice button.
-      expect(onFocus).not.toHaveBeenCalled();
+      expect(
+        focus.mock.contexts.some((el) =>
+          (el as HTMLElement).hasAttribute('data-voice-button'),
+        ),
+      ).toBe(false);
     });
 
     it('keeps the mic working while a note has failed', async () => {
