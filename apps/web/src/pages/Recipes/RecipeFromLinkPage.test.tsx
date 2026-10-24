@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -356,7 +356,7 @@ describe('RecipeFromLinkPage', () => {
         ...preferences('da'),
         'POST /api/recipes/from-link': () => Response.json(read()),
       });
-      const catalog = await screen.findByRole('radio', { name: 'In Dansk' });
+      const catalog = await screen.findByRole('radio', { name: 'In Danish' });
       expect(catalog).toBeChecked();
       expect(screen.getByRole('radiogroup')).toHaveAccessibleName(
         'Language of the recipe',
@@ -380,8 +380,36 @@ describe('RecipeFromLinkPage', () => {
       expect(sent(calls)).toMatchObject({ language: 'source' });
     });
 
+    it('says "På dansk" and "În engleză" in lower case in the Member\'s UI Language', async () => {
+      vi.stubGlobal(
+        'fetch',
+        stubApi({
+          'GET /api/settings/preferences': () =>
+            Response.json({ effectiveCatalogLanguage: 'da' }),
+        }).fetchMock,
+      );
+      renderWithProviders(<RecipeFromLinkPage />, { locale: 'da' });
+      expect(
+        await screen.findByRole('radio', { name: 'På dansk' }),
+      ).toBeChecked();
+      cleanup();
+      vi.stubGlobal(
+        'fetch',
+        stubApi({
+          'GET /api/settings/preferences': () =>
+            Response.json({ effectiveCatalogLanguage: 'en' }),
+        }).fetchMock,
+      );
+      renderWithProviders(<RecipeFromLinkPage />, { locale: 'ro' });
+      expect(
+        await screen.findByRole('radio', { name: 'În engleză' }),
+      ).toBeChecked();
+    });
+
     it('names the UI Language until the Preferences arrive', async () => {
-      setup({});
+      setup({
+        'GET /api/settings/preferences': () => new Promise<Response>(() => {}),
+      });
       expect(
         await screen.findByRole('radio', { name: 'In English' }),
       ).toBeChecked();

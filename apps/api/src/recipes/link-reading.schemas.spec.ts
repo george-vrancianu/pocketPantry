@@ -10,9 +10,10 @@ function assertAllRequired(node: unknown, path: string): void {
   const schema = node as Record<string, unknown>;
   if (schema.properties && typeof schema.properties === 'object') {
     const keys = Object.keys(schema.properties);
-    expect(
-      [...((schema.required as string[] | undefined) ?? [])].sort(),
-    ).toEqual([...keys].sort());
+    expect({
+      path,
+      required: [...((schema.required as string[] | undefined) ?? [])].sort(),
+    }).toEqual({ path, required: [...keys].sort() });
   }
   for (const [key, value] of Object.entries(schema)) {
     assertAllRequired(value, `${path}.${key}`);

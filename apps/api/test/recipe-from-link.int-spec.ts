@@ -365,7 +365,7 @@ describe('Recipe from Link (integration)', () => {
       const prompt = prompts[0].prompt;
       expect(prompt).toContain("in the page's own language");
       expect(prompt).toContain('(do not translate)');
-      expect(prompt).toContain('match its ingredients across languages');
+      expect(prompt).toContain('match ingredients across languages');
       expect(prompt).not.toContain('Romanian');
       expect(prompt).not.toContain('Write the title and the steps in English');
       // Matching against the Catalog is unchanged.

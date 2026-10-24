@@ -1,4 +1,4 @@
-import { Link, Typography } from '@pocket-pantry/ui';
+import { Box, Link, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { languageName } from '../lib/languageName';
 
@@ -36,14 +36,14 @@ export function SourceLink({
   );
   if (!translatedFrom) return link;
   return (
-    <>
+    <Box component="span">
       {link}
       <Typography component="span" variant="meta" color="text.secondary">
-        {' · '}
+        <span aria-hidden>{' · '}</span>
         {t('sourceLink.translatedFrom', {
           language: languageName(translatedFrom, i18n.resolvedLanguage ?? 'en'),
         })}
       </Typography>
-    </>
+    </Box>
   );
 }
