@@ -230,7 +230,12 @@ function StatusPills({
           fg={tokens.color.soonFg}
           bg={tokens.color.soonBg}
         >
-          {t('missingOne', { name: card.missing.name })}
+          {card.recipe.id === recipeId
+            ? t('missingOne', { name: card.missing.name })
+            : t('missingOneVia', {
+                name: card.missing.name,
+                title: card.recipe.title,
+              })}
         </Pill>
       ) : null}
       {card && card.expiringCount > 0 ? (

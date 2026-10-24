@@ -65,6 +65,7 @@
   "canMake": "Poți găti",
   "canMakeVia": "Poți găti {{title}}",
   "missingOne": "Lipsește {{name}}",
+  "missingOneVia": "Lipsește {{name}} pentru {{title}}",
   "expiring_one": "{{count}} expiră curând",
   "expiring_few": "{{count}} expiră curând",
   "expiring_other": "{{count}} expiră curând",

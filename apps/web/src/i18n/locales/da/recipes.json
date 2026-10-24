@@ -60,6 +60,7 @@
   "canMake": "Kan laves",
   "canMakeVia": "Kan laves: {{title}}",
   "missingOne": "Mangler {{name}}",
+  "missingOneVia": "Mangler {{name}} til {{title}}",
   "expiring_one": "{{count}} udløber snart",
   "expiring_other": "{{count}} udløber snart",
   "emptyHint": "Scan en tallerken eller lav en ud fra et foto.",

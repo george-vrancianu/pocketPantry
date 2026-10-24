@@ -11,6 +11,8 @@ import { Link } from 'react-router-dom';
 import { canMakeCards, type CookTonightCard } from '../../../lib/cookTonight';
 import { useGatorAlt } from '../../../lib/useGatorAlt';
 
+type CardState = { mood: GatorMood; to: string; lines: (string | null)[] };
+
 /**
  * The Cook Tonight card on the Recipes page, one link in every state:
  * - something Can Make: chef Gator, how many Base Recipes and how many of them use what expires
@@ -27,10 +29,10 @@ export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
   const canMake = canMakeCards(cards);
   const oneShort = cards.length - canMake.length;
   const expiring = canMake.filter((card) => card.expiringCount > 0).length;
-  const { mood, to, lines } =
+  const { mood, to, lines }: CardState =
     canMake.length > 0
       ? {
-          mood: 'chef' as GatorMood,
+          mood: 'chef',
           to: '/recipes/cook-tonight',
           lines: [
             t('cookTonight.canMake', { count: canMake.length }),
@@ -41,7 +43,7 @@ export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
         }
       : oneShort > 0
         ? {
-            mood: 'chef-flop' as GatorMood,
+            mood: 'chef-flop',
             to: '/recipes/cook-tonight',
             lines: [
               t('cookTonight.nothingYet'),
@@ -49,7 +51,7 @@ export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
             ],
           }
         : {
-            mood: 'chef-flop' as GatorMood,
+            mood: 'chef-flop',
             to: '/pantry',
             lines: [
               t('cookTonight.nothingInPantry'),

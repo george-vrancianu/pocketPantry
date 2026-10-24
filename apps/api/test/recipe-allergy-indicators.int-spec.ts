@@ -23,7 +23,7 @@ jest.setTimeout(30_000);
 const CROWD_PER_INGREDIENT = MAX_PLATE_MATCHES + 1;
 
 // Spec: #350 / #358, ADR 0014. The compact allergyWarning on Recipe browse, Cook Tonight
-// (which also feeds the Can Make strip) and Plate Scan matches.
+// (which also feeds the Cook Tonight card) and Plate Scan matches.
 describe('Allergy indicators on Recipe lists and matches (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
@@ -219,7 +219,7 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
     });
   });
 
-  describe('Cook Tonight and the Can Make strip', () => {
+  describe('Cook Tonight and the Cook Tonight card', () => {
     it('adds the warning to the card Recipe', async () => {
       // One missing line each, so both are near misses and get a card.
       const strong = await create([g('parmesan')]);

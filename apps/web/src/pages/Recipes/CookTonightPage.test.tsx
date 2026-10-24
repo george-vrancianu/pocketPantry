@@ -176,6 +176,20 @@ describe('CookTonightPage', () => {
     expect(await screen.findByText('detail page')).toBeInTheDocument();
   });
 
+  it('names the Variant a near miss opens, with the Ingredient it lacks', async () => {
+    setup([
+      base('o', 'Omelette', {
+        canMake: false,
+        missing: { ingredientId: 'i-chives', name: 'Chives' },
+        recipe: { id: 'f', title: 'Frittata', parentId: 'o' },
+      }),
+    ]);
+    const link = await screen.findByRole('link', {
+      name: /Omelette.*Missing Chives for Frittata/,
+    });
+    expect(link).toHaveAttribute('href', '/recipes/f');
+  });
+
   it('shows a spinner while the cards load', async () => {
     let answer: (response: Response) => void = () => {};
     const { fetchMock } = stubApi({

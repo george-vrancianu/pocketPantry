@@ -60,6 +60,7 @@
   "canMake": "Can Make",
   "canMakeVia": "Can Make {{title}}",
   "missingOne": "Missing {{name}}",
+  "missingOneVia": "Missing {{name}} for {{title}}",
   "expiring_one": "{{count}} expiring",
   "expiring_other": "{{count}} expiring",
   "emptyHint": "Scan a plate or make one from a photo.",
