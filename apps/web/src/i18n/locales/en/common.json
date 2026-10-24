@@ -17,6 +17,12 @@
     "cupboard": "Cupboard",
     "spices": "Spices"
   },
+  "locationsShort": {
+    "fridge": "Fridge",
+    "freezer": "Freezer",
+    "cupboard": "Cupboard",
+    "spices": "Spices"
+  },
   "row": {
     "a11yHint": "Swipe left to remove, hold to edit",
     "actions": {

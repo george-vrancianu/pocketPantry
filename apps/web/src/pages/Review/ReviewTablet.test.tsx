@@ -139,6 +139,11 @@ describe('Review on a tablet or laptop', () => {
     expect(within(row).getByLabelText('Expiry date: Milk')).toHaveValue(
       '24.12.2026',
     );
+    // A table cell is too narrow for the Location toggle: the tablet keeps the dropdown.
+    expect(
+      within(row).getByRole('combobox', { name: 'Location: Milk' }),
+    ).toHaveValue('fridge');
+    expect(within(row).queryByRole('group', { name: 'Location' })).toBeNull();
   });
 
   it('keeps a missing-quantity row in To check while typed, then Confirm moves it to Confident', async () => {

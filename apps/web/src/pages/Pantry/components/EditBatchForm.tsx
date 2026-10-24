@@ -2,10 +2,11 @@ import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
+import { LocationToggle } from '../../../components/LocationToggle';
 import { RemoveLink } from '../../../components/RemoveLink';
 import type { Batch, BatchEdit } from '../../../lib/pantry';
 import { useEditBatchForm } from '../hooks/useEditBatchForm';
-import { AmountLocationRow } from './AmountLocationRow';
+import { BatchAmountField } from './BatchAmountField';
 
 type Props = {
   batch: Batch;
@@ -33,17 +34,20 @@ export function EditBatchForm({ batch, onSaved, onCancel, onRemove }: Props) {
       aria-label={t('edit.title', { name: batch.name })}
       sx={{ px: 3, pt: 1, pb: 3 }}
     >
-      <AmountLocationRow
+      <BatchAmountField
         name={batch.name}
         amountScale={batch.amountScale}
         quantity={form.quantity}
         unit={form.unit}
-        location={form.location}
         quantityValid={form.quantityValid}
         onQuantityChange={form.setQuantity}
         onUnitChange={form.setUnit}
-        onLocationChange={form.setLocation}
         onSubmit={() => formRef.current?.requestSubmit()}
+      />
+      <LocationToggle
+        label={t('form.location')}
+        value={form.location}
+        onChange={form.setLocation}
       />
       {/* No Usual tile: the Default Expiry counts from the purchase date, which a Batch doesn't carry. */}
       <ExpiryField

@@ -17,6 +17,12 @@
     "cupboard": "Dulap",
     "spices": "Condimente"
   },
+  "locationsShort": {
+    "fridge": "Frigider",
+    "freezer": "Congel",
+    "cupboard": "Dulap",
+    "spices": "Condim"
+  },
   "row": {
     "a11yHint": "Glisează la stânga pentru a elimina, ține apăsat pentru a edita",
     "actions": {

@@ -16,12 +16,12 @@ import {
   type RowStatus,
 } from '../../../lib/review';
 import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
-import { Field, controlSx } from './Field';
+import { LocationToggle } from '../../../components/LocationToggle';
+import { Field, controlSx, fieldLabelSx } from './Field';
 import {
   CategorySelect,
   DescriptionInput,
   ExpiryButton,
-  LocationSelect,
   NameInput,
   QuantityUnitInput,
 } from './RowInputs';
@@ -237,13 +237,15 @@ export function RowEditPanel({
 
         {shopping ? null : (
           <>
-            <Field htmlFor={id('location')} label={t('review:field.location')}>
-              <LocationSelect
-                line={line}
-                onChange={onChange}
-                id={id('location')}
+            {/* The toggle needs the panel's full width for four Locations on a phone. */}
+            <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}>
+              <LocationToggle
+                label={t('review:field.location')}
+                value={line.location}
+                onChange={(location) => onChange({ location })}
+                captionSx={fieldLabelSx}
               />
-            </Field>
+            </Box>
 
             <Field
               htmlFor={id('expiry')}

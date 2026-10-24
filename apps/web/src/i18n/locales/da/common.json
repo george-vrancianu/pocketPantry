@@ -17,6 +17,12 @@
     "cupboard": "Skab",
     "spices": "Krydderier"
   },
+  "locationsShort": {
+    "fridge": "Køleskab",
+    "freezer": "Fryser",
+    "cupboard": "Skab",
+    "spices": "Krydderier"
+  },
   "row": {
     "a11yHint": "Stryg til venstre for at fjerne, hold nede for at redigere",
     "actions": {
