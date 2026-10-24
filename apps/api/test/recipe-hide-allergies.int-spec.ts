@@ -20,7 +20,7 @@ import { promoteToAdmin } from './support/promote-to-admin';
 jest.setTimeout(30_000);
 
 // Spec: #350 / #359, ADR 0014, ADR 0012. "Hide Recipes with my Allergies": Recipe browse and
-// search, Cook Tonight (the Can Make strip too) and Plate Scan matches leave out Recipes with
+// search, Cook Tonight (the Cook Tonight card too) and Plate Scan matches leave out Recipes with
 // the viewer's own or Family Allergies in a required, checked line; detail, Variants and
 // Pairing links never drop; the Meal Plan's calls pass the override.
 describe('Hide Recipes with my Allergies (integration)', () => {
@@ -261,7 +261,7 @@ describe('Hide Recipes with my Allergies (integration)', () => {
     });
   });
 
-  describe('Cook Tonight and the Can Make strip', () => {
+  describe('Cook Tonight and the Cook Tonight card', () => {
     it('drops hidden cards, counts them, and the override brings them back', async () => {
       const milky = await create([g('parmesan')]);
       const clear = await create([g('flour')]);

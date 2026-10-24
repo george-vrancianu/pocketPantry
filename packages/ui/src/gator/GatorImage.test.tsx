@@ -1,5 +1,8 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, expectTypeOf, it } from 'vitest';
+import { createHash } from 'node:crypto';
+import chefArt from './art/gator-chef.svg?raw';
+import chefFlopArt from './art/gator-chef-flop.svg?raw';
 import dapperArt from './art/gator-health-dapper.svg?raw';
 import {
   GATOR_MOODS,
@@ -22,13 +25,14 @@ const ALTS: Record<GatorMood, string> = {
   'health-dapper': 'Gator with a monocle, smiling contentedly',
   'health-hmm': 'Gator, unsure',
   chef: 'Gator the chef stirring a pot',
+  'chef-flop': 'Gator, disappointed, with the cooking tools dropped',
 };
 
 afterEach(cleanup);
 
 describe('GatorImage', () => {
-  it('has the 13 moods', () => {
-    expect(GATOR_MOODS).toHaveLength(13);
+  it('has the 14 moods', () => {
+    expect(GATOR_MOODS).toHaveLength(14);
   });
 
   it.each(Object.entries(ALTS))(
@@ -122,5 +126,30 @@ describe('dapper Gator art', () => {
         dapperArt,
       );
     expect(media?.[1]).toContain('animation:none');
+  });
+});
+
+describe('chef Gator art', () => {
+  it('is unchanged, byte for byte', () => {
+    expect(createHash('sha256').update(chefArt).digest('hex')).toBe(
+      '48afb8b529c0393f001c43495c11213b86f04817ae7e6f37be1c47c597ef7504',
+    );
+  });
+});
+
+describe('disappointed chef Gator art', () => {
+  it('is its own drawing, not a copy of the chef', () => {
+    expect(chefFlopArt).not.toBe(chefArt);
+  });
+
+  it('keeps the chef hat and drops the pot and whisk', () => {
+    // Toque band, pot body and whisk wires, in the chef's colours.
+    expect(chefFlopArt).toContain('fill="#F4EFE4"');
+    expect(chefFlopArt).toContain('fill="#C7533C"');
+    expect(chefFlopArt).toContain('stroke="#9AA3A8"');
+  });
+
+  it("has the worried Gator's sweat drop", () => {
+    expect(chefFlopArt).toContain('fill="#8CCBEA"');
   });
 });

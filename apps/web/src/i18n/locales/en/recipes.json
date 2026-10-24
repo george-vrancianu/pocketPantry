@@ -53,8 +53,6 @@
   "method": "Method",
   "empty": "No Recipes yet.",
   "noMatches": "No Recipes match.",
-  "canMakeThis": "You can make this",
-  "fromYourPantry": "From your Pantry",
   "allRecipes": "All Recipes",
   "matches": "Matches",
   "clear": "Clear",
@@ -62,10 +60,9 @@
   "canMake": "Can Make",
   "canMakeVia": "Can Make {{title}}",
   "missingOne": "Missing {{name}}",
+  "missingOneVia": "Missing {{name}} for {{title}}",
   "expiring_one": "{{count}} expiring",
   "expiring_other": "{{count}} expiring",
-  "otherVariants_one": "+{{count}} Variant",
-  "otherVariants_other": "+{{count}} Variants",
   "emptyHint": "Scan a plate or make one from a photo.",
   "noMatchesHint": "Try another word or clear a filter.",
   "variantsHint": "Search or pick a filter to see Variants on their own.",
@@ -175,9 +172,20 @@
   },
   "cookTonight": {
     "title": "Cook tonight",
-    "line_one": "{{count}} Recipe uses what expires soon",
-    "line_other": "{{count}} Recipes use what expires soon",
-    "seeThem": "See them"
+    "canMake_one": "{{count}} Recipe you can make",
+    "canMake_other": "{{count}} Recipes you can make",
+    "expiring_one": "{{count}} uses what expires soon",
+    "expiring_other": "{{count}} use what expires soon",
+    "nothingYet": "Nothing to cook yet",
+    "oneShort_one": "{{count}} Recipe is one ingredient short",
+    "oneShort_other": "{{count}} Recipes are one ingredient short",
+    "nothingInPantry": "Nothing to cook from your Pantry yet",
+    "addWhatYouHave": "Add what you have"
+  },
+  "cookTonightPage": {
+    "title": "Cook tonight",
+    "canMake": "You can make this",
+    "oneShort": "One ingredient short"
   },
   "add": "Add a Recipe",
   "fromLink": {
