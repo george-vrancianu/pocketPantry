@@ -1309,4 +1309,63 @@ describe('Family Recipes (integration)', () => {
       expect(queued[0]).toMatchObject({ source: 'recipe' });
     });
   });
+  describe('Source language', () => {
+    const put = (id: string, extra: object = {}) =>
+      a1.put(`/${id}`, {
+        title: title('Renamed'),
+        servings: 3,
+        locale: 'en',
+        lines: [line(0, 10)],
+        steps: [{ text: 'Stir' }],
+        ...extra,
+      });
+
+    it('is saved lower-cased, returned on the detail, and kept by an update', async () => {
+      const created = await familyRecipe(a1, null, { sourceLanguage: ' RO ' });
+      expect(created.sourceLanguage).toBe('ro');
+      const detail = (await a1.get(`/${created.id}`).expect(200))
+        .body as RecipeDetail;
+      expect(detail.sourceLanguage).toBe('ro');
+      const updated = (await put(created.id).expect(200))
+        .body as FamilyRecipeEdit;
+      expect(updated.sourceLanguage).toBe('ro');
+    });
+
+    it('is null for a Recipe without one', async () => {
+      const created = await familyRecipe(a1, null);
+      expect(created.sourceLanguage).toBeNull();
+      const detail = (await a1.get(`/${created.id}`).expect(200))
+        .body as RecipeDetail;
+      expect(detail.sourceLanguage).toBeNull();
+    });
+
+    it('refuses a value that is not a language code', async () => {
+      for (const sourceLanguage of [
+        '',
+        'english please',
+        '1',
+        'a'.repeat(9),
+        5,
+      ]) {
+        await a1.post('', doc(null, { sourceLanguage })).expect(400);
+      }
+    });
+
+    it('is not accepted by an update, which leaves it untouched', async () => {
+      const created = await familyRecipe(a1, null, { sourceLanguage: 'ro' });
+      await put(created.id, { sourceLanguage: 'en' }).expect(400);
+      const detail = (await a1.get(`/${created.id}`).expect(200))
+        .body as RecipeDetail;
+      expect(detail.sourceLanguage).toBe('ro');
+    });
+
+    it('is not copied into a Variant draft', async () => {
+      const base = await catalogBase();
+      const variant = await familyRecipe(a1, base.id, { sourceLanguage: 'ro' });
+      const draft = (await a1.get(`/${variant.id}/variant-draft`).expect(200))
+        .body as FamilyRecipeDraft;
+      expect(draft).not.toHaveProperty('sourceLanguage');
+      expect(variant.sourceLanguage).toBe('ro');
+    });
+  });
 });

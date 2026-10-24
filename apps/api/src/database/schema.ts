@@ -867,6 +867,8 @@ export const recipes = pgTable(
     nutritionNote: text('nutrition_note'),
     // Recipe from Link: the normalised page the Recipe was read from. Family Recipes only; never copied to a Variant.
     sourceLink: text('source_link'),
+    // Recipe from Link: the page's detected language, only when the Recipe was translated out of it. Never copied to a Variant.
+    sourceLanguage: text('source_language'),
     ...timestamps,
   },
   (table) => [

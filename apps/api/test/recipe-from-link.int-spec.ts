@@ -36,6 +36,7 @@ const PANCAKES = {
 
 const reading = (overrides: Record<string, unknown> = {}) => ({
   recipeFound: true,
+  sourceLanguage: 'en',
   title: 'Pancakes',
   servings: null,
   prepMinutes: 10,
@@ -89,7 +90,8 @@ describe('Recipe from Link (integration)', () => {
   const serve = (html: string) => {
     page = () => Promise.resolve({ finalUrl: 'https://example.com/', html });
   };
-  const read = (url: string, who = member) => who.post('/from-link', { url });
+  const read = (url: string, who = member, extra: object = {}) =>
+    who.post('/from-link', { url, ...extra });
 
   beforeAll(async () => {
     const pageFetcher: PageFetcher = {
@@ -316,6 +318,106 @@ describe('Recipe from Link (integration)', () => {
     ).expect(200);
     expect(prompts[0].prompt).toContain('Romanian');
     expect(prompts[0].prompt).not.toContain('Danish');
+  });
+
+  describe('language choice and source language', () => {
+    const url = 'https://example.com/lang';
+
+    it('defaults to the Catalog Language and instructs it for the text', async () => {
+      await read(url).expect(200);
+      const prompt = prompts[0].prompt;
+      expect(prompt).toContain('Write the title and the steps in English');
+      expect(prompt).toContain(
+        'nameAsWritten as a short ingredient name in English',
+      );
+      expect(prompt).not.toContain("page's own language");
+    });
+
+    it('catalog is the same as the default, in the Catalog Language', async () => {
+      const cookie = await signUp(app, `link-lc-${stamp}@example.com`, 'LC');
+      await client(app, cookie, '/api/settings')
+        .put('/preferences', {
+          locale: 'en',
+          catalogLanguage: 'da',
+          scanLanguage: 'en',
+        })
+        .expect(200);
+      await read(url, client(app, cookie, '/api/recipes'), {
+        language: 'catalog',
+      }).expect(200);
+      expect(prompts[0].prompt).toContain(
+        'Write the title and the steps in Danish',
+      );
+    });
+
+    it('source keeps the page language and does not name the Catalog Language', async () => {
+      const cookie = await signUp(app, `link-ls-${stamp}@example.com`, 'LS');
+      await client(app, cookie, '/api/settings')
+        .put('/preferences', {
+          locale: 'en',
+          catalogLanguage: 'ro',
+          scanLanguage: 'en',
+        })
+        .expect(200);
+      await read(url, client(app, cookie, '/api/recipes'), {
+        language: 'source',
+      }).expect(200);
+      const prompt = prompts[0].prompt;
+      expect(prompt).toContain("in the page's own language");
+      expect(prompt).toContain('do not translate anything');
+      expect(prompt).not.toContain('Romanian');
+      expect(prompt).not.toContain('Write the title and the steps in English');
+      // Matching against the Catalog is unchanged.
+      expect(prompt).toContain('Set ingredientId only to an exact id');
+    });
+
+    it('refuses an unknown language choice and extra fields', async () => {
+      await read(url, member, { language: 'french' }).expect(400);
+      await read(url, member, { language: null }).expect(400);
+      await read(url, member, { extra: 1 }).expect(400);
+      expect(prompts).toHaveLength(0);
+    });
+
+    it('sets sourceLanguage when the page language differs from the Catalog Language', async () => {
+      respondWith(reading({ sourceLanguage: 'ro' }));
+      const res = await read(url).expect(200);
+      expect((res.body as RecipeFromLink).sourceLanguage).toBe('ro');
+    });
+
+    it('normalises a regional code to its base code', async () => {
+      respondWith(reading({ sourceLanguage: ' DA-dk ' }));
+      const res = await read(url).expect(200);
+      expect((res.body as RecipeFromLink).sourceLanguage).toBe('da');
+    });
+
+    it('is null when the page language is the Catalog Language', async () => {
+      respondWith(reading({ sourceLanguage: 'en-GB' }));
+      const res = await read(url).expect(200);
+      expect((res.body as RecipeFromLink).sourceLanguage).toBeNull();
+    });
+
+    it('is null with the source choice, even when detected', async () => {
+      respondWith(reading({ sourceLanguage: 'ro' }));
+      const res = await read(url, member, { language: 'source' }).expect(200);
+      expect((res.body as RecipeFromLink).sourceLanguage).toBeNull();
+    });
+
+    it.each([null, '', '  ', 'not a language!', '123'])(
+      'is null for an unknown detected language (%j)',
+      async (detected) => {
+        respondWith(reading({ sourceLanguage: detected }));
+        const res = await read(url).expect(200);
+        expect((res.body as RecipeFromLink).sourceLanguage).toBeNull();
+      },
+    );
+
+    it('is null when the model leaves the field out', async () => {
+      const rest: Record<string, unknown> = reading();
+      delete rest.sourceLanguage;
+      respondWith(rest);
+      const res = await read(url).expect(200);
+      expect((res.body as RecipeFromLink).sourceLanguage).toBeNull();
+    });
   });
 
   it('leaves ids outside the Family scope, and low-confidence matches, Unmatched', async () => {
