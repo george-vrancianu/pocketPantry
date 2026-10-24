@@ -47,3 +47,14 @@ export const nothingToTranslate = () =>
 export const itemNotFound = (
   kind: 'line' | 'step' | 'tip' | 'pairing' | 'eating_moment',
 ) => new ApiException(400, 'recipes.item_not_found', { kind });
+
+/**
+ * Coded errors of Recipe from Link. The web app owns the copy (`errors:<code>`).
+ *
+ * - `link.invalid` (400): not an http(s) link, or the page fetcher refused the address.
+ * - `link.unreadable` (422): the page could not be fetched (blocked, not HTML, too large, timed out).
+ * - `link.no_recipe` (422): the page has no schema.org Recipe, or the reading found none.
+ */
+export const linkInvalid = () => new ApiException(400, 'link.invalid');
+export const linkUnreadable = () => new ApiException(422, 'link.unreadable');
+export const linkNoRecipe = () => new ApiException(422, 'link.no_recipe');

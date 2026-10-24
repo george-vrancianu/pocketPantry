@@ -1,9 +1,13 @@
 import { Module } from '@nestjs/common';
+import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
+import { PageFetchModule } from '../page-fetch/page-fetch.module';
+import { ScanModule } from '../scan/scan.module';
 import { MemberLanguageModule } from '../member-language/member-language.module';
 import { SettingsModule } from '../settings/settings.module';
 import { FamilyRecipesService } from './family-recipes.service';
 import { ShoppingModule } from '../shopping/shopping.module';
 import { PantryMatchingService } from './matching/pantry-matching.service';
+import { LinkRecipesService } from './link-recipes.service';
 import { PlateRecipesService } from './plate-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
 import { RecipeBrowseService } from './recipe-browse.service';
@@ -16,7 +20,14 @@ import { RecipesController } from './recipes.controller';
 import { RecipesService } from './recipes.service';
 
 @Module({
-  imports: [SettingsModule, ShoppingModule, MemberLanguageModule],
+  imports: [
+    SettingsModule,
+    ShoppingModule,
+    MemberLanguageModule,
+    IngredientCatalogModule,
+    PageFetchModule,
+    ScanModule,
+  ],
   controllers: [RecipesController, RecipePantryController],
   providers: [
     RecipesService,
@@ -27,6 +38,7 @@ import { RecipesService } from './recipes.service';
     FamilyRecipesService,
     CookTonightService,
     PlateRecipesService,
+    LinkRecipesService,
     PantryMatchingService,
     RecipePantryService,
   ],

@@ -4,6 +4,7 @@ import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
 import type { AllergyOwner, AllergyWarningOwner } from './matching/allergens';
 import type { PlateMatch } from './plate-matches';
+import { sourceLinkInput } from './source-link';
 import type { RecipeDiff } from './recipe-diff';
 import {
   guidanceBody,
@@ -122,7 +123,17 @@ export const familyRecipeCreate = familyRecipeUpdate.extend({
    * the array order is the Tip order. Later edits use the Tip endpoints.
    */
   tips: z.array(newStepTip).max(MAX_TIPS).optional(),
+  /** Optional: the page a Recipe from Link was read from, normalised on the way in. Set at creation only. */
+  sourceLink: sourceLinkInput.optional(),
 });
+
+/** Reading a page into an unsaved Family Recipe draft. Later tickets add `text`, `language` and `force`. */
+export const fromLinkBody = z
+  .object({
+    locale: memberLocale,
+    url: z.string().trim().min(1).max(4096),
+  })
+  .strict();
 
 /** The Plate Scan dish the Review wants the closest Catalog Base Recipe for. */
 export const plateMatchesBody = z
@@ -230,6 +241,7 @@ export type FamilyRecipeUpdate = z.infer<typeof familyRecipeUpdate>;
 export type FamilyRecipeCreate = z.infer<typeof familyRecipeCreate>;
 export type PlateMatchesBody = z.infer<typeof plateMatchesBody>;
 export type FromPlateBody = z.infer<typeof fromPlateBody>;
+export type FromLinkBody = z.infer<typeof fromLinkBody>;
 export type VariantCreate = z.infer<typeof variantCreate>;
 export type TipCreate = z.infer<typeof tipCreate>;
 export type TipUpdate = z.infer<typeof tipUpdate>;
@@ -280,6 +292,8 @@ export type AdminRecipeDetail = AdminGuidance & {
   methodId: string | null;
   archived: boolean;
   archivedAt: string | null;
+  /** The normalised page a Recipe from Link was read from; null otherwise. */
+  sourceLink: string | null;
   lines: RecipeLineView[];
   steps: RecipeStepView[];
   /** This Recipe's own Tips, in order; `stepId` null for Recipe-level Tips. */
@@ -317,6 +331,8 @@ export type ResolvedRecipe = {
   cuisine: { id: string; name: string } | null;
   method: { id: string; name: string } | null;
   archived: boolean;
+  /** The normalised page a Recipe from Link was read from; null otherwise (and always on a Catalog Recipe). */
+  sourceLink: string | null;
   lines: (RecipeLineView & { ingredientName: string })[];
   steps: RecipeStepView[];
   /** Own Tips plus, on a Variant, the base's non-hidden Recipe-level Tips (`inherited`). */
@@ -457,6 +473,27 @@ export type RecipeFilters = {
   methods: NamedRef[];
   /** Live Eating Moments in sort order. They feed the guidance editor's picker, not a browsing filter. */
   eatingMoments: NamedRef[];
+};
+
+/** The draft a link reading returns: the variant-draft shape without a base, and Servings empty when the page had none. */
+export type LinkRecipeDraft = Omit<
+  FamilyRecipeDraft,
+  'parentId' | 'servings'
+> & {
+  servings: number | null;
+};
+
+/**
+ * The result of `POST /api/recipes/from-link`, told apart by `kind`. Ticket 514 adds
+ * `{ kind: 'duplicate', recipeId }`; ticket 515 adds `sourceLanguage` to the draft.
+ */
+export type RecipeFromLink = {
+  kind: 'draft';
+  draft: LinkRecipeDraft;
+  /** The normalised link, to send back on the create request. */
+  sourceLink: string;
+  /** The Catalog Base Recipes closest to the draft; empty until ticket 516. */
+  closestBases: PlateMatchView[];
 };
 
 /** What `createIn` takes: the create body without the transport-level locale default. */

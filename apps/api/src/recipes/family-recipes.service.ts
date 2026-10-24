@@ -186,6 +186,8 @@ export class FamilyRecipesService {
       familyId,
       parentId: document.parentId,
       ...recipeColumns(document),
+      // Set at creation only; updates never touch it, and a Variant draft does not copy it (ADR 0006).
+      sourceLink: document.sourceLink ?? null,
     });
     await this.writeLines(tx, id, document, new Map(), locale);
     const stepIds = await this.recipes.writeSteps(tx, id, document, new Set());

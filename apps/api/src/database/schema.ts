@@ -865,6 +865,8 @@ export const recipes = pgTable(
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     // Recipe guidance: one general-direction note, at most 500 characters (checked in the service).
     nutritionNote: text('nutrition_note'),
+    // Recipe from Link: the normalised page the Recipe was read from. Family Recipes only; never copied to a Variant.
+    sourceLink: text('source_link'),
     ...timestamps,
   },
   (table) => [

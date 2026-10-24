@@ -1236,4 +1236,65 @@ describe('Family Recipes (integration)', () => {
       expect(familyA).toBeDefined();
     });
   });
+
+  describe('Source Link', () => {
+    const link = 'https://Example.com/soup#top';
+
+    it('is saved normalised, returned on the detail, and kept by an update', async () => {
+      const created = await familyRecipe(a1, null, { sourceLink: link });
+      expect(created.sourceLink).toBe('https://example.com/soup');
+      const detail = (await a1.get(`/${created.id}`).expect(200))
+        .body as RecipeDetail;
+      expect(detail.sourceLink).toBe('https://example.com/soup');
+
+      const updated = (
+        await a1
+          .put(`/${created.id}`, {
+            title: title('Renamed'),
+            servings: 3,
+            locale: 'en',
+            lines: [line(0, 10)],
+            steps: [{ text: 'Stir' }],
+          })
+          .expect(200)
+      ).body as FamilyRecipeEdit;
+      expect(updated.sourceLink).toBe('https://example.com/soup');
+    });
+
+    it('is null for a Recipe without one', async () => {
+      const created = await familyRecipe(a1, null);
+      expect(created.sourceLink).toBeNull();
+      const detail = (await a1.get(`/${created.id}`).expect(200))
+        .body as RecipeDetail;
+      expect(detail.sourceLink).toBeNull();
+    });
+
+    it('refuses a Source Link that is not an http(s) link', async () => {
+      await a1
+        .post('', doc(null, { sourceLink: 'ftp://example.com/a' }))
+        .expect(400);
+      await a1.post('', doc(null, { sourceLink: 'nonsense' })).expect(400);
+    });
+
+    it('is not copied into a Variant draft', async () => {
+      const base = await catalogBase();
+      const variant = await familyRecipe(a1, base.id, { sourceLink: link });
+      const draft = (await a1.get(`/${variant.id}/variant-draft`).expect(200))
+        .body as FamilyRecipeDraft;
+      expect(draft).not.toHaveProperty('sourceLink');
+      expect(variant.sourceLink).not.toBeNull();
+    });
+
+    it('queues Unmatched lines for curation on save, as for any Family Recipe', async () => {
+      const created = await familyRecipe(a1, null, {
+        sourceLink: link,
+        lines: [
+          { rawName: `Zq link spice ${stamp}`, quantity: null, unit: null },
+        ],
+      });
+      const queued = await unmatchedFor(created.lines[0].id);
+      expect(queued).toHaveLength(1);
+      expect(queued[0]).toMatchObject({ source: 'recipe' });
+    });
+  });
 });
