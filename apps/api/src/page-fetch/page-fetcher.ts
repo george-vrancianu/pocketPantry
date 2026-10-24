@@ -67,14 +67,15 @@ export type PageFetcherOptions = {
  * here is always a non-default one. No env var or flag relaxes this; tests
  * pass their own options.
  */
-export const STRICT_PAGE_FETCHER_OPTIONS: PageFetcherOptions = {
-  lookup: (hostname) => dnsLookup(hostname, { all: true, verbatim: true }),
-  isAddressAllowed: isPublicAddress,
-  isPortAllowed: (port) => port === '',
-  timeoutMs: 10_000,
-  maxBytes: 3 * 1024 * 1024,
-  maxRedirects: 5,
-};
+export const STRICT_PAGE_FETCHER_OPTIONS: Readonly<PageFetcherOptions> =
+  Object.freeze({
+    lookup: (hostname) => dnsLookup(hostname, { all: true, verbatim: true }),
+    isAddressAllowed: isPublicAddress,
+    isPortAllowed: (port) => port === '',
+    timeoutMs: 10_000,
+    maxBytes: 3 * 1024 * 1024,
+    maxRedirects: 5,
+  });
 
 export const PAGE_FETCHER_USER_AGENT =
   'PocketPantry-RecipeFromLink/1.0 (+https://github.com/george-vrancianu/pocketPantry)';
@@ -121,7 +122,7 @@ const invalid = (message: string) => new PageFetchError('invalid', message);
  *   (no `<meta>` sniffing).
  */
 export function createPageFetcher(
-  options: PageFetcherOptions = STRICT_PAGE_FETCHER_OPTIONS,
+  options: Readonly<PageFetcherOptions> = STRICT_PAGE_FETCHER_OPTIONS,
 ): PageFetcher {
   async function checkedAddress(url: URL): Promise<ResolvedAddress> {
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
@@ -289,6 +290,10 @@ export function createPageFetcher(
             throw invalid('A redirect led to an invalid link');
           }
         }
+      } catch (error) {
+        // Anything unexpected (e.g. a synchronous throw from `http.request`) is a failed read, not a refused link.
+        if (error instanceof PageFetchError) throw error;
+        throw unreadable('The page could not be read');
       } finally {
         clearTimeout(timer);
         deadline.abort();

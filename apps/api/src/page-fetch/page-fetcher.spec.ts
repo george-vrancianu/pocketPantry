@@ -1,4 +1,5 @@
 import * as http from 'node:http';
+import * as https from 'node:https';
 import type { AddressInfo } from 'node:net';
 import {
   createPageFetcher,
@@ -125,7 +126,11 @@ describe('page fetcher', () => {
   });
 
   describe('refusing the link', () => {
-    const fetcher = createPageFetcher();
+    // Its lookup throws, so no case here can ever reach real DNS.
+    const fetcher = createPageFetcher({
+      ...STRICT_PAGE_FETCHER_OPTIONS,
+      lookup: () => Promise.reject(new Error('no DNS in these tests')),
+    });
 
     it.each([
       'file:///etc/passwd',
@@ -199,9 +204,8 @@ describe('page fetcher', () => {
         lookup,
       });
       const kind = await kindOf(strict.fetchPage(link));
-      // `localhost` is a name: it is resolved (by the real resolver) and refused as loopback.
       expect(kind).toBe('invalid');
-      if (!link.includes('localhost')) expect(lookup).not.toHaveBeenCalled();
+      expect(lookup).not.toHaveBeenCalled();
     });
 
     it('refuses localhost by name, resolved to loopback', async () => {
@@ -474,30 +478,35 @@ describe('page fetcher', () => {
       );
     });
 
-    it('refuses an over-cap Content-Length without reading the body', async () => {
+    it('refuses an over-cap Content-Length from the headers alone, before the body arrives', async () => {
       routes['/r'] = (_req, res) => {
-        res.setHeader('Content-Type', 'text/html');
-        res.end('a'.repeat(4097));
+        res.writeHead(200, {
+          'Content-Type': 'text/html',
+          'Content-Length': '1000000',
+        });
+        res.write('a'); // far below the cap: only the header can trigger the refusal
       };
-      expect(await kindOf(testFetcher().fetchPage(`${base()}/r`))).toBe(
-        'unreadable',
-      );
+      const started = Date.now();
+      expect(
+        await kindOf(testFetcher({ timeoutMs: 5000 }).fetchPage(`${base()}/r`)),
+      ).toBe('unreadable');
+      expect(Date.now() - started).toBeLessThan(1500);
     });
 
     it('cuts off a chunked body with no Content-Length once over the cap', async () => {
-      let aborted = false;
+      let closed: Promise<void> = Promise.resolve();
       routes['/r'] = (req, res) => {
+        closed = new Promise((resolve) => req.socket.on('close', resolve));
         res.setHeader('Content-Type', 'text/html');
         res.writeHead(200);
-        req.socket.on('close', () => (aborted = true));
         const timer = setInterval(() => res.write('a'.repeat(1024)), 5);
         res.on('close', () => clearInterval(timer));
       };
       expect(
         await kindOf(testFetcher({ timeoutMs: 5000 }).fetchPage(`${base()}/r`)),
       ).toBe('unreadable');
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      expect(aborted).toBe(true);
+      // The server sees the client hang up: the request was aborted, not drained.
+      await closed;
     });
   });
 
@@ -546,7 +555,44 @@ describe('page fetcher', () => {
     });
   });
 
+  describe('proxy and global agents', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it('never uses the global agents, which is where proxy settings live', async () => {
+      routes['/r'] = html;
+      const trap = () => {
+        throw new Error('the global agent was used');
+      };
+      const httpTrap = jest
+        .spyOn(http.globalAgent, 'createConnection')
+        .mockImplementation(trap);
+      const httpsTrap = jest
+        .spyOn(https.globalAgent, 'createConnection')
+        .mockImplementation(trap);
+      await expect(
+        testFetcher().fetchPage(`${base()}/r`),
+      ).resolves.toMatchObject({ html: HTML });
+      expect(httpTrap).not.toHaveBeenCalled();
+      expect(httpsTrap).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('unexpected failures', () => {
+    it('reports a throw from the HTTP client as unreadable, not as a crash', async () => {
+      const fetcher = testFetcher({
+        lookup: () =>
+          Promise.resolve([{ address: 12345 as unknown as string, family: 4 }]),
+        isAddressAllowed: () => true,
+      });
+      expect(await kindOf(fetcher.fetchPage(`${base()}/r`))).toBe('unreadable');
+    });
+  });
+
   describe('production defaults', () => {
+    it('are frozen, so no code can relax them', () => {
+      expect(Object.isFrozen(STRICT_PAGE_FETCHER_OPTIONS)).toBe(true);
+    });
+
     it('are the strict ones', () => {
       expect(STRICT_PAGE_FETCHER_OPTIONS).toMatchObject({
         timeoutMs: 10_000,
