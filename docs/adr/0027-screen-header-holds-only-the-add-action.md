@@ -20,3 +20,4 @@ The Pantry, the Shopping List and Recipes each put their add button somewhere di
 
 - Getting to Settings from a sub-screen takes two taps (Home in the Dock, then the gear).
 - A future header button needs a reason to break the one-button rule; search and share stay possible as the single action on screens that add nothing.
+- A Recipe editor (New, Variant, Edit) adds nothing, so its single header button is Save. It has no Dock and no Home button: Back is its exit.
