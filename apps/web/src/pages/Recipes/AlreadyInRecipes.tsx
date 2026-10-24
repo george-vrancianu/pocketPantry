@@ -1,5 +1,5 @@
 import { Button, Stack, Typography } from '@pocket-pantry/ui';
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -9,17 +9,20 @@ import { useTranslation } from 'react-i18next';
  */
 export const AlreadyInRecipes = forwardRef<
   HTMLHeadingElement,
-  { onOpen: () => void; onReadAgain: () => void }
->(function AlreadyInRecipes({ onOpen, onReadAgain }, heading) {
+  { recipeId: string; onReadAgain: () => void }
+>(function AlreadyInRecipes({ recipeId, onReadAgain }, heading) {
   const { t } = useTranslation('recipes');
+  const headingId = useId();
+  const bodyId = useId();
   return (
     <Stack
       component="section"
       spacing={1.5}
-      aria-labelledby="already-in-recipes"
+      aria-labelledby={headingId}
+      aria-describedby={bodyId}
     >
       <Typography
-        id="already-in-recipes"
+        id={headingId}
         component="h2"
         variant="h6"
         tabIndex={-1}
@@ -27,11 +30,13 @@ export const AlreadyInRecipes = forwardRef<
       >
         {t('fromLink.duplicate.heading')}
       </Typography>
-      <Typography color="text.secondary">
+      <Typography id={bodyId} color="text.secondary">
         {t('fromLink.duplicate.body')}
       </Typography>
       <Stack direction="row" spacing={1.5}>
-        <Button onClick={onOpen}>{t('fromLink.duplicate.open')}</Button>
+        <Button href={`/recipes/${recipeId}`}>
+          {t('fromLink.duplicate.open')}
+        </Button>
         <Button variant="secondary" onClick={onReadAgain}>
           {t('fromLink.duplicate.readAgain')}
         </Button>

@@ -339,7 +339,7 @@ describe('Recipe from Link (integration)', () => {
       expect(prompt).toContain(
         'nameAsWritten as a short ingredient name in English',
       );
-      expect(prompt).not.toContain("page's own language");
+      expect(prompt).not.toContain("recipe's own language");
     });
 
     it('catalog is the same as the default, in the Catalog Language', async () => {
@@ -372,7 +372,7 @@ describe('Recipe from Link (integration)', () => {
         language: 'source',
       }).expect(200);
       const prompt = prompts[0].prompt;
-      expect(prompt).toContain("in the page's own language");
+      expect(prompt).toContain("in the recipe's own language");
       expect(prompt).toContain('(do not translate)');
       expect(prompt).toContain('match ingredients across languages');
       expect(prompt).not.toContain('Romanian');
@@ -746,18 +746,19 @@ describe('Recipe from Link (integration)', () => {
       expect(prompts).toEqual([]);
     });
 
-    it('link.no_recipe without a JSON-LD Recipe, and no AI call', async () => {
-      serve('<html><body>Just a blog</body></html>');
+    it('link.no_recipe for a page with neither a JSON-LD Recipe nor visible text, and no AI call', async () => {
+      serve(
+        '<html><head><title>Empty</title><script>var a = 1;</script></head><body><nav>Home</nav><style>p{}</style></body></html>',
+      );
       const res = await read('https://example.com/blog').expect(422);
       expect(code(res)).toBe('link.no_recipe');
       expect(prompts).toEqual([]);
     });
 
-    it('link.no_recipe for JSON-LD without a Recipe', async () => {
+    it('reads the visible text of a page whose JSON-LD has no Recipe', async () => {
       serve(jsonLdPage({ '@type': 'Article', name: 'News' }));
-      const res = await read('https://example.com/article').expect(422);
-      expect(code(res)).toBe('link.no_recipe');
-      expect(prompts).toEqual([]);
+      await read('https://example.com/article').expect(200);
+      expect(prompts[0].prompt).toContain('Blog chatter 5521');
     });
 
     it('link.no_recipe quickly for a huge page of unclosed script tags', async () => {
@@ -831,16 +832,14 @@ describe('Recipe from Link (integration)', () => {
       expect(new Date(resetsAt).toISOString()).toMatch(/T00:00:00\.000Z$/);
     });
 
-    it('is not touched by invalid links, failed fetches or a page without a recipe', async () => {
+    it('is not touched by invalid links, failed fetches or a page without text', async () => {
       await read('not a link').expect(400);
       page = () => Promise.reject(new PageFetchError('invalid', 'refused'));
       await read('https://example.com/private').expect(400);
       page = () => Promise.reject(new PageFetchError('unreadable', 'timeout'));
       await read('https://example.com/slow').expect(422);
-      serve('<html><body>Just a blog</body></html>');
+      serve('<html><body><script>1</script></body></html>');
       await read('https://example.com/blog').expect(422);
-      serve(jsonLdPage({ '@type': 'Article', name: 'News' }));
-      await read('https://example.com/article').expect(422);
       expect(prompts).toEqual([]);
 
       // The whole cap is still there.
@@ -909,6 +908,314 @@ describe('Recipe from Link (integration)', () => {
         ]),
       );
       expect(rows).toHaveLength(2);
+    });
+  });
+
+  describe('a page without JSON-LD', () => {
+    const TEXT_ONLY = `<!DOCTYPE html><html><head><title>Blog title 7001</title>
+      <style>.x { color: red } /* css 7002 */</style>
+      <SCRIPT>var tracker = "script 7003";</SCRIPT></head>
+      <body><header>Header 7004</header><NAV><ul><li>Nav 7005</li></ul></NAV>
+      <!-- comment 7006 -->
+      <aside>Aside 7007</aside><noscript>Noscript 7008</noscript>
+      <svg><text>Svg 7009</text></svg><template><p>Template 7010</p></template>
+      <main><h1>Pancakes &amp; syrup</h1>
+      <p>Mix   2 cups&nbsp;flour with<br>1 cup milk &#38; a pinch of &#x73;alt, &lt;sifted&gt; &quot;fine&quot; &apos;ok&apos;.</p>
+      <ul><li>Fry 2 min</li><li>Serve</li></ul></main>
+      <footer>Footer 7011</footer></body></html>`;
+
+    it('sends the visible text, without scripts, styles, navigation or comments, and returns the same kind of draft', async () => {
+      serve(TEXT_ONLY);
+      const res = await read('https://example.com/blog').expect(200);
+      const body = res.body as RecipeFromLink;
+
+      const prompt = prompts[0].prompt;
+      expect(prompt).toContain('Pancakes & syrup');
+      expect(prompt).toContain(
+        'Mix 2 cups flour with\n1 cup milk & a pinch of salt, <sifted> "fine" \'ok\'.',
+      );
+      expect(prompt).toContain('Fry 2 min');
+      for (const hidden of [
+        'Blog title 7001',
+        'css 7002',
+        'script 7003',
+        'Header 7004',
+        'Nav 7005',
+        'comment 7006',
+        'Aside 7007',
+        'Noscript 7008',
+        'Svg 7009',
+        'Template 7010',
+        'Footer 7011',
+        '&amp;',
+        '<h1>',
+      ]) {
+        expect(prompt).not.toContain(hidden);
+      }
+
+      expect(body).toMatchObject({
+        kind: 'draft',
+        sourceLink: 'https://example.com/blog',
+      });
+      expect(body.draft).toMatchObject({
+        title: 'Pancakes',
+        servings: null,
+        tips: [],
+        guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
+        steps: [
+          { text: 'Whisk everything.', timerSeconds: null },
+          { text: 'Fry each side.', timerSeconds: 120 },
+        ],
+      });
+      expect(body.draft.lines).toEqual([
+        expect.objectContaining({
+          ingredientId: flour,
+          quantity: 250,
+          unit: 'g',
+          note: '2 cups',
+        }),
+        expect.objectContaining({
+          ingredientId: null,
+          rawName: 'grandma spice',
+          optional: true,
+          note: 'a pinch, ground',
+        }),
+      ]);
+    });
+
+    it('keeps text after an unclosed navigation or head tag', async () => {
+      serve('<html><head><body><nav>Menu<p>Salt and pepper 7020</p>');
+      await read('https://example.com/loose').expect(200);
+      expect(prompts[0].prompt).toContain('Salt and pepper 7020');
+    });
+
+    it('does not stop an unclosed head at a header, and keeps custom elements', async () => {
+      serve(
+        '<head><title>T</title><body><p>Before header</p><header>Site 7050</header><p>Recipe</p>',
+      );
+      await read('https://example.com/minified').expect(200);
+      expect(prompts[0].prompt).toContain('Before header');
+      expect(prompts[0].prompt).toContain('Recipe');
+      expect(prompts[0].prompt).not.toContain('Site 7050');
+
+      serve(
+        '<body><nav-bar>Bar text 7051</nav-bar><script-x>Custom 7052</script-x><p>Rest 7053</p>',
+      );
+      await read('https://example.com/custom').expect(200);
+      const prompt = prompts[1].prompt;
+      expect(prompt).toContain('Bar text 7051');
+      expect(prompt).toContain('Custom 7052');
+      expect(prompt).toContain('Rest 7053');
+    });
+
+    it('keeps the header and footer of an article, and drops the site ones', async () => {
+      serve(
+        '<body><header>Site header 7060</header><article><header class="entry-header"><h1>Title 7061</h1></header><p>Body</p><footer>Entry footer 7062</footer></article><footer>Site footer 7063</footer></body>',
+      );
+      await read('https://example.com/article').expect(200);
+      const prompt = prompts[0].prompt;
+      expect(prompt).toContain('Title 7061');
+      expect(prompt).toContain('Entry footer 7062');
+      expect(prompt).not.toContain('Site header 7060');
+      expect(prompt).not.toContain('Site footer 7063');
+    });
+
+    it('does not treat a slash on script as self-closing', async () => {
+      serve('<body><script src=x />leak 7070</script><p>Visible 7071</p>');
+      await read('https://example.com/slash').expect(200);
+      expect(prompts[0].prompt).toContain('Visible 7071');
+      expect(prompts[0].prompt).not.toContain('leak 7070');
+    });
+
+    it('gives the model the JSON-LD and not the page text when the page has it', async () => {
+      serve(
+        jsonLdPage(PANCAKES).replace(
+          '<body>',
+          '<body><p>Distinctive visible words 7030</p>',
+        ),
+      );
+      await read('https://example.com/both').expect(200);
+      expect(prompts).toHaveLength(1);
+      expect(prompts[0].prompt).toContain('2 cups flour');
+      expect(prompts[0].prompt).not.toContain('Distinctive visible words 7030');
+      expect(prompts[0].prompt).not.toContain('Blog chatter 5521');
+    });
+
+    it('trims a long page to the budget', async () => {
+      const marker = 'TAIL-MARKER-7040';
+      serve(
+        `<html><body><p>Head 7041 ${'word '.repeat(60_000)}</p><p>${marker}</p></body></html>`,
+      );
+      await read('https://example.com/long').expect(200);
+      const prompt = prompts[0].prompt;
+      expect(prompt).toContain('Head 7041');
+      expect(prompt).not.toContain(marker);
+      // Compared with a short page, the long one adds at most the budget.
+      serve('<html><body><p>Head 7041</p></body></html>');
+      await read('https://example.com/short').expect(200);
+      expect(prompt.length - prompts[1].prompt.length).toBeLessThanOrEqual(
+        30_000,
+      );
+    });
+
+    it('is link.no_recipe with no AI call and no cap charge when nothing is visible', async () => {
+      serve('<html><body><script>a()</script>  <!-- x -->\n</body></html>');
+      const res = await read('https://example.com/empty').expect(422);
+      expect(code(res)).toBe('link.no_recipe');
+      expect(prompts).toEqual([]);
+      // The whole cap is still there.
+      serve(TEXT_ONLY);
+      await read('https://example.com/a').expect(200);
+      await read('https://example.com/b').expect(200);
+      await read('https://example.com/c').expect(429);
+    });
+
+    it('link.no_recipe when the AI finds none in the page text', async () => {
+      serve('<html><body>Just a blog about cats</body></html>');
+      respondWith(reading({ recipeFound: false }));
+      const res = await read('https://example.com/cats').expect(422);
+      expect(code(res)).toBe('link.no_recipe');
+      expect(prompts).toHaveLength(1);
+    });
+
+    describe('hostile pages finish quickly', () => {
+      const cases: [string, string][] = [
+        ['unclosed script tags', '<html>' + '<script>'.repeat(200_000)],
+        ['unclosed non-raw tags', '<html>' + '<nav>'.repeat(200_000) + 'x'],
+        ['unclosed head tags', '<head>'.repeat(200_000) + 'text'],
+        ['lone angle brackets', '< '.repeat(500_000) + 'text'],
+        ['tag openers without an end', '<a href='.repeat(300_000)],
+        ['unclosed comments', '<!--'.repeat(300_000)],
+        ['many comments', '<!-- c -->'.repeat(200_000) + 'text'],
+        ['deep nesting', '<div>'.repeat(400_000) + 'text'],
+        ['nav with one distant close', '<nav>'.repeat(200_000) + '</nav>text'],
+        [
+          'entities without an end',
+          '&#'.repeat(500_000) + '&#x'.repeat(100_000),
+        ],
+        ['a 3 MB page', '<p>some recipe words</p>'.repeat(130_000)],
+      ];
+      it.each(cases)('%s', async (_name, html) => {
+        serve(html);
+        const started = Date.now();
+        const res = await read('https://example.com/hostile');
+        expect(Date.now() - started).toBeLessThan(5000);
+        expect([200, 422]).toContain(res.status);
+      });
+    });
+  });
+
+  describe('pasted text', () => {
+    const paste = (
+      text: unknown,
+      who: ReturnType<typeof client> = member,
+      extra: object = {},
+    ) => who.post('/from-link', { text, ...extra });
+    const PASTED = 'Pancakes\n2 cups flour\n1 cup milk\nWhisk, then fry. 5521';
+
+    it('returns a draft without a Source Link, without fetching', async () => {
+      const res = await paste(`  ${PASTED}  `).expect(200);
+      const body = res.body as RecipeFromLink;
+      expect(fetched).toEqual([]);
+      expect(body).toMatchObject({
+        kind: 'draft',
+        sourceLink: null,
+        sourceLanguage: null,
+      });
+      expect(body.draft.title).toBe('Pancakes');
+      expect(body.draft.lines[0]).toMatchObject({
+        ingredientId: flour,
+        quantity: 250,
+        unit: 'g',
+        note: '2 cups',
+      });
+      expect(body.draft.lines[1]).toMatchObject({
+        rawName: 'grandma spice',
+        optional: true,
+      });
+      expect(body.draft.steps[1]).toMatchObject({ timerSeconds: 120 });
+      expect(prompts).toHaveLength(1);
+      expect(prompts[0].prompt).toContain(PASTED);
+    });
+
+    it('carries the language choice into the prompt and sets sourceLanguage as for a link', async () => {
+      respondWith(reading({ sourceLanguage: 'fr' }));
+      const res = await paste(PASTED).expect(200);
+      expect((res.body as RecipeFromLink).sourceLanguage).toBe('fr');
+      expect(prompts[0].prompt).toContain(
+        'Write the title and the steps in English',
+      );
+
+      await paste(PASTED, member, { language: 'source' }).expect(200);
+      expect(prompts[1].prompt).not.toContain(
+        'Write the title and the steps in English',
+      );
+      expect(prompts[1].prompt).toContain("recipe's own language");
+    });
+
+    it('counts against the Link Cap and hands the use back when the AI finds no recipe', async () => {
+      await paste(PASTED).expect(200);
+      await paste(PASTED).expect(200);
+      const res = await paste(PASTED).expect(429);
+      expect(code(res)).toBe('link.cap_reached');
+      expect(prompts).toHaveLength(2);
+
+      const fresh = client(
+        app,
+        await signUp(app, `link-paste-${stamp}@example.com`, 'P'),
+        '/api/recipes',
+      );
+      respondWith(reading({ recipeFound: false }));
+      const none = await paste('Just my diary', fresh).expect(422);
+      expect(code(none)).toBe('link.no_recipe');
+      await paste('Still my diary', fresh).expect(422);
+      respondWith(reading());
+      await paste(PASTED, fresh).expect(200);
+      await paste(PASTED, fresh).expect(200);
+      await paste(PASTED, fresh).expect(429);
+    });
+
+    it('maps provider failures like a link read', async () => {
+      answer = () =>
+        Promise.reject(new StructuredOutputAiError('failed', null));
+      const res = await paste(PASTED).expect(502);
+      expect(code(res)).toBe('scan.provider_unavailable');
+    });
+
+    it('treats text as data: it never reaches the fetcher even when it holds a link', async () => {
+      await paste('https://example.com/recipe').expect(200);
+      expect(fetched).toEqual([]);
+    });
+  });
+
+  describe('exactly one of a link and pasted text', () => {
+    it.each([
+      ['both', { url: 'https://example.com/a', text: 'Some recipe' }],
+      ['neither', {}],
+      ['empty text', { text: '' }],
+      ['whitespace-only text', { text: ' \n\t ' }],
+      ['text over the limit', { text: 'a'.repeat(50_001) }],
+      ['an unknown field', { text: 'Some recipe', extra: 1 }],
+      ['non-string text', { text: 5 }],
+    ])('%s is refused without fetching or charging', async (_name, body) => {
+      const res = await member.post('/from-link', body).expect(400);
+      expect(code(res)).toBe('validation_failed');
+      expect(fetched).toEqual([]);
+      expect(prompts).toEqual([]);
+    });
+
+    it('treats blank text beside a link as just the link', async () => {
+      await member
+        .post('/from-link', { url: 'https://example.com/a', text: '  ' })
+        .expect(200);
+      expect(fetched).toEqual(['https://example.com/a']);
+    });
+
+    it('takes text at the limit and leaves the Link Cap untouched by refusals', async () => {
+      await member.post('/from-link', { text: '' }).expect(400);
+      await member.post('/from-link', { text: 'a'.repeat(50_000) }).expect(200);
+      await member.post('/from-link', { text: 'x' }).expect(200);
+      await member.post('/from-link', { text: 'y' }).expect(429);
     });
   });
 
@@ -1062,6 +1369,7 @@ describe('Already in your Recipes (integration)', () => {
     ).body as LinkReadResult;
     if (drafted.kind !== 'draft') throw new Error('expected a draft');
     expect(drafted.sourceLink).toBe('https://example.com/pie');
+    if (drafted.sourceLink === null) throw new Error('expected a link');
     const saved = await save(member, drafted.sourceLink);
     const again = await read('https://example.com/pie?fbclid=z').expect(200);
     expect(again.body).toEqual({ kind: 'duplicate', recipeId: saved.id });
@@ -1135,5 +1443,27 @@ describe('Already in your Recipes (integration)', () => {
   it('keeps the strict body: unknown fields and a non-boolean force are refused', async () => {
     await read('https://example.com/a', member, { extra: 1 }).expect(400);
     await read('https://example.com/a', member, { force: 'yes' }).expect(400);
+  });
+
+  it('never treats pasted text as a link, even one equal to a saved Source Link', async () => {
+    await save(member, 'https://example.com/soup');
+    const res = await member
+      .post('/from-link', { text: 'https://example.com/soup' })
+      .expect(200);
+    const body = res.body as LinkReadResult;
+    expect(body.kind).toBe('draft');
+    expect(prompts).toHaveLength(1);
+    expect(fetched).toHaveLength(0);
+  });
+
+  it('accepts force with pasted text and ignores it', async () => {
+    await save(member, 'https://example.com/soup');
+    const res = await member
+      .post('/from-link', {
+        text: 'Pancakes: flour, eggs, whisk.',
+        force: true,
+      })
+      .expect(200);
+    expect((res.body as LinkReadResult).kind).toBe('draft');
   });
 });

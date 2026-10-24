@@ -12,9 +12,12 @@ import { ChoiceRadioGroup } from './ChoiceRadioGroup';
 export function ReadingLanguageChoice({
   value,
   onChange,
+  input = 'link',
 }: {
   value: ReadingLanguage;
   onChange: (value: ReadingLanguage) => void;
+  /** What is being read; the alternative to the Catalog Language is worded for a page or for pasted text. */
+  input?: 'link' | 'text';
 }) {
   const { t, i18n } = useTranslation('recipes');
   const preferences = useMemberPreferences();
@@ -37,7 +40,14 @@ export function ReadingLanguageChoice({
             language: catalogName,
           }),
         },
-        { value: 'source', label: t('readingLanguage.source') },
+        {
+          value: 'source',
+          label: t(
+            input === 'text'
+              ? 'readingLanguage.sourceText'
+              : 'readingLanguage.source',
+          ),
+        },
       ]}
     />
   );

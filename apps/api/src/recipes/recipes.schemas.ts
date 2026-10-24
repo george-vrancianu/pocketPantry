@@ -153,15 +153,31 @@ export const familyRecipeCreate = familyRecipeUpdate.extend({
   sourceLanguage: sourceLanguageInput.optional(),
 });
 
-/** Reading a page into an unsaved Family Recipe draft. `force` skips the "already in your Recipes" check. */
+/** The most pasted recipe text one read takes. */
+export const MAX_PASTED_TEXT_CHARS = 50_000;
+
+/**
+ * Reading a page, or pasted recipe text, into an unsaved Family Recipe draft: exactly one
+ * of `url` and `text`. Blank text counts as absent. `force` skips the "already in your Recipes" check
+ * of a link; for pasted text there is no such check, so it is accepted and ignored.
+ */
 export const fromLinkBody = z
   .object({
     locale: memberLocale,
-    url: z.string().trim().min(1).max(4096),
+    url: z.string().trim().min(1).max(4096).optional(),
+    text: z
+      .string()
+      .trim()
+      .max(MAX_PASTED_TEXT_CHARS)
+      .transform((text) => text || undefined)
+      .optional(),
     language: readingLanguage.default('catalog'),
     force: z.boolean().optional(),
   })
-  .strict();
+  .strict()
+  .refine((body) => (body.url === undefined) !== (body.text === undefined), {
+    message: 'give exactly one of url and text',
+  });
 
 /** The Plate Scan dish the Review wants the closest Catalog Base Recipe for. */
 export const plateMatchesBody = z
@@ -527,8 +543,8 @@ export type RecipeFromLinkDuplicate = { kind: 'duplicate'; recipeId: string };
 export type RecipeFromLinkDraft = {
   kind: 'draft';
   draft: LinkRecipeDraft;
-  /** The normalised link, to send back on the create request. */
-  sourceLink: string;
+  /** The normalised link, to send back on the create request; null for pasted text. */
+  sourceLink: string | null;
   /**
    * The detected language of the page, only when the draft is written in another one (a translation);
    * null when it is the same or unknown, and always with the "source" language choice. Send it back on create.

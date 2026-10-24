@@ -15,8 +15,8 @@ export type RecipeFromLinkDraft = {
   draft: Omit<FamilyRecipeDraft, 'parentId' | 'servings'> & {
     servings: number | null;
   };
-  /** The normalised link of the page. */
-  sourceLink: string;
+  /** The normalised link of the page; null for pasted text. */
+  sourceLink: string | null;
   /** The page's language (a lower-case code like "fr") when the draft was translated from it; null when not. */
   sourceLanguage: string | null;
   /** The closest Base Recipes to offer as the base, ranked as for a Plate Scan. */
@@ -25,14 +25,25 @@ export type RecipeFromLinkDraft = {
   hiddenByAllergiesCount: number;
 };
 
+/** The longest link the link field takes. */
+export const MAX_LINK_LENGTH = 2048;
+/** The longest pasted text the text field takes (the API refuses more). */
+export const MAX_PASTED_TEXT_LENGTH = 50_000;
+
 /** `catalog`: write the Recipe in the Member's Catalog Language; `source`: keep the page's language. */
 export type ReadingLanguage = 'catalog' | 'source';
 
-export type ReadLinkInput = {
-  url: string;
+/** What to read: a link or pasted text, never both. */
+export type ReadLinkInput = (
+  | {
+      url: string;
+      /** Read even though the link is already one of the Family's Recipes. */
+      force?: boolean;
+      text?: never;
+    }
+  | { text: string; url?: never; force?: never }
+) & {
   language: ReadingLanguage;
-  /** Read even though the link is already one of the Family's Recipes. */
-  force?: boolean;
   /** Aborting it abandons the read on this side; the caller must then ignore the outcome. */
   signal?: AbortSignal;
 };
@@ -40,10 +51,14 @@ export type ReadLinkInput = {
 /** Read the recipe on a web page into a draft; nothing is saved. */
 export function useReadRecipeLink() {
   return useMutation({
-    mutationFn: ({ url, language, force, signal }: ReadLinkInput) =>
+    mutationFn: ({ url, text, language, force, signal }: ReadLinkInput) =>
       apiRequest<RecipeFromLink>('/recipes/from-link', {
         method: 'POST',
-        body: { url, language, ...(force ? { force } : {}) },
+        body: {
+          ...(url !== undefined ? { url } : { text }),
+          language,
+          ...(force ? { force } : {}),
+        },
         ...(signal ? { signal } : {}),
       }),
   });
