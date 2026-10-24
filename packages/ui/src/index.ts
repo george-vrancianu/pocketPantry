@@ -70,6 +70,7 @@ export { Card, type CardProps } from './atoms/Card';
 export { Chip, type ChipProps } from './atoms/Chip';
 export { Checkbox, type CheckboxProps } from './atoms/Checkbox';
 export { Collapse, type CollapseProps } from './atoms/Collapse';
+export { Popper, type PopperProps } from './atoms/Popper';
 export { Dialog, type DialogProps } from './atoms/Dialog';
 export { FieldUnit, type FieldUnitProps } from './atoms/FieldUnit';
 export {
@@ -152,6 +153,10 @@ export {
   StarFillIcon,
   UndoIcon,
   ImportIcon,
+  FridgeIcon,
+  FreezerIcon,
+  CupboardIcon,
+  SpicesIcon,
   Icon,
   type IconName,
   type IconProps,

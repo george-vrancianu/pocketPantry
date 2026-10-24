@@ -327,6 +327,7 @@ export function TabletReviewRow({
                 {t(`common:locations.${line.location}`)}
               </Box>
             ) : (
+              // A table cell is too narrow for the Location toggle, so the table keeps the dropdown (issue 521).
               <LocationSelect
                 line={line}
                 onChange={onChange}

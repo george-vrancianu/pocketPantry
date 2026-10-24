@@ -23,4 +23,14 @@ describe('useGatorAlt', () => {
     renderWithProviders(<Probe />);
     expect(screen.getByText('Gator, worried')).toBeInTheDocument();
   });
+
+  it('describes the disappointed chef', () => {
+    function Probe() {
+      return <p>{useGatorAlt()('chef-flop')}</p>;
+    }
+    renderWithProviders(<Probe />);
+    expect(
+      screen.getByText('Gator, disappointed, with the cooking tools dropped'),
+    ).toBeInTheDocument();
+  });
 });

@@ -1,6 +1,6 @@
 import { UNITS, type Unit } from './catalog';
 
-/** How a catalog Ingredient is bought: decides which Usual Amount chips it offers. */
+/** How a catalog Ingredient is bought: decides which Usual Amounts it offers. */
 export const AMOUNT_SCALES = ['low', 'medium', 'large'] as const;
 export type AmountScale = (typeof AMOUNT_SCALES)[number];
 
@@ -53,20 +53,33 @@ function clean(value: number): number {
   return Math.round(value * 1e6) / 1e6;
 }
 
-/** The scale's values displayed in `unit`, in priority order. */
+/**
+ * Usual Amounts from the unit alone, for anything without an Amount Scale (Unmatched names, the
+ * amount sheet), in the unit shown and in priority order.
+ */
+const UNIT_ONLY: Record<Unit, readonly number[]> = {
+  g: [250, 500, 100, 1000, 50, 750, 200, 150, 300],
+  ml: [250, 500, 100, 1000, 50, 750, 200, 150, 300],
+  kg: [1, 2, 3, 4, 5],
+  l: [1, 2, 3, 4, 5],
+  pcs: [1, 2, 3, 4, 6, 12],
+};
+
+/** The Usual Amounts displayed in `unit`, in priority order: the scale's, or the unit's alone without one. */
 export function usualAmountsInPriority(
   unit: Unit,
-  scale: AmountScale,
+  scale: AmountScale | null | undefined,
 ): number[] {
+  if (!scale) return [...UNIT_ONLY[unit]];
   return PRIORITY[FAMILY[unit]][scale].map((base) =>
     clean(base / PER_BASE[unit]),
   );
 }
 
-/** The scale's values displayed in `unit`, sorted ascending. */
+/** The Usual Amounts displayed in `unit`, sorted ascending. */
 export function usualAmountsAscending(
   unit: Unit,
-  scale: AmountScale,
+  scale: AmountScale | null | undefined,
 ): number[] {
   return [...usualAmountsInPriority(unit, scale)].sort((a, b) => a - b);
 }

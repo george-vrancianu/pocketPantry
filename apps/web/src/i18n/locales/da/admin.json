@@ -211,7 +211,7 @@
     },
     "variant": {
       "title": "Lav en variant",
-      "hint": "Kopierer ingredienslinjer, trin og trin-tips som et udkast. Derefter redigeres varianten for sig.",
+      "hint": "Kopierer ingredienslinjer, trin og trin-tips som udgangspunkt. Derefter redigeres varianten for sig.",
       "name": "Variantens titel",
       "make": "Lav en variant",
       "making": "Opretter…"

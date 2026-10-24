@@ -11,6 +11,7 @@ import healthCurious from './art/gator-health-curious.svg';
 import healthDapper from './art/gator-health-dapper.svg';
 import healthHmm from './art/gator-health-hmm.svg';
 import chef from './art/gator-chef.svg';
+import chefFlop from './art/gator-chef-flop.svg';
 
 /**
  * The art lives in `.svg` files (ticket 493), not inline TSX: it is fixed
@@ -32,6 +33,7 @@ const ART = {
   'health-dapper': healthDapper,
   'health-hmm': healthHmm,
   chef,
+  'chef-flop': chefFlop,
 } as const;
 
 export type GatorMood = keyof typeof ART;

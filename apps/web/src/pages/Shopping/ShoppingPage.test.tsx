@@ -1825,9 +1825,10 @@ describe('ShoppingPage', () => {
           ),
         ).toBeVisible();
         await user.click(
-          within(dialog).getByRole('button', { name: 'Unit: unit' }),
+          within(
+            within(dialog).getByRole('group', { name: 'Choose a unit' }),
+          ).getByRole('button', { name: 'pcs' }),
         );
-        await user.click(within(dialog).getByRole('button', { name: 'pcs' }));
         expect(
           within(dialog).getByText(
             'Already on your list. Adding again increases the amount.',
@@ -1853,7 +1854,9 @@ describe('ShoppingPage', () => {
         await user.click(
           within(dialog).getByRole('button', { name: 'Unit: g' }),
         );
-        await user.click(within(dialog).getByRole('button', { name: 'kg' }));
+        await user.click(
+          within(dialog).getByRole('menuitemradio', { name: 'kg' }),
+        );
         expect(
           within(dialog).getByText(
             'Already on your list in g. This adds a separate line.',
@@ -1863,7 +1866,9 @@ describe('ShoppingPage', () => {
         await user.click(
           within(dialog).getByRole('button', { name: 'Unit: kg' }),
         );
-        await user.click(within(dialog).getByRole('button', { name: 'g' }));
+        await user.click(
+          within(dialog).getByRole('menuitemradio', { name: 'g' }),
+        );
         expect(
           within(dialog).getByText(
             'Already on your list. Adding again increases the amount.',
@@ -1961,7 +1966,9 @@ describe('ShoppingPage', () => {
         await user.click(
           within(dialog).getByRole('button', { name: 'Unit: g' }),
         );
-        await user.click(within(dialog).getByRole('button', { name: 'kg' }));
+        await user.click(
+          within(dialog).getByRole('menuitemradio', { name: 'kg' }),
+        );
 
         expect(
           within(dialog).getByRole('textbox', {
@@ -2016,7 +2023,7 @@ describe('ShoppingPage', () => {
       expect(await screen.findByText('100 g')).toBeVisible();
     });
 
-    it('changes the unit from the chip popover and returns focus to the amount', async () => {
+    it('changes the unit from the dropdown menu and returns focus to the amount', async () => {
       const { calls } = withParmesan();
       renderWithProviders(<ShoppingPage />);
       const user = userEvent.setup();
@@ -2028,14 +2035,17 @@ describe('ShoppingPage', () => {
       });
       await user.type(amount, '2');
       await user.click(within(dialog).getByRole('button', { name: 'Unit: g' }));
-      expect(within(dialog).getByRole('button', { name: 'g' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
+      expect(
+        within(dialog).getByRole('menuitemradio', { name: 'g' }),
+      ).toHaveAttribute('aria-checked', 'true');
+      await user.click(
+        within(dialog).getByRole('menuitemradio', { name: 'kg' }),
       );
-      await user.click(within(dialog).getByRole('button', { name: 'kg' }));
 
       expect(amount).toHaveFocus();
-      expect(within(dialog).queryByRole('button', { name: 'kg' })).toBeNull();
+      expect(
+        within(dialog).queryByRole('menuitemradio', { name: 'kg' }),
+      ).toBeNull();
       await user.keyboard('{Enter}');
 
       await waitFor(() => expect(posts(calls)).toHaveLength(1));
@@ -2086,8 +2096,9 @@ describe('ShoppingPage', () => {
           name: /Use “Dragon fruit” as typed/,
         }),
       );
+      // No unit yet: the unit toggles show, none pressed.
       expect(
-        within(dialog).getByRole('button', { name: 'Unit: unit' }),
+        within(dialog).getByRole('group', { name: 'Choose a unit' }),
       ).toBeVisible();
       await user.click(
         within(dialog).getByRole('button', {
@@ -2323,7 +2334,9 @@ describe('ShoppingPage', () => {
       await user.click(
         within(dialog).getByRole('button', { name: 'Unit: kg' }),
       );
-      await user.click(within(dialog).getByRole('button', { name: 'g' }));
+      await user.click(
+        within(dialog).getByRole('menuitemradio', { name: 'g' }),
+      );
       await user.type(amount, 'x');
       await user.clear(amount);
       await user.type(amount, '3{Enter}');
@@ -2344,7 +2357,9 @@ describe('ShoppingPage', () => {
 
       await user.click(option);
       await user.click(within(dialog).getByRole('button', { name: 'Unit: g' }));
-      await user.click(within(dialog).getByRole('button', { name: 'kg' }));
+      await user.click(
+        within(dialog).getByRole('menuitemradio', { name: 'kg' }),
+      );
       await user.type(
         within(dialog).getByRole('textbox', { name: /Amount of Parmesan/ }),
         '2 g{Enter}',
@@ -2450,7 +2465,7 @@ describe('ShoppingPage', () => {
       expect(within(reopened).queryByRole('alert')).toBeNull();
     });
 
-    it('closes the unit popover on Escape before the sheet', async () => {
+    it('closes the unit menu on Escape before the sheet', async () => {
       withParmesan();
       renderWithProviders(<ShoppingPage />);
       const user = userEvent.setup();
@@ -2460,7 +2475,9 @@ describe('ShoppingPage', () => {
       await user.click(within(dialog).getByRole('button', { name: 'Unit: g' }));
       await user.keyboard('{Escape}');
 
-      expect(within(dialog).queryByRole('button', { name: 'kg' })).toBeNull();
+      expect(
+        within(dialog).queryByRole('menuitemradio', { name: 'kg' }),
+      ).toBeNull();
       expect(
         within(dialog).getByRole('textbox', { name: /Amount of Parmesan/ }),
       ).toHaveFocus();

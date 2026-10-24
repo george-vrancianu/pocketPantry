@@ -19,6 +19,15 @@ export const controlSx = {
   },
 } as const;
 
+/** The small caption above each control in the edit panel. */
+export const fieldLabelSx = {
+  display: 'block',
+  mb: '4px',
+  fontSize: 11,
+  fontWeight: 600,
+  color: tokens.color.muted,
+} as const;
+
 type Props = {
   /** The id of the control inside, so the visible label is its accessible name. */
   htmlFor: string;
@@ -46,13 +55,7 @@ export function Field({
         component="label"
         id={`${htmlFor}-label`}
         htmlFor={htmlFor}
-        sx={{
-          display: 'block',
-          mb: '4px',
-          fontSize: 11,
-          fontWeight: 600,
-          color: tokens.color.muted,
-        }}
+        sx={fieldLabelSx}
       >
         {label}
       </Box>

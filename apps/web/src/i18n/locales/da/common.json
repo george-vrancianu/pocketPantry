@@ -46,11 +46,11 @@
     "label": "Mængde af {{name}}, for eksempel 2 eller 500 g",
     "labelNoName": "Mængde, for eksempel 2 eller 500 g",
     "unit": "Enhed: {{unit}}",
-    "noUnit": "enhed",
+    "noUnit": "Ingen enhed",
     "units": "Enheder",
+    "chooseUnit": "Vælg en enhed",
     "invalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler.",
     "unitRequired": "Vælg en enhed til mængden.",
-    "usual": "sædvanlig mængde",
     "usualAmounts": "Sædvanlige mængder til {{name}}",
     "chip": "{{value}} {{unit}}"
   },

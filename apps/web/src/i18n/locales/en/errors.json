@@ -6,7 +6,7 @@
   "forbidden": "You do not have access to this.",
   "not_found": "We could not find that.",
   "too_many_requests": "Too many attempts. Please wait a moment and try again.",
-  "validation_failed": "Please check your details and try again.",
+  "validation_failed": "Please check what you entered and try again.",
   "auth": {
     "unauthenticated": "Please sign in to continue.",
     "admin_required": "This area is for catalog admins only.",

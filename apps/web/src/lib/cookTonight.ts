@@ -80,3 +80,10 @@ export function cardFor(
     (recipe.parentId === null ? index.byBase.get(recipe.id) : undefined)
   );
 }
+
+/** The cards the Family Can Make, those using Expiring Soon Batches first; the rank decides within each group. */
+export function canMakeCards(cards: CookTonightCard[]): CookTonightCard[] {
+  return cards
+    .filter((card) => card.canMake)
+    .sort((a, b) => Number(b.expiringCount > 0) - Number(a.expiringCount > 0));
+}

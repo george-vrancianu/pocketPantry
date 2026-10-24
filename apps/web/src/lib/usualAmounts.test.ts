@@ -35,6 +35,20 @@ describe('usualAmountsInPriority', () => {
     ]);
   });
 
+  it.each([
+    ['g', [250, 500, 100, 1000, 50, 750, 200, 150, 300]],
+    ['ml', [250, 500, 100, 1000, 50, 750, 200, 150, 300]],
+    ['kg', [1, 2, 3, 4, 5]],
+    ['l', [1, 2, 3, 4, 5]],
+    ['pcs', [1, 2, 3, 4, 6, 12]],
+  ] as const)(
+    'offers %s from the unit alone when there is no Amount Scale',
+    (unit, expected) => {
+      expect(usualAmountsInPriority(unit, null)).toEqual(expected);
+      expect(usualAmountsInPriority(unit, undefined)).toEqual(expected);
+    },
+  );
+
   it('keeps the first four priorities as round anchors for the medium mass scale', () => {
     expect(usualAmountsInPriority('g', 'medium').slice(0, 4)).toEqual([
       250, 500, 100, 1000,
@@ -50,6 +64,15 @@ describe('usualAmountsAscending', () => {
     expect(usualAmountsAscending('g', 'low')).toEqual([
       5, 10, 15, 20, 25, 30, 50, 75, 100,
     ]);
+  });
+});
+
+describe('usualAmountsAscending without an Amount Scale', () => {
+  it('sorts the unit-only values ascending', () => {
+    expect(usualAmountsAscending('g', null)).toEqual([
+      50, 100, 150, 200, 250, 300, 500, 750, 1000,
+    ]);
+    expect(usualAmountsAscending('pcs', null)).toEqual([1, 2, 3, 4, 6, 12]);
   });
 });
 
