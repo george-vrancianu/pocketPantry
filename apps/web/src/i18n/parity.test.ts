@@ -214,6 +214,7 @@ const PLAIN_WORDS: Record<string, string> = {
   meal: 'everyday word in Meal Plan copy; avoided only as the name of a Plan Slot or Eating Moment',
   note: 'plain word; Voice Note and Nutrition Note are canonical and not matched',
   product: 'packaged goods in Product Scan copy, not an Ingredient',
+  save: 'plain verb for keeping a form ("Save Recipe"); avoided only as the name of Add to Family',
 };
 
 /** Exceptions found when the broad whitelist was narrowed: term, reason, keys. */

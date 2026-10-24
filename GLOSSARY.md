@@ -73,7 +73,7 @@ A quick-pick quantity offered under the amount field once a unit is chosen, from
 _Avoid_: Preset, suggestion (a Suggestion is a Shopping term), chip
 
 **Unmatched**:
-The state of a scanned or typed name that could not be matched to an Ingredient with confidence. Unmatched Batches are saved under an "Other" Leaf Category and queued for Admin curation.
+The state of a scanned or typed name, on a Batch or an Ingredient Line, that could not be matched to an Ingredient with confidence. Both are queued for Admin curation; Unmatched Batches are saved under an "Other" Leaf Category.
 _Avoid_: Unknown, custom, uncategorised
 
 **Pantry Basic**:
@@ -310,8 +310,16 @@ A Recipe that branches from exactly one Base Recipe, such as "Mediterranean omel
 _Avoid_: Sub-recipe, version, child recipe
 
 **Catalog Recipe**:
-A Recipe curated by Admins and shared by every Family. Members can cook it and make Variants of it, but not change it.
+A Recipe curated by Admins and shared by every Family, browsed in Explore. Members can preview it, shop for its missing Ingredients and make Variants of it, but they cook and plan it only once they Add it to Family, and never change it.
 _Avoid_: Global recipe, built-in recipe
+
+**Explore**:
+Browsing the Catalog Recipes to preview them, Add them to Family or make Variants of them. A Family's own Recipes are not in it.
+_Avoid_: Catalog browser, discover, library
+
+**Add to Family**:
+Copying a Catalog Recipe into a Family Recipe that remembers which Catalog Recipe it was Copied From. The copy is the Family's to change, and later Admin edits to the Catalog Recipe never reach it. A Family has at most one live copy of each Catalog Recipe; a Variant made from a Catalog Recipe is not a copy.
+_Avoid_: Import, save (as the name of the action), clone, adopt
 
 **Family Recipe**:
 A Recipe owned by one Family, which its Members can edit and delete. Either a Base Recipe or a Variant, possibly of a Catalog Recipe.
@@ -362,7 +370,7 @@ A Recipe whose required Ingredient Lines are all covered by the Pantry's unexpir
 _Avoid_: Cookable, available, in stock
 
 **Cook Tonight**:
-The Recipes a Family's Pantry can make now, or with one required Ingredient Line short, one per Base Recipe, best match first.
+The Family Recipes a Family's Pantry can make now, or with one required Ingredient Line short, one per Base Recipe, best match first. Catalog Recipes the Pantry can make are shown in Explore instead.
 _Avoid_: Suggestions, what to cook, use it up
 
 **Pairing**:

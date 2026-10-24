@@ -26,6 +26,6 @@ Writing a New Recipe or a new Variant can take a long time: typing lines and ste
 
 ## Consequences
 
-- A new table and API module hold raw, possibly invalid form state, and a sweep deletes Recipe Drafts after 30 days without an edit.
+- A new table and API module hold raw, possibly invalid form state. There is no scheduler, so a Recipe Draft past 30 days without an edit is deleted lazily, whenever its Member's Recipe Drafts are listed or counted.
 - Text read by Recipe from Link is kept on the server for up to 30 days after the last edit even if the Member never saves.
 - Edit has no protection yet; adding it later is a separate decision, because pending changes to an existing Recipe can conflict with other Members' edits.
