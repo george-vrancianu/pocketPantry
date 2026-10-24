@@ -249,7 +249,7 @@ describe('Review all in the Voice Inbox', () => {
     expect(await screen.findByText(/^3 applied/)).toBeVisible();
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     // Nothing is left in the Voice Inbox.
-    expect(screen.queryByText('2 Voice Notes')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Open/ })).toBeNull();
     expect(screen.queryByText('2 Voice Notes')).toBeNull();
   });
 
@@ -324,6 +324,7 @@ describe('Review all in the Voice Inbox', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(await screen.findByText('Voice Notes discarded')).toBeVisible();
     expect(applied).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: /^Open/ })).toBeNull();
     expect(screen.queryByText('2 Voice Notes')).toBeNull();
   });
 
@@ -346,6 +347,38 @@ describe('Review all in the Voice Inbox', () => {
       sheet.getAllByRole('button', { name: /^Review: / })[1],
     );
     expect(await screen.findByRole('dialog', { name: 'Review' })).toBeVisible();
+  });
+
+  it('drops the refusal once the notes it was made for change', async () => {
+    const many = (prefix: string, count: number) =>
+      Array.from({ length: count }, (_, i) => shop(`${prefix}${i}`, bread));
+    render();
+    await speak(1);
+    await speak(2);
+    // A third note waits behind the two being read.
+    const button = await talkButton();
+    pressDown(button);
+    await screen.findByText("Gator's listening");
+    await holdLongEnough();
+    fireEvent.pointerUp(button);
+    reply(0, 'first note', many('a', 26));
+    reply(1, 'second note', many('b', 25));
+    await userEvent.click(await screen.findByRole('button', { name: /^Open/ }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    await userEvent.click(
+      await sheet.findByRole('button', { name: 'Review all (2)' }),
+    );
+    expect(await sheet.findByText(/more than 50 changes/)).toBeVisible();
+
+    // The third note is read: the refusal was about two notes.
+    await waitFor(() => expect(fake.reads).toHaveLength(3));
+    reply(2, 'third note', [shop('c1', milk)]);
+    expect(
+      await sheet.findByRole('button', { name: 'Review all (3)' }),
+    ).toBeVisible();
+    expect(sheet.queryByText(/more than 50 changes/)).toBeNull();
   });
 
   it('allows exactly 50 Voice Actions', async () => {

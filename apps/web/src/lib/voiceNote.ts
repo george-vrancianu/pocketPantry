@@ -46,6 +46,15 @@ export type VoiceErrorCode =
   /** The Voice Cap is used up; the number is in `voiceCap`. */
   | 'capReached';
 
+/** One Voice Note in a merged Review: what "What I heard" shows of it. */
+export type MergedNote = {
+  id: number;
+  defaultTarget: VoiceDefaultTarget;
+  spokenLanguage?: ScanLanguage;
+  durationMs?: number;
+  transcript: string;
+};
+
 export type VoiceNoteState = {
   phase: VoicePhase;
   /** The page that recorded: the default target of the Voice Note. */
@@ -79,13 +88,7 @@ export type VoiceNoteState = {
    * Set while "Review all" is open: the Voice Notes merged into this one Review, in recording order. The
    * `proposal` is then all of their transcripts, Voice Actions and answers together.
    */
-  merged?: Array<{
-    id: number;
-    defaultTarget: VoiceDefaultTarget;
-    spokenLanguage?: ScanLanguage;
-    durationMs?: number;
-    transcript: string;
-  }>;
+  merged?: MergedNote[];
   /** The Voice Inbox: how many Voice Notes are being read (or waiting), ready, failed, and in all. */
   inbox: {
     reading: number;

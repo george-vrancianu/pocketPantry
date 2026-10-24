@@ -45,8 +45,10 @@ export function VoiceInboxSheet({
   const { spokenLanguage } = usePreferredSpokenLanguage();
   const title = useRef<HTMLHeadingElement>(null);
   // "Review all" was refused: too many Voice Actions for one Apply.
-  const [tooMany, setTooMany] = useState(false);
+  const [refusedAt, setRefusedAt] = useState<number | null>(null);
   const reviewable = inbox.notes.filter((n) => n.phase === 'review').length;
+  // The refusal holds only for the notes it was made for.
+  const tooMany = refusedAt === reviewable;
 
   /** Why a note failed, in the words the pill used. */
   const failureText = (note: (typeof inbox.notes)[number]) => {
@@ -86,7 +88,7 @@ export function VoiceInboxSheet({
               fullWidth
               onClick={() => {
                 const outcome = voiceNote.openMerged();
-                setTooMany(outcome === 'tooMany');
+                setRefusedAt(outcome === 'tooMany' ? reviewable : null);
                 if (outcome === 'opened') onClose();
               }}
             >

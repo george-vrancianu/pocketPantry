@@ -10,7 +10,8 @@ import {
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
-import { formatClock, type VoiceDefaultTarget } from '../../lib/voice';
+import type { MergedNote } from '../../lib/voiceNote';
+import { formatClock } from '../../lib/voice';
 import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 
 /**
@@ -145,17 +146,7 @@ export function HeardCard({
  * "What I heard" for Review all: every Voice Note's transcript in recording order, each with the list
  * it was recorded for, its Spoken Language and length.
  */
-export function MergedHeardCard({
-  notes,
-}: {
-  notes: Array<{
-    id: number;
-    defaultTarget: VoiceDefaultTarget;
-    spokenLanguage?: ScanLanguage;
-    durationMs?: number;
-    transcript: string;
-  }>;
-}) {
+export function MergedHeardCard({ notes }: { notes: MergedNote[] }) {
   const { t } = useTranslation(['voice', 'settings']);
   const { spokenLanguage } = usePreferredSpokenLanguage();
   return (
