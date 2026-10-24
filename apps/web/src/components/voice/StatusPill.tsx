@@ -17,7 +17,7 @@ import { translateErrorCode } from '../../i18n/translateApiError';
 import { formatClock, NOTHING_HEARD_MS } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { useVoiceNoteState } from '../../lib/voiceNote';
-import { usePreferredSpokenLanguage } from '../../lib/useSpokenLanguage';
+import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 import { useVoiceHost } from './VoiceHost';
 import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
 import { enter } from './enter';

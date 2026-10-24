@@ -121,7 +121,8 @@ describe('Voice Notes on the Pantry page', () => {
 
   it('has no Spoken Language chip above the Dock', async () => {
     setup([]);
-    await openReview();
+    renderInAppLayout(<PantryPage />, '/pantry');
+    await screen.findByRole('button', { name: /hold to record a voice note/i });
     expect(
       screen.queryByRole('button', { name: /Spoken Language/ }),
     ).toBeNull();
