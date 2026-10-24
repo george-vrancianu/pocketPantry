@@ -310,7 +310,7 @@ A Recipe owned by one Family, which its Members can edit and delete. Either a Ba
 _Avoid_: Custom recipe, my recipe, user recipe
 
 **Recipe from Link**:
-Reading a recipe from a web page a Member links to, or from recipe text they paste in, into a new Family Recipe in our own format. It fills the New Family Recipe page and nothing is saved until the Member saves it. Only what the source states is filled in; guidance is never made up. Not a Scan and not a Shopping Template being applied.
+Reading a recipe from a web page a Member links to, or from recipe text they paste in, into a new Family Recipe in our own format. It fills the New Family Recipe page and nothing is saved until the Member saves it. Only what the source states is filled in; Guidance is never made up while reading, though the Member can Suggest Guidance on the draft afterwards. Not a Scan and not a Shopping Template being applied.
 _Avoid_: Recipe import, clip, scrape
 
 **Source Link**:
@@ -368,6 +368,18 @@ _Avoid_: Macros, nutrition facts, calories
 **Eating Moment**:
 A time or situation for eating, such as Morning, After a workout, or Before bed, from a list Admins curate and translate. A Recipe marks each Eating Moment it uses as Good for or Avoid, with an optional reason.
 _Avoid_: Occasion, timing, Mealtime (Breakfast, Lunch, or Dinner in a Meal Plan)
+
+**Guidance**:
+A Recipe's Pairings, Nutrition Note and Eating Moments together: what it goes with, how nourishing it is, and when it suits. Not its Tips, which advise on cooking it.
+_Avoid_: Metadata, extras, details
+
+**Suggest Guidance**:
+Asking for Guidance to be proposed from what a Recipe's page currently holds, saved or not, by a Member on a Family Recipe or an Admin on a Catalog Recipe in the language being edited. Only empty fields are filled, each marked as suggested, and nothing is stored until it is saved; once saved it is ordinary Guidance, chosen by whoever saved it. A field with nothing worth proposing is left empty.
+_Avoid_: Suggestion (a proposed Shopping Item), auto-fill, enrich, AI fill
+
+**Guidance Cap**:
+The maximum number of Suggest Guidance requests a Member may make per day. A request that returns nothing usable does not count, and Admins have none. Separate from the Link Cap, Scan Cap, Voice Cap and Assistant Cap.
+_Avoid_: Link Cap (a separate limit)
 
 ### Meal planning
 
