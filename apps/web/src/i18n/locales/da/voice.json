@@ -90,12 +90,6 @@
     "stopped": "Stoppet efter 1 minut",
     "stoppedHint": "Sender det, du sagde."
   },
-  "languageMenu": {
-    "chipLabel": "Talesprog: {{language}}. Skift",
-    "title": "Talesprog",
-    "saved": "Talesprog: {{language}}",
-    "savedHint": "Kun til denne stemmenote."
-  },
   "review": {
     "title": "Gennemse",
     "subline_one": "{{count}} ændring · intet gemmes, før du trykker Anvend",

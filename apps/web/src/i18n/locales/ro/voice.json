@@ -90,12 +90,6 @@
     "stopped": "Oprit la 1 minut",
     "stoppedHint": "Se trimite ce ai spus."
   },
-  "languageMenu": {
-    "chipLabel": "Limba vorbită: {{language}}. Schimbă",
-    "title": "Limba vorbită",
-    "saved": "Limba vorbită: {{language}}",
-    "savedHint": "Doar pentru această notă vocală."
-  },
   "review": {
     "title": "Verificare",
     "subline_one": "{{count}} modificare · nimic nu se salvează până nu apeși Aplică",

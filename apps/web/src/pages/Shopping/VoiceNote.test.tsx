@@ -31,12 +31,6 @@ import { scanLanguagePreference } from '../../test/scan';
 import { stubMotion } from '../../test/viewport';
 import { resetRowFlash } from '../../lib/rowFlash';
 import { voiceNote } from '../../lib/voiceNote';
-import {
-  clearScanLanguageOverride,
-  setScanLanguageOverride,
-  useSessionScanLanguage,
-} from '../../lib/sessionScanLanguage';
-import { useScanLanguage } from '../../lib/useScanLanguage';
 import { ShoppingPage } from './ShoppingPage';
 
 const emptyList = {
@@ -354,8 +348,8 @@ describe('Voice Note on the Shopping List', () => {
         .flatMap((sheet) => Array.from(sheet.cssRules))
         .map((rule) => rule.cssText)
         .join('\n');
-    // 36 px chip row + 22 px gap + 60 px pill + 8 px air.
-    const clearOfPill = /bottom: calc\(126px \+/;
+    // 10 px gap + 60 px pill + 8 px air above the capsule.
+    const clearOfPill = /bottom: calc\(78px \+/;
 
     it('lets taps through the tip and lifts it clear of the pill while reading', async () => {
       setup({ note: never });
@@ -527,42 +521,18 @@ describe('Voice Note on the Shopping List', () => {
       await waitFor(() => expect(cancel).toHaveFocus());
     });
 
-    it('puts a language-change toast clear of a failed pill and its Retry', async () => {
-      setup({ note: () => error('voice.provider_unavailable', 502) });
-      renderInAppLayout(<ShoppingPage />, '/shopping');
-      fireEvent.pointerUp(await hold());
-      await screen.findByRole('alert');
-
-      await userEvent.click(
-        screen.getByRole('button', { name: /Spoken Language: English/ }),
-      );
-      await userEvent.click(
-        await screen.findByRole('menuitemradio', { name: /Dansk/ }),
-      );
-
-      const snackbar = (
-        await screen.findByText(/Spoken Language: Dansk/)
-      ).closest('.MuiSnackbar-root') as HTMLElement;
-      const own = snackbar.className.split(' ').pop() as string;
-      const rule = cssText()
-        .split('\n')
-        .filter((line) => line.includes(own))
-        .join('\n');
-      expect(rule).toMatch(clearOfPill);
-    });
-
     it('leaves focus alone when the pill closes with focus outside it', async () => {
       setup({ note: () => error('voice.nothing_heard', 422) });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       await screen.findByText("Didn't catch anything, try again");
-      const chip = screen.getByRole('button', { name: /Spoken Language/ });
-      chip.focus();
+      const outside = screen.getByRole('link', { name: 'Camera' });
+      outside.focus();
 
       await holdFor(3700);
 
       expect(screen.queryByText("Didn't catch anything, try again")).toBeNull();
-      expect(chip).toHaveFocus();
+      expect(outside).toHaveFocus();
     });
 
     it('tells a press while a failed note waits to retry or discard it first', async () => {
@@ -718,85 +688,24 @@ describe('Voice Note on the Shopping List', () => {
     });
   });
 
-  it('changes the Spoken Language of the next Voice Note from the chip menu, with a toast', async () => {
-    setup();
-    renderInAppLayout(<ShoppingPage />, '/shopping');
-
-    const chip = await screen.findByRole('button', {
-      name: 'Spoken Language: English. Change',
+  describe('Spoken Language', () => {
+    it('has no Spoken Language chip or menu above the Dock', async () => {
+      setup();
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      await talkButton();
+      expect(
+        screen.queryByRole('button', { name: /Spoken Language/ }),
+      ).toBeNull();
+      expect(screen.queryByRole('menu')).toBeNull();
     });
-    await userEvent.click(chip);
-    const items = screen.getAllByRole('menuitemradio');
-    expect(items.map((item) => item.textContent)).toEqual([
-      expect.stringContaining('English'),
-      expect.stringContaining('Română'),
-      expect.stringContaining('Dansk'),
-    ]);
-    expect(items[0]).toHaveAttribute('aria-checked', 'true');
 
-    await userEvent.click(screen.getByRole('menuitemradio', { name: /Dansk/ }));
-
-    expect(
-      await screen.findByText(
-        'Spoken Language: Dansk · For this Voice Note only.',
-      ),
-    ).toBeVisible();
-    expect(screen.queryByRole('menu')).toBeNull();
-    const changed = screen.getByRole('button', {
-      name: 'Spoken Language: Dansk. Change',
-    });
-    expect(changed).toHaveFocus();
-    // Nothing is stored on the device.
-    expect(localStorage.getItem('pocket-pantry.scan-language')).toBeNull();
-  });
-
-  it('closes the language menu with Escape and returns focus to the chip', async () => {
-    setup();
-    renderInAppLayout(<ShoppingPage />, '/shopping');
-    const chip = await screen.findByRole('button', {
-      name: 'Spoken Language: English. Change',
-    });
-    await userEvent.click(chip);
-    await userEvent.keyboard('{Escape}');
-    expect(screen.queryByRole('menu')).toBeNull();
-    expect(chip).toHaveFocus();
-  });
-
-  describe('Spoken Language chip', () => {
-    const chipOf = (name: string) =>
-      screen.findByRole('button', { name: `Spoken Language: ${name}. Change` });
-
-    const error = (code: string, status: number) =>
-      Response.json({ code, params: {} }, { status });
-    const never = () => new Promise<Response>(() => undefined);
-
-    const pick = async (name: RegExp) => {
-      await userEvent.click(
-        await screen.findByRole('button', { name: /Spoken Language/ }),
-      );
-      await userEvent.click(screen.getByRole('menuitemradio', { name }));
-    };
-
-    /** The camera's two chips, read where the Voice Note chip must not reach. */
-    function CameraProbe() {
-      const session = useSessionScanLanguage();
-      const addBatch = useScanLanguage();
-      return (
-        <output data-testid="camera">
-          {session.scanLanguage}/{addBatch.scanLanguage}
-        </output>
-      );
-    }
-
-    it("starts at the Member's Spoken Language preference, not the Scan Language", async () => {
+    it("sends the Member's Spoken Language preference, not the Scan Language", async () => {
       const { sent } = setup({
         preferredScanLanguage: 'da',
         preferredSpokenLanguage: 'ro',
       });
       renderInAppLayout(<ShoppingPage />, '/shopping');
-
-      const chip = await chipOf('Română');
-      expect(chip).toHaveTextContent('ro');
+      await talkButton();
       fireEvent.pointerUp(await hold());
       await screen.findByRole('dialog');
       expect(sent[0].get('spokenLanguage')).toBe('ro');
@@ -808,138 +717,9 @@ describe('Voice Note on the Shopping List', () => {
         preferences: () => new Promise<Response>(() => {}),
       });
       renderInAppLayout(<ShoppingPage />, '/shopping');
-
-      await chipOf('English');
       fireEvent.pointerUp(await hold());
       await screen.findByRole('dialog');
       expect(sent[0].has('spokenLanguage')).toBe(false);
-    });
-
-    it('applies a pick to that Voice Note only and starts the next one at the preference again', async () => {
-      const { sent } = setup({
-        preferredScanLanguage: 'da',
-        preferredSpokenLanguage: 'ro',
-      });
-      renderInAppLayout(<ShoppingPage />, '/shopping');
-      await chipOf('Română');
-
-      await pick(/English/);
-      await chipOf('English');
-      fireEvent.pointerUp(await hold());
-      await screen.findByRole('dialog');
-      expect(sent[0].get('spokenLanguage')).toBe('en');
-      // The language actually used wins in Review.
-      expect(screen.getByRole('dialog')).toHaveTextContent(/English · /);
-
-      await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
-      await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
-      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-      // The pick ended with that Voice Note: the chip is back at the preference.
-      await chipOf('Română');
-      fireEvent.pointerUp(await hold());
-      await screen.findByRole('dialog');
-      expect(sent).toHaveLength(2);
-      expect(sent[1].get('spokenLanguage')).toBe('ro');
-    });
-
-    it('keeps a pick when the recording is cancelled', async () => {
-      const { sent } = setup({ preferredSpokenLanguage: 'ro' });
-      renderInAppLayout(<ShoppingPage />, '/shopping');
-      await chipOf('Română');
-      await pick(/English/);
-      await chipOf('English');
-
-      await hold();
-      act(() => voiceNote.cancel());
-      await waitFor(() =>
-        expect(screen.queryByText("Gator's listening")).toBeNull(),
-      );
-      await chipOf('English');
-
-      fireEvent.pointerUp(await hold());
-      await screen.findByRole('dialog');
-      expect(sent).toHaveLength(1);
-      expect(sent[0].get('spokenLanguage')).toBe('en');
-    });
-
-    it('keeps a pick when the hold is too short to be a note', async () => {
-      const { sent } = setup({ preferredSpokenLanguage: 'ro' });
-      renderInAppLayout(<ShoppingPage />, '/shopping');
-      await chipOf('Română');
-      await pick(/English/);
-      await chipOf('English');
-
-      const button = await talkButton();
-      pressDown(button);
-      await screen.findByText("Gator's listening");
-      await act(() => vi.advanceTimersByTimeAsync(150));
-      fireEvent.pointerUp(button);
-      await screen.findByText('Hold to talk, let go to send');
-      expect(sent).toHaveLength(0);
-      await chipOf('English');
-
-      fireEvent.pointerUp(await hold());
-      await screen.findByRole('dialog');
-      expect(sent[0].get('spokenLanguage')).toBe('en');
-    });
-
-    it('sends a failed note again in the language it was recorded in, though the chip is back at the preference', async () => {
-      let attempt = 0;
-      const { sent } = setup({
-        preferredSpokenLanguage: 'ro',
-        note: () =>
-          ++attempt === 1 ? error('voice.provider_unavailable', 502) : never(),
-      });
-      renderInAppLayout(<ShoppingPage />, '/shopping');
-      await chipOf('Română');
-      await pick(/English/);
-      await chipOf('English');
-      fireEvent.pointerUp(await hold());
-
-      const alert = await screen.findByRole('alert');
-      await chipOf('Română');
-      await userEvent.click(
-        within(alert).getByRole('button', { name: 'Retry' }),
-      );
-
-      await waitFor(() => expect(sent).toHaveLength(2));
-      expect(sent[0].get('spokenLanguage')).toBe('en');
-      expect(sent[1].get('spokenLanguage')).toBe('en');
-    });
-
-    it('does not move the camera chips, and they do not move it', async () => {
-      setup({ preferredScanLanguage: 'da', preferredSpokenLanguage: 'ro' });
-      renderInAppLayout(
-        <>
-          <ShoppingPage />
-          <CameraProbe />
-        </>,
-        '/shopping',
-      );
-      await chipOf('Română');
-      await waitFor(() =>
-        expect(screen.getByTestId('camera')).toHaveTextContent('da/da'),
-      );
-
-      // No pick on the Voice Note chip: a camera move does not reach it.
-      act(() => setScanLanguageOverride('en'));
-      expect(screen.getByTestId('camera')).toHaveTextContent('en/da');
-      await chipOf('Română');
-      act(() => clearScanLanguageOverride());
-
-      await pick(/English/);
-      await chipOf('English');
-      expect(screen.getByTestId('camera')).toHaveTextContent('da/da');
-
-      act(() => setScanLanguageOverride('en'));
-      expect(screen.getByTestId('camera')).toHaveTextContent('en/da');
-      await chipOf('English');
-      act(() => clearScanLanguageOverride());
-      await pick(/Dansk/);
-      await chipOf('Dansk');
-      act(() => setScanLanguageOverride('ro'));
-      await chipOf('Dansk');
-      act(() => clearScanLanguageOverride());
     });
   });
 });
@@ -1673,12 +1453,12 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     await applyAll();
     await screen.findByText('3 applied');
     // jsdom's getComputedStyle ignores the responsive (media query) `bottom`, so the rule text is the only
-    // place to read it; kept loose on purpose. 36 px chip row + 10 px gap above the capsule, rather than just above the Dock.
+    // place to read it; kept loose on purpose. 10 px gap above the capsule, rather than just above the Dock.
     const css = Array.from(document.styleSheets)
       .flatMap((sheet) => Array.from(sheet.cssRules))
       .map((rule) => rule.cssText)
       .join('\n');
-    expect(css).toMatch(/MuiSnackbar-root \{ bottom: calc\(46px \+/);
+    expect(css).toMatch(/MuiSnackbar-root \{ bottom: calc\(10px \+/);
   });
 
   it('puts focus on the voice button after Apply and after Discard', async () => {

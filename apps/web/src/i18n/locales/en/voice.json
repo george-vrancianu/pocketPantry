@@ -90,12 +90,6 @@
     "stopped": "Stopped at 1 minute",
     "stoppedHint": "Sending what you said."
   },
-  "languageMenu": {
-    "chipLabel": "Spoken Language: {{language}}. Change",
-    "title": "Spoken Language",
-    "saved": "Spoken Language: {{language}}",
-    "savedHint": "For this Voice Note only."
-  },
   "review": {
     "title": "Review",
     "subline_one": "{{count}} change · nothing is saved until you Apply",
