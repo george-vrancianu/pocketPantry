@@ -6,6 +6,7 @@ import { AssistantModule } from './assistant/assistant.module';
 import { AssistantTokensModule } from './assistant-tokens/assistant-tokens.module';
 import { AuthModule } from './auth/auth.module';
 import { BarcodeModule } from './barcode/barcode.module';
+import { PageFetchModule } from './page-fetch/page-fetch.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { validateEnv } from './config/env';
@@ -38,6 +39,7 @@ import { SettingsModule } from './settings/settings.module';
     ScanModule,
     VoiceModule,
     BarcodeModule,
+    PageFetchModule,
     DashboardModule,
     SettingsModule,
     AssistantTokensModule,
