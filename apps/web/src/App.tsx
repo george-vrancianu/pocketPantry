@@ -11,6 +11,8 @@ import { SetupOrSkipPage } from './pages/Intro/SetupOrSkipPage';
 import { SetupReviewPage } from './pages/Intro/SetupReviewPage';
 import { SayItPage } from './pages/Intro/SayItPage';
 import { SnapPage } from './pages/Intro/SnapPage';
+// PROTOTYPE: remove with the amount-field prototype.
+import { AmountFieldPrototype } from './pages/AmountFieldPrototype/AmountFieldPrototype';
 import { AdminPage } from './pages/Admin/AdminPage';
 import { CustomisePage } from './pages/Customise/CustomisePage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
@@ -94,6 +96,13 @@ export function App() {
                 path="recipes/:id/variant/new"
                 element={<NewVariantPage />}
               />
+              {import.meta.env.DEV ? (
+                // PROTOTYPE: throwaway route, dev builds only.
+                <Route
+                  path="prototype/amount-field"
+                  element={<AmountFieldPrototype />}
+                />
+              ) : null}
               <Route path="settings" element={<SettingsPage />} />
               <Route path="family" element={<FamilyPage />} />
               <Route element={<RequireAdmin />}>
