@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -70 264 244" width="264" height="244" class="gator g-curious" data-v="tap" role="img" aria-label="Gator, curious"><style>.gator g[class]:not([transform]), .gator .arc{transform-box:fill-box}
+.rig{transform-origin:50% 100%}
+.eye{transform-origin:50% 55%}
+.hat{transform-origin:50% 100%}
+.tail{transform-origin:95% 80%}
+.sparkle, .dot, .bubble, .arc{transform-origin:50% 50%}
+.jaw{transform-origin:13% 8%}
+.head{transform-origin:45% 95%}
+.qmark{transform-origin:40% 100%}
+.basket{transform-origin:50% 12%}
+.whisk{transform-origin:100% 100%}
+.spoon{transform-origin:0% 100%}
+.rack{transform-origin:50% 0%}
+.tick path{stroke-dasharray:1; stroke-dashoffset:0}
+.drop{transform-origin:50% 0%}
+@keyframes boingOnce{0%,100%{transform:none}15%{transform:scale(calc(1 + .1*1),calc(1 - .12*1))}40%{transform:translateY(calc(-22px*1)) scale(calc(1 - .06*1),calc(1 + .1*1))}62%{transform:translateY(0) scale(calc(1 + .08*1),calc(1 - .1*1))}80%{transform:scale(calc(1 - .02*1),calc(1 + .02*1))}}
+@keyframes hatHopOnce{0%,20%,100%{transform:none}44%{transform:translateY(calc(-10px*1)) rotate(calc(-14deg*1))}66%{transform:translateY(calc(-2px*1)) rotate(calc(5deg*1))}84%{transform:none}}
+@keyframes squintOnce{0%,80%,100%{transform:scaleY(1)}12%,60%{transform:scaleY(.15)}}
+[data-v="tap"] .rig{animation:boingOnce .9s linear 1 both}
+[data-v="tap"] .hat{animation:hatHopOnce .9s linear 1 both}
+[data-v="tap"] .eye{animation:squintOnce .9s linear 1 both}
+[data-v="tap"] .tail{animation:wagOnce .9s linear 1 both}
+.g-icon[data-v="tap"] .rig{transform-origin:50% 50%}
+@keyframes wagOnce{0%,100%{transform:none}28%{transform:rotate(12deg)}50%{transform:rotate(-8deg)}72%{transform:rotate(8deg)}}
+@media (prefers-reduced-motion: reduce){svg *{animation:none !important}}</style><g class="rig"><circle cx="124" cy="46" r="17" fill="#5E9A3C"/><g class="eye eye-far"><circle cx="126" cy="44" r="10" fill="#fff"/><g class="pupil"><circle cx="130" cy="40" r="5" fill="#2E3A1F"/></g></g><path d="M28 100 C26 62 56 40 92 42 C118 44 134 56 150 62 L198 68 C218 70 228 84 226 98 C224 112 214 122 198 124 L112 136 C78 142 30 138 28 100 Z" fill="#6FAE48"/><path d="M78 114 L218 100 C214 114 208 121 198 124 L112 136 C92 138 80 130 78 114 Z" fill="#E8E2B0"/><path d="M40 70 l-8 -6 l2 10 Z M50 58 l-6 -8 l0 11 Z M62 50 l-3 -9 l-3 10 Z" fill="#5E9A3C"/><path d="M150 78 q6 4 12 0 M170 80 q6 4 12 0 M160 90 q6 4 12 0" fill="none" stroke="#5E9A3C" stroke-width="3" stroke-linecap="round"/><circle cx="206" cy="74" r="9" fill="#6FAE48"/><ellipse cx="209" cy="72" rx="3.5" ry="2.5" fill="#3E6B2E"/><g class="hat"><g transform="rotate(-14 64 40)"><g fill="#fff" stroke="#CFC6B4" stroke-width="5"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><g fill="#fff"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><path d="M54 22 v12 M64 20 v14 M74 22 v12" stroke="#E2DACB" stroke-width="2.5" stroke-linecap="round"/><rect x="36" y="34" width="56" height="14" rx="5" fill="#F4EFE4" stroke="#CFC6B4" stroke-width="2.5"/></g></g><circle cx="92" cy="46" r="24" fill="#5E9A3C"/><g class="eye eye-near"><circle cx="94" cy="44" r="16" fill="#fff"/><g class="pupil"><circle cx="101" cy="39" r="8" fill="#2E3A1F"/><circle cx="104" cy="36" r="3" fill="#fff"/></g></g><path d="M62 100 Q64 116 80 114 L218 100" fill="none" stroke="#3E6B2E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M100 112 l4 7 l4 -8 Z M122 110 l4 7 l4 -8 Z M144 108 l4 7 l4 -8 Z M166 106 l4 7 l4 -8 Z M188 103 l4 7 l4 -8 Z" fill="#fff"/><path d="M112 114 l4 -7 l4 6 Z M156 109 l4 -7 l4 6 Z M200 104 l3 -6 l3 5 Z" fill="#fff"/><g class="blush"><circle cx="66" cy="96" r="8" fill="#F2A08B" opacity=".5"/></g><g class="brow"><path d="M80 14 Q92 6 106 10" fill="none" stroke="#2E3A1F" stroke-width="3.5" stroke-linecap="round"/></g><g class="qmark"><path d="M200 -14 Q200 -26 213 -26 Q226 -26 226 -15 Q226 -7 214 -3 L213 4" fill="none" stroke="#5F6F2E" stroke-width="6" stroke-linecap="round"/><circle cx="213" cy="15" r="4" fill="#5F6F2E"/></g></g></svg>

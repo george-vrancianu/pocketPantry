@@ -48,6 +48,13 @@ export {
   type GatorImageProps,
   type GatorMood,
 } from './gator/GatorImage';
+export {
+  Gator,
+  type GatorLoop,
+  type GatorMotion,
+  type GatorProps,
+} from './gator/Gator';
+export { type AnimatedGatorMood } from './gator/gatorGeometry';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
 export {

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-34 -66 290 244" width="290" height="244" class="gator g-dapper" data-v="sig" role="img" aria-label="Gator with a monocle and a bubble pipe"><style>.gator g[class]:not([transform]), .gator .arc{transform-box:fill-box}
+.rig{transform-origin:50% 100%}
+.eye{transform-origin:50% 55%}
+.hat{transform-origin:50% 100%}
+.tail{transform-origin:95% 80%}
+.sparkle, .dot, .bubble, .arc{transform-origin:50% 50%}
+.jaw{transform-origin:13% 8%}
+.head{transform-origin:45% 95%}
+.qmark{transform-origin:40% 100%}
+.basket{transform-origin:50% 12%}
+.whisk{transform-origin:100% 100%}
+.spoon{transform-origin:0% 100%}
+.rack{transform-origin:50% 0%}
+.tick path{stroke-dasharray:1; stroke-dashoffset:0}
+[data-v="sig"] .eye{animation:blink calc(4.4s) infinite}
+[data-v="sig"] .eye-far{animation-delay:calc(.04s)}
+.drop{transform-origin:50% 0%}
+[data-v="sig"] .rig{animation:breathe calc(3.2s) ease-in-out infinite}
+[data-v="sig"] .tail{animation:wag calc(1.6s) ease-in-out infinite}
+.g-dapper[data-v="sig"] .bubble{animation:bubbleUp calc(3s) ease-out infinite; animation-delay:calc(var(--i)*-1s)}
+.g-dapper[data-v="sig"] .shine{animation:glint calc(3s) ease-in-out infinite}
+.g-dapper[data-v="sig"] .rig{animation:sway calc(4s) ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(calc(1 + .006*1),calc(1 + .022*1))}}
+@keyframes blink{0%,90%,97%,100%{transform:scaleY(1)}93.5%{transform:scaleY(.08)}}
+@keyframes wag{0%,100%{transform:rotate(calc(-5deg*1))}50%{transform:rotate(calc(7deg*1))}}
+@keyframes sway{0%,100%{transform:rotate(calc(-1.6deg*1))}50%{transform:rotate(calc(1.6deg*1))}}
+@keyframes bubbleUp{0%{transform:translate(0,0) scale(.3);opacity:0}15%{opacity:1;transform:scale(1)}80%{opacity:.9}100%{transform:translate(calc(-8px*1),calc(-30px*1)) scale(1.15);opacity:0}}
+@keyframes glint{0%,62%,100%{opacity:.25}75%{opacity:1}}
+@media (prefers-reduced-motion: reduce){svg *{animation:none !important}}</style><g class="rig"><circle cx="124" cy="46" r="17" fill="#5E9A3C"/><g class="eye eye-far"><circle cx="126" cy="44" r="10" fill="#fff"/><g class="pupil"><circle cx="129" cy="46" r="5" fill="#2E3A1F"/></g></g><path d="M28 100 C26 62 56 40 92 42 C118 44 134 56 150 62 L198 68 C218 70 228 84 226 98 C224 112 214 122 198 124 L112 136 C78 142 30 138 28 100 Z" fill="#6FAE48"/><path d="M78 114 L218 100 C214 114 208 121 198 124 L112 136 C92 138 80 130 78 114 Z" fill="#E8E2B0"/><path d="M40 70 l-8 -6 l2 10 Z M50 58 l-6 -8 l0 11 Z M62 50 l-3 -9 l-3 10 Z" fill="#5E9A3C"/><path d="M150 78 q6 4 12 0 M170 80 q6 4 12 0 M160 90 q6 4 12 0" fill="none" stroke="#5E9A3C" stroke-width="3" stroke-linecap="round"/><circle cx="206" cy="74" r="9" fill="#6FAE48"/><ellipse cx="209" cy="72" rx="3.5" ry="2.5" fill="#3E6B2E"/><g class="hat"><g transform="rotate(-14 64 40)"><g fill="#fff" stroke="#CFC6B4" stroke-width="5"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><g fill="#fff"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><path d="M54 22 v12 M64 20 v14 M74 22 v12" stroke="#E2DACB" stroke-width="2.5" stroke-linecap="round"/><rect x="36" y="34" width="56" height="14" rx="5" fill="#F4EFE4" stroke="#CFC6B4" stroke-width="2.5"/></g></g><circle cx="92" cy="46" r="24" fill="#5E9A3C"/><g class="eye eye-near"><circle cx="94" cy="44" r="16" fill="#fff"/><g class="pupil"><circle cx="100" cy="46" r="8" fill="#2E3A1F"/><circle cx="103" cy="43" r="3" fill="#fff"/></g></g><path d="M52 90 Q52 122 84 117 L218 100" fill="none" stroke="#3E6B2E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M100 112 l4 7 l4 -8 Z M122 110 l4 7 l4 -8 Z M144 108 l4 7 l4 -8 Z M166 106 l4 7 l4 -8 Z M188 103 l4 7 l4 -8 Z" fill="#fff"/><path d="M112 114 l4 -7 l4 6 Z M156 109 l4 -7 l4 6 Z M200 104 l3 -6 l3 5 Z" fill="#fff"/><ellipse cx="64" cy="98" rx="11" ry="8" fill="#F2A08B" opacity=".6"/><circle cx="94" cy="44" r="16.5" fill="#6FAE48"/><circle cx="126" cy="44" r="10.5" fill="#6FAE48"/><path d="M82 50 Q94 34 106 50" fill="none" stroke="#2E3A1F" stroke-width="4.5" stroke-linecap="round"/><path d="M119 49 Q126 40 133 49" fill="none" stroke="#2E3A1F" stroke-width="3.5" stroke-linecap="round"/><g class="monocle"><circle cx="94" cy="44" r="20" fill="rgba(255,255,255,.22)" stroke="#B87A1E" stroke-width="5.5"/><circle cx="94" cy="44" r="16.5" fill="none" stroke="#F0C96B" stroke-width="1.6"/><g class="shine"><path d="M83 33 Q88 28 95 28" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity=".9"/></g><path d="M78 58 Q62 76 74 92" fill="none" stroke="#B87A1E" stroke-width="2.8" stroke-dasharray="5 3" stroke-linecap="round"/></g><g class="pipe"><path d="M92 116 L58 134" stroke="#4A2F18" stroke-width="6" stroke-linecap="round"/><path d="M40 118 H62 V134 Q62 146 51 146 Q40 146 40 134 Z" fill="#7A4E2C"/><ellipse cx="51" cy="118" rx="11" ry="3.5" fill="#4A2F18"/></g><g fill="rgba(255,255,255,.75)" stroke="#8CCBEA" stroke-width="2"><g class="bubble" style="--i:0"><circle cx="34" cy="104" r="5"/></g><g class="bubble" style="--i:1"><circle cx="16" cy="88" r="7"/></g><g class="bubble" style="--i:2"><circle cx="-2" cy="66" r="4.5"/></g></g></g></svg>
