@@ -724,7 +724,10 @@ describe('Voice Note on the Shopping List', () => {
       });
 
       it('gives only the picked note the new language when several fail on the Voice Cap', async () => {
-        const { reads, holdReads } = setup({ note: never });
+        const { reads, holdReads } = setup({
+          note: never,
+          preferredSpokenLanguage: 'en',
+        });
         holdReads();
         renderInAppLayout(<ShoppingPage />, '/shopping');
         for (let i = 0; i < 3; i++) {
@@ -749,12 +752,13 @@ describe('Voice Note on the Shopping List', () => {
         );
         fireEvent.click(await screen.findByRole('menuitem', { name: 'Dansk' }));
         await waitFor(() => expect(reads.length).toBeGreaterThan(before));
-        const languages = reads.slice(before).map((r) => spoken(r.body));
-        expect(languages).toContain('da');
-        expect(languages.filter((l) => l !== 'da')).toEqual(
-          languages.filter((l) => l !== 'da').map(() => 'en'),
-        );
-        expect(languages.filter((l) => l === 'da')).toHaveLength(1);
+        // The released note is read by the other free read slot once reads[1] settles.
+        act(() => reads[1].resolve(error('voice.nothing_heard', 422)));
+        await waitFor(() => expect(reads).toHaveLength(before + 2));
+        expect(reads.slice(before).map((r) => spoken(r.body))).toEqual([
+          'da',
+          'en',
+        ]);
       });
 
       it("plain Retry re-sends in the note's own language", async () => {
