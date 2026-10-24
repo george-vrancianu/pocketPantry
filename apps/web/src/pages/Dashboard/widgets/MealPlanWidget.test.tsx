@@ -1270,7 +1270,7 @@ describe('MealPlanWidget Add missing', () => {
     );
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Please check your details',
+      'Please check what you entered',
     );
     await waitFor(() =>
       expect(

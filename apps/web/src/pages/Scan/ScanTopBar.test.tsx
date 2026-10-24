@@ -107,7 +107,7 @@ describe('The Scan page top bar', () => {
     );
     const sheet = screen.getByRole('dialog', { name: 'Scanning your pantry' });
     expect(sheet).toHaveTextContent(/tap the shutter/);
-    expect(sheet).toHaveTextContent(/tap the stack at the bottom left/);
+    expect(sheet).toHaveTextContent(/tap the photos at the bottom left/);
     expect(within(sheet).getByRole('button', { name: 'Got it' })).toHaveFocus();
   });
 });

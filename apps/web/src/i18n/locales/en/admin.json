@@ -211,7 +211,7 @@
     },
     "variant": {
       "title": "Make a Variant",
-      "hint": "Copies the Ingredient Lines, Steps and Step Tips as a draft. After that, the Variant is edited on its own.",
+      "hint": "Copies the Ingredient Lines, Steps and Step Tips as a starting point. After that, the Variant is edited on its own.",
       "name": "Variant title",
       "make": "Make a Variant",
       "making": "Making…"

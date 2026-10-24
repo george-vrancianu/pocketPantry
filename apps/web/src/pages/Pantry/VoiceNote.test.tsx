@@ -15,6 +15,11 @@ import {
   pressDown,
   useVoiceTimers,
 } from '../../test/voiceHold';
+import {
+  locationToggle,
+  pickLocation,
+  pressedLocation,
+} from '../../test/location';
 import { renderInAppLayout, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 
@@ -288,7 +293,13 @@ describe('Voice Notes on the Pantry page', () => {
     const dialog = within(await openReview());
 
     await userEvent.click(header(dialog, 'Yogurt'));
-    await userEvent.click(dialog.getByRole('button', { name: 'Freezer' }));
+    // Nobody said a Location: the Catalog default shows pressed, with the note under it.
+    const panel = screen.getByRole('dialog');
+    expect(pressedLocation(panel)).toBe('Fridge');
+    expect(dialog.getByText(/^Not said, so the usual place/)).toBeVisible();
+    await pickLocation(userEvent.setup(), 'Freezer', panel);
+    expect(pressedLocation(panel)).toBe('Freezer');
+    expect(dialog.queryByText(/^Not said, so the usual place/)).toBeNull();
     expect(rowOf(dialog, 'Yogurt').textContent).toContain('Freezer · expires');
     expect(rowOf(dialog, 'Yogurt').textContent).not.toContain('usual');
     await userEvent.click(dialog.getByRole('button', { name: /^3 days/ }));
@@ -362,6 +373,12 @@ describe('Voice Notes on the Pantry page', () => {
     await waitFor(() =>
       expect(dialog.getByRole('button', { name: 'Fridge' })).toHaveFocus(),
     );
+    // No Location said and no Catalog default: nothing is pressed yet.
+    expect(
+      within(locationToggle(screen.getByRole('dialog')))
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-pressed')),
+    ).toEqual(['false', 'false', 'false', 'false']);
 
     // Tapping the held-back Apply sends focus back to the picker.
     (document.activeElement as HTMLElement).blur();

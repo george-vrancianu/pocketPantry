@@ -50,9 +50,9 @@ describe('InfoSheet mode list', () => {
 
 describe('InfoSheet copy', () => {
   it.each([
-    ['en', /tap the shutter\./, /tap the stack at the bottom left/, 'Got it'],
-    ['ro', /atinge declanșatorul/, /teancul din stânga jos/, 'Am înțeles'],
-    ['da', /tryk på udløseren/, /bunken nederst til venstre/, 'Forstået'],
+    ['en', /tap the shutter\./, /tap the photos at the bottom left/, 'Got it'],
+    ['ro', /atinge declanșatorul/, /fotografiile din stânga jos/, 'Am înțeles'],
+    ['da', /tryk på udløseren/, /billederne nederst til venstre/, 'Forstået'],
   ])(
     'says in %s how to scan with the shutter and where the stack is',
     async (language, tap, tip, ok) => {

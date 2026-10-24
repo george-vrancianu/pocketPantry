@@ -16,12 +16,12 @@ import {
   type RowStatus,
 } from '../../../lib/review';
 import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
-import { Field, controlSx } from './Field';
+import { LocationToggle } from '../../../components/LocationToggle';
+import { Field, controlSx, fieldLabelSx } from './Field';
 import {
   CategorySelect,
   DescriptionInput,
   ExpiryButton,
-  LocationSelect,
   NameInput,
   QuantityUnitInput,
 } from './RowInputs';
@@ -236,34 +236,43 @@ export function RowEditPanel({
         </Field>
 
         {shopping ? null : (
-          <>
-            <Field htmlFor={id('location')} label={t('review:field.location')}>
-              <LocationSelect
-                line={line}
-                onChange={onChange}
-                id={id('location')}
-              />
-            </Field>
-
-            <Field
-              htmlFor={id('expiry')}
-              label={t('review:field.expiry')}
-              error={expiryError ? t('review:error.expiry') : undefined}
+          <Field
+            htmlFor={id('expiry')}
+            label={t('review:field.expiry')}
+            error={expiryError ? t('review:error.expiry') : undefined}
+            errorId={`${id('expiry')}-error`}
+          >
+            <ExpiryButton
+              line={line}
+              onChange={onChange}
+              id={id('expiry')}
+              error={expiryError}
               errorId={`${id('expiry')}-error`}
-            >
-              <ExpiryButton
-                line={line}
-                onChange={onChange}
-                id={id('expiry')}
-                error={expiryError}
-                errorId={`${id('expiry')}-error`}
-                labelId={`${id('expiry')}-label`}
-              />
-            </Field>
-          </>
+              labelId={`${id('expiry')}-label`}
+            />
+          </Field>
         )}
 
-        <Box sx={{ display: 'flex', gap: '8px', alignSelf: 'end' }}>
+        {/* The toggle needs the panel's full width for four Locations on a phone. */}
+        {shopping ? null : (
+          <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}>
+            <LocationToggle
+              label={t('review:field.location')}
+              value={line.location}
+              onChange={(location) => onChange({ location })}
+              captionSx={fieldLabelSx}
+            />
+          </Box>
+        )}
+
+        <Box
+          sx={{
+            display: 'flex',
+            gap: '8px',
+            alignSelf: 'end',
+            ...(shopping ? {} : { gridColumn: '1 / -1', justifySelf: 'end' }),
+          }}
+        >
           <IconButton
             label={t('review:action.remove', { name: accessibleName })}
             tone="urgentOutline"
