@@ -126,9 +126,14 @@ describe('ShoppingPage', () => {
         .getAllByRole('button')
         .map((b) => b.getAttribute('aria-label')),
     ).toEqual(['Add items']);
-    expect(
-      await screen.findByRole('button', { name: 'Import from a template' }),
-    ).not.toBe(null);
+    // The pill sits beside the count: their nearest shared box is the card, not the page.
+    const pill = await screen.findByRole('button', {
+      name: 'Import from a template',
+    });
+    let card = screen.getByText('1 to buy').parentElement;
+    while (card && !card.contains(pill)) card = card.parentElement;
+    expect(card?.contains(header)).toBe(false);
+    expect(card?.contains(screen.getByRole('progressbar'))).toBe(true);
     expect(
       within(header).queryByRole('button', { name: 'Import from a template' }),
     ).toBeNull();

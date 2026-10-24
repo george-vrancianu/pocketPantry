@@ -117,10 +117,11 @@ export function ShoppingPage() {
               remaining={screen.list.summary.remaining}
               checked={screen.list.summary.checked}
               onFinish={() => setReviewing(true)}
-              // The Start your list block offers Import itself when there are templates.
+              // The Start your list block offers Import itself when there are templates; while
+              // they load, leave the pill out so it does not flash in and out.
               onImport={
                 screen.list.groups.length === 0 &&
-                (templates.data?.length ?? 0) > 0
+                (templates.isPending || (templates.data?.length ?? 0) > 0)
                   ? undefined
                   : (event) => openApply(event.currentTarget)
               }

@@ -1,5 +1,7 @@
 # Shopping: Add items / Import split — design handoff
 
+> Superseded in part by ADR 0026: the Import pill now sits in the summary card and the `+` (Add items) in the header.
+
 Status: approved design (variant B), ready for implementation. Date: 2026-10-14. Amended 2026-10-15 after a grilling session (§12); where this file and the prototype disagree, this file wins.
 
 Domain language: in `GLOSSARY.md` terms, the Import sheet **applies** Shopping Templates. "Import" is only the UI label (like "Move N to Pantry" for Finish Shopping). Name code after the domain (`applyTemplates`, …).
