@@ -291,6 +291,7 @@
     "reading": "Citesc {{count}}",
     "ready": "{{count}} gata",
     "review": "Verificare",
+    "reviewOldest": "Verifică cea mai veche",
     "full": "Verifică mai întâi notele"
   }
 }

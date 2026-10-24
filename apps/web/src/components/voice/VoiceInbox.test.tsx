@@ -144,14 +144,10 @@ describe('the Voice Inbox strip', () => {
     renderAt();
     await speak(1);
     await speak(2);
-    expect(
-      within(strip()).queryByRole('button', { name: 'Review' }),
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
 
     answer(1);
-    expect(
-      await within(strip()).findByRole('button', { name: 'Review' }),
-    ).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Review' })).toBeVisible();
     expect(strip()).toHaveTextContent('Reading 1 · 1 ready');
 
     const dialog = await openReady();
@@ -167,11 +163,11 @@ describe('the Voice Inbox strip', () => {
     fake.reads[1].resolve(Response.json(heard('second note'), { status: 201 }));
     fake.reads[0].resolve(Response.json(heard('first note'), { status: 201 }));
     await screen.findByText('2 ready');
-    expect(
-      within(strip()).queryByRole('button', { name: 'Review' }),
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
 
-    await userEvent.click(strip());
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Review the oldest' }),
+    );
     const dialog = within(await screen.findByRole('dialog'));
     // The oldest is the first recorded, although the second was answered first.
     await userEvent.click(dialog.getByRole('button', { name: /What I heard/ }));

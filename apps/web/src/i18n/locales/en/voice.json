@@ -281,6 +281,7 @@
     "reading": "Reading {{count}}",
     "ready": "{{count}} ready",
     "review": "Review",
+    "reviewOldest": "Review the oldest",
     "full": "Review your notes first"
   }
 }

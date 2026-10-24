@@ -41,7 +41,7 @@ export function VoiceNotices() {
             // No toast or sound: a short buzz where the device has one.
             return haptic(14);
           case 'inboxFull':
-            return toast.show(t('inbox.full'), voiceToast());
+            return toast.show(t('inbox.full'), voiceToast({ abovePill: true }));
           case 'switchedOff':
             // Hides the button and everything that offers a Voice Note.
             return queryClient.setQueryData(['voice', 'config'], {

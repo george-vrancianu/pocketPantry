@@ -39,6 +39,7 @@ async function record(
   startOptions: {
     spokenLanguage: 'en' | 'ro';
     defaultTarget: 'shopping' | 'pantry';
+    openWhenReady?: boolean;
   } = options,
 ) {
   await note.start(startOptions);
@@ -326,6 +327,14 @@ describe('Voice Note module', () => {
       expect(startMicrophone).toHaveBeenCalledOnce();
       note.discard();
       expect(note.startBlocker()).toBe('none');
+    });
+
+    it('refuses to start while a note that opens itself is still being read', async () => {
+      const { note, startMicrophone } = setup();
+      await record(note, { ...options, openWhenReady: true });
+      expect(note.startBlocker()).toBe('review');
+      expect(await note.start(options)).toBe('refused');
+      expect(startMicrophone).toHaveBeenCalledOnce();
     });
 
     it('discarding or applying removes only that note', async () => {

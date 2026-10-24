@@ -34,7 +34,6 @@ export function VoiceInboxStrip() {
 
   return createPortal(
     <Box
-      role="status"
       {...{ [VOICE_PILL_ATTRIBUTE]: '' }}
       onClick={() => voiceNote.openReady()}
       sx={{
@@ -57,6 +56,23 @@ export function VoiceInboxStrip() {
         ...enter,
       }}
     >
+      {ready > 1 ? (
+        <Box
+          component="button"
+          type="button"
+          aria-label={t('inbox.reviewOldest')}
+          onClick={() => voiceNote.openReady()}
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            border: 0,
+            p: 0,
+            background: 'transparent',
+            borderRadius: 'inherit',
+            cursor: 'pointer',
+          }}
+        />
+      ) : null}
       <Box
         aria-hidden
         sx={{ flex: 'none', display: 'flex', alignItems: 'center' }}
@@ -67,7 +83,7 @@ export function VoiceInboxStrip() {
           decorative
         />
       </Box>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Box role="status" sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ fontSize: 14, fontWeight: 600, ...oneLine }}>
           {t('inbox.title', { count: total })}
         </Box>
@@ -76,17 +92,19 @@ export function VoiceInboxStrip() {
         </Box>
       </Box>
       {ready === 1 ? (
-        <Button
-          variant="primary"
-          size="sm"
-          shape="pill"
-          onClick={(event) => {
-            event.stopPropagation();
-            voiceNote.openReady();
-          }}
-        >
-          {t('inbox.review')}
-        </Button>
+        <Box sx={{ position: 'relative' }}>
+          <Button
+            variant="primary"
+            size="sm"
+            shape="pill"
+            onClick={(event) => {
+              event.stopPropagation();
+              voiceNote.openReady();
+            }}
+          >
+            {t('inbox.review')}
+          </Button>
+        </Box>
       ) : null}
     </Box>,
     host,

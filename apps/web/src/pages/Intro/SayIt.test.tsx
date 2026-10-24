@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // The fake voice environment registers its mocks, so it comes before anything that reaches the microphone.
@@ -26,7 +26,8 @@ type Options = Parameters<typeof stubSetupMember>[0];
 async function openSayIt(options: Options = {}) {
   const calls = stubSetupMember(options);
   // Wrap the stubbed API so every Voice Note upload (a FormData body) is kept.
-  const { sent } = stubVoiceFetch(globalThis.fetch as never);
+  const voice = stubVoiceFetch(globalThis.fetch as never);
+  const { sent } = voice;
   renderWithProviders(
     <>
       <App />
@@ -35,7 +36,7 @@ async function openSayIt(options: Options = {}) {
     { route: '/intro/setup' },
   );
   await goToSayIt();
-  return { calls, sent };
+  return { calls, sent, holdReads: voice.holdReads };
 }
 
 const dimmed = () =>
@@ -205,6 +206,26 @@ describe('Setup 2, holding the mic', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].get('defaultTarget')).toBe('pantry');
     expect(where()).toBe('/intro/say-it');
+  });
+
+  it('is single-note: the mic does nothing while the first note is being read', async () => {
+    const { sent, holdReads } = await openSayIt();
+    holdReads();
+    const button = await talkButton();
+    pressDown(button);
+    await screen.findByText("Gator's listening");
+    await holdLongEnough();
+    fireEvent.pointerUp(button);
+    await waitFor(() => expect(sent).toHaveLength(1));
+
+    pressDown(button);
+    await holdLongEnough();
+    fireEvent.pointerUp(button);
+
+    expect(mic.start).toHaveBeenCalledTimes(1);
+    expect(sent).toHaveLength(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByText(/Voice Notes?$/)).toBeNull();
   });
 
   it("records in the Member's Spoken Language", async () => {

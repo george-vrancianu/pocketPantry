@@ -281,6 +281,7 @@
     "reading": "Læser {{count}}",
     "ready": "{{count}} klar",
     "review": "Gennemse",
+    "reviewOldest": "Gennemse den ældste",
     "full": "Gennemse dine noter først"
   }
 }

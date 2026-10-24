@@ -476,8 +476,9 @@ export function createVoiceNote(
     // A note is already under way (the microphone starting, recording, audio being finalised): ignore silently.
     if (starting || session || finishing) return 'active';
     // The mic is not offered while a Review or answer sheet is open.
-    if (isSheet(openNote())) return 'review';
     const open = openNote();
+    // Also while the note that opens itself (Setup's) is still being read: it is the only one.
+    if (isSheet(open) || (open && open.phase !== 'failed')) return 'review';
     if (open?.phase === 'failed' && open.recording) return 'kept';
     // A failure with nothing kept is dropped by this press, so it does not count.
     const dropped = open?.phase === 'failed' && !open.recording ? 1 : 0;
@@ -530,7 +531,7 @@ export function createVoiceNote(
   function pump() {
     while (reads.size < MAX_READS) {
       const next = store.notes.find(
-        (n) => n.phase === 'reading' && !reads.has(n.id),
+        (n) => n.phase === 'reading' && n.recording && !reads.has(n.id),
       );
       if (!next) return;
       void read(next.id);
