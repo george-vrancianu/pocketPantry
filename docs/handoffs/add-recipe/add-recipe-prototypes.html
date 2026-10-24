@@ -1,0 +1,596 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Add Recipe Prototypes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500;9..144,600;9..144,700,50&family=Instrument+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&family=Sora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: neutral review chrome (theme-aware), a toolbar to pick the app theme, then three 390-wide phones side by side (one at a time on narrow screens). Everything inside a .skin is painted by that app theme's own tokens, the same 51 keys as themes.ts. */
+:root{
+  --pg-bg:#ECEDE9; --pg-fg:#1A1D1B; --pg-muted:#5F665F; --pg-line:#D5D9D3; --pg-surface:#F7F8F5; --pg-accent:#2E6A4D; --pg-accent-ink:#fff;
+  --pg-font:'Instrument Sans',ui-sans-serif,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--pg-bg:#131614;--pg-fg:#E8ECE7;--pg-muted:#9AA69C;--pg-line:#2A302B;--pg-surface:#1B1F1C;--pg-accent:#8BD4A6;--pg-accent-ink:#0B1A10;color-scheme:dark}}
+:root[data-theme="dark"]{--pg-bg:#131614;--pg-fg:#E8ECE7;--pg-muted:#9AA69C;--pg-line:#2A302B;--pg-surface:#1B1F1C;--pg-accent:#8BD4A6;--pg-accent-ink:#0B1A10;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--pg-bg);color:var(--pg-fg);font-family:var(--pg-font);font-size:14px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--pg-accent);outline-offset:2px}
+.page{padding-inline:20px;padding-block:18px 60px;max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between}
+.bar h1{font-size:18px;font-weight:700;margin:0;letter-spacing:-.01em}
+.bar h1 small{display:block;font-weight:500;color:var(--pg-muted);font-size:13px;margin-top:2px}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.segc{display:flex;flex-wrap:wrap;background:var(--pg-surface);border:1px solid var(--pg-line);border-radius:12px;padding:3px;gap:2px}
+.segc button{border:0;background:transparent;border-radius:9px;height:34px;padding:0 12px;font-weight:600;font-size:13px;color:var(--pg-muted);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.segc button .dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.15);flex:0 0 auto}
+.segc button[aria-selected="true"]{background:var(--pg-accent);color:var(--pg-accent-ink)}
+.lede{color:var(--pg-muted);max-width:72ch;margin:0;font-size:14px}
+.lede b{color:var(--pg-fg)}
+.variants{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start}
+.variant{width:390px;max-width:100%;display:flex;flex-direction:column;gap:12px}
+.variant.is-hidden{display:none}
+@media (min-width:1300px){.variant.is-hidden{display:flex}#varSeg{display:none}}
+.vlabel{display:flex;align-items:baseline;gap:10px}
+.vlabel .k{font-size:22px;font-weight:800;color:var(--pg-accent)}
+.vlabel .n{font-size:15px;font-weight:700}
+.vnotes{font-size:13px;line-height:1.5;color:var(--pg-muted);margin:0;padding-left:18px}
+.vnotes li{margin-bottom:3px}.vnotes b{color:var(--pg-fg)}
+.before{border:1px solid var(--pg-line);background:var(--pg-surface);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.before h3{margin:0;font-size:14px}
+.before p{margin:0;color:var(--pg-muted);font-size:13.5px}
+
+/* ===== Phone, painted by the app theme tokens set on .skin ===== */
+.skin{color:var(--ink);font-family:var(--body);font-size:15px}
+.phone{width:390px;max-width:100%;height:800px;background:var(--bg);border-radius:44px;border:10px solid var(--bezel);position:relative;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.25);color:var(--ink);font-family:var(--body);font-size:15px;transition:background .2s}
+.scr{position:absolute;inset:0;overflow:auto;padding:12px 18px 110px;scrollbar-width:none;display:flex;flex-direction:column;gap:14px}
+.scr::-webkit-scrollbar{display:none}
+.stat{display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:2px 6px 0}
+.hdr{display:flex;align-items:center;gap:10px;padding-top:4px}
+.hdr h1{margin:0;flex:1;min-width:0;font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:24px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.circ{width:40px;height:40px;border-radius:50%;background:var(--surface);border:var(--bw) solid var(--line);display:grid;place-items:center;color:var(--ink);flex:0 0 auto;padding:0}
+.circ svg,.ico{width:20px;height:20px}
+svg.i{width:18px;height:18px;flex:0 0 auto}
+.btn{height:46px;padding:0 18px;border-radius:var(--r-ctl);border:var(--bw) solid transparent;font-weight:700;font-size:14.5px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:transparent;transition:transform .08s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--primary);color:var(--primary-ink);box-shadow:var(--shadow-btn)}
+.btn.secondary{background:var(--surface);border-color:var(--line-strong);color:var(--ink)}
+.btn.ghost{color:var(--accent)}
+.btn.sm{height:36px;padding:0 14px;font-size:13.5px;border-radius:calc(var(--r-ctl) - 2px)}
+.btn.pill{border-radius:999px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* title */
+.titlebox{display:flex;flex-direction:column;gap:4px}
+.titlein{width:100%;border:0;background:transparent;font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:28px;line-height:1.1;color:var(--ink);padding:4px 2px;border-bottom:var(--bw-field) solid var(--line)}
+.titlein::placeholder{color:var(--muted);opacity:.7}
+.titlein:focus{outline:none;border-bottom-color:var(--accent)}
+.hint{font-size:12.5px;color:var(--muted)}
+.errtxt{font-size:12.5px;color:var(--urgent-fg);font-weight:600}
+
+/* facts strip */
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.fact{background:var(--field-bg);border:var(--bw-field) solid var(--line);border-radius:var(--r-ctl);padding:8px 6px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.fact:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.fact label{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fact input{width:100%;border:0;background:transparent;text-align:center;font-family:var(--display);font-weight:var(--display-w);font-size:19px;color:var(--ink);padding:0;font-variant-numeric:tabular-nums}
+.fact input:focus{outline:none}
+.fact input::placeholder{color:var(--muted);opacity:.5}
+.fact small{font-size:10.5px;color:var(--muted)}
+.fact.lvl{cursor:pointer}
+.fact.lvl b{font-family:var(--display);font-weight:var(--display-w);font-size:16px;line-height:26px}
+.fact.lvl b.none{color:var(--muted);opacity:.6}
+.pick2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pick{position:relative;display:flex;align-items:center;height:44px;border-radius:var(--r-ctl);background:var(--field-bg);border:var(--bw-field) solid var(--line);padding:0 10px 0 12px;gap:6px;min-width:0}
+.pick:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.pick label{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);flex:0 0 auto}
+.pick select{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-weight:600;font-size:14px;color:var(--ink);appearance:none;-webkit-appearance:none;padding:0;text-overflow:ellipsis}
+.pick select:focus{outline:none}
+.pick svg{width:14px;height:14px;color:var(--muted);flex:0 0 auto}
+.pick select.none{color:var(--muted)}
+
+/* sections */
+.sec{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted);padding:2px 6px 6px}
+.sec span:last-child{font-weight:600;letter-spacing:0;text-transform:none;font-variant-numeric:tabular-nums}
+.card{background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:2px 10px}
+.row{display:flex;align-items:center;gap:8px;min-height:50px;padding:5px 2px}
+.row+.row,.row+.xrow,.xrow+.row,.addrow,.steprow+.steprow{border-top:1px solid var(--divider)}
+.grip{color:var(--muted);opacity:.55;flex:0 0 auto;cursor:grab;display:grid;place-items:center;width:18px}
+.grip svg{width:14px;height:14px}
+.nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.nm b{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm.opt b{color:var(--muted);font-weight:500}
+.qty{display:flex;align-items:center;height:36px;border-radius:calc(var(--r-ctl) - 2px);background:var(--field-bg);border:var(--bw-field) solid var(--line);padding:0 3px 0 6px;gap:3px;flex:0 0 auto}
+.qty:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.qty input{width:46px;border:0;background:transparent;font:inherit;font-weight:700;font-size:14px;text-align:right;color:var(--ink);font-variant-numeric:tabular-nums;padding:0}
+.qty input:focus{outline:none}
+.qty input::placeholder{color:var(--muted);opacity:.6;font-weight:500}
+.qty select{height:28px;border:0;border-radius:calc(var(--r-ctl) - 5px);background:var(--chip);padding:0 4px;font:inherit;font-weight:700;font-size:12.5px;color:var(--ink);appearance:none;-webkit-appearance:none;text-align:center;width:44px}
+.qty select:focus{outline:none}
+.more{width:32px;height:32px;border:0;background:transparent;border-radius:50%;display:grid;place-items:center;color:var(--muted);padding:0;flex:0 0 auto}
+.more svg{width:16px;height:16px;transition:transform .15s}
+.more[aria-expanded="true"] svg{transform:rotate(180deg)}
+.more:hover{background:var(--subtle)}
+.xrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 2px 10px 26px;background:var(--subtle);margin:0 -10px;padding-left:36px;padding-right:10px}
+.xrow .note{flex:1 1 140px;min-width:0;height:36px;border-radius:calc(var(--r-ctl) - 2px);background:var(--field-bg);border:var(--bw-field) solid var(--line);padding:0 10px;font:inherit;font-size:13.5px;color:var(--ink)}
+.xrow .note:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.xrow .tgl{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.toggle{width:40px;height:24px;border-radius:999px;background:var(--box);border:0;position:relative;padding:0;flex:0 0 auto;transition:background .15s}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.toggle[aria-checked="true"]{background:var(--accent)}
+.toggle[aria-checked="true"]::after{transform:translateX(16px)}
+.xrow .acts{display:flex;gap:2px;margin-left:auto}
+.ib{width:32px;height:32px;border:0;background:transparent;border-radius:50%;display:grid;place-items:center;color:var(--muted);padding:0}
+.ib svg{width:16px;height:16px}
+.ib:hover{background:var(--chip)}
+.ib[disabled]{opacity:.3}
+.ib.del{color:var(--urgent-fg)}
+.addrow{display:flex;align-items:center;gap:10px;min-height:50px;padding:6px 2px;position:relative}
+.addrow svg.i{color:var(--accent)}
+.addrow input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:15px;font-weight:500;color:var(--ink);height:36px}
+.addrow input::placeholder{color:var(--muted)}
+.addrow input:focus{outline:none}
+.results{position:absolute;left:-10px;right:-10px;top:100%;z-index:5;background:var(--card-bg);border:var(--bw) solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow-float);padding:4px;max-height:220px;overflow:auto}
+.results button{display:flex;width:100%;align-items:center;gap:10px;border:0;background:transparent;text-align:left;padding:9px 12px;border-radius:calc(var(--r-card) - 6px);font-size:14.5px;font-weight:600;color:var(--ink)}
+.results button:hover,.results button.act{background:var(--subtle)}
+.results button small{margin-left:auto;font-weight:500;font-size:12px;color:var(--muted)}
+.results button.free{color:var(--accent-on-tint);background:var(--accent-tint)}
+.results button.free small{color:inherit;opacity:.8}
+.empty{padding:14px 4px;font-size:13.5px;color:var(--muted)}
+
+/* steps */
+.steprow{display:flex;gap:10px;padding:10px 2px 8px;align-items:flex-start}
+.num{width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:var(--display);font-weight:var(--display-w);font-size:13px;flex:0 0 auto;margin-top:5px}
+.stepbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.steptxt{width:100%;border:0;background:transparent;resize:none;font:inherit;font-size:15px;line-height:1.4;color:var(--ink);padding:6px 0 2px;min-height:34px;overflow:hidden}
+.steptxt::placeholder{color:var(--muted)}
+.steptxt:focus{outline:none}
+.steptools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tchip{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px 0 8px;border-radius:var(--r-chip);border:var(--bw) solid var(--line);background:var(--surface);font-size:12.5px;font-weight:700;color:var(--muted)}
+.tchip svg{width:13px;height:13px}
+.tchip.on{background:var(--accent-tint);color:var(--accent-on-tint);border-color:transparent}
+.tchip input{width:34px;border:0;background:transparent;font:inherit;font-weight:700;font-size:12.5px;color:inherit;text-align:right;padding:0;font-variant-numeric:tabular-nums}
+.tchip input:focus{outline:none}
+.tchip .x{display:grid;place-items:center;margin-left:2px}
+.tipn{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:4px}
+.tips{display:flex;flex-direction:column;gap:4px}
+.tip{display:flex;align-items:center;gap:8px;background:var(--subtle);border:1px dashed var(--line-strong);border-radius:calc(var(--r-ctl) - 2px);padding:4px 4px 4px 10px;color:var(--muted)}
+.tip svg{width:14px;height:14px;flex:0 0 auto}
+.tip input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:13px;color:var(--ink);height:28px}
+.tip input:focus{outline:none}
+.tip .ib{width:26px;height:26px}
+.modes{display:flex;gap:4px;background:var(--pg-surface);border:1px solid var(--pg-line);border-radius:10px;padding:3px;width:max-content;max-width:100%}
+.modes button{border:0;background:transparent;border-radius:7px;height:30px;padding:0 10px;font-weight:600;font-size:12.5px;color:var(--pg-muted)}
+.modes button[aria-selected="true"]{background:var(--pg-accent);color:var(--pg-accent-ink)}
+.chosen{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--pg-accent-ink);background:var(--pg-accent);padding:3px 8px;border-radius:999px;margin-left:auto}
+.steprow .acts{display:flex;gap:0;margin-left:auto}
+.steprow .acts .ib{width:28px;height:28px}
+.addstep{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;text-align:left;padding:9px 2px;min-height:48px;font:inherit;font-size:14.5px;font-weight:700;color:var(--accent);border-radius:calc(var(--r-ctl) - 2px)}
+.addstep+.steprow,.steprow+.addstep{border-top:1px solid var(--divider)}
+.addstep:hover{background:var(--subtle)}
+.num.add{background:transparent;color:var(--accent);border:1.5px dashed var(--accent);margin-top:0}
+.num.add svg{width:14px;height:14px;stroke-width:2.6}
+.addstep:hover .num.add,.addstep:focus-visible .num.add{background:var(--accent-tint);border-style:solid}
+/* hold-to-drag reorder */
+.card[data-list]{touch-action:pan-y}
+.row,.steprow{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;position:relative;transition:background .5s linear}
+.row input,.row select,.steprow textarea,.steprow input{user-select:text;-webkit-user-select:text}
+.row.holding,.steprow.holding{background:var(--accent-tint);transition:background .5s linear}
+.row.lift,.steprow.lift{background:var(--card-bg);box-shadow:var(--shadow-float);border-radius:calc(var(--r-ctl) - 2px);z-index:6;transition:none;border-top-color:transparent;cursor:grabbing;padding-left:10px;padding-right:10px;margin-left:-8px;margin-right:-8px}
+.row.lift .grip{color:var(--accent);opacity:1}
+.flip{transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.card.dragging *{cursor:grabbing}
+.warn{display:flex;gap:8px;align-items:flex-start;background:var(--soon-bg);color:var(--soon-fg);border-radius:calc(var(--r-ctl) - 2px);padding:8px 10px;font-size:13px;font-weight:600;flex-wrap:wrap}
+.warn .btn{height:30px;padding:0 10px;font-size:12.5px;background:var(--soon-fg);color:var(--soon-bg)}
+.warn .btn.ghost{background:transparent;color:inherit}
+
+/* disclosure (guidance) */
+.disc{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;text-align:left;padding:12px 4px;font:inherit}
+.disc b{font-size:15px;font-weight:600;display:block}
+.disc small{font-size:12.5px;color:var(--muted);display:block}
+.disc .tx{flex:1;min-width:0}
+.disc svg{width:16px;height:16px;color:var(--muted);transition:transform .15s}
+.disc[aria-expanded="true"] svg{transform:rotate(180deg)}
+.gbody{display:flex;flex-direction:column;gap:10px;padding:0 4px 12px;border-top:1px solid var(--divider);padding-top:10px}
+.glab{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:var(--r-chip);background:var(--surface);border:var(--bw) solid var(--line);font-size:13px;font-weight:600;color:var(--ink)}
+.chip.on{background:var(--accent-tint);border-color:transparent;color:var(--accent-on-tint)}
+.chip.av{background:var(--soon-bg);border-color:transparent;color:var(--soon-fg)}
+.chip svg{width:13px;height:13px}
+.ta{width:100%;border-radius:var(--r-ctl);background:var(--field-bg);border:var(--bw-field) solid var(--line);padding:9px 12px;font:inherit;font-size:14px;color:var(--ink);resize:none;min-height:60px}
+.ta:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.pair{display:flex;align-items:center;gap:8px;font-size:14px}
+.pair b{font-weight:600}.pair small{color:var(--muted);font-size:12.5px}
+.pair .ib{margin-left:auto}
+
+/* bottom bar + toast */
+.savebar{position:absolute;left:0;right:0;bottom:0;padding:10px 18px 18px;background:linear-gradient(to top,var(--bg) 70%,transparent);display:flex;gap:10px;align-items:center}
+.savebar .btn.primary{flex:1}
+.toastp{position:absolute;left:18px;right:18px;bottom:94px;background:var(--toast-bg);color:var(--toast-ink);border-radius:var(--r-ctl);padding:12px 16px;font-weight:600;font-size:14px;box-shadow:var(--shadow-float);display:flex;justify-content:space-between;align-items:center;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:9}
+.toastp.show{opacity:1;transform:none}
+.toastp b{color:var(--toast-action)}
+
+/* B: tabs */
+.tabs{position:sticky;top:0;z-index:4;background:var(--bg);padding:6px 0 8px;margin:-6px 0 -8px}
+.seg{display:flex;background:var(--chip);border-radius:var(--r-ctl);padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;border-radius:calc(var(--r-ctl) - 4px);height:38px;font-weight:600;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px}
+.seg button[aria-selected="true"]{background:var(--seg-on);color:var(--seg-on-ink);font-weight:700;box-shadow:var(--shadow-seg)}
+.seg .cnt{font-size:11px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--accent-tint);color:var(--accent-on-tint);font-variant-numeric:tabular-nums}
+.seg button[aria-selected="true"] .cnt{background:var(--accent);color:var(--accent-ink)}
+.seg .cnt.urg{background:var(--urgent-bg);color:var(--urgent-fg)}
+.panel{display:flex;flex-direction:column;gap:14px}
+.panel[hidden]{display:none}
+.nextrow{display:flex;justify-content:flex-end}
+
+/* C: summary cards + sheets */
+.sumc{display:flex;align-items:center;gap:12px;width:100%;border:0;background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:12px 12px 12px 14px;text-align:left;font:inherit;color:var(--ink)}
+.sumc .ti{width:40px;height:40px;border-radius:calc(var(--r-ctl) - 1px);background:var(--accent-tint);color:var(--accent-on-tint);display:grid;place-items:center;flex:0 0 auto}
+.sumc .ti svg{width:20px;height:20px}
+.sumc .ti.b{background:var(--butter);color:var(--butter-ink)}
+.sumc .tx{flex:1;min-width:0}
+.sumc b{font-size:15px;font-weight:600;display:block}
+.sumc small{font-size:12.5px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sumc .cv{font-family:var(--display);font-weight:var(--display-w);font-size:20px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.sumc .cv.z{color:var(--muted);font-size:13px;font-family:var(--body);font-weight:600}
+.sumc>svg{width:16px;height:16px;color:var(--muted);flex:0 0 auto}
+.sumc.need{border-color:var(--urgent-fg);border-style:dashed}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+.scrim.show{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;background:var(--bg);border-radius:var(--r-dock) var(--r-dock) 0 0;box-shadow:var(--shadow-float);transform:translateY(105%);transition:transform .25s cubic-bezier(.2,.8,.2,1);z-index:11;display:flex;flex-direction:column}
+.sheet.show{transform:none}
+.sheet .shh{display:flex;align-items:center;gap:10px;padding:10px 18px 8px}
+.sheet .shh::before{content:"";position:absolute;top:6px;left:50%;width:36px;height:4px;border-radius:2px;background:var(--box);transform:translateX(-50%)}
+.sheet .shh h2{margin:0;flex:1;font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:20px;padding-top:8px}
+.sheet .shh .btn{margin-top:8px}
+.sheet .shb{overflow:auto;padding:4px 18px 24px;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
+.sheet .shb::-webkit-scrollbar{display:none}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="page">
+  <div class="bar">
+    <h1>Add Recipe<small>Three compact layouts for the family recipe editor (New Recipe, Make a Variant, Edit). Pick the app theme to check all three skins.</small></h1>
+    <div class="ctl">
+      <div class="segc" role="tablist" aria-label="Theme" id="themeSeg"></div>
+      <div class="segc" role="tablist" aria-label="Variant" id="varSeg">
+        <button role="tab" aria-selected="true" data-v="a">A</button>
+        <button role="tab" aria-selected="false" data-v="b">B</button>
+        <button role="tab" aria-selected="false" data-v="c">C</button>
+      </div>
+    </div>
+  </div>
+  <div class="before">
+    <h3>What it is today</h3>
+    <p>One long stacked form: title, three number fields, three native selects, then every ingredient line as five rows (name, quantity, unit, note, optional, move/remove buttons), every step as a textarea plus a timer field plus three buttons, then the guidance fields. Six ingredients and four steps run past 3,000 pt tall. The three prototypes keep every field and rule from <code>recipeDraft.ts</code>, but each ingredient and step is one row, the rare fields (note, optional, reorder) open on demand, and the whole page fits in two or three screens. Example content is a draft lemon chicken soup; nothing is saved.</p>
+  </div>
+  <p class="lede"><b>Interactive:</b> type to add an ingredient (Catalog search, or “Add by name”), tap <b>⌄</b> on a row for note and optional, <b>hold a row</b> (or grab its grip) to drag it to a new place, add timers to steps, switch tabs, open the sheets. Save shows a toast.</p>
+
+  <div class="variants">
+    <div class="variant" data-v="a">
+      <div class="vlabel"><span class="k">A</span><span class="n">One scroll, dense rows</span></div>
+      <ul class="vnotes">
+        <li>Everything on one page in the detail-page order: title, a <b>facts strip</b> (Serves · Prep · Cook · Level), Cuisine and Method pickers, Ingredients card, Steps card, collapsed guidance.</li>
+        <li>An ingredient is <b>one 50 pt row</b>: grip, name, quantity + unit, ⌄. The ⌄ reveals note, optional and move/remove.</li>
+        <li>Adding is a search row at the bottom of the card; a typed name that matches nothing becomes “Add … by name”.</li>
+        <li>Steps: number, auto-growing text, a <b>+ Timer</b> chip. Sticky Save bar; Cancel beside it.</li>
+      </ul>
+      <div class="skin" id="skinA"></div>
+    </div>
+    <div class="variant is-hidden" data-v="b">
+      <div class="vlabel"><span class="k">B</span><span class="n">Tabs, like the detail page</span><span class="chosen">Chosen</span></div>
+      <ul class="vnotes">
+        <li>Same three sticky tabs as the detail page: <b>Details · Ingredients · Steps</b>, with counts. A viewer learns one shape for reading and editing.</li>
+        <li>Details holds title, facts, Cuisine/Method and guidance. Ingredients and Steps each get the full screen and the keyboard never covers another section.</li>
+        <li><b>Save</b> sits in the header, disabled until the title is set; the tab shows a red badge when it holds a problem.</li>
+        <li>One form for all three entries. <b>Edit</b> opens on Steps and shows each step’s tips inline (a <b>Tip</b> chip adds one); a Variant shows copied tips as a count.</li>
+        <li><b>Hold a row</b> (500 ms, the row tints while you hold) or grab its grip to lift it and drag it to a new place; the others slide out of the way. Move up/down stay in the ⌄ strip for keyboard and screen readers.</li>
+        <li><b>Add a step</b> rows sit before the first and after the last step, drawn like a step with a dashed “+” circle in the number column.</li>
+      </ul>
+      <div class="modes" role="tablist" aria-label="Entry point"><button role="tab" aria-selected="true" data-a="mode" data-m="new">New Recipe</button><button role="tab" aria-selected="false" data-a="mode" data-m="variant">Make a Variant</button><button role="tab" aria-selected="false" data-a="mode" data-m="edit">Edit Recipe</button></div>
+      <div class="skin" id="skinB"></div>
+    </div>
+    <div class="variant is-hidden" data-v="c">
+      <div class="vlabel"><span class="k">C</span><span class="n">Overview and sheets</span></div>
+      <ul class="vnotes">
+        <li>The page is a one-screen overview: title, facts, pickers, then <b>three summary cards</b> (Ingredients, Steps, Guidance) that show what is filled in.</li>
+        <li>Tapping a card opens a <b>bottom sheet</b> with the same compact editor as A; Done closes it and the card updates.</li>
+        <li>An empty required section is outlined; Save stays enabled as long as the title is set (lines and steps are optional today, as in the API).</li>
+        <li>Best fit for “Make a Variant”, where most sections are already full and only one usually changes.</li>
+      </ul>
+      <div class="skin" id="skinC"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+const THEMES = {
+  warm:{name:'Warm editorial',tokens:{bg:'#F3EDE1',surface:'#FBF8F1',subtle:'#F6F1E6',ink:'#2B2418',muted:'#766A58',line:'#E6DCCB','line-strong':'#D6C9B2',divider:'#EFE7D8',chip:'#EAE1CF',accent:'#5F6F2E','accent-ink':'#FFFFFF','accent-tint':'#E6EAD2','accent-on-tint':'#4A5722',primary:'#5F6F2E','primary-ink':'#FFFFFF',butter:'#F0C96B','butter-ink':'#4A3608','urgent-bg':'#F8DED1','urgent-fg':'#A8431C','soon-bg':'#F6E5BE','soon-fg':'#704E00','ok-bg':'#E6EAD2','ok-fg':'#4A5722',box:'#C2B49A',star:'#C6882A','card-bg':'#FBF8F1','card-line':'#E9E0CF','field-bg':'#FFFDF8','seg-on':'#FBF8F1','seg-on-ink':'#2B2418','toast-bg':'#2B2418','toast-ink':'#FBF8F1','toast-action':'#F0C96B','dock-bg':'rgba(251,248,241,.94)',bezel:'#2B2418',bw:'1px','bw-field':'1.5px','r-card':'16px','r-ctl':'12px','r-chip':'999px','r-fab':'50%','r-dock':'22px','r-box':'7px','shadow-card':'0 1px 2px rgba(60,40,10,.06), 0 8px 24px -12px rgba(60,40,10,.18)','shadow-btn':'0 4px 12px rgba(95,111,46,.28)','shadow-float':'0 14px 34px -10px rgba(60,40,10,.28)','shadow-seg':'0 1px 2px rgba(60,40,10,.14)',display:"'Fraunces',Georgia,'Times New Roman',serif",body:"'Instrument Sans',ui-sans-serif,system-ui,sans-serif",'display-w':'600','display-ls':'-0.015em'}},
+  minimal:{name:'Minimal crisp',tokens:{bg:'#FAFAF8',surface:'#FFFFFF',subtle:'#F3F4F1',ink:'#141614',muted:'#6B716B',line:'#E7E9E4','line-strong':'#CDD1CA',divider:'#EEF0EB',chip:'#EEF0EB',accent:'#1E7A4E','accent-ink':'#FFFFFF','accent-tint':'#E1F2E8','accent-on-tint':'#176040',primary:'#141614','primary-ink':'#FFFFFF',butter:'#F5E1A4','butter-ink':'#5A4200','urgent-bg':'#FDE8E2','urgent-fg':'#B33A1E','soon-bg':'#FBF0CC','soon-fg':'#7A5600','ok-bg':'#EEF0EB','ok-fg':'#4D534D',box:'#B9BEB8',star:'#D1A21C','card-bg':'#FFFFFF','card-line':'#E7E9E4','field-bg':'#FFFFFF','seg-on':'#141614','seg-on-ink':'#FFFFFF','toast-bg':'#141614','toast-ink':'#FFFFFF','toast-action':'#9BE0B8','dock-bg':'rgba(255,255,255,.96)',bezel:'#141614',bw:'1px','bw-field':'1px','r-card':'12px','r-ctl':'10px','r-chip':'8px','r-fab':'12px','r-dock':'16px','r-box':'6px','shadow-card':'none','shadow-btn':'none','shadow-float':'0 8px 24px rgba(20,22,20,.10)','shadow-seg':'none',display:"'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif",body:"'Figtree',ui-sans-serif,system-ui,sans-serif",'display-w':'700','display-ls':'-0.025em'}},
+  dark:{name:'Dark-first',tokens:{bg:'#0F1512',surface:'#19211C',subtle:'#1F2922',ink:'#ECF2EC',muted:'#97A69B',line:'#26312A','line-strong':'#36433A',divider:'#27322B',chip:'#26312A',accent:'#8FE0A8','accent-ink':'#0B1A10','accent-tint':'#1F3A2A','accent-on-tint':'#A9EDBD',primary:'#8FE0A8','primary-ink':'#0B1A10',butter:'#3D3418','butter-ink':'#F2CF72','urgent-bg':'#3F241B','urgent-fg':'#FFA27E','soon-bg':'#3A3118','soon-fg':'#F2CF72','ok-bg':'#26312A','ok-fg':'#B9C7BC',box:'#4A574E',star:'#F2CF72','card-bg':'#19211C','card-line':'transparent','field-bg':'#111915','seg-on':'#2A3730','seg-on-ink':'#ECF2EC','toast-bg':'#ECF2EC','toast-ink':'#0F1512','toast-action':'#1E7A4E','dock-bg':'rgba(25,33,28,.9)',bezel:'#050807',bw:'1px','bw-field':'1px','r-card':'18px','r-ctl':'14px','r-chip':'999px','r-fab':'16px','r-dock':'24px','r-box':'7px','shadow-card':'0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px -12px rgba(0,0,0,.6)','shadow-btn':'0 6px 18px rgba(143,224,168,.25)','shadow-float':'0 16px 40px rgba(0,0,0,.55)','shadow-seg':'0 1px 0 rgba(255,255,255,.06) inset',display:"'Sora',ui-sans-serif,system-ui,sans-serif",body:"'Albert Sans',ui-sans-serif,system-ui,sans-serif",'display-w':'600','display-ls':'-0.02em'}}
+};
+const ORDER=['warm','minimal','dark'], DOTS={warm:'#5F6F2E',minimal:'#141614',dark:'#8FE0A8'};
+const I = {
+  back:'<path d="M15 6l-6 6 6 6"/>', chev:'<path d="M6 9l6 6 6-6"/>', plus:'<path d="M12 5v14M5 12h14"/>', close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  check:'<path d="M5 12l5 5 9-10"/>', search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>', trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  up:'<path d="M6 15l6-6 6 6"/>', down:'<path d="M6 9l6 6 6-6"/>', grip:'<circle cx="9" cy="6" r="1.4" fill="currentColor"/><circle cx="15" cy="6" r="1.4" fill="currentColor"/><circle cx="9" cy="12" r="1.4" fill="currentColor"/><circle cx="15" cy="12" r="1.4" fill="currentColor"/><circle cx="9" cy="18" r="1.4" fill="currentColor"/><circle cx="15" cy="18" r="1.4" fill="currentColor"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/>',
+  pantry:'<path d="M4 7h16v13H4z"/><path d="M4 12h16M9 7V4h6v3"/>', recipes:'<path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>', info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>', right:'<path d="M9 6l6 6-6 6"/>'
+};
+const ic=(n,c)=>'<svg class="'+(c||'i')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[n]+'</svg>';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const CATALOG=[['Chicken thighs','pcs','Meat'],['Chicken stock','ml','Pantry'],['Lemon','pcs','Produce'],['Rice','g','Pantry'],['Egg','pcs','Dairy & eggs'],['Olive oil','ml','Pantry'],['Onion','pcs','Produce'],['Carrot','pcs','Produce'],['Dill','g','Produce'],['Feta','g','Dairy & eggs'],['Spinach','g','Produce'],['Garlic','pcs','Produce'],['Butter','g','Dairy & eggs'],['Celery','pcs','Produce'],['Black pepper','g','Pantry'],['Parsley','g','Produce'],['Potato','g','Produce'],['Tomato','pcs','Produce']];
+const CUISINES=['Greek','Romanian','Danish','Italian','Mediterranean','Mexican','Indian'], METHODS=['Simmer','Bake','Grill','Fry','Roast','Raw','Slow cook'], LEVELS=['','easy','medium','hard'], LEVELN={'':'Not set',easy:'Easy',medium:'Medium',hard:'Hard'}, UNITS=['g','kg','ml','l','pcs'];
+const MOMENTS=['Breakfast','Lunch','Dinner','Late night','Post-workout'];
+let key=1;
+function sample(){ return {
+  title:'Lemon chicken soup', servings:'4', prep:'15', cook:'35', level:'easy', cuisine:'Greek', method:'Simmer',
+  lines:[
+    {key:key++,name:'Chicken thighs',cat:true,qty:'4',unit:'pcs',note:'skin on',optional:false},
+    {key:key++,name:'Chicken stock',cat:true,qty:'1.5',unit:'l',note:'',optional:false},
+    {key:key++,name:'Rice',cat:true,qty:'120',unit:'g',note:'',optional:false},
+    {key:key++,name:'Lemon',cat:true,qty:'2',unit:'pcs',note:'juice only',optional:false},
+    {key:key++,name:'Egg',cat:true,qty:'2',unit:'pcs',note:'',optional:false},
+    {key:key++,name:'Dill',cat:true,qty:'',unit:'g',note:'to serve',optional:true}
+  ],
+  steps:[
+    {key:key++,text:'Simmer the chicken in the stock until tender, then lift it out and shred it.',timer:'25',tips:['Skim the foam for a clearer broth.']},
+    {key:key++,text:'Add the rice to the stock and cook until just soft.',timer:'12',tips:[]},
+    {key:key++,text:'Whisk the eggs with the lemon juice. Temper with a ladle of hot stock, then stir back in off the heat.',timer:'',tips:[]},
+    {key:key++,text:'Return the chicken, season, and serve with dill.',timer:'',tips:[]}
+  ],
+  mode:'new',
+  guidanceOpen:false, nutrition:'Light but filling; the egg adds protein.', pairings:[{label:'Crusty bread',kind:'Food',why:'Soaks up the broth'}], moments:{Lunch:'good',Dinner:'good','Late night':'avoid'},
+  // ui
+  open:null, q:'', tab:'details', sheet:null, removing:null, titleTouched:false
+};}
+
+function applySkin(el,k){ const t=THEMES[k].tokens; for(const n in t) el.style.setProperty('--'+n,t[n]); el.dataset.skin=k; }
+
+/* ---------- shared pieces ---------- */
+function titleBlock(s){
+  const bad = s.titleTouched && !s.title.trim();
+  const hint={new:'Saved as one of your family’s Recipes.',variant:'Copied from Lemon chicken soup (Catalog). Nothing is saved until you save it.',edit:'Your family’s Recipe. Tips save as you change them.'}[s.mode];
+  return '<div class="titlebox"><input id="'+s.id+'-title" class="titlein" data-f="title" value="'+esc(s.title)+'" placeholder="Recipe title" aria-label="Title" required>'+(bad?'<span class="errtxt">Enter a title.</span>':'<span class="hint">'+hint+'</span>')+'</div>';
+}
+function facts(s){
+  const lvl=s.level;
+  return '<div class="facts" role="group" aria-label="Recipe facts">'+
+    '<div class="fact"><label for="'+s.id+'-serv">Serves</label><input id="'+s.id+'-serv" data-f="servings" inputmode="numeric" value="'+esc(s.servings)+'" placeholder="4"></div>'+
+    '<div class="fact"><label for="'+s.id+'-prep">Prep</label><input id="'+s.id+'-prep" data-f="prep" inputmode="numeric" value="'+esc(s.prep)+'" placeholder="–"><small>min</small></div>'+
+    '<div class="fact"><label for="'+s.id+'-cook">Cook</label><input id="'+s.id+'-cook" data-f="cook" inputmode="numeric" value="'+esc(s.cook)+'" placeholder="–"><small>min</small></div>'+
+    '<button type="button" class="fact lvl" data-a="level" aria-label="Level: '+LEVELN[lvl]+'. Tap to change"><label>Level</label><b class="'+(lvl?'':'none')+'">'+LEVELN[lvl]+'</b></button>'+
+  '</div>';
+}
+function pickers(s){
+  const sel=(f,label,opts,v)=>'<div class="pick"><label for="'+s.id+'-'+f+'">'+label+'</label><select id="'+s.id+'-'+f+'" data-f="'+f+'" class="'+(v?'':'none')+'"><option value="">None</option>'+opts.map(o=>'<option'+(o===v?' selected':'')+'>'+o+'</option>').join('')+'</select>'+ic('chev','')+'</div>';
+  return '<div class="pick2">'+sel('cuisine','Cuisine',CUISINES,s.cuisine)+sel('method','Method',METHODS,s.method)+'</div>';
+}
+function lineRow(s,l,i){
+  const open=s.open===l.key;
+  let h='<div class="row" data-k="'+l.key+'">'+'<span class="grip" aria-hidden="true">'+ic('grip','')+'</span>'+
+    '<div class="nm'+(l.optional?' opt':'')+'"><b>'+esc(l.name)+'</b>'+((l.note||!l.cat||l.optional)?'<small>'+[l.optional?'optional':'',l.note,l.cat?'':'not in the Catalog'].filter(Boolean).join(' · ')+'</small>':'')+'</div>'+
+    '<div class="qty"><input data-lf="qty" data-k="'+l.key+'" inputmode="decimal" value="'+esc(l.qty)+'" placeholder="–" aria-label="Quantity of '+esc(l.name)+'"><select data-lf="unit" data-k="'+l.key+'" aria-label="Unit of '+esc(l.name)+'">'+UNITS.map(u=>'<option'+(u===l.unit?' selected':'')+'>'+u+'</option>').join('')+'</select></div>'+
+    '<button type="button" class="more" data-a="open" data-k="'+l.key+'" aria-expanded="'+open+'" aria-label="More for '+esc(l.name)+'">'+ic('chev','')+'</button></div>';
+  if(open){
+    h+='<div class="xrow"><input class="note" data-lf="note" data-k="'+l.key+'" value="'+esc(l.note)+'" placeholder="Note, e.g. finely chopped" aria-label="Note for '+esc(l.name)+'">'+
+      '<span class="tgl"><button type="button" class="toggle" role="switch" aria-checked="'+l.optional+'" data-a="opt" data-k="'+l.key+'" aria-label="Optional"></button>Optional</span>'+
+      '<span class="acts"><button type="button" class="ib" data-a="mv" data-d="-1" data-k="'+l.key+'" aria-label="Move up"'+(i===0?' disabled':'')+'>'+ic('up','')+'</button><button type="button" class="ib" data-a="mv" data-d="1" data-k="'+l.key+'" aria-label="Move down"'+(i===s.lines.length-1?' disabled':'')+'>'+ic('down','')+'</button><button type="button" class="ib del" data-a="rm" data-k="'+l.key+'" aria-label="Remove">'+ic('trash','')+'</button></span></div>';
+  }
+  return h;
+}
+function linesCard(s){
+  const q=s.q.trim(), ql=q.toLowerCase();
+  const have=new Set(s.lines.map(l=>l.name.toLowerCase()));
+  const res=ql?CATALOG.filter(c=>c[0].toLowerCase().includes(ql)&&!have.has(c[0].toLowerCase())).slice(0,5):[];
+  const exact=res.some(r=>r[0].toLowerCase()===ql);
+  return '<div class="card" data-list="lines">'+(s.lines.length?s.lines.map((l,i)=>lineRow(s,l,i)).join(''):'<div class="empty">No ingredients yet. Search the Catalog below, or type a name.</div>')+
+    '<div class="addrow">'+ic('search')+'<input id="'+s.id+'-q" data-f="q" value="'+esc(s.q)+'" placeholder="Add an ingredient" aria-label="Add an ingredient" autocomplete="off">'+(q?'<button type="button" class="ib" data-a="clearq" aria-label="Clear">'+ic('close','')+'</button>':'')+
+    (q?'<div class="results" role="listbox">'+res.map(r=>'<button type="button" role="option" data-a="addcat" data-n="'+esc(r[0])+'" data-u="'+r[1]+'">'+esc(r[0])+'<small>'+r[2]+'</small></button>').join('')+(exact?'':'<button type="button" role="option" class="free" data-a="addfree" data-n="'+esc(q)+'">'+ic('plus','')+'Add “'+esc(q)+'” by name<small>not in the Catalog</small></button>')+'</div>':'')+
+    '</div></div>';
+}
+function stepRow(s,st,i){
+  const t=st.timer!=='';
+  let h='<div class="steprow" data-k="'+st.key+'"><span class="num" aria-hidden="true">'+(i+1)+'</span><div class="stepbody">'+
+    '<textarea class="steptxt" data-sf="text" data-k="'+st.key+'" rows="1" placeholder="What to do in step '+(i+1)+'" aria-label="Step '+(i+1)+'">'+esc(st.text)+'</textarea>'+
+    '<div class="steptools">'+
+    (t?'<span class="tchip on">'+ic('clock','')+'<input data-sf="timer" data-k="'+st.key+'" value="'+esc(st.timer)+'" inputmode="decimal" aria-label="Timer for step '+(i+1)+', minutes">min<button type="button" class="ib x" style="width:20px;height:20px" data-a="notimer" data-k="'+st.key+'" aria-label="Remove timer">'+ic('close','')+'</button></span>'
+       :'<button type="button" class="tchip" data-a="timer" data-k="'+st.key+'">'+ic('clock','')+'Timer</button>')+
+    (s.mode==='edit'?'<button type="button" class="tchip" data-a="addtip" data-k="'+st.key+'">'+ic('bulb','')+'Tip</button>':st.tips.length?'<span class="tipn">'+ic('bulb','')+st.tips.length+' tip'+(st.tips.length>1?'s':'')+'</span>':'')+
+    '<span class="acts" style="margin-left:auto;display:flex;gap:0"><button type="button" class="ib" data-a="smv" data-d="-1" data-k="'+st.key+'" aria-label="Move step up"'+(i===0?' disabled':'')+'>'+ic('up','')+'</button><button type="button" class="ib" data-a="smv" data-d="1" data-k="'+st.key+'" aria-label="Move step down"'+(i===s.steps.length-1?' disabled':'')+'>'+ic('down','')+'</button><button type="button" class="ib del" data-a="srm" data-k="'+st.key+'" aria-label="Remove step">'+ic('trash','')+'</button></span>'+
+    '</div>'+
+    (s.mode==='edit'&&st.tips.length?'<div class="tips">'+st.tips.map((tp,j)=>'<div class="tip">'+ic('bulb','')+'<input data-tf="'+j+'" data-k="'+st.key+'" value="'+esc(tp)+'" placeholder="A tip for this step" aria-label="Tip '+(j+1)+' of step '+(i+1)+'"><button type="button" class="ib" data-a="rmtip" data-k="'+st.key+'" data-j="'+j+'" aria-label="Delete tip">'+ic('close','')+'</button></div>').join('')+'</div>':'')+
+    (s.removing===st.key?'<div class="warn"><span style="flex:1 1 100%">Removing step '+(i+1)+' deletes its '+st.tips.length+' tip'+(st.tips.length>1?'s':'')+' when you save.</span><button type="button" class="btn" data-a="srmok" data-k="'+st.key+'">Remove step and tip</button><button type="button" class="btn ghost" data-a="keep">Keep</button></div>':'')+
+    '</div></div>';
+  return h;
+}
+function addStepRow(pos,label){
+  return '<button type="button" class="addstep" data-a="addstep" data-pos="'+pos+'" aria-label="'+label+'"><span class="num add" aria-hidden="true">'+ic('plus','')+'</span><span>'+label+'</span></button>';
+}
+function stepsCard(s){
+  const n=s.steps.length;
+  return '<div class="card steps" data-list="steps">'+
+    (n?addStepRow('start','Add a step at the start'):'')+
+    (n?s.steps.map((st,i)=>stepRow(s,st,i)).join(''):'<div class="empty">No steps yet. Each step is one thing to do; timers are optional.</div>')+
+    addStepRow('end',n?'Add a step':'Add the first step')+'</div>';
+}
+function guidanceCard(s,forceOpen){
+  const open=forceOpen||s.guidanceOpen;
+  const n=s.pairings.length+Object.keys(s.moments).length+(s.nutrition?1:0);
+  let h='<div class="card">';
+  if(!forceOpen) h+='<button type="button" class="disc" data-a="gtoggle" aria-expanded="'+open+'"><span class="tx"><b>Pairings, nutrition &amp; moments</b><small>'+(n?n+' set · optional':'Optional')+'</small></span>'+ic('chev','')+'</button>';
+  if(open){
+    h+='<div class="gbody"'+(forceOpen?' style="border-top:0;padding-top:12px"':'')+'>'+
+      '<span class="glab">Pairings</span>'+s.pairings.map((p,i)=>'<div class="pair"><b>'+esc(p.label)+'</b><small>'+p.kind+' · '+esc(p.why)+'</small><button type="button" class="ib" data-a="prm" data-i="'+i+'" aria-label="Remove pairing">'+ic('close','')+'</button></div>').join('')+
+      '<button type="button" class="btn ghost sm" style="align-self:flex-start;padding-left:6px" data-a="padd">'+ic('plus','')+'Add a pairing</button>'+
+      '<span class="glab">Good for</span><div class="chips">'+MOMENTS.map(m=>{const v=s.moments[m];return '<button type="button" class="chip'+(v==='good'?' on':v==='avoid'?' av':'')+'" data-a="mom" data-m="'+m+'" aria-pressed="'+!!v+'">'+(v==='good'?ic('check',''):v==='avoid'?ic('close',''):'')+m+'</button>';}).join('')+'</div><span class="hint">Tap once for Good for, twice for Avoid.</span>'+
+      '<span class="glab">Nutrition note</span><textarea class="ta" data-f="nutrition" aria-label="Nutrition note" placeholder="One line a family member would find useful">'+esc(s.nutrition)+'</textarea>'+
+      '</div>';
+  }
+  return h+'</div>';
+}
+const secLabel=(t,r)=>'<div class="sec"><span>'+t+'</span><span>'+(r||'')+'</span></div>';
+const header=(s,right)=>'<div class="hdr"><button type="button" class="circ" data-a="cancel" aria-label="Back">'+ic('back','')+'</button><h1>'+s.heading+'</h1>'+(right||'')+'</div>';
+const toast='<div class="toastp"><span></span><b></b></div>';
+const stat='<div class="stat"><span>9:41</span><span>●●●</span></div>';
+
+/* ---------- variants ---------- */
+function renderA(s){
+  return '<div class="phone"><div class="scr">'+stat+header(s)+titleBlock(s)+facts(s)+pickers(s)+
+    '<div>'+secLabel('Ingredients',s.lines.length)+linesCard(s)+'</div>'+
+    '<div>'+secLabel('Steps',s.steps.length)+stepsCard(s)+'</div>'+
+    guidanceCard(s)+
+    '</div><div class="savebar"><button type="button" class="btn secondary" data-a="cancel">Cancel</button><button type="button" class="btn primary" data-a="save"'+(s.title.trim()?'':' disabled')+'>Save Recipe</button></div>'+toast+'</div>';
+}
+function renderB(s){
+  const bad=s.titleTouched&&!s.title.trim();
+  const tab=(k,l,cnt,urg)=>'<button role="tab" aria-selected="'+(s.tab===k)+'" data-a="tab" data-t="'+k+'">'+l+(cnt!==undefined?'<span class="cnt'+(urg?' urg':'')+'">'+(urg?'!':cnt)+'</span>':'')+'</button>';
+  return '<div class="phone"><div class="scr">'+stat+header(s,'<button type="button" class="btn primary sm pill" data-a="save"'+(s.title.trim()?'':' disabled')+'>Save</button>')+
+    '<div class="tabs"><div class="seg" role="tablist">'+tab('details','Details',bad?0:undefined,bad)+tab('lines','Ingredients',s.lines.length)+tab('steps','Steps',s.steps.length)+'</div></div>'+
+    '<div class="panel"'+(s.tab==='details'?'':' hidden')+'>'+titleBlock(s)+facts(s)+pickers(s)+guidanceCard(s)+'<div class="nextrow"><button type="button" class="btn ghost sm" data-a="tab" data-t="lines">Ingredients '+ic('right','')+'</button></div></div>'+
+    '<div class="panel"'+(s.tab==='lines'?'':' hidden')+'>'+linesCard(s)+'<span class="hint" style="padding:0 6px">Leave the quantity blank for a line like “salt, to taste”.</span><div class="nextrow"><button type="button" class="btn ghost sm" data-a="tab" data-t="steps">Steps '+ic('right','')+'</button></div></div>'+
+    '<div class="panel"'+(s.tab==='steps'?'':' hidden')+'>'+stepsCard(s)+'<span class="hint" style="padding:0 6px">'+(s.mode==='edit'?'Tips save as soon as you change them; the rest saves with the Recipe.':s.mode==='variant'?'Copied tips stay with their steps; add your own after saving the Variant.':'Add tips to steps after saving the Recipe.')+'</span></div>'+
+    '</div>'+toast+'</div>';
+}
+function renderC(s){
+  const lineSum=s.lines.length?s.lines.slice(0,4).map(l=>l.name).join(', ')+(s.lines.length>4?' +'+(s.lines.length-4):''):'Nothing yet';
+  const stepSum=s.steps.length?(s.steps.filter(x=>x.timer).length?s.steps.filter(x=>x.timer).length+' with timers · ':'')+Math.round(s.steps.reduce((a,x)=>a+(+x.timer||0),0))+' min timed':'Nothing yet';
+  const gN=s.pairings.length+Object.keys(s.moments).length+(s.nutrition?1:0);
+  const card=(a,icn,b,title,sub,cv,need)=>'<button type="button" class="sumc'+(need?' need':'')+'" data-a="sheet" data-s="'+a+'"><span class="ti'+(b?' b':'')+'">'+ic(icn,'')+'</span><span class="tx"><b>'+title+'</b><small>'+esc(sub)+'</small></span><span class="cv'+(cv===0?' z':'')+'">'+(cv===0?'Add':cv)+'</span>'+ic('right','')+'</button>';
+  const sheetBody = s.sheet==='lines'?linesCard(s)+'<span class="hint">Leave the quantity blank for a line like “salt, to taste”.</span>' : s.sheet==='steps'?stepsCard(s)+'<span class="hint">Add tips to steps after saving the Recipe.</span>' : s.sheet==='guide'?guidanceCard(s,true):'';
+  const sheetTitle={lines:'Ingredients',steps:'Steps',guide:'Pairings, nutrition & moments'}[s.sheet]||'';
+  return '<div class="phone"><div class="scr">'+stat+header(s)+titleBlock(s)+facts(s)+pickers(s)+
+    '<div style="display:flex;flex-direction:column;gap:10px">'+
+    card('lines','pantry',false,'Ingredients',lineSum,s.lines.length,!s.lines.length)+
+    card('steps','recipes',false,'Steps',stepSum,s.steps.length,!s.steps.length)+
+    card('guide','info',true,'Pairings, nutrition & moments',gN?[s.pairings.length?s.pairings.length+' pairing':'',Object.keys(s.moments).length?Object.keys(s.moments).length+' moments':'',s.nutrition?'note':''].filter(Boolean).join(' · '):'Optional',gN)+
+    '</div>'+
+    '</div><div class="savebar"><button type="button" class="btn secondary" data-a="cancel">Cancel</button><button type="button" class="btn primary" data-a="save"'+(s.title.trim()?'':' disabled')+'>Save Recipe</button></div>'+
+    '<div class="scrim'+(s.sheet?' show':'')+'" data-a="closesheet"></div><div class="sheet'+(s.sheet?' show':'')+'" role="dialog" aria-modal="true" aria-label="'+sheetTitle+'"><div class="shh"><h2>'+sheetTitle+'</h2><button type="button" class="btn primary sm pill" data-a="closesheet">Done</button></div><div class="shb">'+sheetBody+'</div></div>'+toast+'</div>';
+}
+
+/* ---------- mount + wiring ---------- */
+function mount(hostId, variant, heading){
+  const host=document.getElementById(hostId); const s=sample(); s.id=hostId; s.heading=heading; s.v=variant;
+  const render={a:renderA,b:renderB,c:renderC}[variant];
+  let tm;
+  function show(msg,act){ const t=host.querySelector('.toastp'); if(!t)return; t.querySelector('span').textContent=msg; t.querySelector('b').textContent=act||''; t.classList.add('show'); clearTimeout(tm); tm=setTimeout(()=>t.classList.remove('show'),2200); }
+  function draw(focusSel){
+    const scr=host.querySelector('.scr'), top=scr?scr.scrollTop:0, shb=host.querySelector('.shb'), stop=shb?shb.scrollTop:0;
+    host.innerHTML=render(s);
+    host.querySelectorAll('.steptxt').forEach(grow);
+    const n=host.querySelector('.scr'); if(n) n.scrollTop=top; const nb=host.querySelector('.shb'); if(nb) nb.scrollTop=stop;
+    if(focusSel){ const f=host.querySelector(focusSel); if(f){ f.focus(); if(f.setSelectionRange&&f.value!==undefined){const L=f.value.length; try{f.setSelectionRange(L,L)}catch(e){}} } }
+  }
+  function grow(t){ t.style.height='auto'; t.style.height=t.scrollHeight+'px'; }
+  const line=k=>s.lines.find(l=>l.key==k), step=k=>s.steps.find(x=>x.key==k);
+  const mv=(arr,k,d)=>{const i=arr.findIndex(x=>x.key==k), j=i+d; if(j<0||j>=arr.length)return; [arr[i],arr[j]]=[arr[j],arr[i]];};
+  host.addEventListener('input',e=>{
+    const t=e.target;
+    if(t.dataset.f){ s[t.dataset.f]=t.value; if(t.dataset.f==='q'){ draw('#'+s.id+'-q'); } else if(t.dataset.f==='title'){ const bar=host.querySelectorAll('[data-a="save"]'); bar.forEach(b=>b.disabled=!s.title.trim()); } return; }
+    if(t.dataset.lf){ line(t.dataset.k)[t.dataset.lf]=t.value; return; }
+    if(t.dataset.sf){ step(t.dataset.k)[t.dataset.sf]=t.value; if(t.classList.contains('steptxt')) grow(t); return; }
+    if(t.dataset.tf!==undefined){ step(t.dataset.k).tips[+t.dataset.tf]=t.value; return; }
+  });
+  host.addEventListener('change',e=>{ const t=e.target; if(t.dataset.f&&t.tagName==='SELECT'){ s[t.dataset.f]=t.value; t.classList.toggle('none',!t.value);} if(t.dataset.lf==='unit'){ line(t.dataset.k).unit=t.value; } if(t.dataset.lf==='note'||t.dataset.lf==='qty'){ draw(); } });
+  host.addEventListener('focusout',e=>{ if(e.target.dataset.f==='title'){ s.titleTouched=true; draw(); } });
+  host.addEventListener('keydown',e=>{
+    if(e.target.dataset.f==='q'&&e.key==='Enter'){ e.preventDefault(); const first=host.querySelector('.results button'); if(first) first.click(); }
+    if(e.key==='Escape'&&s.sheet){ s.sheet=null; draw(); }
+  });
+  host.closest('.variant').addEventListener('click',e=>{
+    const b=e.target.closest('[data-a]'); if(!b) return; const a=b.dataset.a, k=b.dataset.k;
+    switch(a){
+      case 'level': s.level=LEVELS[(LEVELS.indexOf(s.level)+1)%LEVELS.length]; draw(); break;
+      case 'open': s.open=s.open==k?null:+k; draw(); break;
+      case 'opt': line(k).optional=!line(k).optional; draw(); break;
+      case 'mv': mv(s.lines,k,+b.dataset.d); draw(); break;
+      case 'rm': s.lines=s.lines.filter(l=>l.key!=k); s.open=null; draw(); show('Removed ingredient','Undo'); break;
+      case 'addcat': s.lines.push({key:key++,name:b.dataset.n,cat:true,qty:'',unit:b.dataset.u,note:'',optional:false}); s.q=''; draw('.row:last-of-type .qty input'); break;
+      case 'addfree': s.lines.push({key:key++,name:b.dataset.n,cat:false,qty:'',unit:'g',note:'',optional:false}); s.q=''; draw('.row:last-of-type .qty input'); break;
+      case 'clearq': s.q=''; draw('#'+s.id+'-q'); break;
+      case 'timer': step(k).timer='5'; draw('.steprow[data-k="'+k+'"] .tchip input'); break;
+      case 'notimer': step(k).timer=''; draw(); break;
+      case 'smv': mv(s.steps,k,+b.dataset.d); draw(); break;
+      case 'addtip': step(k).tips.push(''); draw('.steprow[data-k="'+k+'"] .tip:last-child input'); break;
+      case 'rmtip': step(k).tips.splice(+b.dataset.j,1); draw(); show('Tip deleted','Undo'); break;
+      case 'mode': s.mode=b.dataset.m; s.heading={new:'New Recipe',variant:'Make a Variant',edit:'Edit Recipe'}[s.mode]; s.tab=s.mode==='edit'?'steps':'details'; host.parentElement.querySelectorAll('[data-a="mode"]').forEach(x=>x.setAttribute('aria-selected',x===b)); draw(); break;
+      case 'srm': if(step(k).tips.length){ s.removing=+k; draw(); } else { s.steps=s.steps.filter(x=>x.key!=k); draw(); } break;
+      case 'srmok': s.steps=s.steps.filter(x=>x.key!=k); s.removing=null; draw(); break;
+      case 'keep': s.removing=null; draw(); break;
+      case 'addstep': { const st={key:key++,text:'',timer:'',tips:[]}; if(b.dataset.pos==='start') s.steps.unshift(st); else s.steps.push(st); draw('.steprow[data-k="'+st.key+'"] .steptxt'); break; }
+      case 'gtoggle': s.guidanceOpen=!s.guidanceOpen; draw(); break;
+      case 'prm': s.pairings.splice(+b.dataset.i,1); draw(); break;
+      case 'padd': s.pairings.push({label:'Dry white wine',kind:'Drink',why:'Acid cuts the richness'}); draw(); show('Pairing picker opens here'); break;
+      case 'mom': { const m=b.dataset.m, v=s.moments[m]; if(!v) s.moments[m]='good'; else if(v==='good') s.moments[m]='avoid'; else delete s.moments[m]; draw(); break; }
+      case 'tab': s.tab=b.dataset.t; draw(); host.querySelector('.scr').scrollTop=0; break;
+      case 'sheet': s.sheet=b.dataset.s; draw(); break;
+      case 'closesheet': s.sheet=null; s.q=''; draw(); break;
+      case 'save': if(!s.title.trim()){ s.titleTouched=true; draw(); return; } show('Saved “'+s.title.trim()+'”','View'); break;
+      case 'cancel': show('Back to Recipes (nothing saved)'); break;
+    }
+  });
+  /* Hold-to-drag reorder: hold a row 500 ms (or grab the grip at once), it lifts and follows the finger; siblings slide out of the way; release drops it. */
+  const HOLD=500, TOL=8;
+  let g=null; // {el,list,kind,x0,y0,timer,armed,shift,pid}
+  const buzz=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
+  const rowSel={lines:'.row',steps:'.steprow'};
+  function arm(){
+    if(!g||g.armed) return; g.armed=true; buzz(18);
+    g.el.classList.remove('holding'); g.el.classList.add('lift'); g.list.classList.add('dragging');
+    try{ g.el.setPointerCapture(g.pid); }catch(e){}
+  }
+  function cancelHold(){ if(!g) return; clearTimeout(g.timer); g.el.classList.remove('holding'); if(!g.armed) g=null; }
+  host.addEventListener('contextmenu',e=>{ if(e.target.closest('.row,.steprow')) e.preventDefault(); });
+  host.addEventListener('pointerdown',e=>{
+    if(e.button!==0&&e.pointerType==='mouse') return;
+    const row=e.target.closest('.row,.steprow'); if(!row) return;
+    const list=row.closest('[data-list]'); if(!list) return;
+    if(e.target.closest('input,select,textarea,button')) return; // typing and buttons keep their own gestures
+    if(s.open!==null){ s.open=null; draw(); }
+    const el=host.querySelector(rowSel[list.dataset.list]+'[data-k="'+row.dataset.k+'"]'); if(!el) return;
+    g={el,list:el.closest('[data-list]'),kind:list.dataset.list,x0:e.clientX,y0:e.clientY,armed:false,shift:0,pid:e.pointerId};
+    if(e.target.closest('.grip')){ arm(); return; }
+    el.classList.add('holding');
+    g.timer=setTimeout(arm,HOLD);
+  });
+  host.addEventListener('pointermove',e=>{
+    if(!g) return;
+    if(!g.armed){ if(Math.hypot(e.clientX-g.x0,e.clientY-g.y0)>TOL) cancelHold(); return; }
+    e.preventDefault();
+    const sel=rowSel[g.kind];
+    const dy=e.clientY-g.y0-g.shift;
+    g.el.style.transform='translateY('+dy+'px) scale(1.02)';
+    const r=g.el.getBoundingClientRect();
+    let next=g.el.nextElementSibling; while(next&&!next.matches(sel)){ if(next.matches('.xrow')) next=next.nextElementSibling; else break; }
+    let prev=g.el.previousElementSibling; while(prev&&!prev.matches(sel)){ if(prev.matches('.xrow')) prev=prev.previousElementSibling; else break; }
+    if(next&&next.matches(sel)){ const nr=next.getBoundingClientRect(); if(r.top+r.height/2>nr.top+nr.height/2){ g.shift+=nr.height; g.list.insertBefore(next,g.el); flip(next,r.height); buzz(8); return; } }
+    if(prev&&prev.matches(sel)){ const pr=prev.getBoundingClientRect(); if(r.top+r.height/2<pr.top+pr.height/2){ g.shift-=pr.height; g.list.insertBefore(g.el,prev); flip(prev,-r.height); buzz(8); } }
+  });
+  function flip(el,from){ el.classList.remove('flip'); el.style.transform='translateY('+from+'px)'; requestAnimationFrame(()=>{ el.classList.add('flip'); el.style.transform=''; setTimeout(()=>el.classList.remove('flip'),220); }); }
+  function endDrag(){
+    if(!g) return; const was=g; clearTimeout(g.timer);
+    if(!g.armed){ cancelHold(); return; }
+    const order=[...was.list.querySelectorAll(rowSel[was.kind])].map(r=>+r.dataset.k);
+    const arr=was.kind==='lines'?s.lines:s.steps; const sorted=order.map(k=>arr.find(x=>x.key===k)).filter(Boolean);
+    if(was.kind==='lines') s.lines=sorted; else s.steps=sorted;
+    was.el.classList.remove('lift'); was.list.classList.remove('dragging'); g=null; draw();
+  }
+  host.addEventListener('pointerup',endDrag); host.addEventListener('pointercancel',endDrag);
+  host.addEventListener('touchmove',e=>{ if(g&&g.armed) e.preventDefault(); },{passive:false});
+  draw();
+  return host;
+}
+const hosts=[mount('skinA','a','New Recipe'),mount('skinB','b','New Recipe'),mount('skinC','c','Make a Variant')];
+
+/* theme + variant switches */
+const seg=document.getElementById('themeSeg');
+ORDER.forEach(k=>{ const b=document.createElement('button'); b.setAttribute('role','tab'); b.dataset.key=k; b.innerHTML='<span class="dot" style="background:'+DOTS[k]+'"></span>'+THEMES[k].name; b.addEventListener('click',()=>pickTheme(k)); seg.appendChild(b); });
+function pickTheme(k){ seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',b.dataset.key===k)); hosts.forEach(h=>applySkin(h,k)); try{localStorage.setItem('pp-look',k)}catch(e){} }
+let start='warm'; try{const v=localStorage.getItem('pp-look'); if(v&&THEMES[v]) start=v;}catch(e){} if(THEMES[location.hash.slice(1)]) start=location.hash.slice(1); pickTheme(start);
+document.querySelectorAll('#varSeg button').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#varSeg button').forEach(x=>x.setAttribute('aria-selected',x===b)); document.querySelectorAll('.variant').forEach(v=>v.classList.toggle('is-hidden',v.dataset.v!==b.dataset.v)); }));
+})();
+</script>
+
+</body></html>
