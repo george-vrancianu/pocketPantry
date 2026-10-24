@@ -188,8 +188,14 @@
     "submit": "Læs opskriften",
     "reading": "Læser opskriften…"
   },
+  "readingLanguage": {
+    "label": "Opskriftens sprog",
+    "catalog": "På {{language}}",
+    "source": "Behold sidens sprog"
+  },
   "sourceLink": {
     "from": "Fra {{host}} ↗",
-    "remove": "Fjern link"
+    "remove": "Fjern link",
+    "translatedFrom": "Oversat fra {{language}}"
   }
 }

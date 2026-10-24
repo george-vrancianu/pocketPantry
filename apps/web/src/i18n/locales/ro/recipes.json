@@ -202,8 +202,14 @@
     "submit": "Citește rețeta",
     "reading": "Se citește rețeta…"
   },
+  "readingLanguage": {
+    "label": "Limba rețetei",
+    "catalog": "În {{language}}",
+    "source": "Păstrează limba paginii"
+  },
   "sourceLink": {
     "from": "De pe {{host}} ↗",
-    "remove": "Elimină linkul"
+    "remove": "Elimină linkul",
+    "translatedFrom": "Tradusă din {{language}}"
   }
 }

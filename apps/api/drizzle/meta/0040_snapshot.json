@@ -1,5 +1,5 @@
 {
-  "id": "893227a7-b9fe-4469-b928-63eede7fa393",
+  "id": "a4d388b4-04b9-4502-9195-45d76b2f169a",
   "prevId": "70fe34e1-b903-4d21-a7df-4144f132f638",
   "version": "7",
   "dialect": "postgresql",
@@ -3767,6 +3767,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "source_language": {
+          "name": "source_language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -5426,8 +5432,7 @@
       "values": [
         "scan",
         "voice",
-        "assistant",
-        "link"
+        "assistant"
       ]
     },
     "public.user_role": {

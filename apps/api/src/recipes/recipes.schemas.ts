@@ -112,6 +112,20 @@ const newStepTip = z
   .object({ stepIndex: z.number().int().min(0), text: longText })
   .strict();
 
+/**
+ * Which language a reading (a link now, pasted text in ticket 512) writes the Recipe in:
+ * the Member's Catalog Language (the default) or the source's own ("keep the page's language").
+ */
+export const readingLanguage = z.enum(['catalog', 'source']);
+export type ReadingLanguage = z.infer<typeof readingLanguage>;
+
+/** A detected source language: a short lower-case code such as "en" or "pt-br". */
+export const sourceLanguageInput = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z]{2,3}(-[a-z0-9]{2,5})?$/);
+
 /** Creating a Family Recipe: `parentId` makes it a Variant, null/absent a standalone Base Recipe. */
 export const familyRecipeCreate = familyRecipeUpdate.extend({
   parentId: id.nullable().default(null),
@@ -125,13 +139,16 @@ export const familyRecipeCreate = familyRecipeUpdate.extend({
   tips: z.array(newStepTip).max(MAX_TIPS).optional(),
   /** Optional: the page a Recipe from Link was read from, normalised on the way in. Set at creation only. */
   sourceLink: sourceLinkInput.optional(),
+  /** Optional: the language a translated Recipe from Link was read in. Set at creation only. */
+  sourceLanguage: sourceLanguageInput.optional(),
 });
 
-/** Reading a page into an unsaved Family Recipe draft. Later tickets add `text`, `language` and `force`. */
+/** Reading a page into an unsaved Family Recipe draft. Later tickets add `text` and `force`. */
 export const fromLinkBody = z
   .object({
     locale: memberLocale,
     url: z.string().trim().min(1).max(4096),
+    language: readingLanguage.default('catalog'),
   })
   .strict();
 
@@ -294,6 +311,8 @@ export type AdminRecipeDetail = AdminGuidance & {
   archivedAt: string | null;
   /** The normalised page a Recipe from Link was read from; null otherwise. */
   sourceLink: string | null;
+  /** The language a translated Recipe from Link was read in; null otherwise. */
+  sourceLanguage: string | null;
   lines: RecipeLineView[];
   steps: RecipeStepView[];
   /** This Recipe's own Tips, in order; `stepId` null for Recipe-level Tips. */
@@ -333,6 +352,8 @@ export type ResolvedRecipe = {
   archived: boolean;
   /** The normalised page a Recipe from Link was read from; null otherwise (and always on a Catalog Recipe). */
   sourceLink: string | null;
+  /** The language a translated Recipe from Link was read in; null otherwise (and always on a Catalog Recipe). */
+  sourceLanguage: string | null;
   lines: (RecipeLineView & { ingredientName: string })[];
   steps: RecipeStepView[];
   /** Own Tips plus, on a Variant, the base's non-hidden Recipe-level Tips (`inherited`). */
@@ -485,13 +506,18 @@ export type LinkRecipeDraft = Omit<
 
 /**
  * The result of `POST /api/recipes/from-link`, told apart by `kind`. Ticket 514 adds
- * `{ kind: 'duplicate', recipeId }`; ticket 515 adds `sourceLanguage` to the draft.
+ * `{ kind: 'duplicate', recipeId }`; ticket 515 adds `sourceLanguage` beside `sourceLink`.
  */
 export type RecipeFromLink = {
   kind: 'draft';
   draft: LinkRecipeDraft;
   /** The normalised link, to send back on the create request. */
   sourceLink: string;
+  /**
+   * The detected language of the page, only when the draft is written in another one (a translation);
+   * null when it is the same or unknown, and always with the "source" language choice. Send it back on create.
+   */
+  sourceLanguage: string | null;
   /** The Catalog Base Recipes closest to the draft; empty until ticket 516. */
   closestBases: PlateMatchView[];
 };

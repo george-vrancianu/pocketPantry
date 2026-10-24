@@ -313,6 +313,21 @@ describe('NewRecipePage with a supplied draft', () => {
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('');
   });
 
+  it('ignores route state whose source language is not text', async () => {
+    setup(
+      {
+        pathname: '/recipes/new',
+        state: {
+          ...sourced,
+          sourceLink: 'https://www.example.com/p',
+          sourceLanguage: 7,
+        },
+      },
+      {},
+    );
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('');
+  });
+
   it('ignores route state whose Source Link is not a web address', async () => {
     setup(newRecipeWith({ ...sourced, sourceLink: 'not a link' }), {});
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('');

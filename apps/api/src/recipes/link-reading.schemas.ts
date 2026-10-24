@@ -13,6 +13,8 @@ export const LINK_READING_SCHEMA_NAME = 'recipe_from_link_reading';
 export const linkReadingSchema = z.object({
   /** False when the page holds no recipe to read. */
   recipeFound: z.boolean(),
+  /** The language the page is written in, as a code such as "en"; null when unsure. Normalised by `detectedLanguage`. */
+  sourceLanguage: z.string().nullable(),
   title: z.string(),
   servings: z.number().nullable(),
   prepMinutes: z.number().nullable(),
@@ -27,7 +29,7 @@ export const linkReadingSchema = z.object({
   ),
   ingredients: z.array(
     z.object({
-      /** The ingredient's name as the page writes it, translated into the Catalog Language. */
+      /** The ingredient's name as written in the output language chosen in the prompt. */
       nameAsWritten: z.string(),
       ingredientId: z.string().nullable(),
       matchConfidence: z.number(),
@@ -44,3 +46,11 @@ export type LinkReading = z.infer<typeof linkReadingSchema>;
 export const linkReadingJsonSchema = z.toJSONSchema(linkReadingSchema, {
   target: 'draft-7',
 });
+
+/** The detected language as a lower-case base code ("pt-BR" -> "pt"), or null when empty or not a code. */
+export function detectedLanguage(
+  raw: string | null | undefined,
+): string | null {
+  const base = raw?.trim().toLowerCase().split(/[-_]/)[0] ?? '';
+  return /^[a-z]{2,3}$/.test(base) ? base : null;
+}

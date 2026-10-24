@@ -188,8 +188,14 @@
     "submit": "Read the recipe",
     "reading": "Reading the recipe…"
   },
+  "readingLanguage": {
+    "label": "Language of the recipe",
+    "catalog": "In {{language}}",
+    "source": "Keep the page's language"
+  },
   "sourceLink": {
     "from": "From {{host}} ↗",
-    "remove": "Remove link"
+    "remove": "Remove link",
+    "translatedFrom": "Translated from {{language}}"
   }
 }

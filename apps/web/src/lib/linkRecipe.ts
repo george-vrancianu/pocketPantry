@@ -12,12 +12,18 @@ export type RecipeFromLink = {
   };
   /** The normalised link of the page. */
   sourceLink: string;
+  /** The page's language (a lower-case code like "fr") when the draft was translated from it; null when not. */
+  sourceLanguage: string | null;
   /** The closest Base Recipes to offer as the base; empty until matching them is built. */
   closestBases: BaseRecipeOption[];
 };
 
+/** `catalog`: write the Recipe in the Member's Catalog Language; `source`: keep the page's language. */
+export type ReadingLanguage = 'catalog' | 'source';
+
 export type ReadLinkInput = {
   url: string;
+  language: ReadingLanguage;
   /** Aborting it abandons the read on this side; the caller must then ignore the outcome. */
   signal?: AbortSignal;
 };
@@ -25,10 +31,10 @@ export type ReadLinkInput = {
 /** Read the recipe on a web page into a draft; nothing is saved. */
 export function useReadRecipeLink() {
   return useMutation({
-    mutationFn: ({ url, signal }: ReadLinkInput) =>
+    mutationFn: ({ url, language, signal }: ReadLinkInput) =>
       apiRequest<RecipeFromLink>('/recipes/from-link', {
         method: 'POST',
-        body: { url },
+        body: { url, language },
         ...(signal ? { signal } : {}),
       }),
   });

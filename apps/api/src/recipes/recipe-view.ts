@@ -210,6 +210,7 @@ export async function loadAdminDetail(
     archived: row.archivedAt !== null,
     archivedAt: row.archivedAt?.toISOString() ?? null,
     sourceLink: row.sourceLink,
+    sourceLanguage: row.sourceLanguage,
     lines: parts.lines.map(lineView),
     steps: parts.steps.map(stepView),
     tips: parts.tips.map(tipView),
@@ -378,6 +379,7 @@ export async function resolveRecipe(
         : null,
     archived: row.archivedAt !== null,
     sourceLink: row.sourceLink,
+    sourceLanguage: row.sourceLanguage,
     lines: parts.lines.map((line) => ({
       ...lineView(line),
       note: line.note === null ? null : (lineNote.get(line.id) ?? line.note),

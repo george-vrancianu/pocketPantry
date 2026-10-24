@@ -95,6 +95,8 @@ export type FamilyRecipeDocument = {
   guidance?: GuidanceInput;
   /** Only on create: the page the Recipe was read from. */
   sourceLink?: string;
+  /** Only on create, with `sourceLink`: the language the page was translated from. */
+  sourceLanguage?: string;
 };
 
 /** The copy of a visible Recipe to start a Family Variant from. */
