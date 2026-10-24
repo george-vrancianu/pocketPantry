@@ -74,7 +74,8 @@ describe('Voice Notes on the Pantry page', () => {
         Response.json({ results: [yogurt, rice] }),
       'POST /api/voice': () => {
         reads += 1;
-        if (reads === 1 && firstRead === 'fails') {
+        // A network error is tried once more by itself.
+        if (reads <= 2 && firstRead === 'fails') {
           return Promise.reject(new TypeError('Failed to fetch'));
         }
         if (reads === 1 && firstRead === 'hangs')
@@ -138,11 +139,14 @@ describe('Voice Notes on the Pantry page', () => {
     });
     renderInAppLayout(<PantryPage />, '/pantry');
 
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent("Couldn't send");
-    expect(screen.getByTestId('failed-dot')).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Voice Inbox' });
 
-    await userEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: /^Retry/ }),
+    );
+    await userEvent.keyboard('{Escape}');
 
     expect(await openReady()).toBeVisible();
     expect(sent[0].get('spokenLanguage')).toBe('ro');

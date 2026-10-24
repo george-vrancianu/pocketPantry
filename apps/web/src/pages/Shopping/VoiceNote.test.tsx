@@ -4,6 +4,7 @@ import {
   fireEvent,
   screen,
   waitFor,
+  waitForElementToBeRemoved,
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -371,37 +372,6 @@ describe('Voice Note on the Shopping List', () => {
       expect(rule).toMatch(clearOfPill);
     });
 
-    it('puts focus back on the voice button when Cancel or Discard closes the pill', async () => {
-      let attempt = 0;
-      setup({
-        note: () =>
-          ++attempt === 1
-            ? error('voice.provider_unavailable', 502)
-            : error('voice.too_long', 413),
-      });
-      renderInAppLayout(<ShoppingPage />, '/shopping');
-      fireEvent.pointerUp(await hold());
-      const button = await talkButton();
-
-      // Discard closes a failed send.
-      await userEvent.click(
-        within(await screen.findByRole('alert')).getByRole('button', {
-          name: 'Discard',
-        }),
-      );
-      await waitFor(() => expect(button).toHaveFocus());
-
-      // Too long: only Discard.
-      fireEvent.pointerUp(await hold());
-      await userEvent.click(
-        within(await screen.findByRole('alert')).getByRole('button', {
-          name: 'Discard',
-        }),
-      );
-      expect(screen.queryByRole('alert')).toBeNull();
-      await waitFor(() => expect(button).toHaveFocus());
-    });
-
     it('records a new note while one is being read', async () => {
       const { sent } = setup({ note: never });
       renderInAppLayout(<ShoppingPage />, '/shopping');
@@ -431,91 +401,103 @@ describe('Voice Note on the Shopping List', () => {
       expect(screen.queryByText('1 ready')).toBeNull();
     });
 
-    it('keeps a recording that failed to send in an alert with Discard and Retry', async () => {
+    /** Opens the Voice Inbox sheet from the strip. */
+    const openSheet = async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Open' }));
+      return screen.findByRole('dialog', { name: 'Voice Inbox' });
+    };
+    const rowOf = (dialog: HTMLElement, text: RegExp | string) =>
+      within(dialog)
+        .getAllByRole('listitem')
+        .find((li) => within(li).queryByText(text) !== null) as HTMLElement;
+
+    it('keeps a failed note in the Voice Inbox: the strip counts it and turns into an alert', async () => {
       setup({ note: () => error('voice.provider_unavailable', 502) });
       renderInAppLayout(<ShoppingPage />, '/shopping');
 
       fireEvent.pointerUp(await hold());
 
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent("Couldn't send");
-      expect(alert).toHaveTextContent('No connection. Your recording is kept.');
+      const strip = await screen.findByRole('alert');
+      expect(strip).toHaveTextContent('1 Voice Note');
+      expect(strip).toHaveTextContent('1 failed');
+      const dialog = await openSheet();
+      const row = rowOf(dialog, 'No connection. Your recording is kept.');
+      expect(within(row).getByRole('button', { name: /^Retry/ })).toBeVisible();
       expect(
-        within(alert).getByRole('button', { name: 'Discard' }),
+        within(row).getByRole('button', { name: /^Discard/ }),
       ).toBeVisible();
-      expect(
-        within(alert).getByRole('button', { name: 'Retry' }),
-      ).toBeVisible();
-      expect(screen.queryByRole('dialog')).toBeNull();
-      expect(screen.getByTestId('failed-dot')).toBeInTheDocument();
     });
 
-    it('names an unexpected failure in the alert, keeping the recording for Retry', async () => {
-      setup({ note: () => error('scan.cap_reached', 429, { cap: 5 }) });
+    it('names an unexpected failure in its row, and falls back for an unknown code', async () => {
+      let attempt = 0;
+      setup({
+        note: () =>
+          ++attempt === 1
+            ? error('scan.cap_reached', 429, { cap: 5 })
+            : error('nonsense.code', 500),
+      });
       renderInAppLayout(<ShoppingPage />, '/shopping');
-
       fireEvent.pointerUp(await hold());
+      await screen.findByRole('alert');
+      fireEvent.pointerUp(await hold());
+      await screen.findByText('2 Voice Notes');
+      await waitFor(() =>
+        expect(screen.getByRole('alert')).toHaveTextContent('2 failed'),
+      );
 
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent("Couldn't send");
-      expect(alert).toHaveTextContent(
+      const dialog = await openSheet();
+
+      expect(dialog).toHaveTextContent(
         'You have used all 5 scans for today. Try again tomorrow, or add items by hand.',
       );
-      expect(alert).not.toHaveTextContent('No connection');
-      expect(
-        within(alert).getByRole('button', { name: 'Discard' }),
-      ).toBeVisible();
-      expect(
-        within(alert).getByRole('button', { name: 'Retry' }),
-      ).toBeVisible();
-    });
-
-    it('falls back to the generic message for an unknown failure code', async () => {
-      setup({ note: () => error('nonsense.code', 500) });
-      renderInAppLayout(<ShoppingPage />, '/shopping');
-
-      fireEvent.pointerUp(await hold());
-
-      expect(await screen.findByRole('alert')).toHaveTextContent(
+      expect(dialog).toHaveTextContent(
         'Something went wrong. Please try again.',
       );
     });
 
-    it('puts focus back on the voice button when Retry starts the read', async () => {
+    it('leaves focus in the Review dialog when a row of the sheet opens a note', async () => {
       let attempt = 0;
       setup({
         note: () =>
-          ++attempt === 1 ? error('voice.provider_unavailable', 502) : never(),
+          ++attempt <= 2
+            ? Promise.resolve(
+                Response.json({ transcript: 'bread', actions: [] }),
+              )
+            : error('voice.provider_unavailable', 502),
       });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
-      const button = await talkButton();
+      await screen.findByRole('button', { name: 'Review' });
+      fireEvent.pointerUp(await hold());
+      await screen.findByRole('button', { name: /^Open/ });
+      fireEvent.pointerUp(await hold());
+      await waitFor(() =>
+        expect(screen.getByRole('alert')).toHaveTextContent('1 failed'),
+      );
+      fireEvent.click(screen.getByRole('button', { name: /^Open/ }));
+      const sheet = await screen.findByRole('dialog', { name: 'Voice Inbox' });
 
+      const focus = vi.spyOn(HTMLElement.prototype, 'focus');
       await userEvent.click(
-        within(await screen.findByRole('alert')).getByRole('button', {
-          name: 'Retry',
-        }),
+        within(sheet).getAllByRole('button', { name: /^Review/ })[0],
       );
 
-      await screen.findByText('Reading 1');
-      await waitFor(() => expect(button).toHaveFocus());
+      const review = await screen.findByRole('dialog', { name: 'Review' });
+      await waitFor(() =>
+        expect(review).toContainElement(document.activeElement as HTMLElement),
+      );
+      await waitForElementToBeRemoved(sheet);
+      await holdFor(100);
+      expect(review).toContainElement(document.activeElement as HTMLElement);
+      // The sheet closing for a note that opens does not hand focus to the voice button.
+      expect(
+        focus.mock.contexts.some((el) =>
+          (el as HTMLElement).hasAttribute('data-voice-button'),
+        ),
+      ).toBe(false);
     });
 
-    it('leaves focus alone when the pill closes with focus outside it', async () => {
-      setup({ note: () => error('voice.nothing_heard', 422) });
-      renderInAppLayout(<ShoppingPage />, '/shopping');
-      fireEvent.pointerUp(await hold());
-      await screen.findByText("Didn't catch anything, try again");
-      const outside = screen.getByRole('link', { name: 'Camera' });
-      outside.focus();
-
-      await holdFor(3700);
-
-      expect(screen.queryByText("Didn't catch anything, try again")).toBeNull();
-      expect(outside).toHaveFocus();
-    });
-
-    it('tells a press while a failed note waits to retry or discard it first', async () => {
+    it('keeps the mic working while a note has failed', async () => {
       setup({ note: () => error('voice.provider_unavailable', 502) });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
@@ -524,29 +506,133 @@ describe('Voice Note on the Shopping List', () => {
 
       pressDown(await talkButton());
 
-      expect(
-        await screen.findByText('Retry or discard the last note first'),
-      ).toBeVisible();
-      expect(mic.start).not.toHaveBeenCalled();
-      expect(screen.getByRole('alert')).toHaveTextContent("Couldn't send");
+      expect(await screen.findByText("Gator's listening")).toBeVisible();
+      expect(mic.start).toHaveBeenCalledOnce();
+      expect(screen.queryByText(/Retry or discard/)).toBeNull();
     });
 
-    it('says nothing was heard in a polite pill that closes itself after 3.6 seconds', async () => {
+    it('does not hide a ready note behind a failed one', async () => {
+      let attempt = 0;
+      setup({
+        note: () =>
+          ++attempt === 1
+            ? error('voice.provider_unavailable', 502)
+            : undefined!,
+      });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      fireEvent.pointerUp(await hold());
+      await screen.findByRole('alert');
+      fireEvent.pointerUp(await hold());
+
+      const strip = await screen.findByRole('alert');
+      await waitFor(() => expect(strip).toHaveTextContent('1 ready'));
+      expect(strip).toHaveTextContent('1 failed');
+      expect(await openReady()).toBeVisible();
+    });
+
+    it('retries a failed note from its row in the same Spoken Language', async () => {
+      let attempt = 0;
+      const { sent } = setup({
+        preferredSpokenLanguage: 'ro',
+        note: () =>
+          ++attempt === 1 ? error('voice.provider_unavailable', 502) : never(),
+      });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      fireEvent.pointerUp(await hold());
+      const dialog = await openSheet();
+
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: /^Retry/ }),
+      );
+
+      await waitFor(() => expect(sent).toHaveLength(2));
+      expect(sent[1].get('spokenLanguage')).toBe('ro');
+      expect(
+        within(dialog).queryByRole('button', { name: /^Retry/ }),
+      ).toBeNull();
+      expect(dialog).toHaveTextContent('Being read');
+      // Focus stays inside the sheet.
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    });
+
+    it('discards a failed note from its row, says so, and closes the sheet with the last one', async () => {
+      setup({ note: () => error('voice.provider_unavailable', 502) });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      fireEvent.pointerUp(await hold());
+      const button = await talkButton();
+      const dialog = await openSheet();
+
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: /^Discard/ }),
+      );
+
+      expect(await screen.findByText('Recording discarded')).toBeVisible();
+      // The sheet closes with its animation rather than vanishing, and focus returns to the voice button.
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('dialog', { name: 'Voice Inbox' }),
+        ).toBeNull(),
+      );
+      expect(screen.queryByRole('alert')).toBeNull();
+      await waitFor(() => expect(button).toHaveFocus());
+    });
+
+    it('leaves the sheet usable when a note fails while it is open', async () => {
+      const { reads, holdReads } = setup({ note: never });
+      holdReads();
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      fireEvent.pointerUp(await hold());
+      const dialog = await openSheet();
+      await waitFor(() => expect(reads).toHaveLength(1));
+
+      act(() => reads[0].reject(new TypeError('offline')));
+      await waitFor(() => expect(reads).toHaveLength(2));
+      act(() => reads[1].reject(new TypeError('offline')));
+
+      expect(
+        await within(dialog).findByRole('button', { name: /^Retry/ }),
+      ).toBeVisible();
+      expect(screen.getByRole('dialog', { name: 'Voice Inbox' })).toBeVisible();
+    });
+
+    it('retries a network error once by itself before it fails the note', async () => {
+      const { reads, holdReads } = setup({ note: never });
+      holdReads();
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      fireEvent.pointerUp(await hold());
+      await waitFor(() => expect(reads).toHaveLength(1));
+
+      act(() => reads[0].reject(new TypeError('offline')));
+
+      await waitFor(() => expect(reads).toHaveLength(2));
+      expect(screen.getByRole('status')).toHaveTextContent('Reading 1');
+      act(() =>
+        reads[1].resolve(Response.json({ transcript: 'bread', actions: [] })),
+      );
+      expect(
+        await screen.findByRole('button', { name: 'Review' }),
+      ).toBeVisible();
+    });
+
+    it('says nothing was heard on the note itself, with Discard only, and drops it after 3.6 seconds', async () => {
       setup({ note: () => error('voice.nothing_heard', 422) });
       renderInAppLayout(<ShoppingPage />, '/shopping');
 
       fireEvent.pointerUp(await hold());
 
-      const text = await screen.findByText("Didn't catch anything, try again");
-      expect(text).toBeVisible();
-      expect(screen.getByText(/This one doesn't count/)).toBeVisible();
-      expect(screen.queryByRole('dialog')).toBeNull();
-      expect(screen.queryByRole('alert')).toBeNull();
-      await holdFor(3500);
-      expect(text).toBeVisible();
-      await holdFor(200);
+      const dialog = await openSheet();
+      expect(dialog).toHaveTextContent("Didn't catch anything, try again");
+      expect(dialog).toHaveTextContent("This one doesn't count");
+      expect(
+        within(dialog).queryByRole('button', { name: /^Retry/ }),
+      ).toBeNull();
+      expect(
+        within(dialog).getByRole('button', { name: /^Discard/ }),
+      ).toBeVisible();
+      await holdFor(3700);
       expect(screen.queryByText("Didn't catch anything, try again")).toBeNull();
-      expect(voiceNote.getState().phase).toBe('idle');
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.queryByText('1 Voice Note')).toBeNull();
     });
 
     describe('Voice Cap', () => {
@@ -555,7 +641,7 @@ describe('Voice Note on the Shopping List', () => {
         () =>
           error('voice.cap_reached', 429, { cap, resetsAt });
 
-      it('shows the cap from the payload in an alert with OK, and dims the button', async () => {
+      it('fails the note with the cap on its row, keeps Retry, and dims the button', async () => {
         setup({
           note: capReached(new Date(Date.now() + 3_600_000).toISOString(), 37),
         });
@@ -563,42 +649,39 @@ describe('Voice Note on the Shopping List', () => {
 
         fireEvent.pointerUp(await hold());
 
-        const alert = await screen.findByRole('alert');
-        expect(alert).toHaveTextContent("That's today's 37 Voice Notes");
-        expect(alert).toHaveTextContent(
+        const button = await talkButton();
+        await screen.findByRole('alert');
+        expect(button).toHaveStyle({ opacity: '0.55' });
+        const dialog = await openSheet();
+        expect(dialog).toHaveTextContent("That's today's 37 Voice Notes");
+        expect(dialog).toHaveTextContent(
           'Voice is back tomorrow. Scans still work.',
         );
         expect(
-          within(alert).queryByRole('button', { name: 'Retry' }),
-        ).toBeNull();
-        expect(await talkButton()).toHaveStyle({ opacity: '0.55' });
-        await userEvent.click(
-          within(alert).getByRole('button', { name: 'OK' }),
-        );
-        expect(screen.queryByRole('alert')).toBeNull();
-        expect(await talkButton()).toHaveStyle({ opacity: '0.55' });
+          within(dialog).getByRole('button', { name: /^Retry/ }),
+        ).toBeVisible();
       });
 
-      it('shows the cap pill instead of recording until the reset, then records again', async () => {
+      it('adds a cap row instead of recording until the reset, then records again', async () => {
         setup({
           note: capReached(new Date(Date.now() + 60_000).toISOString()),
         });
         renderInAppLayout(<ShoppingPage />, '/shopping');
         fireEvent.pointerUp(await hold());
+        await screen.findByRole('alert');
+        await userEvent.click(screen.getByRole('button', { name: 'Open' }));
         await userEvent.click(
-          within(await screen.findByRole('alert')).getByRole('button', {
-            name: 'OK',
+          within(await screen.findByRole('dialog')).getByRole('button', {
+            name: /^Discard/,
           }),
         );
+        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
         mic.start.mockClear();
 
         pressDown(await talkButton());
 
-        expect(await screen.findByRole('alert')).toHaveTextContent(
-          "That's today's 50 Voice Notes",
-        );
+        expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
         expect(mic.start).not.toHaveBeenCalled();
-        await userEvent.click(screen.getByRole('button', { name: 'OK' }));
 
         await holdFor(60_000);
 
@@ -615,15 +698,15 @@ describe('Voice Note on the Shopping List', () => {
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
 
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent('Recording too long');
-      expect(alert).toHaveTextContent(
+      const dialog = await openSheet();
+      expect(dialog).toHaveTextContent(
         'That recording was too long. Try a shorter one.',
       );
-      expect(within(alert).queryByRole('button', { name: 'Retry' })).toBeNull();
-      expect(within(alert).queryByRole('button', { name: 'OK' })).toBeNull();
+      expect(
+        within(dialog).queryByRole('button', { name: /^Retry/ }),
+      ).toBeNull();
       await userEvent.click(
-        within(alert).getByRole('button', { name: 'Discard' }),
+        within(dialog).getByRole('button', { name: /^Discard/ }),
       );
       expect(screen.queryByRole('alert')).toBeNull();
       expect(screen.queryByText('Recording discarded')).toBeNull();
@@ -637,34 +720,33 @@ describe('Voice Note on the Shopping List', () => {
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
 
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent(
+      const dialog = await openSheet();
+      expect(dialog).toHaveTextContent(
         "This browser's recording format isn't supported",
       );
-      expect(within(alert).queryByRole('button', { name: 'Retry' })).toBeNull();
-      expect(within(alert).queryByRole('button', { name: 'OK' })).toBeNull();
       expect(
-        within(alert).getByRole('button', { name: 'Discard' }),
+        within(dialog).queryByRole('button', { name: /^Retry/ }),
+      ).toBeNull();
+      expect(
+        within(dialog).getByRole('button', { name: /^Discard/ }),
       ).toBeVisible();
-      expect(screen.queryByTestId('failed-dot')).toBeNull();
       expect(log).toHaveBeenCalled();
       log.mockRestore();
     });
 
-    it('says the browser cannot record, with only OK', async () => {
+    it('says the browser cannot record on a row with Discard only', async () => {
       setup();
       mic.start.mockRejectedValue(new MicrophoneError('unavailable'));
       renderInAppLayout(<ShoppingPage />, '/shopping');
 
       pressDown(await talkButton());
 
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent("Can't record here");
-      expect(within(alert).getAllByRole('button')).toHaveLength(1);
-      expect(within(alert).getByRole('button', { name: 'OK' })).toBeVisible();
-      expect(screen.queryByTestId('failed-dot')).toBeNull();
-      await userEvent.click(within(alert).getByRole('button', { name: 'OK' }));
-      expect(screen.queryByRole('alert')).toBeNull();
+      expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
+      const dialog = await openSheet();
+      expect(dialog).toHaveTextContent('This browser cannot record audio');
+      expect(
+        within(dialog).queryByRole('button', { name: /^Retry/ }),
+      ).toBeNull();
     });
   });
 

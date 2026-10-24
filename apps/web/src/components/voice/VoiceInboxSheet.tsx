@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 import { formatClock } from '../../lib/voice';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
+import { failureReason } from './failureReason';
 
 const glyph: Record<VoiceInboxPhase, string> = {
   reading: '…',
@@ -25,16 +26,40 @@ type VoiceInboxPhase = ReturnType<
 >['inbox']['notes'][number]['phase'];
 
 /** The Voice Inbox sheet: one row per Voice Note in recording order, with Review / See or Cancel. */
-export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
-  const { t } = useTranslation(['voice', 'settings']);
-  const { inbox } = useVoiceNoteState();
+export function VoiceInboxSheet({
+  open,
+  onClose,
+  onExited,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onExited: () => void;
+}) {
+  const { t } = useTranslation(['voice', 'settings', 'errors']);
+  const { inbox, voiceCap } = useVoiceNoteState();
   const { spokenLanguage } = usePreferredSpokenLanguage();
   const title = useRef<HTMLHeadingElement>(null);
 
+  /** Why a note failed, in the words the pill used. */
+  const failureText = (note: (typeof inbox.notes)[number]) => {
+    if (note.phase !== 'failed') return undefined;
+    const reason = failureReason(
+      t,
+      note.error,
+      note.rawError,
+      voiceCap?.cap ?? 0,
+    );
+    if (!reason) return undefined;
+    return note.error === 'nothingHeard' || note.error === 'capReached'
+      ? `${reason.title}. ${reason.hint}`
+      : reason.hint;
+  };
+
   return (
     <Sheet
-      open
+      open={open}
       onClose={onClose}
+      onExited={onExited}
       onEntered={() => title.current?.focus()}
       label={t('voice:inbox.sheetTitle')}
       header={
@@ -64,6 +89,7 @@ export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
             : t('voice:inbox.preview', {
                 duration: formatClock(note.durationMs ?? 0),
               });
+          const reason = failureText(note);
           const meta = [
             note.defaultTarget === 'none'
               ? t('voice:inbox.noList')
@@ -113,7 +139,7 @@ export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
                 </Box>
                 <Box sx={{ fontSize: 12, color: 'text.secondary' }}>{meta}</Box>
                 <Box sx={{ fontSize: 12, color: 'text.secondary' }}>
-                  {t(`voice:inbox.state.${phase}`)}
+                  {reason ?? t(`voice:inbox.state.${phase}`)}
                 </Box>
               </Box>
               {isReady ? (
@@ -145,6 +171,36 @@ export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
                 >
                   {t('voice:inbox.cancel')}
                 </Button>
+              ) : phase === 'failed' ? (
+                <Box sx={{ display: 'flex', gap: '8px', flex: 'none' }}>
+                  <Button
+                    size="sm"
+                    shape="pill"
+                    variant="secondary"
+                    aria-label={t('voice:inbox.discardNote', { preview })}
+                    onClick={() => {
+                      title.current?.focus();
+                      // Only a kept recording is "discarded"; otherwise the row just closes.
+                      if (note.canRetry) voiceNote.discardFailed(note.id);
+                      else voiceNote.dismiss(note.id);
+                    }}
+                  >
+                    {t('voice:send.discard')}
+                  </Button>
+                  {note.canRetry && note.error !== 'nothingHeard' ? (
+                    <Button
+                      size="sm"
+                      shape="pill"
+                      aria-label={t('voice:inbox.retryNote', { preview })}
+                      onClick={() => {
+                        title.current?.focus();
+                        void voiceNote.retry(note.id);
+                      }}
+                    >
+                      {t('voice:send.retry')}
+                    </Button>
+                  ) : null}
+                </Box>
               ) : null}
             </Box>
           );

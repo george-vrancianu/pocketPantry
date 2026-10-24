@@ -264,7 +264,6 @@
     "tooLong": "Înregistrarea a fost prea lungă. Încearcă una mai scurtă.",
     "unsupportedTitle": "Nu se poate citi înregistrarea",
     "unsupported": "Formatul de înregistrare al acestui browser nu este acceptat",
-    "tipFailed": "Reîncearcă sau șterge mai întâi ultima notă",
     "noRecording": "Nu se poate înregistra aici"
   },
   "answers": {
@@ -290,6 +289,11 @@
     "title_other": "{{count}} de note vocale",
     "reading": "Citesc {{count}}",
     "ready": "{{count}} gata",
+    "failed_one": "{{count}} eșuată",
+    "failed_few": "{{count}} eșuate",
+    "failed_other": "{{count}} de eșuate",
+    "retryNote": "Reîncearcă: {{preview}}",
+    "discardNote": "Șterge: {{preview}}",
     "review": "Verificare",
     "full": "Verifică mai întâi notele",
     "sheetTitle": "Inbox vocal",

@@ -66,9 +66,7 @@ function VoiceNoteControls({
     <>
       <VoiceButton voice={voice} target={defaultTarget} />
 
-      <StatusPill voice={voice} />
-
-      {setup ? null : <VoiceInboxStrip />}
+      {setup ? <StatusPill voice={voice} /> : <VoiceInboxStrip />}
 
       <MicSheets mic={voice.mic} target={defaultTarget} />
 

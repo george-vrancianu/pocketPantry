@@ -256,7 +256,6 @@
     "tooLong": "Optagelsen var for lang. Prøv en kortere.",
     "unsupportedTitle": "Kan ikke læse optagelsen",
     "unsupported": "Denne browsers optageformat understøttes ikke",
-    "tipFailed": "Prøv igen eller kassér den sidste note først",
     "noRecording": "Kan ikke optage her"
   },
   "answers": {
@@ -280,6 +279,10 @@
     "title_other": "{{count}} stemmenoter",
     "reading": "Læser {{count}}",
     "ready": "{{count}} klar",
+    "failed_one": "{{count}} mislykkedes",
+    "failed_other": "{{count}} mislykkedes",
+    "retryNote": "Prøv igen: {{preview}}",
+    "discardNote": "Kassér: {{preview}}",
     "review": "Gennemse",
     "full": "Gennemse dine noter først",
     "sheetTitle": "Stemmeindbakke",
