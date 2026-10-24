@@ -54,3 +54,28 @@ export const DapperGlint: Story = {
     alt: 'Gator with a monocle, smiling contentedly',
   },
 };
+
+/**
+ * The chef, disappointed: whisk and pot dropped on the ground, sweating.
+ * Shown when nothing can be cooked from the Pantry.
+ */
+export const ChefFlop: Story = {
+  args: {
+    mood: 'chef-flop',
+    size: 280,
+    alt: 'Gator, disappointed, with the cooking tools dropped',
+  },
+  decorators: [
+    (Story) => (
+      <Box sx={{ bgcolor: 'background.default', p: 2 }}>
+        <Story />
+      </Box>
+    ),
+  ],
+};
+
+/** The disappointed chef on the Dark Theme. */
+export const ChefFlopDark: Story = {
+  ...ChefFlop,
+  globals: { theme: 'dark' },
+};
