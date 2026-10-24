@@ -1353,6 +1353,28 @@ describe('Family Recipes (integration)', () => {
         expect(detail.title).not.toBe('Renamed');
       });
 
+      it('keeps both the link and the language when neither is sent', async () => {
+        const created = await linked();
+        await put(created.id).expect(200);
+        const detail = await stored(created.id);
+        expect(detail.sourceLink).toBe('https://example.com/soup');
+        expect(detail.sourceLanguage).toBe('ro');
+        expect(detail.title).toContain('Renamed');
+      });
+
+      it('refuses clearing the link while setting a language, and changes nothing', async () => {
+        const created = await linked();
+        const res = await put(created.id, {
+          sourceLink: null,
+          sourceLanguage: 'fr',
+        }).expect(400);
+        expect(res.body).toMatchObject({ code: 'recipes.source_link_locked' });
+        const detail = await stored(created.id);
+        expect(detail.sourceLink).toBe('https://example.com/soup');
+        expect(detail.sourceLanguage).toBe('ro');
+        expect(detail.title).not.toContain('Renamed');
+      });
+
       it('still refuses an unknown field', async () => {
         const created = await linked();
         await put(created.id, { sourceLinks: null }).expect(400);

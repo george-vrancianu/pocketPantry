@@ -1052,6 +1052,38 @@ describe('EditFamilyRecipePage Source Link', () => {
     ).toBeVisible();
   });
 
+  it('sends the removal once: a second Save leaves the link out', async () => {
+    const user = userEvent.setup({ delay: null });
+    let current = linked;
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(current),
+      'PUT /api/recipes/g': () => {
+        current = { ...linked, sourceLink: null, sourceLanguage: null };
+        return Response.json(current);
+      },
+    });
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove link' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(calls.filter((c) => c.key === 'PUT /api/recipes/g')).toHaveLength(
+        1,
+      ),
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Save Recipe' }),
+    );
+    await vi.waitFor(() =>
+      expect(calls.filter((c) => c.key === 'PUT /api/recipes/g')).toHaveLength(
+        2,
+      ),
+    );
+    const puts = calls.filter((c) => c.key === 'PUT /api/recipes/g');
+    expect(puts[0].body).toHaveProperty('sourceLink', null);
+    expect(puts[1].body).not.toHaveProperty('sourceLink');
+  });
+
   it('keeps the link and sends nothing when the removal is cancelled', async () => {
     const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/g/edit', {
