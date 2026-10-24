@@ -352,6 +352,15 @@ describe('Voice Note module', () => {
       expect(startMicrophone).toHaveBeenCalledOnce();
     });
 
+    it('does not nudge for the note that opens itself (Setup)', async () => {
+      const { note, notices, answer } = setup();
+      await record(note, { ...options, openWhenReady: true });
+      answer(result('a'));
+      await settle();
+      expect(note.getState().phase).toBe('review');
+      expect(notices).toEqual([]);
+    });
+
     it('discarding or applying removes only that note', async () => {
       const { note, answer } = setup();
       await record(note, options);

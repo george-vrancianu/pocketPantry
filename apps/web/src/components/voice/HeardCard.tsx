@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
 import type { MergedNote } from '../../lib/voiceNote';
 import { formatClock } from '../../lib/voice';
+import { noteMeta } from './noteMeta';
 import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 
 /**
@@ -188,15 +189,12 @@ export function MergedHeardCard({ notes }: { notes: MergedNote[] }) {
                   color: palette('text-secondary'),
                 }}
               >
-                {[
-                  note.defaultTarget === 'none'
-                    ? t('voice:inbox.noList')
-                    : t(`voice:review.lists.${note.defaultTarget}`),
-                  t('voice:review.heardMeta', {
-                    language: t(`settings:languageNames.${language}`),
-                    duration: formatClock(note.durationMs ?? 0),
-                  }),
-                ].join(' · ')}
+                {noteMeta(
+                  t,
+                  note.defaultTarget,
+                  language,
+                  note.durationMs ?? 0,
+                )}
               </Typography>
             </Box>
           );

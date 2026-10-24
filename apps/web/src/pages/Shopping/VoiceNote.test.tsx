@@ -411,13 +411,14 @@ describe('Voice Note on the Shopping List', () => {
         .getAllByRole('listitem')
         .find((li) => within(li).queryByText(text) !== null) as HTMLElement;
 
-    it('keeps a failed note in the Voice Inbox: the strip counts it and turns into an alert', async () => {
+    it('keeps a failed note in the Voice Inbox: the strip counts it politely and announces the failure as an alert', async () => {
       setup({ note: () => error('voice.provider_unavailable', 502) });
       renderInAppLayout(<ShoppingPage />, '/shopping');
 
       fireEvent.pointerUp(await hold());
 
-      const strip = await screen.findByRole('alert');
+      expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
+      const strip = screen.getByRole('status');
       expect(strip).toHaveTextContent('1 Voice Note');
       expect(strip).toHaveTextContent('1 failed');
       const dialog = await openSheet();
@@ -526,7 +527,8 @@ describe('Voice Note on the Shopping List', () => {
       await screen.findByRole('alert');
       fireEvent.pointerUp(await hold());
 
-      const strip = await screen.findByRole('alert');
+      await screen.findByRole('alert');
+      const strip = screen.getByRole('status');
       await waitFor(() => expect(strip).toHaveTextContent('1 ready'));
       expect(strip).toHaveTextContent('1 failed');
       expect(await openReady()).toBeVisible();

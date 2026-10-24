@@ -20,6 +20,7 @@ import {
   voiceNote,
 } from '../../lib/voiceNote';
 import { failureReason } from './failureReason';
+import { noteMeta } from './noteMeta';
 
 const glyph: Record<VoiceInboxPhase, string> = {
   reading: '…',
@@ -49,7 +50,7 @@ export function VoiceInboxSheet({
   const title = useRef<HTMLHeadingElement>(null);
   // "Review all" was refused: too many Voice Actions for one Apply.
   const [refusedAt, setRefusedAt] = useState<number | null>(null);
-  const reviewable = inbox.notes.filter((n) => n.phase === 'review').length;
+  const reviewable = inbox.notes.filter((n) => n.hasActions).length;
   // The refusal holds only for the notes it was made for.
   const tooMany = refusedAt === reviewable;
 
@@ -129,12 +130,7 @@ export function VoiceInboxSheet({
                 duration: formatClock(note.durationMs ?? 0),
               });
           const reason = failureText(note);
-          const meta = [
-            note.defaultTarget === 'none'
-              ? t('voice:inbox.noList')
-              : t(`voice:review.lists.${note.defaultTarget}`),
-            t(`settings:languageNames.${noteLanguage}`),
-          ].join(' · ');
+          const meta = noteMeta(t, note.defaultTarget, noteLanguage);
           return (
             <Box
               component="li"
@@ -204,7 +200,11 @@ export function VoiceInboxSheet({
                   shape="pill"
                   variant="secondary"
                   aria-label={t('voice:inbox.cancelNote', { preview })}
-                  onClick={() => voiceNote.cancelReading(note.id)}
+                  onClick={() => {
+                    // The row goes with the note; focus would fall to the page.
+                    title.current?.focus();
+                    voiceNote.cancelReading(note.id);
+                  }}
                 >
                   {t('voice:inbox.cancel')}
                 </Button>

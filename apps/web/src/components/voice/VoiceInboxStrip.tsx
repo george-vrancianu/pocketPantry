@@ -5,6 +5,7 @@ import {
   palette,
   radius,
   shadow,
+  visuallyHidden,
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -30,7 +31,8 @@ const oneLine = {
 /**
  * The Voice Inbox strip, where the status pill was: Gator, how many Voice Notes there are, what
  * state they are in, and a button: Review when exactly one is ready (it opens that note), else Open,
- * which opens the Voice Inbox sheet. A failed note outlines it in the warning colour and makes it an alert.
+ * which opens the Voice Inbox sheet. A failed note outlines it in the warning colour and announces it as an alert
+ * (the rest of the strip is a polite status).
  * Hidden while recording or while a sheet is up, and when the Voice Inbox is empty.
  *
  * The sheet is hosted here, outside the strip: when the last note leaves while it is open, the sheet
@@ -87,6 +89,14 @@ function Strip({
     .filter(Boolean)
     .join(' · ');
 
+  // Announced assertively only when a note fails; every other change is read politely.
+  const [seenFailed, setSeenFailed] = useState(0);
+  const [failedRose, setFailedRose] = useState(false);
+  if (failed !== seenFailed) {
+    setSeenFailed(failed);
+    setFailedRose(failed > seenFailed);
+  }
+
   const open = () => {
     if (ready === 1) voiceNote.openReady();
     else openSheet();
@@ -128,12 +138,7 @@ function Strip({
             decorative
           />
         </Box>
-        <Box
-          // A fresh node when a note fails, so it is announced as an alert.
-          key={failed > 0 ? 'alert' : 'status'}
-          role={failed > 0 ? 'alert' : 'status'}
-          sx={{ flex: 1, minWidth: 0 }}
-        >
+        <Box role="status" sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ fontSize: 14, fontWeight: 600, ...oneLine }}>
             {t('inbox.title', { count: total })}
           </Box>
@@ -141,6 +146,11 @@ function Strip({
             {summary}
           </Box>
         </Box>
+        {failedRose && failed > 0 ? (
+          <Box role="alert" sx={visuallyHidden}>
+            {t('inbox.failed', { count: failed })}
+          </Box>
+        ) : null}
         <Button
           variant="primary"
           size="sm"
