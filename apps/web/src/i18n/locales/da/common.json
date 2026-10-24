@@ -50,7 +50,6 @@
     "units": "Enheder",
     "invalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler.",
     "unitRequired": "Vælg en enhed til mængden.",
-    "usual": "sædvanlig mængde",
     "usualAmounts": "Sædvanlige mængder til {{name}}",
     "chip": "{{value}} {{unit}}"
   },

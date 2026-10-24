@@ -74,7 +74,8 @@ describe('translation resources', () => {
 
   it.each(LOCALES)('%s has the Usual Amount strings in common', (locale) => {
     const amount = resources[locale].common.amount as Record<string, string>;
-    expect(amount.usual).toEqual(expect.any(String));
+    // The "usual" hint above the chips is gone; the pressed chip says it instead.
+    expect(amount).not.toHaveProperty('usual');
     expect(amount.usualAmounts).toEqual(expect.any(String));
     expect(amount.chip).toEqual(expect.any(String));
   });

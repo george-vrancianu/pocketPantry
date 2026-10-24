@@ -2965,7 +2965,10 @@ describe('PantryPage', () => {
           screen.getByRole('group', { name: 'Usual amounts for Paprika' }),
         ),
       ).toEqual(['10 g', '20 g', '50 g', '100 g']);
-      expect(screen.getByText('usual amount')).toBeVisible();
+      expect(screen.getByRole('button', { name: '50 g' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
     });
 
     it('shows and leaves unchanged a stored amount that matches no chip', async () => {
@@ -2988,7 +2991,12 @@ describe('PantryPage', () => {
       expect(
         screen.getByRole('textbox', { name: /Amount of Paprika/ }),
       ).toHaveValue('333');
-      expect(screen.queryByText('usual amount')).not.toBeInTheDocument();
+      const chips = within(
+        screen.getByRole('group', { name: 'Usual amounts for Paprika' }),
+      ).getAllByRole('button');
+      for (const chip of chips) {
+        expect(chip).toHaveAttribute('aria-pressed', 'false');
+      }
       await user.click(screen.getByRole('button', { name: 'Save changes' }));
       expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
     });

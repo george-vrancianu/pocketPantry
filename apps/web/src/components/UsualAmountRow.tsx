@@ -1,6 +1,5 @@
 import {
   Box,
-  Typography,
   color as themeColor,
   focusRing,
   radius,
@@ -30,7 +29,8 @@ const { color } = tokens;
 export type UsualAmountRowProps = {
   /** The Ingredient's name, for the group's accessible name. */
   name: string;
-  scale: AmountScale;
+  /** The Ingredient's Amount Scale; null or left out offers values from the unit alone. */
+  scale?: AmountScale | null;
   unit: Unit | '';
   /** The field's text; the chip matching it is selected. */
   quantity: string;
@@ -41,7 +41,7 @@ export type UsualAmountRowProps = {
 /**
  * The row of Usual Amount chips under the amount field. Chips that do not fit the row are hidden,
  * keeping the one that matches the amount and then the highest-priority ones; the row never scrolls.
- * It is hidden while the field is empty or has no unit.
+ * It shows once a unit is chosen, even while the quantity is empty, and is hidden while there is no unit.
  */
 export function UsualAmountRow({
   name,
@@ -63,7 +63,7 @@ export function UsualAmountRow({
   );
   const current = parseTypedNumber(quantity);
   const pinned = current === null ? -1 : values.indexOf(current);
-  const visible = unit !== '' && quantity.trim() !== '';
+  const visible = unit !== '';
 
   useEffect(() => {
     const el = group.current;
@@ -128,13 +128,6 @@ export function UsualAmountRow({
 
   return (
     <Box>
-      {visible && pinned >= 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: '6px' }}>
-          <Typography variant="meta" sx={{ color: color.accent }}>
-            {t('amount.usual')}
-          </Typography>
-        </Box>
-      ) : null}
       <Box
         ref={group}
         role="group"
