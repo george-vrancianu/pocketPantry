@@ -14,7 +14,12 @@ import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../i18n/translateApiError';
-import { cardFor, indexCards, useCookTonight } from '../../lib/cookTonight';
+import {
+  canMakeCards,
+  cardFor,
+  indexCards,
+  useCookTonight,
+} from '../../lib/cookTonight';
 import { localIso } from '../../lib/pantry';
 import {
   isFiltering,
@@ -49,13 +54,9 @@ export function RecipesPage() {
   const items = recipes.data?.recipes ?? [];
   const filtering = isFiltering(browse);
   const cards = cookTonight.data?.cards ?? [];
-  // Expiring first, so the strip starts with what to cook before it expires; the rank decides within each group.
-  const canMakeCards = cards
-    .filter((card) => card.canMake)
-    .sort((a, b) => Number(b.expiringCount > 0) - Number(a.expiringCount > 0));
-  const expiringCount = canMakeCards.filter(
-    (card) => card.expiringCount > 0,
-  ).length;
+  // Expiring first, so the strip starts with what to cook before it expires.
+  const canMake = canMakeCards(cards);
+  const expiringCount = canMake.filter((card) => card.expiringCount > 0).length;
   const reduceMotion = usePrefersReducedMotion();
   const stripRef = useRef<HTMLDivElement>(null);
   const index = indexCards(cards);
@@ -92,9 +93,9 @@ export function RecipesPage() {
             }
           />
         ) : null}
-        {!filtering && canMakeCards.length > 0 ? (
+        {!filtering && canMake.length > 0 ? (
           <div ref={stripRef}>
-            <CanMakeStrip cards={canMakeCards} />
+            <CanMakeStrip cards={canMake} />
           </div>
         ) : null}
         <RecipeFilters
