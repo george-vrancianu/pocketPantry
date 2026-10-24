@@ -16,7 +16,10 @@ export type GuideView = { width: number; height: number; insets?: Insets };
 export const TOP_BAR_HEIGHT = 52;
 export const SHUTTER_ROW_HEIGHT = 104;
 export const MODE_SLIDER_HEIGHT = 40;
-export const FOOTER_HEIGHT = SHUTTER_ROW_HEIGHT + MODE_SLIDER_HEIGHT;
+/** Room under the mode slider, above the bottom safe area, so it doesn't sit on the screen's edge. */
+export const FOOTER_BOTTOM_GAP = 20;
+export const FOOTER_HEIGHT =
+  SHUTTER_ROW_HEIGHT + MODE_SLIDER_HEIGHT + FOOTER_BOTTOM_GAP;
 
 /** The guide sits this far above the middle of the clear area (room for the zoom pill later). */
 export const GUIDE_LIFT = 14;

@@ -211,7 +211,7 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
       <Snackbar
         open={screen.toast !== null}
         onClose={screen.clearToast}
-        bottom={200}
+        bottom={220}
       >
         <Alert severity={screen.toast?.severity} role="status">
           {screen.toast?.text}

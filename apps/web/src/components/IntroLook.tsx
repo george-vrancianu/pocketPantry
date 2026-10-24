@@ -23,6 +23,8 @@ export function IntroLook({
         minHeight: '100vh',
         backgroundColor:
           ground === 'olive' ? tokens.color.accent : tokens.color.bg,
+        // Resolved under this subtree's Theme: inherited text would keep the root's colour (light on cream in Dark).
+        color: tokens.color.ink,
       }}
     >
       {children}
