@@ -171,8 +171,18 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
             loading={showHidden && revealed.isPending}
             hiddenByAllergiesCount={hiddenCount}
             onShowHidden={() => {
-              // Keep the current pick: the revealed bases may rank above it.
-              setBasePick({ ...basePick, chosen: parentId ?? STANDALONE });
+              // A failed Show leaves the answer in error (it never goes stale): ask again.
+              if (showHidden) {
+                if (revealed.isError) void revealed.refetch();
+                return;
+              }
+              // Keep the current pick: the revealed list may rank it lower or drop it, so it stays offered.
+              const current = closestBases.find((b) => b.id === parentId);
+              setBasePick({
+                ...basePick,
+                chosen: parentId ?? STANDALONE,
+                another: current ?? basePick.another,
+              });
               setShowHidden(true);
             }}
             onChange={setParentId}

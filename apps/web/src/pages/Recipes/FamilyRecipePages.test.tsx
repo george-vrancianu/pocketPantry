@@ -424,6 +424,87 @@ describe('NewRecipePage with a supplied draft', () => {
     );
   });
 
+  it('keeps a picked base the revealed list no longer holds', async () => {
+    const user = userEvent.setup({ delay: null });
+    const five = ['a', 'b', 'c', 'd', 'e'].map((k, i) => ({
+      id: `base-${k}`,
+      title: `Base ${k}`,
+      allergyWarning: null,
+      score: 1 - i / 10,
+    }));
+    const calls = setup(
+      newRecipeWith({
+        ...sourced,
+        closestBases: five,
+        hiddenByAllergiesCount: 1,
+      }),
+      {
+        'POST /api/recipes/plate-matches': () =>
+          Response.json({
+            matches: [
+              {
+                id: 'base-hidden',
+                title: 'Hidden one',
+                score: 2,
+                allergyWarning: null,
+              },
+              ...five.slice(0, 4),
+            ],
+            hiddenByAllergiesCount: 0,
+          }),
+        'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+      },
+    );
+    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.click(screen.getByRole('radio', { name: 'Base e' }));
+    await user.click(screen.getByRole('button', { name: 'Show' }));
+    expect(
+      await screen.findByRole('radio', { name: /Hidden one/ }),
+    ).toBeVisible();
+    expect(screen.getByRole('radio', { name: 'Base e' })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({ parentId: 'base-e' }),
+    );
+  });
+
+  it('says it is looking between Show and the answer', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup(newRecipeWith({ ...fromLink, hiddenByAllergiesCount: 1 }), {
+      'POST /api/recipes/plate-matches': () =>
+        new Promise<Response>(() => {}) as never,
+    });
+    await user.click(await screen.findByRole('button', { name: 'Show' }));
+    expect(await screen.findByText('Finding Base Recipes…')).toBeVisible();
+  });
+
+  it('asks again when Show failed and is pressed again', async () => {
+    const user = userEvent.setup({ delay: null });
+    let asked = 0;
+    setup(newRecipeWith({ ...fromLink, hiddenByAllergiesCount: 1 }), {
+      'POST /api/recipes/plate-matches': () =>
+        ++asked === 1
+          ? Response.json({ code: 'boom' }, { status: 500 })
+          : Response.json({
+              matches: [
+                {
+                  id: 'base-satay',
+                  title: 'Satay',
+                  score: 1,
+                  allergyWarning: null,
+                },
+              ],
+              hiddenByAllergiesCount: 0,
+            }),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Show' }));
+    await vi.waitFor(() => expect(asked).toBeGreaterThanOrEqual(1));
+    await user.click(await screen.findByRole('button', { name: 'Show' }));
+    expect(await screen.findByRole('radio', { name: /Satay/ })).toBeVisible();
+  });
+
   it('shows the picker for the hidden note and Show even when no base is left', async () => {
     const user = userEvent.setup({ delay: null });
     const calls = setup(
