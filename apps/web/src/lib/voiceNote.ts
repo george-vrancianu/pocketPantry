@@ -134,7 +134,32 @@ export type StartBlocker = 'active' | 'busy' | 'kept' | 'capped' | 'none';
 /** The longest delay `setTimeout` takes. */
 const MAX_TIMEOUT = 2 ** 31 - 1;
 
-const initial: VoiceNoteState = { phase: 'idle', defaultTarget: 'shopping' };
+/** One Voice Note in the list: its own phase, audio, Default List, Spoken Language, proposal and error. */
+export type VoiceNoteEntry = {
+  id: number;
+  phase: Exclude<VoicePhase, 'idle' | 'recording'>;
+  defaultTarget: VoiceDefaultTarget;
+  recording?: VoiceNoteState['recording'];
+  proposal?: VoiceNoteState['proposal'];
+  error?: VoiceErrorCode;
+  rawError?: VoiceNoteState['rawError'];
+};
+
+/**
+ * What the module holds: the Voice Notes (for now at most one), which one is open in Review (and
+ * read by the pill), and the module-level Voice Cap and recording in progress.
+ */
+type VoiceNoteStore = {
+  notes: VoiceNoteEntry[];
+  openId?: number;
+  /** The recording in progress (the microphone is live); it is not a Voice Note yet. */
+  live?: { defaultTarget: VoiceDefaultTarget; startedAt: number };
+  /** The Default List of the last note, kept for the idle view. */
+  lastTarget: VoiceDefaultTarget;
+  voiceCap?: { cap: number; resetsAt: number };
+};
+
+const initial: VoiceNoteStore = { notes: [], lastTarget: 'shopping' };
 
 const nextUtcMidnight = (now: number) => {
   const day = new Date(now);
@@ -157,15 +182,54 @@ export function createVoiceNote(
     startMicrophone,
   },
 ) {
-  let state = initial;
+  let store = initial;
+  let nextId = 1;
+  let view: VoiceNoteState = { phase: 'idle', defaultTarget: 'shopping' };
   const listeners = new Set<() => void>();
+  /** The flat view of what is on screen: the recording in progress, else the open Voice Note, else idle. */
+  const project = (): VoiceNoteState => {
+    const { live, voiceCap } = store;
+    if (live) {
+      return {
+        phase: 'recording',
+        defaultTarget: live.defaultTarget,
+        startedAt: live.startedAt,
+        voiceCap,
+      };
+    }
+    const open = store.notes.find((n) => n.id === store.openId);
+    if (!open) {
+      return { phase: 'idle', defaultTarget: store.lastTarget, voiceCap };
+    }
+    const { id: _id, ...fields } = open;
+    return { ...fields, voiceCap };
+  };
+  /** Publishes the store: a new view object, so subscribers that compare snapshots render again. */
   const emit = () => {
+    view = project();
     for (const listener of listeners) listener();
   };
+  const openNote = () => store.notes.find((n) => n.id === store.openId);
+  const phase = (): VoicePhase => view.phase;
 
-  /** Replaces the transient fields; the Voice Cap is only touched by `setCap`. */
-  function go(next: Omit<VoiceNoteState, 'voiceCap'>) {
-    state = { ...next, voiceCap: state.voiceCap };
+  /** Puts a new Voice Note in the list and opens it (it replaces the one there: the list holds one for now). */
+  function go(next: Omit<VoiceNoteEntry, 'id'>) {
+    const id = nextId++;
+    store = {
+      ...store,
+      notes: [{ id, ...next }],
+      openId: id,
+      live: undefined,
+      lastTarget: next.defaultTarget,
+    };
+    emit();
+  }
+  /** Changes the open Voice Note in place. */
+  function patchOpen(patch: (note: VoiceNoteEntry) => VoiceNoteEntry) {
+    store = {
+      ...store,
+      notes: store.notes.map((n) => (n.id === store.openId ? patch(n) : n)),
+    };
     emit();
   }
   /** Review: swaps the chosen list's resolution into each action with a list to pick that `matches`. `byList` stays, so the pick can change. */
@@ -173,19 +237,23 @@ export function createVoiceNote(
     list: VoiceList,
     matches: (action: VoiceReviewAction) => boolean,
   ) => {
-    if (state.phase !== 'review' || !state.proposal) return;
-    state = {
-      ...state,
+    const proposal = openNote()?.proposal;
+    if (phase() !== 'review' || !proposal) return;
+    patchOpen((n) => ({
+      ...n,
       proposal: {
-        ...state.proposal,
-        actions: state.proposal.actions.map((a) =>
+        ...proposal,
+        actions: proposal.actions.map((a) =>
           a.byList && matches(a) ? { ...a.byList[list], byList: a.byList } : a,
         ),
       },
-    };
+    }));
+  };
+  /** Nothing recording and no note open: the list is emptied (it holds at most one for now). */
+  const idle = () => {
+    store = { ...store, notes: [], openId: undefined, live: undefined };
     emit();
   };
-  const idle = () => go({ phase: 'idle', defaultTarget: state.defaultTarget });
 
   /**
    * What outlives the page that started a Voice Note, so the pill on either page can reach it: the
@@ -215,13 +283,12 @@ export function createVoiceNote(
   /** Renders again when the Voice Cap lifts: the state itself would not change. */
   function watchCap() {
     clearTimeout(capTimer);
-    if (!state.voiceCap) return;
-    const wait = state.voiceCap.resetsAt - Date.now();
+    if (!store.voiceCap) return;
+    const wait = store.voiceCap.resetsAt - Date.now();
     if (wait <= 0) return;
     capTimer = setTimeout(
       () => {
         // A new object, so subscribers that compare snapshots render again.
-        state = { ...state };
         emit();
         watchCap();
       },
@@ -236,13 +303,14 @@ export function createVoiceNote(
    */
   function setCap(cap: { cap: number; resetsAt?: string }) {
     const parsed = Date.parse(cap.resetsAt ?? '');
-    state = {
-      ...state,
+    store = {
+      ...store,
       voiceCap: {
         cap: cap.cap,
         resetsAt: Number.isNaN(parsed) ? nextUtcMidnight(Date.now()) : parsed,
       },
     };
+    view = project();
     watchCap();
   }
 
@@ -267,8 +335,8 @@ export function createVoiceNote(
     letSleep();
     go({
       phase: 'failed',
-      defaultTarget: state.defaultTarget,
-      recording: options.keepRecording ? state.recording : undefined,
+      defaultTarget: view.defaultTarget,
+      recording: options.keepRecording ? view.recording : undefined,
       error,
       rawError: options.rawError,
     });
@@ -276,16 +344,12 @@ export function createVoiceNote(
 
   /** Whether the Voice Cap is still in force. It lifts at the server's reset time. */
   function isCapReached() {
-    return state.voiceCap !== undefined && Date.now() < state.voiceCap.resetsAt;
+    return store.voiceCap !== undefined && Date.now() < store.voiceCap.resetsAt;
   }
 
   /** The Voice Note failed before or without a read (no microphone, the Voice Cap). */
   function failBeforeRead(error: 'unavailable' | 'capReached') {
-    if (
-      state.phase !== 'idle' &&
-      state.phase !== 'recording' &&
-      state.phase !== 'failed'
-    ) {
+    if (phase() !== 'idle' && phase() !== 'recording' && phase() !== 'failed') {
       return;
     }
     failed(error);
@@ -298,8 +362,8 @@ export function createVoiceNote(
   function startBlocker(): StartBlocker {
     // A note is already under way (the microphone starting, recording, audio being finalised): ignore silently.
     if (starting || session || finishing) return 'active';
-    if (state.phase === 'reading') return 'busy';
-    if (state.phase === 'failed' && state.recording) return 'kept';
+    if (phase() === 'reading') return 'busy';
+    if (phase() === 'failed' && view.recording) return 'kept';
     return isCapReached() ? 'capped' : 'none';
   }
 
@@ -383,7 +447,7 @@ export function createVoiceNote(
         phase: answersOnly ? 'answers' : 'review',
         defaultTarget,
         // Kept for the sheet's "English · 0:09"; closing it or Apply drops it with the rest.
-        recording: state.recording,
+        recording: view.recording,
         proposal: {
           transcript: result.transcript,
           actions: result.actions,
@@ -415,8 +479,8 @@ export function createVoiceNote(
     }
     if (blocker !== 'none') return 'refused';
     // A failure without a kept recording is dropped by the next press.
-    if (state.phase === 'failed') idle();
-    if (state.phase !== 'idle') return 'refused';
+    if (phase() === 'failed') idle();
+    if (phase() !== 'idle') return 'refused';
     const attempt = { cancelled: false };
     starting = attempt;
     keepAwake();
@@ -434,7 +498,7 @@ export function createVoiceNote(
     }
     starting = undefined;
     // Stopped or cancelled on the way (its lock is already let go): the stream is not wanted.
-    if (attempt.cancelled || state.phase !== 'idle') {
+    if (attempt.cancelled || phase() !== 'idle') {
       live.cancel();
       if (!attempt.cancelled) letSleep();
       return 'cancelled';
@@ -445,11 +509,15 @@ export function createVoiceNote(
       notify('stoppedAtLimit');
       void stopRecording();
     }, MAX_VOICE_NOTE_MS);
-    go({
-      phase: 'recording',
-      defaultTarget: options.defaultTarget,
-      startedAt: Date.now(),
-    });
+    store = {
+      ...store,
+      live: {
+        defaultTarget: options.defaultTarget,
+        startedAt: Date.now(),
+      },
+      lastTarget: options.defaultTarget,
+    };
+    emit();
     return 'started';
   }
 
@@ -487,11 +555,11 @@ export function createVoiceNote(
       return 'tooShort';
     }
     // Something else ended the note while the audio was finalised.
-    if (state.phase !== 'idle') {
+    if (phase() !== 'idle') {
       letSleep();
       return 'notStarted';
     }
-    void send(audio, mine.spokenLanguage, state.defaultTarget);
+    void send(audio, mine.spokenLanguage, view.defaultTarget);
     return 'sent';
   }
 
@@ -503,7 +571,7 @@ export function createVoiceNote(
     if (!starting && !session) return;
     dropMicrophone();
     letSleep();
-    if (state.phase === 'recording') idle();
+    if (phase() === 'recording') idle();
     if (!options.quiet) notify('recordingCancelled');
   }
 
@@ -511,7 +579,7 @@ export function createVoiceNote(
   const level = () => session?.level() ?? 0;
 
   return {
-    getState: () => state,
+    getState: () => view,
     subscribe(listener: () => void) {
       listeners.add(listener);
       return () => void listeners.delete(listener);
@@ -537,8 +605,8 @@ export function createVoiceNote(
 
     /** Sends the kept recording again: the same audio, in the language and for the page it had. */
     retry(): Promise<void> {
-      const { phase, recording: kept, defaultTarget } = state;
-      if (phase !== 'failed' || !kept) return Promise.resolve();
+      const { phase: now, recording: kept, defaultTarget } = view;
+      if (now !== 'failed' || !kept) return Promise.resolve();
       return send(
         {
           blob: kept.blob,
@@ -551,7 +619,7 @@ export function createVoiceNote(
     },
     /** Gives up waiting for the read. The server is not told, so the Voice Cap charge stands. */
     cancelReading() {
-      if (state.phase !== 'reading') return;
+      if (phase() !== 'reading') return;
       reading?.abort();
       reading = undefined;
       letSleep();
@@ -560,12 +628,12 @@ export function createVoiceNote(
     },
     /** Drops a failure and its kept recording. */
     dismiss() {
-      if (state.phase !== 'failed') return;
+      if (phase() !== 'failed') return;
       idle();
     },
     /** Drops a failure and its kept recording, and says so. */
     discardFailed() {
-      if (state.phase !== 'failed') return;
+      if (phase() !== 'failed') return;
       idle();
       notify('discarded');
     },
@@ -573,15 +641,15 @@ export function createVoiceNote(
 
     /** Review: drops a Voice Action. */
     remove(id: string) {
-      if (state.phase !== 'review' || !state.proposal) return;
-      state = {
-        ...state,
+      const proposal = openNote()?.proposal;
+      if (phase() !== 'review' || !proposal) return;
+      patchOpen((n) => ({
+        ...n,
         proposal: {
-          ...state.proposal,
-          actions: state.proposal.actions.filter((a) => a.id !== id),
+          ...proposal,
+          actions: proposal.actions.filter((a) => a.id !== id),
         },
-      };
-      emit();
+      }));
     },
     /** Review: puts a `needsList` action on a list, swapping in that list's resolution. The pick can change. */
     pickList(id: string, list: VoiceList) {
@@ -593,43 +661,41 @@ export function createVoiceNote(
     },
     /** Review: changes a Voice Action. */
     edit(id: string, patch: VoiceNoteEdit) {
-      if (state.phase !== 'review' || !state.proposal) return;
-      state = {
-        ...state,
+      const proposal = openNote()?.proposal;
+      if (phase() !== 'review' || !proposal) return;
+      patchOpen((n) => ({
+        ...n,
         proposal: {
-          ...state.proposal,
-          actions: state.proposal.actions.map((a) =>
+          ...proposal,
+          actions: proposal.actions.map((a) =>
             a.id === id ? { ...a, ...patch } : a,
           ),
         },
-      };
-      emit();
+      }));
     },
     /** Apply was sent: Review stays open, its buttons disabled. Only from Review. */
     applying() {
-      if (state.phase !== 'review') return;
-      state = { ...state, phase: 'applying' };
-      emit();
+      if (phase() !== 'review') return;
+      patchOpen((n) => ({ ...n, phase: 'applying' }));
     },
     /** Apply failed: back to Review with every edit kept. */
     applyFailed() {
-      if (state.phase !== 'applying') return;
-      state = { ...state, phase: 'review' };
-      emit();
+      if (phase() !== 'applying') return;
+      patchOpen((n) => ({ ...n, phase: 'review' }));
     },
     /** Closes Review once Apply has succeeded. */
     applied() {
-      if (state.phase !== 'applying') return;
+      if (phase() !== 'applying') return;
       idle();
     },
     /** Done on the answer sheet: closes it. Nothing was written, so nothing is sent. */
     closeAnswers() {
-      if (state.phase !== 'answers') return;
+      if (phase() !== 'answers') return;
       idle();
     },
     /** Closes Review without applying; ignored while Apply is in flight. */
     discard() {
-      if (state.phase !== 'review') return;
+      if (phase() !== 'review') return;
       idle();
     },
   };
