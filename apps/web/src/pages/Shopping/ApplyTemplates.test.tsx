@@ -86,13 +86,31 @@ const trolley: ShoppingList = {
   summary: { remaining: 0, checked: 1 },
 };
 
+// Bread is on no template, so it changes nothing in the sheet; it keeps the card's Import pill showing.
+const bread: ShoppingList = {
+  id: 'l1',
+  groups: [
+    {
+      aisle: produce,
+      items: [
+        {
+          id: 'i9',
+          ingredientId: 'bread-ingredient',
+          name: 'Bread',
+          quantity: null,
+          unit: null,
+          checked: false,
+          unmatched: false,
+        },
+      ],
+    },
+  ],
+  summary: { remaining: 1, checked: 0 },
+};
+
 function stub(
   routes: Record<string, () => Response> = {},
-  list: ShoppingList = {
-    id: 'l1',
-    groups: [],
-    summary: { remaining: 0, checked: 0 },
-  },
+  list: ShoppingList = bread,
   templates: Template[] = [taco, bake, empty],
 ) {
   const { fetchMock, calls } = stubApi({
@@ -127,7 +145,7 @@ const openImport = async (user = userEvent.setup()) => {
 describe('Import sheet', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('opens from the header pill, also on an empty list, and closes without importing', async () => {
+  it('opens from the summary card pill and closes without importing', async () => {
     const user = userEvent.setup();
     const { calls } = stub();
     renderWithProviders(<ShoppingPage />);
@@ -156,6 +174,35 @@ describe('Import sheet', () => {
     expect(
       calls.some((c) => c.key === 'POST /api/shopping-list/items/bulk'),
     ).toBe(false);
+  });
+
+  it('leaves the card pill out on an empty list, where the Import tile takes its place', async () => {
+    stub(undefined, {
+      id: 'l1',
+      groups: [],
+      summary: { remaining: 0, checked: 0 },
+    });
+    renderWithProviders(<ShoppingPage />);
+
+    expect(
+      await screen.findByRole('button', { name: /Import a template/ }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'Import from a template' }),
+    ).toBeNull();
+  });
+
+  it('keeps the card pill on an empty list without templates, which has no Import tile', async () => {
+    stub(
+      undefined,
+      { id: 'l1', groups: [], summary: { remaining: 0, checked: 0 } },
+      [],
+    );
+    renderWithProviders(<ShoppingPage />);
+
+    expect(
+      await screen.findByRole('button', { name: 'Import from a template' }),
+    ).toBeVisible();
   });
 
   it('says there are no templates yet and keeps the button disabled', async () => {
@@ -316,12 +363,7 @@ describe('Import sheet', () => {
   it('imports the ticked lines as they are in one call, then closes with a toast and focus on the pill', async () => {
     const user = userEvent.setup();
     const { calls } = stub({
-      'POST /api/shopping-list/items/bulk': () =>
-        Response.json({
-          id: 'l1',
-          groups: [],
-          summary: { remaining: 0, checked: 0 },
-        }),
+      'POST /api/shopping-list/items/bulk': () => Response.json(bread),
     });
     renderWithProviders(<ShoppingPage />);
     const dialog = await openImport(user);

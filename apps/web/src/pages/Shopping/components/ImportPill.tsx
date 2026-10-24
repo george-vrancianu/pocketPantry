@@ -2,7 +2,7 @@ import { Box, ImportIcon, radius, tokens } from '@pocket-pantry/ui';
 import { forwardRef, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
-/** The "Import" pill that opens the Import sheet; always shown in the Shopping header. */
+/** The "Import" pill that opens the Import sheet; shown in the Shopping summary card. */
 export const ImportPill = forwardRef<
   HTMLButtonElement,
   { onClick: (event: MouseEvent<HTMLButtonElement>) => void }

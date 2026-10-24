@@ -1,4 +1,4 @@
-import { cleanup, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PlusIcon } from '../atoms/icons';
 import { renderWithTheme } from '../test/render';
@@ -7,28 +7,46 @@ import { ScreenHeader } from './ScreenHeader';
 describe('ScreenHeader', () => {
   afterEach(cleanup);
 
-  it('puts the Settings gear after the action, as the rightmost button', () => {
+  it('shows the action as the only button without `home` or `back`', () => {
     renderWithTheme(
       <ScreenHeader
         title="Pantry"
-        homeLabel="Home"
         action={{ label: 'Add', icon: <PlusIcon />, href: '/add' }}
-        settings={{ label: 'Settings', href: '/settings' }}
       />,
     );
 
     const names = screen
       .getAllByRole('link')
       .map((link) => link.getAttribute('aria-label'));
-    expect(names).toEqual(['Home', 'Add', 'Settings']);
-    expect(
-      screen.getByRole('link', { name: 'Settings' }).getAttribute('href'),
-    ).toBe('/settings');
+    expect(names).toEqual(['Add']);
   });
 
-  it('leaves the gear out without `settings`', () => {
-    renderWithTheme(<ScreenHeader title="Settings" homeLabel="Home" />);
+  it('shows Home before the title with `home`', () => {
+    renderWithTheme(
+      <ScreenHeader title="Customise" home={{ label: 'Home' }} />,
+    );
 
-    expect(screen.queryByRole('link', { name: 'Settings' })).toBeNull();
+    expect(
+      screen.getByRole('link', { name: 'Home' }).getAttribute('href'),
+    ).toBe('/');
+  });
+
+  it('opens a menu when the action has items', async () => {
+    renderWithTheme(
+      <ScreenHeader
+        title="Recipes"
+        action={{
+          label: 'Add',
+          icon: <PlusIcon />,
+          items: [{ label: 'New recipe', href: '/recipes/new' }],
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'New recipe' }),
+    ).toBeTruthy();
   });
 });

@@ -1,5 +1,7 @@
 # Recipe guidance is written by hand: Nutrition Notes over values, Eating Moments as tags marked Good for or Avoid
 
+> Amended by ADR 0026: Guidance can also be suggested on request, into empty fields only, and is then chosen by the Member or Admin who saves it.
+
 Each Recipe tells a Member what it pairs with and why, how nourishing it is, and when it is best (or worst) to eat. Agreed in a grilling session on 2026-10-11 (#136).
 
 ## Decision
