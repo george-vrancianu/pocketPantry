@@ -54,6 +54,7 @@ const read = (over: Partial<RecipeFromLink['draft']> = {}): RecipeFromLink => ({
     ...over,
   },
   sourceLink: 'https://www.example.com/pancakes',
+  sourceLanguage: null,
   closestBases: [],
 });
 
@@ -144,7 +145,7 @@ describe('RecipeFromLinkPage', () => {
     expect(linkField()).toBeDisabled();
     expect(
       calls.find((c) => c.key === 'POST /api/recipes/from-link')?.body,
-    ).toEqual({ url: 'https://www.example.com/pancakes' });
+    ).toEqual({ url: 'https://www.example.com/pancakes', language: 'catalog' });
     pending.release();
     await screen.findByLabelText(/^Title/);
   });
@@ -335,5 +336,109 @@ describe('RecipeFromLinkPage', () => {
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
     expect(body).toMatchObject({ servings: 4 });
     expect(body).not.toHaveProperty('sourceLink');
+  });
+
+  describe('language choice', () => {
+    const preferences = (catalog: Locale) => ({
+      'GET /api/settings/preferences': () =>
+        Response.json({
+          locale: 'en',
+          catalogLanguage: catalog,
+          effectiveCatalogLanguage: catalog,
+        }),
+    });
+    const sent = (calls: ReturnType<typeof setup>['calls']) =>
+      calls.find((c) => c.key === 'POST /api/recipes/from-link')?.body;
+
+    it('defaults to the Catalog Language and names it, even when it is not English', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        ...preferences('da'),
+        'POST /api/recipes/from-link': () => Response.json(read()),
+      });
+      const catalog = await screen.findByRole('radio', { name: 'In Dansk' });
+      expect(catalog).toBeChecked();
+      expect(screen.getByRole('radiogroup')).toHaveAccessibleName(
+        'Language of the recipe',
+      );
+      await submit(user, 'https://www.example.com/pancakes');
+      await screen.findByLabelText(/^Title/);
+      expect(sent(calls)).toMatchObject({ language: 'catalog' });
+    });
+
+    it("sends 'source' after switching to Keep the page's language", async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        ...preferences('ro'),
+        'POST /api/recipes/from-link': () => Response.json(read()),
+      });
+      await user.click(
+        await screen.findByRole('radio', { name: "Keep the page's language" }),
+      );
+      await submit(user, 'https://www.example.com/pancakes');
+      await screen.findByLabelText(/^Title/);
+      expect(sent(calls)).toMatchObject({ language: 'source' });
+    });
+
+    it('names the UI Language until the Preferences arrive', async () => {
+      setup({});
+      expect(
+        await screen.findByRole('radio', { name: 'In English' }),
+      ).toBeChecked();
+    });
+  });
+
+  it('carries the source language to the create request', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { calls } = setup({
+      'POST /api/recipes/from-link': () =>
+        Response.json({ ...read({ servings: 4 }), sourceLanguage: 'fr' }),
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await submit(user, 'https://www.example.com/pancakes');
+    expect(await screen.findByText(/Translated from French/)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await screen.findByText('Detail of the recipe');
+    expect(
+      calls.find((c) => c.key === 'POST /api/recipes')?.body,
+    ).toMatchObject({
+      sourceLink: 'https://www.example.com/pancakes',
+      sourceLanguage: 'fr',
+    });
+  });
+
+  it('sends no source language when the page needed no translation', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { calls } = setup({
+      'POST /api/recipes/from-link': () => Response.json(read({ servings: 4 })),
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await submit(user, 'https://www.example.com/pancakes');
+    await user.click(
+      await screen.findByRole('button', { name: 'Save Recipe' }),
+    );
+    await screen.findByText('Detail of the recipe');
+    const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
+    expect(body).toHaveProperty('sourceLink');
+    expect(body).not.toHaveProperty('sourceLanguage');
+  });
+
+  it('drops the source language along with the removed Source Link', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { calls } = setup({
+      'POST /api/recipes/from-link': () =>
+        Response.json({ ...read({ servings: 4 }), sourceLanguage: 'fr' }),
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await submit(user, 'https://www.example.com/pancakes');
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove link' }),
+    );
+    expect(screen.queryByText(/Translated from/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await screen.findByText('Detail of the recipe');
+    const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
+    expect(body).not.toHaveProperty('sourceLink');
+    expect(body).not.toHaveProperty('sourceLanguage');
   });
 });

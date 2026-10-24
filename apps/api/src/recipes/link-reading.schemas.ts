@@ -13,8 +13,8 @@ export const LINK_READING_SCHEMA_NAME = 'recipe_from_link_reading';
 export const linkReadingSchema = z.object({
   /** False when the page holds no recipe to read. */
   recipeFound: z.boolean(),
-  /** The language the page is written in, as a code such as "en"; empty when unknown. Normalised by `detectedLanguage`. */
-  sourceLanguage: z.string().nullish(),
+  /** The language the page is written in, as a code such as "en"; null when unsure. Normalised by `detectedLanguage`. */
+  sourceLanguage: z.string().nullable(),
   title: z.string(),
   servings: z.number().nullable(),
   prepMinutes: z.number().nullable(),

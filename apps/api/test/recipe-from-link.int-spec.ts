@@ -364,7 +364,8 @@ describe('Recipe from Link (integration)', () => {
       }).expect(200);
       const prompt = prompts[0].prompt;
       expect(prompt).toContain("in the page's own language");
-      expect(prompt).toContain('do not translate anything');
+      expect(prompt).toContain('(do not translate)');
+      expect(prompt).toContain('match its ingredients across languages');
       expect(prompt).not.toContain('Romanian');
       expect(prompt).not.toContain('Write the title and the steps in English');
       // Matching against the Catalog is unchanged.
@@ -410,14 +411,6 @@ describe('Recipe from Link (integration)', () => {
         expect((res.body as RecipeFromLink).sourceLanguage).toBeNull();
       },
     );
-
-    it('is null when the model leaves the field out', async () => {
-      const rest: Record<string, unknown> = reading();
-      delete rest.sourceLanguage;
-      respondWith(rest);
-      const res = await read(url).expect(200);
-      expect((res.body as RecipeFromLink).sourceLanguage).toBeNull();
-    });
   });
 
   it('leaves ids outside the Family scope, and low-confidence matches, Unmatched', async () => {

@@ -48,6 +48,7 @@ const detail: RecipeDetail = {
   allergens: { items: [], uncheckedCount: 0 },
   allergyWarning: null,
   sourceLink: null,
+  sourceLanguage: null,
 };
 
 const line = (over: Partial<PantryLine> & { lineId: string }): PantryLine => ({

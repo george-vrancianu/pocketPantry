@@ -13,7 +13,8 @@ import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
-import { useReadRecipeLink } from '../../lib/linkRecipe';
+import { ReadingLanguageChoice } from '../../components/ReadingLanguageChoice';
+import { useReadRecipeLink, type ReadingLanguage } from '../../lib/linkRecipe';
 import type { NewRecipeState } from './FamilyRecipePages';
 
 /** The reading's AI failures arrive as Scan codes; their own copy talks about photos, so this step words them for links. */
@@ -30,8 +31,8 @@ const READING_ERRORS: Record<string, string> = {
  * page filled in. Leaving the step cancels a read in progress, and a cancelled read never
  * navigates or shows an error.
  *
- * Later steps of Recipe from Link grow this form: a language choice, "Paste text instead"
- * with its field, the duplicate result and the cap message each add to `form` (above the
+ * Later steps of Recipe from Link grow this form: "Paste text instead" with its field (it reuses
+ * `ReadingLanguageChoice` with its own copy of the state), the duplicate result and the cap message each add to `form` (above the
  * submit button) or to the outcome handling in `submit`.
  */
 export function RecipeFromLinkPage() {
@@ -39,6 +40,7 @@ export function RecipeFromLinkPage() {
   const navigate = useNavigate();
   const read = useReadRecipeLink();
   const [url, setUrl] = useState('');
+  const [language, setLanguage] = useState<ReadingLanguage>('catalog');
   const controller = useRef<AbortController | null>(null);
   const field = useRef<HTMLInputElement>(null);
   const cancelButton = useRef<HTMLButtonElement>(null);
@@ -65,13 +67,18 @@ export function RecipeFromLinkPage() {
     const attempt = new AbortController();
     controller.current = attempt;
     read.mutate(
-      { url: url.trim(), signal: attempt.signal },
+      { url: url.trim(), language, signal: attempt.signal },
       {
-        onSuccess: ({ draft, closestBases, sourceLink }) => {
+        onSuccess: ({ draft, closestBases, sourceLink, sourceLanguage }) => {
           // Defensive: Cancel resets the mutation and leaving unmounts it, so this callback should not run for an aborted read.
           if (attempt.signal.aborted) return;
           navigate('/recipes/new', {
-            state: { draft, closestBases, sourceLink } satisfies NewRecipeState,
+            state: {
+              draft,
+              closestBases,
+              sourceLink,
+              sourceLanguage,
+            } satisfies NewRecipeState,
           });
         },
       },
@@ -123,6 +130,7 @@ export function RecipeFromLinkPage() {
             },
           }}
         />
+        <ReadingLanguageChoice value={language} onChange={setLanguage} />
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
           {read.isPending ? (
             <Box aria-hidden>

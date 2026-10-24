@@ -141,7 +141,7 @@ function readingPrompt(
   const keep = choice === 'source';
   const language = LANGUAGE_NAMES[locale];
   const writeIn = keep
-    ? "the page's own language, exactly as the recipe is written there; do not translate anything"
+    ? "the page's own language (do not translate)"
     : language;
   const pairs = (rows: { id: string; name: string }[]) =>
     JSON.stringify(rows.map((row) => [row.id, row.name]));
@@ -152,7 +152,7 @@ function readingPrompt(
     'Do not invent values the page does not state: use null for servings, prepMinutes, cookMinutes, quantity and unit when missing. For a pinch, to taste or similar, keep quantity and unit null.',
     'Quantity and unit must be one of g, kg, ml, l, pcs. Convert cups, tablespoons, teaspoons, ounces and pounds to g or ml; use pcs for countable items. Put the amount exactly as written (for example "2 cups") in originalAmount, and any preparation (chopped, sifted) in preparation, in ' +
       `${writeIn}. Set optional only when the recipe marks the ingredient optional.`,
-    `Give nameAsWritten as a short ingredient name in ${writeIn}. Set ingredientId only to an exact id from the application catalog (tuples are [id, name, category]) that is a reasonable match, and matchConfidence to how sure you are; never invent an id. Use null when no catalog ingredient fits.`,
+    `Give nameAsWritten as a short ingredient name in ${writeIn}. Set ingredientId only to an exact id from the application catalog (tuples are [id, name, category]) that is a reasonable match, and matchConfidence to how sure you are; never invent an id.${keep ? ' The catalog is in another language than the page may be: match its ingredients across languages.' : ''} Use null when no catalog ingredient fits.`,
     `Set cuisineId or methodId only to an id from these lists, otherwise null. Cuisines [id, name]: ${pairs(lists.cuisines)}. Methods: ${pairs(lists.methods)}.`,
     `Application catalog: ${catalog}`,
     `Recipe data (schema.org JSON-LD): ${input.json}`,

@@ -69,6 +69,8 @@ export type NewRecipeState = {
   closestBases?: BaseRecipeOption[];
   /** The page the draft was read from; kept on the Recipe unless the Member removes it. */
   sourceLink?: string | null;
+  /** The language the page was translated from (a code like "fr"); only kept with the Source Link. */
+  sourceLanguage?: string | null;
 };
 
 const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
@@ -88,7 +90,8 @@ export function NewRecipePage() {
 /** The route state if it is a supplied draft; anything else is ignored. */
 function suppliedOf(state: unknown): NewRecipeState | null {
   if (typeof state !== 'object' || state === null) return null;
-  const { draft, closestBases, sourceLink } = state as Partial<NewRecipeState>;
+  const { draft, closestBases, sourceLink, sourceLanguage } =
+    state as Partial<NewRecipeState>;
   if (typeof draft !== 'object' || draft === null) return null;
   if (!Array.isArray(draft.lines) || !Array.isArray(draft.steps)) return null;
   if (closestBases !== undefined && !Array.isArray(closestBases)) return null;
@@ -97,6 +100,12 @@ function suppliedOf(state: unknown): NewRecipeState | null {
     sourceLink !== undefined &&
     sourceLink !== null &&
     !(typeof sourceLink === 'string' && isSourceLink(sourceLink))
+  )
+    return null;
+  if (
+    sourceLanguage !== undefined &&
+    sourceLanguage !== null &&
+    typeof sourceLanguage !== 'string'
   )
     return null;
   return state as NewRecipeState;
@@ -135,7 +144,10 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
         ) : null}
         {sourceLink ? (
           <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-            <SourceLink href={sourceLink} />
+            <SourceLink
+              href={sourceLink}
+              translatedFrom={supplied?.sourceLanguage}
+            />
             <Button
               variant="ghost"
               onClick={() => {
@@ -169,6 +181,10 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
                   ...document,
                   guidance,
                   ...(sourceLink ? { sourceLink } : {}),
+                  // The language note belongs to the link: no link, no note.
+                  ...(sourceLink && supplied?.sourceLanguage
+                    ? { sourceLanguage: supplied.sourceLanguage }
+                    : {}),
                 },
               },
               { onSuccess: (saved) => navigate(`/recipes/${saved.id}`) },

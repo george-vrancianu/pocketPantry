@@ -107,7 +107,10 @@ function RecipeDetail({ id }: { id: string }) {
             <RecipeHero recipe={recipe} servings={servings} />
             {recipe.sourceLink ? (
               <Box>
-                <SourceLink href={recipe.sourceLink} />
+                <SourceLink
+                  href={recipe.sourceLink}
+                  translatedFrom={recipe.sourceLanguage}
+                />
               </Box>
             ) : null}
             {recipe.allergyWarning ? (
