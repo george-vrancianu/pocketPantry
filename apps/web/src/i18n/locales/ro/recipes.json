@@ -232,5 +232,9 @@
     "from": "De pe {{host}} ↗",
     "remove": "Elimină linkul",
     "translatedFrom": "Tradusă din {{language}}"
+  },
+  "recipeDraft": {
+    "saving": "Se salvează…",
+    "saved": "Ciornă salvată"
   }
 }

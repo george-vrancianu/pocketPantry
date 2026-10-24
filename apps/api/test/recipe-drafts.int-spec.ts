@@ -170,6 +170,31 @@ describe('Recipe Drafts (integration)', () => {
     });
   });
 
+  describe('a deleted Ingredient', () => {
+    it('comes back as an Unmatched name, keeping the typed name', async () => {
+      const line = (id: string, name: string) => ({
+        ingredientId: id,
+        name,
+        quantity: '',
+        unit: 'g',
+        optional: false,
+        note: '',
+      });
+      const created = await create(a1, {
+        content: content({
+          lines: [line(ingredientId, 'Kept'), line(randomUUID(), 'Gone')],
+        }),
+      });
+      const got = await a1.get(`/${created.id}`).expect(200);
+      expect(
+        bodyOf<{ content: { lines: unknown[] } }>(got).content.lines,
+      ).toMatchObject([
+        { ingredientId, name: 'Kept' },
+        { ingredientId: '', name: 'Gone' },
+      ]);
+    });
+  });
+
   describe('update', () => {
     it('replaces the content and bumps the version on a match', async () => {
       const { id } = await create(a1);

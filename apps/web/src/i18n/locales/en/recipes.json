@@ -217,5 +217,9 @@
     "from": "From {{host}} ↗",
     "remove": "Remove link",
     "translatedFrom": "Translated from {{language}}"
+  },
+  "recipeDraft": {
+    "saving": "Saving…",
+    "saved": "Draft saved"
   }
 }
