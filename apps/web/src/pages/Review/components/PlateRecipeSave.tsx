@@ -1,7 +1,10 @@
 import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BaseRecipePicker } from '../../../components/BaseRecipePicker';
+import {
+  BaseRecipePicker,
+  noBasePick,
+} from '../../../components/BaseRecipePicker';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   matchedIngredientIds,
@@ -33,6 +36,8 @@ export function PlateRecipeSave({
   const open = ingredientIds !== null;
   const [title, setTitle] = useState(dishTitle);
   const [parentId, setParentId] = useState<string | null>(null);
+  // Held here, not in the picker, so the pick and search survive Cancel and reopen.
+  const [basePick, setBasePick] = useState(noBasePick);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const openerRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(false);
@@ -99,6 +104,8 @@ export function PlateRecipeSave({
         onChange={(event) => setTitle(event.target.value)}
       />
       <BaseRecipePicker
+        pick={basePick}
+        onPick={setBasePick}
         closest={closestBases}
         loading={matches.isPending}
         hiddenByAllergiesCount={matches.data?.hiddenByAllergiesCount ?? 0}

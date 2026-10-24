@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   BaseRecipePicker,
+  noBasePick,
   type BaseRecipeOption,
 } from '../../components/BaseRecipePicker';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
@@ -64,9 +65,30 @@ const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
 
 /** "New Recipe": the Family Recipe form, blank or filled from a supplied draft; saved as a Base Recipe, or a Variant of the picked base. */
 export function NewRecipePage() {
+  const location = useLocation();
+  // A new navigation (even to this same route) starts the form afresh.
+  return (
+    <NewRecipeContent
+      key={location.key}
+      supplied={suppliedOf(location.state)}
+    />
+  );
+}
+
+/** The route state if it is a supplied draft; anything else is ignored. */
+function suppliedOf(state: unknown): NewRecipeState | null {
+  if (typeof state !== 'object' || state === null) return null;
+  const { draft, closestBases } = state as Partial<NewRecipeState>;
+  if (typeof draft !== 'object' || draft === null) return null;
+  if (!Array.isArray(draft.lines) || !Array.isArray(draft.steps)) return null;
+  if (closestBases !== undefined && !Array.isArray(closestBases)) return null;
+  return state as NewRecipeState;
+}
+
+function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
-  const supplied = (useLocation().state as NewRecipeState | null) ?? null;
+  const [basePick, setBasePick] = useState(noBasePick);
   const create = useCreateFamilyRecipe();
   const momentOptions = useMomentOptions();
   const [parentId, setParentId] = useState<string | null>(null);
@@ -80,6 +102,8 @@ export function NewRecipePage() {
       <Stack spacing={2.5}>
         {supplied?.closestBases ? (
           <BaseRecipePicker
+            pick={basePick}
+            onPick={setBasePick}
             closest={supplied.closestBases}
             onChange={setParentId}
           />

@@ -1,5 +1,5 @@
 import { Box, Stack, TextField, Typography } from '@pocket-pantry/ui';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRecipes, type CompactAllergyWarning } from '../lib/recipes';
 import { AllergenIndicator } from './AllergenIndicator';
@@ -14,7 +14,18 @@ export type BaseRecipeOption = {
   allergyWarning?: CompactAllergyWarning | null;
 };
 
+/** What the Member has done in the picker; the caller holds it so it survives the picker unmounting. */
+export type BasePick = {
+  chosen: string | null;
+  another: BaseRecipeOption | null;
+  search: string;
+};
+
+export const noBasePick: BasePick = { chosen: null, another: null, search: '' };
+
 type Props = {
+  pick: BasePick;
+  onPick: (pick: BasePick) => void;
   /** The closest Base Recipes, best first. */
   closest: BaseRecipeOption[];
   /** The closest are still being fetched. */
@@ -22,7 +33,7 @@ type Props = {
   /** How many closest matches "Hide Recipes with my Allergies" left out; with `onShowHidden`, shows the note. */
   hiddenByAllergiesCount?: number;
   onShowHidden?: () => void;
-  /** The picked base's id, or null for standalone; called on mount and on every change. */
+  /** The picked base's id, or null for standalone; called on mount and on every change. Must be stable (it is an effect dependency). */
   onChange: (parentId: string | null) => void;
 };
 
@@ -62,6 +73,8 @@ function BaseOption({
  * and "standalone". Until the Member chooses, the top match (if any) is picked.
  */
 export function BaseRecipePicker({
+  pick: state,
+  onPick,
   closest,
   loading = false,
   hiddenByAllergiesCount = 0,
@@ -70,9 +83,9 @@ export function BaseRecipePicker({
 }: Props) {
   const { t } = useTranslation('review');
   const groupName = useId();
-  const [chosen, setChosen] = useState<string | null>(null);
-  const [another, setAnother] = useState<BaseRecipeOption | null>(null);
-  const [search, setSearch] = useState('');
+  const { chosen, another, search } = state;
+  const setChosen = (id: string) => onPick({ ...state, chosen: id });
+  const setSearch = (text: string) => onPick({ ...state, search: text });
   const searching = search.trim() !== '';
   const found = useRecipes(
     { search: searching ? search : '', cuisineId: '', methodId: '' },
@@ -109,10 +122,8 @@ export function BaseRecipePicker({
   const parentId = selected === STANDALONE ? null : selected;
   useEffect(() => onChange(parentId), [parentId, onChange]);
 
-  const pick = (base: BaseRecipeOption) => {
-    setAnother(base);
-    setChosen(base.id);
-  };
+  const pickAnother = (base: BaseRecipeOption) =>
+    onPick({ ...state, another: base, chosen: base.id });
 
   return (
     <Stack spacing={1.5}>
@@ -160,7 +171,7 @@ export function BaseRecipePicker({
             name={groupName}
             checked={selected === recipe.id}
             label={recipe.title}
-            onSelect={() => pick(recipe)}
+            onSelect={() => pickAnother(recipe)}
             allergyWarning={recipe.allergyWarning}
           />
         ))}

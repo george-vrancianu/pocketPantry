@@ -1,6 +1,6 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes } from 'react-router-dom';
+import { Link, Route, Routes } from 'react-router-dom';
 import type { InitialEntry } from 'react-router-dom';
 import type { NewRecipeState } from './FamilyRecipePages';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -146,7 +146,15 @@ function setup(route: InitialEntry, routes: Parameters<typeof stubApi>[0]) {
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
     <Routes>
-      <Route path="/recipes/new" element={<NewRecipePage />} />
+      <Route
+        path="/recipes/new"
+        element={
+          <>
+            <Link to="/recipes/new">go blank</Link>
+            <NewRecipePage />
+          </>
+        }
+      />
       <Route path="/recipes/:id/variant/new" element={<NewVariantPage />} />
       <Route path="/recipes/:id/edit" element={<EditFamilyRecipePage />} />
       <Route path="/recipes/:id" element={<p>Detail of the recipe</p>} />
@@ -279,6 +287,23 @@ describe('NewRecipePage with a supplied draft', () => {
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
       ).toMatchObject({ parentId: null }),
     );
+  });
+
+  it('ignores route state that is not a supplied draft', async () => {
+    setup({ pathname: '/recipes/new', state: { from: 'elsewhere' } }, {});
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('');
+    expect(screen.queryByRole('radio')).toBeNull();
+  });
+
+  it('starts afresh when navigated to again without a draft', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup(newRecipeWith(sourced), {});
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue(
+      'Pancakes from a blog',
+    );
+    await user.click(screen.getByRole('link', { name: 'go blank' }));
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('');
+    expect(screen.queryByRole('radio')).toBeNull();
   });
 
   it('shows no Base Recipe picker on the blank page', async () => {
