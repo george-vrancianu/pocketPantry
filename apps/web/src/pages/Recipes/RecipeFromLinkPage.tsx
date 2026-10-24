@@ -1,5 +1,6 @@
 import {
   Alert,
+  Box,
   Button,
   Stack,
   Spinner,
@@ -39,6 +40,18 @@ export function RecipeFromLinkPage() {
   const read = useReadRecipeLink();
   const [url, setUrl] = useState('');
   const controller = useRef<AbortController | null>(null);
+  const field = useRef<HTMLInputElement>(null);
+  const wasPending = useRef(false);
+
+  // The field is disabled while reading; when the read ends (Cancel or an error), focus returns to it.
+  useEffect(() => {
+    if (wasPending.current && !read.isPending) field.current?.focus();
+    wasPending.current = read.isPending;
+  }, [read.isPending]);
+  // A fast failure may never render the pending state, so an error also hands focus back.
+  useEffect(() => {
+    if (read.isError) field.current?.focus();
+  }, [read.isError]);
 
   // Leaving the step abandons the read in progress.
   useEffect(() => () => controller.current?.abort(), []);
@@ -52,6 +65,7 @@ export function RecipeFromLinkPage() {
       { url: url.trim(), signal: attempt.signal },
       {
         onSuccess: ({ draft, closestBases, sourceLink }) => {
+          // Defensive: Cancel resets the mutation and leaving unmounts it, so this callback should not run for an aborted read.
           if (attempt.signal.aborted) return;
           navigate('/recipes/new', {
             state: { draft, closestBases, sourceLink } satisfies NewRecipeState,
@@ -93,6 +107,7 @@ export function RecipeFromLinkPage() {
           type="url"
           label={t('recipes:fromLink.label')}
           value={url}
+          inputRef={field}
           disabled={read.isPending}
           onChange={(event) => setUrl(event.target.value)}
           slotProps={{
@@ -105,16 +120,23 @@ export function RecipeFromLinkPage() {
             },
           }}
         />
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+          {read.isPending ? (
+            <Box aria-hidden>
+              <Spinner label={t('recipes:fromLink.reading')} />
+            </Box>
+          ) : null}
+          <Typography role="status">
+            {read.isPending ? t('recipes:fromLink.reading') : ''}
+          </Typography>
+        </Stack>
         {read.isPending ? (
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-            <Spinner label={t('recipes:fromLink.reading')} />
-            <Typography role="status">
-              {t('recipes:fromLink.reading')}
-            </Typography>
-          </Stack>
-        ) : null}
-        {read.isPending ? (
-          <Button variant="secondary" onClick={cancel}>
+          // Pressing "Read the Recipe" swaps it for Cancel, so focus moves there.
+          <Button
+            variant="secondary"
+            onClick={cancel}
+            ref={(button: HTMLButtonElement | null) => button?.focus()}
+          >
             {t('common:cancel')}
           </Button>
         ) : (

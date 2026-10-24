@@ -121,7 +121,7 @@ function hold(result: RecipeFromLink) {
   };
 }
 
-const linkField = () => screen.getByLabelText(/^Link to the Recipe/);
+const linkField = () => screen.getByLabelText(/^Link to the recipe/);
 
 async function submit(user: ReturnType<typeof userEvent.setup>, url: string) {
   await user.type(linkField(), url);
@@ -141,7 +141,6 @@ describe('RecipeFromLinkPage', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Reading the Recipe',
     );
-    expect(screen.getByRole('progressbar')).toBeVisible();
     expect(linkField()).toBeDisabled();
     expect(
       calls.find((c) => c.key === 'POST /api/recipes/from-link')?.body,
@@ -157,7 +156,7 @@ describe('RecipeFromLinkPage', () => {
     ).toBeDisabled();
   });
 
-  it('aborts the read and goes nowhere when the Member leaves', async () => {
+  it('aborts the read when the Member leaves the step', async () => {
     const user = userEvent.setup({ delay: null });
     const pending = hold(read());
     const { signals, unmount } = setup({
@@ -172,6 +171,28 @@ describe('RecipeFromLinkPage', () => {
     pending.release();
   });
 
+  it('moves focus to Cancel while reading, then back to the field after Cancel', async () => {
+    const user = userEvent.setup({ delay: null });
+    const pending = hold(read());
+    setup({ 'POST /api/recipes/from-link': pending.handler });
+    await submit(user, 'https://example.com/a');
+    expect(await screen.findByRole('button', { name: 'Cancel' })).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(linkField()).toHaveFocus();
+    pending.release();
+  });
+
+  it('moves focus back to the field after an error', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup({
+      'POST /api/recipes/from-link': () =>
+        Response.json({ code: 'link.invalid', params: {} }, { status: 400 }),
+    });
+    await submit(user, 'https://example.com/a');
+    await screen.findByRole('alert');
+    expect(linkField()).toHaveFocus();
+  });
+
   it('aborts the read, shows no error and stays on the step when cancelled', async () => {
     const user = userEvent.setup({ delay: null });
     const pending = hold(read());
@@ -182,7 +203,7 @@ describe('RecipeFromLinkPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Cancel' }));
     expect(signals.at(-1)?.aborted).toBe(true);
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
     expect(linkField()).toHaveValue('https://example.com/a');
     expect(screen.getByText('at /recipes/from-link')).toBeVisible();
     pending.release();
@@ -195,15 +216,15 @@ describe('RecipeFromLinkPage', () => {
   it.each([
     ['link.invalid', 400, /not a web address we can open/],
     ['link.unreadable', 422, /could not open that page/],
-    ['link.no_recipe', 422, /could not find a Recipe on that page/],
+    ['link.no_recipe', 422, /could not find a recipe on that page/],
     [
       'scan.provider_unavailable',
       502,
-      /cannot read Recipes from links right now/,
+      /cannot read recipes from links right now/,
     ],
-    ['scan.provider_refused', 502, /could not read a Recipe from that page/],
-    ['scan.provider_incomplete', 502, /could not read a Recipe from that page/],
-    ['scan.result_invalid', 502, /could not read a Recipe from that page/],
+    ['scan.provider_refused', 502, /could not read a recipe from that page/],
+    ['scan.provider_incomplete', 502, /could not read a recipe from that page/],
+    ['scan.result_invalid', 502, /could not read a recipe from that page/],
   ])(
     'says what went wrong for %s and keeps the link',
     async (code, status, copy) => {

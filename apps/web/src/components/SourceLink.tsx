@@ -10,12 +10,17 @@ export function sourceHost(sourceLink: string): string | null {
   }
 }
 
+/** Whether the text is an http(s) address with a host, so it can be shown as a link. */
+export function isSourceLink(href: string): boolean {
+  return /^https?:/i.test(href) && sourceHost(href) !== null;
+}
+
 /** "From host ↗": where a Recipe was read from (its Source Link), opening the page in a new tab. */
 export function SourceLink({ href }: { href: string }) {
   const { t } = useTranslation('recipes');
   const host = sourceHost(href);
   // Only an http(s) page is linked; anything else is not shown as a link.
-  if (host === null || !/^https?:/i.test(href)) return null;
+  if (host === null || !isSourceLink(href)) return null;
   return (
     <Link href={href} target="_blank" rel="noopener noreferrer">
       {t('sourceLink.from', { host })}

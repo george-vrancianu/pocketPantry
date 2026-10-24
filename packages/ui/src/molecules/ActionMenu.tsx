@@ -18,10 +18,10 @@ export type ActionMenuItem = {
 };
 
 export type ActionMenuProps = {
-  /** Accessible name of the "…" button. */
+  /** Accessible name of the menu button. */
   label: string;
   items: ActionMenuItem[];
-  /** Ref to the "…" button, e.g. to return focus to it after an action is cancelled. */
+  /** Ref to the menu button, e.g. to return focus to it after an action is cancelled. */
   buttonRef?: Ref<HTMLButtonElement>;
   /** The button's icon; "…" by default. */
   icon?: ReactNode;
@@ -29,7 +29,7 @@ export type ActionMenuProps = {
   tone?: 'surface' | 'accent';
 };
 
-/** A "…" icon button that opens a dropdown of actions. Escape, outside click and focus are handled by the MUI menu. */
+/** An icon button ("…" unless `icon` says otherwise) that opens a dropdown of actions. Escape, outside click and focus are handled by the MUI menu. */
 export function ActionMenu({
   label,
   items,

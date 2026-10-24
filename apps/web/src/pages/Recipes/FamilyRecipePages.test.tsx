@@ -313,6 +313,12 @@ describe('NewRecipePage with a supplied draft', () => {
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('');
   });
 
+  it('ignores route state whose Source Link is not a web address', async () => {
+    setup(newRecipeWith({ ...sourced, sourceLink: 'not a link' }), {});
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('');
+    expect(screen.queryByRole('button', { name: 'Remove link' })).toBeNull();
+  });
+
   it('shows no Base Recipe picker when there are no closest Base Recipes', async () => {
     const user = userEvent.setup({ delay: null });
     const calls = setup(newRecipeWith({ ...sourced, closestBases: [] }), {

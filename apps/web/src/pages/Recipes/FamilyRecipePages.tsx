@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -15,7 +15,7 @@ import {
   type BaseRecipeOption,
 } from '../../components/BaseRecipePicker';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
-import { SourceLink } from '../../components/SourceLink';
+import { SourceLink, isSourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
 import {
   useCreateFamilyRecipe,
@@ -92,10 +92,11 @@ function suppliedOf(state: unknown): NewRecipeState | null {
   if (typeof draft !== 'object' || draft === null) return null;
   if (!Array.isArray(draft.lines) || !Array.isArray(draft.steps)) return null;
   if (closestBases !== undefined && !Array.isArray(closestBases)) return null;
+  // A Source Link that is not a web address would show a Remove button with nothing to remove.
   if (
     sourceLink !== undefined &&
     sourceLink !== null &&
-    typeof sourceLink !== 'string'
+    !(typeof sourceLink === 'string' && isSourceLink(sourceLink))
   )
     return null;
   return state as NewRecipeState;
@@ -110,6 +111,7 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
   const [parentId, setParentId] = useState<string | null>(null);
   // The Member may drop the Source Link before saving, but not change it.
   const [sourceLink, setSourceLink] = useState(supplied?.sourceLink ?? null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   // No closest Base Recipes (none found, or not matched yet): no picker, a Base Recipe.
   const hasBases = (supplied?.closestBases?.length ?? 0) > 0;
   const [initial] = useState(() =>
@@ -118,7 +120,10 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
 
   return (
     <>
-      <AppScreenHeader title={t('recipes:family.newRecipeHeading')} />
+      <AppScreenHeader
+        title={t('recipes:family.newRecipeHeading')}
+        titleRef={headingRef}
+      />
       <Stack spacing={2.5}>
         {supplied?.closestBases && hasBases ? (
           <BaseRecipePicker
@@ -131,7 +136,14 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
         {sourceLink ? (
           <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
             <SourceLink href={sourceLink} />
-            <Button variant="ghost" onClick={() => setSourceLink(null)}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSourceLink(null);
+                // The button unmounts with the row: keep focus on the page.
+                headingRef.current?.focus();
+              }}
+            >
               {t('recipes:sourceLink.remove')}
             </Button>
           </Stack>

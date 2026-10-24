@@ -183,8 +183,8 @@
   "fromLink": {
     "menuItem": "From a link",
     "heading": "From a link",
-    "hint": "Paste the link to a page with a Recipe. PantryGator reads it into a new Recipe for you to check before saving.",
-    "label": "Link to the Recipe",
+    "hint": "Paste the link to a page with a recipe. PantryGator reads it into a new Recipe for you to check before saving.",
+    "label": "Link to the recipe",
     "submit": "Read the Recipe",
     "reading": "Reading the Recipe…"
   },

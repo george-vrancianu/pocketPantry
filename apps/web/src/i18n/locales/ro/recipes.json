@@ -197,13 +197,13 @@
   "fromLink": {
     "menuItem": "Dintr-un link",
     "heading": "Dintr-un link",
-    "hint": "Lipește linkul unei pagini cu o rețetă. PantryGator o citește într-o rețetă nouă, pe care o verifici înainte de a o salva.",
+    "hint": "Lipește linkul unei pagini cu o rețetă. PantryGator o transformă într-o rețetă nouă, pe care o verifici înainte de a o salva.",
     "label": "Linkul rețetei",
     "submit": "Citește rețeta",
     "reading": "Se citește rețeta…"
   },
   "sourceLink": {
-    "from": "De la {{host}} ↗",
+    "from": "De pe {{host}} ↗",
     "remove": "Elimină linkul"
   }
 }
