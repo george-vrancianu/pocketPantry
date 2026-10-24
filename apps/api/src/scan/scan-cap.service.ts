@@ -25,6 +25,16 @@ const nextUtcMidnight = (day: string) =>
 
 const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 
+/** The 429 for a Member at the `kind` cap; the Voice Cap and the Link Cap also say when it lifts. */
+const capReached = (kind: UsageKind, cap: number, day: string) =>
+  new ApiException(
+    429,
+    LIMITS[kind].code,
+    kind === 'voice' || kind === 'link'
+      ? { cap, resetsAt: nextUtcMidnight(day) }
+      : { cap },
+  );
+
 /**
  * The per-Member daily caps, counted per UTC day and per kind and enforced
  * before the provider is called. The Scan Cap is `SCAN_DAILY_CAP`, the Voice
@@ -66,13 +76,7 @@ export class ScanCapService {
       .returning({ count: scanUsage.count });
     if (rows.length === 0) {
       // The Voice Cap (the button waits it out) and the Link Cap (the message names the time) say when they lift.
-      throw new ApiException(
-        429,
-        limit.code,
-        kind === 'voice' || kind === 'link'
-          ? { cap, resetsAt: nextUtcMidnight(day) }
-          : { cap },
-      );
+      throw capReached(kind, cap, day);
     }
     return day;
   }
@@ -84,8 +88,8 @@ export class ScanCapService {
    */
   async assertBelowCap(
     memberId: string,
-    kind: UsageKind = 'scan',
     now = new Date(),
+    kind: UsageKind = 'scan',
   ): Promise<void> {
     const limit = LIMITS[kind];
     const cap = this.config.get(limit.setting, { infer: true });
@@ -102,13 +106,7 @@ export class ScanCapService {
         ),
       );
     if ((row?.count ?? 0) >= cap) {
-      throw new ApiException(
-        429,
-        limit.code,
-        kind === 'voice' || kind === 'link'
-          ? { cap, resetsAt: nextUtcMidnight(day) }
-          : { cap },
-      );
+      throw capReached(kind, cap, day);
     }
   }
 

@@ -59,14 +59,6 @@ export type PageFetcherOptions = {
   maxRedirects: number;
 };
 
-/**
- * Production policy. Ports: only the scheme's default (80, 443) are allowed,
- * because recipe sites never need another and non-default ports are how
- * internal services (databases, admin panels) sit next to public hosts. The
- * WHATWG URL parser drops a port equal to the default, so an explicit port
- * here is always a non-default one. No env var or flag relaxes this; tests
- * pass their own options.
- */
 /** The slice of `dns.promises.Resolver` the lookup uses; tests pass a fake. */
 export type AddressResolver = Pick<Resolver, 'resolve4' | 'resolve6'>;
 
@@ -107,6 +99,14 @@ export function resolverLookup(hostname: string): Promise<ResolvedAddress[]> {
   return resolveAddresses(sharedResolver, hostname);
 }
 
+/**
+ * Production policy. Ports: only the scheme's default (80, 443) are allowed,
+ * because recipe sites never need another and non-default ports are how
+ * internal services (databases, admin panels) sit next to public hosts. The
+ * WHATWG URL parser drops a port equal to the default, so an explicit port
+ * here is always a non-default one. No env var or flag relaxes this; tests
+ * pass their own options.
+ */
 export const STRICT_PAGE_FETCHER_OPTIONS: Readonly<PageFetcherOptions> =
   Object.freeze({
     lookup: resolverLookup,

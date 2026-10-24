@@ -100,7 +100,7 @@ export class LinkRecipesService {
         if (existing !== null) return { kind: 'duplicate', recipeId: existing };
       }
       // Already at the cap: refuse before the fetch. The use itself is still counted only in `ask`.
-      await this.caps.assertBelowCap(memberId, 'link');
+      await this.caps.assertBelowCap(memberId, new Date(), 'link');
       input = await this.readingInput(sourceLink);
     } else if (body.text !== undefined) {
       input = { kind: 'pasted-text', text: body.text };

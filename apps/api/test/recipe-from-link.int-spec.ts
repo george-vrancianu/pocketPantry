@@ -818,6 +818,17 @@ describe('Recipe from Link (integration)', () => {
     });
 
     it('answers link.cap_reached before any fetch for a Member already at the cap, and a duplicate stays free', async () => {
+      const saved = await member
+        .post('', {
+          title: `Dup at cap ${stamp}`,
+          servings: 2,
+          locale: 'en',
+          parentId: null,
+          lines: [{ ingredientId: flour, quantity: 50, unit: 'g' }],
+          steps: [{ text: 'Whisk' }],
+          sourceLink: 'https://example.com/dup',
+        })
+        .expect(201);
       await read('https://example.com/one').expect(200);
       await read('https://example.com/two').expect(200);
       fetched.length = 0;
@@ -827,6 +838,13 @@ describe('Recipe from Link (integration)', () => {
       expect(fetched).toEqual([]);
       // Pasted text is still charged inside the AI step, so it is refused too.
       await member.post('/from-link', { text: 'Soup' }).expect(429);
+      // A duplicate comes before the cap check, so it is still answered, without a fetch.
+      const dup = await read('https://example.com/dup').expect(200);
+      expect(dup.body).toEqual({
+        kind: 'duplicate',
+        recipeId: (saved.body as { id: string }).id,
+      });
+      expect(fetched).toEqual([]);
     });
 
     it('answers link.cap_reached with the cap and the next UTC midnight', async () => {
