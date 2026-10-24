@@ -117,6 +117,7 @@ export function SegmentedControl<T extends string>({
             sx={[
               (theme) => {
                 const p = themePalette(theme);
+                const trackPad = dense ? DENSE_TRACK_PAD : 4;
                 return {
                   minHeight: 36,
                   minWidth: dense ? 0 : 56,
@@ -125,10 +126,7 @@ export function SegmentedControl<T extends string>({
                   ...(option.icon
                     ? { flexDirection: 'column', gap: '2px', py: '6px' }
                     : {}),
-                  borderRadius: nestedRadius(
-                    radius.control,
-                    dense ? DENSE_TRACK_PAD : 4,
-                  ),
+                  borderRadius: nestedRadius(radius.control, trackPad),
                   fontSize,
                   fontWeight: selected ? 700 : 600,
                   fontFamily: bodyFont,
