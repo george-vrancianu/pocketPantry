@@ -9,6 +9,7 @@ import type {
   FamilyRecipeEdit,
 } from '../../lib/familyRecipes';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { useRecipe } from '../../lib/recipes';
 import {
   EditFamilyRecipePage,
   NewRecipePage,
@@ -75,6 +76,8 @@ const saved: FamilyRecipeEdit = {
   cuisineId: null,
   methodId: null,
   archived: false,
+  sourceLink: null,
+  sourceLanguage: null,
   lines: [
     {
       id: 'l1',
@@ -138,6 +141,14 @@ const sourceDetail = {
   guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
 };
 
+/** Reads the Recipe's detail query, as the detail page does, so a save's refresh can be seen. */
+function DetailProbe() {
+  const { data } = useRecipe('g');
+  return (
+    <p>{data ? `detail link: ${data.sourceLink ?? 'none'}` : 'loading'}</p>
+  );
+}
+
 function setup(route: InitialEntry, routes: Parameters<typeof stubApi>[0]) {
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes/filters': () => Response.json(filters),
@@ -157,6 +168,15 @@ function setup(route: InitialEntry, routes: Parameters<typeof stubApi>[0]) {
       />
       <Route path="/recipes/:id/variant/new" element={<NewVariantPage />} />
       <Route path="/recipes/:id/edit" element={<EditFamilyRecipePage />} />
+      <Route
+        path="/recipes/:id/edit-and-detail"
+        element={
+          <>
+            <EditFamilyRecipePage />
+            <DetailProbe />
+          </>
+        }
+      />
       <Route path="/recipes/:id" element={<p>Detail of the recipe</p>} />
     </Routes>,
     { route },
@@ -593,6 +613,31 @@ describe('NewVariantPage', () => {
     });
   });
 
+  it('neither shows nor sends the Source Link of a linked source Recipe', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(draft),
+      'GET /api/recipes/x': () =>
+        Response.json({
+          ...sourceDetail,
+          sourceLink: 'https://www.example.com/p',
+          sourceLanguage: 'fr',
+        }),
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await screen.findByLabelText(/^Title/);
+    expect(
+      screen.queryByRole('link', { name: /From example\.com/ }),
+    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Remove link' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
+    expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
+    const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
+    expect(body).toMatchObject({ parentId: 'base' });
+    expect(body).not.toHaveProperty('sourceLink');
+    expect(body).not.toHaveProperty('sourceLanguage');
+  });
+
   it('shows the draft guidance and posts it with the Variant', async () => {
     const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/x/variant/new', {
@@ -921,6 +966,193 @@ describe('EditFamilyRecipePage', () => {
       ).toEqual({ tipIds: ['bt1'] }),
     );
     expect(calls.some((c) => c.key === 'POST /api/recipes/g/tips')).toBe(true);
+  });
+});
+
+describe('EditFamilyRecipePage Source Link', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const linked: FamilyRecipeEdit = {
+    ...saved,
+    sourceLink: 'https://www.example.com/p',
+    sourceLanguage: 'fr',
+  };
+  const putBody = (calls: ReturnType<typeof setup>) =>
+    calls.find((c) => c.key === 'PUT /api/recipes/g')?.body as
+      Record<string, unknown> | undefined;
+
+  it('shows the link and the translation note, with no way to change the link', async () => {
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(linked),
+    });
+    const link = await screen.findByRole('link', {
+      name: 'From example.com ↗',
+    });
+    expect(link).toHaveAttribute('href', 'https://www.example.com/p');
+    expect(
+      screen.getByText('Translated from French', { exact: false }),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Remove link' })).toBeVisible();
+    // The link is shown, never offered for editing.
+    expect(
+      screen
+        .getAllByRole('textbox')
+        .some((box) => (box as HTMLInputElement).value.includes('example.com')),
+    ).toBe(false);
+  });
+
+  it('shows no link row on a Recipe without a Source Link', async () => {
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+    });
+    await screen.findByLabelText(/^Title/);
+    expect(screen.queryByRole('button', { name: 'Remove link' })).toBeNull();
+    expect(screen.queryByText(/From .* ↗/)).toBeNull();
+  });
+
+  it('removes the link on Save: hides it at once, sends null, moves focus to the heading', async () => {
+    const user = userEvent.setup({ delay: null });
+    let current = linked;
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(current),
+      'PUT /api/recipes/g': () => {
+        current = { ...linked, sourceLink: null, sourceLanguage: null };
+        return Response.json(current);
+      },
+    });
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove link' }),
+    );
+    expect(
+      screen.queryByRole('link', { name: /From example\.com/ }),
+    ).toBeNull();
+    expect(screen.queryByText(/Translated from/)).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+    // Nothing is sent until Save.
+    expect(putBody(calls)).toBeUndefined();
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    expect(putBody(calls)).toHaveProperty('sourceLink', null);
+    expect(screen.queryByRole('button', { name: 'Remove link' })).toBeNull();
+  });
+
+  it('does not send the link when Save is pressed without removing it', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(linked),
+      'PUT /api/recipes/g': () => Response.json(linked),
+    });
+    await screen.findByRole('link', { name: 'From example.com ↗' });
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    expect(putBody(calls)).not.toHaveProperty('sourceLink');
+    expect(putBody(calls)).not.toHaveProperty('sourceLanguage');
+    expect(
+      screen.getByRole('link', { name: 'From example.com ↗' }),
+    ).toBeVisible();
+  });
+
+  it('sends the removal once: a second Save leaves the link out', async () => {
+    const user = userEvent.setup({ delay: null });
+    let current = linked;
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(current),
+      'PUT /api/recipes/g': () => {
+        current = { ...linked, sourceLink: null, sourceLanguage: null };
+        return Response.json(current);
+      },
+    });
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove link' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(calls.filter((c) => c.key === 'PUT /api/recipes/g')).toHaveLength(
+        1,
+      ),
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Save Recipe' }),
+    );
+    await vi.waitFor(() =>
+      expect(calls.filter((c) => c.key === 'PUT /api/recipes/g')).toHaveLength(
+        2,
+      ),
+    );
+    const puts = calls.filter((c) => c.key === 'PUT /api/recipes/g');
+    expect(puts[0].body).toHaveProperty('sourceLink', null);
+    expect(puts[1].body).not.toHaveProperty('sourceLink');
+  });
+
+  it('keeps the link and sends nothing when the removal is cancelled', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(linked),
+      'PUT /api/recipes/g': () => Response.json(linked),
+    });
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove link' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
+    expect(putBody(calls)).toBeUndefined();
+  });
+
+  it('still sends the removal on the next Save after a failed one', async () => {
+    const user = userEvent.setup({ delay: null });
+    let attempts = 0;
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(linked),
+      'PUT /api/recipes/g': () =>
+        ++attempts === 1
+          ? Response.json({ code: 'recipes.not_found' }, { status: 404 })
+          : Response.json({
+              ...linked,
+              sourceLink: null,
+              sourceLanguage: null,
+            }),
+    });
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove link' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() => expect(attempts).toBe(1));
+    await user.click(
+      await screen.findByRole('button', { name: 'Save Recipe' }),
+    );
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    expect(attempts).toBe(2);
+    const puts = calls.filter((c) => c.key === 'PUT /api/recipes/g');
+    expect(
+      puts.map((c) => (c.body as { sourceLink?: unknown }).sourceLink),
+    ).toEqual([null, null]);
+  });
+
+  it('refreshes the Recipe detail after the link is removed', async () => {
+    const user = userEvent.setup({ delay: null });
+    let removed = false;
+    setup('/recipes/g/edit-and-detail', {
+      'GET /api/recipes/g/edit': () => Response.json(linked),
+      'GET /api/recipes/g': () =>
+        Response.json({
+          ...sourceDetail,
+          sourceLink: removed ? null : 'https://www.example.com/p',
+        }),
+      'PUT /api/recipes/g': () => {
+        removed = true;
+        return Response.json({
+          ...linked,
+          sourceLink: null,
+          sourceLanguage: null,
+        });
+      },
+    });
+    expect(
+      await screen.findByText('detail link: https://www.example.com/p'),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Remove link' }));
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    expect(await screen.findByText('detail link: none')).toBeVisible();
   });
 });
 

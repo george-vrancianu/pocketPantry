@@ -105,7 +105,17 @@ const memberLocale = z.enum(CATALOG_LOCALES).catch(FALLBACK_LOCALE);
 /** Replacing a Family Recipe's document; its base is fixed at creation. */
 export const familyRecipeUpdate = recipeDocument
   .extend({ lines: z.array(familyLineInput).max(MAX_LINES).default([]) })
-  .extend({ locale: memberLocale });
+  .extend({
+    locale: memberLocale,
+    /**
+     * Only `null` is meaningful: it clears the Source Link and the source language.
+     * Any string is refused by the service (`recipes.source_link_locked`), so the
+     * client gets the specific code rather than a generic validation error.
+     */
+    sourceLink: z.string().nullable().optional(),
+    /** Only `null` is meaningful: it clears the source language alone. Same refusal as above. */
+    sourceLanguage: z.string().nullable().optional(),
+  });
 
 /** A step Tip in a create document: it refers to a Step of the document by index. */
 const newStepTip = z
@@ -137,7 +147,7 @@ export const familyRecipeCreate = familyRecipeUpdate.extend({
    * the array order is the Tip order. Later edits use the Tip endpoints.
    */
   tips: z.array(newStepTip).max(MAX_TIPS).optional(),
-  /** Optional: the page a Recipe from Link was read from, normalised on the way in. Set at creation only. */
+  /** Optional: the page a Recipe from Link was read from, normalised on the way in. Set at creation only; an update can only clear it. */
   sourceLink: sourceLinkInput.optional(),
   /** Optional: the language a translated Recipe from Link was read in. Set at creation only. */
   sourceLanguage: sourceLanguageInput.optional(),
