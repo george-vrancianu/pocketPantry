@@ -183,7 +183,10 @@
       "keep": "Keep reviewing",
       "discarded": "Voice Note discarded",
       "discardedHint": "Nothing was changed.",
-      "pickList": "Pick a list first"
+      "pickList": "Pick a list first",
+      "confirmAll": "Discard all these Voice Notes?",
+      "confirmAllHint": "Nothing changes, and you'll have to say them again.",
+      "discardedAll": "Voice Notes discarded"
     },
     "pickList": {
       "label": "List for {{name}}",
@@ -193,7 +196,8 @@
     "putAll": {
       "label": "Put all on:",
       "name": "Put all on"
-    }
+    },
+    "titleAll": "Review all"
   },
   "toast": {
     "applied_one": "{{count}} applied",
@@ -301,6 +305,8 @@
       "answers": "Answers ready",
       "applying": "Applying",
       "failed": "Could not be read"
-    }
+    },
+    "reviewAll": "Review all ({{count}})",
+    "reviewAllTooMany": "That is more than {{max}} changes for one Apply. Review some of the Voice Notes on their own."
   }
 }
