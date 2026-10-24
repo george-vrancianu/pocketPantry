@@ -557,24 +557,19 @@ describe('the recording gesture on the Shopping List', () => {
   });
 
   describe('keyboard order', () => {
-    it('tabs from the page to the Spoken Language chip, then through the Dock, camera before mic', async () => {
+    it('tabs from the page through the Dock, camera before mic', async () => {
       setup();
       renderInAppLayout(<ShoppingPage />, '/shopping');
-      const chip = await screen.findByRole('button', {
-        name: /Spoken Language: English/,
-      });
       const button = await talkButton();
       const dock = screen.getByRole('navigation');
       const camera = screen.getByRole('link', { name: 'Camera' });
 
-      chip.focus();
-      // Before the chip is the page itself.
+      dock.querySelector<HTMLElement>('a,button')?.focus();
+      // Before the Dock is the page itself.
       await userEvent.tab({ shift: true });
       expect(document.querySelector('main')).toContainElement(
         document.activeElement as HTMLElement,
       );
-      await userEvent.tab();
-      expect(chip).toHaveFocus();
       await userEvent.tab();
       expect(dock.contains(document.activeElement)).toBe(true);
       camera.focus();

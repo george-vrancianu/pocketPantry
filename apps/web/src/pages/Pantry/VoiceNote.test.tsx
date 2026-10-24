@@ -119,6 +119,15 @@ describe('Voice Notes on the Pantry page', () => {
     vi.unstubAllGlobals();
   });
 
+  it('has no Spoken Language chip above the Dock', async () => {
+    setup([]);
+    renderInAppLayout(<PantryPage />, '/pantry');
+    await screen.findByRole('button', { name: /hold to record a voice note/i });
+    expect(
+      screen.queryByRole('button', { name: /Spoken Language/ }),
+    ).toBeNull();
+  });
+
   it('shows a note that failed on the Shopping List here too, and retries it for its own page', async () => {
     // Recorded on the Shopping List, then the Member moved to the Pantry (not a reload).
     const { sent } = setup([], undefined, [], 'fails');

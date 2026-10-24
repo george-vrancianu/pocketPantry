@@ -18,24 +18,17 @@ import {
 } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { usePressGesture } from '../../lib/usePressGesture';
-import { LanguageMenu } from './LanguageMenu';
 import { useDockMicSlot, useReportRecording, useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
 import { useElapsedMs } from './useElapsed';
-import {
-  abovePill,
-  aboveMic,
-  micBottom,
-  VOICE_LAYER,
-} from '../../lib/voicePlacement';
+import { abovePill, aboveMic, VOICE_LAYER } from '../../lib/voicePlacement';
 import { isPillUp, useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 
 type Voice = ReturnType<typeof useVoiceNote>;
 
 /**
- * The hold-to-talk mic: the button sits in the lower half of the Dock's capsule, and the Scan
- * Language chip above it, with the page scrim and the Listening card.
+ * The hold-to-talk mic: the button sits in the lower half of the Dock's capsule, with the page scrim and the Listening card.
  */
 export function VoiceButton({
   voice,
@@ -119,26 +112,6 @@ export function VoiceButton({
           armed={armed}
         />
       ) : null}
-      <Box
-        sx={{
-          position: 'fixed',
-          left: 0,
-          right: 0,
-          bottom: micBottom,
-          zIndex: VOICE_LAYER.card,
-          display: 'flex',
-          justifyContent: 'center',
-          // Only the chip takes taps; the row around it lets them through.
-          pointerEvents: 'none',
-          '& > *': { pointerEvents: 'auto' },
-        }}
-      >
-        <LanguageMenu
-          value={voice.spokenLanguage}
-          disabled={active || voice.sending}
-          onChange={voice.setSpokenLanguage}
-        />
-      </Box>
     </>,
     host,
   );

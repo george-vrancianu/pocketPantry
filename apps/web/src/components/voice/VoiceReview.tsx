@@ -36,7 +36,7 @@ import {
   needsList,
 } from './reviewModel';
 import { translateApiError } from '../../i18n/translateApiError';
-import { usePreferredSpokenLanguage } from '../../lib/useSpokenLanguage';
+import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 import { parseAmountText } from '../../lib/pantry';
 import {
   catalogChangeQueryKeys,

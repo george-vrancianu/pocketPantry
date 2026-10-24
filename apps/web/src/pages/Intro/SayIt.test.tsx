@@ -90,8 +90,8 @@ describe('Setup 2, Say it', () => {
     const talk = await talkButton();
     expect(talk).not.toHaveAttribute('aria-disabled');
     expect(
-      screen.getByRole('button', { name: 'Spoken Language: English. Change' }),
-    ).toBeVisible();
+      screen.queryByRole('button', { name: /Spoken Language/ }),
+    ).toBeNull();
     for (const control of dimmed()) {
       expect(control).toHaveAttribute('aria-disabled', 'true');
       expect(control).toHaveAttribute('tabindex', '-1');

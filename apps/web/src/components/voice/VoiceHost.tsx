@@ -24,7 +24,7 @@ const SetHostContext = createContext<(element: HTMLElement | null) => void>(
   () => undefined,
 );
 
-/** Where the Voice Note button and chip are placed: the slot if the app has one, else the body. */
+/** Where the Voice Note button is placed: the slot if the app has one, else the body. */
 export function useVoiceHost() {
   return useContext(HostContext) ?? document.body;
 }
@@ -60,8 +60,8 @@ export function VoiceHostProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Put this in the DOM between the page and the Dock: the Voice Note's Spoken Language chip, scrim and
- * notices are fixed on screen, but in the DOM they sit here, so Tab reaches the chip after the page
+ * Put this in the DOM between the page and the Dock: the Voice Note's scrim and
+ * notices are fixed on screen, but in the DOM they sit here, so Tab reaches them after the page
  * and before the Dock (whose mic half holds the button itself).
  */
 export function VoiceHostSlot() {

@@ -14,7 +14,7 @@ import { QUICK_TAP_MS, type VoiceDefaultTarget } from './voice';
 import { voiceNote, useVoiceNoteState } from './voiceNote';
 import { useMicPermission } from './useMicPermission';
 import { micExplained } from './micExplained';
-import { useSpokenLanguage } from './useSpokenLanguage';
+import { usePreferredSpokenLanguage } from './usePreferredSpokenLanguage';
 
 /**
  * Hold-to-talk Voice Note: `press` starts recording, `release` stops and sends,
@@ -25,8 +25,7 @@ import { useSpokenLanguage } from './useSpokenLanguage';
 export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   const { t } = useTranslation(['errors', 'voice']);
   const toast = useToast();
-  const { spokenLanguage, spokenLanguageToSend, setSpokenLanguage, reset } =
-    useSpokenLanguage();
+  const { spokenLanguage, spokenLanguageToSend } = usePreferredSpokenLanguage();
   // The Voice Note itself lives in the Voice Note module, so Review and the button on any page see it.
   const { phase, recording: keptRecording } = useVoiceNoteState();
   const recording = phase === 'recording';
@@ -93,14 +92,6 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
     }
     wasRecording.current = recording;
   }, [recording, phase]);
-
-  // A pick is for one Voice Note: once that note is sent (its language is kept for the upload and Retry) the chip is back at the
-  // preference. A cancelled or too-short recording sends nothing, so it keeps the pick.
-  const wasSending = useRef(false);
-  useEffect(() => {
-    if (sending && !wasSending.current) reset();
-    wasSending.current = sending;
-  }, [sending, reset]);
 
   /** Ends the recording and sends it; a recording too short to read gets the tip. */
   const finish = useCallback(async () => {
@@ -244,7 +235,6 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
 
   return {
     spokenLanguage,
-    setSpokenLanguage,
     recording,
     pressing,
     tip,
