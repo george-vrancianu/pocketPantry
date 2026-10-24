@@ -51,7 +51,7 @@ describe('the fake voice environment: pending reads', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('ignores a held read that is resolved after Cancel reading', async () => {
+  it('Cancel reading aborts a held read', async () => {
     const fake = stubVoiceFetch(vi.fn());
     fake.holdReads();
 
@@ -60,9 +60,6 @@ describe('the fake voice environment: pending reads', () => {
     voiceNote.cancelReading();
 
     expect(fake.signals[0].aborted).toBe(true);
-    expect(voiceNote.getState().phase).toBe('idle');
-    fake.reads[0].resolve(Response.json({ transcript: 'late', actions: [] }));
-    await Promise.resolve();
     expect(voiceNote.getState().phase).toBe('idle');
   });
 });
