@@ -174,7 +174,12 @@
     "canMake_one": "{{count}} Recipe you can make",
     "canMake_other": "{{count}} Recipes you can make",
     "expiring_one": "{{count}} uses what expires soon",
-    "expiring_other": "{{count}} use what expires soon"
+    "expiring_other": "{{count}} use what expires soon",
+    "nothingYet": "Nothing to cook yet",
+    "oneShort_one": "{{count}} Recipe is one ingredient short",
+    "oneShort_other": "{{count}} Recipes are one ingredient short",
+    "nothingInPantry": "Nothing to cook from your Pantry yet",
+    "addWhatYouHave": "Add what you have"
   },
   "cookTonightPage": {
     "title": "Cook tonight",
