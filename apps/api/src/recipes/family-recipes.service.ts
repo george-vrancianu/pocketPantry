@@ -15,6 +15,7 @@ import {
   recipeTips,
   unmatchedEntries,
 } from '../database/schema';
+import { consumeRecipeDraft } from '../recipe-drafts/recipe-drafts.service';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
 import {
@@ -160,9 +161,14 @@ export class FamilyRecipesService {
     locale: CatalogLocale,
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
-    const id = await this.database.transaction((tx) =>
-      this.createIn(tx, familyId, document, locale),
-    );
+    const id = await this.database.transaction(async (tx) => {
+      const created = await this.createIn(tx, familyId, document, locale);
+      // Saving ends the Recipe Draft (ADR 0028): both or neither.
+      if (document.recipeDraftId) {
+        await consumeRecipeDraft(tx, memberId, document.recipeDraftId);
+      }
+      return created;
+    });
     return this.edit(familyId, id, locale);
   }
 

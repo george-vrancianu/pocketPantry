@@ -17,6 +17,7 @@ import { ShoppingModule } from './shopping/shopping.module';
 import { MealPlansModule } from './meal-plans/meal-plans.module';
 import { PageFetchModule } from './page-fetch/page-fetch.module';
 import { PantryModule } from './pantry/pantry.module';
+import { RecipeDraftsModule } from './recipe-drafts/recipe-drafts.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { ScanModule } from './scan/scan.module';
 import { VoiceModule } from './voice/voice.module';
@@ -45,6 +46,7 @@ import { SettingsModule } from './settings/settings.module';
     AssistantTokensModule,
     AssistantModule,
     RecipesModule,
+    RecipeDraftsModule,
     MealPlansModule,
     AdminModule,
   ],
