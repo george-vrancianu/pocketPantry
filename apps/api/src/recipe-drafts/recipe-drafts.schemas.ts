@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { recipeDifficulty } from '../database/schema';
+import {
+  MAX_EATING_MOMENTS,
+  MAX_NUTRITION_NOTE,
+  MAX_PAIRINGS,
+} from '../recipes/recipe-guidance.schemas';
 import { MAX_LINES, MAX_STEPS, MAX_TIPS } from '../recipes/recipes.schemas';
 
 /** Most Recipe Drafts one Member can hold (ADR 0028). */
@@ -7,34 +12,34 @@ export const MAX_RECIPE_DRAFTS = 20;
 /** A Recipe Draft is deleted this many days after its last edit (ADR 0028). */
 export const RECIPE_DRAFT_TTL_DAYS = 30;
 
-const MAX_PAIRINGS = 10;
-const MAX_EATING_MOMENTS = 10;
-
-// Text is stored as typed, so there is no minimum, no trimming and no format:
-// only a length ceiling at the Recipe's own maximums so a Recipe Draft never
-// grows into something that cannot be saved.
+// Text is stored as typed, so there is no minimum, no trimming and no format.
+// Only the counts (lines, Steps, Tips, Pairings, Eating Moments) match the
+// Recipe's maximums. Per-string limits are loose safety ceilings, about 10x
+// the Recipe's: the form has no maxLength, and a Recipe Draft must never
+// refuse what the Member is still typing (the Recipe's own limits apply on save).
 const text = (max: number) => z.string().max(max);
-const short = text(64);
+const short = text(64); // ids and enum-like values
+const typed = text(640); // typed numbers: quantity, timer, minutes
 
 const draftLine = z
   .object({
     id: z.uuid().optional(),
     ingredientId: short,
-    name: text(100),
-    quantity: short,
+    name: text(1000),
+    quantity: typed,
     unit: short,
     optional: z.boolean(),
-    note: text(200),
+    note: text(2000),
   })
   .strict();
 
-const draftTip = z.object({ text: text(2000) }).strict();
+const draftTip = z.object({ text: text(20000) }).strict();
 
 const draftStep = z
   .object({
     id: z.uuid().optional(),
-    text: text(2000),
-    timer: short,
+    text: text(20000),
+    timer: typed,
     tips: z.array(draftTip).max(MAX_TIPS).optional(),
   })
   .strict();
@@ -43,13 +48,13 @@ const draftPairing = z
   .object({
     id: z.uuid().optional(),
     kind: short,
-    label: text(200),
-    reason: text(1000),
+    label: text(2000),
+    reason: text(10000),
     principle: short,
     linkType: short,
     linkTarget: short,
-    linkName: text(200).optional(),
-    linkTitle: text(200).optional(),
+    linkName: text(2000).optional(),
+    linkTitle: text(2000).optional(),
     /** Proposed by Suggest Guidance and not yet kept by the Member. */
     suggested: z.boolean().optional(),
   })
@@ -59,14 +64,16 @@ const draftEatingMoment = z
   .object({
     eatingMomentId: short,
     polarity: short,
-    reason: text(1000),
+    reason: text(10000),
     suggested: z.boolean().optional(),
   })
   .strict();
 
 const draftGuidance = z
   .object({
-    nutritionNote: text(500),
+    nutritionNote: text(MAX_NUTRITION_NOTE * 10),
+    /** Proposed by Suggest Guidance and not yet kept by the Member. */
+    nutritionNoteSuggested: z.boolean().optional(),
     pairings: z.array(draftPairing).max(MAX_PAIRINGS),
     eatingMoments: z.array(draftEatingMoment).max(MAX_EATING_MOMENTS),
   })
@@ -79,10 +86,10 @@ const draftGuidance = z
  */
 export const recipeDraftContent = z
   .object({
-    title: text(200),
-    servings: short,
-    prepMinutes: short,
-    cookMinutes: short,
+    title: text(2000),
+    servings: typed,
+    prepMinutes: typed,
+    cookMinutes: typed,
     difficulty: z.union([z.enum(recipeDifficulty.enumValues), z.literal('')]),
     cuisineId: short,
     methodId: short,
@@ -91,8 +98,8 @@ export const recipeDraftContent = z
     guidance: draftGuidance.nullable().default(null),
     /** Plate Scan: the Base Recipe the Member picked from the closest matches. */
     pickedBaseId: short.nullable().default(null),
-    sourceLink: text(2048).nullable().default(null),
-    sourceLanguage: text(10).nullable().default(null),
+    sourceLink: text(10240).nullable().default(null),
+    sourceLanguage: text(40).nullable().default(null),
     /** The fill came from a Plate Scan (the list shows "Plate scan"). */
     plateScan: z.boolean().default(false),
   })

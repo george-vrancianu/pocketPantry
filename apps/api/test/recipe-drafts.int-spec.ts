@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { randomUUID } from 'node:crypto';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -368,12 +368,10 @@ describe('Recipe Drafts (integration)', () => {
   });
 
   describe('expiry', () => {
-    const ageDays = (days: number) => days;
-
     it('deletes a 31-day-old Recipe Draft lazily and 404s it', async () => {
       const old = await create(a1);
       const fresh = await create(a1);
-      await ageDraft(old.id, ageDays(31));
+      await ageDraft(old.id, 31);
       await a1.get(`/${old.id}`).expect(404);
       const list = (await draftsOf(a1).expect(200)).body as Array<{
         id: string;
@@ -431,6 +429,54 @@ describe('Recipe Drafts (integration)', () => {
       });
     });
 
+    it('accepts text longer than the Recipe allows, only the counts are held to the Recipe', async () => {
+      const { id } = await create(a1, {
+        content: content({ title: 'T'.repeat(201) }),
+      });
+      const got = await a1.get(`/${id}`).expect(200);
+      expect(bodyOf<Got>(got).content.title).toHaveLength(201);
+      await a1
+        .put(`/${id}`, {
+          version: 1,
+          content: content({ title: 'U'.repeat(1500) }),
+        })
+        .expect(200);
+      const absurd = await a1.post(
+        '',
+        newDraft({ content: content({ title: 'T'.repeat(5000) }) }),
+      );
+      expect(absurd.status).toBe(400);
+    });
+
+    it('round-trips the suggested markers of Guidance', async () => {
+      const guidance = {
+        nutritionNote: 'Light',
+        nutritionNoteSuggested: true,
+        pairings: [
+          {
+            kind: 'food',
+            label: 'Salad',
+            reason: '',
+            principle: '',
+            linkType: 'none',
+            linkTarget: '',
+            suggested: true,
+          },
+        ],
+        eatingMoments: [
+          {
+            eatingMomentId: '',
+            polarity: 'good',
+            reason: '',
+            suggested: false,
+          },
+        ],
+      };
+      const { id } = await create(a1, { content: content({ guidance }) });
+      const got = await a1.get(`/${id}`).expect(200);
+      expect(got.body).toMatchObject({ content: { guidance } });
+    });
+
     it('refuses content over the Recipe limits and of the wrong shape', async () => {
       const line = {
         ingredientId: '',
@@ -477,6 +523,30 @@ describe('Recipe Drafts (integration)', () => {
       );
       expect(unknown.status).toBe(404);
     });
+
+    it("refuses a Variant whose base is another Family's Recipe", async () => {
+      const made = await api(a1Cookie, '/api/recipes')
+        .post('', {
+          title: label('A-only base'),
+          servings: 2,
+          locale: 'en',
+          parentId: null,
+          lines: [{ ingredientId, quantity: 50, unit: 'g' }],
+          steps: [{ text: 'Whisk' }],
+        })
+        .expect(201);
+      const res = await b.post(
+        '',
+        newDraft({
+          kind: 'variant',
+          baseRecipeId: (made.body as { id: string }).id,
+        }),
+      );
+      expect([res.status, code(res)]).toEqual([
+        404,
+        'recipes.parent_not_found',
+      ]);
+    });
   });
 
   describe('leaving a Family', () => {
@@ -519,6 +589,34 @@ describe('Recipe Drafts (integration)', () => {
         .del(`/members/${removed.id}`)
         .expect(200);
       expect(await countOf(removed.id)).toBe(0);
+    });
+  });
+
+  describe('deleting the Family', () => {
+    it("deletes every Member's Recipe Drafts", async () => {
+      const ownerEmail = `rd-fowner-${stamp}@example.com`;
+      const ownerCookie = await signUp(app, ownerEmail, 'FOwner');
+      const memberEmail = `rd-fmember-${stamp}@example.com`;
+      const memberCookie = await signUp(app, memberEmail, 'FMember');
+      const invite = (await api(ownerCookie, '/api/family').get('').expect(200))
+        .body as { inviteCode: string };
+      await api(memberCookie, '/api/family')
+        .post('/join', { code: invite.inviteCode })
+        .expect(201);
+      const owner = api(ownerCookie, '/api/recipe-drafts');
+      const member = api(memberCookie, '/api/recipe-drafts');
+      const kept = [await create(owner), await create(member)];
+      await api(ownerCookie, '/api/family').del('').expect(200);
+      const left = await database
+        .select({ id: recipeDrafts.id })
+        .from(recipeDrafts)
+        .where(
+          inArray(
+            recipeDrafts.id,
+            kept.map((d) => d.id),
+          ),
+        );
+      expect(left).toEqual([]);
     });
   });
 
@@ -581,6 +679,14 @@ describe('Recipe Drafts (integration)', () => {
       );
       expect(unmatchedBase.status).toBe(404);
       expect(await exists(draft.id)).toBe(true);
+    });
+
+    it('ignores a malformed id', async () => {
+      const res = await recipesApi.post(
+        '',
+        doc({ recipeDraftId: 'not-a-uuid' }),
+      );
+      expect(res.status).toBe(201);
     });
 
     it("ignores an unknown id and leaves another Member's Recipe Draft alone", async () => {

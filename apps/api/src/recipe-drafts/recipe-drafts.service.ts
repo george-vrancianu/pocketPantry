@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
+import { z } from 'zod';
 import { and, desc, eq, inArray, lt, sql } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { DATABASE } from '../database/database.constants';
@@ -245,6 +246,8 @@ export async function consumeRecipeDraft(
   memberId: string,
   recipeDraftId: string,
 ): Promise<void> {
+  // A malformed id matches nothing (and must not reach Postgres as a uuid).
+  if (!z.uuid().safeParse(recipeDraftId).success) return;
   await tx
     .delete(recipeDrafts)
     .where(
