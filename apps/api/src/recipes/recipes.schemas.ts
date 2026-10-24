@@ -153,12 +153,13 @@ export const familyRecipeCreate = familyRecipeUpdate.extend({
   sourceLanguage: sourceLanguageInput.optional(),
 });
 
-/** Reading a page into an unsaved Family Recipe draft. Later tickets add `text` and `force`. */
+/** Reading a page into an unsaved Family Recipe draft. `force` skips the "already in your Recipes" check. */
 export const fromLinkBody = z
   .object({
     locale: memberLocale,
     url: z.string().trim().min(1).max(4096),
     language: readingLanguage.default('catalog'),
+    force: z.boolean().optional(),
   })
   .strict();
 
@@ -515,10 +516,15 @@ export type LinkRecipeDraft = Omit<
 };
 
 /**
- * The result of `POST /api/recipes/from-link`, told apart by `kind`. Ticket 514 adds
- * `{ kind: 'duplicate', recipeId }`; ticket 515 adds `sourceLanguage` beside `sourceLink`.
+ * The result of `POST /api/recipes/from-link`, told apart by `kind`. `duplicate` is the Member's own Recipe
+ * for the same link; `draft` is the reading.
  */
-export type RecipeFromLink = {
+export type RecipeFromLink = RecipeFromLinkDraft | RecipeFromLinkDuplicate;
+
+/** The link is already a live Recipe of the Member's Family (and `force` was not set): nothing was fetched, read or counted. */
+export type RecipeFromLinkDuplicate = { kind: 'duplicate'; recipeId: string };
+
+export type RecipeFromLinkDraft = {
   kind: 'draft';
   draft: LinkRecipeDraft;
   /** The normalised link, to send back on the create request. */

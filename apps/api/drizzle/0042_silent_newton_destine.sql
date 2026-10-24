@@ -1,0 +1,1 @@
+CREATE INDEX "recipes_family_source_link_idx" ON "recipes" USING btree ("family_id","source_link") WHERE "recipes"."source_link" IS NOT NULL;

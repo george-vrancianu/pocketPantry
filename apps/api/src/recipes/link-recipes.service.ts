@@ -1,7 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
+import { DATABASE } from '../database/database.constants';
+import type { Database } from '../database/database.types';
+import { recipes } from '../database/schema';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import { catalogPrompt } from '../ingredients/ingredient-catalog';
@@ -44,6 +48,7 @@ export type ReadingInput = { kind: 'json-ld'; json: string };
 @Injectable()
 export class LinkRecipesService {
   constructor(
+    @Inject(DATABASE) private readonly database: Database,
     @InjectPageFetcher() private readonly pages: PageFetcher,
     private readonly ai: StructuredOutputAiService,
     private readonly caps: ScanCapService,
@@ -56,13 +61,18 @@ export class LinkRecipesService {
 
   async read(
     memberId: string,
-    body: Pick<FromLinkBody, 'url' | 'language'>,
+    body: Pick<FromLinkBody, 'url' | 'language' | 'force'>,
     locale: CatalogLocale,
   ): Promise<RecipeFromLink> {
     const sourceLink = normaliseSourceLink(body.url);
     if (sourceLink === null) throw linkInvalid();
-    const input = await this.readingInput(sourceLink);
     const familyId = await this.settings.familyIdOf(memberId);
+    // Links only: before the fetch and the AI call, so a duplicate is free under the Link Cap.
+    if (body.force !== true) {
+      const existing = await this.liveRecipeOfLink(familyId, sourceLink);
+      if (existing !== null) return { kind: 'duplicate', recipeId: existing };
+    }
+    const input = await this.readingInput(sourceLink);
     const catalog = await this.ingredientCatalog.getCatalogIn(familyId, locale);
     const lists = await this.browse.filters(memberId, locale);
 
@@ -112,6 +122,26 @@ export class LinkRecipesService {
       closestBases: closest.matches,
       hiddenByAllergiesCount: closest.hiddenByAllergiesCount,
     };
+  }
+
+  /** The Family's newest live Recipe read from this (normalised) link, or null. */
+  private async liveRecipeOfLink(
+    familyId: string,
+    sourceLink: string,
+  ): Promise<string | null> {
+    const [row] = await this.database
+      .select({ id: recipes.id })
+      .from(recipes)
+      .where(
+        and(
+          eq(recipes.familyId, familyId),
+          eq(recipes.sourceLink, sourceLink),
+          isNull(recipes.archivedAt),
+        ),
+      )
+      .orderBy(desc(recipes.createdAt))
+      .limit(1);
+    return row?.id ?? null;
   }
 
   /** Fetches the page and picks what the model reads; none is `link.no_recipe`, before any AI call. */

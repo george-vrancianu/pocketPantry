@@ -11,7 +11,9 @@ import { PageFetchError } from '../src/page-fetch/page-fetcher';
 import type { PageFetcher } from '../src/page-fetch/page-fetcher';
 import type {
   AdminRecipeDetail,
-  RecipeFromLink,
+  // The draft answer: the older describes below only read drafts.
+  RecipeFromLinkDraft as RecipeFromLink,
+  RecipeFromLink as LinkReadResult,
 } from '../src/recipes/recipes.schemas';
 import { ScanCapService } from '../src/scan/scan-cap.service';
 import { client, signUp } from './support/admin-session';
@@ -922,5 +924,169 @@ describe('Recipe from Link (integration)', () => {
         .from(recipes)
         .where(eq(recipes.title, 'Pancakes')),
     ).toHaveLength(before.length);
+  });
+});
+
+describe('Already in your Recipes (integration)', () => {
+  let app: NestFastifyApplication;
+  let member: ReturnType<typeof client>;
+  const stamp = Date.now();
+  const prompts: StructuredOutputRequest[] = [];
+  const fetched: string[] = [];
+  let count = 0;
+
+  beforeAll(async () => {
+    const pageFetcher: PageFetcher = {
+      fetchPage: (url) => {
+        fetched.push(url);
+        return Promise.resolve({
+          finalUrl: 'https://elsewhere.example.com/',
+          html: jsonLdPage(PANCAKES),
+        });
+      },
+    };
+    app = await createTestApp(
+      [],
+      {
+        generate: (input) => {
+          prompts.push(input);
+          return Promise.resolve({ data: reading(), requestId: 'fake' });
+        },
+      },
+      undefined,
+      undefined,
+      undefined,
+      pageFetcher,
+    );
+  });
+  afterAll(async () => {
+    await app.close();
+  });
+  beforeEach(async () => {
+    member = await freshMember();
+    prompts.length = 0;
+    fetched.length = 0;
+  });
+
+  const freshMember = async () =>
+    client(
+      app,
+      await signUp(app, `dup-${stamp}-${++count}@example.com`, 'D'),
+      '/api/recipes',
+    );
+  const save = async (who: typeof member, sourceLink: string) => {
+    const res = await who
+      .post('', {
+        title: `Saved ${stamp}-${++count}`,
+        servings: 2,
+        locale: 'en',
+        parentId: null,
+        lines: [{ ingredientId: flour, quantity: 50, unit: 'g' }],
+        steps: [{ text: 'Whisk' }],
+        sourceLink,
+      })
+      .expect(201);
+    return res.body as AdminRecipeDetail;
+  };
+  const read = (url: string, who = member, extra: object = {}) =>
+    who.post('/from-link', { url, ...extra });
+  const expectUntouched = () => {
+    expect(fetched).toHaveLength(0);
+    expect(prompts).toHaveLength(0);
+  };
+
+  it('answers with the saved Recipe, without fetching, reading or using the Link Cap', async () => {
+    const saved = await save(member, 'https://example.com/soup');
+    for (let i = 0; i < 3; i++) {
+      const res = await read('https://example.com/soup').expect(200);
+      expect(res.body).toEqual({ kind: 'duplicate', recipeId: saved.id });
+    }
+    expectUntouched();
+    // The cap (2) is still whole: two real reads succeed afterwards.
+    await read('https://example.com/other').expect(200);
+    await read('https://example.com/another').expect(200);
+    expect(prompts).toHaveLength(2);
+  });
+
+  it('keeps the Source Link normalised on create', async () => {
+    const saved = await save(
+      member,
+      'https://Example.com/soup?utm_source=a&id=1&fbclid=x#top',
+    );
+    expect(saved.sourceLink).toBe('https://example.com/soup?id=1');
+    const detail = (await member.get(`/${saved.id}`).expect(200)).body as {
+      sourceLink: string;
+    };
+    expect(detail.sourceLink).toBe('https://example.com/soup?id=1');
+  });
+
+  it('ignores the fragment, tracking parameters and the host case', async () => {
+    const saved = await save(member, 'https://example.com/soup?id=1');
+    for (const variant of [
+      'https://EXAMPLE.com/soup?id=1#step-2',
+      'https://example.com/soup?id=1&utm_source=mail&utm_MEDIUM=x',
+      'https://example.com/soup?fbclid=abc&id=1',
+      'https://example.com/soup?id=1&gclid=abc&msclkid=1&_ga=2.1',
+    ]) {
+      const res = await read(variant).expect(200);
+      expect(res.body).toEqual({ kind: 'duplicate', recipeId: saved.id });
+    }
+    expectUntouched();
+  });
+
+  it('treats a link with another path or a real parameter as new', async () => {
+    await save(member, 'https://example.com/soup?id=1');
+    for (const other of [
+      'https://example.com/soup?id=2',
+      'https://example.com/stew?id=1',
+    ]) {
+      const res = await read(other).expect(200);
+      expect((res.body as LinkReadResult).kind).toBe('draft');
+    }
+  });
+
+  it('is scoped to the Family', async () => {
+    const other = await freshMember();
+    await save(other, 'https://example.com/soup');
+    const res = await read('https://example.com/soup').expect(200);
+    expect((res.body as LinkReadResult).kind).toBe('draft');
+    expect(prompts).toHaveLength(1);
+  });
+
+  it('does not count an archived Recipe', async () => {
+    const saved = await save(member, 'https://example.com/soup');
+    await member.post(`/${saved.id}/archive`).expect(200);
+    const res = await read('https://example.com/soup').expect(200);
+    expect((res.body as LinkReadResult).kind).toBe('draft');
+  });
+
+  it('names the newest live Recipe when several have the link', async () => {
+    const older = await save(member, 'https://example.com/soup');
+    const newer = await save(member, 'https://example.com/soup#again');
+    const archived = await save(member, 'https://example.com/soup?utm_x=1');
+    await member.post(`/${archived.id}/archive`).expect(200);
+    expect(older.id).not.toBe(newer.id);
+    const res = await read('https://example.com/soup').expect(200);
+    expect(res.body).toEqual({ kind: 'duplicate', recipeId: newer.id });
+  });
+
+  it('reads anyway with force', async () => {
+    await save(member, 'https://example.com/soup');
+    const res = await read('https://example.com/soup', member, {
+      force: true,
+    }).expect(200);
+    expect((res.body as LinkReadResult).kind).toBe('draft');
+    expect(fetched).toHaveLength(1);
+    expect(prompts).toHaveLength(1);
+  });
+
+  it('still refuses an invalid link before the check', async () => {
+    const res = await read('ftp://example.com/soup').expect(400);
+    expect((res.body as { code: string }).code).toBe('link.invalid');
+  });
+
+  it('keeps the strict body: unknown fields and a non-boolean force are refused', async () => {
+    await read('https://example.com/a', member, { extra: 1 }).expect(400);
+    await read('https://example.com/a', member, { force: 'yes' }).expect(400);
   });
 });

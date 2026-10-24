@@ -879,6 +879,10 @@ export const recipes = pgTable(
   (table) => [
     index('recipes_parent_idx').on(table.parentId),
     index('recipes_family_idx').on(table.familyId),
+    // "Already in your Recipes": the Family's Recipe for a Source Link.
+    index('recipes_family_source_link_idx')
+      .on(table.familyId, table.sourceLink)
+      .where(sql`${table.sourceLink} IS NOT NULL`),
     index('recipes_cuisine_idx').on(table.cuisineId),
     index('recipes_method_idx').on(table.methodId),
     check('recipes_servings_positive', sql`${table.servings} > 0`),
