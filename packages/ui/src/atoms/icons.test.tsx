@@ -8,6 +8,10 @@ import {
   HourglassIcon,
   PulseIcon,
   CopyIcon,
+  CupboardIcon,
+  FreezerIcon,
+  FridgeIcon,
+  SpicesIcon,
   EarIcon,
   EqualIcon,
   GlobeIcon,
@@ -148,5 +152,17 @@ describe('icons', () => {
       ).toBeGreaterThan(0);
       unmount();
     }
+  });
+
+  it.each([
+    ['Fridge', FridgeIcon],
+    ['Freezer', FreezerIcon],
+    ['Cupboard', CupboardIcon],
+    ['Spices', SpicesIcon],
+  ])('draw the %s Location as a decorative 2 px stroke glyph', (_, Glyph) => {
+    const { container } = render(<Glyph />);
+    const svg = container.querySelector('svg')!;
+    expect(svg.getAttribute('aria-hidden')).toBe('true');
+    expect(svg.getAttribute('stroke-width')).toBe('2');
   });
 });

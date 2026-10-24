@@ -108,10 +108,12 @@ describe('App shell', () => {
     expect(
       screen.getByRole('heading', { name: 'Pantry', level: 1 }),
     ).toBeInTheDocument();
-    // The header's way back to the Dashboard, and the Dock's Home tab.
-    for (const home of screen.getAllByRole('link', { name: 'Home' })) {
-      expect(home).toHaveAttribute('href', '/');
-    }
+    // The Dock's Home tab is the only way back to the Dashboard (ADR 0027).
+    expect(screen.getAllByRole('link', { name: 'Home' })).toHaveLength(1);
+    expect(within(dock).getByRole('link', { name: 'Home' })).toHaveAttribute(
+      'href',
+      '/',
+    );
   });
 
   it('has no Dock while customising the dashboard', async () => {

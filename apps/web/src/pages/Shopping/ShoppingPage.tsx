@@ -1,4 +1,11 @@
-import { Alert, Box, Button, Spinner, Stack } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Box,
+  Button,
+  PlusIcon,
+  Spinner,
+  Stack,
+} from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTemplates } from '../../lib/shoppingTemplates';
@@ -15,7 +22,6 @@ import { AddSheet } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
 import { SaveTemplateSheet } from './components/SaveTemplateSheet';
-import { ImportPill } from './components/ImportPill';
 import { ApplyTemplatesSheet } from './components/ApplyTemplatesSheet';
 import { SaveListRow } from './components/SaveListRow';
 import { EmptyListStart } from './components/EmptyListStart';
@@ -44,7 +50,7 @@ export function ShoppingPage() {
     hadGroups.current = groupCount > 0;
   }, [groupCount]);
   // A tile that opened a sheet unmounts once the sheet fills the list: put focus back on the
-  // header pill / "+" instead of leaving it on <body>.
+  // header "+" / the summary card's Import pill instead of leaving it on <body>.
   const importPill = useRef<HTMLButtonElement>(null);
   const addButton = useRef<HTMLButtonElement>(null);
   const opener = useRef<Element | null>(null);
@@ -88,12 +94,12 @@ export function ShoppingPage() {
       <UnverifiedToast />
       <AppScreenHeader
         title={t('shopping:title')}
-        trailing={
-          <ImportPill
-            ref={importPill}
-            onClick={(event) => openApply(event.currentTarget)}
-          />
-        }
+        action={{
+          label: t('shopping:addItems'),
+          icon: <PlusIcon size={20} />,
+          onClick: (event) => openSheet(event.currentTarget),
+          buttonRef: addButton,
+        }}
       />
       <RowHintNote hint={hint} />
       <Stack spacing={2.5}>
@@ -111,8 +117,15 @@ export function ShoppingPage() {
               remaining={screen.list.summary.remaining}
               checked={screen.list.summary.checked}
               onFinish={() => setReviewing(true)}
-              onAddItems={(event) => openSheet(event.currentTarget)}
-              addRef={addButton}
+              // The Start your list block offers Import itself when there are templates; while
+              // they load, leave the pill out so it does not flash in and out.
+              onImport={
+                screen.list.groups.length === 0 &&
+                (templates.isPending || (templates.data?.length ?? 0) > 0)
+                  ? undefined
+                  : (event) => openApply(event.currentTarget)
+              }
+              importRef={importPill}
             />
             {screen.list.groups.length === 0 ? (
               <Box ref={empty} tabIndex={-1} sx={{ outline: 'none' }}>

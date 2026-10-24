@@ -17,6 +17,11 @@ import {
   quickPickTiles,
   sheetButton,
 } from '../../test/expirySheet';
+import {
+  locationToggle,
+  pickLocation,
+  pressedLocation,
+} from '../../test/location';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { trackScrolling } from '../../test/scroll';
 import { stubMotion } from '../../test/viewport';
@@ -394,7 +399,7 @@ describe('PantryPage', () => {
         name: 'Ingredient: Parmesan. Press Backspace to change',
       }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Location')).toHaveValue('fridge');
+    expect(pressedLocation()).toBe('Fridge');
     expect(
       screen.getByRole('button', { name: /^Expires, .*, in 30 days$/ }),
     ).toBeInTheDocument();
@@ -405,7 +410,7 @@ describe('PantryPage', () => {
       screen.getByLabelText('Location'),
     );
 
-    await user.selectOptions(screen.getByLabelText('Location'), 'freezer');
+    await pickLocation(user, 'Freezer');
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
       '200',
@@ -691,8 +696,11 @@ describe('PantryPage', () => {
     await user.type(amount, '1.2345');
     expect(amount).not.toHaveAttribute('aria-invalid');
     // Out of the amount field (past its unit and Usual Amount chips).
-    await user.click(screen.getByLabelText('Location'));
-    expect(screen.getByLabelText('Location')).toHaveFocus();
+    const fridge = within(locationToggle()).getByRole('button', {
+      name: 'Fridge',
+    });
+    await user.click(fridge);
+    expect(fridge).toHaveFocus();
     expect(amount).toHaveAttribute('aria-invalid', 'true');
     expect(
       screen.getByText(/from 0.001 to 1,000,000, with up to 3 decimals/),
@@ -797,7 +805,7 @@ describe('PantryPage', () => {
       );
       const fieldsShown = () => ({
         amount: screen.queryByRole('textbox', { name: /^Amount/ }),
-        location: screen.queryByLabelText('Location'),
+        location: screen.queryByRole('group', { name: 'Location' }),
         expires: screen.queryByRole('button', { name: /^Expires,/ }),
         description: screen.queryByLabelText('Product description'),
       });
@@ -841,7 +849,7 @@ describe('PantryPage', () => {
       expect(
         screen.getByRole('textbox', { name: /Amount of Zorblax paste/ }),
       ).toBeVisible();
-      expect(screen.getByLabelText('Location')).toBeVisible();
+      expect(locationToggle()).toBeVisible();
       expect(screen.getByLabelText('Product description')).toBeVisible();
     });
   });
@@ -1933,7 +1941,7 @@ describe('PantryPage', () => {
               name: /^Expires, .*, in 7 days$/,
             }),
           ).toBeInTheDocument();
-          expect(screen.getByLabelText('Location')).toHaveValue('fridge');
+          expect(pressedLocation()).toBe('Fridge');
           expect(
             screen.getByRole('button', { name: 'Unit: L' }),
           ).toBeInTheDocument();
@@ -1980,10 +1988,7 @@ describe('PantryPage', () => {
 
           await user.click(addButton('Milk'));
           // The search for Milk's defaults is still out: the Member picks the freezer and a 3-day expiry.
-          await user.selectOptions(
-            screen.getByLabelText('Location'),
-            'freezer',
-          );
+          await pickLocation(user, 'Freezer');
           await user.click(screen.getByRole('button', { name: /^Expires,/ }));
           const sheet = await screen.findByRole('dialog', { name: 'Expires' });
           await user.click(quickPick(sheet, /^3 days,/));
@@ -1996,7 +2001,7 @@ describe('PantryPage', () => {
           await screen.findByRole('combobox', {
             name: 'Ingredient: Milk. Press Backspace to change',
           });
-          expect(screen.getByLabelText('Location')).toHaveValue('freezer');
+          expect(pressedLocation()).toBe('Freezer');
 
           await user.type(
             screen.getByRole('textbox', { name: /Amount of Milk/ }),
@@ -2877,10 +2882,7 @@ describe('PantryPage', () => {
         within(form).getByRole('textbox', { name: /Amount of Milk/ }),
         '0.25',
       );
-      await user.selectOptions(
-        within(form).getByLabelText('Location'),
-        'freezer',
-      );
+      await pickLocation(user, 'Freezer', form);
       await user.click(within(form).getByRole('button', { name: /^Expires,/ }));
       const sheet = await screen.findByRole('dialog', { name: 'Expires' });
       await user.click(sheetButton(sheet, 'No expiry'));
@@ -3005,7 +3007,7 @@ describe('PantryPage', () => {
       expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
     });
 
-    it('edits the amount and unit in one input, above the Location', async () => {
+    it('edits the amount and unit in one input, with the Location toggle under it', async () => {
       const user = userEvent.setup();
       const calls = stubManaged(stock());
       renderWithProviders(<PantryPage />);
@@ -3015,7 +3017,7 @@ describe('PantryPage', () => {
       expectLocationBelowAmount(amount, screen.getByLabelText('Location'));
       await user.clear(amount);
       await user.type(amount, '500 ml');
-      await user.selectOptions(screen.getByLabelText('Location'), 'freezer');
+      await pickLocation(user, 'Freezer');
       await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
       await waitFor(() =>
@@ -3715,7 +3717,7 @@ describe('PantryPage', () => {
           name: 'Ingredient: Parmesan. Press Backspace to change',
         }),
       ).toBeInTheDocument();
-      expect(screen.getByLabelText('Location')).toHaveValue('fridge');
+      expect(pressedLocation()).toBe('Fridge');
       expect(
         screen.getByRole('button', { name: 'Add to Pantry' }),
       ).toBeInTheDocument();
