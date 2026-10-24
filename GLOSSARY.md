@@ -66,7 +66,7 @@ _Avoid_: Shelf life
 
 **Amount Scale**:
 How a catalog Ingredient is bought: low, medium or large, which decides its Usual Amounts.
-_Avoid_: Size, pack size, bucket
+_Avoid_: pack size, bucket
 
 **Usual Amount**:
 A quick-pick quantity offered under the amount field once a unit is chosen, from the Ingredient's Amount Scale or, when there is none, from the unit alone.
