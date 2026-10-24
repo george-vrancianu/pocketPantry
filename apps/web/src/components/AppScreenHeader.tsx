@@ -1,14 +1,14 @@
 import { ScreenHeader, type ScreenHeaderProps } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
+import { dockStateFor } from '../lib/dockState';
 
 type Props = Pick<
   ScreenHeaderProps,
   'title' | 'subtitle' | 'action' | 'trailing' | 'titleRef' | 'back'
 >;
 
-const SETTINGS_PATH = '/settings';
-
+/** The screen header; Home shows only where the Dock is hidden, since the Dock carries Home everywhere else. */
 export function AppScreenHeader({
   title,
   subtitle,
@@ -23,16 +23,11 @@ export function AppScreenHeader({
     <ScreenHeader
       title={title}
       subtitle={subtitle}
-      homeLabel={t('home')}
+      home={dockStateFor(pathname).visible ? undefined : { label: t('home') }}
       action={action}
       trailing={trailing}
       titleRef={titleRef}
       back={back}
-      settings={
-        pathname === SETTINGS_PATH
-          ? undefined
-          : { label: t('settings'), href: SETTINGS_PATH }
-      }
     />
   );
 }

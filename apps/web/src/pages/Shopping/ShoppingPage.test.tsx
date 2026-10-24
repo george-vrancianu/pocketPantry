@@ -116,6 +116,24 @@ describe('ShoppingPage', () => {
     vi.unstubAllGlobals();
   });
 
+  it('puts Add items alone in the header and Import in the summary card', async () => {
+    stubShopping();
+    renderWithProviders(<ShoppingPage />);
+
+    const header = await screen.findByRole('banner');
+    expect(
+      within(header)
+        .getAllByRole('button')
+        .map((b) => b.getAttribute('aria-label')),
+    ).toEqual(['Add items']);
+    expect(
+      await screen.findByRole('button', { name: 'Import from a template' }),
+    ).not.toBe(null);
+    expect(
+      within(header).queryByRole('button', { name: 'Import from a template' }),
+    ).toBeNull();
+  });
+
   it('shows the summary card and groups in the order given, with quantities', async () => {
     stubShopping();
     renderWithProviders(<ShoppingPage />);
