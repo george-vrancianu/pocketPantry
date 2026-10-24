@@ -168,6 +168,7 @@
     "invalid": "Det er ikke en webadresse, vi kan åbne. Tjek linket, og prøv igen.",
     "unreadable": "Vi kunne ikke åbne den side. Tjek linket, eller prøv igen om et øjeblik.",
     "no_recipe": "Vi kunne ikke finde en opskrift på den side. Prøv en side, der viser hele opskriften.",
+    "no_recipe_text": "Vi kunne ikke finde en opskrift i den tekst. Tjek, at du har indsat hele opskriften.",
     "reading_unavailable": "Det er ikke muligt at læse opskrifter fra links lige nu. Prøv igen om et øjeblik.",
     "reading_failed": "Vi kunne ikke læse en opskrift fra den side. Prøv igen, eller prøv et andet link.",
     "cap_reached_one": "Du har brugt din {{count}} opskriftslæsning fra links i dag. Dine læsninger nulstilles {{when}}.",

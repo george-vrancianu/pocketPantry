@@ -185,6 +185,10 @@
     "heading": "Fra et link",
     "hint": "Indsæt linket til en side med en opskrift. PantryGator læser den ind i en ny opskrift, som du kan tjekke, før du gemmer.",
     "label": "Link til opskriften",
+    "pasteSwitch": "Indsæt tekst i stedet",
+    "useLink": "Brug et link i stedet",
+    "pasteInstead": "Indsæt opskriftens tekst i stedet",
+    "textLabel": "Opskriftens tekst",
     "submit": "Læs opskriften",
     "reading": "Læser opskriften…"
   },

@@ -185,6 +185,10 @@
     "heading": "From a link",
     "hint": "Paste the link to a page with a recipe. PantryGator reads it into a new Recipe for you to check before saving.",
     "label": "Link to the recipe",
+    "pasteSwitch": "Paste text instead",
+    "useLink": "Use a link instead",
+    "pasteInstead": "Paste the recipe text instead",
+    "textLabel": "Recipe text",
     "submit": "Read the recipe",
     "reading": "Reading the recipe…"
   },

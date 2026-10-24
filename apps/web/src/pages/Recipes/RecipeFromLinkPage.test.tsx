@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -249,6 +249,9 @@ describe('RecipeFromLinkPage', () => {
   ] as [Locale, string, RegExp][])(
     'words %s errors in that language',
     async (locale, code, copy) => {
+      const submitName = { ro: 'Citește rețeta', da: 'Læs opskriften' }[
+        locale as 'ro' | 'da'
+      ];
       const user = userEvent.setup({ delay: null });
       vi.stubGlobal(
         'fetch',
@@ -262,7 +265,7 @@ describe('RecipeFromLinkPage', () => {
         route: '/recipes/from-link',
       });
       await user.type(screen.getByRole('textbox'), 'https://example.com/a');
-      await user.click(screen.getByRole('button'));
+      await user.click(screen.getByRole('button', { name: submitName }));
       expect(await screen.findByRole('alert')).toHaveTextContent(copy);
     },
   );
@@ -527,5 +530,166 @@ describe('RecipeFromLinkPage', () => {
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
     expect(body).not.toHaveProperty('sourceLink');
     expect(body).not.toHaveProperty('sourceLanguage');
+  });
+
+  describe('pasting text instead', () => {
+    const textField = () => screen.getByLabelText(/^Recipe text/);
+    const fromLink = (calls: ReturnType<typeof setup>['calls']) =>
+      calls.find((c) => c.key === 'POST /api/recipes/from-link')?.body;
+    const failing = (code: string, status = 422) => ({
+      'POST /api/recipes/from-link': () =>
+        Response.json({ code, params: {} }, { status }),
+    });
+
+    it('swaps the link field for a text field and sends the text with the language, no url', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        'POST /api/recipes/from-link': () =>
+          Response.json({ ...read({ servings: 4 }), sourceLink: null }),
+      });
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      expect(textField()).toHaveFocus();
+      expect(screen.queryByLabelText(/^Link to the recipe/)).toBeNull();
+      expect(screen.getByRole('radiogroup')).toBeVisible();
+      const submitButton = screen.getByRole('button', {
+        name: 'Read the recipe',
+      });
+      expect(submitButton).toBeDisabled();
+      await user.click(
+        screen.getByRole('radio', { name: "Keep the page's language" }),
+      );
+      await user.type(textField(), '  2 eggs, whisk and fry  ');
+      await user.click(submitButton);
+      expect(await screen.findByLabelText(/^Title/)).toHaveValue(
+        'Blog pancakes',
+      );
+      expect(fromLink(calls)).toEqual({
+        text: '2 eggs, whisk and fry',
+        language: 'source',
+      });
+      expect(screen.queryByRole('link', { name: /^From / })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Remove link' })).toBeNull();
+    });
+
+    it('saves a pasted draft without a sourceLink', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        'POST /api/recipes/from-link': () =>
+          Response.json({ ...read({ servings: 4 }), sourceLink: null }),
+        'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+      });
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      await user.type(textField(), 'eggs');
+      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      await user.click(
+        await screen.findByRole('button', { name: 'Save Recipe' }),
+      );
+      await screen.findByText('Detail of the recipe');
+      const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
+      expect(body).toMatchObject({ servings: 4 });
+      expect(body).not.toHaveProperty('sourceLink');
+    });
+
+    it('keeps the link and the text when switching back and forth', async () => {
+      const user = userEvent.setup({ delay: null });
+      setup({});
+      await user.type(linkField(), 'https://example.com/a');
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      await user.type(textField(), 'two eggs');
+      await user.click(
+        screen.getByRole('button', { name: 'Use a link instead' }),
+      );
+      expect(linkField()).toHaveValue('https://example.com/a');
+      expect(linkField()).toHaveFocus();
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      expect(textField()).toHaveValue('two eggs');
+      expect(textField()).toHaveFocus();
+    });
+
+    it('shows progress and aborts on Cancel just like a link', async () => {
+      const user = userEvent.setup({ delay: null });
+      const pending = hold(read());
+      const { signals } = setup({
+        'POST /api/recipes/from-link': pending.handler,
+      });
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      await user.type(textField(), 'eggs');
+      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'Reading the recipe',
+      );
+      expect(textField()).toBeDisabled();
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(signals.at(-1)?.aborted).toBe(true);
+      expect(textField()).toHaveValue('eggs');
+      expect(textField()).toHaveFocus();
+      pending.release();
+    });
+
+    it.each([
+      ['link.unreadable', /could not open that page/],
+      ['link.no_recipe', /could not find a recipe on that page/],
+    ])(
+      'offers to paste the text after %s, keeping the link',
+      async (code, copy) => {
+        const user = userEvent.setup({ delay: null });
+        setup(failing(code));
+        await submit(user, 'https://example.com/a');
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent(copy);
+        await user.click(
+          within(alert).getByRole('button', {
+            name: 'Paste the recipe text instead',
+          }),
+        );
+        expect(textField()).toHaveFocus();
+        expect(screen.queryByRole('alert')).toBeNull();
+        await user.click(
+          screen.getByRole('button', { name: 'Use a link instead' }),
+        );
+        expect(linkField()).toHaveValue('https://example.com/a');
+      },
+    );
+
+    it('says no recipe in the text, with no paste offer, in paste mode', async () => {
+      const user = userEvent.setup({ delay: null });
+      setup(failing('link.no_recipe'));
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      await user.type(textField(), 'hello');
+      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent(/could not find a recipe in that text/);
+      expect(alert).not.toHaveTextContent(/page/);
+      expect(
+        screen.queryByRole('button', { name: 'Paste the recipe text instead' }),
+      ).toBeNull();
+      expect(textField()).toHaveValue('hello');
+    });
+
+    it.each([
+      ['link.invalid', 400],
+      ['link.cap_reached', 429],
+      ['scan.provider_unavailable', 502],
+    ])('does not offer to paste after %s', async (code, status) => {
+      const user = userEvent.setup({ delay: null });
+      setup(failing(code, status));
+      await submit(user, 'https://example.com/a');
+      await screen.findByRole('alert');
+      expect(
+        screen.queryByRole('button', { name: 'Paste the recipe text instead' }),
+      ).toBeNull();
+    });
   });
 });

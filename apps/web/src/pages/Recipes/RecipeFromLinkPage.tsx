@@ -59,18 +59,22 @@ function capMessage(
  * page filled in. Leaving the step cancels a read in progress, and a cancelled read never
  * navigates or shows an error.
  *
- * Later steps of Recipe from Link grow this form: "Paste text instead" with its field (it reuses
- * `ReadingLanguageChoice` with its own copy of the state) and the duplicate result each add to `form` (above the
- * submit button) or to the outcome handling in `submit`.
+ * "Paste text instead" swaps the link field for a text field (the link and the text are both kept);
+ * a link the page of which cannot be read offers the same switch from its error. The duplicate result
+ * adds to the outcome handling in `submit`.
  */
 export function RecipeFromLinkPage() {
   const { t, i18n } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
   const read = useReadRecipeLink();
+  const [mode, setMode] = useState<'link' | 'text'>('link');
+  // Both are kept, so switching modes never loses what the Member typed.
   const [url, setUrl] = useState('');
+  const [pasted, setPasted] = useState('');
   const [language, setLanguage] = useState<ReadingLanguage>('catalog');
   const controller = useRef<AbortController | null>(null);
-  const field = useRef<HTMLInputElement>(null);
+  const field = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const modeChanged = useRef(false);
   const cancelButton = useRef<HTMLButtonElement>(null);
   const wasPending = useRef(false);
 
@@ -86,16 +90,32 @@ export function RecipeFromLinkPage() {
     if (read.isError) field.current?.focus();
   }, [read.isError]);
 
+  // Switching modes swaps the field, so focus follows to the one now shown.
+  useEffect(() => {
+    if (modeChanged.current) field.current?.focus();
+  }, [mode]);
+
+  const switchTo = (next: 'link' | 'text') => {
+    modeChanged.current = true;
+    read.reset();
+    setMode(next);
+  };
+
   // Leaving the step abandons the read in progress.
   useEffect(() => () => controller.current?.abort(), []);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (url.trim() === '' || read.isPending) return;
+    const input = mode === 'text' ? pasted.trim() : url.trim();
+    if (input === '' || read.isPending) return;
     const attempt = new AbortController();
     controller.current = attempt;
     read.mutate(
-      { url: url.trim(), language, signal: attempt.signal },
+      {
+        ...(mode === 'text' ? { text: input } : { url: input }),
+        language,
+        signal: attempt.signal,
+      },
       {
         onSuccess: ({ draft, closestBases, sourceLink, sourceLanguage }) => {
           // Defensive: Cancel resets the mutation and leaving unmounts it, so this callback should not run for an aborted read.
@@ -118,6 +138,26 @@ export function RecipeFromLinkPage() {
     read.reset();
   };
 
+  const code = read.error instanceof ApiError ? read.error.code : null;
+  const offersPaste =
+    mode === 'link' &&
+    (code === 'link.unreadable' || code === 'link.no_recipe');
+  const errorMessage = () => {
+    if (read.error instanceof ApiError) {
+      if (read.error.code === 'link.cap_reached') {
+        return capMessage(t, i18n.language, read.error.params);
+      }
+      const reading = READING_ERRORS[read.error.code];
+      if (reading) return t(reading);
+      // Pasted text has no page or link to blame.
+      if (mode === 'text' && read.error.code === 'link.no_recipe') {
+        return t('errors:link.no_recipe_text');
+      }
+    }
+    return translateApiError(t, read.error);
+  };
+  const empty = (mode === 'text' ? pasted : url).trim() === '';
+
   return (
     <>
       <AppScreenHeader
@@ -136,32 +176,56 @@ export function RecipeFromLinkPage() {
         </Typography>
         {read.isError ? (
           <Alert>
-            {read.error instanceof ApiError &&
-            read.error.code === 'link.cap_reached'
-              ? capMessage(t, i18n.language, read.error.params)
-              : read.error instanceof ApiError &&
-                  READING_ERRORS[read.error.code]
-                ? t(READING_ERRORS[read.error.code])
-                : translateApiError(t, read.error)}
+            <Stack spacing={1} sx={{ alignItems: 'flex-start' }}>
+              <span>{errorMessage()}</span>
+              {offersPaste ? (
+                <Button variant="ghost" onClick={() => switchTo('text')}>
+                  {t('recipes:fromLink.pasteInstead')}
+                </Button>
+              ) : null}
+            </Stack>
           </Alert>
         ) : null}
-        <TextField
-          type="url"
-          label={t('recipes:fromLink.label')}
-          value={url}
-          inputRef={field}
+        {mode === 'text' ? (
+          <TextField
+            multiline
+            minRows={6}
+            label={t('recipes:fromLink.textLabel')}
+            value={pasted}
+            inputRef={field}
+            disabled={read.isPending}
+            onChange={(event) => setPasted(event.target.value)}
+            slotProps={{ htmlInput: { maxLength: 50000 } }}
+          />
+        ) : (
+          <TextField
+            type="url"
+            label={t('recipes:fromLink.label')}
+            value={url}
+            inputRef={field}
+            disabled={read.isPending}
+            onChange={(event) => setUrl(event.target.value)}
+            slotProps={{
+              htmlInput: {
+                maxLength: 2048,
+                inputMode: 'url',
+                autoCapitalize: 'none',
+                autoCorrect: 'off',
+                spellCheck: false,
+              },
+            }}
+          />
+        )}
+        <Button
+          variant="ghost"
           disabled={read.isPending}
-          onChange={(event) => setUrl(event.target.value)}
-          slotProps={{
-            htmlInput: {
-              maxLength: 2048,
-              inputMode: 'url',
-              autoCapitalize: 'none',
-              autoCorrect: 'off',
-              spellCheck: false,
-            },
-          }}
-        />
+          onClick={() => switchTo(mode === 'text' ? 'link' : 'text')}
+          sx={{ alignSelf: 'flex-start' }}
+        >
+          {mode === 'text'
+            ? t('recipes:fromLink.useLink')
+            : t('recipes:fromLink.pasteSwitch')}
+        </Button>
         <ReadingLanguageChoice value={language} onChange={setLanguage} />
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
           {read.isPending ? (
@@ -178,7 +242,7 @@ export function RecipeFromLinkPage() {
             {t('common:cancel')}
           </Button>
         ) : (
-          <Button type="submit" disabled={url.trim() === ''}>
+          <Button type="submit" disabled={empty}>
             {t('recipes:fromLink.submit')}
           </Button>
         )}

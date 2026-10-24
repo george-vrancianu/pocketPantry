@@ -10,8 +10,8 @@ export type RecipeFromLink = {
   draft: Omit<FamilyRecipeDraft, 'parentId' | 'servings'> & {
     servings: number | null;
   };
-  /** The normalised link of the page. */
-  sourceLink: string;
+  /** The normalised link of the page; null for pasted text. */
+  sourceLink: string | null;
   /** The page's language (a lower-case code like "fr") when the draft was translated from it; null when not. */
   sourceLanguage: string | null;
   /** The closest Base Recipes to offer as the base; empty until matching them is built. */
@@ -21,8 +21,10 @@ export type RecipeFromLink = {
 /** `catalog`: write the Recipe in the Member's Catalog Language; `source`: keep the page's language. */
 export type ReadingLanguage = 'catalog' | 'source';
 
-export type ReadLinkInput = {
-  url: string;
+/** What to read: a link or pasted text, never both. */
+export type ReadLinkInput = (
+  { url: string; text?: never } | { text: string; url?: never }
+) & {
   language: ReadingLanguage;
   /** Aborting it abandons the read on this side; the caller must then ignore the outcome. */
   signal?: AbortSignal;
@@ -31,10 +33,10 @@ export type ReadLinkInput = {
 /** Read the recipe on a web page into a draft; nothing is saved. */
 export function useReadRecipeLink() {
   return useMutation({
-    mutationFn: ({ url, language, signal }: ReadLinkInput) =>
+    mutationFn: ({ url, text, language, signal }: ReadLinkInput) =>
       apiRequest<RecipeFromLink>('/recipes/from-link', {
         method: 'POST',
-        body: { url, language },
+        body: { ...(url !== undefined ? { url } : { text }), language },
         ...(signal ? { signal } : {}),
       }),
   });

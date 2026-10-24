@@ -199,6 +199,10 @@
     "heading": "Dintr-un link",
     "hint": "Lipește linkul unei pagini cu o rețetă. PantryGator o transformă într-o rețetă nouă, pe care o verifici înainte de a o salva.",
     "label": "Linkul rețetei",
+    "pasteSwitch": "Lipește text în loc",
+    "useLink": "Folosește un link",
+    "pasteInstead": "Lipește textul rețetei",
+    "textLabel": "Textul rețetei",
     "submit": "Citește rețeta",
     "reading": "Se citește rețeta…"
   },

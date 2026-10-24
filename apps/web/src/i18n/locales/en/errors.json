@@ -168,6 +168,7 @@
     "invalid": "That is not a web address we can open. Check the link and try again.",
     "unreadable": "We could not open that page. Check the link, or try again in a moment.",
     "no_recipe": "We could not find a recipe on that page. Try a page that shows the full recipe.",
+    "no_recipe_text": "We could not find a recipe in that text. Check that you pasted the whole recipe.",
     "reading_unavailable": "We cannot read recipes from links right now. Please try again in a moment.",
     "reading_failed": "We could not read a recipe from that page. Try again, or try another link.",
     "cap_reached_one": "You have used your {{count}} recipe read from links for today. Your reads reset on {{when}}.",
