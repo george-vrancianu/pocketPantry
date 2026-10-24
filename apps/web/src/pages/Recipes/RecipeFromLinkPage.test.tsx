@@ -125,7 +125,7 @@ const linkField = () => screen.getByLabelText(/^Link to the recipe/);
 
 async function submit(user: ReturnType<typeof userEvent.setup>, url: string) {
   await user.type(linkField(), url);
-  await user.click(screen.getByRole('button', { name: 'Read the Recipe' }));
+  await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
 }
 
 describe('RecipeFromLinkPage', () => {
@@ -139,7 +139,7 @@ describe('RecipeFromLinkPage', () => {
     });
     await submit(user, 'https://www.example.com/pancakes');
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'Reading the Recipe',
+      'Reading the recipe',
     );
     expect(linkField()).toBeDisabled();
     expect(
@@ -152,8 +152,9 @@ describe('RecipeFromLinkPage', () => {
   it('cannot be submitted without a link', async () => {
     setup({});
     expect(
-      screen.getByRole('button', { name: 'Read the Recipe' }),
+      screen.getByRole('button', { name: 'Read the recipe' }),
     ).toBeDisabled();
+    expect(linkField()).not.toHaveFocus();
   });
 
   it('aborts the read when the Member leaves the step', async () => {
@@ -328,6 +329,7 @@ describe('RecipeFromLinkPage', () => {
       await screen.findByRole('button', { name: 'Remove link' }),
     );
     expect(screen.queryByRole('link', { name: /^From / })).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
     await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
     await screen.findByText('Detail of the recipe');
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;

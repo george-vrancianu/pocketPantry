@@ -20,7 +20,7 @@ export function SourceLink({ href }: { href: string }) {
   const { t } = useTranslation('recipes');
   const host = sourceHost(href);
   // Only an http(s) page is linked; anything else is not shown as a link.
-  if (host === null || !isSourceLink(href)) return null;
+  if (host === null || !/^https?:/i.test(href)) return null;
   return (
     <Link href={href} target="_blank" rel="noopener noreferrer">
       {t('sourceLink.from', { host })}

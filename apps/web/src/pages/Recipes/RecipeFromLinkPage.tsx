@@ -41,11 +41,14 @@ export function RecipeFromLinkPage() {
   const [url, setUrl] = useState('');
   const controller = useRef<AbortController | null>(null);
   const field = useRef<HTMLInputElement>(null);
+  const cancelButton = useRef<HTMLButtonElement>(null);
   const wasPending = useRef(false);
 
   // The field is disabled while reading; when the read ends (Cancel or an error), focus returns to it.
   useEffect(() => {
     if (wasPending.current && !read.isPending) field.current?.focus();
+    // Pressing "Read the recipe" swaps it for Cancel, so focus moves there once, not on every render.
+    if (!wasPending.current && read.isPending) cancelButton.current?.focus();
     wasPending.current = read.isPending;
   }, [read.isPending]);
   // A fast failure may never render the pending state, so an error also hands focus back.
@@ -131,12 +134,7 @@ export function RecipeFromLinkPage() {
           </Typography>
         </Stack>
         {read.isPending ? (
-          // Pressing "Read the Recipe" swaps it for Cancel, so focus moves there.
-          <Button
-            variant="secondary"
-            onClick={cancel}
-            ref={(button: HTMLButtonElement | null) => button?.focus()}
-          >
+          <Button variant="secondary" onClick={cancel} ref={cancelButton}>
             {t('common:cancel')}
           </Button>
         ) : (

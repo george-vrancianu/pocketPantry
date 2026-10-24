@@ -185,8 +185,8 @@
     "heading": "From a link",
     "hint": "Paste the link to a page with a recipe. PantryGator reads it into a new Recipe for you to check before saving.",
     "label": "Link to the recipe",
-    "submit": "Read the Recipe",
-    "reading": "Reading the Recipe…"
+    "submit": "Read the recipe",
+    "reading": "Reading the recipe…"
   },
   "sourceLink": {
     "from": "From {{host}} ↗",
