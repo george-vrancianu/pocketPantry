@@ -77,7 +77,7 @@ Code touched (proposed), all in `apps/web/src/pages/Scan/`:
 
 ### 3.1 Clear area
 The **clear area** is the part of the screen between the bottom of the top bar and the top of the footer:
-`top = safe-top + 52`, `bottom = screenHeight − (safe-bottom + 104 + 40)`.
+`top = safe-top + 52`, `bottom = screenHeight − (max(safe-bottom, 20) + 104 + 40)` (the 20 pt floor is a §12 decision).
 
 ### 3.2 Guide
 - Same four L-shaped brackets as v2 (30 pt arms, 3.5 pt stroke, 10 pt outer radius, white 92 %, drop-shadow 0 1 3 rgba(0,0,0,.35)).
@@ -120,8 +120,8 @@ The **clear area** is the part of the screen between the bottom of the top bar a
 ## 5. Footer
 
 ### 5.1 Bar
-- `position: absolute; bottom: 0; left: 0; right: 0`, same glass as the top bar, top border 1 pt rgba(255,255,255,.06), `padding-bottom: env(safe-area-inset-bottom)` (34 pt on the reference phone).
-- Top to bottom: **shutter row** (104 pt) → **mode slider** (40 pt) → safe area.
+- `position: absolute; bottom: 0; left: 0; right: 0`, same glass as the top bar, top border 1 pt rgba(255,255,255,.06), `padding-bottom: max(env(safe-area-inset-bottom), 20px)` (34 pt on the reference phone; at least 20 pt, §12).
+- Top to bottom: **shutter row** (104 pt) → **mode slider** (40 pt) → safe area (at least 20 pt).
 - Shutter row: CSS grid `1fr auto 1fr`, `align-items: center`, padding 0 30. Left cell: photo stack (justify start). Centre: shutter. Right cell: import (justify end).
 
 ### 5.2 Photo stack (replaces the Scan column and Done)
@@ -211,6 +211,7 @@ Remove: `done.*`, the double-tap hint strings, the screen-reader capture fallbac
 - **Swipe on the viewfinder** stays. Put it behind one flag so it can be limited to the slider if device testing shows accidental mode changes while framing.
 - **Zoom** is deferred to a follow-up issue.
 - **Stack badge with several states at once** follows the order in §5.2. Still check how it reads with a failed Scan and reads still running.
+- **Room under the mode slider** (2026-10-24): the footer's bottom padding is at least 20 pt (`FOOTER_MIN_BOTTOM`), because with no safe area the slider sat on the screen's edge. It is a floor, not added to a home indicator's inset; the clear area (§3.1) uses the same floor.
 
 ## 13. Add-Batch camera (`CameraOverlay`)
 - The camera the add-Batch form opens for Prefill (`FORM_CAMERA_MODES`: Product, Barcode) gets the same chrome: glass top bar (Close, torch, language chip in Product, Info), the shutter (hold to focus) and the slider with its two labels, and the Barcode ring.

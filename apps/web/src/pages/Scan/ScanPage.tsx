@@ -23,7 +23,11 @@ import { ShutterButton } from './components/ShutterButton';
 import { Viewfinder, useShotFeedback } from './components/Viewfinder';
 import { useFlyToStack } from './components/FlyToStack';
 import { useGuideRect } from './hooks/useGuideRect';
-import type { Rect } from '../../lib/scanGuides';
+import {
+  FOOTER_HEIGHT,
+  FOOTER_MIN_BOTTOM,
+  type Rect,
+} from '../../lib/scanGuides';
 import { failedCopyKey } from '../../lib/scanSession';
 import { useScanScreen, type ScanScreenModes } from './hooks/useScanScreen';
 
@@ -211,7 +215,8 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
       <Snackbar
         open={screen.toast !== null}
         onClose={screen.clearToast}
-        bottom={200}
+        // 56 pt above the footer, clear of its status line.
+        bottom={FOOTER_HEIGHT + FOOTER_MIN_BOTTOM + 56}
       >
         <Alert severity={screen.toast?.severity} role="status">
           {screen.toast?.text}

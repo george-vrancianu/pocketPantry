@@ -12,7 +12,7 @@ Decisions (user answers):
 Layout:
 - Feed is full-bleed behind both bars. Top and bottom bars are glass: `cam-glass` rgba(20,22,20,.55) + blur 14.
 - Top bar: Close (left). Right: torch (yellow `cam-warn` when on), Scan Language chip (globe + EN/RO/DA, opens a small menu; hidden in Plate), Info.
-- Footer, top to bottom: shutter row (104 pt; shutter 78 pt white ring, 62 pt disc, scales to 0.88 when pressed), mode slider (40 pt), home indicator (34 pt).
+- Footer, top to bottom: shutter row (104 pt; shutter 78 pt white ring, 62 pt disc, scales to 0.88 when pressed), mode slider (40 pt), home indicator (34 pt; at least 20 pt where there is none, handoff §12).
 - Small zoom pill (1× / 2) floats just above the footer, iOS-style.
 - Guide is now centred in the clear area between the bars (not at 46 % of screen height) and sized as a fraction of that area: Receipt .56w × .78h, Product .62 × .56, Ingredients .88 × .50, Plate .80 × .60.
 

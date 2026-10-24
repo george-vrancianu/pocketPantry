@@ -1,6 +1,6 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
-import { SHUTTER_ROW_HEIGHT } from '../../../lib/scanGuides';
+import { FOOTER_MIN_BOTTOM, SHUTTER_ROW_HEIGHT } from '../../../lib/scanGuides';
 import { glassBar, translucent } from './glass';
 
 type Props = {
@@ -20,7 +20,8 @@ type Props = {
 
 /**
  * The glass footer under the camera feed (handoff 5.1): the shutter row (`stack | shutter | right`, as
- * a `1fr auto 1fr` grid so the shutter never moves), then the mode slider, then the bottom safe area.
+ * a `1fr auto 1fr` grid so the shutter never moves), then the mode slider, then the bottom safe area
+ * (at least `FOOTER_MIN_BOTTOM`).
  * Both camera hosts mount it. Their messages sit right above the bar.
  */
 export function CameraFooter({
@@ -72,7 +73,7 @@ export function CameraFooter({
         sx={{
           ...glassBar,
           borderTop: `1px solid ${translucent(tokens.color.ink, 6)}`,
-          pb: 'env(safe-area-inset-bottom)',
+          pb: `max(env(safe-area-inset-bottom), ${FOOTER_MIN_BOTTOM}px)`,
         }}
       >
         <Box

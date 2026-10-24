@@ -1,13 +1,12 @@
 import {
   Box,
   CenteredLayout,
-  GatorImage,
   Link,
   Stack,
   Typography,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import { BrandLockup } from './BrandLockup';
 import { IntroLook } from './IntroLook';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
@@ -32,26 +31,28 @@ export function AuthShell({
   languageSwitcher = true,
   children,
 }: Props) {
-  const { t } = useTranslation('common');
   return (
     <IntroLook>
       <CenteredLayout>
         <Stack spacing={3}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 2,
-            }}
-          >
-            <Typography variant="sectionLabel" color="text.secondary">
-              {t('appName')}
-            </Typography>
-            {languageSwitcher ? <LanguageSwitcher /> : null}
-          </Box>
-          {back ? <Link href={backHref}>{back}</Link> : null}
-          <GatorImage mood="app-icon" size={64} decorative />
+          {back || languageSwitcher ? (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 2,
+              }}
+            >
+              {back ? <Link href={backHref}>{back}</Link> : null}
+              {languageSwitcher ? (
+                <Box sx={{ ml: 'auto' }}>
+                  <LanguageSwitcher />
+                </Box>
+              ) : null}
+            </Box>
+          ) : null}
+          <BrandLockup />
           <Stack spacing={0.5}>
             <Typography variant="h1">{title}</Typography>
             <Typography variant="meta" color="text.secondary">

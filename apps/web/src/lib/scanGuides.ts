@@ -17,6 +17,11 @@ export const TOP_BAR_HEIGHT = 52;
 export const SHUTTER_ROW_HEIGHT = 104;
 export const MODE_SLIDER_HEIGHT = 40;
 export const FOOTER_HEIGHT = SHUTTER_ROW_HEIGHT + MODE_SLIDER_HEIGHT;
+/**
+ * The least room under the mode slider, so it never sits on the screen's edge. It is a floor on the
+ * bottom safe area, not added to it: a home indicator already leaves room.
+ */
+export const FOOTER_MIN_BOTTOM = 20;
 
 /** The guide sits this far above the middle of the clear area (room for the zoom pill later). */
 export const GUIDE_LIFT = 14;
@@ -38,7 +43,8 @@ export const SCAN_GUIDES: Record<
 export function clearArea(view: GuideView): { top: number; height: number } {
   const insets = view.insets ?? { top: 0, bottom: 0 };
   const top = insets.top + TOP_BAR_HEIGHT;
-  const bottom = view.height - (insets.bottom + FOOTER_HEIGHT);
+  const bottom =
+    view.height - (Math.max(insets.bottom, FOOTER_MIN_BOTTOM) + FOOTER_HEIGHT);
   return { top, height: bottom - top };
 }
 
