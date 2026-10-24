@@ -305,6 +305,39 @@ describe('the Voice Inbox strip', () => {
     expect(fake.signals[1].aborted).toBe(true);
   });
 
+  it('keeps focus in the sheet when a row is cancelled', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    await userEvent.click(await screen.findByRole('button', { name: 'Open' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    await userEvent.click(
+      within(sheet.getAllByRole('listitem')[1]).getByRole('button', {
+        name: /^Cancel/,
+      }),
+    );
+    await waitFor(() => expect(sheet.getAllByRole('listitem')).toHaveLength(1));
+    expect(sheet.getByRole('heading', { name: 'Voice Inbox' })).toHaveFocus();
+  });
+
+  it('reads the strip politely, and raises an alert only when a note fails', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    expect(screen.queryByRole('alert')).toBeNull();
+    answer(0);
+    await screen.findByText('Reading 1 · 1 ready');
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    fake.reads[1].reject(new TypeError('Failed to fetch'));
+    await waitFor(() => expect(fake.reads.length).toBeGreaterThan(2));
+    fake.reads[2].reject(new TypeError('Failed to fetch'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('1 failed');
+    expect(strip()).toHaveTextContent('1 ready · 1 failed');
+  });
+
   it('sends each note with the Default List of the page it was recorded on, whichever page opens it', async () => {
     renderAt('/shopping');
     await speak(1);

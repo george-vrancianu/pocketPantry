@@ -150,7 +150,7 @@ describe('Review all in the Voice Inbox', () => {
     sheet: ReturnType<typeof within>,
   ): Promise<ReturnType<typeof within>> => {
     await userEvent.click(
-      sheet.getByRole('button', { name: 'Review all (2)' }),
+      sheet.getByRole('button', { name: /^Review all \(\d\)$/ }),
     );
     return within(await screen.findByRole('dialog', { name: 'Review all' }));
   };
@@ -182,6 +182,41 @@ describe('Review all in the Voice Inbox', () => {
       await screen.findByRole('dialog', { name: 'Voice Inbox' }),
     );
     expect(sheet.queryByRole('button', { name: /Review all/ })).toBeNull();
+  });
+
+  it('does not count a note without Voice Actions toward Review all', async () => {
+    render();
+    await speak(1);
+    await speak(2);
+    reply(0, 'first note', [shop('a1', bread)]);
+    reply(1, 'just chatting', []);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open (2)' }),
+    );
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    expect(sheet.queryByRole('button', { name: /Review all/ })).toBeNull();
+  });
+
+  it('merges only the notes that have Voice Actions', async () => {
+    render();
+    await speak(1);
+    await speak(2);
+    reply(0, 'first note', [shop('a1', bread)]);
+    reply(1, 'just chatting', []);
+    await speak(3);
+    reply(2, 'third note', [shop('a3', milk)]);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open (3)' }),
+    );
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    const dialog = await reviewAll(sheet);
+    expect(dialog.getByText(/first note/)).toBeVisible();
+    expect(dialog.getByText(/third note/)).toBeVisible();
+    expect(dialog.queryByText(/just chatting/)).toBeNull();
   });
 
   it('merges the notes in recording order: transcripts, one answer card, actions grouped by list, duplicates kept', async () => {
@@ -333,7 +368,7 @@ describe('Review all in the Voice Inbox', () => {
       Array.from({ length: count }, (_, i) => shop(`${prefix}${i}`, bread));
     const sheet = await twoNotes(many('a', 26), many('b', 25));
     await userEvent.click(
-      sheet.getByRole('button', { name: 'Review all (2)' }),
+      sheet.getByRole('button', { name: /^Review all \(\d\)$/ }),
     );
 
     expect(
@@ -368,7 +403,7 @@ describe('Review all in the Voice Inbox', () => {
       await screen.findByRole('dialog', { name: 'Voice Inbox' }),
     );
     await userEvent.click(
-      await sheet.findByRole('button', { name: 'Review all (2)' }),
+      await sheet.findByRole('button', { name: /^Review all \(\d\)$/ }),
     );
     expect(await sheet.findByText(/more than 50 changes/)).toBeVisible();
 

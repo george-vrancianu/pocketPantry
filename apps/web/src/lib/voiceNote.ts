@@ -96,21 +96,18 @@ export type VoiceNoteState = {
     failed: number;
     total: number;
     /** Every Voice Note in recording order: its id (for `cancelReading` and the like) and phase. */
-    notes: Array<{
-      id: number;
-      phase: Exclude<VoicePhase, 'idle' | 'recording'>;
-      defaultTarget: VoiceDefaultTarget;
-      /** `undefined`: the Member's Spoken Language preference was used. */
-      spokenLanguage?: ScanLanguage;
-      durationMs?: number;
-      /** The first line the server heard, once the note is read. */
-      transcript?: string;
-      /** Why a failed note failed, and the server's own error behind a `failed`. */
-      error?: VoiceErrorCode;
-      rawError?: { code: string; params: Record<string, unknown> };
-      /** A failed note with its recording kept can be retried. */
-      canRetry?: boolean;
-    }>;
+    notes: Array<
+      MergedNote & {
+        phase: Exclude<VoicePhase, 'idle' | 'recording'>;
+        /** Why a failed note failed, and the server's own error behind a `failed`. */
+        error?: VoiceErrorCode;
+        rawError?: { code: string; params: Record<string, unknown> };
+        /** A failed note with its recording kept can be retried. */
+        canRetry?: boolean;
+        /** It has Voice Actions to review: what "Review all" counts. */
+        hasActions: boolean;
+      }
+    >;
   };
 };
 
@@ -238,6 +235,9 @@ const nextUtcMidnight = (now: number) => {
 
 const isReady = (n: VoiceNoteEntry) =>
   n.phase === 'review' || n.phase === 'answers';
+/** A Voice Note in Review with at least one Voice Action: what "Review all" merges. */
+const hasActions = (n: VoiceNoteEntry) =>
+  n.phase === 'review' && (n.proposal?.actions.length ?? 0) > 0;
 /** A Review or answer sheet is on screen (or applying). */
 const isSheet = (n: VoiceNoteEntry | undefined) =>
   n !== undefined && (isReady(n) || n.phase === 'applying');
@@ -275,10 +275,11 @@ export function createVoiceNote(
       defaultTarget: n.defaultTarget,
       spokenLanguage: n.spokenLanguage,
       durationMs: n.durationMs,
-      transcript: n.proposal?.transcript,
+      transcript: n.proposal?.transcript ?? '',
       error: n.error,
       rawError: n.rawError,
       canRetry: n.phase === 'failed' && n.recording !== undefined,
+      hasActions: hasActions(n),
     })),
   });
   /** The flat view of what is on screen: the recording in progress, else the open Voice Note, else idle. */
@@ -753,7 +754,8 @@ export function createVoiceNote(
         },
       }));
       emit();
-      notify('noteReady');
+      // Setup opens its own note when it is read; no "ready" nudge for it.
+      if (!note.openWhenReady) notify('noteReady');
     }
     pump();
   }
@@ -946,6 +948,15 @@ export function createVoiceNote(
     emit();
   }
 
+  /** Opens one Voice Note that is ready (its Review or answer sheet). Nothing else is open already. */
+  function openOne(id: number) {
+    if (store.live || store.merged || isSheet(openNote())) return;
+    const next = store.notes.find((n) => n.id === id);
+    if (!next || !isReady(next)) return;
+    store = { ...store, openId: next.id };
+    emit();
+  }
+
   /** The input loudness, 0 to 1, for the Listening card's meter; 0 when nothing records. */
   const level = () => session?.level() ?? 0;
 
@@ -1034,16 +1045,9 @@ export function createVoiceNote(
     /** Opens the oldest Voice Note that is ready: its Review, or its answer sheet. Nothing is open already. */
     openReady() {
       const next = store.notes.find(isReady);
-      if (next) this.open(next.id);
+      if (next) openOne(next.id);
     },
-    /** Opens one Voice Note that is ready (its Review or answer sheet). Nothing else is open already. */
-    open(id: number) {
-      if (store.live || store.merged || isSheet(openNote())) return;
-      const next = store.notes.find((n) => n.id === id);
-      if (!next || !isReady(next)) return;
-      store = { ...store, openId: next.id };
-      emit();
-    },
+    open: openOne,
     /** Drops a failure and its kept recording. */
     dismiss(id?: number) {
       const note = failedNote(id);
@@ -1064,7 +1068,7 @@ export function createVoiceNote(
      */
     openMerged(): MergeOutcome {
       if (store.live || store.merged || isSheet(openNote())) return 'refused';
-      const notes = store.notes.filter((n) => n.phase === 'review');
+      const notes = store.notes.filter(hasActions);
       if (notes.length < 2) return 'refused';
       const total = notes.reduce(
         (sum, n) => sum + (n.proposal?.actions.length ?? 0),
