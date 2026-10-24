@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
@@ -111,6 +111,20 @@ describe('DashboardPage', () => {
     expect(
       await screen.findByRole('link', { name: 'Customise dashboard' }),
     ).toHaveAttribute('href', '/customise');
+  });
+
+  it('puts the Settings gear rightmost, after Customise', async () => {
+    stub({ widgets: [] });
+
+    renderWithProviders(<DashboardPage />);
+
+    const header = await screen.findByRole('banner');
+    const links = within(header).getAllByRole('link');
+    expect(links.map((link) => link.getAttribute('aria-label'))).toEqual([
+      'Customise dashboard',
+      'Settings',
+    ]);
+    expect(links[1]).toHaveAttribute('href', '/settings');
   });
 
   it('shows an error with a retry when the layout cannot be loaded', async () => {

@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box';
 import type { MouseEventHandler, ReactNode, Ref } from 'react';
-import { BackIcon, HomeIcon } from '../atoms/icons';
+import { BackIcon, HomeIcon, SettingsIcon } from '../atoms/icons';
 import { IconButton } from '../atoms/IconButton';
 import { Typography } from '../atoms/Typography';
 import { tokens } from '../theme/tokens';
@@ -29,9 +29,11 @@ export type ScreenHeaderProps = {
   back?: { label: string; href: string };
   /** Makes the title programmatically focusable, so a screen can move focus to it. Needs `title`. */
   titleRef?: Ref<HTMLHeadingElement>;
+  /** The Settings gear, always the rightmost button. Omit to hide it (e.g. on Settings itself). */
+  settings?: { label: string; href: string };
 };
 
-/** Sub-screen header: Home button, H1 title, optional trailing content (e.g. counter chips), one action button. */
+/** Sub-screen header: Home button, H1 title, optional trailing content (e.g. counter chips), one action button, Settings gear. */
 export function ScreenHeader({
   title,
   subtitle,
@@ -41,6 +43,7 @@ export function ScreenHeader({
   trailing,
   titleRef,
   back,
+  settings,
 }: ScreenHeaderProps) {
   return (
     <Box
@@ -69,7 +72,7 @@ export function ScreenHeader({
             component="h1"
             ref={titleRef}
             tabIndex={titleRef ? -1 : undefined}
-            sx={{ outline: 'none' }}
+            sx={{ outline: 'none', overflowWrap: 'break-word' }}
           >
             {title}
           </Typography>
@@ -91,6 +94,11 @@ export function ScreenHeader({
           onClick={action.onClick}
         >
           {action.icon}
+        </IconButton>
+      ) : null}
+      {settings ? (
+        <IconButton label={settings.label} href={settings.href}>
+          <SettingsIcon size={20} />
         </IconButton>
       ) : null}
     </Box>

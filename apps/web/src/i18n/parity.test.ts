@@ -459,7 +459,7 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
     'explains that intolerances count as Allergies',
   'errors:recipes.source_locale|source language':
     'a Recipe language, not the Scan Language',
-  'dashboard:settings|settings': 'link to Settings',
+  'screenHeader:settings|settings': 'header link to Settings',
   'voice:blocked.safariStep2|settings': 'Safari "Website Settings" menu name',
   'onboarding:languages.app|app language':
     'the first-screen name for the UI Language, before the Member has any Preferences (design handoff)',
