@@ -199,7 +199,7 @@ describe('RecipeFromLinkPage', () => {
     [
       'scan.provider_unavailable',
       502,
-      /Reading Recipes from links is not available/,
+      /cannot read Recipes from links right now/,
     ],
     ['scan.provider_refused', 502, /could not read a Recipe from that page/],
     ['scan.provider_incomplete', 502, /could not read a Recipe from that page/],
