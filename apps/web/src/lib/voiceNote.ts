@@ -83,7 +83,7 @@ export type VoiceNoteState = {
     /** Every Voice Note in recording order: its id (for `cancelReading` and the like) and phase. */
     notes: Array<{
       id: number;
-      phase: VoicePhase;
+      phase: Exclude<VoicePhase, 'idle' | 'recording'>;
       defaultTarget: VoiceDefaultTarget;
       /** `undefined`: the Member's Spoken Language preference was used. */
       spokenLanguage?: ScanLanguage;
@@ -839,11 +839,8 @@ export function createVoiceNote(
     clear,
     /** Opens the oldest Voice Note that is ready: its Review, or its answer sheet. Nothing is open already. */
     openReady() {
-      if (store.live || isSheet(openNote())) return;
       const next = store.notes.find(isReady);
-      if (!next) return;
-      store = { ...store, openId: next.id };
-      emit();
+      if (next) this.open(next.id);
     },
     /** Opens one Voice Note that is ready (its Review or answer sheet). Nothing else is open already. */
     open(id: number) {

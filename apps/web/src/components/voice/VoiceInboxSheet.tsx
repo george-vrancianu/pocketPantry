@@ -12,13 +12,17 @@ import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage
 import { formatClock } from '../../lib/voice';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 
-const glyph = {
+const glyph: Record<VoiceInboxPhase, string> = {
   reading: '…',
   review: '✓',
   answers: '✓',
   applying: '…',
   failed: '!',
-} as const;
+};
+
+type VoiceInboxPhase = ReturnType<
+  typeof useVoiceNoteState
+>['inbox']['notes'][number]['phase'];
 
 /** The Voice Inbox sheet: one row per Voice Note in recording order, with Review / See or Cancel. */
 export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
@@ -53,7 +57,7 @@ export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
         sx={{ m: 0, px: 2, pb: 2, listStyle: 'none' }}
       >
         {inbox.notes.map((note) => {
-          const phase = note.phase === 'recording' ? 'reading' : note.phase;
+          const { phase } = note;
           const isReady = phase === 'review' || phase === 'answers';
           const preview = note.transcript
             ? note.transcript.split('\n')[0]
@@ -93,7 +97,7 @@ export function VoiceInboxSheet({ onClose }: { onClose: () => void }) {
                   fontWeight: 700,
                 }}
               >
-                {glyph[phase as keyof typeof glyph] ?? '…'}
+                {glyph[phase]}
               </Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Box

@@ -248,6 +248,45 @@ describe('the Voice Inbox strip', () => {
     expect(await dialog.findByText(/second note/)).toBeVisible();
   });
 
+  it('shows an answers-only row with See, which opens the answer sheet and closes the Voice Inbox', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    fake.reads[0].resolve(
+      Response.json(
+        {
+          transcript: 'do we have bread',
+          actions: [],
+          answers: [
+            {
+              id: 'q1',
+              kind: 'no',
+              text: 'bread',
+              ingredient: bread,
+              onShoppingList: false,
+            },
+          ],
+        },
+        { status: 201 },
+      ),
+    );
+    fake.reads[1].resolve(Response.json(heard(), { status: 201 }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open (2)' }),
+    );
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    const row = sheet.getAllByRole('listitem')[0];
+    expect(row).toHaveTextContent('Answers ready');
+    expect(row).toHaveTextContent('English');
+    await userEvent.click(within(row).getByRole('button', { name: /^See: / }));
+    expect(
+      await screen.findByRole('dialog', { name: 'Your Pantry' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('dialog', { name: 'Voice Inbox' })).toBeNull();
+  });
+
   it('cancels only the read of the row it is on', async () => {
     renderAt();
     await speak(1);
