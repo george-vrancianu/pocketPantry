@@ -174,7 +174,12 @@
     "canMake_one": "{{count}} opskrift, du kan lave",
     "canMake_other": "{{count}} opskrifter, du kan lave",
     "expiring_one": "{{count}} bruger det, der snart udløber",
-    "expiring_other": "{{count}} bruger det, der snart udløber"
+    "expiring_other": "{{count}} bruger det, der snart udløber",
+    "nothingYet": "Intet at lave endnu",
+    "oneShort_one": "{{count}} opskrift mangler én ingrediens",
+    "oneShort_other": "{{count}} opskrifter mangler én ingrediens",
+    "nothingInPantry": "Intet at lave fra dit spisekammer endnu",
+    "addWhatYouHave": "Tilføj det, du har"
   },
   "cookTonightPage": {
     "title": "Lav mad i aften",

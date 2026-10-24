@@ -188,7 +188,13 @@
     "canMake_other": "{{count}} de rețete pe care le poți găti",
     "expiring_one": "{{count}} folosește ce expiră curând",
     "expiring_few": "{{count}} folosesc ce expiră curând",
-    "expiring_other": "{{count}} folosesc ce expiră curând"
+    "expiring_other": "{{count}} folosesc ce expiră curând",
+    "nothingYet": "Nimic de gătit încă",
+    "oneShort_one": "{{count}} rețetă mai are nevoie de un ingredient",
+    "oneShort_few": "{{count}} rețete mai au nevoie de un ingredient",
+    "oneShort_other": "{{count}} de rețete mai au nevoie de un ingredient",
+    "nothingInPantry": "Nimic de gătit din Cămara ta încă",
+    "addWhatYouHave": "Adaugă ce ai"
   },
   "cookTonightPage": {
     "title": "Gătește diseară",

@@ -11,8 +11,8 @@ import { RecipesPage } from './RecipesPage';
 /*
  * DOM contract these tests assume (the implementation must provide it):
  * - The Cook Tonight card is one `link` whose accessible name is its visible lines joined
- *   with ", ", starting "Cook tonight". Its Gator is an `img` inside it, named by the Gator's
- *   alt text and marked with `data-mood`.
+ *   with ", ", starting "Cook tonight", in every state (Can Make, one ingredient short, nothing).
+ *   Its Gator is an `img` inside it, named by the Gator's alt text and marked with `data-mood`.
  * - The list is a `list` named by its heading, so its name starts with "All Recipes" or
  *   "Matches"; the count is part of that heading's text. Each row is a `listitem` whose
  *   text holds the title, family pill, "Variant of", meta, pills and time; the row also
@@ -147,6 +147,7 @@ function setup(
       <Route path="/recipes/new" element={<p>new recipe page</p>} />
       <Route path="/recipes/from-link" element={<p>link step</p>} />
       <Route path="/recipes/cook-tonight" element={<p>cook tonight page</p>} />
+      <Route path="/pantry" element={<p>pantry page</p>} />
       <Route path="/recipes/:id" element={<p>detail page</p>} />
     </Routes>,
     { route: '/recipes' },
@@ -807,16 +808,105 @@ describe('RecipesPage', () => {
       expect(await screen.findByText('cook tonight page')).toBeInTheDocument();
     });
 
-    it('is hidden when nothing can be made', async () => {
-      setup(() => [omelette], [near('o', 'Omelette')]);
-      await findRow('Omelette');
-      expect(queryCookTonight()).toBeNull();
-    });
+    describe('when nothing can be made', () => {
+      const FLOP = 'Gator, disappointed, with the cooking tools dropped';
 
-    it('is hidden when there are no cards', async () => {
-      setup(() => [omelette], []);
-      await findRow('Omelette');
-      expect(queryCookTonight()).toBeNull();
+      it('says how many Recipes are one ingredient short, with the disappointed chef, and opens the Cook Tonight page', async () => {
+        setup(
+          () => [omelette, soup],
+          [near('o', 'Omelette'), near('s', 'Soup', 2)],
+        );
+        const link = await findCookTonight();
+        expect(link).toHaveAccessibleName(
+          'Cook tonight, Nothing to cook yet, 2 Recipes are one ingredient short',
+        );
+        expect(link).toHaveTextContent('Nothing to cook yet');
+        expect(link).toHaveTextContent('2 Recipes are one ingredient short');
+        expect(link).not.toHaveTextContent('expires soon');
+        expect(within(link).getByRole('img', { name: FLOP })).toHaveAttribute(
+          'data-mood',
+          'chef-flop',
+        );
+        expect(link).toHaveAttribute('href', '/recipes/cook-tonight');
+        await userEvent.click(link);
+        expect(
+          await screen.findByText('cook tonight page'),
+        ).toBeInTheDocument();
+      });
+
+      it('says "1 Recipe is" in the singular', async () => {
+        setup(() => [omelette], [near('o', 'Omelette')]);
+        expect(await findCookTonight()).toHaveAccessibleName(
+          'Cook tonight, Nothing to cook yet, 1 Recipe is one ingredient short',
+        );
+      });
+
+      it('points to the Pantry, with the disappointed chef, when nothing is one ingredient short either', async () => {
+        setup(() => [omelette], []);
+        const link = await findCookTonight();
+        expect(link).toHaveAccessibleName(
+          'Cook tonight, Nothing to cook from your Pantry yet, Add what you have',
+        );
+        expect(link).toHaveTextContent('Nothing to cook from your Pantry yet');
+        expect(link).toHaveTextContent('Add what you have');
+        expect(within(link).getByRole('img', { name: FLOP })).toHaveAttribute(
+          'data-mood',
+          'chef-flop',
+        );
+        expect(link).toHaveAttribute('href', '/pantry');
+        await userEvent.click(link);
+        expect(await screen.findByText('pantry page')).toBeInTheDocument();
+      });
+
+      it('never shows the disappointed chef before Cook Tonight has loaded', async () => {
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        setup(
+          () => [omelette],
+          async () => {
+            await gate;
+            return [];
+          },
+        );
+        await findRow('Omelette');
+        expect(queryCookTonight()).toBeNull();
+        expect(screen.queryByAltText(FLOP)).toBeNull();
+        release();
+        expect(await findCookTonight()).toHaveAttribute('href', '/pantry');
+      });
+
+      it('is hidden while searching, and returns after Clear', async () => {
+        setup((url) => (filtered(url) ? [frittata] : [omelette]), []);
+        const user = userEvent.setup();
+        await findCookTonight();
+        await user.type(screen.getByLabelText('Search Recipes'), 'frit');
+        await waitFor(() => expect(queryCookTonight()).toBeNull());
+        expect(screen.queryByAltText(FLOP)).toBeNull();
+        await user.click(await chip('Clear'));
+        await findCookTonight();
+      });
+
+      it('counts the Recipes hidden by Allergies once Show is pressed', async () => {
+        const user = userEvent.setup();
+        setup(
+          () => [omelette],
+          (url) =>
+            url.searchParams.get('showHidden') === 'true'
+              ? [near('o', 'Omelette'), near('s', 'Soup')]
+              : [near('o', 'Omelette')],
+          undefined,
+          1,
+        );
+        expect(await findCookTonight()).toHaveAccessibleName(
+          'Cook tonight, Nothing to cook yet, 1 Recipe is one ingredient short',
+        );
+        await user.click(await screen.findByRole('button', { name: 'Show' }));
+        await waitFor(async () =>
+          expect(await findCookTonight()).toHaveAccessibleName(
+            'Cook tonight, Nothing to cook yet, 2 Recipes are one ingredient short',
+          ),
+        );
+      });
     });
 
     it('is hidden while Cook Tonight loads', async () => {

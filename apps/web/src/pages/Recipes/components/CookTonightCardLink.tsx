@@ -4,6 +4,7 @@ import {
   GatorImage,
   radius,
   tokens,
+  type GatorMood,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -11,27 +12,58 @@ import { canMakeCards, type CookTonightCard } from '../../../lib/cookTonight';
 import { useGatorAlt } from '../../../lib/useGatorAlt';
 
 /**
- * The Cook Tonight card on the Recipes page: chef Gator, how many Base Recipes the Family Can
- * Make and how many of them use something Expiring Soon. The whole card links to the Cook
- * Tonight page. Renders nothing when nothing can be made.
+ * The Cook Tonight card on the Recipes page, one link in every state:
+ * - something Can Make: chef Gator, how many Base Recipes and how many of them use what expires
+ *   soon, to the Cook Tonight page;
+ * - nothing, but some one ingredient short: the disappointed chef and how many, to the Cook
+ *   Tonight page, where only that section shows;
+ * - neither: the disappointed chef and a hint to add what you have, to the Pantry, so the
+ *   Member never lands on an empty page.
  */
 export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
   const { t } = useTranslation('recipes');
   const gatorAlt = useGatorAlt();
   // One card per Base Recipe, so Variants never count separately.
   const canMake = canMakeCards(cards);
-  if (canMake.length === 0) return null;
+  const oneShort = cards.length - canMake.length;
   const expiring = canMake.filter((card) => card.expiringCount > 0).length;
+  const { mood, to, lines } =
+    canMake.length > 0
+      ? {
+          mood: 'chef' as GatorMood,
+          to: '/recipes/cook-tonight',
+          lines: [
+            t('cookTonight.canMake', { count: canMake.length }),
+            expiring > 0
+              ? t('cookTonight.expiring', { count: expiring })
+              : null,
+          ],
+        }
+      : oneShort > 0
+        ? {
+            mood: 'chef-flop' as GatorMood,
+            to: '/recipes/cook-tonight',
+            lines: [
+              t('cookTonight.nothingYet'),
+              t('cookTonight.oneShort', { count: oneShort }),
+            ],
+          }
+        : {
+            mood: 'chef-flop' as GatorMood,
+            to: '/pantry',
+            lines: [
+              t('cookTonight.nothingInPantry'),
+              t('cookTonight.addWhatYouHave'),
+            ],
+          };
   const title = t('cookTonight.title');
-  const line = t('cookTonight.canMake', { count: canMake.length });
-  const expiringLine =
-    expiring > 0 ? t('cookTonight.expiring', { count: expiring }) : null;
+  const [line, secondLine] = lines;
   return (
     <Box
       component={Link}
-      to="/recipes/cook-tonight"
+      to={to}
       // Block children carry no spaces for a screen reader, so name the link explicitly.
-      aria-label={[title, line, expiringLine].filter(Boolean).join(', ')}
+      aria-label={[title, ...lines].filter(Boolean).join(', ')}
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -48,11 +80,11 @@ export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ ...displayType, fontSize: 22 }}>{title}</Box>
         <Box sx={{ fontSize: 15, fontWeight: 700, mt: '2px' }}>{line}</Box>
-        {expiringLine ? (
-          <Box sx={{ fontSize: 14, mt: '2px' }}>{expiringLine}</Box>
+        {secondLine ? (
+          <Box sx={{ fontSize: 14, mt: '2px' }}>{secondLine}</Box>
         ) : null}
       </Box>
-      <GatorImage mood="chef" size={104} alt={gatorAlt('chef')} />
+      <GatorImage mood={mood} size={104} alt={gatorAlt(mood)} />
     </Box>
   );
 }
