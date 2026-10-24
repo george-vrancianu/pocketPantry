@@ -6,10 +6,11 @@ import { StructuredOutputAiError } from '../src/ai/structured-output-ai.service'
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { recipes } from '../src/database/schema';
+import { recipes, scanUsage } from '../src/database/schema';
 import { PageFetchError } from '../src/page-fetch/page-fetcher';
 import type { PageFetcher } from '../src/page-fetch/page-fetcher';
 import type { RecipeFromLink } from '../src/recipes/recipes.schemas';
+import { ScanCapService } from '../src/scan/scan-cap.service';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 
@@ -112,18 +113,20 @@ describe('Recipe from Link (integration)', () => {
       pageFetcher,
     );
     database = app.get<Database>(DATABASE);
-    member = client(
-      app,
-      await signUp(app, `link-a-${stamp}@example.com`, 'A'),
-      '/api/recipes',
-    );
     cookieB = await signUp(app, `link-b-${stamp}@example.com`, 'B');
     familyBMember = client(app, cookieB, '/api/recipes');
   });
   afterAll(async () => {
     await app.close();
   });
-  beforeEach(() => {
+  let memberCount = 0;
+  beforeEach(async () => {
+    // A fresh Member per test: the Link Cap (2 in the test env) counts every read that reaches the AI.
+    member = client(
+      app,
+      await signUp(app, `link-a-${stamp}-${++memberCount}@example.com`, 'A'),
+      '/api/recipes',
+    );
     prompts.length = 0;
     fetched.length = 0;
     serve(jsonLdPage(PANCAKES));
@@ -531,6 +534,119 @@ describe('Recipe from Link (integration)', () => {
       respondWith({ nope: true });
       const res = await read('https://example.com/bad').expect(502);
       expect(code(res)).toBe('scan.result_invalid');
+    });
+  });
+
+  describe('the Link Cap', () => {
+    // The test env sets LINK_DAILY_CAP to 2 and SCAN_DAILY_CAP to 3.
+    const idOf = async (cookie: string) =>
+      (
+        (await client(app, cookie, '/api/auth').get('/get-session')).body as {
+          user: { id: string };
+        }
+      ).user.id;
+
+    it('counts a read only when the AI is called', async () => {
+      await read('https://example.com/one').expect(200);
+      await read('https://example.com/two').expect(200);
+      expect(prompts).toHaveLength(2);
+      const res = await read('https://example.com/three').expect(429);
+      expect(code(res)).toBe('link.cap_reached');
+      expect(prompts).toHaveLength(2);
+    });
+
+    it('answers link.cap_reached with the cap and the next UTC midnight', async () => {
+      await read('https://example.com/one').expect(200);
+      await read('https://example.com/two').expect(200);
+      const res = await read('https://example.com/three').expect(429);
+      const body = res.body as {
+        code: string;
+        params: { cap: number; resetsAt: string };
+      };
+      expect(body.params.cap).toBe(2);
+      const resetsAt = Date.parse(body.params.resetsAt);
+      expect(resetsAt).toBeGreaterThan(Date.now());
+      expect(resetsAt - Date.now()).toBeLessThanOrEqual(86_400_000);
+      expect(new Date(resetsAt).toISOString()).toMatch(/T00:00:00\.000Z$/);
+    });
+
+    it('is not touched by invalid links, failed fetches or a page without a recipe', async () => {
+      await read('not a link').expect(400);
+      page = () => Promise.reject(new PageFetchError('invalid', 'refused'));
+      await read('https://example.com/private').expect(400);
+      page = () => Promise.reject(new PageFetchError('unreadable', 'timeout'));
+      await read('https://example.com/slow').expect(422);
+      serve('<html><body>Just a blog</body></html>');
+      await read('https://example.com/blog').expect(422);
+      serve(jsonLdPage({ '@type': 'Article', name: 'News' }));
+      await read('https://example.com/article').expect(422);
+      expect(prompts).toEqual([]);
+
+      // The whole cap is still there.
+      serve(jsonLdPage(PANCAKES));
+      await read('https://example.com/one').expect(200);
+      await read('https://example.com/two').expect(200);
+      await read('https://example.com/three').expect(429);
+    });
+
+    it('counts a read the AI answered with no recipe, and hands back one the provider failed', async () => {
+      respondWith(reading({ recipeFound: false }));
+      await read('https://example.com/odd').expect(422);
+      answer = () =>
+        Promise.reject(new StructuredOutputAiError('failed', null));
+      await read('https://example.com/down').expect(502);
+      respondWith({ nope: true });
+      await read('https://example.com/bad').expect(502);
+
+      // Only the no-recipe read stayed counted: one use is left.
+      respondWith(reading());
+      await read('https://example.com/ok').expect(200);
+      const res = await read('https://example.com/over').expect(429);
+      expect(code(res)).toBe('link.cap_reached');
+    });
+
+    it('is separate from the Scan Cap', async () => {
+      const caps = app.get(ScanCapService);
+      const linkCookie = await signUp(
+        app,
+        `link-full-${stamp}@example.com`,
+        'L',
+      );
+      const linkFull = client(app, linkCookie, '/api/recipes');
+      const scanCookie = await signUp(
+        app,
+        `link-scan-${stamp}@example.com`,
+        'S',
+      );
+      const scanFull = client(app, scanCookie, '/api/recipes');
+
+      // A full Link Cap leaves every Scan available.
+      await read('https://example.com/one', linkFull).expect(200);
+      await read('https://example.com/two', linkFull).expect(200);
+      await read('https://example.com/three', linkFull).expect(429);
+      const linkId = await idOf(linkCookie);
+      for (let i = 0; i < 3; i++) await caps.consume(linkId);
+      await expect(caps.consume(linkId)).rejects.toMatchObject({
+        code: 'scan.cap_reached',
+      });
+
+      // A full Scan Cap, in turn, leaves the Link Cap alone.
+      const scanId = await idOf(scanCookie);
+      for (let i = 0; i < 3; i++) await caps.consume(scanId);
+      await read('https://example.com/one', scanFull).expect(200);
+      await read('https://example.com/two', scanFull).expect(200);
+
+      const rows = await database
+        .select({ kind: scanUsage.kind, count: scanUsage.count })
+        .from(scanUsage)
+        .where(eq(scanUsage.memberId, scanId));
+      expect(rows).toEqual(
+        expect.arrayContaining([
+          { kind: 'scan', count: 3 },
+          { kind: 'link', count: 2 },
+        ]),
+      );
+      expect(rows).toHaveLength(2);
     });
   });
 
