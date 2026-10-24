@@ -271,7 +271,7 @@ describe('Voice Note on the Shopping List', () => {
 
     pressDown(button);
     await screen.findByText('Starting…');
-    await holdFor(400);
+    await holdFor(2000);
     fireEvent.pointerUp(button);
     await act(async () => ready(session));
 
@@ -458,7 +458,7 @@ describe('Voice Note on the Shopping List', () => {
       let attempt = 0;
       setup({
         note: () =>
-          ++attempt === 1
+          ++attempt <= 2
             ? Promise.resolve(
                 Response.json({ transcript: 'bread', actions: [] }),
               )
@@ -468,21 +468,29 @@ describe('Voice Note on the Shopping List', () => {
       fireEvent.pointerUp(await hold());
       await screen.findByRole('button', { name: 'Review' });
       fireEvent.pointerUp(await hold());
+      await screen.findByRole('button', { name: /^Open/ });
+      fireEvent.pointerUp(await hold());
       await waitFor(() =>
         expect(screen.getByRole('alert')).toHaveTextContent('1 failed'),
       );
-      const sheet = await openSheet();
+      fireEvent.click(screen.getByRole('button', { name: /^Open/ }));
+      const sheet = await screen.findByRole('dialog', { name: 'Voice Inbox' });
 
+      const onFocus = vi.fn();
+      const voiceButton = document.querySelector('[data-voice-button]');
+      voiceButton?.addEventListener('focus', onFocus);
       await userEvent.click(
-        within(sheet).getByRole('button', { name: /^Review/ }),
+        within(sheet).getAllByRole('button', { name: /^Review/ })[0],
       );
 
       const review = await screen.findByRole('dialog', { name: 'Review' });
       await waitFor(() =>
         expect(review).toContainElement(document.activeElement as HTMLElement),
       );
-      await holdFor(400);
+      await holdFor(2000);
       expect(review).toContainElement(document.activeElement as HTMLElement);
+      // The sheet closing for a note that opens does not hand focus to the voice button.
+      expect(onFocus).not.toHaveBeenCalled();
     });
 
     it('keeps the mic working while a note has failed', async () => {
