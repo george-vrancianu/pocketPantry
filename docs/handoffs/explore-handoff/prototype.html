@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Family Recipes and Explore</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500;9..144,600;9..144,700,50&family=Instrument+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&family=Sora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{ --page-bg:#ECEAE4; --page-fg:#1F1D18; --page-muted:#6C675C; --page-line:#D9D5CC; --page-card:#F7F5F0; --page-accent:#4E5E2A; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --page-bg:#15171A; --page-fg:#EDEBE6; --page-muted:#9B978E; --page-line:#2B2E33; --page-card:#1D2024; --page-accent:#A7C66B; color-scheme:dark } }
+:root[data-theme="dark"]{ --page-bg:#15171A; --page-fg:#EDEBE6; --page-muted:#9B978E; --page-line:#2B2E33; --page-card:#1D2024; --page-accent:#A7C66B; color-scheme:dark }
+body{ background:var(--page-bg); color:var(--page-fg); font-family:'Instrument Sans',ui-sans-serif,system-ui,sans-serif; padding-inline:16px; padding-block:20px 40px; margin:0 }
+.wrap{ max-width:1080px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:36px; align-items:start }
+@media (max-width:840px){ .wrap{ grid-template-columns:1fr } .notes{ order:2 } .stage{ order:1; justify-self:center; position:static !important } }
+.notes h1{ font:600 26px/1.15 'Fraunces',Georgia,serif; letter-spacing:-.01em; margin:0 0 6px; text-wrap:balance }
+.notes .sub{ color:var(--page-muted); font-size:14px; margin:0 0 18px; max-width:56ch; line-height:1.5 }
+.notes h2{ font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--page-muted); margin:22px 0 8px }
+.notes p, .notes li{ font-size:14px; line-height:1.5; max-width:58ch }
+.notes p{ margin:0 0 8px }
+.notes ul{ margin:0 0 8px; padding-left:18px }
+.notes li{ margin-bottom:4px }
+.notes code{ font-size:12.5px; background:var(--page-card); border:1px solid var(--page-line); border-radius:5px; padding:0 4px }
+.seg{ display:flex; gap:8px; flex-wrap:wrap }
+.seg button{ font:600 13px/1 inherit; font-family:inherit; padding:9px 13px; border-radius:999px; border:1px solid var(--page-line); background:var(--page-card); color:var(--page-fg); cursor:pointer }
+.seg button[aria-pressed="true"]{ background:var(--page-fg); color:var(--page-bg); border-color:var(--page-fg) }
+.seg.vars button{ display:flex; gap:8px; align-items:center; border-radius:12px; padding:10px 14px }
+.seg.vars .k{ display:inline-grid; place-items:center; width:20px; height:20px; border-radius:6px; background:var(--page-line); font-size:11.5px; font-weight:700 }
+.seg.vars button[aria-pressed="true"] .k{ background:var(--page-bg); color:var(--page-fg) }
+.seg button:focus-visible{ outline:2px solid var(--page-accent); outline-offset:2px }
+.vnote{ display:none } .vnote.on{ display:block }
+.vnote{ background:var(--page-card); border:1px solid var(--page-line); border-radius:14px; padding:12px 16px; margin-top:10px }
+.vnote p:last-child, .vnote ul:last-child{ margin-bottom:0 }
+.scen button{ border-radius:10px; font-weight:500; background:transparent }
+
+/* ---------- phone ---------- */
+.stage{ position:sticky; top:16px }
+.phone{ width:390px; max-width:100%; height:844px; border-radius:46px; background:var(--bg); color:var(--ink); box-shadow:0 0 0 10px var(--bezel), 0 30px 60px -20px rgba(0,0,0,.45); overflow:hidden; position:relative; font-family:var(--body); font-size:14px; display:flex; flex-direction:column; }
+.phone *{ box-sizing:border-box }
+.statusbar{ height:50px; flex:none; display:flex; align-items:flex-end; justify-content:space-between; padding:0 30px 6px; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums }
+.viewport{ flex:1; min-height:0; position:relative; overflow:hidden }
+.screen{ position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; scrollbar-width:none; padding:0 20px 120px; background:var(--bg) }
+.screen::-webkit-scrollbar{ display:none }
+.screen.in-push{ animation:inPush .32s cubic-bezier(.2,.8,.2,1) }
+.screen.out-push{ animation:outPush .32s cubic-bezier(.2,.8,.2,1) forwards }
+.screen.in-pop{ animation:inPop .32s cubic-bezier(.2,.8,.2,1) }
+.screen.out-pop{ animation:outPop .32s cubic-bezier(.2,.8,.2,1) forwards; z-index:2 }
+.screen.in-fade{ animation:inFade .2s ease }
+@keyframes inPush{ from{ transform:translateX(100%) } }
+@keyframes outPush{ to{ transform:translateX(-28%); opacity:.6 } }
+@keyframes inPop{ from{ transform:translateX(-28%); opacity:.6 } }
+@keyframes outPop{ to{ transform:translateX(100%) } }
+@keyframes inFade{ from{ opacity:0 } }
+
+.hdr{ display:flex; align-items:center; gap:8px; padding:6px 0 12px; min-height:58px }
+.hdr h1{ margin:0; flex:1; min-width:0; font-family:var(--display); font-weight:var(--display-w); letter-spacing:var(--display-ls); font-size:30px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.hdr h1.sm{ font-size:24px }
+.fab{ flex:none; width:44px; height:44px; border-radius:var(--r-fab); background:var(--primary); color:var(--primary-ink); border:0; display:grid; place-items:center; box-shadow:var(--shadow-btn); cursor:pointer }
+.ghost{ flex:none; width:40px; height:40px; border-radius:50%; background:transparent; border:var(--bw) solid var(--line); color:var(--ink); display:grid; place-items:center; cursor:pointer; position:relative }
+.ghost:hover{ background:var(--subtle) }
+.badge{ position:absolute; top:-4px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px; background:var(--accent); color:var(--accent-ink); font-size:11px; font-weight:700; display:grid; place-items:center; border:2px solid var(--bg); font-variant-numeric:tabular-nums }
+.badge.bump{ animation:bump .4s cubic-bezier(.2,.8,.2,1) }
+@keyframes bump{ 40%{ transform:scale(1.3) } }
+.xpill{ flex:none; height:40px; padding:0 13px 0 10px; border-radius:999px; border:var(--bw) solid var(--line); background:var(--card-bg); color:var(--ink); font:700 13.5px/1 inherit; font-family:inherit; display:inline-flex; align-items:center; gap:6px; cursor:pointer }
+.xpill svg{ color:var(--accent) }
+.xpill:hover{ background:var(--subtle) }
+.sub2{ font-size:13.5px; color:var(--muted); margin:-6px 0 4px; line-height:1.4 }
+button:focus-visible, a:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
+
+/* + menu */
+.menu{ position:absolute; z-index:8; right:20px; top:112px; min-width:214px; background:var(--card-bg); border-radius:16px; box-shadow:var(--shadow-float); padding:6px; border:var(--bw) solid var(--card-line); animation:inFade .14s ease }
+.menu button{ width:100%; height:44px; display:flex; align-items:center; gap:10px; padding:0 10px; border:0; background:transparent; border-radius:10px; color:var(--ink); font:600 15px/1 inherit; font-family:inherit; cursor:pointer; text-align:left }
+.menu button svg{ color:var(--muted) }
+.menu button:hover{ background:var(--subtle) }
+.menu hr{ border:0; border-top:var(--bw) solid var(--divider); margin:4px 6px }
+.menu .new{ margin-left:auto; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:999px; background:var(--accent-tint); color:var(--accent-on-tint) }
+
+/* family / explore tabs (variant B) */
+.tabs{ display:grid; grid-template-columns:1fr 1fr; background:var(--chip); border-radius:var(--r-ctl); padding:4px; margin:0 0 4px }
+.tabs button{ height:38px; border:0; background:transparent; border-radius:calc(var(--r-ctl) - 3px); font:600 14px/1 inherit; font-family:inherit; color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; position:relative }
+.tabs button[aria-selected="true"]{ background:var(--card-bg); color:var(--ink); font-weight:700; box-shadow:0 1px 2px rgba(0,0,0,.08) }
+.tabs .tb{ min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:var(--accent); color:var(--accent-ink); font-size:10.5px; font-weight:700; display:inline-grid; place-items:center }
+
+.seclabel{ display:flex; align-items:baseline; justify-content:space-between; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:18px 0 8px; gap:8px }
+.seclabel .cnt{ font-weight:600; letter-spacing:0; text-transform:none; font-variant-numeric:tabular-nums }
+.seclabel a, .seclabel button.lnk{ color:var(--accent); font-size:13px; font-weight:700; letter-spacing:0; text-transform:none; text-decoration:none; background:none; border:0; padding:0; cursor:pointer; font-family:inherit }
+.seclabel .k{ display:inline-flex; align-items:center; gap:6px }
+.seclabel .k .star{ color:var(--star) }
+
+.sticky{ position:sticky; top:0; z-index:3; background:var(--bg); margin:0 -20px; padding:8px 20px 8px }
+.search{ display:flex; align-items:center; gap:10px; height:48px; border-radius:var(--r-ctl); background:var(--field-bg); border:var(--bw-field) solid var(--line); padding:0 14px; color:var(--muted) }
+.search input{ flex:1; min-width:0; border:0; background:transparent; font:500 15px/1 inherit; font-family:inherit; color:var(--ink); outline:none }
+.search input::placeholder{ color:var(--muted) }
+.search:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-tint) }
+.chips{ display:flex; gap:8px; overflow-x:auto; margin:8px -20px 0; padding:0 20px; scrollbar-width:none; align-items:center }
+.chips::-webkit-scrollbar{ display:none }
+.chip{ flex:none; height:32px; padding:0 12px; border-radius:var(--r-chip); border:var(--bw) solid var(--line); background:var(--card-bg); color:var(--ink); font:600 12.5px/1 inherit; font-family:inherit; display:inline-flex; align-items:center; gap:5px; cursor:pointer }
+.chip[aria-pressed="true"]{ background:var(--primary); color:var(--primary-ink); border-color:var(--primary) }
+.chip.clear{ color:var(--muted) }
+.chips .div{ flex:none; width:1px; height:20px; background:var(--line-strong) }
+
+ul.rows{ list-style:none; margin:0; padding:0 }
+ul.rows li{ position:relative; display:flex; align-items:center; gap:4px }
+ul.rows li + li{ border-top:var(--bw) solid var(--line) }
+.row{ flex:1; min-width:0; display:flex; align-items:center; gap:12px; min-height:72px; padding:10px 0 10px 2px; color:var(--ink); text-decoration:none; text-align:left; background:none; border:0; font-family:inherit; cursor:pointer; font-size:inherit }
+.cluster{ flex:none; width:50px; height:50px; border-radius:var(--r-ctl); background:var(--subtle); border:var(--bw) solid var(--card-line); position:relative; color:var(--ink) }
+[data-theme="dark"] .cluster, [data-theme="dark"] .cluster .halo{ background:var(--chip) }
+.cluster svg{ position:absolute }
+.cluster .a{ width:30px; height:30px; left:4px; top:5px }
+.cluster .b{ width:24px; height:24px; right:2px; bottom:3px }
+.cluster .halo{ position:absolute; right:0; bottom:1px; width:28px; height:28px; border-radius:50%; background:var(--subtle) }
+.body{ flex:1; min-width:0 }
+.title{ font-size:15.5px; font-weight:700; line-height:1.25; display:flex; align-items:center; gap:6px; flex-wrap:wrap }
+.fam{ display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; background:var(--butter); color:var(--butter-ink); font-size:11px; font-weight:700; line-height:1.3 }
+.vof{ font-size:12.5px; font-weight:600; color:var(--accent); margin-top:1px }
+.src{ font-size:12px; font-weight:600; color:var(--muted); margin-top:1px; display:flex; align-items:center; gap:4px }
+.meta{ font-size:13px; font-weight:500; color:var(--muted); margin-top:2px }
+.pills{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px }
+.pill{ display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:999px; font-size:12px; font-weight:700; line-height:1.2 }
+.pill.ok{ background:var(--accent-tint); color:var(--accent-on-tint) }
+.pill.soon{ background:var(--soon-bg); color:var(--soon-fg) }
+.pill.urg{ background:var(--urgent-bg); color:var(--urgent-fg) }
+.time{ flex:none; text-align:right; font-variant-numeric:tabular-nums; min-width:30px }
+.time .n{ font-family:var(--display); font-weight:var(--display-w); font-size:17px; line-height:1 }
+.time .u{ font-size:11px; font-weight:600; color:var(--muted); margin-top:2px }
+.heart{ flex:none; width:40px; height:40px; margin-right:-8px; border-radius:50%; border:0; background:transparent; color:var(--muted); display:grid; place-items:center; cursor:pointer }
+.heart:hover{ background:var(--subtle) }
+.heart[aria-pressed="true"]{ color:var(--star) }
+/* add to family button */
+.add{ flex:none; width:38px; height:38px; margin-right:-2px; border-radius:50%; border:1.5px solid var(--accent); background:var(--card-bg); color:var(--accent); display:grid; place-items:center; cursor:pointer; transition:background .2s, color .2s, border-color .2s }
+.add:hover{ background:var(--accent-tint) }
+.add[aria-pressed="true"]{ background:var(--accent-tint); border-color:transparent; color:var(--accent-on-tint) }
+.add.pop svg{ animation:pop .36s cubic-bezier(.2,.8,.2,1) }
+@keyframes pop{ 40%{ transform:scale(1.35) } }
+li.flash{ animation:flash 1.6s ease }
+@keyframes flash{ 0%,40%{ background:var(--accent-tint) } 100%{ background:transparent } }
+li.arriving{ animation:arrive .32s cubic-bezier(.2,.8,.2,1) }
+@keyframes arrive{ from{ opacity:0; transform:translateY(-8px) } }
+
+.more{ display:flex; align-items:center; justify-content:center; gap:6px; width:100%; height:44px; margin-top:6px; border-radius:var(--r-ctl); border:var(--bw) dashed var(--line-strong); background:transparent; color:var(--accent); font:700 13.5px/1 inherit; font-family:inherit; cursor:pointer }
+.more:hover{ background:var(--subtle) }
+.favhint{ display:flex; align-items:center; gap:12px; padding:12px 14px; border:1.5px dashed var(--line-strong); border-radius:var(--r-card); color:var(--muted); font-size:13px; line-height:1.4 }
+.favhint .ic{ flex:none; width:36px; height:36px; border-radius:50%; background:var(--subtle); display:grid; place-items:center; color:var(--star) }
+.favhint b{ color:var(--ink); font-weight:600 }
+.empty{ text-align:center; padding:28px 0 10px }
+.empty .h{ font-family:var(--display); font-weight:var(--display-w); font-size:18px }
+.empty .s{ color:var(--muted); font-size:14px; margin-top:4px }
+
+/* fall-through row to Explore while searching */
+.fall{ display:flex; align-items:center; gap:12px; width:100%; margin-top:12px; padding:12px 14px; border-radius:var(--r-card); background:var(--card-bg); border:var(--bw) solid var(--card-line); box-shadow:var(--shadow-card); color:var(--ink); font-family:inherit; text-align:left; cursor:pointer }
+.fall .ic{ flex:none; width:38px; height:38px; border-radius:50%; background:var(--accent-tint); color:var(--accent-on-tint); display:grid; place-items:center }
+.fall .t{ flex:1; min-width:0; font-size:14.5px; font-weight:700 }
+.fall .t span{ display:block; font-size:12.5px; font-weight:500; color:var(--muted); margin-top:2px }
+.fall > svg{ color:var(--muted); flex:none }
+
+/* explore end card (A, C) */
+.endcard{ display:flex; align-items:center; gap:14px; width:100%; margin-top:22px; padding:16px; border-radius:calc(var(--r-card) + 2px); background:var(--accent); color:var(--accent-ink); border:0; font-family:inherit; text-align:left; cursor:pointer; position:relative; overflow:hidden }
+.endcard .stack{ flex:none; width:58px; height:46px; position:relative }
+.endcard .stack span{ position:absolute; width:34px; height:34px; border-radius:10px; background:rgba(255,255,255,.92); display:grid; place-items:center; color:#2B2418 }
+.endcard .stack span:nth-child(1){ left:0; top:8px; transform:rotate(-8deg) }
+.endcard .stack span:nth-child(2){ left:12px; top:2px; transform:rotate(4deg) }
+.endcard .stack span:nth-child(3){ left:24px; top:10px; transform:rotate(10deg) }
+.endcard .stack svg{ width:24px; height:24px }
+.endcard .t{ flex:1; font-family:var(--display); font-weight:var(--display-w); font-size:18px; line-height:1.15 }
+.endcard .t span{ display:block; font-family:var(--body); font-size:12.5px; font-weight:500; opacity:.88; margin-top:3px }
+
+/* explore shelf (C) */
+.shelf{ display:flex; gap:10px; overflow-x:auto; margin:0 -20px; padding:2px 20px 6px; scroll-snap-type:x mandatory; scroll-padding-inline:20px; scrollbar-width:none }
+.shelf::-webkit-scrollbar{ display:none }
+.stile{ flex:none; width:164px; scroll-snap-align:start; border-radius:var(--r-card); background:var(--card-bg); border:var(--bw) solid var(--card-line); box-shadow:var(--shadow-card); padding:10px 12px 12px; position:relative; text-align:left; color:var(--ink); font-family:inherit; cursor:pointer }
+.stile .cluster{ width:42px; height:42px }
+.stile .cluster .a{ width:25px; height:25px; left:3px; top:4px } .stile .cluster .b{ width:20px; height:20px }
+.stile .cluster .halo{ width:23px; height:23px }
+.stile .tt{ font-weight:700; font-size:14px; line-height:1.2; margin-top:8px; min-height:34px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
+.stile .ft{ font-size:12px; color:var(--muted); margin-top:4px; display:flex; align-items:center; gap:4px }
+.stile .add{ position:absolute; top:10px; right:10px; width:34px; height:34px }
+.stile.seeall{ display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; color:var(--accent); font-weight:700; font-size:13.5px; border-style:dashed; box-shadow:none; background:transparent; border-color:var(--line-strong); width:110px }
+
+/* new-family empty */
+.welcome{ text-align:center; padding:4px 0 6px }
+.gpanel{ position:relative; height:206px; border-radius:24px; background:var(--accent-tint); overflow:hidden; margin-bottom:16px; text-align:left }
+.gbtn{ all:unset; position:absolute; left:-24px; bottom:-8px; width:206px; height:186px; cursor:pointer; border-radius:20px }
+.gbtn:focus-visible{ outline:3px solid var(--accent); outline-offset:-3px }
+.gbtn svg{ width:100%; height:100%; overflow:visible }
+.bubble{ position:absolute; right:12px; top:16px; width:150px; background:var(--card-bg); color:var(--ink); border-radius:18px; padding:11px 13px; font-size:13.5px; font-weight:600; line-height:1.38; box-shadow:var(--shadow-card) }
+.bubble::before{ content:""; position:absolute; left:-7px; top:58px; width:16px; height:16px; background:var(--card-bg); transform:rotate(45deg); border-radius:3px }
+.bubble b{ color:var(--accent-on-tint) }
+.bubble.in{ animation:bubbleIn .4s cubic-bezier(.2,.8,.2,1) .7s both }
+@keyframes bubbleIn{ from{ opacity:0; transform:translateY(6px) scale(.94) } }
+.welcome .h{ font-family:var(--display); font-weight:var(--display-w); font-size:22px; letter-spacing:var(--display-ls); line-height:1.15 }
+.welcome .s{ color:var(--muted); font-size:14px; margin:6px auto 16px; max-width:31ch; line-height:1.45 }
+/* Gator motion rig (from docs/gator-motion, Balanced) */
+.phone{ --amp:1; --t:1 }
+.gator g[class]:not([transform]){ transform-box:fill-box }
+.gator .rig{ transform-origin:50% 100% } .gator .eye{ transform-origin:50% 55% } .gator .hat{ transform-origin:50% 100% }
+.gator .tail{ transform-origin:95% 80% } .gator .head{ transform-origin:45% 95% } .gator .whisk{ transform-origin:100% 100% }
+.gator .spoon{ transform-origin:0% 100% } .gator .rack{ transform-origin:50% 0% }
+.g-chef.enter .rig{ animation:popOnce 1.25s linear 1 }
+.g-chef.enter .steam{ opacity:0 }
+.g-chef.sig .eye{ animation:blink 4.4s infinite } .g-chef.sig .eye-far{ animation-delay:.04s }
+.g-chef.sig .tail{ animation:wag 1.6s ease-in-out infinite }
+.g-chef.sig .spoon{ animation:stir 1.4s linear infinite }
+.g-chef.sig .steam{ animation:steam 2s ease-out infinite }
+.g-chef.sig .whisk{ animation:waveArm 1.4s ease-in-out infinite }
+.g-chef.sig .head{ animation:bob 1.4s ease-in-out infinite }
+.g-chef.sig .rack{ animation:rackSway 2.8s ease-in-out infinite }
+.g-chef.poke .rig{ animation:boingOnce .9s linear 1 !important }
+.g-chef.poke .hat{ animation:hatHopOnce .9s linear 1 !important }
+.g-chef.poke .eye{ animation:squintOnce .9s linear 1 !important }
+@keyframes popOnce{ 0%{ opacity:0; transform:translateY(30px) scale(.4) } 25%{ opacity:1 } 50%{ transform:translateY(-14px) scale(.94,1.1) } 72%{ transform:translateY(0) scale(1.06,.92) } 86%{ transform:scale(.98,1.03) } 100%{ transform:none } }
+@keyframes blink{0%,90%,97%,100%{transform:scaleY(1)}93.5%{transform:scaleY(.08)}}
+@keyframes wag{0%,100%{transform:rotate(calc(-5deg*var(--amp)))}50%{transform:rotate(calc(7deg*var(--amp)))}}
+@keyframes stir{0%,100%{transform:translate(0,0) rotate(0)}25%{transform:translate(calc(5px*var(--amp)),calc(1px*var(--amp))) rotate(calc(4deg*var(--amp)))}50%{transform:translate(0,calc(2px*var(--amp)))}75%{transform:translate(calc(-5px*var(--amp)),calc(1px*var(--amp))) rotate(calc(-4deg*var(--amp)))}}
+@keyframes steam{0%{transform:translateY(4px);opacity:0}30%{opacity:.95}100%{transform:translateY(calc(-14px*var(--amp)));opacity:0}}
+@keyframes waveArm{0%,100%{transform:rotate(calc(-6deg*var(--amp)))}50%{transform:rotate(calc(8deg*var(--amp)))}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(calc(-2.5px*var(--amp)))}}
+@keyframes rackSway{0%,100%{transform:rotate(calc(-3deg*var(--amp)))}50%{transform:rotate(calc(3deg*var(--amp)))}}
+@keyframes boingOnce{0%,100%{transform:none}15%{transform:scale(calc(1 + .1*var(--amp)),calc(1 - .12*var(--amp)))}40%{transform:translateY(calc(-22px*var(--amp))) scale(calc(1 - .06*var(--amp)),calc(1 + .1*var(--amp)))}62%{transform:translateY(0) scale(calc(1 + .08*var(--amp)),calc(1 - .1*var(--amp)))}80%{transform:scale(calc(1 - .02*var(--amp)),calc(1 + .02*var(--amp)))}}
+@keyframes hatHopOnce{0%,20%,100%{transform:none}44%{transform:translateY(calc(-10px*var(--amp))) rotate(calc(-14deg*var(--amp)))}66%{transform:translateY(calc(-2px*var(--amp))) rotate(calc(5deg*var(--amp)))}84%{transform:none}}
+@keyframes squintOnce{0%,80%,100%{transform:scaleY(1)}12%,60%{transform:scaleY(.15)}}
+@keyframes hatSway{0%,100%{transform:rotate(0)}50%{transform:rotate(calc(-4deg*var(--amp)))}}
+@media (prefers-reduced-motion: reduce){ .gator *{ animation:none !important } .bubble.in{ animation:none } .g-chef.enter .steam{ opacity:1 } }
+.btn{ height:48px; border-radius:var(--r-ctl); border:0; padding:0 18px; font:700 15px/1 inherit; font-family:inherit; display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; width:100% }
+.btn.primary{ background:var(--primary); color:var(--primary-ink); box-shadow:var(--shadow-btn) }
+.btn.secondary{ background:var(--card-bg); color:var(--ink); border:var(--bw) solid var(--line-strong) }
+.btn.tinted{ background:var(--accent-tint); color:var(--accent-on-tint) }
+.btn:disabled{ cursor:default }
+.btn + .btn{ margin-top:8px }
+
+/* preview sheet */
+.scrim{ position:absolute; inset:0; z-index:9; background:rgba(10,12,8,.38); animation:inFade .2s ease }
+.sheet{ position:absolute; z-index:10; left:0; right:0; bottom:0; max-height:86%; overflow-y:auto; scrollbar-width:none; background:var(--surface); border-radius:26px 26px 0 0; padding:8px 20px 28px; box-shadow:var(--shadow-float); animation:sheetIn .3s cubic-bezier(.2,.8,.2,1) }
+.sheet::-webkit-scrollbar{ display:none }
+@keyframes sheetIn{ from{ transform:translateY(100%) } }
+.sheet .grab{ width:40px; height:5px; border-radius:3px; background:var(--line-strong); margin:0 auto 14px }
+.sheet .top{ display:flex; gap:14px; align-items:flex-start }
+.sheet .top .cluster{ width:58px; height:58px }
+.sheet .top .cluster .a{ width:34px; height:34px } .sheet .top .cluster .b{ width:28px; height:28px } .sheet .top .cluster .halo{ width:32px; height:32px }
+.sheet .eyebrow{ font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent) }
+.sheet h2{ margin:2px 0 0; font-family:var(--display); font-weight:var(--display-w); letter-spacing:var(--display-ls); font-size:23px; line-height:1.15 }
+.sheet .x{ margin-left:auto; flex:none }
+.facts{ display:grid; grid-template-columns:1fr 1fr 1fr 1.5fr; gap:8px; margin:14px 0 12px }
+.facts div{ background:var(--card-bg); border:var(--bw) solid var(--card-line); border-radius:12px; padding:8px 6px; text-align:center }
+.facts small{ display:block; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted) }
+.facts b{ display:block; font-family:var(--display); font-weight:var(--display-w); font-size:15px; margin-top:2px; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.ings{ display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 4px }
+.ing{ display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px 0 4px; border-radius:999px; background:var(--card-bg); border:var(--bw) solid var(--card-line); font-size:12.5px; font-weight:600 }
+.ing svg{ width:22px; height:22px }
+.ing.miss{ border-color:var(--soon-fg); border-style:dashed }
+.sheet .lbl{ font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:16px 0 6px; display:flex; justify-content:space-between }
+.vlist{ background:var(--card-bg); border:var(--bw) solid var(--card-line); border-radius:var(--r-card); padding:0 12px }
+.vlist li{ min-height:58px }
+.vlist .row{ min-height:58px; padding:8px 0 }
+.vlist .cluster{ width:40px; height:40px } .vlist .cluster .a{ width:24px; height:24px; left:3px; top:4px } .vlist .cluster .b{ width:19px; height:19px } .vlist .cluster .halo{ width:22px; height:22px }
+.vlist .title{ font-size:14.5px }
+.actions{ margin-top:18px }
+.lnkbtn{ display:block; width:100%; margin-top:10px; background:none; border:0; color:var(--accent); font:700 14px/1 inherit; font-family:inherit; padding:10px; cursor:pointer }
+.why{ font-size:12.5px; color:var(--muted); text-align:center; margin-top:8px; line-height:1.4 }
+
+/* variant editor stub */
+.ed .eyebrow{ font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); margin:4px 0 8px }
+.ed .tabs3{ display:grid; grid-template-columns:repeat(3,1fr); background:var(--chip); border-radius:var(--r-ctl); padding:4px; margin:6px 0 14px }
+.ed .tabs3 span{ height:36px; display:grid; place-items:center; font-size:14px; font-weight:600; color:var(--muted); border-radius:calc(var(--r-ctl) - 3px) }
+.ed .tabs3 span.on{ background:var(--card-bg); color:var(--ink); font-weight:700 }
+.ed label{ display:block; font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:12px 0 6px }
+.ed input{ width:100%; height:48px; border-radius:var(--r-ctl); border:var(--bw-field) solid var(--line); background:var(--field-bg); padding:0 14px; font:600 16px/1 inherit; font-family:inherit; color:var(--ink); outline:none }
+.ed input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-tint) }
+.ed .card{ background:var(--card-bg); border:var(--bw) solid var(--card-line); border-radius:var(--r-card); padding:4px 14px }
+.ed .card div{ display:flex; align-items:center; gap:10px; min-height:44px; font-size:14.5px; font-weight:600 }
+.ed .card div + div{ border-top:var(--bw) solid var(--divider) }
+.ed .card svg{ width:24px; height:24px }
+.ed .hint{ font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.45 }
+.savepill{ flex:none; height:40px; padding:0 18px; border-radius:999px; border:0; background:var(--primary); color:var(--primary-ink); font:700 14.5px/1 inherit; font-family:inherit; cursor:pointer }
+
+.dock{ z-index:5; position:absolute; left:14px; right:14px; bottom:14px; height:66px; border-radius:var(--r-dock); background:var(--dock-bg); backdrop-filter:blur(14px); box-shadow:var(--shadow-float); display:grid; grid-template-columns:repeat(4,1fr); align-items:center; padding:0 6px; border:var(--bw) solid var(--card-line) }
+.dock div{ display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; font-weight:600; color:var(--muted) }
+.dock div.on{ color:var(--accent) }
+.dock.hide{ display:none }
+.toast{ z-index:11; position:absolute; left:16px; right:16px; bottom:92px; background:var(--toast-bg); color:var(--toast-ink); border-radius:var(--r-ctl); padding:12px 14px; display:flex; align-items:center; gap:12px; font-size:13.5px; font-weight:500; box-shadow:var(--shadow-float); transform:translateY(12px); opacity:0; pointer-events:none; transition:all .24s cubic-bezier(.2,.8,.2,1) }
+.toast.show{ transform:none; opacity:1; pointer-events:auto }
+.toast span{ flex:1; line-height:1.35 }
+.toast button{ border:0; background:transparent; color:var(--toast-action); font:700 13.5px/1 inherit; font-family:inherit; cursor:pointer; padding:4px 2px }
+.toast.nodock{ bottom:24px }
+.toast.overbar{ bottom:100px }
+
+/* full Recipe preview (from Explore) */
+.prevbar{ z-index:6; position:absolute; left:0; right:0; bottom:0; padding:12px 16px 26px; background:var(--bg); border-top:var(--bw) solid var(--line); display:grid; grid-template-columns:1fr 1fr; gap:10px }
+.prevbar .btn{ margin:0 !important; font-size:14px; padding:0 8px; white-space:nowrap; gap:6px }
+.prevbar .btn + .btn{ margin-top:0 }
+.prevbar.hide{ display:none }
+.hero .eyebrow{ font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); display:flex; align-items:center; gap:6px; background:none; border:0; padding:0; font-family:inherit; cursor:pointer }
+.hero .eyebrow.cat{ color:var(--muted); cursor:default }
+.hero h2{ margin:6px 0 0; font-family:var(--display); font-weight:var(--display-w); letter-spacing:var(--display-ls); font-size:28px; line-height:1.12 }
+.hero .fam{ vertical-align:middle; margin-left:4px }
+.hero .facts{ margin:14px 0 6px }
+.dtabs{ position:sticky; top:0; z-index:3; background:var(--bg); margin:0 -20px; padding:8px 20px }
+.dtabs .seg3{ display:grid; grid-template-columns:repeat(3,1fr); background:var(--chip); border-radius:var(--r-ctl); padding:4px }
+.dtabs button{ height:40px; border:0; background:transparent; border-radius:calc(var(--r-ctl) - 3px); font:600 14px/1 inherit; font-family:inherit; color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px }
+.dtabs button[aria-selected="true"]{ background:var(--card-bg); color:var(--ink); font-weight:700; box-shadow:0 1px 2px rgba(0,0,0,.08) }
+.dtabs .cb{ min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:var(--urgent-bg); color:var(--urgent-fg); font-size:11px; font-weight:700; display:inline-grid; place-items:center }
+.toprow{ display:flex; align-items:center; justify-content:space-between; margin:12px 0 10px; gap:8px }
+.toprow .l{ font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted) }
+.stepper{ display:flex; align-items:center; gap:4px; height:40px; padding:0 3px; border-radius:999px; background:var(--card-bg); border:var(--bw) solid var(--line) }
+.stepper button{ width:34px; height:34px; border-radius:50%; border:0; background:var(--subtle); color:var(--ink); font:700 18px/1 inherit; font-family:inherit; cursor:pointer; display:grid; place-items:center }
+.stepper button:disabled{ opacity:.4; cursor:default }
+.stepper span{ font-size:13.5px; font-weight:700; min-width:84px; text-align:center; font-variant-numeric:tabular-nums }
+.itable{ background:var(--card-bg); border:var(--bw) solid var(--card-line); border-radius:calc(var(--r-card) + 4px); overflow:hidden }
+.irow{ display:flex; align-items:center; gap:10px; min-height:48px; padding:8px 14px }
+.irow + .irow{ border-top:var(--bw) solid var(--divider) }
+.irow > svg{ width:26px; height:26px; flex:none }
+.irow .nm{ flex:1; min-width:0; font-size:15px; font-weight:600; display:flex; align-items:center; flex-wrap:wrap; gap:7px }
+.qty{ font-size:12.5px; font-weight:700; padding:1px 7px; border-radius:6px; background:var(--accent-tint); color:var(--accent-on-tint); font-variant-numeric:tabular-nums }
+.irow .pill{ flex:none }
+.note{ font-size:13px; color:var(--muted); margin-top:10px; line-height:1.45 }
+.steps{ background:var(--card-bg); border:var(--bw) solid var(--card-line); border-radius:calc(var(--r-card) + 4px); padding:2px 16px; margin-top:12px }
+.step{ display:flex; gap:12px; padding:12px 0 }
+.step + .step{ border-top:var(--bw) solid var(--divider) }
+.step .no{ flex:none; width:28px; height:28px; border-radius:50%; background:var(--ink); color:var(--bg); display:grid; place-items:center; font-family:var(--display); font-weight:700; font-size:14px }
+.step p{ margin:3px 0 0; font-size:15px; font-weight:500; line-height:1.45 }
+.timer{ display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 11px; margin-top:8px; border-radius:999px; background:var(--accent-tint); color:var(--accent-on-tint); font-size:12.5px; font-weight:700; border:0; font-family:inherit }
+.tip{ margin-top:8px; padding:8px 11px; border-radius:12px; background:var(--subtle); border:1px dashed var(--line-strong); font-size:13px; color:var(--muted); line-height:1.4 }
+.tip b{ color:var(--ink) }
+.acard{ background:var(--card-bg); border:var(--bw) solid var(--card-line); border-radius:calc(var(--r-card) + 4px); padding:12px 16px; font-size:14.5px; line-height:1.5 }
+.acard .pr{ font-size:15px; font-weight:700 }
+.acard .pp{ font-size:11.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--accent); margin-top:2px }
+.acard .rs{ font-size:13.5px; color:var(--muted) }
+.acard > div + div{ border-top:var(--bw) solid var(--divider); padding-top:10px; margin-top:10px }
+.disc{ font-size:12px; color:var(--muted); margin-top:10px }
+.prevnote{ display:flex; gap:10px; align-items:center; margin:14px 0 0; padding:10px 12px; border-radius:var(--r-ctl); background:var(--subtle); border:var(--bw) dashed var(--line-strong); font-size:12.5px; color:var(--muted); line-height:1.4 }
+.prevnote svg{ flex:none; color:var(--accent) }
+.lnkbtn.full{ display:flex; align-items:center; justify-content:center; gap:6px; height:46px; border-radius:var(--r-ctl); border:var(--bw) solid var(--line); background:var(--card-bg); margin-top:12px; font-size:14.5px; color:var(--ink) }
+.lnkbtn.full svg{ color:var(--accent) }
+@media (prefers-reduced-motion: reduce){ .screen, .sheet, .scrim, .add.pop svg, li.flash, li.arriving, .badge.bump, .menu{ animation:none !important } }
+</style>
+
+<div class="wrap">
+  <section class="notes">
+    <h1>Explore Recipes — handoff prototype</h1>
+    <p class="sub">The scope of this handoff: the <b>Explore</b> pill on Recipes, the Explore page, one-tap <b>Add to family</b>, the quick view sheet, the full Recipe preview, and the empty family page with chef Gator. Variant A was picked; B and C were dropped.</p>
+
+    <h2>Scenario</h2>
+    <div class="seg scen" role="group" aria-label="Scenario">
+      <button type="button" data-scen="default" aria-pressed="true">Family with 8 Recipes</button>
+      <button type="button" data-scen="new" aria-pressed="false">New family · Gator</button>
+    </div>
+
+    <h2>Theme</h2>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" data-theme-pick="warm" aria-pressed="true">Warm editorial</button>
+      <button type="button" data-theme-pick="minimal" aria-pressed="false">Minimal crisp</button>
+      <button type="button" data-theme-pick="dark" aria-pressed="false">Dark-first</button>
+    </div>
+
+    <h2>Flow</h2>
+    <ul>
+      <li><b>Recipes → Explore</b>: the <b>Explore</b> pill in the header, or <b>From Explore</b> in the “+” menu. Explore is pushed with a Back button.</li>
+      <li><b>Explore</b>: search and chips, then <b>You can make this</b> and <b>All Recipes</b>. Tap <b>+</b> on a row to add it: the + turns into ✓, a toast offers Undo, and Back shows a +n badge.</li>
+      <li><b>Quick view</b>: tap a row. You get the facts, the ingredients, the Base Recipe's Variants (each with a +), <b>See the whole Recipe</b>, <b>Add to your family's Recipes</b> and <b>Make a Variant</b>.</li>
+      <li><b>Full preview</b>: the Ingredients, Steps and About tabs. A bottom bar replaces the Dock and holds <b>Make a Variant</b> and <b>Add to family</b>.</li>
+      <li><b>Empty family</b>: chef Gator pops in and then stirs; tap him to make him hop. Below him come Explore Recipes, New Recipe and the “Start with these” rows with a +.</li>
+    </ul>
+    <p>The family list, the Make a Variant editor and the search fall-through are only here for context. Their designs belong to other handoffs.</p>
+  </section>
+
+  <div class="stage">
+    <div class="phone" id="phone" data-theme="warm">
+      <div class="statusbar"><span>9:41</span><span>●●● ᯤ ▮</span></div>
+      <div class="viewport" id="vp"></div>
+      <div class="dock" id="dock" aria-hidden="true">
+        <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 10l2-5h12l2 5M10 14h4"/></svg>Pantry</div>
+        <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14l-1.5 12H6.5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>Shopping</div>
+        <div class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 8h6M9 12h6"/></svg>Recipes</div>
+        <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="12" r="3"/></svg>Scan</div>
+      </div>
+      <div id="pbwrap"></div>
+      <div id="overlay"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastmsg"></span><button type="button" id="toastact" hidden></button><button type="button" id="undo">Undo</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const THEMES = {
+  warm:{bg:"#F3EDE1",surface:"#FBF8F1",subtle:"#F6F1E6",ink:"#2B2418",muted:"#766A58",line:"#E6DCCB","line-strong":"#D6C9B2",divider:"#EFE7D8",chip:"#EAE1CF",accent:"#5F6F2E","accent-ink":"#FFFFFF","accent-tint":"#E6EAD2","accent-on-tint":"#4A5722",primary:"#5F6F2E","primary-ink":"#FFFFFF",butter:"#F0C96B","butter-ink":"#4A3608","urgent-bg":"#F8DED1","urgent-fg":"#A8431C","soon-bg":"#F6E5BE","soon-fg":"#704E00","ok-bg":"#E6EAD2","ok-fg":"#4A5722",star:"#C6882A","card-bg":"#FBF8F1","card-line":"#E9E0CF","field-bg":"#FFFDF8","toast-bg":"#2B2418","toast-ink":"#FBF8F1","toast-action":"#F0C96B","dock-bg":"rgba(251,248,241,.94)",bezel:"#2B2418",bw:"1px","bw-field":"1.5px","r-card":"16px","r-ctl":"12px","r-chip":"999px","r-fab":"50%","r-dock":"22px","shadow-card":"0 1px 2px rgba(60,40,10,.06), 0 8px 24px -12px rgba(60,40,10,.18)","shadow-btn":"0 4px 12px rgba(95,111,46,.28)","shadow-float":"0 14px 34px -10px rgba(60,40,10,.28)",display:"'Fraunces',Georgia,'Times New Roman',serif",body:"'Instrument Sans',ui-sans-serif,system-ui,sans-serif","display-w":"600","display-ls":"-0.015em"},
+  minimal:{bg:"#FAFAF8",surface:"#FFFFFF",subtle:"#F3F4F1",ink:"#141614",muted:"#6B716B",line:"#E7E9E4","line-strong":"#CDD1CA",divider:"#EEF0EB",chip:"#EEF0EB",accent:"#1E7A4E","accent-ink":"#FFFFFF","accent-tint":"#E1F2E8","accent-on-tint":"#176040",primary:"#141614","primary-ink":"#FFFFFF",butter:"#F5E1A4","butter-ink":"#5A4200","urgent-bg":"#FDE8E2","urgent-fg":"#B33A1E","soon-bg":"#FBF0CC","soon-fg":"#7A5600","ok-bg":"#EEF0EB","ok-fg":"#4D534D",star:"#D1A21C","card-bg":"#FFFFFF","card-line":"#E7E9E4","field-bg":"#FFFFFF","toast-bg":"#141614","toast-ink":"#FFFFFF","toast-action":"#9BE0B8","dock-bg":"rgba(255,255,255,.96)",bezel:"#141614",bw:"1px","bw-field":"1px","r-card":"12px","r-ctl":"10px","r-chip":"8px","r-fab":"12px","r-dock":"16px","shadow-card":"none","shadow-btn":"none","shadow-float":"0 8px 24px rgba(20,22,20,.10)",display:"'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif",body:"'Figtree',ui-sans-serif,system-ui,sans-serif","display-w":"700","display-ls":"-0.025em"},
+  dark:{bg:"#0F1512",surface:"#19211C",subtle:"#1F2922",ink:"#ECF2EC",muted:"#97A69B",line:"#26312A","line-strong":"#36433A",divider:"#27322B",chip:"#26312A",accent:"#8FE0A8","accent-ink":"#0B1A10","accent-tint":"#1F3A2A","accent-on-tint":"#A9EDBD",primary:"#8FE0A8","primary-ink":"#0B1A10",butter:"#3D3418","butter-ink":"#F2CF72","urgent-bg":"#3F241B","urgent-fg":"#FFA27E","soon-bg":"#3A3118","soon-fg":"#F2CF72","ok-bg":"#26312A","ok-fg":"#B9C7BC",star:"#F2CF72","card-bg":"#19211C","card-line":"transparent","field-bg":"#111915","toast-bg":"#ECF2EC","toast-ink":"#0F1512","toast-action":"#1E7A4E","dock-bg":"rgba(25,33,28,.9)",bezel:"#050807",bw:"1px","bw-field":"1px","r-card":"18px","r-ctl":"14px","r-chip":"999px","r-fab":"16px","r-dock":"24px","shadow-card":"0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px -12px rgba(0,0,0,.6)","shadow-btn":"0 6px 18px rgba(143,224,168,.25)","shadow-float":"0 16px 40px rgba(0,0,0,.55)",display:"'Sora',ui-sans-serif,system-ui,sans-serif",body:"'Albert Sans',ui-sans-serif,system-ui,sans-serif","display-w":"600","display-ls":"-0.02em"}
+};
+// Aisle tints from the ingredient-icons handoff (light / dark).
+const TINT = { produce:["#DDEBE2","#24392E"], bakery:["#F6EBC8","#3B3320"], dairy:["#E3ECF3","#243440"], meat:["#FBE6DA","#42291E"], pantry:["#E2E8DD","#2B332C"], frozen:["#E6E9F4","#272C3F"], drinks:["#EFE6F1","#362A3A"] };
+const AISLE = { tomato:"produce",cucumber:"produce",onion:"produce",garlic:"produce",potato:"produce",spinach:"produce",lemon:"produce",banana:"produce",pepper:"produce",parsley:"produce", bread:"bakery", milk:"dairy",eggs:"dairy",butter:"dairy",yogurt:"dairy",feta:"dairy",parmesan:"dairy",cream:"dairy", chicken:"meat",mince:"meat",salmon:"meat", pasta:"pantry",rice:"pantry",oil:"pantry",flour:"pantry",passata:"pantry",chickpeas:"pantry",oats:"pantry",honey:"pantry", default:"pantry" };
+const ICONS = {"eggs":[{"d":"M12 3.8c3.4 0 6.4 5.3 6.4 9.9a6.4 6.4 0 0 1-12.8 0C5.6 9.1 8.6 3.8 12 3.8z","body":true},{"d":"M8.6 13.2c0-2.6 1.2-5.3 3-7"}],"butter":[{"d":"M4.5 11.5l3-3h12l-3 3z"},{"d":"M4.5 11.5h12v6h-12z","body":true},{"d":"M16.5 17.5v-6l3-3v6z"}],"parsley":[{"d":"M13.6 7.2a2.8 2.8 0 1 0 5.6 0 2.8 2.8 0 1 0-5.6 0z","body":true},{"d":"M9.2 10.4a2.6 2.6 0 1 0 5.2 0 2.6 2.6 0 1 0-5.2 0z","body":true},{"d":"M5.4 13.8a2.4 2.4 0 1 0 4.8 0 2.4 2.4 0 1 0-4.8 0z","body":true},{"d":"M12 21.5c-.2-4 1.4-8.6 4.6-14M12.8 15.6l-4.2-1.8M14.6 12.4l-2.8-2"}],"chicken":[{"d":"M9.4 8.8A5.4 5.4 0 1 1 15.2 14.6C12.8 14.8 11 14.6 10.3 13.8 9.5 12.6 9.3 10.7 9.4 8.8z","body":true},{"d":"M9.7 13.2l1.2 1.2-4 4-1.2-1.2z"},{"d":"M2.8 17.9a1.7 1.7 0 1 0 3.4 0 1.7 1.7 0 1 0-3.4 0zM4.4 19.5a1.7 1.7 0 1 0 3.4 0 1.7 1.7 0 1 0-3.4 0z"}],"cucumber":[{"d":"M5.2 18.8c-1.4-1.4-1-3.4.8-5.2l7.6-7.6c1.8-1.8 3.8-2.2 5.2-.8s1 3.4-.8 5.2l-7.6 7.6c-1.8 1.8-3.8 2.2-5.2.8z","body":true},{"d":"M8.4 12.8l.9.9M10.9 10.3l.9.9M13.4 7.8l.9.9M18.4 5.6l1.4-1.4"}],"tomato":[{"d":"M12 20.5a7.3 7.3 0 1 0 0-14.6 7.3 7.3 0 0 0 0 14.6z","body":true},{"d":"M12 6.5c-1.3-1.2-2.8-1.6-4.3-1.3M12 6.5c1.3-1.2 2.8-1.6 4.3-1.3M12 6.5V3.8"},{"d":"M8.3 12.2c.3-1.6 1.3-2.8 2.7-3.5"}],"flour":[{"d":"M6.6 9.5c0-1.4 1.1-2.5 2.5-2.5h5.8c1.4 0 2.5 1.1 2.5 2.5l.6 9c.1 1-.7 1.5-1.5 1.5H7.5c-.8 0-1.6-.5-1.5-1.5z","body":true},{"d":"M9.2 7l.5-2.6h4.6l.5 2.6"},{"d":"M9.4 14a2.6 2.6 0 1 0 5.2 0 2.6 2.6 0 1 0-5.2 0z"},{"d":"M12 12.4v3.2M10.7 13.9l1.3.9 1.3-.9"}],"oil":[{"d":"M9.6 9.6V5h4.8v4.6c1.5.9 2.2 2.3 2.2 4v5.4a1.5 1.5 0 0 1-1.5 1.5H8.9a1.5 1.5 0 0 1-1.5-1.5v-5.4c0-1.7.7-3.1 2.2-4z","body":true},{"d":"M9.1 3.5h5.8v1.5H9.1z"},{"d":"M9.6 13.2h4.8v3.2H9.6z"}],"potato":[{"d":"M5.6 11.8c.4-3.7 3.4-6 7.2-5.8 3.8.2 6.4 2.9 5.9 6.7-.4 3.5-3.3 5.6-6.9 5.6S5.2 15.5 5.6 11.8z","body":true},{"d":"M9.3 10.4l.7.7M13.8 9.6l.7.7M12 14.4l.7.7M8.4 14.2l.7.7"}],"milk":[{"d":"M7 9l1.8-4h6.4L17 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 18.5z","body":true},{"d":"M7 9h10M12 9V5"},{"d":"M9.5 12.5h5v3.5h-5z"}],"feta":[{"d":"M12.5 9.5l2.5-2.5h5L17.5 9.5z"},{"d":"M12.5 9.5h5v6h-5z","body":true},{"d":"M17.5 15.5v-6l2.5-2.5v6z"},{"d":"M4.5 12.5l2.5-2.5h6l-2.5 2.5z"},{"d":"M4.5 12.5h6v6h-6z","body":true},{"d":"M10.5 18.5v-6l2.5-2.5v6z"}],"bread":[{"d":"M4.5 10.5A3.3 3.3 0 0 1 7.8 7.2h8.4a3.3 3.3 0 0 1 3.3 3.3 2.6 2.6 0 0 1-1.5 2.3V18a1.5 1.5 0 0 1-1.5 1.5H7.5A1.5 1.5 0 0 1 6 18v-5.2a2.6 2.6 0 0 1-1.5-2.3z","body":true},{"d":"M9 13.6l1.4 2.4M12 13.6l1.4 2.4M15 13.6l1.4 2.4"}],"chickpeas":[{"d":"M6 6.5v11c0 1.1 2.7 2 6 2s6-.9 6-2v-11c0 1.1-2.7 2-6 2s-6-.9-6-2z","body":true},{"d":"M6 6.5a6 2 0 1 0 12 0 6 2 0 1 0-12 0z"},{"d":"M9 13.4a.9.9 0 1 0 1.8 0 .9.9 0 1 0-1.8 0zM12.4 12.4a.9.9 0 1 0 1.8 0 .9.9 0 1 0-1.8 0zM11 15.6a.9.9 0 1 0 1.8 0 .9.9 0 1 0-1.8 0z"}],"passata":[{"d":"M9.5 7V4h5v3c1.6.8 2.5 2.3 2.5 4.2v7.3a1.5 1.5 0 0 1-1.5 1.5H8.5A1.5 1.5 0 0 1 7 18.5v-7.3C7 9.3 7.9 7.8 9.5 7z","body":true},{"d":"M10.2 14a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 1 0-3.6 0z"},{"d":"M12 12.2v-1.4M9.5 4h5"}],"onion":[{"d":"M12 4.5c-1.6 3.2-6.3 4.6-6.3 9.6a6.3 6.3 0 0 0 12.6 0c0-5-4.7-6.4-6.3-9.6z","body":true},{"d":"M9.6 9.4c-1.4 2.4-1.5 5-.3 8.1M14.4 9.4c1.4 2.4 1.5 5 .3 8.1"},{"d":"M12 4.5c0-1 .4-1.8 1.2-2.3"}],"pasta":[{"d":"M8 4.5c-.2 5-.2 10 .2 15M11 4.5c.2 5 .2 10-.2 15M14 4.5c-.2 5-.2 10 .2 15M17 4.5c.2 5 .2 10-.2 15"},{"d":"M6 10.5h12v3.6H6z","body":true},{"d":"M8.5 12.3h7"}],"parmesan":[{"d":"M3.5 16.5L20.5 7.5v9a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z","body":true},{"d":"M8.4 15l.8.8M12.6 13.2l.8.8M16 11.2l.8.8M11 15.4l.6.6"}],"salmon":[{"d":"M3.5 12c2.4-3.6 5.4-5.4 9-5.4 2.9 0 5.3 1.8 7.2 5.4-1.9 3.6-4.3 5.4-7.2 5.4-3.6 0-6.6-1.8-9-5.4z","body":true},{"d":"M19 12l2.4-3.2v6.4z"},{"d":"M11.2 7.4c1.1 3 1.1 6.2 0 9.2"},{"d":"M6.6 10.8a.8.8 0 1 0 1.6 0 .8.8 0 1 0-1.6 0z","dot":true}],"spinach":[{"d":"M5 19C4.5 11.6 9.3 5.3 18.7 4.6c.6 9.4-4.4 14.6-13.7 14.4z","body":true},{"d":"M3.4 21.2L5 19C8.2 14.2 12.4 9.6 18.5 4.8"},{"d":"M8.8 14.3c1.6.4 3.1.3 4.6-.4M11.8 11.2c1.4.3 2.6.2 3.7-.4"}],"lemon":[{"d":"M5.9 7.7A7.5 5.2 -35 1 0 18.1 16.3A7.5 5.2 -35 1 0 5.9 7.7z","body":true},{"d":"M18.1 16.3l1.4 1.1"},{"d":"M4.6 6.4c.4-2.4 2-3.9 4.2-4-.1 2.3-1.6 3.8-4.2 4z"},{"d":"M8.6 13.5c-.3-2.2.9-4.3 3-5.4"}],"banana":[{"d":"M5.2 6.5c.6 6.6 5.2 11.2 12.3 11.8h1.4c.5 0 .8.5.4.9-2.2 1.8-5 2.4-8 1.7C6.2 19.6 3.6 15 3.8 8.6c0-.8.3-1.4.8-1.9z","body":true},{"d":"M5.2 6.5l-.7-2.2M7.4 9.8c1.2 3.6 4 6.2 8 7.3"}],"oats":[{"d":"M11.6 9.8c-2.2.2-3.6-.8-4.2-3 2.2-.2 3.6.8 4.2 3z","body":true},{"d":"M12.4 9.8c2.2.2 3.6-.8 4.2-3-2.2-.2-3.6.8-4.2 3z","body":true},{"d":"M11.6 14.8c-2.2.2-3.6-.8-4.2-3 2.2-.2 3.6.8 4.2 3z","body":true},{"d":"M12.4 14.8c2.2.2 3.6-.8 4.2-3-2.2-.2-3.6.8-4.2 3z","body":true},{"d":"M12 6.8c-1.4-1.6-1.6-3.3-.6-5.1 1.5 1.3 1.7 3 .6 5.1z","body":true},{"d":"M12 21.5V6.8"}],"garlic":[{"d":"M12 6.5c-1.2 2.6-6.2 4-6.2 9.3a6.2 6.2 0 0 0 12.4 0c0-5.3-5-6.7-6.2-9.3z","body":true},{"d":"M12 6.5c-.6-1.4-.6-2.7.3-4.2"},{"d":"M12 10.5v9.5M8.9 13.5c-.6 2-.4 4.1.6 6.1M15.1 13.5c.6 2 .4 4.1-.6 6.1"}],"pepper":[{"d":"M12 7.6c-1.4-.9-2.9-1-4.3-.3C5.3 8.5 4.4 11.2 5 14.3c.6 3.2 2.4 5.7 4.6 5.7.9 0 1.5-.5 2.4-.5s1.5.5 2.4.5c2.2 0 4-2.5 4.6-5.7.6-3.1-.3-5.8-2.7-7-1.4-.7-2.9-.6-4.3.3z","body":true},{"d":"M9.7 8.2c.2 3.6.2 7.4-.4 11.2M14.3 8.2c-.2 3.6-.2 7.4.4 11.2"},{"d":"M12 7.6c-.3-1.4-.1-2.6.6-3.6"}],"rice":[{"d":"M6.2 13c1-3.4 3.2-5.3 5.8-5.3s4.8 1.9 5.8 5.3z"},{"d":"M9.6 11.4l.9-.9M12.8 10l.9-.9M14.6 12l.9-.9"},{"d":"M4 13h16c0 4.2-3.3 7.5-8 7.5S4 17.2 4 13z","body":true},{"d":"M5.2 16.4h13.6"}],"yogurt":[{"d":"M5.5 8.5h13l-1.2 10.5a1.5 1.5 0 0 1-1.5 1.3H8.2a1.5 1.5 0 0 1-1.5-1.3z","body":true},{"d":"M5 8.5V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1.5M8.2 13h7.6"}],"mince":[{"d":"M6.5 14c.5-2.8 2.4-4.5 5.5-4.5s5 1.7 5.5 4.5z","body":true},{"d":"M9 12.2l.6.6M12 11l.6.6M14.6 12.4l.6.6"},{"d":"M4 14h16l-1 4.5a1.5 1.5 0 0 1-1.5 1.2h-11A1.5 1.5 0 0 1 5 18.5z"}],"cream":[{"d":"M6 8.5h9.5v8.5a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z","body":true},{"d":"M6 8.5L4.2 6.4M15.5 11h1.6a2.2 2.2 0 0 1 0 4.4h-1.6"},{"d":"M8.5 12.2c1.2-.8 2.7-.8 4.5 0"}],"honey":[{"d":"M8 5h8v2.8H8z"},{"d":"M7.6 7.8h8.8c.9 1 1.3 2.4 1.3 4v6.2a1.5 1.5 0 0 1-1.5 1.5H7.8a1.5 1.5 0 0 1-1.5-1.5v-6.2c0-1.6.4-3 1.3-4z","body":true},{"d":"M8.6 12.3h6.8v3.2H8.6z"}],"default":[{"d":"M5.5 8.5h13l-.9 11.2a1.5 1.5 0 0 1-1.5 1.3H7.9a1.5 1.5 0 0 1-1.5-1.3z","body":true},{"d":"M9 8.5V7a3 3 0 0 1 6 0v1.5"}]};
+
+
+const CATALOG = [
+  { id:'omelette', title:'Omelette', method:'Pan-fried', level:'Easy', min:10, serves:1, ing:['eggs','butter','parsley'] },
+  { id:'med-omelette', title:'Mediterranean omelette', cuisine:'Mediterranean', method:'Pan-fried', level:'Easy', min:16, serves:1, base:'omelette', ing:['eggs','feta','tomato','onion'] },
+  { id:'chicken-salad', title:'Chicken salad', method:'Grilled', level:'Easy', min:30, serves:2, ing:['chicken','cucumber','tomato','oil'] },
+  { id:'caesar', title:'Chicken Caesar salad', cuisine:'American', method:'Grilled', level:'Easy', min:40, serves:2, base:'chicken-salad', ing:['chicken','parmesan','bread','lemon'] },
+  { id:'fried-chicken', title:'Fried chicken', method:'Deep-fried', level:'Medium', min:65, serves:4, ing:['chicken','flour','oil','pepper'] },
+  { id:'southern', title:'Southern buttermilk fried chicken', cuisine:'American', method:'Deep-fried', level:'Medium', min:55, serves:4, base:'fried-chicken', ing:['chicken','milk','flour','pepper'] },
+  { id:'puree', title:'Potato puree', method:'Boiled', level:'Easy', min:40, serves:4, ing:['potato','milk','butter'] },
+  { id:'fr-puree', title:'French pommes purée', cuisine:'French', method:'Boiled', level:'Medium', min:55, serves:4, base:'puree', ing:['potato','butter','cream'] },
+  { id:'platter', title:'Appetizer platter', method:'No-cook', level:'Easy', min:20, serves:4, ing:['feta','tomato','bread','cucumber'] },
+  { id:'ro-platter', title:'Romanian appetizer platter', cuisine:'Romanian', method:'No-cook', level:'Easy', min:70, serves:6, base:'platter', ing:['feta','onion','bread','pepper'] },
+  { id:'salmon', title:'Salmon with spinach and lemon', cuisine:'Mediterranean', method:'Pan-fried', level:'Medium', min:30, serves:2, ing:['salmon','spinach','lemon','garlic'] },
+  { id:'curry', title:'Chickpea coconut curry', cuisine:'Indian', method:'Simmered', level:'Easy', min:35, serves:4, ing:['chickpeas','rice','garlic','onion'] },
+  { id:'shakshuka', title:'Shakshuka', cuisine:'Mediterranean', method:'Simmered', level:'Easy', min:30, serves:2, ing:['eggs','tomato','pepper','onion'] },
+  { id:'carbonara', title:'Spaghetti carbonara', cuisine:'Italian', method:'Boiled', level:'Medium', min:25, serves:2, ing:['pasta','eggs','parmesan'] },
+  { id:'risotto', title:'Lemon risotto', cuisine:'Italian', method:'Simmered', level:'Medium', min:40, serves:4, ing:['rice','lemon','parmesan','butter'] },
+  { id:'frittata', title:'Spinach frittata', cuisine:'Italian', method:'Baked', level:'Easy', min:30, serves:4, ing:['eggs','spinach','feta'] },
+  { id:'yog-bowl', title:'Honey yogurt bowl', method:'No-cook', level:'Easy', min:5, serves:1, ing:['yogurt','honey','oats','banana'] },
+  { id:'tomato-soup', title:'Roasted tomato soup', method:'Simmered', level:'Easy', min:45, serves:4, ing:['tomato','onion','garlic','cream'] },
+];
+const FAMILY0 = [
+  { id:'stew', title:"Grandma's chickpea stew", cuisine:'Romanian', method:'Simmered', level:'Easy', min:50, ing:['chickpeas','passata','onion'], fav:3 },
+  { id:'pasta', title:'Weeknight tomato pasta', cuisine:'Italian', method:'Boiled', level:'Easy', min:25, ing:['pasta','passata','parmesan'], fav:2 },
+  { id:'pancakes', title:'Banana oat pancakes', method:'Pan-fried', level:'Easy', min:20, ing:['banana','oats','eggs'] },
+  { id:'garlic-rice', title:"Dad's garlic rice", method:'Boiled', level:'Easy', min:25, ing:['rice','garlic','butter'] },
+  { id:'yogurt-cake', title:'Lemon yogurt cake', method:'Baked', level:'Medium', min:60, ing:['yogurt','lemon','flour'] },
+  { id:'stuffed', title:'Stuffed peppers', cuisine:'Romanian', method:'Baked', level:'Medium', min:90, ing:['pepper','mince','rice'] },
+  { id:'honey-salmon', title:'Honey-glazed salmon', method:'Baked', level:'Easy', min:25, base:'salmon', ing:['salmon','honey','garlic'] },
+  { id:'copy-caesar', title:'Chicken Caesar salad', cuisine:'American', method:'Grilled', level:'Easy', min:40, base:'chicken-salad', copiedFrom:'caesar', ing:['chicken','parmesan','bread'] },
+];
+// cook-tonight result, keyed by recipe id (copies inherit their source's entry)
+const CARDS = {
+  pasta:{ canMake:true, expiring:0 }, pancakes:{ canMake:true, expiring:1 }, stew:{ canMake:false, missing:'onion' },
+  omelette:{ canMake:true, expiring:2 }, shakshuka:{ canMake:true, expiring:1 }, salmon:{ canMake:true, expiring:1 },
+  'yog-bowl':{ canMake:true, expiring:0 }, frittata:{ canMake:true, expiring:0 }, puree:{ canMake:false, missing:'butter' }, 'tomato-soup':{ canMake:false, missing:'cream' },
+};
+const MISSING = { stew:'onion', puree:'butter', 'tomato-soup':'cream' };
+const CUISINES = ['Mediterranean','Italian','Romanian','American','French','Indian'];
+const METHODS = ['Pan-fried','Grilled','Boiled','Simmered','Baked','No-cook','Deep-fried'];
+const LIMIT = 4;
+const NAMES = { eggs:'Eggs', butter:'Butter', parsley:'Parsley', feta:'Feta', tomato:'Tomatoes', onion:'Onion', chicken:'Chicken', cucumber:'Cucumber', oil:'Olive oil', parmesan:'Parmesan', bread:'Bread', lemon:'Lemon', flour:'Flour', pepper:'Bell pepper', milk:'Milk', potato:'Potatoes', cream:'Cream', salmon:'Salmon', spinach:'Spinach', garlic:'Garlic', chickpeas:'Chickpeas', rice:'Rice', pasta:'Spaghetti', yogurt:'Yogurt', honey:'Honey', oats:'Oats', banana:'Banana', passata:'Passata', mince:'Mince' };
+
+
+const QTY = { eggs:[2,'pcs'], butter:[15,'g'], parsley:[5,'g'], feta:[40,'g'], tomato:[1,'pcs'], onion:[0.5,'pcs'], chicken:[200,'g'], cucumber:[0.5,'pcs'], oil:[15,'ml'], parmesan:[30,'g'], bread:[1,'pcs'], lemon:[0.5,'pcs'], flour:[60,'g'], pepper:[1,'pcs'], milk:[100,'ml'], potato:[250,'g'], cream:[50,'ml'], salmon:[180,'g'], spinach:[60,'g'], garlic:[1,'pcs'], chickpeas:[120,'g'], rice:[80,'g'], pasta:[100,'g'], yogurt:[150,'g'], honey:[10,'g'], oats:[40,'g'], banana:[1,'pcs'], passata:[200,'ml'], mince:[150,'g'] };
+const STEPS = {
+  omelette:[['Whisk the eggs with a pinch of salt until no streaks of white are left.'],['Melt the butter in a small non-stick pan over medium heat until it foams.',null,'Too hot and the outside browns before the middle sets.'],['Pour in the eggs. Stir gently with a spatula, pulling the set edges to the middle.',60],['When the top is still slightly wet, scatter the parsley, fold in half and slide onto a plate.']],
+  shakshuka:[['Soften the onion and pepper in a wide pan with a little oil.',480],['Add the tomatoes, season, and simmer until thick.',600,'Taste it now: a pinch of sugar fixes sharp tomatoes.'],['Make four wells and crack an egg into each. Cover and cook until the whites set.',360],['Serve straight from the pan with bread.']],
+  salmon:[['Pat the salmon dry and season both sides.'],['Sear skin-side down in a hot pan without moving it.',240,'A dry skin is what makes it crisp.'],['Flip, add the garlic, cook one more minute, then take the fish out.',60],['Wilt the spinach in the same pan, squeeze over the lemon and serve together.',90]],
+  carbonara:[['Boil the spaghetti in well-salted water.',540],['Beat the eggs with most of the parmesan and lots of black pepper.'],['Off the heat, toss the drained pasta with the egg mix and a splash of pasta water until glossy.',null,'Off the heat, or the eggs scramble.'],['Finish with the rest of the parmesan.']],
+};
+function stepsFor(r){
+  if(STEPS[r.id]) return STEPS[r.id];
+  const n = r.ing.map(k=>(NAMES[k]||k).toLowerCase());
+  return [[`Get everything ready: ${n.slice(0,-1).join(', ')} and ${n[n.length-1]}.`],[`Cook the ${n[0]} the ${(r.method||'usual').toLowerCase()} way until done.`, r.min>20?Math.round(r.min*0.5)*60:null],[`Bring it all together, taste, and season.`],['Serve warm.']];
+}
+const ABOUT = {
+  pair: { omelette:[['Toasted sourdough','Texture contrast','Crisp bread against soft eggs.'],['Green salad','Acid cuts fat','A sharp dressing lifts the butter.']],
+          shakshuka:[['Warm flatbread','Texture contrast','For mopping up the sauce.'],['Yogurt','Cool against heat','Calms the pepper.']] },
+  nutrition: 'A good source of protein. Fairly light, though the butter and cheese add fat.'
+};
+const S = { theme:'warm', v:'a', scen:'default', family:[], favs:new Map(), favSeq:10, stack:['family'], tab:'family',
+  fq:'', fc:'', fm:'', eq:'', ec:'', em:'', expanded:new Set(), added:0, detail:null, dtab:'ing', dserv:null, menu:false, sheet:null, draft:null, flash:null };
+let undoFn=null, toastT=null;
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cat = id => CATALOG.find(r=>r.id===id);
+const fam = id => S.family.find(r=>r.id===id);
+const copyOf = catId => S.family.find(r=>r.copiedFrom===catId);
+const card = r => CARDS[r.copiedFrom || r.id];
+const variantsOf = id => CATALOG.filter(r=>r.base===id);
+
+function iconSvg(key, cls){
+  const parts = ICONS[key] || ICONS.default; const dark = S.theme==='dark';
+  const tint = TINT[AISLE[key]||'pantry'][dark?1:0];
+  return `<svg class="${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${parts.map(p=>`<path d="${p.d}" ${p.body?`fill="${tint}"`:p.dot?'fill="currentColor"':'fill="none"'}/>`).join('')}</svg>`;
+}
+const cluster = r => `<div class="cluster" aria-hidden="true">${iconSvg(r.ing[0],'a')}<span class="halo"></span>${iconSvg(r.ing[1],'b')}</div>`;
+const sv = (d, w=18, sw=2) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const I = {
+  plus: sv('<path d="M12 5v14M5 12h14"/>',20),
+  plusS: sv('<path d="M12 5v14M5 12h14"/>',18,2.2),
+  check: sv('<path d="m5 12 5 5L20 7"/>',18,2.4),
+  checkS: sv('<path d="m5 12 5 5L20 7"/>',13,2.4),
+  heart:on=>`<svg width="22" height="22" viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.3 4.6 13a4.4 4.4 0 0 1 6.2-6.2L12 8l1.2-1.2a4.4 4.4 0 0 1 6.2 6.2z"/></svg>`,
+  warn: sv('<path d="M12 9v4M12 17h.01M10.3 4.6 2.8 18a1.4 1.4 0 0 0 1.2 2h16a1.4 1.4 0 0 0 1.2-2L13.7 4.6a1.4 1.4 0 0 0-2.4 0z"/>',13,2.2),
+  leaf: sv('<path d="M5 19c0-8 5-13 14-14 0 9-5 14-14 14z"/><path d="M5 19 13 11"/>',13),
+  compass: sv('<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',18,2),
+  compassL: sv('<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',20,1.9),
+  gear: sv('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',19,1.7),
+  back: sv('<path d="m15 18-6-6 6-6"/>',20,2.2),
+  chevR: sv('<path d="m9 6 6 6-6 6"/>',18,2.2),
+  chevD: sv('<path d="m6 9 6 6 6-6"/>',14,2.2),
+  x: sv('<path d="M6 6l12 12M18 6 6 18"/>',12,2.4),
+  xL: sv('<path d="M6 6l12 12M18 6 6 18"/>',18,2.2),
+  search: sv('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',18),
+  star: `<svg class="star" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.9l-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z"/></svg>`,
+  people: sv('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.5a4.5 4.5 0 0 1 5 4.5"/>',13),
+  fork: sv('<circle cx="6" cy="5" r="2"/><circle cx="18" cy="5" r="2"/><circle cx="12" cy="19" r="2"/><path d="M6 7v2a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V7M12 12v5"/>',18,1.9),
+  pen: sv('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m14 6 4 4"/>',18,1.9),
+  link: sv('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',18,1.9),
+  book: sv('<path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 20a2 2 0 0 0 2 2h13v-4"/><path d="M9 7h6M9 11h4"/>',18,1.9),
+  clock: sv('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',14,2),
+  cart: sv('<circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2l2.4 11h11L21 8H6.2"/>',18,2),
+  eye: sv('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',18,1.9),
+  dot: sv('<circle cx="12" cy="12" r="1.6" fill="currentColor"/>',12),
+};
+const meta = (r, withVariants) => [r.cuisine, r.method, r.level, withVariants && variantsOf(r.id).length ? `+${variantsOf(r.id).length} Variant${variantsOf(r.id).length>1?'s':''}` : null].filter(Boolean).join(' · ');
+function pills(r, inCan){
+  const c = card(r); if(!c) return '';
+  const out=[];
+  if(c.canMake){ if(!inCan) out.push(`<span class="pill ok">${I.checkS}Can make</span>`); }
+  else if(c.missing) out.push(`<span class="pill soon">${I.warn}Missing ${esc(c.missing)}</span>`);
+  if(c.expiring) out.push(`<span class="pill urg">${I.leaf}${c.expiring} expiring</span>`);
+  return out.length?`<div class="pills">${out.join('')}</div>`:'';
+}
+const timeCol = r => `<div class="time"><div class="n">${r.min}</div><div class="u">min</div></div>`;
+function baseTitle(r){ const b = r.base && (cat(r.base) || fam(r.base)); return b ? b.title : null; }
+
+function famRow(r, inCan){
+  const on = S.favs.has(r.id);
+  const bt = baseTitle(r);
+  return `<li data-id="${r.id}" class="${S.flash===r.id?'flash':''}">
+    <a class="row" href="#" data-noop>
+      ${cluster(r)}
+      <div class="body">
+        <div class="title"><span>${esc(r.title)}</span></div>
+        ${bt?`<div class="vof">Variant of ${esc(bt)}</div>`:''}
+        ${r.copiedFrom?`<div class="src">${I.compass.replace('width="18" height="18"','width="12" height="12"')}From Explore</div>`:''}
+        <div class="meta">${esc(meta(r))}</div>
+        ${pills(r, inCan)}
+      </div>
+      ${timeCol(r)}
+    </a>
+    <button class="heart" type="button" data-fav="${r.id}" aria-pressed="${on}" aria-label="${on?'Remove from':'Add to'} Favorites: ${esc(r.title)}">${I.heart(on)}</button>
+  </li>`;
+}
+function addBtn(r, cls=''){
+  const c = copyOf(r.id);
+  return c ? `<button class="add ${cls}" type="button" data-opencopy="${r.id}" aria-pressed="true" aria-label="${esc(r.title)} is in your family's Recipes. Open it">${I.check}</button>`
+           : `<button class="add ${cls}" type="button" data-add="${r.id}" aria-pressed="false" aria-label="Add ${esc(r.title)} to your family's Recipes">${I.plusS}</button>`;
+}
+function expRow(r, inCan, showBase){
+  const bt = showBase ? baseTitle(r) : null;
+  const inF = copyOf(r.id);
+  return `<li data-id="${r.id}">
+    <button class="row" type="button" data-preview="${r.id}">
+      ${cluster(r)}
+      <div class="body">
+        <div class="title"><span>${esc(r.title)}</span>${inF?`<span class="fam">${I.people}In your family's</span>`:''}</div>
+        ${bt?`<div class="vof">Variant of ${esc(bt)}</div>`:''}
+        <div class="meta">${esc(meta(r, !showBase))}</div>
+        ${pills(r, inCan)}
+      </div>
+      ${timeCol(r)}
+    </button>
+    ${addBtn(r)}
+  </li>`;
+}
+function group(key, items, fn){
+  const open = S.expanded.has(key);
+  const shown = open ? items : items.slice(0, LIMIT);
+  const hidden = items.length - shown.length;
+  return `<ul class="rows">${shown.map(fn).join('')}</ul>` +
+    (hidden>0 ? `<button class="more" type="button" data-more="${key}">Show ${hidden} more${I.chevD}</button>` :
+     (open && items.length>LIMIT ? `<button class="more" type="button" data-less="${key}">Show less</button>` : ''));
+}
+const matchF = (r,q,c,m) => (!q || r.title.toLowerCase().includes(q.toLowerCase())) && (!c || r.cuisine===c) && (!m || r.method===m);
+
+function searchBlock(which){
+  const q = which==='f'?S.fq:S.eq, c = which==='f'?S.fc:S.ec, m = which==='f'?S.fm:S.em;
+  const f = q||c||m;
+  return `<div class="sticky">
+    <div class="search">${I.search}<input data-q="${which}" type="search" value="${esc(q)}" placeholder="${which==='f'?"Search your family's Recipes":'Search all Recipes'}" autocomplete="off" aria-label="${which==='f'?"Search your family's Recipes":'Search all Recipes'}"></div>
+    <div class="chips">${f?`<button class="chip clear" type="button" data-clear="${which}">${I.x}Clear</button>`:''}${CUISINES.map(x=>`<button class="chip" type="button" data-cu="${which}|${x}" aria-pressed="${c===x}">${x}</button>`).join('')}<span class="div"></span>${METHODS.map(x=>`<button class="chip" type="button" data-me="${which}|${x}" aria-pressed="${m===x}">${x}</button>`).join('')}</div>
+  </div>`;
+}
+function headerFamily(){
+  const explorePill = S.v==='a' ? `<button class="xpill" type="button" data-go="explore">${I.compass}Explore</button>` : '';
+  return `<div class="hdr"><h1>Recipes</h1>${explorePill}
+    <button class="fab" type="button" data-menu aria-haspopup="menu" aria-expanded="${S.menu}" aria-label="Add a Recipe">${I.plus}</button>
+    <button class="ghost" type="button" aria-label="Settings">${I.gear}</button></div>`;
+}
+function tabsHtml(){
+  return `<div class="tabs" role="tablist" aria-label="Recipes">
+    <button type="button" role="tab" data-tab="family" aria-selected="${S.tab==='family'}">Your family's${S.added?`<span class="tb">+${S.added}</span>`:''}</button>
+    <button type="button" role="tab" data-tab="explore" aria-selected="${S.tab==='explore'}">${I.compass.replace('width="18" height="18"','width="16" height="16"')}Explore</button></div>`;
+}
+function exploreEnd(){
+  const n = CATALOG.length;
+  return `<button class="endcard" type="button" data-go="explore"><span class="stack" aria-hidden="true"><span>${iconSvg('tomato')}</span><span>${iconSvg('eggs')}</span><span>${iconSvg('lemon')}</span></span>
+    <span class="t">Explore all Recipes<span>${n} Catalog Recipes to add to your family or make your own</span></span>${I.chevR}</button>`;
+}
+
+function familyScreen(){
+  if(S.flash){ S.expanded.add('fam'); S.expanded.add('can'); S.expanded.add('fav'); }
+  const fq=S.fq, f = fq||S.fc||S.fm;
+  let h = headerFamily();
+  if(S.v==='b') h += tabsHtml();
+  if(!S.family.length){
+    const starters = CATALOG.filter(r=>card(r)&&card(r).canMake&&!r.base).slice(0,3);
+    h += `<div class="welcome"><div class="gpanel">
+        <button class="gbtn g-chef enter" type="button" data-gator aria-label="Gator the chef, stirring an empty pot. Tap to say hi"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -6 280 246" class="gator" aria-hidden="true" focusable="false"><g class="rig"><g class="tail"><path d="M62 184 C22 190 0 174 2 146 C4 126 22 118 32 126 C18 130 16 148 28 158 C40 168 58 164 72 160 Z" fill="#5E9A3C"/><path d="M10 134 l-6 -6 l1 9 Z M6 150 l-8 -2 l6 7 Z" fill="#4E8A30"/></g><ellipse cx="108" cy="176" rx="60" ry="42" fill="#6FAE48"/><ellipse cx="118" cy="186" rx="34" ry="28" fill="#E8E2B0"/><path d="M64 142 l-2 -12 l10 8 Z M82 134 l2 -12 l8 10 Z" fill="#4E8A30"/><ellipse cx="82" cy="216" rx="19" ry="9" fill="#5E9A3C"/><ellipse cx="134" cy="218" rx="19" ry="9" fill="#5E9A3C"/><g class="whisk"><path d="M62 160 C46 150 40 136 44 122" fill="none" stroke="#6FAE48" stroke-width="12" stroke-linecap="round"/><g transform="rotate(-18 44 110)"><rect x="41" y="104" width="7" height="22" rx="3" fill="#A9783F"/><path d="M44.5 104 C34 92 34 74 44.5 68 C55 74 55 92 44.5 104 M44.5 104 C39 92 39 76 44.5 68 C50 76 50 92 44.5 104 M44.5 104 V68" fill="none" stroke="#9AA3A8" stroke-width="2.5"/></g></g><g class="steam"><path d="M190 156 c-6 -6 6 -10 0 -18 M212 154 c-6 -6 6 -10 0 -18 M234 156 c-6 -6 6 -10 0 -18" fill="none" stroke="#B9C7B8" stroke-width="3.5" stroke-linecap="round"/></g><rect x="168" y="168" width="88" height="52" rx="12" fill="#C7533C"/><rect x="162" y="160" width="100" height="14" rx="7" fill="#A8432F"/><rect x="152" y="176" width="18" height="9" rx="4.5" fill="#A8432F"/><rect x="254" y="176" width="18" height="9" rx="4.5" fill="#A8432F"/><path d="M180 194 H244" stroke="#D97A63" stroke-width="3" stroke-linecap="round" opacity=".6"/><g class="spoon"><path d="M150 168 L196 140" stroke="#C8924F" stroke-width="6" stroke-linecap="round"/><path d="M144 172 C138 168 136 160 142 156 C148 152 156 156 156 164 C156 170 150 174 144 172 Z" fill="#C8924F" transform="translate(52 -28) rotate(-30 148 164)"/><path d="M136 176 C146 178 154 174 160 166" fill="none" stroke="#6FAE48" stroke-width="12" stroke-linecap="round"/></g><ellipse cx="200" cy="164" rx="0" ry="0"/><g class="rack"><g transform="translate(250 20)"><rect x="-4" y="0" width="24" height="5" rx="2.5" fill="#A9783F"/><path d="M2 5 V48" stroke="#9AA3A8" stroke-width="3" stroke-linecap="round"/><path d="M-6 48 a8 8 0 0 0 16 0 Z" fill="#9AA3A8"/><path d="M14 5 V40" stroke="#C8924F" stroke-width="3" stroke-linecap="round"/><rect x="9" y="40" width="10" height="16" rx="3" fill="#C8924F"/></g></g><g class="head"><g transform="translate(46 22) scale(.8)"><g class="headcopy"><circle cx="124" cy="46" r="17" fill="#5E9A3C"/><g class="eye eye-far"><circle cx="126" cy="44" r="10" fill="#fff"/><g class="pupil"><circle cx="129" cy="46" r="5" fill="#2E3A1F"/></g></g><path d="M28 100 C26 62 56 40 92 42 C118 44 134 56 150 62 L198 68 C218 70 228 84 226 98 C224 112 214 122 198 124 L112 136 C78 142 30 138 28 100 Z" fill="#6FAE48"/><path d="M78 114 L218 100 C214 114 208 121 198 124 L112 136 C92 138 80 130 78 114 Z" fill="#E8E2B0"/><path d="M40 70 l-8 -6 l2 10 Z M50 58 l-6 -8 l0 11 Z M62 50 l-3 -9 l-3 10 Z" fill="#5E9A3C"/><path d="M150 78 q6 4 12 0 M170 80 q6 4 12 0 M160 90 q6 4 12 0" fill="none" stroke="#5E9A3C" stroke-width="3" stroke-linecap="round"/><circle cx="206" cy="74" r="9" fill="#6FAE48"/><ellipse cx="209" cy="72" rx="3.5" ry="2.5" fill="#3E6B2E"/><g class="hat"><g transform="rotate(-14 64 40)"><g fill="#fff" stroke="#CFC6B4" stroke-width="5"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><g fill="#fff"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><path d="M54 22 v12 M64 20 v14 M74 22 v12" stroke="#E2DACB" stroke-width="2.5" stroke-linecap="round"/><rect x="36" y="34" width="56" height="14" rx="5" fill="#F4EFE4" stroke="#CFC6B4" stroke-width="2.5"/></g></g><circle cx="92" cy="46" r="24" fill="#5E9A3C"/><g class="eye eye-near"><circle cx="94" cy="44" r="16" fill="#fff"/><g class="pupil"><circle cx="100" cy="46" r="8" fill="#2E3A1F"/><circle cx="103" cy="43" r="3" fill="#fff"/></g></g><path d="M62 100 Q64 116 80 114 L218 100" fill="none" stroke="#3E6B2E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M100 112 l4 7 l4 -8 Z M122 110 l4 7 l4 -8 Z M144 108 l4 7 l4 -8 Z M166 106 l4 7 l4 -8 Z M188 103 l4 7 l4 -8 Z" fill="#fff"/><path d="M112 114 l4 -7 l4 6 Z M156 109 l4 -7 l4 6 Z M200 104 l3 -6 l3 5 Z" fill="#fff"/><g class="blush"><circle cx="66" cy="96" r="8" fill="#F2A08B" opacity=".5"/></g></g></g></g></g></svg></button>
+        <div class="bubble in">My pot's empty! Grab a few Recipes from <b>Explore</b>, or write down one of yours.</div></div>
+      <div class="h">No family Recipes yet</div><div class="s">Recipes you add can be changed however you like. Everyone in your family sees them.</div>
+      <button class="btn primary" type="button" data-go="explore">${I.compassL}Explore Recipes</button>
+      <button class="btn secondary" type="button" data-menu>${I.plusS}New Recipe</button></div>
+      <div class="seclabel"><span>Start with these · you can make them</span></div>
+      <ul class="rows">${starters.map(r=>expRow(r,true,false)).join('')}</ul>`;
+    return h;
+  }
+  h += searchBlock('f');
+  if(f){
+    const hits = S.family.filter(r=>matchF(r,fq,S.fc,S.fm));
+    const more = CATALOG.filter(r=>matchF(r,fq,S.fc,S.fm) && !copyOf(r.id)).length;
+    h += hits.length ? `<div class="seclabel"><span>Matches</span><span class="cnt">${hits.length}</span></div><ul class="rows">${hits.map(r=>famRow(r,false)).join('')}</ul>`
+       : `<div class="empty"><div class="h">None of your Recipes match.</div><div class="s">Try another word, or look in Explore.</div></div>`;
+    if(more) h += `<button class="fall" type="button" data-fall><span class="ic">${I.compass}</span><span class="t">${fq?`“${esc(fq)}”`:'Same filter'} in Explore<span>${more} more Recipe${more>1?'s':''} you can add or make your own</span></span>${I.chevR}</button>`;
+    return h;
+  }
+  const can = S.family.filter(r=>card(r)&&card(r).canMake).sort((a,b)=>(card(b).expiring||0)-(card(a).expiring||0)||a.title.localeCompare(b.title));
+  const seen = new Set(can.map(r=>r.id));
+  const favs = S.family.filter(r=>S.favs.has(r.id)&&!seen.has(r.id)).sort((a,b)=>S.favs.get(b.id)-S.favs.get(a.id));
+  favs.forEach(r=>seen.add(r.id));
+  const rest = S.family.filter(r=>!seen.has(r.id)).sort((a,b)=>a.title.localeCompare(b.title));
+  if(can.length) h += `<section><div class="seclabel"><span>You can make this</span><a href="#" data-noop>From your Pantry</a></div>${group('can', can, r=>famRow(r,true))}</section>`;
+  h += `<section><div class="seclabel"><span class="k">${I.star}Favorites</span>${favs.length?`<span class="cnt">${favs.length}</span>`:''}</div>${favs.length?group('fav',favs,r=>famRow(r,false)):`<div class="favhint"><span class="ic">${I.heart(false)}</span><span>Nothing here yet. <b>Tap the heart</b> on any of your Recipes to keep it at the top.</span></div>`}</section>`;
+  if(rest.length) h += `<section><div class="seclabel"><span>Your family's</span><span class="cnt">${S.family.length} in all</span></div>${group('fam', rest, r=>famRow(r,false))}</section>`;
+  if(S.v==='c'){
+    const sh = CATALOG.filter(r=>card(r)&&card(r).canMake).sort((a,b)=>(card(b).expiring||0)-(card(a).expiring||0));
+    h += `<section><div class="seclabel"><span class="k">${I.compass.replace('width="18" height="18"','width="14" height="14"')}More you can make</span><button class="lnk" type="button" data-go="explore">See all</button></div>
+      <div class="shelf">${sh.map(r=>`<div class="stile" role="button" tabindex="0" data-preview="${r.id}">${cluster(r)}${addBtn(r)}<div class="tt">${esc(r.title)}</div><div class="ft">${r.min} min${card(r).expiring?` · <span style="color:var(--urgent-fg);font-weight:700">${card(r).expiring} expiring</span>`:''}</div></div>`).join('')}
+      <button class="stile seeall" type="button" data-go="explore">${I.compassL}See all</button></div></section>`;
+  }
+  if(S.v!=='b') h += exploreEnd();
+  return h;
+}
+
+function exploreScreen(){
+  const q=S.eq, f=q||S.ec||S.em;
+  let h;
+  if(S.v==='b'){ h = headerFamily() + tabsHtml(); }
+  else h = `<div class="hdr"><button class="ghost" type="button" data-back aria-label="Back to your family's Recipes${S.added?`, ${S.added} added`:''}">${I.back}${S.added?`<span class="badge" id="addbadge">+${S.added}</span>`:''}</button><h1>Explore</h1><button class="ghost" type="button" aria-label="Settings">${I.gear}</button></div>
+    <p class="sub2">Add a Recipe to your family's to cook, plan and change it, or make a Variant of it.</p>`;
+  h += searchBlock('e');
+  if(f){
+    const hits = CATALOG.filter(r=>matchF(r,q,S.ec,S.em));
+    h += hits.length ? `<div class="seclabel"><span>Matches</span><span class="cnt">${hits.length}</span></div>${group('ehits', hits, r=>expRow(r,false,true))}`
+      : `<div class="empty"><div class="h">No Recipes match.</div><div class="s">Try another word, or write your own with New Recipe.</div></div>`;
+    return h;
+  }
+  const can = CATALOG.filter(r=>card(r)&&card(r).canMake).sort((a,b)=>(card(b).expiring||0)-(card(a).expiring||0)||a.title.localeCompare(b.title));
+  const seen = new Set(can.map(r=>r.id));
+  const all = CATALOG.filter(r=>!r.base && !seen.has(r.id)).sort((a,b)=>a.title.localeCompare(b.title));
+  h += `<section><div class="seclabel"><span>You can make this</span><span class="cnt">${can.length}</span></div>${group('ecan', can, r=>expRow(r,true,true))}</section>`;
+  h += `<section><div class="seclabel"><span>All Recipes</span><span class="cnt">${all.length}</span></div>${group('eall', all, r=>expRow(r,false,false))}</section>`;
+  return h;
+}
+
+
+function fmtQ(k, serves, base){
+  const q=QTY[k]; if(!q) return '';
+  let v=q[0]*serves/(base||1); const u=q[1];
+  v = u==='pcs' ? Math.round(v*2)/2 : (v>=100? Math.round(v/10)*10 : Math.round(v));
+  const s = (v%1===0.5 && u==='pcs') ? (v===0.5?'½':`${Math.floor(v)}½`) : String(v);
+  return u==='pcs' ? s : `${s} ${u}`;
+}
+function detailScreen(){
+  const r=cat(S.detail), inF=copyOf(r.id), bt=baseTitle(r), vars=variantsOf(r.id);
+  const serv=S.dserv||r.serves, miss=MISSING[r.id], c=card(r)||{};
+  const missN = miss?1:0;
+  let h = `<div class="hdr"><button class="ghost" type="button" data-back aria-label="Back">${I.back}</button><span style="flex:1"></span>
+    <button class="ghost" type="button" aria-label="Settings">${I.gear}</button></div>
+  <div class="hero">
+    ${bt?`<button class="eyebrow" type="button" data-full="${r.base}">⑂ Variant of ${esc(bt)}</button>`:`<div class="eyebrow cat">${I.compass.replace('width="18" height="18"','width="13" height="13"')}Explore · Catalog Recipe</div>`}
+    <h2>${esc(r.title)}${inF?` <span class="fam">${I.people}In your family's</span>`:''}</h2>
+    <div class="facts"><div><small>Time</small><b>${r.min} min</b></div><div><small>Serves</small><b>${serv}</b></div><div><small>Level</small><b>${r.level}</b></div><div><small>Style</small><b style="font-size:13px;white-space:normal">${esc([r.cuisine,r.method].filter(Boolean).join(' · '))}</b></div></div>
+  </div>
+  <div class="dtabs"><div class="seg3" role="tablist" aria-label="Recipe">
+    <button role="tab" type="button" data-dtab="ing" aria-selected="${S.dtab==='ing'}">Ingredients${missN?`<span class="cb">${missN}</span>`:''}</button>
+    <button role="tab" type="button" data-dtab="steps" aria-selected="${S.dtab==='steps'}">Steps</button>
+    <button role="tab" type="button" data-dtab="about" aria-selected="${S.dtab==='about'}">About</button></div></div>
+  <div role="tabpanel">`;
+  if(S.dtab==='ing'){
+    h += `<div class="toprow"><span class="l">${missN?`Missing ${missN}`:'You can make this'}</span>
+      <div class="stepper"><button type="button" data-serv="-1" aria-label="Fewer servings" ${serv<=1?'disabled':''}>−</button><span>${serv} Serving${serv>1?'s':''}</span><button type="button" data-serv="1" aria-label="More servings" ${serv>=12?'disabled':''}>+</button></div></div>
+    <div class="itable">${r.ing.map(k=>{
+      const st = miss===k ? `<span class="pill urg">${I.warn}Missing</span>` : `<span class="pill ok">${I.checkS}In your Pantry</span>`;
+      const q=fmtQ(k, serv, r.serves);
+      return `<div class="irow">${iconSvg(k)}<div class="nm">${esc(NAMES[k]||k)}${q?`<span class="qty">${q}</span>`:''}</div>${st}</div>`; }).join('')}</div>
+    ${missN?`<button class="btn secondary" type="button" style="margin-top:12px" data-shop="${esc(NAMES[miss]||miss)}">${I.cart}Add ${missN} missing to Shopping List</button>`:''}`;
+  } else if(S.dtab==='steps'){
+    const st=stepsFor(r);
+    h += `<div class="steps">${st.map((s,i)=>`<div class="step"><span class="no">${i+1}</span><div><p>${esc(s[0])}</p>${s[1]?`<button class="timer" type="button">${I.clock}Timer ${Math.floor(s[1]/60)}:${String(s[1]%60).padStart(2,'0')}</button>`:''}${s[2]?`<div class="tip"><b>Tip:</b> ${esc(s[2])}</div>`:''}</div></div>`).join('')}</div>`;
+  } else {
+    const pr = ABOUT.pair[r.id] || ABOUT.pair[r.base];
+    if(pr) h += `<div class="seclabel"><span>Pairings</span></div><div class="acard">${pr.map(p=>`<div><div class="pr">${esc(p[0])}</div><div class="pp">${esc(p[1])}</div><div class="rs">${esc(p[2])}</div></div>`).join('')}</div>`;
+    h += `<div class="seclabel"><span>Nutrition</span></div><div class="acard">${ABOUT.nutrition}</div><p class="disc">General guidance, not medical or dietary advice.</p>`;
+    if(vars.length) h += `<div class="seclabel"><span>Variants</span><span class="cnt">${vars.length}</span></div><ul class="rows vlist">${vars.map(v=>`<li data-id="${v.id}"><button class="row" type="button" data-full="${v.id}">${cluster(v)}<div class="body"><div class="title"><span>${esc(v.title)}</span></div><div class="meta">${esc(meta(v))}</div></div>${timeCol(v)}</button>${addBtn(v)}</li>`).join('')}</ul>`;
+  }
+  h += `<div class="prevnote">${I.eye}<span>You're previewing a Catalog Recipe. Add it to your family's to change it, plan it or cook it from your list.</span></div></div>`;
+  return h;
+}
+function prevbarHtml(){
+  const r=cat(S.detail), inF=copyOf(r.id);
+  return `<div class="prevbar" id="prevbar">
+    <button class="btn secondary" type="button" data-variant="${r.id}">${I.fork}Make a Variant</button>
+    ${inF?`<button class="btn tinted" type="button" data-opencopy="${r.id}">${I.check}In your family's</button>`
+         :`<button class="btn primary" type="button" data-add="${r.id}">${I.plusS}Add to family</button>`}</div>`;
+}
+function variantScreen(){
+  const d = S.draft, src = cat(d.src), base = src.base ? cat(src.base) : src;
+  return `<div class="hdr"><button class="ghost" type="button" data-back aria-label="Back">${I.back}</button><h1 class="sm">Make a Variant</h1><button class="savepill" type="button" data-save>Save</button><button class="ghost" type="button" aria-label="Settings">${I.gear}</button></div>
+  <div class="ed">
+    <div class="eyebrow">⑂ Variant of ${esc(base.title)}</div>
+    <div class="tabs3" aria-hidden="true"><span class="on">Details</span><span>Ingredients ${src.ing.length}</span><span>Steps</span></div>
+    <label for="vt">Title</label><input id="vt" value="${esc(d.title)}" autocomplete="off">
+    <label>Ingredients · copied from ${esc(src.title)}</label>
+    <div class="card">${src.ing.map(k=>`<div>${iconSvg(k)}${esc(NAMES[k]||k)}</div>`).join('')}</div>
+    <p class="hint">Stub of the editor from <b>add-recipe v2</b> (Details · Ingredients · Steps). ${src.base?`A Variant can't have Variants, so this one branches from <b>${esc(base.title)}</b>, starting from ${esc(src.title)}'s lines.`:'Lines, Steps and Tips start as a copy of the Base.'} Save returns to your family's Recipes.</p>
+  </div>`;
+}
+
+function sheetHtml(){
+  const r = cat(S.sheet); const c = card(r) || {}; const inF = copyOf(r.id);
+  const bt = baseTitle(r); const vars = variantsOf(r.id);
+  const miss = MISSING[r.id];
+  return `<div class="scrim" data-close></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shT">
+    <div class="grab"></div>
+    <div class="top">${cluster(r)}<div style="flex:1;min-width:0">${bt?`<div class="eyebrow">⑂ Variant of ${esc(bt)}</div>`:'<div class="eyebrow">Catalog Recipe</div>'}<h2 id="shT">${esc(r.title)}</h2></div>
+      <button class="ghost x" type="button" data-close aria-label="Close">${I.xL}</button></div>
+    <div class="facts"><div><small>Time</small><b>${r.min} min</b></div><div><small>Serves</small><b>${r.serves}</b></div><div><small>Level</small><b>${r.level}</b></div><div><small>Style</small><b>${esc(r.cuisine||r.method)}</b></div></div>
+    ${pills(r,false)}
+    <div class="lbl"><span>Ingredients</span><span>${r.ing.length}</span></div>
+    <div class="ings">${r.ing.map(k=>`<span class="ing ${miss===k?'miss':''}">${iconSvg(k)}${esc(NAMES[k]||k)}</span>`).join('')}</div>
+    ${vars.length?`<div class="lbl"><span>Variants</span><span>${vars.length}</span></div><ul class="rows vlist">${vars.map(v=>`<li data-id="${v.id}"><button class="row" type="button" data-preview="${v.id}">${cluster(v)}<div class="body"><div class="title"><span>${esc(v.title)}</span></div><div class="meta">${esc(meta(v))}</div></div>${timeCol(v)}</button>${addBtn(v)}</li>`).join('')}</ul>`:''}
+    <button class="lnkbtn full" type="button" data-full="${r.id}">${I.book}See the whole Recipe${I.chevR}</button>
+    <div class="actions">
+      ${inF ? `<button class="btn tinted" type="button" data-opencopy="${r.id}">${I.check}In your family's Recipes · Open</button>`
+            : `<button class="btn primary" type="button" data-add="${r.id}">${I.plusS}Add to your family's Recipes</button>`}
+      <button class="btn secondary" type="button" data-variant="${r.id}">${I.fork}Make a Variant</button>
+      <p class="why">${inF?'Your copy is yours to change. This Catalog Recipe stays as it is.':'Adding makes a copy your family can change. Make a Variant opens the editor first.'}</p>
+    </div>
+  </div>`;
+}
+function menuHtml(){
+  return `<div class="scrim" data-close style="background:transparent"></div><div class="menu" role="menu">
+    <button role="menuitem" type="button" data-noop>${I.pen}New Recipe</button>
+    <button role="menuitem" type="button" data-noop>${I.link}From a link</button><hr>
+    <button role="menuitem" type="button" data-go="explore">${I.compass}From Explore<span class="new">new</span></button></div>`;
+}
+
+let cur=null;
+function current(){ const top=S.stack[S.stack.length-1]; return S.v==='b' && top!=='variant' && top!=='detail' ? S.tab : top; }
+function render(anim){
+  const vp=document.getElementById('vp');
+  const scr=current();
+  const html = scr==='family'?familyScreen(): scr==='explore'?exploreScreen(): scr==='detail'?detailScreen(): variantScreen();
+  const keepScroll = !anim && cur ? cur.scrollTop : 0;
+  const focusQ = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.q;
+  const el=document.createElement('div'); el.className='screen'; el.innerHTML=html;
+  if(anim && cur && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+    const old=cur; if(anim!=='fade') old.classList.add(anim==='push'?'out-push':'out-pop');
+    el.classList.add(anim==='push'?'in-push':anim==='pop'?'in-pop':'in-fade');
+    vp.appendChild(el); setTimeout(()=>old.remove(), 330);
+  } else { vp.innerHTML=''; vp.appendChild(el); el.scrollTop=keepScroll; }
+  cur=el;
+  if(focusQ && !anim){ const i=el.querySelector(`[data-q="${focusQ}"]`); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } }
+  document.getElementById('dock').classList.toggle('hide', scr==='variant'||scr==='detail');
+  const pb=document.getElementById('pbwrap'); pb.innerHTML = scr==='detail' ? prevbarHtml() : '';
+  document.getElementById('toast').classList.toggle('nodock', scr==='variant');
+  document.getElementById('toast').classList.toggle('overbar', scr==='detail');
+  const ov=document.getElementById('overlay'); ov.innerHTML = S.sheet ? sheetHtml() : S.menu ? menuHtml() : '';
+  const gb=cur.querySelector('[data-gator]'); if(gb){ setTimeout(()=>{ gb.classList.remove('enter'); gb.classList.add('sig'); }, 1300); }
+  if(S.flash){ const id=S.flash; setTimeout(()=>{ const li=cur.querySelector(`li[data-id="${id}"]`); if(li) li.scrollIntoView({block:'center', behavior:'smooth'}); },anim?360:60); S.flash=null; }
+}
+function go(to){
+  S.menu=false; S.sheet=null;
+  if(S.v==='b' && (to==='explore'||to==='family')){ if(S.tab!==to){ S.tab=to; S.stack=['family']; render('fade'); } else render(); cur.scrollTop=0; return; }
+  if(current()===to){ render(); return; }
+  S.stack.push(to); render('push');
+}
+function back(){ S.sheet=null; if(S.stack.length>1){ S.stack.pop(); render('pop'); } }
+
+function toast(msg, undo, act){
+  document.getElementById('toastmsg').textContent=msg; undoFn=undo;
+  const u=document.getElementById('undo'); u.hidden=!undo;
+  const a=document.getElementById('toastact'); a.hidden=!act; if(act){ a.textContent=act.label; a.onclick=()=>{ hideToast(); act.fn(); }; }
+  document.getElementById('toast').classList.add('show'); clearTimeout(toastT); toastT=setTimeout(hideToast, 4500);
+}
+function hideToast(){ document.getElementById('toast').classList.remove('show'); }
+
+function addCopy(id){
+  const r=cat(id); if(copyOf(id)) return;
+  const copy={...r, id:'copy-'+id, copiedFrom:id};
+  S.family.push(copy); S.added++;
+  render();
+  const b=cur.querySelector(`[data-opencopy="${id}"]`); if(b) b.classList.add('pop');
+  const bd=document.getElementById('addbadge'); if(bd) bd.classList.add('bump');
+  toast(`Added ${r.title} to your family's Recipes`, ()=>{ S.family=S.family.filter(x=>x.id!==copy.id); S.added=Math.max(0,S.added-1); S.favs.delete(copy.id); render(); });
+}
+function openCopy(id){
+  const c=copyOf(id); if(!c) return;
+  S.sheet=null; S.flash=c.id;
+  if(S.v==='b'){ go('family'); S.flash=c.id; render(); return; }
+  S.stack=['family']; render('pop');
+}
+function setFav(id){
+  const on=!S.favs.has(id); const r=fam(id);
+  if(on) S.favs.set(id, ++S.favSeq); else S.favs.delete(id);
+  render(); const li=cur.querySelector(`li[data-id="${id}"]`); if(li) li.classList.add('arriving');
+  toast(on?`Added ${r.title} to Favorites`:`Removed ${r.title} from Favorites`, ()=>{ if(on) S.favs.delete(id); else S.favs.set(id, ++S.favSeq); render(); });
+}
+function startVariant(id){
+  const r=cat(id); S.sheet=null;
+  S.draft={ src:id, title: (r.base? r.title : r.title) + ', our way' };
+  S.stack.push('variant'); render('push');
+}
+function saveVariant(){
+  const d=S.draft, src=cat(d.src), baseId = src.base || src.id;
+  const t=(cur.querySelector('#vt').value||'').trim() || src.title+', our way';
+  const nr={ ...src, id:'var-'+Date.now(), title:t, base:baseId, copiedFrom:undefined };
+  S.family.push(nr); S.added++; S.flash=nr.id; S.draft=null;
+  S.stack=['family']; if(S.v==='b') S.tab='family';
+  render('pop');
+  toast(`Saved ${t} to your family's Recipes`, null);
+}
+
+document.addEventListener('click', e=>{
+  const t=e.target;
+  const g=s=>t.closest(s);
+  let x;
+  if(x=g('[data-theme-pick]')){ applyTheme(x.dataset.themePick); return; }
+  if(x=g('[data-var]')){ S.v=x.dataset.var; document.querySelectorAll('[data-var]').forEach(b=>b.setAttribute('aria-pressed', String(b===x))); document.querySelectorAll('[data-vnote]').forEach(n=>n.classList.toggle('on', n.dataset.vnote===S.v)); scenario(S.scen); return; }
+  if(x=g('[data-scen]')){ scenario(x.dataset.scen); return; }
+  if(!t.closest('#phone')) return;
+  if(x=g('[data-gator]')){ x.classList.remove('poke'); void x.offsetWidth; x.classList.add('poke'); setTimeout(()=>x.classList.remove('poke'), 950); return; }
+  if(g('[data-noop]')){ e.preventDefault(); if(S.menu){ S.menu=false; render(); } return; }
+  if(x=g('[data-add]')){ e.stopPropagation(); addCopy(x.dataset.add); return; }
+  if(x=g('[data-opencopy]')){ e.stopPropagation(); openCopy(x.dataset.opencopy); return; }
+  if(x=g('[data-full]')){ e.preventDefault(); hideToast(); const id=x.dataset.full; const same=current()==='detail';
+    S.sheet=null; S.detail=id; S.dtab='ing'; S.dserv=null;
+    if(same){ S.stack.push('detail'); render('push'); } else { S.stack.push('detail'); render('push'); } return; }
+  if(x=g('[data-dtab]')){ S.dtab=x.dataset.dtab; render(); const tb=cur.querySelector('.dtabs'); if(tb && cur.scrollTop>tb.offsetTop) cur.scrollTop=tb.offsetTop; return; }
+  if(x=g('[data-serv]')){ const r=cat(S.detail); S.dserv=Math.max(1,Math.min(12,(S.dserv||r.serves)+Number(x.dataset.serv))); render(); return; }
+  if(x=g('[data-shop]')){ x.disabled=true; x.innerHTML=I.check+'Added to your list'; toast(`Added ${x.dataset.shop} to your Shopping List`, null); return; }
+  if(x=g('[data-variant]')){ startVariant(x.dataset.variant); return; }
+  if(x=g('[data-preview]')){ e.preventDefault(); hideToast(); S.sheet=x.dataset.preview; S.menu=false; render(); return; }
+  if(g('[data-close]')){ S.sheet=null; S.menu=false; render(); return; }
+  if(g('[data-menu]')){ S.menu=!S.menu; render(); return; }
+  if(x=g('[data-go]')){ go(x.dataset.go); return; }
+  if(x=g('[data-tab]')){ if(x.dataset.tab==='explore'&&!S.eq&&S.fq) S.eq=S.fq; go(x.dataset.tab); return; }
+  if(g('[data-back]')){ back(); return; }
+  if(g('[data-save]')){ saveVariant(); return; }
+  if(g('[data-fall]')){ S.eq=S.fq; S.ec=S.fc; S.em=S.fm; go('explore'); return; }
+  if(x=g('[data-fav]')){ setFav(x.dataset.fav); return; }
+  if(x=g('[data-more]')){ S.expanded.add(x.dataset.more); render(); return; }
+  if(x=g('[data-less]')){ S.expanded.delete(x.dataset.less); render(); return; }
+  if(x=g('[data-clear]')){ const w=x.dataset.clear; S[w+'q']=''; S[w+'c']=''; S[w+'m']=''; render(); return; }
+  if(x=g('[data-cu]')){ const [w,v]=x.dataset.cu.split('|'); S[w+'c']=S[w+'c']===v?'':v; render(); return; }
+  if(x=g('[data-me]')){ const [w,v]=x.dataset.me.split('|'); S[w+'m']=S[w+'m']===v?'':v; render(); return; }
+  if(t.id==='undo'){ hideToast(); if(undoFn){ const f=undoFn; undoFn=null; f(); } }
+});
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && (S.sheet||S.menu)){ S.sheet=null; S.menu=false; render(); }
+  if((e.key==='Enter'||e.key===' ') && e.target.classList && e.target.classList.contains('stile') && !e.target.closest('.add')){ e.preventDefault(); S.sheet=e.target.dataset.preview; render(); }
+});
+let deb; document.addEventListener('input', e=>{ const w=e.target.dataset && e.target.dataset.q; if(!w) return; clearTimeout(deb); const v=e.target.value; deb=setTimeout(()=>{ S[w+'q']=v.trim(); render(); },300); });
+
+function applyTheme(id){
+  S.theme=id; const th=THEMES[id]; const ph=document.getElementById('phone');
+  for(const k in th) ph.style.setProperty('--'+k, th[k]);
+  ph.dataset.theme=id;
+  document.querySelectorAll('[data-theme-pick]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.themePick===id)));
+  render();
+}
+function scenario(s){
+  S.scen=s; document.querySelectorAll('[data-scen]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.scen===s)));
+  S.family = s==='new' ? [] : FAMILY0.map(r=>({...r}));
+  S.favs=new Map(); S.family.forEach(r=>{ if(r.fav) S.favs.set(r.id, r.fav); });
+  S.fq=s==='search'?'chicken':''; S.fc=''; S.fm=''; S.eq=''; S.ec=''; S.em='';
+  S.expanded=new Set(); S.added=0; S.menu=false; S.sheet=null; S.stack=['family']; S.tab='family'; S.draft=null;
+  hideToast(); render(); cur.scrollTop=0;
+}
+
+applyTheme('warm'); scenario('default');
+</script>
+
+</html>
