@@ -10,6 +10,10 @@ import {
   OPEN_FOOD_FACTS_CLIENT,
   type OpenFoodFactsClient,
 } from '../../src/barcode/open-food-facts.client';
+import {
+  PAGE_FETCHER,
+  type PageFetcher,
+} from '../../src/page-fetch/page-fetcher';
 import { configureApp, MAX_REQUEST_BODY_BYTES } from '../../src/app.setup';
 import { serveWebApp } from '../../src/web-app';
 
@@ -26,6 +30,8 @@ export async function createTestApp(
   openFoodFacts?: OpenFoodFactsClient,
   /** Stands in for the audio transcription provider; no test calls the network. */
   transcription?: Pick<TranscriptionService, 'isConfigured' | 'transcribe'>,
+  /** Stands in for the page fetcher (Recipe from Link); no test fetches a real page. */
+  pageFetcher?: PageFetcher,
 ): Promise<NestFastifyApplication> {
   const builder = Test.createTestingModule({
     imports: [AppModule],
@@ -39,6 +45,13 @@ export async function createTestApp(
     openFoodFacts ?? {
       fetchProduct: () => {
         throw new Error('This test did not provide an Open Food Facts client');
+      },
+    },
+  );
+  builder.overrideProvider(PAGE_FETCHER).useValue(
+    pageFetcher ?? {
+      fetchPage: () => {
+        throw new Error('This test did not provide a page fetcher');
       },
     },
   );

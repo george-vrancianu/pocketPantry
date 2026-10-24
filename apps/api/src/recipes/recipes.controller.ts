@@ -20,6 +20,7 @@ import { MemberLanguageService } from '../member-language/member-language.servic
 import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
+import { LinkRecipesService } from './link-recipes.service';
 import { PlateRecipesService } from './plate-recipes.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import {
@@ -27,6 +28,7 @@ import {
   cookTonightQuery,
   familyRecipeCreate,
   familyRecipeUpdate,
+  fromLinkBody,
   fromPlateBody,
   plateMatchesBody,
   hiddenTipsBody,
@@ -39,7 +41,9 @@ import {
   type FamilyRecipeDraft,
   type FamilyRecipeEdit,
   type FamilyRecipeUpdate,
+  type FromLinkBody,
   type FromPlateBody,
+  type RecipeFromLink,
   type PlateMatchesBody,
   type PlateMatches,
   type HiddenTipsBody,
@@ -66,6 +70,7 @@ export class RecipesController {
     private readonly family: FamilyRecipesService,
     private readonly cookTonight: CookTonightService,
     private readonly plate: PlateRecipesService,
+    private readonly link: LinkRecipesService,
     private readonly languages: MemberLanguageService,
   ) {}
 
@@ -149,6 +154,20 @@ export class RecipesController {
   ): Promise<FamilyRecipeEdit> {
     const locale = await this.languages.catalogLanguageOf(member.id);
     return this.plate.save(member.id, { ...body, locale });
+  }
+
+  @Post('from-link')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      "Read the recipe on a web page into an unsaved Family Recipe draft in the Member's Catalog Language; nothing is saved",
+  })
+  async readLink(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(fromLinkBody)) body: FromLinkBody,
+  ): Promise<RecipeFromLink> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    return this.link.read(member.id, body, locale);
   }
 
   @Get(':id/variant-draft')

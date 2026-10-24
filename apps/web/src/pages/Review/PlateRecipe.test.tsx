@@ -208,6 +208,25 @@ describe('Plate Scan: save as a Recipe', () => {
     expect(savedParent(calls)).toBe('c1');
   });
 
+  it('keeps the picked base and search text when the panel is cancelled and reopened', async () => {
+    renderPlate();
+    await openPanel();
+    await screen.findByRole('radio', { name: 'Pilaf (closest match)' });
+    await userEvent.type(
+      screen.getByRole('searchbox', { name: 'Find another Base Recipe' }),
+      'pae',
+    );
+    await userEvent.click(await screen.findByRole('radio', { name: 'Paella' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Save as a Recipe' }),
+    );
+    expect(
+      screen.getByRole('searchbox', { name: 'Find another Base Recipe' }),
+    ).toHaveValue('pae');
+    expect(await screen.findByRole('radio', { name: 'Paella' })).toBeChecked();
+  });
+
   it('shows a translated error and keeps the Scan card when the save fails', async () => {
     renderPlate({
       'POST /api/recipes/from-plate': () =>

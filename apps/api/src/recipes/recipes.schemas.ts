@@ -4,6 +4,7 @@ import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
 import type { AllergyOwner, AllergyWarningOwner } from './matching/allergens';
 import type { PlateMatch } from './plate-matches';
+import { sourceLinkInput } from './source-link';
 import type { RecipeDiff } from './recipe-diff';
 import {
   guidanceBody,
@@ -104,25 +105,84 @@ const memberLocale = z.enum(CATALOG_LOCALES).catch(FALLBACK_LOCALE);
 /** Replacing a Family Recipe's document; its base is fixed at creation. */
 export const familyRecipeUpdate = recipeDocument
   .extend({ lines: z.array(familyLineInput).max(MAX_LINES).default([]) })
-  .extend({ locale: memberLocale });
+  .extend({
+    locale: memberLocale,
+    /**
+     * Only `null` is meaningful: it clears the Source Link and the source language.
+     * Any string is refused by the service (`recipes.source_link_locked`), so the
+     * client gets the specific code rather than a generic validation error.
+     */
+    sourceLink: z.string().nullable().optional(),
+    /** Only `null` is meaningful: it clears the source language alone. Same refusal as above. */
+    sourceLanguage: z.string().nullable().optional(),
+  });
 
 /** A step Tip in a create document: it refers to a Step of the document by index. */
 const newStepTip = z
   .object({ stepIndex: z.number().int().min(0), text: longText })
   .strict();
 
+/**
+ * Which language a reading (a link now, pasted text in ticket 512) writes the Recipe in:
+ * the Member's Catalog Language (the default) or the source's own ("keep the page's language").
+ */
+export const readingLanguage = z.enum(['catalog', 'source']);
+export type ReadingLanguage = z.infer<typeof readingLanguage>;
+
+/** A detected source language: a short lower-case code such as "en" or "pt-br". */
+export const sourceLanguageInput = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z]{2,3}(-[a-z0-9]{2,5})?$/);
+
 /** Creating a Family Recipe: `parentId` makes it a Variant, null/absent a standalone Base Recipe. */
-export const familyRecipeCreate = familyRecipeUpdate.extend({
-  parentId: id.nullable().default(null),
-  /** Optional: a saved draft brings its guidance along; edits go through the guidance endpoint. */
-  guidance: guidanceBody.optional(),
-  /**
-   * Optional step Tips for a new Recipe (a Variant draft brings the source's).
-   * `stepIndex` is the position of a Step in `steps` of this same document;
-   * the array order is the Tip order. Later edits use the Tip endpoints.
-   */
-  tips: z.array(newStepTip).max(MAX_TIPS).optional(),
-});
+export const familyRecipeCreate = familyRecipeUpdate
+  .extend({
+    parentId: id.nullable().default(null),
+    /** Optional: a saved draft brings its guidance along; edits go through the guidance endpoint. */
+    guidance: guidanceBody.optional(),
+    /**
+     * Optional step Tips for a new Recipe (a Variant draft brings the source's).
+     * `stepIndex` is the position of a Step in `steps` of this same document;
+     * the array order is the Tip order. Later edits use the Tip endpoints.
+     */
+    tips: z.array(newStepTip).max(MAX_TIPS).optional(),
+    /** Optional: the page a Recipe from Link was read from, normalised on the way in. Set at creation only; an update can only clear it. */
+    sourceLink: sourceLinkInput.optional(),
+    /** Optional: the language a translated Recipe from Link was read in. Set at creation only. */
+    sourceLanguage: sourceLanguageInput.optional(),
+  })
+  .refine(
+    (body) => body.sourceLanguage === undefined || Boolean(body.sourceLink),
+    { message: 'sourceLanguage needs a sourceLink', path: ['sourceLanguage'] },
+  );
+
+/** The most pasted recipe text one read takes. */
+export const MAX_PASTED_TEXT_CHARS = 50_000;
+
+/**
+ * Reading a page, or pasted recipe text, into an unsaved Family Recipe draft: exactly one
+ * of `url` and `text`. Blank text counts as absent. `force` skips the "already in your Recipes" check
+ * of a link; for pasted text there is no such check, so it is accepted and ignored.
+ */
+export const fromLinkBody = z
+  .object({
+    locale: memberLocale,
+    url: z.string().trim().min(1).max(4096).optional(),
+    text: z
+      .string()
+      .trim()
+      .max(MAX_PASTED_TEXT_CHARS)
+      .transform((text) => text || undefined)
+      .optional(),
+    language: readingLanguage.default('catalog'),
+    force: z.boolean().optional(),
+  })
+  .strict()
+  .refine((body) => (body.url === undefined) !== (body.text === undefined), {
+    message: 'give exactly one of url and text',
+  });
 
 /** The Plate Scan dish the Review wants the closest Catalog Base Recipe for. */
 export const plateMatchesBody = z
@@ -230,6 +290,7 @@ export type FamilyRecipeUpdate = z.infer<typeof familyRecipeUpdate>;
 export type FamilyRecipeCreate = z.infer<typeof familyRecipeCreate>;
 export type PlateMatchesBody = z.infer<typeof plateMatchesBody>;
 export type FromPlateBody = z.infer<typeof fromPlateBody>;
+export type FromLinkBody = z.infer<typeof fromLinkBody>;
 export type VariantCreate = z.infer<typeof variantCreate>;
 export type TipCreate = z.infer<typeof tipCreate>;
 export type TipUpdate = z.infer<typeof tipUpdate>;
@@ -280,6 +341,10 @@ export type AdminRecipeDetail = AdminGuidance & {
   methodId: string | null;
   archived: boolean;
   archivedAt: string | null;
+  /** The normalised page a Recipe from Link was read from; null otherwise. */
+  sourceLink: string | null;
+  /** The language a translated Recipe from Link was read in; null otherwise. */
+  sourceLanguage: string | null;
   lines: RecipeLineView[];
   steps: RecipeStepView[];
   /** This Recipe's own Tips, in order; `stepId` null for Recipe-level Tips. */
@@ -317,6 +382,10 @@ export type ResolvedRecipe = {
   cuisine: { id: string; name: string } | null;
   method: { id: string; name: string } | null;
   archived: boolean;
+  /** The normalised page a Recipe from Link was read from; null otherwise (and always on a Catalog Recipe). */
+  sourceLink: string | null;
+  /** The language a translated Recipe from Link was read in; null otherwise (and always on a Catalog Recipe). */
+  sourceLanguage: string | null;
   lines: (RecipeLineView & { ingredientName: string })[];
   steps: RecipeStepView[];
   /** Own Tips plus, on a Variant, the base's non-hidden Recipe-level Tips (`inherited`). */
@@ -457,6 +526,39 @@ export type RecipeFilters = {
   methods: NamedRef[];
   /** Live Eating Moments in sort order. They feed the guidance editor's picker, not a browsing filter. */
   eatingMoments: NamedRef[];
+};
+
+/** The draft a link reading returns: the variant-draft shape without a base, and Servings empty when the page had none. */
+export type LinkRecipeDraft = Omit<
+  FamilyRecipeDraft,
+  'parentId' | 'servings'
+> & {
+  servings: number | null;
+};
+
+/**
+ * The result of `POST /api/recipes/from-link`, told apart by `kind`. `duplicate` is the Member's own Recipe
+ * for the same link; `draft` is the reading.
+ */
+export type RecipeFromLink = RecipeFromLinkDraft | RecipeFromLinkDuplicate;
+
+/** The link is already a live Recipe of the Member's Family (and `force` was not set): nothing was fetched, read or counted. */
+export type RecipeFromLinkDuplicate = { kind: 'duplicate'; recipeId: string };
+
+export type RecipeFromLinkDraft = {
+  kind: 'draft';
+  draft: LinkRecipeDraft;
+  /** The normalised link, to send back on the create request; null for pasted text. */
+  sourceLink: string | null;
+  /**
+   * The detected language of the page, only when the draft is written in another one (a translation);
+   * null when it is the same or unknown, and always with the "source" language choice. Send it back on create.
+   */
+  sourceLanguage: string | null;
+  /** The Catalog Base Recipes closest to the draft, ranked as for a Plate Scan. */
+  closestBases: PlateMatchView[];
+  /** How many of the closest were left out by "Hide Recipes with my Allergies". */
+  hiddenByAllergiesCount: number;
 };
 
 /** What `createIn` takes: the create body without the transport-level locale default. */

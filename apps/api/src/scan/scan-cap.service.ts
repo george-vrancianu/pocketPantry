@@ -7,7 +7,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { scanUsage } from '../database/schema';
 
-export type UsageKind = 'scan' | 'voice' | 'assistant';
+export type UsageKind = 'scan' | 'voice' | 'assistant' | 'link';
 
 const LIMITS = {
   scan: { setting: 'SCAN_DAILY_CAP', code: 'scan.cap_reached' },
@@ -16,6 +16,7 @@ const LIMITS = {
     setting: 'ASSISTANT_DAILY_CAP',
     code: 'assistant.cap_reached',
   },
+  link: { setting: 'LINK_DAILY_CAP', code: 'link.cap_reached' },
 } as const;
 
 /** When the cap's UTC `day` ends (ISO), which is when its count starts over. */
@@ -24,10 +25,21 @@ const nextUtcMidnight = (day: string) =>
 
 const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 
+/** The 429 for a Member at the `kind` cap; the Voice Cap and the Link Cap also say when it lifts. */
+const capReached = (kind: UsageKind, cap: number, day: string) =>
+  new ApiException(
+    429,
+    LIMITS[kind].code,
+    kind === 'voice' || kind === 'link'
+      ? { cap, resetsAt: nextUtcMidnight(day) }
+      : { cap },
+  );
+
 /**
  * The per-Member daily caps, counted per UTC day and per kind and enforced
  * before the provider is called. The Scan Cap is `SCAN_DAILY_CAP`, the Voice
- * Cap `VOICE_DAILY_CAP` and the Assistant Cap `ASSISTANT_DAILY_CAP`; a cap of 0
+ * Cap `VOICE_DAILY_CAP`, the Assistant Cap `ASSISTANT_DAILY_CAP` and the Link Cap
+ * `LINK_DAILY_CAP`; a cap of 0
  * disables it. Kinds never affect each other.
  */
 @Injectable()
@@ -39,7 +51,8 @@ export class ScanCapService {
 
   /**
    * Counts one use of `kind`, atomically; throws `scan.cap_reached` (Scan Cap),
-   * `voice.cap_reached` (Voice Cap) or `assistant.cap_reached` (Assistant Cap)
+   * `voice.cap_reached` (Voice Cap), `assistant.cap_reached` (Assistant Cap) or
+   * `link.cap_reached` (Link Cap)
    * once the Member is at that kind's cap.
    * Returns the UTC day it was counted on, which a refund must use.
    */
@@ -62,14 +75,39 @@ export class ScanCapService {
       })
       .returning({ count: scanUsage.count });
     if (rows.length === 0) {
-      // Only the Voice Cap says when it lifts; the web lets the Voice button wait it out.
-      throw new ApiException(
-        429,
-        limit.code,
-        kind === 'voice' ? { cap, resetsAt: nextUtcMidnight(day) } : { cap },
-      );
+      // The Voice Cap (the button waits it out) and the Link Cap (the message names the time) say when they lift.
+      throw capReached(kind, cap, day);
     }
     return day;
+  }
+
+  /**
+   * Throws the cap's `*.cap_reached` (same shape as `consume`) when the Member is already at the
+   * `kind` cap today, without counting a use. A cheap early refusal before slow work; `consume`
+   * stays the one place a use is counted.
+   */
+  async assertBelowCap(
+    memberId: string,
+    now = new Date(),
+    kind: UsageKind = 'scan',
+  ): Promise<void> {
+    const limit = LIMITS[kind];
+    const cap = this.config.get(limit.setting, { infer: true });
+    if (cap === 0) return;
+    const day = utcDay(now);
+    const [row] = await this.database
+      .select({ count: scanUsage.count })
+      .from(scanUsage)
+      .where(
+        and(
+          eq(scanUsage.memberId, memberId),
+          eq(scanUsage.day, day),
+          eq(scanUsage.kind, kind),
+        ),
+      );
+    if ((row?.count ?? 0) >= cap) {
+      throw capReached(kind, cap, day);
+    }
   }
 
   /** Counts one use of `kind` before calling the provider, and hands it back if the provider fails. */

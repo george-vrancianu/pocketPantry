@@ -13,6 +13,7 @@ import {
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
+import { SourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
 import {
@@ -104,6 +105,14 @@ function RecipeDetail({ id }: { id: string }) {
         {recipe ? (
           <>
             <RecipeHero recipe={recipe} servings={servings} />
+            {recipe.sourceLink ? (
+              <Box>
+                <SourceLink
+                  href={recipe.sourceLink}
+                  translatedFrom={recipe.sourceLanguage}
+                />
+              </Box>
+            ) : null}
             {recipe.allergyWarning ? (
               <AllergyWarningBanner warning={recipe.allergyWarning} />
             ) : null}

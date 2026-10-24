@@ -29,8 +29,13 @@ const timestamps = {
 };
 
 export const userRole = pgEnum('user_role', ['admin', 'regular']);
-// What a daily cap counts: Scans, Voice Notes or Assistant Requests.
-export const usageKind = pgEnum('usage_kind', ['scan', 'voice', 'assistant']);
+// What a daily cap counts: Scans, Voice Notes, Assistant Requests or Recipe from Link reads.
+export const usageKind = pgEnum('usage_kind', [
+  'scan',
+  'voice',
+  'assistant',
+  'link',
+]);
 export const familyRole = pgEnum('family_role', ['owner', 'member']);
 
 // A Family owns the Pantry, Shopping List and Family Settings.
@@ -865,11 +870,19 @@ export const recipes = pgTable(
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     // Recipe guidance: one general-direction note, at most 500 characters (checked in the service).
     nutritionNote: text('nutrition_note'),
+    // Recipe from Link: the normalised page the Recipe was read from. Family Recipes only; never copied to a Variant.
+    sourceLink: text('source_link'),
+    // Recipe from Link: the page's detected language, only when the Recipe was translated out of it. Never copied to a Variant.
+    sourceLanguage: text('source_language'),
     ...timestamps,
   },
   (table) => [
     index('recipes_parent_idx').on(table.parentId),
     index('recipes_family_idx').on(table.familyId),
+    // "Already in your Recipes": the Family's Recipe for a Source Link.
+    index('recipes_family_source_link_idx')
+      .on(table.familyId, table.sourceLink)
+      .where(sql`${table.sourceLink} IS NOT NULL`),
     index('recipes_cuisine_idx').on(table.cuisineId),
     index('recipes_method_idx').on(table.methodId),
     check('recipes_servings_positive', sql`${table.servings} > 0`),

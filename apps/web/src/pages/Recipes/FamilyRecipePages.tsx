@@ -1,8 +1,15 @@
 import { Alert, Link, Spinner, Stack, Typography } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import {
+  BaseRecipePicker,
+  STANDALONE,
+  noBasePick,
+  type BaseRecipeOption,
+} from '../../components/BaseRecipePicker';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { RemovableSourceLink, isSourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
 import {
   useCreateFamilyRecipe,
@@ -15,14 +22,19 @@ import {
 import { TipsEditor } from '../../components/recipeEditor/RecipeTips';
 import { emptyDraft } from '../../lib/recipeDraft';
 import { toGuidanceDraft, type GuidanceDraft } from '../../lib/guidanceDraft';
+import { usePlateMatches } from '../../lib/plateRecipe';
 import { useRecipe, type RecipeDetail } from '../../lib/recipes';
 import { FamilyGuidance, useMomentOptions } from './components/FamilyGuidance';
-import { draftOfEdit, draftOfVariantDraft } from './familyDraft';
+import {
+  draftOfEdit,
+  draftOfVariantDraft,
+  type NewRecipeDraft,
+} from './familyDraft';
 import { FamilyRecipeForm } from './components/FamilyRecipeForm';
 
 /** The draft's guidance with its Pairing links named from the source Recipe (same order). */
 function namedGuidance(
-  draft: FamilyRecipeDraft,
+  draft: Pick<FamilyRecipeDraft, 'guidance'>,
   source: RecipeDetail | undefined,
 ): GuidanceDraft {
   const guidance = toGuidanceDraft(draft.guidance);
@@ -42,35 +54,181 @@ function namedGuidance(
   };
 }
 
-/** "New Recipe": the Family Recipe form, blank; saved as a Base Recipe (no parent). */
+/**
+ * What can be handed to the New Recipe page (react-router `location.state`) to open it filled:
+ * a draft, and the closest Base Recipes to offer as its base. Without `closestBases` the page
+ * saves a Base Recipe and shows no picker.
+ */
+export type NewRecipeState = {
+  draft: NewRecipeDraft;
+  closestBases?: BaseRecipeOption[];
+  /** How many of the closest "Hide Recipes with my Allergies" left out; with it, the picker offers Show. */
+  hiddenByAllergiesCount?: number;
+  /** The page the draft was read from; kept on the Recipe unless the Member removes it. */
+  sourceLink?: string | null;
+  /** The language the page was translated from (a code like "fr"); only kept with the Source Link. */
+  sourceLanguage?: string | null;
+};
+
+const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
+
+/** "New Recipe": the Family Recipe form, blank or filled from a supplied draft; saved as a Base Recipe, or a Variant of the picked base. */
 export function NewRecipePage() {
+  const location = useLocation();
+  // A new navigation (even to this same route) starts the form afresh.
+  return (
+    <NewRecipeContent
+      key={location.key}
+      supplied={suppliedOf(location.state)}
+    />
+  );
+}
+
+/** The route state if it is a supplied draft; anything else is ignored. */
+function suppliedOf(state: unknown): NewRecipeState | null {
+  if (typeof state !== 'object' || state === null) return null;
+  const {
+    draft,
+    closestBases,
+    hiddenByAllergiesCount,
+    sourceLink,
+    sourceLanguage,
+  } = state as Partial<NewRecipeState>;
+  if (typeof draft !== 'object' || draft === null) return null;
+  if (!Array.isArray(draft.lines) || !Array.isArray(draft.steps)) return null;
+  if (!Array.isArray(draft.tips)) return null;
+  if (typeof draft.guidance !== 'object' || draft.guidance === null)
+    return null;
+  if (closestBases !== undefined && !Array.isArray(closestBases)) return null;
+  if (
+    hiddenByAllergiesCount !== undefined &&
+    typeof hiddenByAllergiesCount !== 'number'
+  )
+    return null;
+  // A Source Link that is not a web address would show a Remove button with nothing to remove.
+  if (
+    sourceLink !== undefined &&
+    sourceLink !== null &&
+    !(typeof sourceLink === 'string' && isSourceLink(sourceLink))
+  )
+    return null;
+  if (
+    sourceLanguage !== undefined &&
+    sourceLanguage !== null &&
+    typeof sourceLanguage !== 'string'
+  )
+    return null;
+  return state as NewRecipeState;
+}
+
+function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
+  const [basePick, setBasePick] = useState(noBasePick);
   const create = useCreateFamilyRecipe();
   const momentOptions = useMomentOptions();
+  const [parentId, setParentId] = useState<string | null>(null);
+  // The Member may drop the Source Link before saving, but not change it.
+  const [sourceLink, setSourceLink] = useState(supplied?.sourceLink ?? null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  // "Show" in the hidden-by-Allergies note asks the ranking again, hidden ones too, for the draft as it arrived.
+  const [showHidden, setShowHidden] = useState(false);
+  const revealed = usePlateMatches(
+    {
+      dishTitle: supplied?.draft.title ?? '',
+      ingredientIds: [
+        ...new Set(
+          (supplied?.draft.lines ?? []).flatMap((line) =>
+            line.ingredientId ? [line.ingredientId] : [],
+          ),
+        ),
+      ],
+      showHidden: true,
+    },
+    showHidden,
+  );
+  const suppliedBases = supplied?.closestBases ?? [];
+  const suppliedHidden = supplied?.hiddenByAllergiesCount ?? 0;
+  const closestBases = revealed.data?.matches ?? suppliedBases;
+  const hiddenCount = revealed.data
+    ? revealed.data.hiddenByAllergiesCount
+    : suppliedHidden;
+  // Nothing close and nothing hidden (or not matched yet): no picker, a Base Recipe.
+  const hasBases = suppliedBases.length > 0 || suppliedHidden > 0;
+  const [initial] = useState(() =>
+    supplied ? draftOfVariantDraft(supplied.draft) : emptyDraft(),
+  );
 
   return (
     <>
-      <AppScreenHeader title={t('recipes:family.newRecipeHeading')} />
+      <AppScreenHeader
+        title={t('recipes:family.newRecipeHeading')}
+        titleRef={headingRef}
+      />
       <Stack spacing={2.5}>
+        {hasBases ? (
+          <BaseRecipePicker
+            pick={basePick}
+            onPick={setBasePick}
+            closest={closestBases}
+            loading={showHidden && (revealed.isPending || revealed.isFetching)}
+            hiddenByAllergiesCount={hiddenCount}
+            onShowHidden={() => {
+              // A failed Show leaves the answer in error (it never goes stale): ask again.
+              if (showHidden) {
+                if (revealed.isError) void revealed.refetch();
+                return;
+              }
+              // Keep the current pick: the revealed list may rank it lower or drop it, so it stays offered.
+              const current = closestBases.find((b) => b.id === parentId);
+              setBasePick({
+                ...basePick,
+                chosen: parentId ?? STANDALONE,
+                another: current ?? basePick.another,
+              });
+              setShowHidden(true);
+            }}
+            onChange={setParentId}
+          />
+        ) : null}
+        {sourceLink ? (
+          <RemovableSourceLink
+            href={sourceLink}
+            translatedFrom={supplied?.sourceLanguage}
+            onRemove={() => {
+              setSourceLink(null);
+              // The button unmounts with the row: keep focus on the page.
+              headingRef.current?.focus();
+            }}
+          />
+        ) : null}
         <FamilyRecipeForm
           heading={t('recipes:family.newRecipeHeading')}
           description={t('recipes:family.newRecipeHint')}
-          initial={emptyDraft()}
+          initial={initial}
           saveLabel={t('recipes:family.save')}
           saving={create.isPending}
           error={create.error}
           guidance={{
-            initial: toGuidanceDraft({
-              nutritionNote: null,
-              pairings: [],
-              eatingMoments: [],
-            }),
+            initial: supplied
+              ? namedGuidance(supplied.draft, undefined)
+              : toGuidanceDraft(blankGuidance),
             momentOptions,
           }}
           onSave={(document, guidance) =>
             create.mutate(
-              { parentId: null, document: { ...document, guidance } },
+              {
+                parentId: hasBases ? parentId : null,
+                document: {
+                  ...document,
+                  guidance,
+                  ...(sourceLink ? { sourceLink } : {}),
+                  // The language note belongs to the link: no link, no note.
+                  ...(sourceLink && supplied?.sourceLanguage
+                    ? { sourceLanguage: supplied.sourceLanguage }
+                    : {}),
+                },
+              },
               { onSuccess: (saved) => navigate(`/recipes/${saved.id}`) },
             )
           }
@@ -143,10 +301,16 @@ export function EditFamilyRecipePage() {
   const recipe = query.data;
   /** Bumped after each save so the form reseeds with the new line and Step ids. */
   const [saves, setSaves] = useState(0);
+  /** The Member dropped the Source Link; it is only sent (and gone) once they save. */
+  const [linkRemoved, setLinkRemoved] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
     <>
-      <AppScreenHeader title={recipe?.title ?? t('recipes:title')} />
+      <AppScreenHeader
+        title={recipe?.title ?? t('recipes:title')}
+        titleRef={headingRef}
+      />
       <Stack spacing={3}>
         {query.error ? (
           <Alert>{translateApiError(t, query.error)}</Alert>
@@ -154,6 +318,17 @@ export function EditFamilyRecipePage() {
         {query.isPending ? <Spinner label={t('common:loading')} /> : null}
         {recipe && !recipe.archived ? (
           <>
+            {recipe.sourceLink && !linkRemoved ? (
+              <RemovableSourceLink
+                href={recipe.sourceLink}
+                translatedFrom={recipe.sourceLanguage}
+                onRemove={() => {
+                  setLinkRemoved(true);
+                  // The button unmounts with the row: keep focus on the page.
+                  headingRef.current?.focus();
+                }}
+              />
+            ) : null}
             <FamilyRecipeForm
               // Tip writes refresh `recipe` but must not reset unsaved edits; a save reseeds.
               key={`${recipe.id}-${saves}`}
@@ -166,9 +341,16 @@ export function EditFamilyRecipePage() {
                 recipe.tips.filter((tip) => tip.stepId === stepId).length
               }
               onSave={(document) =>
-                update.mutate(document, {
-                  onSuccess: () => setSaves((count) => count + 1),
-                })
+                update.mutate(
+                  // `null` clears the link (and its language); leaving it out keeps both.
+                  linkRemoved ? { ...document, sourceLink: null } : document,
+                  {
+                    onSuccess: () => {
+                      setSaves((count) => count + 1);
+                      setLinkRemoved(false);
+                    },
+                  },
+                )
               }
               onCancel={() => navigate(`/recipes/${id}`)}
             />

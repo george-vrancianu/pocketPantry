@@ -192,5 +192,36 @@
     "line_few": "{{count}} rețete folosesc ce expiră curând",
     "line_other": "{{count}} de rețete folosesc ce expiră curând",
     "seeThem": "Vezi-le"
+  },
+  "add": "Adaugă o rețetă",
+  "fromLink": {
+    "menuItem": "Dintr-un link",
+    "heading": "Dintr-un link",
+    "hint": "Lipește linkul unei pagini cu o rețetă. PantryGator o transformă într-o rețetă nouă, pe care o verifici înainte de a o salva.",
+    "textHint": "Lipește textul unei rețete. PantryGator îl transformă într-o rețetă nouă, pe care o verifici înainte de a o salva.",
+    "label": "Linkul rețetei",
+    "pasteSwitch": "Lipește textul în schimb",
+    "useLink": "Folosește un link în schimb",
+    "pasteInstead": "Lipește textul rețetei în schimb",
+    "textLabel": "Textul rețetei",
+    "submit": "Citește rețeta",
+    "reading": "Se citește rețeta…",
+    "duplicate": {
+      "heading": "Deja în rețetele tale",
+      "body": "Acest link este deja una dintre rețetele tale. Deschide-o sau citește pagina din nou pentru a face încă o copie.",
+      "open": "Deschide",
+      "readAgain": "Citește din nou"
+    }
+  },
+  "readingLanguage": {
+    "label": "Limba rețetei",
+    "catalog": "În {{language}}",
+    "source": "Păstrează limba paginii",
+    "sourceText": "Păstrează limba textului"
+  },
+  "sourceLink": {
+    "from": "De pe {{host}} ↗",
+    "remove": "Elimină linkul",
+    "translatedFrom": "Tradusă din {{language}}"
   }
 }

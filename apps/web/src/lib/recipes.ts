@@ -194,6 +194,10 @@ export type RecipeDetail = {
   allergens: RecipeAllergens;
   /** Null when nothing the viewer must avoid is, or might be, in the Recipe. */
   allergyWarning: AllergyWarning | null;
+  /** The page the Recipe was read from, when it was read from a link. */
+  sourceLink: string | null;
+  /** The language a Recipe read from a page was translated from (a lower-case code), or null. */
+  sourceLanguage: string | null;
 };
 
 /** Pickers' options; browsing uses Cuisines and Methods, the Family editor adds Eating Moments. */

@@ -1,4 +1,5 @@
 import {
+  ActionMenu,
   Alert,
   Box,
   PlusIcon,
@@ -63,11 +64,20 @@ export function RecipesPage() {
     <>
       <AppScreenHeader
         title={t('recipes:title')}
-        action={{
-          label: t('recipes:family.newRecipe'),
-          icon: <PlusIcon size={20} />,
-          href: '/recipes/new',
-        }}
+        trailing={
+          <ActionMenu
+            label={t('recipes:add')}
+            tone="accent"
+            icon={<PlusIcon size={20} />}
+            items={[
+              { label: t('recipes:family.newRecipe'), href: '/recipes/new' },
+              {
+                label: t('recipes:fromLink.menuItem'),
+                href: '/recipes/from-link',
+              },
+            ]}
+          />
+        }
       />
       {/* Flex gap leaves the children's margins alone, so the filters can bleed to the screen edges. */}
       <Stack spacing={1.5} useFlexGap>

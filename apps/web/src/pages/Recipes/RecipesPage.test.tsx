@@ -130,6 +130,7 @@ function setup(
     <Routes>
       <Route path="/recipes" element={<RecipesPage />} />
       <Route path="/recipes/new" element={<p>new recipe page</p>} />
+      <Route path="/recipes/from-link" element={<p>link step</p>} />
       <Route path="/recipes/:id" element={<p>detail page</p>} />
     </Routes>,
     { route: '/recipes' },
@@ -181,12 +182,29 @@ describe('RecipesPage', () => {
       expect(rows[1]).toHaveTextContent('Omelette');
     });
 
-    it('opens the New Recipe page from the header plus', async () => {
+    it('offers New Recipe and From a link from the header plus, and opens New Recipe', async () => {
       setup(() => [omelette]);
       await userEvent.click(
-        await screen.findByRole('link', { name: 'New Recipe' }),
+        await screen.findByRole('button', { name: 'Add a Recipe' }),
+      );
+      expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(
+        ['New Recipe', 'From a link'],
+      );
+      await userEvent.click(
+        screen.getByRole('menuitem', { name: 'New Recipe' }),
       );
       expect(screen.getByText('new recipe page')).toBeInTheDocument();
+    });
+
+    it('opens the link step from the header plus', async () => {
+      setup(() => [omelette]);
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Add a Recipe' }),
+      );
+      await userEvent.click(
+        screen.getByRole('menuitem', { name: 'From a link' }),
+      );
+      expect(screen.getByText('link step')).toBeInTheDocument();
     });
 
     it('opens a Recipe when its row is tapped', async () => {

@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Locale } from '../../i18n';
 import type { RecipeDetail } from '../../lib/recipes';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { RecipeDetailPage } from './RecipeDetailPage';
@@ -56,6 +57,8 @@ const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
   allergens: { items: [], uncheckedCount: 0 },
   allergyWarning: null,
+  sourceLink: null,
+  sourceLanguage: null,
   ...over,
 });
 
@@ -63,6 +66,7 @@ function setup(
   detail: RecipeDetail,
   route = `/recipes/${detail.id}`,
   extra: Parameters<typeof stubApi>[0] = {},
+  locale: Locale = 'en',
 ) {
   const { fetchMock, calls } = stubApi({
     [`GET /api/recipes/${detail.id}`]: () => Response.json(detail),
@@ -75,7 +79,7 @@ function setup(
       <Route path="/recipes/:id" element={<RecipeDetailPage />} />
       <Route path="/recipes/:id/edit" element={<p>Edit page</p>} />
     </Routes>,
-    { route },
+    { route, locale },
   );
   return calls;
 }
@@ -117,6 +121,55 @@ describe('RecipeDetailPage', () => {
     const ingredients = screen.getByRole('list', { name: 'Ingredients' });
     expect(within(ingredients).getByText(/Egg/)).toBeInTheDocument();
     expect(within(ingredients).getByText(/optional/)).toBeInTheDocument();
+  });
+
+  it('links a Recipe read from a page to its Source Link', async () => {
+    setup(
+      recipe({
+        owner: 'family',
+        sourceLink: 'https://www.example.com/pancakes',
+      }),
+    );
+    const link = await screen.findByRole('link', {
+      name: 'From example.com ↗',
+    });
+    expect(link).toHaveAttribute('href', 'https://www.example.com/pancakes');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it.each([
+    ['en', 'fr', 'Translated from French'],
+    ['en', 'en', 'Translated from English'],
+    ['ro', 'it', 'Tradusă din italiană'],
+    ['en', 'xx-bogus-code-', 'Translated from xx-bogus-code-'],
+  ] as [Locale, string, string][])(
+    'says a %s-UI Recipe read from a %s page was translated',
+    async (locale, code, note) => {
+      setup(
+        recipe({
+          sourceLink: 'https://www.example.com/pancakes',
+          sourceLanguage: code,
+        }),
+        undefined,
+        {},
+        locale,
+      );
+      expect(await screen.findByText(note, { exact: false })).toBeVisible();
+      expect(screen.getByRole('link', { name: /example\.com/ })).toBeVisible();
+    },
+  );
+
+  it('says nothing of translation when the Recipe has no source language', async () => {
+    setup(recipe({ sourceLink: 'https://www.example.com/pancakes' }));
+    await screen.findByRole('link', { name: 'From example.com ↗' });
+    expect(screen.queryByText(/Translated from/)).toBeNull();
+  });
+
+  it('shows no Source Link on a Recipe without one', async () => {
+    setup(recipe({}));
+    await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+    expect(screen.queryByRole('link', { name: /^From / })).toBeNull();
   });
 
   it('puts the family pill in the H1 of a Family Recipe', async () => {
