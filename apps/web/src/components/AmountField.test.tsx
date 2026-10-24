@@ -132,6 +132,18 @@ describe('AmountField with no unit', () => {
     expect(field()).toHaveFocus();
   });
 
+  it('leaves focus alone when a toggle is tapped and the input never had it', async () => {
+    renderWithProviders(<Harness unit="" scale={null} />);
+    const user = setupUser();
+
+    await user.click(toggle('g'));
+
+    // The tap never takes focus from the input; here the input had none, so the code hands it over
+    // after the unit is chosen (choose() focuses the input), which opens the keyboard on a phone.
+    expect(dropdown('g')).toBeInTheDocument();
+    expect(field()).toHaveFocus();
+  });
+
   it('keeps the typed number when a toggle sets the unit', async () => {
     renderWithProviders(<Harness unit="" start="3" />);
     const user = setupUser();
@@ -204,6 +216,19 @@ describe('AmountField unit dropdown', () => {
     expect(field()).toHaveValue('1500');
     expect(dropdown('g')).toBeInTheDocument();
     expect(field()).toHaveFocus();
+  });
+
+  it('writes a tiny converted amount as plain decimals, never with an exponent', async () => {
+    const onQuantity = vi.fn();
+    renderWithProviders(
+      <Harness unit="g" start="0.0001" scale={null} onQuantity={onQuantity} />,
+    );
+    const user = setupUser();
+
+    await user.click(dropdown('g'));
+    await user.click(entry('kg'));
+
+    expect(onQuantity).toHaveBeenLastCalledWith('0.0000001', undefined);
   });
 
   it('keeps the number when the unit changes to another family', async () => {

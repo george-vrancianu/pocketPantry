@@ -2,6 +2,7 @@ import {
   Box,
   ChevronDownIcon,
   PlusIcon,
+  Popper,
   Typography,
   tokens,
   border,
@@ -51,6 +52,13 @@ const continuesAlias = (alias: string) =>
 // Android IMEs report typing as composition text.
 const TYPED_INPUT_TYPES = new Set(['insertText', 'insertCompositionText']);
 const TYPED_AMOUNT = /^(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|pcs|pc|stk|buc)\.?$/i;
+
+/** A number as plain decimal text: `String` would turn 0.0000001 into "1e-7", which does not parse. */
+const plainNumber = (value: number) =>
+  value.toLocaleString('en-US', {
+    useGrouping: false,
+    maximumFractionDigits: 20,
+  });
 
 /** The strip's height in px, the same for unit toggles and values so the field never jumps. */
 const STRIP_HEIGHT = 40;
@@ -111,6 +119,8 @@ export function AmountField({
   const input = useRef<HTMLInputElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
+  // The input row; the menu opens below it, over the strip.
+  const [row, setRow] = useState<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   // Opened from the keyboard: focus moves into the menu, onto the current unit, and Escape
   // hands it back to the dropdown. Opened by a tap, Escape hands focus to the input.
@@ -179,7 +189,7 @@ export function AmountField({
       value !== null &&
       unitsInFamily(unit).includes(next)
     ) {
-      onQuantityChange(String(convertQuantity(value, unit, next)));
+      onQuantityChange(plainNumber(convertQuantity(value, unit, next)));
     }
     onUnitChange(next);
     setMenuOpen(false);
@@ -305,7 +315,7 @@ export function AmountField({
               {label}
             </Box>
           ) : null}
-          <Box sx={{ display: 'flex', height }}>
+          <Box ref={setRow} sx={{ display: 'flex', height }}>
             <Box
               component="input"
               id={inputId}
@@ -405,7 +415,7 @@ export function AmountField({
               </Box>
             ) : null}
           </Box>
-          {open ? (
+          <Popper open={open} anchorEl={row} placement="bottom-end">
             <Box
               ref={menu}
               id={menuId}
@@ -417,11 +427,6 @@ export function AmountField({
                 else rove(event, 'ArrowUp', 'ArrowDown');
               }}
               sx={{
-                position: 'absolute',
-                // Below the input, over the strip.
-                top: height,
-                right: 0,
-                zIndex: 2,
                 minWidth: 140,
                 display: 'flex',
                 flexDirection: 'column',
@@ -462,7 +467,7 @@ export function AmountField({
                 );
               })}
             </Box>
-          ) : null}
+          </Popper>
           <Box
             onMouseDown={keepFocus}
             onKeyDown={(event: KeyboardEvent<HTMLElement>) =>
@@ -498,7 +503,13 @@ export function AmountField({
                     // "No unit" is the state with none pressed.
                     aria-pressed={false}
                     onClick={() => choose(option)}
-                    sx={{ ...segmentSx(false), flex: 1, px: 0 }}
+                    // Five toggles share the width evenly, down to a 320 px sheet.
+                    sx={{
+                      ...segmentSx(false),
+                      flex: '1 1 0',
+                      minWidth: 0,
+                      px: 0,
+                    }}
                   >
                     {unitLabel(option)}
                   </Box>
