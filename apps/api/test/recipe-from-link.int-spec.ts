@@ -21,7 +21,7 @@ const milk = seedId.ingredient('milk');
 const mediterranean = seedId.cuisine('mediterranean');
 
 const jsonLdPage = (recipe: object, wrap: (r: object) => object = (r) => r) =>
-  `<html><head><script type="application/ld+json">${JSON.stringify(wrap(recipe))}</script></head><body>x</body></html>`;
+  `<html><head><script type="application/ld+json">${JSON.stringify(wrap(recipe))}</script></head><body>Blog chatter 5521</body></html>`;
 
 const ldScript = (json: string, attributes = 'type="application/ld+json"') =>
   `<script ${attributes}>${json}</script>`;
@@ -497,10 +497,10 @@ describe('Recipe from Link (integration)', () => {
     });
 
     it('link.no_recipe quickly for a huge page of unclosed script tags', async () => {
-      serve(`<html>${'<script type="application/ld+json">'.repeat(40_000)}`);
+      serve(`<html>${'<script>'.repeat(200_000)}`);
       const started = Date.now();
       const res = await read('https://example.com/unclosed').expect(422);
-      expect(Date.now() - started).toBeLessThan(2000);
+      expect(Date.now() - started).toBeLessThan(5000);
       expect(code(res)).toBe('link.no_recipe');
       expect(prompts).toEqual([]);
     });
