@@ -281,7 +281,23 @@
     "reading": "Reading {{count}}",
     "ready": "{{count}} ready",
     "review": "Review",
-    "reviewOldest": "Review the oldest",
-    "full": "Review your notes first"
+    "full": "Review your notes first",
+    "sheetTitle": "Voice Inbox",
+    "preview": "Voice Note · {{duration}}",
+    "noList": "No list",
+    "open": "Open",
+    "openCount": "Open ({{count}})",
+    "see": "See",
+    "cancel": "Cancel",
+    "reviewNote": "Review: {{preview}}",
+    "seeNote": "See: {{preview}}",
+    "cancelNote": "Cancel reading: {{preview}}",
+    "state": {
+      "reading": "Being read",
+      "review": "Ready to review",
+      "answers": "Answers ready",
+      "applying": "Applying",
+      "failed": "Could not be read"
+    }
   }
 }

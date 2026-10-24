@@ -156,7 +156,7 @@ describe('the Voice Inbox strip', () => {
     expect(screen.queryByText('2 Voice Notes')).toBeNull();
   });
 
-  it('opens the oldest ready note when several are ready, and Apply removes only that note', async () => {
+  it('opens the oldest ready note from the sheet when several are ready, and Apply removes only that note', async () => {
     renderAt();
     await speak(1);
     await speak(2);
@@ -165,10 +165,14 @@ describe('the Voice Inbox strip', () => {
     await screen.findByText('2 ready');
     expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
 
+    await userEvent.click(screen.getByRole('button', { name: 'Open (2)' }));
+    const sheet = within(await screen.findByRole('dialog'));
     await userEvent.click(
-      screen.getByRole('button', { name: 'Review the oldest' }),
+      sheet.getAllByRole('button', { name: /^Review: / })[0],
     );
-    const dialog = within(await screen.findByRole('dialog'));
+    const dialog = within(
+      await screen.findByRole('dialog', { name: 'Review' }),
+    );
     // The oldest is the first recorded, although the second was answered first.
     await userEvent.click(dialog.getByRole('button', { name: /What I heard/ }));
     expect(await dialog.findByText(/first note/)).toBeVisible();
@@ -181,6 +185,85 @@ describe('the Voice Inbox strip', () => {
     // The other note is still there, ready.
     expect(await screen.findByText('1 Voice Note')).toBeVisible();
     expect(screen.getByText('1 ready')).toBeVisible();
+  });
+
+  it('opens the sheet for any mix but one ready note, with a row per note in recording order', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    await speak();
+    // Nothing ready yet: the strip offers Open, and the sheet lists the notes being read.
+    await userEvent.click(await screen.findByRole('button', { name: 'Open' }));
+    let sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    let rows = sheet.getAllByRole('listitem');
+    expect(rows).toHaveLength(3);
+    rows.forEach((row) => {
+      expect(row).toHaveTextContent(/Voice Note · 0:\d\d/);
+      expect(row).toHaveTextContent('Shopping List');
+      expect(row).toHaveTextContent('Being read');
+      expect(
+        within(row).getByRole('button', { name: /^Cancel/ }),
+      ).toBeVisible();
+    });
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    // One ready note: Review opens it directly, no sheet.
+    answer(0);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Review' }),
+    );
+    expect(await screen.findByRole('dialog', { name: 'Review' })).toBeVisible();
+    expect(screen.queryByRole('dialog', { name: 'Voice Inbox' })).toBeNull();
+  });
+
+  it('shows ready rows with their transcript and Review, and opens that note and closes the sheet', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    answer(0);
+    fake.reads[1].resolve(Response.json(heard('second note'), { status: 201 }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open (2)' }),
+    );
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    const rows = sheet.getAllByRole('listitem');
+    expect(rows[0]).toHaveTextContent('got the bread');
+    expect(rows[1]).toHaveTextContent('second note');
+    expect(rows[1]).toHaveTextContent('Ready to review');
+    expect(
+      within(rows[1]).queryByRole('button', { name: /^Cancel/ }),
+    ).toBeNull();
+
+    await userEvent.click(
+      within(rows[1]).getByRole('button', { name: /^Review/ }),
+    );
+    const dialog = within(await screen.findByRole('dialog'));
+    expect(screen.queryByRole('dialog', { name: 'Voice Inbox' })).toBeNull();
+    await userEvent.click(dialog.getByRole('button', { name: /What I heard/ }));
+    expect(await dialog.findByText(/second note/)).toBeVisible();
+  });
+
+  it('cancels only the read of the row it is on', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    await userEvent.click(await screen.findByRole('button', { name: 'Open' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    await userEvent.click(
+      within(sheet.getAllByRole('listitem')[1]).getByRole('button', {
+        name: /^Cancel/,
+      }),
+    );
+    await waitFor(() => expect(sheet.getAllByRole('listitem')).toHaveLength(1));
+    expect(fake.signals[0].aborted).toBe(false);
+    expect(fake.signals[1].aborted).toBe(true);
   });
 
   it('sends each note with the Default List of the page it was recorded on, whichever page opens it', async () => {
