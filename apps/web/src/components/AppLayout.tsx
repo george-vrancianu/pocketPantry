@@ -7,6 +7,8 @@ import { ApplyMemberTheme } from './ApplyMemberTheme';
 import { AppDock } from './AppDock';
 import { useShowsDockMic, VoiceNote } from './VoiceNote';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
+// PROTOTYPE, throwaway: the Voice Inbox indicator variants (?voiceInbox=A|B|C).
+import { VoiceInboxPrototype } from './voice/prototype-voice-inbox/VoiceInboxPrototype';
 
 /** The line editor, whose tablet layout is a wide table (the overview of cards is not). */
 const isWide = (pathname: string) => pathname.startsWith('/scan/review/');
@@ -30,6 +32,7 @@ export function AppLayout() {
         </PageLayout>
         <VoiceHostSlot />
         <VoiceNote />
+        {import.meta.env.DEV ? <VoiceInboxPrototype /> : null}
         {dock.visible ? <AppDock activeKey={dock.activeKey} /> : null}
       </VoiceHostProvider>
     </>
