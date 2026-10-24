@@ -50,7 +50,7 @@ describe('InfoSheet mode list', () => {
 
 describe('InfoSheet copy', () => {
   it.each([
-    ['en', /tap the shutter\./, /tap the stack at the bottom left/, 'Got it'],
+    ['en', /tap the shutter\./, /tap the photos at the bottom left/, 'Got it'],
     ['ro', /atinge declanșatorul/, /teancul din stânga jos/, 'Am înțeles'],
     ['da', /tryk på udløseren/, /bunken nederst til venstre/, 'Forstået'],
   ])(
