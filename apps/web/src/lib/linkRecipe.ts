@@ -18,6 +18,11 @@ export type RecipeFromLink = {
   closestBases: BaseRecipeOption[];
 };
 
+/** The longest link the link field takes. */
+export const MAX_LINK_LENGTH = 2048;
+/** The longest pasted text the text field takes (the API refuses more). */
+export const MAX_PASTED_TEXT_LENGTH = 50_000;
+
 /** `catalog`: write the Recipe in the Member's Catalog Language; `source`: keep the page's language. */
 export type ReadingLanguage = 'catalog' | 'source';
 

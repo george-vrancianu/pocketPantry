@@ -184,6 +184,7 @@
     "menuItem": "From a link",
     "heading": "From a link",
     "hint": "Paste the link to a page with a recipe. PantryGator reads it into a new Recipe for you to check before saving.",
+    "textHint": "Paste the text of a recipe. PantryGator reads it into a new Recipe for you to check before saving.",
     "label": "Link to the recipe",
     "pasteSwitch": "Paste text instead",
     "useLink": "Use a link instead",
@@ -195,7 +196,8 @@
   "readingLanguage": {
     "label": "Language of the recipe",
     "catalog": "In {{language}}",
-    "source": "Keep the page's language"
+    "source": "Keep the page's language",
+    "sourceText": "Keep the text's language"
   },
   "sourceLink": {
     "from": "From {{host}} ↗",

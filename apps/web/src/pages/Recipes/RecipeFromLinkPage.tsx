@@ -15,7 +15,12 @@ import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
 import { ReadingLanguageChoice } from '../../components/ReadingLanguageChoice';
-import { useReadRecipeLink, type ReadingLanguage } from '../../lib/linkRecipe';
+import {
+  MAX_LINK_LENGTH,
+  MAX_PASTED_TEXT_LENGTH,
+  useReadRecipeLink,
+  type ReadingLanguage,
+} from '../../lib/linkRecipe';
 import { dateLocale } from '../../lib/pantry';
 import type { NewRecipeState } from './FamilyRecipePages';
 
@@ -148,8 +153,8 @@ export function RecipeFromLinkPage() {
         return capMessage(t, i18n.language, read.error.params);
       }
       const reading = READING_ERRORS[read.error.code];
-      if (reading) return t(reading);
       // Pasted text has no page or link to blame.
+      if (reading) return t(mode === 'text' ? `${reading}_text` : reading);
       if (mode === 'text' && read.error.code === 'link.no_recipe') {
         return t('errors:link.no_recipe_text');
       }
@@ -172,19 +177,21 @@ export function RecipeFromLinkPage() {
         aria-label={t('recipes:fromLink.heading')}
       >
         <Typography color="text.secondary">
-          {t('recipes:fromLink.hint')}
+          {t(
+            mode === 'text'
+              ? 'recipes:fromLink.textHint'
+              : 'recipes:fromLink.hint',
+          )}
         </Typography>
-        {read.isError ? (
-          <Alert>
-            <Stack spacing={1} sx={{ alignItems: 'flex-start' }}>
-              <span>{errorMessage()}</span>
-              {offersPaste ? (
-                <Button variant="ghost" onClick={() => switchTo('text')}>
-                  {t('recipes:fromLink.pasteInstead')}
-                </Button>
-              ) : null}
-            </Stack>
-          </Alert>
+        {read.isError ? <Alert>{errorMessage()}</Alert> : null}
+        {offersPaste ? (
+          <Button
+            variant="ghost"
+            onClick={() => switchTo('text')}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            {t('recipes:fromLink.pasteInstead')}
+          </Button>
         ) : null}
         {mode === 'text' ? (
           <TextField
@@ -195,7 +202,7 @@ export function RecipeFromLinkPage() {
             inputRef={field}
             disabled={read.isPending}
             onChange={(event) => setPasted(event.target.value)}
-            slotProps={{ htmlInput: { maxLength: 50000 } }}
+            slotProps={{ htmlInput: { maxLength: MAX_PASTED_TEXT_LENGTH } }}
           />
         ) : (
           <TextField
@@ -207,7 +214,7 @@ export function RecipeFromLinkPage() {
             onChange={(event) => setUrl(event.target.value)}
             slotProps={{
               htmlInput: {
-                maxLength: 2048,
+                maxLength: MAX_LINK_LENGTH,
                 inputMode: 'url',
                 autoCapitalize: 'none',
                 autoCorrect: 'off',
@@ -226,7 +233,11 @@ export function RecipeFromLinkPage() {
             ? t('recipes:fromLink.useLink')
             : t('recipes:fromLink.pasteSwitch')}
         </Button>
-        <ReadingLanguageChoice value={language} onChange={setLanguage} />
+        <ReadingLanguageChoice
+          value={language}
+          onChange={setLanguage}
+          input={mode}
+        />
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
           {read.isPending ? (
             <Box aria-hidden>

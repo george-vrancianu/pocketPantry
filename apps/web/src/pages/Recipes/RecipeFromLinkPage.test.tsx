@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -558,7 +558,7 @@ describe('RecipeFromLinkPage', () => {
       });
       expect(submitButton).toBeDisabled();
       await user.click(
-        screen.getByRole('radio', { name: "Keep the page's language" }),
+        screen.getByRole('radio', { name: "Keep the text's language" }),
       );
       await user.type(textField(), '  2 eggs, whisk and fry  ');
       await user.click(submitButton);
@@ -647,8 +647,9 @@ describe('RecipeFromLinkPage', () => {
         await submit(user, 'https://example.com/a');
         const alert = await screen.findByRole('alert');
         expect(alert).toHaveTextContent(copy);
+        expect(alert).not.toHaveTextContent('Paste the recipe text instead');
         await user.click(
-          within(alert).getByRole('button', {
+          screen.getByRole('button', {
             name: 'Paste the recipe text instead',
           }),
         );
@@ -676,6 +677,45 @@ describe('RecipeFromLinkPage', () => {
         screen.queryByRole('button', { name: 'Paste the recipe text instead' }),
       ).toBeNull();
       expect(textField()).toHaveValue('hello');
+    });
+
+    it('words the hint, the language choice and AI failures for text, not for a page', async () => {
+      const user = userEvent.setup({ delay: null });
+      setup(failing('scan.provider_refused', 502));
+      expect(screen.getByText(/Paste the link to a page/)).toBeVisible();
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      expect(screen.queryByText(/Paste the link/)).toBeNull();
+      expect(screen.getByText(/Paste the text of a recipe/)).toBeVisible();
+      expect(
+        screen.getByRole('radio', { name: "Keep the text's language" }),
+      ).toBeVisible();
+      expect(screen.queryByRole('radio', { name: /page/ })).toBeNull();
+      await user.type(textField(), 'eggs');
+      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent(/could not read a recipe from that text/);
+      expect(alert).not.toHaveTextContent(/page|link/);
+    });
+
+    it('aborts a pending paste read when the Member leaves', async () => {
+      const user = userEvent.setup({ delay: null });
+      const pending = hold(read());
+      const { signals, unmount } = setup({
+        'POST /api/recipes/from-link': pending.handler,
+      });
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      await user.type(textField(), 'eggs');
+      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      await screen.findByRole('status');
+      const signal = signals.at(-1);
+      expect(signal?.aborted).toBe(false);
+      unmount();
+      expect(signal?.aborted).toBe(true);
+      pending.release();
     });
 
     it.each([
