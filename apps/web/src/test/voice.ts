@@ -140,10 +140,11 @@ export function stubVoiceFetch(
       if (init.signal) signals.push(init.signal);
       if (holding) {
         return new Promise<Response>((resolve, reject) => {
+          const aborted = () =>
+            reject(new DOMException('Aborted', 'AbortError'));
+          if (init.signal?.aborted) return aborted();
           reads.push({ body, resolve, reject });
-          init.signal?.addEventListener('abort', () =>
-            reject(new DOMException('Aborted', 'AbortError')),
-          );
+          init.signal?.addEventListener('abort', aborted, { once: true });
         });
       }
     }

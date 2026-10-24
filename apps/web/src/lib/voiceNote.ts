@@ -135,7 +135,7 @@ export type StartBlocker = 'active' | 'busy' | 'kept' | 'capped' | 'none';
 const MAX_TIMEOUT = 2 ** 31 - 1;
 
 /** One Voice Note in the list: its own phase, audio, Default List, Spoken Language, proposal and error. */
-export type VoiceNoteEntry = {
+type VoiceNoteEntry = {
   id: number;
   phase: Exclude<VoicePhase, 'idle' | 'recording'>;
   defaultTarget: VoiceDefaultTarget;
@@ -186,6 +186,7 @@ export function createVoiceNote(
   let nextId = 1;
   let view: VoiceNoteState = { phase: 'idle', defaultTarget: 'shopping' };
   const listeners = new Set<() => void>();
+  const openNote = () => store.notes.find((n) => n.id === store.openId);
   /** The flat view of what is on screen: the recording in progress, else the open Voice Note, else idle. */
   const project = (): VoiceNoteState => {
     const { live, voiceCap } = store;
@@ -197,7 +198,7 @@ export function createVoiceNote(
         voiceCap,
       };
     }
-    const open = store.notes.find((n) => n.id === store.openId);
+    const open = openNote();
     if (!open) {
       return { phase: 'idle', defaultTarget: store.lastTarget, voiceCap };
     }
@@ -209,7 +210,6 @@ export function createVoiceNote(
     view = project();
     for (const listener of listeners) listener();
   };
-  const openNote = () => store.notes.find((n) => n.id === store.openId);
   const phase = (): VoicePhase => view.phase;
 
   /** Puts a new Voice Note in the list and opens it (it replaces the one there: the list holds one for now). */

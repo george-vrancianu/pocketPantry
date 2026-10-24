@@ -32,16 +32,37 @@ describe('the fake voice environment: pending reads', () => {
     await vi.waitFor(() => expect(voiceNote.getState().phase).toBe('failed'));
   });
 
-  it('answers at once again after releaseReads', async () => {
+  it('answers new reads at once after releaseReads, leaving a held one held', async () => {
     const fetchMock = vi.fn(() =>
       Promise.resolve(Response.json({ transcript: 'eggs', actions: [] })),
     );
     const fake = stubVoiceFetch(fetchMock);
     fake.holdReads();
-    fake.releaseReads();
 
     await recordAndSend({ spokenLanguage: 'en', defaultTarget: 'shopping' });
+    await vi.waitFor(() => expect(fake.reads).toHaveLength(1));
+    fake.releaseReads();
+    expect(voiceNote.getState().phase).toBe('reading');
+
+    voiceNote.cancelReading();
+    await recordAndSend({ spokenLanguage: 'en', defaultTarget: 'shopping' });
     await vi.waitFor(() => expect(voiceNote.getState().phase).toBe('review'));
-    expect(fake.reads).toHaveLength(0);
+    expect(fake.reads).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a held read that is resolved after Cancel reading', async () => {
+    const fake = stubVoiceFetch(vi.fn());
+    fake.holdReads();
+
+    await recordAndSend({ spokenLanguage: 'en', defaultTarget: 'shopping' });
+    await vi.waitFor(() => expect(fake.reads).toHaveLength(1));
+    voiceNote.cancelReading();
+
+    expect(fake.signals[0].aborted).toBe(true);
+    expect(voiceNote.getState().phase).toBe('idle');
+    fake.reads[0].resolve(Response.json({ transcript: 'late', actions: [] }));
+    await Promise.resolve();
+    expect(voiceNote.getState().phase).toBe('idle');
   });
 });
