@@ -454,6 +454,37 @@ describe('Voice Note on the Shopping List', () => {
       );
     });
 
+    it('leaves focus in the Review dialog when a row of the sheet opens a note', async () => {
+      let attempt = 0;
+      setup({
+        note: () =>
+          ++attempt === 1
+            ? Promise.resolve(
+                Response.json({ transcript: 'bread', actions: [] }),
+              )
+            : error('voice.provider_unavailable', 502),
+      });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      fireEvent.pointerUp(await hold());
+      await screen.findByRole('button', { name: 'Review' });
+      fireEvent.pointerUp(await hold());
+      await waitFor(() =>
+        expect(screen.getByRole('alert')).toHaveTextContent('1 failed'),
+      );
+      const sheet = await openSheet();
+
+      await userEvent.click(
+        within(sheet).getByRole('button', { name: /^Review/ }),
+      );
+
+      const review = await screen.findByRole('dialog', { name: 'Review' });
+      await waitFor(() =>
+        expect(review).toContainElement(document.activeElement as HTMLElement),
+      );
+      await holdFor(400);
+      expect(review).toContainElement(document.activeElement as HTMLElement);
+    });
+
     it('keeps the mic working while a note has failed', async () => {
       setup({ note: () => error('voice.provider_unavailable', 502) });
       renderInAppLayout(<ShoppingPage />, '/shopping');
@@ -588,7 +619,8 @@ describe('Voice Note on the Shopping List', () => {
       ).toBeVisible();
       await holdFor(3700);
       expect(screen.queryByText("Didn't catch anything, try again")).toBeNull();
-      expect(voiceNote.getState().inbox.total).toBe(0);
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.queryByText('1 Voice Note')).toBeNull();
     });
 
     describe('Voice Cap', () => {
@@ -665,6 +697,7 @@ describe('Voice Note on the Shopping List', () => {
         within(dialog).getByRole('button', { name: /^Discard/ }),
       );
       expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.queryByText('Recording discarded')).toBeNull();
     });
 
     it('offers only Discard, and logs, when the recording format is not supported', async () => {

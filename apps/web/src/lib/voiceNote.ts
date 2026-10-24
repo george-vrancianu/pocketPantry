@@ -923,7 +923,10 @@ export function createVoiceNote(
             ? { ...n, phase: 'reading', error: undefined, rawError: undefined }
             : n,
         ),
-        openId: note.openWhenReady ? store.openId : undefined,
+        openId:
+          store.openId === note.id && !note.openWhenReady
+            ? undefined
+            : store.openId,
       };
       // The server decides whether the Voice Cap still holds; the next refusal sets it again.
       if (capped) {

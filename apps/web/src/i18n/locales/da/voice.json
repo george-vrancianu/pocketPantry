@@ -281,8 +281,6 @@
     "ready": "{{count}} klar",
     "failed_one": "{{count}} mislykkedes",
     "failed_other": "{{count}} mislykkedes",
-    "retry": "Prøv igen",
-    "discard": "Kassér",
     "retryNote": "Prøv igen: {{preview}}",
     "discardNote": "Kassér: {{preview}}",
     "review": "Gennemse",

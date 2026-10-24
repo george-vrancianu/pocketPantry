@@ -281,8 +281,6 @@
     "ready": "{{count}} ready",
     "failed_one": "{{count}} failed",
     "failed_other": "{{count}} failed",
-    "retry": "Retry",
-    "discard": "Discard",
     "retryNote": "Retry: {{preview}}",
     "discardNote": "Discard: {{preview}}",
     "review": "Review",

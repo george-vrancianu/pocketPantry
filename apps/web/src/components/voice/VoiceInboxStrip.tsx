@@ -59,8 +59,8 @@ export function VoiceInboxStrip() {
           onExited={() => {
             setMounted(false);
             setWantSheet(false);
-            // The opener went with the last note.
-            if (!isStripUp(voiceNote.getState())) focusVoiceButton();
+            // The opener went with the last note; otherwise focus is wherever the Member went.
+            if (voiceNote.getState().inbox.total === 0) focusVoiceButton();
           }}
         />
       ) : null}

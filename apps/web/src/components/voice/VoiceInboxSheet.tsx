@@ -8,10 +8,10 @@ import {
 } from '@pocket-pantry/ui';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateErrorCode } from '../../i18n/translateApiError';
 import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 import { formatClock } from '../../lib/voice';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
+import { failureReason } from './failureReason';
 
 const glyph: Record<VoiceInboxPhase, string> = {
   reading: '…',
@@ -41,26 +41,18 @@ export function VoiceInboxSheet({
   const title = useRef<HTMLHeadingElement>(null);
 
   /** Why a note failed, in the words the pill used. */
-  const failureReason = (note: (typeof inbox.notes)[number]) => {
+  const failureText = (note: (typeof inbox.notes)[number]) => {
     if (note.phase !== 'failed') return undefined;
-    switch (note.error) {
-      case 'failed':
-        return note.rawError
-          ? translateErrorCode(t, note.rawError.code, note.rawError.params)
-          : t('voice:send.failedHint');
-      case 'unavailable':
-        return t('voice:unavailable');
-      case 'tooLong':
-        return t('voice:send.tooLong');
-      case 'unsupported':
-        return t('voice:send.unsupported');
-      case 'nothingHeard':
-        return `${t('voice:send.nothing')}. ${t('voice:send.nothingHint')}`;
-      case 'capReached':
-        return `${t('voice:send.cap', { cap: voiceCap?.cap ?? 0 })}. ${t('voice:send.capHint')}`;
-      default:
-        return undefined;
-    }
+    const reason = failureReason(
+      t,
+      note.error,
+      note.rawError,
+      voiceCap?.cap ?? 0,
+    );
+    if (!reason) return undefined;
+    return note.error === 'nothingHeard' || note.error === 'capReached'
+      ? `${reason.title}. ${reason.hint}`
+      : reason.hint;
   };
 
   return (
@@ -97,7 +89,7 @@ export function VoiceInboxSheet({
             : t('voice:inbox.preview', {
                 duration: formatClock(note.durationMs ?? 0),
               });
-          const reason = failureReason(note);
+          const reason = failureText(note);
           const meta = [
             note.defaultTarget === 'none'
               ? t('voice:inbox.noList')
@@ -188,10 +180,12 @@ export function VoiceInboxSheet({
                     aria-label={t('voice:inbox.discardNote', { preview })}
                     onClick={() => {
                       title.current?.focus();
-                      voiceNote.discardFailed(note.id);
+                      // Only a kept recording is "discarded"; otherwise the row just closes.
+                      if (note.canRetry) voiceNote.discardFailed(note.id);
+                      else voiceNote.dismiss(note.id);
                     }}
                   >
-                    {t('voice:inbox.discard')}
+                    {t('voice:send.discard')}
                   </Button>
                   {note.canRetry && note.error !== 'nothingHeard' ? (
                     <Button
@@ -203,7 +197,7 @@ export function VoiceInboxSheet({
                         void voiceNote.retry(note.id);
                       }}
                     >
-                      {t('voice:inbox.retry')}
+                      {t('voice:send.retry')}
                     </Button>
                   ) : null}
                 </Box>
