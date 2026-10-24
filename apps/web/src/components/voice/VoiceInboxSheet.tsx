@@ -1,4 +1,5 @@
 import {
+  ActionMenu,
   Box,
   Button,
   Sheet,
@@ -8,6 +9,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SCAN_LANGUAGES } from '../../i18n/resources';
 import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 import { formatClock } from '../../lib/voice';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
@@ -187,7 +189,28 @@ export function VoiceInboxSheet({
                   >
                     {t('voice:send.discard')}
                   </Button>
-                  {note.canRetry && note.error !== 'nothingHeard' ? (
+                  {note.canRetry ? (
+                    <ActionMenu
+                      label={t('voice:inbox.retryOtherNote', { preview })}
+                      icon={<span aria-hidden>🌐</span>}
+                      items={SCAN_LANGUAGES.map((language) => {
+                        const name = t(`settings:languageNames.${language}`);
+                        return {
+                          label:
+                            language === (note.spokenLanguage ?? spokenLanguage)
+                              ? t('voice:inbox.currentLanguage', {
+                                  language: name,
+                                })
+                              : name,
+                          onClick: () => {
+                            title.current?.focus();
+                            void voiceNote.retry(note.id, language);
+                          },
+                        };
+                      })}
+                    />
+                  ) : null}
+                  {note.canRetry ? (
                     <Button
                       size="sm"
                       shape="pill"

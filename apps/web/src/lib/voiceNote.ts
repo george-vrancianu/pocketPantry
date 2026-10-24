@@ -451,7 +451,7 @@ export function createVoiceNote(
     if (starting) starting.cancelled = true;
   }
 
-  /** Nothing-heard notes leave the Voice Inbox on their own. */
+  /** Setup's nothing-heard note leaves on its own; in the Voice Inbox it stays until retried or discarded. */
   const nothingHeardTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
   /** A read note did not reach Review; `keepRecording` holds the audio for Retry. */
@@ -470,7 +470,10 @@ export function createVoiceNote(
       rawError: options.rawError,
       recording: options.keepRecording ? n.recording : undefined,
     }));
-    if (error === 'nothingHeard') {
+    if (
+      error === 'nothingHeard' &&
+      store.notes.find((n) => n.id === id)?.openWhenReady
+    ) {
       clearTimeout(nothingHeardTimers.get(id));
       nothingHeardTimers.set(
         id,
@@ -902,9 +905,10 @@ export function createVoiceNote(
     /**
      * Sends the kept recording of a failed note again (the open one without an id): the same audio, in
      * the language and for the page it had. Retrying a note that failed for the Voice Cap releases
-     * every note that failed with it.
+     * every note that failed with it. With `spokenLanguage` the note is read in that language
+     * instead, and keeps it.
      */
-    retry(id?: number): Promise<void> {
+    retry(id?: number, spokenLanguage?: ScanLanguage): Promise<void> {
       const note = failedNote(id);
       if (!note?.recording) return Promise.resolve();
       const capped = note.error === 'capReached';
@@ -920,7 +924,21 @@ export function createVoiceNote(
         ...store,
         notes: store.notes.map((n) =>
           ids.includes(n.id)
-            ? { ...n, phase: 'reading', error: undefined, rawError: undefined }
+            ? {
+                ...n,
+                phase: 'reading',
+                error: undefined,
+                rawError: undefined,
+                ...(spokenLanguage && n.id === note.id
+                  ? {
+                      spokenLanguage,
+                      recording: n.recording && {
+                        ...n.recording,
+                        spokenLanguage,
+                      },
+                    }
+                  : {}),
+              }
             : n,
         ),
         openId:
