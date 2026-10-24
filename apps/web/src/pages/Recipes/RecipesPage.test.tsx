@@ -519,6 +519,22 @@ describe('RecipesPage', () => {
       expect(within(row).queryByText('Can Make')).not.toBeInTheDocument();
     });
 
+    it('names the Variant on a near-miss pill whose best match is that Variant', async () => {
+      setup(
+        () => [omelette],
+        [
+          card({
+            canMake: false,
+            missing: { ingredientId: null, name: 'Chives' },
+            recipe: { id: 'f', title: 'Frittata', parentId: 'o' },
+          }),
+        ],
+      );
+      expect(await findRow('Omelette')).toHaveTextContent(
+        'Missing Chives for Frittata',
+      );
+    });
+
     it("prefers a Recipe's own card to its base's, and gives no pill to a Variant row without its own card", async () => {
       const calls = setup(
         (url) => (filtered(url) ? [frittata, gratin] : [omelette]),
