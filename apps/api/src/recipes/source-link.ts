@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const MAX_SOURCE_LINK_LENGTH = 2048;
 
 /** Query parameters that only track where a visitor came from, matched case-insensitively; `utm_*` is dropped too. */
-export const TRACKING_PARAMS: ReadonlySet<string> = new Set([
+const TRACKING_PARAMS: ReadonlySet<string> = new Set([
   'fbclid',
   'gclid',
   'dclid',
@@ -25,10 +25,20 @@ const isTracking = (key: string) => {
   return lower.startsWith('utm_') || TRACKING_PARAMS.has(lower);
 };
 
+/** The decoded name of a raw `key=value` query segment. */
+function keyOf(segment: string): string {
+  const name = segment.split('=', 1)[0].replace(/\+/g, ' ');
+  try {
+    return decodeURIComponent(name);
+  } catch {
+    return name;
+  }
+}
+
 /**
  * The Source Link of a Recipe from Link: the page's address in one canonical
  * form, or null when it is not an http(s) URL: host lower-cased (the URL parser does),
- * fragment and tracking parameters dropped, the other parameters kept in their order.
+ * fragment and tracking parameters dropped, the other parameters kept in their order and as written.
  * Used both when a link is stored and when it is compared (the "Already in your Recipes" check).
  */
 export function normaliseSourceLink(raw: string): string | null {
@@ -41,11 +51,12 @@ export function normaliseSourceLink(raw: string): string | null {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
   if (url.hostname === '') return null;
   url.hash = '';
-  // Rebuilt only when something was dropped, so a link's other parameters keep their exact spelling.
-  if ([...url.searchParams.keys()].some(isTracking)) {
-    const kept = [...url.searchParams].filter(([key]) => !isTracking(key));
-    url.search = new URLSearchParams(kept).toString();
-  }
+  // Segments are kept as written (no re-encoding), so a link shared with tracking still matches one saved without.
+  url.search = url.search
+    .slice(1)
+    .split('&')
+    .filter((segment) => segment !== '' && !isTracking(keyOf(segment)))
+    .join('&');
   const normalised = url.toString();
   return normalised.length <= MAX_SOURCE_LINK_LENGTH ? normalised : null;
 }

@@ -934,6 +934,7 @@ describe('Already in your Recipes (integration)', () => {
   const prompts: StructuredOutputRequest[] = [];
   const fetched: string[] = [];
   let count = 0;
+  let memberCookie: string;
 
   beforeAll(async () => {
     const pageFetcher: PageFetcher = {
@@ -963,17 +964,16 @@ describe('Already in your Recipes (integration)', () => {
     await app.close();
   });
   beforeEach(async () => {
-    member = await freshMember();
+    memberCookie = await newCookie();
+    member = client(app, memberCookie, '/api/recipes');
     prompts.length = 0;
     fetched.length = 0;
   });
 
+  const newCookie = () =>
+    signUp(app, `dup-${stamp}-${++count}@example.com`, 'D');
   const freshMember = async () =>
-    client(
-      app,
-      await signUp(app, `dup-${stamp}-${++count}@example.com`, 'D'),
-      '/api/recipes',
-    );
+    client(app, await newCookie(), '/api/recipes');
   const save = async (who: typeof member, sourceLink: string) => {
     const res = await who
       .post('', {
@@ -1027,11 +1027,58 @@ describe('Already in your Recipes (integration)', () => {
       'https://example.com/soup?id=1&utm_source=mail&utm_MEDIUM=x',
       'https://example.com/soup?fbclid=abc&id=1',
       'https://example.com/soup?id=1&gclid=abc&msclkid=1&_ga=2.1',
+      'https://example.com/soup?id=1&',
+      'https://example.com/soup?id=1&utm_source=x&',
     ]) {
       const res = await read(variant).expect(200);
       expect(res.body).toEqual({ kind: 'duplicate', recipeId: saved.id });
     }
     expectUntouched();
+  });
+
+  it('keeps the other parameters exactly as written when dropping tracking', async () => {
+    const saved = await save(
+      member,
+      'https://example.com/soup?q=a%20b&flag&t=~x&s=a/b',
+    );
+    const res = await read(
+      'https://example.com/soup?q=a%20b&flag&utm_source=x&t=~x&gclid=1&s=a/b',
+    ).expect(200);
+    expect(res.body).toEqual({ kind: 'duplicate', recipeId: saved.id });
+  });
+
+  it('drops a bare trailing question mark', async () => {
+    const saved = await save(member, 'https://example.com/plain?');
+    expect(saved.sourceLink).toBe('https://example.com/plain');
+    const res = await read('https://example.com/plain?utm_source=x').expect(
+      200,
+    );
+    expect(res.body).toEqual({ kind: 'duplicate', recipeId: saved.id });
+  });
+
+  it('finds the Recipe saved from a draft, by the submitted link and not the final one', async () => {
+    const drafted = (
+      await read('https://Example.com/pie?utm_source=a#x').expect(200)
+    ).body as LinkReadResult;
+    if (drafted.kind !== 'draft') throw new Error('expected a draft');
+    expect(drafted.sourceLink).toBe('https://example.com/pie');
+    const saved = await save(member, drafted.sourceLink);
+    const again = await read('https://example.com/pie?fbclid=z').expect(200);
+    expect(again.body).toEqual({ kind: 'duplicate', recipeId: saved.id });
+  });
+
+  it('is shared by every Member of the Family', async () => {
+    const saved = await save(member, 'https://example.com/soup');
+    const family = (
+      await client(app, memberCookie, '/api/family').get('').expect(200)
+    ).body as { inviteCode: string };
+    const secondCookie = await newCookie();
+    const second = client(app, secondCookie, '/api/recipes');
+    await client(app, secondCookie, '/api/family')
+      .post('/join', { code: family.inviteCode })
+      .expect(201);
+    const res = await read('https://example.com/soup', second).expect(200);
+    expect(res.body).toEqual({ kind: 'duplicate', recipeId: saved.id });
   });
 
   it('treats a link with another path or a real parameter as new', async () => {
