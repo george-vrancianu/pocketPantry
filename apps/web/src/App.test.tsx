@@ -108,7 +108,7 @@ describe('App shell', () => {
     expect(
       screen.getByRole('heading', { name: 'Pantry', level: 1 }),
     ).toBeInTheDocument();
-    // The Dock's Home tab is the only way back to the Dashboard (ADR 0026).
+    // The Dock's Home tab is the only way back to the Dashboard (ADR 0027).
     expect(screen.getAllByRole('link', { name: 'Home' })).toHaveLength(1);
     expect(within(dock).getByRole('link', { name: 'Home' })).toHaveAttribute(
       'href',
