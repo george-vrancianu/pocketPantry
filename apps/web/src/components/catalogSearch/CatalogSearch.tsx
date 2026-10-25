@@ -40,6 +40,8 @@ export type CatalogSearchProps = {
   onQueryChange?: (query: string) => void;
   /** Accessible name of the input and its listbox; defaults to the generic search label. */
   label?: string;
+  /** Placeholder of the empty field; defaults to the generic one. */
+  placeholder?: string;
   /** Id of an element that describes the input. */
   describedBy?: string;
   /** Show the default unit as a chip on each row (default true). */
@@ -88,6 +90,7 @@ export function CatalogSearch({
   autoFocus,
   onQueryChange,
   label,
+  placeholder,
   describedBy,
   showUnit = true,
   selected = null,
@@ -321,6 +324,7 @@ export function CatalogSearch({
       <SearchField
         inputRef={inputRef}
         label={name}
+        placeholder={placeholder}
         value={query}
         onChange={change}
         onKeyDown={keyDown}

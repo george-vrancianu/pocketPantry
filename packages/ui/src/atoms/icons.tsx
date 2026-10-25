@@ -31,6 +31,7 @@ import {
   Equal,
   Lock,
   Camera,
+  ScanBarcode,
   Globe,
   ImagePlus,
   ReceiptText,
@@ -331,6 +332,8 @@ export const EqualIcon = lucide(Equal);
 export const LockIcon = lucide(Lock);
 /** The Dock's stacked Camera/Mic button: open the camera. */
 export const CameraIcon = lucide(Camera);
+/** Add to Pantry quick row: "Scan barcode". */
+export const ScanBarcodeIcon = lucide(ScanBarcode);
 /** Scan camera: the Scan Language chip's globe. */
 export const GlobeIcon = lucide(Globe);
 /** Explore: the header pill, the "+" menu item and the empty Recipes page. */

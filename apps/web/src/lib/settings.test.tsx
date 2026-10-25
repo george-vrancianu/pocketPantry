@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stubApi } from '../test/render';
+import { popularToStartQueryKey } from './queryKeys';
 import {
   preferencesQueryKey,
   useSaveLanguagePreference,
@@ -32,6 +33,7 @@ function setup(answer: Partial<MemberPreferences>) {
   queryClient.setQueryData(preferencesQueryKey, stored);
   queryClient.setQueryData(['pantry'], { batches: [], runningLow: [] });
   queryClient.setQueryData(['shopping-list'], {});
+  queryClient.setQueryData(popularToStartQueryKey('en'), { ingredients: [] });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
@@ -39,14 +41,16 @@ function setup(answer: Partial<MemberPreferences>) {
     ['pantry', 'shopping-list'].map(
       (key) => queryClient.getQueryState([key])?.isInvalidated,
     );
-  return { wrapper, named };
+  const popularStale = () =>
+    queryClient.getQueryState(popularToStartQueryKey('en'))?.isInvalidated;
+  return { wrapper, named, popularStale };
 }
 
 describe('saving a language Preference', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('refetches the Catalog names when the effective Catalog Language changed', async () => {
-    const { wrapper, named } = setup({
+    const { wrapper, named, popularStale } = setup({
       catalogLanguage: 'ro',
       effectiveCatalogLanguage: 'ro',
     });
@@ -58,6 +62,7 @@ describe('saving a language Preference', () => {
     await act(() => result.current.mutateAsync('ro'));
 
     expect(named()).toEqual([true, true]);
+    expect(popularStale()).toBe(true);
   });
 
   it('leaves the Catalog names alone on a Scan Language save', async () => {

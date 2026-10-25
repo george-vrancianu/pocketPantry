@@ -24,12 +24,13 @@ export function stubPantry() {
 
 /** Opens the add-Batch camera overlay from the Pantry in `mode`; returns the user. */
 export async function openOverlay(mode: 'product' | 'barcode') {
-  localStorage.setItem('pocket-pantry.camera-overlay-mode', mode);
   const user = userEvent.setup();
   renderWithProviders(<PantryPage />);
   await user.click(await screen.findByRole('button', { name: 'Add batch' }));
   await user.click(
-    screen.getByRole('button', { name: 'Fill from the camera' }),
+    screen.getByRole('button', {
+      name: mode === 'product' ? 'Take a photo' : 'Scan barcode',
+    }),
   );
   return user;
 }
