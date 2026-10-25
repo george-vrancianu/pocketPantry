@@ -3,7 +3,7 @@ import {
   Button,
   color,
   displayType,
-  GatorImage,
+  Gator,
   MicIcon,
   radius,
   ReceiptIcon,
@@ -122,7 +122,12 @@ export function AllSetPage() {
           {t('allSet.bubble')}
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: '28px' }}>
-          <GatorImage mood="proud" size={270} alt={gatorAlt('proud')} />
+          <Gator
+            mood="proud"
+            size={270}
+            loop="signature"
+            alt={gatorAlt('proud')}
+          />
         </Box>
 
         {counts.batches > 0 || counts.shoppingItems > 0 ? (
