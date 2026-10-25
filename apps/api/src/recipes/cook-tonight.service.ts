@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
@@ -59,9 +59,18 @@ export class CookTonightService {
     if (qualifying.length === 0)
       return { cards: [], hiddenByAllergiesCount: 0 };
 
+    // A Family Variant of a Catalog Base is grouped under the Family's live copy of that Base.
+    const copyOf = await this.liveCopyIds(
+      familyId,
+      query.scope === 'family'
+        ? qualifying.flatMap((r) => (r.parentId ? [r.parentId] : []))
+        : [],
+    );
     const groups = new Map<string, RecipeRow[]>();
     for (const row of qualifying) {
-      const key = row.parentId ?? row.id;
+      const key = row.parentId
+        ? (copyOf.get(row.parentId) ?? row.parentId)
+        : row.id;
       groups.set(key, [...(groups.get(key) ?? []), row]);
     }
     // Bases that are not themselves candidates (archived) still title the card.
@@ -165,6 +174,25 @@ export class CookTonightService {
         };
       }),
     };
+  }
+
+  /** The Family's live copy of each Catalog Recipe in `ids`, by the Catalog Recipe's id. */
+  private async liveCopyIds(
+    familyId: string,
+    ids: string[],
+  ): Promise<Map<string, string>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.database
+      .select({ id: recipes.id, copiedFromId: recipes.copiedFromId })
+      .from(recipes)
+      .where(
+        and(
+          eq(recipes.familyId, familyId),
+          inArray(recipes.copiedFromId, [...new Set(ids)]),
+          isNull(recipes.archivedAt),
+        ),
+      );
+    return new Map(rows.map((r) => [r.copiedFromId!, r.id]));
   }
 
   /** Display names, in `locale`, of the Ingredients the near-miss cards are short of. */

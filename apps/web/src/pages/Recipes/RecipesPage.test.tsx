@@ -312,14 +312,84 @@ describe('RecipesPage', () => {
       );
     });
 
-    it('labels a Variant with its Base Recipe only while filtering', async () => {
-      setup(() => [frittata]);
-      expect(await findRow('Frittata')).not.toHaveTextContent('Variant of');
+    it('labels a Variant with its Base Recipe while filtering', async () => {
+      setup((url) => (filtered(url) ? [frittata, omelette] : [omelette]));
+      await findRow('Omelette');
 
       await userEvent.click(await chip('Italian'));
       expect(await findRow('Frittata', MATCHES)).toHaveTextContent(
         'Variant of Omelette',
       );
+    });
+
+    it('asks for the Family scope only, in the list and in Cook Tonight', async () => {
+      const cookTonightUrls: string[] = [];
+      const calls = setup(
+        () => [omelette],
+        (url) => {
+          cookTonightUrls.push(url.search);
+          return [];
+        },
+      );
+      await findRow('Omelette');
+      await userEvent.click(await chip('Italian'));
+      await waitFor(() =>
+        expect(lastQuery(calls).get('cuisineId')).toBe('c-it'),
+      );
+      const lists = calls.filter((c) => c.key === 'GET /api/recipes');
+      expect(lists.length).toBeGreaterThan(1);
+      for (const call of lists) {
+        expect(new URLSearchParams(call.search).get('scope')).toBe('family');
+      }
+      await waitFor(() => expect(cookTonightUrls.length).toBeGreaterThan(0));
+      for (const search of cookTonightUrls) {
+        expect(new URLSearchParams(search).get('scope')).toBe('family');
+      }
+    });
+
+    describe('Variants', () => {
+      const copy = item({
+        id: 'copy',
+        title: 'Omelette',
+        owner: 'family',
+        copiedFromId: 'o',
+      });
+      const ownVariant = (parentId: string, over: Partial<RecipeListItem>) =>
+        item({
+          id: 'v',
+          title: 'Frittata',
+          owner: 'family',
+          parentId,
+          base: { id: parentId, title: 'Omelette' },
+          ...over,
+        });
+
+      it("groups a Family Variant under the Family's copy of its Catalog Base", async () => {
+        setup(() => [copy, ownVariant('o', {})]);
+        const row = await findRow('Omelette');
+        expect(row).toHaveTextContent('1 Variant');
+        const list = screen.getByRole('list', { name: ALL });
+        expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+        expect(within(list).queryByText('Frittata')).not.toBeInTheDocument();
+      });
+
+      it('groups a Variant under a Family Base it was made from', async () => {
+        const base = item({ id: 'fb', title: 'Omelette', owner: 'family' });
+        setup(() => [base, ownVariant('fb', {})]);
+        expect(await findRow('Omelette')).toHaveTextContent('1 Variant');
+        expect(
+          within(screen.getByRole('list', { name: ALL })).getAllByRole(
+            'listitem',
+          ),
+        ).toHaveLength(1);
+      });
+
+      it('lists a Variant without a copy of its Base as its own row, "Variant of {base}"', async () => {
+        setup(() => [ownVariant('o', {})]);
+        expect(await findRow('Frittata')).toHaveTextContent(
+          'Variant of Omelette',
+        );
+      });
     });
   });
 

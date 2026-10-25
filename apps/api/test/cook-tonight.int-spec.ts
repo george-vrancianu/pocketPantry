@@ -63,6 +63,7 @@ describe('Cook Tonight (integration)', () => {
     opts: {
       familyId?: string | null;
       parentId?: string;
+      copiedFromId?: string;
       archived?: boolean;
       title?: string;
     } = {},
@@ -72,6 +73,7 @@ describe('Cook Tonight (integration)', () => {
       id,
       familyId: opts.familyId ?? null,
       parentId: opts.parentId ?? null,
+      copiedFromId: opts.copiedFromId ?? null,
       title: opts.title ?? `Tonight ${stamp}-${++n}`,
       servings: 2,
       archivedAt: opts.archived ? new Date() : null,
@@ -428,6 +430,29 @@ describe('Cook Tonight (integration)', () => {
       expect(catalog).toHaveLength(1);
       expect([base, catalogVariant]).toContain(catalog[0].recipe.id);
       expect(catalog[0].recipe.owner).toBe('catalog');
+    });
+
+    it('groups a Family Variant under the Family copy of its Catalog Base on family, one card', async () => {
+      const line = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];
+      const base = await makeRecipe(line);
+      const copy = await makeRecipe(line, {
+        familyId: anaFamily,
+        copiedFromId: base,
+        title: `Copy ${stamp}-s5`,
+      });
+      const familyVariant = await makeRecipe(line, {
+        parentId: base,
+        familyId: anaFamily,
+        title: `Fam Variant ${stamp}-s6`,
+      });
+      await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+
+      const cards = await cardsIn('family');
+      expect(cards.filter((c) => c.base.id === base)).toHaveLength(0);
+      const grouped = cards.filter((c) => c.base.id === copy);
+      expect(grouped).toHaveLength(1);
+      expect([copy, familyVariant]).toContain(grouped[0].recipe.id);
+      expect(grouped[0].otherVariantsCount).toBe(1);
     });
 
     it('keeps best match first inside a scope', async () => {
