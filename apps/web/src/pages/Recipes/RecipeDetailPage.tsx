@@ -121,12 +121,7 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
   }
   // A Catalog Recipe opens as the Family's copy, else as its preview.
   if (!preview && recipe && recipe.owner === 'catalog') {
-    return (
-      <Navigate
-        replace
-        to={catalogRecipeHref(recipe.id, recipe.familyCopyId)}
-      />
-    );
+    return <Navigate replace to={catalogRecipeHref(recipe)} />;
   }
   return (
     <>

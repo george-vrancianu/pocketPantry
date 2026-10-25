@@ -143,11 +143,7 @@ function CookCard({ card }: { card: CookTonightCard }) {
   return (
     <Box
       component={Link}
-      to={
-        recipe.owner === 'catalog'
-          ? catalogRecipeHref(recipe.id, recipe.familyCopyId)
-          : `/recipes/${recipe.id}`
-      }
+      to={catalogRecipeHref(recipe)}
       aria-label={name}
       sx={{
         display: 'block',

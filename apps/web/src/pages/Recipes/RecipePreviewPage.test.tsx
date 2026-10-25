@@ -71,7 +71,7 @@ const spicy: RecipeDetail = {
   id: 'spicy',
   parentId: 'soup',
   title: 'Spicy soup',
-  base: { id: 'soup', title: 'Soup', archived: false },
+  base: { id: 'soup', title: 'Soup', archived: false, familyCopyId: null },
   variants: [],
 };
 

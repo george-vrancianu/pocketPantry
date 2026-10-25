@@ -223,7 +223,6 @@ export async function loadAdminDetail(
   };
 }
 
-/** Who owns the Recipe: the Catalog or a Family. */
 /** The Family's live copy of each Catalog Recipe it has added, by source id. */
 export async function liveCopiesOf(
   executor: Executor,
@@ -244,6 +243,7 @@ export async function liveCopiesOf(
   return new Map(rows.map((r) => [r.copiedFromId!, r.id]));
 }
 
+/** Who owns the Recipe: the Catalog or a Family. */
 export const ownerOf = (row: Pick<RecipeRow, 'familyId'>): RecipeOwner =>
   row.familyId === null ? 'catalog' : 'family';
 

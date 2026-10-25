@@ -83,11 +83,10 @@ export function RecipeHero({
         ) : null}
         {recipe.base ? (
           <Link
-            href={
-              preview
-                ? catalogRecipeHref(recipe.base.id, null)
-                : `/recipes/${recipe.base.id}`
-            }
+            href={catalogRecipeHref({
+              ...recipe.base,
+              owner: 'catalog',
+            })}
             underline="none"
             sx={{
               display: 'inline-flex',

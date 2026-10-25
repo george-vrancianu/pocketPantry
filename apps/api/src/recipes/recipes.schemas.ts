@@ -530,7 +530,13 @@ export type CompactAllergyWarning = {
  */
 export type RecipeDetail = ResolvedRecipe & {
   /** Null on a Base Recipe. */
-  base: { id: string; title: string; archived: boolean } | null;
+  base: {
+    id: string;
+    title: string;
+    archived: boolean;
+    /** The Family's live copy of a Catalog base, else null. */
+    familyCopyId: string | null;
+  } | null;
   /** The live Variants of a Base Recipe, ordered by title; empty on a Variant. */
   variants: RecipeVariantItem[];
   /** The Family's live copy of a Catalog Recipe, else null (always null on a Family Recipe). */
@@ -684,5 +690,7 @@ export type PlateMatches = {
 
 /** A Plate Scan's closest-match Base Recipe with the viewer's compact Allergy Warning. */
 export type PlateMatchView = PlateMatch & {
+  /** The Family's live copy of this Catalog Base, else null. */
+  familyCopyId: string | null;
   allergyWarning: CompactAllergyWarning | null;
 };

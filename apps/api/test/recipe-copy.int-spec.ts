@@ -458,6 +458,9 @@ describe('Add to Family (integration)', () => {
     const copiedVariant = await copyId(ana, variantId);
     expect(await variantCopy(ana)).toBe(copiedVariant);
     expect(await variantCopy(ben)).toBeNull();
+    const viaVariant = (await ana.get(`/${variantId}?locale=en`).expect(200))
+      .body as { base: { familyCopyId: string | null } };
+    expect(viaVariant.base.familyCopyId).toBe(id);
     const own = (await ana.get(`/${id}?locale=en`).expect(200)).body as {
       familyCopyId: string | null;
     };
@@ -481,5 +484,35 @@ describe('Add to Family (integration)', () => {
       familyCopyId: id,
     });
     expect((await linkOf(ben)).familyCopyId).toBeNull();
+    expect(await linkOf(ana)).toMatchObject({ owner: 'catalog' });
+  });
+
+  it('marks a Pairing link to a Family Recipe as family-owned, with no familyCopyId', async () => {
+    const src = await makeBase();
+    const own = (
+      (
+        await ana
+          .post('', {
+            title: `Copy ${stamp}-own`,
+            servings: 2,
+            locale: 'en',
+            parentId: null,
+            lines: [],
+          })
+          .expect(201)
+      ).body as { id: string }
+    ).id;
+    const copied = await copyId(ana, src.id);
+    await database
+      .update(recipePairings)
+      .set({ linkedRecipeId: own })
+      .where(eq(recipePairings.recipeId, copied));
+    const link = (
+      (await ana.get(`/${copied}?locale=en`).expect(200)).body as {
+        guidance: { pairings: { link: Record<string, unknown> }[] };
+      }
+    ).guidance.pairings[0].link;
+    expect(link).toMatchObject({ type: 'recipe', id: own, owner: 'family' });
+    expect(link.familyCopyId).toBeUndefined();
   });
 });

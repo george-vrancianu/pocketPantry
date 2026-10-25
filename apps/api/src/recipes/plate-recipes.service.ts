@@ -11,7 +11,7 @@ import {
   loadAllergyWarnings,
   loadViewerAllergyContext,
 } from './recipe-allergens';
-import { recipeTitles } from './recipe-view';
+import { liveCopiesOf, recipeTitles } from './recipe-view';
 import type {
   FamilyRecipeEdit,
   FromPlateBody,
@@ -97,9 +97,15 @@ export class PlateRecipesService {
           candidates.filter((c) => !hidden.has(c.id)),
         )
       : closest;
+    const copies = await liveCopiesOf(
+      this.database,
+      familyId,
+      ranked.map((m) => m.id),
+    );
     return {
       matches: ranked.map((m) => ({
         ...m,
+        familyCopyId: copies.get(m.id) ?? null,
         allergyWarning: warnings.get(m.id) ?? null,
       })),
       hiddenByAllergiesCount: hides

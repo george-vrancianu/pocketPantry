@@ -200,7 +200,13 @@ export type RecipeDetail = {
   lines: RecipeDetailLine[];
   steps: RecipeDetailStep[];
   tips: RecipeDetailTip[];
-  base: { id: string; title: string; archived: boolean } | null;
+  base: {
+    id: string;
+    title: string;
+    archived: boolean;
+    /** The Family's live copy of a Catalog base, else null. */
+    familyCopyId: string | null;
+  } | null;
   variants: RecipeVariantItem[];
   /** The Family's live copy of a Catalog Recipe, else null. */
   familyCopyId: string | null;

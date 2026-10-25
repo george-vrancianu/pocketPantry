@@ -34,11 +34,7 @@ function PairingItem({ pairing }: { pairing: DetailPairing }) {
       <Box sx={{ fontSize: 15, fontWeight: 700 }}>
         {link?.type === 'recipe' ? (
           <Link
-            href={
-              link.owner === 'catalog'
-                ? catalogRecipeHref(link.id, link.familyCopyId)
-                : `/recipes/${link.id}`
-            }
+            href={catalogRecipeHref(link)}
             title={link.title}
             underline="none"
             sx={{ color: tokens.color.accent, fontWeight: 700 }}

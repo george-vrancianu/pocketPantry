@@ -11,6 +11,8 @@ export type PlateMatch = {
   id: string;
   title: string;
   score: number;
+  /** The Family's live copy of this Catalog Base, else null. */
+  familyCopyId: string | null;
   allergyWarning: CompactAllergyWarning | null;
 };
 

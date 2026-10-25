@@ -131,7 +131,8 @@ export class RecipeBrowseService {
     ]);
     const { warnings, hidden } = allergy;
     const shown = hides ? matching.filter((r) => !hidden.has(r.id)) : matching;
-    const copies = await this.liveCopies(
+    const copies = await liveCopiesOf(
+      this.database,
       familyId,
       shown.filter((r) => r.familyId === null).map((r) => r.id),
     );
@@ -204,6 +205,12 @@ export class RecipeBrowseService {
           id: baseRow.id,
           title: baseResolved.title,
           archived: baseResolved.archived,
+          familyCopyId:
+            baseRow.familyId === null
+              ? ((
+                  await liveCopiesOf(this.database, familyId, [baseRow.id])
+                ).get(baseRow.id) ?? null)
+              : null,
         },
         diff: diffIngredients(diffLines(baseResolved), diffLines(resolved)),
       };
@@ -225,7 +232,9 @@ export class RecipeBrowseService {
     );
     const familyCopyId =
       row.familyId === null
-        ? ((await this.liveCopies(familyId, [row.id])).get(row.id) ?? null)
+        ? ((await liveCopiesOf(this.database, familyId, [row.id])).get(
+            row.id,
+          ) ?? null)
         : null;
     // A Pairing's Catalog Recipe link also names the Family's live copy of it.
     const pairedIds = resolved.guidance.pairings.flatMap((p) =>
@@ -233,7 +242,7 @@ export class RecipeBrowseService {
         ? [p.link.id]
         : [],
     );
-    const pairedCopies = await this.liveCopies(familyId, pairedIds);
+    const pairedCopies = await liveCopiesOf(this.database, familyId, pairedIds);
     const guidance = {
       ...resolved.guidance,
       pairings: resolved.guidance.pairings.map((p) =>
@@ -316,7 +325,8 @@ export class RecipeBrowseService {
         ),
       );
     const titles = await recipeTitles(this.database, rows, locale);
-    const copies = await this.liveCopies(
+    const copies = await liveCopiesOf(
+      this.database,
       familyId,
       rows.filter((r) => r.familyId === null).map((r) => r.id),
     );
@@ -336,14 +346,6 @@ export class RecipeBrowseService {
         familyCopyId: copies.get(row.id) ?? null,
       }))
       .sort((a, b) => byTitle(locale)(a, b) || a.id.localeCompare(b.id));
-  }
-
-  /** The Family's live copy of each Catalog Recipe it has added, by source id. */
-  private async liveCopies(
-    familyId: string,
-    sourceIds: string[],
-  ): Promise<Map<string, string>> {
-    return liveCopiesOf(this.database, familyId, sourceIds);
   }
 
   private async variantCounts(

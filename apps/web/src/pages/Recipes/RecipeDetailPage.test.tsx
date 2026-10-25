@@ -249,12 +249,17 @@ describe('RecipeDetailPage', () => {
           id: 'f',
           title: 'Frittata',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
         }),
       );
       expect(
         await screen.findByRole('link', { name: /Variant of Omelette/ }),
-      ).toHaveAttribute('href', '/recipes/o');
+      ).toHaveAttribute('href', '/recipes/explore/o');
     });
   });
 
@@ -287,7 +292,7 @@ describe('RecipeDetailPage', () => {
     ).closest('section')!;
     expect(
       within(section).getByRole('link', { name: 'Frittata' }),
-    ).toHaveAttribute('href', '/recipes/f');
+    ).toHaveAttribute('href', '/recipes/explore/f');
     expect(within(section).getByText(/Italian/)).toBeInTheDocument();
     expect(within(section).getByText(/Baking/)).toBeInTheDocument();
   });
@@ -338,7 +343,12 @@ describe('RecipeDetailPage', () => {
         id: 'f',
         title: 'Frittata',
         parentId: 'o',
-        base: { id: 'o', title: 'Omelette', archived: false },
+        base: {
+          id: 'o',
+          title: 'Omelette',
+          archived: false,
+          familyCopyId: null,
+        },
         diff: {
           added: [entry('a1', 'Feta', 100, 'g')],
           removed: [entry('r1', 'Butter', 20, 'g')],
@@ -352,7 +362,7 @@ describe('RecipeDetailPage', () => {
     const back = await screen.findByRole('link', {
       name: /Variant of Omelette/,
     });
-    expect(back).toHaveAttribute('href', '/recipes/o');
+    expect(back).toHaveAttribute('href', '/recipes/explore/o');
     const section = screen
       .getByRole('heading', { name: "What's different" })
       .closest('section')!;
@@ -418,7 +428,12 @@ describe('RecipeDetailPage', () => {
     setup(
       recipe({
         parentId: 'o',
-        base: { id: 'o', title: 'Omelette', archived: false },
+        base: {
+          id: 'o',
+          title: 'Omelette',
+          archived: false,
+          familyCopyId: null,
+        },
         diff: { added: [entry('a1', 'Feta')], removed: [], swapped: [] },
         guidance: {
           nutritionNote: 'Rich in fat.',
@@ -660,7 +675,12 @@ describe('RecipeDetailPage', () => {
     setup(
       recipe({
         parentId: 'o',
-        base: { id: 'o', title: 'Omelette', archived: false },
+        base: {
+          id: 'o',
+          title: 'Omelette',
+          archived: false,
+          familyCopyId: null,
+        },
       }),
     );
     await openTab(user, 'About');
@@ -837,7 +857,12 @@ describe('RecipeDetailPage', () => {
       setup(
         recipe({
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
           diff: {
             added: [entry('a1', 'Feta')],
             removed: [entry('r1', 'Butter')],
@@ -866,7 +891,12 @@ describe('RecipeDetailPage', () => {
       setup(
         recipe({
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
           diff: { added: [], removed: [], swapped: [] },
         }),
       );
@@ -921,7 +951,12 @@ describe('RecipeDetailPage', () => {
           id: 'g',
           owner: 'family',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
         }),
       );
       const button = await screen.findByRole('button', {
@@ -940,7 +975,12 @@ describe('RecipeDetailPage', () => {
           id: 'g',
           owner: 'family',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
         }),
       );
       const menu = await openMenu(user);
@@ -1014,7 +1054,12 @@ describe('RecipeDetailPage', () => {
           id: 'g',
           owner: 'family',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
           lines: [
             {
               id: 'l9',
@@ -1087,7 +1132,12 @@ describe('RecipeDetailPage', () => {
         recipe({
           id: 'v',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: true },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: true,
+            familyCopyId: null,
+          },
         }),
       );
       await screen.findByRole('heading', { level: 1, name: /Omelette/ });
@@ -1101,7 +1151,12 @@ describe('RecipeDetailPage', () => {
           id: 'g',
           owner: 'family',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
         }),
         '/recipes/g',
         {

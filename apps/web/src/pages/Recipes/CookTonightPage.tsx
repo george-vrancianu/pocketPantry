@@ -78,11 +78,7 @@ function CardSection({
             recipe={baseRow(card)}
             card={card}
             filtering={false}
-            to={
-              card.recipe.owner === 'catalog'
-                ? catalogRecipeHref(card.recipe.id, card.recipe.familyCopyId)
-                : `/recipes/${card.recipe.id}`
-            }
+            to={catalogRecipeHref(card.recipe)}
           />
         ))}
       </Box>

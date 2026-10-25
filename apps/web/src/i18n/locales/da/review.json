@@ -171,6 +171,8 @@
     "base": "Grundopskrift",
     "loading": "Finder grundopskrifter…",
     "closest": "{{title}} (nærmeste)",
+    "previewLabel": "Vis {{title}}",
+    "preview": "Vis",
     "standalone": "Selvstændig opskrift (uden grundopskrift)",
     "search": "Find en anden grundopskrift",
     "cancel": "Annuller",
