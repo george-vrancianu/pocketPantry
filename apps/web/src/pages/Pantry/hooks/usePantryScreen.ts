@@ -50,11 +50,14 @@ export function usePantryScreen() {
   const { mutateAsync: sendDelete } = useDeleteBatch();
   const removal = useDeferredRemoval(['pantry'], sendDelete);
   const { hiddenIds } = removal;
-  // The Add batch form replaces the list while open; `from` is the row that opened it, if any.
+  // The Add to Pantry sheet opens over the list; `start` is what it begins with.
+  // `open` is separate from the rest so the sheet keeps its start while it slides away.
   const [adding, setAdding] = useState<{
+    open: boolean;
     start?: AddBatchStart;
-    from?: OpenIngredientKey;
-  } | null>(null);
+    /** A shelf card's Location: every pick in the visit goes there. */
+    location?: StorageLocation;
+  }>({ open: false });
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PantryFilter>('all');
   // One open Ingredient for the whole page: opening another closes it, in any Location.
@@ -68,6 +71,9 @@ export function usePantryScreen() {
     filter === 'all'
       ? searched
       : searched.filter((batch) => batch.location === filter);
+
+  const liveAll = all.filter(live);
+  const liveShown = shown.filter(live);
 
   const sections = groupByLocation(shown).map((group) => ({
     location: group.location,
@@ -106,26 +112,44 @@ export function usePantryScreen() {
     filter,
     setFilter,
     isLoading: batches.isPending,
-    isEmpty: batches.isSuccess && all.length === 0,
-    noMatches: batches.isSuccess && all.length > 0 && shown.length === 0,
+    // No Batches at all (Expired ones count). A Batch pending its delete is already gone, so the last
+    // one's removal shows this while its Undo toast is up.
+    isEmpty: batches.isSuccess && liveAll.length === 0,
+    // A Location filter with none (and no search) shows that Location's shelf card.
+    emptyShelf:
+      batches.isSuccess &&
+      liveAll.length > 0 &&
+      liveShown.length === 0 &&
+      query === '' &&
+      filter !== 'all'
+        ? filter
+        : null,
+    noMatches:
+      batches.isSuccess &&
+      liveAll.length > 0 &&
+      liveShown.length === 0 &&
+      !(query === '' && filter !== 'all'),
     error: batches.error ? translateApiError(t, batches.error) : null,
     today,
-    adding: adding !== null,
-    /** What the open Add batch form starts with: nothing (the header "+") or a row's Ingredient. */
-    addStart: adding?.start,
-    /** The row whose Add batch button opened the form, for focus to go back to. */
-    addingFrom: adding?.from,
-    startAdding: () => setAdding({}),
+    adding: adding.open,
+    /** The Location a shelf card's "+" presets for the sheet's picks. */
+    addLocation: adding.location,
+    /** What the Add to Pantry sheet starts with: nothing (the header "+") or a row's Ingredient. */
+    addStart: adding.start,
+    startAdding: () => setAdding({ open: true }),
+    /** A shelf card's "+": the sheet with that Location preset. */
+    startAddingAt: (location: StorageLocation) =>
+      setAdding({ open: true, location }),
     /** Add batch from an open card: its Ingredient picked, or its Unmatched name typed in. */
     startAddingTo: (row: PantryRow) =>
       setAdding({
+        open: true,
         start:
           row.ingredientId === null
             ? { unmatchedName: row.name }
             : { ingredient: { id: row.ingredientId, name: row.name } },
-        from: row.openKey,
       }),
-    stopAdding: () => setAdding(null),
+    stopAdding: () => setAdding((current) => ({ ...current, open: false })),
     /** Open the Ingredient, closing any other; or close it if it is the open one. */
     toggleOpen: (key: OpenIngredientKey) =>
       setOpenKey((current) => (current === key ? null : key)),

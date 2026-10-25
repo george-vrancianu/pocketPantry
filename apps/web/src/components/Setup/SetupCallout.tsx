@@ -5,21 +5,32 @@ export function SetupCallout({
   title,
   body,
   bottom,
+  width = 'fit-content',
+  role,
+  zIndex,
 }: {
   title: string;
   body: string;
   /** CSS `bottom`: where the pointer's card sits above the capsule. */
   bottom: string | { xs: string; md: string };
+  /** CSS `width`; the default hugs the text. */
+  width?: number | string;
+  /** Set to `status` for a callout that appears over a live page. */
+  role?: 'status';
+  zIndex?: number;
 }) {
   return (
     <Box
+      role={role}
       sx={{
         position: 'fixed',
         left: 0,
         right: 0,
         bottom,
         mx: 'auto',
-        width: 'fit-content',
+        width,
+        zIndex,
+        pointerEvents: 'none',
         maxWidth: 'calc(100% - 32px)',
         boxSizing: 'border-box',
         px: '14px',

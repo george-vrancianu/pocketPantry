@@ -25,6 +25,40 @@ describe('Sheet', () => {
     expect(style.borderRadius).toContain('var(--pp-r-card)');
   });
 
+  describe('slide-up', () => {
+    const slideTransition = (reduce: boolean) => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: reduce && query.includes('reduce'),
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+      }));
+      render(
+        <Sheet open onClose={() => undefined} label="Add items">
+          Body
+        </Sheet>,
+      );
+      const slider = screen
+        .getByRole('dialog', { name: 'Add items' })
+        .closest<HTMLElement>('.MuiDialog-container')!;
+      return slider.style.transition;
+    };
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('slides over 340ms by default', () => {
+      expect(slideTransition(false)).toContain('340ms');
+    });
+
+    it('skips the slide under reduced motion', () => {
+      const transition = slideTransition(true);
+      expect(transition).toContain('0ms');
+      expect(transition).not.toContain('340ms');
+    });
+  });
+
   describe('closing', () => {
     const scrim = () => document.querySelector('.MuiBackdrop-root')!;
 

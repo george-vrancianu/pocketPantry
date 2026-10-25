@@ -68,6 +68,10 @@
     "still": "Still blocked. Allow the microphone in your browser, then try again."
   },
   "unavailable": "This browser cannot record audio, so Voice Notes are not available here.",
+  "teach": {
+    "title": "Hold the mic, talk, let go",
+    "line": "Try “two litres of milk and a dozen eggs, in the fridge”."
+  },
   "voiceButton": {
     "label": "Hold to record a Voice Note",
     "blocked": "Microphone blocked"

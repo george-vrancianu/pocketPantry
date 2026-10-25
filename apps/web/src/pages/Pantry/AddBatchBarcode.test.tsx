@@ -1,8 +1,15 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { Batch } from '../../lib/pantry';
+import { clearPick, typeNote } from '../../test/addBatch';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 import {
@@ -94,15 +101,31 @@ function stubLookup(
   return calls;
 }
 
+const productLine = {
+  name: 'Zorblax',
+  sourceText: null,
+  match: null,
+  lowConfidence: false,
+  quantity: null,
+  unit: null,
+  expiryDate: null,
+  productDescription: 'Zorblax Crunch',
+};
+
 async function openForm(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: 'Add batch' }));
 }
-const cameraButton = () =>
-  screen.getByRole('button', { name: 'Fill from the camera' });
+const cameraButton = () => screen.getByRole('button', { name: 'Scan barcode' });
 
 async function decode(code = CODE) {
   await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
   act(() => emitBarcode(code));
+}
+
+/** Reads a code, waits for the result card and confirms it with Use this. */
+async function decodeAndUse(code = CODE) {
+  await decode(code);
+  fireEvent.click(await screen.findByRole('button', { name: 'Use this' }));
 }
 
 describe('Prefill the add-Batch form from a Barcode Lookup', () => {
@@ -134,21 +157,6 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     expect(fakeCamera.watching).toBe(0);
   });
 
-  it("remembers the last mode apart from the Scan page's", async () => {
-    const user = userEvent.setup();
-    localStorage.setItem('pocket-pantry.scan-mode', 'plate');
-    stubLookup(() => Response.json(found()));
-    renderWithProviders(<PantryPage />);
-    await openForm(user);
-    await user.click(cameraButton());
-    await user.click(screen.getByRole('radio', { name: 'Product' }));
-    await user.click(screen.getByRole('button', { name: 'Close scanner' }));
-
-    await user.click(cameraButton());
-    expect(screen.getByRole('radio', { name: 'Product' })).toBeChecked();
-    expect(localStorage.getItem('pocket-pantry.scan-mode')).toBe('plate');
-  });
-
   it('closes on a decoded barcode, prefills the form and credits Open Food Facts, without a Scan', async () => {
     const user = userEvent.setup();
     const calls = stubLookup(() => Response.json(found()));
@@ -156,8 +164,28 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     await openForm(user);
     await user.click(cameraButton());
     await decode();
+    // The card waits for Use this: nothing is filled yet.
+    const card = await screen.findByTestId('barcode-card');
+    expect(within(card).getByText('Greek yogurt')).toBeVisible();
+    expect(within(card).getByText('Yogurt · Dairy & eggs')).toBeVisible();
+    expect(
+      within(card).getByText('Product data: Open Food Facts'),
+    ).toBeVisible();
+    expect(card).toHaveAttribute('role', 'status');
+    expect(screen.queryByTestId('scan-line')).toBeNull();
+    fireEvent.click(within(card).getByRole('button', { name: 'Use this' }));
 
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
+    expect(screen.getByTestId('camera-source-tag')).toHaveTextContent(
+      'Scanned',
+    );
+    expect(screen.getByTestId('selected-token')).toHaveTextContent(
+      'Greek yogurt',
+    );
+    expect(screen.queryByTestId('prefilled-ingredient')).toBeNull();
+    expect(
+      await screen.findByText(/Found by barcode · Greek yogurt/),
+    ).toBeVisible();
     expect(
       await screen.findByRole('combobox', {
         name: 'Ingredient: Yogurt. Press Backspace to change',
@@ -167,7 +195,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       screen.getByRole('textbox', { name: /Amount of Yogurt/ }),
     ).toHaveValue('400');
     expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Product description')).toHaveValue(
+    expect(screen.getByLabelText('Note · optional')).toHaveValue(
       'Greek yogurt',
     );
     expect(screen.getByTestId('prefilled-description')).toHaveTextContent(
@@ -197,9 +225,10 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     await decode();
     expect(await screen.findByText('Looking up the barcode…')).toBeVisible();
     release();
-    await waitFor(() =>
-      expect(screen.queryByText('Looking up the barcode…')).toBeNull(),
-    );
+    expect(
+      await screen.findByRole('button', { name: 'Use this' }),
+    ).toBeVisible();
+    expect(screen.queryByText('Looking up the barcode…')).toBeNull();
   });
 
   it('with no confident match, pre-types the Ingredient search and fills the description', async () => {
@@ -212,7 +241,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
 
     await waitFor(() =>
       expect(
@@ -220,7 +249,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       ).toHaveValue('Zorblax Crunch'),
     );
     // No Ingredient is picked yet, so the rest of the form waits for one.
-    expect(screen.queryByLabelText('Product description')).toBeNull();
+    expect(screen.queryByLabelText('Note · optional')).toBeNull();
     expect(screen.getByText('Product data: Open Food Facts')).toBeVisible();
     await user.clear(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
@@ -230,7 +259,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       'yog',
     );
     await user.click(await screen.findByRole('option', { name: /Yogurt/ }));
-    expect(screen.getByLabelText('Product description')).toHaveValue(
+    expect(screen.getByLabelText('Note · optional')).toHaveValue(
       'Zorblax Crunch',
     );
   });
@@ -245,23 +274,25 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.type(screen.getByLabelText('Product description'), 'Mine');
+    await typeNote(user, 'Mine');
+    // The camera is for an empty pick: clear it. The note the Member typed stays.
+    await clearPick(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
 
     await screen.findByText('Product data: Open Food Facts');
     expect(
       screen.getByRole('combobox', {
-        name: 'Ingredient: Milk. Press Backspace to change',
+        name: 'Ingredient: Yogurt. Press Backspace to change',
       }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Product description')).toHaveValue('Mine');
-    expect(screen.getByRole('textbox', { name: /Amount of Milk/ })).toHaveValue(
-      '400',
-    );
+    expect(screen.getByLabelText('Note · optional')).toHaveValue('Mine');
+    expect(
+      screen.getByRole('textbox', { name: /Amount of Yogurt/ }),
+    ).toHaveValue('400');
   });
 
-  it('on not found, reopens the camera in Product mode with a short message', async () => {
+  it('on not found, shows the unknown-barcode card with Take a photo and Type it', async () => {
     const user = userEvent.setup();
     stubLookup(() => Response.json({ found: false }));
     renderWithProviders(<PantryPage />);
@@ -269,19 +300,33 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     await user.click(cameraButton());
     await decode();
 
-    const overlay = await screen.findByTestId('camera-overlay');
+    const card = await screen.findByTestId('barcode-card');
     expect(
-      within(overlay).getByText(/No product found for that barcode/),
+      await within(card).findByText("We don't know this barcode yet"),
     ).toBeVisible();
-    expect(screen.getByRole('radio', { name: 'Product' })).toBeChecked();
-    expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
-    // The Member's choice of mode is not overwritten by the switch.
+    expect(within(card).getByText(CODE)).toBeVisible();
     expect(
-      localStorage.getItem('pocket-pantry.camera-overlay-mode'),
-    ).toBeNull();
+      within(card).getByRole('button', { name: 'Take a photo' }),
+    ).toBeVisible();
+    expect(within(card).getByRole('button', { name: 'Type it' })).toBeVisible();
+    expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
   });
 
-  it('keeps the form and shows a short error when the lookup fails', async () => {
+  it('Scan again dismisses the card and reads again', async () => {
+    const user = userEvent.setup();
+    stubLookup(() => Response.json(found()));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    await user.click(await screen.findByRole('button', { name: 'Scan again' }));
+    expect(screen.queryByTestId('barcode-card')).toBeNull();
+    expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
+    expect(screen.getByTestId('scan-line')).toBeInTheDocument();
+    await waitFor(() => expect(fakeCamera.watching).toBe(1));
+  });
+
+  it('says why the lookup failed on the card and offers Scan again', async () => {
     const user = userEvent.setup();
     stubLookup(() =>
       Response.json(
@@ -296,10 +341,126 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     expect(
       await screen.findByText(/barcode lookup is unavailable/),
     ).toBeVisible();
-    expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
+    expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Scan again' })).toBeVisible();
   });
 
-  it('keeps the form and says to wait when the lookup is rate limited', async () => {
+  it('offers Type it and Take a photo after a failed lookup, without teaching the code', async () => {
+    const user = userEvent.setup();
+    const calls = stubLookup(() =>
+      Response.json(
+        { code: 'barcode.rate_limited', params: {} },
+        { status: 429, headers: { 'Retry-After': '30' } },
+      ),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    const card = await screen.findByTestId('barcode-card');
+    expect(
+      await within(card).findByText(/Too many Barcode Lookups/),
+    ).toBeVisible();
+    expect(
+      within(card).queryByText("We don't know this barcode yet"),
+    ).toBeNull();
+    expect(
+      within(card).getByRole('button', { name: 'Scan again' }),
+    ).toBeVisible();
+    expect(
+      within(card).getByRole('button', { name: 'Take a photo' }),
+    ).toBeVisible();
+    await user.click(within(card).getByRole('button', { name: 'Type it' }));
+    expect(screen.queryByTestId('camera-overlay')).toBeNull();
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'mil',
+    );
+    await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.key === 'POST /api/pantry/batches'),
+      ).toBe(true),
+    );
+    const create = calls.find(
+      (call) => call.key === 'POST /api/pantry/batches',
+    );
+    expect(create?.body).toMatchObject({ ingredientId: 'milk-id' });
+    expect(create?.body).not.toHaveProperty('barcode');
+  });
+
+  it('sends no barcode when the Member takes a photo after a failed lookup', async () => {
+    const user = userEvent.setup();
+    const calls = stubLookup(
+      () =>
+        Response.json(
+          { code: 'barcode.rate_limited', params: {} },
+          { status: 429, headers: { 'Retry-After': '30' } },
+        ),
+      {
+        'POST /api/scan/product': () =>
+          Response.json({ lines: [{ ...productLine, match: yogurt }] }),
+      },
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    const card = await screen.findByTestId('barcode-card');
+    await within(card).findByText(/Too many Barcode Lookups/);
+    await user.click(
+      within(card).getByRole('button', { name: 'Take a photo' }),
+    );
+    screen.getByRole('button', { name: 'Take photo' }).focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(screen.queryByTestId('camera-overlay')).toBeNull(),
+    );
+    await user.click(
+      await screen.findByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.key === 'POST /api/pantry/batches'),
+      ).toBe(true),
+    );
+    const create = calls.find(
+      (call) => call.key === 'POST /api/pantry/batches',
+    );
+    expect(create?.body).not.toHaveProperty('barcode');
+  });
+
+  it('ignores a lookup that lands after the Member switched to Product', async () => {
+    const user = userEvent.setup();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const calls = stubLookup(async () => {
+      await gate;
+      return Response.json(found());
+    });
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    expect(await screen.findByText('Looking up the barcode…')).toBeVisible();
+    await user.click(screen.getByRole('radio', { name: 'Product' }));
+    expect(screen.queryByTestId('barcode-card')).toBeNull();
+    release();
+    await act(async () => {
+      await gate;
+    });
+    await waitFor(() =>
+      expect(
+        calls.filter((c) => c.key.startsWith('GET /api/barcode')),
+      ).toHaveLength(1),
+    );
+    expect(screen.queryByTestId('barcode-card')).toBeNull();
+  });
+
+  it('says to wait on the card when the lookup is rate limited', async () => {
     const user = userEvent.setup();
     stubLookup(() =>
       Response.json(
@@ -313,7 +474,6 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     await decode();
     expect(await screen.findByText(/Too many Barcode Lookups/)).toBeVisible();
     expect(screen.queryByText(/No product found/)).toBeNull();
-    expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
   });
 
   it('cancelling keeps the form and ends the watch', async () => {
@@ -331,13 +491,16 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
 
   it('drops the Open Food Facts credit once a Product photo is read after a barcode', async () => {
     const user = userEvent.setup();
-    stubLookup(() => Response.json(found()));
+    stubLookup(() => Response.json(found()), {
+      'POST /api/scan/product': () => Response.json({ lines: [productLine] }),
+    });
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
     await screen.findByText('Product data: Open Food Facts');
 
+    await clearPick(user);
     await user.click(cameraButton());
     await user.click(screen.getByRole('radio', { name: 'Product' }));
     screen.getByRole('button', { name: 'Take photo' }).focus();
@@ -347,7 +510,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     );
   });
 
-  it('with no confident match, drops an earlier untouched pick', async () => {
+  it('with no confident match after a cleared pick, pre-types the search', async () => {
     const user = userEvent.setup();
     let calls = 0;
     stubLookup(() =>
@@ -360,14 +523,15 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
     await screen.findByRole('combobox', {
       name: 'Ingredient: Yogurt. Press Backspace to change',
     });
 
     fakeCamera.emit = null;
+    await clearPick(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
     await waitFor(() =>
       expect(
         screen.getByRole('combobox', { name: 'Search ingredients' }),
@@ -380,9 +544,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     stubLookup(() => Response.json(found()));
     renderWithProviders(<PantryPage />, { locale: 'da' });
     await user.click(await screen.findByRole('button', { name: /^Tilføj/ }));
-    await user.click(
-      screen.getByRole('button', { name: 'Udfyld med kameraet' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Scan stregkode' }));
     expect(screen.getByRole('radio', { name: 'Stregkode' })).toBeChecked();
   });
 
@@ -391,7 +553,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     stubLookup(() => Response.json(found()));
     renderWithProviders(<PantryPage />, { locale: 'ro' });
     await user.click(await screen.findByRole('button', { name: /^Adaugă/ }));
-    await user.click(screen.getByRole('button', { name: /camera/ }));
+    await user.click(screen.getByRole('button', { name: 'Scanează codul' }));
     expect(screen.getByRole('radio', { name: 'Cod de bare' })).toBeChecked();
   });
 });
@@ -419,9 +581,11 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
     await screen.findByText('Product data: Open Food Facts');
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
 
     await waitFor(() =>
       expect(
@@ -437,21 +601,25 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
     });
   });
 
-  it('learns a barcode Open Food Facts does not know: not found, then a manual save sends it', async () => {
+  it('learns a barcode Open Food Facts does not know: unknown, Type it, then a manual save sends it', async () => {
     const user = userEvent.setup();
     const calls = stubLookup(() => Response.json({ found: false }));
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
     await decode();
-    await screen.findByText(/No product found for that barcode/);
-    await user.click(screen.getByRole('button', { name: 'Close scanner' }));
+    await user.click(await screen.findByRole('button', { name: 'Type it' }));
+    expect(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    ).toHaveFocus();
     await user.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
 
     await waitFor(() =>
       expect(
@@ -469,12 +637,19 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
 
   it('keeps the looked-up barcode through a Product photo with no decodable code', async () => {
     const user = userEvent.setup();
-    const calls = stubLookup(() => Response.json({ found: false }));
+    const calls = stubLookup(() => Response.json({ found: false }), {
+      'POST /api/scan/product': () => Response.json({ lines: [productLine] }),
+    });
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
     await decode();
-    await screen.findByText(/No product found for that barcode/);
+    await user.click(
+      within(await screen.findByTestId('barcode-card')).getByRole('button', {
+        name: 'Take a photo',
+      }),
+    );
+    expect(screen.getByRole('radio', { name: 'Product' })).toBeChecked();
     screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
     await waitFor(() =>
@@ -487,7 +662,9 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
 
     await waitFor(() =>
       expect(
@@ -510,7 +687,9 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
 
     await waitFor(() =>
       expect(
@@ -529,14 +708,14 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
 
     expect(
       await screen.findByRole('combobox', {
         name: 'Ingredient: Yogurt. Press Backspace to change',
       }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Product description')).toHaveValue(
+    expect(screen.getByLabelText('Note · optional')).toHaveValue(
       'Our usual tub',
     );
     expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
@@ -556,16 +735,16 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
 
     expect(
       await screen.findByText(/"Zorblax Crunch" will be saved as Unmatched/),
     ).toBeVisible();
-    expect(screen.getByLabelText('Product description')).toHaveValue(
-      'Zorblax tub',
-    );
+    expect(screen.getByLabelText('Note · optional')).toHaveValue('Zorblax tub');
     expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
     await waitFor(() =>
       expect(
         calls.some((call) => call.key === 'POST /api/pantry/batches'),
@@ -632,7 +811,7 @@ describe('Allergens from a Barcode Lookup', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
     await user.click(
       await screen.findByRole('button', {
         name: 'Add “Zorblax Crunch” to your catalog',
@@ -697,7 +876,7 @@ describe('Allergens from a Barcode Lookup', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
     // Drop the match and create a new Ingredient instead.
     await screen
       .findByRole('combobox', {
@@ -732,7 +911,7 @@ describe('Allergens from a Barcode Lookup', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
     expect(
       await screen.findByText('This product lists Milk and Gluten'),
     ).toBeVisible();
@@ -764,7 +943,7 @@ describe('Allergens from a Barcode Lookup', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
 
     expect(await screen.findByText('This product lists Milk')).toBeVisible();
     expect(
@@ -780,7 +959,7 @@ describe('Allergens from a Barcode Lookup', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
 
     await screen.findByText('Product data: Open Food Facts');
     expect(screen.queryByText(/This product lists/)).toBeNull();
@@ -794,7 +973,7 @@ describe('Allergens from a Barcode Lookup', () => {
     renderWithProviders(<PantryPage />);
     await openForm(user);
     await user.click(cameraButton());
-    await decode();
+    await decodeAndUse();
     await screen.findByText('This product lists Milk');
 
     screen

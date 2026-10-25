@@ -47,32 +47,10 @@ export function loadScanPageMode(): CameraMode {
 /** The Scan Mode for photos added away from the camera: the last-used camera mode's, else Receipt. */
 export const loadLastScanMode = (): ScanMode => scanModeOf(loadScanPageMode());
 
-/** Remembers the Scan page's mode for the next visit, apart from the add-Batch overlay's. */
+/** Remembers the Scan page's mode for the next visit. */
 export function saveScanPageMode(mode: CameraMode): void {
   try {
     window.localStorage.setItem(SCAN_PAGE_MODE_KEY, mode);
-  } catch {
-    // Not persisting is acceptable.
-  }
-}
-
-const OVERLAY_MODE_KEY = 'pocket-pantry.camera-overlay-mode';
-
-/** The mode the add-Batch camera overlay was last left in on this device, else Barcode (free and instant). */
-export function loadOverlayMode(): CameraMode {
-  try {
-    const saved = window.localStorage.getItem(OVERLAY_MODE_KEY);
-    if (saved === 'barcode' || saved === 'product') return saved;
-  } catch {
-    // Storage can be blocked; fall back to Barcode.
-  }
-  return 'barcode';
-}
-
-/** Remembers the overlay's mode, apart from the Scan page's own. */
-export function saveOverlayMode(mode: CameraMode): void {
-  try {
-    window.localStorage.setItem(OVERLAY_MODE_KEY, mode);
   } catch {
     // Not persisting is acceptable.
   }

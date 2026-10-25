@@ -2,12 +2,14 @@ import {
   Alert,
   bodyFont,
   Box,
+  radius,
   tokens,
   Typography,
   useForcedThemeColor,
   visuallyHidden,
 } from '@pocket-pantry/ui';
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -15,15 +17,19 @@ import {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ScanLanguage } from '../../i18n/resources';
+import { translateApiError } from '../../i18n/translateApiError';
+import { ApiError } from '../../lib/api';
+import { useBarcodeLookup, type BarcodeLookup } from '../../lib/barcode';
 import { readBarcode, useCamera } from '../../lib/camera';
 import type { CameraMode } from '../../lib/cameraMode';
+import { useProductRead, type ProposedLine } from '../../lib/scan';
 import { IMAGE_PREPARATION } from '../../lib/scanImage';
+import { BarcodeResultCard } from './components/BarcodeResultCard';
 import { CameraFooter } from './components/CameraFooter';
 import { CameraTopBar } from './components/CameraTopBar';
 import { Fading } from './components/Fading';
 import { InfoSheet } from './components/InfoSheet';
-import { shade } from './components/glass';
+import { glassFocusRing, shade, translucent } from './components/glass';
 import { ModeSlider } from './components/ModeSlider';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ShutterButton } from './components/ShutterButton';
@@ -34,24 +40,28 @@ import { useScanLanguage } from '../../lib/useScanLanguage';
 
 export type { CameraMode };
 
-/** What the camera hands back to whatever opened it, then closes: one kind per camera mode. */
+/** What the camera hands back to whatever opened it, then closes: one kind per way out. */
 export type CameraResult =
   | {
       kind: 'product';
-      /** The prepared photo, as a JPEG data URL. */
-      image: string;
-      /** The language the Member chose to read it in. */
-      scanLanguage: ScanLanguage | undefined;
+      /** The first line the photo's label read gave (the overlay did the read). */
+      read: ProposedLine;
       /**
-       * The barcode found in the captured frame, or null: decoded on the device alongside the
-       * read, never awaited by it. Never rejects; a frame that cannot be decoded just has none.
+       * The barcode of the photo, or null: the code of an unknown barcode the Member came from,
+       * else decoded on the device from the frame, never awaited by the read. Never rejects.
        */
       barcode: Promise<string | null>;
     }
   | {
       kind: 'barcode';
-      /** The decoded EAN-13, EAN-8, UPC-A or UPC-E code. */
+      /** The read EAN-13, EAN-8, UPC-A or UPC-E code the Member confirmed with Use this. */
       code: string;
+      lookup: Extract<BarcodeLookup, { found: true }>;
+    }
+  | {
+      /** Type it: back to the sheet with the search focused; the code of an unknown barcode, if any, still goes with the Batch. */
+      kind: 'type';
+      code: string | null;
     };
 
 type Props = {
@@ -59,29 +69,26 @@ type Props = {
   modes: readonly CameraMode[];
   /** The mode the camera opens in; the first of `modes` when it is not one of them. */
   defaultMode: CameraMode;
-  /** The Member picked a mode on the slider: the opener may remember it. */
-  onModeChange?: (mode: CameraMode) => void;
-  /** A short message above the footer, such as why the overlay reopened. */
-  notice?: string;
-  /** One shot was taken, or a barcode was read: the opener closes the overlay and owns the work that follows. */
+  /** A label was read, a barcode was confirmed, or the Member chose to type: the opener closes the overlay and applies it. */
   onResult: (result: CameraResult) => void;
+  /** Scan several: the opener closes what the camera was opened over and opens the Scan page in this mode. */
+  onScanSeveral: (mode: CameraMode) => void;
   /** Closed without a shot; the opener is left as it was. */
   onCancel: () => void;
 };
 
 /**
  * The camera as a full-screen overlay for a page that needs one photo back (the add-Batch form),
- * not a Scan Session. Its mode lives in the overlay, never in the URL, and the opener decides what
- * to remember: it is opened over a page whose own address and settings are not its to change. The
+ * not a Scan Session. Its mode lives in the overlay, never in the URL: it is opened over a page
+ * whose own address and settings are not its to change. The
  * Scan Language is the Scan page's remembered one, and only Product mode has it: a Barcode Lookup
  * is not a Scan.
  */
 export function CameraOverlay({
   modes,
   defaultMode,
-  onModeChange,
-  notice,
   onResult,
+  onScanSeveral,
   onCancel,
 }: Props) {
   const { t } = useTranslation('scan');
@@ -96,12 +103,33 @@ export function CameraOverlay({
   const closeInfo = useCallback(() => setInfoOpen(false), []);
   const [flash, setFlash] = useState(false);
   const [preparing, setPreparing] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+  // The barcode on the card, and its lookup while that is out; and the code of an unknown barcode
+  // the Member is taking a photo for instead.
+  const [card, setCard] = useState<{
+    code: string;
+    lookup: BarcodeLookup | null;
+    /** The lookup failed (unavailable, rate limited): said on the card, with Scan again, Type it and Take a photo. */
+    error?: unknown;
+  } | null>(null);
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
+  const { t: tAll } = useTranslation();
+  const productRead = useProductRead();
+  const barcodeLookup = useBarcodeLookup();
   const { shot, fire } = useShotFeedback();
   const guide = useGuideRect(mode);
   const [viewfinder, setViewfinder] = useState<HTMLElement | null>(null);
   const [sliding, setSliding] = useState(false);
   const shooting = useRef(false);
+  // The Barcode Lookup in flight (its number), so a result that lands after the card was dismissed
+  // or the mode changed is ignored. The pending check is defensive: the watcher stops after the first
+  // code, so a second read cannot arrive while a lookup is out.
+  const lookupSeq = useRef(0);
+  const lookupPending = useRef<number | null>(null);
+  const dismissCard = () => {
+    lookupPending.current = null;
+    setCard(null);
+  };
   const { videoRef } = camera;
 
   // Focus moves into the dialog on open, and Escape closes it as Close does.
@@ -118,7 +146,17 @@ export function CameraOverlay({
   });
   const cancel = () => {
     closed.current = true;
+    lookupPending.current = null;
     cancelRef.current();
+  };
+  // Escape inside the overlay is taken here and stops, so a host dialog around it (the Add to Pantry
+  // sheet) does not also close. The document listener below covers focus outside the overlay.
+  const onOverlayKeyDown = (event: ReactKeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+    event.stopPropagation();
+    // The Info sheet answers its own Escape on the document, which this stop would cut off.
+    if (infoOpenRef.current) closeInfo();
+    else cancel();
   };
   useEffect(() => {
     closed.current = false;
@@ -135,54 +173,96 @@ export function CameraOverlay({
     };
   }, []);
 
-  // Barcode reads the live stream: the first code closes the overlay. The decoder (WASM
-  // where the browser has none) is loaded by this call, the first time Barcode is used.
-  const resultRef = useRef(onResult);
-  useLayoutEffect(() => {
-    resultRef.current = onResult;
-  });
+  // Barcode reads the live stream: a code stops the reading and shows the card (looked up first);
+  // Scan again dismisses it and reads again. The decoder (WASM where the browser has none) is
+  // loaded by this call, the first time Barcode is used.
   const { watchBarcodes } = camera;
+  const { mutate: lookUp } = barcodeLookup;
+  const reading = card !== null;
   useEffect(() => {
-    if (mode !== 'barcode' || camera.status !== 'ready') return;
+    if (mode !== 'barcode' || camera.status !== 'ready' || reading) return;
     return watchBarcodes((code) => {
-      if (closed.current) return;
-      closed.current = true;
-      resultRef.current({ kind: 'barcode', code });
+      if (closed.current || lookupPending.current !== null) return;
+      const seq = ++lookupSeq.current;
+      lookupPending.current = seq;
+      navigator.vibrate?.(12);
+      setCard({ code, lookup: null });
+      lookUp(code, {
+        onSuccess: (lookup) => {
+          if (lookupPending.current === seq) setCard({ code, lookup });
+        },
+        onError: (error) => {
+          if (lookupPending.current === seq)
+            setCard({ code, lookup: null, error });
+        },
+      });
     });
-  }, [mode, camera.status, watchBarcodes]);
+  }, [mode, camera.status, watchBarcodes, reading, lookUp]);
+
+  const confirmCard = () => {
+    if (!card?.lookup?.found) return;
+    closed.current = true;
+    onResult({ kind: 'barcode', code: card.code, lookup: card.lookup });
+  };
+  const takePhotoOfCard = () => {
+    if (!card) return;
+    // A failed lookup says nothing about the code, so it is not taught as unknown.
+    setPendingCode(card.error === undefined ? card.code : null);
+    dismissCard();
+    setMode('product');
+  };
+  const typeIt = () => {
+    closed.current = true;
+    onResult({
+      kind: 'type',
+      code: card ? (card.error === undefined ? card.code : null) : pendingCode,
+    });
+  };
 
   const shoot = async () => {
     if (mode === 'barcode' || shooting.current) return;
     shooting.current = true;
-    setFailed(false);
+    setFailed(null);
     try {
       const frame = await camera.capture();
       if (!frame) return;
-      // The frame's barcode settles later, never delaying the read: the ZXing decode is main-thread
-      // work, so it only starts once the result is handed over and the read is under way.
-      let settle: (code: string | null) => void = () => {};
-      const barcode = new Promise<string | null>(
-        (resolve) => (settle = resolve),
-      );
       setPreparing(true);
       const image = await IMAGE_PREPARATION[mode](
         frame,
         'camera',
         measureView(camera.videoRef.current),
       );
-      if (!closed.current) {
-        onResult({
-          kind: 'product',
+      if (closed.current) return;
+      // The frame's barcode settles later, never delaying the read: the ZXing decode is main-thread
+      // work, so it only starts once the read is under way. A code the Member came here with wins.
+      const barcode = pendingCode
+        ? Promise.resolve(pendingCode)
+        : new Promise<string | null>((resolve) => {
+            setTimeout(() => {
+              readBarcode(frame).then(resolve, () => resolve(null));
+            }, 0);
+          });
+      let read: ProposedLine;
+      try {
+        read = await productRead.mutateAsync({
           image,
           scanLanguage: scanLanguageToSend,
-          barcode,
         });
-        setTimeout(() => {
-          readBarcode(frame).then(settle, () => settle(null));
-        }, 0);
+      } catch (error) {
+        if (!closed.current)
+          setFailed(
+            error instanceof ApiError && error.code === 'scan.cap_reached'
+              ? t('labelCap')
+              : t('labelFailed'),
+          );
+        return;
+      }
+      if (!closed.current) {
+        closed.current = true;
+        onResult({ kind: 'product', read, barcode });
       }
     } catch {
-      setFailed(true);
+      setFailed(t('overlay.photoFailed'));
     } finally {
       setPreparing(false);
       shooting.current = false;
@@ -200,6 +280,7 @@ export function CameraOverlay({
       role="dialog"
       aria-modal="true"
       ref={dialog}
+      onKeyDown={onOverlayKeyDown}
       tabIndex={-1}
       aria-label={t('title', {
         mode: t(`mode.${mode}`).toLocaleLowerCase(),
@@ -242,7 +323,12 @@ export function CameraOverlay({
             backgroundImage: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${shade(45)} 100%)`,
           }}
         />
-        <Viewfinder rect={guide} shot={shot} sliding={sliding} />
+        <Viewfinder
+          rect={guide}
+          shot={shot}
+          sliding={sliding}
+          scanLine={mode === 'barcode' && card === null}
+        />
       </Box>
       <CameraTopBar
         onClose={cancel}
@@ -275,14 +361,10 @@ export function CameraOverlay({
             >
               {camera.status === 'unavailable'
                 ? t('overlay.noCamera')
-                : mode === 'barcode'
+                : mode === 'barcode' && card === null
                   ? t('overlay.pointAtBarcode')
                   : null}
             </Typography>
-            {notice ? <Alert severity="info">{notice}</Alert> : null}
-            {failed ? (
-              <Alert role="alert">{t('overlay.photoFailed')}</Alert>
-            ) : null}
           </>
         }
         shutter={
@@ -309,7 +391,9 @@ export function CameraOverlay({
                 const picked = modes.find((item) => item === next);
                 if (!picked) return;
                 setMode(picked);
-                onModeChange?.(picked);
+                dismissCard();
+                setFailed(null);
+                if (picked === 'barcode') setPendingCode(null);
               }}
             />
           ) : (
@@ -317,6 +401,119 @@ export function CameraOverlay({
           )
         }
       />
+      <Box
+        sx={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 'calc(env(safe-area-inset-top, 0px) + 64px)',
+          display: 'flex',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        <Box
+          data-testid="adds-to-pantry"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            py: 0.75,
+            px: 1.375,
+            borderRadius: radius.pill,
+            backgroundColor: translucent(tokens.color.accent, 16),
+            color: tokens.color.accent,
+            fontSize: 12,
+            fontWeight: 700,
+            pointerEvents: 'auto',
+          }}
+        >
+          {t('addsToPantry')}
+          <Box
+            component="button"
+            type="button"
+            onClick={() => onScanSeveral(mode)}
+            sx={{
+              border: 0,
+              background: 'none',
+              color: tokens.color.ink,
+              font: 'inherit',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              p: 0,
+              '&:focus-visible': glassFocusRing,
+            }}
+          >
+            {t('scanSeveral')}
+          </Box>
+        </Box>
+      </Box>
+      {failed ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 14,
+            right: 14,
+            bottom: 196,
+          }}
+        >
+          <Alert role="alert">
+            {failed}
+            <Box
+              component="button"
+              type="button"
+              onClick={typeIt}
+              sx={{
+                ml: 1,
+                border: 0,
+                background: 'none',
+                color: 'inherit',
+                font: 'inherit',
+                fontWeight: 700,
+                textDecoration: 'underline',
+                cursor: 'pointer',
+              }}
+            >
+              {t('typeIt')}
+            </Box>
+          </Alert>
+        </Box>
+      ) : null}
+      {preparing && mode === 'product' ? (
+        <Box
+          role="status"
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            bottom: 196,
+            transform: 'translateX(-50%)',
+            px: 1.75,
+            py: 1.125,
+            borderRadius: radius.pill,
+            backgroundColor: shade(80),
+            fontSize: 13,
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {t('readingLabel')}
+        </Box>
+      ) : null}
+      {card ? (
+        <BarcodeResultCard
+          code={card.code}
+          lookup={card.lookup}
+          error={
+            card.error === undefined
+              ? undefined
+              : translateApiError(tAll, card.error)
+          }
+          onScanAgain={dismissCard}
+          onUse={confirmCard}
+          onTakePhoto={takePhotoOfCard}
+          onTypeIt={typeIt}
+        />
+      ) : null}
       {infoOpen ? (
         <InfoSheet onClose={closeInfo} modes={modes} stackTip={false} />
       ) : null}
