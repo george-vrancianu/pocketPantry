@@ -187,9 +187,10 @@ export {
   type SegmentedTabsProps,
 } from './molecules/SegmentedTabs';
 export {
-  RefreshStatusLine,
-  type RefreshStatusLineProps,
-} from './molecules/RefreshStatusLine';
+  RefreshLoader,
+  REFRESH_LOADER_RETRACT_MS,
+  type RefreshLoaderProps,
+} from './molecules/RefreshLoader';
 export {
   DashboardHeader,
   type DashboardHeaderProps,

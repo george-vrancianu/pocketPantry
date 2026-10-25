@@ -105,12 +105,19 @@ describe('the Voice Inbox strip', () => {
   }
   const answer = (index: number) =>
     fake.reads[index].resolve(Response.json(heard(), { status: 201 }));
-  const strip = () => screen.getByRole('status');
+  // The layout's refresh loader keeps an empty status region of its own on every screen.
+  const voiceStatuses = () =>
+    screen.queryAllByRole('status').filter((el) => el.textContent !== '');
+  const strip = () => {
+    const [only, ...rest] = voiceStatuses();
+    expect(rest).toHaveLength(0);
+    return only;
+  };
 
   it('shows nothing when the Voice Inbox is empty and while recording', async () => {
     renderAt();
     await talkButton();
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(voiceStatuses()).toHaveLength(0);
 
     await speak(1);
     expect(await screen.findByText('1 Voice Note')).toBeVisible();

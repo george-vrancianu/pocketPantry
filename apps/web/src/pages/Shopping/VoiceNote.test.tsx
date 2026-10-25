@@ -41,7 +41,7 @@ import { resetRowFlash } from '../../lib/rowFlash';
 import { voiceNote } from '../../lib/voiceNote';
 import { ShoppingPage } from './ShoppingPage';
 
-/** The Voice Note's status; the header's refresh status line is a status too, empty at rest. */
+/** The Voice Note's status; the refresh loader's live region is a status too, empty at rest. */
 const statusNote = () => {
   const note = screen
     .getAllByRole('status')

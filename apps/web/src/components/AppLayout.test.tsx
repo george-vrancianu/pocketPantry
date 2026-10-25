@@ -348,9 +348,16 @@ describe('AppLayout Voice Notes off the Shopping List and the Pantry', () => {
     renderAt('/recipes');
     pressDown(await talkButton());
     await screen.findByText("Gator's listening");
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Say which list: “on the list” or “in the pantry”.',
-    );
+    // The refresh loader's own status region sits empty beside it.
+    expect(
+      screen.getAllByRole('status').filter((el) => el.textContent !== ''),
+    ).toEqual([
+      expect.objectContaining({
+        textContent: expect.stringContaining(
+          'Say which list: “on the list” or “in the pantry”.',
+        ),
+      }),
+    ]);
   });
 
   it('opens Review over the current page and applies with the usual toast, without navigating', async () => {

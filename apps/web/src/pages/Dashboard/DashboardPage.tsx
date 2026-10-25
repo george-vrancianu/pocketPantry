@@ -10,7 +10,6 @@ import {
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { RefreshMark } from '../../components/RefreshMark';
-import { RefreshStatus } from '../../components/RefreshStatus';
 import { translateApiError } from '../../i18n/translateApiError';
 import { useDashboardLayout } from '../../lib/dashboard';
 import { greetingKeyForHour } from '../../lib/greeting';
@@ -37,7 +36,7 @@ export function DashboardPage() {
       <DashboardHeader
         leading={inLayout ? <RefreshMark size={42} /> : undefined}
         greeting={t(`greeting.${greetingKeyForHour(now.getHours())}`)}
-        subline={inLayout ? <RefreshStatus rest={date} /> : date}
+        subline={date}
         actions={
           <>
             <IconButton label={t('customise')} href="/customise">

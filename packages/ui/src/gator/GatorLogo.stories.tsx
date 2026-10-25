@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import Box from '@mui/material/Box';
 import { useState } from 'react';
 import { PlusIcon } from '../atoms/icons';
-import { RefreshStatusLine } from '../molecules/RefreshStatusLine';
+import { RefreshLoader } from '../molecules/RefreshLoader';
 import { ScreenHeader } from '../molecules/ScreenHeader';
 import { GatorLogo, resetGatorLogoEntrance } from './GatorLogo';
 
@@ -91,9 +91,9 @@ function TabRootHeader({ status }: { status: Status }) {
         leading={
           <GatorLogo label="Refresh" onClick={() => setTaps((n) => n + 1)} />
         }
-        subline={<RefreshStatusLine state={status} labels={LABELS} />}
         action={{ label: 'Add', icon: <PlusIcon size={20} /> }}
       />
+      <RefreshLoader state={status} labels={LABELS} />
       <Box
         sx={{
           opacity: status === 'busy' ? 0.55 : 1,

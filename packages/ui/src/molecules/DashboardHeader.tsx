@@ -8,13 +8,13 @@ export type DashboardHeaderProps = {
   leading?: ReactNode;
   /** The greeting, kept to one line with an ellipsis. */
   greeting: string;
-  /** The small line under the greeting: the date at rest, the refresh status otherwise. */
+  /** The small line under the greeting: today's date. */
   subline?: ReactNode;
   /** The buttons at the end (Customise, Settings), in order. */
   actions: ReactNode;
 };
 
-/** The Dashboard's header: mark, greeting with a status line under it, then the actions. */
+/** The Dashboard's header: mark, greeting with the date under it, then the actions. */
 export function DashboardHeader({
   leading,
   greeting,

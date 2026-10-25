@@ -6,6 +6,7 @@ import {
   stubApi,
 } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
+import { MIN_BUSY_MS } from '../../lib/refresh';
 import { DashboardPage } from './DashboardPage';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -192,8 +193,8 @@ describe('DashboardPage header', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Good evening' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Sunday, October 25');
     const header = screen.getByRole('banner');
+    expect(header).toHaveTextContent('Sunday, October 25');
     const links = within(header).getAllByRole('link');
     expect(links.map((l) => l.getAttribute('aria-label'))).toEqual([
       'Customise dashboard',
@@ -201,24 +202,28 @@ describe('DashboardPage header', () => {
     ]);
   });
 
-  it('refetches on a tap: Refreshing, Updated just now, then the date again', async () => {
+  it('refetches on a tap, saying the outcome off the header and keeping the date under the greeting', async () => {
     const calls = stubDash(layout);
     renderInAppLayout(<DashboardPage />, '/');
     await settle();
     const count = () =>
       calls.filter((c) => c.key === 'GET /api/dashboard-layout').length;
     const before = count();
+    const header = screen.getByRole('banner');
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(screen.getByRole('status')).toHaveTextContent('Refreshing…');
-    await settle();
+    expect(header).toHaveTextContent('Sunday, October 25');
+    expect(header).not.toHaveTextContent('Refreshing…');
+    await elapse(MIN_BUSY_MS);
     expect(screen.getByRole('status')).toHaveTextContent('Updated just now');
+    expect(header).toHaveTextContent('Sunday, October 25');
     expect(count()).toBeGreaterThan(before);
     await elapse(2500);
-    expect(screen.getByRole('status')).toHaveTextContent('Sunday, October 25');
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 
-  it('reports a failed refresh, then the date', async () => {
+  it('reports a failed refresh, then clears it', async () => {
     let fail = false;
     stubDash(() => (fail ? Response.error() : layout()));
     renderInAppLayout(<DashboardPage />, '/');
@@ -226,11 +231,12 @@ describe('DashboardPage header', () => {
     fail = true;
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
-    await settle();
+    await elapse(MIN_BUSY_MS);
     expect(screen.getByRole('status')).toHaveTextContent(
       "Couldn't refresh · showing what you had",
     );
+    expect(screen.getByRole('banner')).toHaveTextContent('Sunday, October 25');
     await elapse(4000);
-    expect(screen.getByRole('status')).toHaveTextContent('Sunday, October 25');
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 });
