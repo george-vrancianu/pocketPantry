@@ -64,6 +64,7 @@
     "save": "Gem ændringer"
   },
   "form": {
+    "close": "Luk",
     "title": "Tilføj til spisekammeret",
     "cancel": "Annuller",
     "save": "Tilføj til spisekammeret",

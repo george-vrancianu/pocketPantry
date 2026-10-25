@@ -64,6 +64,7 @@
     "save": "Save changes"
   },
   "form": {
+    "close": "Close",
     "title": "Add to Pantry",
     "cancel": "Cancel",
     "save": "Add to Pantry",

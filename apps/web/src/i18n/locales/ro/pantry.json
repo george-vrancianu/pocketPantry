@@ -70,6 +70,7 @@
     "chip": "Pe sfârșite"
   },
   "form": {
+    "close": "Închide",
     "title": "Adaugă în cămară",
     "cancel": "Anulează",
     "save": "Adaugă în cămară",

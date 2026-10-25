@@ -67,6 +67,9 @@ describe('The add-Batch camera chrome', () => {
       screen.queryByRole('dialog', { name: 'Scanning your pantry' }),
     ).toBeNull();
     expect(overlay()).toBeInTheDocument();
+    expect(
+      screen.getByRole('dialog', { name: 'Add to Pantry' }),
+    ).toBeInTheDocument();
   });
 
   it('closes on a Product Scan', async () => {
