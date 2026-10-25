@@ -51,7 +51,6 @@
   "search": "Søg opskrifter",
   "cuisine": "Køkken",
   "method": "Metode",
-  "empty": "Ingen opskrifter endnu.",
   "noMatches": "Ingen opskrifter passer.",
   "allRecipes": "Alle opskrifter",
   "matches": "Resultater",
@@ -63,7 +62,6 @@
   "missingOneVia": "Mangler {{name}} til {{title}}",
   "expiring_one": "{{count}} udløber snart",
   "expiring_other": "{{count}} udløber snart",
-  "emptyHint": "Scan en tallerken eller lav en ud fra et foto.",
   "noMatchesHint": "Prøv et andet ord, eller ryd et filter.",
   "variantsHint": "Søg eller vælg et filter for at se varianter for sig.",
   "minutesShort": "min",
@@ -295,5 +293,14 @@
     "openCopy": "I dine opskrifter · Åbn",
     "explain": "Når du tilføjer, laver du en kopi, som din familie kan ændre. Lav en variant åbner editoren først.",
     "explainAdded": "Din kopi kan du ændre. Denne katalogopskrift forbliver, som den er."
-  }
+  },
+  "emptyFamily": {
+    "title": "Ingen familieopskrifter endnu",
+    "body": "Opskrifter, du tilføjer, kan ændres, som du vil. Hele familien kan se dem.",
+    "explore": "Udforsk opskrifter",
+    "newRecipe": "+ Ny opskrift",
+    "starters": "Start med disse · du kan lave dem"
+  },
+  "allHidden": "Ingen opskrifter at vise.",
+  "allHiddenHint": "Opskrifter skjult på grund af dine allergier er udeladt."
 }

@@ -422,11 +422,10 @@ describe('RecipesPage', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('shows an empty state with a hint', async () => {
+    it('shows chef Gator instead of the list when the Family has no Recipes', async () => {
       setup(() => []);
-      expect(await screen.findByText('No Recipes yet.')).toBeInTheDocument();
       expect(
-        screen.getByText('Scan a plate or make one from a photo.'),
+        await screen.findByText('No family Recipes yet'),
       ).toBeInTheDocument();
     });
 
