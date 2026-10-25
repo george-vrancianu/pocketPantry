@@ -1595,10 +1595,16 @@ describe('EditFamilyRecipePage Source Link', () => {
       await screen.findByRole('button', { name: 'Remove link' }),
     );
     // Leaving with the removal unsaved asks first (#596).
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    await user.click(screen.getByRole('link', { name: 'Back' }));
-    expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
-    expect(putBody(calls)).toBeUndefined();
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    try {
+      await user.click(screen.getByRole('link', { name: 'Back' }));
+      expect(
+        await screen.findByText('Detail of the recipe'),
+      ).toBeInTheDocument();
+      expect(putBody(calls)).toBeUndefined();
+    } finally {
+      confirm.mockRestore();
+    }
   });
 
   it('still sends the removal on the next Save after a failed one', async () => {
@@ -2966,10 +2972,14 @@ describe('Recipe editor Ingredient Lines (#589)', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Remove Egg' }));
     await screen.findByText('Removed Egg');
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    await user.click(screen.getByRole('link', { name: 'Back' }));
-    expect(await screen.findByText('Detail of the recipe')).toBeVisible();
-    await waitFor(() => expect(screen.queryByText('Removed Egg')).toBeNull());
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    try {
+      await user.click(screen.getByRole('link', { name: 'Back' }));
+      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+      await waitFor(() => expect(screen.queryByText('Removed Egg')).toBeNull());
+    } finally {
+      confirm.mockRestore();
+    }
   });
 });
 
@@ -3974,7 +3984,8 @@ describe('Edit leave guard (#596)', () => {
       target: { value: 'Lots of protein' },
     });
     await goBack(user);
-    expect(confirm).toHaveBeenCalled();
+    expect(confirm).toHaveBeenCalledWith('Discard your changes?');
+    expect(screen.queryByText('Detail of the recipe')).toBeNull();
   });
 
   it('does not ask after a successful Save', async () => {
