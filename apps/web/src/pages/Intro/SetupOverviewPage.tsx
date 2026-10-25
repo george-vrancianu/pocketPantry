@@ -2,15 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IntroLook } from '../../components/IntroLook';
 import { SetupReviewFrame } from '../../components/Setup/SetupReviewView';
+import { useSnapLeave } from '../../components/Setup/useSnapLeave';
 import { SetupTopRow } from '../../components/Setup/SetupTopRow';
 import {
   INTRO_CAMERA_PATH,
   INTRO_PATHS,
-  introPath,
   setupReviewPath,
-  skipStep,
 } from '../../lib/intro';
-import { resetScanSession, useScanSession } from '../../lib/scanSession';
+import { useScanSession } from '../../lib/scanSession';
 import { useAutoAdvance, useIntro } from '../../lib/useIntro';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 
@@ -29,14 +28,11 @@ export function SetupOverviewPage() {
   // Skip empties the Scan Session on its way out, which must not bounce this page back to Snap.
   const [leaving, setLeaving] = useState(false);
 
+  const leave = useSnapLeave(() => setLeaving(true));
+
   if (advancing || leaving) return null;
 
   const mode = scans[scans.length - 1]?.mode;
-  const onSkip = () => {
-    setLeaving(true);
-    resetScanSession();
-    navigate(introPath(skipStep('snap')), { replace: true });
-  };
   // Adding ends by emptying the Scan Session, which `useAutoAdvance` reacts to. When the Member empties it
   // without saving anything (discarding, or removing the last card) they go back to Snap and stay there.
   const backToSnapIfNothingSaved = () => {
@@ -62,7 +58,7 @@ export function SetupOverviewPage() {
           },
           renderFrame: (content) => (
             <SetupReviewFrame>
-              <SetupTopRow onSkip={onSkip} />
+              <SetupTopRow leave={leave} />
               {content}
             </SetupReviewFrame>
           ),

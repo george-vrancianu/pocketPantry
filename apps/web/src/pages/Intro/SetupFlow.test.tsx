@@ -433,6 +433,7 @@ describe('Setup 1: Snap, Setup overview, All set', () => {
     await cards();
 
     await user.click(screen.getByRole('button', { name: 'Skip' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
     expect(
       await screen.findByText(
         "Now just tell me what's in the cupboard, or what to buy. Leave as many notes as you like.",
@@ -592,5 +593,124 @@ describe('Setup 1: Snap, Setup overview, All set', () => {
     expect(
       screen.getByRole('button', { name: 'Import from photos' }),
     ).toBeInTheDocument();
+  });
+  describe('Next and the Skip that asks first', () => {
+    const SAY_IT_CALLOUT =
+      "Now just tell me what's in the cupboard, or what to buy. Leave as many notes as you like.";
+
+    /** Two photos taken, then back to Snap with them still in the Scan Session. */
+    async function snapWithPhotos() {
+      const opened = await openSnap();
+      await snapPhotos(opened.user, 2);
+      await opened.user.click(
+        screen.getByRole('button', { name: 'Browser back' }),
+      );
+      await screen.findByTestId('snap-session');
+      return opened;
+    }
+
+    it('shows no Next on Snap while nothing is unsaved, and Skip moves on with no confirm', async () => {
+      const { user } = await openSnap();
+      expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+      await user.click(screen.getByRole('link', { name: 'Skip' }));
+      expect(where()).toBe('/intro/say-it');
+      expect(screen.queryByText(/saved yet/)).toBeNull();
+    });
+
+    it('Next on Snap moves on to Say it and the photos wait in the app Review after the Intro', async () => {
+      const { user } = await snapWithPhotos();
+      await user.click(screen.getByRole('button', { name: 'Next' }));
+      expect(await screen.findByText(SAY_IT_CALLOUT)).toBeInTheDocument();
+      expect(where()).toBe('/intro/say-it');
+
+      await user.click(screen.getByRole('link', { name: 'Skip' }));
+      await user.click(
+        await screen.findByRole('button', { name: 'Go to my kitchen' }),
+      );
+      await user.click(await screen.findByRole('link', { name: 'Camera' }));
+      await waitFor(() => expect(shutter()).toBeInTheDocument());
+      expect(stackCount()).toBe(2);
+      await user.click(photoStack());
+      expect(await cards()).toHaveLength(2);
+      expect(screen.queryByTestId('setup-review-banner')).toBeNull();
+    });
+
+    it('Next on the overview moves on to Say it', async () => {
+      const { user } = await openSnap();
+      await snapPhotos(user, 2);
+      await openOverview(user);
+      await cards();
+      await user.click(screen.getByRole('button', { name: 'Next' }));
+      expect(await screen.findByText(SAY_IT_CALLOUT)).toBeInTheDocument();
+      expect(where()).toBe('/intro/say-it');
+    });
+
+    it('Next in the line editor moves on to Say it', async () => {
+      const { user } = await openSnap();
+      await snapPhotos(user, 1);
+      await openOverview(user);
+      await openCard(user);
+      await user.click(screen.getByRole('button', { name: 'Next' }));
+      expect(await screen.findByText(SAY_IT_CALLOUT)).toBeInTheDocument();
+      expect(where()).toBe('/intro/say-it');
+    });
+
+    it('Skip with unsaved photos asks first: cancel keeps them, confirm drops them and moves on', async () => {
+      const { user } = await openSnap();
+      await snapPhotos(user, 2);
+      await openOverview(user);
+      await cards();
+
+      await user.click(screen.getByRole('button', { name: 'Skip' }));
+      expect(
+        screen.getByText(
+          "Skip and lose these 2 photos? They haven't been saved yet.",
+        ),
+      ).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(screen.queryByText(/saved yet/)).toBeNull();
+      expect(screen.getByRole('button', { name: 'Skip' })).toHaveFocus();
+      expect(where()).toBe('/intro/review');
+      expect(await cards()).toHaveLength(2);
+
+      await user.click(screen.getByRole('button', { name: 'Skip' }));
+      await user.click(screen.getByRole('button', { name: 'Confirm' }));
+      expect(await screen.findByText(SAY_IT_CALLOUT)).toBeInTheDocument();
+      expect(where()).toBe('/intro/say-it');
+      expect(screen.queryByText(/in your Pantry$/)).toBeNull();
+    });
+
+    it('Skip on Snap with unsaved photos asks first, and confirming leaves the Scan Session empty', async () => {
+      const { user } = await snapWithPhotos();
+      await user.click(screen.getByRole('button', { name: 'Skip' }));
+      expect(screen.getByText(/saved yet/)).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Confirm' }));
+      expect(await screen.findByText(SAY_IT_CALLOUT)).toBeInTheDocument();
+
+      await user.click(screen.getByRole('link', { name: 'Skip' }));
+      await user.click(
+        await screen.findByRole('button', { name: 'Go to my kitchen' }),
+      );
+      await user.click(await screen.findByRole('link', { name: 'Camera' }));
+      await waitFor(() => expect(shutter()).toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: /^Review/ })).toBeNull();
+      expect(stackCount()).toBe(0);
+    });
+
+    it('Skip in the line editor asks first too', async () => {
+      const { user } = await openSnap();
+      await snapPhotos(user, 1);
+      await openOverview(user);
+      await openCard(user);
+      await user.click(screen.getByRole('button', { name: 'Skip' }));
+      const ask = screen.getByText(/saved yet/);
+      await user.click(
+        within(ask.closest('[role="alert"]')!.parentElement!).getByRole(
+          'button',
+          { name: 'Confirm' },
+        ),
+      );
+      expect(await screen.findByText(SAY_IT_CALLOUT)).toBeInTheDocument();
+    });
   });
 });

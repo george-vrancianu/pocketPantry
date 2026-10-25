@@ -39,7 +39,10 @@
   },
   "setupStep": {
     "progress": "{{step}} af 2",
-    "skip": "Spring over"
+    "skip": "Spring over",
+    "next": "Næste",
+    "lostPhotos_one": "Spring over og mist dette billede? Det er ikke gemt endnu.",
+    "lostPhotos_other": "Spring over og mist disse {{count}} billeder? De er ikke gemt endnu."
   },
   "snap": {
     "bubble": {

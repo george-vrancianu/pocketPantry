@@ -17,6 +17,7 @@ import { IntroLook } from '../../components/IntroLook';
 import { creamFocus } from '../../components/Setup/creamFocus';
 import { GatorBubble } from '../../components/Setup/GatorBubble';
 import { SetupCallout } from '../../components/Setup/SetupCallout';
+import { useSnapLeave } from '../../components/Setup/useSnapLeave';
 import { SetupOliveTopRow } from '../../components/Setup/SetupOliveTopRow';
 import {
   INTRO_CAMERA_PATH,
@@ -44,6 +45,7 @@ export function SnapPage() {
   const session = useScanSession();
   const taken = session.scans.length;
   const reading = pendingCount(session);
+  const leave = useSnapLeave();
 
   return (
     <IntroLook ground="olive">
@@ -62,7 +64,7 @@ export function SnapPage() {
           creamFocus,
         ]}
       >
-        <SetupOliveTopRow skipTo={SKIP_TO} />
+        <SetupOliveTopRow skipTo={SKIP_TO} leave={leave} />
 
         <GatorBubble live mt="24px">
           {t(`snap.bubble.${pick}`)}
