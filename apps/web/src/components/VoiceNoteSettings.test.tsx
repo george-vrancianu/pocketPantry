@@ -79,32 +79,25 @@ describe('the Voice Note host settings', () => {
   });
 
   const open = (name: string | RegExp) => screen.findByRole('dialog', { name });
+  /** Nothing opens by itself: the Member presses Review in the strip. */
+  const openFromStrip = async (name: string | RegExp) => {
+    await userEvent
+      .setup()
+      .click(await screen.findByRole('button', { name: 'Review' }));
+    return open(name);
+  };
   const applyOne = async () => {
-    const review = await open(/what I heard|Review/i);
+    const review = await openFromStrip(/what I heard|Review/i);
     await userEvent
       .setup()
       .click(within(review).getByRole('button', { name: /Do this one|Apply/ }));
   };
 
-  it('indicator: the status pill shows the read', async () => {
-    await host(
-      { ...APP_VOICE_SETTINGS, indicator: 'pill', openWhenReady: true },
-      true,
-    );
-    const pill = await screen.findByRole('status');
-    expect(within(pill).getByRole('button', { name: 'Cancel' })).toBeVisible();
-  });
-
-  it('indicator: the strip is the app default and the note waits in it', async () => {
+  it('the Voice Inbox strip shows the read and the note waits in it', async () => {
     const { sent } = await host(APP_VOICE_SETTINGS);
     expect(await screen.findByText(/ready/i)).toBeVisible();
     expect(sent[0].get('defaultTarget')).toBe('none');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('openWhenReady: the note opens as soon as it is read', async () => {
-    await host({ ...APP_VOICE_SETTINGS, openWhenReady: true });
-    expect(await open(/./)).toBeVisible();
   });
 
   it('defaultTarget: forces the Default List over the route', async () => {
@@ -119,18 +112,18 @@ describe('the Voice Note host settings', () => {
   it('reviewLook: setup draws the Intro Review, app keeps the app one', async () => {
     await host({
       ...APP_VOICE_SETTINGS,
-      openWhenReady: true,
       reviewLook: 'setup',
     });
-    const review = await open("Here's what I heard");
+    const review = await openFromStrip("Here's what I heard");
     expect(
       within(review).getByRole('button', { name: 'Do this one' }),
     ).toBeVisible();
   });
 
-  it('reviewLook: app opened from the Voice Inbox keeps the app heading', async () => {
-    await host({ ...APP_VOICE_SETTINGS, openWhenReady: true });
-    const review = await open(/./);
+  it('reviewLook: app keeps the app heading', async () => {
+    await host(APP_VOICE_SETTINGS);
+    const review = await openFromStrip(/./);
+    expect(review).toHaveAccessibleName(/Review|What I heard/i);
     expect(review).not.toHaveAccessibleName("Here's what I heard");
   });
 
@@ -138,7 +131,6 @@ describe('the Voice Note host settings', () => {
     const afterApply = vi.fn();
     await host({
       ...APP_VOICE_SETTINGS,
-      openWhenReady: true,
       afterApply,
     });
     await applyOne();
@@ -152,7 +144,6 @@ describe('the Voice Note host settings', () => {
     const afterApply = vi.fn();
     await host({
       ...APP_VOICE_SETTINGS,
-      openWhenReady: true,
       toastOnApply: false,
       afterApply,
     });

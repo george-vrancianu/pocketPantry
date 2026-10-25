@@ -8,7 +8,6 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { AppDock } from '../../components/AppDock';
 import { IntroLook } from '../../components/IntroLook';
 import { creamFocus } from '../../components/Setup/creamFocus';
@@ -22,7 +21,7 @@ import {
   VoiceHostSlot,
 } from '../../components/voice/VoiceHost';
 import { introPath, nextStep, savedByVoice, skipStep } from '../../lib/intro';
-import { useIntro } from '../../lib/useIntro';
+import { useAutoAdvance, useIntro } from '../../lib/useIntro';
 import {
   useVoiceConfig,
   type VoiceApplyResult,
@@ -36,10 +35,8 @@ const SKIP_TO = introPath(skipStep('say-it'));
 /** Where the step after Say it is: "Continue" when there is no mic, and "Do these N" once saved. */
 const CONTINUE_TO = introPath(nextStep('say-it'));
 
-/** Say it's one-note settings: the status pill, open as soon as read, the Pantry as Default List (ADR 0021). */
+/** Say it's Voice Note settings: the app's Voice Inbox, with the Pantry as Default List (ADR 0021), the Setup look and no toast. */
 const SAY_IT_VOICE_SETTINGS: VoiceNoteSettings = {
-  indicator: 'pill',
-  openWhenReady: true,
   defaultTarget: 'pantry',
   reviewLook: 'setup',
   toastOnApply: false,
@@ -106,16 +103,18 @@ function SayItScreen() {
   const { counts, recordSaved } = useIntro();
   const voice = useVoiceConfig();
   const holding = useDockRaised();
-  const { phase } = useVoiceNoteState();
-  const navigate = useNavigate();
-  // "Do these N" ran: count only what was really saved, then on to All set.
+  const { phase, inbox } = useVoiceNoteState();
+  // Every apply (one note or Review all) adds what the server really saved. Moving on to All set is
+  // useAutoAdvance's: once the Voice Inbox is empty and something was saved here.
   const settings: VoiceNoteSettings = {
     ...SAY_IT_VOICE_SETTINGS,
     afterApply: (result: VoiceApplyResult, actions: VoiceReviewAction[]) => {
-      recordSaved(savedByVoice(result.applied, actions));
-      void navigate(CONTINUE_TO, { replace: true });
+      recordSaved(savedByVoice(result.applied, actions), 'say-it');
     },
   };
+
+  const movingOn = useAutoAdvance('say-it', inbox.total === 0);
+  if (movingOn) return null;
 
   return (
     <>
@@ -137,7 +136,7 @@ function SayItScreen() {
         <SetupOliveTopRow
           step={2}
           skipTo={SKIP_TO}
-          skipDisabled={phase === 'reading'}
+          skipDisabled={inbox.reading > 0}
         />
 
         {counts.batches > 0 ? (
@@ -213,8 +212,8 @@ function SayItScreen() {
       {voice === 'on' ? (
         <>
           <CoachLine held={holding} />
-          {/* Only at rest: after release the status pill owns the space above the mic. */}
-          {!holding && phase === 'idle' ? (
+          {/* Only at rest with an empty Voice Inbox: after release the strip owns the space above the mic. */}
+          {!holding && phase === 'idle' && inbox.total === 0 ? (
             <SetupCallout
               title={t('sayIt.callout.title')}
               body={t('sayIt.callout.body')}
@@ -232,7 +231,7 @@ function SayItScreen() {
 
 /**
  * Setup 2, Say it: the olive screen that teaches where the mic lives. The real Dock is shown with only the
- * mic lit, and holding it runs the real Voice Note flow (recording, permission, Voice Cap, Review) in the
+ * mic lit, and holding it runs the real Voice Note flow (recording, permission, Voice Cap, the Voice Inbox, Review) in the
  * Member's Spoken Language, with the Pantry as its Default List. This screen is outside the app layout, so
  * it hosts the Voice Note itself.
  */

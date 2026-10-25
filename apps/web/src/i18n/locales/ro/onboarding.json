@@ -76,7 +76,7 @@
     "pill_one": "{{count}} lucru în Cămara ta",
     "pill_few": "{{count}} lucruri în Cămara ta",
     "pill_other": "{{count}} de lucruri în Cămara ta",
-    "bubble": "Acum spune-mi ce e în dulap sau ce trebuie cumpărat.",
+    "bubble": "Acum spune-mi ce e în dulap sau ce trebuie cumpărat. Poți lăsa câte note vrei.",
     "examplesLabel": "Ce poți spune",
     "examples": {
       "pantry": {
@@ -90,7 +90,7 @@
     },
     "callout": {
       "title": "Ține apăsat pe microfon, vorbește, dă drumul",
-      "body": "Telefonul îți va cere accesul la microfon. Înregistrarea se șterge după ce o citesc."
+      "body": "Telefonul îți va cere accesul la microfon. Poți lăsa mai multe note, apoi le verifici împreună. Fiecare înregistrare se șterge după ce o citesc."
     },
     "coach": {
       "keepHolding": "Ține apăsat cât timp vorbești.",

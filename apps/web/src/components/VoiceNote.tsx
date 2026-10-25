@@ -7,7 +7,6 @@ import { VoiceAnswers } from './voice/VoiceAnswerSheet';
 import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
 import { VoiceInboxStrip } from './voice/VoiceInboxStrip';
-import { StatusPill } from './voice/StatusPill';
 import { useVoiceConfigured, type VoiceDefaultTarget } from '../lib/voice';
 import { useVoiceNote } from '../lib/useVoiceNote';
 import { dockStateFor } from '../lib/dockState';
@@ -26,10 +25,6 @@ export function defaultTargetFor(pathname: string): VoiceDefaultTarget {
  * The host and the Voice Note module never ask where they are.
  */
 export type VoiceNoteSettings = {
-  /** What shows above the Dock: the Voice Inbox strip, or the single status pill. */
-  indicator: 'strip' | 'pill';
-  /** Whether a Voice Note opens as soon as it is read, instead of waiting in the Voice Inbox. */
-  openWhenReady: boolean;
   /** The Default List this host forces over the route's (ADR 0021). Absent: the route's. */
   defaultTarget?: VoiceDefaultTarget;
   /** How the Review looks: the app's, or the Intro's (happy Gator, "Here's what I heard", "Do these N"). */
@@ -42,8 +37,6 @@ export type VoiceNoteSettings = {
 
 /** Today's in-app settings: the Voice Inbox strip, notes wait to be opened, the route's Default List, a toast. */
 export const APP_VOICE_SETTINGS: VoiceNoteSettings = {
-  indicator: 'strip',
-  openWhenReady: false,
   reviewLook: 'app',
   toastOnApply: true,
 };
@@ -85,19 +78,13 @@ function VoiceNoteControls({
   defaultTarget: VoiceDefaultTarget;
   settings: VoiceNoteSettings;
 }) {
-  const voice = useVoiceNote(defaultTarget, {
-    openWhenReady: settings.openWhenReady,
-  });
+  const voice = useVoiceNote(defaultTarget);
 
   return (
     <>
       <VoiceButton voice={voice} target={defaultTarget} />
 
-      {settings.indicator === 'pill' ? (
-        <StatusPill voice={voice} />
-      ) : (
-        <VoiceInboxStrip />
-      )}
+      <VoiceInboxStrip />
 
       <MicSheets mic={voice.mic} target={defaultTarget} />
 

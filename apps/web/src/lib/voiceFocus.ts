@@ -10,15 +10,6 @@ export function focusVoiceButton() {
   }, 0);
 }
 
-/** Puts focus on the status pill's first button (its Cancel while reading) once the pill has rendered it. */
-export function focusPillAction() {
-  setTimeout(() => {
-    document
-      .querySelector<HTMLElement>(`[${VOICE_PILL_ATTRIBUTE}] button`)
-      ?.focus();
-  }, 0);
-}
-
 /** Whether focus is on one of the status pill's buttons. */
 export function isInPill() {
   return !!document.activeElement?.closest(`[${VOICE_PILL_ATTRIBUTE}]`);

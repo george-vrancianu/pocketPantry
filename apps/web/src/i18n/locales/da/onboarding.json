@@ -73,7 +73,7 @@
   "sayIt": {
     "pill_one": "{{count}} ting i dit spisekammer",
     "pill_other": "{{count}} ting i dit spisekammer",
-    "bubble": "Fortæl mig nu, hvad der er i skabet, eller hvad der skal købes.",
+    "bubble": "Fortæl mig nu, hvad der er i skabet, eller hvad der skal købes. Du kan lægge så mange noter, du vil.",
     "examplesLabel": "Det kan du sige",
     "examples": {
       "pantry": {
@@ -87,7 +87,7 @@
     },
     "callout": {
       "title": "Hold mikrofonen nede, tal, slip",
-      "body": "Din telefon spørger om adgang til mikrofonen. Optagelsen bliver slettet, når jeg har læst den."
+      "body": "Din telefon spørger om adgang til mikrofonen. Læg gerne flere noter, og gennemgå dem så samlet. Hver optagelse bliver slettet, når jeg har læst den."
     },
     "coach": {
       "keepHolding": "Bliv ved med at holde, mens du taler.",
