@@ -214,6 +214,21 @@ describe('GuidanceSection', () => {
     expect(screen.getByText('Heavy to sleep on')).toBeInTheDocument();
   });
 
+  it('puts each When to Eat tag on its own line, the reason under it', () => {
+    show({
+      eatingMoments: [moment({ name: 'Dinner', reason: 'Filling and warm' })],
+    });
+    const item = screen.getByRole('listitem');
+    expect(item).toHaveStyle({ flexDirection: 'column' });
+    const tag = within(item).getByText('Good for · Dinner');
+    const reason = within(item).getByText('Filling and warm');
+    expect(tag).not.toContainElement(reason);
+    expect(reason.tagName).toBe('P');
+    expect(
+      tag.compareDocumentPosition(reason) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('shows the Nutrition note, then the disclaimer last', () => {
     show({ nutritionNote: 'Rich in fat; fine as a treat.' });
     const nutrition = screen.getByRole('region', { name: 'Nutrition' });
