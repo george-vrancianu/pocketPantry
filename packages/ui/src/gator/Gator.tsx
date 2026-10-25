@@ -4,13 +4,13 @@ import { type AnimatedGatorMood, gatorLayout } from './gatorGeometry';
 
 export type GatorLoop = 'idle' | 'signature';
 /** Everything the image can show; `data-motion` carries it. */
-export type GatorMotion = GatorLoop | 'entrance';
+export type GatorMotion = GatorLoop | 'entrance' | 'tap';
 
 /** How long each one-shot plays before Gator returns to its loop (ms). */
-export const ONE_SHOT_MS = { entrance: 1300 } as const;
+export const ONE_SHOT_MS = { entrance: 1300, tap: 900 } as const;
 type OneShot = keyof typeof ONE_SHOT_MS;
 
-type Variant = GatorMotion | 'tap';
+type Variant = GatorMotion;
 const VARIANT_FILE = /gator-(.+)-(idle|signature|entrance|tap)\.svg$/;
 
 const FILES = import.meta.glob<string>(
@@ -32,6 +32,13 @@ export type GatorProps = {
   loop?: GatorLoop;
   /** Play the Entrance on mount (default true). */
   entrance?: boolean;
+  /** Makes Gator a button (named by its alt): a press plays the Tap and calls this at once. */
+  onClick?: () => void;
+  /**
+   * For a Gator inside something already pressable: the parent bumps this number to start a Tap.
+   * Gator renders no button of its own.
+   */
+  tapSignal?: number;
 } & (
   | {
       /** The translated alt text describing the mood. */
@@ -46,7 +53,7 @@ export type GatorProps = {
 );
 
 /** A one-shot in progress. */
-type Shot = { kind: OneShot };
+type Shot = { kind: OneShot; run: number };
 
 /**
  * Gator in motion: an Entrance on mount, then the caller's loop. The motion
@@ -58,12 +65,14 @@ export function Gator({
   size = 96,
   loop = 'idle',
   entrance = true,
+  onClick,
+  tapSignal = 0,
   alt,
   decorative,
 }: GatorProps) {
   const reduceMotion = usePrefersReducedMotion();
   const [shot, setShot] = useState<Shot | null>(() =>
-    entrance && !reduceMotion ? { kind: 'entrance' } : null,
+    entrance && !reduceMotion ? { kind: 'entrance', run: 0 } : null,
   );
   const [shotMood, setShotMood] = useState(mood);
   if (shotMood !== mood) {
@@ -71,6 +80,18 @@ export function Gator({
     // to its loop, and the cut-short one-shot never comes back.
     setShotMood(mood);
     setShot(null);
+  }
+
+  // Each Tap gets a new run, which remounts the image so it plays from its first frame.
+  const [taps, setTaps] = useState(0);
+  const startTap = () => {
+    setTaps(taps + 1);
+    setShot({ kind: 'tap', run: taps + 1 });
+  };
+  const [seenSignal, setSeenSignal] = useState(tapSignal);
+  if (seenSignal !== tapSignal) {
+    setSeenSignal(tapSignal);
+    startTap();
   }
 
   useEffect(() => {
@@ -92,9 +113,30 @@ export function Gator({
     new Image().src = loopSrc;
   }, [loopSrc]);
 
+  const Wrapper = onClick ? 'button' : 'span';
   return (
-    <span
+    <Wrapper
+      {...(onClick
+        ? {
+            type: 'button' as const,
+            onClick: () => {
+              startTap();
+              onClick();
+            },
+          }
+        : {})}
       style={{
+        ...(onClick
+          ? {
+              padding: 0,
+              border: 0,
+              background: 'none',
+              font: 'inherit',
+              color: 'inherit',
+              cursor: 'pointer',
+              verticalAlign: 'top',
+            }
+          : {}),
         // flow-root: the img's negative margin-top must not collapse out of
         // the span, or the art and the content after it shift up.
         display: 'flow-root',
@@ -103,6 +145,7 @@ export function Gator({
       }}
     >
       <img
+        key={taps}
         src={files[motion]}
         data-mood={mood}
         data-motion={motion}
@@ -122,6 +165,6 @@ export function Gator({
         }}
         draggable={false}
       />
-    </span>
+    </Wrapper>
   );
 }

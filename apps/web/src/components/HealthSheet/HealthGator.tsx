@@ -1,10 +1,10 @@
 import {
   Box,
-  GatorImage,
+  Gator,
   radius,
   tokens,
   usePrefersReducedMotion,
-  type GatorMood,
+  type AnimatedGatorMood,
 } from '@pocket-pantry/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +16,7 @@ import { expiringSoonDay, todoTitle } from './todoText';
 const FADE_MS = 300;
 
 /** Gator's face for a Pantry Health band: curious below ten Batches, then dapper, hmm or worried by verdict. */
-export function healthMood(health: PantryHealth): GatorMood {
+export function healthMood(health: PantryHealth): AnimatedGatorMood {
   if (!health.scored) return 'health-curious';
   return health.verdict === 'good'
     ? 'health-dapper'
@@ -61,15 +61,22 @@ export function useHealthGatorLine(
 export function HealthGator({
   health,
   size,
+  tapSignal,
+  entrance = false,
 }: {
   health: PantryHealth;
   size: number;
+  /** A parent that is already pressable bumps this to start Gator's Tap. */
+  tapSignal?: number;
+  /** Play the Entrance when first shown (not on a band change). */
+  entrance?: boolean;
 }) {
   const mood = healthMood(health);
   const gatorAlt = useGatorAlt();
   const reduceMotion = usePrefersReducedMotion();
+  const [firstMood] = useState(mood);
   const [previous, setPrevious] = useState(mood);
-  const [leaving, setLeaving] = useState<GatorMood | null>(null);
+  const [leaving, setLeaving] = useState<AnimatedGatorMood | null>(null);
   if (previous !== mood) {
     setPrevious(mood);
     setLeaving(reduceMotion ? null : previous);
@@ -106,7 +113,7 @@ export function HealthGator({
             }),
           }}
         >
-          <GatorImage mood={leaving} size={size} decorative />
+          <Gator mood={leaving} size={size} entrance={false} decorative />
         </Box>
       ) : null}
       <Box
@@ -122,7 +129,13 @@ export function HealthGator({
             : {}),
         }}
       >
-        <GatorImage mood={mood} size={size} alt={gatorAlt(mood)} />
+        <Gator
+          mood={mood}
+          size={size}
+          entrance={entrance && mood === firstMood}
+          tapSignal={tapSignal}
+          alt={gatorAlt(mood)}
+        />
       </Box>
     </Box>
   );

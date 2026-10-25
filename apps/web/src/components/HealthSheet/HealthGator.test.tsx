@@ -64,6 +64,10 @@ describe('HealthGator', () => {
     expect(screen.getByAltText(ALT.worried)).toBeInTheDocument();
     // The leaving face is decorative: only the current mood is announced.
     expect(screen.queryByAltText(ALT.dapper)).toBeNull();
+    // The new mood goes straight to its loop, never the Entrance.
+    expect(screen.getByAltText(ALT.worried).getAttribute('data-motion')).toBe(
+      'idle',
+    );
     act(() => {
       vi.advanceTimersByTime(300);
     });

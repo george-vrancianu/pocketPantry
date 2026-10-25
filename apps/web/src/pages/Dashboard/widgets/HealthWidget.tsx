@@ -39,6 +39,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const today = useToday();
   const [open, setOpen] = useState(false);
+  const [tapSignal, setTapSignal] = useState(0);
   const state = usePantryHealth();
   const { isPending, error, batchCount, health, todos } = state;
   const wide = size !== 'small';
@@ -94,7 +95,10 @@ export function HealthWidget({ size, columns }: WidgetProps) {
         columns={columns}
         isLoading={isPending}
         error={error ? translateApiError(t, error) : null}
-        onPress={() => setOpen(true)}
+        onPress={() => {
+          setTapSignal((n) => n + 1);
+          setOpen(true);
+        }}
         pressLabel={wide && gatorLine ? `${cardName}. ${gatorLine}` : cardName}
         padding="12px 14px 14px"
       >
@@ -143,7 +147,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
                   {wideSubline}
                 </Box>
               </Box>
-              <HealthGator health={health} size={64} />
+              <HealthGator health={health} size={64} tapSignal={tapSignal} />
               <Box
                 component="span"
                 sx={{ color: tokens.color.muted, display: 'flex' }}
@@ -189,7 +193,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
               }}
             >
               <ScoreRing health={health} batchCount={batchCount} size={56} />
-              <HealthGator health={health} size={52} />
+              <HealthGator health={health} size={52} tapSignal={tapSignal} />
             </Box>
             <Box component="span">
               <Box

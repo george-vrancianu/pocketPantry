@@ -369,6 +369,35 @@ describe('HealthWidget', () => {
     });
   });
 
+  describe.each([
+    ['wide', 2],
+    ['small', 2],
+  ] as const)('Gator on the %s card', (size, columns) => {
+    it('taps and opens the sheet at once, which plays its Entrance', async () => {
+      stub(tenBatchPantry());
+      stubMotion(false);
+      const user = userEvent.setup();
+      renderWithProviders(<HealthWidget size={size} columns={columns} />);
+
+      const card = await screen.findByRole('button', {
+        name: /^Pantry health, 91/,
+      });
+      const gator = () => card.querySelector('img')!;
+      expect(gator().getAttribute('data-motion')).toBe('idle');
+      await user.click(card);
+
+      expect(gator().getAttribute('data-motion')).toBe('tap');
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pantry health',
+      });
+      expect(sheet.querySelector('img')!.getAttribute('data-motion')).toBe(
+        'entrance',
+      );
+      expect(within(card).queryByRole('button')).toBeNull();
+      expect(within(sheet).queryByRole('button', { name: /Gator/ })).toBeNull();
+    });
+  });
+
   describe('sheet', () => {
     it('opens on a tap with the header: the ring, verdict and each Health Factor', async () => {
       stub(tenBatchPantry());

@@ -28,6 +28,37 @@ export const Signature: Story = { args: { loop: 'signature' } };
 
 export const WithoutEntrance: Story = { args: { entrance: false } };
 
+/** A button named by its alt: a press plays the Tap and calls onClick. */
+export const Clickable: Story = {
+  args: { entrance: false, onClick: () => {} },
+};
+
+function ParentTap() {
+  const [signal, setSignal] = useState(0);
+  return (
+    <Box>
+      <Box
+        component="button"
+        type="button"
+        onClick={() => setSignal(signal + 1)}
+        sx={{ p: 2, cursor: 'pointer' }}
+      >
+        Press the card
+        <Gator
+          mood="happy"
+          size={120}
+          entrance={false}
+          tapSignal={signal}
+          decorative
+        />
+      </Box>
+    </Box>
+  );
+}
+
+/** A Gator inside something already pressable; the parent starts the Tap. */
+export const TapStartedByParent: Story = { render: () => <ParentTap /> };
+
 function Grid({ loop, entrance }: { loop: GatorLoop; entrance: boolean }) {
   return (
     <Box
