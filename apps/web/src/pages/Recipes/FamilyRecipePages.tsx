@@ -32,11 +32,16 @@ import {
   useVariantDraft,
   type FamilyRecipeDraft,
 } from '../../lib/familyRecipes';
-import { TipsEditor } from '../../components/recipeEditor/RecipeTips';
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval';
+import { RecipeTipsCard } from './components/RecipeTipsCard';
 import { emptyDraft } from '../../lib/recipeDraft';
 import { toGuidanceDraft, type GuidanceDraft } from '../../lib/guidanceDraft';
 import { usePlateMatches } from '../../lib/plateRecipe';
-import { useRecipe, type RecipeDetail } from '../../lib/recipes';
+import {
+  recipesQueryKey,
+  useRecipe,
+  type RecipeDetail,
+} from '../../lib/recipes';
 import { FamilyGuidance, useMomentOptions } from './components/FamilyGuidance';
 import {
   draftOfEdit,
@@ -304,6 +309,7 @@ function NewRecipeContent({
       }}
       openTab="details"
       hint={t('recipes:family.newRecipeHint')}
+      stepsHint={t('recipes:family.tips.newHint')}
       detailsTop={
         <>
           {hasBases && resumedBases.ready ? (
@@ -517,6 +523,7 @@ function VariantForm({
         subline: <RecipeDraftStatus status={autosave.status} />,
       }}
       openTab="details"
+      stepsHint={t('recipes:family.tips.variantHint')}
       hint={t('recipes:family.copyHint', {
         source: source?.title ?? prefill.title,
       })}
@@ -541,6 +548,11 @@ export function EditFamilyRecipePage() {
   const query = useFamilyRecipeEdit(id);
   const update = useUpdateFamilyRecipe(id);
   const tipWrites = useFamilyTipWrites(id);
+  // Deleting a Tip waits for its Undo window to end (ADR 0009).
+  const tipRemoval = useDeferredRemoval(
+    [...recipesQueryKey, 'edit', id],
+    tipWrites.remove.mutateAsync,
+  );
   const recipe = query.data;
   /** Bumped after each save so the form reseeds with the new line and Step ids. */
   const [saves, setSaves] = useState(0);
@@ -551,6 +563,22 @@ export function EditFamilyRecipePage() {
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const back = { label: t('recipes:back'), href: `/recipes/${id}` };
+  // A failed delete is reported by the deferred-removal toast, not here.
+  const tipError =
+    tipWrites.add.error ?? tipWrites.update.error ?? tipWrites.hide.error;
+  const tips = (recipe?.tips ?? []).filter(
+    (tip) => !tipRemoval.hiddenIds.has(tip.id),
+  );
+  const tipActions = {
+    add: (text: string, stepId: string | null) =>
+      tipWrites.add.mutateAsync({ text, stepId }),
+    update: (tipId: string, text: string) =>
+      tipWrites.update.mutate({ tipId, text }),
+    remove: (tipId: string) =>
+      tipRemoval.remove(tipId, '', t('recipes:family.tips.deleted'), {
+        polite: true,
+      }),
+  };
   if (!recipe || recipe.archived) {
     return (
       <>
@@ -594,14 +622,23 @@ export function EditFamilyRecipePage() {
         ) : null
       }
       notices={
-        <Typography role="status" variant="body2">
-          {saves > 0 && !update.isPending ? t('recipes:family.saved') : null}
-        </Typography>
+        <>
+          <Typography role="status" variant="body2">
+            {saves > 0 && !update.isPending ? t('recipes:family.saved') : null}
+          </Typography>
+          {tipError ? <Alert>{translateApiError(t, tipError)}</Alert> : null}
+        </>
       }
       stepsEnd={
         <>
           <Link href={`/recipes/${id}`}>{t('recipes:family.viewRecipe')}</Link>
-          <TipsEditor recipe={{ ...recipe, id }} writes={tipWrites} />
+          <RecipeTipsCard
+            tips={tips.filter((tip) => tip.stepId === null)}
+            parentTips={recipe.parentTips ?? undefined}
+            actions={tipActions}
+            busy={tipWrites.hide.isPending}
+            onHide={(tipIds) => tipWrites.hide.mutate(tipIds)}
+          />
           <FamilyGuidance recipe={recipe} page={page} />
         </>
       }
@@ -610,8 +647,12 @@ export function EditFamilyRecipePage() {
       saving={update.isPending}
       error={update.error}
       stepTipCount={(stepId) =>
-        recipe.tips.filter((tip) => tip.stepId === stepId).length
+        tips.filter((tip) => tip.stepId === stepId).length
       }
+      stepTips={{
+        of: (stepId) => tips.filter((tip) => tip.stepId === stepId),
+        actions: tipActions,
+      }}
       onSave={(document) =>
         update.mutate(
           // `null` clears the link (and its language); leaving it out keeps both.
