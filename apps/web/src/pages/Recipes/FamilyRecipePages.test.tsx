@@ -1544,9 +1544,18 @@ describe('Suggest Guidance', () => {
     linkedIngredientId: null,
     linkedRecipeId: null,
   };
+  const moment = {
+    eatingMomentId: 'em1',
+    polarity: 'avoid',
+    reason: 'Too heavy first thing.',
+  };
   const proposal = () =>
     Response.json({
-      guidance: { nutritionNote: NOTE, pairings: [idea] },
+      guidance: {
+        nutritionNote: NOTE,
+        pairings: [idea],
+        eatingMoments: [moment],
+      },
       noSuggestions: [],
     });
   const noteOnly = () =>
@@ -1585,6 +1594,17 @@ describe('Suggest Guidance', () => {
         'Suggested',
       ),
     ).toBeVisible();
+    // The Eating Moment is a row marked Suggested too, with its polarity and reason.
+    const moments = within(
+      screen.getByRole('group', { name: /Eating Moments/ }),
+    );
+    expect(moments.getByText('Suggested')).toBeVisible();
+    expect(moments.getByLabelText('Good for or Avoid: Breakfast')).toHaveValue(
+      'avoid',
+    );
+    expect(moments.getByLabelText('Reason for Breakfast')).toHaveValue(
+      moment.reason,
+    );
     // Nothing is stored by suggesting.
     expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(false);
     // Every covered field is filled now: the button says why it is off.
@@ -1596,7 +1616,9 @@ describe('Suggest Guidance', () => {
       expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(true),
     );
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
-    expect(body).toMatchObject({ guidance: { nutritionNote: NOTE } });
+    expect(body).toMatchObject({
+      guidance: { nutritionNote: NOTE, eatingMoments: [moment] },
+    });
     expect(JSON.stringify(body)).not.toMatch(/suggested/i);
   });
 
@@ -1611,6 +1633,60 @@ describe('Suggest Guidance', () => {
 
     expect(screen.queryByText('Suggested')).not.toBeInTheDocument();
     expect(noteField()).toHaveValue(`${NOTE}!`);
+  });
+
+  it('clears the mark of an Eating Moment once the Member edits its reason or polarity', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json({
+          guidance: {
+            eatingMoments: [
+              moment,
+              { ...moment, eatingMomentId: 'em2', polarity: 'good_for' },
+            ],
+          },
+          noSuggestions: [],
+        }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+    await screen.findByLabelText('Reason for Lunch');
+    expect(screen.getAllByText('Suggested')).toHaveLength(2);
+
+    await user.type(screen.getByLabelText('Reason for Breakfast'), '!');
+    expect(screen.getAllByText('Suggested')).toHaveLength(1);
+    await user.selectOptions(
+      screen.getByLabelText('Good for or Avoid: Lunch'),
+      'avoid',
+    );
+    expect(screen.queryByText('Suggested')).not.toBeInTheDocument();
+  });
+
+  it('keeps Eating Moments the Member already added', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(noNote),
+      'GET /api/recipes/x': () => Response.json(sourceDetail),
+      [suggestRoute]: () =>
+        Response.json({
+          guidance: { nutritionNote: NOTE, eatingMoments: [moment] },
+          noSuggestions: [],
+        }),
+    });
+    await screen.findByLabelText(/^Title/);
+    await user.click(suggestButton());
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    expect(calls.some((c) => c.key === suggestRoute)).toBe(true);
+    // The Variant draft carries "Breakfast" as Good for already: untouched, not marked.
+    expect(screen.getByLabelText('Reason for Breakfast')).toHaveValue(
+      'Quick start',
+    );
+    expect(
+      within(screen.getByRole('group', { name: /Eating Moments/ })).queryByText(
+        'Suggested',
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it('is disabled with a hint when the Nutrition Note is filled, and never asks', async () => {
@@ -1713,6 +1789,24 @@ describe('Suggest Guidance', () => {
     // Typing in the field makes the message redundant.
     await user.type(noteField(), 'x');
     expect(screen.queryByText(/No suggestions for/)).not.toBeInTheDocument();
+  });
+
+  it('says "No suggestions for Eating Moments" in a status when none was worth proposing', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json({ guidance: {}, noSuggestions: ['eatingMoments'] }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+
+    await screen.findByText('No suggestions for Eating Moments.');
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((s) => s.textContent === 'No suggestions for Eating Moments.'),
+    ).toBe(true);
+    expect(screen.getByText('No Eating Moments yet.')).toBeVisible();
   });
 
   it('shows a polite error and leaves the form untouched when suggesting fails', async () => {
