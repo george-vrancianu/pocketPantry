@@ -220,6 +220,7 @@
   },
   "recipeDraft": {
     "saving": "Gemmer…",
-    "saved": "Kladde gemt"
+    "saved": "Kladde gemt",
+    "originPlateScan": "Scannet tallerken"
   }
 }

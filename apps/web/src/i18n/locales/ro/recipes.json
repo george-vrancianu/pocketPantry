@@ -235,6 +235,7 @@
   },
   "recipeDraft": {
     "saving": "Se salvează…",
-    "saved": "Ciornă salvată"
+    "saved": "Ciornă salvată",
+    "originPlateScan": "Scanare farfurie"
   }
 }
