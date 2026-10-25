@@ -39,7 +39,10 @@
   },
   "setupStep": {
     "progress": "{{step}} of 2",
-    "skip": "Skip"
+    "skip": "Skip",
+    "next": "Next",
+    "lostPhotos_one": "Skip and lose this photo? It hasn't been saved yet.",
+    "lostPhotos_other": "Skip and lose these {{count}} photos? They haven't been saved yet."
   },
   "snap": {
     "bubble": {

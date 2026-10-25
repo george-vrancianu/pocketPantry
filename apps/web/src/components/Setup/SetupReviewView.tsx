@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GatorBanner } from '../GatorBanner';
 import { ReviewActionBar } from '../ReviewActionBar';
+import type { SetupLeave } from './SetupLeave';
 import { SetupTopRow } from './SetupTopRow';
 
 /** The cream page frame of every Setup Review state (reading, failed, read): a phone-width column. */
@@ -45,7 +46,7 @@ type Props = {
   onBack: () => void;
   /** Drop this card and take its photo again. */
   onRetake: () => void;
-  onSkip: () => void;
+  leave: SetupLeave;
   children: ReactNode;
 };
 
@@ -64,7 +65,7 @@ export function SetupReviewView({
   onSave,
   onBack,
   onRetake,
-  onSkip,
+  leave,
   children,
 }: Props) {
   const { t } = useTranslation('onboarding');
@@ -76,7 +77,7 @@ export function SetupReviewView({
     <SetupReviewFrame bottomRoom>
       <SetupTopRow
         back={{ label: tReview('title'), onClick: onBack }}
-        onSkip={onSkip}
+        leave={leave}
       />
       <Box component="header" sx={{ pt: '20px', pb: '14px' }}>
         <Typography variant="h2" component="h1">

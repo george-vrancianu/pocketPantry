@@ -1,17 +1,12 @@
 import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { IntroLook } from '../../components/IntroLook';
+import { useSnapLeave } from '../../components/Setup/useSnapLeave';
 import { SetupReviewView } from '../../components/Setup/SetupReviewView';
-import {
-  INTRO_CAMERA_PATH,
-  INTRO_REVIEW_PATH,
-  introPath,
-  skipStep,
-} from '../../lib/intro';
+import { INTRO_CAMERA_PATH, INTRO_REVIEW_PATH } from '../../lib/intro';
 import { readScans } from '../../lib/scanReads';
 import {
   dispatchScanSession,
-  resetScanSession,
   scanDisplayState,
   useScanSession,
 } from '../../lib/scanSession';
@@ -31,6 +26,7 @@ export function SetupReviewPage() {
   const scan = useScanSession().scans.find((s) => s.id === scanId);
   // Leaving drops cards from the Scan Session, which must not bounce this page to the overview on the way out.
   const [leaving, setLeaving] = useState(false);
+  const leave = useSnapLeave(() => setLeaving(true));
 
   // A card that is not read yet (or is gone) has no editor: the overview shows its state.
   if (!scan || scanDisplayState(scan) !== 'read')
@@ -45,11 +41,6 @@ export function SetupReviewPage() {
     readScans();
     navigate(`${INTRO_CAMERA_PATH}?mode=${mode}`, { replace: true });
   };
-  const onSkip = () => {
-    setLeaving(true);
-    resetScanSession();
-    navigate(introPath(skipStep('snap')), { replace: true });
-  };
 
   return (
     <IntroLook>
@@ -61,7 +52,7 @@ export function SetupReviewPage() {
               {...frame}
               onBack={onBack}
               onRetake={onRetake}
-              onSkip={onSkip}
+              leave={leave}
             />
           ),
           onSaved: (saved) => {
