@@ -25,6 +25,7 @@ import {
   type StepDraft,
 } from '../../lib/recipeDraft';
 import { RowControls } from '../RowControls';
+import { GripGlyph, reordered, SortableItem, SortableList } from './sortable';
 import { StepNumber } from '../StepNumber';
 import type { RecipeTip } from '../../lib/adminRecipes';
 import { NewTipRow, TipRow, type TipActions } from './TipRows';
@@ -189,242 +190,309 @@ export function RecipeStepsSection({
           : addRow(t('admin:recipe.steps.addStart'), 0)}
         {steps.length > 0 ? (
           <Box component="ol" sx={{ m: 0, p: 0, listStyle: 'none' }}>
-            {steps.map((step, index) => {
-              const number = index + 1;
-              const tips = tipCount(step);
-              const flagged =
-                problems.steps[step.key] === 'text' &&
-                touchedSteps.has(step.key);
-              const timerOpen = openTimers.has(step.key) || step.timer !== '';
-              const timerFlagged = problems.steps[step.key] === 'timer';
-              const timerErrorId = `step-${step.key}-timer-error`;
-              return (
-                <Stack
-                  component="li"
-                  key={step.key}
-                  direction="row"
-                  spacing={1.5}
-                  sx={{ alignItems: 'flex-start', p: '12px 14px' }}
-                >
-                  <Box sx={{ mt: '6px', display: 'flex' }}>
-                    <StepNumber>{number}</StepNumber>
-                  </Box>
-                  <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
-                    <TextField
-                      value={step.text}
-                      placeholder={t('admin:recipe.steps.placeholder', {
-                        number,
-                      })}
-                      inputRef={(node: HTMLElement | null) => {
-                        if (node && focusKey.current === step.key) {
-                          focusKey.current = null;
-                          node.focus();
-                        }
-                      }}
-                      onChange={(event) => {
-                        touch(step.key);
-                        changeStep(step.key, { text: event.target.value });
-                      }}
-                      onBlur={() => touch(step.key)}
-                      error={flagged}
-                      helperText={
-                        flagged ? t('admin:recipe.invalid.stepText') : undefined
-                      }
-                      multiline
-                      minRows={1}
-                      slotProps={{
-                        htmlInput: {
-                          'aria-label': t('admin:recipe.steps.text', {
-                            number,
-                          }),
-                        },
-                      }}
-                    />
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}
-                    >
-                      {timerOpen ? (
-                        <Stack
-                          direction="row"
-                          spacing={0.5}
-                          sx={{ alignItems: 'center' }}
+            <SortableList
+              keys={steps.map((step) => step.key)}
+              nameOf={(key) =>
+                t('admin:recipe.steps.text', {
+                  number: steps.findIndex((step) => step.key === key) + 1,
+                })
+              }
+              onReorder={(from, to) => onChange(reordered(steps, from, to))}
+            >
+              {steps.map((step, index) => {
+                const number = index + 1;
+                const tips = tipCount(step);
+                const flagged =
+                  problems.steps[step.key] === 'text' &&
+                  touchedSteps.has(step.key);
+                const timerOpen = openTimers.has(step.key) || step.timer !== '';
+                const timerFlagged = problems.steps[step.key] === 'timer';
+                const timerErrorId = `step-${step.key}-timer-error`;
+                return (
+                  <SortableItem
+                    key={step.key}
+                    id={step.key}
+                    gripLabel={t('admin:recipe.reorder.grip', {
+                      name: t('admin:recipe.steps.text', { number }),
+                    })}
+                  >
+                    {({ row, grip }) => (
+                      <Stack
+                        component="li"
+                        {...row}
+                        direction="row"
+                        spacing={1.5}
+                        sx={{
+                          ...row.sx,
+                          alignItems: 'flex-start',
+                          p: '12px 14px',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            mt: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
                         >
-                          <ClockIcon size={16} />
+                          <Box component="button" {...grip}>
+                            <GripGlyph />
+                          </Box>
+                          <StepNumber>{number}</StepNumber>
+                        </Box>
+                        <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
                           <TextField
-                            size="small"
-                            value={step.timer}
+                            value={step.text}
+                            placeholder={t('admin:recipe.steps.placeholder', {
+                              number,
+                            })}
+                            inputRef={(node: HTMLElement | null) => {
+                              if (node && focusKey.current === step.key) {
+                                focusKey.current = null;
+                                node.focus();
+                              }
+                            }}
                             onChange={(event) => {
-                              openTimer(step.key);
+                              touch(step.key);
                               changeStep(step.key, {
-                                timer: event.target.value,
+                                text: event.target.value,
                               });
                             }}
-                            onBlur={() => {
-                              if (step.timer.trim() !== '') return;
-                              closeTimer(step.key);
-                              changeStep(step.key, { timer: '' });
-                            }}
-                            error={timerFlagged}
-                            sx={{ width: 110 }}
+                            onBlur={() => touch(step.key)}
+                            error={flagged}
+                            helperText={
+                              flagged
+                                ? t('admin:recipe.invalid.stepText')
+                                : undefined
+                            }
+                            multiline
+                            minRows={1}
                             slotProps={{
                               htmlInput: {
-                                inputMode: 'decimal',
-                                'aria-describedby': timerFlagged
-                                  ? timerErrorId
-                                  : undefined,
-                                'aria-label': t('admin:recipe.steps.timer', {
+                                'aria-label': t('admin:recipe.steps.text', {
                                   number,
                                 }),
                               },
-                              input: {
-                                endAdornment: (
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                  >
-                                    {t('admin:recipe.steps.minutes')}
-                                  </Typography>
-                                ),
-                              },
                             }}
                           />
-                          <IconButton
-                            tone="plain"
-                            size={40}
-                            label={t('admin:recipe.steps.clearTimer', {
-                              number,
-                            })}
-                            onClick={() => {
-                              closeTimer(step.key);
-                              changeStep(step.key, { timer: '' });
-                            }}
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}
                           >
-                            <CloseIcon />
-                          </IconButton>
-                        </Stack>
-                      ) : (
-                        <Chip
-                          icon={<ClockIcon />}
-                          label={t('admin:recipe.steps.addTimer')}
-                          aria-label={t('admin:recipe.steps.addTimerFor', {
-                            number,
-                          })}
-                          onClick={() => {
-                            openTimer(step.key);
-                            changeStep(step.key, { timer: DEFAULT_TIMER });
-                          }}
-                        />
-                      )}
-                      {stepTips && step.id ? (
-                        <Chip
-                          icon={<span aria-hidden>💡</span>}
-                          label={t('admin:recipe.steps.addTip')}
-                          aria-label={t('admin:recipe.steps.addTipFor', {
-                            number,
-                          })}
-                          onClick={() => setTipRow(step.id!, true)}
-                        />
-                      ) : null}
-                      {step.tips && step.tips.length > 0 ? (
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ alignSelf: 'center' }}
-                        >
-                          <span aria-hidden>💡 </span>
-                          {t('admin:recipe.steps.copiedTips', {
-                            count: step.tips.length,
-                          })}
-                        </Typography>
-                      ) : null}
-                      <RowControls
-                        moveUp={t('admin:recipe.steps.moveUp', { number })}
-                        moveDown={t('admin:recipe.steps.moveDown', { number })}
-                        remove={t('admin:recipe.steps.remove', { number })}
-                        first={index === 0}
-                        last={index === steps.length - 1}
-                        onMoveUp={() => onChange(moved(steps, index, -1))}
-                        onMoveDown={() => onChange(moved(steps, index, 1))}
-                        onRemove={() =>
-                          tips > 0 ? setRemoving(step.key) : remove(step, index)
-                        }
-                      />
-                    </Stack>
-                    {timerOpen && timerFlagged ? (
-                      <Typography
-                        id={timerErrorId}
-                        variant="caption"
-                        color="error"
-                      >
-                        {t('admin:recipe.invalid.timer')}
-                      </Typography>
-                    ) : null}
-                    {stepTips && step.id ? (
-                      <>
-                        {stepTips.of(step.id).map((tip, tipIndex) => (
-                          <TipRow
-                            key={`${tip.id}-${tip.text}`}
-                            tip={tip}
-                            label={t('admin:recipe.steps.tipOf', {
-                              n: tipIndex + 1,
-                              step: number,
-                            })}
-                            placeholder={t('admin:recipe.steps.tipPlaceholder')}
-                            removeLabel={t('admin:recipe.steps.deleteTip', {
-                              n: tipIndex + 1,
-                              step: number,
-                            })}
-                            actions={stepTips.actions}
-                          />
-                        ))}
-                        {addingTip.has(step.id) ? (
-                          <NewTipRow
-                            label={t('admin:recipe.steps.newTip', { number })}
-                            placeholder={t('admin:recipe.steps.tipPlaceholder')}
-                            removeLabel={t('admin:recipe.steps.cancelTip', {
-                              number,
-                            })}
-                            stepId={step.id}
-                            actions={stepTips.actions}
-                            onDone={() => setTipRow(step.id!, false)}
-                          />
-                        ) : null}
-                      </>
-                    ) : null}
-                    {removing === step.key ? (
-                      <Alert severity="warning">
-                        <Stack spacing={1}>
-                          <span>
-                            {t('admin:recipe.steps.tipsWarning', {
-                              number,
-                              count: tips,
-                            })}
-                          </span>
-                          <Stack direction="row" spacing={1}>
-                            <Button
-                              onClick={() => {
-                                setRemoving(null);
-                                onChange(without(step.key));
-                              }}
-                            >
-                              {t('admin:recipe.steps.removeWithTips')}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => setRemoving(null)}
-                            >
-                              {t('admin:recipe.steps.keep')}
-                            </Button>
+                            {timerOpen ? (
+                              <Stack
+                                direction="row"
+                                spacing={0.5}
+                                sx={{ alignItems: 'center' }}
+                              >
+                                <ClockIcon size={16} />
+                                <TextField
+                                  size="small"
+                                  value={step.timer}
+                                  onChange={(event) => {
+                                    openTimer(step.key);
+                                    changeStep(step.key, {
+                                      timer: event.target.value,
+                                    });
+                                  }}
+                                  onBlur={() => {
+                                    if (step.timer.trim() !== '') return;
+                                    closeTimer(step.key);
+                                    changeStep(step.key, { timer: '' });
+                                  }}
+                                  error={timerFlagged}
+                                  sx={{ width: 110 }}
+                                  slotProps={{
+                                    htmlInput: {
+                                      inputMode: 'decimal',
+                                      'aria-describedby': timerFlagged
+                                        ? timerErrorId
+                                        : undefined,
+                                      'aria-label': t(
+                                        'admin:recipe.steps.timer',
+                                        {
+                                          number,
+                                        },
+                                      ),
+                                    },
+                                    input: {
+                                      endAdornment: (
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                        >
+                                          {t('admin:recipe.steps.minutes')}
+                                        </Typography>
+                                      ),
+                                    },
+                                  }}
+                                />
+                                <IconButton
+                                  tone="plain"
+                                  size={40}
+                                  label={t('admin:recipe.steps.clearTimer', {
+                                    number,
+                                  })}
+                                  onClick={() => {
+                                    closeTimer(step.key);
+                                    changeStep(step.key, { timer: '' });
+                                  }}
+                                >
+                                  <CloseIcon />
+                                </IconButton>
+                              </Stack>
+                            ) : (
+                              <Chip
+                                icon={<ClockIcon />}
+                                label={t('admin:recipe.steps.addTimer')}
+                                aria-label={t(
+                                  'admin:recipe.steps.addTimerFor',
+                                  {
+                                    number,
+                                  },
+                                )}
+                                onClick={() => {
+                                  openTimer(step.key);
+                                  changeStep(step.key, {
+                                    timer: DEFAULT_TIMER,
+                                  });
+                                }}
+                              />
+                            )}
+                            {stepTips && step.id ? (
+                              <Chip
+                                icon={<span aria-hidden>💡</span>}
+                                label={t('admin:recipe.steps.addTip')}
+                                aria-label={t('admin:recipe.steps.addTipFor', {
+                                  number,
+                                })}
+                                onClick={() => setTipRow(step.id!, true)}
+                              />
+                            ) : null}
+                            {step.tips && step.tips.length > 0 ? (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ alignSelf: 'center' }}
+                              >
+                                <span aria-hidden>💡 </span>
+                                {t('admin:recipe.steps.copiedTips', {
+                                  count: step.tips.length,
+                                })}
+                              </Typography>
+                            ) : null}
+                            <RowControls
+                              moveUp={t('admin:recipe.steps.moveUp', {
+                                number,
+                              })}
+                              moveDown={t('admin:recipe.steps.moveDown', {
+                                number,
+                              })}
+                              remove={t('admin:recipe.steps.remove', {
+                                number,
+                              })}
+                              first={index === 0}
+                              last={index === steps.length - 1}
+                              onMoveUp={() => onChange(moved(steps, index, -1))}
+                              onMoveDown={() =>
+                                onChange(moved(steps, index, 1))
+                              }
+                              onRemove={() =>
+                                tips > 0
+                                  ? setRemoving(step.key)
+                                  : remove(step, index)
+                              }
+                            />
                           </Stack>
+                          {timerOpen && timerFlagged ? (
+                            <Typography
+                              id={timerErrorId}
+                              variant="caption"
+                              color="error"
+                            >
+                              {t('admin:recipe.invalid.timer')}
+                            </Typography>
+                          ) : null}
+                          {stepTips && step.id ? (
+                            <>
+                              {stepTips.of(step.id).map((tip, tipIndex) => (
+                                <TipRow
+                                  key={`${tip.id}-${tip.text}`}
+                                  tip={tip}
+                                  label={t('admin:recipe.steps.tipOf', {
+                                    n: tipIndex + 1,
+                                    step: number,
+                                  })}
+                                  placeholder={t(
+                                    'admin:recipe.steps.tipPlaceholder',
+                                  )}
+                                  removeLabel={t(
+                                    'admin:recipe.steps.deleteTip',
+                                    {
+                                      n: tipIndex + 1,
+                                      step: number,
+                                    },
+                                  )}
+                                  actions={stepTips.actions}
+                                />
+                              ))}
+                              {addingTip.has(step.id) ? (
+                                <NewTipRow
+                                  label={t('admin:recipe.steps.newTip', {
+                                    number,
+                                  })}
+                                  placeholder={t(
+                                    'admin:recipe.steps.tipPlaceholder',
+                                  )}
+                                  removeLabel={t(
+                                    'admin:recipe.steps.cancelTip',
+                                    {
+                                      number,
+                                    },
+                                  )}
+                                  stepId={step.id}
+                                  actions={stepTips.actions}
+                                  onDone={() => setTipRow(step.id!, false)}
+                                />
+                              ) : null}
+                            </>
+                          ) : null}
+                          {removing === step.key ? (
+                            <Alert severity="warning">
+                              <Stack spacing={1}>
+                                <span>
+                                  {t('admin:recipe.steps.tipsWarning', {
+                                    number,
+                                    count: tips,
+                                  })}
+                                </span>
+                                <Stack direction="row" spacing={1}>
+                                  <Button
+                                    onClick={() => {
+                                      setRemoving(null);
+                                      onChange(without(step.key));
+                                    }}
+                                  >
+                                    {t('admin:recipe.steps.removeWithTips')}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => setRemoving(null)}
+                                  >
+                                    {t('admin:recipe.steps.keep')}
+                                  </Button>
+                                </Stack>
+                              </Stack>
+                            </Alert>
+                          ) : null}
                         </Stack>
-                      </Alert>
-                    ) : null}
-                  </Stack>
-                </Stack>
-              );
-            })}
+                      </Stack>
+                    )}
+                  </SortableItem>
+                );
+              })}
+            </SortableList>
           </Box>
         ) : null}
         {steps.length > 0

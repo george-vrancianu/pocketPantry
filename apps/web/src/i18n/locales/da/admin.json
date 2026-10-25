@@ -195,6 +195,16 @@
       "optionalSub": "valgfri",
       "optionalSwitch": "Valgfri"
     },
+    "reorder": {
+      "roleDescription": "flytbar",
+      "hold": "Hold nede for at flytte",
+      "grip": "Flyt {{name}}",
+      "instructions": "For at ændre rækkefølgen skal du holde en række nede, eller fokusere på grebet og trykke mellemrum for at samle op, bruge piletasterne til at flytte og trykke mellemrum for at slippe. Tryk Escape for at annullere.",
+      "pickedUp": "{{name}} samlet op.",
+      "movedTo": "{{name}} flyttet til plads {{position}} af {{total}}.",
+      "dropped": "{{name}} sluppet på plads {{position}} af {{total}}.",
+      "cancelled": "Ændring af rækkefølge annulleret."
+    },
     "steps": {
       "title": "Trin",
       "empty": "Ingen trin endnu.",
