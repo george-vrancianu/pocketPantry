@@ -4,6 +4,7 @@ import {
   radius,
   tokens,
   usePrefersReducedMotion,
+  warmGatorLoops,
   type AnimatedGatorMood,
 } from '@pocket-pantry/ui';
 import { useEffect, useState } from 'react';
@@ -14,6 +15,12 @@ import { useGatorAlt } from '../../lib/useGatorAlt';
 import { expiringSoonDay, todoTitle } from './todoText';
 
 const FADE_MS = 300;
+const HEALTH_MOODS: AnimatedGatorMood[] = [
+  'health-curious',
+  'health-dapper',
+  'health-hmm',
+  'worried',
+];
 
 /** Gator's face for a Pantry Health band: curious below ten Batches, then dapper, hmm or worried by verdict. */
 export function healthMood(health: PantryHealth): AnimatedGatorMood {
@@ -74,11 +81,15 @@ export function HealthGator({
   const mood = healthMood(health);
   const gatorAlt = useGatorAlt();
   const reduceMotion = usePrefersReducedMotion();
-  const [firstMood] = useState(mood);
+  // After a band change the face never plays an Entrance, even if the band comes back.
+  const [changed, setChanged] = useState(false);
+  // Warm every band's loop, so the incoming face isn't blank while the old one fades out.
+  useEffect(() => warmGatorLoops(HEALTH_MOODS, 'idle'), []);
   const [previous, setPrevious] = useState(mood);
   const [leaving, setLeaving] = useState<AnimatedGatorMood | null>(null);
   if (previous !== mood) {
     setPrevious(mood);
+    setChanged(true);
     setLeaving(reduceMotion ? null : previous);
   }
   // The old face goes once its fade has run, however the browser reports it.
@@ -132,7 +143,7 @@ export function HealthGator({
         <Gator
           mood={mood}
           size={size}
-          entrance={entrance && mood === firstMood}
+          entrance={entrance && !changed}
           tapSignal={tapSignal}
           alt={gatorAlt(mood)}
         />

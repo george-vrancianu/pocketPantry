@@ -31,6 +31,9 @@ function Harness() {
       <button type="button" onClick={() => setScore(50)}>
         Change
       </button>
+      <button type="button" onClick={() => setScore(90)}>
+        Back
+      </button>
     </>
   );
 }
@@ -72,6 +75,16 @@ describe('HealthGator', () => {
       vi.advanceTimersByTime(300);
     });
     expect(screen.queryByTestId('health-gator-leaving')).toBeNull();
+  });
+
+  it('never plays an Entrance after a band change, even when the band comes back', async () => {
+    stubMotion(false);
+    renderWithProviders(<Harness />);
+    await userEvent.click(screen.getByRole('button', { name: 'Change' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByAltText(ALT.dapper).getAttribute('data-motion')).toBe(
+      'idle',
+    );
   });
 
   it('swaps without a fade under reduced motion', async () => {

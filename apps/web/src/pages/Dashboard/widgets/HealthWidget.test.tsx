@@ -97,7 +97,7 @@ function stub(
 
 /** The element's markup under the active Theme: a Theme is its CSS variables, set on the root. */
 const snapshotOf = (element: Element) =>
-  `data-theme=${document.documentElement.dataset.theme}\n${element.outerHTML.replace(/_r_\w+_/g, '_r_N_')}`;
+  `data-theme=${document.documentElement.dataset.theme}\n${element.outerHTML.replace(/_r_\w+_/g, '_r_N_').replace(/src="[^"]*\/(gator-[\w-]+\.svg)"/g, 'src="$1"')}`;
 
 /** The disclosure button of a Health To-do; its bulk button shares the start of the name. */
 const disclosure = (sheet: HTMLElement, name: RegExp) =>
@@ -383,7 +383,7 @@ describe('HealthWidget', () => {
         name: /^Pantry health, 91/,
       });
       const gator = () => card.querySelector('img')!;
-      expect(gator().getAttribute('data-motion')).toBe('idle');
+      expect(gator().getAttribute('data-motion')).toBe('entrance');
       await user.click(card);
 
       expect(gator().getAttribute('data-motion')).toBe('tap');

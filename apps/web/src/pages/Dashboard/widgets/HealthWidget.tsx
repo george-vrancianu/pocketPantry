@@ -147,7 +147,12 @@ export function HealthWidget({ size, columns }: WidgetProps) {
                   {wideSubline}
                 </Box>
               </Box>
-              <HealthGator health={health} size={64} tapSignal={tapSignal} />
+              <HealthGator
+                health={health}
+                size={64}
+                entrance
+                tapSignal={tapSignal}
+              />
               <Box
                 component="span"
                 sx={{ color: tokens.color.muted, display: 'flex' }}
@@ -193,7 +198,12 @@ export function HealthWidget({ size, columns }: WidgetProps) {
               }}
             >
               <ScoreRing health={health} batchCount={batchCount} size={56} />
-              <HealthGator health={health} size={52} tapSignal={tapSignal} />
+              <HealthGator
+                health={health}
+                size={52}
+                entrance
+                tapSignal={tapSignal}
+              />
             </Box>
             <Box component="span">
               <Box

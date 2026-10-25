@@ -24,6 +24,14 @@ for (const [path, url] of Object.entries(FILES)) {
   (ART[mood!] ??= {})[variant as Variant] = url;
 }
 
+/** Warms the cache with these moods' loops, so a face that mounts later doesn't show an empty box. */
+export function warmGatorLoops(moods: AnimatedGatorMood[], loop: GatorLoop) {
+  for (const mood of moods) {
+    const src = ART[mood]?.[loop];
+    if (src) new Image().src = src;
+  }
+}
+
 export type GatorProps = {
   mood: AnimatedGatorMood;
   /** Pixel width of the drawing itself; its padding hangs outside. */
@@ -49,11 +57,13 @@ export type GatorProps = {
       /** Empty alt, hidden from assistive tech. */
       decorative: true;
       alt?: never;
+      /** A button needs a name: onClick requires alt. */
+      onClick?: never;
     }
 );
 
 /** A one-shot in progress. */
-type Shot = { kind: OneShot; run: number };
+type Shot = { kind: OneShot };
 
 /**
  * Gator in motion: an Entrance on mount, then the caller's loop. The motion
@@ -72,7 +82,7 @@ export function Gator({
 }: GatorProps) {
   const reduceMotion = usePrefersReducedMotion();
   const [shot, setShot] = useState<Shot | null>(() =>
-    entrance && !reduceMotion ? { kind: 'entrance', run: 0 } : null,
+    entrance && !reduceMotion ? { kind: 'entrance' } : null,
   );
   const [shotMood, setShotMood] = useState(mood);
   if (shotMood !== mood) {
@@ -85,8 +95,8 @@ export function Gator({
   // Each Tap gets a new run, which remounts the image so it plays from its first frame.
   const [taps, setTaps] = useState(0);
   const startTap = () => {
-    setTaps(taps + 1);
-    setShot({ kind: 'tap', run: taps + 1 });
+    setTaps((n) => n + 1);
+    setShot({ kind: 'tap' });
   };
   const [seenSignal, setSeenSignal] = useState(tapSignal);
   if (seenSignal !== tapSignal) {
@@ -112,6 +122,12 @@ export function Gator({
   useEffect(() => {
     new Image().src = loopSrc;
   }, [loopSrc]);
+
+  // A pressable Gator will want its Tap at once, too.
+  const tapSrc = onClick || tapSignal !== undefined ? files.tap : undefined;
+  useEffect(() => {
+    if (tapSrc) new Image().src = tapSrc;
+  }, [tapSrc]);
 
   const Wrapper = onClick ? 'button' : 'span';
   return (
