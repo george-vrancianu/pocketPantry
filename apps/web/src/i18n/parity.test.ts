@@ -460,6 +460,10 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
     'the example sentence a Member can say (design copy); the Location is Fridge, spoken in lower case',
   'recipes:recipeDraft.saved|draft':
     'the status "Draft saved" in the Recipe Draft form header; the exact copy of the ticket, next to the Recipe form it belongs to',
+  'recipes:family.newRecipeHint|draft':
+    'the editor hint of design v3, the exact copy of ticket #587: "Kept as your draft until you save it as one of your family\'s Recipes."',
+  'recipes:family.tabs.details|details':
+    "the editor's first tab, named Details by design v3 (ticket #587); a tab, not the glossary's metadata term",
   'recipes:drafts.entry|draft':
     'the Recipes page entry "Drafts (N)", the exact copy of ticket #547; it opens the list titled "Recipe Drafts"',
   'recipes:drafts.discard|draft':

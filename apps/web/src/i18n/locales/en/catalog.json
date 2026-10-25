@@ -23,6 +23,8 @@
     "aisleLoading": "loading…",
     "aisleMatching": "matching “{{query}}”",
     "leaveAisle": "Leave {{aisle}}",
+    "addIngredient": "Add an ingredient",
+    "backToAisles": "Aisles",
     "noMatchAisleHint": "Try another aisle or clear the aisle.",
     "recentlyStocked": "Recently stocked",
     "stockedInPantry": "in pantry · added {{when}}",

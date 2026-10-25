@@ -118,25 +118,78 @@
   "family": {
     "newRecipe": "Rețetă nouă",
     "newRecipeHeading": "Rețetă nouă",
-    "newRecipeHint": "Adaugă sfaturi la pași după ce salvezi rețeta.",
+    "newRecipeHint": "Rămâne ciornă până o salvezi ca una dintre rețetele familiei tale.",
     "makeVariant": "Fă o variantă",
     "edit": "Editează",
     "delete": "Șterge",
     "deleteConfirm": "Ștergi această rețetă? Dispare pentru toată familia.",
     "newHeading": "Fă o variantă",
     "editHeading": "Editează rețeta",
-    "create": "Salvează varianta",
-    "save": "Salvează rețeta",
     "title": "Titlu",
-    "copyHint": "Aceasta este o copie pe care o poți schimba. Nu se salvează nimic până nu o salvezi.",
-    "tipsHint": "Sfaturile copiate rămân la pașii lor; adaugă-le pe ale tale după ce salvezi varianta.",
+    "copyHint": "Copiată din {{source}}. Devine rețetă când o salvezi.",
+    "editorTabs": "Filele rețetei",
+    "tabs": {
+      "details": "Detalii",
+      "needsAttention": "Necesită atenție",
+      "toIngredients": "Ingrediente ›",
+      "toSteps": "Pași ›"
+    },
     "freeTextNote": "Nu e în Catalog",
     "unavailable": "Această rețetă nu poate fi editată.",
-    "guidanceHint": "Recomandări, o Notă nutrițională și Momente de consum. Se salvează odată cu rețeta.",
+    "guidanceCard": {
+      "title": "Asocieri, nutriție și momente",
+      "optional": "Opțional",
+      "setCount_one": "{{count}} setat · opțional",
+      "setCount_few": "{{count}} setate · opțional",
+      "setCount_other": "{{count}} de setate · opțional",
+      "linkOptional": "Opțional · niciodată citit din pagină",
+      "suggest": "Sugerează",
+      "suggesting": "Se sugerează…",
+      "nothing": "Nimic de sugerat",
+      "momentHint": "Atinge o dată pentru Bun pentru, de două ori pentru Evită, de trei ori pentru a șterge.",
+      "notSet": "nesetat",
+      "editPairing": "Editează {{label}}",
+      "problem": "De corectat înainte de salvare",
+      "donePairing": "Gata"
+    },
     "linkedRecipeUnavailable": "O rețetă pe care nu o vezi sau care e arhivată",
+    "leaveConfirm": "Renunți la modificări?",
     "saved": "Rețeta a fost salvată.",
+    "saveFailed": {
+      "recipe": "Rețeta nu a fost salvată: {{reason}}",
+      "guidance": "Recomandările rețetei nu au fost salvate: {{reason}}"
+    },
     "viewRecipe": "Vezi rețeta",
-    "moreActions": "Mai multe acțiuni"
+    "moreActions": "Mai multe acțiuni",
+    "tips": {
+      "newHint": "Adaugă sfaturi la pași după ce salvezi rețeta.",
+      "variantHint": "Sfaturile copiate rămân la pașii lor; adaugă-le pe ale tale după ce salvezi Varianta.",
+      "deleted": "Sfat șters"
+    },
+    "recipeTips": {
+      "placeholder": "Un sfat pentru această rețetă",
+      "title": "Sfaturile rețetei",
+      "hint": "Sfaturile se salvează imediat ce le schimbi; restul se salvează cu rețeta.",
+      "tip": "Sfatul rețetei {{number}}",
+      "delete": "Șterge Sfatul rețetei {{number}}",
+      "new": "Sfat nou al rețetei",
+      "cancelNew": "Renunță la Sfatul nou al rețetei",
+      "add": "Adaugă un Sfat al rețetei"
+    },
+    "details": {
+      "titlePlaceholder": "Titlul rețetei",
+      "servesRequired": "Introdu pentru câte porții este.",
+      "levelCycle": "Nivel: {{value}}. Atinge pentru a schimba",
+      "prep": "Pregătire",
+      "cook": "Gătire"
+    },
+    "baseCard": {
+      "closest": "cea mai apropiată",
+      "subline": "Alege Rețeta din Catalog din care provine această Variantă sau las-o de sine stătătoare.",
+      "savesVariant": "Se salvează ca Variantă a rețetei <b>{{title}}</b>.",
+      "savesBase": "Se salvează ca propria Rețetă de bază."
+    },
+    "variantOf": "Variantă a rețetei <b>{{title}}</b>"
   },
   "fewerServings": "Mai puține porții",
   "moreServings": "Mai multe porții",
@@ -229,7 +282,8 @@
   "sourceLink": {
     "from": "De pe {{host}} ↗",
     "remove": "Elimină linkul",
-    "translatedFrom": "Tradusă din {{language}}"
+    "translatedFrom": "Tradusă din {{language}}",
+    "removed": "Link eliminat. Dispare când salvezi."
   },
   "recipeDraft": {
     "saving": "Se salvează…",

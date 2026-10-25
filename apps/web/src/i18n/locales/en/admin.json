@@ -181,7 +181,7 @@
     "lines": {
       "title": "Ingredient Lines",
       "hint": "Leave the quantity blank for a line like \"salt, to taste\".",
-      "empty": "No Ingredient Lines yet.",
+      "empty": "No ingredients yet. Search the Catalog below.",
       "add": "Add an Ingredient",
       "quantity": "Quantity of {{name}}",
       "unit": "Unit of {{name}}",
@@ -190,7 +190,20 @@
       "remove": "Remove {{name}}",
       "moveUp": "Move {{name}} up",
       "moveDown": "Move {{name}} down",
-      "unknown": "Unknown Ingredient"
+      "unknown": "Unknown Ingredient",
+      "more": "More for {{name}}",
+      "optionalSub": "optional",
+      "optionalSwitch": "Optional"
+    },
+    "reorder": {
+      "roleDescription": "movable",
+      "hold": "Hold to move",
+      "grip": "Move {{name}}",
+      "instructions": "To reorder, hold a row, or focus its grip and press space to pick up, use the arrow keys to move, then press space to drop. Press escape to cancel.",
+      "pickedUp": "Picked up {{name}}.",
+      "movedTo": "{{name}} moved to position {{position}} of {{total}}.",
+      "dropped": "{{name}} dropped at position {{position}} of {{total}}.",
+      "cancelled": "Reorder cancelled."
     },
     "steps": {
       "title": "Steps",
@@ -203,11 +216,24 @@
       "remove": "Remove Step {{number}}",
       "tipsWarning_one": "Removing Step {{number}} deletes its {{count}} Tip when you save.",
       "tipsWarning_other": "Removing Step {{number}} deletes its {{count}} Tips when you save.",
-      "draftTips": "Tips for Step {{number}}",
-      "removeTip": "Remove Tip {{n}} of Step {{step}}",
-      "removeTipShort": "Remove",
       "removeWithTips": "Remove Step and Tips",
-      "keep": "Keep Step"
+      "keep": "Keep Step",
+      "addStart": "Add a Step at the start",
+      "addFirst": "Add the first Step",
+      "placeholder": "What to do in Step {{number}}",
+      "addTimer": "Timer",
+      "addTimerFor": "Add a timer to Step {{number}}",
+      "clearTimer": "Remove the timer from Step {{number}}",
+      "minutes": "min",
+      "tipOf": "Tip {{n}} of Step {{step}}",
+      "deleteTip": "Delete Tip {{n}} of Step {{step}}",
+      "newTip": "New Tip for Step {{number}}",
+      "cancelTip": "Cancel the new Tip for Step {{number}}",
+      "tipPlaceholder": "A tip for this step",
+      "addTip": "Tip",
+      "addTipFor": "Add a Tip to Step {{number}}",
+      "copiedTips_one": "{{count}} tip",
+      "copiedTips_other": "{{count}} tips"
     },
     "variant": {
       "title": "Make a Variant",

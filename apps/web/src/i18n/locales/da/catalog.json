@@ -23,6 +23,8 @@
     "aisleLoading": "henter…",
     "aisleMatching": "der matcher “{{query}}”",
     "leaveAisle": "Forlad {{aisle}}",
+    "addIngredient": "Tilføj en ingrediens",
+    "backToAisles": "Afdelinger",
     "noMatchAisleHint": "Prøv en anden afdeling, eller fjern afdelingen.",
     "recentlyStocked": "Senest tilføjet",
     "stockedInPantry": "i spisekammeret · tilføjet {{when}}",

@@ -22,6 +22,15 @@ describe('ScreenHeader', () => {
     expect(names).toEqual(['Add']);
   });
 
+  it('shows the subline under the title, and not without a title', () => {
+    const { rerender } = renderWithTheme(
+      <ScreenHeader title="New Recipe" subline={<span>Draft saved</span>} />,
+    );
+    expect(screen.getByText('Draft saved')).toBeTruthy();
+    rerender(<ScreenHeader subline={<span>Draft saved</span>} />);
+    expect(screen.queryByText('Draft saved')).toBeNull();
+  });
+
   it('shows Home before the title with `home`', () => {
     renderWithTheme(
       <ScreenHeader title="Customise" home={{ label: 'Home' }} />,
