@@ -198,6 +198,7 @@
       "optionalSwitch": "Opțional"
     },
     "reorder": {
+      "roleDescription": "mobil",
       "hold": "Ține apăsat pentru a muta",
       "grip": "Mută {{name}}",
       "instructions": "Pentru a reordona, ține apăsat pe un rând sau mută focalizarea pe mâner și apasă spațiu pentru a ridica, folosește săgețile pentru a muta, apoi apasă spațiu pentru a lăsa. Apasă Escape pentru a anula.",

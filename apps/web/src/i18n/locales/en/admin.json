@@ -196,6 +196,7 @@
       "optionalSwitch": "Optional"
     },
     "reorder": {
+      "roleDescription": "movable",
       "hold": "Hold to move",
       "grip": "Move {{name}}",
       "instructions": "To reorder, hold a row, or focus its grip and press space to pick up, use the arrow keys to move, then press space to drop. Press escape to cancel.",

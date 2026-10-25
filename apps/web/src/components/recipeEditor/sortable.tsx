@@ -3,6 +3,7 @@ import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -17,6 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripIcon, tokens, usePrefersReducedMotion } from '@pocket-pantry/ui';
+import { createPortal } from 'react-dom';
 import {
   createContext,
   useContext,
@@ -28,6 +30,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type Ref,
+  type TouchEventHandler,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { haptic } from '../../lib/haptic';
@@ -51,6 +54,8 @@ const activator =
   (accepts: (target: EventTarget | null) => boolean): Handler =>
   ({ nativeEvent: event }, { onActivation }) => {
     if (!event.isPrimary || event.button !== 0) return false;
+    // A touch hold goes through HoldTouchSensor; only the grip stays here.
+    if (event.pointerType === 'touch' && !onGrip(event.target)) return false;
     if (!accepts(event.target)) return false;
     onActivation?.({ event });
     return true;
@@ -66,6 +71,26 @@ class HoldSensor extends PointerSensor {
     {
       eventName: 'onPointerDown' as const,
       handler: activator((t) => onGrip(t) || !onControl(t)),
+    },
+  ];
+}
+
+/**
+ * Touch hold. A pointer drag started by touch is cancelled by the browser's
+ * first pan (touch-action is fixed at touch start), so touch uses touch events,
+ * whose non-passive touchmove lets a lifted row stop the page scrolling.
+ * The grip is left to HoldSensor.
+ */
+class HoldTouchSensor extends TouchSensor {
+  static activators = [
+    {
+      eventName: 'onTouchStart' as const,
+      handler: (({ nativeEvent: event }, { onActivation }) => {
+        if (event.touches.length > 1) return false;
+        if (onGrip(event.target) || onControl(event.target)) return false;
+        onActivation?.({ event });
+        return true;
+      }) as (typeof TouchSensor.activators)[number]['handler'],
     },
   ];
 }
@@ -101,6 +126,9 @@ export function SortableList({
       activationConstraint: { delay: HOLD_MS, tolerance: HOLD_TOLERANCE },
       bypassActivationConstraint: ({ event }) => onGrip(event.target),
     }),
+    useSensor(HoldTouchSensor, {
+      activationConstraint: { delay: HOLD_MS, tolerance: HOLD_TOLERANCE },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -119,15 +147,20 @@ export function SortableList({
 
   return (
     <SortableCtx.Provider value={{ describedBy: hintId }}>
-      <span id={hintId} hidden>
-        {t('recipe.reorder.hold')}
-      </span>
+      {createPortal(
+        <span id={hintId} hidden>
+          {t('recipe.reorder.hold')}
+        </span>,
+        document.body,
+      )}
       <DndContext
         id={dndId}
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={onDragStart}
-        onDragOver={() => haptic(6)}
+        onDragOver={({ active, over }) => {
+          if (over && over.id !== active.id) haptic(6);
+        }}
         onDragEnd={onDragEnd}
         accessibility={{
           screenReaderInstructions: {
@@ -172,6 +205,7 @@ export const reordered = <T,>(items: T[], from: number, to: number): T[] =>
 export function useSortableRow(key: number, gripLabel: string) {
   const { describedBy } = useContext(SortableCtx);
   const reduceMotion = usePrefersReducedMotion();
+  const { t } = useTranslation('admin');
   const {
     attributes,
     listeners,
@@ -180,7 +214,10 @@ export function useSortableRow(key: number, gripLabel: string) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: key });
+  } = useSortable({
+    id: key,
+    attributes: { roleDescription: t('recipe.reorder.roleDescription') },
+  });
   const [holding, setHolding] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
 
@@ -201,11 +238,18 @@ export function useSortableRow(key: number, gripLabel: string) {
     } as CSSProperties,
     onPointerDown: (event: ReactPointerEvent<HTMLLIElement>) => {
       listeners?.onPointerDown?.(event);
-      if (!onGrip(event.target) && !onControl(event.target)) {
+      if (
+        event.isPrimary &&
+        event.button === 0 &&
+        !onGrip(event.target) &&
+        !onControl(event.target)
+      ) {
         start.current = { x: event.clientX, y: event.clientY };
         setHolding(true);
       }
     },
+    onTouchStart: listeners?.onTouchStart as
+      TouchEventHandler<HTMLLIElement> | undefined,
     onPointerMove: (event: ReactPointerEvent<HTMLLIElement>) => {
       const from = start.current;
       if (
@@ -222,11 +266,15 @@ export function useSortableRow(key: number, gripLabel: string) {
     sx: {
       position: 'relative' as const,
       zIndex: isDragging ? 1 : 0,
-      bgcolor: isDragging
-        ? tokens.color.accentTint
-        : holding
-          ? tokens.color.accentTint
-          : tokens.color.surface,
+      bgcolor:
+        isDragging || holding ? tokens.color.accentTint : tokens.color.surface,
+      userSelect: 'none' as const,
+      WebkitUserSelect: 'none' as const,
+      WebkitTouchCallout: 'none' as const,
+      '& input, & textarea, & select': {
+        userSelect: 'text' as const,
+        WebkitUserSelect: 'text' as const,
+      },
       transition:
         holding && !isDragging
           ? `background-color ${HOLD_MS}ms linear`

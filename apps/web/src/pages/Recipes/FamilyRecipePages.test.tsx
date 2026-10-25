@@ -3081,14 +3081,11 @@ describe('Recipe editor reorder by hold, grip or keyboard (#592)', () => {
   });
 
   it('lifts a row held for 500 ms and not one held on the quantity input', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     stubRowLayout();
     edit();
-    await openTab(
-      userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime }),
-      'Ingredients',
-    );
+    await openTab(userEvent.setup({ delay: null }), 'Ingredients');
     const quantity = await screen.findByLabelText('Quantity of Egg');
+    vi.useFakeTimers();
     const row = quantity.closest('li')!;
     const press = (target: Element) =>
       fireEvent.pointerDown(target, {
@@ -3113,5 +3110,37 @@ describe('Recipe editor reorder by hold, grip or keyboard (#592)', () => {
     expect(row).not.toHaveAttribute('data-lifted');
     await act(() => vi.advanceTimersByTimeAsync(300));
     expect(row).toHaveAttribute('data-lifted');
+  });
+
+  it('lifts a touch hold on the row body, but not a touch on a control or a touch pointer', async () => {
+    stubRowLayout();
+    edit();
+    await openTab(userEvent.setup({ delay: null }), 'Ingredients');
+    const quantity = await screen.findByLabelText('Quantity of Egg');
+    const row = quantity.closest('li')!;
+    vi.useFakeTimers();
+    const point = { clientX: 10, clientY: 10 };
+
+    fireEvent.pointerDown(row.querySelector('p')!, {
+      pointerId: 2,
+      isPrimary: true,
+      button: 0,
+      pointerType: 'touch',
+      ...point,
+    });
+    await act(() => vi.advanceTimersByTimeAsync(600));
+    expect(row).not.toHaveAttribute('data-lifted');
+
+    fireEvent.touchStart(quantity, { touches: [point] });
+    await act(() => vi.advanceTimersByTimeAsync(600));
+    expect(row).not.toHaveAttribute('data-lifted');
+    fireEvent.touchEnd(document);
+
+    fireEvent.touchStart(row.querySelector('p')!, { touches: [point] });
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(row).not.toHaveAttribute('data-lifted');
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(row).toHaveAttribute('data-lifted');
+    fireEvent.touchEnd(document);
   });
 });
