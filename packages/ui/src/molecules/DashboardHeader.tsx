@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 import { Typography } from '../atoms/Typography';
-import { tokens } from '../theme/tokens';
+import { palette } from '../theme/themeVars';
 
 export type DashboardHeaderProps = {
   /** The refresh mark, before the greeting. */
@@ -53,7 +53,7 @@ export function DashboardHeader({
           <Box
             sx={{
               fontSize: 12.5,
-              color: tokens.color.muted,
+              color: palette('text-secondary'),
               mt: '2px',
               minHeight: '1.4em',
             }}

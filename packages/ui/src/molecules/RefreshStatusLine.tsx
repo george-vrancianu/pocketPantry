@@ -1,8 +1,7 @@
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 import { CheckIcon } from '../atoms/icons';
-import { tokens } from '../theme/tokens';
-import { color } from '../theme/themeVars';
+import { color, palette } from '../theme/themeVars';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 
 export type RefreshStatusLineProps = {
@@ -29,10 +28,10 @@ export function RefreshStatusLine({
         fontWeight: 600,
         color:
           state === 'done'
-            ? tokens.color.accentOnTint
+            ? color.accentOnTint
             : state === 'failed'
-              ? tokens.color.soonFg
-              : tokens.color.muted,
+              ? palette('warning-main')
+              : palette('text-secondary'),
       }}
     >
       {state === 'busy' ? (
@@ -46,7 +45,7 @@ export function RefreshStatusLine({
                     height: 6,
                     m: '2.5px',
                     borderRadius: '50%',
-                    bgcolor: tokens.color.accent,
+                    bgcolor: palette('pp-accent'),
                   }
                 : {
                     width: 11,
@@ -54,7 +53,7 @@ export function RefreshStatusLine({
                     boxSizing: 'border-box',
                     borderRadius: '50%',
                     border: `2px solid ${color.lineStrong}`,
-                    borderTopColor: tokens.color.accent,
+                    borderTopColor: palette('pp-accent'),
                     '@keyframes pp-refresh-spin': {
                       to: { transform: 'rotate(360deg)' },
                     },

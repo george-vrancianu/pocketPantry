@@ -252,6 +252,24 @@ describe('Refresh mark on a tab root', () => {
       expect(screen.getByRole('status')).toHaveTextContent(done);
     },
   );
+
+  it.each([
+    [
+      'ro',
+      'Reîmprospătează',
+      'Nu s-a putut reîmprospăta · se afișează ce aveai',
+    ],
+    ['da', 'Opdater', 'Kunne ikke opdatere · viser det, du havde'],
+  ] as const)('says the failure line in %s', async (locale, name, failed) => {
+    stubPantry(() => Response.json({ batches: [] }));
+    await openPantry(locale);
+    stubPantry(() =>
+      Response.json({ code: 'boom', params: {} }, { status: 500 }),
+    );
+    fireEvent.click(screen.getByRole('button', { name }));
+    await settle();
+    expect(screen.getByRole('status')).toHaveTextContent(failed);
+  });
 });
 
 describe('Refresh mark placement', () => {

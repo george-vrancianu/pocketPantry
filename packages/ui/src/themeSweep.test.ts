@@ -16,7 +16,7 @@ const sources = import.meta.glob<string>(
     // The helpers that name the Theme's variables.
     '!./theme/themeVars.ts',
     // Gator's art keeps its own colours and tile shape in every Theme (tile gradient, Dark rim).
-    '!./gator/art/**',
+    '!./gator/art/logoArt.ts',
   ],
   { query: '?raw', import: 'default', eager: true },
 );
