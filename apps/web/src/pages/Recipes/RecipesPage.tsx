@@ -22,6 +22,7 @@ import {
   useRecipeFilters,
   useRecipes,
   type RecipeBrowse,
+  type RecipeListItem,
 } from '../../lib/recipes';
 import { useRecipeDrafts } from '../../lib/recipeDrafts';
 import { useRecipeDraftDiscard } from './useRecipeDraftDiscard';
@@ -68,7 +69,36 @@ function ExplorePill() {
   );
 }
 
-/** Browse Recipes: Base Recipes by default, Variants too once a search or filter is active. */
+/**
+ * The list without the Variants that sit under a Base in it. The Base's count becomes the
+ * Variants grouped under it. A Variant belongs to its `parentId` or, when that is a Catalog
+ * Recipe, to the Family's copy of it (`copiedFromId`).
+ */
+function groupVariants(found: RecipeListItem[]): RecipeListItem[] {
+  const baseFor = new Map<string, string>();
+  for (const item of found) {
+    if (item.parentId !== null) continue;
+    if (item.copiedFromId) baseFor.set(item.copiedFromId, item.id);
+  }
+  const counts = new Map<string, number>();
+  const rows = found.filter((item) => {
+    const base =
+      item.parentId === null ? undefined : baseFor.get(item.parentId);
+    if (base === undefined) return true;
+    counts.set(base, (counts.get(base) ?? 0) + 1);
+    return false;
+  });
+  return rows.map((item) =>
+    item.parentId === null
+      ? {
+          ...item,
+          variantCount: counts.get(item.id) ?? 0,
+        }
+      : item,
+  );
+}
+
+/** The Family's Recipes (Catalog Recipes are reached through Explore): Bases by default, Variants too once a search or filter is active. */
 export function RecipesPage() {
   const { t } = useTranslation(['recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
@@ -78,12 +108,13 @@ export function RecipesPage() {
   });
   // "Show" in the hidden-by-Allergies note asks the list and the Cook Tonight card for everything.
   const [showHidden, setShowHidden] = useState(false);
-  const recipes = useRecipes(browse, { showHidden });
+  const recipes = useRecipes(browse, { showHidden, scope: 'family' });
   const filters = useRecipeFilters();
   const cookTonight = useCookTonight(
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     localIso(new Date()),
     showHidden,
+    'family',
   );
   // Recipe Drafts are not Recipes: just an entry to the list, hidden when there are none (ADR 0028).
   const drafts = useRecipeDrafts();
@@ -92,8 +123,11 @@ export function RecipesPage() {
     drafts.data?.filter((draft) => !discarding.hiddenIds.has(draft.id))
       .length ?? 0;
   const headingId = useId();
-  const items = recipes.data?.recipes ?? [];
   const filtering = isFiltering(browse);
+  const found = recipes.data?.recipes ?? [];
+  // Not searching: a Variant sits under its Base (a Family Recipe, or the Family's copy of its
+  // Catalog Base); one without a Base in the list is its own row, labelled "Variant of {base}".
+  const items = filtering ? found : groupVariants(found);
   const cards = cookTonight.data?.cards ?? [];
   const index = indexCards(cards);
 
@@ -191,7 +225,7 @@ export function RecipesPage() {
                   key={recipe.id}
                   recipe={recipe}
                   card={cardFor(index, recipe)}
-                  filtering={filtering}
+                  filtering={filtering || recipe.parentId !== null}
                 />
               ))}
             </Box>

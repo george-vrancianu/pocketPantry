@@ -24,6 +24,7 @@ export function CookTonightPage() {
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     localIso(new Date()),
     showHidden,
+    'family',
   );
   const cards = cookTonight.data?.cards ?? [];
   return (

@@ -515,4 +515,34 @@ describe('Add to Family (integration)', () => {
     expect(link).toMatchObject({ type: 'recipe', id: own, owner: 'family' });
     expect(link.familyCopyId).toBeUndefined();
   });
+
+  it("lists the Family's Variants of the Catalog Base on the copy's detail, and no one else's", async () => {
+    const src = await makeBase();
+    const id = await copyId(ana, src.id);
+    const mine = newId();
+    const theirs = newId();
+    await database.insert(recipes).values([
+      {
+        id: mine,
+        familyId: anaFamily,
+        parentId: src.id,
+        title: `Copy ${stamp}-mine`,
+        servings: 2,
+      },
+      {
+        id: theirs,
+        familyId: benFamily,
+        parentId: src.id,
+        title: `Copy ${stamp}-theirs`,
+        servings: 2,
+      },
+    ]);
+    const ids = async () =>
+      (
+        (await ana.get(`/${id}?locale=en`).expect(200)).body as {
+          variants: { id: string }[];
+        }
+      ).variants.map((v) => v.id);
+    expect(await ids()).toEqual([mine]);
+  });
 });
