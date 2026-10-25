@@ -69,6 +69,8 @@ type Props = {
   initial: FamilyDraft;
   /** Reseeds the fields from `initial` when it changes (Edit, after a save), keeping the tab and the panels below. */
   seedKey?: string;
+  /** Reseeds only the Guidance card from `guidance.initial`; defaults to `seedKey`. A Recipe-only reseed keeps the Member's Guidance edits. */
+  guidanceSeedKey?: string;
   saving: boolean;
   error: unknown;
   /** How many own Tips a saved Step carries, for the warning before removing it. */
@@ -86,8 +88,6 @@ type Props = {
     /** A Recipe from Link draft: the card says its Guidance is never read from the page. */
     fromLink?: boolean;
   };
-  /** Tells the page what the form holds now, for siblings that read it (Suggest Guidance on the edit page). */
-  onDraftChange?: (draft: FamilyDraft) => void;
   /** Reports the form as it is, on mount and after every change (for the Recipe Draft). */
   onChange?: (state: {
     draft: FamilyDraft;
@@ -114,13 +114,13 @@ export function FamilyRecipeForm({
   notices,
   initial,
   seedKey,
+  guidanceSeedKey = seedKey,
   saving,
   error,
   stepTipCount,
   stepsHint,
   stepTips,
   guidance,
-  onDraftChange,
   onChange,
   onSave,
 }: Props) {
@@ -141,6 +141,10 @@ export function FamilyRecipeForm({
   if (seededWith !== seedKey) {
     setSeededWith(seedKey);
     setDraft(initial);
+  }
+  const [guidanceSeededWith, setGuidanceSeededWith] = useState(guidanceSeedKey);
+  if (guidanceSeededWith !== guidanceSeedKey) {
+    setGuidanceSeededWith(guidanceSeedKey);
     if (guidance) setGuidanceDraft(guidance.initial);
   }
   const [titleTouched, setTitleTouched] = useState(false);
@@ -152,7 +156,6 @@ export function FamilyRecipeForm({
     setTab(next);
     window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   };
-  useEffect(() => onDraftChange?.(draft), [draft, onDraftChange]);
   useEffect(() => {
     onChange?.({ draft, guidance: guidanceDraft });
     // The latest `onChange` is enough; only edits report.
@@ -260,7 +263,7 @@ export function FamilyRecipeForm({
             </Stack>
           ) : null}
         </Box>
-        {/* All three panels stay mounted while hidden: Suggest Guidance (in flight or answered) and the Tips and Guidance panels hold state of their own. */}
+        {/* All three panels stay mounted while hidden: Suggest Guidance (in flight or answered) and the Tips hold state of their own. */}
         <Stack
           role="tabpanel"
           id={segmentedTabPanelId(tabsId, 'details')}

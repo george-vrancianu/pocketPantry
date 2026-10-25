@@ -147,7 +147,7 @@
     "saved": "Recipe saved.",
     "saveFailed": {
       "recipe": "The Recipe was not saved: {{reason}}",
-      "guidance": "Its Guidance was not saved: {{reason}}"
+      "guidance": "The Recipe's Guidance was not saved: {{reason}}"
     },
     "viewRecipe": "View the Recipe",
     "moreActions": "More actions",

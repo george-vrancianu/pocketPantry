@@ -45,6 +45,7 @@ import {
 } from '../../lib/recipes';
 import { useMomentOptions } from './components/FamilyGuidance';
 import {
+  documentOf,
   draftOfEdit,
   draftOfVariantDraft,
   type NewRecipeDraft,
@@ -560,8 +561,10 @@ export function EditFamilyRecipePage() {
     tipWrites.remove.mutateAsync,
   );
   const recipe = query.data;
-  /** Bumped after each save so the form reseeds with the new line and Step ids. */
-  const [saves, setSaves] = useState(0);
+  /** Bumped when the Recipe is stored so the form reseeds with the new line and Step ids. */
+  const [recipeSaves, setRecipeSaves] = useState(0);
+  /** Bumped when the Guidance is stored so its card reseeds; a Recipe-only save keeps Guidance edits. */
+  const [guidanceSaves, setGuidanceSaves] = useState(0);
   /** The Member dropped the Source Link; it is only sent (and gone) once they save. */
   const [linkRemoved, setLinkRemoved] = useState(false);
   /** The Guidance as the last save stored it; reseeds the Guidance card after a save. */
@@ -575,7 +578,7 @@ export function EditFamilyRecipePage() {
     part: 'recipe' | 'guidance';
     error: unknown;
   } | null>(null);
-  /** The Recipe body that was stored while its Guidance failed: a retry does not resend it. */
+  /** The Recipe document as last stored (what the form reseeded with): a Save with the same document does not resend it. */
   const storedRecipe = useRef<string | null>(null);
   const [saving, setSaving] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -619,7 +622,8 @@ export function EditFamilyRecipePage() {
   return (
     <FamilyRecipeForm
       // Tip writes refresh `recipe` but must not reset unsaved edits; a save reseeds.
-      seedKey={`${recipe.id}-${saves}`}
+      seedKey={`${recipe.id}-${recipeSaves}`}
+      guidanceSeedKey={`${recipe.id}-${guidanceSaves}`}
       header={{
         title: t('recipes:family.editHeading'),
         titleRef: headingRef,
@@ -682,6 +686,7 @@ export function EditFamilyRecipePage() {
         actions: tipActions,
       }}
       onSave={async (document, guidance) => {
+        // Edit always passes `guidance`; without it there is nothing to store.
         if (!guidance) return;
         // `null` clears the link (and its language); leaving it out keeps both.
         const body = linkRemoved ? { ...document, sourceLink: null } : document;
@@ -692,12 +697,16 @@ export function EditFamilyRecipePage() {
         try {
           if (storedRecipe.current !== key) {
             try {
-              await update.mutateAsync(body);
+              const stored = await update.mutateAsync(body);
+              storedRecipe.current = JSON.stringify(
+                documentOf(draftOfEdit(stored)),
+              );
+              setLinkRemoved(false);
+              setRecipeSaves((count) => count + 1);
             } catch (error) {
               setFailure({ part: 'recipe', error });
               return;
             }
-            storedRecipe.current = key;
           }
           try {
             const stored = await setGuidance.mutateAsync(guidance);
@@ -706,9 +715,7 @@ export function EditFamilyRecipePage() {
             setFailure({ part: 'guidance', error });
             return;
           }
-          storedRecipe.current = null;
-          setSaves((count) => count + 1);
-          setLinkRemoved(false);
+          setGuidanceSaves((count) => count + 1);
           setSaved(true);
         } finally {
           setSaving(false);

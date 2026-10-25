@@ -156,7 +156,7 @@
     "saved": "Rețeta a fost salvată.",
     "saveFailed": {
       "recipe": "Rețeta nu a fost salvată: {{reason}}",
-      "guidance": "Îndrumările ei nu au fost salvate: {{reason}}"
+      "guidance": "Recomandările rețetei nu au fost salvate: {{reason}}"
     },
     "viewRecipe": "Vezi rețeta",
     "moreActions": "Mai multe acțiuni",

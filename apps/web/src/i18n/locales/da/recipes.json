@@ -147,7 +147,7 @@
     "saved": "Opskriften er gemt.",
     "saveFailed": {
       "recipe": "Opskriften blev ikke gemt: {{reason}}",
-      "guidance": "Dens vejledning blev ikke gemt: {{reason}}"
+      "guidance": "Opskriftens vejledning blev ikke gemt: {{reason}}"
     },
     "viewRecipe": "Se opskriften",
     "moreActions": "Flere handlinger",

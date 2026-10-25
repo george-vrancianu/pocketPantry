@@ -1103,6 +1103,9 @@ describe('EditFamilyRecipePage', () => {
     expect(
       screen.getByRole('link', { name: 'View the Recipe' }),
     ).toHaveAttribute('href', '/recipes/g');
+    expect(
+      calls.find((call) => call.key === 'PUT /api/recipes/g/guidance')!.body,
+    ).toMatchObject({ nutritionNote: 'Still here' });
     const put = calls.find((call) => call.key === 'PUT /api/recipes/g')!;
     expect(put.body).toMatchObject({
       title: 'Better omelette',
@@ -1207,21 +1210,32 @@ describe('EditFamilyRecipePage', () => {
   it('says the Guidance was not saved when only it fails, and a retry sends only the Guidance (#595)', async () => {
     const user = userEvent.setup({ delay: null });
     let guidanceCalls = 0;
+    // The server answers with what the last PUT stored.
+    let seen: { key: string; body: unknown }[] | undefined;
+    const withStoredTitle = () => ({
+      ...saved,
+      title:
+        (
+          seen?.filter((c) => c.key === 'PUT /api/recipes/g').at(-1)?.body as
+            { title: string } | undefined
+        )?.title ?? saved.title,
+    });
     const calls = setup('/recipes/g/edit', {
-      'GET /api/recipes/g/edit': () => Response.json(saved),
-      'PUT /api/recipes/g': () => Response.json(saved),
+      'GET /api/recipes/g/edit': () => Response.json(withStoredTitle()),
+      'PUT /api/recipes/g': () => Response.json(withStoredTitle()),
       'PUT /api/recipes/g/guidance': () =>
         ++guidanceCalls === 1
           ? Response.json({ error: 'boom' }, { status: 500 })
           : Response.json(saved),
     });
+    seen = calls;
     await openTab(user, 'Details');
     fireEvent.change(await screen.findByLabelText(/^Title/), {
       target: { value: 'Better omelette' },
     });
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(
-      await screen.findByText(/Its Guidance was not saved/),
+      await screen.findByText(/Guidance was not saved/),
     ).toBeInTheDocument();
     expect(screen.queryByText('Recipe saved.')).toBeNull();
     expect(screen.getByLabelText(/^Title/)).toHaveValue('Better omelette');
@@ -1233,6 +1247,76 @@ describe('EditFamilyRecipePage', () => {
     expect(
       calls.filter((c) => c.key === 'PUT /api/recipes/g/guidance'),
     ).toHaveLength(2);
+  });
+
+  it('resends a Recipe changed again after a Guidance failure, keeping the Guidance edits (#595)', async () => {
+    const user = userEvent.setup({ delay: null });
+    let guidanceCalls = 0;
+    // The server answers with what the last PUT stored.
+    let seen: { key: string; body: unknown }[] | undefined;
+    const withStoredTitle = () => ({
+      ...saved,
+      title:
+        (
+          seen?.filter((c) => c.key === 'PUT /api/recipes/g').at(-1)?.body as
+            { title: string } | undefined
+        )?.title ?? saved.title,
+    });
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(withStoredTitle()),
+      'PUT /api/recipes/g': () => Response.json(withStoredTitle()),
+      'PUT /api/recipes/g/guidance': () =>
+        ++guidanceCalls === 1
+          ? Response.json({ error: 'boom' }, { status: 500 })
+          : Response.json(saved),
+    });
+    seen = calls;
+    await openTab(user, 'Details');
+    await openGuidance(user);
+    fireEvent.change(await screen.findByLabelText('Nutrition Note'), {
+      target: { value: 'Mine' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Title/), {
+      target: { value: 'Better omelette' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(
+      await screen.findByText(/The Recipe's Guidance was not saved/),
+    ).toBeInTheDocument();
+    // Only the Recipe reseeded: the Guidance edit is still there.
+    expect(screen.getByLabelText('Nutrition Note')).toHaveValue('Mine');
+
+    fireEvent.change(screen.getByLabelText(/^Title/), {
+      target: { value: 'Best omelette' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    expect(calls.map((c) => c.key).filter((k) => k.startsWith('PUT'))).toEqual([
+      'PUT /api/recipes/g',
+      'PUT /api/recipes/g/guidance',
+      'PUT /api/recipes/g',
+      'PUT /api/recipes/g/guidance',
+    ]);
+    const puts = calls.filter((c) => c.key === 'PUT /api/recipes/g');
+    expect(puts[1]!.body).toMatchObject({ title: 'Best omelette' });
+  });
+
+  it('reseeds the Guidance card from what the Guidance save returned (#595)', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'PUT /api/recipes/g': () => Response.json(saved),
+      'PUT /api/recipes/g/guidance': () =>
+        Response.json({ ...saved, nutritionNote: 'From server' }),
+    });
+    await openTab(user, 'Details');
+    await openGuidance(user);
+    fireEvent.change(await screen.findByLabelText('Nutrition Note'), {
+      target: { value: 'Typed' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nutrition Note')).toHaveValue('From server');
   });
 
   it('sends no Guidance when the Recipe fails, names the Recipe, and a retry sends both (#595)', async () => {
@@ -1485,6 +1569,10 @@ describe('EditFamilyRecipePage Source Link', () => {
         1,
       ),
     );
+    // An unchanged Recipe is not resent, so change something for the second Save.
+    fireEvent.change(await screen.findByLabelText(/^Title/), {
+      target: { value: 'Another title' },
+    });
     await user.click(await screen.findByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(calls.filter((c) => c.key === 'PUT /api/recipes/g')).toHaveLength(
