@@ -230,6 +230,11 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
     ['scan:typeIt', 'scan:labelFailed', 'scan:labelCap'],
   ],
   [
+    'type',
+    'the verb "Type" (enter by hand) on the Empty Pantry banner, not a Category',
+    ['pantry:empty.type'],
+  ],
+  [
     'token',
     'the Assistant Token (GLOSSARY), shortened to "token" in the Siri section; not the Invite Code',
     [

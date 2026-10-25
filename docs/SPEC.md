@@ -58,6 +58,9 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 32. As a Member, I want Batches with an expiry date sorted soonest first, so that I use things before they go off.
 33. As a Member, I want an Expiring Soon marker on Batches inside the Stale Threshold, so that I notice them.
 34. As a Member, I want quantity and expiry to be optional, so that I can add "some garlic" without lying about numbers.
+89. As a Member with an empty Pantry, I want the page to show me the quickest ways to fill it (scan, speak, type, or move what I ticked while shopping), so that I can get started without hunting for buttons.
+90. As a Member, I want to add a Batch by photographing the product or scanning its barcode, so that the Ingredient, pack size and product name are filled in for me.
+91. As a Member, I want to add several things by hand one after another without the form closing, so that stocking up by hand is fast.
 
 ### Scanning
 
@@ -78,7 +81,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 49. As a Member, I want to be told when I've hit my daily Scan Cap, so that I know why the shutter stopped working.
 50. As a Member, I want Scans to work on Romanian receipts and labels, so that my shop in Romania is recognised.
 
-- As a Member adding to my Pantry by hand, I want a barcode I scan from the Add sheet to be confirmed on a card before it fills the sheet, so that a misread costs one tap, not a trip back.
+92. As a Member adding to my Pantry by hand, I want a barcode I scan from the Add sheet to be confirmed on a card before it fills the sheet, so that a misread costs one tap, not a trip back.
 
 ### Shopping List
 
@@ -194,6 +197,9 @@ These stories were added on 2026-10-10 after a grilling session and number on fr
 - Pantry read endpoints return Batches grouped by Ingredient with totals and soonest expiry, and support filtering by Location and searching by localised name.
   - Wave 1 deviation: the roll-up and search run client-side in `apps/web/src/lib/pantry.ts` and the API returns Batches. See [ADR 0002](adr/0002-pantry-rollup-and-search-client-side.md).
 - Expiring Soon is computed from the Family's Stale Threshold at read time, not stored.
+- An Empty Pantry (no Batches at all, Expired ones included) shows an empty state instead of the list: dimmed Location chips, a bar to move checked Shopping Items into the Pantry (Finish Shopping, through `/shopping?finish=1`, which opens the Review once the Shopping List has loaded and then drops the parameter) when there are any, a Gator banner with Scan (camera on Receipt), Say it (lights the Dock mic without disabling the tabs) and Type (Add sheet), and one empty card per Location whose "+" opens the Add sheet with that Location preset for every pick, camera picks included. The header holds only the "+" (ADR 0027). Deleting the last Batch shows the empty state as soon as the row is gone, while its Undo toast is up; Undo brings the list back.
+- In a Pantry that has Batches, a Location filter with none shows that Location's empty card instead of "No batches match."
+- Manual add is a bottom sheet that replaces the inline add-Batch form, and every entry to that form (the header "+", "Add batch" on an Ingredient card) opens it. Before a pick it offers Take a photo (camera on Product), Scan barcode (camera on Barcode), Say it, the Catalog search, and Recently Stocked tiles (or Popular to start, a fixed list per locale, when there are none) with aisle chips. After a pick, one card holds amount, Location (the Catalog default marked; with none, Cupboard and no mark) and expiry (Usual = Default Expiry, quick picks, or the expiry sheet); the Product Description is a note, folded for typed picks and open for camera picks. Changing the Location does not change the Default Expiry. Saving keeps the sheet open for the next item and lists what was added; each add's toast offers Undo, which deletes only that Batch.
 
 ### Scanning
 

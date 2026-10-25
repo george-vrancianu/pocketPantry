@@ -1,7 +1,25 @@
 {
   "title": "Spisekammer",
   "add": "Tilføj parti",
-  "empty": "Dit spisekammer er tomt. Tilføj dit første parti med +-knappen.",
+  "empty": {
+    "subtitle": "Der er ikke noget her endnu",
+    "gatorAlt": "Gator læser en liste. Tryk for at sige hej",
+    "gatorLine": "Fortæl mig, hvad du har, så lægger jeg det på den rigtige hylde.",
+    "scan": "Scan",
+    "sayIt": "Sig det",
+    "type": "Skriv",
+    "ticked_one": "{{count}} afkrydset på din indkøbsliste",
+    "ticked_other": "{{count}} afkrydset på din indkøbsliste",
+    "moveThem": "Flyt dem",
+    "shelfEmpty": "{{location}} er tom",
+    "hint": {
+      "fridge": "Mælk, æg, ost, rester",
+      "freezer": "Ærter, is, et ekstra brød",
+      "cupboard": "Pasta, ris, dåser, olie",
+      "spices": "Paprika, spidskommen, oregano"
+    },
+    "addTo": "Tilføj til {{location}}"
+  },
   "expiry": {
     "today": "I dag",
     "expired": "Udløbet",

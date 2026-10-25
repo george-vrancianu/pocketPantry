@@ -15,6 +15,8 @@ import {
 } from '../../components/RowToggleErrors';
 import { RowHintNote } from '../../components/RowHintNote';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
+import { EmptyPantry } from './components/EmptyPantry';
+import { ShelfCard } from './components/ShelfCard';
 import { AddToPantrySheet } from './components/AddToPantrySheet';
 import { LocationSection } from './components/LocationSection';
 import { RowKeyHints } from './components/RowKeyHints';
@@ -41,6 +43,7 @@ export function PantryPage() {
       <UnverifiedToast />
       <AppScreenHeader
         title={t('pantry:title')}
+        subtitle={screen.isEmpty ? t('pantry:empty.subtitle') : undefined}
         action={{
           label: t('pantry:add'),
           icon: <PlusIcon size={20} />,
@@ -52,6 +55,7 @@ export function PantryPage() {
       <AddToPantrySheet
         open={screen.adding}
         start={screen.addStart}
+        location={screen.addLocation}
         onClose={screen.stopAdding}
         onExited={() => {
           if (document.activeElement === document.body) focusAdd();
@@ -67,7 +71,10 @@ export function PantryPage() {
         ) : null}
         {screen.isLoading ? <Spinner label={t('common:loading')} /> : null}
         {screen.isEmpty ? (
-          <Typography color="text.secondary">{t('pantry:empty')}</Typography>
+          <EmptyPantry
+            onType={screen.startAdding}
+            onAddTo={screen.startAddingAt}
+          />
         ) : null}
         {!screen.isEmpty && !screen.isLoading && !screen.error ? (
           <PantryFilters
@@ -76,6 +83,12 @@ export function PantryPage() {
             filter={screen.filter}
             onFilterChange={screen.setFilter}
             counts={screen.counts}
+          />
+        ) : null}
+        {screen.emptyShelf ? (
+          <ShelfCard
+            location={screen.emptyShelf}
+            onAdd={screen.startAddingAt}
           />
         ) : null}
         {screen.noMatches ? (

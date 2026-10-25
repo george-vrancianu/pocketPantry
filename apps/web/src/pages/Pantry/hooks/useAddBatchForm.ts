@@ -48,10 +48,13 @@ type PickedIngredient = Pick<CatalogSearchResult, 'id' | 'name'> &
 export function useAddBatchForm({
   onSaved,
   start,
+  presetLocation,
 }: {
   /** Called with the Batch the save created. */
   onSaved: (batch: Batch) => void;
   start?: AddBatchStart;
+  /** A shelf card's Location: it wins over each pick's Catalog default, camera picks included. */
+  presetLocation?: StorageLocation;
 }) {
   const { t, i18n } = useTranslation();
   const addBatch = useAddBatch();
@@ -80,7 +83,9 @@ export function useAddBatchForm({
   // The unit a dropped Ingredient had on screen: kept while its name is edited, never carried to the next pick.
   const [frozenUnit, setFrozenUnit] = useState<Unit | null>(null);
   const unit: Unit = chosenUnit ?? frozenUnit ?? ingredient?.defaultUnit ?? 'g';
-  const [location, setLocation] = useState<StorageLocation>(FALLBACK_LOCATION);
+  const [location, setLocation] = useState<StorageLocation>(
+    presetLocation ?? FALLBACK_LOCATION,
+  );
   const [expiryDate, setExpiryDate] = useState<IsoDate | null>(null);
   const [description, setDescription] = useState('');
 
@@ -123,7 +128,9 @@ export function useAddBatchForm({
     setFrozenUnit(null);
     // Keep a unit the Member chose with an amount before the pick ("2 kg", then Parmesan); with no amount, the new Ingredient's unit applies.
     if (quantity.trim() === '') setChosenUnit(null);
-    setLocation(result.defaults.location ?? FALLBACK_LOCATION);
+    setLocation(
+      presetLocation ?? result.defaults.location ?? FALLBACK_LOCATION,
+    );
     const days = result.defaults.expiryDays;
     setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
   };
@@ -142,7 +149,11 @@ export function useAddBatchForm({
     if (!startingDefaults || ingredient !== startingIngredient) return;
     setIngredient(startingDefaults);
     if (!touched.location)
-      setLocation(startingDefaults.defaults.location ?? FALLBACK_LOCATION);
+      setLocation(
+        presetLocation ??
+          startingDefaults.defaults.location ??
+          FALLBACK_LOCATION,
+      );
     const days = startingDefaults.defaults.expiryDays;
     if (!touched.expiry && !prefilled.has('expiry'))
       setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
@@ -213,7 +224,9 @@ export function useAddBatchForm({
       }
     }
     if (matched && !touched.location)
-      setLocation(matched.defaults.location ?? FALLBACK_LOCATION);
+      setLocation(
+        presetLocation ?? matched.defaults.location ?? FALLBACK_LOCATION,
+      );
     if (!touched.expiry) {
       if (read.expiryDate) {
         setExpiryDate(read.expiryDate as IsoDate);

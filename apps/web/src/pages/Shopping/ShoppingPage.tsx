@@ -8,6 +8,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { useTemplates } from '../../lib/shoppingTemplates';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
@@ -34,6 +35,22 @@ export function ShoppingPage() {
   const screen = useShoppingScreen();
   const rowToggleErrors = useRowToggleErrors();
   const [reviewing, setReviewing] = useState(false);
+  // `?finish=1` (the Empty Pantry's ticked bar) opens Finish Shopping's Review once the list has
+  // loaded, then leaves the URL, so a reload does not reopen it.
+  const [params, setParams] = useSearchParams();
+  const finishRequested = params.get('finish') === '1' && screen.list != null;
+  if (finishRequested && !reviewing) setReviewing(true);
+  useEffect(() => {
+    if (!finishRequested) return;
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete('finish');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [finishRequested, setParams]);
   const hint = useRowHint(
     'shopping',
     !reviewing && (screen.list?.groups.length ?? 0) > 0,
