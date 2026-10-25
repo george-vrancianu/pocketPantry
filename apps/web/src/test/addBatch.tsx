@@ -5,7 +5,9 @@ import { PantryPage } from '../pages/Pantry/PantryPage';
 import { renderWithProviders, stubApi } from './render';
 
 /** Stubs the Pantry's API (and the Scan reads) for the add-Batch camera tests; returns the recorded calls. */
-export function stubPantry() {
+export function stubPantry(
+  extra: Record<string, () => Response | Promise<Response>> = {},
+) {
   const { fetchMock, calls } = stubApi({
     'GET /api/pantry': () => Response.json({ batches: [], runningLow: [] }),
     'GET /api/staples': () => Response.json({ staples: [] }),
@@ -17,6 +19,7 @@ export function stubPantry() {
     'POST /api/scan/product': () => Response.json({ lines: [] }),
     'GET /api/barcode-lookup/3017620422003': () =>
       Response.json({ found: false }, { status: 404 }),
+    ...extra,
   });
   vi.stubGlobal('fetch', fetchMock);
   return calls;

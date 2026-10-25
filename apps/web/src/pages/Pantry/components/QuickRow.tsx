@@ -13,8 +13,6 @@ import { useTranslation } from 'react-i18next';
 import type { CameraMode } from '../../../lib/cameraMode';
 
 type Props = {
-  /** A read is under way: the tiles stay focusable but do nothing. */
-  disabled: boolean;
   /** Set to the tile that opened the camera, so focus can return to it. */
   openerRef: { current: HTMLButtonElement | null };
   onOpen: (mode: CameraMode) => void;
@@ -23,7 +21,7 @@ type Props = {
 };
 
 /** The Add to Pantry sheet's fastest ways in: the camera on Product, or on Barcode, or Say it, which lights the Dock mic. */
-export function QuickRow({ disabled, openerRef, onOpen, onSayIt }: Props) {
+export function QuickRow({ openerRef, onOpen, onSayIt }: Props) {
   const { t } = useTranslation('pantry');
   return (
     <Box
@@ -38,14 +36,12 @@ export function QuickRow({ disabled, openerRef, onOpen, onSayIt }: Props) {
       <Tile
         label={t('form.quick.photo')}
         icon={<CameraIcon size={24} />}
-        disabled={disabled}
         openerRef={openerRef}
         onOpen={() => onOpen('product')}
       />
       <Tile
         label={t('form.quick.barcode')}
         icon={<ScanBarcodeIcon size={24} />}
-        disabled={disabled}
         openerRef={openerRef}
         onOpen={() => onOpen('barcode')}
       />
@@ -53,7 +49,6 @@ export function QuickRow({ disabled, openerRef, onOpen, onSayIt }: Props) {
         <Tile
           label={t('form.quick.sayIt')}
           icon={<MicIcon size={24} />}
-          disabled={disabled}
           openerRef={openerRef}
           onOpen={onSayIt}
         />
@@ -65,13 +60,11 @@ export function QuickRow({ disabled, openerRef, onOpen, onSayIt }: Props) {
 function Tile({
   label,
   icon,
-  disabled,
   openerRef,
   onOpen,
 }: {
   label: string;
   icon: ReactNode;
-  disabled: boolean;
   openerRef: { current: HTMLButtonElement | null };
   onOpen: () => void;
 }) {
@@ -79,9 +72,7 @@ function Tile({
     <Box
       component="button"
       type="button"
-      aria-disabled={disabled || undefined}
       onClick={(event: MouseEvent<HTMLButtonElement>) => {
-        if (disabled) return;
         openerRef.current = event.currentTarget;
         onOpen();
       }}
@@ -100,8 +91,7 @@ function Tile({
         border: `1px solid ${color.cardLine}`,
         borderRadius: radius.card,
         boxShadow: shadow.card,
-        cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? 0.6 : 1,
+        cursor: 'pointer',
         '&:hover': { backgroundColor: 'pp.subtle' },
         ...focusRing,
       }}

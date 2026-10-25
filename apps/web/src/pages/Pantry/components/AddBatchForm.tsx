@@ -12,6 +12,7 @@ import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
 import { StatusIcon } from '../../../components/StatusIcon';
 import type { Batch } from '../../../lib/pantry';
+import type { CameraMode } from '../../../lib/cameraMode';
 import { CameraOverlay } from '../../Scan/CameraOverlay';
 import {
   useAddBatchForm,
@@ -31,6 +32,8 @@ type Props = {
   onCameraOpenChange?: (open: boolean) => void;
   /** The Say it tile; leave out where the Dock has no mic. */
   onSayIt?: () => void;
+  /** Scan several, from the camera: the host closes the sheet and opens the Scan page in this mode. */
+  onScanSeveral: (mode: CameraMode) => void;
 };
 
 /** The camera the form opens: a Product photo or a barcode, never the Scan page's other modes. */
@@ -42,23 +45,25 @@ export function AddBatchForm({
   start,
   onCameraOpenChange,
   onSayIt,
+  onScanSeveral,
 }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const form = useAddBatchForm({ onSaved, start });
   const id = useId();
   const { t: tReview } = useTranslation('review');
-  const { t: tScan } = useTranslation('scan');
   const { t: tCatalog } = useTranslation('catalog');
   const opener = useRef<HTMLButtonElement | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const picked = form.ingredient?.name ?? form.unmatchedName;
   const { camera } = form;
-  const busy = camera.reading || camera.lookingUp;
+  const searchInput = useRef<HTMLInputElement>(null);
   // After the overlay closes, focus goes back to the button that opened it.
   const wasOpen = useRef(false);
   useEffect(() => {
-    if (wasOpen.current && !camera.open) opener.current?.focus();
+    if (wasOpen.current && !camera.open)
+      (camera.typeRequested ? searchInput : opener).current?.focus();
     wasOpen.current = camera.open;
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- only when the camera opens or closes
   }, [camera.open]);
   useEffect(() => {
     onCameraOpenChange?.(camera.open);
@@ -85,29 +90,16 @@ export function AddBatchForm({
       aria-label={t('form.title')}
     >
       <QuickRow
-        disabled={busy}
         openerRef={opener}
         onOpen={(mode) => camera.openCamera(mode)}
         onSayIt={onSayIt}
       />
-      {busy ? (
-        <Typography role="status" color="text.secondary">
-          {camera.lookingUp
-            ? t('form.prefill.lookingUp')
-            : t('form.prefill.reading')}
-        </Typography>
-      ) : null}
-      <div aria-live="polite" data-testid="prefill-read-error">
-        {camera.readError ? <Alert>{camera.readError}</Alert> : null}
-      </div>
       {camera.open ? (
         <CameraOverlay
           modes={FORM_CAMERA_MODES}
           defaultMode={camera.openMode}
-          notice={
-            camera.barcodeMissed ? tScan('overlay.barcodeNotFound') : undefined
-          }
           onResult={camera.onResult}
+          onScanSeveral={onScanSeveral}
           onCancel={camera.cancel}
         />
       ) : null}
@@ -116,6 +108,7 @@ export function AddBatchForm({
 
       <CatalogSearch
         autoFocus
+        inputRef={searchInput}
         placeholder={tCatalog('search.placeholderAdd')}
         defaultQuery={form.initialQuery}
         selected={form.selected}
@@ -131,6 +124,15 @@ export function AddBatchForm({
         }
       />
 
+      {camera.source ? (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          data-testid="camera-source-tag"
+        >
+          {t(`form.tag.${camera.source}`)}
+        </Typography>
+      ) : null}
       {mark('ingredient')}
       <ListedAllergensNote allergens={camera.missingAllergens} />
       {camera.checkIngredient ? (

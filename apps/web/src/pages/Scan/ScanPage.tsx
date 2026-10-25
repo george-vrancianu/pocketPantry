@@ -112,7 +112,15 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
             backgroundImage: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${shade(45)} 100%)`,
           }}
         />
-        <Viewfinder rect={guide} shot={shot} sliding={sliding} />
+        <Viewfinder
+          rect={guide}
+          shot={shot}
+          sliding={sliding}
+          scanLine={screen.mode === 'barcode'}
+          readCount={
+            screen.scans.filter((scan) => scan.mode === 'barcode').length
+          }
+        />
       </Box>
 
       <CameraTopBar

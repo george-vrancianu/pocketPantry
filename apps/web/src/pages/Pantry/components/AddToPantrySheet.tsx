@@ -17,6 +17,7 @@ import { formatRowAmount } from '../../../lib/amount';
 import { flashRows } from '../../../lib/rowFlash';
 import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
 import { useDeleteBatch, type Batch } from '../../../lib/pantry';
+import { useNavigate } from 'react-router-dom';
 import type { AddBatchStart } from '../hooks/useAddBatchForm';
 import { useShowsDockMic } from '../../../components/VoiceNote';
 import { useMicTeach } from '../../../components/voice/VoiceHost';
@@ -66,6 +67,7 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
     flashRows(added.map((batch) => batch.id));
     onClose();
   };
+  const navigate = useNavigate();
   const close = () => {
     if (!cameraOpen) leave();
   };
@@ -198,6 +200,10 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
                 }
               : undefined
           }
+          onScanSeveral={(mode) => {
+            leave();
+            navigate(`/scan?mode=${mode}`);
+          }}
         />
       </Box>
     </Sheet>
