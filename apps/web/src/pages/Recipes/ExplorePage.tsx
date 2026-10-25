@@ -173,7 +173,12 @@ export function ExplorePage() {
   );
 
   return (
-    <Box sx={slideSx(leaving, enter)} ref={pageRef} data-testid="explore-page">
+    <Box
+      sx={slideSx(leaving, enter)}
+      ref={pageRef}
+      data-testid="explore-page"
+      data-motion={leaving ? 'out' : enter ? 'in' : 'none'}
+    >
       <AppScreenHeader
         title={t('recipes:explore.title')}
         back={{

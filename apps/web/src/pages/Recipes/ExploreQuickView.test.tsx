@@ -390,7 +390,7 @@ describe('Explore and the preview round trip', () => {
     state.mockRestore();
     const page = await screen.findByTestId('explore-page');
     expect(screen.getByTestId('back-badge')).toHaveTextContent('+1');
-    expect(getComputedStyle(page).animationName).not.toContain('slide-in');
+    expect(page).toHaveAttribute('data-motion', 'none');
   });
 
   it('Back from a preview opened directly goes to Explore, and its adds do not count', async () => {
@@ -402,13 +402,20 @@ describe('Explore and the preview round trip', () => {
     expect(await screen.findByTestId('explore-page')).toBeVisible();
     expect(exploreAdds.get()).toBe(0);
     expect(screen.queryByTestId('back-badge')).toBeNull();
+    expect(screen.getByTestId('explore-page')).toHaveAttribute(
+      'data-motion',
+      'none',
+    );
   });
 
   it('Back after a redirect at load (a deep link) lands on Explore, not out of the app', async () => {
     setup('/recipes/soup');
     await screen.findByRole('heading', { level: 1, name: /Soup/ });
     await user().click(screen.getByRole('link', { name: /Back/ }));
-    expect(await screen.findByTestId('explore-page')).toBeVisible();
+    expect(await screen.findByTestId('explore-page')).toHaveAttribute(
+      'data-motion',
+      'none',
+    );
   });
 
   it('leaving a preview for elsewhere and coming back to Explore is a fresh visit', async () => {
@@ -425,7 +432,10 @@ describe('Explore and the preview round trip', () => {
     await screen.findByRole('heading', { level: 1, name: /Soup/ });
     await u.click(screen.getByRole('link', { name: 'home' }));
     await u.click(await screen.findByRole('link', { name: 'to explore' }));
-    await screen.findByTestId('explore-page');
+    expect(await screen.findByTestId('explore-page')).toHaveAttribute(
+      'data-motion',
+      'in',
+    );
     expect(screen.queryByTestId('back-badge')).toBeNull();
   });
 
@@ -450,5 +460,9 @@ describe('Explore and the preview round trip', () => {
     await rowButton();
     await act(async () => {});
     expect(screen.queryByTestId('back-badge')).toBeNull();
+    expect(screen.getByTestId('explore-page')).toHaveAttribute(
+      'data-motion',
+      'in',
+    );
   });
 });
