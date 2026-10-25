@@ -1,5 +1,5 @@
 import {
-  GatorImage,
+  Gator,
   Alert,
   Box,
   Button,
@@ -275,7 +275,13 @@ export function ReviewOverviewPage() {
               sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}
             >
               {/* The line beside Gator says what it is doing, so the image is decorative. */}
-              <GatorImage mood="list-keeper" size={64} decorative />
+              <Gator
+                mood="list-keeper"
+                size={64}
+                loop="signature"
+                entrance={false}
+                decorative
+              />
               <Typography>{t('overview.reading')}</Typography>
             </Box>
           ) : scan.dishes ? (
@@ -285,9 +291,10 @@ export function ReviewOverviewPage() {
               <Box
                 sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}
               >
-                <GatorImage
+                <Gator
                   mood="worried"
                   size={48}
+                  entrance={false}
                   alt={gatorAlt('worried')}
                 />
                 <Typography sx={{ fontWeight: 700 }}>

@@ -1,7 +1,7 @@
 import {
   Box,
   color,
-  GatorImage,
+  Gator,
   radius,
   tokens,
   Typography,
@@ -37,7 +37,7 @@ export function GatorBanner({ title, detail, testId }: Props) {
       }}
     >
       <Box sx={{ flex: 'none' }}>
-        <GatorImage mood="happy" size={88} alt={gatorAlt('happy')} />
+        <Gator mood="happy" size={88} alt={gatorAlt('happy')} />
       </Box>
       <Typography sx={{ fontSize: 15, lineHeight: 1.4 }}>
         <strong>{title}</strong>

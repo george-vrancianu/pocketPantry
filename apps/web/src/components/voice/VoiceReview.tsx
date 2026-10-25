@@ -1,7 +1,7 @@
 import {
   Alert,
   Box,
-  GatorImage,
+  Gator,
   Sheet,
   Typography,
   ShoppingIcon,
@@ -316,7 +316,7 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
           }}
         >
           {setup ? (
-            <GatorImage mood="happy" size={72} alt={gatorAlt('happy')} />
+            <Gator mood="happy" size={72} alt={gatorAlt('happy')} />
           ) : null}
           <Box>
             <Typography

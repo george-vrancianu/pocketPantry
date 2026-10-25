@@ -1,7 +1,7 @@
 import {
   Box,
   Button,
-  GatorImage,
+  Gator,
   palette,
   radius,
   shadow,
@@ -146,9 +146,11 @@ function Strip({
           aria-hidden
           sx={{ flex: 'none', display: 'flex', alignItems: 'center' }}
         >
-          <GatorImage
+          <Gator
             mood={reading > 0 ? 'thinking' : 'happy'}
             size={44}
+            loop={reading > 0 ? 'signature' : 'idle'}
+            entrance={false}
             decorative
           />
         </Box>
