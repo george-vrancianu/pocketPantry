@@ -2,6 +2,7 @@ import { count, eq } from 'drizzle-orm';
 import {
   batches,
   family,
+  recipeDrafts,
   shoppingItems,
   shoppingLists,
   user,
@@ -10,7 +11,9 @@ import type { Tx } from '../database/database.types';
 import { withFreshInviteCode } from './invite-code';
 
 /**
- * Moves a Member into a brand-new Household of One as its Owner. Runs inside
+ * Moves a Member into a brand-new Household of One as its Owner. Their Recipe
+ * Drafts end with the move (ADR 0028): nothing from the old Family stays with
+ * them. Runs inside
  * the caller's transaction so a Member is never without a Family. The insert
  * runs in a savepoint: a (vanishingly rare) Invite Code collision would
  * otherwise abort the whole transaction.
@@ -24,6 +27,7 @@ export async function moveToNewHouseholdOfOne(
       savepoint.insert(family).values(code).returning({ id: family.id }),
     ),
   );
+  await tx.delete(recipeDrafts).where(eq(recipeDrafts.memberId, memberId));
   await tx
     .update(user)
     .set({ familyId: created.id, familyRole: 'owner' })

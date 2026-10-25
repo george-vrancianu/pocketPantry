@@ -759,6 +759,9 @@ describe('NewRecipePage', () => {
   it('shows a coded error in the Member locale and stays on the form', async () => {
     const user = userEvent.setup({ delay: null });
     setup('/recipes/new', {
+      // The Recipe Draft saves quietly; an unanswered one would show its own error.
+      'POST /api/recipe-drafts': () =>
+        Response.json({ id: 'draft-id', version: 1 }, { status: 201 }),
       'POST /api/recipes': () =>
         Response.json(
           { code: 'recipes.parent_archived', params: {} },

@@ -4,6 +4,7 @@ import type { Unit } from './catalog';
 import type { GuidanceInput, RecipeStep, RecipeTip } from './adminRecipes';
 import type { Difficulty } from './recipeVocabulary';
 import { recipeChangeQueryKeys } from './queryKeys';
+import { recipeDraftsListKey } from './recipeDrafts';
 import { recipesQueryKey } from './recipes';
 
 type GuidanceInputWithIds = {
@@ -101,6 +102,8 @@ export type FamilyRecipeDocument = {
   sourceLink?: string | null;
   /** Only on create, with `sourceLink`: the language the page was translated from. */
   sourceLanguage?: string;
+  /** Only on create: the Member's Recipe Draft this Recipe finishes; it ends with the create. */
+  recipeDraftId?: string;
 };
 
 /** The copy of a visible Recipe to start a Family Variant from. */
@@ -157,12 +160,22 @@ function useFamilyWrite<Input, Result>(
 
 /** Create a Variant under `parentId` (or, with null, a standalone Base Recipe). */
 export function useCreateFamilyRecipe() {
+  const queryClient = useQueryClient();
   return useFamilyWrite(
-    (input: { parentId: string | null; document: FamilyRecipeDocument }) =>
-      apiRequest<FamilyRecipeEdit>('/recipes', {
+    async (input: {
+      parentId: string | null;
+      document: FamilyRecipeDocument;
+    }) => {
+      const saved = await apiRequest<FamilyRecipeEdit>('/recipes', {
         method: 'POST',
         body: { ...input.document, parentId: input.parentId },
-      }),
+      });
+      // The server ended that Recipe Draft with the create (ADR 0028): the list is old now.
+      if (input.document.recipeDraftId) {
+        void queryClient.invalidateQueries({ queryKey: recipeDraftsListKey });
+      }
+      return saved;
+    },
   );
 }
 
