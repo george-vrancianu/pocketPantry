@@ -320,3 +320,77 @@ describe('RecipeEditor', () => {
     );
   });
 });
+
+describe('RecipeEditor Suggest Guidance', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const NOTE = 'Warming and filling. Light on greens.';
+  const suggestRoute = 'POST /api/admin/recipes/suggest-guidance';
+  const answer = () =>
+    Response.json({
+      guidance: { nutritionNote: NOTE },
+      noSuggestions: ['pairings', 'eatingMoments'],
+    });
+
+  it('fills an empty Nutrition Note from the editor as it is now, marked Suggested, and stores nothing until Save', async () => {
+    const { calls } = open(base, {
+      [suggestRoute]: answer,
+      'PUT /api/admin/recipes/r1/guidance': () => Response.json(base),
+    });
+    const user = userEvent.setup();
+
+    const [title] = await screen.findAllByLabelText(/^Title/);
+    await user.clear(title);
+    await user.type(title, 'Winter soup');
+    await user.click(screen.getByRole('button', { name: 'Suggest Guidance' }));
+
+    const note = await screen.findByLabelText('Nutrition Note');
+    await vi.waitFor(() => expect(note).toHaveValue(NOTE));
+    expect(
+      within(screen.getByRole('group', { name: /Nutrition Note/ })).getByText(
+        'Suggested',
+      ),
+    ).toBeVisible();
+    // The unsaved edit reaches the API, with the recipe id and the Guidance on the form.
+    expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+      recipe: { title: 'Winter soup', servings: 4 },
+      guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
+      recipeId: 'r1',
+    });
+    // Nothing is stored by suggesting.
+    expect(calls.some((c) => c.key.startsWith('PUT'))).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: 'Save guidance' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.some((c) => c.key === 'PUT /api/admin/recipes/r1/guidance'),
+      ).toBe(true),
+    );
+    const saved = calls.find(
+      (c) => c.key === 'PUT /api/admin/recipes/r1/guidance',
+    )?.body;
+    expect(saved).toMatchObject({ nutritionNote: NOTE });
+    expect(JSON.stringify(saved)).not.toMatch(/suggested/i);
+  });
+
+  it('does not fill a field that already has content', async () => {
+    open({ ...base, nutritionNote: 'Mine' });
+    await screen.findByRole('button', { name: 'Suggest Guidance' });
+    expect(screen.getByLabelText('Nutrition Note')).toHaveValue('Mine');
+  });
+
+  it('is not offered on the translations screen', async () => {
+    open(base);
+    const translations = await screen.findByRole('region', {
+      name: 'Recipe translations',
+    });
+    expect(
+      within(translations).queryByRole('button', { name: 'Suggest Guidance' }),
+    ).toBeNull();
+    expect(
+      screen.getAllByRole('button', { name: 'Suggest Guidance' }),
+    ).toHaveLength(1);
+  });
+});

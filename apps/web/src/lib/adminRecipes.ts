@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ScanLanguage } from '../i18n/resources';
 import { apiRequest } from './api';
+import type { GuidanceSuggestion } from './guidanceSuggestion';
 import type { Unit } from './catalog';
 import { recipeChangeQueryKeys } from './queryKeys';
 import type { RecipeAllergens } from './recipes';
@@ -261,4 +262,21 @@ export function useSetGuidance(id: string) {
       body: input,
     }),
   );
+}
+
+/** What Suggest Guidance sends for a Catalog Recipe: the editor as it is now, and the Guidance on the form. */
+export type SuggestCatalogGuidanceRequest = {
+  recipe: Partial<Pick<RecipeDocument, 'title' | 'servings'>> &
+    Omit<RecipeDocument, 'title' | 'servings'>;
+  guidance: GuidanceInput;
+  /** The saved Catalog Recipe being edited. */
+  recipeId?: string;
+};
+
+/** Ask for Guidance for the empty fields of a Catalog Recipe. Admin only; nothing is saved. */
+export function suggestCatalogGuidance(body: SuggestCatalogGuidanceRequest) {
+  return apiRequest<GuidanceSuggestion>('/admin/recipes/suggest-guidance', {
+    method: 'POST',
+    body,
+  });
 }

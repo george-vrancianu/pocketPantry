@@ -7,7 +7,12 @@ import {
   type GuidanceBody,
   type PairingInput,
 } from './recipe-guidance.schemas';
-import { familyLineInput, recipeDocument, MAX_LINES } from './recipes.schemas';
+import {
+  familyLineInput,
+  lineInput,
+  recipeDocument,
+  MAX_LINES,
+} from './recipes.schemas';
 
 /** Structured-output schema name of a Suggest Guidance answer. */
 export const GUIDANCE_SUGGESTION_SCHEMA_NAME = 'recipe_guidance_suggestion';
@@ -48,7 +53,7 @@ const formPairing = pairingInput.extend({
   label: z.string().trim().max(MAX_PAIRING_LABEL),
   reason: z.string().trim().max(MAX_PAIRING_REASON),
 });
-const formGuidance = guidanceBody.extend({
+export const formGuidance = guidanceBody.extend({
   pairings: z.array(formPairing).max(100),
 });
 type FormGuidance = z.infer<typeof formGuidance>;
@@ -146,3 +151,21 @@ export function emptyGuidanceFields(
     }
   });
 }
+
+/**
+ * Suggest Guidance for a Catalog Recipe (an Admin): what the editor holds now, with Catalog
+ * lines (an Ingredient or not yet chosen), and the Guidance already on the form.
+ */
+export const adminSuggestGuidanceBody = z
+  .object({
+    recipe: recipeDocument.extend({
+      title: recipeDocument.shape.title.optional(),
+      servings: recipeDocument.shape.servings.optional(),
+      lines: z.array(lineInput).max(MAX_LINES).default([]),
+    }),
+    guidance: formGuidance,
+    /** The saved Catalog Recipe being edited, if any: Pairings may never link to it. */
+    recipeId: z.uuid().optional(),
+  })
+  .strict();
+export type AdminSuggestGuidanceBody = z.infer<typeof adminSuggestGuidanceBody>;

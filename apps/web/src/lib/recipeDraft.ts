@@ -1,5 +1,9 @@
 import { localName, type AdminCatalog } from './admin';
-import type { AdminRecipe, RecipeDocument } from './adminRecipes';
+import type {
+  AdminRecipe,
+  RecipeDocument,
+  SuggestCatalogGuidanceRequest,
+} from './adminRecipes';
 import type { Difficulty } from './recipeVocabulary';
 import type { Unit } from './catalog';
 
@@ -211,4 +215,50 @@ export function moved<T>(items: T[], index: number, offset: -1 | 1): T[] {
   const copy = [...items];
   [copy[index], copy[target]] = [copy[target], copy[index]];
   return copy;
+}
+
+/**
+ * The editor's Recipe as Suggest Guidance reads it. The form may be half done, so unlike
+ * `documentOf` this never needs `problemsOf` to be clear: lines without an Ingredient and
+ * Steps with no text are left out, and a missing Title or Servings is left out too.
+ */
+export function suggestionRecipeOf(
+  draft: RecipeDraft,
+): SuggestCatalogGuidanceRequest['recipe'] {
+  const servings = Number(draft.servings.trim());
+  const quantityOf = (text: string) => {
+    const value = decimal(text);
+    return text.trim() !== '' && value >= 0.001 && value <= MAX_QUANTITY
+      ? Math.round(value * 1000) / 1000
+      : null;
+  };
+  return {
+    ...(draft.title.trim() ? { title: draft.title.trim() } : {}),
+    ...(Number.isInteger(servings) && servings >= 1 && servings <= 1000
+      ? { servings }
+      : {}),
+    prepMinutes: null,
+    cookMinutes: null,
+    difficulty: null,
+    cuisineId: draft.cuisineId || null,
+    methodId: draft.methodId || null,
+    lines: draft.lines.flatMap((line) => {
+      if (!line.ingredientId) return [];
+      const quantity = quantityOf(line.quantity);
+      return [
+        {
+          ingredientId: line.ingredientId,
+          quantity,
+          unit: quantity === null ? null : line.unit,
+          optional: line.optional,
+          note: null,
+        },
+      ];
+    }),
+    steps: draft.steps.flatMap((step) =>
+      step.text.trim() === ''
+        ? []
+        : [{ text: step.text.trim().slice(0, 2000), timerSeconds: null }],
+    ),
+  };
 }
