@@ -222,6 +222,7 @@
       "deleteTip": "Șterge Sfatul {{n}} al pasului {{step}}",
       "newTip": "Sfat nou pentru pasul {{number}}",
       "cancelTip": "Renunță la Sfatul nou pentru pasul {{number}}",
+      "tipPlaceholder": "Un sfat pentru acest pas",
       "addTip": "Sfat",
       "addTipFor": "Adaugă un Sfat la pasul {{number}}",
       "copiedTips_one": "{{count}} sfat",

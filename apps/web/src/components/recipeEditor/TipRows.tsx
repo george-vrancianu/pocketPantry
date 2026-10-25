@@ -1,5 +1,6 @@
 import { CloseIcon, IconButton, Stack, TextField } from '@pocket-pantry/ui';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { RecipeTip } from '../../lib/adminRecipes';
 
 /** What the inline Tip rows need from the page: Tips save on blur, and a delete is deferred behind Undo. */
@@ -8,6 +9,16 @@ export type TipActions = {
   update: (tipId: string, text: string) => void;
   remove: (tipId: string) => void;
 };
+
+/** The dashed, subtle look of a Tip row under its Step. */
+const rowSx = {
+  alignItems: 'center',
+  bgcolor: 'pp.subtle',
+  border: '1px dashed',
+  borderColor: 'pp.lineStrong',
+  borderRadius: 1,
+  pl: 1.25,
+} as const;
 
 const Bulb = () => (
   <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>
@@ -24,9 +35,10 @@ type RowProps = {
 
 /** A saved Tip: bulb, input that saves a change on blur, and ×. */
 export function TipRow({ tip, label, removeLabel, actions }: RowProps) {
+  const { t } = useTranslation('admin');
   const [text, setText] = useState(tip.text);
   return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+    <Stack direction="row" spacing={1} sx={rowSx}>
       <Bulb />
       <TextField
         size="small"
@@ -40,6 +52,7 @@ export function TipRow({ tip, label, removeLabel, actions }: RowProps) {
           else if (value !== tip.text) actions.update(tip.id, value);
         }}
         sx={{ flex: 1 }}
+        placeholder={t('recipe.steps.tipPlaceholder')}
         slotProps={{ htmlInput: { 'aria-label': label } }}
       />
       <IconButton
@@ -71,6 +84,7 @@ export function NewTipRow({
   actions,
   onDone,
 }: NewProps) {
+  const { t } = useTranslation('admin');
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const save = () => {
@@ -81,7 +95,7 @@ export function NewTipRow({
     actions.add(value, stepId).then(onDone, () => setSaving(false));
   };
   return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+    <Stack direction="row" spacing={1} sx={rowSx}>
       <Bulb />
       <TextField
         size="small"
@@ -91,13 +105,14 @@ export function NewTipRow({
         onChange={(event) => setText(event.target.value)}
         onBlur={save}
         sx={{ flex: 1 }}
+        placeholder={t('recipe.steps.tipPlaceholder')}
         slotProps={{ htmlInput: { 'aria-label': label } }}
       />
       <IconButton
         tone="plain"
         size={40}
         label={removeLabel}
-        // Pressing × blurs the field first, which would save; the row is simply dropped instead.
+        // Pressing × with a pointer blurs the field first, which would save; the row is simply dropped instead. (Tabbing to × still saves.)
         onMouseDown={(event) => event.preventDefault()}
         onClick={onDone}
       >

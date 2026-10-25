@@ -240,36 +240,6 @@ export function RecipeStepsSection({
                         },
                       }}
                     />
-                    {stepTips && step.id ? (
-                      <>
-                        {stepTips.of(step.id).map((tip, tipIndex) => (
-                          <TipRow
-                            key={`${tip.id}-${tip.text}`}
-                            tip={tip}
-                            label={t('admin:recipe.steps.tipOf', {
-                              n: tipIndex + 1,
-                              step: number,
-                            })}
-                            removeLabel={t('admin:recipe.steps.deleteTip', {
-                              n: tipIndex + 1,
-                              step: number,
-                            })}
-                            actions={stepTips.actions}
-                          />
-                        ))}
-                        {addingTip.has(step.id) ? (
-                          <NewTipRow
-                            label={t('admin:recipe.steps.newTip', { number })}
-                            removeLabel={t('admin:recipe.steps.cancelTip', {
-                              number,
-                            })}
-                            stepId={step.id}
-                            actions={stepTips.actions}
-                            onDone={() => setTipRow(step.id!, false)}
-                          />
-                        ) : null}
-                      </>
-                    ) : null}
                     <Stack
                       direction="row"
                       spacing={1}
@@ -390,6 +360,36 @@ export function RecipeStepsSection({
                       >
                         {t('admin:recipe.invalid.timer')}
                       </Typography>
+                    ) : null}
+                    {stepTips && step.id ? (
+                      <>
+                        {stepTips.of(step.id).map((tip, tipIndex) => (
+                          <TipRow
+                            key={`${tip.id}-${tip.text}`}
+                            tip={tip}
+                            label={t('admin:recipe.steps.tipOf', {
+                              n: tipIndex + 1,
+                              step: number,
+                            })}
+                            removeLabel={t('admin:recipe.steps.deleteTip', {
+                              n: tipIndex + 1,
+                              step: number,
+                            })}
+                            actions={stepTips.actions}
+                          />
+                        ))}
+                        {addingTip.has(step.id) ? (
+                          <NewTipRow
+                            label={t('admin:recipe.steps.newTip', { number })}
+                            removeLabel={t('admin:recipe.steps.cancelTip', {
+                              number,
+                            })}
+                            stepId={step.id}
+                            actions={stepTips.actions}
+                            onDone={() => setTipRow(step.id!, false)}
+                          />
+                        ) : null}
+                      </>
                     ) : null}
                     {removing === step.key ? (
                       <Alert severity="warning">

@@ -563,11 +563,9 @@ export function EditFamilyRecipePage() {
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const back = { label: t('recipes:back'), href: `/recipes/${id}` };
+  // A failed delete is reported by the deferred-removal toast, not here.
   const tipError =
-    tipWrites.add.error ??
-    tipWrites.update.error ??
-    tipWrites.remove.error ??
-    tipWrites.hide.error;
+    tipWrites.add.error ?? tipWrites.update.error ?? tipWrites.hide.error;
   const tips = (recipe?.tips ?? []).filter(
     (tip) => !tipRemoval.hiddenIds.has(tip.id),
   );

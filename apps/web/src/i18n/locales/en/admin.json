@@ -219,6 +219,7 @@
       "deleteTip": "Delete Tip {{n}} of Step {{step}}",
       "newTip": "New Tip for Step {{number}}",
       "cancelTip": "Cancel the new Tip for Step {{number}}",
+      "tipPlaceholder": "A tip for this step",
       "addTip": "Tip",
       "addTipFor": "Add a Tip to Step {{number}}",
       "copiedTips_one": "{{count}} tip",

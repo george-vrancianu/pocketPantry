@@ -2708,6 +2708,45 @@ describe('Recipe editor Tips (#593)', () => {
     expect(tipCalls(calls)).toHaveLength(0);
   });
 
+  it('shows a Tip under the Step tool row, with a placeholder when new', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await openTab(user, 'Steps');
+    const tool = screen.getByRole('button', { name: 'Add a Tip to Step 1' });
+    const tip = screen.getByLabelText('Tip 1 of Step 1');
+    expect(
+      tool.compareDocumentPosition(tip) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    await user.click(tool);
+    expect(screen.getByLabelText('New Tip for Step 1')).toHaveAttribute(
+      'placeholder',
+      'A tip for this step',
+    );
+  });
+
+  it('reports a failed Tip delete once, as one toast, not also an Alert', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({
+      delay: null,
+      advanceTimers: vi.advanceTimersByTime,
+    });
+    edit({
+      'DELETE /api/recipes/g/tips/t2': () =>
+        Response.json({ error: 'boom' }, { status: 500 }),
+    });
+    await openTab(user, 'Steps');
+    await user.click(
+      screen.getByRole('button', { name: 'Delete Tip 1 of Step 1' }),
+    );
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 1000));
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Tip 1 of Step 1')).toBeVisible(),
+    );
+    expect(
+      screen.getAllByText('Something went wrong. Please try again.'),
+    ).toHaveLength(1);
+  });
+
   it('holds the Recipe tips in a card, with the Base Recipe Tips as toggles', async () => {
     const user = userEvent.setup({ delay: null });
     const calls = edit({
