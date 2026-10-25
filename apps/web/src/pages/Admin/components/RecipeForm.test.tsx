@@ -1,8 +1,9 @@
-import { screen } from '@testing-library/react';
+import { act, waitFor, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
 import type { AdminRecipe } from '../../../lib/adminRecipes';
+import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
 import { renderWithProviders, stubApi } from '../../../test/render';
 import { RecipeForm } from './RecipeForm';
 
@@ -149,7 +150,8 @@ describe('RecipeForm', () => {
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
     expect(screen.getByLabelText('Unit of Milk')).toHaveValue('ml');
     await user.type(screen.getByLabelText('Quantity of Milk'), '250');
-    await user.click(screen.getByLabelText('Optional: Milk'));
+    await user.click(screen.getByRole('button', { name: 'More for Milk' }));
+    await user.click(screen.getByRole('switch', { name: 'Optional: Milk' }));
     await user.type(screen.getByLabelText('Note for Milk'), 'cold');
 
     await user.click(screen.getByRole('button', { name: 'Add a Step' }));
@@ -203,6 +205,7 @@ describe('RecipeForm', () => {
       '10',
     );
     await user.click(screen.getByRole('button', { name: 'Move Step 2 up' }));
+    await user.click(screen.getByRole('button', { name: 'More for Milk' }));
     await user.click(screen.getByRole('button', { name: 'Move Milk up' }));
     await user.click(screen.getByRole('button', { name: 'Remove Step 2' }));
     await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
@@ -416,5 +419,65 @@ describe('RecipeForm: no Add to your catalog (#270)', () => {
     expect(
       screen.queryByRole('option', { name: /to your catalog/ }),
     ).toBeNull();
+  });
+});
+
+describe('RecipeForm Ingredient Lines (#589)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const renderSaved = () => {
+    const { fetchMock } = stubApi({});
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <RecipeForm
+        recipe={saved}
+        catalog={catalog}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+  };
+
+  it('shows a row with a subline, opens one strip at a time and moves a line', async () => {
+    renderSaved();
+    const user = userEvent.setup({ delay: null });
+    expect(screen.getByText('optional \u00b7 warm')).toBeVisible();
+    const salt = screen.getByRole('button', { name: 'More for Salt' });
+    const milk = screen.getByRole('button', { name: 'More for Milk' });
+    await user.click(salt);
+    expect(salt).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      screen.getByRole('button', { name: 'Move Salt up' }),
+    ).toHaveAttribute('aria-disabled', 'true');
+    await user.click(milk);
+    expect(salt).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.getByRole('button', { name: 'Move Milk down' }),
+    ).toHaveAttribute('aria-disabled', 'true');
+    await user.click(screen.getByRole('button', { name: 'Move Milk up' }));
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Milk');
+  });
+
+  it('removes a line with Undo that puts it back, and drops the toast after the window', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderSaved();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.click(screen.getByRole('button', { name: 'More for Salt' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Salt' }));
+    expect(screen.queryByLabelText('Quantity of Salt')).toBeNull();
+    expect(
+      (await screen.findByText('Removed Salt')).closest('[role="status"]'),
+    ).not.toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Salt');
+
+    await user.click(screen.getByRole('button', { name: 'More for Salt' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Salt' }));
+    await screen.findByText('Removed Salt');
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 500));
+    await waitFor(() => expect(screen.queryByText('Removed Salt')).toBeNull());
   });
 });
