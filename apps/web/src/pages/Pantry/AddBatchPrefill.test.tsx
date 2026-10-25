@@ -183,6 +183,9 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
     expect(cameraButton()).toHaveFocus();
+    expect(
+      screen.getByRole('dialog', { name: 'Add to Pantry' }),
+    ).toBeInTheDocument();
   });
 
   it('closes only the language menu on Escape, not the overlay', async () => {
