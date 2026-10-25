@@ -15,14 +15,7 @@ import {
   vi,
 } from 'vitest';
 import { Gator, ONE_SHOT_MS, type GatorProps } from './Gator';
-import chefFlopArt from './art/gator-chef-flop.svg?raw';
-import {
-  GATOR_GEOMETRY,
-  GATOR_MOODS,
-  STILL_GEOMETRY,
-  type AnimatedGatorMood,
-  type GatorMood,
-} from './gatorGeometry';
+import { GATOR_GEOMETRY, GATOR_MOODS, type GatorMood } from './gatorGeometry';
 
 const ALTS: Record<GatorMood, string> = {
   'shopping-buddy': 'Gator waving, holding a shopping basket',
@@ -40,9 +33,7 @@ const ALTS: Record<GatorMood, string> = {
   chef: 'Gator the chef stirring a pot',
   'chef-flop': 'Gator, disappointed, with the cooking tools dropped',
 };
-const MOODS = GATOR_MOODS.filter(
-  (m): m is AnimatedGatorMood => m !== 'chef-flop',
-);
+const MOODS = GATOR_MOODS;
 const VARIANTS = ['idle', 'signature', 'entrance', 'tap'] as const;
 
 const art = import.meta.glob<string>('./art/gator-*-*.svg', {
@@ -216,18 +207,15 @@ describe('Gator', () => {
     expect(Object.keys(ALTS).sort()).toEqual([...GATOR_MOODS].sort());
   });
 
-  describe('chef-flop, which has no motion art', () => {
+  describe('chef-flop, the disappointed chef', () => {
     const src = (container: HTMLElement) =>
       image(container).getAttribute('src');
 
-    it('shows its one still for every variant, with the motion still reported', () => {
+    it('plays its own Entrance, then settles into its loop', () => {
       const { container } = render(<Gator mood="chef-flop" alt="a" />);
-      const still = src(container);
-      expect(still).toMatch(/gator-chef-flop/);
-      expect(motion(container)).toBe('entrance');
+      expect(src(container)).toMatch(/gator-chef-flop-entrance/);
       advance(ONE_SHOT_MS.entrance);
-      expect(motion(container)).toBe('idle');
-      expect(src(container)).toBe(still);
+      expect(src(container)).toMatch(/gator-chef-flop-idle/);
     });
 
     it('keeps the same image element when switching to and from chef', () => {
@@ -235,26 +223,19 @@ describe('Gator', () => {
       const img = image(container);
       rerender(<Gator mood="chef-flop" alt="a" />);
       expect(image(container)).toBe(img);
-      expect(src(container)).toMatch(/gator-chef-flop/);
+      expect(src(container)).toMatch(/gator-chef-flop-idle/);
       rerender(<Gator mood="chef" alt="a" />);
       expect(image(container)).toBe(img);
       expect(src(container)).toMatch(/gator-chef-idle/);
     });
 
-    it('has no padding, so the layout box is the image', () => {
-      const { container } = render(
-        <Gator mood="chef-flop" size={104} alt="a" />,
-      );
-      expect(image(container).style.marginTop).toBe('0px');
-      expect(image(container).style.width).toBe('104px');
-    });
-
     it('is its own drawing, keeping the hat and dropping the pot and whisk', () => {
-      expect(chefFlopArt).not.toBe(artOf('chef', 'idle'));
-      expect(chefFlopArt).toContain('fill="#F4EFE4"');
-      expect(chefFlopArt).toContain('fill="#C7533C"');
-      expect(chefFlopArt).toContain('stroke="#9AA3A8"');
-      expect(chefFlopArt).toContain('fill="#8CCBEA"');
+      const flop = artOf('chef-flop', 'idle')!;
+      expect(flop).not.toBe(artOf('chef', 'idle'));
+      expect(flop).toContain('class="pot"');
+      expect(flop).toContain('class="whiskdown"');
+      expect(flop).toContain('fill="#8CCBEA"');
+      expect(artOf('chef-flop', 'signature')).toContain('@keyframes sigh');
     });
   });
 
@@ -466,12 +447,6 @@ describe('Gator art', () => {
       }
     },
   );
-
-  it('gives the still chef-flop the viewBox of its art', () => {
-    expect(/viewBox="([^"]*)"/.exec(chefFlopArt)?.[1]).toBe(
-      STILL_GEOMETRY['chef-flop'].view.join(' '),
-    );
-  });
 
   it('keeps every Gator animated art file free of external references', () => {
     for (const text of Object.values(art)) {
