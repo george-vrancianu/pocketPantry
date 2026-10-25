@@ -43,11 +43,17 @@ export {
   type IngredientIconProps,
 } from './ingredientIcon/IngredientIcon';
 export {
-  GatorImage,
+  Gator,
+  warmGatorLoops,
+  type GatorLoop,
+  type GatorMotion,
+  type GatorProps,
+} from './gator/Gator';
+export {
   GATOR_MOODS,
-  type GatorImageProps,
+  type AnimatedGatorMood,
   type GatorMood,
-} from './gator/GatorImage';
+} from './gator/gatorGeometry';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
 export {

@@ -1,7 +1,7 @@
 import {
   Box,
   Button,
-  GatorImage,
+  Gator,
   palette,
   radius,
   shadow,
@@ -103,8 +103,9 @@ function Strip({
   const host = useVoiceHost();
   const { reading, ready, failed } = state.inbox;
   const total = reading + ready + failed;
+  const busy = reading > 0;
   const summary = [
-    reading > 0 ? t('inbox.reading', { count: reading }) : null,
+    busy ? t('inbox.reading', { count: reading }) : null,
     ready > 0 ? t('inbox.ready', { count: ready }) : null,
     failed > 0 ? t('inbox.failed', { count: failed }) : null,
   ]
@@ -146,9 +147,11 @@ function Strip({
           aria-hidden
           sx={{ flex: 'none', display: 'flex', alignItems: 'center' }}
         >
-          <GatorImage
-            mood={reading > 0 ? 'thinking' : 'happy'}
+          <Gator
+            mood={busy ? 'thinking' : 'happy'}
             size={44}
+            loop={busy ? 'signature' : 'idle'}
+            entrance={false}
             decorative
           />
         </Box>

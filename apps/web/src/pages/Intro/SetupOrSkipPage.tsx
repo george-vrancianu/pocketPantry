@@ -3,7 +3,7 @@ import {
   Box,
   ChevronRightIcon,
   color,
-  GatorImage,
+  Gator,
   MicIcon,
   radius,
   ScanIcon,
@@ -134,9 +134,10 @@ export function SetupOrSkipPage() {
             backgroundColor: palette('pp-accentTint'),
           }}
         >
-          <GatorImage
+          <Gator
             mood="shopping-buddy"
             size={220}
+            loop="signature"
             alt={gatorAlt('shopping-buddy')}
           />
         </Box>

@@ -97,7 +97,7 @@ function stub(
 
 /** The element's markup under the active Theme: a Theme is its CSS variables, set on the root. */
 const snapshotOf = (element: Element) =>
-  `data-theme=${document.documentElement.dataset.theme}\n${element.outerHTML.replace(/_r_\w+_/g, '_r_N_')}`;
+  `data-theme=${document.documentElement.dataset.theme}\n${element.outerHTML.replace(/_r_\w+_/g, '_r_N_').replace(/src="[^"]*\/(gator-[\w-]+\.svg)"/g, 'src="$1"')}`;
 
 /** The disclosure button of a Health To-do; its bulk button shares the start of the name. */
 const disclosure = (sheet: HTMLElement, name: RegExp) =>
@@ -366,6 +366,34 @@ describe('HealthWidget', () => {
       } finally {
         vi.useRealTimers();
       }
+    });
+  });
+
+  describe.each([
+    ['wide', 2],
+    ['small', 2],
+  ] as const)('Gator on the %s card', (size, columns) => {
+    it('taps and opens the sheet at once, which plays its Entrance', async () => {
+      stub(tenBatchPantry());
+      stubMotion(false);
+      const user = userEvent.setup();
+      renderWithProviders(<HealthWidget size={size} columns={columns} />);
+
+      const card = await screen.findByRole('button', {
+        name: /^Pantry health, 91/,
+      });
+      const gator = () => card.querySelector('img')!;
+      await user.click(card);
+
+      expect(gator().getAttribute('data-motion')).toBe('tap');
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pantry health',
+      });
+      expect(sheet.querySelector('img')!.getAttribute('data-motion')).toBe(
+        'entrance',
+      );
+      expect(within(card).queryByRole('button')).toBeNull();
+      expect(within(sheet).queryByRole('button', { name: /Gator/ })).toBeNull();
     });
   });
 

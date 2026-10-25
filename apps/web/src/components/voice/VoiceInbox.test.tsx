@@ -140,6 +140,19 @@ describe('the Voice Inbox strip', () => {
     expect(strip()).toHaveTextContent('Reading 2 · 1 ready');
   });
 
+  it('keeps the strip Gator on its Signature while a note is read, then rests on idle once it is ready', async () => {
+    renderAt();
+    await speak(1);
+    await screen.findByText('1 Voice Note');
+    const gator = () => strip().parentElement!.querySelector('img[data-mood]');
+    expect(gator()).toHaveAttribute('data-mood', 'thinking');
+    expect(gator()).toHaveAttribute('data-motion', 'signature');
+
+    answer(0);
+    await waitFor(() => expect(gator()).toHaveAttribute('data-mood', 'happy'));
+    expect(gator()).toHaveAttribute('data-motion', 'idle');
+  });
+
   it('offers Review only when exactly one note is ready, and opens it', async () => {
     renderAt();
     await speak(1);

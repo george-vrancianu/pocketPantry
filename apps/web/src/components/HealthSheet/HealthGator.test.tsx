@@ -23,13 +23,16 @@ const ALT = {
 } as const;
 
 /** Shows a 90, and a 50 once "Change" is pressed. */
-function Harness() {
+function Harness({ entrance }: { entrance?: boolean }) {
   const [score, setScore] = useState(90);
   return (
     <>
-      <HealthGator health={scored(score)} size={64} />
+      <HealthGator health={scored(score)} size={64} entrance={entrance} />
       <button type="button" onClick={() => setScore(50)}>
         Change
+      </button>
+      <button type="button" onClick={() => setScore(90)}>
+        Back
       </button>
     </>
   );
@@ -64,10 +67,27 @@ describe('HealthGator', () => {
     expect(screen.getByAltText(ALT.worried)).toBeInTheDocument();
     // The leaving face is decorative: only the current mood is announced.
     expect(screen.queryByAltText(ALT.dapper)).toBeNull();
+    // The new mood goes straight to its loop, never the Entrance.
+    expect(screen.getByAltText(ALT.worried).getAttribute('data-motion')).toBe(
+      'idle',
+    );
     act(() => {
       vi.advanceTimersByTime(300);
     });
     expect(screen.queryByTestId('health-gator-leaving')).toBeNull();
+  });
+
+  it('never plays an Entrance after a band change, even when the band comes back', async () => {
+    stubMotion(false);
+    renderWithProviders(<Harness entrance />);
+    expect(screen.getByAltText(ALT.dapper).getAttribute('data-motion')).toBe(
+      'entrance',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Change' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByAltText(ALT.dapper).getAttribute('data-motion')).toBe(
+      'idle',
+    );
   });
 
   it('swaps without a fade under reduced motion', async () => {
