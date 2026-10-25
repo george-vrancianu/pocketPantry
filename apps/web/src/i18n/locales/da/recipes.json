@@ -270,5 +270,13 @@
     "openCopy": "{{title}} er i dine opskrifter. Åbn den",
     "undoFailed": "Kunne ikke fortryde tilføjelsen af {{title}}. Prøv igen.",
     "alreadyAdded": "{{title}} er allerede i dine opskrifter"
+  },
+  "preview": {
+    "eyebrow": "Udforsk · Katalogopskrift",
+    "note": "Du ser en forhåndsvisning af en katalogopskrift. Føj den til dine opskrifter for at ændre den, planlægge den eller lave den fra din liste.",
+    "addShort": "Føj til familien",
+    "inFamily": "I dine opskrifter",
+    "openCopy": "{{title}} er i dine opskrifter. Åbn den",
+    "actions": "Handlinger for denne opskrift"
   }
 }

@@ -433,4 +433,34 @@ describe('Add to Family (integration)', () => {
     await ana.post(`/${id}/archive`).expect(200);
     expect((await find(ana)).familyCopyId).toBeNull();
   });
+
+  it('puts familyCopyId on the Catalog Recipe detail, preview Variants included', async () => {
+    const src = await makeBase();
+    const variantId = newId();
+    await database.insert(recipes).values({
+      id: variantId,
+      parentId: src.id,
+      title: `Copy ${stamp}-detail-variant`,
+      servings: 2,
+    });
+    const detail = async (as: ReturnType<typeof client>) =>
+      (await as.get(`/${src.id}?locale=en`).expect(200)).body as {
+        familyCopyId: string | null;
+        variants: { id: string; familyCopyId: string | null }[];
+      };
+    const variantCopy = async (as: ReturnType<typeof client>) =>
+      (await detail(as)).variants.find((v) => v.id === variantId)!.familyCopyId;
+    expect((await detail(ana)).familyCopyId).toBeNull();
+    const id = await copyId(ana, src.id);
+    expect((await detail(ana)).familyCopyId).toBe(id);
+    expect((await detail(ben)).familyCopyId).toBeNull();
+    expect(await variantCopy(ana)).toBeNull();
+    const copiedVariant = await copyId(ana, variantId);
+    expect(await variantCopy(ana)).toBe(copiedVariant);
+    expect(await variantCopy(ben)).toBeNull();
+    const own = (await ana.get(`/${id}?locale=en`).expect(200)).body as {
+      familyCopyId: string | null;
+    };
+    expect(own.familyCopyId).toBeNull();
+  });
 });
