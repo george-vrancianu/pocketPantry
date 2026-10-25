@@ -34,6 +34,8 @@ type Props = {
   onChange: (lines: LineDraft[]) => void;
   /** Whether a line is a Family Ingredient (shows the Family pill). */
   isFamily?: (line: LineDraft) => boolean;
+  /** Key of a line the host just appended: its quantity takes focus. */
+  focusKey?: number | null;
   /** The search that adds a line, shown under the list. */
   children: ReactNode;
 };
@@ -44,6 +46,7 @@ export function RecipeLinesSection({
   problems,
   onChange,
   isFamily,
+  focusKey,
   children,
 }: Props) {
   const { t } = useTranslation(['admin', 'common', 'recipes']);
@@ -58,6 +61,12 @@ export function RecipeLinesSection({
   // The toast outlives this page: take it down when we go.
   const undoToast = useRef<ToastHandle | null>(null);
   useEffect(() => () => undoToast.current?.close(), []);
+
+  // The host names the line it just appended; that line's quantity takes focus.
+  const qtyInputs = useRef(new Map<number, HTMLInputElement>());
+  useEffect(() => {
+    if (focusKey != null) qtyInputs.current.get(focusKey)?.focus();
+  }, [focusKey]);
 
   const changeLine = (key: number, patch: Partial<LineDraft>) =>
     onChange(
@@ -171,6 +180,10 @@ export function RecipeLinesSection({
                     error={bad}
                     slotProps={{
                       htmlInput: {
+                        ref: (node: HTMLInputElement | null) => {
+                          if (node) qtyInputs.current.set(line.key, node);
+                          else qtyInputs.current.delete(line.key);
+                        },
                         inputMode: 'decimal',
                         'aria-label': t('admin:recipe.lines.quantity', {
                           name,
