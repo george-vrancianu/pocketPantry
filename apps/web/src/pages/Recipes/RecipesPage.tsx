@@ -16,6 +16,7 @@ import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../i18n/translateApiError';
 import { cardFor, indexCards, useCookTonight } from '../../lib/cookTonight';
+import { useAddToFamily } from '../../lib/addToFamily';
 import { localIso } from '../../lib/pantry';
 import {
   isFiltering,
@@ -130,7 +131,13 @@ export function RecipesPage() {
   // Catalog Base); one without a Base in the list is its own row, labelled "Variant of {base}".
   const items = filtering ? found : groupVariants(found);
   // No live Recipes (archived ones aren't listed): chef Gator replaces the search, chips and list.
-  const empty = !filtering && recipes.data !== undefined && items.length === 0;
+  const noneListed = recipes.data !== undefined && items.length === 0;
+  // Recipes hidden by Allergies are still Recipes: that Family isn't empty.
+  const empty =
+    !filtering &&
+    noneListed &&
+    (recipes.data?.hiddenByAllergiesCount ?? 0) === 0;
+  const addToFamily = useAddToFamily();
   const addButton = useRef<HTMLButtonElement>(null);
   const cards = cookTonight.data?.cards ?? [];
   const index = indexCards(cards);
@@ -203,15 +210,20 @@ export function RecipesPage() {
         ) : null}
         {recipes.isPending ? <Spinner label={t('common:loading')} /> : null}
         {empty ? (
-          <EmptyFamilyRecipes onNewRecipe={() => addButton.current?.click()} />
+          <EmptyFamilyRecipes
+            onNewRecipe={() => addButton.current?.click()}
+            {...addToFamily}
+          />
         ) : null}
-        {recipes.data && filtering && items.length === 0 ? (
+        {noneListed && !empty ? (
           <Box sx={{ textAlign: 'center', py: '32px' }}>
             <Box sx={{ ...displayType, fontSize: 18 }}>
-              {t('recipes:noMatches')}
+              {filtering ? t('recipes:noMatches') : t('recipes:allHidden')}
             </Box>
             <Box sx={{ fontSize: 14, color: tokens.color.muted, mt: '4px' }}>
-              {t('recipes:noMatchesHint')}
+              {filtering
+                ? t('recipes:noMatchesHint')
+                : t('recipes:allHiddenHint')}
             </Box>
           </Box>
         ) : null}

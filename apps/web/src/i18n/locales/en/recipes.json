@@ -291,5 +291,7 @@
     "explore": "Explore Recipes",
     "newRecipe": "+ New Recipe",
     "starters": "Start with these · you can make them"
-  }
+  },
+  "allHidden": "No Recipes to show.",
+  "allHiddenHint": "Recipes hidden by your Allergies are left out."
 }

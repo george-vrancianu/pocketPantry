@@ -309,5 +309,7 @@
     "explore": "Explorează Rețetele",
     "newRecipe": "+ Rețetă nouă",
     "starters": "Începe cu acestea · le poți găti"
-  }
+  },
+  "allHidden": "Nicio Rețetă de arătat.",
+  "allHiddenHint": "Rețetele ascunse din cauza Alergiilor tale nu apar."
 }

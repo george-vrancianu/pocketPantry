@@ -291,5 +291,7 @@
     "explore": "Udforsk opskrifter",
     "newRecipe": "+ Ny opskrift",
     "starters": "Start med disse · du kan lave dem"
-  }
+  },
+  "allHidden": "Ingen opskrifter at vise.",
+  "allHiddenHint": "Opskrifter skjult på grund af dine allergier er udeladt."
 }

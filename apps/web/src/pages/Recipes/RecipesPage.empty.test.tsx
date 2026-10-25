@@ -60,9 +60,16 @@ type Options = {
   catalog?: RecipeListItem[];
   cards?: CookTonightCard[];
   drafts?: number;
+  hidden?: number;
 };
 
-function setup({ family = [], catalog = [], cards = [], drafts = 0 }: Options) {
+function setup({
+  family = [],
+  catalog = [],
+  cards = [],
+  drafts = 0,
+  hidden = 0,
+}: Options) {
   // Adding makes the Family's copy live, until Undo archives it.
   let copy: RecipeListItem | null = null;
   const { fetchMock, calls } = stubApi({
@@ -72,7 +79,7 @@ function setup({ family = [], catalog = [], cards = [], drafts = 0 }: Options) {
           url.searchParams.get('scope') === 'catalog'
             ? catalog
             : [...family, ...(copy ? [copy] : [])],
-        hiddenByAllergiesCount: 0,
+        hiddenByAllergiesCount: hidden,
       }),
     'GET /api/recipes/filters': () =>
       Response.json({ cuisines: [], methods: [] }),
@@ -130,7 +137,7 @@ describe('RecipesPage when the Family has no Recipes', () => {
     await findTitle();
     expect(
       screen.getByRole('button', {
-        name: 'Gator the chef, stirring an empty pot. Tap to say hi',
+        name: 'Gator the chef, with a steaming pot. Tap to say hi',
       }),
     ).toBeVisible();
     expect(screen.getByText(/My pot's empty!/)).toBeVisible();
@@ -196,9 +203,15 @@ describe('RecipesPage when the Family has no Recipes', () => {
     ).toBeTruthy();
   });
 
-  it('shows when only archived Recipes exist (the list has none)', async () => {
+  it('shows when the API lists no live Recipes (archived ones are excluded)', async () => {
     setup({ family: [] });
     expect(await findTitle()).toBeVisible();
+  });
+
+  it('is not shown when every Recipe is hidden by Allergies', async () => {
+    setup({ family: [], hidden: 1 });
+    expect(await screen.findByText('No Recipes to show.')).toBeVisible();
+    expect(screen.queryByText(TITLE)).toBeNull();
   });
 
   it('is not shown for a Family with only a Variant', async () => {
@@ -257,8 +270,18 @@ describe('RecipesPage when the Family has no Recipes', () => {
     });
 
     it('hides the section when Cook Tonight has nothing', async () => {
-      setup({ catalog: catalogBases, cards: [] });
+      const calls = setup({ catalog: catalogBases, cards: [] });
       await findTitle();
+      await waitFor(() =>
+        expect(
+          calls.some(
+            (c) =>
+              c.key === 'GET /api/recipes/cook-tonight' &&
+              new URLSearchParams(c.search).get('scope') === 'catalog',
+          ),
+        ).toBe(true),
+      );
+      await vi.advanceTimersByTimeAsync(50);
       await waitFor(() =>
         expect(
           screen.queryByText('Start with these · you can make them'),

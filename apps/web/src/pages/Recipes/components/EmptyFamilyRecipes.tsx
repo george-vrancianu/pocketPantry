@@ -12,7 +12,7 @@ import {
 import { useId, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { ExploreRow } from '../../../components/ExploreRow';
-import { useAddToFamily } from '../../../lib/addToFamily';
+import type { useAddToFamily } from '../../../lib/addToFamily';
 import { canMakeBases, useCookTonight } from '../../../lib/cookTonight';
 import { localIso } from '../../../lib/pantry';
 import { useRecipes, type RecipeBrowse } from '../../../lib/recipes';
@@ -114,7 +114,9 @@ function GatorPanel() {
 }
 
 /** Up to three Catalog Bases the Family can make now, each one tap from being added. Hidden when there are none. */
-function Starters() {
+type AddApi = ReturnType<typeof useAddToFamily>;
+
+function Starters({ add, stateOf }: AddApi) {
   const { t } = useTranslation('recipes');
   const recipes = useRecipes(NO_BROWSE, { scope: 'catalog' });
   const cookTonight = useCookTonight(
@@ -123,10 +125,10 @@ function Starters() {
     false,
     'catalog',
   );
-  const { add, stateOf } = useAddToFamily();
   const headingId = useId();
   const cards = cookTonight.data?.cards ?? [];
   const starters = canMakeBases(cards, recipes.data?.recipes ?? [])
+    // Defensive: bases only.
     .filter((recipe) => recipe.parentId === null)
     .slice(0, STARTERS);
   if (starters.length === 0) return null;
@@ -156,7 +158,9 @@ function Starters() {
 /** `/recipes` for a Family with no live Recipes: chef Gator, the two ways forward and a few starters (ADR 0029). */
 export function EmptyFamilyRecipes({
   onNewRecipe,
-}: {
+  add,
+  stateOf,
+}: AddApi & {
   /** Opens the header's "+" menu. */
   onNewRecipe: () => void;
 }) {
@@ -202,7 +206,7 @@ export function EmptyFamilyRecipes({
           {t('emptyFamily.newRecipe')}
         </Button>
       </Stack>
-      <Starters />
+      <Starters add={add} stateOf={stateOf} />
     </Stack>
   );
 }
