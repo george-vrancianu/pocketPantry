@@ -55,6 +55,8 @@ const envSchema = z.object({
   ASSISTANT_DAILY_CAP: z.coerce.number().int().min(0).default(50),
   /** Link Cap: Recipe from Link reads per Member per UTC day. 0 disables the cap (unlimited). */
   LINK_DAILY_CAP: z.coerce.number().int().min(0).default(20),
+  /** Guidance Cap: Suggest Guidance requests per Member per UTC day. 0 disables the cap (unlimited). */
+  GUIDANCE_DAILY_CAP: z.coerce.number().int().min(0).default(20),
   /** Meal Plans per Family, past ones included. */
   MEAL_PLAN_CAP: z.coerce.number().int().positive().default(10),
   /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */

@@ -1,6 +1,6 @@
 {
-  "id": "0dbd02fc-58f9-4d3f-bb59-fe042d0202de",
-  "prevId": "4d7ae04d-352e-4869-9fab-ef3ef4c38bb2",
+  "id": "f76bf1fe-effa-4ef8-9b26-953e44fd74e2",
+  "prevId": "12a09489-89f0-496f-98e3-f5f7c6658243",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -101,9 +101,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "account_provider_account_idx": {
           "name": "account_provider_account_idx",
@@ -122,24 +122,24 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "account_user_id_user_id_fk": {
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -203,9 +203,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "aisles_sort_order_idx": {
           "name": "aisles_sort_order_idx",
@@ -218,9 +218,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -291,9 +291,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -370,34 +370,34 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "assistant_tokens_user_id_user_id_fk": {
           "name": "assistant_tokens_user_id_user_id_fk",
           "tableFrom": "assistant_tokens",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "assistant_tokens_secret_hash_unique": {
           "name": "assistant_tokens_secret_hash_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "secret_hash"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {},
@@ -505,50 +505,50 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "batches_family_id_family_id_fk": {
           "name": "batches_family_id_family_id_fk",
           "tableFrom": "batches",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "batches_ingredient_id_ingredients_id_fk": {
           "name": "batches_ingredient_id_ingredients_id_fk",
           "tableFrom": "batches",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "batches_leaf_category_id_leaf_categories_id_fk": {
           "name": "batches_leaf_category_id_leaf_categories_id_fk",
           "tableFrom": "batches",
+          "tableTo": "leaf_categories",
           "columnsFrom": [
             "leaf_category_id"
           ],
-          "tableTo": "leaf_categories",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -663,10 +663,10 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"catalog_translations\".\"kind\" = 'name'",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "catalog_translations_display_value_idx": {
           "name": "catalog_translations_display_value_idx",
@@ -691,10 +691,10 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"catalog_translations\".\"kind\" = 'name'",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "catalog_translations_synonym_idx": {
           "name": "catalog_translations_synonym_idx",
@@ -725,10 +725,10 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"catalog_translations\".\"kind\" = 'synonym' AND \"catalog_translations\".\"owner_family_id\" IS NULL",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "catalog_translations_family_synonym_idx": {
           "name": "catalog_translations_family_synonym_idx",
@@ -765,10 +765,10 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"catalog_translations\".\"kind\" = 'synonym' AND \"catalog_translations\".\"owner_family_id\" IS NOT NULL",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "catalog_translations_lookup_idx": {
           "name": "catalog_translations_lookup_idx",
@@ -781,24 +781,24 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "catalog_translations_owner_family_id_family_id_fk": {
           "name": "catalog_translations_owner_family_id_family_id_fk",
           "tableFrom": "catalog_translations",
+          "tableTo": "family",
           "columnsFrom": [
             "owner_family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -856,9 +856,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -904,15 +904,15 @@
         "dashboard_layouts_user_id_user_id_fk": {
           "name": "dashboard_layouts_user_id_user_id_fk",
           "tableFrom": "dashboard_layouts",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -982,9 +982,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -1045,10 +1045,10 @@
       "uniqueConstraints": {
         "family_invite_code_unique": {
           "name": "family_invite_code_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "invite_code"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {},
@@ -1117,15 +1117,15 @@
             },
             {
               "expression": "coalesce(\"label\", '')",
-              "isExpression": true,
               "asc": true,
+              "isExpression": true,
               "nulls": "last"
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "family_allergies_allergen_idx": {
           "name": "family_allergies_allergen_idx",
@@ -1138,37 +1138,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "family_allergies_family_id_family_id_fk": {
           "name": "family_allergies_family_id_family_id_fk",
           "tableFrom": "family_allergies",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "family_allergies_allergen_id_allergens_id_fk": {
           "name": "family_allergies_allergen_id_allergens_id_fk",
           "tableFrom": "family_allergies",
+          "tableTo": "allergens",
           "columnsFrom": [
             "allergen_id"
           ],
-          "tableTo": "allergens",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1226,15 +1226,15 @@
         "family_expiry_overrides_family_id_family_id_fk": {
           "name": "family_expiry_overrides_family_id_family_id_fk",
           "tableFrom": "family_expiry_overrides",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -1304,37 +1304,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "ingredient_allergens_ingredient_id_ingredients_id_fk": {
           "name": "ingredient_allergens_ingredient_id_ingredients_id_fk",
           "tableFrom": "ingredient_allergens",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "ingredient_allergens_allergen_id_allergens_id_fk": {
           "name": "ingredient_allergens_allergen_id_allergens_id_fk",
           "tableFrom": "ingredient_allergens",
+          "tableTo": "allergens",
           "columnsFrom": [
             "allergen_id"
           ],
-          "tableTo": "allergens",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -1399,28 +1399,28 @@
         "ingredient_stock_history_family_id_family_id_fk": {
           "name": "ingredient_stock_history_family_id_family_id_fk",
           "tableFrom": "ingredient_stock_history",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "ingredient_stock_history_ingredient_id_ingredients_id_fk": {
           "name": "ingredient_stock_history_ingredient_id_ingredients_id_fk",
           "tableFrom": "ingredient_stock_history",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -1545,10 +1545,10 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"ingredients\".\"owner_family_id\" IS NULL",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "ingredients_family_normalized_name_idx": {
           "name": "ingredients_family_normalized_name_idx",
@@ -1567,10 +1567,10 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"ingredients\".\"owner_family_id\" IS NOT NULL",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "ingredients_leaf_category_idx": {
           "name": "ingredients_leaf_category_idx",
@@ -1583,50 +1583,50 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "ingredients_leaf_category_id_leaf_categories_id_fk": {
           "name": "ingredients_leaf_category_id_leaf_categories_id_fk",
           "tableFrom": "ingredients",
+          "tableTo": "leaf_categories",
           "columnsFrom": [
             "leaf_category_id"
           ],
-          "tableTo": "leaf_categories",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "ingredients_owner_family_id_family_id_fk": {
           "name": "ingredients_owner_family_id_family_id_fk",
           "tableFrom": "ingredients",
+          "tableTo": "family",
           "columnsFrom": [
             "owner_family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "ingredients_created_by_user_id_user_id_fk": {
           "name": "ingredients_created_by_user_id_user_id_fk",
           "tableFrom": "ingredients",
+          "tableTo": "user",
           "columnsFrom": [
             "created_by_user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1715,9 +1715,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "known_barcodes_ingredient_idx": {
           "name": "known_barcodes_ingredient_idx",
@@ -1730,9 +1730,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "known_barcodes_normalized_name_idx": {
           "name": "known_barcodes_normalized_name_idx",
@@ -1745,37 +1745,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "known_barcodes_family_id_family_id_fk": {
           "name": "known_barcodes_family_id_family_id_fk",
           "tableFrom": "known_barcodes",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "known_barcodes_ingredient_id_ingredients_id_fk": {
           "name": "known_barcodes_ingredient_id_ingredients_id_fk",
           "tableFrom": "known_barcodes",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1864,9 +1864,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "leaf_categories_parent_idx": {
           "name": "leaf_categories_parent_idx",
@@ -1879,9 +1879,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "leaf_categories_one_other_per_parent_idx": {
           "name": "leaf_categories_one_other_per_parent_idx",
@@ -1894,25 +1894,25 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"leaf_categories\".\"is_other\"",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "leaf_categories_parent_id_parent_categories_id_fk": {
           "name": "leaf_categories_parent_id_parent_categories_id_fk",
           "tableFrom": "leaf_categories",
+          "tableTo": "parent_categories",
           "columnsFrom": [
             "parent_id"
           ],
-          "tableTo": "parent_categories",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2002,9 +2002,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "meal_plan_slots_recipe_idx": {
           "name": "meal_plan_slots_recipe_idx",
@@ -2017,37 +2017,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "meal_plan_slots_meal_plan_id_meal_plans_id_fk": {
           "name": "meal_plan_slots_meal_plan_id_meal_plans_id_fk",
           "tableFrom": "meal_plan_slots",
+          "tableTo": "meal_plans",
           "columnsFrom": [
             "meal_plan_id"
           ],
-          "tableTo": "meal_plans",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "meal_plan_slots_recipe_id_recipes_id_fk": {
           "name": "meal_plan_slots_recipe_id_recipes_id_fk",
           "tableFrom": "meal_plan_slots",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2139,24 +2139,24 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "meal_plans_family_id_family_id_fk": {
           "name": "meal_plans_family_id_family_id_fk",
           "tableFrom": "meal_plans",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2217,37 +2217,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "member_allergies_user_id_user_id_fk": {
           "name": "member_allergies_user_id_user_id_fk",
           "tableFrom": "member_allergies",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "member_allergies_allergen_id_allergens_id_fk": {
           "name": "member_allergies_allergen_id_allergens_id_fk",
           "tableFrom": "member_allergies",
+          "tableTo": "allergens",
           "columnsFrom": [
             "allergen_id"
           ],
-          "tableTo": "allergens",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -2313,9 +2313,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -2424,9 +2424,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "parent_categories_aisle_idx": {
           "name": "parent_categories_aisle_idx",
@@ -2439,24 +2439,24 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "parent_categories_aisle_id_aisles_id_fk": {
           "name": "parent_categories_aisle_id_aisles_id_fk",
           "tableFrom": "parent_categories",
+          "tableTo": "aisles",
           "columnsFrom": [
             "aisle_id"
           ],
-          "tableTo": "aisles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2546,50 +2546,50 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "recipe_drafts_member_id_user_id_fk": {
           "name": "recipe_drafts_member_id_user_id_fk",
           "tableFrom": "recipe_drafts",
+          "tableTo": "user",
           "columnsFrom": [
             "member_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "recipe_drafts_family_id_family_id_fk": {
           "name": "recipe_drafts_family_id_family_id_fk",
           "tableFrom": "recipe_drafts",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "recipe_drafts_base_recipe_id_recipes_id_fk": {
           "name": "recipe_drafts_base_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_drafts",
+          "tableTo": "recipes",
           "columnsFrom": [
             "base_recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2640,15 +2640,15 @@
         "recipe_eating_moment_translations_recipe_eating_moment_id_recipe_eating_moments_id_fk": {
           "name": "recipe_eating_moment_translations_recipe_eating_moment_id_recipe_eating_moments_id_fk",
           "tableFrom": "recipe_eating_moment_translations",
+          "tableTo": "recipe_eating_moments",
           "columnsFrom": [
             "recipe_eating_moment_id"
           ],
-          "tableTo": "recipe_eating_moments",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -2739,9 +2739,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "recipe_eating_moments_moment_idx": {
           "name": "recipe_eating_moments_moment_idx",
@@ -2754,37 +2754,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "recipe_eating_moments_recipe_id_recipes_id_fk": {
           "name": "recipe_eating_moments_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_eating_moments",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "recipe_eating_moments_eating_moment_id_eating_moments_id_fk": {
           "name": "recipe_eating_moments_eating_moment_id_eating_moments_id_fk",
           "tableFrom": "recipe_eating_moments",
+          "tableTo": "eating_moments",
           "columnsFrom": [
             "eating_moment_id"
           ],
-          "tableTo": "eating_moments",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2815,28 +2815,28 @@
         "recipe_hidden_tips_recipe_id_recipes_id_fk": {
           "name": "recipe_hidden_tips_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_hidden_tips",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "recipe_hidden_tips_tip_id_recipe_tips_id_fk": {
           "name": "recipe_hidden_tips_tip_id_recipe_tips_id_fk",
           "tableFrom": "recipe_hidden_tips",
+          "tableTo": "recipe_tips",
           "columnsFrom": [
             "tip_id"
           ],
-          "tableTo": "recipe_tips",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -2895,15 +2895,15 @@
         "recipe_ingredient_line_translations_line_id_recipe_ingredient_lines_id_fk": {
           "name": "recipe_ingredient_line_translations_line_id_recipe_ingredient_lines_id_fk",
           "tableFrom": "recipe_ingredient_line_translations",
+          "tableTo": "recipe_ingredient_lines",
           "columnsFrom": [
             "line_id"
           ],
-          "tableTo": "recipe_ingredient_lines",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -3013,9 +3013,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "recipe_ingredient_lines_ingredient_idx": {
           "name": "recipe_ingredient_lines_ingredient_idx",
@@ -3028,9 +3028,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "recipe_ingredient_lines_name_idx": {
           "name": "recipe_ingredient_lines_name_idx",
@@ -3043,37 +3043,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "recipe_ingredient_lines_recipe_id_recipes_id_fk": {
           "name": "recipe_ingredient_lines_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_ingredient_lines",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "recipe_ingredient_lines_ingredient_id_ingredients_id_fk": {
           "name": "recipe_ingredient_lines_ingredient_id_ingredients_id_fk",
           "tableFrom": "recipe_ingredient_lines",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3137,15 +3137,15 @@
         "recipe_nutrition_note_translations_recipe_id_recipes_id_fk": {
           "name": "recipe_nutrition_note_translations_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_nutrition_note_translations",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -3210,15 +3210,15 @@
         "recipe_pairing_translations_pairing_id_recipe_pairings_id_fk": {
           "name": "recipe_pairing_translations_pairing_id_recipe_pairings_id_fk",
           "tableFrom": "recipe_pairing_translations",
+          "tableTo": "recipe_pairings",
           "columnsFrom": [
             "pairing_id"
           ],
-          "tableTo": "recipe_pairings",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -3322,9 +3322,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "recipe_pairings_linked_recipe_idx": {
           "name": "recipe_pairings_linked_recipe_idx",
@@ -3337,9 +3337,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "recipe_pairings_linked_ingredient_idx": {
           "name": "recipe_pairings_linked_ingredient_idx",
@@ -3352,50 +3352,50 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "recipe_pairings_recipe_id_recipes_id_fk": {
           "name": "recipe_pairings_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_pairings",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "recipe_pairings_linked_ingredient_id_ingredients_id_fk": {
           "name": "recipe_pairings_linked_ingredient_id_ingredients_id_fk",
           "tableFrom": "recipe_pairings",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "linked_ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "recipe_pairings_linked_recipe_id_recipes_id_fk": {
           "name": "recipe_pairings_linked_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_pairings",
+          "tableTo": "recipes",
           "columnsFrom": [
             "linked_recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3451,15 +3451,15 @@
         "recipe_step_translations_step_id_recipe_steps_id_fk": {
           "name": "recipe_step_translations_step_id_recipe_steps_id_fk",
           "tableFrom": "recipe_step_translations",
+          "tableTo": "recipe_steps",
           "columnsFrom": [
             "step_id"
           ],
-          "tableTo": "recipe_steps",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -3537,24 +3537,24 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "recipe_steps_recipe_id_recipes_id_fk": {
           "name": "recipe_steps_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_steps",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3610,15 +3610,15 @@
         "recipe_tip_translations_tip_id_recipe_tips_id_fk": {
           "name": "recipe_tip_translations_tip_id_recipe_tips_id_fk",
           "tableFrom": "recipe_tip_translations",
+          "tableTo": "recipe_tips",
           "columnsFrom": [
             "tip_id"
           ],
-          "tableTo": "recipe_tips",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -3696,9 +3696,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "recipe_tips_step_idx": {
           "name": "recipe_tips_step_idx",
@@ -3711,37 +3711,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "recipe_tips_recipe_id_recipes_id_fk": {
           "name": "recipe_tips_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_tips",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "recipe_tips_step_id_recipe_steps_id_fk": {
           "name": "recipe_tips_step_id_recipe_steps_id_fk",
           "tableFrom": "recipe_tips",
+          "tableTo": "recipe_steps",
           "columnsFrom": [
             "step_id"
           ],
-          "tableTo": "recipe_steps",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3792,15 +3792,15 @@
         "recipe_translations_recipe_id_recipes_id_fk": {
           "name": "recipe_translations_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_translations",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -3939,9 +3939,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "recipes_family_idx": {
           "name": "recipes_family_idx",
@@ -3954,9 +3954,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "recipes_family_source_link_idx": {
           "name": "recipes_family_source_link_idx",
@@ -3975,10 +3975,10 @@
             }
           ],
           "isUnique": false,
-          "with": {},
-          "method": "btree",
           "where": "\"recipes\".\"source_link\" IS NOT NULL",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "recipes_family_copied_from_live_idx": {
           "name": "recipes_family_copied_from_live_idx",
@@ -3997,10 +3997,10 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"recipes\".\"copied_from_id\" IS NOT NULL AND \"recipes\".\"archived_at\" IS NULL",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "recipes_cuisine_idx": {
           "name": "recipes_cuisine_idx",
@@ -4013,9 +4013,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "recipes_method_idx": {
           "name": "recipes_method_idx",
@@ -4028,76 +4028,76 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "recipes_parent_id_recipes_id_fk": {
           "name": "recipes_parent_id_recipes_id_fk",
           "tableFrom": "recipes",
+          "tableTo": "recipes",
           "columnsFrom": [
             "parent_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "recipes_family_id_family_id_fk": {
           "name": "recipes_family_id_family_id_fk",
           "tableFrom": "recipes",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "recipes_cuisine_id_cuisines_id_fk": {
           "name": "recipes_cuisine_id_cuisines_id_fk",
           "tableFrom": "recipes",
+          "tableTo": "cuisines",
           "columnsFrom": [
             "cuisine_id"
           ],
-          "tableTo": "cuisines",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "recipes_method_id_methods_id_fk": {
           "name": "recipes_method_id_methods_id_fk",
           "tableFrom": "recipes",
+          "tableTo": "methods",
           "columnsFrom": [
             "method_id"
           ],
-          "tableTo": "methods",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "recipes_copied_from_id_recipes_id_fk": {
           "name": "recipes_copied_from_id_recipes_id_fk",
           "tableFrom": "recipes",
+          "tableTo": "recipes",
           "columnsFrom": [
             "copied_from_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4151,28 +4151,28 @@
         "running_low_family_id_family_id_fk": {
           "name": "running_low_family_id_family_id_fk",
           "tableFrom": "running_low",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "running_low_ingredient_id_ingredients_id_fk": {
           "name": "running_low_ingredient_id_ingredients_id_fk",
           "tableFrom": "running_low",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -4226,15 +4226,15 @@
         "scan_usage_member_id_user_id_fk": {
           "name": "scan_usage_member_id_user_id_fk",
           "tableFrom": "scan_usage",
+          "tableTo": "user",
           "columnsFrom": [
             "member_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -4324,34 +4324,34 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "session_user_id_user_id_fk": {
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "session_token_unique": {
           "name": "session_token_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "token"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {},
@@ -4394,28 +4394,28 @@
         "shopping_item_source_recipes_shopping_item_id_shopping_items_id_fk": {
           "name": "shopping_item_source_recipes_shopping_item_id_shopping_items_id_fk",
           "tableFrom": "shopping_item_source_recipes",
+          "tableTo": "shopping_items",
           "columnsFrom": [
             "shopping_item_id"
           ],
-          "tableTo": "shopping_items",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "shopping_item_source_recipes_recipe_id_recipes_id_fk": {
           "name": "shopping_item_source_recipes_recipe_id_recipes_id_fk",
           "tableFrom": "shopping_item_source_recipes",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -4514,37 +4514,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "shopping_items_list_id_shopping_lists_id_fk": {
           "name": "shopping_items_list_id_shopping_lists_id_fk",
           "tableFrom": "shopping_items",
+          "tableTo": "shopping_lists",
           "columnsFrom": [
             "list_id"
           ],
-          "tableTo": "shopping_lists",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "shopping_items_ingredient_id_ingredients_id_fk": {
           "name": "shopping_items_ingredient_id_ingredients_id_fk",
           "tableFrom": "shopping_items",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4610,25 +4610,25 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"shopping_lists\".\"status\" = 'active'",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "shopping_lists_family_id_family_id_fk": {
           "name": "shopping_lists_family_id_family_id_fk",
           "tableFrom": "shopping_lists",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4718,9 +4718,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "shopping_template_lines_ingredient_idx": {
           "name": "shopping_template_lines_ingredient_idx",
@@ -4733,37 +4733,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "shopping_template_lines_template_id_shopping_templates_id_fk": {
           "name": "shopping_template_lines_template_id_shopping_templates_id_fk",
           "tableFrom": "shopping_template_lines",
+          "tableTo": "shopping_templates",
           "columnsFrom": [
             "template_id"
           ],
-          "tableTo": "shopping_templates",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "shopping_template_lines_ingredient_id_ingredients_id_fk": {
           "name": "shopping_template_lines_ingredient_id_ingredients_id_fk",
           "tableFrom": "shopping_template_lines",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4827,24 +4827,24 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "shopping_templates_family_id_family_id_fk": {
           "name": "shopping_templates_family_id_family_id_fk",
           "tableFrom": "shopping_templates",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4922,37 +4922,37 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "staples_family_id_family_id_fk": {
           "name": "staples_family_id_family_id_fk",
           "tableFrom": "staples",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "staples_ingredient_id_ingredients_id_fk": {
           "name": "staples_ingredient_id_ingredients_id_fk",
           "tableFrom": "staples",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5006,28 +5006,28 @@
         "suggestion_dismissals_family_id_family_id_fk": {
           "name": "suggestion_dismissals_family_id_family_id_fk",
           "tableFrom": "suggestion_dismissals",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "suggestion_dismissals_ingredient_id_ingredients_id_fk": {
           "name": "suggestion_dismissals_ingredient_id_ingredients_id_fk",
           "tableFrom": "suggestion_dismissals",
+          "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
           ],
-          "tableTo": "ingredients",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -5142,9 +5142,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "unmatched_entries_batch_idx": {
           "name": "unmatched_entries_batch_idx",
@@ -5157,10 +5157,10 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"unmatched_entries\".\"batch_id\" IS NOT NULL",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "unmatched_entries_shopping_item_idx": {
           "name": "unmatched_entries_shopping_item_idx",
@@ -5173,10 +5173,10 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"unmatched_entries\".\"shopping_item_id\" IS NOT NULL",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "unmatched_entries_ingredient_line_idx": {
           "name": "unmatched_entries_ingredient_line_idx",
@@ -5189,51 +5189,51 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"unmatched_entries\".\"ingredient_line_id\" IS NOT NULL",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "unmatched_entries_batch_id_batches_id_fk": {
           "name": "unmatched_entries_batch_id_batches_id_fk",
           "tableFrom": "unmatched_entries",
+          "tableTo": "batches",
           "columnsFrom": [
             "batch_id"
           ],
-          "tableTo": "batches",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "unmatched_entries_shopping_item_id_shopping_items_id_fk": {
           "name": "unmatched_entries_shopping_item_id_shopping_items_id_fk",
           "tableFrom": "unmatched_entries",
+          "tableTo": "shopping_items",
           "columnsFrom": [
             "shopping_item_id"
           ],
-          "tableTo": "shopping_items",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "unmatched_entries_ingredient_line_id_recipe_ingredient_lines_id_fk": {
           "name": "unmatched_entries_ingredient_line_id_recipe_ingredient_lines_id_fk",
           "tableFrom": "unmatched_entries",
+          "tableTo": "recipe_ingredient_lines",
           "columnsFrom": [
             "ingredient_line_id"
           ],
-          "tableTo": "recipe_ingredient_lines",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5374,9 +5374,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "user_family_owner_idx": {
           "name": "user_family_owner_idx",
@@ -5389,35 +5389,35 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "\"user\".\"family_role\" = 'owner'",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "user_family_id_family_id_fk": {
           "name": "user_family_id_family_id_fk",
           "tableFrom": "user",
+          "tableTo": "family",
           "columnsFrom": [
             "family_id"
           ],
-          "tableTo": "family",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "user_email_unique": {
           "name": "user_email_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "email"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {},
@@ -5479,9 +5479,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -5637,7 +5637,8 @@
         "scan",
         "voice",
         "assistant",
-        "link"
+        "link",
+        "guidance"
       ]
     },
     "public.user_role": {
@@ -5650,10 +5651,10 @@
     }
   },
   "schemas": {},
-  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
+  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},
