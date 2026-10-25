@@ -183,7 +183,7 @@
     "cap_reached_unknown": "Ai folosit toate citirile de rețete din linkuri de azi. Încearcă mâine."
   },
   "recipe_drafts": {
-    "not_found": "Ciorna de rețetă aceea nu mai există. Poate a fost eliminată sau păstrată prea mult.",
+    "not_found": "Acea ciornă de rețetă nu mai există. Poate a fost eliminată sau păstrată prea mult.",
     "limit_reached": "Ai deja {{max}} de ciorne de rețete. Termină sau elimină una ca să începi alta."
   }
 }

@@ -1,7 +1,13 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Fragment, StrictMode } from 'react';
-import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import {
+  Link,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   RecipeDraftContent,
@@ -50,6 +56,15 @@ const titled = (title: string): RecipeDraftContent => ({
 
 const filters = { cuisines: [], methods: [], eatingMoments: [] };
 
+function GoBack() {
+  const navigate = useNavigate();
+  return (
+    <button type="button" onClick={() => navigate(-1)}>
+      go back
+    </button>
+  );
+}
+
 function Where() {
   const location = useLocation();
   return <p>{`at ${location.pathname}${location.search}`}</p>;
@@ -76,7 +91,15 @@ function setup(
   renderWithProviders(
     <Mode>
       <Routes>
-        <Route path="/recipes" element={<RecipesPage />} />
+        <Route
+          path="/recipes"
+          element={
+            <>
+              <GoBack />
+              <RecipesPage />
+            </>
+          }
+        />
         <Route
           path="/recipes/drafts"
           element={
@@ -433,6 +456,21 @@ describe('Recipe Drafts list and discard', () => {
             c.key === 'POST /api/recipe-drafts' || c.key.startsWith('PUT '),
         ),
       ).toEqual([]);
+    });
+
+    it('does not come back to the discarded Recipe Draft on Back', async () => {
+      const u = user();
+      setup([summary({})], resumable, `/recipes/new?draft=${ID_A}`);
+      await screen.findByLabelText(/^Title/);
+      await u.click(
+        await screen.findByRole('button', { name: 'Discard draft' }),
+      );
+      expect(await screen.findByText('No Recipes yet.')).toBeVisible();
+      await u.click(screen.getByRole('button', { name: 'go back' }));
+      await elapse(100);
+      expect(screen.queryByLabelText(/^Title/)).toBeNull();
+      expect(screen.queryByText(/^at \/recipes\/new/)).toBeNull();
+      expect(screen.getByText('No Recipes yet.')).toBeVisible();
     });
 
     it('sends nothing on Undo, and the Recipe Draft is back in the entry', async () => {
