@@ -141,7 +141,7 @@ export function documentOf(draft: FamilyDraft): FamilyRecipeDocument {
 /**
  * The page's Recipe as Suggest Guidance reads it. The form may be half done, so unlike
  * `documentOf` this never needs `problemsOf` to be clear: lines and Steps with nothing in them
- * are left out and a missing Title or Servings gets a stand-in the API accepts.
+ * are left out and a missing Title or Servings is left out too (the API takes both as optional).
  */
 export function suggestionRecipeOf(
   draft: FamilyDraft,
@@ -154,8 +154,8 @@ export function suggestionRecipeOf(
       : null;
   };
   return {
-    title: draft.title.trim() || '-',
-    servings: servings >= 1 && servings <= 1000 ? servings : 1,
+    ...(draft.title.trim() ? { title: draft.title.trim() } : {}),
+    ...(servings >= 1 && servings <= 1000 ? { servings } : {}),
     prepMinutes: null,
     cookMinutes: null,
     cuisineId: draft.cuisineId || null,

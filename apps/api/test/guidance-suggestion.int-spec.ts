@@ -7,6 +7,7 @@ import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
+  ingredientAllergens,
   recipeEatingMoments,
   recipeIngredientLines,
   recipePairings,
@@ -17,6 +18,7 @@ import type { GuidanceSuggestion } from '../src/recipes/guidance-suggestion.sche
 import { ScanCapService } from '../src/scan/scan-cap.service';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
+import { promoteToAdmin } from './support/promote-to-admin';
 
 jest.setTimeout(30_000);
 
@@ -44,6 +46,7 @@ describe('Suggest Guidance (integration)', () => {
   let database: Database;
   let member: ReturnType<typeof client>;
   let settings: ReturnType<typeof client>;
+  let cookieOf: string;
   const prompts: StructuredOutputRequest[] = [];
   let answer: () => Promise<{ data: unknown; requestId: string | null }>;
   const stamp = Date.now();
@@ -80,11 +83,13 @@ describe('Suggest Guidance (integration)', () => {
       `guidance-${stamp}-${++memberCount}@example.com`,
       'G',
     );
+    cookieOf = cookie;
     member = client(app, cookie, '/api/recipes');
     settings = client(app, cookie, '/api/settings');
     prompts.length = 0;
     respondWith({
       nutritionNote: 'Filling and rich in carbs. Light on fibre.',
+      pairings: null,
     });
   });
 
@@ -100,7 +105,7 @@ describe('Suggest Guidance (integration)', () => {
 
     expect(res.body as GuidanceSuggestion).toEqual({
       guidance: { nutritionNote: 'Filling and rich in carbs. Light on fibre.' },
-      noSuggestions: [],
+      noSuggestions: ['pairings'],
     });
     expect(prompts).toHaveLength(1);
     // The page's current content reaches the model, matched lines by name.
@@ -140,7 +145,11 @@ describe('Suggest Guidance (integration)', () => {
 
   it('refuses without an AI call when the Nutrition Note is filled', async () => {
     const res = await suggest(
-      request({ ...emptyGuidance, nutritionNote: 'Mine.' }),
+      request({
+        nutritionNote: 'Mine.',
+        pairings: [{ kind: 'food', label: 'Mine', reason: 'Because.' }],
+        eatingMoments: [],
+      }),
     ).expect(400);
     expect((res.body as { code: string }).code).toBe(
       'guidance.nothing_to_suggest',
@@ -163,8 +172,15 @@ describe('Suggest Guidance (integration)', () => {
     ).toBeTruthy();
   });
 
+  it('accepts a page without a Title or Servings yet', async () => {
+    await suggest({
+      recipe: { lines: [], steps: [] },
+      guidance: emptyGuidance,
+    }).expect(200);
+  });
+
   it('trims a note over 500 characters', async () => {
-    respondWith({ nutritionNote: `  ${'x'.repeat(700)}  ` });
+    respondWith({ nutritionNote: `  ${'x'.repeat(700)}  `, pairings: null });
     const res = await suggest(request()).expect(200);
     expect(
       (res.body as GuidanceSuggestion).guidance.nutritionNote,
@@ -172,11 +188,11 @@ describe('Suggest Guidance (integration)', () => {
   });
 
   it('reports a field with nothing to propose instead of filling it', async () => {
-    respondWith({ nutritionNote: '   ' });
+    respondWith({ nutritionNote: '   ', pairings: null });
     const res = await suggest(request()).expect(200);
     expect(res.body as GuidanceSuggestion).toEqual({
       guidance: {},
-      noSuggestions: ['nutritionNote'],
+      noSuggestions: ['pairings', 'nutritionNote'],
     });
   });
 
@@ -204,6 +220,368 @@ describe('Suggest Guidance (integration)', () => {
       .expect(200);
     await suggest(request()).expect(200);
     expect(prompts[0].prompt).toContain('Romanian');
+  });
+
+  describe('Pairings', () => {
+    const butter = seedId.ingredient('butter');
+    const parmesan = seedId.ingredient('parmesan'); // milk
+    const peanuts = seedId.ingredient('peanuts'); // peanuts
+    const MILK = seedId.allergen('milk');
+    const PEANUT = seedId.allergen('peanuts');
+    const idea = (over: Record<string, unknown> = {}) => ({
+      kind: 'food',
+      label: 'Berries',
+      reason: 'Fresh and tart.',
+      principle: null,
+      ingredientId: null,
+      recipeId: null,
+      ...over,
+    });
+    const propose = (...pairings: object[]) =>
+      respondWith({ nutritionNote: null, pairings });
+    const pairingsOf = async (body: object = request()) =>
+      ((await suggest(body).expect(200)).body as GuidanceSuggestion).guidance
+        .pairings;
+    const familyRecipe = async (who = member, title = 'Own dish') =>
+      (
+        await who
+          .post('', {
+            title: `${title} ${stamp}-${++recipeCount}`,
+            servings: 2,
+            locale: 'en',
+            parentId: null,
+            lines: [{ ingredientId: flour, quantity: 50, unit: 'g' }],
+            steps: [{ text: 'Cook' }],
+          })
+          .expect(201)
+      ).body as { id: string; title: string };
+    let recipeCount = 0;
+    let admin: ReturnType<typeof client>;
+
+    beforeAll(async () => {
+      const email = `guidance-admin-${stamp}@example.com`;
+      const cookie = await signUp(app, email, 'Admin');
+      await promoteToAdmin(database, email);
+      admin = client(app, cookie, '/api/admin/recipes');
+    });
+    const catalogRecipe = async (ingredientId: string, title = 'Cat dish') =>
+      (
+        await admin
+          .post('', {
+            title: `${title} ${stamp}-${++recipeCount}`,
+            servings: 4,
+            lines: [{ ingredientId, quantity: 100, unit: 'g' }],
+            steps: [{ text: 'Cook' }],
+          })
+          .expect(201)
+      ).body as { id: string; title: string };
+
+    it('proposes up to 10 Pairings with a kind, label, reason and principle, linked to an offered Ingredient and Recipe, named', async () => {
+      const dish = await familyRecipe();
+      propose(
+        idea({
+          label: 'Butter',
+          principle: 'fat_carries_flavour',
+          ingredientId: butter,
+        }),
+        idea({ kind: 'drink', label: 'Tea', recipeId: dish.id }),
+      );
+      const res = await suggest(request()).expect(200);
+      expect(res.body as GuidanceSuggestion).toEqual({
+        guidance: {
+          pairings: [
+            {
+              kind: 'food',
+              label: 'Butter',
+              reason: 'Fresh and tart.',
+              principle: 'fat_carries_flavour',
+              linkedIngredientId: butter,
+              linkedIngredientName: 'Butter',
+              linkedRecipeId: null,
+              linkedRecipeTitle: null,
+            },
+            {
+              kind: 'drink',
+              label: 'Tea',
+              reason: 'Fresh and tart.',
+              principle: null,
+              linkedIngredientId: null,
+              linkedIngredientName: null,
+              linkedRecipeId: dish.id,
+              linkedRecipeTitle: dish.title,
+            },
+          ],
+        },
+        noSuggestions: ['nutritionNote'],
+      });
+      // The offered Ingredients and Recipes reach the model.
+      expect(prompts[0].prompt).toContain(butter);
+      expect(prompts[0].prompt).toContain(dish.id);
+    });
+
+    it('offers a Catalog Recipe and links to it', async () => {
+      const cat = await catalogRecipe(flour);
+      propose(idea({ recipeId: cat.id }));
+      const pairings = await pairingsOf();
+      expect(pairings?.[0].linkedRecipeId).toBe(cat.id);
+      expect(prompts[0].prompt).toContain(cat.id);
+    });
+
+    it('keeps a link the model was not offered as an unlinked label', async () => {
+      const archived = await familyRecipe(member, 'Archived');
+      await member.post(`/${archived.id}/archive`).expect(200);
+      propose(
+        idea({
+          label: 'A',
+          ingredientId: '3f0c8a5e-6b1d-4c53-9a53-0d4f6f5e9a11',
+        }),
+        idea({ label: 'B', recipeId: '3f0c8a5e-6b1d-4c53-9a53-0d4f6f5e9a12' }),
+        idea({ label: 'C', recipeId: archived.id }),
+      );
+      const pairings = await pairingsOf();
+      expect(pairings?.map((p) => p.label)).toEqual(['A', 'B', 'C']);
+      for (const p of pairings ?? []) {
+        expect(p.linkedIngredientId).toBeNull();
+        expect(p.linkedRecipeId).toBeNull();
+      }
+      expect(prompts[0].prompt).not.toContain(archived.id);
+    });
+
+    it("does not link to another Family's Recipe", async () => {
+      const outsider = client(
+        app,
+        await signUp(
+          app,
+          `guidance-out-${stamp}-${++memberCount}@example.com`,
+          'O',
+        ),
+        '/api/recipes',
+      );
+      const theirs = await familyRecipe(outsider, 'Theirs');
+      propose(idea({ recipeId: theirs.id }));
+      const pairings = await pairingsOf();
+      expect(pairings).toHaveLength(1);
+      expect(pairings?.[0].linkedRecipeId).toBeNull();
+      expect(prompts[0].prompt).not.toContain(theirs.id);
+    });
+
+    it("ignores another Family's recipeId, and never links the Recipe itself", async () => {
+      const outsider = client(
+        app,
+        await signUp(
+          app,
+          `guidance-out-${stamp}-${++memberCount}@example.com`,
+          'O',
+        ),
+        '/api/recipes',
+      );
+      const theirs = await familyRecipe(outsider, 'Theirs');
+      const mine = await familyRecipe();
+      const other = await familyRecipe(member, 'Sibling');
+      propose(
+        idea({ label: 'Self', recipeId: mine.id }),
+        idea({ label: 'Sibling', recipeId: other.id }),
+      );
+      const pairings = await pairingsOf(
+        request(emptyGuidance, { recipeId: mine.id }),
+      );
+      expect(pairings?.[0].linkedRecipeId).toBeNull();
+      expect(pairings?.[1].linkedRecipeId).toBe(other.id);
+      expect(prompts[0].prompt).not.toContain(mine.id);
+
+      // Another Family's id behaves like no id: nothing leaks, nothing changes.
+      await pairingsOf(request(emptyGuidance, { recipeId: theirs.id }));
+      expect(prompts[1].prompt).toContain(mine.id);
+      expect(prompts[1].prompt).not.toContain(theirs.id);
+    });
+
+    it("names a Member's Allergy in the prompt and drops Pairings linked to it", async () => {
+      const unsafeRecipe = await catalogRecipe(parmesan, 'Cheesy');
+      const safeRecipe = await catalogRecipe(flour, 'Plain');
+      await settings.put('/allergies', { allergenIds: [MILK] }).expect(200);
+      propose(
+        idea({ label: 'Cheese', ingredientId: parmesan }),
+        idea({ label: 'Cheesy dish', recipeId: unsafeRecipe.id }),
+        idea({ label: 'Plain dish', recipeId: safeRecipe.id }),
+        idea({ label: 'Berries' }),
+      );
+      const pairings = await pairingsOf();
+      expect(pairings?.map((p) => p.label)).toEqual(['Plain dish', 'Berries']);
+      expect(prompts[0].prompt).toContain('Milk');
+    });
+
+    it('avoids the Allergies of the other Members of the Family', async () => {
+      const invite = (
+        await client(app, cookieOf, '/api/family').get('').expect(200)
+      ).body as { inviteCode: string };
+      const benCookie = await signUp(
+        app,
+        `guidance-ben-${stamp}-${++memberCount}@example.com`,
+        'Ben',
+      );
+      await client(app, benCookie, '/api/family')
+        .post('/join', { code: invite.inviteCode })
+        .expect(201);
+      await client(app, benCookie, '/api/settings')
+        .put('/allergies', { allergenIds: [PEANUT] })
+        .expect(200);
+      propose(idea({ label: 'Nuts', ingredientId: peanuts }));
+      expect(await pairingsOf()).toBeUndefined();
+      expect(prompts[0].prompt).toContain('Peanuts');
+    });
+
+    it('avoids a Family Allergy', async () => {
+      await settings
+        .post('/family-allergies', { allergenId: MILK })
+        .expect(201);
+      const unsafe = await catalogRecipe(parmesan, 'Cheesy');
+      propose(
+        idea({ label: 'Cheese', ingredientId: parmesan }),
+        idea({ label: 'Cheesy dish', recipeId: unsafe.id }),
+      );
+      const res = await suggest(request()).expect(200);
+      expect(res.body as GuidanceSuggestion).toEqual({
+        guidance: {},
+        noSuggestions: ['pairings', 'nutritionNote'],
+      });
+      expect(prompts[0].prompt).toContain('Milk');
+    });
+
+    it('ignores an optional Ingredient Line when judging a Recipe', async () => {
+      await settings.put('/allergies', { allergenIds: [MILK] }).expect(200);
+      const optional = (
+        await admin
+          .post('', {
+            title: `Optional ${stamp}-${++recipeCount}`,
+            servings: 2,
+            lines: [
+              { ingredientId: flour, quantity: 1, unit: 'g' },
+              {
+                ingredientId: parmesan,
+                quantity: 1,
+                unit: 'g',
+                optional: true,
+              },
+            ],
+            steps: [{ text: 'Cook' }],
+          })
+          .expect(201)
+      ).body as { id: string };
+      propose(idea({ recipeId: optional.id }));
+      expect((await pairingsOf())?.[0].linkedRecipeId).toBe(optional.id);
+    });
+
+    it('trims to 10 Pairings and to the label and reason lengths, instead of rejecting', async () => {
+      propose(
+        idea({ label: 'L'.repeat(300), reason: 'R'.repeat(1500) }),
+        ...Array.from({ length: 14 }, (_, i) => idea({ label: `Extra ${i}` })),
+      );
+      const pairings = await pairingsOf();
+      expect(pairings).toHaveLength(10);
+      expect(pairings?.[0].label).toHaveLength(200);
+      expect(pairings?.[0].reason).toHaveLength(1000);
+    });
+
+    it('drops an unknown principle but keeps the Pairing, and skips unusable ones', async () => {
+      propose(
+        idea({ label: 'Wine', principle: 'because_i_said_so' }),
+        idea({ label: '   ' }),
+        idea({ label: 'Odd', kind: 'dessert' }),
+      );
+      const pairings = await pairingsOf();
+      expect(pairings).toHaveLength(1);
+      expect(pairings?.[0]).toMatchObject({ label: 'Wine', principle: null });
+    });
+
+    it('keeps Pairings already on the form: no replacing, no topping up', async () => {
+      respondWith({ nutritionNote: 'A note.', pairings: [idea()] });
+      const res = await suggest(
+        request({
+          ...emptyGuidance,
+          pairings: [{ kind: 'food', label: 'Mine', reason: 'Because.' }],
+        }),
+      ).expect(200);
+      expect(res.body as GuidanceSuggestion).toEqual({
+        guidance: { nutritionNote: 'A note.' },
+        noSuggestions: [],
+      });
+    });
+
+    it('drops a Recipe whose required line has an avoided Allergen on an Unchecked Ingredient', async () => {
+      await settings.put('/allergies', { allergenIds: [MILK] }).expect(200);
+      // A Family Ingredient nobody has marked as checked, with a milk tag stored on it.
+      const unchecked = (
+        await client(app, cookieOf, '/api')
+          .post('/catalog/family-ingredients?locale=en', {
+            name: `Mystery ${stamp}-${++recipeCount}`,
+            leafCategoryId: seedId.leaf('ground-spices'),
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as { id: string };
+      await database
+        .insert(ingredientAllergens)
+        .values({ ingredientId: unchecked.id, allergenId: MILK });
+      const dish = (
+        await member
+          .post('', {
+            title: `Mystery dish ${stamp}-${++recipeCount}`,
+            servings: 2,
+            locale: 'en',
+            parentId: null,
+            lines: [{ ingredientId: unchecked.id, quantity: 1, unit: 'g' }],
+            steps: [{ text: 'Cook' }],
+          })
+          .expect(201)
+      ).body as { id: string };
+      propose(idea({ label: 'Mystery', recipeId: dish.id }), idea());
+      const pairings = await pairingsOf();
+      expect(pairings?.map((p) => p.label)).toEqual(['Berries']);
+    });
+
+    it('leaves Pairings alone when a row is started, even without its reason', async () => {
+      respondWith({ nutritionNote: 'A note.', pairings: [idea()] });
+      const res = await suggest(
+        request({
+          ...emptyGuidance,
+          pairings: [{ kind: 'food', label: 'Half way', reason: '' }],
+        }),
+      ).expect(200);
+      expect(res.body as GuidanceSuggestion).toEqual({
+        guidance: { nutritionNote: 'A note.' },
+        noSuggestions: [],
+      });
+
+      // With the note filled too, nothing is left to ask for.
+      await suggest(
+        request({
+          nutritionNote: 'Mine.',
+          pairings: [{ kind: 'food', label: '', reason: 'Why' }],
+          eatingMoments: [],
+        }),
+      ).expect(400);
+    });
+
+    it('treats a row with nothing in it as empty', async () => {
+      propose(idea());
+      const res = await suggest(
+        request({
+          ...emptyGuidance,
+          pairings: [{ kind: 'food', label: '', reason: '' }],
+        }),
+      ).expect(200);
+      expect((res.body as GuidanceSuggestion).guidance.pairings).toHaveLength(
+        1,
+      );
+    });
+
+    it('reports no suggestions for Pairings when the model has none', async () => {
+      propose();
+      const res = await suggest(request()).expect(200);
+      expect((res.body as GuidanceSuggestion).noSuggestions).toContain(
+        'pairings',
+      );
+    });
   });
 
   describe('the Guidance Cap', () => {
@@ -263,26 +641,35 @@ describe('Suggest Guidance (integration)', () => {
       await suggest(request()).expect(502);
       expect(await usage('guidance')).toBe(0);
 
-      respondWith({ nutritionNote: 'Rich and filling.' });
+      respondWith({ nutritionNote: 'Rich and filling.', pairings: null });
       await suggest(request()).expect(200);
       await suggest(request()).expect(200);
       await suggest(request()).expect(429);
     });
 
     it('hands back a request where no field got a proposal, as a normal answer', async () => {
-      respondWith({ nutritionNote: null });
+      respondWith({ nutritionNote: null, pairings: null });
       for (let i = 0; i < 3; i++) {
         const res = await suggest(request()).expect(200);
         expect(res.body as GuidanceSuggestion).toEqual({
           guidance: {},
-          noSuggestions: ['nutritionNote'],
+          noSuggestions: ['pairings', 'nutritionNote'],
         });
       }
       expect(await usage('guidance')).toBe(0);
     });
 
     it('does not count the refusal when no field is empty', async () => {
-      await suggest(request({ nutritionNote: 'Already written.' })).expect(400);
+      const res = await suggest(
+        request({
+          nutritionNote: 'Already written.',
+          pairings: [{ kind: 'food', label: 'Mine', reason: 'Because.' }],
+          eatingMoments: [],
+        }),
+      ).expect(400);
+      expect((res.body as { code: string }).code).toBe(
+        'guidance.nothing_to_suggest',
+      );
       await suggest(request()).expect(200);
       expect(await usage('guidance')).toBe(1);
     });

@@ -1533,8 +1533,22 @@ describe('Suggest Guidance', () => {
 
   const NOTE = 'Rich in protein, light on fibre.';
   const suggestRoute = 'POST /api/recipes/suggest-guidance';
+  const idea = {
+    kind: 'food',
+    label: 'Fresh berries',
+    reason: 'Their tartness cuts the richness.',
+    principle: 'acid_cuts_fat',
+    linkedIngredientId: null,
+    linkedRecipeId: null,
+  };
   const proposal = () =>
+    Response.json({
+      guidance: { nutritionNote: NOTE, pairings: [idea] },
+      noSuggestions: [],
+    });
+  const noteOnly = () =>
     Response.json({ guidance: { nutritionNote: NOTE }, noSuggestions: [] });
+  const pairingsGroup = () => screen.getByRole('group', { name: /Pairings/ });
   const noteField = () => screen.getByLabelText('Nutrition Note');
   const suggestButton = () =>
     screen.getByRole('button', { name: 'Suggest Guidance' });
@@ -1555,6 +1569,9 @@ describe('Suggest Guidance', () => {
     await user.click(suggestButton());
 
     await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
+      'Fresh berries',
+    );
     const asked = calls.find((c) => c.key === suggestRoute)?.body;
     expect(asked).toMatchObject({
       recipe: { title: 'Gran stew', servings: 4 },
@@ -1582,7 +1599,7 @@ describe('Suggest Guidance', () => {
 
   it('clears the mark once the Member edits the note', async () => {
     const user = userEvent.setup({ delay: null });
-    setup('/recipes/new', { [suggestRoute]: proposal });
+    setup('/recipes/new', { [suggestRoute]: noteOnly });
     await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
     await user.click(suggestButton());
     await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
@@ -1659,7 +1676,7 @@ describe('Suggest Guidance', () => {
     setup('/recipes/new', {
       [suggestRoute]: async () => {
         await gate;
-        return proposal();
+        return noteOnly();
       },
     });
     await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
@@ -1787,6 +1804,143 @@ describe('Suggest Guidance', () => {
       recipeId: 'g',
       recipe: { title: 'Unsaved title' },
       guidance: { pairings: [{ id: 'p1' }, { id: 'p2' }] },
+    });
+  });
+
+  describe('Pairings', () => {
+    const titleAndSuggest = async (routes: Record<string, () => Response>) => {
+      const user = userEvent.setup({ delay: null });
+      const calls = setup('/recipes/new', routes);
+      await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+      return { user, calls };
+    };
+
+    it('lands linked Pairings marked Suggested, naming the Ingredient and the Recipe they link to', async () => {
+      const { user, calls } = await titleAndSuggest({
+        [suggestRoute]: () =>
+          Response.json({
+            guidance: {
+              pairings: [
+                {
+                  ...idea,
+                  label: 'Butter',
+                  linkedIngredientId: 'butter',
+                  linkedIngredientName: 'Butter',
+                },
+                {
+                  ...idea,
+                  kind: 'drink',
+                  label: 'Tea',
+                  principle: null,
+                  linkedRecipeId: 'tea',
+                  linkedRecipeTitle: 'Iced tea',
+                },
+              ],
+            },
+            noSuggestions: ['nutritionNote'],
+          }),
+        'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+      });
+      await user.click(suggestButton());
+
+      await screen.findByText('Linked Ingredient: Butter');
+      expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(2);
+      expect(
+        screen.getByLabelText('Linked Recipe of Pairing 2'),
+      ).toHaveDisplayValue('Iced tea');
+      expect(
+        screen.getByText('No suggestions for Nutrition Note.'),
+      ).toBeVisible();
+
+      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await vi.waitFor(() =>
+        expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(true),
+      );
+      const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
+      expect(body).toMatchObject({
+        guidance: {
+          pairings: [
+            { label: 'Butter', linkedIngredientId: 'butter' },
+            { label: 'Tea', linkedRecipeId: 'tea', linkedIngredientId: null },
+          ],
+        },
+      });
+      expect(JSON.stringify(body)).not.toMatch(/suggested|linkedRecipeTitle/i);
+    });
+
+    it('says "No suggestions for Pairings." when the server has none', async () => {
+      const { user } = await titleAndSuggest({
+        [suggestRoute]: () =>
+          Response.json({ guidance: {}, noSuggestions: ['pairings'] }),
+      });
+      await user.click(suggestButton());
+
+      await screen.findByText('No suggestions for Pairings.');
+      expect(
+        screen.queryByLabelText('Label of Pairing 1'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('treats blank Pairing rows as empty: sends none, and the proposal replaces them', async () => {
+      const { user, calls } = await titleAndSuggest({
+        [suggestRoute]: proposal,
+      });
+      await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+      expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue('');
+      expect(suggestButton()).toBeEnabled();
+
+      await user.click(suggestButton());
+
+      await vi.waitFor(() =>
+        expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
+          'Fresh berries',
+        ),
+      );
+      expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+        guidance: { pairings: [] },
+      });
+      expect(
+        screen.queryByLabelText('Label of Pairing 2'),
+      ).not.toBeInTheDocument();
+    });
+
+    it("keeps a partly typed Pairing row as the Member's own: Pairings are not proposed beside it", async () => {
+      const { user, calls } = await titleAndSuggest({
+        [suggestRoute]: noteOnly,
+      });
+      await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+      await user.type(screen.getByLabelText('Label of Pairing 1'), 'Half way');
+
+      await user.click(suggestButton());
+
+      await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+      expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+        guidance: { pairings: [{ label: 'Half way' }] },
+      });
+      expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
+        'Half way',
+      );
+      expect(
+        screen.queryByLabelText('Label of Pairing 2'),
+      ).not.toBeInTheDocument();
+      expect(
+        within(pairingsGroup()).queryByText('Suggested'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('keeps a Pairing the Member has filled in: it is not asked for again', async () => {
+      const { user } = await titleAndSuggest({ [suggestRoute]: proposal });
+      await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+      await user.type(screen.getByLabelText('Label of Pairing 1'), 'Mine');
+      await user.type(screen.getByLabelText('Reason for Pairing 1'), 'Because');
+
+      await user.click(suggestButton());
+
+      await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+      expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue('Mine');
+      expect(
+        screen.queryByLabelText('Label of Pairing 2'),
+      ).not.toBeInTheDocument();
     });
   });
 });
