@@ -68,6 +68,10 @@
     "still": "Încă blocat. Permite microfonul în browser, apoi încearcă din nou."
   },
   "unavailable": "Acest browser nu poate înregistra sunet, deci notele vocale nu sunt disponibile aici.",
+  "teach": {
+    "title": "Ține microfonul, vorbește, dă drumul",
+    "line": "Încearcă „doi litri de lapte și o duzină de ouă, la frigider”."
+  },
   "voiceButton": {
     "label": "Ține apăsat pentru a înregistra o notă vocală",
     "blocked": "Microfon blocat"

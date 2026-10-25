@@ -8,6 +8,8 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AddBatchStart } from '../hooks/useAddBatchForm';
+import { useShowsDockMic } from '../../../components/VoiceNote';
+import { useMicTeach } from '../../../components/voice/VoiceHost';
 import { AddBatchForm } from './AddBatchForm';
 
 type Props = {
@@ -28,6 +30,8 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
   const { t } = useTranslation('pantry');
   // The camera overlay owns Escape while it is up; the sheet must not close under it.
   const [cameraOpen, setCameraOpen] = useState(false);
+  const showsMic = useShowsDockMic();
+  const micTeach = useMicTeach();
   const close = () => {
     if (!cameraOpen) onClose();
   };
@@ -66,6 +70,14 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
           onSaved={onClose}
           onCancel={onClose}
           onCameraOpenChange={setCameraOpen}
+          onSayIt={
+            showsMic
+              ? () => {
+                  onClose();
+                  micTeach.start();
+                }
+              : undefined
+          }
         />
       </Box>
     </Sheet>

@@ -436,6 +436,8 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
       'plain "in stock" availability phrase, not the Pantry noun',
     ]),
   ),
+  'voice:teach.line|fridge':
+    'the example sentence a Member can say (design copy); the Location is Fridge, spoken in lower case',
   'recipes:recipeDraft.saved|draft':
     'the status "Draft saved" in the Recipe Draft form header; the exact copy of the ticket, next to the Recipe form it belongs to',
   'recipes:drafts.entry|draft':

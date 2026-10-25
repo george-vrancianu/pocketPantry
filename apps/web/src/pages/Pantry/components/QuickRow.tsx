@@ -2,6 +2,7 @@ import {
   Box,
   CameraIcon,
   color,
+  MicIcon,
   focusRing,
   radius,
   ScanBarcodeIcon,
@@ -17,10 +18,12 @@ type Props = {
   /** Set to the tile that opened the camera, so focus can return to it. */
   openerRef: { current: HTMLButtonElement | null };
   onOpen: (mode: CameraMode) => void;
+  /** Present when the Dock has a mic: closes the sheet and lights it. */
+  onSayIt?: () => void;
 };
 
-/** The Add to Pantry sheet's fastest ways in: the camera on Product, or on Barcode. */
-export function QuickRow({ disabled, openerRef, onOpen }: Props) {
+/** The Add to Pantry sheet's fastest ways in: the camera on Product, or on Barcode, or Say it, which lights the Dock mic. */
+export function QuickRow({ disabled, openerRef, onOpen, onSayIt }: Props) {
   const { t } = useTranslation('pantry');
   return (
     <Box
@@ -28,7 +31,7 @@ export function QuickRow({ disabled, openerRef, onOpen }: Props) {
       aria-label={t('form.quick.label')}
       sx={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gridTemplateColumns: `repeat(${onSayIt ? 3 : 2}, minmax(0, 1fr))`,
         gap: '8px',
       }}
     >
@@ -46,6 +49,15 @@ export function QuickRow({ disabled, openerRef, onOpen }: Props) {
         openerRef={openerRef}
         onOpen={() => onOpen('barcode')}
       />
+      {onSayIt ? (
+        <Tile
+          label={t('form.quick.sayIt')}
+          icon={<MicIcon size={24} />}
+          disabled={disabled}
+          openerRef={openerRef}
+          onOpen={onSayIt}
+        />
+      ) : null}
     </Box>
   );
 }
