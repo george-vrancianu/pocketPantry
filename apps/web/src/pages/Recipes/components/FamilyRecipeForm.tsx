@@ -315,6 +315,22 @@ export function FamilyRecipeForm({
               lines={draft.lines}
               problems={problems}
               focusKey={addedKey}
+              onMatched={(line, ingredient) => {
+                if (ingredient.owner === 'family')
+                  setPickedFamily((ids) => new Set(ids).add(ingredient.id));
+                setDraft((current) => ({
+                  ...current,
+                  lines: current.lines.map((item) =>
+                    item.key === line.key
+                      ? {
+                          ...item,
+                          ingredientId: ingredient.id,
+                          name: ingredient.name,
+                        }
+                      : item,
+                  ),
+                }));
+              }}
               onChange={(lines) => change({ lines })}
               isFamily={(line) =>
                 familyIds.has(line.ingredientId) ||
