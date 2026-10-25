@@ -1,5 +1,5 @@
 {
-  "id": "4d7ae04d-352e-4869-9fab-ef3ef4c38bb2",
+  "id": "12a09489-89f0-496f-98e3-f5f7c6658243",
   "prevId": "ee3f1af5-ad3b-49fc-a9a4-d36003e899ca",
   "version": "7",
   "dialect": "postgresql",
@@ -3906,12 +3906,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "copied_from_id": {
-          "name": "copied_from_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -3976,28 +3970,6 @@
           ],
           "isUnique": false,
           "where": "\"recipes\".\"source_link\" IS NOT NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "recipes_family_copied_from_live_idx": {
-          "name": "recipes_family_copied_from_live_idx",
-          "columns": [
-            {
-              "expression": "family_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "copied_from_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"recipes\".\"copied_from_id\" IS NOT NULL AND \"recipes\".\"archived_at\" IS NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -4079,19 +4051,6 @@
           "tableTo": "methods",
           "columnsFrom": [
             "method_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "recipes_copied_from_id_recipes_id_fk": {
-          "name": "recipes_copied_from_id_recipes_id_fk",
-          "tableFrom": "recipes",
-          "tableTo": "recipes",
-          "columnsFrom": [
-            "copied_from_id"
           ],
           "columnsTo": [
             "id"
@@ -5637,7 +5596,8 @@
         "scan",
         "voice",
         "assistant",
-        "link"
+        "link",
+        "guidance"
       ]
     },
     "public.user_role": {

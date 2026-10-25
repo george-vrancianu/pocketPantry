@@ -1,5 +1,5 @@
 import { Box } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
@@ -29,6 +29,8 @@ type Props = {
   catalog: AdminCatalog;
   onSaved: (recipe: AdminRecipe) => void;
   onCancel: () => void;
+  /** Tells the editor what the form holds now, for siblings that read it (Suggest Guidance). */
+  onDraftChange?: (draft: RecipeDraft) => void;
 };
 
 /**
@@ -36,7 +38,13 @@ type Props = {
  * Saving sends the whole document; lines and Steps that carry an id are
  * updated in place, so their translations and Step Tips stay put.
  */
-export function RecipeForm({ recipe, catalog, onSaved, onCancel }: Props) {
+export function RecipeForm({
+  recipe,
+  catalog,
+  onSaved,
+  onCancel,
+  onDraftChange,
+}: Props) {
   const { t, i18n } = useTranslation(['admin', 'recipes', 'common']);
   const create = useCreateRecipe();
   const update = useUpdateRecipe(recipe?.id ?? '');
@@ -44,6 +52,7 @@ export function RecipeForm({ recipe, catalog, onSaved, onCancel }: Props) {
   const [draft, setDraft] = useState<RecipeDraft>(() =>
     recipe ? draftOf(recipe, catalog, i18n.language) : emptyDraft(),
   );
+  useEffect(() => onDraftChange?.(draft), [draft, onDraftChange]);
   const [searchKey, setSearchKey] = useState(0);
   const [justSaved, setJustSaved] = useState(false);
   const [titleTouched, setTitleTouched] = useState(false);

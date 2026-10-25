@@ -3,10 +3,10 @@ import { resolve } from 'node:path';
 import pg from 'pg';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 
-// Migration 0045 copies every Catalog Recipe a Meal Plan slot uses into its Family and
+// Migration 0046 copies every Catalog Recipe a Meal Plan slot uses into its Family and
 // repoints the slot. Each test plays it inside a transaction that is rolled back.
 const statements = readFileSync(
-  resolve(process.cwd(), 'drizzle/0045_meal_plan_slots_family_recipes.sql'),
+  resolve(process.cwd(), 'drizzle/0046_meal_plan_slots_family_recipes.sql'),
   'utf8',
 )
   .split('--> statement-breakpoint')
@@ -14,10 +14,10 @@ const statements = readFileSync(
   .filter((statement) => statement !== '');
 
 const id = (n: number) =>
-  `00000000-0000-4000-8000-0000000045${String(n).padStart(2, '0')}`;
+  `00000000-0000-4000-8000-0000000046${String(n).padStart(2, '0')}`;
 const ids = {
   family: id(1),
-  owner: 'mig0045-owner',
+  owner: 'mig0046-owner',
   base: id(2),
   variant: id(3),
   line: id(4),
@@ -32,11 +32,11 @@ const ids = {
   plain: id(13),
   oldCopy: id(14),
   otherFamily: id(15),
-  otherOwner: 'mig0045-other',
+  otherOwner: 'mig0046-other',
   otherPlan: id(16),
 };
 
-describe('Migration 0045: Meal Plan slots use Family Recipes (integration)', () => {
+describe('Migration 0046: Meal Plan slots use Family Recipes (integration)', () => {
   let client: pg.Client;
 
   beforeAll(async () => {
@@ -140,7 +140,7 @@ describe('Migration 0045: Meal Plan slots use Family Recipes (integration)', () 
     );
     await run(
       `insert into eating_moments (id, name, normalized_name, sort_order, archived_at)
-       values ($1, 'Mig lunch', 'mig lunch 0045', 9990, null), ($2, 'Mig gone', 'mig gone 0045', 9991, now())`,
+       values ($1, 'Mig lunch', 'mig lunch 0046', 9990, null), ($2, 'Mig gone', 'mig gone 0046', 9991, now())`,
       [ids.moment, ids.archivedMoment],
     );
     await run(

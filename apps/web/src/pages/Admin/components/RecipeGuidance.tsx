@@ -4,10 +4,17 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { localName, type AdminCatalog } from '../../../lib/admin';
 import {
+  suggestCatalogGuidance,
   useAdminRecipes,
   useSetGuidance,
   type AdminRecipe,
 } from '../../../lib/adminRecipes';
+import {
+  draftOf,
+  suggestionRecipeOf,
+  type RecipeDraft,
+} from '../../../lib/recipeDraft';
+import { useGuidanceSuggestion } from '../../../components/recipeEditor/SuggestGuidance';
 import {
   guidanceProblems,
   toGuidanceDraft,
@@ -19,20 +26,40 @@ import {
   type RecipePickerProps,
 } from '../../../components/recipeEditor/GuidanceFields';
 
-type Props = { recipe: AdminRecipe; catalog: AdminCatalog };
+type Props = {
+  recipe: AdminRecipe;
+  catalog: AdminCatalog;
+  /** The Recipe form above as it is now (unsaved edits included), which Suggest Guidance reads; absent, the saved Recipe. */
+  page?: RecipeDraft | null;
+};
 
 /**
  * Pairings, Nutrition Note and Eating Moments of a saved Recipe, saved together
  * through the guidance endpoint (its own Save, like Tips are separate from the
  * Recipe document). Saved Pairings keep their id so translations survive.
  */
-export function RecipeGuidance({ recipe, catalog }: Props) {
+export function RecipeGuidance({ recipe, catalog, page }: Props) {
   const { t, i18n } = useTranslation(['admin', 'recipes', 'errors']);
   const save = useSetGuidance(recipe.id);
   const [draft, setDraft] = useState<GuidanceDraft>(() =>
     toGuidanceDraft(recipe),
   );
   const [done, setDone] = useState(false);
+  const suggestion = useGuidanceSuggestion({
+    draft,
+    onChange: (next) => {
+      setDone(false);
+      setDraft(next);
+    },
+    send: (guidance) =>
+      suggestCatalogGuidance({
+        recipe: suggestionRecipeOf(
+          page ?? draftOf(recipe, catalog, i18n.language),
+        ),
+        guidance,
+        recipeId: recipe.id,
+      }),
+  });
   const problems = guidanceProblems(draft);
 
   const submit = async () => {
@@ -80,6 +107,7 @@ export function RecipeGuidance({ recipe, catalog }: Props) {
         }}
         momentOptions={momentOptions}
         RecipePicker={RecipePicker}
+        suggestion={suggestion}
         ingredientScope="shared"
         ingredientName={(id) => {
           const item = catalog.ingredients.find((i) => i.id === id);
