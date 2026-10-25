@@ -19,6 +19,7 @@ import { cardFor, indexCards, useCookTonight } from '../../lib/cookTonight';
 import { useAddToFamily } from '../../lib/addToFamily';
 import { localIso } from '../../lib/pantry';
 import {
+  hasNoFamilyRecipes,
   isFiltering,
   useRecipeFilters,
   useRecipes,
@@ -133,10 +134,7 @@ export function RecipesPage() {
   // No live Recipes (archived ones aren't listed): chef Gator replaces the search, chips and list.
   const noneListed = recipes.data !== undefined && items.length === 0;
   // Recipes hidden by Allergies are still Recipes: that Family isn't empty.
-  const empty =
-    !filtering &&
-    noneListed &&
-    (recipes.data?.hiddenByAllergiesCount ?? 0) === 0;
+  const empty = !filtering && hasNoFamilyRecipes(recipes.data);
   const addToFamily = useAddToFamily();
   const addButton = useRef<HTMLButtonElement>(null);
   const cards = cookTonight.data?.cards ?? [];

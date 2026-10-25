@@ -1,9 +1,12 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactNode } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Batch } from '../../../lib/pantry';
 import type { ShoppingItem, ShoppingList } from '../../../lib/shopping';
+import { useCookTonight } from '../../../lib/cookTonight';
+import { localIso } from '../../../lib/pantry';
 import { renderWithProviders, stubApi } from '../../../test/render';
 import { stubMotion } from '../../../test/viewport';
 import { BudgetWidget, NutritionWidget } from './PlaceholderWidgets';
@@ -54,6 +57,12 @@ function shoppingList(items: ShoppingItem[]): ShoppingList {
     summary: { remaining: items.length - checked, checked },
   };
 }
+
+/** The Family Recipe list the wide/tall Cook Tonight Widget asks for: one Recipe, so the Family isn't empty. */
+const hasRecipes = {
+  'GET /api/recipes': () =>
+    Response.json({ recipes: [{ id: 'listed' }], hiddenByAllergiesCount: 0 }),
+};
 
 function stub(routes: Record<string, () => Response>) {
   const { fetchMock } = stubApi(routes);
@@ -285,6 +294,7 @@ describe('CookTonightWidget', () => {
     ...overrides,
   });
   const cookTonight = (cards: CookTonightCard[]) => ({
+    ...hasRecipes,
     'GET /api/recipes/cook-tonight': () => Response.json({ cards }),
   });
 
@@ -499,6 +509,7 @@ describe('CookTonightWidget', () => {
 
   it('says how many Recipes are hidden by Allergies and brings them back on Show', async () => {
     const { fetchMock, calls } = stubApi({
+      ...hasRecipes,
       'GET /api/recipes/cook-tonight': (url) =>
         url.searchParams.get('showHidden') === 'true'
           ? Response.json({
@@ -627,6 +638,7 @@ describe("CookTonightWidget as Gator's bubble panel", () => {
     card(id, { canMake: false, missing: { ingredientId: 'i', name: 'Salt' } });
   const stubCards = (cards: CookTonightCard[], hidden = 0) =>
     stub({
+      ...hasRecipes,
       'GET /api/recipes/cook-tonight': () =>
         Response.json({ cards, hiddenByAllergiesCount: hidden }),
     });
@@ -799,5 +811,152 @@ describe("CookTonightWidget as Gator's bubble panel", () => {
       within(region).getAllByRole('link', { name: /^Recipe / }),
     ).toHaveLength(1);
     expect(within(region).queryByRole('img')).toBeNull();
+  });
+});
+
+describe('CookTonightWidget for a Family with no Recipes', () => {
+  afterEach(() => vi.useRealTimers());
+
+  const cookTonightRoute = (hidden = 0) => ({
+    'GET /api/recipes/cook-tonight': () =>
+      Response.json({ cards: [], hiddenByAllergiesCount: hidden }),
+  });
+  const recipeList = (recipes: unknown[], hidden: number) => ({
+    'GET /api/recipes': () =>
+      Response.json({ recipes, hiddenByAllergiesCount: hidden }),
+  });
+  function Where() {
+    return <p>at {useLocation().pathname}</p>;
+  }
+  /** Shares Cook Tonight's query with the Widget, so it shows once that answer is in. */
+  function CookTonightProbe() {
+    // oxlint-disable-next-line react/purity -- same key as the Widget's own call; the test day never rolls over
+    const { data } = useCookTonight(localIso(new Date()), false, 'family');
+    return data ? <p>ct ready</p> : null;
+  }
+  function renderAt(
+    size: 'small' | 'wide' | 'tall' = 'wide',
+    probe?: ReactNode,
+  ) {
+    renderWithProviders(
+      <>
+        {probe}
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <CookTonightWidget
+                size={size}
+                columns={size === 'tall' ? 4 : 2}
+              />
+            }
+          />
+          <Route path="*" element={<Where />} />
+        </Routes>
+      </>,
+    );
+  }
+  const POT = /My pot's empty!/;
+
+  it("shows Gator's empty-pot line and the three links to their pages", async () => {
+    stub({ ...cookTonightRoute(), ...recipeList([], 0) });
+    renderAt();
+
+    expect(await screen.findByText(POT)).toBeInTheDocument();
+    const region = screen.getByRole('region', { name: 'Cook tonight' });
+    expect(
+      within(region).getByRole('link', { name: 'Explore Recipes' }),
+    ).toHaveAttribute('href', '/recipes/explore');
+    expect(
+      within(region).getByRole('link', { name: 'From a link' }),
+    ).toHaveAttribute('href', '/recipes/from-link');
+    expect(
+      within(region).getByRole('link', { name: 'New Recipe' }),
+    ).toHaveAttribute('href', '/recipes/new');
+    expect(screen.queryByText(/Nothing in your Pantry/)).toBeNull();
+  });
+
+  it('shows the same on a tall Widget', async () => {
+    stub({ ...cookTonightRoute(), ...recipeList([], 0) });
+    renderAt('tall');
+    expect(await screen.findByText(POT)).toBeInTheDocument();
+  });
+
+  it('makes the panel no link, with Gator a button that plays his Tap', async () => {
+    stubMotion(false);
+    stub({ ...cookTonightRoute(), ...recipeList([], 0) });
+    renderAt();
+    const user = userEvent.setup();
+
+    await screen.findByText(POT);
+    const region = screen.getByRole('region', { name: 'Cook tonight' });
+    // Only the three text links; the panel itself is not one.
+    expect(within(region).getAllByRole('link')).toHaveLength(3);
+    const gator = within(region).getByRole('button', {
+      name: /Gator the chef/,
+    });
+    await user.click(gator);
+    expect(gator.querySelector('img')).toHaveAttribute('data-motion', 'tap');
+    expect(screen.queryByText(/^at /)).toBeNull();
+  });
+
+  it('shows the Nothing state and the Hidden by Allergies note when every Recipe is hidden', async () => {
+    stub({ ...cookTonightRoute(2), ...recipeList([], 2) });
+    renderAt();
+
+    const panel = await screen.findByRole('link', { name: /^Cook tonight, / });
+    expect(panel).toHaveAttribute('href', '/pantry');
+    expect(
+      screen.getByText('2 Recipes hidden by your Allergies'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(POT)).toBeNull();
+  });
+
+  it('leaves the small Widget as it was, without asking for the Recipe list', async () => {
+    const { fetchMock, calls } = stubApi({
+      ...cookTonightRoute(),
+      ...recipeList([], 0),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderAt('small');
+
+    const region = await screen.findByRole('region', { name: 'Cook tonight' });
+    expect(
+      await within(region).findByText(/Nothing you can make/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(POT)).toBeNull();
+    expect(calls.map((call) => call.key)).not.toContain('GET /api/recipes');
+  });
+
+  it('shows neither the empty pot nor Nothing while the Recipe list loads', async () => {
+    const { fetchMock, calls } = stubApi({
+      ...cookTonightRoute(),
+      'GET /api/recipes': () => new Promise<Response>(() => {}),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderAt('wide', <CookTonightProbe />);
+
+    // Cook Tonight has answered (empty); only the Recipe list is still pending.
+    await screen.findByText('ct ready');
+    expect(calls.map((call) => call.key)).toContain('GET /api/recipes');
+    const region = screen.getByRole('region', { name: 'Cook tonight' });
+    expect(
+      within(region).getByRole('progressbar', { name: 'Loading' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(POT)).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Cook tonight, / })).toBeNull();
+  });
+
+  it('shows an error, neither the empty pot nor Nothing, when the Recipe list fails', async () => {
+    stub({
+      ...cookTonightRoute(),
+      'GET /api/recipes': () =>
+        Response.json({ message: 'boom' }, { status: 500 }),
+    });
+    renderAt();
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.queryByText(POT)).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Cook tonight, / })).toBeNull();
   });
 });
