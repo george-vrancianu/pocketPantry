@@ -45,7 +45,7 @@ export function RecipeForm({
   onCancel,
   onDraftChange,
 }: Props) {
-  const { t, i18n } = useTranslation(['admin', 'recipes', 'common']);
+  const { t, i18n } = useTranslation(['admin', 'recipes', 'common', 'catalog']);
   const create = useCreateRecipe();
   const update = useUpdateRecipe(recipe?.id ?? '');
   const write = recipe ? update : create;
@@ -121,6 +121,9 @@ export function RecipeForm({
         <CatalogSearch
           emptyState={<BrowseByAisle />}
           key={searchKey}
+          inline
+          label={t('catalog:search.addIngredient')}
+          placeholder={t('catalog:search.addIngredient')}
           scope="shared"
           onSelect={(ingredient) => {
             change({

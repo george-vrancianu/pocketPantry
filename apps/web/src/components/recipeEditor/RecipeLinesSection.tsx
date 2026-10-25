@@ -59,6 +59,19 @@ export function RecipeLinesSection({
   const undoToast = useRef<ToastHandle | null>(null);
   useEffect(() => () => undoToast.current?.close(), []);
 
+  // A line appended at the end (by the search) takes focus in its quantity; an Undo does not.
+  const seenKeys = useRef(new Set(lines.map((line) => line.key)));
+  const restoring = useRef(false);
+  useEffect(() => {
+    const last = lines[lines.length - 1];
+    const fresh = last !== undefined && !seenKeys.current.has(last.key);
+    seenKeys.current = new Set(lines.map((line) => line.key));
+    if (fresh && !restoring.current) {
+      document.getElementById(`line-qty-${last.key}`)?.focus();
+    }
+    restoring.current = false;
+  }, [lines]);
+
   const changeLine = (key: number, patch: Partial<LineDraft>) =>
     onChange(
       lines.map((line) => (line.key === key ? { ...line, ...patch } : line)),
@@ -77,6 +90,7 @@ export function RecipeLinesSection({
           if (current.some((item) => item.key === line.key)) return;
           const next = [...current];
           next.splice(Math.min(index, next.length), 0, line);
+          restoring.current = true;
           latest.current.onChange(next);
         },
       },
@@ -171,6 +185,7 @@ export function RecipeLinesSection({
                     error={bad}
                     slotProps={{
                       htmlInput: {
+                        id: `line-qty-${line.key}`,
                         inputMode: 'decimal',
                         'aria-label': t('admin:recipe.lines.quantity', {
                           name,

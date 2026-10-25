@@ -102,7 +102,13 @@ export function FamilyRecipeForm({
   onChange,
   onSave,
 }: Props) {
-  const { t } = useTranslation(['recipes', 'admin', 'common', 'errors']);
+  const { t } = useTranslation([
+    'recipes',
+    'admin',
+    'common',
+    'errors',
+    'catalog',
+  ]);
   const filters = useRecipeFilters();
   const [draft, setDraft] = useState<FamilyDraft>(initial);
   const [searchKey, setSearchKey] = useState(0);
@@ -308,6 +314,9 @@ export function FamilyRecipeForm({
               <CatalogSearch
                 emptyState={<BrowseByAisle />}
                 key={searchKey}
+                inline
+                label={t('catalog:search.addIngredient')}
+                placeholder={t('catalog:search.addIngredient')}
                 onSelect={(ingredient) => {
                   if (ingredient.owner === 'family')
                     setPickedFamily((ids) => new Set(ids).add(ingredient.id));

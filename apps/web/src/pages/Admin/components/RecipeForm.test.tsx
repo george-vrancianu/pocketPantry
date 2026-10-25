@@ -109,7 +109,7 @@ describe('RecipeForm', () => {
     const user = userEvent.setup();
 
     await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
       'mi',
     );
     await screen.findByRole('option', { name: /Milk/ });
@@ -120,6 +120,28 @@ describe('RecipeForm', () => {
     for (const call of searches) {
       expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
     }
+  });
+
+  it('offers neither Add to your catalog nor Use as typed when nothing matches (#590)', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <RecipeForm catalog={catalog} onSaved={vi.fn()} onCancel={vi.fn()} />,
+    );
+    const user = userEvent.setup();
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
+      'kombucha',
+    );
+
+    expect(await screen.findByText(/No match for/)).toBeVisible();
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /to your catalog/ }),
+    ).toBeNull();
   });
 
   it('creates a Base Recipe from title, an Ingredient with its default unit, and a Step', async () => {
@@ -144,7 +166,7 @@ describe('RecipeForm', () => {
     await user.type(screen.getByLabelText('Prep (minutes)'), '5');
 
     await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
       'milk',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
@@ -371,7 +393,7 @@ describe('RecipeForm Browse by aisle', () => {
     const user = userEvent.setup();
 
     await user.click(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
     );
     expect(await screen.findByText('Browse by aisle')).toBeVisible();
     await user.click(
@@ -407,7 +429,7 @@ describe('RecipeForm: no Add to your catalog (#270)', () => {
     );
 
     await userEvent.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
       'kombucha',
     );
 

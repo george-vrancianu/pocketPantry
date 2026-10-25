@@ -15,6 +15,7 @@ import type {
   FamilyRecipeEdit,
 } from '../../lib/familyRecipes';
 import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
+import { stubViewport } from '../../test/viewport';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { useRecipe } from '../../lib/recipes';
 import {
@@ -714,7 +715,7 @@ describe('NewRecipePage', () => {
 
     await openTab(user, 'Ingredients');
     await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
       'Dragon fruit',
     );
     const useTyped = await screen.findByRole('option', {
@@ -731,7 +732,7 @@ describe('NewRecipePage', () => {
     expect(screen.getByText(/Not in the Catalog/)).toBeVisible();
     // The search is ready for the next ingredient.
     expect(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
     ).toHaveValue('');
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
@@ -750,7 +751,7 @@ describe('NewRecipePage', () => {
     });
     await openTab(user, 'Ingredients');
     await user.type(
-      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+      await screen.findByRole('combobox', { name: 'Add an ingredient' }),
       'zzz',
     );
     await screen.findByRole('option', { name: /as typed/ });
@@ -895,7 +896,7 @@ describe('NewVariantPage', () => {
     });
     await openTab(user, 'Ingredients');
     await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
       'Gran’s herbs',
     );
     await user.click(
@@ -1491,7 +1492,7 @@ describe('Family Recipe Browse by aisle', () => {
 
     await openTab(user, 'Ingredients');
     await user.click(
-      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+      await screen.findByRole('combobox', { name: 'Add an ingredient' }),
     );
 
     expect(await screen.findByText('Browse by aisle')).toBeVisible();
@@ -1532,7 +1533,7 @@ describe('Family Recipe form: Add to your catalog (#270)', () => {
     await openTab(user, 'Ingredients');
 
     await user.click(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
     );
     await user.paste('kombucha');
 
@@ -1567,6 +1568,118 @@ describe('Family Recipe form: Add to your catalog (#270)', () => {
     );
     expect(options).toHaveLength(1);
     expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+  });
+});
+
+describe('Family Recipe form: inline Add an ingredient (#590)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const kombucha = {
+    owner: 'family',
+    amountScale: 'medium',
+    id: 'k1',
+    name: 'Kombucha',
+    defaultUnit: 'ml',
+    leafCategory: { id: 'tea', name: 'Tea' },
+    parentCategory: {
+      id: 'drinks',
+      name: 'Drinks',
+      aisle: { id: 'a1', name: 'Drinks' },
+    },
+    defaults: { expiryDays: 30, location: 'fridge' },
+  };
+  const searchBox = () =>
+    screen.getByRole('combobox', { name: 'Add an ingredient' });
+
+  it('picks a result with Enter, clears the query and focuses the new line quantity', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [kombucha] }),
+    });
+    await openTab(user, 'Ingredients');
+
+    await user.type(searchBox(), 'komb');
+    await screen.findByRole('option', { name: /Kombucha/ });
+    await user.keyboard('{Enter}');
+
+    const quantity = await screen.findByLabelText('Quantity of Kombucha');
+    expect(searchBox()).toHaveValue('');
+    expect(quantity).toHaveFocus();
+  });
+
+  it('adds an Unmatched line with Use as typed and focuses its quantity', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await openTab(user, 'Ingredients');
+
+    await user.type(searchBox(), 'Dragon fruit');
+    await user.click(
+      await screen.findByRole('option', {
+        name: /Use “Dragon fruit” as typed/,
+      }),
+    );
+
+    expect(
+      await screen.findByLabelText('Quantity of Dragon fruit'),
+    ).toHaveFocus();
+  });
+
+  it('closes the popover with Escape', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [kombucha] }),
+    });
+    await openTab(user, 'Ingredients');
+
+    await user.type(searchBox(), 'komb');
+    await screen.findByRole('option', { name: /Kombucha/ });
+    await user.keyboard('{Escape}');
+
+    expect(searchBox()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('adds the line with the new Family Ingredient after Add to your catalog', async () => {
+    stubViewport(1024);
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+      'GET /api/catalog/allergens': () => Response.json({ allergens: [] }),
+      'GET /api/catalog/categories': () =>
+        Response.json({
+          categories: [
+            {
+              id: 'tea',
+              name: 'Tea',
+              parentCategory: { id: 'drinks', name: 'Drinks' },
+              aisle: { id: 'a1', name: 'Drinks' },
+              defaults: { expiryDays: null, location: null },
+            },
+          ],
+        }),
+      'POST /api/catalog/family-ingredients': () =>
+        Response.json(kombucha, { status: 201 }),
+    });
+    await openTab(user, 'Ingredients');
+
+    await user.type(searchBox(), 'Kombucha');
+    await user.click(
+      await screen.findByRole('option', {
+        name: /Add “Kombucha” to your catalog/,
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    await user.click(
+      await within(dialog).findByRole('option', { name: /Tea/ }),
+    );
+    await user.click(
+      within(dialog).getByRole('button', { name: /^Add & pick/ }),
+    );
+
+    const quantity = await screen.findByLabelText('Quantity of Kombucha');
+    expect(quantity).toHaveFocus();
+    expect(screen.getAllByText('Family').length).toBeGreaterThan(0);
   });
 });
 
@@ -2272,7 +2385,7 @@ describe('Recipe editor shell', () => {
     );
     expect(screen.getByLabelText('Quantity of Egg')).toBeVisible();
     expect(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
     ).toBeVisible();
     expect(screen.getByLabelText(/^Title/)).not.toBeVisible();
 
