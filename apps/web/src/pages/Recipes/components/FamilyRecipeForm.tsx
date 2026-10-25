@@ -1,5 +1,5 @@
 import { Stack, Typography } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
@@ -36,6 +36,8 @@ type Props = {
   stepTipCount?: (stepId: string) => number;
   /** The Recipe's guidance (a Variant draft's copy, or a blank one), edited and saved with the document. */
   guidance?: { initial: GuidanceDraft; momentOptions: MomentOption[] };
+  /** Tells the page what the form holds now, for siblings that read it (Suggest Guidance on the edit page). */
+  onDraftChange?: (draft: FamilyDraft) => void;
   onSave: (document: FamilyRecipeDocument, guidance?: GuidanceInput) => void;
   onCancel: () => void;
 };
@@ -54,6 +56,7 @@ export function FamilyRecipeForm({
   error,
   stepTipCount,
   guidance,
+  onDraftChange,
   onSave,
   onCancel,
 }: Props) {
@@ -65,6 +68,7 @@ export function FamilyRecipeForm({
     guidance?.initial ?? null,
   );
   const [titleTouched, setTitleTouched] = useState(false);
+  useEffect(() => onDraftChange?.(draft), [draft, onDraftChange]);
   const problems = problemsOf(draft);
   const guidanceBad = guidanceDraft
     ? Object.values(guidanceProblems(guidanceDraft)).some(
@@ -169,6 +173,7 @@ export function FamilyRecipeForm({
             draft={guidanceDraft}
             onChange={setGuidanceDraft}
             momentOptions={guidance.momentOptions}
+            page={draft}
           />
         </Stack>
       ) : null}

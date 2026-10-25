@@ -28,6 +28,7 @@ import { FamilyGuidance, useMomentOptions } from './components/FamilyGuidance';
 import {
   draftOfEdit,
   draftOfVariantDraft,
+  type FamilyDraft,
   type NewRecipeDraft,
 } from './familyDraft';
 import { FamilyRecipeForm } from './components/FamilyRecipeForm';
@@ -303,6 +304,8 @@ export function EditFamilyRecipePage() {
   const [saves, setSaves] = useState(0);
   /** The Member dropped the Source Link; it is only sent (and gone) once they save. */
   const [linkRemoved, setLinkRemoved] = useState(false);
+  /** What the form holds now, for Suggest Guidance in the Guidance section below it. */
+  const [page, setPage] = useState<FamilyDraft | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
@@ -334,6 +337,7 @@ export function EditFamilyRecipePage() {
               key={`${recipe.id}-${saves}`}
               heading={t('recipes:family.editHeading')}
               initial={draftOfEdit(recipe)}
+              onDraftChange={setPage}
               saveLabel={t('recipes:family.save')}
               saving={update.isPending}
               error={update.error}
@@ -363,7 +367,7 @@ export function EditFamilyRecipePage() {
               {t('recipes:family.viewRecipe')}
             </Link>
             <TipsEditor recipe={{ ...recipe, id }} writes={tipWrites} />
-            <FamilyGuidance recipe={recipe} />
+            <FamilyGuidance recipe={recipe} page={page} />
           </>
         ) : null}
         {recipe?.archived ? (

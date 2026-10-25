@@ -2,6 +2,7 @@ import type {
   FamilyRecipeDocument,
   FamilyRecipeDraft,
   FamilyRecipeEdit,
+  SuggestFamilyGuidanceRequest,
 } from '../../lib/familyRecipes';
 import {
   decimal,
@@ -134,5 +135,50 @@ export function documentOf(draft: FamilyDraft): FamilyRecipeDocument {
         step.timer.trim() === '' ? null : Math.round(decimal(step.timer) * 60),
     })),
     ...(tips.length > 0 ? { tips } : {}),
+  };
+}
+
+/**
+ * The page's Recipe as Suggest Guidance reads it. The form may be half done, so unlike
+ * `documentOf` this never needs `problemsOf` to be clear: lines and Steps with nothing in them
+ * are left out and a missing Title or Servings gets a stand-in the API accepts.
+ */
+export function suggestionRecipeOf(
+  draft: FamilyDraft,
+): SuggestFamilyGuidanceRequest['recipe'] {
+  const servings = Math.round(decimal(draft.servings));
+  const quantityOf = (text: string) => {
+    const value = decimal(text);
+    return text.trim() !== '' && value >= 0.001 && value <= 1_000_000
+      ? Math.round(value * 1000) / 1000
+      : null;
+  };
+  return {
+    title: draft.title.trim() || '-',
+    servings: servings >= 1 && servings <= 1000 ? servings : 1,
+    prepMinutes: null,
+    cookMinutes: null,
+    cuisineId: draft.cuisineId || null,
+    methodId: draft.methodId || null,
+    lines: draft.lines.flatMap((line) => {
+      const rawName = line.name.trim().slice(0, 100);
+      if (!line.ingredientId && rawName === '') return [];
+      const quantity = quantityOf(line.quantity);
+      return [
+        {
+          ingredientId: line.ingredientId || null,
+          rawName: line.ingredientId ? null : rawName,
+          quantity,
+          unit: quantity === null ? null : line.unit,
+          optional: line.optional,
+          note: null,
+        },
+      ];
+    }),
+    steps: draft.steps.flatMap((step) =>
+      step.text.trim() === ''
+        ? []
+        : [{ text: step.text.trim().slice(0, 2000), timerSeconds: null }],
+    ),
   };
 }

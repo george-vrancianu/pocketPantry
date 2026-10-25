@@ -29,6 +29,12 @@ import {
 import type { CatalogScopeName } from '../../lib/catalog';
 import { moved } from '../../lib/recipeDraft';
 import { RowControls } from '../RowControls';
+import {
+  NoSuggestionsMessage,
+  SuggestGuidanceButton,
+  SuggestedMark,
+  type GuidanceSuggestionControl,
+} from './SuggestGuidance';
 
 export type MomentOption = { id: string; name: string; archived: boolean };
 
@@ -55,6 +61,11 @@ type FieldsProps = {
   ingredientName?: (id: string) => string | undefined;
   /** Which Catalog the Ingredient link searches: `shared` for Catalog Recipes (Admin). */
   ingredientScope?: CatalogScopeName;
+  /**
+   * Suggest Guidance, from `useGuidanceSuggestion` in the host that supplies its endpoint.
+   * Without it there is no button (and no marks, since nothing is ever suggested).
+   */
+  suggestion?: GuidanceSuggestionControl;
 };
 
 /**
@@ -70,6 +81,7 @@ export function GuidanceFields({
   RecipePicker,
   ingredientName,
   ingredientScope,
+  suggestion,
 }: FieldsProps) {
   const { t } = useTranslation(['admin', 'recipes']);
   const problems = guidanceProblems(draft);
@@ -78,13 +90,14 @@ export function GuidanceFields({
   const patchPairing = (key: number, patch: Partial<PairingDraft>) =>
     change({
       pairings: draft.pairings.map((p) =>
-        p.key === key ? { ...p, ...patch } : p,
+        // Editing an item makes it the Member's own: the mark goes.
+        p.key === key ? { ...p, ...patch, suggested: false } : p,
       ),
     });
   const patchMoment = (id: string, patch: Partial<EatingMomentDraft>) =>
     change({
       eatingMoments: draft.eatingMoments.map((m) =>
-        m.eatingMomentId === id ? { ...m, ...patch } : m,
+        m.eatingMomentId === id ? { ...m, ...patch, suggested: false } : m,
       ),
     });
   const count = noteLength(draft.nutritionNote);
@@ -97,6 +110,7 @@ export function GuidanceFields({
 
   return (
     <>
+      {suggestion ? <SuggestGuidanceButton control={suggestion} /> : null}
       <Stack
         component="fieldset"
         spacing={1.5}
@@ -113,6 +127,7 @@ export function GuidanceFields({
             {t('admin:recipe.guidance.pairings.empty')}
           </Typography>
         ) : null}
+        <NoSuggestionsMessage field="pairings" control={suggestion} />
         {draft.pairings.map((pairing, index) => (
           <PairingRow
             key={pairing.key}
@@ -171,11 +186,17 @@ export function GuidanceFields({
       >
         <Typography component="legend" variant="body2" sx={{ fontWeight: 700 }}>
           {t('admin:recipe.guidance.nutrition.title')}
+          {draft.nutritionNoteSuggested ? <SuggestedMark /> : null}
         </Typography>
         <TextField
           label={t('admin:recipe.guidance.nutrition.label')}
           value={draft.nutritionNote}
-          onChange={(event) => change({ nutritionNote: event.target.value })}
+          onChange={(event) =>
+            change({
+              nutritionNote: event.target.value,
+              nutritionNoteSuggested: false,
+            })
+          }
           error={problems.note}
           helperText={t('admin:recipe.guidance.nutrition.helper')}
           multiline
@@ -196,6 +217,7 @@ export function GuidanceFields({
             })}
           </Typography>
         ) : null}
+        <NoSuggestionsMessage field="nutritionNote" control={suggestion} />
       </Stack>
 
       <Stack
@@ -216,6 +238,7 @@ export function GuidanceFields({
             {t('admin:recipe.guidance.eatingMoments.empty')}
           </Typography>
         ) : null}
+        <NoSuggestionsMessage field="eatingMoments" control={suggestion} />
         {draft.eatingMoments.map((use, index) => {
           const moment = momentOptions.find((m) => m.id === use.eatingMomentId);
           const name =
@@ -227,6 +250,7 @@ export function GuidanceFields({
                 {moment?.archived
                   ? ` (${t('admin:eatingMoment.archivedBadge')})`
                   : ''}
+                {use.suggested ? <SuggestedMark /> : null}
               </Typography>
               <TextField
                 select
@@ -374,6 +398,7 @@ function PairingRow({
     >
       <Typography component="legend" variant="body2" sx={{ fontWeight: 700 }}>
         {t('admin:recipe.guidance.pairings.heading', p)}
+        {pairing.suggested ? <SuggestedMark /> : null}
       </Typography>
       <TextField
         select

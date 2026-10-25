@@ -1527,3 +1527,213 @@ describe('Family Recipe form: Add to your catalog (#270)', () => {
     expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
   });
 });
+
+describe('Suggest Guidance', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const NOTE = 'Rich in protein, light on fibre.';
+  const suggestRoute = 'POST /api/recipes/suggest-guidance';
+  const proposal = () =>
+    Response.json({ guidance: { nutritionNote: NOTE }, noSuggestions: [] });
+  const noteField = () => screen.getByLabelText('Nutrition Note');
+  const suggestButton = () =>
+    screen.getByRole('button', { name: 'Suggest Guidance' });
+  const noNote: FamilyRecipeDraft = {
+    ...draft,
+    guidance: { ...draft.guidance, nutritionNote: null },
+  };
+  const unfilled: FamilyRecipeEdit = { ...saved, nutritionNote: null };
+
+  it('fills an empty Nutrition Note from the page as it is now, marked Suggested, and sends ordinary Guidance on save', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', {
+      [suggestRoute]: proposal,
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+
+    await user.click(suggestButton());
+
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    const asked = calls.find((c) => c.key === suggestRoute)?.body;
+    expect(asked).toMatchObject({
+      recipe: { title: 'Gran stew', servings: 4 },
+      guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
+    });
+    expect(
+      within(screen.getByRole('group', { name: /Nutrition Note/ })).getByText(
+        'Suggested',
+      ),
+    ).toBeVisible();
+    // Nothing is stored by suggesting.
+    expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(false);
+    // Every covered field is filled now: the button says why it is off.
+    expect(suggestButton()).toBeDisabled();
+    expect(suggestButton()).toHaveAccessibleDescription(/already filled/);
+
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(true),
+    );
+    const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
+    expect(body).toMatchObject({ guidance: { nutritionNote: NOTE } });
+    expect(JSON.stringify(body)).not.toMatch(/suggested/i);
+  });
+
+  it('clears the mark once the Member edits the note', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', { [suggestRoute]: proposal });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+
+    await user.type(noteField(), '!');
+
+    expect(screen.queryByText('Suggested')).not.toBeInTheDocument();
+    expect(noteField()).toHaveValue(`${NOTE}!`);
+  });
+
+  it('is disabled with a hint when the Nutrition Note is filled, and never asks', async () => {
+    const calls = setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(draft),
+      'GET /api/recipes/x': () => Response.json(sourceDetail),
+      [suggestRoute]: proposal,
+    });
+    expect(await screen.findByLabelText('Nutrition Note')).toHaveValue(
+      'Rich in protein',
+    );
+    expect(suggestButton()).toBeDisabled();
+    expect(suggestButton()).toHaveAccessibleDescription(/already filled/);
+    fireEvent.click(suggestButton());
+    expect(calls.some((c) => c.key === suggestRoute)).toBe(false);
+  });
+
+  it('works on a Variant, reading the copied ingredients and Steps', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(noNote),
+      'GET /api/recipes/x': () => Response.json(sourceDetail),
+      [suggestRoute]: proposal,
+    });
+    await screen.findByLabelText(/^Title/);
+    await user.click(suggestButton());
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+      recipe: {
+        title: 'Omelette',
+        lines: [{ ingredientId: 'egg', quantity: 3, unit: 'pcs' }],
+        steps: [{ text: 'Whisk the eggs' }],
+      },
+      guidance: {
+        pairings: [{ label: 'Orange juice' }],
+        eatingMoments: [{ eatingMomentId: 'em1' }],
+      },
+    });
+  });
+
+  it('shows a working state and sends one request however often it is pressed', async () => {
+    const user = userEvent.setup({ delay: null });
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const calls = setup('/recipes/new', {
+      [suggestRoute]: async () => {
+        await gate;
+        return proposal();
+      },
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+
+    const working = await screen.findByRole('button', { name: 'Suggesting…' });
+    expect(working).toBeDisabled();
+    fireEvent.click(working);
+    release();
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    expect(calls.filter((c) => c.key === suggestRoute)).toHaveLength(1);
+  });
+
+  it('does not overwrite a note the Member typed while the request was in flight', async () => {
+    const user = userEvent.setup({ delay: null });
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    setup('/recipes/new', {
+      [suggestRoute]: async () => {
+        await gate;
+        return proposal();
+      },
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+    await screen.findByRole('button', { name: 'Suggesting…' });
+
+    await user.type(noteField(), 'Mine');
+    release();
+
+    await screen.findByRole('button', { name: 'Suggest Guidance' });
+    expect(noteField()).toHaveValue('Mine');
+    expect(screen.queryByText('Suggested')).not.toBeInTheDocument();
+  });
+
+  it('says "No suggestions for ..." in a status when nothing was worth proposing', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json({ guidance: {}, noSuggestions: ['nutritionNote'] }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+
+    await screen.findByText('No suggestions for Nutrition Note.');
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((s) => s.textContent === 'No suggestions for Nutrition Note.'),
+    ).toBe(true);
+    expect(noteField()).toHaveValue('');
+    // Typing in the field makes the message redundant.
+    await user.type(noteField(), 'x');
+    expect(screen.queryByText(/No suggestions for/)).not.toBeInTheDocument();
+  });
+
+  it('shows a polite error and leaves the form untouched when suggesting fails', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json(
+          { code: 'scan.provider_unavailable', params: {} },
+          { status: 502 },
+        ),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+
+    const toast = await screen.findByText(
+      'Suggest Guidance is not working right now. Please try again in a moment.',
+    );
+    expect(toast.closest('[role="status"]')).not.toBeNull();
+    expect(noteField()).toHaveValue('');
+    expect(screen.getByLabelText(/^Title/)).toHaveValue('Gran stew');
+    // It can be tried again.
+    expect(suggestButton()).toBeEnabled();
+  });
+
+  it('on the edit page reads unsaved edits and names the Recipe being edited', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(unfilled),
+      [suggestRoute]: proposal,
+    });
+    fireEvent.change(await screen.findByLabelText(/^Title/), {
+      target: { value: 'Unsaved title' },
+    });
+
+    await user.click(suggestButton());
+
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+      recipeId: 'g',
+      recipe: { title: 'Unsaved title' },
+      guidance: { pairings: [{ id: 'p1' }, { id: 'p2' }] },
+    });
+  });
+});
