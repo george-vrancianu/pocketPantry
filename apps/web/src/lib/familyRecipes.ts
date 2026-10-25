@@ -200,7 +200,7 @@ export function useArchiveFamilyRecipe(id: string) {
   );
 }
 
-/** Same shape as the Admin's `useTipWrites`, so the Tips editor serves both. */
+/** Tip writes for a Family Recipe: add, edit, delete and hide, on the same endpoints shape as the Admin's. */
 export function useFamilyTipWrites(id: string) {
   const path = `/recipes/${id}`;
   const add = useFamilyWrite((input: { text: string; stepId: string | null }) =>

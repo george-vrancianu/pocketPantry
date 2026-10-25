@@ -110,25 +110,77 @@
   "family": {
     "newRecipe": "Ny opskrift",
     "newRecipeHeading": "Ny opskrift",
-    "newRecipeHint": "Tilføj tips til trin, når opskriften er gemt.",
+    "newRecipeHint": "Gemmes som dit udkast, indtil du gemmer den som en af din families opskrifter.",
     "makeVariant": "Lav en variant",
     "edit": "Rediger",
     "delete": "Slet",
     "deleteConfirm": "Slet denne opskrift? Den forsvinder for hele din familie.",
     "newHeading": "Lav en variant",
     "editHeading": "Rediger opskrift",
-    "create": "Gem variant",
-    "save": "Gem opskrift",
     "title": "Titel",
-    "copyHint": "Det her er en kopi, du kan ændre. Intet gemmes, før du gemmer den.",
-    "tipsHint": "Kopierede tips følger deres trin; tilføj dine egne, når varianten er gemt.",
+    "copyHint": "Kopieret fra {{source}}. Den bliver til en opskrift, når du gemmer den.",
+    "editorTabs": "Opskriftens faner",
+    "tabs": {
+      "details": "Detaljer",
+      "needsAttention": "Kræver opmærksomhed",
+      "toIngredients": "Ingredienser ›",
+      "toSteps": "Trin ›"
+    },
     "freeTextNote": "Ikke i kataloget",
     "unavailable": "Denne opskrift kan ikke redigeres.",
-    "guidanceHint": "Parringer, en Ernæringsnote og Spisetidspunkter. De gemmes sammen med opskriften.",
+    "guidanceCard": {
+      "title": "Passer godt til, ernæring og tidspunkter",
+      "optional": "Valgfrit",
+      "setCount_one": "{{count}} angivet · valgfrit",
+      "setCount_other": "{{count}} angivet · valgfrit",
+      "linkOptional": "Valgfrit · aldrig læst fra siden",
+      "suggest": "Foreslå",
+      "suggesting": "Foreslår…",
+      "nothing": "Intet at foreslå",
+      "momentHint": "Tryk én gang for Godt til, to gange for Undgå, tre gange for at rydde.",
+      "notSet": "ikke angivet",
+      "editPairing": "Redigér {{label}}",
+      "problem": "Ret før du gemmer",
+      "donePairing": "Færdig"
+    },
     "linkedRecipeUnavailable": "En opskrift, du ikke kan se, eller som er arkiveret",
+    "leaveConfirm": "Kassér dine ændringer?",
     "saved": "Opskriften er gemt.",
+    "saveFailed": {
+      "recipe": "Opskriften blev ikke gemt: {{reason}}",
+      "guidance": "Opskriftens vejledning blev ikke gemt: {{reason}}"
+    },
     "viewRecipe": "Se opskriften",
-    "moreActions": "Flere handlinger"
+    "moreActions": "Flere handlinger",
+    "tips": {
+      "newHint": "Tilføj tips til trin, når du har gemt opskriften.",
+      "variantHint": "Kopierede tips følger deres trin; tilføj dine egne, når du har gemt varianten.",
+      "deleted": "Tip slettet"
+    },
+    "recipeTips": {
+      "placeholder": "Et tip til denne opskrift",
+      "title": "Opskriftens tips",
+      "hint": "Tips gemmes, så snart du ændrer dem; resten gemmes med opskriften.",
+      "tip": "Opskriftens tip {{number}}",
+      "delete": "Slet opskriftens tip {{number}}",
+      "new": "Nyt tip til opskriften",
+      "cancelNew": "Annuller nyt tip til opskriften",
+      "add": "Tilføj et tip til opskriften"
+    },
+    "details": {
+      "titlePlaceholder": "Opskriftens titel",
+      "servesRequired": "Angiv, hvor mange den rækker til.",
+      "levelCycle": "Niveau: {{value}}. Tryk for at skifte",
+      "prep": "Forberedelse",
+      "cook": "Tilberedning"
+    },
+    "baseCard": {
+      "closest": "nærmeste",
+      "subline": "Vælg den Katalogopskrift, denne er en variant af, eller lad den stå selvstændig.",
+      "savesVariant": "Gemmes som en variant af <b>{{title}}</b>.",
+      "savesBase": "Gemmes som sin egen grundopskrift."
+    },
+    "variantOf": "Variant af <b>{{title}}</b>"
   },
   "fewerServings": "Færre portioner",
   "moreServings": "Flere portioner",
@@ -214,7 +266,8 @@
   "sourceLink": {
     "from": "Fra {{host}} ↗",
     "remove": "Fjern link",
-    "translatedFrom": "Oversat fra {{language}}"
+    "translatedFrom": "Oversat fra {{language}}",
+    "removed": "Link fjernet. Det forsvinder, når du gemmer."
   },
   "recipeDraft": {
     "saving": "Gemmer…",

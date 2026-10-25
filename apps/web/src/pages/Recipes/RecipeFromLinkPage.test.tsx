@@ -153,6 +153,20 @@ describe('RecipeFromLinkPage', () => {
     await screen.findByLabelText(/^Title/);
   });
 
+  it('has Back and the title, no Settings gear, and a visible label on the field', () => {
+    setup({});
+    expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+      'href',
+      '/recipes',
+    );
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'From a link' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('link', { name: /settings/i })).toBeNull();
+    expect(screen.getByText('Link to the recipe')).toBeVisible();
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+  });
+
   it('cannot be submitted without a link', async () => {
     setup({});
     expect(
@@ -283,18 +297,24 @@ describe('RecipeFromLinkPage', () => {
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('Blog pancakes');
     expect(screen.getByText('at /recipes/new')).toBeVisible();
     // Matched line with the original amount in its note, and an Unmatched name.
+    await user.click(screen.getByRole('tab', { name: /^Ingredients/ }));
     expect(screen.getByLabelText('Quantity of Egg')).toHaveValue('2');
-    expect(screen.getByDisplayValue('2 large')).toBeVisible();
+    expect(screen.getByText(/2 large/)).toBeVisible();
     expect(screen.getByText('Maple syrup')).toBeVisible();
-    expect(screen.getByDisplayValue('to serve')).toBeVisible();
+    expect(screen.getByText(/to serve/)).toBeVisible();
     // Steps with their timers.
+    await user.click(screen.getByRole('tab', { name: /^Steps/ }));
     expect(screen.getByDisplayValue('Whisk and fry')).toBeVisible();
     expect(screen.getByDisplayValue('Serve warm')).toBeVisible();
     expect(screen.getByLabelText('Timer for Step 1 (minutes)')).toHaveValue(
       '2',
     );
-    expect(screen.getByLabelText('Timer for Step 2 (minutes)')).toHaveValue('');
+    expect(screen.queryByLabelText('Timer for Step 2 (minutes)')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Add a timer to Step 2' }),
+    ).toBeVisible();
     // Where it came from, opening in a new tab; no empty Base Recipe picker.
+    await user.click(screen.getByRole('tab', { name: /^Details/ }));
     const source = screen.getByRole('link', { name: 'From example.com ↗' });
     expect(source).toHaveAttribute('href', 'https://www.example.com/pancakes');
     expect(source).toHaveAttribute('target', '_blank');
@@ -315,7 +335,11 @@ describe('RecipeFromLinkPage', () => {
     await submit(user, 'https://www.example.com/pancakes');
     await screen.findByLabelText(/^Title/);
 
-    await user.click(screen.getByRole('button', { name: 'Suggest Guidance' }));
+    // The row says Guidance is never read from the page, and offers Suggest.
+    expect(
+      screen.getByRole('button', { name: /^Pairings, nutrition/ }),
+    ).toHaveTextContent('Optional · never read from the page');
+    await user.click(screen.getByRole('button', { name: 'Suggest' }));
 
     await waitFor(() =>
       expect(screen.getByLabelText('Nutrition Note')).toHaveValue(
@@ -348,9 +372,9 @@ describe('RecipeFromLinkPage', () => {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
     await submit(user, 'https://www.example.com/pancakes');
-    const servings = await screen.findByLabelText(/^Servings/);
+    const servings = await screen.findByLabelText(/^Serves/);
     expect(servings).toHaveValue('');
-    const save = screen.getByRole('button', { name: 'Save Recipe' });
+    const save = screen.getByRole('button', { name: 'Save' });
     expect(save).toBeDisabled();
     await user.type(servings, '4');
     await user.click(save);
@@ -388,7 +412,7 @@ describe('RecipeFromLinkPage', () => {
         await screen.findByRole('radio', { name: /Omelette/ }),
       ).toBeChecked();
       expect(screen.getByRole('radio', { name: 'Crepes' })).not.toBeChecked();
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       expect(await screen.findByText('Detail of the recipe')).toBeVisible();
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -409,7 +433,7 @@ describe('RecipeFromLinkPage', () => {
       await user.click(
         await screen.findByRole('radio', { name: /standalone/i }),
       );
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       expect(await screen.findByText('Detail of the recipe')).toBeVisible();
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -448,8 +472,8 @@ describe('RecipeFromLinkPage', () => {
       await screen.findByRole('button', { name: 'Remove link' }),
     );
     expect(screen.queryByRole('link', { name: /^From / })).toBeNull();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    expect(screen.getByRole('button', { name: 'Undo' })).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await screen.findByText('Detail of the recipe');
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
     expect(body).toMatchObject({ servings: 4 });
@@ -602,7 +626,7 @@ describe('RecipeFromLinkPage', () => {
     });
     await submit(user, 'https://www.example.com/pancakes');
     expect(await screen.findByText(/Translated from French/)).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await screen.findByText('Detail of the recipe');
     expect(
       calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -619,9 +643,7 @@ describe('RecipeFromLinkPage', () => {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
     await submit(user, 'https://www.example.com/pancakes');
-    await user.click(
-      await screen.findByRole('button', { name: 'Save Recipe' }),
-    );
+    await user.click(await screen.findByRole('button', { name: 'Save' }));
     await screen.findByText('Detail of the recipe');
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
     expect(body).toHaveProperty('sourceLink');
@@ -640,7 +662,7 @@ describe('RecipeFromLinkPage', () => {
       await screen.findByRole('button', { name: 'Remove link' }),
     );
     expect(screen.queryByText(/Translated from/)).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await screen.findByText('Detail of the recipe');
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
     expect(body).not.toHaveProperty('sourceLink');
@@ -700,9 +722,7 @@ describe('RecipeFromLinkPage', () => {
       );
       await user.type(textField(), 'eggs');
       await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
-      await user.click(
-        await screen.findByRole('button', { name: 'Save Recipe' }),
-      );
+      await user.click(await screen.findByRole('button', { name: 'Save' }));
       await screen.findByText('Detail of the recipe');
       const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
       expect(body).toMatchObject({ servings: 4 });

@@ -32,7 +32,7 @@ export function RecipeTips({ recipe }: Props) {
   return <TipsEditor recipe={recipe} writes={writes} />;
 }
 
-/** The Tips editor over any Tip writes of the same shape (Admin or Family). */
+/** The Tips editor over any Tip writes of the same shape (the Admin's Recipe Tips card). */
 export function TipsEditor({ recipe, writes }: Props & { writes: TipWrites }) {
   const { t } = useTranslation(['admin', 'errors']);
   const error =
