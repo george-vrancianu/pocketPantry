@@ -8,6 +8,7 @@ import type { Database } from '../src/database/database.types';
 import {
   eatingMoments,
   family,
+  ingredients,
   recipeEatingMoments,
   recipePairings,
   recipes,
@@ -29,11 +30,11 @@ describe('Suggest Guidance for a Catalog Recipe (integration)', () => {
   let database: Database;
   let admin: ReturnType<typeof client>;
   let member: ReturnType<typeof client>;
-  let memberSettings: ReturnType<typeof client>;
   let adminSettings: ReturnType<typeof client>;
   let adminId: string;
   let familyId: string;
   let familyRecipeId: string;
+  let familyIngredientId: string;
   const prompts: StructuredOutputRequest[] = [];
   let answer: () => Promise<{ data: unknown; requestId: string | null }>;
   const stamp = Date.now();
@@ -116,7 +117,6 @@ describe('Suggest Guidance for a Catalog Recipe (integration)', () => {
       'M',
     );
     member = client(app, memberCookie, '/api/admin/recipes');
-    memberSettings = client(app, memberCookie, '/api/settings');
 
     familyId = crypto.randomUUID();
     await database.insert(family).values({
@@ -130,6 +130,18 @@ describe('Suggest Guidance for a Catalog Recipe (integration)', () => {
       familyId,
       title: `Family dish ${stamp}`,
       servings: 2,
+    });
+    familyIngredientId = crypto.randomUUID();
+    const [sample] = await database
+      .select()
+      .from(ingredients)
+      .where(eq(ingredients.id, flour));
+    await database.insert(ingredients).values({
+      ...sample,
+      id: familyIngredientId,
+      ownerFamilyId: familyId,
+      name: `Family flour ${stamp}`,
+      normalizedName: `family flour ${stamp}`,
     });
     await database.insert(eatingMoments).values(
       (
@@ -147,6 +159,9 @@ describe('Suggest Guidance for a Catalog Recipe (integration)', () => {
     );
   });
   afterAll(async () => {
+    await database
+      .delete(ingredients)
+      .where(eq(ingredients.id, familyIngredientId));
     await database.delete(recipes).where(ilike(recipes.title, `%${stamp}%`));
     await database.delete(family).where(eq(family.id, familyId));
     await database
@@ -228,6 +243,7 @@ describe('Suggest Guidance for a Catalog Recipe (integration)', () => {
         idea({ label: 'Family dish', recipeId: familyRecipeId }),
         idea({ label: 'Itself', recipeId: self.id }),
         idea({ label: 'Flour', ingredientId: flour }),
+        idea({ label: 'Family flour', ingredientId: familyIngredientId }),
       ],
     });
     const res = await suggest(
@@ -239,8 +255,10 @@ describe('Suggest Guidance for a Catalog Recipe (integration)', () => {
       ['Family dish', null],
       ['Itself', null],
       ['Flour', null],
+      ['Family flour', null],
     ]);
     expect(pairings[3].linkedIngredientId).toBe(flour);
+    expect(pairings[4].linkedIngredientId).toBeNull();
     expect(prompts[0].prompt).toContain(cat.id);
     expect(prompts[0].prompt).not.toContain(familyRecipeId);
     expect(prompts[0].prompt).not.toContain(self.id);
@@ -248,9 +266,13 @@ describe('Suggest Guidance for a Catalog Recipe (integration)', () => {
 
   it('considers no Allergies, even the Admin’s own', async () => {
     await adminSettings.put('/allergies', { allergenIds: [MILK] }).expect(200);
-    await suggest(request()).expect(200);
-    expect(prompts[0].prompt).toContain('No Allergies are known.');
-    expect(prompts[0].prompt).not.toContain('Allergies to');
+    try {
+      await suggest(request()).expect(200);
+      expect(prompts[0].prompt).toContain('No Allergies are known.');
+      expect(prompts[0].prompt).not.toContain('Allergies to');
+    } finally {
+      await adminSettings.put('/allergies', { allergenIds: [] }).expect(200);
+    }
   });
 
   it("writes in the Catalog's base language, whatever the Admin's own Preferences", async () => {
@@ -270,7 +292,6 @@ describe('Suggest Guidance for a Catalog Recipe (integration)', () => {
       .post('/suggest-guidance', request())
       .expect(401);
     expect(prompts).toHaveLength(0);
-    await memberSettings.get('/allergies');
   });
 
   it('is never counted: more requests than the Guidance Cap all succeed and leave no usage', async () => {

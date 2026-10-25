@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, isNull } from 'drizzle-orm';
 import { SHARED_ONLY } from '../catalog/catalog-scope';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import {
@@ -12,9 +11,7 @@ import type { IngredientCatalog } from '../ingredients/ingredient-catalog';
 import {
   cuisines,
   eatingMomentPolarity,
-  eatingMoments,
   methods,
-  recipes,
   pairingKind,
   pairingPrinciple,
 } from '../database/schema';
@@ -40,6 +37,8 @@ import {
 } from './guidance-suggestion.schemas';
 import {
   NO_CONTEXT,
+  catalogEatingMoments,
+  catalogSuggestionContext,
   memberSuggestionContext,
   type SuggestionContext,
 } from './guidance-suggestion-context';
@@ -148,11 +147,7 @@ export class GuidanceSuggestionService {
         this.database.select().from(cuisines),
         this.database.select().from(methods),
         empty.includes('eatingMoments')
-          ? this.database
-              .select({ id: eatingMoments.id, name: eatingMoments.name })
-              .from(eatingMoments)
-              .where(isNull(eatingMoments.archivedAt))
-              .orderBy(asc(eatingMoments.sortOrder), asc(eatingMoments.id))
+          ? catalogEatingMoments(this.database)
           : [],
       ]);
       return {
@@ -160,18 +155,11 @@ export class GuidanceSuggestionService {
         cuisines: cuisineRows,
         methods: methodRows,
         moments: momentRows,
-        context: async () => {
-          const rows = await this.database
-            .select({ id: recipes.id, title: recipes.title })
-            .from(recipes)
-            .where(and(isNull(recipes.archivedAt), isNull(recipes.familyId)));
-          return {
+        context: () =>
+          catalogSuggestionContext(this.database, {
             catalog,
-            linkableRecipes: rows.filter((r) => r.id !== body.recipeId),
-            avoidAllergens: [],
-            unsafeLinkIds: new Set<string>(),
-          };
-        },
+            recipeId: body.recipeId,
+          }),
         cap: null,
       };
     });

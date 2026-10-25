@@ -1,8 +1,9 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { Executor } from '../database/database.types';
 import {
   allergens,
+  eatingMoments,
   ingredientAllergens,
   recipeIngredientLines,
   recipes,
@@ -137,4 +138,34 @@ export async function memberSuggestionContext(
     avoidAllergens,
     unsafeLinkIds,
   };
+}
+
+/** The context of an Admin (Catalog mode): Catalog Ingredients and Recipes only, no Allergens to avoid. */
+export async function catalogSuggestionContext(
+  executor: Executor,
+  input: {
+    catalog: IngredientCatalog;
+    /** The Catalog Recipe being edited, left out of the links. */
+    recipeId?: string;
+  },
+): Promise<SuggestionContext> {
+  const rows = await executor
+    .select({ id: recipes.id, title: recipes.title })
+    .from(recipes)
+    .where(and(isNull(recipes.archivedAt), isNull(recipes.familyId)));
+  return {
+    catalog: input.catalog,
+    linkableRecipes: rows.filter((r) => r.id !== input.recipeId),
+    avoidAllergens: [],
+    unsafeLinkIds: new Set<string>(),
+  };
+}
+
+/** The unarchived Eating Moments an Admin's Eating Moments suggestion may name, in sort order. */
+export function catalogEatingMoments(executor: Executor) {
+  return executor
+    .select({ id: eatingMoments.id, name: eatingMoments.name })
+    .from(eatingMoments)
+    .where(isNull(eatingMoments.archivedAt))
+    .orderBy(asc(eatingMoments.sortOrder), asc(eatingMoments.id));
 }

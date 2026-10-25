@@ -376,9 +376,47 @@ describe('RecipeEditor Suggest Guidance', () => {
   });
 
   it('does not fill a field that already has content', async () => {
-    open({ ...base, nutritionNote: 'Mine' });
-    await screen.findByRole('button', { name: 'Suggest Guidance' });
+    const { calls } = open(
+      { ...base, nutritionNote: 'Mine' },
+      {
+        [suggestRoute]: () =>
+          Response.json({
+            guidance: {
+              pairings: [
+                {
+                  kind: 'food',
+                  label: 'Crusty bread',
+                  reason: 'Soaks it up',
+                  principle: null,
+                  linkedIngredientId: null,
+                  linkedRecipeId: null,
+                  linkedIngredientName: null,
+                  linkedRecipeTitle: null,
+                },
+              ],
+            },
+            noSuggestions: [],
+          }),
+      },
+    );
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Suggest Guidance' }),
+    );
+
+    expect(await screen.findByDisplayValue('Crusty bread')).toBeVisible();
+    expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+      guidance: { nutritionNote: 'Mine' },
+    });
     expect(screen.getByLabelText('Nutrition Note')).toHaveValue('Mine');
+    // Only the Pairings got a mark; the Nutrition Note was left alone.
+    expect(screen.getAllByText('Suggested')).toHaveLength(1);
+    expect(
+      within(screen.getByRole('group', { name: /Nutrition Note/ })).queryByText(
+        'Suggested',
+      ),
+    ).toBeNull();
   });
 
   it('is not offered on the translations screen', async () => {

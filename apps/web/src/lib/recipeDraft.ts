@@ -123,15 +123,24 @@ const MAX_TIMER_SECONDS = 1_000_000;
 const isMinutes = (text: string) =>
   text.trim() === '' ||
   (/^\d{1,6}$/.test(text.trim()) && Number(text.trim()) <= MAX_MINUTES);
+/** A quantity within bounds, or null when the text is not one. */
+const validQuantity = (text: string): number | null => {
+  const value = decimal(text);
+  return Number.isFinite(value) && value >= 0.001 && value <= MAX_QUANTITY
+    ? value
+    : null;
+};
 const isQuantity = (text: string) => {
   if (text.trim() === '') return true;
-  const value = decimal(text);
+  const value = validQuantity(text);
   return (
-    Number.isFinite(value) &&
-    value >= 0.001 &&
-    value <= MAX_QUANTITY &&
-    Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6
+    value !== null && Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6
   );
+};
+/** Whole Servings from 1 to 1000, or null when the text is not that. */
+const validServings = (text: string): number | null => {
+  const value = Number(text.trim());
+  return Number.isInteger(value) && value >= 1 && value <= 1000 ? value : null;
 };
 const isTimer = (text: string) => {
   if (text.trim() === '') return true;
@@ -141,7 +150,6 @@ const isTimer = (text: string) => {
 };
 
 export function problemsOf(draft: RecipeDraft): DraftProblems {
-  const servings = Number(draft.servings.trim());
   const lines: Record<number, boolean> = {};
   for (const line of draft.lines) {
     if (!isQuantity(line.quantity)) lines[line.key] = true;
@@ -153,11 +161,7 @@ export function problemsOf(draft: RecipeDraft): DraftProblems {
   }
   return {
     title: draft.title.trim() === '',
-    servings: !(
-      Number.isInteger(servings) &&
-      servings >= 1 &&
-      servings <= 1000
-    ),
+    servings: validServings(draft.servings) === null,
     prepMinutes: !isMinutes(draft.prepMinutes),
     cookMinutes: !isMinutes(draft.cookMinutes),
     lines,
@@ -225,18 +229,16 @@ export function moved<T>(items: T[], index: number, offset: -1 | 1): T[] {
 export function suggestionRecipeOf(
   draft: RecipeDraft,
 ): SuggestCatalogGuidanceRequest['recipe'] {
-  const servings = Number(draft.servings.trim());
+  const servings = validServings(draft.servings);
   const quantityOf = (text: string) => {
-    const value = decimal(text);
-    return text.trim() !== '' && value >= 0.001 && value <= MAX_QUANTITY
+    const value = validQuantity(text);
+    return text.trim() !== '' && value !== null
       ? Math.round(value * 1000) / 1000
       : null;
   };
   return {
     ...(draft.title.trim() ? { title: draft.title.trim() } : {}),
-    ...(Number.isInteger(servings) && servings >= 1 && servings <= 1000
-      ? { servings }
-      : {}),
+    ...(servings === null ? {} : { servings }),
     prepMinutes: null,
     cookMinutes: null,
     difficulty: null,
