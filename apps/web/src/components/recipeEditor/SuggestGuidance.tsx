@@ -8,11 +8,10 @@ import {
 } from '@pocket-pantry/ui';
 import { useToast } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState } from 'react';
-import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
-import { dateLocale } from '../../lib/pantry';
+import { capMessage } from '../../lib/capMessage';
 import type { GuidanceInput } from '../../lib/adminRecipes';
 import type { GuidanceDraft } from '../../lib/guidanceDraft';
 import {
@@ -31,33 +30,6 @@ const SUGGEST_ERRORS: Record<string, string> = {
   'scan.provider_incomplete': 'errors:guidance.suggest_failed',
   'scan.result_invalid': 'errors:guidance.suggest_failed',
 };
-
-/**
- * The Guidance Cap message names when Suggest Guidance is available again: the API sends the
- * next UTC midnight as `resetsAt`, shown here in the Member's own time. A missing or unreadable
- * one says "tomorrow", and a missing count leaves the number out.
- */
-export function capMessage(
-  t: TFunction,
-  language: string,
-  params: Record<string, unknown>,
-): string {
-  const cap = Number(params.cap);
-  const count = Number.isInteger(cap) && cap > 0 ? cap : undefined;
-  const resetsAt = Date.parse(
-    typeof params.resetsAt === 'string' ? params.resetsAt : '',
-  );
-  if (count === undefined) return t('errors:guidance.cap_reached_unknown');
-  if (Number.isNaN(resetsAt)) {
-    return t('errors:guidance.cap_reached_no_time', { count });
-  }
-  const when = new Intl.DateTimeFormat(dateLocale(language), {
-    weekday: 'long',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(resetsAt);
-  return t('errors:guidance.cap_reached', { count, when });
-}
 
 /** What `GuidanceFields` needs from `useGuidanceSuggestion` to show the button, the marks and the messages. */
 export type GuidanceSuggestionControl = {
@@ -134,9 +106,12 @@ export function useGuidanceSuggestion({
           error instanceof ApiError &&
           error.code === 'guidance.cap_reached'
         ) {
-          toast.show(capMessage(t, i18n.language, error.params), {
-            polite: true,
-          });
+          toast.show(
+            capMessage(t, i18n.language, error.params, 'errors:guidance'),
+            {
+              polite: true,
+            },
+          );
           return;
         }
         const key =

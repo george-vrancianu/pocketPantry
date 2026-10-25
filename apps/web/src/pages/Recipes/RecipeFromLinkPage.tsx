@@ -7,7 +7,6 @@ import {
   TextField,
   Typography,
 } from '@pocket-pantry/ui';
-import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -22,7 +21,7 @@ import {
   useReadRecipeLink,
   type ReadingLanguage,
 } from '../../lib/linkRecipe';
-import { dateLocale } from '../../lib/pantry';
+import { capMessage } from '../../lib/capMessage';
 import type { NewRecipeState } from './FamilyRecipePages';
 
 /** The reading's AI failures arrive as Scan codes; their own copy talks about photos, so this step words them for links. */
@@ -33,32 +32,6 @@ const READING_ERRORS: Record<string, string> = {
   'scan.provider_incomplete': 'errors:link.reading_failed',
   'scan.result_invalid': 'errors:link.reading_failed',
 };
-
-/**
- * The Link Cap message names when the reads start again: the API sends the next UTC midnight
- * as `resetsAt`, shown here in the Member's own time. A missing or unreadable one says "tomorrow", and a missing count leaves the number out.
- */
-function capMessage(
-  t: TFunction,
-  language: string,
-  params: Record<string, unknown>,
-): string {
-  const cap = Number(params.cap);
-  const count = Number.isInteger(cap) && cap > 0 ? cap : undefined;
-  const resetsAt = Date.parse(
-    typeof params.resetsAt === 'string' ? params.resetsAt : '',
-  );
-  if (count === undefined) return t('errors:link.cap_reached_unknown');
-  if (Number.isNaN(resetsAt)) {
-    return t('errors:link.cap_reached_no_time', { count });
-  }
-  const when = new Intl.DateTimeFormat(dateLocale(language), {
-    weekday: 'long',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(resetsAt);
-  return t('errors:link.cap_reached', { count, when });
-}
 
 /**
  * "From a link": the Member gives the address of a recipe page and it opens the New Recipe
@@ -186,7 +159,7 @@ export function RecipeFromLinkPage() {
   const errorMessage = () => {
     if (read.error instanceof ApiError) {
       if (read.error.code === 'link.cap_reached') {
-        return capMessage(t, i18n.language, read.error.params);
+        return capMessage(t, i18n.language, read.error.params, 'errors:link');
       }
       const reading = READING_ERRORS[read.error.code];
       // Pasted text has no page or link to blame.

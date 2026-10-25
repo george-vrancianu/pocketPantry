@@ -1744,7 +1744,7 @@ describe('Suggest Guidance', () => {
         minute: '2-digit',
       }).format(Date.parse(resetsAt));
       const toast = await screen.findByText(
-        `You have used all 20 Suggest Guidance requests for today. They reset on ${when}.`,
+        `You have used all 20 Suggest Guidance requests for today. Your requests reset on ${when}.`,
       );
       expect(toast.closest('[role="status"]')).not.toBeNull();
       expect(noteField()).toHaveValue('');

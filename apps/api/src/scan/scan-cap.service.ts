@@ -76,7 +76,7 @@ export class ScanCapService {
       })
       .returning({ count: scanUsage.count });
     if (rows.length === 0) {
-      // The Voice Cap (the button waits it out) and the Link Cap (the message names the time) say when they lift.
+      // The Voice Cap (the button waits it out), the Link Cap and the Guidance Cap (the message names the time) say when they lift.
       throw capReached(kind, cap, day);
     }
     return day;
