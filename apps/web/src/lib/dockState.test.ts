@@ -20,6 +20,11 @@ describe('dockStateFor', () => {
     expect(dockStateFor('/pantry/abc').activeKey).toBe('pantry');
   });
 
+  it("hides the dock on a Catalog Recipe's preview, where its action bar takes its place", () => {
+    expect(dockStateFor('/recipes/explore/abc').visible).toBe(false);
+    expect(dockStateFor('/recipes/explore').visible).toBe(true);
+  });
+
   it('hides the dock on the scan screen, where the camera is full screen', () => {
     expect(dockStateFor('/scan').visible).toBe(false);
   });

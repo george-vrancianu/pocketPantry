@@ -448,6 +448,8 @@ export type RecipeVariantItem = {
   cuisine: NamedRef | null;
   method: NamedRef | null;
   owner: RecipeOwner;
+  /** The Family's live copy of a Catalog Variant, else null. */
+  familyCopyId: string | null;
 };
 
 /** One Allergen a Recipe is known to contain, with the lines it comes from. */
@@ -531,6 +533,8 @@ export type RecipeDetail = ResolvedRecipe & {
   base: { id: string; title: string; archived: boolean } | null;
   /** The live Variants of a Base Recipe, ordered by title; empty on a Variant. */
   variants: RecipeVariantItem[];
+  /** The Family's live copy of a Catalog Recipe, else null (always null on a Family Recipe). */
+  familyCopyId: string | null;
   /** Ingredients that differ from the base; null on a Base Recipe. */
   diff: RecipeDiff | null;
   /** What the Recipe is known to contain, worked out from its own lines. */

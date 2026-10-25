@@ -20,6 +20,7 @@ import {
   ArrowLeftRight,
   Users,
   GitBranch,
+  Eye,
   BatteryLow,
   Mic,
   MicOff,
@@ -310,6 +311,7 @@ export const ArrowLeftIcon = lucide(ArrowLeft);
 export const SwapIcon = lucide(ArrowLeftRight);
 export const PeopleIcon = lucide(Users);
 export const BranchIcon = lucide(GitBranch);
+export const EyeIcon = lucide(Eye);
 export const RunningLowIcon = lucide(BatteryLow);
 
 /** Voice Notes: the voice button, the intro sheet hero and its Allow button. */

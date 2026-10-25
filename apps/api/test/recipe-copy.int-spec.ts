@@ -433,4 +433,20 @@ describe('Add to Family (integration)', () => {
     await ana.post(`/${id}/archive`).expect(200);
     expect((await find(ana)).familyCopyId).toBeNull();
   });
+
+  it('puts familyCopyId on the Catalog Recipe detail, preview Variants included', async () => {
+    const src = await makeBase();
+    const detail = async (as: ReturnType<typeof client>) =>
+      (await as.get(`/${src.id}?locale=en`).expect(200)).body as {
+        familyCopyId: string | null;
+      };
+    expect((await detail(ana)).familyCopyId).toBeNull();
+    const id = await copyId(ana, src.id);
+    expect((await detail(ana)).familyCopyId).toBe(id);
+    expect((await detail(ben)).familyCopyId).toBeNull();
+    const own = (await ana.get(`/${id}?locale=en`).expect(200)).body as {
+      familyCopyId: string | null;
+    };
+    expect(own.familyCopyId).toBeNull();
+  });
 });

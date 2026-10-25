@@ -77,6 +77,8 @@ export type RecipeVariantItem = {
   cuisine: NamedRef | null;
   method: NamedRef | null;
   owner: RecipeOwner;
+  /** The Family's live copy of a Catalog Variant, else null. */
+  familyCopyId: string | null;
 };
 
 export type RecipeDetailLine = {
@@ -193,6 +195,8 @@ export type RecipeDetail = {
   tips: RecipeDetailTip[];
   base: { id: string; title: string; archived: boolean } | null;
   variants: RecipeVariantItem[];
+  /** The Family's live copy of a Catalog Recipe, else null. */
+  familyCopyId: string | null;
   diff: RecipeDiff | null;
   guidance: RecipeGuidance;
   allergens: RecipeAllergens;

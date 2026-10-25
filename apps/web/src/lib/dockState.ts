@@ -8,10 +8,13 @@ const DOCK_SECTIONS = ['shopping', 'pantry', 'recipes'];
 
 /** Handoff section 3: no dock on /customise or anywhere under /scan, active item by section. */
 export function dockStateFor(pathname: string): DockState {
-  const [, section = ''] = pathname.split('/');
+  const [, section = '', second = '', third] = pathname.split('/');
+  // A Catalog Recipe's preview has its own bottom bar in the Dock's place.
+  const preview =
+    section === 'recipes' && second === 'explore' && third !== undefined;
   return {
     // The camera is full-screen and Review has its own sticky action bar: neither shows the dock.
-    visible: section !== 'customise' && section !== 'scan',
+    visible: section !== 'customise' && section !== 'scan' && !preview,
     activeKey:
       section === ''
         ? 'home'
