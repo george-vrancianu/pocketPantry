@@ -16,7 +16,7 @@ import type {
 } from '../../lib/familyRecipes';
 import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
 import { stubRowLayout } from '../../test/layout';
-import { stubViewport } from '../../test/viewport';
+import { stubMatchMedia, stubViewport } from '../../test/viewport';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { useRecipe } from '../../lib/recipes';
 import {
@@ -247,6 +247,15 @@ const newRecipeWith = (state: NewRecipeState) => ({
   pathname: '/recipes/new',
   state,
 });
+
+const guidanceToggle = () =>
+  screen.getByRole('button', { name: /^Pairings, nutrition & moments/ });
+const openGuidance = async (user: ReturnType<typeof userEvent.setup>) => {
+  const toggle = await screen.findByRole('button', {
+    name: /^Pairings, nutrition & moments/,
+  });
+  if (toggle.getAttribute('aria-expanded') !== 'true') await user.click(toggle);
+};
 
 describe('NewRecipePage with a supplied draft', () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -764,12 +773,11 @@ describe('NewRecipePage', () => {
     }
   });
 
-  it('words the Guidance hint and the editor hint for a Recipe, not a Variant', async () => {
+  it('words the Guidance card and the editor hint for a Recipe, not a Variant', async () => {
     setup('/recipes/new', {});
     await screen.findByLabelText(/^Title/);
-    expect(
-      screen.getByText(/Pairings, a Nutrition Note and Eating Moments\./),
-    ).not.toHaveTextContent(/Variant/);
+    expect(guidanceToggle()).toHaveTextContent('Optional');
+    expect(guidanceToggle()).not.toHaveTextContent(/Variant/);
     expect(
       screen.getByText(
         "Kept as your draft until you save it as one of your family's Recipes.",
@@ -805,6 +813,17 @@ describe('NewRecipePage', () => {
 
 describe('NewVariantPage', () => {
   afterEach(() => vi.unstubAllGlobals());
+
+  it('does not move focus to the Guidance row when the draft arrives fully filled', async () => {
+    setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(draft),
+    });
+    await screen.findByLabelText(/^Title/);
+    expect(
+      screen.queryByRole('button', { name: 'Suggest' }),
+    ).not.toBeInTheDocument();
+    expect(guidanceToggle()).not.toHaveFocus();
+  });
 
   it('prefills from the draft', async () => {
     const user = userEvent.setup({ delay: null });
@@ -947,20 +966,19 @@ describe('NewVariantPage', () => {
       'GET /api/recipes/x/variant-draft': () => Response.json(draft),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
+    await openGuidance(user);
     const note = await screen.findByLabelText('Nutrition Note');
     expect(note).toHaveValue('Rich in protein');
-    expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
-      'Orange juice',
-    );
+    // The copied Pairing is a row: label, then "kind · reason".
+    expect(screen.getByText('Orange juice')).toBeVisible();
     expect(await screen.findByLabelText('Reason for Breakfast')).toHaveValue(
       'Quick start',
     );
-    // Breakfast is used already; only Lunch is left to add.
-    const pick = screen.getByLabelText('Add an Eating Moment');
+    // Breakfast is Good for already; Lunch is one tap away.
     expect(
-      within(pick).queryByRole('option', { name: 'Breakfast' }),
-    ).toBeNull();
-    await user.selectOptions(pick, 'em2');
+      screen.getByRole('button', { name: 'Breakfast: Good for' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: 'Lunch: not set' }));
     expect(await screen.findByLabelText('Reason for Lunch')).toBeVisible();
 
     await user.clear(note);
@@ -1023,9 +1041,16 @@ describe('NewVariantPage', () => {
           },
         }),
     });
+    const user = userEvent.setup({ delay: null });
+    await openGuidance(user);
+    await user.click(
+      await screen.findByRole('button', { name: 'Edit Orange juice' }),
+    );
     expect(
       await screen.findByText('Linked Ingredient: Orange'),
     ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    await user.click(screen.getByRole('button', { name: 'Edit Toast' }));
     expect(
       await screen.findByRole('option', { name: 'Buttered toast' }),
     ).toBeInTheDocument();
@@ -1741,8 +1766,8 @@ describe('Suggest Guidance', () => {
     Response.json({ guidance: { nutritionNote: NOTE }, noSuggestions: [] });
   const pairingsGroup = () => screen.getByRole('group', { name: /Pairings/ });
   const noteField = () => screen.getByLabelText('Nutrition Note');
-  const suggestButton = () =>
-    screen.getByRole('button', { name: 'Suggest Guidance' });
+  // On the row of the Guidance card (New and Variant).
+  const suggestButton = () => screen.getByRole('button', { name: 'Suggest' });
   const noNote: FamilyRecipeDraft = {
     ...draft,
     guidance: { ...draft.guidance, nutritionNote: null },
@@ -1760,9 +1785,7 @@ describe('Suggest Guidance', () => {
     await user.click(suggestButton());
 
     await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
-    expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
-      'Fresh berries',
-    );
+    expect(screen.getByText('Fresh berries')).toBeVisible();
     const asked = calls.find((c) => c.key === suggestRoute)?.body;
     expect(asked).toMatchObject({
       recipe: { title: 'Gran stew', servings: 4 },
@@ -1773,22 +1796,23 @@ describe('Suggest Guidance', () => {
         'Suggested',
       ),
     ).toBeVisible();
-    // The Eating Moment is a row marked Suggested too, with its polarity and reason.
+    // The Eating Moment is a chip marked Avoid, with its reason and a Suggested mark.
     const moments = within(
       screen.getByRole('group', { name: /Eating Moments/ }),
     );
     expect(moments.getByText('Suggested')).toBeVisible();
-    expect(moments.getByLabelText('Good for or Avoid: Breakfast')).toHaveValue(
-      'avoid',
-    );
+    expect(
+      moments.getByRole('button', { name: 'Breakfast: Avoid' }),
+    ).toBeVisible();
     expect(moments.getByLabelText('Reason for Breakfast')).toHaveValue(
       moment.reason,
     );
     // Nothing is stored by suggesting.
     expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(false);
-    // Every covered field is filled now: the button says why it is off.
-    expect(suggestButton()).toBeDisabled();
-    expect(suggestButton()).toHaveAccessibleDescription(/already filled/);
+    // Every covered field is filled now: nothing is left to suggest, so the row drops the button.
+    expect(
+      screen.queryByRole('button', { name: 'Suggest' }),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
@@ -1835,10 +1859,7 @@ describe('Suggest Guidance', () => {
 
     await user.type(screen.getByLabelText('Reason for Breakfast'), '!');
     expect(screen.getAllByText('Suggested')).toHaveLength(1);
-    await user.selectOptions(
-      screen.getByLabelText('Good for or Avoid: Lunch'),
-      'avoid',
-    );
+    await user.click(screen.getByRole('button', { name: 'Lunch: Good for' }));
     expect(screen.queryByText('Suggested')).not.toBeInTheDocument();
   });
 
@@ -1868,18 +1889,18 @@ describe('Suggest Guidance', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('is disabled with a hint when the Nutrition Note is filled, and never asks', async () => {
+  it('has no Suggest on the row when every field is filled, and never asks', async () => {
     const calls = setup('/recipes/x/variant/new', {
       'GET /api/recipes/x/variant-draft': () => Response.json(draft),
       'GET /api/recipes/x': () => Response.json(sourceDetail),
       [suggestRoute]: proposal,
     });
-    expect(await screen.findByLabelText('Nutrition Note')).toHaveValue(
-      'Rich in protein',
-    );
-    expect(suggestButton()).toBeDisabled();
-    expect(suggestButton()).toHaveAccessibleDescription(/already filled/);
-    fireEvent.click(suggestButton());
+    expect(
+      await screen.findByRole('button', { name: /^Pairings, nutrition/ }),
+    ).toHaveTextContent('3 set');
+    expect(
+      screen.queryByRole('button', { name: 'Suggest' }),
+    ).not.toBeInTheDocument();
     expect(calls.some((c) => c.key === suggestRoute)).toBe(false);
   });
 
@@ -1944,12 +1965,12 @@ describe('Suggest Guidance', () => {
     await user.type(noteField(), 'Mine');
     release();
 
-    await screen.findByRole('button', { name: 'Suggest Guidance' });
+    await screen.findByRole('button', { name: 'Suggest' });
     expect(noteField()).toHaveValue('Mine');
     expect(screen.queryByText('Suggested')).not.toBeInTheDocument();
   });
 
-  it('says "No suggestions for ..." in a status when nothing was worth proposing', async () => {
+  it('says "Nothing to suggest" in a status when nothing was worth proposing', async () => {
     const user = userEvent.setup({ delay: null });
     setup('/recipes/new', {
       [suggestRoute]: () =>
@@ -1958,19 +1979,19 @@ describe('Suggest Guidance', () => {
     await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
     await user.click(suggestButton());
 
-    await screen.findByText('No suggestions for Nutrition Note.');
+    await screen.findByText('Nothing to suggest');
     expect(
       screen
         .getAllByRole('status')
-        .some((s) => s.textContent === 'No suggestions for Nutrition Note.'),
+        .some((s) => s.textContent === 'Nothing to suggest'),
     ).toBe(true);
     expect(noteField()).toHaveValue('');
     // Typing in the field makes the message redundant.
     await user.type(noteField(), 'x');
-    expect(screen.queryByText(/No suggestions for/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Nothing to suggest')).not.toBeInTheDocument();
   });
 
-  it('says "No suggestions for Eating Moments" in a status when none was worth proposing', async () => {
+  it('says "Nothing to suggest" for Eating Moments in a status when none was worth proposing', async () => {
     const user = userEvent.setup({ delay: null });
     setup('/recipes/new', {
       [suggestRoute]: () =>
@@ -1979,13 +2000,12 @@ describe('Suggest Guidance', () => {
     await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
     await user.click(suggestButton());
 
-    await screen.findByText('No suggestions for Eating Moments.');
+    await screen.findByText('Nothing to suggest');
     expect(
-      screen
-        .getAllByRole('status')
-        .some((s) => s.textContent === 'No suggestions for Eating Moments.'),
-    ).toBe(true);
-    expect(screen.getByText('No Eating Moments yet.')).toBeVisible();
+      within(screen.getByRole('group', { name: /Eating Moments/ })).getByText(
+        'Nothing to suggest',
+      ),
+    ).toBeVisible();
   });
 
   it('shows a polite error and leaves the form untouched when suggesting fails', async () => {
@@ -2075,7 +2095,8 @@ describe('Suggest Guidance', () => {
     });
     await openTab(user, 'Steps');
 
-    await user.click(suggestButton());
+    // Edit keeps its own Guidance panel and button (the one Save comes later).
+    await user.click(screen.getByRole('button', { name: 'Suggest Guidance' }));
 
     await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
     expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
@@ -2121,14 +2142,17 @@ describe('Suggest Guidance', () => {
       });
       await user.click(suggestButton());
 
-      await screen.findByText('Linked Ingredient: Butter');
+      expect(await screen.findByText('Butter')).toBeVisible();
       expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(2);
+      await user.click(screen.getByRole('button', { name: 'Edit Butter' }));
+      expect(screen.getByText('Linked Ingredient: Butter')).toBeVisible();
+      await user.click(screen.getByRole('button', { name: 'Done' }));
+      await user.click(screen.getByRole('button', { name: 'Edit Tea' }));
       expect(
         screen.getByLabelText('Linked Recipe of Pairing 2'),
       ).toHaveDisplayValue('Iced tea');
-      expect(
-        screen.getByText('No suggestions for Nutrition Note.'),
-      ).toBeVisible();
+      await user.click(screen.getByRole('button', { name: 'Done' }));
+      expect(screen.getByText('Nothing to suggest')).toBeVisible();
 
       await user.click(screen.getByRole('button', { name: 'Save' }));
       await vi.waitFor(() =>
@@ -2146,14 +2170,14 @@ describe('Suggest Guidance', () => {
       expect(JSON.stringify(body)).not.toMatch(/suggested|linkedRecipeTitle/i);
     });
 
-    it('says "No suggestions for Pairings." when the server has none', async () => {
+    it('says "Nothing to suggest" for Pairings when the server has none', async () => {
       const { user } = await titleAndSuggest({
         [suggestRoute]: () =>
           Response.json({ guidance: {}, noSuggestions: ['pairings'] }),
       });
       await user.click(suggestButton());
 
-      await screen.findByText('No suggestions for Pairings.');
+      await screen.findByText('Nothing to suggest');
       expect(
         screen.queryByLabelText('Label of Pairing 1'),
       ).not.toBeInTheDocument();
@@ -2163,6 +2187,7 @@ describe('Suggest Guidance', () => {
       const { user, calls } = await titleAndSuggest({
         [suggestRoute]: proposal,
       });
+      await openGuidance(user);
       await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
       expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue('');
       expect(suggestButton()).toBeEnabled();
@@ -2170,9 +2195,7 @@ describe('Suggest Guidance', () => {
       await user.click(suggestButton());
 
       await vi.waitFor(() =>
-        expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
-          'Fresh berries',
-        ),
+        expect(screen.getByText('Fresh berries')).toBeVisible(),
       );
       expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
         guidance: { pairings: [] },
@@ -2191,9 +2214,12 @@ describe('Suggest Guidance', () => {
           }),
       });
       await user.click(suggestButton());
-      await screen.findByLabelText('Label of Pairing 2');
+      await screen.findByText('Toast');
       expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(2);
 
+      await user.click(
+        screen.getByRole('button', { name: 'Edit Fresh berries' }),
+      );
       await user.type(screen.getByLabelText('Label of Pairing 1'), '!');
       expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(1);
     });
@@ -2202,6 +2228,7 @@ describe('Suggest Guidance', () => {
       const { user, calls } = await titleAndSuggest({
         [suggestRoute]: noteOnly,
       });
+      await openGuidance(user);
       await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
       await user.type(screen.getByLabelText('Label of Pairing 1'), 'Half way');
 
@@ -2224,6 +2251,7 @@ describe('Suggest Guidance', () => {
 
     it('keeps a Pairing the Member has filled in: it is not asked for again', async () => {
       const { user } = await titleAndSuggest({ [suggestRoute]: proposal });
+      await openGuidance(user);
       await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
       await user.type(screen.getByLabelText('Label of Pairing 1'), 'Mine');
       await user.type(screen.getByLabelText('Reason for Pairing 1'), 'Because');
@@ -2314,7 +2342,7 @@ describe('Recipe editor shell', () => {
       },
     });
     await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
-    await user.click(screen.getByRole('button', { name: 'Suggest Guidance' }));
+    await user.click(screen.getByRole('button', { name: 'Suggest' }));
     await screen.findByRole('button', { name: 'Suggesting…' });
 
     // Away while the request is in flight, and back after it lands.
@@ -2400,7 +2428,9 @@ describe('Recipe editor shell', () => {
     const user = userEvent.setup({ delay: null });
     setup('/recipes/x/variant/new', variantRoutes);
     expect(await screen.findByLabelText(/^Title/)).toBeVisible();
-    expect(screen.getByRole('region', { name: 'Guidance' })).toBeVisible();
+    expect(
+      screen.getByRole('region', { name: 'Pairings, nutrition & moments' }),
+    ).toBeVisible();
     // The other tabs stay mounted but hidden.
     expect(screen.getByLabelText('Quantity of Egg')).not.toBeVisible();
     expect(screen.queryByRole('textbox', { name: 'Step 1' })).toBeNull();
@@ -3515,5 +3545,183 @@ describe('Unmatched line: Add to your catalog on a phone (#598)', () => {
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
       ).toMatchObject({ lines: [{ ingredientId: 'k1' }] }),
     );
+  });
+});
+
+describe('Guidance card (#594)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const suggestRoute = 'POST /api/recipes/suggest-guidance';
+
+  it('starts collapsed and counts what is set in its subline', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    await screen.findByLabelText(/^Title/);
+    expect(guidanceToggle()).toHaveAttribute('aria-expanded', 'false');
+    expect(guidanceToggle()).toHaveTextContent('Optional');
+    expect(screen.getByLabelText('Nutrition Note')).not.toBeVisible();
+
+    await openGuidance(user);
+    expect(guidanceToggle()).toHaveAttribute('aria-expanded', 'true');
+    await user.type(screen.getByLabelText('Nutrition Note'), 'Hearty');
+    expect(guidanceToggle()).toHaveTextContent('1 set · optional');
+    await user.click(
+      screen.getByRole('button', { name: 'Breakfast: not set' }),
+    );
+    expect(guidanceToggle()).toHaveTextContent('2 set · optional');
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.type(screen.getByLabelText('Label of Pairing 1'), 'Toast');
+    await user.type(screen.getByLabelText('Reason for Pairing 1'), 'Crisp');
+    expect(guidanceToggle()).toHaveTextContent('3 set · optional');
+    await user.clear(screen.getByLabelText('Nutrition Note'));
+    expect(guidanceToggle()).toHaveTextContent('2 set · optional');
+  });
+
+  it('says Guidance is never read from the page on a Recipe from a link', async () => {
+    setup(
+      newRecipeWith({
+        ...sourced,
+        sourceLink: 'https://www.example.com/tortilla',
+      }),
+      {},
+    );
+    await screen.findByLabelText(/^Title/);
+    expect(guidanceToggle()).toHaveTextContent(
+      'Optional · never read from the page',
+    );
+  });
+
+  it('asks from the collapsed row, which expands the card and fills only what is empty', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json({
+          guidance: { nutritionNote: 'Light.' },
+          noSuggestions: ['pairings', 'eatingMoments'],
+        }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    expect(guidanceToggle()).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(screen.getByRole('button', { name: 'Suggest' }));
+
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Nutrition Note')).toHaveValue('Light.'),
+    );
+    expect(guidanceToggle()).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getAllByText('Nothing to suggest')).toHaveLength(2);
+    expect(guidanceToggle()).toHaveTextContent('1 set · optional');
+  });
+
+  it('cycles an Eating Moment chip Good for, Avoid, cleared, and sends it on save', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', {
+      'POST /api/recipe-drafts': () =>
+        Response.json({ id: 'draft-1', version: 1 }, { status: 201 }),
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await openGuidance(user);
+    const chip = (state: string) =>
+      screen.getByRole('button', { name: `Breakfast: ${state}` });
+
+    await user.click(chip('not set'));
+    expect(chip('Good for')).toHaveAttribute('aria-pressed', 'true');
+    await user.type(screen.getByLabelText('Reason for Breakfast'), 'Quick');
+    await user.click(chip('Good for'));
+    expect(chip('Avoid')).toBeVisible();
+    await user.click(chip('Avoid'));
+    expect(chip('not set')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByLabelText('Reason for Breakfast')).toBeNull();
+
+    // Back to Avoid with a reason, then save.
+    await user.click(chip('not set'));
+    await user.click(chip('Good for'));
+    await user.type(screen.getByLabelText('Reason for Breakfast'), 'Too heavy');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({
+        guidance: {
+          eatingMoments: [
+            { eatingMomentId: 'em1', polarity: 'avoid', reason: 'Too heavy' },
+          ],
+        },
+      }),
+    );
+  });
+
+  it('shows on the collapsed row why Save is disabled, and flags the Details tab', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    await user.type(await screen.findByLabelText(/^Title/), 'Tortilla');
+    await openGuidance(user);
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.click(guidanceToggle());
+    expect(guidanceToggle()).toHaveAttribute('aria-expanded', 'false');
+    expect(guidanceToggle()).toHaveTextContent('Fix before saving');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    await user.click(screen.getByRole('tab', { name: /^Ingredients/ }));
+    expect(
+      screen.getByRole('tab', { name: /^Details, .*attention/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps focus on the row when Suggest fills the last empty fields', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json({
+          guidance: {
+            nutritionNote: 'Light.',
+            pairings: [
+              {
+                kind: 'food',
+                label: 'Toast',
+                reason: 'Crisp',
+                linkType: 'none',
+                linkTarget: '',
+              },
+            ],
+            eatingMoments: [
+              { eatingMomentId: 'em1', polarity: 'good_for', reason: 'Easy' },
+            ],
+          },
+          noSuggestions: [],
+        }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Tortilla');
+    await user.click(screen.getByRole('button', { name: 'Suggest' }));
+    await screen.findByText('Toast');
+    expect(
+      screen.queryByRole('button', { name: 'Suggest' }),
+    ).not.toBeInTheDocument();
+    expect(guidanceToggle()).toHaveFocus();
+  });
+
+  it('does not rotate the chevron when the Member prefers reduced motion', async () => {
+    const user = userEvent.setup({ delay: null });
+    stubMatchMedia((query) => query.includes('prefers-reduced-motion'));
+    setup('/recipes/new', {});
+    await screen.findByLabelText(/^Title/);
+    await openGuidance(user);
+    const chevron = guidanceToggle().querySelector(
+      '[aria-hidden]',
+    ) as HTMLElement;
+    expect(getComputedStyle(chevron).transform).not.toContain('180');
+  });
+
+  it('rotates the chevron when the Member has not asked for reduced motion', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    await screen.findByLabelText(/^Title/);
+    await openGuidance(user);
+    const chevron = guidanceToggle().querySelector(
+      '[aria-hidden]',
+    ) as HTMLElement;
+    expect(getComputedStyle(chevron).transform).toContain('180');
   });
 });
