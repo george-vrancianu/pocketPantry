@@ -183,7 +183,7 @@
     "cap_reached_unknown": "Ai folosit toate citirile de rețete din linkuri de azi. Încearcă mâine."
   },
   "guidance": {
-    "nothing_to_suggest": "Tot ce poate completa Sugerează recomandări este deja completat. Golește un câmp pentru a primi o sugestie.",
+    "nothing_to_suggest": "Tot ce poate completa Sugerează recomandări este deja completat. Golește un câmp și apasă din nou Sugerează recomandări.",
     "suggest_unavailable": "Sugerează recomandări nu este disponibil acum. Încearcă din nou peste puțin timp.",
     "suggest_failed": "Nu am putut sugera recomandări. Încearcă din nou sau scrie-le tu."
   }

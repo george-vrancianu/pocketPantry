@@ -181,7 +181,7 @@
     "cap_reached_unknown": "You have used all of today's recipe reads from links. Try again tomorrow."
   },
   "guidance": {
-    "nothing_to_suggest": "Everything Suggest Guidance can fill is already filled. Clear a field to get a suggestion.",
+    "nothing_to_suggest": "Everything Suggest Guidance can fill is already filled. Clear a field and press Suggest Guidance again.",
     "suggest_unavailable": "Suggest Guidance is not working right now. Please try again in a moment.",
     "suggest_failed": "We could not suggest Guidance. Try again, or write it yourself."
   }

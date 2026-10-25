@@ -318,7 +318,7 @@
       "suggest": {
         "button": "Foreslå vejledning",
         "working": "Foreslår…",
-        "allFilled": "Alt, som Foreslå vejledning kan udfylde, er allerede udfyldt. Ryd et felt for at få et forslag.",
+        "allFilled": "Alt, som Foreslå vejledning kan udfylde, er allerede udfyldt. Ryd et felt, og tryk på Foreslå vejledning igen.",
         "mark": "Foreslået",
         "none": "Ingen forslag til {{field}}.",
         "added": "Foreslået: {{fields}}. Intet gemmes, før du gemmer.",

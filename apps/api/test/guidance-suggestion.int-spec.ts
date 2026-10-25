@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { count } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
 import { StructuredOutputAiError } from '../src/ai/structured-output-ai.service';
 import { seedId } from '../src/catalog/seed/seed-catalog';
@@ -107,6 +107,33 @@ describe('Suggest Guidance (integration)', () => {
     expect(prompts[0].prompt).toContain('grandma spice');
     expect(prompts[0].prompt).toContain('Fry each side.');
     expect(await rowCounts()).toEqual(before);
+  });
+
+  it('leaves the stored Recipe untouched when called with its recipeId', async () => {
+    const created = await member
+      .post('', {
+        title: 'Stored 8841',
+        servings: 2,
+        locale: 'en',
+        parentId: null,
+        lines: [{ ingredientId: flour, quantity: 50, unit: 'g' }],
+        steps: [{ text: 'Whisk' }],
+      })
+      .expect(201);
+    const recipeId = (created.body as { id: string }).id;
+    const stored = async () => ({
+      row: (
+        await database.select().from(recipes).where(eq(recipes.id, recipeId))
+      )[0],
+      counts: await rowCounts(),
+    });
+    const before = await stored();
+    expect(before.row.nutritionNote).toBeNull();
+
+    await suggest(request(emptyGuidance, { recipeId })).expect(200);
+
+    expect(prompts).toHaveLength(1);
+    expect(await stored()).toEqual(before);
   });
 
   it('refuses without an AI call when the Nutrition Note is filled', async () => {

@@ -318,7 +318,7 @@
       "suggest": {
         "button": "Suggest Guidance",
         "working": "Suggesting…",
-        "allFilled": "Everything Suggest Guidance can fill is already filled. Clear a field to get a suggestion.",
+        "allFilled": "Everything Suggest Guidance can fill is already filled. Clear a field and press Suggest Guidance again.",
         "mark": "Suggested",
         "none": "No suggestions for {{field}}.",
         "added": "Suggested: {{fields}}. Nothing is saved until you save.",

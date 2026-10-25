@@ -181,7 +181,7 @@
     "cap_reached_unknown": "Du har brugt alle dagens opskriftslæsninger fra links. Prøv igen i morgen."
   },
   "guidance": {
-    "nothing_to_suggest": "Alt, som Foreslå vejledning kan udfylde, er allerede udfyldt. Ryd et felt for at få et forslag.",
+    "nothing_to_suggest": "Alt, som Foreslå vejledning kan udfylde, er allerede udfyldt. Ryd et felt, og tryk på Foreslå vejledning igen.",
     "suggest_unavailable": "Foreslå vejledning er ikke tilgængelig lige nu. Prøv igen om lidt.",
     "suggest_failed": "Vi kunne ikke foreslå vejledning. Prøv igen, eller skriv den selv."
   }

@@ -32,6 +32,9 @@ export function emptyGuidanceFields(draft: GuidanceDraft): GuidanceField[] {
 export const fillableFields = (draft: GuidanceDraft) =>
   emptyGuidanceFields(draft).filter((f) => COVERED_GUIDANCE_FIELDS.includes(f));
 
+/** Longest Nutrition Note the API accepts (`nutritionNote` in the API's `recipe-guidance.schemas.ts`: `max(5000)`). Keep in step. */
+const NUTRITION_NOTE_MAX_LENGTH = 5000;
+
 /**
  * All the Guidance on the form, as the request carries it. Pairing rows that are not
  * filled in yet are left out: the API refuses them, and they hold nothing to go on.
@@ -40,7 +43,8 @@ export function guidanceForRequest(draft: GuidanceDraft): GuidanceInput {
   const input = toGuidanceInput(draft);
   return {
     ...input,
-    nutritionNote: input.nutritionNote?.slice(0, 5000) ?? null,
+    nutritionNote:
+      input.nutritionNote?.slice(0, NUTRITION_NOTE_MAX_LENGTH) ?? null,
     pairings: input.pairings.filter((p) => p.label !== '' && p.reason !== ''),
   };
 }
