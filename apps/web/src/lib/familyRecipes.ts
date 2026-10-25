@@ -4,6 +4,7 @@ import type { Unit } from './catalog';
 import type { GuidanceInput, RecipeStep, RecipeTip } from './adminRecipes';
 import type { Difficulty } from './recipeVocabulary';
 import { recipeChangeQueryKeys } from './queryKeys';
+import { recipeDraftsListKey } from './recipeDrafts';
 import { recipesQueryKey } from './recipes';
 
 type GuidanceInputWithIds = {
@@ -159,12 +160,22 @@ function useFamilyWrite<Input, Result>(
 
 /** Create a Variant under `parentId` (or, with null, a standalone Base Recipe). */
 export function useCreateFamilyRecipe() {
+  const queryClient = useQueryClient();
   return useFamilyWrite(
-    (input: { parentId: string | null; document: FamilyRecipeDocument }) =>
-      apiRequest<FamilyRecipeEdit>('/recipes', {
+    async (input: {
+      parentId: string | null;
+      document: FamilyRecipeDocument;
+    }) => {
+      const saved = await apiRequest<FamilyRecipeEdit>('/recipes', {
         method: 'POST',
         body: { ...input.document, parentId: input.parentId },
-      }),
+      });
+      // The server ended that Recipe Draft with the create (ADR 0028): the list is old now.
+      if (input.document.recipeDraftId) {
+        void queryClient.invalidateQueries({ queryKey: recipeDraftsListKey });
+      }
+      return saved;
+    },
   );
 }
 
