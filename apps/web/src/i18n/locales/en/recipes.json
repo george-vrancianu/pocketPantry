@@ -256,5 +256,18 @@
     "continueNamed": "Continue {{name}}",
     "startNew": "Start new",
     "baseGone": "The Base Recipe this Recipe Draft was a Variant of is gone. It opens as a New Recipe and will be saved as a Base Recipe."
+  },
+  "explore": {
+    "title": "Explore",
+    "menuItem": "From Explore",
+    "menuNew": "new",
+    "subline": "Add a Recipe to cook, plan and change it, or make a Variant of it.",
+    "back": "Back to your Recipes",
+    "add": "Add {{title}} to your Recipes",
+    "added": "Added {{title}} to your Recipes",
+    "addFailed": "Couldn't add {{title}}. Try again.",
+    "inFamily": "In your Recipes",
+    "openCopy": "{{title}} is in your Recipes. Open it",
+    "undoFailed": "Couldn't undo adding {{title}}. Try again."
   }
 }

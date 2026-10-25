@@ -35,6 +35,8 @@ const item = (over: Partial<RecipeListItem>): RecipeListItem => ({
   cookMinutes: 20,
   difficulty: 'easy',
   owner: 'catalog',
+  familyCopyId: null,
+  copiedFromId: null,
   allergyWarning: null,
   ...over,
 });
@@ -146,6 +148,7 @@ function setup(
       <Route path="/recipes" element={<RecipesPage />} />
       <Route path="/recipes/new" element={<p>new recipe page</p>} />
       <Route path="/recipes/from-link" element={<p>link step</p>} />
+      <Route path="/recipes/explore" element={<p>explore page</p>} />
       <Route path="/recipes/cook-tonight" element={<p>cook tonight page</p>} />
       <Route path="/pantry" element={<p>pantry page</p>} />
       <Route path="/recipes/:id" element={<p>detail page</p>} />
@@ -195,18 +198,29 @@ describe('RecipesPage', () => {
       expect(rows[1]).toHaveTextContent('Omelette');
     });
 
-    it('offers New Recipe and From a link from the header plus, and opens New Recipe', async () => {
+    it('offers New Recipe, From a link and From Explore (marked new) from the header plus, and opens New Recipe', async () => {
       setup(() => [omelette]);
       await userEvent.click(
         await screen.findByRole('button', { name: 'Add a Recipe' }),
       );
       expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(
-        ['New Recipe', 'From a link'],
+        ['New Recipe', 'From a link', 'From Explore new'],
       );
       await userEvent.click(
         screen.getByRole('menuitem', { name: 'New Recipe' }),
       );
       expect(screen.getByText('new recipe page')).toBeInTheDocument();
+    });
+
+    it('opens Explore from the header plus', async () => {
+      setup(() => [omelette]);
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Add a Recipe' }),
+      );
+      await userEvent.click(
+        screen.getByRole('menuitem', { name: 'From Explore new' }),
+      );
+      expect(screen.getByText('explore page')).toBeInTheDocument();
     });
 
     it('opens the link step from the header plus', async () => {

@@ -256,5 +256,18 @@
     "continueNamed": "Fortsæt {{name}}",
     "startNew": "Start ny",
     "baseGone": "Grundopskriften, denne opskriftkladde var en variant af, findes ikke længere. Den åbnes som en ny opskrift og gemmes som en grundopskrift."
+  },
+  "explore": {
+    "title": "Udforsk",
+    "menuItem": "Fra Udforsk",
+    "menuNew": "ny",
+    "subline": "Tilføj en opskrift for at lave den, planlægge den og ændre den, eller lav en variant af den.",
+    "back": "Tilbage til dine opskrifter",
+    "add": "Tilføj {{title}} til dine opskrifter",
+    "added": "{{title}} er tilføjet til dine opskrifter",
+    "addFailed": "Kunne ikke tilføje {{title}}. Prøv igen.",
+    "inFamily": "I dine opskrifter",
+    "openCopy": "{{title}} er i dine opskrifter. Åbn den",
+    "undoFailed": "Kunne ikke fortryde tilføjelsen af {{title}}. Prøv igen."
   }
 }
