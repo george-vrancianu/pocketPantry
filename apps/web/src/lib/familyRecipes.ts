@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
+import type { GuidanceSuggestion } from './guidanceSuggestion';
 import type { GuidanceInput, RecipeStep, RecipeTip } from './adminRecipes';
 import type { Difficulty } from './recipeVocabulary';
 import { recipeChangeQueryKeys } from './queryKeys';
@@ -241,4 +242,29 @@ export function useSetFamilyGuidance(id: string) {
       body: input,
     }),
   );
+}
+
+/** What Suggest Guidance sends for a Family Recipe: the page as it is now, and the Guidance on the form. */
+export type SuggestFamilyGuidanceRequest = {
+  recipe: Partial<Pick<FamilyRecipeDocument, 'title' | 'servings'>> &
+    Pick<
+      FamilyRecipeDocument,
+      | 'prepMinutes'
+      | 'cookMinutes'
+      | 'cuisineId'
+      | 'methodId'
+      | 'lines'
+      | 'steps'
+    >;
+  guidance: GuidanceInput;
+  /** The saved Recipe being edited, if any. */
+  recipeId?: string;
+};
+
+/** Ask for Guidance for the empty fields of a Family Recipe page. Nothing is saved. */
+export function suggestFamilyGuidance(body: SuggestFamilyGuidanceRequest) {
+  return apiRequest<GuidanceSuggestion>('/recipes/suggest-guidance', {
+    method: 'POST',
+    body,
+  });
 }

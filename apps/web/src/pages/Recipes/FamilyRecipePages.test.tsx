@@ -1530,3 +1530,530 @@ describe('Family Recipe form: Add to your catalog (#270)', () => {
     expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
   });
 });
+
+describe('Suggest Guidance', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const NOTE = 'Rich in protein, light on fibre.';
+  const suggestRoute = 'POST /api/recipes/suggest-guidance';
+  const idea = {
+    kind: 'food',
+    label: 'Fresh berries',
+    reason: 'Their tartness cuts the richness.',
+    principle: 'acid_cuts_fat',
+    linkedIngredientId: null,
+    linkedRecipeId: null,
+  };
+  const moment = {
+    eatingMomentId: 'em1',
+    polarity: 'avoid',
+    reason: 'Too heavy first thing.',
+  };
+  const proposal = () =>
+    Response.json({
+      guidance: {
+        nutritionNote: NOTE,
+        pairings: [idea],
+        eatingMoments: [moment],
+      },
+      noSuggestions: [],
+    });
+  const noteOnly = () =>
+    Response.json({ guidance: { nutritionNote: NOTE }, noSuggestions: [] });
+  const pairingsGroup = () => screen.getByRole('group', { name: /Pairings/ });
+  const noteField = () => screen.getByLabelText('Nutrition Note');
+  const suggestButton = () =>
+    screen.getByRole('button', { name: 'Suggest Guidance' });
+  const noNote: FamilyRecipeDraft = {
+    ...draft,
+    guidance: { ...draft.guidance, nutritionNote: null },
+  };
+  const unfilled: FamilyRecipeEdit = { ...saved, nutritionNote: null };
+
+  it('fills an empty Nutrition Note from the page as it is now, marked Suggested, and sends ordinary Guidance on save', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', {
+      [suggestRoute]: proposal,
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+
+    await user.click(suggestButton());
+
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
+      'Fresh berries',
+    );
+    const asked = calls.find((c) => c.key === suggestRoute)?.body;
+    expect(asked).toMatchObject({
+      recipe: { title: 'Gran stew', servings: 4 },
+      guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
+    });
+    expect(
+      within(screen.getByRole('group', { name: /Nutrition Note/ })).getByText(
+        'Suggested',
+      ),
+    ).toBeVisible();
+    // The Eating Moment is a row marked Suggested too, with its polarity and reason.
+    const moments = within(
+      screen.getByRole('group', { name: /Eating Moments/ }),
+    );
+    expect(moments.getByText('Suggested')).toBeVisible();
+    expect(moments.getByLabelText('Good for or Avoid: Breakfast')).toHaveValue(
+      'avoid',
+    );
+    expect(moments.getByLabelText('Reason for Breakfast')).toHaveValue(
+      moment.reason,
+    );
+    // Nothing is stored by suggesting.
+    expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(false);
+    // Every covered field is filled now: the button says why it is off.
+    expect(suggestButton()).toBeDisabled();
+    expect(suggestButton()).toHaveAccessibleDescription(/already filled/);
+
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(true),
+    );
+    const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
+    expect(body).toMatchObject({
+      guidance: { nutritionNote: NOTE, eatingMoments: [moment] },
+    });
+    expect(JSON.stringify(body)).not.toMatch(/suggested/i);
+  });
+
+  it('clears the mark once the Member edits the note', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', { [suggestRoute]: noteOnly });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+
+    await user.type(noteField(), '!');
+
+    expect(screen.queryByText('Suggested')).not.toBeInTheDocument();
+    expect(noteField()).toHaveValue(`${NOTE}!`);
+  });
+
+  it('clears the mark of an Eating Moment once the Member edits its reason or polarity', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json({
+          guidance: {
+            eatingMoments: [
+              moment,
+              { ...moment, eatingMomentId: 'em2', polarity: 'good_for' },
+            ],
+          },
+          noSuggestions: [],
+        }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+    await screen.findByLabelText('Reason for Lunch');
+    expect(screen.getAllByText('Suggested')).toHaveLength(2);
+
+    await user.type(screen.getByLabelText('Reason for Breakfast'), '!');
+    expect(screen.getAllByText('Suggested')).toHaveLength(1);
+    await user.selectOptions(
+      screen.getByLabelText('Good for or Avoid: Lunch'),
+      'avoid',
+    );
+    expect(screen.queryByText('Suggested')).not.toBeInTheDocument();
+  });
+
+  it('keeps Eating Moments the Member already added', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(noNote),
+      'GET /api/recipes/x': () => Response.json(sourceDetail),
+      [suggestRoute]: () =>
+        Response.json({
+          guidance: { nutritionNote: NOTE, eatingMoments: [moment] },
+          noSuggestions: [],
+        }),
+    });
+    await screen.findByLabelText(/^Title/);
+    await user.click(suggestButton());
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    expect(calls.some((c) => c.key === suggestRoute)).toBe(true);
+    // The Variant draft carries "Breakfast" as Good for already: untouched, not marked.
+    expect(screen.getByLabelText('Reason for Breakfast')).toHaveValue(
+      'Quick start',
+    );
+    expect(
+      within(screen.getByRole('group', { name: /Eating Moments/ })).queryByText(
+        'Suggested',
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it('is disabled with a hint when the Nutrition Note is filled, and never asks', async () => {
+    const calls = setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(draft),
+      'GET /api/recipes/x': () => Response.json(sourceDetail),
+      [suggestRoute]: proposal,
+    });
+    expect(await screen.findByLabelText('Nutrition Note')).toHaveValue(
+      'Rich in protein',
+    );
+    expect(suggestButton()).toBeDisabled();
+    expect(suggestButton()).toHaveAccessibleDescription(/already filled/);
+    fireEvent.click(suggestButton());
+    expect(calls.some((c) => c.key === suggestRoute)).toBe(false);
+  });
+
+  it('works on a Variant, reading the copied ingredients and Steps', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(noNote),
+      'GET /api/recipes/x': () => Response.json(sourceDetail),
+      [suggestRoute]: proposal,
+    });
+    await screen.findByLabelText(/^Title/);
+    await user.click(suggestButton());
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+      recipe: {
+        title: 'Omelette',
+        lines: [{ ingredientId: 'egg', quantity: 3, unit: 'pcs' }],
+        steps: [{ text: 'Whisk the eggs' }],
+      },
+      guidance: {
+        pairings: [{ label: 'Orange juice' }],
+        eatingMoments: [{ eatingMomentId: 'em1' }],
+      },
+    });
+  });
+
+  it('shows a working state and sends one request however often it is pressed', async () => {
+    const user = userEvent.setup({ delay: null });
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const calls = setup('/recipes/new', {
+      [suggestRoute]: async () => {
+        await gate;
+        return proposal();
+      },
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+
+    const working = await screen.findByRole('button', { name: 'Suggesting…' });
+    expect(working).toBeDisabled();
+    fireEvent.click(working);
+    release();
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    expect(calls.filter((c) => c.key === suggestRoute)).toHaveLength(1);
+  });
+
+  it('does not overwrite a note the Member typed while the request was in flight', async () => {
+    const user = userEvent.setup({ delay: null });
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    setup('/recipes/new', {
+      [suggestRoute]: async () => {
+        await gate;
+        return noteOnly();
+      },
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+    await screen.findByRole('button', { name: 'Suggesting…' });
+
+    await user.type(noteField(), 'Mine');
+    release();
+
+    await screen.findByRole('button', { name: 'Suggest Guidance' });
+    expect(noteField()).toHaveValue('Mine');
+    expect(screen.queryByText('Suggested')).not.toBeInTheDocument();
+  });
+
+  it('says "No suggestions for ..." in a status when nothing was worth proposing', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json({ guidance: {}, noSuggestions: ['nutritionNote'] }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+
+    await screen.findByText('No suggestions for Nutrition Note.');
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((s) => s.textContent === 'No suggestions for Nutrition Note.'),
+    ).toBe(true);
+    expect(noteField()).toHaveValue('');
+    // Typing in the field makes the message redundant.
+    await user.type(noteField(), 'x');
+    expect(screen.queryByText(/No suggestions for/)).not.toBeInTheDocument();
+  });
+
+  it('says "No suggestions for Eating Moments" in a status when none was worth proposing', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json({ guidance: {}, noSuggestions: ['eatingMoments'] }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+
+    await screen.findByText('No suggestions for Eating Moments.');
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((s) => s.textContent === 'No suggestions for Eating Moments.'),
+    ).toBe(true);
+    expect(screen.getByText('No Eating Moments yet.')).toBeVisible();
+  });
+
+  it('shows a polite error and leaves the form untouched when suggesting fails', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json(
+          { code: 'scan.provider_unavailable', params: {} },
+          { status: 502 },
+        ),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(suggestButton());
+
+    const toast = await screen.findByText(
+      'Suggest Guidance is not working right now. Please try again in a moment.',
+    );
+    expect(toast.closest('[role="status"]')).not.toBeNull();
+    expect(noteField()).toHaveValue('');
+    expect(screen.getByLabelText(/^Title/)).toHaveValue('Gran stew');
+    // It can be tried again.
+    expect(suggestButton()).toBeEnabled();
+  });
+
+  describe('the Guidance Cap', () => {
+    afterEach(() => vi.useRealTimers());
+
+    const pressAtCap = async (params: object) => {
+      const user = userEvent.setup({ delay: null });
+      setup('/recipes/new', {
+        [suggestRoute]: () =>
+          Response.json(
+            { code: 'guidance.cap_reached', params },
+            { status: 429 },
+          ),
+      });
+      await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+      await user.click(suggestButton());
+    };
+
+    it("says when Suggest Guidance is available again, in the Member's own time, and leaves the form untouched", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date('2026-05-01T10:00:00Z'));
+      const resetsAt = '2026-05-02T00:00:00.000Z';
+      await pressAtCap({ cap: 20, resetsAt });
+      const when = new Intl.DateTimeFormat('en-GB', {
+        weekday: 'long',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(Date.parse(resetsAt));
+      const toast = await screen.findByText(
+        `You have used all 20 Suggest Guidance requests for today. Your requests reset on ${when}.`,
+      );
+      expect(toast.closest('[role="status"]')).not.toBeNull();
+      expect(noteField()).toHaveValue('');
+      expect(screen.getByLabelText(/^Title/)).toHaveValue('Gran stew');
+    });
+
+    it('says to try tomorrow when the reset time is missing', async () => {
+      await pressAtCap({ cap: 20 });
+      expect(
+        await screen.findByText(
+          'You have used all 20 Suggest Guidance requests for today. Try again tomorrow.',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('leaves the number out when the cap is missing', async () => {
+      await pressAtCap({});
+      expect(
+        await screen.findByText(
+          "You have used all of today's Suggest Guidance requests. Try again tomorrow.",
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('on the edit page reads unsaved edits and names the Recipe being edited', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(unfilled),
+      [suggestRoute]: proposal,
+    });
+    fireEvent.change(await screen.findByLabelText(/^Title/), {
+      target: { value: 'Unsaved title' },
+    });
+
+    await user.click(suggestButton());
+
+    await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+    expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+      recipeId: 'g',
+      recipe: { title: 'Unsaved title' },
+      guidance: { pairings: [{ id: 'p1' }, { id: 'p2' }] },
+    });
+  });
+
+  describe('Pairings', () => {
+    const titleAndSuggest = async (routes: Record<string, () => Response>) => {
+      const user = userEvent.setup({ delay: null });
+      const calls = setup('/recipes/new', routes);
+      await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+      return { user, calls };
+    };
+
+    it('lands linked Pairings marked Suggested, naming the Ingredient and the Recipe they link to', async () => {
+      const { user, calls } = await titleAndSuggest({
+        [suggestRoute]: () =>
+          Response.json({
+            guidance: {
+              pairings: [
+                {
+                  ...idea,
+                  label: 'Butter',
+                  linkedIngredientId: 'butter',
+                  linkedIngredientName: 'Butter',
+                },
+                {
+                  ...idea,
+                  kind: 'drink',
+                  label: 'Tea',
+                  principle: null,
+                  linkedRecipeId: 'tea',
+                  linkedRecipeTitle: 'Iced tea',
+                },
+              ],
+            },
+            noSuggestions: ['nutritionNote'],
+          }),
+        'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+      });
+      await user.click(suggestButton());
+
+      await screen.findByText('Linked Ingredient: Butter');
+      expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(2);
+      expect(
+        screen.getByLabelText('Linked Recipe of Pairing 2'),
+      ).toHaveDisplayValue('Iced tea');
+      expect(
+        screen.getByText('No suggestions for Nutrition Note.'),
+      ).toBeVisible();
+
+      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await vi.waitFor(() =>
+        expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(true),
+      );
+      const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
+      expect(body).toMatchObject({
+        guidance: {
+          pairings: [
+            { label: 'Butter', linkedIngredientId: 'butter' },
+            { label: 'Tea', linkedRecipeId: 'tea', linkedIngredientId: null },
+          ],
+        },
+      });
+      expect(JSON.stringify(body)).not.toMatch(/suggested|linkedRecipeTitle/i);
+    });
+
+    it('says "No suggestions for Pairings." when the server has none', async () => {
+      const { user } = await titleAndSuggest({
+        [suggestRoute]: () =>
+          Response.json({ guidance: {}, noSuggestions: ['pairings'] }),
+      });
+      await user.click(suggestButton());
+
+      await screen.findByText('No suggestions for Pairings.');
+      expect(
+        screen.queryByLabelText('Label of Pairing 1'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('treats blank Pairing rows as empty: sends none, and the proposal replaces them', async () => {
+      const { user, calls } = await titleAndSuggest({
+        [suggestRoute]: proposal,
+      });
+      await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+      expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue('');
+      expect(suggestButton()).toBeEnabled();
+
+      await user.click(suggestButton());
+
+      await vi.waitFor(() =>
+        expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
+          'Fresh berries',
+        ),
+      );
+      expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+        guidance: { pairings: [] },
+      });
+      expect(
+        screen.queryByLabelText('Label of Pairing 2'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('clears the Suggested chip of a Pairing once the Member edits it', async () => {
+      const { user } = await titleAndSuggest({
+        [suggestRoute]: () =>
+          Response.json({
+            guidance: { pairings: [idea, { ...idea, label: 'Toast' }] },
+            noSuggestions: ['nutritionNote'],
+          }),
+      });
+      await user.click(suggestButton());
+      await screen.findByLabelText('Label of Pairing 2');
+      expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(2);
+
+      await user.type(screen.getByLabelText('Label of Pairing 1'), '!');
+      expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(1);
+    });
+
+    it("keeps a partly typed Pairing row as the Member's own: Pairings are not proposed beside it", async () => {
+      const { user, calls } = await titleAndSuggest({
+        [suggestRoute]: noteOnly,
+      });
+      await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+      await user.type(screen.getByLabelText('Label of Pairing 1'), 'Half way');
+
+      await user.click(suggestButton());
+
+      await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+      expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+        guidance: { pairings: [{ label: 'Half way' }] },
+      });
+      expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
+        'Half way',
+      );
+      expect(
+        screen.queryByLabelText('Label of Pairing 2'),
+      ).not.toBeInTheDocument();
+      expect(
+        within(pairingsGroup()).queryByText('Suggested'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('keeps a Pairing the Member has filled in: it is not asked for again', async () => {
+      const { user } = await titleAndSuggest({ [suggestRoute]: proposal });
+      await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+      await user.type(screen.getByLabelText('Label of Pairing 1'), 'Mine');
+      await user.type(screen.getByLabelText('Reason for Pairing 1'), 'Because');
+
+      await user.click(suggestButton());
+
+      await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+      expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue('Mine');
+      expect(
+        screen.queryByLabelText('Label of Pairing 2'),
+      ).not.toBeInTheDocument();
+    });
+  });
+});

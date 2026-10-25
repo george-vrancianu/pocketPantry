@@ -20,6 +20,12 @@ import { MemberLanguageService } from '../member-language/member-language.servic
 import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
+import { GuidanceSuggestionService } from './guidance-suggestion.service';
+import {
+  suggestGuidanceBody,
+  type GuidanceSuggestion,
+  type SuggestGuidanceBody,
+} from './guidance-suggestion.schemas';
 import { LinkRecipesService } from './link-recipes.service';
 import { PlateRecipesService } from './plate-recipes.service';
 import { RecipeCopyService } from './recipe-copy.service';
@@ -73,6 +79,7 @@ export class RecipesController {
     private readonly cookTonight: CookTonightService,
     private readonly plate: PlateRecipesService,
     private readonly link: LinkRecipesService,
+    private readonly guidanceSuggestion: GuidanceSuggestionService,
     private readonly languages: MemberLanguageService,
   ) {}
 
@@ -170,6 +177,21 @@ export class RecipesController {
   ): Promise<RecipeFromLink> {
     const locale = await this.languages.catalogLanguageOf(member.id);
     return this.link.read(member.id, body, locale);
+  }
+
+  @Post('suggest-guidance')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      "Propose Guidance for the empty fields of the Recipe page as it is now, in the Recipe's language; nothing is saved. Refused when no field it covers is empty",
+  })
+  async suggestGuidance(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(suggestGuidanceBody))
+    body: SuggestGuidanceBody,
+  ): Promise<GuidanceSuggestion> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    return this.guidanceSuggestion.suggest(member.id, body, locale);
   }
 
   @Get(':id/variant-draft')

@@ -7,7 +7,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { scanUsage } from '../database/schema';
 
-export type UsageKind = 'scan' | 'voice' | 'assistant' | 'link';
+export type UsageKind = 'scan' | 'voice' | 'assistant' | 'link' | 'guidance';
 
 const LIMITS = {
   scan: { setting: 'SCAN_DAILY_CAP', code: 'scan.cap_reached' },
@@ -17,6 +17,7 @@ const LIMITS = {
     code: 'assistant.cap_reached',
   },
   link: { setting: 'LINK_DAILY_CAP', code: 'link.cap_reached' },
+  guidance: { setting: 'GUIDANCE_DAILY_CAP', code: 'guidance.cap_reached' },
 } as const;
 
 /** When the cap's UTC `day` ends (ISO), which is when its count starts over. */
@@ -25,12 +26,12 @@ const nextUtcMidnight = (day: string) =>
 
 const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 
-/** The 429 for a Member at the `kind` cap; the Voice Cap and the Link Cap also say when it lifts. */
+/** The 429 for a Member at the `kind` cap; the Voice Cap, the Link Cap and the Guidance Cap also say when it lifts. */
 const capReached = (kind: UsageKind, cap: number, day: string) =>
   new ApiException(
     429,
     LIMITS[kind].code,
-    kind === 'voice' || kind === 'link'
+    kind === 'voice' || kind === 'link' || kind === 'guidance'
       ? { cap, resetsAt: nextUtcMidnight(day) }
       : { cap },
   );
@@ -39,7 +40,7 @@ const capReached = (kind: UsageKind, cap: number, day: string) =>
  * The per-Member daily caps, counted per UTC day and per kind and enforced
  * before the provider is called. The Scan Cap is `SCAN_DAILY_CAP`, the Voice
  * Cap `VOICE_DAILY_CAP`, the Assistant Cap `ASSISTANT_DAILY_CAP` and the Link Cap
- * `LINK_DAILY_CAP`; a cap of 0
+ * `LINK_DAILY_CAP` and the Guidance Cap `GUIDANCE_DAILY_CAP`; a cap of 0
  * disables it. Kinds never affect each other.
  */
 @Injectable()
@@ -52,7 +53,7 @@ export class ScanCapService {
   /**
    * Counts one use of `kind`, atomically; throws `scan.cap_reached` (Scan Cap),
    * `voice.cap_reached` (Voice Cap), `assistant.cap_reached` (Assistant Cap) or
-   * `link.cap_reached` (Link Cap)
+   * `link.cap_reached` (Link Cap) or `guidance.cap_reached` (Guidance Cap)
    * once the Member is at that kind's cap.
    * Returns the UTC day it was counted on, which a refund must use.
    */
@@ -75,7 +76,7 @@ export class ScanCapService {
       })
       .returning({ count: scanUsage.count });
     if (rows.length === 0) {
-      // The Voice Cap (the button waits it out) and the Link Cap (the message names the time) say when they lift.
+      // The Voice Cap (the button waits it out), the Link Cap and the Guidance Cap (the message names the time) say when they lift.
       throw capReached(kind, cap, day);
     }
     return day;
