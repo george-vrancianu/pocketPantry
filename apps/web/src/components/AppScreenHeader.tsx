@@ -41,7 +41,7 @@ export function AppScreenHeader({
       title={title}
       leading={tabRoot ? <RefreshMark /> : undefined}
       subtitle={subtitle}
-      // A tab root's refresh shows in the layout's loader, never under its title.
+      // A tab root keeps a one-line title, level with the mark: no subline there.
       subline={tabRoot ? undefined : subline}
       // With the mark, the Explore pill and the action in one row, a long title would break mid-word at 360 px.
       truncateTitle={tabRoot || truncateTitle}
