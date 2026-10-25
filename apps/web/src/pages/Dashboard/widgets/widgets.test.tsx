@@ -527,8 +527,18 @@ describe('CookTonightWidget', () => {
     renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
 
     expect(
-      await screen.findByText(/Nothing to cook from your Pantry yet/),
+      await screen.findByText(/Nothing to cook from your Recipes yet/),
     ).toBeInTheDocument();
+  });
+
+  it('links to Explore when there is nothing to cook', async () => {
+    stub(cookTonight([]));
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    expect(
+      await screen.findByRole('link', { name: 'Explore Recipes' }),
+    ).toHaveAttribute('href', '/recipes/explore');
   });
 
   it('asks the API for today', async () => {
@@ -541,6 +551,7 @@ describe('CookTonightWidget', () => {
     const search = new URLSearchParams(calls[0]?.search);
     expect(calls[0]?.key).toBe('GET /api/recipes/cook-tonight');
     expect(search.get('today')).toBe(isoIn(0));
+    expect(search.get('scope')).toBe('family');
   });
 
   it('shows an allergen indicator on a card, named in the link', async () => {
