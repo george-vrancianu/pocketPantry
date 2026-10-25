@@ -175,7 +175,7 @@ describe('Recipe Draft failures on New Variant', () => {
     await elapse(1600);
     await screen.findByRole('button', { name: 'Load latest' });
     expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(sent(calls, 'POST /api/recipes')).toHaveLength(1),
     );

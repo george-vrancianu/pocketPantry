@@ -1,13 +1,6 @@
-import {
-  Box,
-  ClockIcon,
-  Stack,
-  tokens,
-  Card,
-  displayType,
-  radius,
-} from '@pocket-pantry/ui';
+import { Box, ClockIcon, Stack, tokens, Card, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { StepNumber } from '../../../components/StepNumber';
 import type { RecipeDetailStep, RecipeDetailTip } from '../../../lib/recipes';
 
 function formatTimer(seconds: number) {
@@ -97,22 +90,7 @@ export function StepList({
             borderTop: index === 0 ? 0 : `1px solid ${tokens.color.divider}`,
           }}
         >
-          <Box
-            aria-hidden="true"
-            sx={{
-              flex: '0 0 28px',
-              height: 28,
-              borderRadius: '50%',
-              bgcolor: tokens.color.ink,
-              color: tokens.color.surface,
-              display: 'grid',
-              placeItems: 'center',
-              ...displayType,
-              fontSize: 14,
-            }}
-          >
-            {index + 1}
-          </Box>
+          <StepNumber>{index + 1}</StepNumber>
           <Box sx={{ flex: 1, minWidth: 0, lineHeight: 1.45, fontWeight: 500 }}>
             {step.text}
             {step.timerSeconds ? (

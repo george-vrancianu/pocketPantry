@@ -110,25 +110,77 @@
   "family": {
     "newRecipe": "New Recipe",
     "newRecipeHeading": "New Recipe",
-    "newRecipeHint": "Add Tips to Steps after saving the Recipe.",
+    "newRecipeHint": "Kept as your draft until you save it as one of your family's Recipes.",
     "makeVariant": "Make a Variant",
     "edit": "Edit",
     "delete": "Delete",
     "deleteConfirm": "Delete this Recipe? It disappears for your whole family.",
     "newHeading": "Make a Variant",
     "editHeading": "Edit Recipe",
-    "create": "Save Variant",
-    "save": "Save Recipe",
     "title": "Title",
-    "copyHint": "This is a copy to change. Nothing is saved until you save it.",
-    "tipsHint": "Copied Tips stay with their Steps; add your own after saving the Variant.",
+    "copyHint": "Copied from {{source}}. It becomes a Recipe when you save it.",
+    "editorTabs": "Recipe tabs",
+    "tabs": {
+      "details": "Details",
+      "needsAttention": "Needs attention",
+      "toIngredients": "Ingredients ›",
+      "toSteps": "Steps ›"
+    },
     "freeTextNote": "Not in the Catalog",
     "unavailable": "This Recipe cannot be edited.",
-    "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the Recipe.",
+    "guidanceCard": {
+      "title": "Pairings, nutrition & moments",
+      "optional": "Optional",
+      "setCount_one": "{{count}} set · optional",
+      "setCount_other": "{{count}} set · optional",
+      "linkOptional": "Optional · never read from the page",
+      "suggest": "Suggest",
+      "suggesting": "Suggesting…",
+      "nothing": "Nothing to suggest",
+      "momentHint": "Tap once for Good for, twice for Avoid, three times to clear.",
+      "notSet": "not set",
+      "editPairing": "Edit {{label}}",
+      "problem": "Fix before saving",
+      "donePairing": "Done"
+    },
     "linkedRecipeUnavailable": "A Recipe you cannot see or that is archived",
+    "leaveConfirm": "Discard your changes?",
     "saved": "Recipe saved.",
+    "saveFailed": {
+      "recipe": "The Recipe was not saved: {{reason}}",
+      "guidance": "The Recipe's Guidance was not saved: {{reason}}"
+    },
     "viewRecipe": "View the Recipe",
-    "moreActions": "More actions"
+    "moreActions": "More actions",
+    "tips": {
+      "newHint": "Add tips to steps after saving the Recipe.",
+      "variantHint": "Copied tips stay with their steps; add your own after saving the Variant.",
+      "deleted": "Tip deleted"
+    },
+    "recipeTips": {
+      "placeholder": "A tip for this recipe",
+      "title": "Recipe tips",
+      "hint": "Tips save as soon as you change them; the rest saves with the Recipe.",
+      "tip": "Recipe Tip {{number}}",
+      "delete": "Delete Recipe Tip {{number}}",
+      "new": "New Recipe Tip",
+      "cancelNew": "Cancel the new Recipe Tip",
+      "add": "Add a Recipe Tip"
+    },
+    "details": {
+      "titlePlaceholder": "Recipe title",
+      "servesRequired": "Enter how many it serves.",
+      "levelCycle": "Level: {{value}}. Tap to change",
+      "prep": "Prep",
+      "cook": "Cook"
+    },
+    "baseCard": {
+      "closest": "closest match",
+      "subline": "Pick the Catalog Recipe this one is a Variant of, or keep it standalone.",
+      "savesVariant": "Saves as a Variant of <b>{{title}}</b>.",
+      "savesBase": "Saves as its own Base Recipe."
+    },
+    "variantOf": "Variant of <b>{{title}}</b>"
   },
   "fewerServings": "Fewer Servings",
   "moreServings": "More Servings",
@@ -214,7 +266,8 @@
   "sourceLink": {
     "from": "From {{host}} ↗",
     "remove": "Remove link",
-    "translatedFrom": "Translated from {{language}}"
+    "translatedFrom": "Translated from {{language}}",
+    "removed": "Link removed. It goes when you save."
   },
   "recipeDraft": {
     "saving": "Saving…",

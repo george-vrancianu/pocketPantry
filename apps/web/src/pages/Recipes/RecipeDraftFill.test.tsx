@@ -216,7 +216,7 @@ describe('Recipe Drafts for supplied fills', () => {
         sourceLanguage: 'fr',
       },
     });
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Detail of the recipe')).toBeVisible();
     expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
       sourceLink: 'https://www.example.org/pancakes',
@@ -378,7 +378,7 @@ describe('Recipe Drafts for supplied fills', () => {
           new Promise<Response>(() => {}),
       });
       await screen.findByRole('radio', { name: 'Waffles' });
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       // The create goes out at once, without waiting for the matches.
       await vi.waitFor(() =>
         expect(sent(calls, 'POST /api/recipes')).toHaveLength(1),
@@ -410,7 +410,7 @@ describe('Recipe Drafts for supplied fills', () => {
           await screen.findByRole('radio', { name: 'Waffles' }),
         ).toBeChecked();
         await elapse(500);
-        await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+        await user.click(screen.getByRole('button', { name: 'Save' }));
         expect(await screen.findByText('Detail of the recipe')).toBeVisible();
         expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
           parentId: 'base-waffles',
@@ -432,7 +432,7 @@ describe('Recipe Drafts for supplied fills', () => {
       await screen.findByLabelText(/^Title/);
       await elapse(5000);
       expect(sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`)).toHaveLength(0);
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       expect(await screen.findByText('Detail of the recipe')).toBeVisible();
       expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
         parentId: 'base-waffles',
@@ -462,7 +462,7 @@ describe('Recipe Drafts for supplied fills', () => {
         expect(sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`)).toHaveLength(
           0,
         );
-        await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+        await user.click(screen.getByRole('button', { name: 'Save' }));
         expect(await screen.findByText('Detail of the recipe')).toBeVisible();
         expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
           parentId: null,
@@ -481,14 +481,14 @@ describe('Recipe Drafts for supplied fills', () => {
             : Response.json(savedRecipe, { status: 201 }),
       });
       await screen.findByRole('radio', { name: 'Waffles' });
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       await vi.waitFor(() =>
         expect(sent(calls, 'POST /api/recipes')).toHaveLength(1),
       );
       const crepes = await screen.findByRole('radio', { name: /Crepes/ });
       await user.click(crepes);
       expect(crepes).toBeChecked();
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       expect(await screen.findByText('Detail of the recipe')).toBeVisible();
       expect(sent(calls, 'POST /api/recipes')).toHaveLength(2);
     });
@@ -532,7 +532,7 @@ describe('Recipe Drafts for supplied fills', () => {
           await screen.findByRole('radio', { name: /Crepes/ }),
         ).toBeChecked();
         expect(screen.queryByRole('radio', { name: 'Waffles' })).toBeNull();
-        await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+        await user.click(screen.getByRole('button', { name: 'Save' }));
         expect(await screen.findByText('Detail of the recipe')).toBeVisible();
         expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
           parentId: 'base-crepes',
@@ -547,7 +547,7 @@ describe('Recipe Drafts for supplied fills', () => {
         );
         await screen.findByLabelText(/^Title/);
         await elapse(500);
-        await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+        await user.click(screen.getByRole('button', { name: 'Save' }));
         expect(await screen.findByText('Detail of the recipe')).toBeVisible();
         expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
           parentId: null,

@@ -181,7 +181,7 @@
     "lines": {
       "title": "Ingredienslinjer",
       "hint": "Lad mængden stå tom for en linje som \"salt, efter smag\".",
-      "empty": "Ingen ingredienslinjer endnu.",
+      "empty": "Ingen ingredienser endnu. Søg i kataloget herunder.",
       "add": "Tilføj en ingrediens",
       "quantity": "Mængde af {{name}}",
       "unit": "Enhed for {{name}}",
@@ -190,7 +190,20 @@
       "remove": "Fjern {{name}}",
       "moveUp": "Flyt {{name}} op",
       "moveDown": "Flyt {{name}} ned",
-      "unknown": "Ukendt ingrediens"
+      "unknown": "Ukendt ingrediens",
+      "more": "Mere for {{name}}",
+      "optionalSub": "valgfri",
+      "optionalSwitch": "Valgfri"
+    },
+    "reorder": {
+      "roleDescription": "flytbar",
+      "hold": "Hold nede for at flytte",
+      "grip": "Flyt {{name}}",
+      "instructions": "For at ændre rækkefølgen skal du holde en række nede, eller fokusere på grebet og trykke mellemrum for at samle op, bruge piletasterne til at flytte og trykke mellemrum for at slippe. Tryk Escape for at annullere.",
+      "pickedUp": "{{name}} samlet op.",
+      "movedTo": "{{name}} flyttet til plads {{position}} af {{total}}.",
+      "dropped": "{{name}} sluppet på plads {{position}} af {{total}}.",
+      "cancelled": "Ændring af rækkefølge annulleret."
     },
     "steps": {
       "title": "Trin",
@@ -203,11 +216,24 @@
       "remove": "Fjern trin {{number}}",
       "tipsWarning_one": "Hvis du fjerner trin {{number}}, slettes dets {{count}} tip, når du gemmer.",
       "tipsWarning_other": "Hvis du fjerner trin {{number}}, slettes dets {{count}} tips, når du gemmer.",
-      "draftTips": "Tips til trin {{number}}",
-      "removeTip": "Fjern tip {{n}} til trin {{step}}",
-      "removeTipShort": "Fjern",
       "removeWithTips": "Fjern trin og tips",
-      "keep": "Behold trin"
+      "keep": "Behold trin",
+      "addStart": "Tilføj et trin i starten",
+      "addFirst": "Tilføj det første trin",
+      "placeholder": "Hvad skal gøres i trin {{number}}",
+      "addTimer": "Timer",
+      "addTimerFor": "Tilføj en timer til trin {{number}}",
+      "clearTimer": "Fjern timeren fra trin {{number}}",
+      "minutes": "min",
+      "tipOf": "Tip {{n}} til trin {{step}}",
+      "deleteTip": "Slet tip {{n}} til trin {{step}}",
+      "newTip": "Nyt tip til trin {{number}}",
+      "cancelTip": "Annuller nyt tip til trin {{number}}",
+      "tipPlaceholder": "Et tip til dette trin",
+      "addTip": "Tip",
+      "addTipFor": "Tilføj et tip til trin {{number}}",
+      "copiedTips_one": "{{count}} tip",
+      "copiedTips_other": "{{count}} tips"
     },
     "variant": {
       "title": "Lav en variant",
