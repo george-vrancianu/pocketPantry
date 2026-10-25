@@ -41,6 +41,9 @@ export type ReviewFrameProps = {
  * What the host (the Intro's Setup Review) decides for the line editor: what happens once the card is
  * saved, where Retake goes, and the frame and banner wrapping it. Without settings the editor is the app's:
  * it lands on the Pantry or Shopping List and uses the app header.
+ *
+ * Unlike `ReviewOverviewSettings` (all optional, with app defaults), every part is required: passing
+ * settings at all switches the editor to the host's layout, and a half-hosted editor has no sensible default.
  */
 export type ReviewEditorSettings = {
   /** The card was saved with this many lines; replaces the app's landing. */

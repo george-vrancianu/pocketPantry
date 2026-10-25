@@ -1,13 +1,20 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from '@testing-library/react';
-import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
+import {
+  dispatchScanSession,
+  getScanSession,
+  resetScanSession,
+} from '../../lib/scanSession';
 import { Where } from '../../test/intro';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { scanOnce, shutter } from '../../test/scan';
-import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
+import {
+  ReviewOverviewPage,
+  type ReviewOverviewSettings,
+} from '../Review/ReviewOverviewPage';
 import { ScanPage, type ScanPageProps } from './ScanPage';
 
 vi.mock('../../lib/image', async (importActual) => ({
@@ -143,5 +150,77 @@ describe('The Review overview takes its behaviour from the host', () => {
       .setup()
       .click(screen.getByRole('button', { name: /Take more/ }));
     expect(where()).toBe('/host/camera');
+  });
+
+  /** One read card on the overview, rendered with the given host settings. */
+  function renderOverview(settings: ReviewOverviewSettings) {
+    act(() => {
+      dispatchScanSession({
+        type: 'enqueue',
+        scan: {
+          id: 'one',
+          mode: 'ingredients',
+          scanLanguage: 'en',
+          image: 'data:image/jpeg;base64,YQ==',
+          thumbnail: 'data:image/jpeg;base64,YQ==',
+        },
+      });
+      dispatchScanSession({ type: 'start' });
+      dispatchScanSession({
+        type: 'read',
+        id: 'one',
+        lines: [
+          {
+            name: 'Milk',
+            match: null,
+            lowConfidence: false,
+            quantity: 1,
+            unit: 'pcs',
+            expiryDate: null,
+            sourceText: null,
+            productDescription: null,
+          },
+        ],
+      });
+    });
+    const { fetchMock } = stubApi({
+      'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <>
+        <Routes>
+          <Route
+            path="/host/review"
+            element={<ReviewOverviewPage settings={settings} />}
+          />
+          <Route path="*" element={<p>elsewhere</p>} />
+        </Routes>
+        <Where />
+      </>,
+      { route: '/host/review' },
+    );
+  }
+
+  it('hands Add all to the host instead of landing on the camera', async () => {
+    const afterAddAll = vi.fn();
+    renderOverview({ afterAddAll });
+    await userEvent
+      .setup()
+      .click(await screen.findByRole('button', { name: /^Add all/ }));
+    await waitFor(() => expect(afterAddAll).toHaveBeenCalledWith(1, 0));
+    expect(where()).toBe('/host/review');
+    expect(getScanSession().scans).toEqual([]);
+  });
+
+  it('hands Discard all to the host instead of landing on the camera', async () => {
+    const afterDiscardAll = vi.fn();
+    renderOverview({ afterDiscardAll });
+    await userEvent
+      .setup()
+      .click(await screen.findByRole('button', { name: 'Discard all' }));
+    expect(afterDiscardAll).toHaveBeenCalledTimes(1);
+    expect(where()).toBe('/host/review');
+    expect(getScanSession().scans).toEqual([]);
   });
 });
