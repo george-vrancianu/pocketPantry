@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -12,7 +12,6 @@ import { ShoppingWidget } from './ShoppingWidget';
 import { CookTonightWidget } from './CookTonightWidget';
 import { UseSoonWidget } from './UseSoonWidget';
 import type { CookTonightCard } from '../../../lib/cookTonight';
-import { act } from '@testing-library/react';
 
 const isoIn = (days: number) => {
   const date = new Date();
@@ -462,6 +461,7 @@ describe('CookTonightWidget', () => {
     renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Cook tonight, / })).toBeNull();
   });
 
   it('speaks Romanian plurals', async () => {
@@ -658,7 +658,12 @@ describe("CookTonightWidget as Gator's bubble panel", () => {
       expect(
         within(region).queryByRole('link', { name: 'See all' }),
       ).toBeNull();
-      expect(within(region).queryByRole('heading')).toBeNull();
+      // The title is only the panel's own; a header row would make it appear twice.
+      const panel = await within(region).findByRole('link', {
+        name: /^Cook tonight, /,
+      });
+      expect(within(region).getAllByText('Cook tonight')).toHaveLength(1);
+      expect(within(panel).getByText('Cook tonight')).toBeInTheDocument();
     });
 
     it('says how many Recipes can be made, how many use what expires soon, and leads to Cook Tonight', async () => {
@@ -774,7 +779,7 @@ describe("CookTonightWidget as Gator's bubble panel", () => {
     });
   });
 
-  it('shows up to 2 cards when wide and up to 3 when tall, below the panel', async () => {
+  it('shows up to 3 cards under the panel when tall', async () => {
     stubCards([card('1'), card('2'), card('3'), card('4')]);
     renderAt('tall', 4);
     expect(

@@ -1,10 +1,10 @@
 import { Box, displayType, Gator, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { CookTonightCard } from '../../../lib/cookTonight';
-import { cookTonightPanelState } from '../../../lib/cookTonightPanel';
-import { useGatorAlt } from '../../../lib/useGatorAlt';
-import { useGatorTapLink } from '../../../lib/useGatorTapLink';
-import { GatorBubblePanel } from '../../../components/GatorBubblePanel';
+import type { CookTonightCard } from '../lib/cookTonight';
+import { cookTonightPanelState } from '../lib/cookTonightPanel';
+import { useGatorAlt } from '../lib/useGatorAlt';
+import { useGatorTapLink } from '../lib/useGatorTapLink';
+import { GatorBubblePanel } from './GatorBubblePanel';
 
 /**
  * The Cook Tonight card on the Recipes page: Gator's bubble panel, one link in every state (see
