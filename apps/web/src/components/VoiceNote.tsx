@@ -1,4 +1,8 @@
-import { VoiceReview, type VoiceSetup } from './voice/VoiceReview';
+import {
+  VoiceReview,
+  type AfterApply,
+  type ReviewLook,
+} from './voice/VoiceReview';
 import { VoiceAnswers } from './voice/VoiceAnswerSheet';
 import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
@@ -18,29 +22,52 @@ export function defaultTargetFor(pathname: string): VoiceDefaultTarget {
 }
 
 /**
+ * How a Voice Note host behaves. The app's layout passes `APP_VOICE_SETTINGS`; the Intro's Say it passes its own.
+ * The host and the Voice Note module never ask where they are.
+ */
+export type VoiceNoteSettings = {
+  /** What shows above the Dock: the Voice Inbox strip, or the single status pill. */
+  indicator: 'strip' | 'pill';
+  /** Whether a Voice Note opens as soon as it is read, instead of waiting in the Voice Inbox. */
+  openWhenReady: boolean;
+  /** The Default List this host forces over the route's (ADR 0021). Absent: the route's. */
+  defaultTarget?: VoiceDefaultTarget;
+  /** How the Review looks: the app's, or the Intro's (happy Gator, "Here's what I heard", "Do these N"). */
+  reviewLook: ReviewLook;
+  /** Whether Apply toasts its result and flashes the rows. Off when the page itself shows what was saved. */
+  toastOnApply: boolean;
+  /** Told what was really applied, given the result. It changes neither the Review's look nor the toast. */
+  afterApply?: AfterApply;
+};
+
+/** Today's in-app settings: the Voice Inbox strip, notes wait to be opened, the route's Default List, a toast. */
+export const APP_VOICE_SETTINGS: VoiceNoteSettings = {
+  indicator: 'strip',
+  openWhenReady: false,
+  reviewLook: 'app',
+  toastOnApply: true,
+};
+
+/**
  * Voice Notes, hosted once in the app layout: the hold-to-talk mic in the Dock's capsule with
  * its notices, and the Review sheet that shows "What I heard".
  * Shown on every page with the Dock, acting on that page's list on the Shopping List and the Pantry and on no
- * list elsewhere (Setup's Say it is the one exception and passes its own). Hidden until the server says transcription is configured.
+ * list elsewhere unless the settings force one. Hidden until the server says transcription is configured.
  */
 export function VoiceNote({
-  defaultTarget: override,
-  setup,
+  settings = APP_VOICE_SETTINGS,
 }: {
-  /** The Default List this host forces over the route's: Setup's Say it passes the Pantry (ADR 0021). */
-  defaultTarget?: VoiceDefaultTarget;
-  /** Setup's Say it: what happens when its Review is applied. Absent everywhere else. */
-  setup?: VoiceSetup;
+  settings?: VoiceNoteSettings;
 } = {}) {
   const showsMic = useShowsDockMic();
   const routeTarget = defaultTargetFor(useLocation().pathname);
-  const defaultTarget = override ?? routeTarget;
+  const defaultTarget = settings.defaultTarget ?? routeTarget;
   if (!showsMic) return null;
   return (
     <VoiceNoteControls
       key={defaultTarget}
       defaultTarget={defaultTarget}
-      setup={setup}
+      settings={settings}
     />
   );
 }
@@ -53,24 +80,34 @@ export function useShowsDockMic() {
 
 function VoiceNoteControls({
   defaultTarget,
-  setup,
+  settings,
 }: {
   defaultTarget: VoiceDefaultTarget;
-  setup?: VoiceSetup;
+  settings: VoiceNoteSettings;
 }) {
   const voice = useVoiceNote(defaultTarget, {
-    openWhenReady: setup !== undefined,
+    openWhenReady: settings.openWhenReady,
   });
 
   return (
     <>
       <VoiceButton voice={voice} target={defaultTarget} />
 
-      {setup ? <StatusPill voice={voice} /> : <VoiceInboxStrip />}
+      {settings.indicator === 'pill' ? (
+        <StatusPill voice={voice} />
+      ) : (
+        <VoiceInboxStrip />
+      )}
 
       <MicSheets mic={voice.mic} target={defaultTarget} />
 
-      <VoiceReview setup={setup} />
+      <VoiceReview
+        review={{
+          look: settings.reviewLook,
+          toastOnApply: settings.toastOnApply,
+          afterApply: settings.afterApply,
+        }}
+      />
 
       <VoiceAnswers />
     </>

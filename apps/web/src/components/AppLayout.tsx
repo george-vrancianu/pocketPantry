@@ -9,7 +9,7 @@ import { ApplyMemberTheme } from './ApplyMemberTheme';
 import { AppDock } from './AppDock';
 import { RefreshProvider, useRefreshScreen } from '../lib/refresh';
 import { RefreshLoaderSlot } from './RefreshLoaderSlot';
-import { useShowsDockMic, VoiceNote } from './VoiceNote';
+import { APP_VOICE_SETTINGS, useShowsDockMic, VoiceNote } from './VoiceNote';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
 
 /** The line editor, whose tablet layout is a wide table (the overview of cards is not). */
@@ -55,7 +55,7 @@ export function AppLayout() {
           </PageLayout>
           <RefreshLoaderSlot />
           <VoiceHostSlot />
-          <VoiceNote />
+          <VoiceNote settings={APP_VOICE_SETTINGS} />
           {dock.visible ? <AppDock activeKey={dock.activeKey} /> : null}
         </VoiceHostProvider>
       </RefreshProvider>
