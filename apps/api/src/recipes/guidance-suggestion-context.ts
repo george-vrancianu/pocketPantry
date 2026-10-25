@@ -1,13 +1,14 @@
-import { and, inArray, isNull } from 'drizzle-orm';
-import { catalogScope } from '../catalog/catalog-scope';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { Executor } from '../database/database.types';
-import { allergens, ingredientAllergens, recipes } from '../database/schema';
-import type { IngredientCatalog } from '../ingredients/ingredient-catalog';
 import {
-  loadFillBlockedRecipes,
-  loadViewerAllergies,
-} from './recipe-allergens';
+  allergens,
+  ingredientAllergens,
+  recipeIngredientLines,
+  recipes,
+} from '../database/schema';
+import type { IngredientCatalog } from '../ingredients/ingredient-catalog';
+import { loadViewerAllergies } from './recipe-allergens';
 import { recipeTitles, visibleTo } from './recipe-view';
 
 /**
@@ -92,13 +93,35 @@ export async function memberSuggestionContext(
         ).map((row) => row.id),
       )
     : new Set<string>();
-  // The rule Fill uses: an avoided Allergen in a required, checked line.
-  const unsafeRecipes = await loadFillBlockedRecipes(
-    executor,
-    catalogScope(familyId),
-    own.map((r) => r.id),
-    allergies,
-  );
+  // Any required line whose Ingredient is tagged with an avoided Allergen, checked or not: the
+  // same raw tags the direct Ingredient check reads. Optional lines can be left out.
+  const unsafeRecipes =
+    avoidIds.length && own.length
+      ? new Set(
+          (
+            await executor
+              .selectDistinct({ id: recipeIngredientLines.recipeId })
+              .from(recipeIngredientLines)
+              .innerJoin(
+                ingredientAllergens,
+                eq(
+                  ingredientAllergens.ingredientId,
+                  recipeIngredientLines.ingredientId,
+                ),
+              )
+              .where(
+                and(
+                  inArray(
+                    recipeIngredientLines.recipeId,
+                    own.map((r) => r.id),
+                  ),
+                  eq(recipeIngredientLines.optional, false),
+                  inArray(ingredientAllergens.allergenId, avoidIds),
+                ),
+              )
+          ).map((row) => row.id),
+        )
+      : new Set<string>();
   const unsafeLinkIds = new Set([...unsafeIngredients, ...unsafeRecipes]);
 
   return {

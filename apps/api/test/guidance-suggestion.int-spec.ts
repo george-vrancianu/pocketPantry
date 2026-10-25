@@ -7,6 +7,7 @@ import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
+  ingredientAllergens,
   recipeEatingMoments,
   recipeIngredientLines,
   recipePairings,
@@ -504,6 +505,74 @@ describe('Suggest Guidance (integration)', () => {
         guidance: { nutritionNote: 'A note.' },
         noSuggestions: [],
       });
+    });
+
+    it('drops a Recipe whose required line has an avoided Allergen on an Unchecked Ingredient', async () => {
+      await settings.put('/allergies', { allergenIds: [MILK] }).expect(200);
+      // A Family Ingredient nobody has marked as checked, with a milk tag stored on it.
+      const unchecked = (
+        await client(app, cookieOf, '/api')
+          .post('/catalog/family-ingredients?locale=en', {
+            name: `Mystery ${stamp}-${++recipeCount}`,
+            leafCategoryId: seedId.leaf('ground-spices'),
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as { id: string };
+      await database
+        .insert(ingredientAllergens)
+        .values({ ingredientId: unchecked.id, allergenId: MILK });
+      const dish = (
+        await member
+          .post('', {
+            title: `Mystery dish ${stamp}-${++recipeCount}`,
+            servings: 2,
+            locale: 'en',
+            parentId: null,
+            lines: [{ ingredientId: unchecked.id, quantity: 1, unit: 'g' }],
+            steps: [{ text: 'Cook' }],
+          })
+          .expect(201)
+      ).body as { id: string };
+      propose(idea({ label: 'Mystery', recipeId: dish.id }), idea());
+      const pairings = await pairingsOf();
+      expect(pairings?.map((p) => p.label)).toEqual(['Berries']);
+    });
+
+    it('leaves Pairings alone when a row is started, even without its reason', async () => {
+      respondWith({ nutritionNote: 'A note.', pairings: [idea()] });
+      const res = await suggest(
+        request({
+          ...emptyGuidance,
+          pairings: [{ kind: 'food', label: 'Half way', reason: '' }],
+        }),
+      ).expect(200);
+      expect(res.body as GuidanceSuggestion).toEqual({
+        guidance: { nutritionNote: 'A note.' },
+        noSuggestions: [],
+      });
+
+      // With the note filled too, nothing is left to ask for.
+      await suggest(
+        request({
+          nutritionNote: 'Mine.',
+          pairings: [{ kind: 'food', label: '', reason: 'Why' }],
+          eatingMoments: [],
+        }),
+      ).expect(400);
+    });
+
+    it('treats a row with nothing in it as empty', async () => {
+      propose(idea());
+      const res = await suggest(
+        request({
+          ...emptyGuidance,
+          pairings: [{ kind: 'food', label: '', reason: '' }],
+        }),
+      ).expect(200);
+      expect((res.body as GuidanceSuggestion).guidance.pairings).toHaveLength(
+        1,
+      );
     });
 
     it('reports no suggestions for Pairings when the model has none', async () => {

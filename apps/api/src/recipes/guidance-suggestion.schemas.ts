@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import {
+  MAX_PAIRING_LABEL,
+  MAX_PAIRING_REASON,
   guidanceBody,
+  pairingInput,
   type GuidanceBody,
   type PairingInput,
 } from './recipe-guidance.schemas';
@@ -39,10 +42,24 @@ const suggestionRecipe = recipeDocument.extend({
  * Suggest Guidance for a Family Recipe (ADR 0026): what the page holds now, and the Guidance
  * already on the form (all of it, so the empty fields can be told).
  */
+/**
+ * A Pairing row as the form holds it: a started one may lack its label or reason, because a
+ * request is never saved (the save schema stays strict). A blank row is one with no label,
+ * no reason and no link.
+ */
+const formPairing = pairingInput.extend({
+  label: z.string().trim().max(MAX_PAIRING_LABEL),
+  reason: z.string().trim().max(MAX_PAIRING_REASON),
+});
+const formGuidance = guidanceBody.extend({
+  pairings: z.array(formPairing).max(100),
+});
+type FormGuidance = z.infer<typeof formGuidance>;
+
 export const suggestGuidanceBody = z
   .object({
     recipe: suggestionRecipe,
-    guidance: guidanceBody,
+    guidance: formGuidance,
     /** The saved Family Recipe being edited, if any: Pairings may never link to it. */
     recipeId: z.uuid().optional(),
   })
@@ -94,14 +111,21 @@ export type GuidanceSuggestion = {
   noSuggestions: GuidanceField[];
 };
 
-/** Which fields of the Guidance on the form are empty (Pairings: none; Nutrition Note: null or blank; Eating Moments: none). */
+/** Which fields of the Guidance on the form are empty (Pairings: no row with anything in it; Nutrition Note: null or blank; Eating Moments: none). */
 export function emptyGuidanceFields(
-  guidance: Pick<GuidanceBody, GuidanceField>,
+  guidance: Pick<FormGuidance, GuidanceField>,
 ): GuidanceField[] {
   return GUIDANCE_FIELDS.filter((field) => {
     switch (field) {
       case 'pairings':
-        return guidance.pairings.length === 0;
+        // A started row is the Member's own work; only rows with nothing in them are empty.
+        return guidance.pairings.every(
+          (p) =>
+            p.label === '' &&
+            p.reason === '' &&
+            p.linkedIngredientId === null &&
+            p.linkedRecipeId === null,
+        );
       case 'nutritionNote':
         return (guidance.nutritionNote ?? '').trim() === '';
       case 'eatingMoments':

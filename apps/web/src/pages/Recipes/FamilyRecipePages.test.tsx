@@ -1904,6 +1904,30 @@ describe('Suggest Guidance', () => {
       ).not.toBeInTheDocument();
     });
 
+    it("keeps a partly typed Pairing row as the Member's own: Pairings are not proposed beside it", async () => {
+      const { user, calls } = await titleAndSuggest({
+        [suggestRoute]: noteOnly,
+      });
+      await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+      await user.type(screen.getByLabelText('Label of Pairing 1'), 'Half way');
+
+      await user.click(suggestButton());
+
+      await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
+      expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
+        guidance: { pairings: [{ label: 'Half way' }] },
+      });
+      expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
+        'Half way',
+      );
+      expect(
+        screen.queryByLabelText('Label of Pairing 2'),
+      ).not.toBeInTheDocument();
+      expect(
+        within(pairingsGroup()).queryByText('Suggested'),
+      ).not.toBeInTheDocument();
+    });
+
     it('keeps a Pairing the Member has filled in: it is not asked for again', async () => {
       const { user } = await titleAndSuggest({ [suggestRoute]: proposal });
       await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));

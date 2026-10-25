@@ -1,10 +1,10 @@
 import type { GuidanceInput } from './adminRecipes';
 import {
+  toGuidanceDraft,
   toGuidanceInput,
   type GuidanceDraft,
   type PairingDraft,
 } from './guidanceDraft';
-import { newKey } from './recipeDraft';
 
 /** The three fields of Guidance (mirror of the API's `GuidanceField`). */
 export type GuidanceField = 'pairings' | 'nutritionNote' | 'eatingMoments';
@@ -33,16 +33,17 @@ export type GuidanceSuggestion = {
 };
 
 /**
- * A Pairing row that is filled in: the only kind the request carries (the API refuses the
- * rest), so the only kind that makes the Pairings "filled" for Suggest Guidance.
+ * A Pairing row with nothing in it: no label, no reason, no chosen link. Anything else is the
+ * Member's own work, started or finished, and counts as a Pairing for Suggest Guidance.
  */
-export const isCompletePairing = (p: Pick<PairingDraft, 'label' | 'reason'>) =>
-  p.label.trim() !== '' && p.reason.trim() !== '';
+export const isBlankPairing = (
+  p: Pick<PairingDraft, 'label' | 'reason' | 'linkTarget'>,
+) => p.label.trim() === '' && p.reason.trim() === '' && p.linkTarget === '';
 
-/** The fields of the form that are empty now (Pairings: no filled-in row; an Eating Moment counts as filled). */
+/** The fields of the form that are empty now (Pairings: every row blank; an Eating Moment counts as filled). */
 export function emptyGuidanceFields(draft: GuidanceDraft): GuidanceField[] {
   const empty: Record<GuidanceField, boolean> = {
-    pairings: !draft.pairings.some(isCompletePairing),
+    pairings: draft.pairings.every(isBlankPairing),
     nutritionNote: draft.nutritionNote.trim() === '',
     eatingMoments: draft.eatingMoments.length === 0,
   };
@@ -57,8 +58,9 @@ export const fillableFields = (draft: GuidanceDraft) =>
 const NUTRITION_NOTE_MAX_LENGTH = 5000;
 
 /**
- * All the Guidance on the form, as the request carries it. Pairing rows that are not
- * filled in yet are left out: the API refuses them, and they hold nothing to go on.
+ * All the Guidance on the form, as the request carries it. Blank Pairing rows are left out;
+ * started rows are sent as typed (the request takes them, it never saves), so the API judges
+ * the field empty or not exactly as the form does.
  */
 export function guidanceForRequest(draft: GuidanceDraft): GuidanceInput {
   const input = toGuidanceInput(draft);
@@ -66,7 +68,9 @@ export function guidanceForRequest(draft: GuidanceDraft): GuidanceInput {
     ...input,
     nutritionNote:
       input.nutritionNote?.slice(0, NUTRITION_NOTE_MAX_LENGTH) ?? null,
-    pairings: input.pairings.filter(isCompletePairing),
+    pairings: input.pairings.filter(
+      (_, i) => !isBlankPairing(draft.pairings[i]),
+    ),
   };
 }
 
@@ -86,11 +90,8 @@ export function mergeSuggestion(
   if (empty.includes('pairings') && pairings && pairings.length > 0) {
     next = {
       ...next,
-      // Rows with some text typed stay after the proposal; rows with nothing in them make way.
-      pairings: [
-        ...pairings.map(pairingRow),
-        ...next.pairings.filter((p) => p.label !== '' || p.reason !== ''),
-      ],
+      // Only blank rows are there (the field is empty), and they make way for the proposal.
+      pairings: pairings.map(pairingRow),
     };
     filled.push('pairings');
   }
@@ -104,21 +105,10 @@ export function mergeSuggestion(
 
 /** A proposed Pairing as a form row, marked suggested, its link named as the server named it. */
 function pairingRow(p: SuggestedPairing): PairingDraft {
-  const linkType = p.linkedIngredientId
-    ? 'ingredient'
-    : p.linkedRecipeId
-      ? 'recipe'
-      : 'none';
-  return {
-    key: newKey(),
-    kind: p.kind,
-    label: p.label,
-    reason: p.reason,
-    principle: p.principle ?? '',
-    linkType,
-    linkTarget: p.linkedIngredientId ?? p.linkedRecipeId ?? '',
-    linkName: p.linkedIngredientName ?? undefined,
-    linkTitle: p.linkedRecipeTitle ?? undefined,
-    suggested: true,
-  };
+  const [row] = toGuidanceDraft({
+    nutritionNote: null,
+    pairings: [p],
+    eatingMoments: [],
+  }).pairings;
+  return { ...row, suggested: true };
 }
