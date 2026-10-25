@@ -3263,3 +3263,160 @@ describe('Details basics of the editor', () => {
     );
   });
 });
+
+describe('Unmatched line: Add to your catalog from the ⌄ strip (#598)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const kombucha = {
+    owner: 'family',
+    amountScale: 'medium',
+    id: 'k1',
+    name: 'Kombucha',
+    defaultUnit: 'ml',
+    leafCategory: { id: 'tea', name: 'Tea' },
+    parentCategory: {
+      id: 'drinks',
+      name: 'Drinks',
+      aisle: { id: 'a1', name: 'Drinks' },
+    },
+    defaults: { expiryDays: 30, location: 'fridge' },
+  };
+  const routes = (extra: Parameters<typeof stubApi>[0] = {}) => ({
+    'GET /api/catalog/search': () => Response.json({ results: [] }),
+    'GET /api/catalog/allergens': () => Response.json({ allergens: [] }),
+    'GET /api/catalog/categories': () =>
+      Response.json({
+        categories: [
+          {
+            id: 'tea',
+            name: 'Tea',
+            parentCategory: { id: 'drinks', name: 'Drinks' },
+            aisle: { id: 'a1', name: 'Drinks' },
+            defaults: { expiryDays: null, location: null },
+          },
+        ],
+      }),
+    'POST /api/catalog/family-ingredients': () =>
+      Response.json(kombucha, { status: 201 }),
+    'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    ...extra,
+  });
+
+  async function unmatchedLine(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await openTab(user, 'Ingredients');
+    await user.type(
+      screen.getByRole('combobox', { name: 'Add an ingredient' }),
+      'Kombucha',
+    );
+    await user.click(
+      await screen.findByRole('option', { name: /Kombucha” as typed/ }),
+    );
+    await user.type(await screen.findByLabelText('Quantity of Kombucha'), '2');
+    await user.click(screen.getByRole('button', { name: /More for Kombucha/ }));
+    await user.type(screen.getByLabelText('Note for Kombucha'), 'chilled');
+    await user.click(screen.getByLabelText('Optional: Kombucha'));
+  }
+  const addButton = () =>
+    screen.getByRole('button', { name: 'Add “Kombucha” to your catalog' });
+
+  it('turns the line into the new Family Ingredient in place, keeping quantity, note and Optional', async () => {
+    stubViewport(1024);
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', routes());
+    await unmatchedLine(user);
+    expect(screen.getByText(/Not in the Catalog/)).toBeVisible();
+
+    await user.click(addButton());
+    const dialog = await screen.findByRole('dialog');
+    await user.click(
+      await within(dialog).findByRole('option', { name: /Tea/ }),
+    );
+    await user.click(
+      within(dialog).getByRole('button', { name: /^Add & pick/ }),
+    );
+
+    await vi.waitFor(() =>
+      expect(screen.queryByText(/Not in the Catalog/)).not.toBeInTheDocument(),
+    );
+    expect(screen.getAllByText('Family').length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/^Quantity of /)).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({
+        lines: [
+          {
+            ingredientId: 'k1',
+            quantity: 2,
+            note: 'chilled',
+            optional: true,
+          },
+        ],
+      }),
+    );
+  });
+
+  it('leaves the line Unmatched when the sheet is cancelled', async () => {
+    stubViewport(1024);
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', routes());
+    await unmatchedLine(user);
+
+    await user.click(addButton());
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText(/Not in the Catalog/)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({ lines: [{ ingredientId: null, rawName: 'Kombucha' }] }),
+    );
+  });
+
+  it('on Edit, Save updates the line in place, keeping its id', async () => {
+    stubViewport(1024);
+    const user = userEvent.setup({ delay: null });
+    const calls = setup(
+      '/recipes/g/edit',
+      routes({
+        'GET /api/recipes/g/edit': () => Response.json(saved),
+        'PUT /api/recipes/g': () => Response.json(saved),
+      }),
+    );
+    await openTab(user, 'Ingredients');
+    await user.click(
+      await screen.findByRole('button', { name: /More for Gran’s herbs/ }),
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add “Gran’s herbs” to your catalog',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    await user.click(
+      await within(dialog).findByRole('option', { name: /Tea/ }),
+    );
+    await user.click(
+      within(dialog).getByRole('button', { name: /^Add & pick/ }),
+    );
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'PUT /api/recipes/g')?.body,
+      ).toMatchObject({
+        lines: [
+          { id: 'l1', ingredientId: 'egg' },
+          { id: 'l2', ingredientId: 'k1', rawName: null },
+        ],
+      }),
+    );
+  });
+});

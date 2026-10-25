@@ -126,6 +126,7 @@
       "toIngredients": "Ingredients ›",
       "toSteps": "Steps ›"
     },
+    "addToCatalog": "Add “{{name}}” to your catalog",
     "freeTextNote": "Not in the Catalog",
     "unavailable": "This Recipe cannot be edited.",
     "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the Recipe.",

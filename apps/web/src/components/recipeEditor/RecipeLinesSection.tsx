@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   ChevronDownIcon,
   IconButton,
   Stack,
@@ -17,7 +18,8 @@ import {
   type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { UNITS, type Unit } from '../../lib/catalog';
+import { UNITS, type CatalogSearchResult, type Unit } from '../../lib/catalog';
+import { AddToCatalog } from '../catalogSearch/AddToCatalog';
 import {
   moved,
   type DraftProblems,
@@ -34,6 +36,8 @@ type Props = {
   onChange: (lines: LineDraft[]) => void;
   /** Whether a line is a Family Ingredient (shows the Family pill). */
   isFamily?: (line: LineDraft) => boolean;
+  /** Family editor: an Unmatched line's strip offers "Add to your catalog"; called with the Ingredient it became. */
+  onMatched?: (line: LineDraft, ingredient: CatalogSearchResult) => void;
   /** Key of a line the host just appended: its quantity takes focus. */
   focusKey?: number | null;
   /** The search that adds a line, shown under the list. */
@@ -46,12 +50,14 @@ export function RecipeLinesSection({
   problems,
   onChange,
   isFamily,
+  onMatched,
   focusKey,
   children,
 }: Props) {
   const { t } = useTranslation(['admin', 'common', 'recipes']);
   const toast = useToast();
   const [openKey, setOpenKey] = useState<number | null>(null);
+  const [addingKey, setAddingKey] = useState<number | null>(null);
 
   // Undo builds on the newest lines, not on what rendered when the toast appeared.
   const latest = useRef({ lines, onChange });
@@ -291,6 +297,26 @@ export function RecipeLinesSection({
                               {t('admin:recipe.lines.optionalSwitch')}
                             </Typography>
                           </Stack>
+                          {onMatched && line.ingredientId === '' ? (
+                            <Box sx={{ position: 'relative' }}>
+                              <Button
+                                variant="ghost"
+                                aria-expanded={addingKey === line.key}
+                                onClick={() => setAddingKey(line.key)}
+                              >
+                                {t('recipes:family.addToCatalog', { name })}
+                              </Button>
+                              <AddToCatalog
+                                open={addingKey === line.key}
+                                typed={line.name}
+                                onPicked={(ingredient) => {
+                                  setAddingKey(null);
+                                  onMatched(line, ingredient);
+                                }}
+                                onDismiss={() => setAddingKey(null)}
+                              />
+                            </Box>
+                          ) : null}
                           <RowControls
                             moveUp={t('admin:recipe.lines.moveUp', { name })}
                             moveDown={t('admin:recipe.lines.moveDown', {
