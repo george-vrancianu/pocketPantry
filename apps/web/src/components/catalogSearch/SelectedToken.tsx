@@ -52,14 +52,29 @@ export function SelectedToken({
           sx={{
             fontSize: 15,
             fontWeight: 600,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            minWidth: 0,
           }}
         >
-          {selected.name}
-          {selected.owner === 'family' ? <FamilyTag /> : null}
-          {tag}
+          <Box
+            component="span"
+            sx={{
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {selected.name}
+          </Box>
+          <Box
+            component="span"
+            sx={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center' }}
+          >
+            {selected.owner === 'family' ? <FamilyTag /> : null}
+            {tag}
+          </Box>
         </Box>
         <Box
           sx={{
