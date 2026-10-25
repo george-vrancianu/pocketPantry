@@ -1,5 +1,5 @@
 import { Box, radius, shadow, tokens } from '@pocket-pantry/ui';
-import type { ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 type LinkProps =
@@ -15,14 +15,17 @@ export function GatorBubblePanel({
   children,
   to,
   label,
+  onClick,
 }: {
   gator: ReactNode;
   /** What Gator says. */
   children: ReactNode;
+  /** Link only: runs on press, and may stop the navigation to do something first. */
+  onClick?: MouseEventHandler<HTMLElement>;
 } & LinkProps) {
   return (
     <Box
-      {...(to ? { component: Link, to, 'aria-label': label } : {})}
+      {...(to ? { component: Link, to, 'aria-label': label, onClick } : {})}
       sx={{
         position: 'relative',
         display: 'block',

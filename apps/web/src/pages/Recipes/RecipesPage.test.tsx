@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { QueryClient } from '@tanstack/react-query';
 import { Route, Routes } from 'react-router-dom';
@@ -6,13 +6,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CookTonightCard } from '../../lib/cookTonight';
 import type { RecipeListItem } from '../../lib/recipes';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubMotion } from '../../test/viewport';
 import { RecipesPage } from './RecipesPage';
 
 /*
  * DOM contract these tests assume (the implementation must provide it):
- * - The Cook Tonight card is one `link` whose accessible name is its visible lines joined
- *   with ", ", starting "Cook tonight", in every state (Can Make, one ingredient short, nothing).
- *   Its Gator is an `img` inside it, named by the Gator's alt text and marked with `data-mood`.
+ * - The Cook Tonight card is Gator's bubble panel as one `link` whose accessible name is its
+ *   visible lines joined with ", ", starting "Cook tonight", in every state (Can Make, one
+ *   ingredient short, nothing). Its Gator is an `img` inside it, named by the Gator's alt text
+ *   and marked with `data-mood`. Pressing it plays Gator's Tap (`data-motion="tap"` on that img) and navigates 500ms later, or at
+ *   once with reduced motion (tests that only follow the link stub reduced motion).
  * - The list is a `list` named by its heading, so its name starts with "All Recipes" or
  *   "Matches"; the count is part of that heading's text. Each row is a `listitem` whose
  *   text holds the title, family pill, "Variant of", meta, pills and time; the row also
@@ -913,6 +916,7 @@ describe('RecipesPage', () => {
     });
 
     it('opens the Cook Tonight page when tapped', async () => {
+      stubMotion(true);
       setup(() => [omelette], [plain('o', 'Omelette')]);
       const link = await findCookTonight();
       expect(link).toHaveAttribute('href', '/recipes/cook-tonight');
@@ -920,10 +924,53 @@ describe('RecipesPage', () => {
       expect(await screen.findByText('cook tonight page')).toBeInTheDocument();
     });
 
+    describe('pressing the card', () => {
+      afterEach(() => vi.useRealTimers());
+
+      it("plays Gator's Tap and opens the page 500ms later", async () => {
+        stubMotion(false);
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        setup(() => [omelette], [plain('o', 'Omelette')]);
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        const link = await findCookTonight();
+        await user.click(link);
+        expect(within(link).getByRole('img')).toHaveAttribute(
+          'data-motion',
+          'tap',
+        );
+        await act(() => vi.advanceTimersByTimeAsync(400));
+        expect(screen.queryByText('cook tonight page')).toBeNull();
+        expect(await findCookTonight()).toBeVisible();
+        await act(() => vi.advanceTimersByTimeAsync(100));
+        expect(screen.getByText('cook tonight page')).toBeInTheDocument();
+      });
+
+      it('goes to the Pantry after the Tap when nothing can be made', async () => {
+        stubMotion(false);
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        setup(() => [omelette], []);
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        await user.click(await findCookTonight());
+        expect(screen.queryByText('pantry page')).toBeNull();
+        await act(() => vi.advanceTimersByTimeAsync(500));
+        expect(screen.getByText('pantry page')).toBeInTheDocument();
+      });
+
+      it('opens the page at once with reduced motion', async () => {
+        stubMotion(true);
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        setup(() => [omelette], [plain('o', 'Omelette')]);
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        await user.click(await findCookTonight());
+        expect(screen.getByText('cook tonight page')).toBeInTheDocument();
+      });
+    });
+
     describe('when nothing can be made', () => {
       const FLOP = 'Gator, disappointed, with the cooking tools dropped';
 
       it('says how many Recipes are one ingredient short, with the disappointed chef, and opens the Cook Tonight page', async () => {
+        stubMotion(true);
         setup(
           () => [omelette, soup],
           [near('o', 'Omelette'), near('s', 'Soup', 2)],
@@ -954,6 +1001,7 @@ describe('RecipesPage', () => {
       });
 
       it('points to the Pantry, with the disappointed chef, when nothing is one ingredient short either', async () => {
+        stubMotion(true);
         setup(() => [omelette], []);
         const link = await findCookTonight();
         expect(link).toHaveAccessibleName(

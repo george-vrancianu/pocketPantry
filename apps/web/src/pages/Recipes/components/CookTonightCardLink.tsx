@@ -2,90 +2,80 @@ import {
   Box,
   displayType,
   Gator,
-  radius,
   tokens,
-  type GatorMood,
+  usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
-import { canMakeCards, type CookTonightCard } from '../../../lib/cookTonight';
+import { useNavigate } from 'react-router-dom';
+import type { CookTonightCard } from '../../../lib/cookTonight';
+import { cookTonightPanelState } from '../../../lib/cookTonightPanel';
+import { TAP_BEFORE_NEXT_MS } from '../../../lib/gatorTap';
 import { useGatorAlt } from '../../../lib/useGatorAlt';
-
-type CardState = { mood: GatorMood; to: string; lines: (string | null)[] };
+import { GatorBubblePanel } from './GatorBubblePanel';
 
 /**
- * The Cook Tonight card on the Recipes page, one link in every state:
- * - something Can Make: chef Gator, how many Base Recipes and how many of them use what expires
- *   soon, to the Cook Tonight page;
- * - nothing, but some one ingredient short: the disappointed chef and how many, to the Cook
- *   Tonight page, where only that section shows;
- * - neither: the disappointed chef and a hint to add what you have, to the Pantry, so the
- *   Member never lands on an empty page.
+ * The Cook Tonight card on the Recipes page: Gator's bubble panel, one link in every state (see
+ * `cookTonightPanelState`). Pressing it plays Gator's Tap, then navigates; with reduced motion it
+ * navigates at once.
  */
 export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
   const { t } = useTranslation('recipes');
   const gatorAlt = useGatorAlt();
-  // One card per Base Recipe, so Variants never count separately.
-  const canMake = canMakeCards(cards);
-  const oneShort = cards.length - canMake.length;
-  const expiring = canMake.filter((card) => card.expiringCount > 0).length;
-  const { mood, to, lines }: CardState =
-    canMake.length > 0
-      ? {
-          mood: 'chef',
-          to: '/recipes/cook-tonight',
-          lines: [
-            t('cookTonight.canMake', { count: canMake.length }),
-            expiring > 0
-              ? t('cookTonight.expiring', { count: expiring })
-              : null,
-          ],
-        }
-      : oneShort > 0
-        ? {
-            mood: 'chef-flop',
-            to: '/recipes/cook-tonight',
-            lines: [
-              t('cookTonight.nothingYet'),
-              t('cookTonight.oneShort', { count: oneShort }),
-            ],
-          }
-        : {
-            mood: 'chef-flop',
-            to: '/pantry',
-            lines: [
-              t('cookTonight.nothingInPantry'),
-              t('cookTonight.addWhatYouHave'),
-            ],
-          };
+  const navigate = useNavigate();
+  const reduceMotion = usePrefersReducedMotion();
+  const [taps, setTaps] = useState(0);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  // The card is hidden when the Family has no Recipes, so that state never reaches it.
+  const { mood, to, lines } = cookTonightPanelState(cards, false, t);
+  if (!to) return null;
   const title = t('cookTonight.title');
-  const [line, secondLine] = lines;
+  const [line, ...rest] = lines;
+
+  const onClick = (event: MouseEvent<HTMLElement>) => {
+    const plain =
+      event.button === 0 &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.shiftKey &&
+      !event.altKey;
+    if (reduceMotion || !plain) return;
+    event.preventDefault();
+    if (timer.current) return;
+    setTaps((n) => n + 1);
+    timer.current = setTimeout(() => {
+      timer.current = undefined;
+      navigate(to);
+    }, TAP_BEFORE_NEXT_MS);
+  };
+
   return (
-    <Box
-      component={Link}
+    <GatorBubblePanel
       to={to}
       // Block children carry no spaces for a screen reader, so name the link explicitly.
-      aria-label={[title, ...lines].filter(Boolean).join(', ')}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        minHeight: 110,
-        p: '14px 6px 14px 18px',
-        borderRadius: radius.card,
-        bgcolor: tokens.color.accentTint,
-        color: tokens.color.accentOnTint,
-        textDecoration: 'none',
-      }}
+      label={[title, ...lines].join(', ')}
+      onClick={onClick}
+      gator={
+        <Gator
+          mood={mood}
+          size={170}
+          loop="signature"
+          tapSignal={taps}
+          alt={gatorAlt(mood)}
+        />
+      }
     >
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ ...displayType, fontSize: 22 }}>{title}</Box>
-        <Box sx={{ fontSize: 15, fontWeight: 700, mt: '2px' }}>{line}</Box>
-        {secondLine ? (
-          <Box sx={{ fontSize: 14, mt: '2px' }}>{secondLine}</Box>
-        ) : null}
-      </Box>
-      <Gator mood={mood} size={104} alt={gatorAlt(mood)} />
-    </Box>
+      <Box sx={{ ...displayType, fontSize: 18 }}>{title}</Box>
+      <Box sx={{ fontWeight: 700, mt: '4px' }}>{line}</Box>
+      {rest.map((text, i) => (
+        <Box
+          key={i}
+          sx={{ fontSize: 13, mt: '2px', color: tokens.color.accentOnTint }}
+        >
+          {text}
+        </Box>
+      ))}
+    </GatorBubblePanel>
   );
 }
