@@ -121,7 +121,7 @@ describe('a shelf "+" preset', () => {
     expect(
       await sheet.findByRole('button', { name: /Freezer/, pressed: true }),
     ).toBeInTheDocument();
-    await user.click(sheet.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(sheet.getByRole('button', { name: /^Add (?!to )/ }));
     await waitFor(() => expect(posts(calls)).toHaveLength(1));
     expect(posts(calls)[0].body).toMatchObject({ location: 'freezer' });
 
@@ -134,7 +134,7 @@ describe('a shelf "+" preset', () => {
     expect(
       await sheet.findByRole('button', { name: /Freezer/, pressed: true }),
     ).toBeInTheDocument();
-    await user.click(sheet.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(sheet.getByRole('button', { name: /^Add (?!to )/ }));
     await waitFor(() => expect(posts(calls)).toHaveLength(2));
     expect(posts(calls)[1].body).toMatchObject({ location: 'freezer' });
   });
