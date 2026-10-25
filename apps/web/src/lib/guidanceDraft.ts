@@ -121,6 +121,11 @@ export function guidanceProblems(draft: GuidanceDraft) {
   };
 }
 
+export const hasGuidanceProblem = (draft: GuidanceDraft) =>
+  Object.values(guidanceProblems(draft)).some(
+    (problem) => problem !== false && problem !== null,
+  );
+
 export function toGuidanceInput(draft: GuidanceDraft): GuidanceInput {
   const note = draft.nutritionNote.trim();
   return {

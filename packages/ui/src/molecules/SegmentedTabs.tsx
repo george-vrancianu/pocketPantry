@@ -13,6 +13,8 @@ export type SegmentedTab<T extends string> = {
   badge?: string;
   /** What screen readers hear in place of the badge, e.g. "2 to buy". */
   badgeLabel?: string;
+  /** The tab's whole accessible name, when label plus badge should read differently, e.g. "Ingredients, 6". */
+  accessibleName?: string;
 };
 
 export type SegmentedTabsProps<T extends string> = {
@@ -85,6 +87,7 @@ export function SegmentedTabs<T extends string>({
               else buttons.current.delete(tab.value);
             }}
             role="tab"
+            aria-label={tab.accessibleName}
             id={segmentedTabId(id, tab.value)}
             aria-selected={selected}
             aria-controls={

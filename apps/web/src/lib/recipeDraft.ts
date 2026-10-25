@@ -212,14 +212,18 @@ export function documentOf(draft: RecipeDraft): RecipeDocument {
   };
 }
 
-/** A copy of `items` with the entries at `index` and `index + offset` swapped. */
-export function moved<T>(items: T[], index: number, offset: -1 | 1): T[] {
-  const target = index + offset;
-  if (target < 0 || target >= items.length) return items;
+/** A copy of `items` with the entry at `from` moved to `to`, keeping every item (and so its key). Out-of-range indexes change nothing. */
+export function reordered<T>(items: T[], from: number, to: number): T[] {
+  const inRange = (index: number) => index >= 0 && index < items.length;
+  if (!inRange(from) || !inRange(to) || from === to) return items;
   const copy = [...items];
-  [copy[index], copy[target]] = [copy[target], copy[index]];
+  copy.splice(to, 0, ...copy.splice(from, 1));
   return copy;
 }
+
+/** `items` with the entry at `index` moved one place by `offset`. */
+export const moved = <T>(items: T[], index: number, offset: -1 | 1): T[] =>
+  reordered(items, index, index + offset);
 
 /**
  * The editor's Recipe as Suggest Guidance reads it. The form may be half done, so unlike

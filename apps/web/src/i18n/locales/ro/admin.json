@@ -183,7 +183,7 @@
     "lines": {
       "title": "Linii de ingredient",
       "hint": "Lasă cantitatea goală pentru o linie precum „sare, după gust”.",
-      "empty": "Nicio linie de ingredient încă.",
+      "empty": "Niciun ingredient încă. Caută în Catalog mai jos.",
       "add": "Adaugă un Ingredient",
       "quantity": "Cantitate pentru {{name}}",
       "unit": "Unitate pentru {{name}}",
@@ -192,7 +192,20 @@
       "remove": "Elimină {{name}}",
       "moveUp": "Mută {{name}} mai sus",
       "moveDown": "Mută {{name}} mai jos",
-      "unknown": "Ingredient necunoscut"
+      "unknown": "Ingredient necunoscut",
+      "more": "Mai mult pentru {{name}}",
+      "optionalSub": "opțional",
+      "optionalSwitch": "Opțional"
+    },
+    "reorder": {
+      "roleDescription": "mobil",
+      "hold": "Ține apăsat pentru a muta",
+      "grip": "Mută {{name}}",
+      "instructions": "Pentru a reordona, ține apăsat pe un rând sau mută focalizarea pe mâner și apasă spațiu pentru a ridica, folosește săgețile pentru a muta, apoi apasă spațiu pentru a lăsa. Apasă Escape pentru a anula.",
+      "pickedUp": "{{name}} a fost ridicat.",
+      "movedTo": "{{name}} a fost mutat pe poziția {{position}} din {{total}}.",
+      "dropped": "{{name}} a fost lăsat pe poziția {{position}} din {{total}}.",
+      "cancelled": "Reordonare anulată."
     },
     "steps": {
       "title": "Pași",
@@ -206,11 +219,25 @@
       "tipsWarning_one": "Eliminarea pasului {{number}} șterge Sfatul lui la salvare.",
       "tipsWarning_other": "Eliminarea pasului {{number}} șterge cele {{count}} Sfaturi ale lui la salvare.",
       "tipsWarning_few": "Eliminarea pasului {{number}} șterge cele {{count}} Sfaturi ale lui la salvare.",
-      "draftTips": "Sfaturi pentru pasul {{number}}",
-      "removeTip": "Elimină Sfatul {{n}} al pasului {{step}}",
-      "removeTipShort": "Elimină",
       "removeWithTips": "Elimină pasul și Sfaturile",
-      "keep": "Păstrează pasul"
+      "keep": "Păstrează pasul",
+      "addStart": "Adaugă un Pas la început",
+      "addFirst": "Adaugă primul Pas",
+      "placeholder": "Ce ai de făcut la pasul {{number}}",
+      "addTimer": "Cronometru",
+      "addTimerFor": "Adaugă un cronometru la pasul {{number}}",
+      "clearTimer": "Elimină cronometrul de la pasul {{number}}",
+      "minutes": "min",
+      "tipOf": "Sfatul {{n}} al pasului {{step}}",
+      "deleteTip": "Șterge Sfatul {{n}} al pasului {{step}}",
+      "newTip": "Sfat nou pentru pasul {{number}}",
+      "cancelTip": "Renunță la Sfatul nou pentru pasul {{number}}",
+      "tipPlaceholder": "Un sfat pentru acest pas",
+      "addTip": "Sfat",
+      "addTipFor": "Adaugă un Sfat la pasul {{number}}",
+      "copiedTips_one": "{{count}} sfat",
+      "copiedTips_few": "{{count}} sfaturi",
+      "copiedTips_other": "{{count}} de sfaturi"
     },
     "variant": {
       "title": "Creează o variantă",

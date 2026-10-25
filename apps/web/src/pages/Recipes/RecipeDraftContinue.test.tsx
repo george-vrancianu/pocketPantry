@@ -373,9 +373,7 @@ describe('Continue your draft? prompt', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Continue Gran stew' }),
     );
-    await user.click(
-      await screen.findByRole('button', { name: 'Save Recipe' }),
-    );
+    await user.click(await screen.findByRole('button', { name: 'Save' }));
     await user.click(await screen.findByRole('link', { name: 'again' }));
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('');
     expect(screen.queryByText(PROMPT)).toBeNull();
