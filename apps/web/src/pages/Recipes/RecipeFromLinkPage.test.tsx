@@ -309,7 +309,10 @@ describe('RecipeFromLinkPage', () => {
     expect(screen.getByLabelText('Timer for Step 1 (minutes)')).toHaveValue(
       '2',
     );
-    expect(screen.getByLabelText('Timer for Step 2 (minutes)')).toHaveValue('');
+    expect(screen.queryByLabelText('Timer for Step 2 (minutes)')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Add a timer to Step 2' }),
+    ).toBeVisible();
     // Where it came from, opening in a new tab; no empty Base Recipe picker.
     await user.click(screen.getByRole('tab', { name: /^Details/ }));
     const source = screen.getByRole('link', { name: 'From example.com ↗' });
