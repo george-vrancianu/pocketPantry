@@ -115,7 +115,13 @@ export function FamilyRecipeForm({
   onChange,
   onSave,
 }: Props) {
-  const { t } = useTranslation(['recipes', 'admin', 'common', 'errors']);
+  const { t } = useTranslation([
+    'recipes',
+    'admin',
+    'common',
+    'errors',
+    'catalog',
+  ]);
   const filters = useRecipeFilters();
   const [draft, setDraft] = useState<FamilyDraft>(initial);
   const [searchKey, setSearchKey] = useState(0);
@@ -158,13 +164,17 @@ export function FamilyRecipeForm({
     familyCatalog.data?.ingredients.map((item) => item.id) ?? [],
   );
   const [pickedFamily, setPickedFamily] = useState<Set<string>>(new Set());
-  const addLine = (line: Pick<LineDraft, 'ingredientId' | 'name' | 'unit'>) =>
+  const [addedKey, setAddedKey] = useState<number | null>(null);
+  const addLine = (line: Pick<LineDraft, 'ingredientId' | 'name' | 'unit'>) => {
+    const key = newKey();
     change({
       lines: [
         ...draft.lines,
-        { key: newKey(), quantity: '', optional: false, note: '', ...line },
+        { key, quantity: '', optional: false, note: '', ...line },
       ],
     });
+    setAddedKey(key);
+  };
 
   const canSave = !hasProblems(problems) && !guidanceBad;
   const submit = () =>
@@ -305,6 +315,7 @@ export function FamilyRecipeForm({
             <RecipeLinesSection
               lines={draft.lines}
               problems={problems}
+              focusKey={addedKey}
               onChange={(lines) => change({ lines })}
               isFamily={(line) =>
                 familyIds.has(line.ingredientId) ||
@@ -314,6 +325,9 @@ export function FamilyRecipeForm({
               <CatalogSearch
                 emptyState={<BrowseByAisle />}
                 key={searchKey}
+                inline
+                label={t('catalog:search.addIngredient')}
+                placeholder={t('catalog:search.addIngredient')}
                 onSelect={(ingredient) => {
                   if (ingredient.owner === 'family')
                     setPickedFamily((ids) => new Set(ids).add(ingredient.id));

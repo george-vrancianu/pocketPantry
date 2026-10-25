@@ -154,7 +154,7 @@ describe('Recipe Drafts autosave on New Recipe', () => {
     });
     await user.click(await screen.findByRole('tab', { name: /^Ingredients/ }));
     await user.type(
-      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+      await screen.findByRole('combobox', { name: 'Add an ingredient' }),
       'Dragon fruit',
     );
     await user.click(

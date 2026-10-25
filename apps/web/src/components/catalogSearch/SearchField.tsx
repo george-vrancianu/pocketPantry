@@ -26,6 +26,8 @@ export type SearchFieldProps = {
   onFocus: () => void;
   autoFocus?: boolean;
   describedBy?: string;
+  /** Placeholder text; defaults to the generic search hint. */
+  placeholder?: string;
   /** Combobox wiring: the listbox it controls and whether it is showing. */
   listboxId: string;
   expanded: boolean;
@@ -55,6 +57,7 @@ export function SearchField({
   onFocus,
   autoFocus,
   describedBy,
+  placeholder,
   listboxId,
   expanded,
   activeOptionId,
@@ -145,7 +148,7 @@ export function SearchField({
         spellCheck={false}
         enterKeyHint="search"
         autoFocus={autoFocus}
-        placeholder={t('search.placeholder')}
+        placeholder={placeholder ?? t('search.placeholder')}
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
