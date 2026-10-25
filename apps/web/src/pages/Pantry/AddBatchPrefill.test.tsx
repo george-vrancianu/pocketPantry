@@ -340,6 +340,12 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
       screen.getByRole('textbox', { name: /Amount of Yogurt/ }),
     ).toHaveValue('500');
     expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
+    // The quick row (the opener) is gone, so focus lands on the token.
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Ingredient: Yogurt. Press Backspace to change',
+      }),
+    ).toHaveFocus();
     expect(screen.getByLabelText('Note · optional')).toHaveValue(
       'Greek yogurt 500 g',
     );
@@ -497,6 +503,64 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
       await screen.findByText('Read from your photo · check it and add'),
     ).toBeVisible();
     expect(screen.queryByText(/Couldn't match/)).toBeNull();
+  });
+
+  it("keeps the Member's typed Unmatched name untagged and silent when the photo only fills the rest", async () => {
+    const user = userEvent.setup();
+    const { release } = stubProductScan(() =>
+      Response.json({
+        lines: [line({ match: milk, name: 'Milk', quantity: 500, unit: 'g' })],
+      }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'Zorblax paste',
+    );
+    await user.click(
+      await screen.findByRole('option', {
+        name: /Use “Zorblax paste” as typed/,
+      }),
+    );
+    await shoot(user);
+    release();
+    await waitFor(() =>
+      expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument(),
+    );
+    expect(
+      await screen.findByRole('textbox', { name: /Amount of Zorblax paste/ }),
+    ).toHaveValue('500');
+    expect(screen.getByLabelText('Note · optional')).toHaveValue(
+      'Greek yogurt 500 g',
+    );
+    expect(
+      screen.queryByRole('combobox', { name: /Ingredient: Milk/ }),
+    ).toBeNull();
+    expect(screen.queryByTestId('camera-source-tag')).toBeNull();
+    expect(screen.queryByTestId('prefilled-ingredient')).toBeNull();
+    expect(
+      screen.queryByText('Read from your photo · check it and add'),
+    ).toBeNull();
+    expect(screen.queryByText(/Couldn't match/)).toBeNull();
+  });
+
+  it('keeps the note field once the photo has filled it, even when the Member deletes its text', async () => {
+    const user = userEvent.setup();
+    const { release } = stubProductScan(() =>
+      Response.json({ lines: [line()] }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await shoot(user);
+    release();
+    const note = await screen.findByLabelText('Note · optional');
+    expect(note).toHaveValue('Greek yogurt 500 g');
+    await user.clear(note);
+    const still = screen.getByLabelText('Note · optional');
+    expect(still).toHaveValue('');
+    expect(still).toHaveFocus();
+    expect(screen.queryByRole('button', { name: /Add a note/ })).toBeNull();
   });
 
   it('says the scan cap is used up, in the camera', async () => {

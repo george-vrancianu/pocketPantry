@@ -6,7 +6,7 @@ import {
   radius,
   tokens,
 } from '@pocket-pantry/ui';
-import { useRef, useState, type ReactNode, type Ref } from 'react';
+import { useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpirySheet } from '../../../components/ExpiryPicker';
 import {
@@ -59,6 +59,7 @@ export function ExpiryChips({
   const { t, i18n } = useTranslation('pantry');
   const today = useToday();
   const daysLabel = useDaysLabel();
+  const lineId = useId();
   const [sheetOpen, setSheetOpen] = useState(false);
   const calendarChip = useRef<HTMLButtonElement>(null);
 
@@ -72,6 +73,10 @@ export function ExpiryChips({
     value !== null &&
     !usualSelected &&
     !QUICK_DAYS.some((days) => quickSelected(days));
+  const calendarDate =
+    calendarSelected && value !== null
+      ? dateAndRelativeDay(value, today, i18n.language).date
+      : '';
   const shown =
     value === null ? null : dateAndRelativeDay(value, today, i18n.language);
 
@@ -125,6 +130,7 @@ export function ExpiryChips({
       <Box
         role="group"
         aria-label={t('picker.label')}
+        aria-describedby={lineId}
         sx={{
           display: 'flex',
           gap: '8px',
@@ -148,13 +154,14 @@ export function ExpiryChips({
         {chip('none', t('form.noDate'), noDateSelected, () => onChange(null))}
         {chip(
           'calendar',
-          calendarSelected && value !== null
-            ? dateAndRelativeDay(value, today, i18n.language).date
-            : '',
+          calendarDate,
           calendarSelected,
           () => setSheetOpen(true),
           {
-            'aria-label': t('picker.calendar'),
+            // The visible date is part of the name (label in name).
+            'aria-label': calendarDate
+              ? `${t('picker.calendar')}, ${calendarDate}`
+              : t('picker.calendar'),
             'aria-haspopup': 'dialog',
             icon: <CalendarDaysIcon size={16} aria-hidden />,
             ref: calendarChip,
@@ -162,6 +169,7 @@ export function ExpiryChips({
         )}
       </Box>
       <Box
+        id={lineId}
         sx={{
           mt: '8px',
           display: 'flex',

@@ -201,4 +201,59 @@ describe('the Add to Pantry card', () => {
     await waitFor(() => expect(batchPost(calls)).toBeDefined());
     expect(batchPost(calls)).toMatchObject({ productDescription: 'Grana' });
   });
+
+  it('presses Usual, not 1 mo, when the Default Expiry is a month', async () => {
+    const { user } = await openAndPick('Parmesan', 'parm');
+    await user.click(screen.getByRole('button', { name: '3 d' }));
+    await user.click(screen.getByRole('button', { name: '1 mo' }));
+    expect(
+      screen.getByRole('button', { name: 'Usual · 1 mo' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '1 mo' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('puts the date in the calendar chip name, and the resolved line in the group description', async () => {
+    const { user } = await openAndPick('Parmesan', 'parm');
+    const group = screen.getByRole('group', { name: 'Expires' });
+    expect(group).toHaveAccessibleDescription(/Fri, Nov 13 · in 30 days/);
+    await user.click(screen.getByRole('button', { name: '3 d' }));
+    await user.click(screen.getByRole('button', { name: 'Calendar' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Expires' });
+    await user.click(
+      within(sheet).getByRole('button', { name: 'Tuesday, October 20, 2026' }),
+    );
+    await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Expires' })).toBeNull(),
+    );
+    expect(
+      screen.getByRole('button', { name: /^Calendar, .*Oct 20/ }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(group).toHaveAccessibleDescription(/Tue, Oct 20 · in 6 days/);
+  });
+
+  it('puts "Add parmesan" in the sheet footer only after a pick, with no Cancel', async () => {
+    const user = userEvent.setup();
+    stubPantry({
+      'GET /api/catalog/search': () => Response.json({ results: [parmesan] }),
+    });
+    renderWithProviders(<PantryPage />);
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    const dialog = screen.getByRole('dialog', { name: 'Add to Pantry' });
+    expect(within(dialog).queryByRole('button', { name: /^Add / })).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: 'Cancel' })).toBeNull();
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    const add = within(dialog).getByRole('button', { name: 'Add parmesan' });
+    // Outside the form and the scrolling body, tied to the form by `form=`.
+    expect(add.closest('form')).toBeNull();
+    expect(add).toHaveAttribute('form', screen.getByRole('form').id);
+    expect(within(dialog).queryByRole('button', { name: 'Cancel' })).toBeNull();
+  });
 });

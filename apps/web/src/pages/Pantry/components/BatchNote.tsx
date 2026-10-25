@@ -10,12 +10,14 @@ type Props = {
 
 /**
  * The Product Description as a note: folded behind "+ Add a note (brand, size)" until the Member opens it,
- * and open whenever it holds text (a Prefill fills it).
+ * and open for good once it holds text (a Prefill fills it).
  */
 export function BatchNote({ id, value, onChange }: Props) {
   const { t } = useTranslation('pantry');
   const [revealed, setRevealed] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  // Once shown it stays shown: deleting a Prefill's text must not fold the field under the Member's fingers.
+  if (value !== '' && !revealed) setRevealed(true);
   const open = revealed || value !== '';
   // Focus the field the Member just unfolded; one that Prefill opened is left alone.
   const focusOnOpen = useRef(false);

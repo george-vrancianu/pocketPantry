@@ -702,7 +702,7 @@ describe('PantryPage', () => {
     );
   });
 
-  it('explains an invalid quantity and returns focus to Add after Cancel', async () => {
+  it('explains an invalid quantity and returns focus to Add after Close', async () => {
     const user = userEvent.setup();
     stubPantry([], [parmesan]);
     renderWithProviders(<PantryPage />);
@@ -733,7 +733,7 @@ describe('PantryPage', () => {
       screen.getByText(/from 0.001 to 1,000,000, with up to 3 decimals/),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Close' }));
     expect(
       await screen.findByRole('button', { name: 'Add batch' }),
     ).toHaveFocus();
@@ -750,8 +750,8 @@ describe('PantryPage', () => {
       'Zorblax paste',
     );
     expect(
-      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
-    ).toBeDisabled();
+      screen.queryByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    ).toBeNull();
 
     const useTyped = await screen.findByRole('option', {
       name: /Use “Zorblax paste” as typed/,
@@ -847,7 +847,12 @@ describe('PantryPage', () => {
         expires: null,
         description: null,
       });
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Close' })).toBeVisible();
+      // The footer button waits for a pick; there is no Cancel.
+      expect(
+        screen.queryByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+      ).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
 
       await user.type(
         screen.getByRole('combobox', { name: 'Search ingredients' }),
@@ -983,7 +988,7 @@ describe('PantryPage', () => {
       expect(
         screen.getByText(/Fri, Nov 20 · in 37 days/),
       ).not.toHaveTextContent('usual for');
-      expect(screen.getByRole('button', { name: 'Calendar' })).toHaveAttribute(
+      expect(screen.getByRole('button', { name: /^Calendar/ })).toHaveAttribute(
         'aria-pressed',
         'true',
       );
@@ -1021,7 +1026,7 @@ describe('PantryPage', () => {
       waitFor(() => expect(element).toHaveFocus(), { timeout: 5000 });
 
     async function openSheet(user: ReturnType<typeof userEvent.setup>) {
-      await user.click(screen.getByRole('button', { name: 'Calendar' }));
+      await user.click(screen.getByRole('button', { name: /^Calendar/ }));
       return screen.findByRole('dialog', { name: 'Expires' });
     }
 
@@ -1488,7 +1493,7 @@ describe('PantryPage', () => {
           screen.queryByRole('dialog', { name: 'Expires' }),
         ).not.toBeInTheDocument(),
       );
-      expect(screen.getByRole('button', { name: 'Calendar' })).toHaveFocus();
+      expect(screen.getByRole('button', { name: /^Calendar/ })).toHaveFocus();
 
       sheet = await openSheet(user);
       await focusLandsOn(quickPick(sheet, /^Usual,/));
@@ -2139,7 +2144,7 @@ describe('PantryPage', () => {
           await openMilk(user);
 
           await user.click(addButton('Milk'));
-          await user.click(screen.getByRole('button', { name: 'Cancel' }));
+          await user.click(screen.getByRole('button', { name: 'Close' }));
 
           const row = await screen.findByRole('button', { name: /^Milk/ });
           expect(row).toHaveAttribute('aria-expanded', 'true');
@@ -2155,7 +2160,7 @@ describe('PantryPage', () => {
           renderWithProviders(<PantryPage />);
           await openMilk(user);
           await user.click(addButton('Milk'));
-          await user.click(screen.getByRole('button', { name: 'Cancel' }));
+          await user.click(screen.getByRole('button', { name: 'Close' }));
 
           await user.click(
             await screen.findByRole('button', { name: 'Add batch' }),
@@ -2239,7 +2244,7 @@ describe('PantryPage', () => {
             expect(
               within(await sheet()).getByRole('textbox', { name: /^Amount/ }),
             ).toBeInTheDocument();
-            await user.click(screen.getByRole('button', { name: 'Cancel' }));
+            await user.click(screen.getByRole('button', { name: 'Close' }));
             await closed();
 
             await user.click(screen.getByRole('button', { name: /^Zorblax/ }));

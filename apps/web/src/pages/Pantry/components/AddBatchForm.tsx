@@ -1,4 +1,4 @@
-import { Alert, Button, Stack, Typography } from '@pocket-pantry/ui';
+import { Alert, Stack, Typography } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
@@ -28,7 +28,10 @@ import { QuickRow } from './QuickRow';
 type Props = {
   /** Called with the Batch the save created. */
   onSaved: (batch: Batch) => void;
-  onCancel: () => void;
+  /** The form's id: the host's submit button (in the sheet footer) points at it with `form=`. */
+  formId: string;
+  /** Told what the host's submit button shows: null until an Ingredient or name is picked. */
+  onSubmitChange: (submit: SubmitState | null) => void;
   /** Start with an Ingredient picked, or an Unmatched name typed in; empty without. */
   start?: AddBatchStart;
   /** Told when the camera overlay opens or closes, so a host can leave Escape to the overlay. */
@@ -39,12 +42,16 @@ type Props = {
   onScanSeveral: (mode: CameraMode) => void;
 };
 
+/** What the submit button in the sheet footer says, and whether it can be pressed. */
+export type SubmitState = { label: string; disabled: boolean };
+
 /** The camera the form opens: a Product photo or a barcode, never the Scan page's other modes. */
 const FORM_CAMERA_MODES = ['product', 'barcode'] as const;
 
 export function AddBatchForm({
   onSaved,
-  onCancel,
+  formId,
+  onSubmitChange,
   start,
   onCameraOpenChange,
   onSayIt,
@@ -60,14 +67,30 @@ export function AddBatchForm({
   const picked = form.ingredient?.name ?? form.unmatchedName;
   const { camera } = form;
   const searchInput = useRef<HTMLInputElement>(null);
-  // After the overlay closes, focus goes back to the button that opened it.
+  // After the overlay closes, focus goes back to the button that opened it; with that gone (a match
+  // hides the quick row) it goes to the search, which is the token once an Ingredient is picked.
   const wasOpen = useRef(false);
   useEffect(() => {
     if (wasOpen.current && !camera.open)
-      (camera.typeRequested ? searchInput : opener).current?.focus();
+      (camera.typeRequested || !opener.current?.isConnected
+        ? searchInput
+        : opener
+      ).current?.focus();
     wasOpen.current = camera.open;
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- only when the camera opens or closes
   }, [camera.open]);
+  const submitLabel = form.saving
+    ? t('form.saving')
+    : picked
+      ? t('form.saveName', { name: picked.toLocaleLowerCase(i18n.language) })
+      : null;
+  const canSave = form.canSave;
+  useEffect(() => {
+    onSubmitChange(
+      submitLabel === null ? null : { label: submitLabel, disabled: !canSave },
+    );
+  }, [submitLabel, canSave, onSubmitChange]);
+  useEffect(() => () => onSubmitChange(null), [onSubmitChange]);
   useEffect(() => {
     onCameraOpenChange?.(camera.open);
     return () => onCameraOpenChange?.(false);
@@ -87,6 +110,7 @@ export function AddBatchForm({
   return (
     <Stack
       component="form"
+      id={formId}
       ref={formRef}
       spacing={2}
       onSubmit={form.submit}
@@ -211,21 +235,6 @@ export function AddBatchForm({
       ) : null}
 
       {form.error ? <Alert>{form.error}</Alert> : null}
-
-      <Stack direction="row" spacing={1}>
-        <Button type="submit" disabled={!form.canSave}>
-          {form.saving
-            ? t('form.saving')
-            : picked
-              ? t('form.saveName', {
-                  name: picked.toLocaleLowerCase(i18n.language),
-                })
-              : t('form.save')}
-        </Button>
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          {t('form.cancel')}
-        </Button>
-      </Stack>
     </Stack>
   );
 }

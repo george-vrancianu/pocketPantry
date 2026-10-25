@@ -10,7 +10,7 @@ import {
   tokens,
   useToast,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { formatRowAmount } from '../../../lib/amount';
@@ -21,7 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import type { AddBatchStart } from '../hooks/useAddBatchForm';
 import { useShowsDockMic } from '../../../components/VoiceNote';
 import { useMicTeach } from '../../../components/voice/VoiceHost';
-import { AddBatchForm } from './AddBatchForm';
+import { AddBatchForm, type SubmitState } from './AddBatchForm';
 
 type Props = {
   open: boolean;
@@ -59,6 +59,9 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
       setFormKey(0);
     }
   }
+  // The footer's submit button: the form reports its label and whether it can save.
+  const formId = useId();
+  const [submit, setSubmit] = useState<SubmitState | null>(null);
   // The camera overlay owns Escape while it is up; the sheet must not close under it.
   const [cameraOpen, setCameraOpen] = useState(false);
   const showsMic = useShowsDockMic();
@@ -129,6 +132,20 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
           )}
         </Box>
       }
+      footer={
+        submit ? (
+          <Box sx={{ p: '12px 18px' }}>
+            <Button
+              type="submit"
+              form={formId}
+              fullWidth
+              disabled={submit.disabled}
+            >
+              {submit.label}
+            </Button>
+          </Box>
+        ) : null
+      }
     >
       <Box sx={{ p: '0 18px 20px' }}>
         {added.length > 0 ? (
@@ -191,7 +208,8 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
           key={formKey}
           start={formKey === 0 ? start : undefined}
           onSaved={saved}
-          onCancel={leave}
+          formId={formId}
+          onSubmitChange={setSubmit}
           onCameraOpenChange={setCameraOpen}
           onSayIt={
             showsMic
