@@ -215,25 +215,30 @@ export function StatusPills({
   recipeId,
   card,
   warning,
+  hideCanMake = false,
 }: {
   recipeId: string;
   card: CookTonightCard | undefined;
   warning: CompactAllergyWarning | null;
+  /** Inside a group that already says "You can make this". */
+  hideCanMake?: boolean;
 }) {
   const { t } = useTranslation('recipes');
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', mt: '6px' }}>
       <AllergenIndicator warning={warning} />
       {!card ? null : card.canMake ? (
-        <Pill
-          icon={<CheckIcon size={13} />}
-          fg={tokens.color.accentOnTint}
-          bg={tokens.color.accentTint}
-        >
-          {card.recipe.id === recipeId
-            ? t('canMake')
-            : t('canMakeVia', { title: card.recipe.title })}
-        </Pill>
+        hideCanMake ? null : (
+          <Pill
+            icon={<CheckIcon size={13} />}
+            fg={tokens.color.accentOnTint}
+            bg={tokens.color.accentTint}
+          >
+            {card.recipe.id === recipeId
+              ? t('canMake')
+              : t('canMakeVia', { title: card.recipe.title })}
+          </Pill>
+        )
       ) : card.missing ? (
         <Pill
           icon={<WarningIcon size={13} />}

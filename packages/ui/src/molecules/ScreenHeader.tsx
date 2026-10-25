@@ -5,6 +5,7 @@ import { IconButton } from '../atoms/IconButton';
 import { ActionMenu, type ActionMenuItem } from './ActionMenu';
 import { Typography } from '../atoms/Typography';
 import { tokens } from '../theme/tokens';
+import { radius } from '../theme/themeVars';
 
 export type ScreenHeaderAction = {
   /** Accessible name of the icon-only button. */
@@ -30,7 +31,12 @@ export type ScreenHeaderProps = {
   /** Content right-aligned in the header, e.g. counter chips on wide screens. */
   trailing?: ReactNode;
   /** A Back link to `href`, in place of the Home button. */
-  back?: { label: string; href: string };
+  back?: {
+    label: string;
+    href: string;
+    /** A "+n" count on Back's corner, hidden at 0; the label should name it too. It bumps when it grows. */
+    badge?: number;
+  };
   /** Makes the title programmatically focusable, so a screen can move focus to it. Needs `title`. */
   titleRef?: Ref<HTMLHeadingElement>;
 };
@@ -57,9 +63,47 @@ export function ScreenHeader({
       }}
     >
       {back ? (
-        <IconButton label={back.label} href={back.href}>
-          <BackIcon size={20} />
-        </IconButton>
+        <Box sx={{ position: 'relative', display: 'flex' }}>
+          <IconButton label={back.label} href={back.href}>
+            <BackIcon size={20} />
+          </IconButton>
+          {back.badge ? (
+            <Box
+              key={back.badge}
+              aria-hidden
+              data-testid="back-badge"
+              sx={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-6px',
+                minWidth: 20,
+                height: 20,
+                px: '5px',
+                boxSizing: 'border-box',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: radius.pill,
+                bgcolor: tokens.color.accent,
+                color: 'pp.accentInk',
+                boxShadow: `0 0 0 2px ${tokens.color.bg}`,
+                fontSize: 11,
+                fontWeight: 700,
+                pointerEvents: 'none',
+                '@keyframes ppBadgeBump': {
+                  '0%': { transform: 'scale(1)' },
+                  '40%': { transform: 'scale(1.3)' },
+                  '100%': { transform: 'scale(1)' },
+                },
+                '@media (prefers-reduced-motion: no-preference)': {
+                  animation: 'ppBadgeBump 400ms ease-out',
+                },
+              }}
+            >
+              +{back.badge}
+            </Box>
+          ) : null}
+        </Box>
       ) : home ? (
         <IconButton label={home.label} href={home.href ?? '/'}>
           <HomeIcon size={20} />

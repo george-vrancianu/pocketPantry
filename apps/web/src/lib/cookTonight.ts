@@ -38,6 +38,8 @@ export function useCookTonight(
   today: string,
   /** Also ask for the Recipes "Hide Recipes with my Allergies" would leave out. */
   showHidden = false,
+  /** `catalog` ranks the Catalog Recipes (Explore); `family` the Family's own. Omitted: both. */
+  scope?: 'family' | 'catalog',
 ) {
   return useQuery({
     queryKey: [
@@ -45,10 +47,12 @@ export function useCookTonight(
       'cook-tonight',
       today,
       ...(showHidden ? ['showHidden'] : []),
+      ...(scope ? [scope] : []),
     ],
     queryFn: () => {
       const params = new URLSearchParams({ today });
       if (showHidden) params.set('showHidden', 'true');
+      if (scope) params.set('scope', scope);
       return apiRequest<CookTonightView>(`/recipes/cook-tonight?${params}`);
     },
   });

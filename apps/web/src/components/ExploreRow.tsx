@@ -19,6 +19,8 @@ type Props = {
   filtering?: boolean;
   /** Where tapping the row body goes (the quick view, later); without it the body is not a control. */
   onOpen?: () => void;
+  /** In "You can make this", which already says it: leaves out the Can make pill. */
+  hideCanMake?: boolean;
 };
 
 /** A Catalog Recipe row with its one-tap add button; shared by Explore and the empty Recipes page. */
@@ -29,6 +31,7 @@ export function ExploreRow({
   card,
   filtering = false,
   onOpen,
+  hideCanMake = false,
 }: Props) {
   const { t } = useTranslation('recipes');
   const meta = [
@@ -85,6 +88,7 @@ export function ExploreRow({
             recipeId={recipe.id}
             card={card}
             warning={recipe.allergyWarning}
+            hideCanMake={hideCanMake}
           />
         ) : null
       }

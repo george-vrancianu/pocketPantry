@@ -196,3 +196,190 @@ describe('ExplorePage add to Family', () => {
     expect(await screen.findByText('detail page')).toBeVisible();
   });
 });
+
+const base = (
+  id: string,
+  over: Partial<RecipeListItem> = {},
+): RecipeListItem => ({
+  ...soup,
+  id,
+  title: id,
+  ...over,
+});
+
+const cardOf = (
+  baseId: string,
+  over: Record<string, unknown> = {},
+  recipe: Record<string, unknown> = {},
+) => ({
+  base: { id: baseId, title: baseId, archived: false },
+  recipe: {
+    id: baseId,
+    title: baseId,
+    parentId: null,
+    owner: 'catalog',
+    servings: 2,
+    prepMinutes: 10,
+    cookMinutes: 20,
+    allergyWarning: null,
+    ...recipe,
+  },
+  canMake: true,
+  missing: null,
+  expiringCount: 0,
+  otherVariantsCount: 0,
+  ...over,
+});
+
+function setupGroups({
+  list = (_url: URL): RecipeListItem[] => [],
+  cards = [] as ReturnType<typeof cardOf>[],
+  hidden = 0,
+} = {}) {
+  const { fetchMock, calls } = stubApi({
+    'GET /api/recipes': (url) =>
+      Response.json({ recipes: list(url), hiddenByAllergiesCount: hidden }),
+    'GET /api/recipes/filters': () =>
+      Response.json({ cuisines: [], methods: [] }),
+    'GET /api/recipes/cook-tonight': () =>
+      Response.json({ cards, hiddenByAllergiesCount: 0 }),
+    'POST /api/recipes/b/copy': () =>
+      Response.json({ id: 'copy-b', created: true }),
+    'POST /api/recipes/copy-b/archive': () => Response.json({ id: 'copy-b' }),
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  renderWithProviders(
+    <Routes>
+      <Route path="/recipes/explore" element={<ExplorePage />} />
+      <Route path="/recipes" element={<p>recipes page</p>} />
+    </Routes>,
+    { route: '/recipes/explore' },
+  );
+  return calls;
+}
+
+const titlesIn = (list: HTMLElement) =>
+  within(list)
+    .getAllByRole('listitem')
+    .map((li) => li.querySelector('div')?.textContent ?? '');
+
+describe('ExplorePage groups', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('puts what the Pantry can make first, most expiring first, without the Can make pill, and the rest A to Z', async () => {
+    const calls = setupGroups({
+      list: () => [base('a'), base('b'), base('c'), base('d')],
+      cards: [
+        cardOf('b'),
+        cardOf('d', { expiringCount: 2 }),
+        cardOf('a', {
+          canMake: false,
+          missing: { ingredientId: null, name: 'egg' },
+        }),
+      ],
+    });
+    const make = await screen.findByRole('list', {
+      name: /^You can make this/,
+    });
+    expect(titlesIn(make).map((x) => x.slice(0, 1))).toEqual(['d', 'b']);
+    expect(within(make).queryByText('Can Make')).toBeNull();
+    expect(within(make).getByText('2 expiring')).toBeVisible();
+    const all = screen.getByRole('list', { name: /^All Recipes/ });
+    expect(titlesIn(all).map((x) => x.slice(0, 1))).toEqual(['a', 'c']);
+    const url = calls.find((c) => c.key === 'GET /api/recipes/cook-tonight')!;
+    expect(new URLSearchParams(url.search).get('scope')).toBe('catalog');
+  });
+
+  it("lists a Catalog Variant card's Base in the group", async () => {
+    setupGroups({
+      list: () => [base('omelette', { variantCount: 1 })],
+      cards: [
+        cardOf(
+          'omelette',
+          {},
+          { id: 'cheese', title: 'Cheese omelette', parentId: 'omelette' },
+        ),
+      ],
+    });
+    const make = await screen.findByRole('list', {
+      name: /^You can make this/,
+    });
+    expect(within(make).getByText('omelette')).toBeVisible();
+    expect(screen.queryByRole('list', { name: /^All Recipes/ })).toBeNull();
+  });
+
+  it('shows 4 rows, then Show n more', async () => {
+    setupGroups({
+      list: () => ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => base(id)),
+    });
+    const all = await screen.findByRole('list', { name: /^All Recipes/ });
+    expect(within(all).getAllByRole('listitem')).toHaveLength(4);
+    await userEvent.click(screen.getByRole('button', { name: 'Show 2 more' }));
+    expect(within(all).getAllByRole('listitem')).toHaveLength(6);
+    expect(screen.queryByRole('button', { name: /Show .* more/ })).toBeNull();
+  });
+
+  it('folds into Matches with Variants while searching, and says when nothing matches', async () => {
+    setupGroups({
+      list: (url) =>
+        url.searchParams.has('search')
+          ? url.searchParams.get('search') === 'zzz'
+            ? []
+            : [
+                base('cheese', {
+                  parentId: 'omelette',
+                  base: { id: 'omelette', title: 'Omelette' },
+                }),
+              ]
+          : [base('omelette')],
+      cards: [cardOf('omelette')],
+    });
+    await screen.findByRole('list', { name: /^You can make this/ });
+    const user = userEvent.setup();
+    await user.type(
+      screen.getByRole('searchbox', { name: 'Search all Recipes' }),
+      'che',
+    );
+    const matches = await screen.findByRole('list', { name: /^Matches/ });
+    expect(await screen.findByText('Variant of Omelette')).toBeVisible();
+    expect(matches).toBeInTheDocument();
+    expect(
+      screen.queryByRole('list', { name: /^You can make this/ }),
+    ).toBeNull();
+    await user.clear(screen.getByRole('searchbox'));
+    await user.type(screen.getByRole('searchbox'), 'zzz');
+    expect(await screen.findByText('No Recipes match.')).toBeVisible();
+  });
+
+  it('offers the Recipes hidden by Allergies', async () => {
+    setupGroups({ list: () => [base('a')], hidden: 2 });
+    expect(await screen.findByRole('button', { name: /show/i })).toBeVisible();
+  });
+});
+
+describe('ExplorePage Back badge', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('counts net adds on Back, counts down on Undo and hides at 0', async () => {
+    setupGroups({ list: () => [base('b')] });
+    const user = userEvent.setup();
+    expect(
+      await screen.findByRole('link', { name: 'Back to your Recipes' }),
+    ).toBeVisible();
+    expect(screen.queryByTestId('back-badge')).toBeNull();
+    await user.click(
+      await screen.findByRole('button', { name: 'Add b to your Recipes' }),
+    );
+    expect(
+      await screen.findByRole('link', {
+        name: 'Back to your Recipes, 1 added',
+      }),
+    ).toBeVisible();
+    expect(screen.getByTestId('back-badge')).toHaveTextContent('+1');
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    await waitFor(() => expect(screen.queryByTestId('back-badge')).toBeNull());
+    expect(
+      screen.getByRole('link', { name: 'Back to your Recipes' }),
+    ).toBeVisible();
+  });
+});

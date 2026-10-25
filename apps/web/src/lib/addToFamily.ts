@@ -28,15 +28,24 @@ export type AddableRecipe = {
  * One hook per screen: `stateOf` merges the server's `familyCopyId` with the
  * taps made here until the refetch lands.
  */
-export function useAddToFamily() {
+export function useAddToFamily({
+  onNet,
+}: {
+  /** +1 when a tap made a copy, -1 when Undo archived it (the Back badge counts net adds). */
+  onNet?: (delta: 1 | -1) => void;
+} = {}) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [overrides, setAddStates] = useState<Record<string, AddState>>({});
+  const [overrides, setOverrides] = useState<Record<string, AddState>>({});
   // The copy request of each source in flight, so Undo can wait for the copy id.
   const pending = useRef(
     new Map<string, Promise<{ id: string; created: boolean }>>(),
   );
+  const onNetRef = useRef(onNet);
+  useEffect(() => {
+    onNetRef.current = onNet;
+  });
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -47,7 +56,7 @@ export function useAddToFamily() {
 
   const set = useCallback((id: string, value: AddState | null) => {
     if (!mounted.current) return;
-    setAddStates((prev) => {
+    setOverrides((prev) => {
       const next = { ...prev };
       if (value) next[id] = value;
       else delete next[id];
@@ -73,6 +82,7 @@ export function useAddToFamily() {
       set(recipe.id, { status: 'none' });
       try {
         await apiRequest(`/recipes/${copyId}/archive`, { method: 'POST' });
+        onNetRef.current?.(-1);
       } catch {
         set(recipe.id, { status: 'added', copyId });
         toast.show(t('recipes:explore.undoFailed', { title: recipe.title }));
@@ -107,7 +117,8 @@ export function useAddToFamily() {
       try {
         const body = await request;
         set(recipe.id, { status: 'added', copyId: body.id });
-        if (!body.created) {
+        if (body.created) onNetRef.current?.(1);
+        else {
           toast.show(
             t('recipes:explore.alreadyAdded', { title: recipe.title }),
             {

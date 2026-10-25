@@ -13,6 +13,8 @@ export type ActionMenuItem = {
   icon?: ReactNode;
   /** A small pill after the label, e.g. "new". */
   badge?: string;
+  /** Draws a divider above the item. */
+  dividerBefore?: boolean;
   /** Renders the item as a link. */
   href?: string;
   onClick?: () => void;
@@ -90,6 +92,21 @@ export function ActionMenu({
                 item.onClick?.();
               }}
               sx={{
+                ...(item.dividerBefore
+                  ? {
+                      position: 'relative',
+                      mt: '9px',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: -5,
+                        left: 0,
+                        right: 0,
+                        height: '1px',
+                        bgcolor: tokens.color.line,
+                      },
+                    }
+                  : {}),
                 gap: '10px',
                 height: 44,
                 px: '12px',

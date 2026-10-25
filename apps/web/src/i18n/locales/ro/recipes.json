@@ -285,6 +285,18 @@
     "inFamily": "În Rețetele tale",
     "openCopy": "{{title}} este în Rețetele tale. Deschide-o",
     "undoFailed": "Nu am putut anula adăugarea {{title}}. Încearcă din nou.",
-    "alreadyAdded": "{{title}} este deja în Rețetele tale"
+    "alreadyAdded": "{{title}} este deja în Rețetele tale",
+    "pill": "Explorează",
+    "search": "Caută în toate Rețetele",
+    "canMake": "Poți găti acestea",
+    "allRecipes": "Toate Rețetele",
+    "matches": "Rezultate",
+    "noMatchesHint": "Încearcă alt cuvânt sau scrie-ți propria Rețetă cu Rețetă nouă.",
+    "backAdded_one": "Înapoi la Rețetele tale, {{count}} adăugată",
+    "backAdded_few": "Înapoi la Rețetele tale, {{count}} adăugate",
+    "backAdded_other": "Înapoi la Rețetele tale, {{count}} de adăugate",
+    "showMore_one": "Arată încă {{count}}",
+    "showMore_few": "Arată încă {{count}}",
+    "showMore_other": "Arată încă {{count}}"
   }
 }
