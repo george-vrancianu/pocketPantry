@@ -3,18 +3,20 @@ import type { MouseEventHandler, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 type LinkProps =
-  { to: string; label: string } | { to?: undefined; label?: undefined };
+  | { to: string; label: string; describedBy?: string }
+  | { to?: undefined; label?: undefined; describedBy?: undefined };
 
 /**
  * Gator on the accent tint with a speech bubble beside him, which fades in after his Entrance.
  * Gator sits whole inside the panel, with room above for his hop and below for his shadow; size
- * him at 170. Pass `to` to make the whole panel one link, named by `label`.
+ * him at 170. Pass `to` to make the whole panel one link, named by `label` (and described by the element `describedBy`).
  */
 export function GatorBubblePanel({
   gator,
   children,
   to,
   label,
+  describedBy,
   onClick,
 }: {
   gator: ReactNode;
@@ -25,7 +27,15 @@ export function GatorBubblePanel({
 } & LinkProps) {
   return (
     <Box
-      {...(to ? { component: Link, to, 'aria-label': label, onClick } : {})}
+      {...(to
+        ? {
+            component: Link,
+            to,
+            'aria-label': label,
+            'aria-describedby': describedBy,
+            onClick,
+          }
+        : {})}
       sx={{
         position: 'relative',
         display: 'block',

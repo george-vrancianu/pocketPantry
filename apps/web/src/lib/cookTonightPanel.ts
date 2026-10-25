@@ -2,18 +2,19 @@ import type { GatorMood } from '@pocket-pantry/ui';
 import type { TFunction } from 'i18next';
 import { canMakeCards, type CookTonightCard } from './cookTonight';
 
-export type CookTonightPanelKind =
-  'canMake' | 'oneShort' | 'nothing' | 'noRecipes';
-
 export type CookTonightPanelState = {
-  kind: CookTonightPanelKind;
   /** 'chef' for canMake and noRecipes, 'chef-flop' otherwise. */
   mood: GatorMood;
-  /** canMake and oneShort lead to the Cook Tonight page, nothing to the Pantry; noRecipes has no link. */
-  to: string | null;
   /** The status lines after the "Cook tonight" label; empty for noRecipes. */
   lines: string[];
-};
+} & (
+  | {
+      kind: 'canMake' | 'oneShort' | 'nothing';
+      /** canMake and oneShort lead to the Cook Tonight page, nothing to the Pantry. */
+      to: string;
+    }
+  | { kind: 'noRecipes'; to: null }
+);
 
 /**
  * The one place that works out what the Cook Tonight Gator panel says and where it leads, so the

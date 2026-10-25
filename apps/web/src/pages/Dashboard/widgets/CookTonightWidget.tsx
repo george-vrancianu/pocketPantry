@@ -6,7 +6,7 @@ import {
   AllergenIndicator,
   allergenIndicatorLabel,
 } from '../../../components/AllergenIndicator';
-import { CookTonightCardLink } from '../../../components/CookTonightCardLink';
+import { CookTonightPanel } from '../../../components/CookTonightPanel';
 import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { recipeHref } from '../../../lib/recipeHref';
@@ -35,7 +35,10 @@ function cardsFor(size: WidgetSize, columns: GridColumns): number {
   return rows === 2 && span === 2 ? 3 : 2;
 }
 
-/** Cards for the Recipes the Family can make tonight (or nearly), one per Base Recipe. */
+/**
+ * Small: header, See all and one card. Wide/tall: Gator's Cook Tonight panel, the Hidden by
+ * Allergies note, then 2–3 cards.
+ */
 export function CookTonightWidget({ size, columns }: WidgetProps) {
   const { t } = useTranslation('dashboard');
   const [showHidden, setShowHidden] = useState(false);
@@ -51,6 +54,9 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
   const allCards = cookTonight.data?.cards ?? [];
   const cards = allCards.slice(0, cardsFor(size, columns));
 
+  const pending = cookTonight.isPending || (wide && recipes.isPending);
+  const failure = cookTonight.error ?? (wide ? recipes.error : null);
+
   const note = (
     <HiddenByAllergiesNote
       count={cookTonight.data?.hiddenByAllergiesCount ?? 0}
@@ -64,12 +70,8 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
       size={size}
       columns={columns}
       // Either answer missing or failed is never read as Nothing or an empty Family (Story 27).
-      isLoading={cookTonight.isPending || (wide && recipes.isPending)}
-      error={
-        cookTonight.error || (wide && recipes.error)
-          ? translateApiError(t, cookTonight.error ?? recipes.error)
-          : null
-      }
+      isLoading={pending}
+      error={failure ? translateApiError(t, failure) : null}
     >
       {size === 'small' ? (
         <>
@@ -120,7 +122,7 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
       ) : (
         // Wide and tall: no header row; the panel names the Widget and leads to Cook Tonight.
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <CookTonightCardLink
+          <CookTonightPanel
             cards={allCards}
             noRecipes={hasNoFamilyRecipes(recipes.data)}
           />

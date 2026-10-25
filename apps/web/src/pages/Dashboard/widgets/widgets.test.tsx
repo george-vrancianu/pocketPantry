@@ -873,7 +873,7 @@ describe('CookTonightWidget for a Family with no Recipes', () => {
     expect(
       within(region).getByRole('link', { name: 'New Recipe' }),
     ).toHaveAttribute('href', '/recipes/new');
-    expect(screen.queryByText(/Nothing in your Pantry/)).toBeNull();
+    expect(screen.queryByText(/Nothing to cook from your Pantry/)).toBeNull();
   });
 
   it('shows the same on a tall Widget', async () => {

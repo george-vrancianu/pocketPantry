@@ -16,6 +16,7 @@ import { RecipesPage } from './RecipesPage';
  *   ingredient short, nothing). Its Gator is an `img` inside it, named by the Gator's alt text
  *   and marked with `data-mood`. Pressing it plays Gator's Tap (`data-motion="tap"` on that img) and navigates 500ms later, or at
  *   once with reduced motion (tests that only follow the link stub reduced motion).
+ *   Its accessible description is that alt text, so a screen reader hears his mood too.
  * - The list is a `list` named by its heading, so its name starts with "All Recipes" or
  *   "Matches"; the count is part of that heading's text. Each row is a `listitem` whose
  *   text holds the title, family pill, "Variant of", meta, pills and time; the row also
@@ -875,6 +876,8 @@ describe('RecipesPage', () => {
       expect(
         within(link).getByRole('img', { name: 'Gator, cooking' }),
       ).toHaveAttribute('data-mood', 'chef');
+      // The link's name stays "Cook tonight, ..."; Gator's mood is its description.
+      expect(link).toHaveAccessibleDescription('Gator, cooking');
     });
 
     it('says "1 Recipe" in the singular and "2 use" in the plural', async () => {
@@ -1102,6 +1105,52 @@ describe('RecipesPage', () => {
       );
       expect(queryCookTonight()).toBeNull();
       expect(screen.queryByAltText('Gator, cooking')).toBeNull();
+    });
+
+    describe('before the Recipe list has answered', () => {
+      /** Cook Tonight answers "nothing" at once; the Recipe list is whatever `list` does. */
+      function setupWithList(list: () => Response | Promise<Response>) {
+        const { fetchMock } = stubApi({
+          'GET /api/recipes': list,
+          'GET /api/recipes/filters': () => Response.json(filters),
+          'GET /api/recipes/cook-tonight': () =>
+            Response.json({ cards: [], hiddenByAllergiesCount: 0 }),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        ({ queryClient } = renderWithProviders(<RecipesPage />, {
+          route: '/recipes',
+        }));
+      }
+      const cookTonightAnswered = () =>
+        waitFor(() =>
+          expect(
+            queryClient
+              .getQueryCache()
+              .findAll({ queryKey: ['recipes', 'cook-tonight'] })
+              .some((query) => query.state.status === 'success'),
+          ).toBe(true),
+        );
+
+      it('is hidden while the Recipe list loads, so a slow load never reads as "nothing to cook"', async () => {
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        setupWithList(async () => {
+          await gate;
+          return Response.json({ recipes: [], hiddenByAllergiesCount: 0 });
+        });
+        await cookTonightAnswered();
+        expect(queryCookTonight()).toBeNull();
+        release();
+      });
+
+      it('is hidden when the Recipe list fails to load', async () => {
+        setupWithList(() =>
+          Response.json({ code: 'internal', params: {} }, { status: 500 }),
+        );
+        await screen.findByRole('alert');
+        await cookTonightAnswered();
+        expect(queryCookTonight()).toBeNull();
+      });
     });
 
     it('is hidden while searching and while a chip filters, and returns after Clear', async () => {

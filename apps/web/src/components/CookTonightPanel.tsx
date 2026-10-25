@@ -1,4 +1,12 @@
-import { Box, displayType, Gator, Link, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  displayType,
+  Gator,
+  Link,
+  tokens,
+  visuallyHidden,
+} from '@pocket-pantry/ui';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CookTonightCard } from '../lib/cookTonight';
 import { cookTonightPanelState } from '../lib/cookTonightPanel';
@@ -13,7 +21,7 @@ import { GatorBubblePanel } from './GatorBubblePanel';
  * navigates; with reduced motion it navigates at once. With `noRecipes` it is the empty-pot panel
  * instead (not a link) with three text links under it.
  */
-export function CookTonightCardLink({
+export function CookTonightPanel({
   cards,
   noRecipes = false,
 }: {
@@ -23,18 +31,23 @@ export function CookTonightCardLink({
 }) {
   const { t } = useTranslation('recipes');
   const gatorAlt = useGatorAlt();
-  // The Recipes page hides the card when the Family has no Recipes; the Dashboard Widget passes `noRecipes`.
-  const { mood, to, lines } = cookTonightPanelState(cards, noRecipes, t);
-  const { taps, onClick } = useGatorTapLink(to);
-  if (!to) return noRecipes ? <EmptyPot /> : null;
+  // The Recipes page hides the panel when the Family has no Recipes; the Dashboard Widget passes `noRecipes`.
+  const state = cookTonightPanelState(cards, noRecipes, t);
+  const { taps, onClick } = useGatorTapLink(state.to);
+  const moodId = useId();
+  if (state.kind === 'noRecipes') return <EmptyPot />;
+  const { mood, to, lines } = state;
   const title = t('cookTonight.title');
   const [line, ...rest] = lines;
+  const moodAlt = gatorAlt(mood);
 
   return (
     <GatorBubblePanel
       to={to}
       // Block children carry no spaces for a screen reader, so name the link explicitly.
       label={[title, ...lines].join(', ')}
+      // The label overrides Gator's alt text, so his mood is the link's description instead.
+      describedBy={moodId}
       onClick={onClick}
       gator={
         <Gator
@@ -42,10 +55,13 @@ export function CookTonightCardLink({
           size={170}
           loop="signature"
           tapSignal={taps}
-          alt={gatorAlt(mood)}
+          alt={moodAlt}
         />
       }
     >
+      <Box component="span" id={moodId} sx={visuallyHidden}>
+        {moodAlt}
+      </Box>
       <Box sx={{ ...displayType, fontSize: 18 }}>{title}</Box>
       <Box sx={{ fontWeight: 700, mt: '4px' }}>{line}</Box>
       {rest.map((text, i) => (
