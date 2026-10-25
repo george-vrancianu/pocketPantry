@@ -181,7 +181,7 @@
     "lines": {
       "title": "Ingredient Lines",
       "hint": "Leave the quantity blank for a line like \"salt, to taste\".",
-      "empty": "No ingredients yet. Search the Catalog below, or type a name.",
+      "empty": "No ingredients yet. Search the Catalog below.",
       "add": "Add an Ingredient",
       "quantity": "Quantity of {{name}}",
       "unit": "Unit of {{name}}",

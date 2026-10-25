@@ -181,7 +181,7 @@
     "lines": {
       "title": "Ingredienslinjer",
       "hint": "Lad mængden stå tom for en linje som \"salt, efter smag\".",
-      "empty": "Ingen ingredienser endnu. Søg i kataloget herunder, eller skriv et navn.",
+      "empty": "Ingen ingredienser endnu. Søg i kataloget herunder.",
       "add": "Tilføj en ingrediens",
       "quantity": "Mængde af {{name}}",
       "unit": "Enhed for {{name}}",
