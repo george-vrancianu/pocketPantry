@@ -1,11 +1,4 @@
-import {
-  Alert,
-  Button,
-  Link,
-  Spinner,
-  Stack,
-  Typography,
-} from '@pocket-pantry/ui';
+import { Alert, Link, Spinner, Stack, Typography } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,9 +7,11 @@ import {
   useNavigate,
   useParams,
 } from 'react-router-dom';
-import { RecipeDraftConflictBanner } from '../../components/RecipeDraftConflictBanner';
 import { RecipeDraftStatus } from '../../components/RecipeDraftStatus';
-import { useLeaveGuard } from '../../lib/useLeaveGuard';
+import {
+  useRecipeDraftFormSession,
+  type RecipeDraftRouteProps,
+} from './useRecipeDraftFormSession';
 import {
   contentOfForm,
   formOfContent,
@@ -25,10 +20,7 @@ import {
 import { DRAFT_PARAM, useRecipeDraftRoute } from './useRecipeDraftRoute';
 import { RecipeDraftContinue } from './RecipeDraftContinue';
 import { plateMatchInput, useResumedPlateBases } from './useResumedPlateBases';
-import { RecipeDraftLimitNotice } from './components/RecipeDraftLimitNotice';
-import type { DiscardedDraftState } from './useRecipeDraftDiscard';
 import { useRecipeDraftAutosave } from '../../lib/recipeDraftAutosave';
-import { type RecipeDraftView } from '../../lib/recipeDrafts';
 import {
   BaseRecipePicker,
   STANDALONE,
@@ -39,7 +31,6 @@ import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { RemovableSourceLink, isSourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
 import {
-  useCreateFamilyRecipe,
   useFamilyRecipeEdit,
   useFamilyTipWrites,
   useUpdateFamilyRecipe,
@@ -101,11 +92,23 @@ export type NewRecipeState = {
 
 const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
 
+/** The route's Recipe Draft handles, as one object for the form. */
+function routePropsOf(
+  route: ReturnType<typeof useRecipeDraftRoute>,
+): RecipeDraftRouteProps {
+  return {
+    resumed: route.resumed,
+    onDraftId: route.onDraftId,
+    onLoadLatest: route.adopt,
+  };
+}
+
 /** "New Recipe": the Family Recipe form, blank or filled from a supplied draft or a resumed Recipe Draft; saved as a Base Recipe, or a Variant of the picked base. */
 export function NewRecipePage() {
   const location = useLocation();
   const { t } = useTranslation(['common', 'errors', 'recipes']);
   const route = useRecipeDraftRoute();
+  const draftRoute = routePropsOf(route);
   if (route.error) return <Alert>{translateApiError(t, route.error)}</Alert>;
   if (route.loading) return <Spinner label={t('common:loading')} />;
   // A resumed Recipe Draft holds everything; the state a reload kept would only repeat it.
@@ -119,12 +122,7 @@ export function NewRecipePage() {
       baseRecipeId={null}
       title={t('recipes:family.newRecipeHeading')}
     >
-      <NewRecipeContent
-        supplied={supplied}
-        resumed={route.resumed}
-        onDraftId={route.onDraftId}
-        onLoadLatest={route.adopt}
-      />
+      <NewRecipeContent supplied={supplied} draftRoute={draftRoute} />
     </RecipeDraftContinue>
   );
 }
@@ -170,19 +168,15 @@ function suppliedOf(state: unknown): NewRecipeState | null {
 
 function NewRecipeContent({
   supplied,
-  resumed,
-  onDraftId,
-  onLoadLatest,
+  draftRoute,
 }: {
   supplied: NewRecipeState | null;
-  resumed?: RecipeDraftView;
-  onDraftId: (id: string) => void;
-  onLoadLatest: (latest: RecipeDraftView) => void;
+  draftRoute: RecipeDraftRouteProps;
 }) {
+  const { resumed } = draftRoute;
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
   const [basePick, setBasePick] = useState(noBasePick);
-  const create = useCreateFamilyRecipe();
   // True from the tap on Save until the create answers, so a second tap cannot make a second Recipe.
   const [finishing, setFinishing] = useState(false);
   const momentOptions = useMomentOptions();
@@ -280,20 +274,17 @@ function NewRecipeContent({
         }),
     resumed: resumed ? { id: resumed.id, version: resumed.version } : undefined,
   });
-  const { draftId, flush } = autosave;
-  // A save that failed (or lost to another device) is not on the server: ask before leaving.
-  useLeaveGuard(autosave.hasUnsaved, t('recipes:recipeDraft.leaveConfirm'));
-  const [discarding, setDiscarding] = useState(false);
+  const session = useRecipeDraftFormSession({
+    autosave,
+    route: draftRoute,
+    finishing,
+    setFinishing,
+  });
   // A read that counted against a Cap must not be lost: no waiting for an edit.
   useEffect(() => {
-    if (supplied) void flush();
+    if (supplied) void autosave.flush();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  useEffect(() => {
-    // Only a new id goes to the URL, and not while the Recipe is being saved: the page is about to leave.
-    if (draftId && !finishing) onDraftId(draftId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftId, finishing]);
 
   return (
     <>
@@ -342,77 +333,31 @@ function NewRecipeContent({
         {resumed?.kind === 'variant' && !resumed.baseAvailable ? (
           <Alert severity="info">{t('recipes:drafts.baseGone')}</Alert>
         ) : null}
-        <RecipeDraftLimitNotice
-          error={autosave.error}
-          status={autosave.status}
-        />
-        {autosave.status === 'conflict' && draftId ? (
-          <RecipeDraftConflictBanner
-            draftId={draftId}
-            onLoaded={onLoadLatest}
-          />
-        ) : null}
+        {session.notices}
         <FamilyRecipeForm
           heading={t('recipes:family.newRecipeHeading')}
           description={t('recipes:family.newRecipeHint')}
           initial={initial}
           saveLabel={t('recipes:family.save')}
-          saving={create.isPending || finishing || discarding}
-          error={create.error}
+          saving={session.saving}
+          error={session.create.error}
           guidance={{ initial: initialGuidance, momentOptions }}
           onChange={setFormState}
-          onSave={async (document, guidance) => {
-            if (finishing) return;
-            setFinishing(true);
-            // The Recipe Draft ends with the create, so it must be known first.
-            const recipeDraftId = await autosave.flush();
-            // It is being consumed: no update may go out meanwhile.
-            autosave.pause();
-            create.mutate(
-              {
-                parentId: hasBases ? parentId : null,
-                document: {
-                  ...document,
-                  guidance,
-                  ...(recipeDraftId ? { recipeDraftId } : {}),
-                  ...(sourceLink ? { sourceLink } : {}),
-                  // The language note belongs to the link: no link, no note.
-                  ...(sourceLink && sourceLanguage ? { sourceLanguage } : {}),
-                },
+          onSave={(document, guidance) =>
+            session.save({
+              parentId: hasBases ? parentId : null,
+              document,
+              guidance,
+              extra: {
+                ...(sourceLink ? { sourceLink } : {}),
+                // The language note belongs to the link: no link, no note.
+                ...(sourceLink && sourceLanguage ? { sourceLanguage } : {}),
               },
-              {
-                onSuccess: (saved) => {
-                  autosave.stop();
-                  navigate(`/recipes/${saved.id}`);
-                },
-                onError: () => {
-                  setFinishing(false);
-                  autosave.resume();
-                },
-              },
-            );
-          }}
+            })
+          }
           onCancel={() => navigate('/recipes')}
         />
-        {draftId ? (
-          <Button
-            variant="secondary"
-            disabled={discarding || finishing}
-            onClick={async () => {
-              setDiscarding(true);
-              // Let a write in flight land (it may be the create that gives the id), then keep autosave from writing again.
-              const id = await autosave.flush();
-              autosave.stop();
-              // The Recipes page owns the Undo: this form is about to be gone.
-              const state: DiscardedDraftState | null = id
-                ? { discardRecipeDraft: { id } }
-                : null;
-              navigate('/recipes', { replace: true, state });
-            }}
-          >
-            {t('recipes:drafts.discard')}
-          </Button>
-        ) : null}
+        {session.discardButton}
       </Stack>
     </>
   );
@@ -424,6 +369,7 @@ export function NewVariantPage() {
   const { id = '' } = useParams();
   const location = useLocation();
   const route = useRecipeDraftRoute();
+  const draftRoute = routePropsOf(route);
   const resuming = new URLSearchParams(location.search).has(DRAFT_PARAM);
   const title = t('recipes:family.newHeading');
   if (route.error || route.loading) {
@@ -467,26 +413,17 @@ export function NewVariantPage() {
       baseRecipeId={id}
       title={title}
     >
-      <NewVariantContent
-        baseId={id}
-        resumed={route.resumed}
-        onDraftId={route.onDraftId}
-        onLoadLatest={route.adopt}
-      />
+      <NewVariantContent baseId={id} draftRoute={draftRoute} />
     </RecipeDraftContinue>
   );
 }
 
 function NewVariantContent({
   baseId: id,
-  resumed,
-  onDraftId,
-  onLoadLatest,
+  draftRoute,
 }: {
   baseId: string;
-  resumed?: RecipeDraftView;
-  onDraftId: (id: string) => void;
-  onLoadLatest: (latest: RecipeDraftView) => void;
+  draftRoute: RecipeDraftRouteProps;
 }) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
@@ -514,9 +451,7 @@ function NewVariantContent({
           baseId={id}
           prefill={draft.data}
           source={source.data}
-          resumed={resumed}
-          onDraftId={onDraftId}
-          onLoadLatest={onLoadLatest}
+          draftRoute={draftRoute}
           onCancel={() => navigate(`/recipes/${id}`)}
         />
       ) : null}
@@ -529,25 +464,19 @@ function VariantForm({
   baseId,
   prefill,
   source,
-  resumed,
-  onDraftId,
-  onLoadLatest,
+  draftRoute,
   onCancel,
 }: {
   baseId: string;
   prefill: FamilyRecipeDraft;
   source: RecipeDetail | undefined;
-  resumed?: RecipeDraftView;
-  onDraftId: (id: string) => void;
-  onLoadLatest: (latest: RecipeDraftView) => void;
+  draftRoute: RecipeDraftRouteProps;
   onCancel: () => void;
 }) {
+  const { resumed } = draftRoute;
   const { t } = useTranslation(['recipes', 'common', 'errors']);
-  const navigate = useNavigate();
-  const create = useCreateFamilyRecipe();
   const momentOptions = useMomentOptions();
   const [finishing, setFinishing] = useState(false);
-  const [discarding, setDiscarding] = useState(false);
   const [resumedForm] = useState(() =>
     resumed ? formOfContent(resumed.content) : null,
   );
@@ -568,12 +497,12 @@ function VariantForm({
     blank: contentOfForm(copy),
     resumed: resumed ? { id: resumed.id, version: resumed.version } : undefined,
   });
-  const { draftId } = autosave;
-  useLeaveGuard(autosave.hasUnsaved, t('recipes:recipeDraft.leaveConfirm'));
-  useEffect(() => {
-    if (draftId && !finishing) onDraftId(draftId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftId, finishing]);
+  const session = useRecipeDraftFormSession({
+    autosave,
+    route: draftRoute,
+    finishing,
+    setFinishing,
+  });
 
   return (
     <>
@@ -582,70 +511,22 @@ function VariantForm({
         trailing={<RecipeDraftStatus status={autosave.status} />}
       />
       <Stack spacing={2.5}>
-        <RecipeDraftLimitNotice
-          error={autosave.error}
-          status={autosave.status}
-        />
-        {autosave.status === 'conflict' && draftId ? (
-          <RecipeDraftConflictBanner
-            draftId={draftId}
-            onLoaded={onLoadLatest}
-          />
-        ) : null}
+        {session.notices}
         <FamilyRecipeForm
           heading={t('recipes:family.newHeading')}
           description={`${t('recipes:family.copyHint')} ${t('recipes:family.tipsHint')}`}
           initial={initial.draft}
           saveLabel={t('recipes:family.create')}
-          saving={create.isPending || finishing || discarding}
-          error={create.error}
+          saving={session.saving}
+          error={session.create.error}
           guidance={{ initial: initial.guidance, momentOptions }}
           onChange={setFormState}
-          onSave={async (document, guidance) => {
-            if (finishing) return;
-            setFinishing(true);
-            const recipeDraftId = await autosave.flush();
-            autosave.pause();
-            create.mutate(
-              {
-                parentId: prefill.parentId,
-                document: {
-                  ...document,
-                  guidance,
-                  ...(recipeDraftId ? { recipeDraftId } : {}),
-                },
-              },
-              {
-                onSuccess: (saved) => {
-                  autosave.stop();
-                  navigate(`/recipes/${saved.id}`);
-                },
-                onError: () => {
-                  setFinishing(false);
-                  autosave.resume();
-                },
-              },
-            );
-          }}
+          onSave={(document, guidance) =>
+            session.save({ parentId: prefill.parentId, document, guidance })
+          }
           onCancel={onCancel}
         />
-        {draftId ? (
-          <Button
-            variant="secondary"
-            disabled={discarding || finishing}
-            onClick={async () => {
-              setDiscarding(true);
-              const id = await autosave.flush();
-              autosave.stop();
-              const state: DiscardedDraftState | null = id
-                ? { discardRecipeDraft: { id } }
-                : null;
-              navigate('/recipes', { replace: true, state });
-            }}
-          >
-            {t('recipes:drafts.discard')}
-          </Button>
-        ) : null}
+        {session.discardButton}
       </Stack>
     </>
   );

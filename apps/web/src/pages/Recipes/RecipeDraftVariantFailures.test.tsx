@@ -159,4 +159,28 @@ describe('Recipe Draft failures on New Variant', () => {
       content: { title: 'From the phone.' },
     });
   });
+
+  it('saves a Variant after a version conflict without ending the newer Recipe Draft, and offers no Discard draft', async () => {
+    const user = typer();
+    const calls = setup({
+      [POST]: () => created(),
+      [PUT]: () => failure(409, 'recipe_drafts.version_conflict'),
+      'POST /api/recipes': () =>
+        Response.json({ id: 'new-variant', title: 'x' }, { status: 201 }),
+    });
+    const title = await screen.findByLabelText(/^Title/);
+    await user.type(title, '!');
+    await elapse(1600);
+    await user.type(title, '?');
+    await elapse(1600);
+    await screen.findByRole('button', { name: 'Load latest' });
+    expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
+    await vi.waitFor(() =>
+      expect(sent(calls, 'POST /api/recipes')).toHaveLength(1),
+    );
+    expect(sent(calls, 'POST /api/recipes')[0].body).not.toHaveProperty(
+      'recipeDraftId',
+    );
+  });
 });

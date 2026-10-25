@@ -296,7 +296,7 @@ describe('Recipe Drafts (integration)', () => {
       expect(list.map((d) => d.origin)).toEqual([
         null,
         { type: 'plate_scan' },
-        { type: 'link', domain: 'www.example.org' },
+        { type: 'link', domain: 'example.org' },
       ]);
       expect(list[0]).toMatchObject({
         title: 'Plain edited',

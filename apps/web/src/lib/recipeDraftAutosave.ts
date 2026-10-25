@@ -68,6 +68,8 @@ export type Autosave = {
   error: unknown;
   /** True while the last save failed or lost to a newer version, so leaving would lose edits. Read when needed (it is current even before a re-render). */
   hasUnsaved: () => boolean;
+  /** True once a write lost to a newer version, until the form is reloaded. Read when needed (current even before a re-render): the stored Recipe Draft is then not this form's to end or discard. */
+  conflicted: () => boolean;
   /** The Recipe Draft's id once it exists. */
   draftId: string | null;
   /** Sends what is pending now (after a request in flight); resolves to the Recipe Draft id, or null if there is none. Never rejects. */
@@ -280,6 +282,8 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     return !state.stopped && state.failed;
   }, []);
 
+  const conflicted = useCallback(() => run.current.conflict, []);
+
   const stop = useCallback(() => {
     const state = run.current;
     state.stopped = true;
@@ -299,5 +303,15 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     schedule();
   }, [schedule]);
 
-  return { status, error, draftId, hasUnsaved, flush, pause, resume, stop };
+  return {
+    status,
+    error,
+    draftId,
+    hasUnsaved,
+    conflicted,
+    flush,
+    pause,
+    resume,
+    stop,
+  };
 }

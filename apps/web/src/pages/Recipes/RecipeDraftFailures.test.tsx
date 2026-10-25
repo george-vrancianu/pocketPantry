@@ -386,6 +386,32 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
       expect(sent(calls, POST)).toHaveLength(1);
     });
 
+    it('saves without ending the newer Recipe Draft, and offers no Discard draft meanwhile', async () => {
+      const calls = setup({
+        [POST]: () => created(),
+        [PUT]: conflict,
+        'POST /api/recipes': () =>
+          Response.json(
+            { id: 'new-recipe', title: 'Gran stew' },
+            { status: 201 },
+          ),
+      });
+      const user = typer();
+      const title = await screen.findByLabelText(/^Title/);
+      await user.type(title, 'Gran');
+      await elapse(1600);
+      await user.type(title, ' stew');
+      await elapse(1600);
+      await screen.findByRole('button', { name: 'Load latest' });
+      expect(
+        screen.queryByRole('button', { name: 'Discard draft' }),
+      ).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+      const [post] = sent(calls, 'POST /api/recipes');
+      expect(post.body).not.toHaveProperty('recipeDraftId');
+    });
+
     it('asks before leaving, since the edits here are not saved', async () => {
       const { user } = await conflicted();
       await screen.findByRole('button', { name: 'Load latest' });
@@ -450,7 +476,7 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
       [
         'ro',
         'Această ciornă de rețetă a fost modificată pe alt dispozitiv',
-        'Încarcă ultima versiune',
+        'Încarcă ultima ciornă salvată',
       ],
       ['da', 'Denne opskriftkladde er ændret på en anden enhed', 'Hent nyeste'],
     ] as const)('says it in %s', async (locale, text, action) => {

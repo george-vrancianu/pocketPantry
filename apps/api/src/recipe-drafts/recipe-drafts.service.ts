@@ -89,7 +89,9 @@ export async function deleteExpiredRecipeDrafts(
 function originOf(content: RecipeDraftContent): RecipeDraftOrigin {
   if (content.sourceLink) {
     try {
-      return { type: 'link', domain: new URL(content.sourceLink).hostname };
+      const { hostname } = new URL(content.sourceLink);
+      // "www." is the same site, and noise in a row.
+      return { type: 'link', domain: hostname.replace(/^www\./, '') };
     } catch {
       // A half-typed link has no domain yet: fall through.
     }

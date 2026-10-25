@@ -11,7 +11,7 @@ import type { AutosaveStatus } from '../../../lib/recipeDraftAutosave';
  * gone), with its translated reason. Transient failures are the header's
  * "retrying" note, not this.
  */
-export function RecipeDraftLimitNotice({
+export function RecipeDraftWriteNotice({
   error,
   status,
 }: {

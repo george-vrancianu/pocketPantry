@@ -185,6 +185,6 @@
   "recipe_drafts": {
     "not_found": "Acea ciornă de rețetă nu mai există. Poate a fost eliminată sau păstrată prea mult.",
     "limit_reached": "Ai deja {{max}} de ciorne de rețete. Termină sau elimină una ca să începi alta.",
-    "version_conflict": "Această ciornă de rețetă a fost modificată pe alt dispozitiv. Încarcă ultima versiune ca să continui."
+    "version_conflict": "Această ciornă de rețetă a fost modificată pe alt dispozitiv. Încarcă ultima ciornă salvată ca să continui."
   }
 }
