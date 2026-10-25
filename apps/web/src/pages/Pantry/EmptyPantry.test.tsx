@@ -218,7 +218,7 @@ describe('the Empty Pantry', () => {
       within(dialog).getByRole('button', { name: /Freezer/, pressed: true }),
     ).toBeInTheDocument();
     await user.click(
-      within(dialog).getByRole('button', { name: 'Add to Pantry' }),
+      within(dialog).getByRole('button', { name: /^Add (?!to )/ }),
     );
     await waitFor(() =>
       expect(calls.some((c) => c.key === 'POST /api/pantry/batches')).toBe(

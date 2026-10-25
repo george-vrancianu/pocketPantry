@@ -20,6 +20,7 @@ import { barcodeLine } from '../../../lib/barcode';
 import { isValidBarcode } from '../../../lib/gtin';
 import type { CameraMode } from '../../../lib/cameraMode';
 import { type ProposedLine } from '../../../lib/scan';
+import { defaultAmount } from '../../../lib/usualAmounts';
 import type { CameraResult } from '../../Scan/CameraOverlay';
 import {
   defaultExpiryDate,
@@ -120,14 +121,32 @@ export function useAddBatchForm({
     }
   };
 
+  /** An amount in the form's own notation ("0,5" in ro and da), so it parses back as typed text does. */
+  const typedAmount = (value: number) =>
+    new Intl.NumberFormat(i18n.language, {
+      useGrouping: false,
+      maximumFractionDigits: 3,
+    }).format(value);
+  /** The Ingredient's usual amount, as the amount a pick starts with. */
+  const usualAmountText = (
+    result: Pick<CatalogSearchResult, 'defaultUnit' | 'amountScale'>,
+  ) => typedAmount(defaultAmount(result.defaultUnit, result.amountScale));
+
   const selectIngredient = (result: CatalogSearchResult) => {
     edit('ingredient');
     setIngredient(result);
     setUnmatchedName(null);
     // A frozen unit belonged to the dropped Ingredient: the new one's default applies.
     setFrozenUnit(null);
-    // Keep a unit the Member chose with an amount before the pick ("2 kg", then Parmesan); with no amount, the new Ingredient's unit applies.
-    if (quantity.trim() === '') setChosenUnit(null);
+    // Keep an amount the Member typed (or Prefill read) before the pick ("2 kg", then Parmesan), with its unit.
+    // Otherwise the new Ingredient's usual amount and unit apply.
+    if (
+      quantity.trim() === '' ||
+      (!touched.amount && !prefilled.has('amount'))
+    ) {
+      setChosenUnit(null);
+      setQuantity(usualAmountText(result));
+    }
     setLocation(
       presetLocation ?? result.defaults.location ?? FALLBACK_LOCATION,
     );
@@ -154,6 +173,8 @@ export function useAddBatchForm({
           startingDefaults.defaults.location ??
           FALLBACK_LOCATION,
       );
+    if (!touched.amount && quantity.trim() === '')
+      setQuantity(usualAmountText(startingDefaults));
     const days = startingDefaults.defaults.expiryDays;
     if (!touched.expiry && !prefilled.has('expiry'))
       setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
@@ -191,14 +212,17 @@ export function useAddBatchForm({
    * Writes a Product Scan's line into the fields the Member has not touched and marks them. Location
    * and expiry keep the Catalog-default fallback when the line gives none.
    */
+  // The Member's own Ingredient (picked or typed) is not overwritten by Prefill; one they cleared leaves nothing to protect.
+  const ingredientTouched =
+    touched.ingredient && (ingredient !== null || unmatchedName !== null);
   const applyPrefill = (
     read: ProposedLine,
     /** With no Match: keep the read name as a typed Unmatched name (a Known Barcode's saved name), or pre-type it in the Ingredient search (Product Scan, Barcode Lookup). */
     noMatch: 'typed-name' | 'search' = 'typed-name',
   ) => {
     const marks = new Set<PrefillField>();
-    const matched = touched.ingredient ? null : read.match;
-    if (!touched.ingredient) {
+    const matched = ingredientTouched ? null : read.match;
+    if (!ingredientTouched) {
       if (read.match) {
         setIngredient(read.match);
         setUnmatchedName(null);
@@ -231,7 +255,7 @@ export function useAddBatchForm({
       if (read.expiryDate) {
         setExpiryDate(read.expiryDate as IsoDate);
         marks.add('expiry');
-      } else if (!touched.ingredient) {
+      } else if (!ingredientTouched) {
         const days = matched?.defaults.expiryDays ?? null;
         setExpiryDate(
           days === null ? null : defaultExpiryDate(days, new Date()),
@@ -240,14 +264,13 @@ export function useAddBatchForm({
     }
     if (!touched.amount && read.quantity !== null) {
       // In the form's own notation ("0,5" in ro and da), so it parses back as typed text does.
-      setQuantity(
-        new Intl.NumberFormat(i18n.language, {
-          useGrouping: false,
-          maximumFractionDigits: 3,
-        }).format(read.quantity),
-      );
+      setQuantity(typedAmount(read.quantity));
       setChosenUnit(read.unit);
       marks.add('amount');
+    } else if (!touched.amount && matched) {
+      // No pack size read: the matched Ingredient's usual amount.
+      setQuantity(usualAmountText(matched));
+      setChosenUnit(null);
     }
     if (!touched.description && read.productDescription) {
       setDescription(read.productDescription);
@@ -301,7 +324,7 @@ export function useAddBatchForm({
         if (code && current === cameraResults.current) setBarcodeToSend(code);
       });
       const { read } = result;
-      const ingredientPicked = touched.ingredient;
+      const ingredientPicked = ingredientTouched;
       prefillNow.current(read, 'search');
       // The Member's own Ingredient pick is not "From photo", and the toast only speaks of what the read did.
       if (!ingredientPicked) setSource('photo');
@@ -392,6 +415,10 @@ export function useAddBatchForm({
     unit,
     location,
     expiryDate,
+    /** The Catalog default Location of the picked Ingredient; null when it has none (or is not known yet). */
+    usualLocation: ingredient?.defaults?.location ?? null,
+    /** The picked Ingredient's Leaf Category name, for "usual for {leaf}"; its own name until the Catalog result lands. */
+    leafName: ingredient?.leafCategory?.name ?? ingredient?.name ?? null,
     /** The Default Expiry in days for the "Usual" quick pick: only for a chosen Ingredient that has one. */
     usualDays: ingredient?.defaults?.expiryDays ?? null,
     description,

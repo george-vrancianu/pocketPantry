@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
 import { FALLBACK_LOCATION } from '../../../lib/catalog';
-import { usualAmountsInPriority } from '../../../lib/usualAmounts';
+import { defaultAmount } from '../../../lib/usualAmounts';
 import { usePopularToStart } from '../../../lib/popularToStart';
 import { useEmptyStateSearch } from './context';
 import { IngredientTile } from './IngredientTile';
@@ -16,13 +16,10 @@ export function PopularToStart() {
   return (
     <TileSection heading={t('search.popularToStart')}>
       {popular.data.map((ingredient) => {
-        // Counts start at the first Usual Amount; mass and volume at the second (the handoff's default).
-        const usual = usualAmountsInPriority(
+        const quantity = defaultAmount(
           ingredient.defaultUnit,
           ingredient.amountScale,
         );
-        const quantity =
-          (ingredient.defaultUnit === 'pcs' ? usual[0] : usual[1]) ?? 1;
         const amount = formatAmount(
           quantity,
           ingredient.defaultUnit,

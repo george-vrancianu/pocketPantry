@@ -103,6 +103,7 @@ export {
   BookmarkIcon,
   TemplateIcon,
   CalendarIcon,
+  CalendarDaysIcon,
   SubItemIcon,
   PulseIcon,
   CookIcon,

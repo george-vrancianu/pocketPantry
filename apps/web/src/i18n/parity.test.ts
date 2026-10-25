@@ -220,6 +220,11 @@ const PLAIN_WORDS: Record<string, string> = {
 /** Exceptions found when the broad whitelist was narrowed: term, reason, keys. */
 const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   [
+    'brand',
+    'a product maker named as an example in the Note hint (Add to Pantry), not a Brand Ingredient',
+    ['pantry:form.addNote', 'pantry:form.descriptionPlaceholder'],
+  ],
+  [
     'label',
     'the printed label of a product the camera reads, not a Product Description',
     ['scan:readingLabel', 'scan:labelFailed'],

@@ -97,11 +97,10 @@
     "close": "Închide",
     "title": "Adaugă în cămară",
     "cancel": "Anulează",
-    "save": "Adaugă în cămară",
     "saving": "Se salvează",
     "location": "Locație",
-    "description": "Descrierea produsului",
-    "descriptionPlaceholder": "de ex. Grana Padano 200g",
+    "description": "Notă · opțional",
+    "descriptionPlaceholder": "Marcă sau mărime, de ex. Zuzu 3,5%",
     "unmatchedNotice": "\"{{name}}\" va fi salvat ca Nepotrivit și marcat pentru verificare.",
     "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale și fără exponent.",
     "prefill": {
@@ -129,7 +128,15 @@
     "addedToast": "Adăugat {{details}}",
     "addedList_one": "{{count}} lot adăugat",
     "addedList_few": "{{count}} loturi adăugate",
-    "addedList_other": "{{count}} de loturi adăugate"
+    "addedList_other": "{{count}} de loturi adăugate",
+    "amount": "Cantitate",
+    "where": "Unde se pune",
+    "usualDot": "obișnuit",
+    "usualFor": "obișnuit pentru {{name}}",
+    "usualChip": "Obișnuit · {{value}}",
+    "noDate": "Fără dată",
+    "addNote": "+ Adaugă o notă (marcă, mărime)",
+    "saveName": "Adaugă {{name}}"
   },
   "picker": {
     "label": "Expiră",

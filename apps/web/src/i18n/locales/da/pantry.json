@@ -90,11 +90,10 @@
     "close": "Luk",
     "title": "Tilføj til spisekammeret",
     "cancel": "Annuller",
-    "save": "Tilføj til spisekammeret",
     "saving": "Gemmer",
     "location": "Placering",
-    "description": "Produktbeskrivelse",
-    "descriptionPlaceholder": "f.eks. Grana Padano 200 g",
+    "description": "Note · valgfri",
+    "descriptionPlaceholder": "Mærke eller størrelse, fx Arla 3,5 %",
     "unmatchedNotice": "\"{{name}}\" gemmes som umatchet og markeres til gennemgang.",
     "quantityInvalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler og uden eksponent.",
     "prefill": {
@@ -121,7 +120,15 @@
     "done": "Færdig",
     "addedToast": "Tilføjet {{details}}",
     "addedList_one": "{{count}} parti tilføjet",
-    "addedList_other": "{{count}} partier tilføjet"
+    "addedList_other": "{{count}} partier tilføjet",
+    "amount": "Mængde",
+    "where": "Hvor det skal hen",
+    "usualDot": "sædvanlig",
+    "usualFor": "sædvanlig for {{name}}",
+    "usualChip": "Sædvanlig · {{value}}",
+    "noDate": "Ingen dato",
+    "addNote": "+ Tilføj en note (mærke, størrelse)",
+    "saveName": "Tilføj {{name}}"
   },
   "picker": {
     "label": "Udløber",

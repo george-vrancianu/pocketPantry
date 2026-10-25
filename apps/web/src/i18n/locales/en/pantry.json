@@ -90,11 +90,10 @@
     "close": "Close",
     "title": "Add to Pantry",
     "cancel": "Cancel",
-    "save": "Add to Pantry",
     "saving": "Saving",
     "location": "Location",
-    "description": "Product description",
-    "descriptionPlaceholder": "e.g. Grana Padano 200g",
+    "description": "Note · optional",
+    "descriptionPlaceholder": "Brand or size, e.g. Zuzu 3.5%",
     "unmatchedNotice": "\"{{name}}\" will be saved as Unmatched and flagged for review.",
     "quantityInvalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals and no exponent.",
     "prefill": {
@@ -121,7 +120,15 @@
     "done": "Done",
     "addedToast": "Added {{details}}",
     "addedList_one": "{{count}} batch added",
-    "addedList_other": "{{count}} batches added"
+    "addedList_other": "{{count}} batches added",
+    "amount": "Amount",
+    "where": "Where it goes",
+    "usualDot": "usual",
+    "usualFor": "usual for {{name}}",
+    "usualChip": "Usual · {{value}}",
+    "noDate": "No date",
+    "addNote": "+ Add a note (brand, size)",
+    "saveName": "Add {{name}}"
   },
   "picker": {
     "label": "Expires",

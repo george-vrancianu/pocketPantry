@@ -7,6 +7,7 @@ import type { Batch } from '../../lib/pantry';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
+import { clearPick, typeNote } from '../../test/addBatch';
 import {
   fakeCamera,
   languageChip,
@@ -149,13 +150,6 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
       { route: '/pantry?mode=receipt&tab=x' },
     );
     await openForm(user);
-    await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'yog',
-    );
-    await user.click(await screen.findByRole('option', { name: /Yogurt/ }));
-    await user.type(screen.getByLabelText('Product description'), 'Mine');
-
     await user.click(cameraButton());
     expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
     expect(languageChip()).toBeInTheDocument();
@@ -166,7 +160,9 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
 
     await user.click(screen.getByRole('button', { name: 'Close scanner' }));
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Product description')).toHaveValue('Mine');
+    expect(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    ).toBeInTheDocument();
     expect(scanCalls(calls)).toHaveLength(0);
   });
 
@@ -344,12 +340,16 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
       screen.getByRole('textbox', { name: /Amount of Yogurt/ }),
     ).toHaveValue('500');
     expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Product description')).toHaveValue(
+    // The quick row (the opener) is gone, so focus lands on the token.
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Ingredient: Yogurt. Press Backspace to change',
+      }),
+    ).toHaveFocus();
+    expect(screen.getByLabelText('Note · optional')).toHaveValue(
       'Greek yogurt 500 g',
     );
-    expect(
-      screen.getByRole('button', { name: /^Expires, .*December 24/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Thu, Dec 24 · in/)).toBeInTheDocument();
     for (const field of ['ingredient', 'amount', 'expiry', 'description'])
       expect(screen.getByTestId(`prefilled-${field}`)).toHaveTextContent(
         'Filled from the product',
@@ -357,11 +357,13 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     expect(screen.queryByText(/Low confidence/)).not.toBeInTheDocument();
 
     // Editing a field drops its mark.
-    await user.type(screen.getByLabelText('Product description'), '!');
+    await user.type(screen.getByLabelText('Note · optional'), '!');
     expect(screen.queryByTestId('prefilled-description')).toBeNull();
     expect(screen.getByTestId('prefilled-amount')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
     const post = calls.find((c) => c.key === 'POST /api/pantry/batches');
     expect(post?.body).toEqual({
       ingredientId: 'yogurt-id',
@@ -385,11 +387,14 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    await user.clear(screen.getByRole('textbox', { name: /Amount of Milk/ }));
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Milk/ }),
       '2',
     );
-    await user.type(screen.getByLabelText('Product description'), 'Fresh');
+    await typeNote(user, 'Fresh');
+    // The camera is for an empty pick: clear it. What the Member set stays.
+    await clearPick(user);
     await shoot(user);
     release();
     await waitFor(() =>
@@ -397,52 +402,37 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     );
 
     expect(
-      screen.getByRole('combobox', {
-        name: 'Ingredient: Milk. Press Backspace to change',
+      await screen.findByRole('combobox', {
+        name: 'Ingredient: Yogurt. Press Backspace to change',
       }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /Amount of Milk/ })).toHaveValue(
-      '2',
-    );
-    expect(screen.getByLabelText('Product description')).toHaveValue('Fresh');
+    expect(
+      screen.getByRole('textbox', { name: /Amount of Yogurt/ }),
+    ).toHaveValue('2');
+    expect(screen.getByLabelText('Note · optional')).toHaveValue('Fresh');
     // Expiry was not touched: it takes the date from the photo.
     expect(await screen.findByTestId('prefilled-expiry')).toBeInTheDocument();
-    expect(screen.queryByTestId('prefilled-ingredient')).toBeNull();
+    expect(screen.getByTestId('prefilled-ingredient')).toBeInTheDocument();
     expect(screen.queryByTestId('prefilled-amount')).toBeNull();
     expect(screen.queryByTestId('prefilled-description')).toBeNull();
   });
 
-  it('keeps the Ingredient the form was opened from and fills the rest', async () => {
+  it('hides the quick row while an Ingredient is picked, and brings it back when the pick is cleared', async () => {
     const user = userEvent.setup();
-    const { release } = stubProductScan(() =>
-      Response.json({ lines: [line({ expiryDate: null })] }),
-    );
+    stubProductScan(() => Response.json({ lines: [line()] }));
     renderWithProviders(<PantryPage />);
-    await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-    await user.click(
-      screen.getByRole('button', { name: 'Add a batch of Milk' }),
+    await openForm(user);
+    expect(cameraButton()).toBeInTheDocument();
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'yog',
     );
-    await screen.findByRole('combobox', {
-      name: 'Ingredient: Milk. Press Backspace to change',
-    });
-    await shoot(user);
-    release();
+    await user.click(await screen.findByRole('option', { name: /Yogurt/ }));
+    expect(screen.queryByRole('button', { name: 'Take a photo' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Add quickly' })).toBeNull();
 
-    await waitFor(() =>
-      expect(screen.getByLabelText('Product description')).toHaveValue(
-        'Greek yogurt 500 g',
-      ),
-    );
-    expect(
-      screen.getByRole('combobox', {
-        name: 'Ingredient: Milk. Press Backspace to change',
-      }),
-    ).toBeInTheDocument();
-    expect(screen.queryByTestId('prefilled-ingredient')).toBeNull();
-    // Milk's own Catalog default expiry stays.
-    expect(
-      screen.getByRole('button', { name: /^Expires, .*, in 7 days$/ }),
-    ).toBeInTheDocument();
+    await clearPick(user);
+    expect(cameraButton()).toBeInTheDocument();
   });
 
   it('marks a low-confidence match with "check this" and leaves Save enabled', async () => {
@@ -457,7 +447,9 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     expect(
       await screen.findByText(/Low confidence: check the match/),
     ).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Add to Pantry' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    ).toBeEnabled();
   });
 
   it('on no match, pre-types the search with the read name and says so', async () => {
@@ -483,7 +475,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     ).toBeVisible();
     // The note is read into the form; its field shows once an Ingredient is picked.
     await user.click(await screen.findByRole('option', { name: /Yogurt/ }));
-    expect(screen.getByLabelText('Product description')).toHaveValue(
+    expect(screen.getByLabelText('Note · optional')).toHaveValue(
       'Greek yogurt 500 g',
     );
   });
@@ -513,7 +505,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     expect(screen.queryByText(/Couldn't match/)).toBeNull();
   });
 
-  it("keeps the Member's own Ingredient pick untagged and silent when the photo only fills the rest", async () => {
+  it("keeps the Member's typed Unmatched name untagged and silent when the photo only fills the rest", async () => {
     const user = userEvent.setup();
     const { release } = stubProductScan(() =>
       Response.json({
@@ -524,27 +516,51 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     await openForm(user);
     await user.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'yog',
+      'Zorblax paste',
     );
-    await user.click(await screen.findByRole('option', { name: /Yogurt/ }));
+    await user.click(
+      await screen.findByRole('option', {
+        name: /Use “Zorblax paste” as typed/,
+      }),
+    );
     await shoot(user);
     release();
     await waitFor(() =>
       expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument(),
     );
     expect(
-      await screen.findByRole('combobox', {
-        name: 'Ingredient: Yogurt. Press Backspace to change',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByRole('textbox', { name: /Amount of Yogurt/ }),
+      await screen.findByRole('textbox', { name: /Amount of Zorblax paste/ }),
     ).toHaveValue('500');
+    expect(screen.getByLabelText('Note · optional')).toHaveValue(
+      'Greek yogurt 500 g',
+    );
+    expect(
+      screen.queryByRole('combobox', { name: /Ingredient: Milk/ }),
+    ).toBeNull();
     expect(screen.queryByTestId('camera-source-tag')).toBeNull();
+    expect(screen.queryByTestId('prefilled-ingredient')).toBeNull();
     expect(
       screen.queryByText('Read from your photo · check it and add'),
     ).toBeNull();
     expect(screen.queryByText(/Couldn't match/)).toBeNull();
+  });
+
+  it('keeps the note field once the photo has filled it, even when the Member deletes its text', async () => {
+    const user = userEvent.setup();
+    const { release } = stubProductScan(() =>
+      Response.json({ lines: [line()] }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await shoot(user);
+    release();
+    const note = await screen.findByLabelText('Note · optional');
+    expect(note).toHaveValue('Greek yogurt 500 g');
+    await user.clear(note);
+    const still = screen.getByLabelText('Note · optional');
+    expect(still).toHaveValue('');
+    expect(still).toHaveFocus();
+    expect(screen.queryByRole('button', { name: /Add a note/ })).toBeNull();
   });
 
   it('says the scan cap is used up, in the camera', async () => {
@@ -574,11 +590,6 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     );
     renderWithProviders(<PantryPage />);
     await openForm(user);
-    await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'mil',
-    );
-    await user.click(await screen.findByRole('option', { name: /Milk/ }));
     await shoot(user);
     release();
     const alert = await screen.findByRole('alert');
@@ -588,7 +599,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     await user.click(within(alert).getByRole('button', { name: 'Type it' }));
     expect(screen.queryByTestId('camera-overlay')).toBeNull();
     expect(
-      screen.getByRole('combobox', { name: /Ingredient: Milk/ }),
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
     ).toHaveFocus();
   });
 });
@@ -607,7 +618,9 @@ describe('Learn barcodes from Product photos', () => {
     user: ReturnType<typeof userEvent.setup>,
     calls: ReturnType<typeof stubApi>['calls'],
   ) {
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
     await waitFor(() =>
       expect(
         calls.some((call) => call.key === 'POST /api/pantry/batches'),
@@ -686,6 +699,7 @@ describe('Learn barcodes from Product photos', () => {
     await shoot(user);
     release();
     await screen.findByTestId('prefilled-ingredient');
+    await clearPick(user);
     await shoot(user);
     await act(async () => {
       late(CODE);
@@ -708,6 +722,7 @@ describe('Learn barcodes from Product photos', () => {
     await shoot(user);
     release();
     await screen.findByTestId('prefilled-ingredient');
+    await clearPick(user);
     await shoot(user);
     await waitFor(() => expect(fakeCamera.readCount).toBe(2));
 

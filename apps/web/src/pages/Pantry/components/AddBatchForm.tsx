@@ -1,4 +1,4 @@
-import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
+import { Alert, Stack, Typography } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
@@ -8,8 +8,7 @@ import {
   ListedAllergensNote,
   OpenFoodFactsCredit,
 } from '../../../components/BarcodeLookupNotes';
-import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
-import { LocationToggle } from '../../../components/LocationToggle';
+import { expiryContext } from '../../../components/ExpiryPicker';
 import { StatusIcon } from '../../../components/StatusIcon';
 import type { StorageLocation } from '../../../lib/catalog';
 import type { Batch } from '../../../lib/pantry';
@@ -21,12 +20,19 @@ import {
   type PrefillField,
 } from '../hooks/useAddBatchForm';
 import { BatchAmountField } from './BatchAmountField';
+import { BatchCard, CardSection } from './BatchCard';
+import { BatchNote } from './BatchNote';
+import { ExpiryChips } from './ExpiryChips';
+import { WhereItGoes } from './WhereItGoes';
 import { QuickRow } from './QuickRow';
 
 type Props = {
   /** Called with the Batch the save created. */
   onSaved: (batch: Batch) => void;
-  onCancel: () => void;
+  /** The form's id: the host's submit button (in the sheet footer) points at it with `form=`. */
+  formId: string;
+  /** Told what the host's submit button shows: null until an Ingredient or name is picked. */
+  onSubmitChange: (submit: SubmitState | null) => void;
   /** Start with an Ingredient picked, or an Unmatched name typed in; empty without. */
   start?: AddBatchStart;
   /** Every pick goes to this Location (a shelf card's "+"). */
@@ -39,12 +45,16 @@ type Props = {
   onScanSeveral: (mode: CameraMode) => void;
 };
 
+/** What the submit button in the sheet footer says, and whether it can be pressed. */
+export type SubmitState = { label: string; disabled: boolean };
+
 /** The camera the form opens: a Product photo or a barcode, never the Scan page's other modes. */
 const FORM_CAMERA_MODES = ['product', 'barcode'] as const;
 
 export function AddBatchForm({
   onSaved,
-  onCancel,
+  formId,
+  onSubmitChange,
   start,
   presetLocation,
   onCameraOpenChange,
@@ -61,14 +71,30 @@ export function AddBatchForm({
   const picked = form.ingredient?.name ?? form.unmatchedName;
   const { camera } = form;
   const searchInput = useRef<HTMLInputElement>(null);
-  // After the overlay closes, focus goes back to the button that opened it.
+  // After the overlay closes, focus goes back to the button that opened it; with that gone (a match
+  // hides the quick row) it goes to the search, which is the token once an Ingredient is picked.
   const wasOpen = useRef(false);
   useEffect(() => {
     if (wasOpen.current && !camera.open)
-      (camera.typeRequested ? searchInput : opener).current?.focus();
+      (camera.typeRequested || !opener.current?.isConnected
+        ? searchInput
+        : opener
+      ).current?.focus();
     wasOpen.current = camera.open;
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- only when the camera opens or closes
   }, [camera.open]);
+  const submitLabel = form.saving
+    ? t('form.saving')
+    : picked
+      ? t('form.saveName', { name: picked.toLocaleLowerCase(i18n.language) })
+      : null;
+  const canSave = form.canSave;
+  useEffect(() => {
+    onSubmitChange(
+      submitLabel === null ? null : { label: submitLabel, disabled: !canSave },
+    );
+  }, [submitLabel, canSave, onSubmitChange]);
+  useEffect(() => () => onSubmitChange(null), [onSubmitChange]);
   useEffect(() => {
     onCameraOpenChange?.(camera.open);
     return () => onCameraOpenChange?.(false);
@@ -88,16 +114,19 @@ export function AddBatchForm({
   return (
     <Stack
       component="form"
+      id={formId}
       ref={formRef}
       spacing={2}
       onSubmit={form.submit}
       aria-label={t('form.title')}
     >
-      <QuickRow
-        openerRef={opener}
-        onOpen={(mode) => camera.openCamera(mode)}
-        onSayIt={onSayIt}
-      />
+      {form.ingredient === null ? (
+        <QuickRow
+          openerRef={opener}
+          onOpen={(mode) => camera.openCamera(mode)}
+          onSayIt={onSayIt}
+        />
+      ) : null}
       {camera.open ? (
         <CameraOverlay
           modes={FORM_CAMERA_MODES}
@@ -151,65 +180,65 @@ export function AddBatchForm({
         </Alert>
       ) : null}
       {picked ? (
-        <>
-          <BatchAmountField
-            name={picked}
-            amountScale={form.ingredient?.amountScale}
-            quantity={form.quantity}
-            unit={form.unit}
-            quantityValid={form.quantityValid}
-            onQuantityChange={form.setQuantity}
-            onUnitChange={form.setUnit}
-            onSubmit={() => formRef.current?.requestSubmit()}
-          />
-
-          {mark('amount')}
-          <LocationToggle
-            label={t('form.location')}
-            value={form.location}
-            onChange={form.setLocation}
-          />
-          <ExpiryField
-            id={`${id}-expiry`}
-            label={t('picker.label')}
-            value={form.expiryDate}
-            onChange={form.setExpiryDate}
-            usualDays={form.usualDays}
-            context={expiryContext(
-              {
-                name: picked,
-                quantity: form.quantity,
-                unit: form.unit,
-                location: form.location,
-              },
-              i18n.language,
-              t,
-            )}
-          />
-
-          {mark('expiry')}
-          <TextField
+        <BatchCard>
+          <CardSection label={t('form.amount')}>
+            <BatchAmountField
+              name={picked}
+              amountScale={form.ingredient?.amountScale}
+              quantity={form.quantity}
+              unit={form.unit}
+              quantityValid={form.quantityValid}
+              onQuantityChange={form.setQuantity}
+              onUnitChange={form.setUnit}
+              onSubmit={() => formRef.current?.requestSubmit()}
+            />
+            {mark('amount')}
+          </CardSection>
+          <CardSection
+            label={t('form.where')}
+            hint={
+              form.usualLocation !== null &&
+              form.location === form.usualLocation
+                ? t('form.usualFor', { name: form.leafName })
+                : null
+            }
+          >
+            <WhereItGoes
+              label={t('form.location')}
+              value={form.location}
+              onChange={form.setLocation}
+              usual={form.usualLocation}
+            />
+          </CardSection>
+          <CardSection label={t('picker.label')}>
+            <ExpiryChips
+              value={form.expiryDate}
+              onChange={form.setExpiryDate}
+              usualDays={form.usualDays}
+              name={picked}
+              context={expiryContext(
+                {
+                  name: picked,
+                  quantity: form.quantity,
+                  unit: form.unit,
+                  location: form.location,
+                },
+                i18n.language,
+                t,
+              )}
+            />
+            {mark('expiry')}
+          </CardSection>
+          <BatchNote
             id={`${id}-description`}
-            label={t('form.description')}
-            placeholder={t('form.descriptionPlaceholder')}
             value={form.description}
-            onChange={(event) => form.setDescription(event.target.value)}
-            slotProps={{ htmlInput: { maxLength: 200 } }}
+            onChange={form.setDescription}
           />
           {mark('description')}
-        </>
+        </BatchCard>
       ) : null}
 
       {form.error ? <Alert>{form.error}</Alert> : null}
-
-      <Stack direction="row" spacing={1}>
-        <Button type="submit" disabled={!form.canSave}>
-          {form.saving ? t('form.saving') : t('form.save')}
-        </Button>
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          {t('form.cancel')}
-        </Button>
-      </Stack>
     </Stack>
   );
 }

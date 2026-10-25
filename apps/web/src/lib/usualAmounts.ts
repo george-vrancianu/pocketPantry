@@ -76,6 +76,19 @@ export function usualAmountsInPriority(
   );
 }
 
+/**
+ * The amount a new Batch of an Ingredient starts with: the first Usual Amount for counts, the second
+ * for mass and volume (a sensible pack, not the smallest). Shared by Popular to start and the Add
+ * sheet's amount.
+ */
+export function defaultAmount(
+  unit: Unit,
+  scale: AmountScale | null | undefined,
+): number {
+  const usual = usualAmountsInPriority(unit, scale);
+  return (unit === 'pcs' ? usual[0] : usual[1]) ?? 1;
+}
+
 /** The Usual Amounts displayed in `unit`, sorted ascending. */
 export function usualAmountsAscending(
   unit: Unit,

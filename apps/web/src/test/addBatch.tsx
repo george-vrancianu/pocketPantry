@@ -37,3 +37,18 @@ export async function openOverlay(mode: 'product' | 'barcode') {
   );
   return user;
 }
+
+/** Clears the picked Ingredient (the token's ×), as a Member does before using the camera. */
+export async function clearPick(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Change ingredient' }));
+}
+
+/** Types a note, unfolding it first when it is folded. */
+export async function typeNote(
+  user: ReturnType<typeof userEvent.setup>,
+  text: string,
+) {
+  const fold = screen.queryByRole('button', { name: /Add a note/ });
+  if (fold) await user.click(fold);
+  await user.type(screen.getByLabelText('Note · optional'), text);
+}
