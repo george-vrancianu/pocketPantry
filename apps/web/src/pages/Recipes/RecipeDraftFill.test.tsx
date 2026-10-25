@@ -439,6 +439,60 @@ describe('Recipe Drafts for supplied fills', () => {
       });
     });
 
+    describe('when the Member picked Standalone', () => {
+      const standaloneRoutes = {
+        ...resumeRoutes(),
+        ...saveRoutes,
+        [`GET /api/recipe-drafts/${DRAFT_ID}`]: () =>
+          Response.json(
+            stored(
+              content({ plateScan: true, pickedBaseId: null, servings: '2' }),
+            ),
+          ),
+      };
+
+      it('keeps Standalone checked, writes nothing and saves without a base', async () => {
+        const user = typer();
+        const calls = setup(`/recipes/new?draft=${DRAFT_ID}`, standaloneRoutes);
+        expect(
+          await screen.findByRole('radio', { name: /Standalone/ }),
+        ).toBeChecked();
+        expect(screen.getByRole('radio', { name: /Crepes/ })).not.toBeChecked();
+        await elapse(5000);
+        expect(sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`)).toHaveLength(
+          0,
+        );
+        await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+        expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+        expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
+          parentId: null,
+        });
+      });
+    });
+
+    it('keeps the picker and sends one more create when a save fails', async () => {
+      const user = typer();
+      let answers = 0;
+      const calls = setup(`/recipes/new?draft=${DRAFT_ID}`, {
+        ...resumeRoutes(),
+        'POST /api/recipes': () =>
+          ++answers === 1
+            ? Response.json({ error: 'boom' }, { status: 500 })
+            : Response.json(savedRecipe, { status: 201 }),
+      });
+      await screen.findByRole('radio', { name: 'Waffles' });
+      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await vi.waitFor(() =>
+        expect(sent(calls, 'POST /api/recipes')).toHaveLength(1),
+      );
+      const crepes = await screen.findByRole('radio', { name: /Crepes/ });
+      await user.click(crepes);
+      expect(crepes).toBeChecked();
+      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+      expect(sent(calls, 'POST /api/recipes')).toHaveLength(2);
+    });
+
     describe('when the picked base is gone', () => {
       const goneRoutes = (
         base: () => Response,
@@ -495,10 +549,9 @@ describe('Recipe Drafts for supplied fills', () => {
         await elapse(500);
         await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
         expect(await screen.findByText('Detail of the recipe')).toBeVisible();
-        expect(sent(calls, 'POST /api/recipes')[0].body).not.toHaveProperty(
-          'parentId',
-          'base-waffles',
-        );
+        expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
+          parentId: null,
+        });
       });
     });
 
