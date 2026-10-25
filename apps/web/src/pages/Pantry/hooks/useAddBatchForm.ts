@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
+import { useToast } from '@pocket-pantry/ui';
 import {
   useCatalogSearch,
   type CatalogAllergen,
@@ -14,11 +15,10 @@ import {
   type StorageLocation,
   type Unit,
 } from '../../../lib/catalog';
-import { ApiError } from '../../../lib/api';
-import { barcodeLine, useBarcodeLookup } from '../../../lib/barcode';
+import { barcodeLine } from '../../../lib/barcode';
 import { isValidBarcode } from '../../../lib/gtin';
 import { loadOverlayMode, type CameraMode } from '../../../lib/cameraMode';
-import { useProductRead, type ProposedLine } from '../../../lib/scan';
+import { type ProposedLine } from '../../../lib/scan';
 import type { CameraResult } from '../../Scan/CameraOverlay';
 import {
   defaultExpiryDate,
@@ -99,6 +99,8 @@ export function useAddBatchForm({
     new Set(),
   );
   const [checkIngredient, setCheckIngredient] = useState(false);
+  // Where the camera's values came from, shown as a tag until the Member changes the Ingredient.
+  const [source, setSource] = useState<'photo' | 'scanned' | null>(null);
   const edit = (field: PrefillField) => {
     touch(field);
     setPrefilled((was) => {
@@ -106,7 +108,10 @@ export function useAddBatchForm({
       next.delete(field);
       return next;
     });
-    if (field === 'ingredient') setCheckIngredient(false);
+    if (field === 'ingredient') {
+      setCheckIngredient(false);
+      setSource(null);
+    }
   };
 
   const selectIngredient = (result: CatalogSearchResult) => {
@@ -243,9 +248,10 @@ export function useAddBatchForm({
   });
 
   const [cameraOpen, setCameraOpen] = useState(false);
-  // The mode the overlay opened in, and whether it reopened because a barcode was not found.
+  // The mode the overlay opens in.
   const [openMode, setOpenMode] = useState<CameraMode>('barcode');
-  const [barcodeMissed, setBarcodeMissed] = useState(false);
+  // The camera closed with Type it: the form puts focus in the search.
+  const [typeRequested, setTypeRequested] = useState(false);
   // Values came from Open Food Facts: the form credits it (ODbL).
   const [fromOpenFoodFacts, setFromOpenFoodFacts] = useState(false);
   // The Allergens the last Barcode Lookup listed, and those the matched Ingredient is not tagged with.
@@ -254,13 +260,13 @@ export function useAddBatchForm({
     missing: CatalogAllergen[];
   }>({ listed: [], missing: [] });
   // The barcode the Batch is saved with, so the Family learns it (a Known Barcode). Set by whatever
-  // supplied one: a Barcode Lookup now, a barcode decoded from a Product photo. The Batch stores none.
+  // supplied one: a Barcode Lookup, an unknown code the Member typed the Ingredient for, a barcode
+  // decoded from a Product photo. The Batch stores none.
   const [barcodeToSend, setBarcodeToSend] = useState<string | null>(null);
-  const productRead = useProductRead();
-  const barcodeLookup = useBarcodeLookup();
-  const open = (mode: CameraMode, missed: boolean) => {
+  const toast = useToast();
+  const openCamera = (mode: CameraMode = loadOverlayMode()) => {
     setOpenMode(mode);
-    setBarcodeMissed(missed);
+    setTypeRequested(false);
     setCameraOpen(true);
   };
   // Counts camera results: a photo's barcode that lands after a newer result is dropped.
@@ -268,63 +274,64 @@ export function useAddBatchForm({
   const onCameraResult = (result: CameraResult) => {
     const current = ++cameraResults.current;
     setCameraOpen(false);
-    productRead.reset();
-    barcodeLookup.reset();
     setFromOpenFoodFacts(false);
     setLookupAllergens({ listed: [], missing: [] });
-    // A Product photo after a missed barcode keeps the looked-up code: Open Food Facts
-    // does not know it, so the Family learns it with this Batch.
-    if (result.kind !== 'product' || !barcodeMissed) setBarcodeToSend(null);
+    setBarcodeToSend(null);
+    if (result.kind === 'type') {
+      setTypeRequested(true);
+      setBarcodeToSend(result.code);
+      return;
+    }
     if (result.kind === 'product') {
       void result.barcode.then((code) => {
         if (code && current === cameraResults.current) setBarcodeToSend(code);
       });
-      productRead.mutate(result, {
-        onSuccess: (read) => prefillNow.current(read),
-      });
+      const { read } = result;
+      prefillNow.current(read, 'search');
+      setSource('photo');
+      if (read.match)
+        toast.show(t('pantry:form.toast.photo'), { polite: true });
+      else
+        toast.show(
+          t('pantry:form.toast.noMatch', {
+            name: read.name.trim() || read.productDescription || '',
+          }),
+          { polite: true },
+        );
       return;
     }
-    barcodeLookup.mutate(result.code, {
-      onSuccess: (lookup) => {
-        if (!lookup.found) {
-          setBarcodeToSend(result.code);
-          return open('product', true);
-        }
-        // A Known Barcode saved under a typed name fills that name; otherwise no match pre-types the search.
-        prefillNow.current(
-          barcodeLine(lookup),
-          lookup.unmatchedName === undefined ? 'search' : 'typed-name',
-        );
-        setFromOpenFoodFacts(lookup.source === 'open_food_facts');
-        setLookupAllergens({
-          // Pre-tick only for a new Ingredient: a confident match is not created.
-          listed: lookup.match ? [] : lookup.allergens,
-          missing: lookup.missingAllergens,
-        });
-        setBarcodeToSend(result.code);
-      },
+    const { lookup } = result;
+    // A Known Barcode saved under a typed name fills that name; otherwise no match pre-types the search.
+    prefillNow.current(
+      barcodeLine(lookup),
+      lookup.unmatchedName === undefined ? 'search' : 'typed-name',
+    );
+    setSource('scanned');
+    setFromOpenFoodFacts(lookup.source === 'open_food_facts');
+    setLookupAllergens({
+      // Pre-tick only for a new Ingredient: a confident match is not created.
+      listed: lookup.match ? [] : lookup.allergens,
+      missing: lookup.missingAllergens,
     });
+    setBarcodeToSend(result.code);
+    toast.show(
+      t('pantry:form.toast.barcode', {
+        name: lookup.unmatchedName ?? lookup.productDescription,
+      }),
+      { polite: true },
+    );
   };
-  const failure = productRead.error ?? barcodeLookup.error;
-  const readError = failure
-    ? failure instanceof ApiError && failure.code === 'scan.cap_reached'
-      ? t('pantry:form.prefill.cap')
-      : translateApiError(t, failure)
-    : null;
   const camera = {
     open: cameraOpen,
-    openCamera: () => open(loadOverlayMode(), false),
+    /** Opens the camera in `mode`, or the last one the Member used. */
+    openCamera,
     cancel: () => setCameraOpen(false),
     onResult: onCameraResult,
     /** The mode the overlay opens in. */
     openMode,
-    /** The overlay reopened in Product mode because the barcode is not in Open Food Facts. */
-    barcodeMissed,
-    /** A Product Scan is being read; the form stays editable. */
-    reading: productRead.isPending,
-    /** A Barcode Lookup is under way. */
-    lookingUp: barcodeLookup.isPending,
-    readError,
+    /** The camera closed with Type it: put focus in the search. */
+    typeRequested,
+    source,
     fromOpenFoodFacts,
     /** Ids to pre-tick for a new Family Ingredient; undefined when none are listed (never []). */
     listedAllergenIds: lookupAllergens.listed.length

@@ -5,7 +5,12 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderWithProviders } from '../../test/render';
+import { stubMatchMedia } from '../../test/viewport';
+import { PantryPage } from './PantryPage';
 import { openOverlay, stubPantry } from '../../test/addBatch';
 import { emitBarcode, fakeCamera } from '../../test/scan';
 
@@ -72,19 +77,108 @@ describe('The add-Batch camera chrome', () => {
     ).toBeInTheDocument();
   });
 
-  it('closes on a Product Scan', async () => {
-    stubPantry();
+  it('closes on a Product Scan that reads', async () => {
+    stubPantry({
+      'POST /api/scan/product': () =>
+        Response.json({
+          lines: [
+            {
+              name: 'Zorblax',
+              sourceText: null,
+              match: null,
+              lowConfidence: false,
+              quantity: null,
+              unit: null,
+              expiryDate: null,
+              productDescription: null,
+            },
+          ],
+        }),
+    });
     await openOverlay('product');
     fireEvent.click(screen.getByRole('button', { name: 'Take photo' }));
     await waitFor(() => expect(overlay()).toBeNull());
   });
 
-  it('closes on a decoded barcode', async () => {
-    stubPantry();
+  it('closes on a decoded barcode once Use this is pressed', async () => {
+    stubPantry({
+      'GET /api/barcode-lookup/3017620422003': () =>
+        Response.json({
+          found: true,
+          source: 'known_barcode',
+          match: null,
+          lowConfidence: false,
+          allergens: [],
+          missingAllergens: [],
+          productDescription: 'Hazelnut spread',
+          quantity: null,
+          unit: null,
+        }),
+    });
     await openOverlay('barcode');
     await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
     act(() => emitBarcode('3017620422003'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Use this' }));
     await waitFor(() => expect(overlay()).toBeNull());
+  });
+});
+
+describe('The add-Batch camera hand-offs', () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('says it adds to the Pantry, and Scan several closes the sheet and opens the Scan page in the same mode', async () => {
+    stubPantry();
+    localStorage.setItem('pocket-pantry.camera-overlay-mode', 'barcode');
+    const user = userEvent.setup();
+    function Where() {
+      const location = useLocation();
+      return (
+        <output data-testid="where">
+          {location.pathname + location.search}
+        </output>
+      );
+    }
+    renderWithProviders(
+      <>
+        <PantryPage />
+        <Where />
+      </>,
+      { route: '/pantry' },
+    );
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Fill from the camera' }),
+    );
+    const pill = within(screen.getByTestId('adds-to-pantry'));
+    expect(pill.getByText('Adds to your Pantry')).toBeVisible();
+    await user.click(pill.getByRole('button', { name: 'Scan several' }));
+    expect(screen.getByTestId('where')).toHaveTextContent('/scan?mode=barcode');
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Add to Pantry' }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it('sweeps a scan line in the Barcode guide, and hides it in Product', async () => {
+    stubPantry();
+    const user = await openOverlay('barcode');
+    expect(
+      within(screen.getByTestId('scan-guide')).getByTestId('scan-line'),
+    ).not.toHaveAttribute('data-static');
+    await user.click(screen.getByRole('radio', { name: 'Product' }));
+    expect(screen.queryByTestId('scan-line')).toBeNull();
+  });
+
+  it('holds the scan line still under reduced motion', async () => {
+    stubMatchMedia((query) => query.includes('prefers-reduced-motion'));
+    stubPantry();
+    await openOverlay('barcode');
+    expect(screen.getByTestId('scan-line')).toHaveAttribute(
+      'data-static',
+      'true',
+    );
   });
 });
 

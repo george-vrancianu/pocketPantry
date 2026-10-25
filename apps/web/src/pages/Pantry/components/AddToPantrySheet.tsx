@@ -7,6 +7,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import type { AddBatchStart } from '../hooks/useAddBatchForm';
 import { AddBatchForm } from './AddBatchForm';
 
@@ -28,6 +29,7 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
   const { t } = useTranslation('pantry');
   // The camera overlay owns Escape while it is up; the sheet must not close under it.
   const [cameraOpen, setCameraOpen] = useState(false);
+  const navigate = useNavigate();
   const close = () => {
     if (!cameraOpen) onClose();
   };
@@ -66,6 +68,10 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
           onSaved={onClose}
           onCancel={onClose}
           onCameraOpenChange={setCameraOpen}
+          onScanSeveral={(mode) => {
+            onClose();
+            navigate(`/scan?mode=${mode}`);
+          }}
         />
       </Box>
     </Sheet>

@@ -12,7 +12,7 @@ import { SCAN_INTERVAL_MS } from '../../lib/cameraMode';
 import { resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { stubViewport } from '../../test/viewport';
+import { stubMatchMedia, stubViewport } from '../../test/viewport';
 import {
   emitBarcode,
   expectStack,
@@ -188,6 +188,25 @@ describe('Barcode on the Scan page', () => {
         screen.queryByRole('button', { name: 'Import from photos' }),
       ).not.toBeInTheDocument();
       await waitFor(() => expect(fakeCamera.watching).toBe(1));
+    });
+
+    it('sweeps a scan line in the Barcode guide, hides it after a read, and not in other modes', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      expect(screen.getByTestId('scan-line')).toBeInTheDocument();
+      await decode(A);
+      expect(screen.queryByTestId('scan-line')).toBeNull();
+      await user.click(screen.getByRole('radio', { name: 'Product' }));
+      expect(screen.queryByTestId('scan-line')).toBeNull();
+    });
+
+    it('holds the scan line still under reduced motion', () => {
+      stubMatchMedia((query) => query.includes('prefers-reduced-motion'));
+      renderScan('/scan?mode=barcode');
+      expect(screen.getByTestId('scan-line')).toHaveAttribute(
+        'data-static',
+        'true',
+      );
     });
 
     it('stops reading barcodes in another mode', async () => {

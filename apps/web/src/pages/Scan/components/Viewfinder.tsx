@@ -1,6 +1,6 @@
 import { Box, tokens, usePrefersReducedMotion } from '@pocket-pantry/ui';
-import { shade } from './glass';
-import { useCallback, useEffect, useState } from 'react';
+import { shade, translucent } from './glass';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Rect } from '../../../lib/scanGuides';
 
 const PULSE_MS = 360;
@@ -30,9 +30,46 @@ export function useShotFeedback() {
   return { shot, fire };
 }
 
+const READ_HIDE_MS = 1200;
+
+/**
+ * The scan line of the Barcode guide: 2 pt, 7 % side insets, sweeping from 16 % to 84 % of the guide
+ * height and back every 1.4 s; static at the middle under reduced motion.
+ */
+function ScanLine({ animated }: { animated: boolean }) {
+  return (
+    <Box
+      data-testid="scan-line"
+      data-static={animated ? undefined : 'true'}
+      aria-hidden="true"
+      sx={{
+        position: 'absolute',
+        left: '7%',
+        right: '7%',
+        top: '50%',
+        height: 2,
+        borderRadius: 1,
+        backgroundColor: tokens.color.accent,
+        boxShadow: `0 0 12px 2px ${translucent(tokens.color.accent, 70)}`,
+        ...(animated && {
+          animation: 'pp-scan-line 1.4s ease-in-out infinite alternate',
+          '@keyframes pp-scan-line': {
+            from: { top: '16%' },
+            to: { top: '84%' },
+          },
+        }),
+      }}
+    />
+  );
+}
+
 type Props = {
   /** The guide, in screen pt (see `guideRect`). */
   rect: Rect;
+  /** Show the scan line inside the guide (the Barcode guide); the host hides it once a code is read. */
+  scanLine?: boolean;
+  /** Codes read so far in a Scan Session: the line is hidden briefly after each new one. */
+  readCount?: number;
   /** Counts Scans taken (`useShotFeedback`): each one restarts the flash, fill and pulse. */
   shot: number;
   /** True while the mode slider is being dragged: the guide shrinks slightly. */
@@ -43,7 +80,22 @@ type Props = {
  * The guide brackets for the camera mode, over the full-screen feed. The guide takes no input: it
  * is not a button, not focusable, and ignores the pointer. A Scan flashes the screen and the guide.
  */
-export function Viewfinder({ rect, shot, sliding = false }: Props) {
+export function Viewfinder({
+  rect,
+  shot,
+  sliding = false,
+  scanLine = false,
+  readCount = 0,
+}: Props) {
+  const [justRead, setJustRead] = useState(false);
+  const seenReads = useRef(readCount);
+  useEffect(() => {
+    if (readCount === seenReads.current) return;
+    seenReads.current = readCount;
+    setJustRead(true);
+    const timer = window.setTimeout(() => setJustRead(false), READ_HIDE_MS);
+    return () => window.clearTimeout(timer);
+  }, [readCount]);
   const [pulse, setPulse] = useState(false);
   const [flash, setFlash] = useState(false);
   // Under reduced motion the screen flash, the guide's fill and the pulse are not rendered at all;
@@ -123,6 +175,9 @@ export function Viewfinder({ rect, shot, sliding = false }: Props) {
               },
             }}
           />
+        ) : null}
+        {scanLine && !justRead && !flash ? (
+          <ScanLine animated={animated} />
         ) : null}
         {CORNERS.map(([v, h]) => (
           <Box

@@ -279,7 +279,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     ).toBeInTheDocument();
   });
 
-  it('closes on a shot, shows reading, lets the Member edit, and reads in the Scan Language preference, unless the chip is changed', async () => {
+  it('reads in the camera, then closes on the match with the From photo tag and a toast, in the Scan Language preference unless the chip is changed', async () => {
     const user = userEvent.setup();
     const { calls, release } = stubProductScan(
       () => Response.json({ lines: [line()] }),
@@ -293,35 +293,30 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     screen.getByRole('button', { name: 'Take photo' }).focus();
     await user.keyboard('{Enter}');
 
-    expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
-    expect(await screen.findByText(/Reading the product photo/)).toBeVisible();
-    expect(cameraButton()).toHaveAttribute('aria-disabled', 'true');
-    // Edits made while the photo is read.
-    await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'mil',
+    // The camera stays up while the label is read, with the shutter off.
+    expect(await screen.findByText("Gator's reading the label…")).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Take photo' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
     );
-    await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.type(screen.getByLabelText('Product description'), 'Fresh');
     release();
     await waitFor(() =>
-      expect(screen.queryByText(/Reading the product photo/)).toBeNull(),
+      expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument(),
     );
-    // They are kept and unmarked; the untouched fields still fill.
     expect(
-      screen.getByRole('combobox', {
-        name: 'Ingredient: Milk. Press Backspace to change',
+      await screen.findByRole('combobox', {
+        name: 'Ingredient: Yogurt. Press Backspace to change',
       }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('combobox', { name: /Ingredient: Yogurt/ }),
-    ).toBeNull();
-    expect(screen.queryByTestId('prefilled-ingredient')).toBeNull();
-    expect(screen.getByLabelText('Product description')).toHaveValue('Fresh');
-    expect(screen.queryByTestId('prefilled-description')).toBeNull();
-    expect(screen.getByRole('textbox', { name: /Amount of Milk/ })).toHaveValue(
-      '500',
+      screen.getByRole('textbox', { name: /Amount of Yogurt/ }),
+    ).toHaveValue('500');
+    expect(screen.getByTestId('camera-source-tag')).toHaveTextContent(
+      'From photo',
     );
+    expect(
+      await screen.findByText('Read from your photo · check it and add'),
+    ).toBeVisible();
     expect(await screen.findByTestId('prefilled-expiry')).toBeInTheDocument();
     const [post] = scanCalls(calls);
     expect(post.search).toContain('scanLanguage=da');
@@ -468,7 +463,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     expect(screen.getByRole('button', { name: 'Add to Pantry' })).toBeEnabled();
   });
 
-  it('prefills an unmatched read as a typed name', async () => {
+  it('on no match, pre-types the search with the read name and says so', async () => {
     const user = userEvent.setup();
     const { release } = stubProductScan(() =>
       Response.json({
@@ -481,13 +476,17 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     await openForm(user);
     await shoot(user);
     release();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+      ).toHaveValue('Zorblax'),
+    );
     expect(
-      await screen.findByText(/"Zorblax" will be saved as Unmatched/),
+      await screen.findByText("Couldn't match Zorblax · pick the closest"),
     ).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Add to Pantry' })).toBeEnabled();
   });
 
-  it('shows the Scan Cap alert inline and keeps what was typed', async () => {
+  it('says the scan cap is used up, in the camera', async () => {
     const user = userEvent.setup();
     const { release } = stubProductScan(() =>
       Response.json(
@@ -497,21 +496,14 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     );
     renderWithProviders(<PantryPage />);
     await openForm(user);
-    await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'mil',
-    );
-    await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.type(screen.getByLabelText('Product description'), 'Fresh');
     await shoot(user);
     release();
     const alert = await screen.findByRole('alert');
-    expect(within(alert).getByText(/by hand/)).toBeVisible();
-    expect(screen.getByLabelText('Product description')).toHaveValue('Fresh');
-    expect(screen.getByRole('button', { name: 'Add to Pantry' })).toBeEnabled();
+    expect(within(alert).getByText(/all of today's scans/)).toBeVisible();
+    expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
   });
 
-  it('shows a short error for any other failure and keeps what was typed', async () => {
+  it('stays in the camera on a read failure, and Type it returns to the sheet with the search focused', async () => {
     const user = userEvent.setup();
     const { release } = stubProductScan(() =>
       Response.json(
@@ -526,13 +518,17 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.type(screen.getByLabelText('Product description'), 'Fresh');
     await shoot(user);
     release();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The scan did not finish. Please try again.',
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      "Couldn't read that label. Try again or type it.",
     );
-    expect(screen.getByLabelText('Product description')).toHaveValue('Fresh');
+    await user.click(within(alert).getByRole('button', { name: 'Type it' }));
+    expect(screen.queryByTestId('camera-overlay')).toBeNull();
+    expect(
+      screen.getByRole('combobox', { name: /Ingredient: Milk/ }),
+    ).toHaveFocus();
   });
 });
 

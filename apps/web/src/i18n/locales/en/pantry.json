@@ -82,6 +82,15 @@
       "credit": "Product data: Open Food Facts",
       "lookingUp": "Looking up the barcode…",
       "listsAllergens": "This product lists {{names}}"
+    },
+    "tag": {
+      "photo": "From photo",
+      "scanned": "Scanned"
+    },
+    "toast": {
+      "photo": "Read from your photo · check it and add",
+      "noMatch": "Couldn't match {{name}} · pick the closest",
+      "barcode": "Found by barcode · {{name}}"
     }
   },
   "picker": {

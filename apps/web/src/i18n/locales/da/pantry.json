@@ -82,6 +82,15 @@
       "credit": "Produktdata: Open Food Facts",
       "lookingUp": "Slår stregkoden op…",
       "listsAllergens": "Dette produkt angiver {{names}}"
+    },
+    "tag": {
+      "photo": "Fra foto",
+      "scanned": "Scannet"
+    },
+    "toast": {
+      "photo": "Læst fra dit foto · tjek og tilføj",
+      "noMatch": "Kunne ikke finde {{name}} · vælg det nærmeste",
+      "barcode": "Fundet med stregkode · {{name}}"
     }
   },
   "picker": {
