@@ -4,7 +4,6 @@ import {
   Button,
   SegmentedTabs,
   Stack,
-  Typography,
   segmentedTabId,
   segmentedTabPanelId,
   tokens,
@@ -26,12 +25,12 @@ import { useFamilyCatalog } from '../../../lib/familyCatalog';
 import { useRecipeFilters } from '../../../lib/recipes';
 import type { GuidanceInput } from '../../../lib/adminRecipes';
 import {
-  guidanceProblems,
+  hasGuidanceProblem,
   toGuidanceInput,
   type GuidanceDraft,
 } from '../../../lib/guidanceDraft';
 import type { MomentOption } from '../../../components/recipeEditor/GuidanceFields';
-import { FamilyGuidanceFields } from './FamilyGuidance';
+import { GuidanceCard } from './GuidanceCard';
 import { AppScreenHeader } from '../../../components/AppScreenHeader';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { RecipeLinesSection } from '../../../components/recipeEditor/RecipeLinesSection';
@@ -79,7 +78,12 @@ type Props = {
   /** Edit only: Tips edited inline under their Steps. */
   stepTips?: ComponentProps<typeof RecipeStepsSection>['stepTips'];
   /** The Recipe's guidance (a Variant draft's copy, or a blank one), edited and saved with the document. */
-  guidance?: { initial: GuidanceDraft; momentOptions: MomentOption[] };
+  guidance?: {
+    initial: GuidanceDraft;
+    momentOptions: MomentOption[];
+    /** A Recipe from Link draft: the card says its Guidance is never read from the page. */
+    fromLink?: boolean;
+  };
   /** Tells the page what the form holds now, for siblings that read it (Suggest Guidance on the edit page). */
   onDraftChange?: (draft: FamilyDraft) => void;
   /** Reports the form as it is, on mount and after every change (for the Recipe Draft). */
@@ -149,11 +153,7 @@ export function FamilyRecipeForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft, guidanceDraft]);
   const problems = problemsOf(draft);
-  const guidanceBad = guidanceDraft
-    ? Object.values(guidanceProblems(guidanceDraft)).some(
-        (problem) => problem !== false && problem !== null,
-      )
-    : false;
+  const guidanceBad = guidanceDraft ? hasGuidanceProblem(guidanceDraft) : false;
   const showTitleError = problems.title && titleTouched;
 
   const change = (patch: Partial<FamilyDraft>) =>
@@ -182,7 +182,7 @@ export function FamilyRecipeForm({
       documentOf(draft),
       guidanceDraft ? toGuidanceInput(guidanceDraft) : undefined,
     );
-  const detailsBad = showTitleError || problems.servings;
+  const detailsBad = showTitleError || problems.servings || guidanceBad;
   const lineCount = draft.lines.length;
   const stepCount = draft.steps.length;
 
@@ -276,24 +276,13 @@ export function FamilyRecipeForm({
               onTitleBlur={() => setTitleTouched(true)}
             />
             {guidance && guidanceDraft ? (
-              <Stack
-                spacing={2}
-                component="section"
-                aria-label={t('admin:recipe.guidance.title')}
-              >
-                <Typography variant="sectionLabel" color="text.secondary">
-                  {t('admin:recipe.guidance.title')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('recipes:family.guidanceHint')}
-                </Typography>
-                <FamilyGuidanceFields
-                  draft={guidanceDraft}
-                  onChange={setGuidanceDraft}
-                  momentOptions={guidance.momentOptions}
-                  page={draft}
-                />
-              </Stack>
+              <GuidanceCard
+                draft={guidanceDraft}
+                onChange={setGuidanceDraft}
+                momentOptions={guidance.momentOptions}
+                page={draft}
+                fromLink={guidance.fromLink}
+              />
             ) : null}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button variant="ghost" onClick={() => goTo('ingredients')}>

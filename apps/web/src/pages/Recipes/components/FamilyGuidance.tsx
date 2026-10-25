@@ -38,7 +38,7 @@ export function useMomentOptions(): MomentOption[] {
 }
 
 /** Links a Pairing to a Recipe the Member can see: search by title, then choose. */
-function FamilyRecipePicker({
+export function FamilyRecipePicker({
   label,
   value,
   valueLabel,

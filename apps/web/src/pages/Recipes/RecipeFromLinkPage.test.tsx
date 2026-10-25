@@ -335,7 +335,11 @@ describe('RecipeFromLinkPage', () => {
     await submit(user, 'https://www.example.com/pancakes');
     await screen.findByLabelText(/^Title/);
 
-    await user.click(screen.getByRole('button', { name: 'Suggest Guidance' }));
+    // The row says Guidance is never read from the page, and offers Suggest.
+    expect(
+      screen.getByRole('button', { name: /^Pairings, nutrition/ }),
+    ).toHaveTextContent('Optional · never read from the page');
+    await user.click(screen.getByRole('button', { name: 'Suggest' }));
 
     await waitFor(() =>
       expect(screen.getByLabelText('Nutrition Note')).toHaveValue(

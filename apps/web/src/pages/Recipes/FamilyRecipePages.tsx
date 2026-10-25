@@ -360,7 +360,11 @@ function NewRecipeContent({
       initial={initial}
       saving={session.saving}
       error={session.create.error}
-      guidance={{ initial: initialGuidance, momentOptions }}
+      guidance={{
+        initial: initialGuidance,
+        momentOptions,
+        fromLink: Boolean(sourceLink),
+      }}
       onChange={setFormState}
       onSave={(document, guidance) =>
         session.save({
