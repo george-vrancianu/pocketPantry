@@ -151,13 +151,17 @@ export function FamilyRecipeForm({
     familyCatalog.data?.ingredients.map((item) => item.id) ?? [],
   );
   const [pickedFamily, setPickedFamily] = useState<Set<string>>(new Set());
-  const addLine = (line: Pick<LineDraft, 'ingredientId' | 'name' | 'unit'>) =>
+  const [addedKey, setAddedKey] = useState<number | null>(null);
+  const addLine = (line: Pick<LineDraft, 'ingredientId' | 'name' | 'unit'>) => {
+    const key = newKey();
     change({
       lines: [
         ...draft.lines,
-        { key: newKey(), quantity: '', optional: false, note: '', ...line },
+        { key, quantity: '', optional: false, note: '', ...line },
       ],
     });
+    setAddedKey(key);
+  };
 
   const canSave = !hasProblems(problems) && !guidanceBad;
   const submit = () =>
@@ -305,6 +309,7 @@ export function FamilyRecipeForm({
             <RecipeLinesSection
               lines={draft.lines}
               problems={problems}
+              focusKey={addedKey}
               onChange={(lines) => change({ lines })}
               isFamily={(line) =>
                 familyIds.has(line.ingredientId) ||

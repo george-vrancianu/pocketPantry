@@ -34,6 +34,8 @@ type Props = {
   onChange: (lines: LineDraft[]) => void;
   /** Whether a line is a Family Ingredient (shows the Family pill). */
   isFamily?: (line: LineDraft) => boolean;
+  /** Key of a line the host just appended: its quantity takes focus. */
+  focusKey?: number | null;
   /** The search that adds a line, shown under the list. */
   children: ReactNode;
 };
@@ -44,6 +46,7 @@ export function RecipeLinesSection({
   problems,
   onChange,
   isFamily,
+  focusKey,
   children,
 }: Props) {
   const { t } = useTranslation(['admin', 'common', 'recipes']);
@@ -59,18 +62,11 @@ export function RecipeLinesSection({
   const undoToast = useRef<ToastHandle | null>(null);
   useEffect(() => () => undoToast.current?.close(), []);
 
-  // A line appended at the end (by the search) takes focus in its quantity; an Undo does not.
-  const seenKeys = useRef(new Set(lines.map((line) => line.key)));
-  const restoring = useRef(false);
+  // The host names the line it just appended; that line's quantity takes focus.
+  const qtyInputs = useRef(new Map<number, HTMLInputElement>());
   useEffect(() => {
-    const last = lines[lines.length - 1];
-    const fresh = last !== undefined && !seenKeys.current.has(last.key);
-    seenKeys.current = new Set(lines.map((line) => line.key));
-    if (fresh && !restoring.current) {
-      document.getElementById(`line-qty-${last.key}`)?.focus();
-    }
-    restoring.current = false;
-  }, [lines]);
+    if (focusKey != null) qtyInputs.current.get(focusKey)?.focus();
+  }, [focusKey]);
 
   const changeLine = (key: number, patch: Partial<LineDraft>) =>
     onChange(
@@ -90,7 +86,6 @@ export function RecipeLinesSection({
           if (current.some((item) => item.key === line.key)) return;
           const next = [...current];
           next.splice(Math.min(index, next.length), 0, line);
-          restoring.current = true;
           latest.current.onChange(next);
         },
       },
@@ -185,7 +180,10 @@ export function RecipeLinesSection({
                     error={bad}
                     slotProps={{
                       htmlInput: {
-                        id: `line-qty-${line.key}`,
+                        ref: (node: HTMLInputElement | null) => {
+                          if (node) qtyInputs.current.set(line.key, node);
+                          else qtyInputs.current.delete(line.key);
+                        },
                         inputMode: 'decimal',
                         'aria-label': t('admin:recipe.lines.quantity', {
                           name,

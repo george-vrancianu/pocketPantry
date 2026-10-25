@@ -3,6 +3,7 @@ import {
   tokens,
   usePrefersReducedMotion,
   visuallyHidden,
+  focusRing,
   radius,
 } from '@pocket-pantry/ui';
 import {
@@ -325,6 +326,11 @@ export function CatalogSearch({
     (aisleShown ||
       (typed !== '' && (expanded || firstLoad || failed || noMatch)));
 
+  const cardSurface = {
+    borderRadius: radius.card,
+    border: `1px solid ${tokens.color.line}`,
+    backgroundColor: tokens.color.surface,
+  };
   const popoverSx = inline
     ? {
         position: 'absolute' as const,
@@ -334,16 +340,27 @@ export function CatalogSearch({
         zIndex: 5,
         maxHeight: 360,
         overflowY: 'auto' as const,
-        borderRadius: radius.card,
-        border: `1px solid ${tokens.color.line}`,
-        backgroundColor: tokens.color.surface,
+        ...cardSurface,
         boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
       }
     : null;
   const popoverOpen = inline && (emptyShown || panelVisible);
 
   return (
-    <Box sx={{ position: 'relative' }}>
+    <Box
+      sx={{ position: 'relative' }}
+      onBlur={
+        inline
+          ? (event) => {
+              // Focus left the search (a tap or click outside, or Tab away): close the popover.
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setOpen(false);
+                setActiveIndex(-1);
+              }
+            }
+          : undefined
+      }
+    >
       <SearchField
         inputRef={inputRef}
         label={name}
@@ -378,6 +395,8 @@ export function CatalogSearch({
       <Box
         sx={popoverOpen ? popoverSx : undefined}
         hidden={inline && !popoverOpen}
+        // Taps inside the popover keep focus in the field, so they don't read as leaving it.
+        onMouseDown={inline ? (event) => event.preventDefault() : undefined}
       >
         {emptyShown ? (
           // Taps inside land without the field losing focus. A block that renders nothing leaves no gap.
@@ -413,9 +432,7 @@ export function CatalogSearch({
               ? { overflow: 'hidden' }
               : {
                   mt: 1,
-                  borderRadius: radius.card,
-                  border: `1px solid ${tokens.color.line}`,
-                  backgroundColor: tokens.color.surface,
+                  ...cardSurface,
                   overflow: 'hidden',
                 }
           }
@@ -436,6 +453,7 @@ export function CatalogSearch({
                 fontWeight: 600,
                 p: '10px 14px 0',
                 cursor: 'pointer',
+                ...focusRing,
               }}
             >
               {`‹ ${t('search.backToAisles')}`}

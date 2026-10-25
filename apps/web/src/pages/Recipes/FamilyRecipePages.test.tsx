@@ -1092,6 +1092,20 @@ describe('EditFamilyRecipePage', () => {
     });
   });
 
+  it('keeps focus where it was when a save reseeds the Ingredient lines', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'PUT /api/recipes/g': () => Response.json(saved),
+    });
+    await openTab(user, 'Ingredients');
+    await user.click(await screen.findByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+
+    expect(screen.getByLabelText('Quantity of Gran’s herbs')).not.toHaveFocus();
+    expect(screen.getByLabelText('Quantity of Egg')).not.toHaveFocus();
+  });
+
   it('says an archived Recipe cannot be edited', async () => {
     setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () =>
@@ -1638,6 +1652,51 @@ describe('Family Recipe form: inline Add an ingredient (#590)', () => {
     await user.keyboard('{Escape}');
 
     expect(searchBox()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('closes the popover when focus leaves the search', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [kombucha] }),
+    });
+    await openTab(user, 'Ingredients');
+
+    await user.type(searchBox(), 'komb');
+    await screen.findByRole('option', { name: /Kombucha/ });
+    await user.click(document.body);
+
+    expect(searchBox()).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('option', { name: /Kombucha/ })).toBeNull();
+  });
+
+  it('goes back from an aisle with the inline ‹ Aisles link and keeps focus in the field', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'GET /api/catalog/aisles': () =>
+        Response.json({
+          aisles: [
+            {
+              id: 'aisle-dairy',
+              name: 'Dairy & eggs',
+              parentCategories: [{ id: 'p-dairy', name: 'Dairy' }],
+            },
+          ],
+        }),
+      'GET /api/catalog/search': () => Response.json({ results: [kombucha] }),
+    });
+    await openTab(user, 'Ingredients');
+
+    await user.click(searchBox());
+    await user.click(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    );
+    await user.click(await screen.findByRole('button', { name: '‹ Aisles' }));
+
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    ).toBeVisible();
+    expect(searchBox()).toHaveFocus();
   });
 
   it('adds the line with the new Family Ingredient after Add to your catalog', async () => {
