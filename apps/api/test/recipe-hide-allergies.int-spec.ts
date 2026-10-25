@@ -417,6 +417,8 @@ describe('Hide Recipes with my Allergies (integration)', () => {
         type: 'recipe',
         id: milky.id,
         title: milky.title,
+        owner: 'catalog',
+        familyCopyId: null,
       });
     });
   });

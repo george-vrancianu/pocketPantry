@@ -95,14 +95,56 @@ describe('GuidanceSection', () => {
       pairings: [
         pairing({
           label: 'A salad',
-          link: { type: 'recipe', id: 'r-1', title: 'Green salad' },
+          link: {
+            type: 'recipe',
+            id: 'r-1',
+            title: 'Green salad',
+            owner: 'catalog',
+            familyCopyId: 'c-1',
+          },
         }),
       ],
     });
     const link = screen.getByRole('link', { name: 'A salad' });
-    expect(link).toHaveAttribute('href', '/recipes/r-1');
+    expect(link).toHaveAttribute('href', '/recipes/c-1');
     expect(link).toHaveAttribute('title', 'Green salad');
     expect(screen.queryByText('Green salad')).toBeNull();
+  });
+
+  it('opens the Explore preview for a Catalog Recipe the Family has not added', () => {
+    show({
+      pairings: [
+        pairing({
+          label: 'A salad',
+          link: {
+            type: 'recipe',
+            id: 'r-1',
+            title: 'Green salad',
+            owner: 'catalog',
+            familyCopyId: null,
+          },
+        }),
+      ],
+    });
+    expect(screen.getByRole('link', { name: 'A salad' })).toHaveAttribute(
+      'href',
+      '/recipes/explore/r-1',
+    );
+  });
+
+  it('opens a Family Recipe as itself', () => {
+    show({
+      pairings: [
+        pairing({
+          label: 'A salad',
+          link: { type: 'recipe', id: 'r-2', title: 'Ours', owner: 'family' },
+        }),
+      ],
+    });
+    expect(screen.getByRole('link', { name: 'A salad' })).toHaveAttribute(
+      'href',
+      '/recipes/r-2',
+    );
   });
 
   it('shows a linked Ingredient as plain text', () => {

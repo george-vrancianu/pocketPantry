@@ -15,7 +15,7 @@ import { RecipeDetailPage } from './RecipeDetailPage';
 const detail: RecipeDetail = {
   id: 'r1',
   parentId: null,
-  owner: 'catalog',
+  owner: 'family',
   title: 'Pancakes',
   servings: 2,
   prepMinutes: null,
@@ -490,7 +490,12 @@ describe('Recipe detail Pantry status', () => {
       parentId: 'r1',
       title: 'Vegan pancakes',
       servings: 4,
-      base: { id: 'r1', title: 'Pancakes', archived: false },
+      base: {
+        id: 'r1',
+        title: 'Pancakes',
+        archived: false,
+        familyCopyId: 'r1',
+      },
     };
     const { fetchMock, calls } = stubApi({
       'GET /api/recipes/r1': () => Response.json(detail),

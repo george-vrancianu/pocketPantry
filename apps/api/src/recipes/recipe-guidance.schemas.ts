@@ -111,7 +111,14 @@ export type ResolvedGuidance = {
     /** Null without a link, or when the linked Recipe is archived (the label stays). */
     link:
       | { type: 'ingredient'; id: string; name: string }
-      | { type: 'recipe'; id: string; title: string }
+      | {
+          type: 'recipe';
+          id: string;
+          title: string;
+          owner: 'catalog' | 'family';
+          /** Member detail only: the Family's live copy of a Catalog Recipe, else null. */
+          familyCopyId?: string | null;
+        }
       | null;
   })[];
   /** Archived Eating Moments are left out. */

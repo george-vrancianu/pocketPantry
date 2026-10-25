@@ -58,6 +58,7 @@ const card = (
     title: 'Omelette',
     parentId: null,
     owner: 'catalog',
+    familyCopyId: null,
     servings: 2,
     prepMinutes: 10,
     cookMinutes: 15,

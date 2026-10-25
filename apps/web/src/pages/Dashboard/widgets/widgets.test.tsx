@@ -270,6 +270,7 @@ describe('CookTonightWidget', () => {
       title: `Recipe ${id}`,
       parentId: null,
       owner: 'catalog',
+      familyCopyId: null,
       servings: 2,
       prepMinutes: null,
       cookMinutes: null,
@@ -285,6 +286,22 @@ describe('CookTonightWidget', () => {
     'GET /api/recipes/cook-tonight': () => Response.json({ cards }),
   });
 
+  it('links a Catalog card to the Family copy, else to the Explore preview', async () => {
+    const withCopy = card('r1');
+    withCopy.recipe.familyCopyId = 'copy-1';
+    stub(cookTonight([withCopy, card('r2')]));
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    expect(
+      await screen.findByRole('link', { name: /Recipe r1/ }),
+    ).toHaveAttribute('href', '/recipes/copy-1');
+    expect(screen.getByRole('link', { name: /Recipe r2/ })).toHaveAttribute(
+      'href',
+      '/recipes/explore/r2',
+    );
+  });
+
   it('shows one card linking to the Recipe, with the other Variants count and time', async () => {
     stub(
       cookTonight([
@@ -295,6 +312,7 @@ describe('CookTonightWidget', () => {
             title: 'Spicy Pasta',
             parentId: 'b-r1',
             owner: 'family',
+            familyCopyId: null,
             servings: 2,
             prepMinutes: 10,
             cookMinutes: 20,
@@ -345,6 +363,7 @@ describe('CookTonightWidget', () => {
             title: 'Vegan Stew',
             parentId: 'b1',
             owner: 'family',
+            familyCopyId: null,
             servings: 2,
             prepMinutes: null,
             cookMinutes: null,
@@ -412,6 +431,7 @@ describe('CookTonightWidget', () => {
             title: 'Paella',
             parentId: 'b-1',
             owner: 'family',
+            familyCopyId: null,
             servings: 2,
             prepMinutes: 5,
             cookMinutes: null,

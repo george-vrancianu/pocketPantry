@@ -4,7 +4,6 @@ import {
   BranchIcon,
   DeleteIcon,
   ManualEntryIcon,
-  PlusIcon,
   Stack,
 } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
@@ -18,7 +17,7 @@ import type { RecipeDetail } from '../../../lib/recipes';
 
 /**
  * The Recipe screen's header: Back to the list, and what a Member can do with
- * the Recipe. A Catalog Recipe offers Make a Variant; the Family's own live
+ * the Recipe. The Family's own live
  * Recipe keeps Make a Variant, Edit and Delete (archive) in a menu.
  */
 export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
@@ -54,11 +53,6 @@ export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
     <>
       <AppScreenHeader
         back={back}
-        action={
-          !own && canMakeVariant
-            ? { ...makeVariant, icon: <PlusIcon size={20} /> }
-            : undefined
-        }
         trailing={
           own ? (
             <ActionMenu

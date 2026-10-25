@@ -459,6 +459,7 @@ describe('Recipes browsing and detail (integration)', () => {
         id: b.id,
         title: `CBaza ${stamp}`,
         archived: false,
+        familyCopyId: null,
       });
       expect(d.tips.map((t) => [t.text, t.inherited])).toEqual([
         ['Catalog tip', true],
@@ -500,7 +501,12 @@ describe('Recipes browsing and detail (integration)', () => {
         lines: [line(0, 300), line(3), line(4)],
       });
       const d = await detail(v.id);
-      expect(d.base).toEqual({ id: b.id, title: b.title, archived: false });
+      expect(d.base).toEqual({
+        id: b.id,
+        title: b.title,
+        archived: false,
+        familyCopyId: null,
+      });
       expect(d.variants).toEqual([]);
       expect(
         d.diff?.swapped.map((s) => [s.from.ingredientId, s.to.ingredientId]),

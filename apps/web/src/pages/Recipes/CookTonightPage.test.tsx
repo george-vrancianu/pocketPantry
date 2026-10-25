@@ -31,6 +31,7 @@ const card = (
     title: over.base?.title ?? 'Omelette',
     parentId: null,
     owner: 'catalog',
+    familyCopyId: null,
     servings: 2,
     prepMinutes: 10,
     cookMinutes: 15,
@@ -163,7 +164,7 @@ describe('CookTonightPage', () => {
   it('names the Variant a Base Recipe can make, and opens that Variant', async () => {
     setup([
       base('o', 'Omelette', {
-        recipe: { id: 'f', title: 'Frittata', parentId: 'o' },
+        recipe: { id: 'f', title: 'Frittata', parentId: 'o', owner: 'family' },
       }),
     ]);
     const [row] = within(await section('You can make this')).getAllByRole(
@@ -181,13 +182,27 @@ describe('CookTonightPage', () => {
       base('o', 'Omelette', {
         canMake: false,
         missing: { ingredientId: 'i-chives', name: 'Chives' },
-        recipe: { id: 'f', title: 'Frittata', parentId: 'o' },
+        recipe: { id: 'f', title: 'Frittata', parentId: 'o', owner: 'family' },
       }),
     ]);
     const link = await screen.findByRole('link', {
       name: /Omelette.*Missing Chives for Frittata/,
     });
     expect(link).toHaveAttribute('href', '/recipes/f');
+  });
+
+  it('opens a Catalog card as the Family copy, else the Explore preview', async () => {
+    setup([
+      base('o', 'Omelette', { recipe: { familyCopyId: 'copy-o' } }),
+      base('s', 'Soup'),
+    ]);
+    expect(
+      await screen.findByRole('link', { name: /Omelette/ }),
+    ).toHaveAttribute('href', '/recipes/copy-o');
+    expect(screen.getByRole('link', { name: /Soup/ })).toHaveAttribute(
+      'href',
+      '/recipes/explore/s',
+    );
   });
 
   it('shows a spinner while the cards load', async () => {

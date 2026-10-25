@@ -276,6 +276,7 @@ export async function loadResolvedGuidance(
           type: 'recipe',
           id: linked.id,
           title: linked.translated ?? linked.title,
+          owner: linked.familyId === null ? 'catalog' : 'family',
         };
       }
       return {

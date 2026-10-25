@@ -17,7 +17,7 @@ import type {
 } from '../../../lib/recipes';
 import type { AddState } from '../../../lib/addToFamily';
 import { AddToFamilyButton } from '../../../components/AddToFamilyButton';
-import { recipeHref } from '../previewHref';
+import { catalogRecipeHref } from '../../../lib/catalogRecipeHref';
 import { GuidanceSection } from './GuidanceSection';
 import { IngredientList, lineAmount, type LineAllergy } from './IngredientList';
 import { OwnerBadge } from './OwnerBadge';
@@ -320,9 +320,7 @@ function VariantsSection({ recipe, preview }: SectionProps) {
               }
             >
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Link href={recipeHref(variant.id, preview !== undefined)}>
-                  {variant.title}
-                </Link>{' '}
+                <Link href={catalogRecipeHref(variant)}>{variant.title}</Link>{' '}
                 <OwnerBadge owner={variant.owner} />
                 <RecipeMeta cuisine={variant.cuisine} method={variant.method} />
               </Box>

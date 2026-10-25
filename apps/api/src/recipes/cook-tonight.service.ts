@@ -17,7 +17,13 @@ import {
   loadAllergyWarnings,
   loadViewerAllergyContext,
 } from './recipe-allergens';
-import { inScope, ownerOf, recipeTitles, visibleTo } from './recipe-view';
+import {
+  inScope,
+  liveCopiesOf,
+  ownerOf,
+  recipeTitles,
+  visibleTo,
+} from './recipe-view';
 import type {
   CookTonightCard,
   CookTonightQuery,
@@ -128,6 +134,13 @@ export class CookTonightService {
       groupsRanked,
       locale,
     );
+    const copies = await liveCopiesOf(
+      this.database,
+      familyId,
+      groupsRanked.flatMap(({ candidates }) =>
+        candidates[0].row.familyId === null ? [candidates[0].row.id] : [],
+      ),
+    );
     return {
       hiddenByAllergiesCount,
       cards: groupsRanked.map(({ base, candidates }): CookTonightCard => {
@@ -144,6 +157,7 @@ export class CookTonightService {
             title: top.title,
             parentId: top.row.parentId,
             owner: ownerOf(top.row),
+            familyCopyId: copies.get(top.row.id) ?? null,
             servings: top.match.servings,
             prepMinutes: top.row.prepMinutes,
             cookMinutes: top.row.cookMinutes,
