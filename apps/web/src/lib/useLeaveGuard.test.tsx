@@ -21,6 +21,9 @@ function Form() {
     <>
       <p>form</p>
       <Link to="/other">other</Link>
+      <button type="button" onClick={() => navigate(-1)}>
+        go back
+      </button>
       <button
         type="button"
         onClick={() => navigate('/form?draft=1', { replace: true })}
@@ -130,6 +133,15 @@ describe('useLeaveGuard on a BrowserRouter', () => {
     await screen.findByText('form');
     // Gone and back: one guard, not two.
     await userEvent.click(screen.getByRole('link', { name: 'other' }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks exactly once for navigate(-1), and goes back when the Member agrees', async () => {
+    await mount();
+    ask = true;
+    confirm.mockReturnValue(true);
+    await userEvent.click(screen.getByRole('button', { name: 'go back' }));
+    expect(await screen.findByText('start at /start')).toBeVisible();
     expect(confirm).toHaveBeenCalledTimes(1);
   });
 });

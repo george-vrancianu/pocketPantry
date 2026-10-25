@@ -342,7 +342,10 @@ function NewRecipeContent({
         {resumed?.kind === 'variant' && !resumed.baseAvailable ? (
           <Alert severity="info">{t('recipes:drafts.baseGone')}</Alert>
         ) : null}
-        <RecipeDraftLimitNotice error={autosave.error} />
+        <RecipeDraftLimitNotice
+          error={autosave.error}
+          status={autosave.status}
+        />
         {autosave.status === 'conflict' && draftId ? (
           <RecipeDraftConflictBanner
             draftId={draftId}
@@ -579,7 +582,10 @@ function VariantForm({
         trailing={<RecipeDraftStatus status={autosave.status} />}
       />
       <Stack spacing={2.5}>
-        <RecipeDraftLimitNotice error={autosave.error} />
+        <RecipeDraftLimitNotice
+          error={autosave.error}
+          status={autosave.status}
+        />
         {autosave.status === 'conflict' && draftId ? (
           <RecipeDraftConflictBanner
             draftId={draftId}

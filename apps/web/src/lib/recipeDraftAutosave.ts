@@ -22,15 +22,24 @@ export const AUTOSAVE_RETRY_DELAYS_MS = [3000, 6000, 12_000, 24_000, 30_000];
 
 /**
  * `failed`: the last save failed and is being retried (the header says so).
+ * `rejected`: the server refused the write for good (a 4xx that waiting cannot
+ * fix, e.g. the Recipe Draft is gone): not retried, and the edits are unsaved.
  * `conflict`: another device or tab saved a newer version; autosave has stopped
  * until the form is reloaded from the server.
  */
 export type AutosaveStatus =
-  'idle' | 'saving' | 'saved' | 'failed' | 'conflict';
+  'idle' | 'saving' | 'saved' | 'failed' | 'rejected' | 'conflict';
 
 const isConflict = (caught: unknown) =>
   caught instanceof ApiError &&
   caught.code === 'recipe_drafts.version_conflict';
+/** Worth another try: no answer (network), a server fault, or told to slow down. Other 4xx will never succeed. */
+const isRetryable = (caught: unknown) =>
+  !(caught instanceof ApiError) ||
+  caught.status === 0 ||
+  caught.status >= 500 ||
+  caught.status === 408 ||
+  caught.status === 429;
 /** The cap does not clear by waiting: only the Member finishing or discarding a Recipe Draft does. */
 const isCap = (caught: unknown) =>
   caught instanceof ApiError && caught.code === 'recipe_drafts.limit_reached';
@@ -189,6 +198,8 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
           setStatus('conflict');
         } else if (isCap(caught)) {
           setStatus('idle');
+        } else if (!isRetryable(caught)) {
+          setStatus('rejected');
         } else {
           setStatus('failed');
           // Retry, a little later each time. A closed form does not retry (its one last try was this).
@@ -209,6 +220,8 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     // Cleared after the assignment, even when `send` finishes without waiting.
     state.busy = send().finally(() => {
       state.busy = null;
+      // Asked only for the round sent as the page hid: a page restored from the back/forward cache carries on normally.
+      state.keepalive = false;
     });
     return state.busy;
   }, []);

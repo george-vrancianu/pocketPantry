@@ -39,10 +39,19 @@ export function useLeaveGuard(shouldAsk: () => boolean, message: string): void {
     const ask = () =>
       !latest.current.shouldAsk() || window.confirm(latest.current.message);
 
-    const restore = guardNavigator(navigator, ask, () => here.current);
+    // A `go` the Member agreed to is followed by a popstate that must not ask again.
+    let approved = false;
+    const restore = guardNavigator(navigator, ask, () => here.current, {
+      onGo: () => (approved = true),
+      onOther: () => (approved = false),
+    });
 
     let undoing = false;
     const onPop = (event: PopStateEvent) => {
+      if (approved) {
+        approved = false;
+        return;
+      }
       if (undoing) {
         undoing = false;
         event.stopImmediatePropagation();
@@ -91,17 +100,24 @@ type Navigator = NonNullable<
   ContextType<typeof UNSAFE_NavigationContext>
 >['navigator'];
 
-/** Makes `push`, `replace` and `go` ask first; returns the undo. */
+/**
+ * Makes `push`, `replace` and `go` ask first; returns the undo. It replaces
+ * methods on the one shared navigator, so it assumes a single guard is mounted
+ * at a time (one form per page); a second would wrap the first and ask twice.
+ */
 function guardNavigator(
   navigator: Navigator,
   ask: () => boolean,
   currentPath: () => string,
+  { onGo, onOther }: { onGo: () => void; onOther: () => void },
 ): () => void {
   const { push, replace, go } = navigator;
   navigator.push = (...args: Parameters<typeof push>) => {
+    onOther();
     if (ask()) push.apply(navigator, args);
   };
   navigator.replace = (...args: Parameters<typeof replace>) => {
+    onOther();
     const [to] = args;
     const target = typeof to === 'string' ? to : (to.pathname ?? currentPath());
     // Same page (the address gaining its `draft` id) is not leaving.
@@ -110,7 +126,9 @@ function guardNavigator(
     }
   };
   navigator.go = (delta: number) => {
-    if (ask()) go.call(navigator, delta);
+    if (!ask()) return;
+    onGo();
+    go.call(navigator, delta);
   };
   return () => {
     navigator.push = push;

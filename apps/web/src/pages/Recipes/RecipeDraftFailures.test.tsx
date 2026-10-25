@@ -63,6 +63,9 @@ const inTurn = (...answers: Array<() => Response>) => {
   return () => answers[Math.min(n++, answers.length - 1)]();
 };
 
+/** Whether each request asked for keepalive, in order. */
+const keepalives: boolean[] = [];
+
 function Leave() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -89,7 +92,10 @@ function setup(
     'GET /api/recipes/filters': () => Response.json(filters),
     ...routes,
   });
-  vi.stubGlobal('fetch', fetchMock);
+  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+    keepalives.push(init?.keepalive === true);
+    return fetchMock(input, init);
+  });
   renderWithProviders(
     <Routes>
       <Route
@@ -127,6 +133,7 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    keepalives.length = 0;
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -211,15 +218,31 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
     });
 
     it.each([
-      ['ro', 'Nu am putut salva ciorna de rețetă, încerc din nou'],
-      ['da', 'Kunne ikke gemme opskriftkladden, prøver igen'],
-    ] as const)('says it in %s', async (locale, text) => {
-      const user = typer();
-      setup({ [POST]: serverError }, '/recipes/new', locale);
-      await user.type((await screen.findAllByRole('textbox'))[0], 'Gran stew');
-      await elapse(1600);
-      expect(await screen.findByText(text)).toBeVisible();
-    });
+      [
+        'ro',
+        'Nu am putut salva ciorna de rețetă, încerc din nou',
+        'Pleci oricum?',
+      ],
+      [
+        'da',
+        'Kunne ikke gemme opskriftkladden, prøver igen',
+        'Vil du forlade siden alligevel?',
+      ],
+    ] as const)(
+      'says it, and asks before leaving, in %s',
+      async (locale, text, ask) => {
+        const user = typer();
+        setup({ [POST]: serverError }, '/recipes/new', locale);
+        await user.type(
+          (await screen.findAllByRole('textbox'))[0],
+          'Gran stew',
+        );
+        await elapse(1600);
+        expect(await screen.findByText(text)).toBeVisible();
+        await user.click(screen.getByRole('link', { name: 'leave' }));
+        expect(confirm).toHaveBeenCalledWith(expect.stringContaining(ask));
+      },
+    );
 
     it('does not retry the cap, which waiting cannot clear', async () => {
       const user = typer();
@@ -475,6 +498,77 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
         content: { title: 'Gran stew!' },
       });
       finish(Response.json({}, { status: 500 }));
+    });
+  });
+
+  describe('a request that cannot succeed by waiting', () => {
+    const NOT_FOUND = 'That Recipe Draft is gone.';
+    it.each([
+      [404, 'recipe_drafts.not_found'],
+      [400, 'validation_failed'],
+    ])(
+      'stops retrying a %s, says why inline and still guards leaving',
+      async (status, code) => {
+        const user = typer();
+        const calls = setup({
+          [POST]: () => created(),
+          [PUT]: () => failure(status, code),
+        });
+        const title = await screen.findByLabelText(/^Title/);
+        await user.type(title, 'Gran');
+        await elapse(1600);
+        await user.type(title, ' stew');
+        await elapse(1600);
+        if (status === 404) {
+          expect(await screen.findByText(new RegExp(NOT_FOUND))).toBeVisible();
+        }
+        expect(screen.queryByText(FAILED)).toBeNull();
+        await elapse(120_000);
+        expect(sent(calls, PUT)).toHaveLength(1);
+        await user.click(screen.getByRole('link', { name: 'leave' }));
+        expect(confirm).toHaveBeenCalledTimes(1);
+        expect(screen.queryByText('Recipes page')).toBeNull();
+      },
+    );
+
+    it('keeps retrying 5xx, 408 and 429', async () => {
+      const user = typer();
+      const calls = setup({
+        [POST]: inTurn(
+          () => failure(408, 'unknown'),
+          () => failure(429, 'unknown'),
+          created,
+        ),
+      });
+      await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+      await elapse(1600);
+      await elapse(3100);
+      await elapse(6100);
+      expect(sent(calls, POST)).toHaveLength(3);
+      expect(await screen.findByText('Draft saved')).toBeVisible();
+    });
+  });
+
+  describe('keepalive', () => {
+    it('is asked only of the request sent as the page hides, not of later ones (bfcache restore)', async () => {
+      const user = typer();
+      setup({
+        [POST]: () => created(),
+        [PUT]: () => Response.json({ id: DRAFT_ID, version: 2 }),
+      });
+      const title = await screen.findByLabelText(/^Title/);
+      await user.type(title, 'Gran');
+      await elapse(1600);
+      await user.type(title, ' stew');
+      await act(async () => {
+        window.dispatchEvent(new Event('pagehide'));
+      });
+      await elapse(10);
+      expect(keepalives.at(-1)).toBe(true);
+      // Restored from the back/forward cache: the form carries on.
+      await user.type(title, '!');
+      await elapse(1600);
+      expect(keepalives.at(-1)).toBe(false);
     });
   });
 });
