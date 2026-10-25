@@ -1,6 +1,8 @@
 import { act, screen, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import {
+  Link,
   Route,
   Routes,
   useLocation,
@@ -39,6 +41,7 @@ function setup(
   routes: Parameters<typeof stubApi>[0],
   state?: unknown,
   locale: 'en' | 'ro' | 'da' = 'en',
+  staleTime = 0,
 ) {
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes/filters': () =>
@@ -61,27 +64,42 @@ function setup(
     ...routes,
   });
   vi.stubGlobal('fetch', fetchMock);
+  // Production keeps a fetched list fresh for a while; the page must not trust it.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime } },
+  });
   renderWithProviders(
-    <Routes>
-      <Route
-        path="/recipes/new"
-        element={
-          <>
-            <Where />
-            <NewRecipePage />
-          </>
-        }
-      />
-      <Route
-        path="/recipes/:id/variant/new"
-        element={
-          <>
-            <Where />
-            <NewVariantPage />
-          </>
-        }
-      />
-    </Routes>,
+    <QueryClientProvider client={queryClient}>
+      <Routes>
+        <Route
+          path="/recipes/new"
+          element={
+            <>
+              <Where />
+              <NewRecipePage />
+            </>
+          }
+        />
+        <Route
+          path="/recipes/:id"
+          element={
+            <>
+              <p>Detail of the recipe</p>
+              <Link to="/recipes/new">again</Link>
+            </>
+          }
+        />
+        <Route
+          path="/recipes/:id/variant/new"
+          element={
+            <>
+              <Where />
+              <NewVariantPage />
+            </>
+          }
+        />
+      </Routes>
+    </QueryClientProvider>,
     { route: state === undefined ? route : { pathname: route, state }, locale },
   );
   return calls;
@@ -253,7 +271,7 @@ describe('Continue your draft? prompt', () => {
     expect(screen.queryByText('A new recipe')).toBeNull();
   });
 
-  it('on New Variant, Continue opens the draft and Start new gives the prefilled form', async () => {
+  it('on New Variant, Start new gives the prefilled form', async () => {
     const user = typer();
     setup(`/recipes/${BASE}/variant/new`, {
       ...list([summary(A, { kind: 'variant', baseRecipeId: BASE })]),
@@ -277,10 +295,89 @@ describe('Continue your draft? prompt', () => {
     ).toBeVisible();
   });
 
-  it('asks in Danish and Romanian', async () => {
+  it('asks in Danish', async () => {
     setup('/recipes/new', list([summary(A)]), undefined, 'da');
     expect(
       await screen.findByText('Vil du fortsætte din kladde?'),
     ).toBeVisible();
+    expect(screen.getByText(/Du har en ufærdig opskriftkladde/)).toBeVisible();
+  });
+
+  it('asks in Romanian, with the plural forms', async () => {
+    setup(
+      '/recipes/new',
+      list([summary(A), summary(B), summary(C)]),
+      undefined,
+      'ro',
+    );
+    expect(await screen.findByText('Continui ciorna?')).toBeVisible();
+    expect(
+      screen.getByText(/Ai 3 ciorne de rețete nefinalizate/),
+    ).toBeVisible();
+    expect(screen.getAllByRole('button', { name: /^Continuă / })).toHaveLength(
+      3,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Începe una nouă' }),
+    ).toBeVisible();
+  });
+
+  it('counts the drafts in the hint', async () => {
+    setup('/recipes/new', list([summary(A), summary(B)]));
+    expect(
+      await screen.findByText(
+        'You have 2 unfinished Recipe Drafts. Continue one, or start a new one.',
+      ),
+    ).toBeVisible();
+  });
+
+  it('does not offer a Recipe Draft that was saved a moment ago, even when the cached list is still fresh', async () => {
+    const user = typer();
+    let current = [summary(A)];
+    setup(
+      '/recipes/new',
+      {
+        'GET /api/recipe-drafts': () => Response.json(current),
+        [`GET /api/recipe-drafts/${A}`]: () =>
+          Response.json({
+            ...summary(A),
+            baseAvailable: false,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            content: {
+              title: 'Gran stew',
+              servings: '4',
+              prepMinutes: '',
+              cookMinutes: '',
+              difficulty: '',
+              cuisineId: '',
+              methodId: '',
+              lines: [],
+              steps: [],
+              guidance: null,
+              pickedBaseId: null,
+              sourceLink: null,
+              sourceLanguage: null,
+              plateScan: false,
+            },
+          }),
+        'POST /api/recipes': () => {
+          // The server ends the Recipe Draft with the create.
+          current = [];
+          return Response.json({ id: 'made' }, { status: 201 });
+        },
+      },
+      undefined,
+      'en',
+      60_000,
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Continue Gran stew' }),
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Save Recipe' }),
+    );
+    await user.click(await screen.findByRole('link', { name: 'again' }));
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('');
+    expect(screen.queryByText(PROMPT)).toBeNull();
   });
 });

@@ -41,11 +41,11 @@ export function RecipeDraftContinue({
 }) {
   const { t } = useTranslation(['recipes', 'common']);
   const navigate = useNavigate();
-  const list = useRecipeDrafts(active);
+  const list = useRecipeDrafts(active, 'always');
   // Set once the list has answered: the drafts to offer, or none.
   const [offered, setOffered] = useState<RecipeDraftSummary[] | null>(null);
   const [startedNew, setStartedNew] = useState(false);
-  // A cached list may be old: wait for the refetch a visit starts, then decide once.
+  // A cached list may be old (a Recipe Draft saved a moment ago is gone): every visit refetches, and the answer waits for it.
   const answered = !list.isFetching && (list.isSuccess || list.isError);
   if (active && offered === null && answered) {
     setOffered(
@@ -75,7 +75,9 @@ export function RecipeDraftContinue({
         <Typography variant="h2" component="h2">
           {t('recipes:drafts.continueTitle')}
         </Typography>
-        <Typography>{t('recipes:drafts.continueHint')}</Typography>
+        <Typography>
+          {t('recipes:drafts.continueHint', { count: offered.length })}
+        </Typography>
         <Stack
           component="ul"
           spacing={1.5}

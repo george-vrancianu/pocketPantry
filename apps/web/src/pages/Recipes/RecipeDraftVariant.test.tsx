@@ -260,7 +260,7 @@ describe('Recipe Drafts on New Variant', () => {
 
   it('discards from the form back to Recipes', async () => {
     const user = typer();
-    setup(VARIANT, {
+    const calls = setup(VARIANT, {
       'POST /api/recipe-drafts': () =>
         Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }),
     });
@@ -270,6 +270,10 @@ describe('Recipe Drafts on New Variant', () => {
       await screen.findByRole('button', { name: 'Discard draft' }),
     );
     expect(await screen.findByText('Recipes page')).toBeVisible();
+    // The delete waits for the Undo window, which the Recipes page owns.
+    expect(sent(calls, `DELETE /api/recipe-drafts/${DRAFT_ID}`)).toHaveLength(
+      0,
+    );
   });
 
   it('opens a Variant draft of an archived base as New Recipe with a note, and saves a Base Recipe', async () => {
@@ -316,15 +320,29 @@ describe('Recipe Drafts on New Variant', () => {
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('Gran omelette');
   });
 
-  it('has the note in Romanian and Danish', async () => {
+  it.each([
+    ['ro', /această ciornă de rețetă nu mai există/],
+    ['da', /denne opskriftkladde var en variant af, findes ikke længere/],
+  ] as const)('has the note in %s', async (locale, note) => {
     setup(
       `/recipes/new?draft=${DRAFT_ID}`,
       {
         [`GET /api/recipe-drafts/${DRAFT_ID}`]: () =>
           Response.json(view({ baseAvailable: false, baseRecipeId: null })),
       },
-      'da',
+      locale,
     );
-    expect(await screen.findByText(/findes ikke længere/)).toBeVisible();
+    expect(await screen.findByText(note)).toBeVisible();
+  });
+
+  it('opens a Variant draft under its own base when the URL names another', async () => {
+    const calls = setup(`/recipes/other/variant/new?draft=${DRAFT_ID}`, {
+      [`GET /api/recipe-drafts/${DRAFT_ID}`]: () => Response.json(view()),
+    });
+    expect(
+      await screen.findByText(`at ${VARIANT}?draft=${DRAFT_ID} by REPLACE`),
+    ).toBeVisible();
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('Gran omelette');
+    expect(sent(calls, 'GET /api/recipes/other/variant-draft')).toHaveLength(0);
   });
 });

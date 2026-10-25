@@ -244,10 +244,11 @@
     "removeAction": "Kassér {{name}}",
     "variantOf": "Variant af {{base}}",
     "continueTitle": "Vil du fortsætte din kladde?",
-    "continueHint": "Du har ufærdige opskriftkladder. Fortsæt en, eller start en ny.",
+    "continueHint_one": "Du har en ufærdig opskriftkladde. Fortsæt den, eller start en ny.",
+    "continueHint_other": "Du har {{count}} ufærdige opskriftkladder. Fortsæt en, eller start en ny.",
     "continue": "Fortsæt",
     "continueNamed": "Fortsæt {{name}}",
     "startNew": "Start ny",
-    "baseGone": "Grundopskriften, denne kladde var en variant af, findes ikke længere. Den åbnes som en ny opskrift og gemmes som en grundopskrift."
+    "baseGone": "Grundopskriften, denne opskriftkladde var en variant af, findes ikke længere. Den åbnes som en ny opskrift og gemmes som en grundopskrift."
   }
 }

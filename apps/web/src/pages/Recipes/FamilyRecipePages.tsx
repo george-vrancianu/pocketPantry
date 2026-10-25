@@ -118,7 +118,6 @@ export function NewRecipePage() {
       title={t('recipes:family.newRecipeHeading')}
     >
       <NewRecipeContent
-        key={route.formKey}
         supplied={supplied}
         resumed={route.resumed}
         onDraftId={route.onDraftId}
@@ -424,10 +423,22 @@ export function NewVariantPage() {
     );
   }
   // The base is archived (or not visible): the Recipe Draft carries on as a New Recipe (ADR 0028).
-  if (route.resumed && !route.resumed.baseAvailable) {
+  if (
+    route.resumed &&
+    (!route.resumed.baseAvailable || !route.resumed.baseRecipeId)
+  ) {
     return (
       <Navigate
         to={`/recipes/new?${DRAFT_PARAM}=${route.resumed.id}`}
+        replace
+      />
+    );
+  }
+  // The Recipe Draft belongs to another base: open it under that base, so Save makes a Variant of the right one.
+  if (route.resumed?.baseRecipeId && route.resumed.baseRecipeId !== id) {
+    return (
+      <Navigate
+        to={`/recipes/${route.resumed.baseRecipeId}/variant/new?${DRAFT_PARAM}=${route.resumed.id}`}
         replace
       />
     );
@@ -441,7 +452,6 @@ export function NewVariantPage() {
       title={title}
     >
       <NewVariantContent
-        key={route.formKey}
         baseId={id}
         resumed={route.resumed}
         onDraftId={route.onDraftId}

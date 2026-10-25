@@ -96,7 +96,10 @@ export const recipeDraftsQueryKey = ['recipe-drafts'] as const;
 export const recipeDraftsListKey = [...recipeDraftsQueryKey, 'list'] as const;
 
 /** The Member's Recipe Drafts, newest edit first. */
-export function useRecipeDrafts(enabled = true) {
+export function useRecipeDrafts(
+  enabled = true,
+  refetchOnMount: 'always' | boolean = true,
+) {
   return useQuery({
     queryKey: recipeDraftsListKey,
     queryFn: async () => {
@@ -104,6 +107,7 @@ export function useRecipeDrafts(enabled = true) {
       return apiRequest<RecipeDraftSummary[]>('/recipe-drafts');
     },
     enabled,
+    refetchOnMount,
   });
 }
 
