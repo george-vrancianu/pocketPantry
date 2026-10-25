@@ -3,7 +3,11 @@ import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import { pairingKind, pairingPrinciple } from '../database/schema';
+import {
+  eatingMomentPolarity,
+  pairingKind,
+  pairingPrinciple,
+} from '../database/schema';
 import { ApiException } from '../common/api-exception';
 import { catalogPrompt } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
@@ -28,10 +32,12 @@ import {
   type SuggestionContext,
 } from './guidance-suggestion-context';
 import {
+  MAX_EATING_MOMENTS,
   MAX_NUTRITION_NOTE,
   MAX_PAIRINGS,
   MAX_PAIRING_LABEL,
   MAX_PAIRING_REASON,
+  type EatingMomentUseInput,
   type PairingInput,
 } from './recipe-guidance.schemas';
 import { RecipeBrowseService } from './recipe-browse.service';
@@ -71,6 +77,10 @@ export class GuidanceSuggestionService {
     const nameOf = (list: { id: string; name: string }[], id: string | null) =>
       list.find((item) => item.id === id)?.name ?? null;
 
+    // The unarchived, Admin-curated Eating Moments (named in `locale`), offered only when wanted.
+    // Admin mode (#556) passes the same kind of list, named in the base language.
+    const moments = wanted.includes('eatingMoments') ? lists.eatingMoments : [];
+
     // Links and Allergens matter only for Pairings; no lookups otherwise.
     const context = wanted.includes('pairings')
       ? await memberSuggestionContext(this.database, {
@@ -89,14 +99,14 @@ export class GuidanceSuggestionService {
     let suggestion: GuidanceSuggestion;
     try {
       const answer = await this.ask({
-        prompt: suggestionPrompt(wanted, locale, context, {
+        prompt: suggestionPrompt(wanted, locale, context, moments, {
           recipe: body.recipe,
           ingredientName: (id) => names.get(id) ?? null,
           cuisine: nameOf(lists.cuisines, body.recipe.cuisineId),
           method: nameOf(lists.methods, body.recipe.methodId),
         }),
       });
-      suggestion = suggestionOf(answer, wanted, context);
+      suggestion = suggestionOf(answer, wanted, context, moments);
     } catch (error) {
       await this.caps.refund(memberId, day, 'guidance');
       throw error;
@@ -136,6 +146,7 @@ function suggestionOf(
   answer: GuidanceSuggestionAnswer,
   wanted: GuidanceField[],
   context: SuggestionContext,
+  moments: OfferedMoment[],
 ): GuidanceSuggestion {
   const guidance: GuidanceSuggestion['guidance'] = {};
   const noSuggestions: GuidanceField[] = [];
@@ -156,9 +167,12 @@ function suggestionOf(
         else guidance.pairings = pairings;
         break;
       }
-      default:
-        // Eating Moments are not covered yet.
-        noSuggestions.push(field);
+      case 'eatingMoments': {
+        const uses = eatingMomentsOf(answer.eatingMoments ?? [], moments);
+        if (uses.length === 0) noSuggestions.push(field);
+        else guidance.eatingMoments = uses;
+        break;
+      }
     }
   }
   return { guidance, noSuggestions };
@@ -167,6 +181,44 @@ function suggestionOf(
 /** At most `max` code points of the trimmed text (trimmed again, so a cut never ends on a space). */
 const clip = (text: string, max: number) =>
   [...text.trim()].slice(0, max).join('').trim();
+
+/** The reason of an Eating Moment shares the Pairing reason's limit (both are `reason` in the Guidance schemas). */
+const MAX_EATING_MOMENT_REASON = MAX_PAIRING_REASON;
+
+/** An Eating Moment the model may use: unarchived and Admin-curated. */
+type OfferedMoment = { id: string; name: string };
+
+/**
+ * Judges the proposed Eating Moments: only offered ids count, each moment once (the first
+ * wins, so never both Good for and Avoid), reasons are trimmed to length, at most 10 are kept.
+ */
+function eatingMomentsOf(
+  proposed: NonNullable<GuidanceSuggestionAnswer['eatingMoments']>,
+  offered: OfferedMoment[],
+): EatingMomentUseInput[] {
+  const known = new Set(offered.map((m) => m.id));
+  const seen = new Set<string>();
+  const result: EatingMomentUseInput[] = [];
+  for (const idea of proposed) {
+    if (result.length >= MAX_EATING_MOMENTS) break;
+    const id = idea.eatingMomentId.trim();
+    const polarity = idea.polarity.trim();
+    if (!known.has(id) || seen.has(id)) continue;
+    if (
+      !(eatingMomentPolarity.enumValues as readonly string[]).includes(polarity)
+    )
+      continue;
+    // The reason is optional on an Eating Moment: a blank one is kept as none.
+    const reason = clip(idea.reason, MAX_EATING_MOMENT_REASON);
+    seen.add(id);
+    result.push({
+      eatingMomentId: id,
+      polarity: polarity as EatingMomentUseInput['polarity'],
+      reason: reason === '' ? null : reason,
+    });
+  }
+  return result;
+}
 
 /**
  * Judges the proposed Pairings: unusable ones (no label or reason, unknown kind) are skipped,
@@ -243,6 +295,7 @@ function suggestionPrompt(
   wanted: GuidanceField[],
   locale: CatalogLocale,
   context: SuggestionContext,
+  moments: OfferedMoment[],
   page: {
     recipe: SuggestGuidanceBody['recipe'];
     ingredientName: (id: string) => string | null;
@@ -271,7 +324,9 @@ function suggestionPrompt(
   const asks: Record<GuidanceField, string> = {
     nutritionNote: `nutritionNote: a short, balanced note on the dish's nutrition in at most ${MAX_NUTRITION_NOTE} characters. Say what is good about it and what is less good, in plain words. Give no numbers or nutrition values (no calories, grams, percentages) and no medical advice. Use null if you cannot say anything sound.`,
     pairings: `pairings: up to ${MAX_PAIRINGS} foods or drinks that go well with the dish. Each has kind ("food" or "drink"), a short label (at most ${MAX_PAIRING_LABEL} characters), a reason in one or two plain sentences (at most ${MAX_PAIRING_REASON} characters), and principle: one of ${pairingPrinciple.enumValues.join(', ')} where one fits, else null. Set ingredientId to the id of a listed Catalog Ingredient, or recipeId to the id of a listed Recipe, only when the pairing is exactly that thing; otherwise leave both null. Never invent ids. Use null for the whole list if you have no sound idea.`,
-    eatingMoments: 'eatingMoments: not requested; leave out.',
+    eatingMoments: `eatingMoments: for which of the listed Eating Moments the dish is a good choice ("good_for") or best avoided ("avoid"), at most ${MAX_EATING_MOMENTS}. Each has eatingMomentId (an id from this list only: ${JSON.stringify(
+      moments.map((m) => [m.id, m.name]),
+    )}), polarity, and a reason in one or two plain sentences (at most ${MAX_EATING_MOMENT_REASON} characters). Use each Eating Moment at most once, never both good_for and avoid. Never invent ids. Use null for the whole list if you have no sound idea.`,
   };
   return [
     'Suggest Guidance for a home recipe, returned in the given schema.',

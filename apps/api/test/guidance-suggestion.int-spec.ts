@@ -7,6 +7,7 @@ import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
+  eatingMoments,
   ingredientAllergens,
   recipeEatingMoments,
   recipeIngredientLines,
@@ -35,6 +36,14 @@ const recipe = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 const emptyGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
+/** An Eating Moment already on the form: that field is the Member's own, so it is not asked for. */
+const filledMoments = [
+  {
+    eatingMomentId: '3f0c8a5e-6b1d-4c53-9a53-0d4f6f5e9a12',
+    polarity: 'good_for',
+    reason: null,
+  },
+];
 const request = (guidance: object = emptyGuidance, extra: object = {}) => ({
   recipe: recipe(),
   guidance,
@@ -90,6 +99,7 @@ describe('Suggest Guidance (integration)', () => {
     respondWith({
       nutritionNote: 'Filling and rich in carbs. Light on fibre.',
       pairings: null,
+      eatingMoments: null,
     });
   });
 
@@ -105,7 +115,7 @@ describe('Suggest Guidance (integration)', () => {
 
     expect(res.body as GuidanceSuggestion).toEqual({
       guidance: { nutritionNote: 'Filling and rich in carbs. Light on fibre.' },
-      noSuggestions: ['pairings'],
+      noSuggestions: ['pairings', 'eatingMoments'],
     });
     expect(prompts).toHaveLength(1);
     // The page's current content reaches the model, matched lines by name.
@@ -148,7 +158,7 @@ describe('Suggest Guidance (integration)', () => {
       request({
         nutritionNote: 'Mine.',
         pairings: [{ kind: 'food', label: 'Mine', reason: 'Because.' }],
-        eatingMoments: [],
+        eatingMoments: filledMoments,
       }),
     ).expect(400);
     expect((res.body as { code: string }).code).toBe(
@@ -180,7 +190,11 @@ describe('Suggest Guidance (integration)', () => {
   });
 
   it('trims a note over 500 characters', async () => {
-    respondWith({ nutritionNote: `  ${'x'.repeat(700)}  `, pairings: null });
+    respondWith({
+      nutritionNote: `  ${'x'.repeat(700)}  `,
+      pairings: null,
+      eatingMoments: null,
+    });
     const res = await suggest(request()).expect(200);
     expect(
       (res.body as GuidanceSuggestion).guidance.nutritionNote,
@@ -188,11 +202,11 @@ describe('Suggest Guidance (integration)', () => {
   });
 
   it('reports a field with nothing to propose instead of filling it', async () => {
-    respondWith({ nutritionNote: '   ', pairings: null });
+    respondWith({ nutritionNote: '   ', pairings: null, eatingMoments: null });
     const res = await suggest(request()).expect(200);
     expect(res.body as GuidanceSuggestion).toEqual({
       guidance: {},
-      noSuggestions: ['pairings', 'nutritionNote'],
+      noSuggestions: ['pairings', 'nutritionNote', 'eatingMoments'],
     });
   });
 
@@ -238,7 +252,7 @@ describe('Suggest Guidance (integration)', () => {
       ...over,
     });
     const propose = (...pairings: object[]) =>
-      respondWith({ nutritionNote: null, pairings });
+      respondWith({ nutritionNote: null, pairings, eatingMoments: null });
     const pairingsOf = async (body: object = request()) =>
       ((await suggest(body).expect(200)).body as GuidanceSuggestion).guidance
         .pairings;
@@ -312,7 +326,7 @@ describe('Suggest Guidance (integration)', () => {
             },
           ],
         },
-        noSuggestions: ['nutritionNote'],
+        noSuggestions: ['nutritionNote', 'eatingMoments'],
       });
       // The offered Ingredients and Recipes reach the model.
       expect(prompts[0].prompt).toContain(butter);
@@ -442,7 +456,7 @@ describe('Suggest Guidance (integration)', () => {
       const res = await suggest(request()).expect(200);
       expect(res.body as GuidanceSuggestion).toEqual({
         guidance: {},
-        noSuggestions: ['pairings', 'nutritionNote'],
+        noSuggestions: ['pairings', 'nutritionNote', 'eatingMoments'],
       });
       expect(prompts[0].prompt).toContain('Milk');
     });
@@ -494,7 +508,11 @@ describe('Suggest Guidance (integration)', () => {
     });
 
     it('keeps Pairings already on the form: no replacing, no topping up', async () => {
-      respondWith({ nutritionNote: 'A note.', pairings: [idea()] });
+      respondWith({
+        nutritionNote: 'A note.',
+        pairings: [idea()],
+        eatingMoments: null,
+      });
       const res = await suggest(
         request({
           ...emptyGuidance,
@@ -503,7 +521,7 @@ describe('Suggest Guidance (integration)', () => {
       ).expect(200);
       expect(res.body as GuidanceSuggestion).toEqual({
         guidance: { nutritionNote: 'A note.' },
-        noSuggestions: [],
+        noSuggestions: ['eatingMoments'],
       });
     });
 
@@ -540,7 +558,11 @@ describe('Suggest Guidance (integration)', () => {
     });
 
     it('leaves Pairings alone when a row is started, even without its reason', async () => {
-      respondWith({ nutritionNote: 'A note.', pairings: [idea()] });
+      respondWith({
+        nutritionNote: 'A note.',
+        pairings: [idea()],
+        eatingMoments: null,
+      });
       const res = await suggest(
         request({
           ...emptyGuidance,
@@ -549,7 +571,7 @@ describe('Suggest Guidance (integration)', () => {
       ).expect(200);
       expect(res.body as GuidanceSuggestion).toEqual({
         guidance: { nutritionNote: 'A note.' },
-        noSuggestions: [],
+        noSuggestions: ['eatingMoments'],
       });
 
       // With the note filled too, nothing is left to ask for.
@@ -557,7 +579,7 @@ describe('Suggest Guidance (integration)', () => {
         request({
           nutritionNote: 'Mine.',
           pairings: [{ kind: 'food', label: '', reason: 'Why' }],
-          eatingMoments: [],
+          eatingMoments: filledMoments,
         }),
       ).expect(400);
     });
@@ -581,6 +603,168 @@ describe('Suggest Guidance (integration)', () => {
       expect((res.body as GuidanceSuggestion).noSuggestions).toContain(
         'pairings',
       );
+    });
+  });
+
+  describe('Eating Moments', () => {
+    const tag = `${stamp}`.slice(-8);
+    const ids = {
+      brunch: crypto.randomUUID(),
+      supper: crypto.randomUUID(),
+      picnic: crypto.randomUUID(),
+      retired: crypto.randomUUID(),
+    };
+    const use = (id: string, polarity = 'good_for', reason = 'Because.') => ({
+      eatingMomentId: id,
+      polarity,
+      reason,
+    });
+    const propose = (...eatingMoments: object[]) =>
+      respondWith({ nutritionNote: null, pairings: null, eatingMoments });
+    const momentsOf = async (body: object = request()) =>
+      ((await suggest(body).expect(200)).body as GuidanceSuggestion).guidance
+        .eatingMoments;
+
+    beforeAll(async () => {
+      await database.insert(eatingMoments).values(
+        (
+          [
+            ['brunch', 'Brunch', null],
+            ['supper', 'Supper', null],
+            ['picnic', 'Picnic', null],
+            ['retired', 'Retired', new Date()],
+          ] as const
+        ).map(([key, name, archivedAt], i) => ({
+          id: ids[key],
+          name: `${name} ${tag}`,
+          normalizedName: `${name} ${tag}`.toLowerCase(),
+          sortOrder: 5000 + i,
+          archivedAt,
+        })),
+      );
+    });
+
+    it('offers only unarchived Eating Moments, by id, and proposes Good for and Avoid with reasons', async () => {
+      propose(
+        use(ids.brunch, 'good_for', '  Light and quick.  '),
+        use(ids.supper, 'avoid', 'Too light to fill a supper.'),
+      );
+      const before = await rowCounts();
+      const res = await suggest(request()).expect(200);
+      expect(res.body as GuidanceSuggestion).toEqual({
+        guidance: {
+          eatingMoments: [
+            use(ids.brunch, 'good_for', 'Light and quick.'),
+            use(ids.supper, 'avoid', 'Too light to fill a supper.'),
+          ],
+        },
+        noSuggestions: ['pairings', 'nutritionNote'],
+      });
+      const { prompt } = prompts[0];
+      for (const id of [ids.brunch, ids.supper, ids.picnic]) {
+        expect(prompt).toContain(id);
+      }
+      expect(prompt).not.toContain(ids.retired);
+      expect(await rowCounts()).toEqual(before);
+    });
+
+    it('drops unknown and archived ids', async () => {
+      propose(
+        use(crypto.randomUUID()),
+        use(ids.retired),
+        use('not-an-id'),
+        use(ids.picnic),
+      );
+      expect(await momentsOf()).toEqual([use(ids.picnic)]);
+    });
+
+    it('keeps the first use of a moment: never twice, never both Good for and Avoid', async () => {
+      propose(
+        use(ids.brunch, 'avoid', 'First.'),
+        use(ids.brunch, 'good_for', 'Conflict.'),
+        use(ids.brunch, 'avoid', 'Again.'),
+        use(ids.supper, 'good_for', 'Fine.'),
+      );
+      expect(await momentsOf()).toEqual([
+        use(ids.brunch, 'avoid', 'First.'),
+        use(ids.supper, 'good_for', 'Fine.'),
+      ]);
+    });
+
+    it('drops an unknown polarity and keeps a blank reason as none', async () => {
+      propose(use(ids.brunch, 'maybe'), use(ids.supper, 'good_for', '   '));
+      expect(await momentsOf()).toEqual([
+        { eatingMomentId: ids.supper, polarity: 'good_for', reason: null },
+      ]);
+    });
+
+    it('trims long reasons instead of rejecting them', async () => {
+      propose(use(ids.brunch, 'good_for', `  ${'r'.repeat(1500)}  `));
+      const moments = await momentsOf();
+      expect(moments?.[0].reason).toHaveLength(1000);
+    });
+
+    it('trims to 10 Eating Moments', async () => {
+      const real = Array.from({ length: 12 }, () => crypto.randomUUID());
+      await database.insert(eatingMoments).values(
+        real.map((id, i) => ({
+          id,
+          name: `Real ${tag} ${i}`,
+          normalizedName: `real ${tag} ${i}`,
+          sortOrder: 7000 + i,
+        })),
+      );
+      propose(...real.map((id) => use(id)));
+      expect(await momentsOf()).toHaveLength(10);
+    });
+
+    it('keeps Eating Moments already on the form: not asked, not returned', async () => {
+      respondWith({
+        nutritionNote: 'A note.',
+        pairings: null,
+        eatingMoments: [use(ids.brunch)],
+      });
+      const res = await suggest(
+        request({ ...emptyGuidance, eatingMoments: [use(ids.supper)] }),
+      ).expect(200);
+      expect(res.body as GuidanceSuggestion).toEqual({
+        guidance: { nutritionNote: 'A note.' },
+        noSuggestions: ['pairings'],
+      });
+      expect(prompts[0].prompt).not.toContain(ids.brunch);
+      expect(prompts[0].prompt).not.toContain('eatingMoments:');
+    });
+
+    it('reports no suggestions and hands the use back when every moment was dropped', async () => {
+      propose(use(crypto.randomUUID()), use(ids.retired));
+      const cookie = await signUp(
+        app,
+        `guidance-moments-${stamp}-${++memberCount}@example.com`,
+        'M',
+      );
+      const who = client(app, cookie, '/api/recipes');
+      const memberId = (
+        (await client(app, cookie, '/api/auth').get('/get-session')).body as {
+          user: { id: string };
+        }
+      ).user.id;
+      for (let i = 0; i < 3; i++) {
+        const res = await suggest(
+          request({ ...emptyGuidance, nutritionNote: 'Mine.' }),
+          who,
+        ).expect(200);
+        expect(res.body as GuidanceSuggestion).toEqual({
+          guidance: {},
+          noSuggestions: ['pairings', 'eatingMoments'],
+        });
+      }
+      const [row] = await database
+        .select({ count: scanUsage.count })
+        .from(scanUsage)
+        .where(
+          and(eq(scanUsage.memberId, memberId), eq(scanUsage.kind, 'guidance')),
+        );
+      expect(row?.count ?? 0).toBe(0);
     });
   });
 
@@ -641,19 +825,23 @@ describe('Suggest Guidance (integration)', () => {
       await suggest(request()).expect(502);
       expect(await usage('guidance')).toBe(0);
 
-      respondWith({ nutritionNote: 'Rich and filling.', pairings: null });
+      respondWith({
+        nutritionNote: 'Rich and filling.',
+        pairings: null,
+        eatingMoments: null,
+      });
       await suggest(request()).expect(200);
       await suggest(request()).expect(200);
       await suggest(request()).expect(429);
     });
 
     it('hands back a request where no field got a proposal, as a normal answer', async () => {
-      respondWith({ nutritionNote: null, pairings: null });
+      respondWith({ nutritionNote: null, pairings: null, eatingMoments: null });
       for (let i = 0; i < 3; i++) {
         const res = await suggest(request()).expect(200);
         expect(res.body as GuidanceSuggestion).toEqual({
           guidance: {},
-          noSuggestions: ['pairings', 'nutritionNote'],
+          noSuggestions: ['pairings', 'nutritionNote', 'eatingMoments'],
         });
       }
       expect(await usage('guidance')).toBe(0);
@@ -664,7 +852,7 @@ describe('Suggest Guidance (integration)', () => {
         request({
           nutritionNote: 'Already written.',
           pairings: [{ kind: 'food', label: 'Mine', reason: 'Because.' }],
-          eatingMoments: [],
+          eatingMoments: filledMoments,
         }),
       ).expect(400);
       expect((res.body as { code: string }).code).toBe(

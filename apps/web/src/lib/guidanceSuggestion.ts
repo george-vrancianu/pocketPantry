@@ -9,13 +9,11 @@ import {
 /** The three fields of Guidance (mirror of the API's `GuidanceField`). */
 export type GuidanceField = 'pairings' | 'nutritionNote' | 'eatingMoments';
 
-/**
- * The fields Suggest Guidance proposes (mirror of the API's `COVERED_GUIDANCE_FIELDS`).
- * Eating Moments join here when the API covers them (plus a branch in `mergeSuggestion`).
- */
+/** The fields Suggest Guidance proposes (mirror of the API's `COVERED_GUIDANCE_FIELDS`). */
 export const COVERED_GUIDANCE_FIELDS: readonly GuidanceField[] = [
   'pairings',
   'nutritionNote',
+  'eatingMoments',
 ];
 
 /** A proposed Pairing: the Guidance input's, plus the name of what it links to. */
@@ -40,7 +38,7 @@ export const isBlankPairing = (
   p: Pick<PairingDraft, 'label' | 'reason' | 'linkTarget'>,
 ) => p.label.trim() === '' && p.reason.trim() === '' && p.linkTarget === '';
 
-/** The fields of the form that are empty now (Pairings: every row blank; an Eating Moment counts as filled). */
+/** The fields of the form that are empty now (Pairings: every row blank; any Eating Moment row counts as filled, as on the API: a row always names a moment). */
 export function emptyGuidanceFields(draft: GuidanceDraft): GuidanceField[] {
   const empty: Record<GuidanceField, boolean> = {
     pairings: draft.pairings.every(isBlankPairing),
@@ -85,7 +83,6 @@ export function mergeSuggestion(
   const empty = fillableFields(draft);
   const filled: GuidanceField[] = [];
   let next = draft;
-  // Eating Moments rows (each with `suggested: true`) are merged here when covered.
   const { pairings } = suggestion.guidance;
   if (empty.includes('pairings') && pairings && pairings.length > 0) {
     next = {
@@ -99,6 +96,23 @@ export function mergeSuggestion(
   if (empty.includes('nutritionNote') && nutritionNote?.trim()) {
     next = { ...next, nutritionNote, nutritionNoteSuggested: true };
     filled.push('nutritionNote');
+  }
+  const { eatingMoments } = suggestion.guidance;
+  if (
+    empty.includes('eatingMoments') &&
+    eatingMoments &&
+    eatingMoments.length > 0
+  ) {
+    next = {
+      ...next,
+      eatingMoments: eatingMoments.map((m) => ({
+        eatingMomentId: m.eatingMomentId,
+        polarity: m.polarity,
+        reason: m.reason ?? '',
+        suggested: true,
+      })),
+    };
+    filled.push('eatingMoments');
   }
   return { draft: next, filled };
 }

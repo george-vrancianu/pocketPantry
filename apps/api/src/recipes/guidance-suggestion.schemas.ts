@@ -28,6 +28,7 @@ export type GuidanceField = (typeof GUIDANCE_FIELDS)[number];
 export const COVERED_GUIDANCE_FIELDS: readonly GuidanceField[] = [
   'pairings',
   'nutritionNote',
+  'eatingMoments',
 ];
 
 /** The page's current Recipe content, as the Family Recipe form holds it (unsaved edits included). */
@@ -86,6 +87,18 @@ export const guidanceSuggestionSchema = z.object({
     .nullable(),
   /** Good and bad, no values; null when there is nothing worth saying. */
   nutritionNote: z.string().nullable(),
+  /** Up to 10 ideas, each about an offered Eating Moment; null when there are none. */
+  eatingMoments: z
+    .array(
+      z.object({
+        /** An offered Eating Moment id. */
+        eatingMomentId: z.string(),
+        /** "good_for" or "avoid". */
+        polarity: z.string(),
+        reason: z.string(),
+      }),
+    )
+    .nullable(),
 });
 export type GuidanceSuggestionAnswer = z.infer<typeof guidanceSuggestionSchema>;
 
