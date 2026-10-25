@@ -1,4 +1,8 @@
-import { VoiceReview, type AfterApply } from './voice/VoiceReview';
+import {
+  VoiceReview,
+  type AfterApply,
+  type ReviewLook,
+} from './voice/VoiceReview';
 import { VoiceAnswers } from './voice/VoiceAnswerSheet';
 import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
@@ -28,10 +32,11 @@ export type VoiceNoteSettings = {
   openWhenReady: boolean;
   /** The Default List this host forces over the route's (ADR 0021). Absent: the route's. */
   defaultTarget?: VoiceDefaultTarget;
-  /**
-   * What happens after an apply, given what was really applied. Absent: the Review toasts the result and
-   * flashes the rows; present: the Review hands the result over instead.
-   */
+  /** How the Review looks: the app's, or the Intro's (happy Gator, "Here's what I heard", "Do these N"). */
+  reviewLook: ReviewLook;
+  /** Whether Apply toasts its result and flashes the rows. Off when the page itself shows what was saved. */
+  toastOnApply: boolean;
+  /** Told what was really applied, given the result. It changes neither the Review's look nor the toast. */
   afterApply?: AfterApply;
 };
 
@@ -39,6 +44,8 @@ export type VoiceNoteSettings = {
 export const APP_VOICE_SETTINGS: VoiceNoteSettings = {
   indicator: 'strip',
   openWhenReady: false,
+  reviewLook: 'app',
+  toastOnApply: true,
 };
 
 /**
@@ -94,7 +101,13 @@ function VoiceNoteControls({
 
       <MicSheets mic={voice.mic} target={defaultTarget} />
 
-      <VoiceReview afterApply={settings.afterApply} />
+      <VoiceReview
+        review={{
+          look: settings.reviewLook,
+          toastOnApply: settings.toastOnApply,
+          afterApply: settings.afterApply,
+        }}
+      />
 
       <VoiceAnswers />
     </>

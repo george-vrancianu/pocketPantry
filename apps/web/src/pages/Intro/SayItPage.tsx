@@ -41,6 +41,8 @@ const SAY_IT_VOICE_SETTINGS: VoiceNoteSettings = {
   indicator: 'pill',
   openWhenReady: true,
   defaultTarget: 'pantry',
+  reviewLook: 'setup',
+  toastOnApply: false,
 };
 
 function ExampleCard({ phrase, result }: { phrase: string; result: string }) {

@@ -9,12 +9,16 @@ import {
   voiceAction,
   voiceIngredient,
 } from '../test/voice';
-import { stubSetupMember } from '../test/intro';
+import { stubSetupMember as stubMember } from '../test/intro';
 import { renderWithProviders } from '../test/render';
 import { holdLongEnough, pressDown, useVoiceTimers } from '../test/voiceHold';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
 import { AppDock } from './AppDock';
-import { VoiceNote, type VoiceNoteSettings } from './VoiceNote';
+import {
+  APP_VOICE_SETTINGS,
+  VoiceNote,
+  type VoiceNoteSettings,
+} from './VoiceNote';
 
 const HEARD = {
   transcript: 'We have rice.',
@@ -37,22 +41,23 @@ const APPLIED = {
 };
 
 /** The host alone, on a page with no list of its own, driven only by its settings. */
-async function host(settings?: VoiceNoteSettings) {
-  stubSetupMember({
+async function host(settings?: VoiceNoteSettings, hangRead = false) {
+  stubMember({
     routes: {
-      'POST /api/voice': () => Response.json(HEARD, { status: 201 }),
+      'POST /api/voice': () =>
+        hangRead
+          ? new Promise<Response>(() => {})
+          : Response.json(HEARD, { status: 201 }),
       'POST /api/voice/apply': () => Response.json(APPLIED, { status: 201 }),
     },
   });
   const { sent } = stubVoiceFetch(globalThis.fetch as never);
   renderWithProviders(
-    <>
-      <VoiceHostProvider>
-        <VoiceHostSlot />
-        <VoiceNote settings={settings} />
-        <AppDock />
-      </VoiceHostProvider>
-    </>,
+    <VoiceHostProvider>
+      <VoiceHostSlot />
+      <VoiceNote settings={settings} />
+      <AppDock />
+    </VoiceHostProvider>,
     { route: '/recipes' },
   );
   const button = await talkButton();
@@ -73,30 +78,86 @@ describe('the Voice Note host settings', () => {
     vi.unstubAllGlobals();
   });
 
-  it('forces its Default List, opens the note when read and hands the apply to afterApply', async () => {
-    const afterApply = vi.fn();
-    const { sent } = await host({
-      indicator: 'pill',
-      openWhenReady: true,
-      defaultTarget: 'pantry',
-      afterApply,
-    });
-    const review = await screen.findByRole('dialog', {
-      name: "Here's what I heard",
-    });
-    expect(sent[0].get('defaultTarget')).toBe('pantry');
+  const open = (name: string | RegExp) => screen.findByRole('dialog', { name });
+  const applyOne = async () => {
+    const review = await open(/what I heard|Review/i);
     await userEvent
       .setup()
-      .click(within(review).getByRole('button', { name: 'Do this one' }));
-    await vi.waitFor(() => expect(afterApply).toHaveBeenCalledTimes(1));
-    expect(afterApply.mock.calls[0][0]).toEqual(APPLIED);
-    expect(afterApply.mock.calls[0][1]).toHaveLength(1);
+      .click(within(review).getByRole('button', { name: /Do this one|Apply/ }));
+  };
+
+  it('indicator: the status pill shows the read', async () => {
+    await host(
+      { ...APP_VOICE_SETTINGS, indicator: 'pill', openWhenReady: true },
+      true,
+    );
+    const pill = await screen.findByRole('status');
+    expect(within(pill).getByRole('button', { name: 'Cancel' })).toBeVisible();
   });
 
-  it('with the app settings the route decides the Default List and the note waits in the Voice Inbox', async () => {
-    const { sent } = await host();
+  it('indicator: the strip is the app default and the note waits in it', async () => {
+    const { sent } = await host(APP_VOICE_SETTINGS);
     expect(await screen.findByText(/ready/i)).toBeVisible();
     expect(sent[0].get('defaultTarget')).toBe('none');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('openWhenReady: the note opens as soon as it is read', async () => {
+    await host({ ...APP_VOICE_SETTINGS, openWhenReady: true });
+    expect(await open(/./)).toBeVisible();
+  });
+
+  it('defaultTarget: forces the Default List over the route', async () => {
+    const { sent } = await host({
+      ...APP_VOICE_SETTINGS,
+      defaultTarget: 'pantry',
+    });
+    await vi.waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].get('defaultTarget')).toBe('pantry');
+  });
+
+  it('reviewLook: setup draws the Intro Review, app keeps the app one', async () => {
+    await host({
+      ...APP_VOICE_SETTINGS,
+      openWhenReady: true,
+      reviewLook: 'setup',
+    });
+    const review = await open("Here's what I heard");
+    expect(
+      within(review).getByRole('button', { name: 'Do this one' }),
+    ).toBeVisible();
+  });
+
+  it('reviewLook: app opened from the Voice Inbox keeps the app heading', async () => {
+    await host({ ...APP_VOICE_SETTINGS, openWhenReady: true });
+    const review = await open(/./);
+    expect(review).not.toHaveAccessibleName("Here's what I heard");
+  });
+
+  it('toastOnApply on: Apply toasts, and afterApply is told without changing the toast or look', async () => {
+    const afterApply = vi.fn();
+    await host({
+      ...APP_VOICE_SETTINGS,
+      openWhenReady: true,
+      afterApply,
+    });
+    await applyOne();
+    await vi.waitFor(() => expect(afterApply).toHaveBeenCalledTimes(1));
+    expect(afterApply.mock.calls[0][0]).toEqual(APPLIED);
+    expect(afterApply.mock.calls[0][1]).toHaveLength(1);
+    expect(await screen.findByText(/applied/i)).toBeVisible();
+  });
+
+  it('toastOnApply off: Apply shows no toast and hands the result to afterApply', async () => {
+    const afterApply = vi.fn();
+    await host({
+      ...APP_VOICE_SETTINGS,
+      openWhenReady: true,
+      toastOnApply: false,
+      afterApply,
+    });
+    await applyOne();
+    await vi.waitFor(() => expect(afterApply).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/applied/i)).not.toBeInTheDocument();
   });
 });

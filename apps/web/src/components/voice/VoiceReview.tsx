@@ -66,11 +66,21 @@ const allOn = (actions: VoiceReviewAction[]): VoiceList | '' => {
 const quantityText = (action: VoiceReviewAction) =>
   action.quantity === null ? '' : String(action.quantity);
 
-/**
- * What a host does with its Review once applied (a host's `afterApply` setting): the Review takes the happy Gator, "Here's what I heard" and
- * "Do these N", and hands the result of Apply to the page instead of toasting it. Discard needs nothing:
- * the Review closes and the Member is still on Say it.
- */
+/** How the Review looks: the app's, or the Intro's (happy Gator, "Here's what I heard", "Do these N", transcript open). */
+export type ReviewLook = 'app' | 'setup';
+
+/** What a host's Review is set to, apart from its look: whether Apply toasts, and who hears about the result. */
+export type ReviewSettings = {
+  look: ReviewLook;
+  /** Whether Apply shows its toast and flashes the rows. */
+  toastOnApply: boolean;
+  /** Told what was really applied; it does not change the look or the toast. */
+  afterApply?: AfterApply;
+};
+
+const APP_REVIEW: ReviewSettings = { look: 'app', toastOnApply: true };
+
+/** What a host does once an Apply succeeds, given what was really applied (a host's `afterApply` setting). */
 export type AfterApply = (
   /** Apply succeeded (some actions may have been skipped). */
   result: VoiceApplyResult,
@@ -82,14 +92,18 @@ export type AfterApply = (
  * Review for a Voice Note, over the current page: the Voice Actions grouped by list, each edited in place, and
  * Discard and Apply. Mounted while there is a Voice Note to review, so each one starts with a clean sheet.
  */
-export function VoiceReview({ afterApply }: { afterApply?: AfterApply } = {}) {
+export function VoiceReview({
+  review = APP_REVIEW,
+}: { review?: ReviewSettings } = {}) {
   const { phase } = useVoiceNoteState();
   return phase === 'review' || phase === 'applying' ? (
-    <ReviewSheet afterApply={afterApply} />
+    <ReviewSheet review={review} />
   ) : null;
 }
 
-function ReviewSheet({ afterApply }: { afterApply?: AfterApply }) {
+function ReviewSheet({ review }: { review: ReviewSettings }) {
+  const { afterApply, toastOnApply } = review;
+  const setupLook = review.look === 'setup';
   const { t, i18n } = useTranslation(['voice', 'common', 'onboarding']);
   const gatorAlt = useGatorAlt();
   const { proposal, defaultTarget, phase, recording, merged } =
@@ -154,10 +168,10 @@ function ReviewSheet({ afterApply }: { afterApply?: AfterApply }) {
     mutationFn: () => applyVoiceActions(applicable),
     onError: () => voiceNote.applyFailed(),
     onSuccess: (result: VoiceApplyResult) => {
-      if (afterApply) {
+      if (!toastOnApply) {
         voiceNote.applied();
         refreshLists();
-        afterApply(result, applicable);
+        afterApply?.(result, applicable);
         return;
       }
       const { message, detail } = applyToast(
@@ -183,6 +197,7 @@ function ReviewSheet({ afterApply }: { afterApply?: AfterApply }) {
       });
       focusVoiceButton();
       refreshLists();
+      afterApply?.(result, applicable);
     },
   });
 
@@ -236,7 +251,7 @@ function ReviewSheet({ afterApply }: { afterApply?: AfterApply }) {
     if (focusPicker(focusId)) setFocusId(null);
   }, [focusId, openId]);
 
-  const heading = afterApply
+  const heading = setupLook
     ? t('onboarding:sayIt.heard.title')
     : merged
       ? t('voice:review.titleAll')
@@ -312,12 +327,12 @@ function ReviewSheet({ afterApply }: { afterApply?: AfterApply }) {
             px: 2.5,
             pt: 1.5,
             pb: 1.5,
-            ...(afterApply
+            ...(setupLook
               ? { display: 'flex', alignItems: 'center', gap: '12px' }
               : {}),
           }}
         >
-          {afterApply ? (
+          {setupLook ? (
             <Gator mood="happy" size={72} alt={gatorAlt('happy')} />
           ) : null}
           <Box>
@@ -330,7 +345,7 @@ function ReviewSheet({ afterApply }: { afterApply?: AfterApply }) {
             >
               {heading}
             </Typography>
-            {afterApply ? null : (
+            {setupLook ? null : (
               <Typography
                 sx={{ fontSize: 13, color: palette('text-secondary') }}
               >
@@ -347,7 +362,7 @@ function ReviewSheet({ afterApply }: { afterApply?: AfterApply }) {
           invalid={invalid.size > 0}
           applying={applying}
           applyLabel={
-            afterApply
+            setupLook
               ? t('onboarding:sayIt.heard.doThese', {
                   count: applicable.length,
                 })
@@ -393,8 +408,7 @@ function ReviewSheet({ afterApply }: { afterApply?: AfterApply }) {
             language={language}
             durationMs={recording?.durationMs}
             defaultOpen={
-              Boolean(afterApply) ||
-              actions.every((a) => a.status === 'notUnderstood')
+              setupLook || actions.every((a) => a.status === 'notUnderstood')
             }
           />
         )}
@@ -471,7 +485,7 @@ function ReviewSheet({ afterApply }: { afterApply?: AfterApply }) {
           </Group>
         ))}
 
-        {afterApply ? (
+        {setupLook ? (
           <Typography
             sx={{ px: '4px', fontSize: 13, color: palette('text-secondary') }}
           >

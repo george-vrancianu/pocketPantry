@@ -4,7 +4,7 @@ import type { useVoiceNoteState } from '../../lib/voiceNote';
 
 type State = ReturnType<typeof useVoiceNoteState>;
 
-/** The title and hint a failed Voice Note shows, shared by the Setup pill and the Voice Inbox sheet. */
+/** The title and hint a failed Voice Note shows, shared by the Say it pill and the Voice Inbox sheet. */
 export function failureReason(
   t: TFunction,
   error: State['error'],

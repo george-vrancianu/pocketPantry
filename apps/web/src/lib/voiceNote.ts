@@ -607,7 +607,7 @@ export function createVoiceNote(
       openWhenReady,
     });
     store = { ...store, live: undefined };
-    // Setup's single note shows its failure on the pill; elsewhere it is a row in the Voice Inbox.
+    // A single note on the status pill (Say it) shows its failure there; elsewhere it is a row in the Voice Inbox.
     if (openWhenReady) store = { ...store, openId: id };
     emit();
   }
@@ -628,10 +628,10 @@ export function createVoiceNote(
     // A note is already under way (the microphone starting, recording, audio being finalised): ignore silently.
     if (starting || session || finishing) return 'active';
     const open = openNote();
-    // The mic is not offered while the open note is a Review or answer sheet, or still being read (Setup's single note).
+    // The mic is not offered while the open note is a Review or answer sheet, or still being read (Say it's single note).
     if (store.merged || (open && open.phase !== 'failed')) return 'review';
     // Failures with no recording kept (Voice Cap on the press, no microphone, too long, unsupported) cannot
-    // be retried and do not count toward the limit; Setup's open failure is dropped by this press.
+    // be retried and do not count toward the limit; Say it's open failure is dropped by this press.
     const counted = store.notes.filter(
       (n) => !(n.phase === 'failed' && (!n.recording || n.id === open?.id)),
     ).length;
@@ -754,7 +754,7 @@ export function createVoiceNote(
         },
       }));
       emit();
-      // Setup opens its own note when it is read; no "ready" nudge for it.
+      // An open-when-ready note (Say it) opens itself when it is read; no "ready" nudge for it.
       if (!note.openWhenReady) notify('noteReady');
     }
     pump();
@@ -793,7 +793,7 @@ export function createVoiceNote(
   async function start(options: {
     defaultTarget: VoiceDefaultTarget;
     spokenLanguage?: ScanLanguage;
-    /** Setup's Say it: the note opens straight away and is reviewed as soon as it is read. */
+    /** The note opens straight away and is reviewed as soon as it is read (Say it), instead of waiting in the Voice Inbox. */
     openWhenReady?: boolean;
   }): Promise<StartOutcome> {
     const blocker = startBlocker();
