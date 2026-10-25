@@ -168,7 +168,13 @@
       "levelCycle": "Level: {{value}}. Tap to change",
       "prep": "Prep",
       "cook": "Cook"
-    }
+    },
+    "baseCard": {
+      "subline": "Pick what this Recipe branches from.",
+      "savesVariant": "Saves as a Variant of {{title}}.",
+      "savesBase": "Saves as its own Base Recipe."
+    },
+    "variantOf": "Variant of {{title}}"
   },
   "fewerServings": "Fewer Servings",
   "moreServings": "More Servings",
@@ -254,7 +260,8 @@
   "sourceLink": {
     "from": "From {{host}} ↗",
     "remove": "Remove link",
-    "translatedFrom": "Translated from {{language}}"
+    "translatedFrom": "Translated from {{language}}",
+    "removed": "Link removed. It goes when you save."
   },
   "recipeDraft": {
     "saving": "Saving…",

@@ -1329,7 +1329,7 @@ describe('EditFamilyRecipePage Source Link', () => {
     expect(screen.queryByText(/From .* ↗/)).toBeNull();
   });
 
-  it('removes the link on Save: hides it at once, sends null, moves focus to the heading', async () => {
+  it('removes the link on Save: hides it at once, sends null, moves focus to Undo', async () => {
     const user = userEvent.setup({ delay: null });
     let current = linked;
     const calls = setup('/recipes/g/edit', {
@@ -1347,7 +1347,7 @@ describe('EditFamilyRecipePage Source Link', () => {
       screen.queryByRole('link', { name: /From example\.com/ }),
     ).toBeNull();
     expect(screen.queryByText(/Translated from/)).toBeNull();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Undo' })).toHaveFocus();
     // Nothing is sent until Save.
     expect(putBody(calls)).toBeUndefined();
     await user.click(screen.getByRole('button', { name: 'Save' }));
@@ -3723,5 +3723,68 @@ describe('Guidance card (#594)', () => {
       '[aria-hidden]',
     ) as HTMLElement;
     expect(getComputedStyle(chevron).transform).toContain('180');
+  });
+});
+
+describe('Source Link Remove with Undo (#597)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('says the link goes on save, focuses Undo, and Undo brings the row back and keeps the link on Save', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup(
+      newRecipeWith({
+        ...sourced,
+        sourceLink: 'https://www.example.com/tortilla',
+      }),
+      {
+        'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+      },
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove link' }),
+    );
+    expect(
+      screen.getByText('Link removed. It goes when you save.'),
+    ).toBeVisible();
+    const undo = screen.getByRole('button', { name: 'Undo' });
+    expect(undo).toHaveFocus();
+    await user.click(undo);
+    expect(screen.getByRole('link', { name: /^From / })).toBeVisible();
+    await user.type(screen.getByLabelText(/^Serves/), '4');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() =>
+      expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(true),
+    );
+    const body = calls.find((c) => c.key === 'POST /api/recipes')?.body as {
+      sourceLink?: string;
+    };
+    expect(body.sourceLink).toBeTruthy();
+  });
+});
+
+describe('Variant of row on Make a Variant (#597)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('names the Catalog Base, not the Family copy the form was filled from (ADR 0029)', async () => {
+    setup('/recipes/copy/variant/new', {
+      'GET /api/recipes/copy/variant-draft': () => Response.json(draft),
+      'GET /api/recipes/copy': () =>
+        Response.json({
+          ...sourceDetail,
+          id: 'copy',
+          title: 'Our omelette',
+          owner: 'family',
+        }),
+      'GET /api/recipes/base': () =>
+        Response.json({
+          ...sourceDetail,
+          id: 'base',
+          title: 'Omelette',
+          owner: 'catalog',
+        }),
+    });
+    expect(await screen.findByText('Variant of Omelette')).toBeVisible();
+    expect(screen.queryByText('Variant of Our omelette')).toBeNull();
+    expect(screen.queryByRole('radio')).toBeNull();
   });
 });

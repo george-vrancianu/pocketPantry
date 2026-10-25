@@ -39,6 +39,8 @@ type Props = {
   onShowHidden?: () => void;
   /** The picked base's id, or null for standalone; called on mount and on every change. Must be stable (it is an effect dependency). */
   onChange: (parentId: string | null) => void;
+  /** A line under the heading saying what the pick is for. */
+  subline?: string;
 };
 
 function BaseOption({
@@ -96,6 +98,7 @@ export function BaseRecipePicker({
   hiddenByAllergiesCount = 0,
   onShowHidden,
   onChange,
+  subline,
 }: Props) {
   const { t } = useTranslation('review');
   const groupName = useId();
@@ -147,6 +150,11 @@ export function BaseRecipePicker({
         <Box component="legend" sx={{ fontWeight: 600, p: 0 }}>
           {t('plateRecipe.base')}
         </Box>
+        {subline ? (
+          <Typography variant="caption" color="text.secondary" component="p">
+            {subline}
+          </Typography>
+        ) : null}
         {loading ? (
           <Typography role="status" color="text.secondary">
             {t('plateRecipe.loading')}

@@ -1,4 +1,5 @@
 import { Box, Button, Link, Stack, Typography } from '@pocket-pantry/ui';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { languageName } from '../lib/languageName';
 
@@ -50,23 +51,52 @@ export function SourceLink({
 
 /**
  * A Source Link the Member may drop but never change: the link row with a "Remove link" button.
- * The button unmounts with the row, so `onRemove` should move focus somewhere on the page.
+ * Removing swaps the row for a status line with Undo (focus moves to Undo); the caller holds
+ * `removed` and applies it when the Member saves.
  */
 export function RemovableSourceLink({
   href,
   translatedFrom,
+  removed,
   onRemove,
+  onUndo,
 }: {
   href: string;
   translatedFrom?: string | null;
+  removed: boolean;
   onRemove: () => void;
+  onUndo: () => void;
 }) {
-  const { t } = useTranslation('recipes');
+  const { t } = useTranslation(['recipes', 'common']);
+  const undoRef = useRef<HTMLButtonElement>(null);
+  const [asked, setAsked] = useState(false);
+  // The remove button unmounts with the row: focus goes to Undo, the next thing to do.
+  useEffect(() => {
+    if (removed && asked) undoRef.current?.focus();
+  }, [removed, asked]);
+  if (removed) {
+    return (
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+        <Typography role="status" variant="body2">
+          {t('recipes:sourceLink.removed')}
+        </Typography>
+        <Button ref={undoRef} variant="ghost" onClick={onUndo}>
+          {t('common:row.undo')}
+        </Button>
+      </Stack>
+    );
+  }
   return (
     <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
       <SourceLink href={href} translatedFrom={translatedFrom} />
-      <Button variant="ghost" onClick={onRemove}>
-        {t('sourceLink.remove')}
+      <Button
+        variant="ghost"
+        onClick={() => {
+          setAsked(true);
+          onRemove();
+        }}
+      >
+        {t('recipes:sourceLink.remove')}
       </Button>
     </Stack>
   );

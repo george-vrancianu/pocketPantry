@@ -472,7 +472,7 @@ describe('RecipeFromLinkPage', () => {
       await screen.findByRole('button', { name: 'Remove link' }),
     );
     expect(screen.queryByRole('link', { name: /^From / })).toBeNull();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Undo' })).toHaveFocus();
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await screen.findByText('Detail of the recipe');
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
