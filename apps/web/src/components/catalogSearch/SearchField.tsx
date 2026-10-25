@@ -10,7 +10,7 @@ import {
   border,
   color as themeColor,
 } from '@pocket-pantry/ui';
-import type { ChangeEvent, KeyboardEvent, Ref } from 'react';
+import type { ChangeEvent, KeyboardEvent, ReactNode, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { ADD_TO_CATALOG_TRIGGER } from './AddToCatalog';
@@ -34,6 +34,10 @@ export type SearchFieldProps = {
   activeOptionId?: string;
   /** The picked ingredient; the field then shows it as a token over a hidden input. */
   selected: CatalogSearchResult | null;
+  /** Shown in the token after the name. */
+  selectedTag?: ReactNode;
+  /** Shown in the token in place of the leaf and Aisle. */
+  selectedMeta?: string;
   /** Clears the text (and the selection); wired to × and to the token. */
   onClear: () => void;
   /** Show the clear × even with no text (an Aisle is open). */
@@ -62,6 +66,8 @@ export function SearchField({
   expanded,
   activeOptionId,
   selected,
+  selectedTag,
+  selectedMeta,
   onClear,
   canClear = false,
   addToCatalog = null,
@@ -189,7 +195,12 @@ export function SearchField({
         {rightSlot}
       </Box>
       {selected ? (
-        <SelectedToken selected={selected} onClear={onClear} />
+        <SelectedToken
+          selected={selected}
+          onClear={onClear}
+          tag={selectedTag}
+          meta={selectedMeta}
+        />
       ) : null}
     </Box>
   );

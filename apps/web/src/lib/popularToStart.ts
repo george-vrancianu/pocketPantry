@@ -5,7 +5,7 @@ import { LOCALES, type Locale } from '../i18n/resources';
 import type { CatalogSearchResult } from './catalog';
 
 /** The UI language as a Catalog locale; anything else reads the English list. */
-export function popularLocale(language: string): Locale {
+function popularLocale(language: string): Locale {
   const base = language.slice(0, 2);
   return LOCALES.find((locale) => locale === base) ?? 'en';
 }

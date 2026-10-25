@@ -11,7 +11,7 @@ import {
   focusRing,
   Typography,
 } from '@pocket-pantry/ui';
-import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useShowsDockMic } from '../../../components/VoiceNote';
@@ -167,7 +167,7 @@ function Pill({
 }: {
   icon: ReactNode;
   label: string;
-  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
+  onClick: () => void;
 }) {
   return (
     <Box

@@ -123,7 +123,7 @@ A fixed list of eight Ingredients per locale that the Add to Pantry sheet offers
 _Avoid_: Suggestions, trending
 
 **Product Description**:
-The free-text name of the actual product a Batch came from, such as "Grana Padano 200g", kept alongside the matched Ingredient.
+The free-text name of the actual product a Batch came from, such as "Grana Padano 200g", kept alongside the matched Ingredient. The UI calls it the note.
 _Avoid_: Label, brand
 
 **Expired**:
@@ -217,7 +217,7 @@ Product, Receipt, Plate, or Ingredients.
 Recognises a single packaged product from one photo, and its best-before date when the date is in that photo.
 
 **Barcode Lookup**:
-Reading a product's barcode in the camera and looking the code up, first among the Family's Known Barcodes and then in an open product database. It fills the add-Batch form, or adds a card to a Scan Session. Not a Scan: no photo is sent for recognition, it has no Scan Language, and it never counts against the Scan Cap. Barcode sits on the camera's mode slider but is not a Scan Mode.
+Reading a product's barcode in the camera and looking the code up, first among the Family's Known Barcodes and then in an open product database. It fills the Add to Pantry sheet, or adds a card to a Scan Session. Not a Scan: no photo is sent for recognition, it has no Scan Language, and it never counts against the Scan Cap. Barcode sits on the camera's mode slider but is not a Scan Mode.
 _Avoid_: Barcode scan, barcode mode
 
 **Lookup Limit**:

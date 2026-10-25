@@ -108,6 +108,8 @@ export function useAddBatchForm({
   const [checkIngredient, setCheckIngredient] = useState(false);
   // Where the camera's values came from, shown as a tag until the Member changes the Ingredient.
   const [source, setSource] = useState<'photo' | 'scanned' | null>(null);
+  // The product the camera read, shown in the token beside that tag.
+  const [productName, setProductName] = useState<string | null>(null);
   const edit = (field: PrefillField) => {
     touch(field);
     setPrefilled((was) => {
@@ -327,9 +329,13 @@ export function useAddBatchForm({
       const ingredientPicked = ingredientTouched;
       prefillNow.current(read, 'search');
       // The Member's own Ingredient pick is not "From photo", and the toast only speaks of what the read did.
-      if (!ingredientPicked) setSource('photo');
-      if (ingredientPicked) return;
       const name = read.name.trim() || read.productDescription || '';
+      // Only a matched pick is "From photo": with no match nothing is picked yet.
+      if (!ingredientPicked && read.match) {
+        setSource('photo');
+        setProductName(name || null);
+      }
+      if (ingredientPicked) return;
       if (read.match || !name)
         toast.show(t('pantry:form.toast.photo'), { polite: true });
       else
@@ -342,7 +348,10 @@ export function useAddBatchForm({
       barcodeLine(lookup),
       lookup.unmatchedName === undefined ? 'search' : 'typed-name',
     );
-    setSource('scanned');
+    if (lookup.match) {
+      setSource('scanned');
+      setProductName(lookup.productDescription || null);
+    }
     setFromOpenFoodFacts(lookup.source === 'open_food_facts');
     setLookupAllergens({
       // Pre-tick only for a new Ingredient: a confident match is not created.
@@ -368,6 +377,7 @@ export function useAddBatchForm({
     /** The camera closed with Type it: put focus in the search. */
     typeRequested,
     source,
+    productName,
     fromOpenFoodFacts,
     /** Ids to pre-tick for a new Family Ingredient; undefined when none are listed (never []). */
     listedAllergenIds: lookupAllergens.listed.length

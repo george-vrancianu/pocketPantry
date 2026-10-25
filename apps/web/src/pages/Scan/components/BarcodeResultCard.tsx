@@ -3,7 +3,7 @@ import {
   color,
   radius,
   shadow,
-  tokens,
+  palette,
   Typography,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
@@ -13,8 +13,8 @@ import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
 import type { BarcodeLookup } from '../../../lib/barcode';
 import { BARCODE_GLYPH } from './barcodeGlyph';
 
-const INK = tokens.color.ink;
-const MUTED = tokens.color.muted;
+const INK = palette('text-primary');
+const MUTED = palette('text-secondary');
 
 const button = {
   minHeight: 42,
@@ -69,7 +69,7 @@ export function BarcodeResultCard({
         bottom: 190,
         p: 1.5,
         borderRadius: radius.sheet,
-        backgroundColor: tokens.color.surface,
+        backgroundColor: 'background.paper',
         color: INK,
         boxShadow: shadow.float,
         ...(!reduced && {
@@ -89,7 +89,7 @@ export function BarcodeResultCard({
             height: 46,
             flex: 'none',
             borderRadius: radius.control,
-            backgroundColor: tokens.color.chipNeutral,
+            backgroundColor: 'pp.chip',
             display: 'grid',
             placeItems: 'center',
             '& svg': {
@@ -222,9 +222,7 @@ function CardButton({
       onClick={onClick}
       sx={{
         ...button,
-        backgroundColor: primary
-          ? tokens.color.accent
-          : tokens.color.chipNeutral,
+        backgroundColor: primary ? 'pp.accent' : 'pp.chip',
         color: primary ? color.accentInk : INK,
         ...sx,
       }}

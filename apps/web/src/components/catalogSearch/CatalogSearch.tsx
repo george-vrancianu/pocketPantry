@@ -53,6 +53,10 @@ export type CatalogSearchProps = {
    * `onQueryChange` reports an empty query (and may also drop it for any change).
    */
   selected?: CatalogSearchResult | null;
+  /** A pill shown in the token after the name. */
+  selectedTag?: ReactNode;
+  /** Shown in the token in place of "{leaf} · {aisle}". */
+  selectedMeta?: string;
   /**
    * Host blocks shown while the field is focused and empty. Blocks reach the
    * search through `useEmptyStateSearch` (pick, open an Aisle), not props.
@@ -94,6 +98,8 @@ export function CatalogSearch({
   describedBy,
   showUnit = true,
   selected = null,
+  selectedTag,
+  selectedMeta,
   emptyState,
   onUseTyped,
   scope = 'family',
@@ -335,6 +341,8 @@ export function CatalogSearch({
         expanded={expanded}
         activeOptionId={expanded && active >= 0 ? optionId(active) : undefined}
         selected={selected}
+        selectedTag={selectedTag}
+        selectedMeta={selectedMeta}
         onClear={clear}
         canClear={aisle !== null}
         addToCatalog={

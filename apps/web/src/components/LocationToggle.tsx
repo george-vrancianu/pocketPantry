@@ -1,22 +1,8 @@
-import {
-  Box,
-  CupboardIcon,
-  FreezerIcon,
-  FridgeIcon,
-  SegmentedControl,
-  SpicesIcon,
-  Typography,
-} from '@pocket-pantry/ui';
-import { type ComponentProps, type ReactNode } from 'react';
+import { Box, SegmentedControl, Typography } from '@pocket-pantry/ui';
+import { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LOCATIONS, type StorageLocation } from '../lib/catalog';
-
-const ICONS: Record<StorageLocation, ReactNode> = {
-  fridge: <FridgeIcon size={18} />,
-  freezer: <FreezerIcon size={18} />,
-  cupboard: <CupboardIcon size={18} />,
-  spices: <SpicesIcon size={18} />,
-};
+import { LocationIcon } from './LocationIcon';
 
 type Props = {
   /** The visible caption above the toggle, also the group's accessible name (set as an aria-label, so a CSS-uppercased caption cannot change its case). */
@@ -62,7 +48,7 @@ export function LocationToggle({
         options={LOCATIONS.map((location) => ({
           value: location,
           label: t(`locations.${location}`),
-          icon: ICONS[location],
+          icon: <LocationIcon location={location} size={18} />,
         }))}
       />
     </Box>

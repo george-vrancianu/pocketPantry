@@ -7,7 +7,6 @@ import {
   IconButton,
   IngredientIcon,
   Sheet,
-  tokens,
   useToast,
 } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
@@ -179,7 +178,7 @@ export function AddToPantrySheet({
                 fontSize: 11.5,
                 fontWeight: 700,
                 textTransform: 'uppercase',
-                color: tokens.color.muted,
+                color: 'text.secondary',
               }}
             >
               {t('form.added')}
@@ -196,8 +195,8 @@ export function AddToPantrySheet({
                   height: 32,
                   p: '0 10px 0 4px',
                   borderRadius: '999px',
-                  backgroundColor: tokens.color.accentTint,
-                  color: tokens.color.accentOnTint,
+                  backgroundColor: 'pp.accentTint',
+                  color: 'pp.accentOnTint',
                   fontSize: 12.5,
                   fontWeight: 700,
                 }}

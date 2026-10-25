@@ -1,4 +1,11 @@
-import { Alert, Stack, Typography } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Box,
+  CameraIcon,
+  ScanBarcodeIcon,
+  Stack,
+  Typography,
+} from '@pocket-pantry/ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
@@ -25,6 +32,35 @@ import { BatchNote } from './BatchNote';
 import { ExpiryChips } from './ExpiryChips';
 import { WhereItGoes } from './WhereItGoes';
 import { QuickRow } from './QuickRow';
+
+/** "From photo" / "Scanned": a butter pill after the Ingredient name in the token. */
+function CameraSourceTag({ source }: { source: 'photo' | 'scanned' }) {
+  const { t } = useTranslation('pantry');
+  const Icon = source === 'photo' ? CameraIcon : ScanBarcodeIcon;
+  return (
+    <Box
+      component="span"
+      data-testid="camera-source-tag"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        ml: 1,
+        px: '7px',
+        py: '1px',
+        verticalAlign: 'middle',
+        borderRadius: '999px',
+        fontSize: 10.5,
+        fontWeight: 800,
+        backgroundColor: 'secondary.main',
+        color: 'secondary.contrastText',
+      }}
+    >
+      <Icon size={11} />
+      {t(`form.tag.${source}`)}
+    </Box>
+  );
+}
 
 type Props = {
   /** Called with the Batch the save created. */
@@ -111,6 +147,9 @@ export function AddBatchForm({
       </Typography>
     ) : null;
 
+  // A camera pick is tagged in the token (instead of the "Filled from the product" mark) once something is picked.
+  const tagged = camera.source !== null && form.selected !== null;
+
   return (
     <Stack
       component="form"
@@ -145,6 +184,12 @@ export function AddBatchForm({
         placeholder={tCatalog('search.placeholderAdd')}
         defaultQuery={form.initialQuery}
         selected={form.selected}
+        selectedTag={
+          tagged && camera.source ? (
+            <CameraSourceTag source={camera.source} />
+          ) : null
+        }
+        selectedMeta={tagged ? (camera.productName ?? undefined) : undefined}
         onSelect={form.selectIngredient}
         onQueryChange={form.changeQuery}
         onUseTyped={form.chooseTypedName}
@@ -157,16 +202,7 @@ export function AddBatchForm({
         }
       />
 
-      {camera.source ? (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          data-testid="camera-source-tag"
-        >
-          {t(`form.tag.${camera.source}`)}
-        </Typography>
-      ) : null}
-      {mark('ingredient')}
+      {tagged ? null : mark('ingredient')}
       <ListedAllergensNote allergens={camera.missingAllergens} />
       {camera.checkIngredient ? (
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>

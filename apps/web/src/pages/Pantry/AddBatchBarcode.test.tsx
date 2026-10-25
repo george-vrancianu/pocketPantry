@@ -179,6 +179,10 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     expect(screen.getByTestId('camera-source-tag')).toHaveTextContent(
       'Scanned',
     );
+    expect(screen.getByTestId('selected-token')).toHaveTextContent(
+      'Greek yogurt',
+    );
+    expect(screen.queryByTestId('prefilled-ingredient')).toBeNull();
     expect(
       await screen.findByText(/Found by barcode · Greek yogurt/),
     ).toBeVisible();

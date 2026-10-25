@@ -4,7 +4,6 @@ import {
   color,
   focusRing,
   radius,
-  tokens,
 } from '@pocket-pantry/ui';
 import { useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -114,7 +113,7 @@ export function ExpiryChips({
         whiteSpace: 'nowrap',
         color: pressed ? color.accentInk : 'text.primary',
         backgroundColor: pressed ? 'pp.accent' : color.cardBg,
-        border: `1px solid ${pressed ? 'transparent' : tokens.color.line}`,
+        border: `1px solid ${pressed ? 'transparent' : 'pp.line'}`,
         borderRadius: radius.chip,
         cursor: 'pointer',
         ...focusRing,

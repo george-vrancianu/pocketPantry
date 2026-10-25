@@ -4,7 +4,6 @@ import {
   focusRing,
   radius,
   ShoppingIcon,
-  tokens,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
@@ -34,8 +33,8 @@ export function TickedBar({ count, onMove }: Props) {
         textAlign: 'start',
         border: 0,
         borderRadius: radius.card,
-        backgroundColor: tokens.color.butter,
-        color: tokens.color.butterInk,
+        backgroundColor: 'secondary.main',
+        color: 'secondary.contrastText',
         cursor: 'pointer',
         ...focusRing,
       }}

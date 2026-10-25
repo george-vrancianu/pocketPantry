@@ -5,9 +5,9 @@ import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 import { SetupCallout } from '../Setup/SetupCallout';
 
 /** How long the callout stays up when nobody touches anything, ms. */
-export const MIC_TEACH_MS = 4800;
+const MIC_TEACH_MS = 4800;
 
-/** The callout's gap above the mic, px: room for the design's language chip. */
+/** The callout's gap above the mic, px. */
 const MIC_TEACH_GAP = 56;
 const CALLOUT_WIDTH = 260;
 

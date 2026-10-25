@@ -1,25 +1,14 @@
 import {
   Box,
   color,
-  CupboardIcon,
-  FreezerIcon,
-  FridgeIcon,
   focusRing,
   PlusIcon,
   radius,
-  SpicesIcon,
   Typography,
 } from '@pocket-pantry/ui';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LocationIcon } from '../../../components/LocationIcon';
 import type { StorageLocation } from '../../../lib/catalog';
-
-const ICONS: Record<StorageLocation, ReactNode> = {
-  fridge: <FridgeIcon size={24} />,
-  freezer: <FreezerIcon size={24} />,
-  cupboard: <CupboardIcon size={24} />,
-  spices: <SpicesIcon size={24} />,
-};
 
 type Props = {
   location: StorageLocation;
@@ -56,7 +45,7 @@ export function ShelfCard({ location, onAdd }: Props) {
           color: 'text.secondary',
         }}
       >
-        {ICONS[location]}
+        <LocationIcon location={location} size={24} />
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography sx={{ fontSize: 15, fontWeight: 700 }}>

@@ -242,7 +242,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     await openForm(user);
     await shoot(user);
     release();
-    await screen.findByTestId('prefilled-ingredient');
+    await screen.findByTestId('camera-source-tag');
     expect(localStorage.getItem('pocket-pantry.scan-mode')).toBe('receipt');
   });
 
@@ -350,7 +350,14 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
       'Greek yogurt 500 g',
     );
     expect(screen.getByText(/Thu, Dec 24 · in/)).toBeInTheDocument();
-    for (const field of ['ingredient', 'amount', 'expiry', 'description'])
+    // The camera tag sits in the token with the product name; the Ingredient needs no second mark.
+    const tag = screen.getByTestId('camera-source-tag');
+    expect(tag).toHaveTextContent('From photo');
+    const token = screen.getByTestId('selected-token');
+    expect(token).toContainElement(tag);
+    expect(token).toHaveTextContent('Greek yogurt');
+    expect(screen.queryByTestId('prefilled-ingredient')).toBeNull();
+    for (const field of ['amount', 'expiry', 'description'])
       expect(screen.getByTestId(`prefilled-${field}`)).toHaveTextContent(
         'Filled from the product',
       );
@@ -412,7 +419,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     expect(screen.getByLabelText('Note · optional')).toHaveValue('Fresh');
     // Expiry was not touched: it takes the date from the photo.
     expect(await screen.findByTestId('prefilled-expiry')).toBeInTheDocument();
-    expect(screen.getByTestId('prefilled-ingredient')).toBeInTheDocument();
+    expect(screen.getByTestId('camera-source-tag')).toBeInTheDocument();
     expect(screen.queryByTestId('prefilled-amount')).toBeNull();
     expect(screen.queryByTestId('prefilled-description')).toBeNull();
   });
@@ -473,8 +480,11 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     expect(
       await screen.findByText("Couldn't match Zorblax · pick the closest"),
     ).toBeVisible();
+    // Nothing is picked, so there is no camera tag to show.
+    expect(screen.queryByTestId('camera-source-tag')).toBeNull();
     // The note is read into the form; its field shows once an Ingredient is picked.
     await user.click(await screen.findByRole('option', { name: /Yogurt/ }));
+    expect(screen.queryByTestId('camera-source-tag')).toBeNull();
     expect(screen.getByLabelText('Note · optional')).toHaveValue(
       'Greek yogurt 500 g',
     );
@@ -639,7 +649,7 @@ describe('Learn barcodes from Product photos', () => {
     await openForm(user);
     await shoot(user);
     release();
-    await screen.findByTestId('prefilled-ingredient');
+    await screen.findByTestId('camera-source-tag');
     await waitFor(() => expect(fakeCamera.readCount).toBe(1));
     await act(async () => {});
 
@@ -659,7 +669,7 @@ describe('Learn barcodes from Product photos', () => {
     await openForm(user);
     await shoot(user);
     release();
-    await screen.findByTestId('prefilled-ingredient');
+    await screen.findByTestId('camera-source-tag');
     await waitFor(() => expect(fakeCamera.readCount).toBe(1));
     await act(async () => {});
 
@@ -676,7 +686,7 @@ describe('Learn barcodes from Product photos', () => {
     await openForm(user);
     await shoot(user);
     release();
-    await screen.findByTestId('prefilled-ingredient');
+    await screen.findByTestId('camera-source-tag');
 
     await waitFor(() => expect(fakeCamera.readCount).toBe(1));
     await act(async () => {});
@@ -698,7 +708,7 @@ describe('Learn barcodes from Product photos', () => {
     await openForm(user);
     await shoot(user);
     release();
-    await screen.findByTestId('prefilled-ingredient');
+    await screen.findByTestId('camera-source-tag');
     await clearPick(user);
     await shoot(user);
     await act(async () => {
@@ -721,7 +731,7 @@ describe('Learn barcodes from Product photos', () => {
     await openForm(user);
     await shoot(user);
     release();
-    await screen.findByTestId('prefilled-ingredient');
+    await screen.findByTestId('camera-source-tag');
     await clearPick(user);
     await shoot(user);
     await waitFor(() => expect(fakeCamera.readCount).toBe(2));

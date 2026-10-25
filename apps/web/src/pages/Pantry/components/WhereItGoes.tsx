@@ -1,26 +1,14 @@
 import {
   Box,
-  CupboardIcon,
-  FreezerIcon,
-  FridgeIcon,
-  SpicesIcon,
   color,
   focusRing,
   radius,
   shadow,
-  tokens,
   visuallyHidden,
 } from '@pocket-pantry/ui';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LocationIcon } from '../../../components/LocationIcon';
 import { LOCATIONS, type StorageLocation } from '../../../lib/catalog';
-
-const ICONS: Record<StorageLocation, ReactNode> = {
-  fridge: <FridgeIcon size={20} />,
-  freezer: <FreezerIcon size={20} />,
-  cupboard: <CupboardIcon size={20} />,
-  spices: <SpicesIcon size={20} />,
-};
 
 type Props = {
   /** The group's accessible name. */
@@ -43,7 +31,7 @@ export function WhereItGoes({ label, value, onChange, usual }: Props) {
         gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
         gap: '4px',
         p: '4px',
-        backgroundColor: tokens.color.chipNeutral,
+        backgroundColor: 'pp.chip',
         borderRadius: radius.control,
       }}
     >
@@ -76,7 +64,7 @@ export function WhereItGoes({ label, value, onChange, usual }: Props) {
               ...focusRing,
             }}
           >
-            {ICONS[location]}
+            <LocationIcon location={location} size={20} />
             {t(`common:locations.${location}`)}
             {location === usual ? (
               <>
