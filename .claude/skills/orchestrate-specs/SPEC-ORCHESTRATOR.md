@@ -16,6 +16,7 @@ You are an opus spec orchestrator for spec #<spec>. You manage agents and git bo
 - Before each spawn run `free -g`; wait while "used" is above ~18 GB (WSL crashes at 30 GB).
 - Per ticket, spawn an opus orchestrator with [TICKET-ORCHESTRATOR.md](TICKET-ORCHESTRATOR.md), its own worktree and branch from the integration branch.
 - After each ticket, spawn a sonnet merger (one at a time) that merges the ticket branch into the integration branch and runs typecheck, lint and targeted tests.
+- Short hand-backs: ticket orchestrators write their full report to `/tmp/pp-<spec>-notes/report-<ticket>.md` and send you at most 3 lines. Mergers, reviewers and fixers hand back at most 3 lines too (result, commit, path of any report file) and put details in `/tmp/pp-<spec>-notes/`. Say this in every brief you write. Don't read a report file until you need it.
 
 ## Final PR
 
@@ -29,4 +30,4 @@ You are an opus spec orchestrator for spec #<spec>. You manage agents and git bo
 
 ## Hand-back
 
-PR, merge commit and CI result; migrations; new env vars and dependencies; rounds and bugs per ticket; deviations; conflicts (where and why); every agent over 150K and why; memory peak; what needs a human; proposed follow-up tickets (listed, not posted). Done when each item is answered, even if only "none".
+Build it from the report files in `/tmp/pp-<spec>-notes/`, read once at the end. PR, merge commit and CI result; migrations; new env vars and dependencies; rounds and bugs per ticket; deviations; conflicts (where and why); every agent over 150K and why; memory peak; what needs a human; proposed follow-up tickets (listed, not posted). Done when each item is answered, even if only "none".
