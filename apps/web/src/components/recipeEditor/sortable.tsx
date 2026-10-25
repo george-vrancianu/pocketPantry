@@ -10,14 +10,18 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripIcon, tokens, usePrefersReducedMotion } from '@pocket-pantry/ui';
+import {
+  GripIcon,
+  shadow,
+  tokens,
+  usePrefersReducedMotion,
+} from '@pocket-pantry/ui';
 import { createPortal } from 'react-dom';
 import {
   createContext,
@@ -197,10 +201,6 @@ export function SortableList({
   );
 }
 
-/** Reorders `items` after a drop, keeping every item (and so its key). */
-export const reordered = <T,>(items: T[], from: number, to: number): T[] =>
-  from < 0 || to < 0 ? items : arrayMove(items, from, to);
-
 /** Props to spread on a row element and its grip. */
 export function useSortableRow(key: number, gripLabel: string) {
   const { describedBy } = useContext(SortableCtx);
@@ -279,7 +279,7 @@ export function useSortableRow(key: number, gripLabel: string) {
         holding && !isDragging
           ? `background-color ${HOLD_MS}ms linear`
           : undefined,
-      boxShadow: isDragging ? '0 8px 24px rgba(0, 0, 0, 0.18)' : undefined,
+      boxShadow: isDragging ? shadow.float : undefined,
     },
   };
   const grip = {

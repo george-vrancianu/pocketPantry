@@ -1,22 +1,15 @@
 import {
   Box,
   Button,
+  Card,
   ChevronDownIcon,
   IconButton,
   Stack,
   TextField,
   Toggle,
   Typography,
-  useToast,
-  type ToastHandle,
 } from '@pocket-pantry/ui';
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNITS, type CatalogSearchResult, type Unit } from '../../lib/catalog';
 import {
@@ -24,14 +17,14 @@ import {
   ADD_TO_CATALOG_TRIGGER,
 } from '../catalogSearch/AddToCatalog';
 import {
-  moved,
+  reordered,
   type DraftProblems,
   type LineDraft,
 } from '../../lib/recipeDraft';
-import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
 import { FamilyTag } from '../catalogSearch/FamilyTag';
 import { RowControls } from '../RowControls';
-import { GripGlyph, reordered, SortableItem, SortableList } from './sortable';
+import { GripGlyph, SortableItem, SortableList } from './sortable';
+import { useUndoRemoval } from './useUndoRemoval';
 
 type Props = {
   lines: LineDraft[];
@@ -43,6 +36,8 @@ type Props = {
   onMatched?: (line: LineDraft, ingredient: CatalogSearchResult) => void;
   /** Key of a line the host just appended: its quantity takes focus. */
   focusKey?: number | null;
+  /** Changes when the host reseeds `lines`; an open Undo toast is dropped then. */
+  seedKey?: string;
   /** The search that adds a line, shown under the list. */
   children: ReactNode;
 };
@@ -55,10 +50,10 @@ export function RecipeLinesSection({
   isFamily,
   onMatched,
   focusKey,
+  seedKey,
   children,
 }: Props) {
   const { t } = useTranslation(['admin', 'common', 'recipes', 'catalog']);
-  const toast = useToast();
   const [openKey, setOpenKey] = useState<number | null>(null);
   const [addingKey, setAddingKey] = useState<number | null>(null);
   const addTriggers = useRef(new Map<number, HTMLButtonElement>());
@@ -66,14 +61,7 @@ export function RecipeLinesSection({
   const keepOutOfRow = (event: { stopPropagation: () => void }) =>
     event.stopPropagation();
 
-  // Undo builds on the newest lines, not on what rendered when the toast appeared.
-  const latest = useRef({ lines, onChange });
-  useLayoutEffect(() => {
-    latest.current = { lines, onChange };
-  });
-  // The toast outlives this page: take it down when we go.
-  const undoToast = useRef<ToastHandle | null>(null);
-  useEffect(() => () => undoToast.current?.close(), []);
+  const removeWithUndo = useUndoRemoval(lines, onChange, seedKey);
   // Focus moves a tick after the add UI closes; a pending move is dropped on unmount.
   const focusTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(focusTimer.current), []);
@@ -101,22 +89,8 @@ export function RecipeLinesSection({
     );
 
   const removeLine = (line: LineDraft, index: number, name: string) => {
-    onChange(lines.filter((item) => item.key !== line.key));
+    removeWithUndo(line, index, name);
     setOpenKey(null);
-    undoToast.current = toast.show(t('common:row.removed', { name }), {
-      polite: true,
-      duration: UNDO_WINDOW_MS,
-      action: {
-        label: t('common:row.undo'),
-        onClick: () => {
-          const current = latest.current.lines;
-          if (current.some((item) => item.key === line.key)) return;
-          const next = [...current];
-          next.splice(Math.min(index, next.length), 0, line);
-          latest.current.onChange(next);
-        },
-      },
-    });
   };
 
   return (
@@ -133,15 +107,15 @@ export function RecipeLinesSection({
           {t('admin:recipe.lines.empty')}
         </Typography>
       ) : (
-        <Stack
+        <Card
+          variant="list"
           component="ol"
           sx={{
             m: 0,
             p: 0,
             listStyle: 'none',
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 2,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           <SortableList
@@ -382,8 +356,12 @@ export function RecipeLinesSection({
                             remove={t('admin:recipe.lines.remove', { name })}
                             first={index === 0}
                             last={index === lines.length - 1}
-                            onMoveUp={() => onChange(moved(lines, index, -1))}
-                            onMoveDown={() => onChange(moved(lines, index, 1))}
+                            onMoveUp={() =>
+                              onChange(reordered(lines, index, index - 1))
+                            }
+                            onMoveDown={() =>
+                              onChange(reordered(lines, index, index + 1))
+                            }
                             onRemove={() => removeLine(line, index, name)}
                           />
                         </Stack>
@@ -394,7 +372,7 @@ export function RecipeLinesSection({
               );
             })}
           </SortableList>
-        </Stack>
+        </Card>
       )}
       <Typography variant="body2" color="text.secondary">
         {t('admin:recipe.lines.hint')}

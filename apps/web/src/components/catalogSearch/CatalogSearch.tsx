@@ -5,6 +5,7 @@ import {
   visuallyHidden,
   focusRing,
   radius,
+  shadow,
 } from '@pocket-pantry/ui';
 import {
   useId,
@@ -341,7 +342,7 @@ export function CatalogSearch({
         maxHeight: 360,
         overflowY: 'auto' as const,
         ...cardSurface,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
+        boxShadow: shadow.float,
       }
     : null;
   const popoverOpen = inline && (emptyShown || panelVisible);

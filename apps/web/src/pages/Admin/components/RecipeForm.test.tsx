@@ -592,8 +592,8 @@ describe('RecipeForm Ingredient Lines (#589)', () => {
     vi.unstubAllGlobals();
   });
 
-  const renderSaved = () => {
-    const { fetchMock } = stubApi({});
+  const renderSaved = (routes: Parameters<typeof stubApi>[0] = {}) => {
+    const { fetchMock } = stubApi(routes);
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(
       <RecipeForm
@@ -643,5 +643,21 @@ describe('RecipeForm Ingredient Lines (#589)', () => {
     await screen.findByText('Removed Salt');
     await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 500));
     await waitFor(() => expect(screen.queryByText('Removed Salt')).toBeNull());
+  });
+
+  it('drops the Undo toast when a Save reseeds the form, so Undo cannot restore a stale id', async () => {
+    renderSaved({
+      'PUT /api/admin/recipes/r1': () =>
+        Response.json({ ...saved, lines: saved.lines.slice(1) }),
+    });
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole('button', { name: 'More for Salt' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Salt' }));
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull(),
+    );
+    expect(screen.queryByLabelText('Quantity of Salt')).toBeNull();
   });
 });

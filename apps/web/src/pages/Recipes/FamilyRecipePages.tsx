@@ -380,7 +380,7 @@ function NewRecipeContent({
       guidance={{
         initial: initialGuidance,
         momentOptions,
-        fromLink: Boolean(sourceLink),
+        fromLink: Boolean(offeredLink),
       }}
       onChange={setFormState}
       onSave={(document, guidance) =>
@@ -578,6 +578,8 @@ function VariantForm({
 }
 
 /** Edit one of the Family's own Recipes, with its own Tips below. */
+type FormState = { draft: FamilyDraft; guidance: GuidanceDraft | null };
+
 export function EditFamilyRecipePage() {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const { id = '' } = useParams();
@@ -614,14 +616,12 @@ export function EditFamilyRecipePage() {
   const [saving, setSaving] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   /** The form as it is now, reported on every change; read when the Member leaves. */
-  const formNow = useRef<{
-    draft: FamilyDraft;
-    guidance: GuidanceDraft | null;
-  } | null>(null);
+  const formNow = useRef<FormState | null>(null);
+  /** Whether the form holds unsaved edits, so "Recipe saved." goes when new ones arrive. */
+  const [dirty, setDirty] = useState(false);
 
   // Unsaved edits to the Recipe or its Guidance (Tips save at once and never count).
-  useLeaveGuard(() => {
-    const now = formNow.current;
+  const hasUnsaved = (now: typeof formNow.current) => {
     if (!now || !recipe) return false;
     const recipeBase =
       storedRecipe.current ?? JSON.stringify(documentOf(draftOfEdit(recipe)));
@@ -633,7 +633,11 @@ export function EditFamilyRecipePage() {
       JSON.stringify(toGuidanceInput(now.guidance)) !==
         JSON.stringify(toGuidanceInput(guidanceBase))
     );
-  }, t('recipes:family.leaveConfirm'));
+  };
+  useLeaveGuard(
+    () => hasUnsaved(formNow.current),
+    t('recipes:family.leaveConfirm'),
+  );
 
   const back = { label: t('recipes:back'), href: `/recipes/${id}` };
   // A failed delete is reported by the deferred-removal toast, not here.
@@ -696,7 +700,7 @@ export function EditFamilyRecipePage() {
       notices={
         <>
           <Typography role="status" variant="body2">
-            {saved && !saving ? t('recipes:family.saved') : null}
+            {saved && !saving && !dirty ? t('recipes:family.saved') : null}
           </Typography>
           {failure ? (
             <Alert>
@@ -728,6 +732,7 @@ export function EditFamilyRecipePage() {
       }}
       onChange={(state) => {
         formNow.current = state;
+        setDirty(hasUnsaved(state));
       }}
       saving={saving}
       error={null}

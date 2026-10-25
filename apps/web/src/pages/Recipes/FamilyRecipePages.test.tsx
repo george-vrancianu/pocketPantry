@@ -6,6 +6,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { AUTOSAVE_DELAY_MS } from '../../lib/recipeDraftAutosave';
 import { Link, Route, Routes } from 'react-router-dom';
 import type { InitialEntry } from 'react-router-dom';
 import type { NewRecipeState } from './FamilyRecipePages';
@@ -2464,7 +2465,10 @@ describe('Suggest Guidance', () => {
 });
 
 describe('Recipe editor shell', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   const variantRoutes = {
     'GET /api/recipes/x/variant-draft': () => Response.json(draft),
@@ -2687,19 +2691,20 @@ describe('Recipe editor shell', () => {
   });
 
   it('puts Discard draft at the end of Details only, once the draft exists', async () => {
-    const user = userEvent.setup({ delay: null });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({
+      delay: null,
+      advanceTimers: vi.advanceTimersByTime,
+    });
     setup('/recipes/new', {
       'POST /api/recipe-drafts': () =>
         Response.json({ id: 'draft-1', version: 1 }, { status: 201 }),
     });
     expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull();
     await user.type(await screen.findByLabelText(/^Title/), 'Stew');
+    await act(() => vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS));
     expect(
-      await screen.findByRole(
-        'button',
-        { name: 'Discard draft' },
-        { timeout: 4000 },
-      ),
+      await screen.findByRole('button', { name: 'Discard draft' }),
     ).toBeVisible();
     await user.click(screen.getByRole('tab', { name: /^Steps/ }));
     expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull();
@@ -4137,5 +4142,72 @@ describe('Edit: Undo after removing the Source Link (#597)', () => {
     const body = calls.find((c) => c.key === 'PUT /api/recipes/g')
       ?.body as Record<string, unknown>;
     expect(body.sourceLink).not.toBeNull();
+  });
+});
+
+describe('Edit: Undo, status and badge after a Save (#586 review)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const withoutHerbs: FamilyRecipeEdit = {
+    ...saved,
+    lines: saved.lines.filter((line) => line.id !== 'l2'),
+  };
+
+  it('closes the Undo toast when a Save reseeds, so Undo cannot bring back a stale id', async () => {
+    const user = userEvent.setup({ delay: null });
+    let stored = saved;
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(stored),
+      'PUT /api/recipes/g': () => {
+        stored = withoutHerbs;
+        return Response.json(stored);
+      },
+    });
+    await openTab(user, 'Ingredients');
+    await user.click(await screen.findByLabelText('More for Gran’s herbs'));
+    await user.click(
+      screen.getByRole('button', { name: 'Remove Gran’s herbs' }),
+    );
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Recipe saved.');
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull(),
+    );
+    const puts = calls.filter((c) => c.key === 'PUT /api/recipes/g');
+    expect(puts).toHaveLength(1);
+    expect(
+      (puts[0].body as { lines: { id: string }[] }).lines.map((l) => l.id),
+    ).toEqual(['l1']);
+  });
+
+  it('hides "Recipe saved." once there are new unsaved changes', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'PUT /api/recipes/g': () => Response.json(saved),
+    });
+    await openTab(user, 'Details');
+    const title = await screen.findByLabelText(/^Title/);
+    await user.type(title, '!');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Recipe saved.')).toBeVisible();
+    await user.type(screen.getByLabelText(/^Title/), '?');
+    expect(screen.queryByText('Recipe saved.')).toBeNull();
+  });
+
+  it('marks the Details tab when Prep is not a number', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+    });
+    await openTab(user, 'Details');
+    expect(
+      screen.queryByRole('tab', { name: 'Details, Needs attention' }),
+    ).toBeNull();
+    await user.type(await screen.findByLabelText(/^Prep/), 'x');
+    expect(
+      screen.getByRole('tab', { name: 'Details, Needs attention' }),
+    ).toBeVisible();
   });
 });

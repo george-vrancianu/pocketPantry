@@ -56,6 +56,8 @@ export function RecipeForm({
   const [searchKey, setSearchKey] = useState(0);
   const [addedKey, setAddedKey] = useState<number | null>(null);
   const [justSaved, setJustSaved] = useState(false);
+  /** Counts saves on Edit, each of which reseeds the draft (so open Undo toasts go). */
+  const [saves, setSaves] = useState(0);
   const [titleTouched, setTitleTouched] = useState(false);
   const problems = problemsOf(draft);
   const showTitleError = problems.title && (titleTouched || !!recipe);
@@ -75,6 +77,7 @@ export function RecipeForm({
         if (recipe) {
           // Reseed so lines and Steps added now carry their new ids.
           setDraft(draftOf(saved, catalog, i18n.language));
+          setSaves((count) => count + 1);
           setJustSaved(true);
         }
         onSaved(saved);
@@ -118,6 +121,7 @@ export function RecipeForm({
         lines={draft.lines}
         problems={problems}
         focusKey={addedKey}
+        seedKey={String(saves)}
         onChange={(lines) => change({ lines })}
       >
         <CatalogSearch
@@ -150,6 +154,7 @@ export function RecipeForm({
       </RecipeLinesSection>
 
       <RecipeStepsSection
+        seedKey={String(saves)}
         steps={draft.steps}
         problems={problems}
         tipCount={(step) => tipCount(step.id)}

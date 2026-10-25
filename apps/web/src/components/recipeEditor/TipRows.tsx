@@ -1,4 +1,10 @@
-import { CloseIcon, IconButton, Stack, TextField } from '@pocket-pantry/ui';
+import {
+  CloseIcon,
+  IconButton,
+  radius,
+  Stack,
+  TextField,
+} from '@pocket-pantry/ui';
 import { useState } from 'react';
 import type { RecipeTip } from '../../lib/adminRecipes';
 
@@ -15,7 +21,7 @@ const rowSx = {
   bgcolor: 'pp.subtle',
   border: '1px dashed',
   borderColor: 'pp.lineStrong',
-  borderRadius: 1,
+  borderRadius: radius.control,
   pl: 1.25,
 } as const;
 

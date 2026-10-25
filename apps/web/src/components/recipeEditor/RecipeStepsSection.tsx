@@ -12,22 +12,21 @@ import {
   TextField,
   tokens,
   Typography,
-  useToast,
-  type ToastHandle,
 } from '@pocket-pantry/ui';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
 import {
   moved,
   newKey,
+  reordered,
   type DraftProblems,
   type StepDraft,
 } from '../../lib/recipeDraft';
 import { RowControls } from '../RowControls';
-import { GripGlyph, reordered, SortableItem, SortableList } from './sortable';
+import { GripGlyph, SortableItem, SortableList } from './sortable';
 import { StepNumber } from '../StepNumber';
 import type { RecipeTip } from '../../lib/adminRecipes';
+import { useUndoRemoval } from './useUndoRemoval';
 import { NewTipRow, TipRow, type TipActions } from './TipRows';
 
 /** Minutes a Timer starts at when the chip is tapped. */
@@ -41,6 +40,8 @@ type Props = {
   onChange: (steps: StepDraft[]) => void;
   /** A line under the Steps: what happens to Tips here. */
   hint?: string;
+  /** Changes when the host reseeds `steps`; an open Undo toast is dropped then. */
+  seedKey?: string;
   /** Edit only: inline Tips under each saved Step, with a Tip chip in the tool row. */
   stepTips?: { of: (stepId: string) => RecipeTip[]; actions: TipActions };
 };
@@ -52,10 +53,10 @@ export function RecipeStepsSection({
   tipCount,
   onChange,
   hint,
+  seedKey,
   stepTips,
 }: Props) {
   const { t } = useTranslation(['admin', 'common']);
-  const toast = useToast();
   /** Steps whose blank text should be flagged: edited or blurred, not just added. */
   const [touchedSteps, setTouchedSteps] = useState<Set<number>>(new Set());
   /** Steps whose Timer field the user opened or edited, so it stays up while blank. */
@@ -73,13 +74,7 @@ export function RecipeStepsSection({
     });
   /** The Step just added, whose text takes focus once it is rendered. */
   const focusKey = useRef<number | null>(null);
-  // Undo builds on the newest Steps, not those the toast was shown with.
-  const latest = useRef({ steps, onChange });
-  useLayoutEffect(() => {
-    latest.current = { steps, onChange };
-  });
-  const undoToast = useRef<ToastHandle | null>(null);
-  useEffect(() => () => undoToast.current?.close(), []);
+  const removeWithUndo = useUndoRemoval(steps, onChange, seedKey);
 
   const addToSet =
     (set: (update: (old: Set<number>) => Set<number>) => void) =>
@@ -103,33 +98,12 @@ export function RecipeStepsSection({
     onChange([...steps.slice(0, index), step, ...steps.slice(index)]);
     focusKey.current = step.key;
   };
-  const remove = (step: StepDraft, index: number) => {
-    const number = index + 1;
-    onChange(without(step.key));
-    undoToast.current?.close();
-    undoToast.current = toast.show(
-      t('common:row.removed', {
-        name: t('admin:recipe.steps.text', { number }),
-      }),
-      {
-        polite: true,
-        duration: UNDO_WINDOW_MS,
-        action: {
-          label: t('common:row.undo'),
-          onClick: () => {
-            const now = latest.current;
-            if (now.steps.some((item) => item.key === step.key)) return;
-            const at = Math.min(index, now.steps.length);
-            now.onChange([
-              ...now.steps.slice(0, at),
-              step,
-              ...now.steps.slice(at),
-            ]);
-          },
-        },
-      },
+  const remove = (step: StepDraft, index: number) =>
+    removeWithUndo(
+      step,
+      index,
+      t('admin:recipe.steps.text', { number: index + 1 }),
     );
-  };
 
   const addRow = (label: string, index: number) => (
     <Box

@@ -194,7 +194,12 @@ export function FamilyRecipeForm({
       documentOf(draft),
       guidanceDraft ? toGuidanceInput(guidanceDraft) : undefined,
     );
-  const detailsBad = showTitleError || problems.servings || guidanceBad;
+  const detailsBad =
+    showTitleError ||
+    problems.servings ||
+    problems.prepMinutes ||
+    problems.cookMinutes ||
+    guidanceBad;
   const lineCount = draft.lines.length;
   const stepCount = draft.steps.length;
 
@@ -316,6 +321,7 @@ export function FamilyRecipeForm({
         >
           <>
             <RecipeLinesSection
+              seedKey={seedKey}
               lines={draft.lines}
               problems={problems}
               focusKey={addedKey}
@@ -381,6 +387,7 @@ export function FamilyRecipeForm({
           <RecipeStepsSection
             steps={draft.steps}
             problems={problems}
+            seedKey={seedKey}
             tipCount={(step) =>
               step.id && stepTipCount
                 ? stepTipCount(step.id)
