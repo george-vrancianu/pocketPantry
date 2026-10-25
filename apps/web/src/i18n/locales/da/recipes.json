@@ -217,5 +217,9 @@
     "from": "Fra {{host}} ↗",
     "remove": "Fjern link",
     "translatedFrom": "Oversat fra {{language}}"
+  },
+  "recipeDraft": {
+    "saving": "Gemmer…",
+    "saved": "Kladde gemt"
   }
 }

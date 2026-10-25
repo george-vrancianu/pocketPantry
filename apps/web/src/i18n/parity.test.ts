@@ -432,6 +432,8 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
       'plain "in stock" availability phrase, not the Pantry noun',
     ]),
   ),
+  'recipes:recipeDraft.saved|draft':
+    'the status "Draft saved" in the Recipe Draft form header; the exact copy of the ticket, next to the Recipe form it belongs to',
   'scan:import.label|import':
     "the Scan screen's Import button adds photos to the Scan Session; it is not the Shopping Template action",
   'scan:noCamera|import':

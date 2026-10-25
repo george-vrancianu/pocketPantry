@@ -10,6 +10,7 @@ import {
   recipes,
   user,
 } from '../src/database/schema';
+import { seedId } from '../src/catalog/seed/seed-catalog';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 
@@ -33,6 +34,7 @@ describe('Recipe Drafts (integration)', () => {
   let b: Client; // Member of Family B
   let a1Id: string;
   let a1Cookie: string;
+  let bCookie: string;
   let ingredientId: string;
   const stamp = Date.now();
   let n = 0;
@@ -113,6 +115,7 @@ describe('Recipe Drafts (integration)', () => {
       .post('/join', { code: invite.inviteCode })
       .expect(201);
     a1Cookie = cookies.a1;
+    bCookie = cookies.b;
     a1 = api(cookies.a1, '/api/recipe-drafts');
     a2 = api(cookies.a2, '/api/recipe-drafts');
     b = api(cookies.b, '/api/recipe-drafts');
@@ -167,6 +170,56 @@ describe('Recipe Drafts (integration)', () => {
         lines: [{ name: 'flour', quantity: '1/2 ab' }],
         steps: [{ text: '' }],
       });
+    });
+  });
+
+  describe('an Ingredient that is gone', () => {
+    const line = (id: string, name: string) => ({
+      ingredientId: id,
+      name,
+      quantity: '',
+      unit: 'g',
+      optional: false,
+      note: '',
+    });
+    const linesOf = (res: { body: unknown }) =>
+      bodyOf<{ content: { lines: unknown[] } }>(res).content.lines;
+    const familyIngredient = async (cookie: string, name: string) => {
+      const res = await api(cookie, '/api/catalog')
+        .post('/family-ingredients', {
+          name: label(name),
+          leafCategoryId: seedId.leaf('ground-spices'),
+          defaultUnit: 'g',
+        })
+        .expect(201);
+      return (res.body as { id: string }).id;
+    };
+
+    it('comes back as an Unmatched name, keeping the typed name, once a Family Ingredient is deleted', async () => {
+      const mine = await familyIngredient(a1Cookie, 'Kept spice');
+      const doomed = await familyIngredient(a1Cookie, 'Doomed spice');
+      const created = await create(a1, {
+        content: content({
+          lines: [line(mine, 'Kept'), line(doomed, 'Gone')],
+        }),
+      });
+      await database.delete(ingredients).where(eq(ingredients.id, doomed));
+      const got = await a1.get(`/${created.id}`).expect(200);
+      expect(linesOf(got)).toMatchObject([
+        { ingredientId: mine, name: 'Kept' },
+        { ingredientId: '', name: 'Gone' },
+      ]);
+      await database.delete(ingredients).where(eq(ingredients.id, mine));
+    });
+
+    it("does not show another Family's Ingredient: it comes back as an Unmatched name", async () => {
+      const theirs = await familyIngredient(bCookie, 'Their spice');
+      const created = await create(a1, {
+        content: content({ lines: [line(theirs, 'Spice')] }),
+      });
+      const got = await a1.get(`/${created.id}`).expect(200);
+      expect(linesOf(got)).toMatchObject([{ ingredientId: '', name: 'Spice' }]);
+      await database.delete(ingredients).where(eq(ingredients.id, theirs));
     });
   });
 

@@ -7,6 +7,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import { recipeDrafts, recipes, user } from '../database/schema';
 import { ApiException } from '../common/api-exception';
+import { catalogScope } from '../catalog/catalog-scope';
 import { recipeTitles } from '../recipes/recipe-view';
 import {
   recipeDraftLimitReached,
@@ -30,6 +31,39 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const expiresAtOf = (updatedAt: Date) =>
   new Date(updatedAt.getTime() + RECIPE_DRAFT_TTL_DAYS * DAY_MS);
+
+/**
+ * A line whose Ingredient was deleted since it was typed comes back with no
+ * Ingredient (an Unmatched name); its typed name stays.
+ */
+async function withoutMissingIngredients(
+  executor: Executor,
+  familyId: string,
+  content: RecipeDraftContent,
+): Promise<RecipeDraftContent> {
+  const ids = [
+    ...new Set(
+      content.lines.flatMap((l) => (l.ingredientId ? [l.ingredientId] : [])),
+    ),
+  ].filter((id) => z.uuid().safeParse(id).success);
+  const found = new Set<string>();
+  if (ids.length > 0) {
+    const table = catalogScope(familyId).ingredients(executor);
+    const rows = await executor
+      .select({ id: table.id })
+      .from(table)
+      .where(inArray(table.id, ids));
+    for (const row of rows) found.add(row.id);
+  }
+  return {
+    ...content,
+    lines: content.lines.map((line) =>
+      line.ingredientId && !found.has(line.ingredientId)
+        ? { ...line, ingredientId: '' }
+        : line,
+    ),
+  };
+}
 
 /**
  * Deletes the Member's Recipe Drafts not edited for 30 days. Expiry is lazy
@@ -137,7 +171,7 @@ export class RecipeDraftsService {
         baseRecipeId: row.baseRecipeId,
         baseRecipeName: base ? (names.get(base.id) ?? null) : null,
         baseAvailable,
-        content: row.content,
+        content: await withoutMissingIngredients(tx, row.familyId, row.content),
         version: row.version,
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),

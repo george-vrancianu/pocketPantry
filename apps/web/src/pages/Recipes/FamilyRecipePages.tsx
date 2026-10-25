@@ -1,7 +1,16 @@
 import { Alert, Link, Spinner, Stack, Typography } from '@pocket-pantry/ui';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { RecipeDraftStatus } from '../../components/RecipeDraftStatus';
+import {
+  contentOfForm,
+  formOfContent,
+  type RecipeDraftForm,
+} from '../../lib/recipeDraftContent';
+import { useRecipeDraftRoute } from './useRecipeDraftRoute';
+import { useRecipeDraftAutosave } from '../../lib/recipeDraftAutosave';
+import { type RecipeDraftView } from '../../lib/recipeDrafts';
 import {
   BaseRecipePicker,
   STANDALONE,
@@ -72,14 +81,19 @@ export type NewRecipeState = {
 
 const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
 
-/** "New Recipe": the Family Recipe form, blank or filled from a supplied draft; saved as a Base Recipe, or a Variant of the picked base. */
+/** "New Recipe": the Family Recipe form, blank or filled from a supplied draft or a resumed Recipe Draft; saved as a Base Recipe, or a Variant of the picked base. */
 export function NewRecipePage() {
   const location = useLocation();
-  // A new navigation (even to this same route) starts the form afresh.
+  const { t } = useTranslation(['common', 'errors']);
+  const route = useRecipeDraftRoute();
+  if (route.error) return <Alert>{translateApiError(t, route.error)}</Alert>;
+  if (route.loading) return <Spinner label={t('common:loading')} />;
   return (
     <NewRecipeContent
-      key={location.key}
+      key={route.formKey}
       supplied={suppliedOf(location.state)}
+      resumed={route.resumed}
+      onDraftId={route.onDraftId}
     />
   );
 }
@@ -121,15 +135,33 @@ function suppliedOf(state: unknown): NewRecipeState | null {
   return state as NewRecipeState;
 }
 
-function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
+function NewRecipeContent({
+  supplied,
+  resumed,
+  onDraftId,
+}: {
+  supplied: NewRecipeState | null;
+  resumed?: RecipeDraftView;
+  onDraftId: (id: string) => void;
+}) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
   const [basePick, setBasePick] = useState(noBasePick);
   const create = useCreateFamilyRecipe();
+  // True from the tap on Save until the create answers, so a second tap cannot make a second Recipe.
+  const [finishing, setFinishing] = useState(false);
   const momentOptions = useMomentOptions();
   const [parentId, setParentId] = useState<string | null>(null);
   // The Member may drop the Source Link before saving, but not change it.
-  const [sourceLink, setSourceLink] = useState(supplied?.sourceLink ?? null);
+  const [resumedForm] = useState(() =>
+    resumed ? formOfContent(resumed.content) : null,
+  );
+  const sourceLanguage = resumedForm
+    ? resumedForm.sourceLanguage
+    : supplied?.sourceLanguage;
+  const [sourceLink, setSourceLink] = useState(
+    resumedForm ? resumedForm.sourceLink : (supplied?.sourceLink ?? null),
+  );
   const headingRef = useRef<HTMLHeadingElement>(null);
   // "Show" in the hidden-by-Allergies note asks the ranking again, hidden ones too, for the draft as it arrived.
   const [showHidden, setShowHidden] = useState(false);
@@ -156,14 +188,48 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
   // Nothing close and nothing hidden (or not matched yet): no picker, a Base Recipe.
   const hasBases = suppliedBases.length > 0 || suppliedHidden > 0;
   const [initial] = useState(() =>
-    supplied ? draftOfVariantDraft(supplied.draft) : emptyDraft(),
+    resumedForm
+      ? resumedForm.draft
+      : supplied
+        ? draftOfVariantDraft(supplied.draft)
+        : emptyDraft(),
   );
+  const [initialGuidance] = useState(
+    () =>
+      resumedForm?.guidance ??
+      (supplied
+        ? namedGuidance(supplied.draft, undefined)
+        : toGuidanceDraft(blankGuidance)),
+  );
+  // What the form holds now, for the Recipe Draft. A supplied fill is not kept yet.
+  const [formState, setFormState] = useState<RecipeDraftForm>({
+    draft: initial,
+    guidance: initialGuidance,
+  });
+  const autosave = useRecipeDraftAutosave({
+    kind: 'new_recipe',
+    baseRecipeId: null,
+    content: contentOfForm({ ...formState, sourceLink, sourceLanguage }),
+    blank: contentOfForm({
+      draft: emptyDraft(),
+      guidance: toGuidanceDraft(blankGuidance),
+    }),
+    resumed: resumed ? { id: resumed.id, version: resumed.version } : undefined,
+    enabled: supplied === null,
+  });
+  const { draftId } = autosave;
+  useEffect(() => {
+    // Only a new id goes to the URL, and not while the Recipe is being saved: the page is about to leave.
+    if (draftId && !finishing) onDraftId(draftId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, finishing]);
 
   return (
     <>
       <AppScreenHeader
         title={t('recipes:family.newRecipeHeading')}
         titleRef={headingRef}
+        trailing={<RecipeDraftStatus status={autosave.status} />}
       />
       <Stack spacing={2.5}>
         {hasBases ? (
@@ -194,7 +260,7 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
         {sourceLink ? (
           <RemovableSourceLink
             href={sourceLink}
-            translatedFrom={supplied?.sourceLanguage}
+            translatedFrom={sourceLanguage}
             onRemove={() => {
               setSourceLink(null);
               // The button unmounts with the row: keep focus on the page.
@@ -207,31 +273,41 @@ function NewRecipeContent({ supplied }: { supplied: NewRecipeState | null }) {
           description={t('recipes:family.newRecipeHint')}
           initial={initial}
           saveLabel={t('recipes:family.save')}
-          saving={create.isPending}
+          saving={create.isPending || finishing}
           error={create.error}
-          guidance={{
-            initial: supplied
-              ? namedGuidance(supplied.draft, undefined)
-              : toGuidanceDraft(blankGuidance),
-            momentOptions,
-          }}
-          onSave={(document, guidance) =>
+          guidance={{ initial: initialGuidance, momentOptions }}
+          onChange={setFormState}
+          onSave={async (document, guidance) => {
+            if (finishing) return;
+            setFinishing(true);
+            // The Recipe Draft ends with the create, so it must be known first.
+            const recipeDraftId = await autosave.flush();
+            // It is being consumed: no update may go out meanwhile.
+            autosave.pause();
             create.mutate(
               {
                 parentId: hasBases ? parentId : null,
                 document: {
                   ...document,
                   guidance,
+                  ...(recipeDraftId ? { recipeDraftId } : {}),
                   ...(sourceLink ? { sourceLink } : {}),
                   // The language note belongs to the link: no link, no note.
-                  ...(sourceLink && supplied?.sourceLanguage
-                    ? { sourceLanguage: supplied.sourceLanguage }
-                    : {}),
+                  ...(sourceLink && sourceLanguage ? { sourceLanguage } : {}),
                 },
               },
-              { onSuccess: (saved) => navigate(`/recipes/${saved.id}`) },
-            )
-          }
+              {
+                onSuccess: (saved) => {
+                  autosave.stop();
+                  navigate(`/recipes/${saved.id}`);
+                },
+                onError: () => {
+                  setFinishing(false);
+                  autosave.resume();
+                },
+              },
+            );
+          }}
           onCancel={() => navigate('/recipes')}
         />
       </Stack>

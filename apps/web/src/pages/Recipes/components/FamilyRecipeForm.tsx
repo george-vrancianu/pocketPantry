@@ -1,5 +1,5 @@
 import { Stack, Typography } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
@@ -36,6 +36,11 @@ type Props = {
   stepTipCount?: (stepId: string) => number;
   /** The Recipe's guidance (a Variant draft's copy, or a blank one), edited and saved with the document. */
   guidance?: { initial: GuidanceDraft; momentOptions: MomentOption[] };
+  /** Reports the form as it is, on mount and after every change (for the Recipe Draft). */
+  onChange?: (state: {
+    draft: FamilyDraft;
+    guidance: GuidanceDraft | null;
+  }) => void;
   onSave: (document: FamilyRecipeDocument, guidance?: GuidanceInput) => void;
   onCancel: () => void;
 };
@@ -54,6 +59,7 @@ export function FamilyRecipeForm({
   error,
   stepTipCount,
   guidance,
+  onChange,
   onSave,
   onCancel,
 }: Props) {
@@ -65,6 +71,11 @@ export function FamilyRecipeForm({
     guidance?.initial ?? null,
   );
   const [titleTouched, setTitleTouched] = useState(false);
+  useEffect(() => {
+    onChange?.({ draft, guidance: guidanceDraft });
+    // The latest `onChange` is enough; only edits report.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, guidanceDraft]);
   const problems = problemsOf(draft);
   const guidanceBad = guidanceDraft
     ? Object.values(guidanceProblems(guidanceDraft)).some(

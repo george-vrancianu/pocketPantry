@@ -101,6 +101,8 @@ export type FamilyRecipeDocument = {
   sourceLink?: string | null;
   /** Only on create, with `sourceLink`: the language the page was translated from. */
   sourceLanguage?: string;
+  /** Only on create: the Member's Recipe Draft this Recipe finishes; it ends with the create. */
+  recipeDraftId?: string;
 };
 
 /** The copy of a visible Recipe to start a Family Variant from. */
