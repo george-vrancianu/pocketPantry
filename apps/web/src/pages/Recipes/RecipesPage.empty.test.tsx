@@ -111,6 +111,7 @@ function setup({
       <Route path="/recipes" element={<RecipesPage />} />
       <Route path="/recipes/new" element={<p>new recipe page</p>} />
       <Route path="/recipes/explore" element={<p>explore page</p>} />
+      <Route path="/recipes/from-link" element={<p>from link page</p>} />
     </Routes>,
     { route: '/recipes' },
   );
@@ -141,6 +142,8 @@ describe('RecipesPage when the Family has no Recipes', () => {
       }),
     ).toBeVisible();
     expect(screen.getByText(/My pot's empty!/)).toBeVisible();
+    expect(screen.getByText(/paste a/)).toBeVisible();
+    expect(screen.getByText(/or write down your own/)).toBeVisible();
     expect(
       screen.getByText(/Recipes you add can be changed however you like/),
     ).toBeVisible();
@@ -149,6 +152,33 @@ describe('RecipesPage when the Family has no Recipes', () => {
     ).toHaveAttribute('href', '/recipes/explore');
     expect(screen.queryByRole('searchbox')).toBeNull();
     expect(screen.queryByRole('list', { name: /^All Recipes/ })).toBeNull();
+  });
+
+  it("bolds Explore and link in Gator's line", async () => {
+    setup({});
+    await findTitle();
+    expect(screen.getByText('Explore', { selector: 'b' })).toBeVisible();
+    expect(screen.getByText('link', { selector: 'b' })).toBeVisible();
+  });
+
+  it('puts "From a link" between "Explore Recipes" and "+ New Recipe", leading to Recipe from Link', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    setup({});
+    await findTitle();
+    const explore = screen.getByRole('link', { name: 'Explore Recipes' });
+    const fromLink = screen.getByRole('link', { name: 'From a link' });
+    const newRecipe = screen.getByRole('button', { name: '+ New Recipe' });
+    expect(fromLink).toHaveAttribute('href', '/recipes/from-link');
+    expect(
+      explore.compareDocumentPosition(fromLink) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      fromLink.compareDocumentPosition(newRecipe) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    await user.click(fromLink);
+    expect(await screen.findByText('from link page')).toBeVisible();
   });
 
   it('hides the art from assistive tech', async () => {
