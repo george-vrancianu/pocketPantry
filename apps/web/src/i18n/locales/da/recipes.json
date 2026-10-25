@@ -221,5 +221,27 @@
   "recipeDraft": {
     "saving": "Gemmer…",
     "saved": "Kladde gemt"
+  },
+  "drafts": {
+    "entry": "Kladder ({{count}})",
+    "title": "Opskriftkladder",
+    "back": "Opskrifter",
+    "empty": "Ingen opskriftkladder",
+    "emptyHint": "En opskrift, du starter og forlader, gemmes her, så du kan gøre den færdig.",
+    "listLabel": "Opskriftkladder",
+    "untitled": "Opskrift uden titel",
+    "newRecipe": "Ny opskrift",
+    "variant": "Variant",
+    "plateScan": "Tallerkenscanning",
+    "from": "Fra {{domain}}",
+    "edited": "Redigeret {{date}}",
+    "keptUntil": "gemmes til {{date}}",
+    "menu": "Valgmuligheder for {{name}}",
+    "discard": "Kassér kladde",
+    "discarded": "Opskriftkladde kasseret",
+    "removeQuestion": "Kassér {{name}}?",
+    "context": "fra dine opskriftkladder",
+    "removeAction": "Kassér {{name}}",
+    "variantOf": "Variant af {{base}}"
   }
 }

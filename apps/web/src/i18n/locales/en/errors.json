@@ -179,5 +179,9 @@
     "cap_reached_no_time_one": "You have used your {{count}} recipe read from links for today. Try again tomorrow.",
     "cap_reached_no_time_other": "You have used all {{count}} recipe reads from links for today. Try again tomorrow.",
     "cap_reached_unknown": "You have used all of today's recipe reads from links. Try again tomorrow."
+  },
+  "recipe_drafts": {
+    "not_found": "That Recipe Draft is gone. It may have been discarded or kept too long.",
+    "limit_reached": "You already keep {{max}} Recipe Drafts. Finish or discard one to start another."
   }
 }
