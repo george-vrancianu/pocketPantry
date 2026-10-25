@@ -162,8 +162,12 @@ export function useDeferredRemoval<Id extends string | number>(
   };
 
   /** `message` replaces the default "Removed {name}" toast text, already translated. */
-  const remove = (id: Id, name: string, message?: string) =>
-    start([id], false, message ?? t('row.removed', { name }));
+  const remove = (
+    id: Id,
+    name: string,
+    message?: string,
+    options?: RemovalOptions,
+  ) => start([id], false, message ?? t('row.removed', { name }), options);
 
   /** Several records as one removal; `message` is the toast text, already translated. Sends one `mutateManyAsync` call, or one `mutateAsync` per record without it. */
   const removeMany = (ids: Id[], message: string, options?: RemovalOptions) =>

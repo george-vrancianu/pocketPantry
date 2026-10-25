@@ -11,6 +11,7 @@ import {
   type RecipeDraftContent,
   type RecipeDraftKind,
 } from './recipeDrafts';
+import { trackDraftWrite } from './recipeDraftWrites';
 
 /** Quiet time after the last edit before it is sent. */
 export const AUTOSAVE_DELAY_MS = 1500;
@@ -37,6 +38,8 @@ export type AutosaveOptions = {
 
 export type Autosave = {
   status: AutosaveStatus;
+  /** The last write's error, until a write succeeds again (the cap `recipe_drafts.limit_reached` shows from it). */
+  error: unknown;
   /** The Recipe Draft's id once it exists. */
   draftId: string | null;
   /** Sends what is pending now (after a request in flight); resolves to the Recipe Draft id, or null if there is none. Never rejects. */
@@ -59,6 +62,7 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
   const create = useCreateRecipeDraft();
   const update = useUpdateRecipeDraft();
   const [status, setStatus] = useState<AutosaveStatus>('idle');
+  const [error, setError] = useState<unknown>(null);
   const [draftId, setDraftId] = useState<string | null>(
     options.resumed?.id ?? null,
   );
@@ -134,6 +138,7 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
             state.version = saved.version;
           }
           state.sent = sending;
+          setError(null);
         } while (state.again);
         if (!state.stopped) {
           setStatus(
@@ -142,8 +147,9 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
               : 'saving',
           );
         }
-      } catch {
+      } catch (caught) {
         // Failure handling (notice, retry, conflicts) is not here yet.
+        setError(caught);
         setStatus('idle');
       }
     };
@@ -183,7 +189,8 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     window.addEventListener('pagehide', onHide);
     return () => {
       window.removeEventListener('pagehide', onHide);
-      void drain();
+      // Tracked, so a Recipe Draft read right after waits for this last write.
+      trackDraftWrite(drain());
     };
   }, [drain]);
 
@@ -211,5 +218,5 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     schedule();
   }, [schedule]);
 
-  return { status, draftId, flush, pause, resume, stop };
+  return { status, error, draftId, flush, pause, resume, stop };
 }

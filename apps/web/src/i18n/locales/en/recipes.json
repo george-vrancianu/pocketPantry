@@ -221,5 +221,27 @@
   "recipeDraft": {
     "saving": "Saving…",
     "saved": "Draft saved"
+  },
+  "drafts": {
+    "entry": "Drafts ({{count}})",
+    "title": "Recipe Drafts",
+    "back": "Recipes",
+    "empty": "No Recipe Drafts",
+    "emptyHint": "A recipe you start and leave is kept here for you to finish.",
+    "listLabel": "Recipe Drafts",
+    "untitled": "Untitled recipe",
+    "newRecipe": "New recipe",
+    "variant": "Variant",
+    "plateScan": "Plate scan",
+    "from": "From {{domain}}",
+    "edited": "Edited {{date}}",
+    "keptUntil": "kept until {{date}}",
+    "menu": "Options for {{name}}",
+    "discard": "Discard draft",
+    "discarded": "Recipe Draft discarded",
+    "removeQuestion": "Discard {{name}}?",
+    "context": "from your Recipe Drafts",
+    "removeAction": "Discard {{name}}",
+    "variantOf": "Variant of {{base}}"
   }
 }

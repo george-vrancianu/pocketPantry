@@ -1,4 +1,11 @@
-import { Alert, Link, Spinner, Stack, Typography } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Button,
+  Link,
+  Spinner,
+  Stack,
+  Typography,
+} from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -10,6 +17,8 @@ import {
 } from '../../lib/recipeDraftContent';
 import { useRecipeDraftRoute } from './useRecipeDraftRoute';
 import { plateMatchInput, useResumedPlateBases } from './useResumedPlateBases';
+import { RecipeDraftLimitNotice } from './components/RecipeDraftLimitNotice';
+import type { DiscardedDraftState } from './useRecipeDraftDiscard';
 import { useRecipeDraftAutosave } from '../../lib/recipeDraftAutosave';
 import { type RecipeDraftView } from '../../lib/recipeDrafts';
 import {
@@ -252,6 +261,7 @@ function NewRecipeContent({
     resumed: resumed ? { id: resumed.id, version: resumed.version } : undefined,
   });
   const { draftId, flush } = autosave;
+  const [discarding, setDiscarding] = useState(false);
   // A read that counted against a Cap must not be lost: no waiting for an edit.
   useEffect(() => {
     if (supplied) void flush();
@@ -307,12 +317,13 @@ function NewRecipeContent({
             }}
           />
         ) : null}
+        <RecipeDraftLimitNotice error={autosave.error} />
         <FamilyRecipeForm
           heading={t('recipes:family.newRecipeHeading')}
           description={t('recipes:family.newRecipeHint')}
           initial={initial}
           saveLabel={t('recipes:family.save')}
-          saving={create.isPending || finishing}
+          saving={create.isPending || finishing || discarding}
           error={create.error}
           guidance={{ initial: initialGuidance, momentOptions }}
           onChange={setFormState}
@@ -349,6 +360,25 @@ function NewRecipeContent({
           }}
           onCancel={() => navigate('/recipes')}
         />
+        {draftId ? (
+          <Button
+            variant="secondary"
+            disabled={discarding || finishing}
+            onClick={async () => {
+              setDiscarding(true);
+              // Let a write in flight land (it may be the create that gives the id), then keep autosave from writing again.
+              const id = await autosave.flush();
+              autosave.stop();
+              // The Recipes page owns the Undo: this form is about to be gone.
+              const state: DiscardedDraftState | null = id
+                ? { discardRecipeDraft: { id } }
+                : null;
+              navigate('/recipes', { replace: true, state });
+            }}
+          >
+            {t('recipes:drafts.discard')}
+          </Button>
+        ) : null}
       </Stack>
     </>
   );
