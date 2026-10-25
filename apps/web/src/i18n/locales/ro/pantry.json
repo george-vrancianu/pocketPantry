@@ -103,9 +103,9 @@
     "added": "Adăugate",
     "done": "Gata",
     "addedToast": "Adăugat {{details}}",
-    "addedList_one": "{{count}} articol adăugat",
-    "addedList_few": "{{count}} articole adăugate",
-    "addedList_other": "{{count}} de articole adăugate"
+    "addedList_one": "{{count}} lot adăugat",
+    "addedList_few": "{{count}} loturi adăugate",
+    "addedList_other": "{{count}} de loturi adăugate"
   },
   "picker": {
     "label": "Expiră",

@@ -97,8 +97,8 @@
     "added": "Tilføjet",
     "done": "Færdig",
     "addedToast": "Tilføjet {{details}}",
-    "addedList_one": "{{count}} vare tilføjet",
-    "addedList_other": "{{count}} varer tilføjet"
+    "addedList_one": "{{count}} parti tilføjet",
+    "addedList_other": "{{count}} partier tilføjet"
   },
   "picker": {
     "label": "Udløber",

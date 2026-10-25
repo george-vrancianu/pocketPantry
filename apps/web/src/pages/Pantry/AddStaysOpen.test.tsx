@@ -147,11 +147,11 @@ describe('Add to Pantry sheet after a save', () => {
     });
     await waitFor(() => expect(search).toHaveFocus());
     expect(sheet.queryByRole('textbox', { name: /Amount of/ })).toBeNull();
-    const strip = sheet.getByRole('list', { name: '1 item added' });
+    const strip = sheet.getByRole('list', { name: '1 batch added' });
     expect(within(strip).getByText('Milk')).toBeInTheDocument();
 
     await addItem(user, 'Rice', '2');
-    const both = await sheet.findByRole('list', { name: '2 items added' });
+    const both = await sheet.findByRole('list', { name: '2 batches added' });
     expect(
       within(both)
         .getAllByRole('listitem')
@@ -167,6 +167,15 @@ describe('Add to Pantry sheet after a save', () => {
     const saved = await toast();
     expect(saved).toHaveTextContent('Added Milk · 500 ml · Fridge');
     expect(within(saved).getByRole('button', { name: 'Undo' })).toBeVisible();
+    // Clear of the sheet's footer.
+    // jsdom does not evaluate media queries, so read the emitted CSS.
+    const css = Array.from(document.querySelectorAll('style'))
+      .flatMap((style) => [
+        style.textContent ?? '',
+        ...Array.from(style.sheet?.cssRules ?? []).map((r) => r.cssText),
+      ])
+      .join('\n');
+    expect(css).toMatch(/bottom:\s*96px/);
   });
 
   it('turns the x into Done after the first add, and Done, x, Escape and the scrim all close', async () => {
@@ -210,10 +219,10 @@ describe('Add to Pantry sheet after a save', () => {
     const user = setup();
     await open(user);
     await addItem(user, 'Milk', '500');
-    await within(await dialog()).findByRole('list', { name: '1 item added' });
+    await within(await dialog()).findByRole('list', { name: '1 batch added' });
     await addItem(user, 'Rice', '2');
     const sheet = within(await dialog());
-    await sheet.findByRole('list', { name: '2 items added' });
+    await sheet.findByRole('list', { name: '2 batches added' });
 
     await user.click(
       within(await toast()).getByRole('button', {
@@ -226,7 +235,7 @@ describe('Add to Pantry sheet after a save', () => {
     expect(calls.find((c) => c.key.startsWith('DELETE'))?.key).toBe(
       'DELETE /api/pantry/batches/b2',
     );
-    const strip = await sheet.findByRole('list', { name: '1 item added' });
+    const strip = await sheet.findByRole('list', { name: '1 batch added' });
     expect(within(strip).queryByText('Rice')).toBeNull();
     expect(within(strip).getByText('Milk')).toBeInTheDocument();
   });
@@ -249,15 +258,17 @@ describe('Add to Pantry sheet after a save', () => {
     const user = setup();
     await open(user);
     await addItem(user, 'Milk', '500');
-    await within(await dialog()).findByRole('list', { name: '1 item added' });
+    await within(await dialog()).findByRole('list', { name: '1 batch added' });
     await addItem(user, 'Rice', '2');
-    await within(await dialog()).findByRole('list', { name: '2 items added' });
+    await within(await dialog()).findByRole('list', {
+      name: '2 batches added',
+    });
     await user.click(
       within(await toast()).getByRole('button', {
         name: 'Undo',
       }),
     );
-    await within(await dialog()).findByRole('list', { name: '1 item added' });
+    await within(await dialog()).findByRole('list', { name: '1 batch added' });
     expect(document.querySelectorAll('[data-row-flash]')).toHaveLength(0);
 
     await user.click(

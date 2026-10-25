@@ -5,6 +5,7 @@ import {
   CloseIcon,
   displayType,
   IconButton,
+  IngredientIcon,
   Sheet,
   tokens,
   useToast,
@@ -12,7 +13,6 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { formatRowAmount } from '../../../lib/amount';
 import { flashRows } from '../../../lib/rowFlash';
 import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
@@ -114,7 +114,7 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
             {t('form.title')}
           </Box>
           {added.length > 0 ? (
-            <Button onClick={leave} sx={{ minHeight: 36, px: '14px' }}>
+            <Button size="sm" shape="pill" onClick={leave}>
               {t('form.done')}
             </Button>
           ) : (
@@ -176,7 +176,8 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
                   fontWeight: 700,
                 }}
               >
-                <IngredientIconSlot
+                <IngredientIcon
+                  size={24}
                   ingredientId={batch.ingredientId}
                   aisleId={batch.aisle?.id}
                 />

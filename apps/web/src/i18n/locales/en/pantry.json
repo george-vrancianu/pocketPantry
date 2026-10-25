@@ -97,8 +97,8 @@
     "added": "Added",
     "done": "Done",
     "addedToast": "Added {{details}}",
-    "addedList_one": "{{count}} item added",
-    "addedList_other": "{{count}} items added"
+    "addedList_one": "{{count}} batch added",
+    "addedList_other": "{{count}} batches added"
   },
   "picker": {
     "label": "Expires",
