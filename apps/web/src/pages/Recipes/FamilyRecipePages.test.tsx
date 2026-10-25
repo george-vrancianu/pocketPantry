@@ -14,6 +14,7 @@ import type {
   FamilyRecipeDraft,
   FamilyRecipeEdit,
 } from '../../lib/familyRecipes';
+import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { useRecipe } from '../../lib/recipes';
 import {
@@ -2426,7 +2427,50 @@ describe('Recipe editor Ingredient Lines (#589)', () => {
     await user.click(screen.getByRole('button', { name: 'More for Egg' }));
     await user.click(screen.getByRole('button', { name: 'Remove Egg' }));
     await screen.findByText('Removed Egg');
-    await act(() => vi.advanceTimersByTimeAsync(6000));
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 500));
+    await waitFor(() => expect(screen.queryByText('Removed Egg')).toBeNull());
+  });
+
+  it("shows the Family pill on a saved line whose Ingredient is the Family's own", async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'GET /api/catalog/family': () =>
+        Response.json({
+          ingredients: [{ id: 'egg', name: 'Egg' }],
+          synonyms: [],
+        }),
+    });
+    await openTab(user, 'Ingredients');
+    const row = (await screen.findByLabelText('Quantity of Egg')).closest(
+      'li',
+    )!;
+    expect(await within(row).findByText('Family')).toBeVisible();
+  });
+
+  it('links the bad-quantity message to the input', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup(newRecipeWith(sourced), {});
+    await openTab(user, 'Ingredients');
+    const quantity = await screen.findByLabelText('Quantity of Egg');
+    await user.clear(quantity);
+    await user.type(quantity, 'lots');
+    expect(quantity).toHaveAccessibleDescription(/Quantity must be/);
+  });
+
+  it('closes the Undo toast when the page unmounts', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+    });
+    await openTab(user, 'Ingredients');
+    await user.click(
+      await screen.findByRole('button', { name: 'More for Egg' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Remove Egg' }));
+    await screen.findByText('Removed Egg');
+    await user.click(screen.getByRole('link', { name: 'Back' }));
+    expect(await screen.findByText('Detail of the recipe')).toBeVisible();
     await waitFor(() => expect(screen.queryByText('Removed Egg')).toBeNull());
   });
 });

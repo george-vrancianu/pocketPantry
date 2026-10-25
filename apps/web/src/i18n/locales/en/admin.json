@@ -193,8 +193,7 @@
       "unknown": "Unknown Ingredient",
       "more": "More for {{name}}",
       "optionalSub": "optional",
-      "optionalSwitch": "Optional",
-      "familyPill": "Family"
+      "optionalSwitch": "Optional"
     },
     "steps": {
       "title": "Steps",

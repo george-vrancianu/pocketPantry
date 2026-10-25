@@ -195,8 +195,7 @@
       "unknown": "Ingredient necunoscut",
       "more": "Mai mult pentru {{name}}",
       "optionalSub": "opțional",
-      "optionalSwitch": "Opțional",
-      "familyPill": "Familie"
+      "optionalSwitch": "Opțional"
     },
     "steps": {
       "title": "Pași",

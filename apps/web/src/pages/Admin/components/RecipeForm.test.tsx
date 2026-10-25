@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
 import type { AdminRecipe } from '../../../lib/adminRecipes';
+import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
 import { renderWithProviders, stubApi } from '../../../test/render';
 import { RecipeForm } from './RecipeForm';
 
@@ -476,7 +477,7 @@ describe('RecipeForm Ingredient Lines (#589)', () => {
     await user.click(screen.getByRole('button', { name: 'More for Salt' }));
     await user.click(screen.getByRole('button', { name: 'Remove Salt' }));
     await screen.findByText('Removed Salt');
-    await act(() => vi.advanceTimersByTimeAsync(6000));
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 500));
     await waitFor(() => expect(screen.queryByText('Removed Salt')).toBeNull());
   });
 });

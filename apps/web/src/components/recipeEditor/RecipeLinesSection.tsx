@@ -10,7 +10,13 @@ import {
   useToast,
   type ToastHandle,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNITS, type Unit } from '../../lib/catalog';
 import {
@@ -19,12 +25,15 @@ import {
   type LineDraft,
 } from '../../lib/recipeDraft';
 import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
+import { FamilyTag } from '../catalogSearch/FamilyTag';
 import { RowControls } from '../RowControls';
 
 type Props = {
   lines: LineDraft[];
   problems: DraftProblems;
   onChange: (lines: LineDraft[]) => void;
+  /** Whether a line is a Family Ingredient (shows the Family pill). */
+  isFamily?: (line: LineDraft) => boolean;
   /** The search that adds a line, shown under the list. */
   children: ReactNode;
 };
@@ -34,6 +43,7 @@ export function RecipeLinesSection({
   lines,
   problems,
   onChange,
+  isFamily,
   children,
 }: Props) {
   const { t } = useTranslation(['admin', 'common', 'recipes']);
@@ -42,7 +52,7 @@ export function RecipeLinesSection({
 
   // Undo builds on the newest lines, not on what rendered when the toast appeared.
   const latest = useRef({ lines, onChange });
-  useEffect(() => {
+  useLayoutEffect(() => {
     latest.current = { lines, onChange };
   });
   // The toast outlives this page: take it down when we go.
@@ -102,6 +112,7 @@ export function RecipeLinesSection({
             const name = line.name || t('admin:recipe.lines.unknown');
             const bad = problems.lines[line.key];
             const open = openKey === line.key;
+            const errorId = `line-qty-error-${line.key}`;
             const stripId = `line-strip-${line.key}`;
             const sub = [
               line.optional ? t('admin:recipe.lines.optionalSub') : null,
@@ -125,7 +136,7 @@ export function RecipeLinesSection({
                   spacing={1}
                   sx={{ alignItems: 'center' }}
                 >
-                  <GripIcon size={18} aria-hidden />
+                  <GripIcon size={18} aria-hidden style={{ opacity: 0.55 }} />
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Stack
                       direction="row"
@@ -142,16 +153,7 @@ export function RecipeLinesSection({
                       >
                         {name}
                       </Typography>
-                      {line.family ? (
-                        <Typography
-                          component="span"
-                          variant="meta"
-                          color="text.secondary"
-                          sx={{ flexShrink: 0 }}
-                        >
-                          {t('admin:recipe.lines.familyPill')}
-                        </Typography>
-                      ) : null}
+                      {isFamily?.(line) ? <FamilyTag /> : null}
                     </Stack>
                     {sub.length > 0 ? (
                       <Typography noWrap variant="meta" color="text.secondary">
@@ -160,29 +162,41 @@ export function RecipeLinesSection({
                     ) : null}
                   </Box>
                   <TextField
-                    label={t('admin:recipe.lines.quantity', { name })}
+                    hiddenLabel
+                    placeholder="–"
                     value={line.quantity}
                     onChange={(event) =>
                       changeLine(line.key, { quantity: event.target.value })
                     }
                     error={bad}
                     slotProps={{
-                      htmlInput: { inputMode: 'decimal' },
-                      inputLabel: { shrink: true },
+                      htmlInput: {
+                        inputMode: 'decimal',
+                        'aria-label': t('admin:recipe.lines.quantity', {
+                          name,
+                        }),
+                        'aria-describedby': bad ? errorId : undefined,
+                        style: { textAlign: 'right' },
+                      },
                     }}
-                    sx={{ width: 84 }}
+                    sx={{ width: 72 }}
                   />
                   <TextField
                     select
-                    label={t('admin:recipe.lines.unit', { name })}
+                    hiddenLabel
                     value={line.unit}
                     onChange={(event) =>
                       changeLine(line.key, {
                         unit: event.target.value as Unit,
                       })
                     }
-                    slotProps={{ select: { native: true } }}
-                    sx={{ width: 96 }}
+                    slotProps={{
+                      select: { native: true },
+                      htmlInput: {
+                        'aria-label': t('admin:recipe.lines.unit', { name }),
+                      },
+                    }}
+                    sx={{ width: 88 }}
                   >
                     {UNITS.map((unit) => (
                       <option key={unit} value={unit}>
@@ -202,7 +216,12 @@ export function RecipeLinesSection({
                   </IconButton>
                 </Stack>
                 {bad ? (
-                  <Typography variant="meta" color="error" role="alert">
+                  <Typography
+                    id={errorId}
+                    variant="meta"
+                    color="error"
+                    role="alert"
+                  >
                     {t('admin:recipe.invalid.quantity')}
                   </Typography>
                 ) : null}

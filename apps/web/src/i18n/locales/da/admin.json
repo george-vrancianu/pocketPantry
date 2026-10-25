@@ -193,8 +193,7 @@
       "unknown": "Ukendt ingrediens",
       "more": "Mere for {{name}}",
       "optionalSub": "valgfri",
-      "optionalSwitch": "Valgfri",
-      "familyPill": "Familie"
+      "optionalSwitch": "Valgfri"
     },
     "steps": {
       "title": "Trin",
