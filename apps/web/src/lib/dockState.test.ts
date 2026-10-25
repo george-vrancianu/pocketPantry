@@ -43,4 +43,17 @@ describe('dockStateFor', () => {
   it('hides the dock while customising the dashboard', () => {
     expect(dockStateFor('/customise').visible).toBe(false);
   });
+
+  it('hides the Dock on the Recipe editor routes only', () => {
+    for (const path of [
+      '/recipes/new',
+      '/recipes/r1/edit',
+      '/recipes/r1/variant/new',
+    ]) {
+      expect(dockStateFor(path).visible).toBe(false);
+    }
+    expect(dockStateFor('/recipes/r1').visible).toBe(true);
+    expect(dockStateFor('/recipes/drafts').visible).toBe(true);
+    expect(dockStateFor('/recipes/from-link').visible).toBe(true);
+  });
 });

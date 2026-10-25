@@ -184,6 +184,16 @@ function setup(route: InitialEntry, routes: Parameters<typeof stubApi>[0]) {
   return calls;
 }
 
+/** Opens one of the editor's tabs by its name ("Details", "Ingredients" or "Steps"). */
+async function openTab(
+  user: ReturnType<typeof userEvent.setup>,
+  name: 'Details' | 'Ingredients' | 'Steps',
+) {
+  await user.click(
+    await screen.findByRole('tab', { name: new RegExp(`^${name}`) }),
+  );
+}
+
 /** What a read-from-source flow hands the New Recipe page: a draft without a Servings count, and the closest Base Recipes. */
 const sourced: NewRecipeState = {
   draft: {
@@ -240,12 +250,17 @@ describe('NewRecipePage with a supplied draft', () => {
     expect(await screen.findByLabelText(/^Title/)).toHaveValue(
       'Pancakes from a blog',
     );
+    expect(screen.getByRole('tab', { name: 'Ingredients, 2' })).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'Steps, 1' })).toBeVisible();
+    await openTab(user, 'Ingredients');
     expect(screen.getByLabelText('Quantity of Egg')).toHaveValue('2');
     expect(screen.getByText('Maple syrup')).toBeVisible();
+    await openTab(user, 'Steps');
     expect(screen.getByDisplayValue('Whisk and fry')).toBeVisible();
+    await openTab(user, 'Details');
     const servings = screen.getByLabelText(/^Servings/);
     expect(servings).toHaveValue('');
-    const save = screen.getByRole('button', { name: 'Save Recipe' });
+    const save = screen.getByRole('button', { name: 'Save' });
     expect(save).toBeDisabled();
 
     await user.type(servings, '4');
@@ -272,7 +287,7 @@ describe('NewRecipePage with a supplied draft', () => {
     });
     await user.type(await screen.findByLabelText(/^Servings/), '4');
     expect(screen.getByRole('radio', { name: /Crepes/ })).toBeChecked();
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Detail of the recipe')).toBeVisible();
     expect(
       calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -286,7 +301,7 @@ describe('NewRecipePage with a supplied draft', () => {
     });
     await user.type(await screen.findByLabelText(/^Servings/), '4');
     await user.click(screen.getByRole('radio', { name: 'Waffles' }));
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -301,7 +316,7 @@ describe('NewRecipePage with a supplied draft', () => {
     });
     await user.type(await screen.findByLabelText(/^Servings/), '4');
     await user.click(screen.getByRole('radio', { name: /standalone/i }));
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -322,7 +337,7 @@ describe('NewRecipePage with a supplied draft', () => {
     });
     await user.type(await screen.findByLabelText(/^Servings/), '4');
     await user.click(screen.getByRole('radio', { name: 'Waffles' }));
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -341,7 +356,7 @@ describe('NewRecipePage with a supplied draft', () => {
     });
     await user.type(await screen.findByLabelText(/^Servings/), '4');
     await user.click(screen.getByRole('radio', { name: /standalone/i }));
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -359,7 +374,7 @@ describe('NewRecipePage with a supplied draft', () => {
     });
     await user.type(await screen.findByLabelText(/^Servings/), '4');
     await user.click(screen.getByRole('button', { name: 'Remove link' }));
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(true),
     );
@@ -416,7 +431,7 @@ describe('NewRecipePage with a supplied draft', () => {
     });
     // The pick made before Show stays, though Satay now ranks first.
     expect(screen.getByRole('radio', { name: 'Crepes' })).toBeChecked();
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -462,7 +477,7 @@ describe('NewRecipePage with a supplied draft', () => {
       await screen.findByRole('radio', { name: /Hidden one/ }),
     ).toBeVisible();
     expect(screen.getByRole('radio', { name: 'Base e' })).toBeChecked();
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -547,7 +562,7 @@ describe('NewRecipePage with a supplied draft', () => {
     await user.click(screen.getByRole('button', { name: 'Show' }));
     expect(await screen.findByRole('radio', { name: /Satay/ })).toBeVisible();
     expect(screen.getByRole('radio', { name: /standalone/i })).toBeChecked();
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -633,7 +648,7 @@ describe('NewRecipePage with a supplied draft', () => {
     });
     await user.type(await screen.findByLabelText(/^Servings/), '4');
     expect(screen.queryByRole('radio')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -676,7 +691,7 @@ describe('NewRecipePage', () => {
     const title = await screen.findByLabelText(/^Title/);
     expect(title).toHaveValue('');
     await user.type(title, 'Gran stew');
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Detail of the recipe')).toBeVisible();
     const post = calls.find((c) => c.key === 'POST /api/recipes');
     expect(post?.body).toMatchObject({ parentId: null, title: 'Gran stew' });
@@ -690,6 +705,7 @@ describe('NewRecipePage', () => {
     });
     await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
 
+    await openTab(user, 'Ingredients');
     await user.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'Dragon fruit',
@@ -710,7 +726,7 @@ describe('NewRecipePage', () => {
     expect(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
     ).toHaveValue('');
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'POST /api/recipes')?.body,
@@ -725,6 +741,7 @@ describe('NewRecipePage', () => {
     const calls = setup('/recipes/new', {
       'GET /api/catalog/search': () => Response.json({ results: [] }),
     });
+    await openTab(user, 'Ingredients');
     await user.type(
       await screen.findByRole('combobox', { name: 'Search ingredients' }),
       'zzz',
@@ -738,22 +755,22 @@ describe('NewRecipePage', () => {
     }
   });
 
-  it('words the Guidance hint and Tips hint for a Recipe, not a Variant', async () => {
+  it('words the Guidance hint and the editor hint for a Recipe, not a Variant', async () => {
     setup('/recipes/new', {});
     await screen.findByLabelText(/^Title/);
     expect(
       screen.getByText(/Pairings, a Nutrition Note and Eating Moments\./),
     ).not.toHaveTextContent(/Variant/);
     expect(
-      screen.getByText('Add Tips to Steps after saving the Recipe.'),
+      screen.getByText(
+        "Kept as your draft until you save it as one of your family's Recipes.",
+      ),
     ).toBeInTheDocument();
   });
 
   it('blocks saving without a title', async () => {
     setup('/recipes/new', {});
-    expect(
-      await screen.findByRole('button', { name: 'Save Recipe' }),
-    ).toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
   it('shows a coded error in the Member locale and stays on the form', async () => {
@@ -769,7 +786,7 @@ describe('NewRecipePage', () => {
         ),
     });
     await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'This Base Recipe is archived, so it cannot get new Variants.',
     );
@@ -781,16 +798,21 @@ describe('NewVariantPage', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('prefills from the draft', async () => {
+    const user = userEvent.setup({ delay: null });
     setup('/recipes/x/variant/new', {
       'GET /api/recipes/x/variant-draft': () => Response.json(draft),
     });
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('Omelette');
     expect(
       screen.getByText(
-        /Copied Tips stay with their Steps; add your own after saving the Variant\./,
+        /^Copied from .*\. It becomes a Recipe when you save it\.$/,
       ),
     ).toBeInTheDocument();
+    // No owner, and nothing about the Variant not being saved yet.
+    expect(screen.queryByText(/Catalog|Nothing is saved/)).toBeNull();
+    await openTab(user, 'Ingredients');
     expect(screen.getByLabelText('Quantity of Egg')).toHaveValue('3');
+    await openTab(user, 'Steps');
     expect(screen.getByLabelText('Step 1')).toHaveValue('Whisk the eggs');
     expect(screen.getByLabelText('Timer for Step 1 (minutes)')).toHaveValue(
       '1.5',
@@ -817,6 +839,7 @@ describe('NewVariantPage', () => {
       'GET /api/recipes/x/variant-draft': () => Response.json(twoSteps),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
+    await openTab(user, 'Steps');
     expect(await screen.findByText('Room-temperature eggs')).toBeVisible();
     expect(screen.getByText('Medium heat')).toBeVisible();
 
@@ -837,7 +860,7 @@ describe('NewVariantPage', () => {
       screen.getByRole('button', { name: 'Remove Tip 1 of Step 1' }),
     );
     expect(screen.queryByText('Medium heat')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
     const post = calls.find((call) => call.key === 'POST /api/recipes')!;
@@ -863,6 +886,7 @@ describe('NewVariantPage', () => {
     fireEvent.change(screen.getByLabelText('Cuisine'), {
       target: { value: 'c-fr' },
     });
+    await openTab(user, 'Ingredients');
     await user.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'Gran’s herbs',
@@ -872,7 +896,7 @@ describe('NewVariantPage', () => {
         name: /Use “Gran’s herbs” as typed/,
       }),
     );
-    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
     const post = calls.find((call) => call.key === 'POST /api/recipes')!;
@@ -905,7 +929,7 @@ describe('NewVariantPage', () => {
       screen.queryByRole('link', { name: /From example\.com/ }),
     ).toBeNull();
     expect(screen.queryByRole('button', { name: 'Remove link' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
     expect(body).toMatchObject({ parentId: 'base' });
@@ -937,7 +961,7 @@ describe('NewVariantPage', () => {
 
     await user.clear(note);
     await user.type(note, 'Light');
-    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((call) => call.key === 'POST /api/recipes')?.body,
@@ -1021,9 +1045,7 @@ describe('NewVariantPage', () => {
       'GET /api/recipes/x/variant-draft': () =>
         Response.json({ ...draft, title: '' }),
     });
-    expect(
-      await screen.findByRole('button', { name: 'Save Variant' }),
-    ).toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeDisabled();
   });
 });
 
@@ -1036,14 +1058,17 @@ describe('EditFamilyRecipePage', () => {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       'PUT /api/recipes/g': () => Response.json(saved),
     });
-    const title = await screen.findByLabelText(/^Title/);
-    fireEvent.change(title, { target: { value: 'Better omelette' } });
-    // Unsaved guidance edits must survive the document save.
-    fireEvent.change(screen.getByLabelText('Nutrition Note'), {
+    // Unsaved guidance edits must survive the document save and a change of tab.
+    fireEvent.change(await screen.findByLabelText('Nutrition Note'), {
       target: { value: 'Still here' },
     });
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await openTab(user, 'Details');
+    fireEvent.change(screen.getByLabelText(/^Title/), {
+      target: { value: 'Better omelette' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    await openTab(user, 'Steps');
     expect(screen.getByLabelText('Nutrition Note')).toHaveValue('Still here');
     expect(
       screen.getByRole('link', { name: 'View the Recipe' }),
@@ -1076,8 +1101,9 @@ describe('EditFamilyRecipePage', () => {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       'PUT /api/recipes/g': () => Response.json(saved),
     });
+    await openTab(user, 'Ingredients');
     await user.clear(await screen.findByLabelText('Quantity of Egg'));
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'PUT /api/recipes/g')?.body,
@@ -1221,8 +1247,7 @@ describe('EditFamilyRecipePage', () => {
       'POST /api/recipes/g/tips': () => Response.json(saved, { status: 201 }),
       'PUT /api/recipes/g/hidden-tips': () => Response.json(saved),
     });
-    await screen.findByLabelText(/^Title/);
-    const tips = screen.getByRole('region', { name: 'Tips' });
+    const tips = await screen.findByRole('region', { name: 'Tips' });
     await user.type(within(tips).getByLabelText('New Tip'), 'Rest it');
     await user.click(
       within(tips).getAllByRole('button', { name: 'Add Tip' })[0]!,
@@ -1257,9 +1282,11 @@ describe('EditFamilyRecipePage Source Link', () => {
       Record<string, unknown> | undefined;
 
   it('shows the link and the translation note, with no way to change the link', async () => {
+    const user = userEvent.setup({ delay: null });
     setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () => Response.json(linked),
     });
+    await openTab(user, 'Details');
     const link = await screen.findByRole('link', {
       name: 'From example.com ↗',
     });
@@ -1277,9 +1304,11 @@ describe('EditFamilyRecipePage Source Link', () => {
   });
 
   it('shows no link row on a Recipe without a Source Link', async () => {
+    const user = userEvent.setup({ delay: null });
     setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () => Response.json(saved),
     });
+    await openTab(user, 'Details');
     await screen.findByLabelText(/^Title/);
     expect(screen.queryByRole('button', { name: 'Remove link' })).toBeNull();
     expect(screen.queryByText(/From .* ↗/)).toBeNull();
@@ -1295,6 +1324,7 @@ describe('EditFamilyRecipePage Source Link', () => {
         return Response.json(current);
       },
     });
+    await openTab(user, 'Details');
     await user.click(
       await screen.findByRole('button', { name: 'Remove link' }),
     );
@@ -1305,7 +1335,7 @@ describe('EditFamilyRecipePage Source Link', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
     // Nothing is sent until Save.
     expect(putBody(calls)).toBeUndefined();
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
     expect(putBody(calls)).toHaveProperty('sourceLink', null);
     expect(screen.queryByRole('button', { name: 'Remove link' })).toBeNull();
@@ -1317,8 +1347,9 @@ describe('EditFamilyRecipePage Source Link', () => {
       'GET /api/recipes/g/edit': () => Response.json(linked),
       'PUT /api/recipes/g': () => Response.json(linked),
     });
+    await openTab(user, 'Details');
     await screen.findByRole('link', { name: 'From example.com ↗' });
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
     expect(putBody(calls)).not.toHaveProperty('sourceLink');
     expect(putBody(calls)).not.toHaveProperty('sourceLanguage');
@@ -1337,18 +1368,17 @@ describe('EditFamilyRecipePage Source Link', () => {
         return Response.json(current);
       },
     });
+    await openTab(user, 'Details');
     await user.click(
       await screen.findByRole('button', { name: 'Remove link' }),
     );
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(calls.filter((c) => c.key === 'PUT /api/recipes/g')).toHaveLength(
         1,
       ),
     );
-    await user.click(
-      await screen.findByRole('button', { name: 'Save Recipe' }),
-    );
+    await user.click(await screen.findByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(calls.filter((c) => c.key === 'PUT /api/recipes/g')).toHaveLength(
         2,
@@ -1365,10 +1395,11 @@ describe('EditFamilyRecipePage Source Link', () => {
       'GET /api/recipes/g/edit': () => Response.json(linked),
       'PUT /api/recipes/g': () => Response.json(linked),
     });
+    await openTab(user, 'Details');
     await user.click(
       await screen.findByRole('button', { name: 'Remove link' }),
     );
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('link', { name: 'Back' }));
     expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
     expect(putBody(calls)).toBeUndefined();
   });
@@ -1387,14 +1418,13 @@ describe('EditFamilyRecipePage Source Link', () => {
               sourceLanguage: null,
             }),
     });
+    await openTab(user, 'Details');
     await user.click(
       await screen.findByRole('button', { name: 'Remove link' }),
     );
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() => expect(attempts).toBe(1));
-    await user.click(
-      await screen.findByRole('button', { name: 'Save Recipe' }),
-    );
+    await user.click(await screen.findByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
     expect(attempts).toBe(2);
     const puts = calls.filter((c) => c.key === 'PUT /api/recipes/g');
@@ -1425,8 +1455,9 @@ describe('EditFamilyRecipePage Source Link', () => {
     expect(
       await screen.findByText('detail link: https://www.example.com/p'),
     ).toBeVisible();
+    await openTab(user, 'Details');
     await user.click(screen.getByRole('button', { name: 'Remove link' }));
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('detail link: none')).toBeVisible();
   });
 });
@@ -1451,6 +1482,7 @@ describe('Family Recipe Browse by aisle', () => {
     const user = userEvent.setup({ delay: null });
     setup('/recipes/new', aisleRoutes);
 
+    await openTab(user, 'Ingredients');
     await user.click(
       await screen.findByRole('combobox', { name: 'Search ingredients' }),
     );
@@ -1490,7 +1522,7 @@ describe('Family Recipe form: Add to your catalog (#270)', () => {
     setup('/recipes/new', {
       'GET /api/catalog/search': () => Response.json({ results: [] }),
     });
-    await screen.findByLabelText(/^Title/);
+    await openTab(user, 'Ingredients');
 
     await user.click(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
@@ -1611,7 +1643,7 @@ describe('Suggest Guidance', () => {
     expect(suggestButton()).toBeDisabled();
     expect(suggestButton()).toHaveAccessibleDescription(/already filled/);
 
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(true),
     );
@@ -1890,9 +1922,11 @@ describe('Suggest Guidance', () => {
       'GET /api/recipes/g/edit': () => Response.json(unfilled),
       [suggestRoute]: proposal,
     });
-    fireEvent.change(await screen.findByLabelText(/^Title/), {
+    await openTab(user, 'Details');
+    fireEvent.change(screen.getByLabelText(/^Title/), {
       target: { value: 'Unsaved title' },
     });
+    await openTab(user, 'Steps');
 
     await user.click(suggestButton());
 
@@ -1949,7 +1983,7 @@ describe('Suggest Guidance', () => {
         screen.getByText('No suggestions for Nutrition Note.'),
       ).toBeVisible();
 
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       await vi.waitFor(() =>
         expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(true),
       );
@@ -2055,5 +2089,197 @@ describe('Suggest Guidance', () => {
         screen.queryByLabelText('Label of Pairing 2'),
       ).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('Recipe editor shell', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const variantRoutes = {
+    'GET /api/recipes/x/variant-draft': () => Response.json(draft),
+    'POST /api/recipe-drafts': () =>
+      Response.json({ id: 'draft-1', version: 1 }, { status: 201 }),
+  };
+
+  it('opens New Recipe on Details with Back to the Recipes, the title and Save', async () => {
+    setup('/recipes/new', {});
+    expect(
+      await screen.findByRole('tab', { name: /^Details/ }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'New Recipe',
+    );
+    expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+      'href',
+      '/recipes',
+    );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    // The editor's own heading and bottom buttons are gone.
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    // Back, not Home, is the way out.
+    expect(screen.queryByRole('link', { name: 'Home' })).toBeNull();
+  });
+
+  it('opens Make a Variant on Details with Back to the Recipe', async () => {
+    setup('/recipes/x/variant/new', variantRoutes);
+    expect(
+      await screen.findByRole('tab', { name: /^Details/ }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+      'href',
+      '/recipes/x',
+    );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
+  it('opens Edit on Steps with Back to the Recipe and no Recipe Draft status', async () => {
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+    });
+    expect(await screen.findByRole('tab', { name: /^Steps/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+      'href',
+      '/recipes/g',
+    );
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      "Grandma's omelette",
+    );
+    expect(screen.queryByText('Draft saved')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull();
+  });
+
+  it('counts Ingredients and Steps in the tab names', async () => {
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+    });
+    expect(
+      await screen.findByRole('tab', { name: 'Ingredients, 2' }),
+    ).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'Steps, 1' })).toBeVisible();
+  });
+
+  it('marks Details with "!" while Serves is blank, and while the touched title is blank', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    const details = await screen.findByRole('tab', { name: /^Details/ });
+    await user.clear(screen.getByLabelText(/^Servings/));
+    expect(details).toHaveAccessibleName('Details, Needs attention');
+    await user.type(screen.getByLabelText(/^Servings/), '4');
+    // An untouched blank title does not nag yet.
+    expect(details).toHaveAccessibleName('Details');
+    await user.click(screen.getByLabelText(/^Title/));
+    await user.tab();
+    expect(details).toHaveAccessibleName('Details, Needs attention');
+    await user.type(screen.getByLabelText(/^Title/), 'Stew');
+    expect(details).toHaveAccessibleName('Details');
+  });
+
+  it('moves between tabs with the arrow keys and scrolls to the top', async () => {
+    const user = userEvent.setup({ delay: null });
+    const scrollTo = vi.fn();
+    vi.stubGlobal('scrollTo', scrollTo);
+    setup('/recipes/new', {});
+    const details = await screen.findByRole('tab', { name: /^Details/ });
+    details.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: /^Ingredients/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: /^Steps/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await user.keyboard('{ArrowLeft}{ArrowLeft}');
+    expect(details).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('puts the fields in their tabs and links on with Ingredients › and Steps ›', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/x/variant/new', variantRoutes);
+    expect(await screen.findByLabelText(/^Title/)).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Guidance' })).toBeVisible();
+    expect(screen.queryByLabelText('Quantity of Egg')).toBeNull();
+    expect(screen.queryByRole('textbox', { name: 'Step 1' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Ingredients ›' }));
+    expect(screen.getByRole('tab', { name: /^Ingredients/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByLabelText('Quantity of Egg')).toBeVisible();
+    expect(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    ).toBeVisible();
+    expect(screen.queryByLabelText(/^Title/)).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Steps ›' }));
+    expect(screen.getByLabelText('Step 1')).toBeVisible();
+  });
+
+  it('words the hints for a New Recipe and a Variant', async () => {
+    setup('/recipes/new', {});
+    expect(
+      await screen.findByText(
+        "Kept as your draft until you save it as one of your family's Recipes.",
+      ),
+    ).toBeVisible();
+  });
+
+  it('words the Variant hint with the source and no owner', async () => {
+    setup('/recipes/x/variant/new', {
+      ...variantRoutes,
+      'GET /api/recipes/x': () =>
+        Response.json({ ...sourceDetail, title: 'Classic omelette' }),
+    });
+    expect(
+      await screen.findByText(
+        'Copied from Classic omelette. It becomes a Recipe when you save it.',
+      ),
+    ).toBeVisible();
+  });
+
+  it('shows the Recipe Draft status under the title, not beside Save', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'POST /api/recipe-drafts': () =>
+        Response.json({ id: 'draft-1', version: 1 }, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Stew');
+    const status = await within(screen.getByRole('banner')).findByRole(
+      'status',
+    );
+    expect(
+      screen.getByRole('heading', { level: 1 }).parentElement,
+    ).toContainElement(status);
+    expect(screen.getByRole('button', { name: 'Save' })).not.toContainElement(
+      status,
+    );
+  });
+
+  it('puts Discard draft at the end of Details only, once the draft exists', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'POST /api/recipe-drafts': () =>
+        Response.json({ id: 'draft-1', version: 1 }, { status: 201 }),
+    });
+    expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull();
+    await user.type(await screen.findByLabelText(/^Title/), 'Stew');
+    expect(
+      await screen.findByRole(
+        'button',
+        { name: 'Discard draft' },
+        { timeout: 4000 },
+      ),
+    ).toBeVisible();
+    await user.click(screen.getByRole('tab', { name: /^Steps/ }));
+    expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull();
   });
 });

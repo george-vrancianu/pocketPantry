@@ -5,13 +5,22 @@ import { dockStateFor } from '../lib/dockState';
 
 type Props = Pick<
   ScreenHeaderProps,
-  'title' | 'subtitle' | 'action' | 'trailing' | 'titleRef' | 'back'
+  | 'title'
+  | 'subtitle'
+  | 'subline'
+  | 'truncateTitle'
+  | 'action'
+  | 'trailing'
+  | 'titleRef'
+  | 'back'
 >;
 
 /** The screen header; Home shows only where the Dock is hidden, since the Dock carries Home everywhere else. */
 export function AppScreenHeader({
   title,
   subtitle,
+  subline,
+  truncateTitle,
   action,
   trailing,
   titleRef,
@@ -23,6 +32,8 @@ export function AppScreenHeader({
     <ScreenHeader
       title={title}
       subtitle={subtitle}
+      subline={subline}
+      truncateTitle={truncateTitle}
       home={dockStateFor(pathname).visible ? undefined : { label: t('home') }}
       action={action}
       trailing={trailing}

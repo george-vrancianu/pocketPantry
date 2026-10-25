@@ -1,12 +1,7 @@
 import { Alert, Link, Spinner, Stack, Typography } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Navigate,
-  useLocation,
-  useNavigate,
-  useParams,
-} from 'react-router-dom';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { RecipeDraftStatus } from '../../components/RecipeDraftStatus';
 import {
   useRecipeDraftFormSession,
@@ -176,7 +171,6 @@ function NewRecipeContent({
 }) {
   const { resumed } = draftRoute;
   const { t } = useTranslation(['recipes', 'common', 'errors']);
-  const navigate = useNavigate();
   const [basePick, setBasePick] = useState(noBasePick);
   // True from the tap on Save until the create answers, so a second tap cannot make a second Recipe.
   const [finishing, setFinishing] = useState(false);
@@ -288,79 +282,80 @@ function NewRecipeContent({
   }, []);
 
   return (
-    <>
-      <AppScreenHeader
-        title={t('recipes:family.newRecipeHeading')}
-        titleRef={headingRef}
-        trailing={<RecipeDraftStatus status={autosave.status} />}
-      />
-      <Stack spacing={2.5}>
-        {hasBases && resumedBases.ready ? (
-          <BaseRecipePicker
-            pick={pick}
-            onPick={setBasePick}
-            closest={closestBases}
-            loading={showHidden && (revealed.isPending || revealed.isFetching)}
-            hiddenByAllergiesCount={hiddenCount}
-            onShowHidden={() => {
-              // A failed Show leaves the answer in error (it never goes stale): ask again.
-              if (showHidden) {
-                if (revealed.isError) void revealed.refetch();
-                return;
+    <FamilyRecipeForm
+      header={{
+        title: t('recipes:family.newRecipeHeading'),
+        titleRef: headingRef,
+        back: { label: t('recipes:back'), href: '/recipes' },
+        subline: <RecipeDraftStatus status={autosave.status} />,
+      }}
+      openTab="details"
+      hint={t('recipes:family.newRecipeHint')}
+      detailsTop={
+        <>
+          {hasBases && resumedBases.ready ? (
+            <BaseRecipePicker
+              pick={pick}
+              onPick={setBasePick}
+              closest={closestBases}
+              loading={
+                showHidden && (revealed.isPending || revealed.isFetching)
               }
-              // Keep the current pick: the revealed list may rank it lower or drop it, so it stays offered.
-              const current = closestBases.find((b) => b.id === parentId);
-              setBasePick({
-                ...pick,
-                chosen: parentId ?? STANDALONE,
-                another: current ?? pick.another,
-              });
-              setShowHidden(true);
-            }}
-            onChange={setParentId}
-          />
-        ) : null}
-        {sourceLink ? (
-          <RemovableSourceLink
-            href={sourceLink}
-            translatedFrom={sourceLanguage}
-            onRemove={() => {
-              setSourceLink(null);
-              // The button unmounts with the row: keep focus on the page.
-              headingRef.current?.focus();
-            }}
-          />
-        ) : null}
-        {resumed?.kind === 'variant' && !resumed.baseAvailable ? (
-          <Alert severity="info">{t('recipes:drafts.baseGone')}</Alert>
-        ) : null}
-        {session.notices}
-        <FamilyRecipeForm
-          heading={t('recipes:family.newRecipeHeading')}
-          description={t('recipes:family.newRecipeHint')}
-          initial={initial}
-          saveLabel={t('recipes:family.save')}
-          saving={session.saving}
-          error={session.create.error}
-          guidance={{ initial: initialGuidance, momentOptions }}
-          onChange={setFormState}
-          onSave={(document, guidance) =>
-            session.save({
-              parentId: hasBases ? parentId : null,
-              document,
-              guidance,
-              extra: {
-                ...(sourceLink ? { sourceLink } : {}),
-                // The language note belongs to the link: no link, no note.
-                ...(sourceLink && sourceLanguage ? { sourceLanguage } : {}),
-              },
-            })
-          }
-          onCancel={() => navigate('/recipes')}
-        />
-        {session.discardButton}
-      </Stack>
-    </>
+              hiddenByAllergiesCount={hiddenCount}
+              onShowHidden={() => {
+                // A failed Show leaves the answer in error (it never goes stale): ask again.
+                if (showHidden) {
+                  if (revealed.isError) void revealed.refetch();
+                  return;
+                }
+                // Keep the current pick: the revealed list may rank it lower or drop it, so it stays offered.
+                const current = closestBases.find((b) => b.id === parentId);
+                setBasePick({
+                  ...pick,
+                  chosen: parentId ?? STANDALONE,
+                  another: current ?? pick.another,
+                });
+                setShowHidden(true);
+              }}
+              onChange={setParentId}
+            />
+          ) : null}
+          {sourceLink ? (
+            <RemovableSourceLink
+              href={sourceLink}
+              translatedFrom={sourceLanguage}
+              onRemove={() => {
+                setSourceLink(null);
+                // The button unmounts with the row: keep focus on the page.
+                headingRef.current?.focus();
+              }}
+            />
+          ) : null}
+          {resumed?.kind === 'variant' && !resumed.baseAvailable ? (
+            <Alert severity="info">{t('recipes:drafts.baseGone')}</Alert>
+          ) : null}
+        </>
+      }
+      notices={session.notices}
+      detailsEnd={session.discardButton}
+      initial={initial}
+      saving={session.saving}
+      error={session.create.error}
+      guidance={{ initial: initialGuidance, momentOptions }}
+      onChange={setFormState}
+      onSave={(document, guidance) =>
+        session.save({
+          parentId: hasBases ? parentId : null,
+          document,
+          guidance,
+          extra: {
+            ...(sourceLink ? { sourceLink } : {}),
+            // The language note belongs to the link: no link, no note.
+            ...(sourceLink && sourceLanguage ? { sourceLanguage } : {}),
+          },
+        })
+      }
+    />
   );
 }
 
@@ -427,7 +422,6 @@ function NewVariantContent({
   draftRoute: RecipeDraftRouteProps;
 }) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
-  const navigate = useNavigate();
   const draft = useVariantDraft(id);
   // The draft carries link ids only; the source's own view names them.
   const source = useRecipe(id);
@@ -453,7 +447,6 @@ function NewVariantContent({
           prefill={draft.data}
           source={source.data}
           draftRoute={draftRoute}
-          onCancel={() => navigate(`/recipes/${id}`)}
         />
       ) : null}
     </>
@@ -466,13 +459,11 @@ function VariantForm({
   prefill,
   source,
   draftRoute,
-  onCancel,
 }: {
   baseId: string;
   prefill: FamilyRecipeDraft;
   source: RecipeDetail | undefined;
   draftRoute: RecipeDraftRouteProps;
-  onCancel: () => void;
 }) {
   const { resumed } = draftRoute;
   const { t } = useTranslation(['recipes', 'common', 'errors']);
@@ -506,30 +497,27 @@ function VariantForm({
   });
 
   return (
-    <>
-      <AppScreenHeader
-        title={t('recipes:family.newHeading')}
-        trailing={<RecipeDraftStatus status={autosave.status} />}
-      />
-      <Stack spacing={2.5}>
-        {session.notices}
-        <FamilyRecipeForm
-          heading={t('recipes:family.newHeading')}
-          description={`${t('recipes:family.copyHint')} ${t('recipes:family.tipsHint')}`}
-          initial={initial.draft}
-          saveLabel={t('recipes:family.create')}
-          saving={session.saving}
-          error={session.create.error}
-          guidance={{ initial: initial.guidance, momentOptions }}
-          onChange={setFormState}
-          onSave={(document, guidance) =>
-            session.save({ parentId: prefill.parentId, document, guidance })
-          }
-          onCancel={onCancel}
-        />
-        {session.discardButton}
-      </Stack>
-    </>
+    <FamilyRecipeForm
+      header={{
+        title: t('recipes:family.newHeading'),
+        back: { label: t('recipes:back'), href: `/recipes/${baseId}` },
+        subline: <RecipeDraftStatus status={autosave.status} />,
+      }}
+      openTab="details"
+      hint={t('recipes:family.copyHint', {
+        source: source?.title ?? prefill.title,
+      })}
+      notices={session.notices}
+      detailsEnd={session.discardButton}
+      initial={initial.draft}
+      saving={session.saving}
+      error={session.create.error}
+      guidance={{ initial: initial.guidance, momentOptions }}
+      onChange={setFormState}
+      onSave={(document, guidance) =>
+        session.save({ parentId: prefill.parentId, document, guidance })
+      }
+    />
   );
 }
 
@@ -537,7 +525,6 @@ function VariantForm({
 export function EditFamilyRecipePage() {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const { id = '' } = useParams();
-  const navigate = useNavigate();
   const query = useFamilyRecipeEdit(id);
   const update = useUpdateFamilyRecipe(id);
   const tipWrites = useFamilyTipWrites(id);
@@ -550,72 +537,76 @@ export function EditFamilyRecipePage() {
   const [page, setPage] = useState<FamilyDraft | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
+  const back = { label: t('recipes:back'), href: `/recipes/${id}` };
+  if (!recipe || recipe.archived) {
+    return (
+      <>
+        <AppScreenHeader
+          title={recipe?.title ?? t('recipes:title')}
+          back={back}
+        />
+        <Stack spacing={3}>
+          {query.error ? (
+            <Alert>{translateApiError(t, query.error)}</Alert>
+          ) : null}
+          {query.isPending ? <Spinner label={t('common:loading')} /> : null}
+          {recipe?.archived ? (
+            <Typography>{t('recipes:family.unavailable')}</Typography>
+          ) : null}
+        </Stack>
+      </>
+    );
+  }
   return (
-    <>
-      <AppScreenHeader
-        title={recipe?.title ?? t('recipes:title')}
-        titleRef={headingRef}
-      />
-      <Stack spacing={3}>
-        {query.error ? (
-          <Alert>{translateApiError(t, query.error)}</Alert>
-        ) : null}
-        {query.isPending ? <Spinner label={t('common:loading')} /> : null}
-        {recipe && !recipe.archived ? (
-          <>
-            {recipe.sourceLink && !linkRemoved ? (
-              <RemovableSourceLink
-                href={recipe.sourceLink}
-                translatedFrom={recipe.sourceLanguage}
-                onRemove={() => {
-                  setLinkRemoved(true);
-                  // The button unmounts with the row: keep focus on the page.
-                  headingRef.current?.focus();
-                }}
-              />
-            ) : null}
-            <FamilyRecipeForm
-              // Tip writes refresh `recipe` but must not reset unsaved edits; a save reseeds.
-              key={`${recipe.id}-${saves}`}
-              heading={t('recipes:family.editHeading')}
-              initial={draftOfEdit(recipe)}
-              onDraftChange={setPage}
-              saveLabel={t('recipes:family.save')}
-              saving={update.isPending}
-              error={update.error}
-              stepTipCount={(stepId) =>
-                recipe.tips.filter((tip) => tip.stepId === stepId).length
-              }
-              onSave={(document) =>
-                update.mutate(
-                  // `null` clears the link (and its language); leaving it out keeps both.
-                  linkRemoved ? { ...document, sourceLink: null } : document,
-                  {
-                    onSuccess: () => {
-                      setSaves((count) => count + 1);
-                      setLinkRemoved(false);
-                    },
-                  },
-                )
-              }
-              onCancel={() => navigate(`/recipes/${id}`)}
-            />
-            <Typography role="status" variant="body2">
-              {saves > 0 && !update.isPending
-                ? t('recipes:family.saved')
-                : null}
-            </Typography>
-            <Link href={`/recipes/${id}`}>
-              {t('recipes:family.viewRecipe')}
-            </Link>
-            <TipsEditor recipe={{ ...recipe, id }} writes={tipWrites} />
-            <FamilyGuidance recipe={recipe} page={page} />
-          </>
-        ) : null}
-        {recipe?.archived ? (
-          <Typography>{t('recipes:family.unavailable')}</Typography>
-        ) : null}
-      </Stack>
-    </>
+    <FamilyRecipeForm
+      // Tip writes refresh `recipe` but must not reset unsaved edits; a save reseeds.
+      seedKey={`${recipe.id}-${saves}`}
+      header={{ title: recipe.title, titleRef: headingRef, back }}
+      openTab="steps"
+      detailsTop={
+        recipe.sourceLink && !linkRemoved ? (
+          <RemovableSourceLink
+            href={recipe.sourceLink}
+            translatedFrom={recipe.sourceLanguage}
+            onRemove={() => {
+              setLinkRemoved(true);
+              // The button unmounts with the row: keep focus on the page.
+              headingRef.current?.focus();
+            }}
+          />
+        ) : null
+      }
+      notices={
+        <Typography role="status" variant="body2">
+          {saves > 0 && !update.isPending ? t('recipes:family.saved') : null}
+        </Typography>
+      }
+      stepsEnd={
+        <>
+          <Link href={`/recipes/${id}`}>{t('recipes:family.viewRecipe')}</Link>
+          <TipsEditor recipe={{ ...recipe, id }} writes={tipWrites} />
+          <FamilyGuidance recipe={recipe} page={page} />
+        </>
+      }
+      initial={draftOfEdit(recipe)}
+      onDraftChange={setPage}
+      saving={update.isPending}
+      error={update.error}
+      stepTipCount={(stepId) =>
+        recipe.tips.filter((tip) => tip.stepId === stepId).length
+      }
+      onSave={(document) =>
+        update.mutate(
+          // `null` clears the link (and its language); leaving it out keeps both.
+          linkRemoved ? { ...document, sourceLink: null } : document,
+          {
+            onSuccess: () => {
+              setSaves((count) => count + 1);
+              setLinkRemoved(false);
+            },
+          },
+        )
+      }
+    />
   );
 }

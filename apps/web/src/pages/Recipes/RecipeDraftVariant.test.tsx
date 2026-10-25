@@ -250,7 +250,7 @@ describe('Recipe Drafts on New Variant', () => {
       version: 4,
       content: { title: 'Gran omelette!' },
     });
-    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Detail of the recipe')).toBeVisible();
     expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
       parentId: BASE,
@@ -297,7 +297,7 @@ describe('Recipe Drafts on New Variant', () => {
     expect(sent(calls, `GET /api/recipes/${BASE}/variant-draft`)).toHaveLength(
       0,
     );
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Detail of the recipe')).toBeVisible();
     const post = sent(calls, 'POST /api/recipes')[0].body as Record<
       string,
