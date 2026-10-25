@@ -14,7 +14,9 @@ import {
   useNavigate,
   useParams,
 } from 'react-router-dom';
+import { RecipeDraftConflictBanner } from '../../components/RecipeDraftConflictBanner';
 import { RecipeDraftStatus } from '../../components/RecipeDraftStatus';
+import { useLeaveGuard } from '../../lib/useLeaveGuard';
 import {
   contentOfForm,
   formOfContent,
@@ -121,6 +123,7 @@ export function NewRecipePage() {
         supplied={supplied}
         resumed={route.resumed}
         onDraftId={route.onDraftId}
+        onLoadLatest={route.adopt}
       />
     </RecipeDraftContinue>
   );
@@ -169,10 +172,12 @@ function NewRecipeContent({
   supplied,
   resumed,
   onDraftId,
+  onLoadLatest,
 }: {
   supplied: NewRecipeState | null;
   resumed?: RecipeDraftView;
   onDraftId: (id: string) => void;
+  onLoadLatest: (latest: RecipeDraftView) => void;
 }) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
@@ -276,6 +281,8 @@ function NewRecipeContent({
     resumed: resumed ? { id: resumed.id, version: resumed.version } : undefined,
   });
   const { draftId, flush } = autosave;
+  // A save that failed (or lost to another device) is not on the server: ask before leaving.
+  useLeaveGuard(autosave.hasUnsaved, t('recipes:recipeDraft.leaveConfirm'));
   const [discarding, setDiscarding] = useState(false);
   // A read that counted against a Cap must not be lost: no waiting for an edit.
   useEffect(() => {
@@ -335,7 +342,16 @@ function NewRecipeContent({
         {resumed?.kind === 'variant' && !resumed.baseAvailable ? (
           <Alert severity="info">{t('recipes:drafts.baseGone')}</Alert>
         ) : null}
-        <RecipeDraftLimitNotice error={autosave.error} />
+        <RecipeDraftLimitNotice
+          error={autosave.error}
+          status={autosave.status}
+        />
+        {autosave.status === 'conflict' && draftId ? (
+          <RecipeDraftConflictBanner
+            draftId={draftId}
+            onLoaded={onLoadLatest}
+          />
+        ) : null}
         <FamilyRecipeForm
           heading={t('recipes:family.newRecipeHeading')}
           description={t('recipes:family.newRecipeHint')}
@@ -455,6 +471,7 @@ export function NewVariantPage() {
         baseId={id}
         resumed={route.resumed}
         onDraftId={route.onDraftId}
+        onLoadLatest={route.adopt}
       />
     </RecipeDraftContinue>
   );
@@ -464,10 +481,12 @@ function NewVariantContent({
   baseId: id,
   resumed,
   onDraftId,
+  onLoadLatest,
 }: {
   baseId: string;
   resumed?: RecipeDraftView;
   onDraftId: (id: string) => void;
+  onLoadLatest: (latest: RecipeDraftView) => void;
 }) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
@@ -497,6 +516,7 @@ function NewVariantContent({
           source={source.data}
           resumed={resumed}
           onDraftId={onDraftId}
+          onLoadLatest={onLoadLatest}
           onCancel={() => navigate(`/recipes/${id}`)}
         />
       ) : null}
@@ -511,6 +531,7 @@ function VariantForm({
   source,
   resumed,
   onDraftId,
+  onLoadLatest,
   onCancel,
 }: {
   baseId: string;
@@ -518,6 +539,7 @@ function VariantForm({
   source: RecipeDetail | undefined;
   resumed?: RecipeDraftView;
   onDraftId: (id: string) => void;
+  onLoadLatest: (latest: RecipeDraftView) => void;
   onCancel: () => void;
 }) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
@@ -547,6 +569,7 @@ function VariantForm({
     resumed: resumed ? { id: resumed.id, version: resumed.version } : undefined,
   });
   const { draftId } = autosave;
+  useLeaveGuard(autosave.hasUnsaved, t('recipes:recipeDraft.leaveConfirm'));
   useEffect(() => {
     if (draftId && !finishing) onDraftId(draftId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -559,7 +582,16 @@ function VariantForm({
         trailing={<RecipeDraftStatus status={autosave.status} />}
       />
       <Stack spacing={2.5}>
-        <RecipeDraftLimitNotice error={autosave.error} />
+        <RecipeDraftLimitNotice
+          error={autosave.error}
+          status={autosave.status}
+        />
+        {autosave.status === 'conflict' && draftId ? (
+          <RecipeDraftConflictBanner
+            draftId={draftId}
+            onLoaded={onLoadLatest}
+          />
+        ) : null}
         <FamilyRecipeForm
           heading={t('recipes:family.newHeading')}
           description={`${t('recipes:family.copyHint')} ${t('recipes:family.tipsHint')}`}

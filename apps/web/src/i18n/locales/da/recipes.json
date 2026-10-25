@@ -220,7 +220,13 @@
   },
   "recipeDraft": {
     "saving": "Gemmer…",
-    "saved": "Kladde gemt"
+    "saved": "Kladde gemt",
+    "saveFailed": "Kunne ikke gemme opskriftkladden, prøver igen",
+    "leaveConfirm": "Dine seneste ændringer i denne opskriftkladde er ikke gemt endnu. Vil du forlade siden alligevel?",
+    "conflictTitle": "Denne opskriftkladde er ændret på en anden enhed",
+    "conflictHint": "Dine ændringer her er ikke gemt. Hent den nyeste version for at fortsætte fra den.",
+    "loadLatest": "Hent nyeste",
+    "loadLatestFailed": "Kunne ikke hente den nyeste version. Prøv igen."
   },
   "drafts": {
     "entry": "Kladder ({{count}})",

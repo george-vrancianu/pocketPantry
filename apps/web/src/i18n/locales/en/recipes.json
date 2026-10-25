@@ -220,7 +220,13 @@
   },
   "recipeDraft": {
     "saving": "Saving…",
-    "saved": "Draft saved"
+    "saved": "Draft saved",
+    "saveFailed": "Couldn't save Recipe Draft, retrying",
+    "leaveConfirm": "Your latest changes to this Recipe Draft are not saved yet. Leave anyway?",
+    "conflictTitle": "This Recipe Draft was changed on another device",
+    "conflictHint": "Your edits here are not saved. Load the latest to carry on from it.",
+    "loadLatest": "Load latest",
+    "loadLatestFailed": "Couldn't load the latest. Try again."
   },
   "drafts": {
     "entry": "Drafts ({{count}})",
