@@ -50,11 +50,12 @@ export function usePantryScreen() {
   const { mutateAsync: sendDelete } = useDeleteBatch();
   const removal = useDeferredRemoval(['pantry'], sendDelete);
   const { hiddenIds } = removal;
-  // The Add batch form replaces the list while open; `from` is the row that opened it, if any.
+  // The Add to Pantry sheet opens over the list; `start` is what it begins with.
+  // `open` is separate from the rest so the sheet keeps its start while it slides away.
   const [adding, setAdding] = useState<{
+    open: boolean;
     start?: AddBatchStart;
-    from?: OpenIngredientKey;
-  } | null>(null);
+  }>({ open: false });
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PantryFilter>('all');
   // One open Ingredient for the whole page: opening another closes it, in any Location.
@@ -110,22 +111,20 @@ export function usePantryScreen() {
     noMatches: batches.isSuccess && all.length > 0 && shown.length === 0,
     error: batches.error ? translateApiError(t, batches.error) : null,
     today,
-    adding: adding !== null,
-    /** What the open Add batch form starts with: nothing (the header "+") or a row's Ingredient. */
-    addStart: adding?.start,
-    /** The row whose Add batch button opened the form, for focus to go back to. */
-    addingFrom: adding?.from,
-    startAdding: () => setAdding({}),
+    adding: adding.open,
+    /** What the Add to Pantry sheet starts with: nothing (the header "+") or a row's Ingredient. */
+    addStart: adding.start,
+    startAdding: () => setAdding({ open: true }),
     /** Add batch from an open card: its Ingredient picked, or its Unmatched name typed in. */
     startAddingTo: (row: PantryRow) =>
       setAdding({
+        open: true,
         start:
           row.ingredientId === null
             ? { unmatchedName: row.name }
             : { ingredient: { id: row.ingredientId, name: row.name } },
-        from: row.openKey,
       }),
-    stopAdding: () => setAdding(null),
+    stopAdding: () => setAdding((current) => ({ ...current, open: false })),
     /** Open the Ingredient, closing any other; or close it if it is the open one. */
     toggleOpen: (key: OpenIngredientKey) =>
       setOpenKey((current) => (current === key ? null : key)),

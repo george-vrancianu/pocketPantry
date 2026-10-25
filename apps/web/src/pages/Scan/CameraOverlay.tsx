@@ -8,6 +8,7 @@ import {
   visuallyHidden,
 } from '@pocket-pantry/ui';
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -120,6 +121,15 @@ export function CameraOverlay({
     closed.current = true;
     cancelRef.current();
   };
+  // Escape inside the overlay is taken here and stops, so a host dialog around it (the Add to Pantry
+  // sheet) does not also close. The document listener below covers focus outside the overlay.
+  const onOverlayKeyDown = (event: ReactKeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+    event.stopPropagation();
+    // The Info sheet answers its own Escape on the document, which this stop would cut off.
+    if (infoOpenRef.current) closeInfo();
+    else cancel();
+  };
   useEffect(() => {
     closed.current = false;
     const onKey = (event: KeyboardEvent) => {
@@ -200,6 +210,7 @@ export function CameraOverlay({
       role="dialog"
       aria-modal="true"
       ref={dialog}
+      onKeyDown={onOverlayKeyDown}
       tabIndex={-1}
       aria-label={t('title', {
         mode: t(`mode.${mode}`).toLocaleLowerCase(),

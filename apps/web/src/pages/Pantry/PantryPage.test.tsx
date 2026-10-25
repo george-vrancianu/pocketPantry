@@ -935,7 +935,9 @@ describe('PantryPage', () => {
 
       await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       expect(
         screen.getByRole('button', {
@@ -999,7 +1001,9 @@ describe('PantryPage', () => {
 
       await user.keyboard('{Escape}');
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       expect((await save(user, calls)).expiryDate).toBe('2026-09-24');
     });
@@ -1017,9 +1021,13 @@ describe('PantryPage', () => {
         'No expiry dateNo expiry',
       );
 
-      await user.click(document.querySelector('.MuiBackdrop-root') as Element);
+      await user.click(
+        [...document.querySelectorAll('.MuiBackdrop-root')].at(-1) as Element,
+      );
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       const row = screen.getByRole('button', {
         name: 'Expires, no expiry date',
@@ -1094,7 +1102,9 @@ describe('PantryPage', () => {
 
       await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       expect((await save(user, calls)).expiryDate).toBe('2026-10-28');
     });
@@ -1269,7 +1279,9 @@ describe('PantryPage', () => {
 
       await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       sheet = await openSheet(user);
       expect(monthShown(sheet)).toEqual(['December 2026', 'auto', 1]);
@@ -1277,7 +1289,9 @@ describe('PantryPage', () => {
       await user.click(sheetButton(sheet, 'No expiry'));
       await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       sheet = await openSheet(user);
       expect(monthShown(sheet)).toEqual(['October 2026', 'auto', 1]);
@@ -1356,7 +1370,9 @@ describe('PantryPage', () => {
 
       await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       expect((await save(user, calls)).expiryDate).toBe('2028-04-14');
     });
@@ -1389,7 +1405,9 @@ describe('PantryPage', () => {
       await user.click(sheetButton(sheet, 'No expiry'));
       await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
 
       sheet = await openSheet(user);
@@ -1409,7 +1427,9 @@ describe('PantryPage', () => {
       await user.click(quickPick(sheet, /^2 weeks,/));
       await user.keyboard('{Escape}');
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       expect(
         screen.getByRole('button', { name: /^Expires, Wednesday, October 28/ }),
@@ -1421,7 +1441,9 @@ describe('PantryPage', () => {
       await user.click(calendarDay(sheet, 'Thursday, October 22, 2026'));
       await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       expect(screen.getByRole('button', { name: /^Expires,/ })).toHaveFocus();
 
@@ -1438,7 +1460,9 @@ describe('PantryPage', () => {
       const sheet = await screen.findByRole('dialog', { name: 'Expires' });
       await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       expect(row).toHaveFocus();
     });
@@ -1495,7 +1519,9 @@ describe('PantryPage', () => {
       );
       await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
       );
       expect((await save(user, calls)).expiryDate).toBe('2026-11-30');
     });
@@ -1994,7 +2020,9 @@ describe('PantryPage', () => {
           await user.click(quickPick(sheet, /^3 days,/));
           await user.click(sheetButton(sheet, 'Done'));
           await waitFor(() =>
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+            expect(
+              screen.queryByRole('dialog', { name: 'Expires' }),
+            ).not.toBeInTheDocument(),
           );
           await act(async () => release());
           // Milk's defaults have landed: it shows as the picked token.
@@ -2068,8 +2096,8 @@ describe('PantryPage', () => {
           await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
           const row = await screen.findByRole('button', { name: /^Milk/ });
-          await waitFor(() => expect(row).toHaveFocus());
           expect(row).toHaveAttribute('aria-expanded', 'true');
+          await waitFor(() => expect(addButton('Milk')).toHaveFocus());
           expect(
             calls.some((call) => call.key === 'POST /api/pantry/batches'),
           ).toBe(false);
@@ -2083,7 +2111,9 @@ describe('PantryPage', () => {
           await user.click(addButton('Milk'));
           await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
-          await user.click(screen.getByRole('button', { name: 'Add batch' }));
+          await user.click(
+            await screen.findByRole('button', { name: 'Add batch' }),
+          );
 
           expect(
             screen.getByRole('combobox', { name: 'Search ingredients' }),
@@ -2092,6 +2122,88 @@ describe('PantryPage', () => {
           expect(
             screen.queryByRole('textbox', { name: /^Amount/ }),
           ).not.toBeInTheDocument();
+        });
+
+        describe('the Add to Pantry sheet', () => {
+          const sheet = () =>
+            screen.findByRole('dialog', { name: 'Add to Pantry' });
+          const closed = () =>
+            waitFor(() =>
+              expect(
+                screen.queryByRole('dialog', { name: 'Add to Pantry' }),
+              ).not.toBeInTheDocument(),
+            );
+
+          it('opens from the header "+" as a modal dialog over the list, with the search focused', async () => {
+            const user = userEvent.setup();
+            stubAdding();
+            renderWithProviders(<PantryPage />);
+            const plus = await screen.findByRole('button', {
+              name: 'Add batch',
+            });
+            await user.click(plus);
+
+            const dialog = await sheet();
+            expect(dialog).toHaveAttribute('aria-modal', 'true');
+            await waitFor(() =>
+              expect(
+                within(dialog).getByRole('combobox', {
+                  name: 'Search ingredients',
+                }),
+              ).toHaveFocus(),
+            );
+            // The list is still rendered behind the scrim.
+            expect(
+              screen.getByRole('button', { name: /^Milk/, hidden: true }),
+            ).toBeInTheDocument();
+
+            await user.keyboard('{Escape}');
+            await closed();
+            await waitFor(() => expect(plus).toHaveFocus());
+          });
+
+          it('closes on the x and on a scrim tap', async () => {
+            const user = userEvent.setup();
+            stubAdding();
+            renderWithProviders(<PantryPage />);
+            await user.click(
+              await screen.findByRole('button', { name: 'Add batch' }),
+            );
+            await user.click(
+              within(await sheet()).getByRole('button', { name: 'Close' }),
+            );
+            await closed();
+
+            await user.click(
+              await screen.findByRole('button', { name: 'Add batch' }),
+            );
+            await sheet();
+            await user.click(
+              document.querySelector('.MuiBackdrop-root') as Element,
+            );
+            await closed();
+          });
+
+          it('opens with the Ingredient picked from an open card, and with the name typed in from an Unmatched row', async () => {
+            const user = userEvent.setup();
+            stubAdding();
+            renderWithProviders(<PantryPage />);
+            await openMilk(user);
+            await user.click(addButton('Milk'));
+            expect(
+              within(await sheet()).getByRole('textbox', { name: /^Amount/ }),
+            ).toBeInTheDocument();
+            await user.click(screen.getByRole('button', { name: 'Cancel' }));
+            await closed();
+
+            await user.click(screen.getByRole('button', { name: /^Zorblax/ }));
+            await user.click(addButton('Zorblax paste'));
+            expect(
+              within(await sheet()).getByRole('combobox', {
+                name: 'Search ingredients',
+              }),
+            ).toHaveValue('Zorblax paste');
+          });
         });
       });
 

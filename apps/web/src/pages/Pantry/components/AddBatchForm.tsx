@@ -25,12 +25,19 @@ type Props = {
   onCancel: () => void;
   /** Start with an Ingredient picked, or an Unmatched name typed in; empty without. */
   start?: AddBatchStart;
+  /** Told when the camera overlay opens or closes, so a host can leave Escape to the overlay. */
+  onCameraOpenChange?: (open: boolean) => void;
 };
 
 /** The camera the form opens: a Product photo or a barcode, never the Scan page's other modes. */
 const FORM_CAMERA_MODES = ['product', 'barcode'] as const;
 
-export function AddBatchForm({ onSaved, onCancel, start }: Props) {
+export function AddBatchForm({
+  onSaved,
+  onCancel,
+  start,
+  onCameraOpenChange,
+}: Props) {
   const { t, i18n } = useTranslation('pantry');
   const form = useAddBatchForm({ onSaved, start });
   const id = useId();
@@ -47,6 +54,10 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
     if (wasOpen.current && !camera.open) cameraButton.current?.focus();
     wasOpen.current = camera.open;
   }, [camera.open]);
+  useEffect(() => {
+    onCameraOpenChange?.(camera.open);
+    return () => onCameraOpenChange?.(false);
+  }, [camera.open, onCameraOpenChange]);
   /** Marks a field Prefill filled and the Member has not edited since. */
   const mark = (field: PrefillField) =>
     camera.prefilled.has(field) ? (
