@@ -1,10 +1,11 @@
 import {
   Box,
-  GatorImage,
+  Gator,
   radius,
   tokens,
   usePrefersReducedMotion,
-  type GatorMood,
+  warmGatorLoops,
+  type AnimatedGatorMood,
 } from '@pocket-pantry/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,15 +15,22 @@ import { useGatorAlt } from '../../lib/useGatorAlt';
 import { expiringSoonDay, todoTitle } from './todoText';
 
 const FADE_MS = 300;
+const BAND_MOOD = {
+  curious: 'health-curious',
+  good: 'health-dapper',
+  some: 'health-hmm',
+  attention: 'worried',
+} as const satisfies Record<string, AnimatedGatorMood>;
+const HEALTH_MOODS: AnimatedGatorMood[] = Object.values(BAND_MOOD);
 
 /** Gator's face for a Pantry Health band: curious below ten Batches, then dapper, hmm or worried by verdict. */
-export function healthMood(health: PantryHealth): GatorMood {
-  if (!health.scored) return 'health-curious';
+export function healthMood(health: PantryHealth): AnimatedGatorMood {
+  if (!health.scored) return BAND_MOOD.curious;
   return health.verdict === 'good'
-    ? 'health-dapper'
+    ? BAND_MOOD.good
     : health.verdict === 'some'
-      ? 'health-hmm'
-      : 'worried';
+      ? BAND_MOOD.some
+      : BAND_MOOD.attention;
 }
 
 /**
@@ -61,17 +69,28 @@ export function useHealthGatorLine(
 export function HealthGator({
   health,
   size,
+  tapSignal,
+  entrance = false,
 }: {
   health: PantryHealth;
   size: number;
+  /** A parent that is already pressable bumps this to start Gator's Tap. */
+  tapSignal?: number;
+  /** Play the Entrance when first shown (not on a band change). */
+  entrance?: boolean;
 }) {
   const mood = healthMood(health);
   const gatorAlt = useGatorAlt();
   const reduceMotion = usePrefersReducedMotion();
+  // After a band change the face never plays an Entrance, even if the band comes back.
+  const [changed, setChanged] = useState(false);
+  // Warm every band's loop, so the incoming face isn't blank while the old one fades out.
+  useEffect(() => warmGatorLoops(HEALTH_MOODS, 'idle'), []);
   const [previous, setPrevious] = useState(mood);
-  const [leaving, setLeaving] = useState<GatorMood | null>(null);
+  const [leaving, setLeaving] = useState<AnimatedGatorMood | null>(null);
   if (previous !== mood) {
     setPrevious(mood);
+    setChanged(true);
     setLeaving(reduceMotion ? null : previous);
   }
   // The old face goes once its fade has run, however the browser reports it.
@@ -106,7 +125,7 @@ export function HealthGator({
             }),
           }}
         >
-          <GatorImage mood={leaving} size={size} decorative />
+          <Gator mood={leaving} size={size} entrance={false} decorative />
         </Box>
       ) : null}
       <Box
@@ -122,7 +141,13 @@ export function HealthGator({
             : {}),
         }}
       >
-        <GatorImage mood={mood} size={size} alt={gatorAlt(mood)} />
+        <Gator
+          mood={mood}
+          size={size}
+          entrance={entrance && !changed}
+          tapSignal={tapSignal}
+          alt={gatorAlt(mood)}
+        />
       </Box>
     </Box>
   );

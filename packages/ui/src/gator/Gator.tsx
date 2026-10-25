@@ -4,13 +4,13 @@ import { type AnimatedGatorMood, gatorLayout } from './gatorGeometry';
 
 export type GatorLoop = 'idle' | 'signature';
 /** Everything the image can show; `data-motion` carries it. */
-export type GatorMotion = GatorLoop | 'entrance';
+export type GatorMotion = GatorLoop | 'entrance' | 'tap';
 
 /** How long each one-shot plays before Gator returns to its loop (ms). */
-export const ONE_SHOT_MS = { entrance: 1300 } as const;
+export const ONE_SHOT_MS = { entrance: 1300, tap: 900 } as const;
 type OneShot = keyof typeof ONE_SHOT_MS;
 
-type Variant = GatorMotion | 'tap';
+type Variant = GatorMotion;
 const VARIANT_FILE = /gator-(.+)-(idle|signature|entrance|tap)\.svg$/;
 
 const FILES = import.meta.glob<string>(
@@ -24,6 +24,14 @@ for (const [path, url] of Object.entries(FILES)) {
   (ART[mood!] ??= {})[variant as Variant] = url;
 }
 
+/** Warms the cache with these moods' loops, so a face that mounts later doesn't show an empty box. */
+export function warmGatorLoops(moods: AnimatedGatorMood[], loop: GatorLoop) {
+  for (const mood of moods) {
+    const src = ART[mood]?.[loop];
+    if (src) new Image().src = src;
+  }
+}
+
 export type GatorProps = {
   mood: AnimatedGatorMood;
   /** Pixel width of the drawing itself; its padding hangs outside. */
@@ -32,6 +40,13 @@ export type GatorProps = {
   loop?: GatorLoop;
   /** Play the Entrance on mount (default true). */
   entrance?: boolean;
+  /** Makes Gator a button (named by its alt): a press plays the Tap and calls this at once. */
+  onClick?: () => void;
+  /**
+   * For a Gator inside something already pressable: the parent bumps this number to start a Tap.
+   * Gator renders no button of its own.
+   */
+  tapSignal?: number;
 } & (
   | {
       /** The translated alt text describing the mood. */
@@ -42,6 +57,8 @@ export type GatorProps = {
       /** Empty alt, hidden from assistive tech. */
       decorative: true;
       alt?: never;
+      /** A button needs a name: onClick requires alt. */
+      onClick?: never;
     }
 );
 
@@ -58,6 +75,8 @@ export function Gator({
   size = 96,
   loop = 'idle',
   entrance = true,
+  onClick,
+  tapSignal,
   alt,
   decorative,
 }: GatorProps) {
@@ -71,6 +90,18 @@ export function Gator({
     // to its loop, and the cut-short one-shot never comes back.
     setShotMood(mood);
     setShot(null);
+  }
+
+  // Each Tap gets a new run, which remounts the image so it plays from its first frame.
+  const [taps, setTaps] = useState(0);
+  const startTap = () => {
+    setTaps((n) => n + 1);
+    setShot({ kind: 'tap' });
+  };
+  const [seenSignal, setSeenSignal] = useState(tapSignal);
+  if (seenSignal !== tapSignal) {
+    setSeenSignal(tapSignal);
+    startTap();
   }
 
   useEffect(() => {
@@ -92,9 +123,36 @@ export function Gator({
     new Image().src = loopSrc;
   }, [loopSrc]);
 
+  // A pressable Gator will want its Tap at once, too.
+  const tapSrc = onClick || tapSignal !== undefined ? files.tap : undefined;
+  useEffect(() => {
+    if (tapSrc) new Image().src = tapSrc;
+  }, [tapSrc]);
+
+  const Wrapper = onClick ? 'button' : 'span';
   return (
-    <span
+    <Wrapper
+      {...(onClick
+        ? {
+            type: 'button' as const,
+            onClick: () => {
+              startTap();
+              onClick();
+            },
+          }
+        : {})}
       style={{
+        ...(onClick
+          ? {
+              padding: 0,
+              border: 0,
+              background: 'none',
+              font: 'inherit',
+              color: 'inherit',
+              cursor: 'pointer',
+              verticalAlign: 'top',
+            }
+          : {}),
         // flow-root: the img's negative margin-top must not collapse out of
         // the span, or the art and the content after it shift up.
         display: 'flow-root',
@@ -103,6 +161,7 @@ export function Gator({
       }}
     >
       <img
+        key={taps}
         src={files[motion]}
         data-mood={mood}
         data-motion={motion}
@@ -122,6 +181,6 @@ export function Gator({
         }}
         draggable={false}
       />
-    </span>
+    </Wrapper>
   );
 }
