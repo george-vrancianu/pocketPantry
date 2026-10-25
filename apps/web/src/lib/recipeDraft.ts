@@ -18,6 +18,8 @@ export type LineDraft = {
   unit: Unit;
   optional: boolean;
   note: string;
+  /** Picked from the Family's own Ingredients (shows a Family pill); unknown on a saved line. */
+  family?: boolean;
 };
 /** A step Tip copied into an unsaved draft; saved Recipes manage Tips through the Tips editor. */
 export type StepTipDraft = { key: number; text: string };

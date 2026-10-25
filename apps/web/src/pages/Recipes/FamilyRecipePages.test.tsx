@@ -1,4 +1,10 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import {
+  act,
+  waitFor,
+  fireEvent,
+  screen,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
 import type { InitialEntry } from 'react-router-dom';
@@ -2330,5 +2336,97 @@ describe('Recipe editor shell', () => {
     ).toBeVisible();
     await user.click(screen.getByRole('tab', { name: /^Steps/ }));
     expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull();
+  });
+});
+
+describe('Recipe editor Ingredient Lines (#589)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const openLines = async (user: ReturnType<typeof userEvent.setup>) => {
+    setup(newRecipeWith(sourced), {});
+    await openTab(user, 'Ingredients');
+    await screen.findByLabelText('Quantity of Egg');
+  };
+
+  it('shows one row per line with a subline, and the rare controls behind a closed strip', async () => {
+    const user = userEvent.setup({ delay: null });
+    await openLines(user);
+    expect(
+      screen.getByText('to serve \u00b7 Not in the Catalog'),
+    ).toBeVisible();
+    expect(screen.queryByLabelText('Note for Egg')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'More for Egg' }),
+    ).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText(/Leave the quantity blank/)).toBeVisible();
+  });
+
+  it('outlines a bad quantity and shows the message under the row', async () => {
+    const user = userEvent.setup({ delay: null });
+    await openLines(user);
+    const quantity = screen.getByLabelText('Quantity of Egg');
+    await user.clear(quantity);
+    await user.type(quantity, 'lots');
+    expect(quantity).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText(/Quantity must be/)).toBeVisible();
+    await user.clear(quantity);
+    expect(screen.queryByText(/Quantity must be/)).toBeNull();
+  });
+
+  it('opens one strip at a time and disables the end arrows', async () => {
+    const user = userEvent.setup({ delay: null });
+    await openLines(user);
+    const egg = screen.getByRole('button', { name: 'More for Egg' });
+    await user.click(egg);
+    expect(egg).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Move Egg up' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await user.click(screen.getByRole('switch', { name: 'Optional: Egg' }));
+    await user.click(
+      screen.getByRole('button', { name: 'More for Maple syrup' }),
+    );
+    expect(egg).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByLabelText('Note for Egg')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Move Maple syrup down' }),
+    ).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText(/^optional/)).toBeVisible();
+  });
+
+  it('moves a line down', async () => {
+    const user = userEvent.setup({ delay: null });
+    await openLines(user);
+    await user.click(screen.getByRole('button', { name: 'More for Egg' }));
+    await user.click(screen.getByRole('button', { name: 'Move Egg down' }));
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('Maple syrup');
+    expect(items[1]).toHaveTextContent('Egg');
+  });
+
+  it('removes a line with a polite Undo toast that restores it at its old index and ends with the window', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await openLines(user);
+    await user.click(screen.getByRole('button', { name: 'More for Egg' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Egg' }));
+    expect(screen.queryByLabelText('Quantity of Egg')).toBeNull();
+    expect(
+      (await screen.findByText('Removed Egg')).closest('[role="status"]'),
+    ).not.toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('Egg');
+    expect(screen.getByLabelText('Quantity of Egg')).toHaveValue('2');
+
+    await user.click(screen.getByRole('button', { name: 'More for Egg' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Egg' }));
+    await screen.findByText('Removed Egg');
+    await act(() => vi.advanceTimersByTimeAsync(6000));
+    await waitFor(() => expect(screen.queryByText('Removed Egg')).toBeNull());
   });
 });

@@ -181,7 +181,7 @@
     "lines": {
       "title": "Ingredient Lines",
       "hint": "Leave the quantity blank for a line like \"salt, to taste\".",
-      "empty": "No Ingredient Lines yet.",
+      "empty": "No ingredients yet. Search the Catalog below, or type a name.",
       "add": "Add an Ingredient",
       "quantity": "Quantity of {{name}}",
       "unit": "Unit of {{name}}",
@@ -190,7 +190,11 @@
       "remove": "Remove {{name}}",
       "moveUp": "Move {{name}} up",
       "moveDown": "Move {{name}} down",
-      "unknown": "Unknown Ingredient"
+      "unknown": "Unknown Ingredient",
+      "more": "More for {{name}}",
+      "optionalSub": "optional",
+      "optionalSwitch": "Optional",
+      "familyPill": "Family"
     },
     "steps": {
       "title": "Steps",

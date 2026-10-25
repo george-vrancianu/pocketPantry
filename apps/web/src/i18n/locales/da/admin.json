@@ -181,7 +181,7 @@
     "lines": {
       "title": "Ingredienslinjer",
       "hint": "Lad mængden stå tom for en linje som \"salt, efter smag\".",
-      "empty": "Ingen ingredienslinjer endnu.",
+      "empty": "Ingen ingredienser endnu. Søg i kataloget herunder, eller skriv et navn.",
       "add": "Tilføj en ingrediens",
       "quantity": "Mængde af {{name}}",
       "unit": "Enhed for {{name}}",
@@ -190,7 +190,11 @@
       "remove": "Fjern {{name}}",
       "moveUp": "Flyt {{name}} op",
       "moveDown": "Flyt {{name}} ned",
-      "unknown": "Ukendt ingrediens"
+      "unknown": "Ukendt ingrediens",
+      "more": "Mere for {{name}}",
+      "optionalSub": "valgfri",
+      "optionalSwitch": "Valgfri",
+      "familyPill": "Familie"
     },
     "steps": {
       "title": "Trin",

@@ -138,7 +138,9 @@ export function FamilyRecipeForm({
 
   const change = (patch: Partial<FamilyDraft>) =>
     setDraft((current) => ({ ...current, ...patch }));
-  const addLine = (line: Pick<LineDraft, 'ingredientId' | 'name' | 'unit'>) =>
+  const addLine = (
+    line: Pick<LineDraft, 'ingredientId' | 'name' | 'unit' | 'family'>,
+  ) =>
     change({
       lines: [
         ...draft.lines,
@@ -293,18 +295,6 @@ export function FamilyRecipeForm({
               lines={draft.lines}
               problems={problems}
               onChange={(lines) => change({ lines })}
-              nameNote={(line) =>
-                line.ingredientId === '' ? (
-                  <Typography
-                    component="span"
-                    variant="meta"
-                    color="text.secondary"
-                  >
-                    {' '}
-                    ({t('recipes:family.freeTextNote')})
-                  </Typography>
-                ) : null
-              }
             >
               <CatalogSearch
                 emptyState={<BrowseByAisle />}
@@ -314,6 +304,7 @@ export function FamilyRecipeForm({
                     ingredientId: ingredient.id,
                     name: ingredient.name,
                     unit: ingredient.defaultUnit,
+                    family: ingredient.owner === 'family',
                   });
                   setSearchKey((value) => value + 1);
                 }}

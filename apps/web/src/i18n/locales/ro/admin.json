@@ -183,7 +183,7 @@
     "lines": {
       "title": "Linii de ingredient",
       "hint": "Lasă cantitatea goală pentru o linie precum „sare, după gust”.",
-      "empty": "Nicio linie de ingredient încă.",
+      "empty": "Niciun ingredient încă. Caută în Catalog mai jos sau scrie un nume.",
       "add": "Adaugă un Ingredient",
       "quantity": "Cantitate pentru {{name}}",
       "unit": "Unitate pentru {{name}}",
@@ -192,7 +192,11 @@
       "remove": "Elimină {{name}}",
       "moveUp": "Mută {{name}} mai sus",
       "moveDown": "Mută {{name}} mai jos",
-      "unknown": "Ingredient necunoscut"
+      "unknown": "Ingredient necunoscut",
+      "more": "Mai mult pentru {{name}}",
+      "optionalSub": "opțional",
+      "optionalSwitch": "Opțional",
+      "familyPill": "Familie"
     },
     "steps": {
       "title": "Pași",
