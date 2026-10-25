@@ -230,6 +230,17 @@ export const ownerOf = (row: Pick<RecipeRow, 'familyId'>): RecipeOwner =>
 export const visibleTo = (familyId: string) =>
   or(isNull(recipes.familyId), eq(recipes.familyId, familyId));
 
+/** `visibleTo`, narrowed to the Family's own or the Catalog's Recipes when a scope is given. */
+export const inScope = (
+  familyId: string,
+  scope: 'family' | 'catalog' | undefined,
+) =>
+  scope === 'family'
+    ? eq(recipes.familyId, familyId)
+    : scope === 'catalog'
+      ? isNull(recipes.familyId)
+      : visibleTo(familyId);
+
 /** The Recipe row when it is a Catalog Recipe or owned by `familyId`, else undefined. */
 export async function findVisibleRecipe(
   executor: Executor,

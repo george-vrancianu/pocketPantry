@@ -17,7 +17,7 @@ import {
   loadAllergyWarnings,
   loadViewerAllergyContext,
 } from './recipe-allergens';
-import { ownerOf, recipeTitles, visibleTo } from './recipe-view';
+import { inScope, ownerOf, recipeTitles, visibleTo } from './recipe-view';
 import type {
   CookTonightCard,
   CookTonightQuery,
@@ -45,7 +45,7 @@ export class CookTonightService {
     const rows = await this.database
       .select()
       .from(recipes)
-      .where(and(visibleTo(familyId), isNull(recipes.archivedAt)));
+      .where(and(inScope(familyId, query.scope), isNull(recipes.archivedAt)));
     const matches = await this.matching.matchRecipes(
       familyId,
       rows.map((r) => r.id),

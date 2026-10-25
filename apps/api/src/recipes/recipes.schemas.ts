@@ -269,8 +269,17 @@ const showHiddenQuery = z
   .transform((v) => v === 'true')
   .optional();
 
+/** Whose Recipes a Member read lists: the Family's own or the Catalog's. Absent means both. */
+export const recipeScopeQuery = z.enum(['family', 'catalog']).optional();
+export type RecipeScope = 'family' | 'catalog';
+
 /** Member browsing: no search or filter lists Base Recipes only. */
 export const browseQuery = z.object({
+  /**
+   * `family`: the Family's live Recipes, Variants included. `catalog`: Catalog Bases, or Catalog
+   * Variants while searching or filtering, counting Catalog Variants only. Absent: both mixed.
+   */
+  scope: recipeScopeQuery,
   search: z.string().trim().max(100).optional(),
   cuisineId: id.optional(),
   methodId: id.optional(),
@@ -618,6 +627,8 @@ export type FamilyRecipeDraft = {
 };
 /** `today` is the Member's local date; it defaults to the server's UTC date. */
 export const cookTonightQuery = z.object({
+  /** Only the Family's own Recipes (`family`) or only Catalog ones (`catalog`); absent is both. */
+  scope: recipeScopeQuery,
   today: z.iso.date().optional(),
   /** The "show hidden" override for "Hide Recipes with my Allergies" (#359). */
   showHidden: showHiddenQuery,
