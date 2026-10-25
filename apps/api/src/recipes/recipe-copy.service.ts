@@ -28,7 +28,9 @@ import { resolveRecipe } from './recipe-view';
  *
  * Errors: 404 `recipes.not_found` (unknown, or another Family's Recipe),
  * 409 `recipes.copy_family_recipe` (the source is a Family Recipe),
- * 409 `recipes.copy_archived` (the Catalog Recipe is archived).
+ * 409 `recipes.copy_archived` (the Catalog Recipe is archived),
+ * 409 `recipes.parent_archived` (a Variant whose Catalog Base is archived).
+ * `created` is false when the Family already had a live copy (returned as is).
  */
 @Injectable()
 export class RecipeCopyService {
@@ -41,11 +43,11 @@ export class RecipeCopyService {
     memberId: string,
     sourceId: string,
     locale: CatalogLocale,
-  ): Promise<{ id: string }> {
+  ): Promise<{ id: string; created: boolean }> {
     const familyId = await this.settings.familyIdOf(memberId);
     const source = await this.readSource(this.database, sourceId, familyId);
     const live = await this.liveCopy(this.database, familyId, sourceId);
-    if (live) return { id: live };
+    if (live) return { id: live, created: false };
 
     const resolved = await resolveRecipe(
       this.database,
@@ -58,12 +60,12 @@ export class RecipeCopyService {
       .from(recipeHiddenTips)
       .where(eq(recipeHiddenTips.recipeId, sourceId));
 
-    const id = await this.database.transaction(async (tx) => {
+    return this.database.transaction(async (tx) => {
       await lockFamilyRow(tx, familyId);
       // Re-read under the lock: a concurrent add finished first, or the source was archived.
       await this.readSource(tx, sourceId, familyId, true);
       const existing = await this.liveCopy(tx, familyId, sourceId);
-      if (existing) return existing;
+      if (existing) return { id: existing, created: false };
 
       const copyId = randomUUID();
       await tx.insert(recipes).values({
@@ -149,9 +151,8 @@ export class RecipeCopyService {
           })),
         },
       );
-      return copyId;
+      return { id: copyId, created: true };
     });
-    return { id };
   }
 
   private async readSource(
@@ -161,7 +162,7 @@ export class RecipeCopyService {
     lock = false,
   ) {
     const query = executor.select().from(recipes).where(eq(recipes.id, id));
-    const [row] = await (lock ? query.for('key share') : query);
+    const [row] = await (lock ? query.for('share') : query);
     // Another Family's Recipe answers like an unknown id.
     if (!row || (row.familyId !== null && row.familyId !== familyId)) {
       throw recipeNotFound();
@@ -170,6 +171,16 @@ export class RecipeCopyService {
       throw new ApiException(409, 'recipes.copy_family_recipe');
     }
     if (row.archivedAt) throw new ApiException(409, 'recipes.copy_archived');
+    if (row.parentId) {
+      const baseQuery = executor
+        .select({ archivedAt: recipes.archivedAt })
+        .from(recipes)
+        .where(eq(recipes.id, row.parentId));
+      const [base] = await (lock ? baseQuery.for('share') : baseQuery);
+      if (base?.archivedAt) {
+        throw new ApiException(409, 'recipes.parent_archived');
+      }
+    }
     return row;
   }
 

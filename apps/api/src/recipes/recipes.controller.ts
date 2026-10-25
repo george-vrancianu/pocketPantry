@@ -215,7 +215,7 @@ export class RecipesController {
   async copy(
     @CurrentUser() member: CurrentUserValue,
     @Id() { id }: { id: string },
-  ): Promise<{ id: string }> {
+  ): Promise<{ id: string; created: boolean }> {
     const locale = await this.languages.catalogLanguageOf(member.id);
     return this.copyService.copy(member.id, id, locale);
   }

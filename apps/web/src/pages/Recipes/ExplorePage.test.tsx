@@ -45,7 +45,9 @@ type Options = {
   copy?: () => Response;
 };
 
-function setup({ copy = () => Response.json({ id: 'copy-1' }) }: Options = {}) {
+function setup({
+  copy = () => Response.json({ id: 'copy-1', created: true }),
+}: Options = {}) {
   // What the server says about Soup: its copy, once added, until it is archived.
   let copyId: string | null = null;
   const { fetchMock, calls } = stubApi({
@@ -147,6 +149,26 @@ describe('ExplorePage add to Family', () => {
       await vi.advanceTimersByTimeAsync(100);
     });
     expect(await addButton()).toBeVisible();
+  });
+
+  it('says so, without Undo, when the Family already had the copy', async () => {
+    const calls = setup({
+      copy: () => Response.json({ id: 'copy-1', created: false }),
+    });
+    await userEvent
+      .setup({ advanceTimers: vi.advanceTimersByTime })
+      .click(await addButton());
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Soup is already in your Recipes',
+    );
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+    expect(
+      await screen.findByRole('link', { name: /is in your Recipes/ }),
+    ).toBeVisible();
+    expect(
+      calls.some((c) => c.key === 'POST /api/recipes/copy-1/archive'),
+    ).toBe(false);
   });
 
   it('rolls back a failed add and says so', async () => {

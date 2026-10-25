@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@pocket-pantry/ui';
 import { apiRequest } from './api';
-import { recipesQueryKey } from './recipes';
+import { recipeChangeQueryKeys } from './queryKeys';
 
 /** What a Catalog Recipe's add button needs to know: add it, or open the Family's copy. */
 export type AddState =
@@ -17,11 +17,6 @@ export type AddableRecipe = {
   title: string;
   familyCopyId: string | null;
 };
-
-type Override =
-  | { status: 'adding' }
-  | { status: 'added'; copyId: string }
-  | { status: 'none' };
 
 /**
  * Add to Family from any Catalog Recipe row (ADR 0029): copies it with
@@ -37,9 +32,11 @@ export function useAddToFamily() {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [overrides, setOverrides] = useState<Record<string, Override>>({});
+  const [overrides, setAddStates] = useState<Record<string, AddState>>({});
   // The copy request of each source in flight, so Undo can wait for the copy id.
-  const pending = useRef(new Map<string, Promise<string>>());
+  const pending = useRef(
+    new Map<string, Promise<{ id: string; created: boolean }>>(),
+  );
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -48,9 +45,9 @@ export function useAddToFamily() {
     };
   }, []);
 
-  const set = useCallback((id: string, value: Override | null) => {
+  const set = useCallback((id: string, value: AddState | null) => {
     if (!mounted.current) return;
-    setOverrides((prev) => {
+    setAddStates((prev) => {
       const next = { ...prev };
       if (value) next[id] = value;
       else delete next[id];
@@ -61,7 +58,11 @@ export function useAddToFamily() {
   // Once the refetch has landed the server's answer is the truth again.
   const settle = useCallback(
     async (id: string) => {
-      await queryClient.invalidateQueries({ queryKey: recipesQueryKey });
+      await Promise.all(
+        recipeChangeQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
       set(id, null);
     },
     [queryClient, set],
@@ -74,10 +75,7 @@ export function useAddToFamily() {
         await apiRequest(`/recipes/${copyId}/archive`, { method: 'POST' });
       } catch {
         set(recipe.id, { status: 'added', copyId });
-        toast.show(
-          t('recipes:explore.undoFailed', { title: recipe.title }),
-          {},
-        );
+        toast.show(t('recipes:explore.undoFailed', { title: recipe.title }));
       }
       await settle(recipe.id);
     },
@@ -88,27 +86,38 @@ export function useAddToFamily() {
     async (recipe: AddableRecipe) => {
       if (pending.current.has(recipe.id)) return;
       set(recipe.id, { status: 'adding' });
-      const request = apiRequest<{ id: string }>(`/recipes/${recipe.id}/copy`, {
-        method: 'POST',
-      }).then((body) => body.id);
+      const request = apiRequest<{ id: string; created: boolean }>(
+        `/recipes/${recipe.id}/copy`,
+        { method: 'POST' },
+      );
       pending.current.set(recipe.id, request);
       // Optimistic: the toast is up before the copy is, and Undo waits for the copy's id.
+      // Undo only archives a copy this tap made: if the Family already had one, the toast is replaced.
       toast.show(t('recipes:explore.added', { title: recipe.title }), {
         polite: true,
         action: {
           label: t('common:row.undo'),
           onClick: () =>
             void request.then(
-              (copyId) => undo(recipe, copyId),
+              (body) => (body.created ? undo(recipe, body.id) : undefined),
               () => undefined,
             ),
         },
       });
       try {
-        set(recipe.id, { status: 'added', copyId: await request });
+        const body = await request;
+        set(recipe.id, { status: 'added', copyId: body.id });
+        if (!body.created) {
+          toast.show(
+            t('recipes:explore.alreadyAdded', { title: recipe.title }),
+            {
+              polite: true,
+            },
+          );
+        }
       } catch {
         set(recipe.id, { status: 'none' });
-        toast.show(t('recipes:explore.addFailed', { title: recipe.title }), {});
+        toast.show(t('recipes:explore.addFailed', { title: recipe.title }));
       } finally {
         pending.current.delete(recipe.id);
       }

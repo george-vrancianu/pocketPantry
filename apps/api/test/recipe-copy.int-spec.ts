@@ -178,7 +178,12 @@ describe('Add to Family (integration)', () => {
 
   it('copies a Catalog Base into a Family Base with its content and no Source Link', async () => {
     const src = await makeBase();
-    const id = await copyId(ana, src.id);
+    const first = (await copy(ana, src.id).expect(200)).body as {
+      id: string;
+      created: boolean;
+    };
+    expect(first.created).toBe(true);
+    const id = first.id;
     expect(id).not.toBe(src.id);
 
     const made = await row(id);
@@ -327,7 +332,11 @@ describe('Add to Family (integration)', () => {
       copyId(ana, src.id),
     ]);
     expect(a).toBe(b);
-    expect(await copyId(ana, src.id)).toBe(a);
+    const again = (await copy(ana, src.id).expect(200)).body as {
+      id: string;
+      created: boolean;
+    };
+    expect(again).toEqual({ id: a, created: false });
     const live = await database
       .select()
       .from(recipes)
@@ -366,6 +375,23 @@ describe('Add to Family (integration)', () => {
     expect(archived.body).toMatchObject({ code: 'recipes.copy_archived' });
 
     await copy(ana, newId()).expect(404);
+  });
+
+  it('refuses a Variant whose Catalog Base is archived', async () => {
+    const base = await makeBase(`Copy ${stamp}-oldbase`);
+    const variantId = newId();
+    await database.insert(recipes).values({
+      id: variantId,
+      parentId: base.id,
+      title: `Copy ${stamp}-orphan`,
+      servings: 2,
+    });
+    await database
+      .update(recipes)
+      .set({ archivedAt: new Date() })
+      .where(eq(recipes.id, base.id));
+    const res = await copy(ana, variantId).expect(409);
+    expect(res.body).toMatchObject({ code: 'recipes.parent_archived' });
   });
 
   it('puts familyCopyId on Catalog list items: the live copy, null after Undo or for another Family', async () => {

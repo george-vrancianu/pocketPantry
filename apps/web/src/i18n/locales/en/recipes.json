@@ -268,6 +268,7 @@
     "addFailed": "Couldn't add {{title}}. Try again.",
     "inFamily": "In your Recipes",
     "openCopy": "{{title}} is in your Recipes. Open it",
-    "undoFailed": "Couldn't undo adding {{title}}. Try again."
+    "undoFailed": "Couldn't undo adding {{title}}. Try again.",
+    "alreadyAdded": "{{title}} is already in your Recipes"
   }
 }
