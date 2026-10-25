@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
 import type { InitialEntry } from 'react-router-dom';
 import type { NewRecipeState } from './FamilyRecipePages';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   FamilyRecipeDraft,
   FamilyRecipeEdit,
@@ -1594,6 +1594,8 @@ describe('EditFamilyRecipePage Source Link', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Remove link' }),
     );
+    // Leaving with the removal unsaved asks first (#596).
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     await user.click(screen.getByRole('link', { name: 'Back' }));
     expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
     expect(putBody(calls)).toBeUndefined();
@@ -2964,6 +2966,7 @@ describe('Recipe editor Ingredient Lines (#589)', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Remove Egg' }));
     await screen.findByText('Removed Egg');
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     await user.click(screen.getByRole('link', { name: 'Back' }));
     expect(await screen.findByText('Detail of the recipe')).toBeVisible();
     await waitFor(() => expect(screen.queryByText('Removed Egg')).toBeNull());
@@ -3911,5 +3914,91 @@ describe('Guidance card (#594)', () => {
       '[aria-hidden]',
     ) as HTMLElement;
     expect(getComputedStyle(chevron).transform).toContain('180');
+  });
+});
+
+describe('Edit leave guard (#596)', () => {
+  let confirm: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  });
+  afterEach(() => {
+    confirm.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  const edit = () =>
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () =>
+        Response.json({
+          ...saved,
+          tips: [{ id: 't2', stepId: 's1', text: 'Low heat' }],
+        }),
+      'PUT /api/recipes/g': () => Response.json(saved),
+      'PATCH /api/recipes/g/tips/t2': () => Response.json({}),
+    });
+  const goBack = (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(screen.getByRole('link', { name: /Back/ }));
+  const retitle = async () =>
+    fireEvent.change(await screen.findByLabelText(/^Title/), {
+      target: { value: 'Better omelette' },
+    });
+
+  it('does not ask when nothing changed', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await screen.findByLabelText(/^Title/);
+    await goBack(user);
+    expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it('asks after a title change: cancel stays, confirm leaves', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await retitle();
+    await goBack(user);
+    expect(confirm).toHaveBeenCalledWith('Discard your changes?');
+    expect(screen.queryByText('Detail of the recipe')).toBeNull();
+    confirm.mockReturnValue(true);
+    await goBack(user);
+    expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
+  });
+
+  it('asks after a Guidance change', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await openTab(user, 'Details');
+    await openGuidance(user);
+    fireEvent.change(await screen.findByLabelText('Nutrition Note'), {
+      target: { value: 'Lots of protein' },
+    });
+    await goBack(user);
+    expect(confirm).toHaveBeenCalled();
+  });
+
+  it('does not ask after a successful Save', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await retitle();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    await goBack(user);
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it('does not ask after a Tip change only', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = edit();
+    await openTab(user, 'Steps');
+    const input = await screen.findByLabelText('Tip 1 of Step 1');
+    await user.clear(input);
+    await user.type(input, 'Medium heat');
+    await user.tab();
+    await vi.waitFor(() =>
+      expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(true),
+    );
+    await goBack(user);
+    expect(confirm).not.toHaveBeenCalled();
   });
 });
