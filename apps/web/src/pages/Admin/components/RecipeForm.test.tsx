@@ -489,6 +489,7 @@ describe('RecipeForm Steps (#591)', () => {
     const error = screen.getByText(/The timer must be a positive number/);
     expect(timer).toHaveAttribute('aria-describedby', error.id);
     await user.clear(timer);
+    await user.type(timer, '  ');
     await user.tab();
     expect(screen.queryByLabelText('Timer for Step 1 (minutes)')).toBeNull();
     expect(

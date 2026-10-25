@@ -1,12 +1,13 @@
 import {
   Alert,
   Box,
+  Card,
+  insetFocusRing,
   Button,
   Chip,
   ClockIcon,
   CloseIcon,
   IconButton,
-  radius,
   Stack,
   TextField,
   tokens,
@@ -126,6 +127,7 @@ export function RecipeStepsSection({
         bgcolor: 'transparent',
         font: 'inherit',
         cursor: 'pointer',
+        ...insetFocusRing,
         width: '100%',
         minHeight: 48,
         justifyContent: 'flex-start',
@@ -155,11 +157,10 @@ export function RecipeStepsSection({
           {t('admin:recipe.steps.empty')}
         </Typography>
       ) : null}
-      <Box
+      <Card
+        variant="list"
         sx={{
-          border: `1px solid ${tokens.color.divider}`,
-          borderRadius: radius.card,
-          bgcolor: tokens.color.surface,
+          p: 0,
           overflow: 'hidden',
           '& > * + *, & > ol > li + li': {
             borderTop: `1px solid ${tokens.color.divider}`,
@@ -284,8 +285,9 @@ export function RecipeStepsSection({
                               });
                             }}
                             onBlur={() => {
-                              if (step.timer.trim() === '')
-                                closeTimer(step.key);
+                              if (step.timer.trim() !== '') return;
+                              closeTimer(step.key);
+                              changeStep(step.key, { timer: '' });
                             }}
                             error={timerFlagged}
                             sx={{ width: 110 }}
@@ -397,7 +399,7 @@ export function RecipeStepsSection({
         {steps.length > 0
           ? addRow(t('admin:recipe.steps.add'), steps.length)
           : null}
-      </Box>
+      </Card>
     </Stack>
   );
 }
