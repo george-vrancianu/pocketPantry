@@ -152,6 +152,7 @@ describe('Recipe Drafts autosave on New Recipe', () => {
       'POST /api/recipe-drafts': () =>
         Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }),
     });
+    await user.click(await screen.findByRole('tab', { name: /^Ingredients/ }));
     await user.type(
       await screen.findByRole('combobox', { name: 'Search ingredients' }),
       'Dragon fruit',
@@ -176,6 +177,7 @@ describe('Recipe Drafts autosave on New Recipe', () => {
       'POST /api/recipe-drafts': () =>
         Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }),
     });
+    await user.click(await screen.findByRole('tab', { name: /^Steps/ }));
     await user.click(await screen.findByRole('button', { name: 'Add a Step' }));
     await user.type(screen.getByLabelText('Step 1'), 'Whi');
     await elapse(1600);
@@ -357,19 +359,21 @@ describe('Recipe Drafts autosave on New Recipe', () => {
       [`PUT /api/recipe-drafts/${DRAFT_ID}`]: () =>
         Response.json({ id: DRAFT_ID, version: 8 }),
     });
-    const title = await screen.findByLabelText(/^Title/);
-    expect(title).toHaveValue('Gran st');
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('Gran st');
     expect(screen.getByLabelText(/^Servings/)).toHaveValue('4x');
+    await user.click(screen.getByRole('tab', { name: /^Ingredients/ }));
     expect(screen.getByLabelText('Quantity of Flour')).toHaveValue('1/2 ab');
+    // A line whose Ingredient is gone is an Unmatched name.
+    expect(screen.getByLabelText('Quantity of Dragon fruit')).toBeVisible();
+    expect(screen.getByText(/Not in the Catalog/)).toBeVisible();
+    await user.click(screen.getByRole('tab', { name: /^Steps/ }));
     expect(screen.getByLabelText('Step 1')).toHaveValue('Whisk the');
     // Resuming alone changes nothing on the server.
     await elapse(5000);
     expect(sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`)).toHaveLength(0);
-    // A line whose Ingredient is gone is an Unmatched name.
-    expect(screen.getByLabelText('Quantity of Dragon fruit')).toBeVisible();
-    expect(screen.getByText(/Not in the Catalog/)).toBeVisible();
 
-    await user.type(title, 'ew');
+    await user.click(screen.getByRole('tab', { name: /^Details/ }));
+    await user.type(screen.getByLabelText(/^Title/), 'ew');
     await elapse(1600);
     const put = sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`);
     expect(put).toHaveLength(1);
@@ -392,7 +396,7 @@ describe('Recipe Drafts autosave on New Recipe', () => {
     });
     await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
     await elapse(1600);
-    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Detail of the recipe')).toBeVisible();
     expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
       title: 'Gran stew',
@@ -475,7 +479,7 @@ describe('Recipe Drafts autosave on New Recipe', () => {
       'POST /api/recipes': () => Response.json(savedRecipe, { status: 201 }),
     });
     await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
-    const save = screen.getByRole('button', { name: /^Save Recipe/ });
+    const save = screen.getByRole('button', { name: 'Save' });
     await user.click(save);
     // The button is disabled for the whole save; a second tap does nothing.
     fireEvent.click(save);
@@ -503,7 +507,7 @@ describe('Recipe Drafts autosave on New Recipe', () => {
     const title = await screen.findByLabelText(/^Title/);
     await user.type(title, 'Gran');
     await elapse(1600);
-    await user.click(screen.getByRole('button', { name: /^Save Recipe/ }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await elapse(10);
     await user.type(title, ' stew');
     await elapse(5000);
