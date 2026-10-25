@@ -8,7 +8,12 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 import { RecipeDraftConflictBanner } from '../../components/RecipeDraftConflictBanner';
 import { RecipeDraftStatus } from '../../components/RecipeDraftStatus';
 import { useLeaveGuard } from '../../lib/useLeaveGuard';
@@ -17,7 +22,8 @@ import {
   formOfContent,
   type RecipeDraftForm,
 } from '../../lib/recipeDraftContent';
-import { useRecipeDraftRoute } from './useRecipeDraftRoute';
+import { DRAFT_PARAM, useRecipeDraftRoute } from './useRecipeDraftRoute';
+import { RecipeDraftContinue } from './RecipeDraftContinue';
 import { plateMatchInput, useResumedPlateBases } from './useResumedPlateBases';
 import { RecipeDraftLimitNotice } from './components/RecipeDraftLimitNotice';
 import type { DiscardedDraftState } from './useRecipeDraftDiscard';
@@ -98,19 +104,28 @@ const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
 /** "New Recipe": the Family Recipe form, blank or filled from a supplied draft or a resumed Recipe Draft; saved as a Base Recipe, or a Variant of the picked base. */
 export function NewRecipePage() {
   const location = useLocation();
-  const { t } = useTranslation(['common', 'errors']);
+  const { t } = useTranslation(['common', 'errors', 'recipes']);
   const route = useRecipeDraftRoute();
   if (route.error) return <Alert>{translateApiError(t, route.error)}</Alert>;
   if (route.loading) return <Spinner label={t('common:loading')} />;
+  // A resumed Recipe Draft holds everything; the state a reload kept would only repeat it.
+  const supplied = route.resumed ? null : suppliedOf(location.state);
+  const resuming = new URLSearchParams(location.search).has(DRAFT_PARAM);
   return (
-    <NewRecipeContent
+    <RecipeDraftContinue
       key={route.formKey}
-      // A resumed Recipe Draft holds everything; the state a reload kept would only repeat it.
-      supplied={route.resumed ? null : suppliedOf(location.state)}
-      resumed={route.resumed}
-      onDraftId={route.onDraftId}
-      onLoadLatest={route.adopt}
-    />
+      active={supplied === null && !resuming}
+      kind="new_recipe"
+      baseRecipeId={null}
+      title={t('recipes:family.newRecipeHeading')}
+    >
+      <NewRecipeContent
+        supplied={supplied}
+        resumed={route.resumed}
+        onDraftId={route.onDraftId}
+        onLoadLatest={route.adopt}
+      />
+    </RecipeDraftContinue>
   );
 }
 
@@ -324,6 +339,9 @@ function NewRecipeContent({
             }}
           />
         ) : null}
+        {resumed?.kind === 'variant' && !resumed.baseAvailable ? (
+          <Alert severity="info">{t('recipes:drafts.baseGone')}</Alert>
+        ) : null}
         <RecipeDraftLimitNotice error={autosave.error} />
         {autosave.status === 'conflict' && draftId ? (
           <RecipeDraftConflictBanner
@@ -397,51 +415,230 @@ function NewRecipeContent({
   );
 }
 
-/** "Make a variant": the editor opens on a copy of the Recipe being viewed. */
+/** "Make a variant": the editor opens on a copy of the Recipe being viewed, or on a resumed Recipe Draft of this base. */
 export function NewVariantPage() {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const { id = '' } = useParams();
+  const location = useLocation();
+  const route = useRecipeDraftRoute();
+  const resuming = new URLSearchParams(location.search).has(DRAFT_PARAM);
+  const title = t('recipes:family.newHeading');
+  if (route.error || route.loading) {
+    return (
+      <>
+        <AppScreenHeader title={title} />
+        {route.error ? (
+          <Alert>{translateApiError(t, route.error)}</Alert>
+        ) : (
+          <Spinner label={t('common:loading')} />
+        )}
+      </>
+    );
+  }
+  // The base is archived (or not visible): the Recipe Draft carries on as a New Recipe (ADR 0028).
+  if (
+    route.resumed &&
+    (!route.resumed.baseAvailable || !route.resumed.baseRecipeId)
+  ) {
+    return (
+      <Navigate
+        to={`/recipes/new?${DRAFT_PARAM}=${route.resumed.id}`}
+        replace
+      />
+    );
+  }
+  // The Recipe Draft belongs to another base: open it under that base, so Save makes a Variant of the right one.
+  if (route.resumed?.baseRecipeId && route.resumed.baseRecipeId !== id) {
+    return (
+      <Navigate
+        to={`/recipes/${route.resumed.baseRecipeId}/variant/new?${DRAFT_PARAM}=${route.resumed.id}`}
+        replace
+      />
+    );
+  }
+  return (
+    <RecipeDraftContinue
+      key={route.formKey}
+      active={!resuming}
+      kind="variant"
+      baseRecipeId={id}
+      title={title}
+    >
+      <NewVariantContent
+        baseId={id}
+        resumed={route.resumed}
+        onDraftId={route.onDraftId}
+        onLoadLatest={route.adopt}
+      />
+    </RecipeDraftContinue>
+  );
+}
+
+function NewVariantContent({
+  baseId: id,
+  resumed,
+  onDraftId,
+  onLoadLatest,
+}: {
+  baseId: string;
+  resumed?: RecipeDraftView;
+  onDraftId: (id: string) => void;
+  onLoadLatest: (latest: RecipeDraftView) => void;
+}) {
+  const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
   const draft = useVariantDraft(id);
-  const create = useCreateFamilyRecipe();
-  const momentOptions = useMomentOptions();
   // The draft carries link ids only; the source's own view names them.
   const source = useRecipe(id);
   const ready = draft.data !== undefined && !source.isPending;
 
   return (
     <>
-      <AppScreenHeader title={t('recipes:family.newHeading')} />
-      <Stack spacing={2.5}>
-        {draft.error ? (
+      {draft.error ? (
+        <>
+          <AppScreenHeader title={t('recipes:family.newHeading')} />
           <Alert>{translateApiError(t, draft.error)}</Alert>
-        ) : null}
-        {draft.isPending || (draft.data && source.isPending) ? (
+        </>
+      ) : null}
+      {!ready && !draft.error ? (
+        <>
+          <AppScreenHeader title={t('recipes:family.newHeading')} />
           <Spinner label={t('common:loading')} />
-        ) : null}
-        {draft.data && ready ? (
-          <FamilyRecipeForm
-            heading={t('recipes:family.newHeading')}
-            description={`${t('recipes:family.copyHint')} ${t('recipes:family.tipsHint')}`}
-            initial={draftOfVariantDraft(draft.data)}
-            saveLabel={t('recipes:family.create')}
-            saving={create.isPending}
-            error={create.error}
-            guidance={{
-              initial: namedGuidance(draft.data, source.data),
-              momentOptions,
-            }}
-            onSave={(document, guidance) =>
-              create.mutate(
-                {
-                  parentId: draft.data.parentId,
-                  document: { ...document, guidance },
-                },
-                { onSuccess: (saved) => navigate(`/recipes/${saved.id}`) },
-              )
-            }
-            onCancel={() => navigate(`/recipes/${id}`)}
+        </>
+      ) : null}
+      {draft.data && ready ? (
+        <VariantForm
+          baseId={id}
+          prefill={draft.data}
+          source={source.data}
+          resumed={resumed}
+          onDraftId={onDraftId}
+          onLoadLatest={onLoadLatest}
+          onCancel={() => navigate(`/recipes/${id}`)}
+        />
+      ) : null}
+    </>
+  );
+}
+
+/** The Variant form once the base's copy is here; autosaves like New Recipe, with the base stored on the Recipe Draft. */
+function VariantForm({
+  baseId,
+  prefill,
+  source,
+  resumed,
+  onDraftId,
+  onLoadLatest,
+  onCancel,
+}: {
+  baseId: string;
+  prefill: FamilyRecipeDraft;
+  source: RecipeDetail | undefined;
+  resumed?: RecipeDraftView;
+  onDraftId: (id: string) => void;
+  onLoadLatest: (latest: RecipeDraftView) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation(['recipes', 'common', 'errors']);
+  const navigate = useNavigate();
+  const create = useCreateFamilyRecipe();
+  const momentOptions = useMomentOptions();
+  const [finishing, setFinishing] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+  const [resumedForm] = useState(() =>
+    resumed ? formOfContent(resumed.content) : null,
+  );
+  // The untouched form is the copy of the base: no Recipe Draft until the Member changes it.
+  const [copy] = useState(() => ({
+    draft: draftOfVariantDraft(prefill),
+    guidance: namedGuidance(prefill, source),
+  }));
+  const [initial] = useState(() => ({
+    draft: resumedForm?.draft ?? copy.draft,
+    guidance: resumedForm?.guidance ?? copy.guidance,
+  }));
+  const [formState, setFormState] = useState<RecipeDraftForm>(initial);
+  const autosave = useRecipeDraftAutosave({
+    kind: 'variant',
+    baseRecipeId: baseId,
+    content: contentOfForm(formState),
+    blank: contentOfForm(copy),
+    resumed: resumed ? { id: resumed.id, version: resumed.version } : undefined,
+  });
+  const { draftId } = autosave;
+  useLeaveGuard(autosave.hasUnsaved, t('recipes:recipeDraft.leaveConfirm'));
+  useEffect(() => {
+    if (draftId && !finishing) onDraftId(draftId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, finishing]);
+
+  return (
+    <>
+      <AppScreenHeader
+        title={t('recipes:family.newHeading')}
+        trailing={<RecipeDraftStatus status={autosave.status} />}
+      />
+      <Stack spacing={2.5}>
+        <RecipeDraftLimitNotice error={autosave.error} />
+        {autosave.status === 'conflict' && draftId ? (
+          <RecipeDraftConflictBanner
+            draftId={draftId}
+            onLoaded={onLoadLatest}
           />
+        ) : null}
+        <FamilyRecipeForm
+          heading={t('recipes:family.newHeading')}
+          description={`${t('recipes:family.copyHint')} ${t('recipes:family.tipsHint')}`}
+          initial={initial.draft}
+          saveLabel={t('recipes:family.create')}
+          saving={create.isPending || finishing || discarding}
+          error={create.error}
+          guidance={{ initial: initial.guidance, momentOptions }}
+          onChange={setFormState}
+          onSave={async (document, guidance) => {
+            if (finishing) return;
+            setFinishing(true);
+            const recipeDraftId = await autosave.flush();
+            autosave.pause();
+            create.mutate(
+              {
+                parentId: prefill.parentId,
+                document: {
+                  ...document,
+                  guidance,
+                  ...(recipeDraftId ? { recipeDraftId } : {}),
+                },
+              },
+              {
+                onSuccess: (saved) => {
+                  autosave.stop();
+                  navigate(`/recipes/${saved.id}`);
+                },
+                onError: () => {
+                  setFinishing(false);
+                  autosave.resume();
+                },
+              },
+            );
+          }}
+          onCancel={onCancel}
+        />
+        {draftId ? (
+          <Button
+            variant="secondary"
+            disabled={discarding || finishing}
+            onClick={async () => {
+              setDiscarding(true);
+              const id = await autosave.flush();
+              autosave.stop();
+              const state: DiscardedDraftState | null = id
+                ? { discardRecipeDraft: { id } }
+                : null;
+              navigate('/recipes', { replace: true, state });
+            }}
+          >
+            {t('recipes:drafts.discard')}
+          </Button>
         ) : null}
       </Stack>
     </>

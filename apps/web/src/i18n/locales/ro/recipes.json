@@ -263,6 +263,14 @@
     "removeQuestion": "Elimini {{name}}?",
     "context": "din ciornele tale de rețete",
     "removeAction": "Elimină {{name}}",
-    "variantOf": "Variantă a rețetei {{base}}"
+    "variantOf": "Variantă a rețetei {{base}}",
+    "continueTitle": "Continui ciorna?",
+    "continueHint_one": "Ai o ciornă de rețetă nefinalizată. Continuă-o sau începe una nouă.",
+    "continueHint_few": "Ai {{count}} ciorne de rețete nefinalizate. Continuă una sau începe una nouă.",
+    "continueHint_other": "Ai {{count}} de ciorne de rețete nefinalizate. Continuă una sau începe una nouă.",
+    "continue": "Continuă",
+    "continueNamed": "Continuă {{name}}",
+    "startNew": "Începe una nouă",
+    "baseGone": "Rețeta de bază a cărei variantă era această ciornă de rețetă nu mai există. Se deschide ca rețetă nouă și va fi salvată ca rețetă de bază."
   }
 }

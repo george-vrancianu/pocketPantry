@@ -248,6 +248,13 @@
     "removeQuestion": "Discard {{name}}?",
     "context": "from your Recipe Drafts",
     "removeAction": "Discard {{name}}",
-    "variantOf": "Variant of {{base}}"
+    "variantOf": "Variant of {{base}}",
+    "continueTitle": "Continue your draft?",
+    "continueHint_one": "You have an unfinished Recipe Draft. Continue it, or start a new one.",
+    "continueHint_other": "You have {{count}} unfinished Recipe Drafts. Continue one, or start a new one.",
+    "continue": "Continue",
+    "continueNamed": "Continue {{name}}",
+    "startNew": "Start new",
+    "baseGone": "The Base Recipe this Recipe Draft was a Variant of is gone. It opens as a New Recipe and will be saved as a Base Recipe."
   }
 }
