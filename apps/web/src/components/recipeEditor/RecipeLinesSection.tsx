@@ -74,6 +74,20 @@ export function RecipeLinesSection({
   // The toast outlives this page: take it down when we go.
   const undoToast = useRef<ToastHandle | null>(null);
   useEffect(() => () => undoToast.current?.close(), []);
+  // Focus moves a tick after the add UI closes; a pending move is dropped on unmount.
+  const focusTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(focusTimer.current), []);
+  const focusLater = (
+    target: () => HTMLElement | undefined,
+    onlyIfLost: boolean,
+  ) => {
+    clearTimeout(focusTimer.current);
+    focusTimer.current = setTimeout(() => {
+      const active = document.activeElement;
+      if (onlyIfLost && active && active !== document.body) return;
+      target()?.focus();
+    }, 0);
+  };
 
   // The host names the line it just appended; that line's quantity takes focus.
   const qtyInputs = useRef(new Map<number, HTMLInputElement>());
@@ -168,7 +182,7 @@ export function RecipeLinesSection({
                       sx={{
                         ...row.sx,
                         // Keep the open popover above the rows after this one.
-                        zIndex: addingKey === line.key ? 2 : row.sx.zIndex,
+                        zIndex: addingKey === line.key ? 1 : row.sx.zIndex,
                         p: 1,
                         borderTop: index === 0 ? 0 : 1,
                         borderColor: 'divider',
@@ -345,20 +359,16 @@ export function RecipeLinesSection({
                                   setAddingKey(null);
                                   onMatched(line, ingredient);
                                   // The trigger unmounts with the Unmatched state: the quantity takes focus.
-                                  setTimeout(
-                                    () =>
-                                      qtyInputs.current.get(line.key)?.focus(),
-                                    0,
+                                  focusLater(
+                                    () => qtyInputs.current.get(line.key),
+                                    false,
                                   );
                                 }}
                                 onDismiss={() => {
                                   setAddingKey(null);
-                                  setTimeout(
-                                    () =>
-                                      addTriggers.current
-                                        .get(line.key)
-                                        ?.focus(),
-                                    0,
+                                  focusLater(
+                                    () => addTriggers.current.get(line.key),
+                                    true,
                                   );
                                 }}
                               />
