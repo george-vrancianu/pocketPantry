@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
+  openReady,
   resetVoiceEnvironment,
   stubVoiceFetch,
   talkButton,
@@ -154,7 +155,18 @@ describe('AppLayout Voice Note host', () => {
     },
   );
 
-  it('reserves room for the Spoken Language chip row above the Dock when the mic shows', async () => {
+  it.each(['/shopping', '/pantry', '/recipes'])(
+    'shows no Spoken Language chip above the Dock on %s',
+    async (route) => {
+      renderAt(route);
+      await talkButton();
+      expect(
+        screen.queryByRole('button', { name: /Spoken Language/ }),
+      ).toBeNull();
+    },
+  );
+
+  it('reserves room for the mic capsule above the Dock when the mic shows', async () => {
     renderAt('/pantry');
     await talkButton();
     const page = (
@@ -168,9 +180,10 @@ describe('AppLayout Voice Note host', () => {
       .map((rule) => rule.cssText)
       .filter((text) => text.includes(page))
       .join('\n');
-    // Chip row 36 above the chip's own spot: Dock 28 + 76 + 24 on phones, 28 + 84 + 24 from md.
-    expect(rules).toMatch(/padding-bottom: calc\(36px \+ calc\(128px \+ env\(/);
-    expect(rules).toMatch(/padding-bottom: calc\(36px \+ calc\(136px \+ env\(/);
+    // Just clear of the capsule: Dock 28 + 76 + 24 on phones, 28 + 84 + 24 from md; no chip row.
+    expect(rules).toMatch(/padding-bottom: calc\(128px \+ env\(/);
+    expect(rules).toMatch(/padding-bottom: calc\(136px \+ env\(/);
+    expect(rules).not.toMatch(/calc\(36px/);
   });
 
   it.each(['/scan', '/customise'])(
@@ -315,7 +328,7 @@ describe('AppLayout Voice Notes off the Shopping List and the Pantry', () => {
     await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
-    return screen.findByRole('dialog');
+    return openReady();
   }
 
   it.each([
@@ -464,7 +477,7 @@ describe('AppLayout Review for actions that need a list', () => {
     await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
-    return within(await screen.findByRole('dialog'));
+    return within(await openReady());
   }
   const pickerOf = (dialog: ReturnType<typeof within>, name: string) =>
     within(dialog.getByRole('group', { name: `List for ${name}` }));

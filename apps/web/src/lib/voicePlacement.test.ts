@@ -3,7 +3,7 @@ import { aboveDock, DOCK_HEIGHT } from '@pocket-pantry/ui';
 import {
   aboveMic,
   micBottom,
-  MIC_ROW,
+  micClearance,
   PILL_GAP,
   PILL_HEIGHT,
   PILL_OFFSET,
@@ -29,7 +29,9 @@ describe('voice placement', () => {
   it('hangs the notices above the capsule that overhangs the Dock', () => {
     expect(micBottom.xs).toBe(aboveDock(DOCK_HEIGHT.xs));
     expect(micBottom.md).toBe(aboveDock(DOCK_HEIGHT.md));
-    expect(aboveMic(0).xs).toContain(String(MIC_ROW));
+    // No row between the capsule and the notices, and none reserved on the page.
+    expect(aboveMic(0).xs).toBe(`calc(${micBottom.xs} + 0px)`);
+    expect(micClearance).toEqual(micBottom);
   });
 
   it('keeps the layers in order: scrim, then cards and pill', () => {
