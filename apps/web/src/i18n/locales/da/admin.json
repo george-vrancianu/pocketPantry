@@ -207,7 +207,15 @@
       "removeTip": "Fjern tip {{n}} til trin {{step}}",
       "removeTipShort": "Fjern",
       "removeWithTips": "Fjern trin og tips",
-      "keep": "Behold trin"
+      "keep": "Behold trin",
+      "addStart": "Tilføj et trin i starten",
+      "addFirst": "Tilføj det første trin",
+      "placeholder": "Hvad skal gøres i trin {{number}}",
+      "addTimer": "Timer",
+      "addTimerFor": "Tilføj en timer til trin {{number}}",
+      "clearTimer": "Fjern timeren fra trin {{number}}",
+      "minutes": "min",
+      "removed": "Trin {{number}} er fjernet"
     },
     "variant": {
       "title": "Lav en variant",

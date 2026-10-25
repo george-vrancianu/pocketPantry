@@ -210,7 +210,15 @@
       "removeTip": "Elimină Sfatul {{n}} al pasului {{step}}",
       "removeTipShort": "Elimină",
       "removeWithTips": "Elimină pasul și Sfaturile",
-      "keep": "Păstrează pasul"
+      "keep": "Păstrează pasul",
+      "addStart": "Adaugă un Pas la început",
+      "addFirst": "Adaugă primul Pas",
+      "placeholder": "Ce ai de făcut la pasul {{number}}",
+      "addTimer": "Cronometru",
+      "addTimerFor": "Adaugă un cronometru la pasul {{number}}",
+      "clearTimer": "Elimină cronometrul de la pasul {{number}}",
+      "minutes": "min",
+      "removed": "Pasul {{number}} a fost eliminat"
     },
     "variant": {
       "title": "Creează o variantă",

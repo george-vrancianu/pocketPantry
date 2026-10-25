@@ -207,7 +207,15 @@
       "removeTip": "Remove Tip {{n}} of Step {{step}}",
       "removeTipShort": "Remove",
       "removeWithTips": "Remove Step and Tips",
-      "keep": "Keep Step"
+      "keep": "Keep Step",
+      "addStart": "Add a Step at the start",
+      "addFirst": "Add the first Step",
+      "placeholder": "What to do in Step {{number}}",
+      "addTimer": "Timer",
+      "addTimerFor": "Add a timer to Step {{number}}",
+      "clearTimer": "Remove the timer from Step {{number}}",
+      "minutes": "min",
+      "removed": "Removed Step {{number}}"
     },
     "variant": {
       "title": "Make a Variant",

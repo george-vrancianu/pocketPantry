@@ -1,6 +1,23 @@
-import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  ClockIcon,
+  CloseIcon,
+  displayType,
+  IconButton,
+  PlusIcon,
+  Stack,
+  TextField,
+  tokens,
+  Typography,
+  useToast,
+  type ToastHandle,
+} from '@pocket-pantry/ui';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
 import {
   moved,
   newKey,
@@ -8,6 +25,9 @@ import {
   type StepDraft,
 } from '../../lib/recipeDraft';
 import { RowControls } from '../RowControls';
+
+/** Minutes a Timer starts at when the chip is tapped. */
+const DEFAULT_TIMER = '5';
 
 type Props = {
   steps: StepDraft[];
@@ -17,25 +37,84 @@ type Props = {
   onChange: (steps: StepDraft[]) => void;
 };
 
-/** The ordered Steps of a Recipe draft, with Move up/down, remove and add. */
+/** The ordered Steps of a Recipe draft: one block each, with a Timer chip, Move up/down, remove, and add at both ends. */
 export function RecipeStepsSection({
   steps,
   problems,
   tipCount,
   onChange,
 }: Props) {
-  const { t } = useTranslation(['admin']);
+  const { t } = useTranslation(['admin', 'common']);
+  const toast = useToast();
   /** Steps whose blank text should be flagged: edited or blurred, not just added. */
   const [touchedSteps, setTouchedSteps] = useState<Set<number>>(new Set());
+  /** Steps whose Timer field the user opened or edited, so it stays up while blank. */
+  const [openTimers, setOpenTimers] = useState<Set<number>>(new Set());
   /** A saved Step with Tips waiting for the user to confirm its removal. */
   const [removing, setRemoving] = useState<number | null>(null);
-  const touch = (key: number) =>
-    setTouchedSteps((set) => new Set(set).add(key));
+  /** The Step just added, whose text takes focus once it is rendered. */
+  const focusKey = useRef<number | null>(null);
+  // Undo builds on the newest Steps, not those the toast was shown with.
+  const latest = useRef({ steps, onChange });
+  useLayoutEffect(() => {
+    latest.current = { steps, onChange };
+  });
+  const undoToast = useRef<ToastHandle | null>(null);
+  useEffect(() => () => undoToast.current?.close(), []);
+
+  const addToSet =
+    (set: (update: (old: Set<number>) => Set<number>) => void) =>
+    (key: number) =>
+      set((old) => new Set(old).add(key));
+  const touch = addToSet(setTouchedSteps);
+  const openTimer = addToSet(setOpenTimers);
   const changeStep = (key: number, patch: Partial<StepDraft>) =>
     onChange(
       steps.map((step) => (step.key === key ? { ...step, ...patch } : step)),
     );
   const without = (key: number) => steps.filter((item) => item.key !== key);
+  const addAt = (index: number) => {
+    const step = { key: newKey(), text: '', timer: '' };
+    onChange([...steps.slice(0, index), step, ...steps.slice(index)]);
+    focusKey.current = step.key;
+  };
+  const remove = (step: StepDraft, index: number) => {
+    const number = index + 1;
+    onChange(without(step.key));
+    undoToast.current?.close();
+    undoToast.current = toast.show(
+      t('admin:recipe.steps.removed', { number }),
+      {
+        polite: true,
+        duration: UNDO_WINDOW_MS,
+        action: {
+          label: t('common:row.undo'),
+          onClick: () => {
+            const now = latest.current;
+            if (now.steps.some((item) => item.key === step.key)) return;
+            const at = Math.min(index, now.steps.length);
+            now.onChange([
+              ...now.steps.slice(0, at),
+              step,
+              ...now.steps.slice(at),
+            ]);
+          },
+        },
+      },
+    );
+  };
+
+  const addButton = (label: string, index: number) => (
+    <div>
+      <Button
+        variant="secondary"
+        startIcon={<PlusIcon />}
+        onClick={() => addAt(index)}
+      >
+        {label}
+      </Button>
+    </div>
+  );
 
   return (
     <Stack
@@ -47,136 +126,237 @@ export function RecipeStepsSection({
         {t('admin:recipe.steps.title')}
       </Typography>
       {steps.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {t('admin:recipe.steps.empty')}
-        </Typography>
-      ) : null}
+        <>
+          <Typography variant="body2" color="text.secondary">
+            {t('admin:recipe.steps.empty')}
+          </Typography>
+          {addButton(t('admin:recipe.steps.addFirst'), 0)}
+        </>
+      ) : (
+        addButton(t('admin:recipe.steps.addStart'), 0)
+      )}
       <Stack component="ol" spacing={2} sx={{ m: 0, p: 0, listStyle: 'none' }}>
         {steps.map((step, index) => {
           const number = index + 1;
           const tips = tipCount(step);
           const flagged =
             problems.steps[step.key] === 'text' && touchedSteps.has(step.key);
+          const timerOpen = openTimers.has(step.key) || step.timer !== '';
+          const timerFlagged =
+            problems.steps[step.key] === 'timer' || step.timer.trim() === '';
           return (
-            <Stack component="li" key={step.key} spacing={1}>
-              <TextField
-                label={t('admin:recipe.steps.text', { number })}
-                value={step.text}
-                onChange={(event) => {
-                  touch(step.key);
-                  changeStep(step.key, { text: event.target.value });
+            <Stack
+              component="li"
+              key={step.key}
+              direction="row"
+              spacing={1.5}
+              sx={{ alignItems: 'flex-start' }}
+            >
+              <Box
+                aria-hidden="true"
+                sx={{
+                  flex: '0 0 28px',
+                  height: 28,
+                  mt: '6px',
+                  borderRadius: '50%',
+                  bgcolor: tokens.color.ink,
+                  color: tokens.color.surface,
+                  display: 'grid',
+                  placeItems: 'center',
+                  ...displayType,
+                  fontSize: 14,
                 }}
-                onBlur={() => touch(step.key)}
-                error={flagged}
-                helperText={
-                  flagged ? t('admin:recipe.invalid.stepText') : undefined
-                }
-                multiline
-                minRows={2}
-              />
-              <TextField
-                label={t('admin:recipe.steps.timer', { number })}
-                value={step.timer}
-                onChange={(event) =>
-                  changeStep(step.key, { timer: event.target.value })
-                }
-                error={problems.steps[step.key] === 'timer'}
-                helperText={
-                  problems.steps[step.key] === 'timer'
-                    ? t('admin:recipe.invalid.timer')
-                    : undefined
-                }
-                slotProps={{ htmlInput: { inputMode: 'decimal' } }}
-              />
-              {step.tips && step.tips.length > 0 ? (
+              >
+                {number}
+              </Box>
+              <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
+                <TextField
+                  value={step.text}
+                  placeholder={t('admin:recipe.steps.placeholder', { number })}
+                  inputRef={(node: HTMLElement | null) => {
+                    if (node && focusKey.current === step.key) {
+                      focusKey.current = null;
+                      node.focus();
+                    }
+                  }}
+                  onChange={(event) => {
+                    touch(step.key);
+                    changeStep(step.key, { text: event.target.value });
+                  }}
+                  onBlur={() => touch(step.key)}
+                  error={flagged}
+                  helperText={
+                    flagged ? t('admin:recipe.invalid.stepText') : undefined
+                  }
+                  multiline
+                  minRows={1}
+                  slotProps={{
+                    htmlInput: {
+                      'aria-label': t('admin:recipe.steps.text', { number }),
+                    },
+                  }}
+                />
+                {step.tips && step.tips.length > 0 ? (
+                  <Stack
+                    component="ul"
+                    spacing={0.5}
+                    aria-label={t('admin:recipe.steps.draftTips', { number })}
+                    sx={{ m: 0, p: 0, listStyle: 'none' }}
+                  >
+                    {step.tips.map((tip, tipIndex) => (
+                      <Stack
+                        component="li"
+                        key={tip.key}
+                        direction="row"
+                        spacing={1}
+                        sx={{ alignItems: 'center' }}
+                      >
+                        <Typography variant="body2" sx={{ flex: 1 }}>
+                          {tip.text}
+                        </Typography>
+                        <Button
+                          variant="ghost"
+                          aria-label={t('admin:recipe.steps.removeTip', {
+                            n: tipIndex + 1,
+                            step: number,
+                          })}
+                          onClick={() =>
+                            changeStep(step.key, {
+                              tips: (step.tips ?? []).filter(
+                                (item) => item.key !== tip.key,
+                              ),
+                            })
+                          }
+                        >
+                          {t('admin:recipe.steps.removeTipShort')}
+                        </Button>
+                      </Stack>
+                    ))}
+                  </Stack>
+                ) : null}
                 <Stack
-                  component="ul"
-                  spacing={0.5}
-                  aria-label={t('admin:recipe.steps.draftTips', { number })}
-                  sx={{ m: 0, p: 0, listStyle: 'none' }}
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}
                 >
-                  {step.tips.map((tip, tipIndex) => (
+                  {timerOpen ? (
                     <Stack
-                      component="li"
-                      key={tip.key}
                       direction="row"
-                      spacing={1}
+                      spacing={0.5}
                       sx={{ alignItems: 'center' }}
                     >
-                      <Typography variant="body2" sx={{ flex: 1 }}>
-                        {tip.text}
-                      </Typography>
-                      <Button
-                        variant="ghost"
-                        aria-label={t('admin:recipe.steps.removeTip', {
-                          n: tipIndex + 1,
-                          step: number,
-                        })}
-                        onClick={() =>
-                          changeStep(step.key, {
-                            tips: (step.tips ?? []).filter(
-                              (item) => item.key !== tip.key,
-                            ),
-                          })
+                      <ClockIcon size={16} />
+                      <TextField
+                        size="small"
+                        value={step.timer}
+                        onChange={(event) => {
+                          openTimer(step.key);
+                          changeStep(step.key, { timer: event.target.value });
+                        }}
+                        error={timerFlagged}
+                        helperText={
+                          timerFlagged
+                            ? t('admin:recipe.invalid.timer')
+                            : undefined
                         }
-                      >
-                        {t('admin:recipe.steps.removeTipShort')}
-                      </Button>
-                    </Stack>
-                  ))}
-                </Stack>
-              ) : null}
-              <RowControls
-                moveUp={t('admin:recipe.steps.moveUp', { number })}
-                moveDown={t('admin:recipe.steps.moveDown', { number })}
-                remove={t('admin:recipe.steps.remove', { number })}
-                first={index === 0}
-                last={index === steps.length - 1}
-                onMoveUp={() => onChange(moved(steps, index, -1))}
-                onMoveDown={() => onChange(moved(steps, index, 1))}
-                onRemove={() =>
-                  tips > 0 ? setRemoving(step.key) : onChange(without(step.key))
-                }
-              />
-              {removing === step.key ? (
-                <Alert severity="warning">
-                  <Stack spacing={1}>
-                    <span>
-                      {t('admin:recipe.steps.tipsWarning', {
-                        number,
-                        count: tips,
-                      })}
-                    </span>
-                    <Stack direction="row" spacing={1}>
-                      <Button
+                        sx={{ width: 110 }}
+                        slotProps={{
+                          htmlInput: {
+                            inputMode: 'decimal',
+                            'aria-label': t('admin:recipe.steps.timer', {
+                              number,
+                            }),
+                          },
+                          input: {
+                            endAdornment: (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {t('admin:recipe.steps.minutes')}
+                              </Typography>
+                            ),
+                          },
+                        }}
+                      />
+                      <IconButton
+                        tone="plain"
+                        size={40}
+                        label={t('admin:recipe.steps.clearTimer', { number })}
                         onClick={() => {
-                          setRemoving(null);
-                          onChange(without(step.key));
+                          setOpenTimers((old) => {
+                            const next = new Set(old);
+                            next.delete(step.key);
+                            return next;
+                          });
+                          changeStep(step.key, { timer: '' });
                         }}
                       >
-                        {t('admin:recipe.steps.removeWithTips')}
-                      </Button>
-                      <Button variant="ghost" onClick={() => setRemoving(null)}>
-                        {t('admin:recipe.steps.keep')}
-                      </Button>
+                        <CloseIcon />
+                      </IconButton>
                     </Stack>
-                  </Stack>
-                </Alert>
-              ) : null}
+                  ) : (
+                    <Chip
+                      icon={<ClockIcon />}
+                      label={t('admin:recipe.steps.addTimer')}
+                      aria-label={t('admin:recipe.steps.addTimerFor', {
+                        number,
+                      })}
+                      onClick={() => {
+                        openTimer(step.key);
+                        changeStep(step.key, { timer: DEFAULT_TIMER });
+                      }}
+                    />
+                  )}
+                  <RowControls
+                    moveUp={t('admin:recipe.steps.moveUp', { number })}
+                    moveDown={t('admin:recipe.steps.moveDown', { number })}
+                    remove={t('admin:recipe.steps.remove', { number })}
+                    first={index === 0}
+                    last={index === steps.length - 1}
+                    onMoveUp={() => onChange(moved(steps, index, -1))}
+                    onMoveDown={() => onChange(moved(steps, index, 1))}
+                    onRemove={() =>
+                      tips > 0 ? setRemoving(step.key) : remove(step, index)
+                    }
+                  />
+                </Stack>
+                {removing === step.key ? (
+                  <Alert severity="warning">
+                    <Stack spacing={1}>
+                      <span>
+                        {t('admin:recipe.steps.tipsWarning', {
+                          number,
+                          count: tips,
+                        })}
+                      </span>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          onClick={() => {
+                            setRemoving(null);
+                            onChange(without(step.key));
+                          }}
+                        >
+                          {t('admin:recipe.steps.removeWithTips')}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => setRemoving(null)}
+                        >
+                          {t('admin:recipe.steps.keep')}
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Alert>
+                ) : null}
+              </Stack>
             </Stack>
           );
         })}
       </Stack>
-      <div>
-        <Button
-          variant="secondary"
-          onClick={() =>
-            onChange([...steps, { key: newKey(), text: '', timer: '' }])
-          }
-        >
-          {t('admin:recipe.steps.add')}
-        </Button>
-      </div>
+      {steps.length > 0
+        ? addButton(t('admin:recipe.steps.add'), steps.length)
+        : null}
     </Stack>
   );
 }

@@ -178,7 +178,9 @@ describe('Recipe Drafts autosave on New Recipe', () => {
         Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }),
     });
     await user.click(await screen.findByRole('tab', { name: /^Steps/ }));
-    await user.click(await screen.findByRole('button', { name: 'Add a Step' }));
+    await user.click(
+      await screen.findByRole('button', { name: 'Add the first Step' }),
+    );
     await user.type(screen.getByLabelText('Step 1'), 'Whi');
     await elapse(1600);
     expect(sent(calls, 'POST /api/recipe-drafts')[0].body).toMatchObject({

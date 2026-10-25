@@ -2332,3 +2332,138 @@ describe('Recipe editor shell', () => {
     expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull();
   });
 });
+
+describe('Recipe editor Steps (#591)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const twoSteps: FamilyRecipeEdit = {
+    ...saved,
+    steps: [
+      { id: 's1', text: 'Whisk the eggs', timerSeconds: 90 },
+      { id: 's2', text: 'Fry', timerSeconds: null },
+    ],
+    tips: [{ id: 't2', stepId: 's1', text: 'Low heat' }],
+  };
+  const edit = () =>
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(twoSteps),
+    });
+
+  it('turns the Timer chip into a minutes field starting at 5, and back with ×', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await openTab(user, 'Steps');
+    expect(screen.getByLabelText('Timer for Step 1 (minutes)')).toHaveValue(
+      '1.5',
+    );
+    expect(screen.getAllByText('min')).toHaveLength(1);
+    await user.click(
+      screen.getByRole('button', { name: 'Add a timer to Step 2' }),
+    );
+    const timer = screen.getByLabelText('Timer for Step 2 (minutes)');
+    expect(timer).toHaveValue('5');
+    expect(screen.getAllByText('min')).toHaveLength(2);
+    await user.clear(timer);
+    expect(
+      screen.getByText(/The timer must be a positive number of minutes/),
+    ).toBeVisible();
+    await user.type(timer, 'x');
+    expect(
+      screen.getByText(/The timer must be a positive number of minutes/),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole('button', { name: 'Remove the timer from Step 2' }),
+    );
+    expect(screen.queryByLabelText('Timer for Step 2 (minutes)')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Add a timer to Step 2' }),
+    ).toBeVisible();
+  });
+
+  it('shows the placeholder and flags a touched blank Step', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await openTab(user, 'Steps');
+    expect(screen.getByLabelText('Step 2')).toHaveAttribute(
+      'placeholder',
+      'What to do in Step 2',
+    );
+    await user.clear(screen.getByLabelText('Step 2'));
+    expect(screen.getByText('Enter the Step text.')).toBeVisible();
+  });
+
+  it('adds a Step at the start and at the end, focusing its text', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await openTab(user, 'Steps');
+    await user.click(screen.getByRole('button', { name: 'Add a Step' }));
+    expect(screen.getByLabelText('Step 3')).toHaveFocus();
+    expect(screen.getByLabelText('Step 3')).toHaveValue('');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Add a Step at the start' }),
+    );
+    expect(screen.getByLabelText('Step 1')).toHaveFocus();
+    expect(screen.getByLabelText('Step 1')).toHaveValue('');
+    expect(screen.getByLabelText('Step 2')).toHaveValue('Whisk the eggs');
+    expect(screen.getByLabelText('Step 4')).toHaveValue('');
+  });
+
+  it('offers only "Add the first Step" when there are no Steps', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    await openTab(user, 'Steps');
+    expect(
+      screen.queryByRole('button', { name: 'Add a Step at the start' }),
+    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add a Step' })).toBeNull();
+    await user.click(
+      screen.getByRole('button', { name: 'Add the first Step' }),
+    );
+    expect(screen.getByLabelText('Step 1')).toHaveFocus();
+    expect(
+      screen.queryByRole('button', { name: 'Add the first Step' }),
+    ).toBeNull();
+  });
+
+  it('confirms inline before removing a saved Step with Tips, with no Undo', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await openTab(user, 'Steps');
+    await user.click(screen.getByRole('button', { name: 'Remove Step 1' }));
+    expect(
+      screen.getByText('Removing Step 1 deletes its 1 Tip when you save.'),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Keep Step' }));
+    expect(screen.getByLabelText('Step 1')).toHaveValue('Whisk the eggs');
+    await user.click(screen.getByRole('button', { name: 'Remove Step 1' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Remove Step and Tips' }),
+    );
+    expect(screen.getByLabelText('Step 1')).toHaveValue('Fry');
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+  });
+
+  it('removes a Step with a polite Undo toast that restores it at its old index', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({
+      delay: null,
+      advanceTimers: vi.advanceTimersByTime,
+    });
+    edit();
+    await openTab(user, 'Steps');
+    await user.click(screen.getByRole('button', { name: 'Add a Step' }));
+    await user.type(screen.getByLabelText('Step 3'), 'Plate');
+    await user.click(screen.getByRole('button', { name: 'Remove Step 2' }));
+    expect(screen.getByLabelText('Step 2')).toHaveValue('Plate');
+    expect(
+      screen.getByText('Removed Step 2').closest('[role="status"]'),
+    ).not.toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByLabelText('Step 2')).toHaveValue('Fry');
+    expect(screen.getByLabelText('Step 3')).toHaveValue('Plate');
+  });
+});
