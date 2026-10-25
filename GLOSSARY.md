@@ -102,6 +102,10 @@ _Avoid_: placeholder, fallback tile
 A Family's inventory of Batches.
 _Avoid_: Inventory, stock, fridge
 
+**Empty Pantry**:
+A Pantry with no Batches at all. A Pantry holding only Expired Batches is not empty.
+_Avoid_: New Pantry, blank Pantry
+
 **Batch**:
 One purchase of one Ingredient in the Pantry, with its own quantity, expiry date, Location, and optional product description.
 _Avoid_: Pantry item, entry, stock line
