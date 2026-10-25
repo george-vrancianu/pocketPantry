@@ -58,6 +58,9 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 32. As a Member, I want Batches with an expiry date sorted soonest first, so that I use things before they go off.
 33. As a Member, I want an Expiring Soon marker on Batches inside the Stale Threshold, so that I notice them.
 34. As a Member, I want quantity and expiry to be optional, so that I can add "some garlic" without lying about numbers.
+
+These stories were added with the Empty Pantry and Add sheet work (spec #604) and number on from the end of the list.
+
 89. As a Member with an empty Pantry, I want the page to show me the quickest ways to fill it (scan, speak, type, or move what I ticked while shopping), so that I can get started without hunting for buttons.
 90. As a Member, I want to add a Batch by photographing the product or scanning its barcode, so that the Ingredient, pack size and product name are filled in for me.
 91. As a Member, I want to add several things by hand one after another without the form closing, so that stocking up by hand is fast.
@@ -80,6 +83,8 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 48. As a Member, I want to save an Unmatched line anyway with the name the scan read, so that a thin Catalog doesn't block me.
 49. As a Member, I want to be told when I've hit my daily Scan Cap, so that I know why the shutter stopped working.
 50. As a Member, I want Scans to work on Romanian receipts and labels, so that my shop in Romania is recognised.
+
+This story was added with the same work (spec #604).
 
 92. As a Member adding to my Pantry by hand, I want a barcode I scan from the Add sheet to be confirmed on a card before it fills the sheet, so that a misread costs one tap, not a trip back.
 

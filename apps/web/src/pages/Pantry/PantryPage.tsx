@@ -48,8 +48,8 @@ export function PantryPage() {
       document.activeElement === document.body
     )
       focusAdd();
-    hadBatches.current = !screen.isEmpty && !screen.isLoading;
-  }, [screen.isEmpty, screen.isLoading, focusAdd]);
+    hadBatches.current = !screen.isEmpty && !screen.isLoading && !screen.error;
+  }, [screen.isEmpty, screen.isLoading, screen.error, focusAdd]);
 
   return (
     <RowToggleErrorProvider report={rowToggleErrors.report}>
