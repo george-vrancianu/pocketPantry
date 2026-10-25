@@ -7,22 +7,17 @@ import {
   displayType,
   tokens,
 } from '@pocket-pantry/ui';
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ExploreRow } from '../../components/ExploreRow';
+import { QuickViewSheet } from '../../components/QuickViewSheet';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../i18n/translateApiError';
 import { localIso } from '../../lib/pantry';
 import { useAddToFamily } from '../../lib/addToFamily';
+import { exploreAdds, useExploreAdds } from '../../lib/exploreAdds';
 import {
   canMakeBases,
   cardFor,
@@ -41,11 +36,15 @@ import { SectionLabel } from './components/SectionLabel';
 
 /** Rows a group shows before "Show n more". */
 const LIMIT = 4;
+/** Lifts a toast above the quick view's action buttons. */
+const QUICK_VIEW_TOAST_BOTTOM =
+  // Sheet bottom padding 28 + explanation line(s) ~36 + gap 10 + Make a Variant 48 + gap 8 + Add 48 + 8 slack
+  'calc(186px + env(safe-area-inset-bottom, 0px))';
 
 const SLIDE = '320ms cubic-bezier(.2,.8,.2,1)';
 
 /** Slides in from the right and, on Back, out to it; no motion under reduced motion. */
-const slideSx = (leaving: boolean) =>
+const slideSx = (leaving: boolean, enter: boolean) =>
   ({
     '@keyframes pp-explore-slide-in': {
       from: { transform: 'translateX(100%)' },
@@ -56,7 +55,11 @@ const slideSx = (leaving: boolean) =>
       to: { transform: 'translateX(100%)' },
     },
     '@media (prefers-reduced-motion: no-preference)': {
-      animation: `${leaving ? 'pp-explore-slide-out' : 'pp-explore-slide-in'} ${SLIDE}${leaving ? ' forwards' : ''}`,
+      animation: leaving
+        ? `pp-explore-slide-out ${SLIDE} forwards`
+        : enter
+          ? `pp-explore-slide-in ${SLIDE}`
+          : 'none',
     },
   }) as const;
 
@@ -91,12 +94,21 @@ export function ExplorePage() {
       window.clearTimeout(fallback);
     };
   }, [leaving, navigate]);
-  // Net adds this visit: the Back badge. It resets when the page unmounts.
-  const [added, setAdded] = useState(0);
-  const onNet = useCallback(
-    (delta: 1 | -1) => setAdded((n) => Math.max(0, n + delta)),
-    [],
-  );
+  // Net adds this visit: the Back badge. It outlives the page so that a round trip through a
+  // preview keeps it; a fresh visit (not Back from a preview) starts again at 0.
+  const added = useExploreAdds();
+  // Returning means coming back from a preview this page opened (not merely a POP: a reload or a
+  // Back from elsewhere is a fresh visit and slides in). The reset is synchronous so no stale
+  // count paints; it is idempotent, so a double render is harmless.
+  const noSlide =
+    (useLocation().state as { noSlide?: boolean } | null)?.noSlide === true;
+  const [enter] = useState(() => {
+    if (exploreAdds.parked()) return false;
+    exploreAdds.reset();
+    return !noSlide;
+  });
+  const [quick, setQuick] = useState<RecipeListItem | null>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
   const recipes = useRecipes(browse, { showHidden, scope: 'catalog' });
   const cookTonight = useCookTonight(
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight
@@ -105,9 +117,16 @@ export function ExplorePage() {
     'catalog',
   );
   const filters = useRecipeFilters();
-  const { add, stateOf } = useAddToFamily({ onNet });
+  const { add, stateOf } = useAddToFamily({
+    onNet: exploreAdds.bump,
+    // While the quick view is open its buttons sit at the bottom: lift the toast clear of them.
+    ...(quickOpen ? { toastBottom: QUICK_VIEW_TOAST_BOTTOM } : {}),
+  });
   const filtering = isFiltering(browse);
   const items = recipes.data?.recipes ?? [];
+  const quickRecipe = quick
+    ? (items.find((item) => item.id === quick.id) ?? quick)
+    : null;
   const cards = cookTonight.data?.cards ?? [];
   const index = indexCards(cards);
 
@@ -144,13 +163,22 @@ export function ExplorePage() {
           card={cardFor(index, recipe)}
           filtering={filtering}
           hideCanMake={options.hideCanMake ?? false}
+          onOpen={() => {
+            setQuick(recipe);
+            setQuickOpen(true);
+          }}
         />
       )}
     />
   );
 
   return (
-    <Box sx={slideSx(leaving)} ref={pageRef} data-testid="explore-page">
+    <Box
+      sx={slideSx(leaving, enter)}
+      ref={pageRef}
+      data-testid="explore-page"
+      data-motion={leaving ? 'out' : enter ? 'in' : 'none'}
+    >
       <AppScreenHeader
         title={t('recipes:explore.title')}
         back={{
@@ -170,6 +198,7 @@ export function ExplorePage() {
             const still = window.matchMedia(
               '(prefers-reduced-motion: reduce)',
             ).matches;
+            if (plain) exploreAdds.reset();
             if (!plain || still) return;
             event.preventDefault();
             setLeaving(true);
@@ -216,6 +245,17 @@ export function ExplorePage() {
             )
           : null}
       </Stack>
+      {quickRecipe ? (
+        <QuickViewSheet
+          recipe={quickRecipe}
+          open={quickOpen}
+          onClose={() => setQuickOpen(false)}
+          card={cardFor(index, quickRecipe)}
+          state={stateOf(quickRecipe)}
+          onAdd={(recipe) => void add(recipe)}
+          stateOf={stateOf}
+        />
+      ) : null}
     </Box>
   );
 }

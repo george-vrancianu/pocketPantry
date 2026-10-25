@@ -1,4 +1,4 @@
-import { Box, PeopleIcon, radius, tokens } from '@pocket-pantry/ui';
+import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CookTonightCard } from '../lib/cookTonight';
 import type { AddState } from '../lib/addToFamily';
@@ -8,6 +8,7 @@ import {
   StatusPills,
 } from '../pages/Recipes/components/RecipeRow';
 import { AddToFamilyButton } from './AddToFamilyButton';
+import { InFamilyPill } from './InFamilyPill';
 
 type Props = {
   recipe: RecipeListItem;
@@ -48,26 +49,10 @@ export function ExploreRow({
         <>
           {recipe.title}
           {state.status === 'none' ? null : (
-            <Box
-              component="span"
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                ml: '8px',
-                px: '8px',
-                py: '2px',
-                borderRadius: radius.pill,
-                bgcolor: tokens.color.butter,
-                color: tokens.color.butterInk,
-                fontSize: 11,
-                fontWeight: 700,
-                verticalAlign: 'middle',
-              }}
-            >
-              <PeopleIcon size={13} />
-              {t('explore.inFamily')}
-            </Box>
+            <>
+              {' '}
+              <InFamilyPill />
+            </>
           )}
         </>
       }

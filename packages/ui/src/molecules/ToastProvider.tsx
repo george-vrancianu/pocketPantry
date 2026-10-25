@@ -53,6 +53,8 @@ export type ToastApi = {
    * another toast has replaced it.
    */
   show: (message: string, options?: ToastOptions) => ToastHandle;
+  /** Close whichever toast is showing (running its `onClose`), e.g. when a sheet opens over it. */
+  dismiss: () => void;
 };
 
 type Current = ToastOptions & { id: number; message: string };
@@ -118,7 +120,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     },
     [settle],
   );
-  const api = useMemo<ToastApi>(() => ({ show }), [show]);
+  const dismiss = useCallback(() => {
+    setOpen(false);
+    settle();
+  }, [settle]);
+  const api = useMemo<ToastApi>(() => ({ show, dismiss }), [show, dismiss]);
 
   return (
     <ToastContext.Provider value={api}>

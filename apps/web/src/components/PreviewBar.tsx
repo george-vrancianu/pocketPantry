@@ -7,7 +7,7 @@ import {
   tokens,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { AddState } from '../../../lib/addToFamily';
+import type { AddState } from '../lib/addToFamily';
 
 /** Height the bar takes, px, so the page can leave room under its content and toasts can sit above it. */
 export const PREVIEW_BAR_HEIGHT = 100;

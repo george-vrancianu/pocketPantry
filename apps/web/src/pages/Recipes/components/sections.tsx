@@ -31,6 +31,8 @@ import { StepList, TipCallout } from './StepList';
 export type PreviewSectionProps = {
   stateOf: (variant: RecipeVariantItem) => AddState;
   onAdd: (variant: RecipeVariantItem) => void;
+  /** Variant previews opened from here keep counting toward Explore's Back badge. */
+  fromExplore: boolean;
 };
 
 export type SectionProps = {
@@ -320,7 +322,14 @@ function VariantsSection({ recipe, preview }: SectionProps) {
               }
             >
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Link href={catalogRecipeHref(variant)}>{variant.title}</Link>{' '}
+                <Link
+                  href={catalogRecipeHref(variant)}
+                  {...(preview?.fromExplore
+                    ? { state: { fromExplore: true } }
+                    : {})}
+                >
+                  {variant.title}
+                </Link>{' '}
                 <OwnerBadge owner={variant.owner} />
                 <RecipeMeta cuisine={variant.cuisine} method={variant.method} />
               </Box>

@@ -10,11 +10,17 @@ import {
   tokens,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useParams } from 'react-router-dom';
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { useAddToFamily } from '../../lib/addToFamily';
+import { exploreAdds } from '../../lib/exploreAdds';
 import { catalogRecipeHref } from '../../lib/catalogRecipeHref';
 import { SourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
@@ -33,7 +39,7 @@ import {
   PREVIEW_BAR_CLEARANCE,
   PREVIEW_BAR_HEIGHT,
   PreviewBar,
-} from './components/PreviewBar';
+} from '../../components/PreviewBar';
 import { PreviewNote } from './components/PreviewNote';
 import { linesToAdd } from './components/PantryStatus';
 import { DETAIL_SECTIONS, type DetailTab } from './components/sections';
@@ -102,10 +108,43 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
     setTab(next);
     window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   };
+  const fromExplore =
+    (useLocation().state as { fromExplore?: boolean } | null)?.fromExplore ===
+    true;
   // The toasts of an add sit above the bar that replaces the Dock.
   const addToFamily = useAddToFamily(
-    preview ? { toastBottom: PREVIEW_BAR_CLEARANCE } : {},
+    preview
+      ? {
+          toastBottom: PREVIEW_BAR_CLEARANCE,
+          // Only a preview opened from Explore counts toward its Back badge.
+          ...(fromExplore ? { onNet: exploreAdds.bump } : {}),
+        }
+      : {},
   );
+  // Parked while a preview opened from Explore shows, so Explore knows it is being returned to.
+  // Unparked on leaving, so a later fresh visit starts at 0.
+  useEffect(() => {
+    if (!(preview && fromExplore)) return;
+    exploreAdds.park();
+    return () => exploreAdds.unpark();
+  }, [preview, fromExplore]);
+  const navigate = useNavigate();
+  // React Router's history index: a replace (a redirect at load) does not raise it.
+  const hasHistory =
+    ((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0;
+  const leavePreview = (event: MouseEvent<HTMLElement>) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
+    event.preventDefault();
+    if (hasHistory) navigate(-1);
+    else navigate('/recipes/explore', { state: { noSlide: true } });
+  };
   const addState = recipe
     ? addToFamily.stateOf({
         id: recipe.id,
@@ -127,7 +166,11 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
     <>
       {preview ? (
         <AppScreenHeader
-          back={{ label: t('recipes:back'), href: '/recipes/explore' }}
+          back={{
+            label: t('recipes:back'),
+            href: '/recipes/explore',
+            onClick: leavePreview,
+          }}
           {...(recipe ? {} : { title: t('recipes:explore.title') })}
         />
       ) : (
@@ -213,6 +256,7 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
                                 familyCopyId: variant.familyCopyId,
                               }),
                             onAdd: (variant) => void addToFamily.add(variant),
+                            fromExplore,
                           }
                         : undefined
                     }
