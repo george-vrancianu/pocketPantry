@@ -149,6 +149,33 @@ describe('Refresh mark on a tab root', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 
+  it("re-enters the mark's head after a successful refresh, not after a failed one", async () => {
+    const motion = () =>
+      screen
+        .getByRole('button', { name: 'Refresh' })
+        .getAttribute('data-motion');
+    stubPantry(() => Response.json({ batches: [batch] }));
+    await openPantry();
+    await elapse(1300);
+    stubPantry(() =>
+      Response.json({ code: 'boom', params: {} }, { status: 500 }),
+    );
+    tap();
+    await settle();
+    expect(motion()).toBe('tap');
+    await elapse(900);
+    expect(motion()).toBe('idle');
+    await elapse(1300);
+    expect(motion()).toBe('idle');
+    await elapse(2700);
+    stubPantry(() => Response.json({ batches: [batch] }));
+    tap();
+    await settle();
+    expect(motion()).toBe('tap');
+    await elapse(900);
+    expect(motion()).toBe('reentrance');
+  });
+
   it('stays busy until every query has settled, even when one fails at once', async () => {
     stubPantry(() => Response.json({ batches: [batch] }));
     await openPantry();

@@ -119,3 +119,17 @@ export const HeaderDone: Story = {
 export const HeaderFailed: Story = {
   render: () => <TabRootHeader status="failed" />,
 };
+
+/** A successful refresh: the head rises back into the tile and the hat lands; the tile stays still. */
+function ReentranceDemo() {
+  const [count, setCount] = useState(0);
+  return (
+    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+      <GatorLogo label="Refresh" successCount={count} />
+      <button type="button" onClick={() => setCount((n) => n + 1)}>
+        Succeed
+      </button>
+    </Box>
+  );
+}
+export const Reentrance: Story = { render: () => <ReentranceDemo /> };

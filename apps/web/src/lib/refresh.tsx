@@ -14,7 +14,12 @@ import { useLocation } from 'react-router-dom';
 
 export type RefreshState = RefreshStatusLineProps['state'];
 
-type Refresh = { state: RefreshState; run: () => Promise<void> };
+type Refresh = {
+  state: RefreshState;
+  /** Rises by one on each successful refresh. */
+  successCount: number;
+  run: () => Promise<void>;
+};
 
 const DONE_MS = 2500;
 const FAILED_MS = 4000;
@@ -39,6 +44,7 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
     (next: RefreshState) => setEntry({ state: next, path: pathname }),
     [pathname],
   );
+  const [successCount, setSuccessCount] = useState(0);
   const busy = useRef(false);
   // Bumped on each run and on each path change: a run whose id is stale started on another screen.
   const runId = useRef(0);
@@ -88,9 +94,13 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
     }
     busy.current = false;
     setState(failed ? 'failed' : 'done');
+    if (!failed) setSuccessCount((n) => n + 1);
   }, [queryClient, setState]);
 
-  const value = useMemo(() => ({ state, run }), [state, run]);
+  const value = useMemo(
+    () => ({ state, successCount, run }),
+    [state, successCount, run],
+  );
   return <RefreshContext value={value}>{children}</RefreshContext>;
 }
 
