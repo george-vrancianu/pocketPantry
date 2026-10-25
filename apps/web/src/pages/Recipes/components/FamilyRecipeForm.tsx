@@ -186,7 +186,7 @@ export function FamilyRecipeForm({
       documentOf(draft),
       guidanceDraft ? toGuidanceInput(guidanceDraft) : undefined,
     );
-  const detailsBad = showTitleError || problems.servings;
+  const detailsBad = showTitleError || problems.servings || guidanceBad;
   const lineCount = draft.lines.length;
   const stepCount = draft.steps.length;
 

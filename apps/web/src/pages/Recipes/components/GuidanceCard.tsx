@@ -5,6 +5,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  Chip,
   CloseIcon,
   IconButton,
   Stack,
@@ -13,8 +14,7 @@ import {
   tokens,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
-import { Chip } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PairingRow,
@@ -42,7 +42,17 @@ import { suggestFamilyGuidance } from '../../../lib/familyRecipes';
 import { suggestionRecipeOf, type FamilyDraft } from '../familyDraft';
 import { FamilyRecipePicker } from './FamilyGuidance';
 
-const fs = { border: 0, p: 0, m: 0, minWidth: 0 };
+const fieldsetReset = { border: 0, p: 0, m: 0, minWidth: 0 };
+const bareButtonSx = {
+  p: 0,
+  minHeight: 44,
+  border: 0,
+  bgcolor: 'transparent',
+  color: 'inherit',
+  font: 'inherit',
+  textAlign: 'left',
+  cursor: 'pointer',
+} as const;
 
 type Props = {
   draft: GuidanceDraft;
@@ -84,7 +94,16 @@ export function GuidanceCard({
       suggestFamilyGuidance({ recipe: suggestionRecipeOf(page), guidance }),
   });
   const problems = guidanceProblems(draft);
+  const hasProblem =
+    problems.pairing || problems.note || problems.linkPosition !== null;
   const set = guidanceSetCount(draft);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  // The Suggest button leaves once every field is filled; keep focus on the row.
+  useEffect(() => {
+    if (suggestion.allFilled && document.activeElement === document.body) {
+      toggleRef.current?.focus();
+    }
+  }, [suggestion.allFilled]);
   const subline =
     set > 0
       ? t('recipes:family.guidanceCard.setCount', { count: set })
@@ -93,14 +112,21 @@ export function GuidanceCard({
         : t('recipes:family.guidanceCard.optional');
   const change = (patch: Partial<GuidanceDraft>) =>
     onChange({ ...draft, ...patch });
-  const nothing = (field: GuidanceField) =>
-    suggestion.noSuggestions.includes(field) ? (
-      <Typography role="status" variant="body2" color="text.secondary">
-        {t('recipes:family.guidanceCard.nothing')}
-      </Typography>
-    ) : (
-      <Typography role="status" variant="body2" sx={{ display: 'none' }} />
-    );
+  // Always mounted, so a screen reader announces the text when it arrives.
+  const nothing = (field: GuidanceField) => (
+    <Typography
+      role="status"
+      variant="body2"
+      color="text.secondary"
+      sx={{ '&:empty': { m: '0 !important' } }}
+    >
+      {suggestion.noSuggestions.includes(field)
+        ? t('recipes:family.guidanceCard.nothing')
+        : null}
+    </Typography>
+  );
+  const removePairing = (key: number) =>
+    change({ pairings: draft.pairings.filter((p) => p.key !== key) });
 
   const patchPairing = (key: number, patch: Partial<PairingDraft>) =>
     change({
@@ -134,6 +160,7 @@ export function GuidanceCard({
       });
     }
   };
+  const unknownMoment = t('admin:recipe.guidance.eatingMoments.unknown');
   const chipMoments: MomentOption[] = [
     ...momentOptions.filter((m) => !m.archived),
     ...draft.eatingMoments
@@ -147,10 +174,11 @@ export function GuidanceCard({
         id: use.eatingMomentId,
         name:
           momentOptions.find((m) => m.id === use.eatingMomentId)?.name ??
-          t('admin:recipe.guidance.eatingMoments.unknown'),
+          unknownMoment,
         archived: true,
       })),
   ];
+  const momentNames = new Map(chipMoments.map((m) => [m.id, m.name]));
   const momentsFull = draft.eatingMoments.length >= MAX_EATING_MOMENTS;
   const pairingsFull = draft.pairings.length >= MAX_PAIRINGS;
   const ChevronIcon = open && reduceMotion ? ChevronUpIcon : ChevronDownIcon;
@@ -168,31 +196,28 @@ export function GuidanceCard({
         <Box
           component="button"
           type="button"
+          ref={toggleRef}
           aria-expanded={open}
           aria-controls={bodyId}
           onClick={() => setOpen(!open)}
           sx={{
+            ...bareButtonSx,
             flex: 1,
             minWidth: 0,
-            minHeight: 44,
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            p: 0,
-            border: 0,
-            bgcolor: 'transparent',
-            color: 'inherit',
-            font: 'inherit',
-            textAlign: 'left',
-            cursor: 'pointer',
           }}
         >
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: 15 }}>
               {t('recipes:family.guidanceCard.title')}
             </Typography>
-            <Typography variant="meta" color="text.secondary">
-              {subline}
+            <Typography
+              variant="meta"
+              color={hasProblem ? 'error' : 'text.secondary'}
+            >
+              {hasProblem ? t('recipes:family.guidanceCard.problem') : subline}
             </Typography>
           </Box>
           <Box
@@ -246,7 +271,7 @@ export function GuidanceCard({
         spacing={2}
         sx={{ px: '16px', pb: '16px', display: open ? 'flex' : 'none' }}
       >
-        <Stack component="fieldset" spacing={1} sx={fs}>
+        <Stack component="fieldset" spacing={1} sx={fieldsetReset}>
           <Typography
             component="legend"
             variant="sectionLabel"
@@ -273,11 +298,7 @@ export function GuidanceCard({
                   }}
                   onRemove={() => {
                     setEditing(null);
-                    change({
-                      pairings: draft.pairings.filter(
-                        (p) => p.key !== pairing.key,
-                      ),
-                    });
+                    removePairing(pairing.key);
                   }}
                 />
                 <div>
@@ -296,21 +317,14 @@ export function GuidanceCard({
                   component="button"
                   type="button"
                   aria-label={t('recipes:family.guidanceCard.editPairing', {
-                    position: index + 1,
+                    label:
+                      pairing.label.trim() ||
+                      t('admin:recipe.guidance.pairings.heading', {
+                        position: index + 1,
+                      }),
                   })}
                   onClick={() => setEditing(pairing.key)}
-                  sx={{
-                    flex: 1,
-                    minWidth: 0,
-                    p: 0,
-                    minHeight: 44,
-                    border: 0,
-                    bgcolor: 'transparent',
-                    color: 'inherit',
-                    font: 'inherit',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                  }}
+                  sx={{ ...bareButtonSx, flex: 1, minWidth: 0 }}
                 >
                   <Typography sx={{ fontWeight: 600, fontSize: 15 }} noWrap>
                     {pairing.label.trim() ||
@@ -336,13 +350,7 @@ export function GuidanceCard({
                   label={t('admin:recipe.guidance.pairings.remove', {
                     position: index + 1,
                   })}
-                  onClick={() =>
-                    change({
-                      pairings: draft.pairings.filter(
-                        (p) => p.key !== pairing.key,
-                      ),
-                    })
-                  }
+                  onClick={() => removePairing(pairing.key)}
                 >
                   <CloseIcon size={16} />
                 </IconButton>
@@ -381,7 +389,7 @@ export function GuidanceCard({
           )}
         </Stack>
 
-        <Stack component="fieldset" spacing={1} sx={fs}>
+        <Stack component="fieldset" spacing={1} sx={fieldsetReset}>
           <Typography
             component="legend"
             variant="sectionLabel"
@@ -439,9 +447,7 @@ export function GuidanceCard({
             </Typography>
           ) : null}
           {draft.eatingMoments.map((use) => {
-            const name =
-              chipMoments.find((m) => m.id === use.eatingMomentId)?.name ??
-              t('admin:recipe.guidance.eatingMoments.unknown');
+            const name = momentNames.get(use.eatingMomentId) ?? unknownMoment;
             return (
               <Stack key={use.eatingMomentId} spacing={0.5}>
                 {use.suggested ? (
@@ -467,7 +473,7 @@ export function GuidanceCard({
           })}
         </Stack>
 
-        <Stack component="fieldset" spacing={1} sx={fs}>
+        <Stack component="fieldset" spacing={1} sx={fieldsetReset}>
           <Typography
             component="legend"
             variant="sectionLabel"

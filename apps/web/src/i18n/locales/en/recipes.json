@@ -139,10 +139,10 @@
       "nothing": "Nothing to suggest",
       "momentHint": "Tap once for Good for, twice for Avoid, three times to clear.",
       "notSet": "not set",
-      "editPairing": "Edit Pairing {{position}}",
+      "editPairing": "Edit {{label}}",
+      "problem": "Fix before saving",
       "donePairing": "Done"
     },
-    "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the Recipe.",
     "linkedRecipeUnavailable": "A Recipe you cannot see or that is archived",
     "saved": "Recipe saved.",
     "viewRecipe": "View the Recipe",

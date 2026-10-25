@@ -1032,13 +1032,13 @@ describe('NewVariantPage', () => {
     const user = userEvent.setup({ delay: null });
     await openGuidance(user);
     await user.click(
-      await screen.findByRole('button', { name: 'Edit Pairing 1' }),
+      await screen.findByRole('button', { name: 'Edit Orange juice' }),
     );
     expect(
       await screen.findByText('Linked Ingredient: Orange'),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Done' }));
-    await user.click(screen.getByRole('button', { name: 'Edit Pairing 2' }));
+    await user.click(screen.getByRole('button', { name: 'Edit Toast' }));
     expect(
       await screen.findByRole('option', { name: 'Buttered toast' }),
     ).toBeInTheDocument();
@@ -1958,7 +1958,7 @@ describe('Suggest Guidance', () => {
     expect(screen.queryByText('Suggested')).not.toBeInTheDocument();
   });
 
-  it('says "No suggestions for ..." in a status when nothing was worth proposing', async () => {
+  it('says "Nothing to suggest" in a status when nothing was worth proposing', async () => {
     const user = userEvent.setup({ delay: null });
     setup('/recipes/new', {
       [suggestRoute]: () =>
@@ -1979,7 +1979,7 @@ describe('Suggest Guidance', () => {
     expect(screen.queryByText('Nothing to suggest')).not.toBeInTheDocument();
   });
 
-  it('says "No suggestions for Eating Moments" in a status when none was worth proposing', async () => {
+  it('says "Nothing to suggest" for Eating Moments in a status when none was worth proposing', async () => {
     const user = userEvent.setup({ delay: null });
     setup('/recipes/new', {
       [suggestRoute]: () =>
@@ -2132,10 +2132,10 @@ describe('Suggest Guidance', () => {
 
       expect(await screen.findByText('Butter')).toBeVisible();
       expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(2);
-      await user.click(screen.getByRole('button', { name: 'Edit Pairing 1' }));
+      await user.click(screen.getByRole('button', { name: 'Edit Butter' }));
       expect(screen.getByText('Linked Ingredient: Butter')).toBeVisible();
       await user.click(screen.getByRole('button', { name: 'Done' }));
-      await user.click(screen.getByRole('button', { name: 'Edit Pairing 2' }));
+      await user.click(screen.getByRole('button', { name: 'Edit Tea' }));
       expect(
         screen.getByLabelText('Linked Recipe of Pairing 2'),
       ).toHaveDisplayValue('Iced tea');
@@ -2158,7 +2158,7 @@ describe('Suggest Guidance', () => {
       expect(JSON.stringify(body)).not.toMatch(/suggested|linkedRecipeTitle/i);
     });
 
-    it('says "No suggestions for Pairings." when the server has none', async () => {
+    it('says "Nothing to suggest" for Pairings when the server has none', async () => {
       const { user } = await titleAndSuggest({
         [suggestRoute]: () =>
           Response.json({ guidance: {}, noSuggestions: ['pairings'] }),
@@ -2205,7 +2205,9 @@ describe('Suggest Guidance', () => {
       await screen.findByText('Toast');
       expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(2);
 
-      await user.click(screen.getByRole('button', { name: 'Edit Pairing 1' }));
+      await user.click(
+        screen.getByRole('button', { name: 'Edit Fresh berries' }),
+      );
       await user.type(screen.getByLabelText('Label of Pairing 1'), '!');
       expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(1);
     });
@@ -3148,6 +3150,7 @@ describe('Guidance card (#594)', () => {
     expect(guidanceToggle()).toHaveTextContent('2 set · optional');
     await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
     await user.type(screen.getByLabelText('Label of Pairing 1'), 'Toast');
+    await user.type(screen.getByLabelText('Reason for Pairing 1'), 'Crisp');
     expect(guidanceToggle()).toHaveTextContent('3 set · optional');
     await user.clear(screen.getByLabelText('Nutrition Note'));
     expect(guidanceToggle()).toHaveTextContent('2 set · optional');
@@ -3229,6 +3232,55 @@ describe('Guidance card (#594)', () => {
     );
   });
 
+  it('shows on the collapsed row why Save is disabled, and flags the Details tab', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    await user.type(await screen.findByLabelText(/^Title/), 'Tortilla');
+    await openGuidance(user);
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.click(guidanceToggle());
+    expect(guidanceToggle()).toHaveAttribute('aria-expanded', 'false');
+    expect(guidanceToggle()).toHaveTextContent('Fix before saving');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+
+    await user.click(screen.getByRole('tab', { name: /^Ingredients/ }));
+    expect(
+      screen.getByRole('tab', { name: /^Details, .*attention/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps focus on the row when Suggest fills the last empty fields', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      [suggestRoute]: () =>
+        Response.json({
+          guidance: {
+            nutritionNote: 'Light.',
+            pairings: [
+              {
+                kind: 'food',
+                label: 'Toast',
+                reason: 'Crisp',
+                linkType: 'none',
+                linkTarget: '',
+              },
+            ],
+            eatingMoments: [
+              { eatingMomentId: 'em1', polarity: 'good_for', reason: 'Easy' },
+            ],
+          },
+          noSuggestions: [],
+        }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Tortilla');
+    await user.click(screen.getByRole('button', { name: 'Suggest' }));
+    await screen.findByText('Toast');
+    expect(
+      screen.queryByRole('button', { name: 'Suggest' }),
+    ).not.toBeInTheDocument();
+    expect(guidanceToggle()).toHaveFocus();
+  });
+
   it('does not rotate the chevron when the Member prefers reduced motion', async () => {
     const user = userEvent.setup({ delay: null });
     stubMatchMedia((query) => query.includes('prefers-reduced-motion'));
@@ -3239,5 +3291,16 @@ describe('Guidance card (#594)', () => {
       '[aria-hidden]',
     ) as HTMLElement;
     expect(getComputedStyle(chevron).transform).not.toContain('180');
+  });
+
+  it('rotates the chevron when the Member has not asked for reduced motion', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    await screen.findByLabelText(/^Title/);
+    await openGuidance(user);
+    const chevron = guidanceToggle().querySelector(
+      '[aria-hidden]',
+    ) as HTMLElement;
+    expect(getComputedStyle(chevron).transform).toContain('180');
   });
 });
