@@ -2,6 +2,9 @@ import { Box, radius, shadow, tokens } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
+type LinkProps =
+  { to: string; label: string } | { to?: undefined; label?: undefined };
+
 /**
  * Gator on the accent tint with a speech bubble beside him, which fades in after his Entrance.
  * Gator sits whole inside the panel, with room above for his hop and below for his shadow; size
@@ -16,9 +19,7 @@ export function GatorBubblePanel({
   gator: ReactNode;
   /** What Gator says. */
   children: ReactNode;
-  to?: string;
-  label?: string;
-}) {
+} & LinkProps) {
   return (
     <Box
       {...(to ? { component: Link, to, 'aria-label': label } : {})}
@@ -48,7 +49,7 @@ export function GatorBubblePanel({
           position: 'absolute',
           // Beside Gator, not pinned to the far edge, so it stays next to him on a wide screen.
           left: 'min(188px, calc(100% - 162px))',
-          top: 16,
+          top: 12,
           width: 150,
           boxSizing: 'border-box',
           p: '11px 13px',
