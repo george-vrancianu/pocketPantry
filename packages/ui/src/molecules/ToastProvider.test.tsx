@@ -52,6 +52,35 @@ describe('Toasts', () => {
     expect(paintedColour(action, 'color')).toBe('#1E7A4E');
   });
 
+  it('dismiss() closes the showing toast and runs its onClose', () => {
+    let closed = false;
+    function Dismissable() {
+      const toast = useToast();
+      return (
+        <>
+          <button
+            onClick={() =>
+              toast.show('Added', {
+                polite: true,
+                onClose: () => {
+                  closed = true;
+                },
+              })
+            }
+          >
+            show
+          </button>
+          <button onClick={() => toast.dismiss()}>hide</button>
+        </>
+      );
+    }
+    render(<Dismissable />);
+    act(() => fireEvent.click(screen.getByText('show')));
+    expect(screen.getByRole('status')).toBeTruthy();
+    act(() => fireEvent.click(screen.getByText('hide')));
+    expect(closed).toBe(true);
+  });
+
   it('shows a second line under the message when given a detail', () => {
     function Detailed() {
       const toast = useToast();

@@ -184,6 +184,8 @@
     "base": "Rețetă de bază",
     "loading": "Se caută rețete de bază…",
     "closest": "{{title}} (cea mai apropiată)",
+    "previewLabel": "Vezi {{title}}",
+    "preview": "Vezi",
     "standalone": "Rețetă de sine stătătoare (fără bază)",
     "search": "Caută altă rețetă de bază",
     "cancel": "Anulează",

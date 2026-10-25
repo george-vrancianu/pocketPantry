@@ -21,12 +21,19 @@ type Props = {
   value: RecipeBrowse;
   onChange: (next: RecipeBrowse) => void;
   options: RecipeFilterOptions | undefined;
+  /** The search box's label, when not "Search Recipes" (Explore searches all of them). */
+  searchLabel?: string;
 };
 
 const NONE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
 
 /** The search box and the Cuisine and Method chips, pinned to the top while the list scrolls. */
-export function RecipeFilters({ value, onChange, options }: Props) {
+export function RecipeFilters({
+  value,
+  onChange,
+  options,
+  searchLabel,
+}: Props) {
   const { t } = useTranslation('recipes');
   const cuisines = options?.cuisines ?? [];
   const methods = options?.methods ?? [];
@@ -46,7 +53,7 @@ export function RecipeFilters({ value, onChange, options }: Props) {
     >
       <TextField
         type="search"
-        label={t('search')}
+        label={searchLabel ?? t('search')}
         value={value.search}
         slotProps={{
           htmlInput: { maxLength: 100 },

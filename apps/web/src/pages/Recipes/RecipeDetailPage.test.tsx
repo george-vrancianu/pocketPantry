@@ -17,7 +17,7 @@ const entry = (
 const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   id: 'o',
   parentId: null,
-  owner: 'catalog',
+  owner: 'family',
   title: 'Omelette',
   servings: 2,
   prepMinutes: 5,
@@ -53,6 +53,8 @@ const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   tips: [],
   base: null,
   variants: [],
+  familyCopyId: null,
+  copiedFrom: null,
   diff: null,
   guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
   allergens: { items: [], uncheckedCount: 0 },
@@ -116,7 +118,7 @@ describe('RecipeDetailPage', () => {
   it('shows the header and ingredients', async () => {
     setup(recipe({}));
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Omelette' }),
+      await screen.findByRole('heading', { level: 1, name: /Omelette/ }),
     ).toBeInTheDocument();
     const ingredients = screen.getByRole('list', { name: 'Ingredients' });
     expect(within(ingredients).getByText(/Egg/)).toBeInTheDocument();
@@ -168,7 +170,7 @@ describe('RecipeDetailPage', () => {
 
   it('shows no Source Link on a Recipe without one', async () => {
     setup(recipe({}));
-    await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+    await screen.findByRole('heading', { level: 1, name: /Omelette/ });
     expect(screen.queryByRole('link', { name: /^From / })).toBeNull();
   });
 
@@ -193,14 +195,6 @@ describe('RecipeDetailPage', () => {
       expect(screen.queryByRole('button', { name: 'Home' })).toBeNull();
     });
 
-    it('offers Make a Variant straight in the header of a Catalog Recipe, with no menu', async () => {
-      setup(recipe({}));
-      expect(
-        await screen.findByRole('link', { name: 'Make a Variant' }),
-      ).toHaveAttribute('href', '/recipes/o/variant/new');
-      expect(screen.queryByRole('button', { name: 'More actions' })).toBeNull();
-    });
-
     it('offers no header action on an archived Recipe', async () => {
       setup(recipe({ id: 'g', owner: 'family', archived: true }));
       await screen.findByText('This Recipe is archived.');
@@ -213,7 +207,7 @@ describe('RecipeDetailPage', () => {
   describe('Hero', () => {
     it('shows the facts: Time, Serves, Level and Style', async () => {
       setup(recipe({}));
-      await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+      await screen.findByRole('heading', { level: 1, name: /Omelette/ });
       expect(fact('Time')).toHaveTextContent('15 min');
       expect(fact('Serves')).toHaveTextContent('2');
       expect(fact('Level')).toHaveTextContent('Easy');
@@ -223,7 +217,7 @@ describe('RecipeDetailPage', () => {
 
     it('omits the Time fact when neither prep nor cook time is known', async () => {
       setup(recipe({ prepMinutes: null, cookMinutes: null }));
-      await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+      await screen.findByRole('heading', { level: 1, name: /Omelette/ });
       const labels = screen.getAllByRole('term').map((n) => n.textContent);
       expect(labels).not.toContain('Time');
       expect(labels).toContain('Serves');
@@ -231,21 +225,21 @@ describe('RecipeDetailPage', () => {
 
     it('sizes the fact columns to the cells shown, keeping Style the wide one', async () => {
       setup(recipe({ prepMinutes: null, cookMinutes: null, difficulty: null }));
-      await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+      await screen.findByRole('heading', { level: 1, name: /Omelette/ });
       const grid = fact('Style').parentElement!.parentElement!;
       expect(grid).toHaveStyle({ gridTemplateColumns: '1fr 1.7fr' });
     });
 
     it('sums prep and cook time when only one is known', async () => {
       setup(recipe({ prepMinutes: null, cookMinutes: 10 }));
-      await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+      await screen.findByRole('heading', { level: 1, name: /Omelette/ });
       expect(fact('Time')).toHaveTextContent('10 min');
     });
 
     it('updates Serves when the Servings stepper is raised', async () => {
       const user = userEvent.setup();
       setup(recipe({}));
-      await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+      await screen.findByRole('heading', { level: 1, name: /Omelette/ });
       await user.click(screen.getByRole('button', { name: 'More Servings' }));
       expect(fact('Serves')).toHaveTextContent('3');
     });
@@ -256,19 +250,18 @@ describe('RecipeDetailPage', () => {
           id: 'f',
           title: 'Frittata',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
         }),
       );
       expect(
         await screen.findByRole('link', { name: /Variant of Omelette/ }),
-      ).toHaveAttribute('href', '/recipes/o');
+      ).toHaveAttribute('href', '/recipes/explore/o');
     });
-  });
-
-  it('shows no pill in the title of a Catalog Recipe', async () => {
-    setup(recipe({ owner: 'catalog' }));
-    const heading = await screen.findByRole('heading', { name: 'Omelette' });
-    expect(within(heading).queryByText("Your family's")).toBeNull();
   });
 
   it('notes an archived Recipe', async () => {
@@ -289,6 +282,7 @@ describe('RecipeDetailPage', () => {
             cuisine: { id: 'c-it', name: 'Italian' },
             method: { id: 'm-bake', name: 'Baking' },
             owner: 'catalog',
+            familyCopyId: null,
           },
         ],
       }),
@@ -299,7 +293,7 @@ describe('RecipeDetailPage', () => {
     ).closest('section')!;
     expect(
       within(section).getByRole('link', { name: 'Frittata' }),
-    ).toHaveAttribute('href', '/recipes/f');
+    ).toHaveAttribute('href', '/recipes/explore/f');
     expect(within(section).getByText(/Italian/)).toBeInTheDocument();
     expect(within(section).getByText(/Baking/)).toBeInTheDocument();
   });
@@ -315,6 +309,7 @@ describe('RecipeDetailPage', () => {
             cuisine: null,
             method: null,
             owner: 'catalog',
+            familyCopyId: null,
           },
           {
             id: 'g',
@@ -322,6 +317,7 @@ describe('RecipeDetailPage', () => {
             cuisine: null,
             method: null,
             owner: 'family',
+            familyCopyId: null,
           },
         ],
       }),
@@ -348,7 +344,12 @@ describe('RecipeDetailPage', () => {
         id: 'f',
         title: 'Frittata',
         parentId: 'o',
-        base: { id: 'o', title: 'Omelette', archived: false },
+        base: {
+          id: 'o',
+          title: 'Omelette',
+          archived: false,
+          familyCopyId: null,
+        },
         diff: {
           added: [entry('a1', 'Feta', 100, 'g')],
           removed: [entry('r1', 'Butter', 20, 'g')],
@@ -362,7 +363,7 @@ describe('RecipeDetailPage', () => {
     const back = await screen.findByRole('link', {
       name: /Variant of Omelette/,
     });
-    expect(back).toHaveAttribute('href', '/recipes/o');
+    expect(back).toHaveAttribute('href', '/recipes/explore/o');
     const section = screen
       .getByRole('heading', { name: "What's different" })
       .closest('section')!;
@@ -382,7 +383,7 @@ describe('RecipeDetailPage', () => {
     const user = userEvent.setup();
     setup(recipe({}));
     await openTab(user, 'About');
-    await screen.findByRole('heading', { name: 'Omelette' });
+    await screen.findByRole('heading', { name: /Omelette/ });
     expect(
       screen.queryByRole('heading', { name: "What's different" }),
     ).toBeNull();
@@ -428,7 +429,12 @@ describe('RecipeDetailPage', () => {
     setup(
       recipe({
         parentId: 'o',
-        base: { id: 'o', title: 'Omelette', archived: false },
+        base: {
+          id: 'o',
+          title: 'Omelette',
+          archived: false,
+          familyCopyId: null,
+        },
         diff: { added: [entry('a1', 'Feta')], removed: [], swapped: [] },
         guidance: {
           nutritionNote: 'Rich in fat.',
@@ -670,7 +676,12 @@ describe('RecipeDetailPage', () => {
     setup(
       recipe({
         parentId: 'o',
-        base: { id: 'o', title: 'Omelette', archived: false },
+        base: {
+          id: 'o',
+          title: 'Omelette',
+          archived: false,
+          familyCopyId: null,
+        },
       }),
     );
     await openTab(user, 'About');
@@ -847,7 +858,12 @@ describe('RecipeDetailPage', () => {
       setup(
         recipe({
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
           diff: {
             added: [entry('a1', 'Feta')],
             removed: [entry('r1', 'Butter')],
@@ -876,7 +892,12 @@ describe('RecipeDetailPage', () => {
       setup(
         recipe({
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
           diff: { added: [], removed: [], swapped: [] },
         }),
       );
@@ -906,7 +927,7 @@ describe('RecipeDetailPage', () => {
     const user = userEvent.setup();
     setup(recipe({}));
     await openTab(user, 'Steps');
-    await screen.findByRole('heading', { name: 'Omelette' });
+    await screen.findByRole('heading', { name: /Omelette/ });
     expect(screen.queryByRole('heading', { name: 'Tips' })).toBeNull();
   });
 
@@ -925,21 +946,18 @@ describe('RecipeDetailPage', () => {
   });
 
   describe('Family actions', () => {
-    it('offers Make a Variant but not Edit or Delete on a Catalog Recipe', async () => {
-      setup(recipe({}));
-      await screen.findByRole('link', { name: 'Make a Variant' });
-      expect(screen.queryByRole('link', { name: 'Edit' })).toBeNull();
-      expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
-      expect(screen.queryByRole('menuitem')).toBeNull();
-    });
-
     it("keeps the actions in a menu on the Family's own Recipe", async () => {
       setup(
         recipe({
           id: 'g',
           owner: 'family',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
         }),
       );
       const button = await screen.findByRole('button', {
@@ -958,7 +976,12 @@ describe('RecipeDetailPage', () => {
           id: 'g',
           owner: 'family',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
         }),
       );
       const menu = await openMenu(user);
@@ -1032,7 +1055,12 @@ describe('RecipeDetailPage', () => {
           id: 'g',
           owner: 'family',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
           lines: [
             {
               id: 'l9',
@@ -1094,9 +1122,39 @@ describe('RecipeDetailPage', () => {
       ).toBeNull();
     });
 
+    it('offers Make a Variant in the menu of a copy of a live Catalog Base', async () => {
+      const user = userEvent.setup();
+      setup(
+        recipe({
+          id: 'c',
+          owner: 'family',
+          copiedFrom: { id: 'o', archived: false },
+        }),
+      );
+      const menu = await openMenu(user);
+      expect(
+        within(menu).getByRole('menuitem', { name: 'Make a Variant' }),
+      ).toHaveAttribute('href', '/recipes/c/variant/new');
+    });
+
+    it('hides Make a Variant on a copy whose Catalog Base is archived', async () => {
+      const user = userEvent.setup();
+      setup(
+        recipe({
+          id: 'c',
+          owner: 'family',
+          copiedFrom: { id: 'o', archived: true },
+        }),
+      );
+      const menu = await openMenu(user);
+      expect(
+        within(menu).queryByRole('menuitem', { name: 'Make a Variant' }),
+      ).toBeNull();
+    });
+
     it('hides Make a Variant when the Recipe is archived', async () => {
       setup(recipe({ archived: true }));
-      await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+      await screen.findByRole('heading', { level: 1, name: /Omelette/ });
       expect(screen.queryByRole('link', { name: 'Make a Variant' })).toBeNull();
     });
 
@@ -1105,27 +1163,37 @@ describe('RecipeDetailPage', () => {
         recipe({
           id: 'v',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: true },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: true,
+            familyCopyId: null,
+          },
         }),
       );
-      await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+      await screen.findByRole('heading', { level: 1, name: /Omelette/ });
       expect(screen.queryByRole('link', { name: 'Make a Variant' })).toBeNull();
     });
 
-    it('archives after a confirm and goes back to the base', async () => {
+    it("archives after a confirm and goes to the Family's copy of the base", async () => {
       const user = userEvent.setup();
       const calls = setup(
         recipe({
           id: 'g',
           owner: 'family',
           parentId: 'o',
-          base: { id: 'o', title: 'Omelette', archived: false },
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: 'oc',
+          },
         }),
         '/recipes/g',
         {
           'POST /api/recipes/g/archive': () => Response.json({ id: 'g' }),
-          'GET /api/recipes/o': () =>
-            Response.json(recipe({ id: 'o', title: 'Omelette' })),
+          'GET /api/recipes/oc': () =>
+            Response.json(recipe({ id: 'oc', title: 'Omelette' })),
         },
       );
       const menu = await openMenu(user);
@@ -1135,13 +1203,35 @@ describe('RecipeDetailPage', () => {
       ).toBe(false);
       await user.click(await screen.findByRole('button', { name: 'Confirm' }));
       await vi.waitFor(() =>
-        expect(
-          screen.getByRole('link', { name: 'Make a Variant' }),
-        ).toHaveAttribute('href', '/recipes/o/variant/new'),
+        expect(calls.map((call) => call.key)).toContain('GET /api/recipes/oc'),
       );
       expect(calls.map((call) => call.key)).toContain(
         'POST /api/recipes/g/archive',
       );
+    });
+
+    it('goes to the list after deleting a Variant whose Catalog base has no Family copy', async () => {
+      const user = userEvent.setup();
+      const calls = setup(
+        recipe({
+          id: 'g',
+          owner: 'family',
+          parentId: 'o',
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: null,
+          },
+        }),
+        '/recipes/g',
+        { 'POST /api/recipes/g/archive': () => Response.json({ id: 'g' }) },
+      );
+      const menu = await openMenu(user);
+      await user.click(within(menu).getByRole('menuitem', { name: 'Delete' }));
+      await user.click(await screen.findByRole('button', { name: 'Confirm' }));
+      expect(await screen.findByText('All recipes page')).toBeInTheDocument();
+      expect(calls.map((call) => call.key)).not.toContain('GET /api/recipes/o');
     });
 
     it('goes to the list after deleting a standalone Family Recipe', async () => {
@@ -1183,7 +1273,7 @@ describe('RecipeDetailPage', () => {
 
     it('shows no banner without a warning', async () => {
       setup(recipe({}));
-      await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+      await screen.findByRole('heading', { level: 1, name: /Omelette/ });
       expect(
         screen.queryByRole('group', { name: 'Allergy Warning' }),
       ).toBeNull();
@@ -1596,6 +1686,33 @@ describe('RecipeDetailPage', () => {
       );
       await screen.findByRole('group', { name: 'Allergy Warning' });
       expect(document.body.textContent).not.toMatch(/\bsafe\b|allergen-free/i);
+    });
+  });
+
+  describe('Catalog Recipe ids on /recipes/:id', () => {
+    const open = (detail: RecipeDetail) => {
+      const { fetchMock } = stubApi({
+        [`GET /api/recipes/${detail.id}`]: () => Response.json(detail),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(
+        <Routes>
+          <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+          <Route path="/recipes/explore/:id" element={<p>Preview page</p>} />
+          <Route path="/recipes/copy-1" element={<p>Copy page</p>} />
+        </Routes>,
+        { route: `/recipes/${detail.id}` },
+      );
+    };
+
+    it("redirects to the Family's live copy when there is one", async () => {
+      open(recipe({ owner: 'catalog', familyCopyId: 'copy-1' }));
+      expect(await screen.findByText('Copy page')).toBeInTheDocument();
+    });
+
+    it('redirects to the Explore preview without a copy', async () => {
+      open(recipe({ owner: 'catalog', familyCopyId: null }));
+      expect(await screen.findByText('Preview page')).toBeInTheDocument();
     });
   });
 });

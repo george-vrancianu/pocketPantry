@@ -35,7 +35,8 @@
     "cookTonight": {
       "title": "Gătește diseară",
       "seeAll": "Vezi tot",
-      "empty": "Nimic de gătit din Cămara ta încă. Adaugă Loturi sau Rețete ca să vezi idei.",
+      "empty": "Nimic de gătit acum din Rețetele tale.",
+      "explore": "Explorează Rețete",
       "missing": "Lipsește: {{name}}",
       "expiring_one": "folosește {{count}} ingredient care expiră curând",
       "expiring_few": "folosește {{count}} ingrediente care expiră curând",

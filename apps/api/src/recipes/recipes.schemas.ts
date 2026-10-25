@@ -269,8 +269,17 @@ const showHiddenQuery = z
   .transform((v) => v === 'true')
   .optional();
 
+/** Whose Recipes a Member read lists: the Family's own or the Catalog's. Absent means both. */
+export const recipeScopeQuery = z.enum(['family', 'catalog']).optional();
+export type RecipeScope = NonNullable<z.infer<typeof recipeScopeQuery>>;
+
 /** Member browsing: no search or filter lists Base Recipes only. */
 export const browseQuery = z.object({
+  /**
+   * `family`: the Family's live Recipes, Variants included. `catalog`: Catalog Bases, or Catalog
+   * Variants while searching or filtering, counting Catalog Variants only. Absent: both mixed.
+   */
+  scope: recipeScopeQuery,
   search: z.string().trim().max(100).optional(),
   cuisineId: id.optional(),
   methodId: id.optional(),
@@ -417,6 +426,10 @@ export type RecipeListItem = {
   cookMinutes: number | null;
   difficulty: AdminRecipeDetail['difficulty'];
   owner: RecipeOwner;
+  /** On a Catalog Recipe: the Family's live copy of it (Add to Family), else null. Always null on a Family Recipe. */
+  familyCopyId: string | null;
+  /** On a Family copy: the Catalog Recipe it was Copied From, else null. Groups a Family Variant under the Family's copy of its Base. */
+  copiedFromId: string | null;
   /** The compact Allergy Warning, judged on this Recipe's own lines; null when nothing the viewer must avoid is, or might be, in it. */
   allergyWarning: CompactAllergyWarning | null;
 };
@@ -435,6 +448,8 @@ export type RecipeVariantItem = {
   cuisine: NamedRef | null;
   method: NamedRef | null;
   owner: RecipeOwner;
+  /** The Family's live copy of a Catalog Variant, else null. */
+  familyCopyId: string | null;
 };
 
 /** One Allergen a Recipe is known to contain, with the lines it comes from. */
@@ -515,9 +530,19 @@ export type CompactAllergyWarning = {
  */
 export type RecipeDetail = ResolvedRecipe & {
   /** Null on a Base Recipe. */
-  base: { id: string; title: string; archived: boolean } | null;
+  base: {
+    id: string;
+    title: string;
+    archived: boolean;
+    /** The Family's live copy of a Catalog base, else null. */
+    familyCopyId: string | null;
+  } | null;
   /** The live Variants of a Base Recipe, ordered by title; empty on a Variant. */
   variants: RecipeVariantItem[];
+  /** The Family's live copy of a Catalog Recipe, else null (always null on a Family Recipe). */
+  familyCopyId: string | null;
+  /** The Catalog Base a Family Base was Copied From, else null. */
+  copiedFrom: { id: string; archived: boolean } | null;
   /** Ingredients that differ from the base; null on a Base Recipe. */
   diff: RecipeDiff | null;
   /** What the Recipe is known to contain, worked out from its own lines. */
@@ -618,6 +643,8 @@ export type FamilyRecipeDraft = {
 };
 /** `today` is the Member's local date; it defaults to the server's UTC date. */
 export const cookTonightQuery = z.object({
+  /** Only the Family's own Recipes (`family`) or only Catalog ones (`catalog`); absent is both. */
+  scope: recipeScopeQuery,
   today: z.iso.date().optional(),
   /** The "show hidden" override for "Hide Recipes with my Allergies" (#359). */
   showHidden: showHiddenQuery,
@@ -633,6 +660,8 @@ export type CookTonightCard = {
     title: string;
     parentId: string | null;
     owner: RecipeOwner;
+    /** The Family's live copy of a Catalog Recipe, else null. */
+    familyCopyId: string | null;
     servings: number;
     prepMinutes: number | null;
     cookMinutes: number | null;
@@ -663,5 +692,7 @@ export type PlateMatches = {
 
 /** A Plate Scan's closest-match Base Recipe with the viewer's compact Allergy Warning. */
 export type PlateMatchView = PlateMatch & {
+  /** The Family's live copy of this Catalog Base, else null. */
+  familyCopyId: string | null;
   allergyWarning: CompactAllergyWarning | null;
 };

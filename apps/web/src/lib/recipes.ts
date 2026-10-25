@@ -57,6 +57,10 @@ export type RecipeListItem = {
   cookMinutes: number | null;
   difficulty: Difficulty | null;
   owner: RecipeOwner;
+  /** On a Catalog Recipe: the Family's live copy of it (Add to Family), else null. */
+  familyCopyId: string | null;
+  /** On a Family copy: the Catalog Recipe it was Copied From, else null. */
+  copiedFromId: string | null;
   allergyWarning: CompactAllergyWarning | null;
 };
 
@@ -73,6 +77,8 @@ export type RecipeVariantItem = {
   cuisine: NamedRef | null;
   method: NamedRef | null;
   owner: RecipeOwner;
+  /** The Family's live copy of a Catalog Variant, else null. */
+  familyCopyId: string | null;
 };
 
 export type RecipeDetailLine = {
@@ -109,7 +115,14 @@ export type RecipeDiff = {
 
 export type PairingLink =
   | { type: 'ingredient'; id: string; name: string }
-  | { type: 'recipe'; id: string; title: string };
+  | {
+      type: 'recipe';
+      id: string;
+      title: string;
+      owner: RecipeOwner;
+      /** The Family's live copy when the linked Recipe is a Catalog Recipe, else null. */
+      familyCopyId?: string | null;
+    };
 export type DetailPairing = {
   id: string;
   kind: PairingKind;
@@ -187,8 +200,18 @@ export type RecipeDetail = {
   lines: RecipeDetailLine[];
   steps: RecipeDetailStep[];
   tips: RecipeDetailTip[];
-  base: { id: string; title: string; archived: boolean } | null;
+  base: {
+    id: string;
+    title: string;
+    archived: boolean;
+    /** The Family's live copy of a Catalog base, else null. */
+    familyCopyId: string | null;
+  } | null;
   variants: RecipeVariantItem[];
+  /** The Family's live copy of a Catalog Recipe, else null. */
+  familyCopyId: string | null;
+  /** The Catalog Base a Family Base was Copied From, else null. */
+  copiedFrom: { id: string; archived: boolean } | null;
   diff: RecipeDiff | null;
   guidance: RecipeGuidance;
   allergens: RecipeAllergens;
@@ -238,6 +261,7 @@ export function useRecipes(
     searchOnly = false,
     includeVariants = false,
     showHidden = false,
+    scope,
     enabled = true,
   }: {
     searchOnly?: boolean;
@@ -247,6 +271,8 @@ export function useRecipes(
      * Pairing picker always pass it: Plan Slots and Pairing links never hide.
      */
     showHidden?: boolean;
+    /** `catalog` lists Catalog Recipes (Explore); `family` the Family's own. Omitted: both, as before. */
+    scope?: 'family' | 'catalog';
     enabled?: boolean;
   } = {},
 ) {
@@ -256,6 +282,7 @@ export function useRecipes(
     queryKey: [
       ...recipesQueryKey,
       'list',
+      scope ?? 'all',
       search,
       cuisineId,
       methodId,
@@ -269,6 +296,7 @@ export function useRecipes(
       if (methodId) params.set('methodId', methodId);
       if (includeVariants) params.set('includeVariants', 'true');
       if (showHidden) params.set('showHidden', 'true');
+      if (scope) params.set('scope', scope);
       return apiRequest<RecipeList>(`/recipes?${params}`);
     },
     // `searchOnly`: nothing to fetch until a search term has settled (the debounce has run).

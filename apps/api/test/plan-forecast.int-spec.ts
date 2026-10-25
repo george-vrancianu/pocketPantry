@@ -117,12 +117,14 @@ describe('Plan Forecast (integration)', () => {
   type Member = Awaited<ReturnType<typeof member>>;
 
   async function recipe(
+    familyId: string,
     lines: { ingredientId: string; quantity?: number; unit?: Unit }[],
     over: { archived?: boolean; servings?: number; prep?: number } = {},
   ) {
     const id = crypto.randomUUID();
     await database.insert(recipes).values({
       id,
+      familyId,
       title: `Dish ${stamp}-${++n}`,
       servings: over.servings ?? 4,
       prepMinutes: over.prep ?? 10,
@@ -193,7 +195,7 @@ describe('Plan Forecast (integration)', () => {
   describe('reading one plan', () => {
     it('carries a status and issues per slot, the day statuses and the plan tag', async () => {
       const ana = await member('plan');
-      const dish = await recipe([
+      const dish = await recipe(ana.familyId, [
         { ingredientId: eggs, quantity: 4, unit: 'pcs' },
       ]);
       await stock(ana.familyId, eggs, 6, 'pcs');
@@ -242,7 +244,7 @@ describe('Plan Forecast (integration)', () => {
 
     it('turns short into onList once the Ingredient is on the Shopping List', async () => {
       const ana = await member('onlist');
-      const dish = await recipe([
+      const dish = await recipe(ana.familyId, [
         { ingredientId: eggs, quantity: 4, unit: 'pcs' },
       ]);
       const id = await plan(ana, TODAY, 1);
@@ -259,7 +261,7 @@ describe('Plan Forecast (integration)', () => {
 
     it('does not count a checked Shopping Item as on the list', async () => {
       const ana = await member('checked');
-      const dish = await recipe([
+      const dish = await recipe(ana.familyId, [
         { ingredientId: eggs, quantity: 4, unit: 'pcs' },
       ]);
       const id = await plan(ana, TODAY, 1);
@@ -281,7 +283,7 @@ describe('Plan Forecast (integration)', () => {
 
     it('gives past days no status, and forecasts from the client today', async () => {
       const ana = await member('past');
-      const dish = await recipe([
+      const dish = await recipe(ana.familyId, [
         { ingredientId: eggs, quantity: 4, unit: 'pcs' },
       ]);
       const id = await plan(ana, TODAY, 2);
@@ -298,7 +300,7 @@ describe('Plan Forecast (integration)', () => {
 
     it('marks a slot unavailable once its Recipe is archived', async () => {
       const ana = await member('archived');
-      const dish = await recipe([
+      const dish = await recipe(ana.familyId, [
         { ingredientId: eggs, quantity: 4, unit: 'pcs' },
       ]);
       const id = await plan(ana, TODAY, 1);
@@ -317,7 +319,7 @@ describe('Plan Forecast (integration)', () => {
 
     it('carries the forecast on from an earlier plan', async () => {
       const ana = await member('carry');
-      const dish = await recipe([
+      const dish = await recipe(ana.familyId, [
         { ingredientId: eggs, quantity: 4, unit: 'pcs' },
       ]);
       await stock(ana.familyId, eggs, 6, 'pcs');
@@ -333,6 +335,7 @@ describe('Plan Forecast (integration)', () => {
     it('runs planned days across two consecutive plans, with gap days and the next plan date', async () => {
       const ana = await member('window');
       const dish = await recipe(
+        ana.familyId,
         [{ ingredientId: eggs, quantity: 4, unit: 'pcs' }],
         { prep: 15 },
       );
@@ -391,7 +394,7 @@ describe('Plan Forecast (integration)', () => {
     it('shows the next plan when today is outside every plan, and nothing planned with none', async () => {
       const ana = await member('next');
       const none = await member('none');
-      const dish = await recipe([
+      const dish = await recipe(ana.familyId, [
         { ingredientId: milk, quantity: 1, unit: 'l' },
       ]);
       const upcoming = await plan(ana, at(12), 2);
@@ -416,7 +419,7 @@ describe('Plan Forecast (integration)', () => {
 
     it('takes today from the client, falling back to the UTC date', async () => {
       const ana = await member('today');
-      const dish = await recipe([
+      const dish = await recipe(ana.familyId, [
         { ingredientId: eggs, quantity: 4, unit: 'pcs' },
       ]);
       const utc = new Date().toISOString().slice(0, 10);
@@ -447,13 +450,16 @@ describe('Plan Forecast (integration)', () => {
   it("never lets another Family's Pantry, list or plans into the forecast", async () => {
     const ana = await member('own');
     const ben = await member('other');
-    const dish = await recipe([
+    const dish = await recipe(ana.familyId, [
+      { ingredientId: eggs, quantity: 4, unit: 'pcs' },
+    ]);
+    const benDish = await recipe(ben.familyId, [
       { ingredientId: eggs, quantity: 4, unit: 'pcs' },
     ]);
     await stock(ben.familyId, eggs, 100, 'pcs');
     await ben.list.post('/items?locale=en', { ingredientId: eggs }).expect(200);
     const benPlan = await plan(ben, TODAY, 1);
-    await fill(ben, benPlan, 0, 'breakfast', dish, 40);
+    await fill(ben, benPlan, 0, 'breakfast', benDish, 40);
     const id = await plan(ana, TODAY, 1);
     await fill(ana, id, 0, 'dinner', dish);
 

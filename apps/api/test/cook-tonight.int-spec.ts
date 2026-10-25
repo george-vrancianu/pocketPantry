@@ -31,6 +31,7 @@ type Card = {
     title: string;
     parentId: string | null;
     owner: 'catalog' | 'family';
+    familyCopyId: string | null;
     servings: number;
   };
   canMake: boolean;
@@ -63,6 +64,7 @@ describe('Cook Tonight (integration)', () => {
     opts: {
       familyId?: string | null;
       parentId?: string;
+      copiedFromId?: string;
       archived?: boolean;
       title?: string;
     } = {},
@@ -72,6 +74,7 @@ describe('Cook Tonight (integration)', () => {
       id,
       familyId: opts.familyId ?? null,
       parentId: opts.parentId ?? null,
+      copiedFromId: opts.copiedFromId ?? null,
       title: opts.title ?? `Tonight ${stamp}-${++n}`,
       servings: 2,
       archivedAt: opts.archived ? new Date() : null,
@@ -372,6 +375,182 @@ describe('Cook Tonight (integration)', () => {
     const en = (await cardsOf(ana)).find((c) => c.base.id === base);
     expect(en?.base.title).toMatch(/^Tonight /);
     expect(en?.missing?.name).toBe('Milk');
+  });
+
+  describe('scope', () => {
+    const cardsIn = async (scope?: string) =>
+      (
+        (
+          await ana
+            .get(
+              `/cook-tonight?today=${today}${scope ? `&scope=${scope}` : ''}`,
+            )
+            .expect(200)
+        ).body as { cards: Card[] }
+      ).cards;
+
+    it('names the Family live copy of a Catalog card in familyCopyId, null without one', async () => {
+      const line = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];
+      const withCopy = await makeRecipe(line);
+      const without = await makeRecipe(line);
+      const copy = await makeRecipe(line, {
+        familyId: anaFamily,
+        copiedFromId: withCopy,
+      });
+      await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+      const cards = await cardsIn('catalog');
+      const copyOf = (id: string) =>
+        cards.find((c) => c.base.id === id)!.recipe.familyCopyId;
+      expect(copyOf(withCopy)).toBe(copy);
+      expect(copyOf(without)).toBeNull();
+    });
+
+    it('returns only the Family cards on family and only Catalog cards on catalog, mixed with no scope', async () => {
+      const line = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];
+      const catalog = await makeRecipe(line);
+      const own = await makeRecipe(line, { familyId: anaFamily });
+      await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+
+      const ids = (cards: Card[]) => cards.map((c) => c.base.id);
+      expect(ids(await cardsIn('family'))).toContain(own);
+      expect(ids(await cardsIn('family'))).not.toContain(catalog);
+      expect(ids(await cardsIn('catalog'))).toContain(catalog);
+      expect(ids(await cardsIn('catalog'))).not.toContain(own);
+      expect(ids(await cardsIn())).toEqual(
+        expect.arrayContaining([own, catalog]),
+      );
+    });
+
+    it('cards a Family Variant of a Catalog Base on its own on family (no copy), and drops it on catalog', async () => {
+      const line = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];
+      const base = await makeRecipe(line);
+      const catalogVariant = await makeRecipe(line, {
+        parentId: base,
+        title: `Cat Variant ${stamp}-s1`,
+      });
+      const familyVariant = await makeRecipe(line, {
+        parentId: base,
+        familyId: anaFamily,
+        title: `Fam Variant ${stamp}-s2`,
+      });
+      await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+
+      const family = await cardsIn('family');
+      expect(family.filter((c) => c.base.id === base)).toHaveLength(0);
+      const own = family.filter((c) => c.base.id === familyVariant);
+      expect(own).toHaveLength(1);
+      expect(own[0].recipe.id).toBe(familyVariant);
+      const catalog = (await cardsIn('catalog')).filter(
+        (c) => c.base.id === base,
+      );
+      expect(catalog).toHaveLength(1);
+      expect([base, catalogVariant]).toContain(catalog[0].recipe.id);
+      expect(catalog[0].recipe.owner).toBe('catalog');
+    });
+
+    it('cards two Family Variants of the same Catalog Base without a copy as two cards', async () => {
+      const line = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];
+      const base = await makeRecipe(line);
+      const one = await makeRecipe(line, {
+        parentId: base,
+        familyId: anaFamily,
+        title: `Fam One ${stamp}-s7`,
+      });
+      const two = await makeRecipe(line, {
+        parentId: base,
+        familyId: anaFamily,
+        title: `Fam Two ${stamp}-s8`,
+      });
+      await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+      const ids = (await cardsIn('family')).map((c) => c.base.id);
+      expect(ids).toEqual(expect.arrayContaining([one, two]));
+    });
+
+    it('groups a Family Variant under the Family copy of its Catalog Base on family, one card', async () => {
+      const line = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];
+      const base = await makeRecipe(line);
+      const copy = await makeRecipe(line, {
+        familyId: anaFamily,
+        copiedFromId: base,
+        title: `Copy ${stamp}-s5`,
+      });
+      await makeRecipe(line, {
+        parentId: base,
+        familyId: anaFamily,
+        title: `Fam Variant ${stamp}-s6`,
+      });
+      await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+
+      const cards = await cardsIn('family');
+      expect(cards.filter((c) => c.base.id === base)).toHaveLength(0);
+      const grouped = cards.filter((c) => c.base.id === copy);
+      expect(grouped).toHaveLength(1);
+      expect(grouped[0].recipe.id).toBe(copy);
+      expect(grouped[0].otherVariantsCount).toBe(1);
+    });
+
+    it('does not group under an archived copy', async () => {
+      const line = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];
+      const base = await makeRecipe(line);
+      const copy = await makeRecipe(line, {
+        familyId: anaFamily,
+        copiedFromId: base,
+        archived: true,
+        title: `Old Copy ${stamp}-s9`,
+      });
+      const variant = await makeRecipe(line, {
+        parentId: base,
+        familyId: anaFamily,
+        title: `Fam Variant ${stamp}-s10`,
+      });
+      await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+      const ids = (await cardsIn('family')).map((c) => c.base.id);
+      expect(ids).toContain(variant);
+      expect(ids).not.toContain(copy);
+    });
+
+    it('still cards a Family Variant under its Catalog Base on catalog and with no scope', async () => {
+      const line = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];
+      const base = await makeRecipe(line);
+      const copy = await makeRecipe(line, {
+        familyId: anaFamily,
+        copiedFromId: base,
+        title: `Copy ${stamp}-s11`,
+      });
+      await makeRecipe(line, {
+        parentId: base,
+        familyId: anaFamily,
+        title: `Fam Variant ${stamp}-s12`,
+      });
+      await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+      const mixed = (await cardsIn()).filter((c) => c.base.id === base);
+      expect(mixed).toHaveLength(1);
+      expect((await cardsIn()).map((c) => c.base.id)).toContain(copy);
+      expect(
+        (await cardsIn('catalog')).filter((c) => c.base.id === base),
+      ).toHaveLength(1);
+    });
+
+    it('keeps best match first inside a scope', async () => {
+      const full = await makeRecipe(
+        [{ ingredientId: feta, quantity: 100, unit: 'g' }],
+        { familyId: anaFamily, title: `Zed ${stamp}-s3` },
+      );
+      const near = await makeRecipe(
+        [
+          { ingredientId: feta, quantity: 100, unit: 'g' },
+          { ingredientId: milk, quantity: 100, unit: 'ml' },
+        ],
+        { familyId: anaFamily, title: `Aaa ${stamp}-s4` },
+      );
+      await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+      const ids = (await cardsIn('family')).map((c) => c.base.id);
+      expect(ids.indexOf(full)).toBeLessThan(ids.indexOf(near));
+    });
+
+    it('rejects an unknown scope', async () => {
+      await ana.get('/cook-tonight?scope=everyone').expect(400);
+    });
   });
 
   it('rejects a malformed today', async () => {

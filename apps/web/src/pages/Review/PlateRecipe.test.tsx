@@ -49,8 +49,20 @@ const lines: ProposedLine[] = [
 ];
 
 const matches: PlateMatch[] = [
-  { id: 'pilaf-id', title: 'Pilaf', score: 0.9, allergyWarning: null },
-  { id: 'risotto-id', title: 'Risotto', score: 0.4, allergyWarning: null },
+  {
+    id: 'pilaf-id',
+    title: 'Pilaf',
+    score: 0.9,
+    familyCopyId: 'pilaf-copy',
+    allergyWarning: null,
+  },
+  {
+    id: 'risotto-id',
+    title: 'Risotto',
+    score: 0.4,
+    familyCopyId: null,
+    allergyWarning: null,
+  },
 ];
 
 function renderPlate(
@@ -167,6 +179,18 @@ describe('Plate Scan: save as a Recipe', () => {
       ],
     });
     expect(getScanSession().scans).toHaveLength(0);
+  });
+
+  it('links each closest match to the Family copy, else the Explore preview', async () => {
+    renderPlate();
+    await openPanel();
+    expect(
+      await screen.findByRole('link', { name: 'View Pilaf' }),
+    ).toHaveAttribute('href', '/recipes/pilaf-copy');
+    expect(screen.getByRole('link', { name: 'View Risotto' })).toHaveAttribute(
+      'href',
+      '/recipes/explore/risotto-id',
+    );
   });
 
   it('saves a standalone Recipe when chosen', async () => {

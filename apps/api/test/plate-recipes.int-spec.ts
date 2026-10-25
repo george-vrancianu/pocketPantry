@@ -17,7 +17,12 @@ const code = (res: { body: unknown }) => (res.body as { code: string }).code;
 jest.setTimeout(30_000);
 
 type Matches = {
-  matches: { id: string; title: string; score: number }[];
+  matches: {
+    id: string;
+    title: string;
+    score: number;
+    familyCopyId: string | null;
+  }[];
 };
 
 describe('Plate Scan as a Family Recipe (integration)', () => {
@@ -136,6 +141,27 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
         title: `${word} near`,
       });
       expect(matches.length).toBeLessThanOrEqual(5);
+    });
+
+    it('names the Family live copy of a match in familyCopyId, null without one', async () => {
+      const word = `Fcp${stamp}`;
+      const copied = await catalogBase(`${word} copied`, [0, 1]);
+      const plain = await catalogBase(`${word} plain`, [0, 1]);
+      const copyId = (
+        (await member.post(`/${copied.id}/copy`).expect(200)).body as {
+          id: string;
+        }
+      ).id;
+      const { matches } = await closestBases(word, [ing[0], ing[1]]);
+      const copyOf = (id: string) =>
+        matches.find((m) => m.id === id)!.familyCopyId;
+      expect(copyOf(copied.id)).toBe(copyId);
+      expect(copyOf(plain.id)).toBeNull();
+      await member.post(`/${copyId}/archive`).expect(200);
+      const after = await closestBases(word, [ing[0], ing[1]]);
+      expect(
+        after.matches.find((m) => m.id === copied.id)!.familyCopyId,
+      ).toBeNull();
     });
 
     it('shows the locale title and still ranks on the source title', async () => {

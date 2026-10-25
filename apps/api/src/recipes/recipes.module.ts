@@ -11,6 +11,7 @@ import { PantryMatchingService } from './matching/pantry-matching.service';
 import { LinkRecipesService } from './link-recipes.service';
 import { PlateRecipesService } from './plate-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
+import { RecipeCopyService } from './recipe-copy.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import { RecipeGuidanceService } from './recipe-guidance.service';
 import { RecipePantryController } from './recipe-pantry.controller';
@@ -37,6 +38,7 @@ import { RecipesService } from './recipes.service';
     RecipeGuidanceService,
     RecipeBrowseService,
     FamilyRecipesService,
+    RecipeCopyService,
     CookTonightService,
     PlateRecipesService,
     LinkRecipesService,
@@ -46,6 +48,7 @@ import { RecipesService } from './recipes.service';
   ],
   exports: [
     FamilyRecipesService,
+    RecipeCopyService,
     RecipesService,
     RecipeTipsService,
     RecipeTranslationsService,

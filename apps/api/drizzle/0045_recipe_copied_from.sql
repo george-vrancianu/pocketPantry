@@ -1,0 +1,3 @@
+ALTER TABLE "recipes" ADD COLUMN "copied_from_id" uuid;--> statement-breakpoint
+ALTER TABLE "recipes" ADD CONSTRAINT "recipes_copied_from_id_recipes_id_fk" FOREIGN KEY ("copied_from_id") REFERENCES "public"."recipes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "recipes_family_copied_from_live_idx" ON "recipes" USING btree ("family_id","copied_from_id") WHERE "recipes"."copied_from_id" IS NOT NULL AND "recipes"."archived_at" IS NULL;

@@ -1,5 +1,6 @@
 import type { ComponentType, SVGProps } from 'react';
 import {
+  Compass,
   House,
   LayoutGrid,
   Settings,
@@ -20,6 +21,7 @@ import {
   ArrowLeftRight,
   Users,
   GitBranch,
+  Eye,
   BatteryLow,
   Mic,
   MicOff,
@@ -310,6 +312,7 @@ export const ArrowLeftIcon = lucide(ArrowLeft);
 export const SwapIcon = lucide(ArrowLeftRight);
 export const PeopleIcon = lucide(Users);
 export const BranchIcon = lucide(GitBranch);
+export const EyeIcon = lucide(Eye);
 export const RunningLowIcon = lucide(BatteryLow);
 
 /** Voice Notes: the voice button, the intro sheet hero and its Allow button. */
@@ -330,6 +333,8 @@ export const LockIcon = lucide(Lock);
 export const CameraIcon = lucide(Camera);
 /** Scan camera: the Scan Language chip's globe. */
 export const GlobeIcon = lucide(Globe);
+/** Explore: the header pill, the "+" menu item and the empty Recipes page. */
+export const CompassIcon = lucide(Compass);
 /** Review overview: "Add from photos". */
 export const ImagePlusIcon = lucide(ImagePlus);
 export const ReceiptIcon = lucide(ReceiptText);

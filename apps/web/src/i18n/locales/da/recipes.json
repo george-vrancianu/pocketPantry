@@ -51,7 +51,6 @@
   "search": "Søg opskrifter",
   "cuisine": "Køkken",
   "method": "Metode",
-  "empty": "Ingen opskrifter endnu.",
   "noMatches": "Ingen opskrifter passer.",
   "allRecipes": "Alle opskrifter",
   "matches": "Resultater",
@@ -63,7 +62,6 @@
   "missingOneVia": "Mangler {{name}} til {{title}}",
   "expiring_one": "{{count}} udløber snart",
   "expiring_other": "{{count}} udløber snart",
-  "emptyHint": "Scan en tallerken eller lav en ud fra et foto.",
   "noMatchesHint": "Prøv et andet ord, eller ryd et filter.",
   "variantsHint": "Søg eller vælg et filter for at se varianter for sig.",
   "minutesShort": "min",
@@ -256,5 +254,52 @@
     "continueNamed": "Fortsæt {{name}}",
     "startNew": "Start ny",
     "baseGone": "Grundopskriften, denne opskriftkladde var en variant af, findes ikke længere. Den åbnes som en ny opskrift og gemmes som en grundopskrift."
-  }
+  },
+  "explore": {
+    "title": "Udforsk",
+    "menuItem": "Fra Udforsk",
+    "menuNew": "ny",
+    "subline": "Tilføj en opskrift for at lave den, planlægge den og ændre den, eller lav en variant af den.",
+    "back": "Tilbage til dine opskrifter",
+    "add": "Tilføj {{title}} til dine opskrifter",
+    "added": "{{title}} er tilføjet til dine opskrifter",
+    "addFailed": "Kunne ikke tilføje {{title}}. Prøv igen.",
+    "openCopy": "{{title}} er i dine opskrifter. Åbn den",
+    "undoFailed": "Kunne ikke fortryde tilføjelsen af {{title}}. Prøv igen.",
+    "alreadyAdded": "{{title}} er allerede i dine opskrifter",
+    "pill": "Udforsk",
+    "search": "Søg i alle opskrifter",
+    "canMake": "Det kan du lave",
+    "noMatchesHint": "Prøv et andet ord, eller skriv din egen med Ny opskrift.",
+    "backAdded_one": "Tilbage til dine opskrifter, {{count}} tilføjet",
+    "backAdded_other": "Tilbage til dine opskrifter, {{count}} tilføjet",
+    "showMore_one": "Vis {{count}} mere",
+    "showMore_other": "Vis {{count}} mere"
+  },
+  "preview": {
+    "eyebrow": "Udforsk · Katalogopskrift",
+    "note": "Du ser en forhåndsvisning af en katalogopskrift. Føj den til dine opskrifter for at ændre den, planlægge den eller lave den fra din liste.",
+    "addShort": "Føj til familien",
+    "inFamily": "I dine opskrifter",
+    "actions": "Handlinger for denne opskrift"
+  },
+  "quickView": {
+    "eyebrow": "Katalogopskrift",
+    "close": "Luk",
+    "missing": "mangler",
+    "seeWhole": "Se hele opskriften",
+    "add": "Føj til dine opskrifter",
+    "openCopy": "I dine opskrifter · Åbn",
+    "explain": "Når du tilføjer, laver du en kopi, som din familie kan ændre. Lav en variant åbner editoren først.",
+    "explainAdded": "Din kopi kan du ændre. Denne katalogopskrift forbliver, som den er."
+  },
+  "emptyFamily": {
+    "title": "Ingen familieopskrifter endnu",
+    "body": "Opskrifter, du tilføjer, kan ændres, som du vil. Hele familien kan se dem.",
+    "explore": "Udforsk opskrifter",
+    "newRecipe": "+ Ny opskrift",
+    "starters": "Start med disse · du kan lave dem"
+  },
+  "allHidden": "Ingen opskrifter at vise.",
+  "allHiddenHint": "Opskrifter skjult på grund af dine allergier er udeladt."
 }

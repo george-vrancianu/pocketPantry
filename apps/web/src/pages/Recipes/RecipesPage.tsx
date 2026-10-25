@@ -1,34 +1,106 @@
 import {
   Alert,
   Box,
+  CompassIcon,
   PlusIcon,
+  radius,
   Spinner,
   Stack,
   tokens,
   displayType,
 } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../i18n/translateApiError';
 import { cardFor, indexCards, useCookTonight } from '../../lib/cookTonight';
+import { useAddToFamily } from '../../lib/addToFamily';
 import { localIso } from '../../lib/pantry';
 import {
   isFiltering,
   useRecipeFilters,
   useRecipes,
   type RecipeBrowse,
+  type RecipeListItem,
 } from '../../lib/recipes';
 import { useRecipeDrafts } from '../../lib/recipeDrafts';
 import { useRecipeDraftDiscard } from './useRecipeDraftDiscard';
+import { EmptyFamilyRecipes } from './components/EmptyFamilyRecipes';
 import { CookTonightCardLink } from './components/CookTonightCardLink';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
 import { SectionLabel } from './components/SectionLabel';
 
-/** Browse Recipes: Base Recipes by default, Variants too once a search or filter is active. */
+/** The header's one second button besides "+" (ADR 0027 amendment): a way into Explore. */
+function ExplorePill() {
+  const { t } = useTranslation('recipes');
+  return (
+    <Box
+      component={Link}
+      to="/recipes/explore"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        height: 40,
+        boxSizing: 'border-box',
+        pl: '10px',
+        pr: '13px',
+        borderRadius: radius.pill,
+        bgcolor: tokens.color.surface,
+        border: `1px solid ${tokens.color.line}`,
+        color: tokens.color.ink,
+        fontSize: 13.5,
+        fontWeight: 700,
+        textDecoration: 'none',
+        flexShrink: 0,
+        '&:hover, &:active': { bgcolor: tokens.color.subtle },
+      }}
+    >
+      <Box
+        component="span"
+        aria-hidden
+        sx={{ display: 'flex', color: tokens.color.accent }}
+      >
+        <CompassIcon size={18} />
+      </Box>
+      {t('explore.pill')}
+    </Box>
+  );
+}
+
+/**
+ * The list without the Variants that sit under a Base in it. The Base's count becomes the
+ * Variants grouped under it. A Variant belongs to its `parentId` or, when that is a Catalog
+ * Recipe, to the Family's copy of it (`copiedFromId`).
+ */
+function groupVariants(found: RecipeListItem[]): RecipeListItem[] {
+  const baseFor = new Map<string, string>();
+  for (const item of found) {
+    if (item.parentId !== null) continue;
+    if (item.copiedFromId) baseFor.set(item.copiedFromId, item.id);
+  }
+  const counts = new Map<string, number>();
+  const rows = found.filter((item) => {
+    const base =
+      item.parentId === null ? undefined : baseFor.get(item.parentId);
+    if (base === undefined) return true;
+    counts.set(base, (counts.get(base) ?? 0) + 1);
+    return false;
+  });
+  return rows.map((item) =>
+    item.parentId === null
+      ? {
+          ...item,
+          variantCount: counts.get(item.id) ?? 0,
+        }
+      : item,
+  );
+}
+
+/** The Family's Recipes (Catalog Recipes are reached through Explore): Bases by default, Variants too once a search or filter is active. */
 export function RecipesPage() {
   const { t } = useTranslation(['recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
@@ -38,12 +110,13 @@ export function RecipesPage() {
   });
   // "Show" in the hidden-by-Allergies note asks the list and the Cook Tonight card for everything.
   const [showHidden, setShowHidden] = useState(false);
-  const recipes = useRecipes(browse, { showHidden });
+  const recipes = useRecipes(browse, { showHidden, scope: 'family' });
   const filters = useRecipeFilters();
   const cookTonight = useCookTonight(
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     localIso(new Date()),
     showHidden,
+    'family',
   );
   // Recipe Drafts are not Recipes: just an entry to the list, hidden when there are none (ADR 0028).
   const drafts = useRecipeDrafts();
@@ -52,8 +125,20 @@ export function RecipesPage() {
     drafts.data?.filter((draft) => !discarding.hiddenIds.has(draft.id))
       .length ?? 0;
   const headingId = useId();
-  const items = recipes.data?.recipes ?? [];
   const filtering = isFiltering(browse);
+  const found = recipes.data?.recipes ?? [];
+  // Not searching: a Variant sits under its Base (a Family Recipe, or the Family's copy of its
+  // Catalog Base); one without a Base in the list is its own row, labelled "Variant of {base}".
+  const items = filtering ? found : groupVariants(found);
+  // No live Recipes (archived ones aren't listed): chef Gator replaces the search, chips and list.
+  const noneListed = recipes.data !== undefined && items.length === 0;
+  // Recipes hidden by Allergies are still Recipes: that Family isn't empty.
+  const empty =
+    !filtering &&
+    noneListed &&
+    (recipes.data?.hiddenByAllergiesCount ?? 0) === 0;
+  const addToFamily = useAddToFamily();
+  const addButton = useRef<HTMLButtonElement>(null);
   const cards = cookTonight.data?.cards ?? [];
   const index = indexCards(cards);
 
@@ -61,14 +146,23 @@ export function RecipesPage() {
     <>
       <AppScreenHeader
         title={t('recipes:title')}
+        trailing={<ExplorePill />}
         action={{
           label: t('recipes:add'),
           icon: <PlusIcon size={20} />,
+          buttonRef: addButton,
           items: [
             { label: t('recipes:family.newRecipe'), href: '/recipes/new' },
             {
               label: t('recipes:fromLink.menuItem'),
               href: '/recipes/from-link',
+            },
+            {
+              label: t('recipes:explore.menuItem'),
+              icon: <CompassIcon size={18} />,
+              dividerBefore: true,
+              badge: t('recipes:explore.menuNew'),
+              href: '/recipes/explore',
             },
           ],
         }}
@@ -76,7 +170,7 @@ export function RecipesPage() {
       {/* Flex gap leaves the children's margins alone, so the filters can bleed to the screen edges. */}
       <Stack spacing={1.5} useFlexGap>
         {/* Hidden until the answer arrives, so an error or a slow load never reads as "nothing to cook". */}
-        {!filtering && cookTonight.data && !cookTonight.error ? (
+        {!filtering && !empty && cookTonight.data && !cookTonight.error ? (
           <CookTonightCardLink cards={cards} />
         ) : null}
         {draftCount > 0 ? (
@@ -93,11 +187,13 @@ export function RecipesPage() {
             {t('recipes:drafts.entry', { count: draftCount })}
           </Box>
         ) : null}
-        <RecipeFilters
-          value={browse}
-          onChange={setBrowse}
-          options={filters.data}
-        />
+        {empty ? null : (
+          <RecipeFilters
+            value={browse}
+            onChange={setBrowse}
+            options={filters.data}
+          />
+        )}
         <HiddenByAllergiesNote
           count={
             filtering
@@ -113,18 +209,21 @@ export function RecipesPage() {
           <Alert>{translateApiError(t, recipes.error)}</Alert>
         ) : null}
         {recipes.isPending ? <Spinner label={t('common:loading')} /> : null}
-        {recipes.data && items.length === 0 ? (
+        {empty ? (
+          <EmptyFamilyRecipes
+            onNewRecipe={() => addButton.current?.click()}
+            {...addToFamily}
+          />
+        ) : null}
+        {noneListed && !empty ? (
           <Box sx={{ textAlign: 'center', py: '32px' }}>
-            <Box
-              sx={{
-                ...displayType,
-                fontSize: 18,
-              }}
-            >
-              {filtering ? t('recipes:noMatches') : t('recipes:empty')}
+            <Box sx={{ ...displayType, fontSize: 18 }}>
+              {filtering ? t('recipes:noMatches') : t('recipes:allHidden')}
             </Box>
             <Box sx={{ fontSize: 14, color: tokens.color.muted, mt: '4px' }}>
-              {filtering ? t('recipes:noMatchesHint') : t('recipes:emptyHint')}
+              {filtering
+                ? t('recipes:noMatchesHint')
+                : t('recipes:allHiddenHint')}
             </Box>
           </Box>
         ) : null}
@@ -143,7 +242,7 @@ export function RecipesPage() {
                   key={recipe.id}
                   recipe={recipe}
                   card={cardFor(index, recipe)}
-                  filtering={filtering}
+                  filtering={filtering || recipe.parentId !== null}
                 />
               ))}
             </Box>

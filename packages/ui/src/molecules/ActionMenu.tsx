@@ -1,3 +1,4 @@
+import Box from '@mui/material/Box';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { useId, useState, type ReactNode, type Ref } from 'react';
@@ -10,6 +11,10 @@ import { nestedRadius, radius, shadow } from '../theme/themeVars';
 export type ActionMenuItem = {
   label: string;
   icon?: ReactNode;
+  /** A small pill after the label, e.g. "new". */
+  badge?: string;
+  /** Draws a divider above the item. */
+  dividerBefore?: boolean;
   /** Renders the item as a link. */
   href?: string;
   onClick?: () => void;
@@ -87,6 +92,21 @@ export function ActionMenu({
                 item.onClick?.();
               }}
               sx={{
+                ...(item.dividerBefore
+                  ? {
+                      position: 'relative',
+                      mt: '9px',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: -5,
+                        left: 0,
+                        right: 0,
+                        height: '1px',
+                        bgcolor: tokens.color.line,
+                      },
+                    }
+                  : {}),
                 gap: '10px',
                 height: 44,
                 px: '12px',
@@ -105,6 +125,24 @@ export function ActionMenu({
             >
               {item.icon}
               {item.label}
+              {item.badge ? ' ' : null}
+              {item.badge ? (
+                <Box
+                  component="span"
+                  sx={{
+                    ml: 'auto',
+                    px: '7px',
+                    py: '1px',
+                    borderRadius: radius.pill,
+                    bgcolor: tokens.color.accentTint,
+                    color: tokens.color.accentOnTint,
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                  }}
+                >
+                  {item.badge}
+                </Box>
+              ) : null}
             </MenuItem>
           );
         })}

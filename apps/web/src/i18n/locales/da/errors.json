@@ -120,7 +120,9 @@
     "pairing_link_not_found": "Den ingrediens eller opskrift, forslaget peger på, findes ikke længere.",
     "pairing_self_link": "Et forslag kan ikke pege på sin egen opskrift.",
     "nutrition_note_too_long": "Ernæringsnoten kan højst være 500 tegn.",
-    "nothing_to_translate": "Der er ingen kildetekst at oversætte. Tilføj den til opskriften først."
+    "nothing_to_translate": "Der er ingen kildetekst at oversætte. Tilføj den til opskriften først.",
+    "copy_family_recipe": "Den opskrift er allerede din, så den kan ikke tilføjes igen.",
+    "copy_archived": "Den opskrift er ikke længere i Udforsk."
   },
   "family_ingredients": {
     "shared_name_exists": "Der findes allerede en fælles ingrediens med det navn. Flet denne ind i den i stedet.",
@@ -151,7 +153,8 @@
     "already_started": "En plan, der er startet, kan ikke flyttes.",
     "day_out_of_range": "Den dag er ikke en del af planen.",
     "not_found": "Madplanen findes ikke længere.",
-    "recipe_not_found": "Opskriften kunne ikke findes."
+    "recipe_not_found": "Opskriften kunne ikke findes.",
+    "recipe_not_in_family": "Føj først opskriften til dine opskrifter, og planlæg den derefter."
   },
   "voice": {
     "cap_reached": "Du har brugt alle {{cap}} stemmenoter i dag. Prøv igen i morgen, eller tilføj varer manuelt.",

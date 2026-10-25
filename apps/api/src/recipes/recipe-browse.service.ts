@@ -18,6 +18,8 @@ import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
 import {
   findVisibleRecipe,
+  inScope,
+  liveCopiesOf,
   ownerOf,
   recipeTitles,
   resolveRecipe,
@@ -29,6 +31,7 @@ import type {
   RecipeFilters,
   RecipeList,
   RecipeListItem,
+  RecipeScope,
   RecipeVariantItem,
   ResolvedRecipe,
 } from './recipes.schemas';
@@ -52,6 +55,7 @@ export class RecipeBrowseService {
    * With one: matching live Recipes, bases and Variants, each Variant labelled
    * with its base. A base matches on its own fields only. Variants of an
    * archived base stay listed (the archived base itself does not).
+   * `scope=family` always lists Variants, since the Family's Variants are its Recipes.
    */
   async list(
     memberId: string,
@@ -60,8 +64,10 @@ export class RecipeBrowseService {
   ): Promise<RecipeList> {
     const familyId = await this.settings.familyIdOf(memberId);
     const needle = normalizeName(query.search ?? '');
-    // Search and filters list Variants beside bases; so does asking for them outright.
+    // Search and filters list Variants beside bases; so does asking for them outright, and
+    // `scope=family` always does.
     const listsVariants =
+      query.scope === 'family' ||
       needle !== '' ||
       query.cuisineId !== undefined ||
       query.methodId !== undefined ||
@@ -72,7 +78,7 @@ export class RecipeBrowseService {
       .from(recipes)
       .where(
         and(
-          visibleTo(familyId),
+          inScope(familyId, query.scope),
           isNull(recipes.archivedAt),
           listsVariants ? undefined : isNull(recipes.parentId),
           query.cuisineId ? eq(recipes.cuisineId, query.cuisineId) : undefined,
@@ -98,7 +104,7 @@ export class RecipeBrowseService {
       needle === '' ? live : this.matchingTitle(live, needle, titles);
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
-    const counts = await this.variantCounts(familyId, baseIds);
+    const counts = await this.variantCounts(familyId, baseIds, query.scope);
     const [ref, { hides, allergy }] = await Promise.all([
       this.namedRefs(
         this.database,
@@ -125,6 +131,11 @@ export class RecipeBrowseService {
     ]);
     const { warnings, hidden } = allergy;
     const shown = hides ? matching.filter((r) => !hidden.has(r.id)) : matching;
+    const copies = await liveCopiesOf(
+      this.database,
+      familyId,
+      shown.filter((r) => r.familyId === null).map((r) => r.id),
+    );
 
     const items = shown
       .map((row): RecipeListItem => {
@@ -144,6 +155,8 @@ export class RecipeBrowseService {
           cookMinutes: row.cookMinutes,
           difficulty: row.difficulty,
           owner: ownerOf(row),
+          familyCopyId: copies.get(row.id) ?? null,
+          copiedFromId: row.copiedFromId,
           allergyWarning: warnings.get(row.id) ?? null,
         };
       })
@@ -192,6 +205,12 @@ export class RecipeBrowseService {
           id: baseRow.id,
           title: baseResolved.title,
           archived: baseResolved.archived,
+          familyCopyId:
+            baseRow.familyId === null
+              ? ((
+                  await liveCopiesOf(this.database, familyId, [baseRow.id])
+                ).get(baseRow.id) ?? null)
+              : null,
         },
         diff: diffIngredients(diffLines(baseResolved), diffLines(resolved)),
       };
@@ -200,7 +219,7 @@ export class RecipeBrowseService {
       loadViewerAllergies(this.database, memberId, familyId),
       row.parentId
         ? Promise.resolve([])
-        : this.variantsOf(row.id, familyId, locale),
+        : this.variantsOfBase(row, familyId, locale),
       baseAndDiff(),
     ]);
 
@@ -211,10 +230,51 @@ export class RecipeBrowseService {
       locale,
       viewerAllergies,
     );
+    const familyCopyId =
+      row.familyId === null
+        ? ((await liveCopiesOf(this.database, familyId, [row.id])).get(
+            row.id,
+          ) ?? null)
+        : null;
+    const [copiedFromRow] =
+      row.familyId !== null && row.parentId === null && row.copiedFromId
+        ? await this.database
+            .select({ archivedAt: recipes.archivedAt })
+            .from(recipes)
+            .where(eq(recipes.id, row.copiedFromId))
+        : [];
+    const copiedFrom =
+      copiedFromRow && row.copiedFromId
+        ? { id: row.copiedFromId, archived: copiedFromRow.archivedAt !== null }
+        : null;
+    // A Pairing's Catalog Recipe link also names the Family's live copy of it.
+    const pairedIds = resolved.guidance.pairings.flatMap((p) =>
+      p.link?.type === 'recipe' && p.link.owner === 'catalog'
+        ? [p.link.id]
+        : [],
+    );
+    const pairedCopies = await liveCopiesOf(this.database, familyId, pairedIds);
+    const guidance = {
+      ...resolved.guidance,
+      pairings: resolved.guidance.pairings.map((p) =>
+        p.link?.type === 'recipe' && p.link.owner === 'catalog'
+          ? {
+              ...p,
+              link: {
+                ...p.link,
+                familyCopyId: pairedCopies.get(p.link.id) ?? null,
+              },
+            }
+          : p,
+      ),
+    };
     return {
       ...resolved,
+      guidance,
       base,
       variants,
+      familyCopyId,
+      copiedFrom,
       diff,
       allergens,
       allergyWarning,
@@ -261,10 +321,33 @@ export class RecipeBrowseService {
     };
   }
 
+  /**
+   * A Base's Variants. A Family copy of a Catalog Base also lists the Family's own live
+   * Variants of that Catalog Base: they are grouped under the copy on the Recipes list.
+   */
+  private async variantsOfBase(
+    row: RecipeRow,
+    familyId: string,
+    locale: CatalogLocale,
+  ): Promise<RecipeVariantItem[]> {
+    const own = await this.variantsOf(row.id, familyId, locale);
+    if (row.familyId === null || !row.copiedFromId) return own;
+    const grouped = await this.variantsOf(
+      row.copiedFromId,
+      familyId,
+      locale,
+      true,
+    );
+    return [...own, ...grouped].sort((a, b) =>
+      a.title.localeCompare(b.title, locale),
+    );
+  }
+
   private async variantsOf(
     baseId: string,
     familyId: string,
     locale: CatalogLocale,
+    familyOnly = false,
   ): Promise<RecipeVariantItem[]> {
     const rows = await this.database
       .select()
@@ -272,11 +355,16 @@ export class RecipeBrowseService {
       .where(
         and(
           eq(recipes.parentId, baseId),
-          visibleTo(familyId),
+          familyOnly ? eq(recipes.familyId, familyId) : visibleTo(familyId),
           isNull(recipes.archivedAt),
         ),
       );
     const titles = await recipeTitles(this.database, rows, locale);
+    const copies = await liveCopiesOf(
+      this.database,
+      familyId,
+      rows.filter((r) => r.familyId === null).map((r) => r.id),
+    );
     const ref = await this.namedRefs(
       this.database,
       catalogScope(familyId),
@@ -290,6 +378,7 @@ export class RecipeBrowseService {
         cuisine: ref.cuisine(row.cuisineId),
         method: ref.method(row.methodId),
         owner: ownerOf(row),
+        familyCopyId: copies.get(row.id) ?? null,
       }))
       .sort((a, b) => byTitle(locale)(a, b) || a.id.localeCompare(b.id));
   }
@@ -297,6 +386,7 @@ export class RecipeBrowseService {
   private async variantCounts(
     familyId: string,
     baseIds: string[],
+    scope: RecipeScope | undefined,
   ): Promise<Map<string, number>> {
     const counts = new Map<string, number>();
     if (baseIds.length === 0) return counts;
@@ -306,7 +396,7 @@ export class RecipeBrowseService {
       .where(
         and(
           inArray(recipes.parentId, baseIds),
-          visibleTo(familyId),
+          inScope(familyId, scope),
           isNull(recipes.archivedAt),
         ),
       );

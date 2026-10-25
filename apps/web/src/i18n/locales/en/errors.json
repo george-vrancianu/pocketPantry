@@ -120,7 +120,9 @@
     "pairing_link_not_found": "The Ingredient or Recipe this Pairing links to no longer exists.",
     "pairing_self_link": "A Pairing cannot link to its own Recipe.",
     "nutrition_note_too_long": "The Nutrition Note can be at most 500 characters.",
-    "nothing_to_translate": "There is no source text to translate. Add it to the Recipe first."
+    "nothing_to_translate": "There is no source text to translate. Add it to the Recipe first.",
+    "copy_family_recipe": "That Recipe is already yours, so it cannot be added again.",
+    "copy_archived": "That Recipe is no longer in Explore."
   },
   "family_ingredients": {
     "shared_name_exists": "A shared ingredient with that name already exists. Merge this one into it instead.",
@@ -151,7 +153,8 @@
     "already_started": "A plan that has started can't be moved.",
     "day_out_of_range": "That day isn't part of the plan.",
     "not_found": "That Meal plan no longer exists.",
-    "recipe_not_found": "That Recipe can't be found."
+    "recipe_not_found": "That Recipe can't be found.",
+    "recipe_not_in_family": "Add this Recipe to your Recipes first, then plan it."
   },
   "voice": {
     "cap_reached": "You have used all {{cap}} voice notes for today. Try again tomorrow, or add items by hand.",

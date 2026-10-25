@@ -171,6 +171,8 @@
     "base": "Base Recipe",
     "loading": "Finding Base Recipes…",
     "closest": "{{title}} (closest match)",
+    "previewLabel": "View {{title}}",
+    "preview": "View",
     "standalone": "Standalone Recipe (no base)",
     "search": "Find another Base Recipe",
     "cancel": "Cancel",

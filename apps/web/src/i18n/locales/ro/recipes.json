@@ -56,7 +56,6 @@
   "search": "Caută rețete",
   "cuisine": "Bucătărie",
   "method": "Metodă",
-  "empty": "Nicio rețetă încă.",
   "noMatches": "Nicio rețetă nu se potrivește.",
   "allRecipes": "Toate rețetele",
   "matches": "Rezultate",
@@ -69,7 +68,6 @@
   "expiring_one": "{{count}} expiră curând",
   "expiring_few": "{{count}} expiră curând",
   "expiring_other": "{{count}} expiră curând",
-  "emptyHint": "Scanează o farfurie sau fă una dintr-o fotografie.",
   "noMatchesHint": "Încearcă alt cuvânt sau șterge un filtru.",
   "variantsHint": "Caută sau alege un filtru ca să vezi variantele separat.",
   "minutesShort": "min",
@@ -272,5 +270,54 @@
     "continueNamed": "Continuă {{name}}",
     "startNew": "Începe una nouă",
     "baseGone": "Rețeta de bază a cărei variantă era această ciornă de rețetă nu mai există. Se deschide ca rețetă nouă și va fi salvată ca rețetă de bază."
-  }
+  },
+  "explore": {
+    "title": "Explorează",
+    "menuItem": "Din Explorează",
+    "menuNew": "nou",
+    "subline": "Adaugă o Rețetă ca să o gătești, să o planifici și să o schimbi, sau fă o Variantă din ea.",
+    "back": "Înapoi la Rețetele tale",
+    "add": "Adaugă {{title}} la Rețetele tale",
+    "added": "{{title}} a fost adăugată la Rețetele tale",
+    "addFailed": "Nu am putut adăuga {{title}}. Încearcă din nou.",
+    "openCopy": "{{title}} este în Rețetele tale. Deschide-o",
+    "undoFailed": "Nu am putut anula adăugarea {{title}}. Încearcă din nou.",
+    "alreadyAdded": "{{title}} este deja în Rețetele tale",
+    "pill": "Explorează",
+    "search": "Caută în toate Rețetele",
+    "canMake": "Poți găti acestea",
+    "noMatchesHint": "Încearcă alt cuvânt sau scrie-ți propria Rețetă cu Rețetă nouă.",
+    "backAdded_one": "Înapoi la Rețetele tale, {{count}} Rețetă adăugată",
+    "backAdded_few": "Înapoi la Rețetele tale, {{count}} Rețete adăugate",
+    "backAdded_other": "Înapoi la Rețetele tale, {{count}} de Rețete adăugate",
+    "showMore_one": "Arată încă {{count}}",
+    "showMore_few": "Arată încă {{count}}",
+    "showMore_other": "Arată încă {{count}}"
+  },
+  "preview": {
+    "eyebrow": "Explorează · Rețetă din Catalog",
+    "note": "Previzualizezi o rețetă din Catalog. Adaug-o la Rețetele tale ca să o schimbi, să o planifici sau să o gătești din lista ta.",
+    "addShort": "Adaugă în familie",
+    "inFamily": "În Rețetele tale",
+    "actions": "Acțiuni pentru această rețetă"
+  },
+  "quickView": {
+    "eyebrow": "Rețetă din Catalog",
+    "close": "Închide",
+    "missing": "lipsește",
+    "seeWhole": "Vezi toată Rețeta",
+    "add": "Adaugă la Rețetele tale",
+    "openCopy": "În Rețetele tale · Deschide",
+    "explain": "Adăugarea face o copie pe care familia ta o poate schimba. Fă o variantă deschide mai întâi editorul.",
+    "explainAdded": "Copia ta e a ta, o poți schimba. Această Rețetă din Catalog rămâne așa cum e."
+  },
+  "emptyFamily": {
+    "title": "Încă nu ai Rețete în familie",
+    "body": "Rețetele pe care le adaugi pot fi schimbate cum vrei. Toată familia le vede.",
+    "explore": "Explorează Rețetele",
+    "newRecipe": "+ Rețetă nouă",
+    "starters": "Începe cu acestea · le poți găti"
+  },
+  "allHidden": "Nicio Rețetă de arătat.",
+  "allHiddenHint": "Rețetele ascunse din cauza Alergiilor tale nu apar."
 }

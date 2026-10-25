@@ -19,7 +19,7 @@ import {
 } from '../../lib/mealPlanPage';
 import { useToday } from '../../lib/useToday';
 import { translateApiError } from '../../i18n/translateApiError';
-import { RecipeRowLayout } from '../Recipes/components/RecipeRow';
+import { RecipeRowLayout } from '../../components/RecipeRowLayout';
 
 const PHASE_TONE: Record<PlanPhase, TagTone> = {
   past: 'neutral',

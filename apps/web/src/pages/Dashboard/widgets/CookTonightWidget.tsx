@@ -8,6 +8,7 @@ import {
 } from '../../../components/AllergenIndicator';
 import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
+import { recipeHref } from '../../../lib/recipeHref';
 import { useCookTonight, type CookTonightCard } from '../../../lib/cookTonight';
 import type { WidgetSize } from '../../../lib/dashboard';
 import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
@@ -34,6 +35,7 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     localIso(new Date()),
     showHidden,
+    'family',
   );
   const cards = (cookTonight.data?.cards ?? []).slice(
     0,
@@ -78,7 +80,18 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
       />
       {cards.length === 0 ? (
         <Box sx={{ fontSize: 14, color: tokens.color.muted, py: '10px' }}>
-          {t('widgets.cookTonight.empty')}
+          {t('widgets.cookTonight.empty')}{' '}
+          <Box
+            component={Link}
+            to="/recipes/explore"
+            sx={{
+              fontWeight: 700,
+              color: tokens.color.accent,
+              textDecoration: 'none',
+            }}
+          >
+            {t('widgets.cookTonight.explore')}
+          </Box>
         </Box>
       ) : (
         <Box
@@ -142,7 +155,7 @@ function CookCard({ card }: { card: CookTonightCard }) {
   return (
     <Box
       component={Link}
-      to={`/recipes/${recipe.id}`}
+      to={recipeHref(recipe)}
       aria-label={name}
       sx={{
         display: 'block',

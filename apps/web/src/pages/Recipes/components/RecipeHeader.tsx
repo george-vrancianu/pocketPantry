@@ -4,7 +4,6 @@ import {
   BranchIcon,
   DeleteIcon,
   ManualEntryIcon,
-  PlusIcon,
   Stack,
 } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
@@ -14,12 +13,13 @@ import { AppScreenHeader } from '../../../components/AppScreenHeader';
 import { ConfirmPrompt } from '../../../components/ConfirmAction';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useArchiveFamilyRecipe } from '../../../lib/familyRecipes';
+import { familyRecipeHref } from '../../../lib/recipeHref';
 import type { RecipeDetail } from '../../../lib/recipes';
 
 /**
  * The Recipe screen's header: Back to the list, and what a Member can do with
- * the Recipe. A Catalog Recipe offers Make a Variant; the Family's own live
- * Recipe keeps Make a Variant, Edit and Delete (archive) in a menu.
+ * the Recipe. The Family's own live Recipe keeps Make a Variant, Edit and
+ * Delete (archive) in a menu.
  */
 export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
   const { t } = useTranslation(['recipes', 'errors']);
@@ -33,12 +33,17 @@ export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
     return <AppScreenHeader back={back} title={t('recipes:title')} />;
 
   const own = recipe.owner === 'family' && !recipe.archived;
-  // A Variant's parent is a Catalog Base Recipe, so a Family Base Recipe
-  // gets none; the Recipe and its base must also be live.
+  // A Variant's parent is a Catalog Base Recipe. A Family Base gets one only
+  // when it is a copy (the draft branches from the Base it was Copied From);
+  // the Recipe and that Catalog Base must also be live.
   const canMakeVariant =
     !recipe.archived &&
     !recipe.base?.archived &&
-    !(recipe.owner === 'family' && recipe.parentId === null);
+    !(
+      recipe.owner === 'family' &&
+      recipe.parentId === null &&
+      (!recipe.copiedFrom || recipe.copiedFrom.archived)
+    );
   const makeVariant = {
     label: t('recipes:family.makeVariant'),
     href: `/recipes/${recipe.id}/variant/new`,
@@ -46,19 +51,20 @@ export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
 
   const remove = () =>
     archive.mutate(undefined, {
+      // A Variant's base is the Catalog Base, which has no page of its own for the Family:
+      // go to the Family's copy of it, if any.
       onSuccess: () =>
-        navigate(recipe.base ? `/recipes/${recipe.base.id}` : '/recipes'),
+        navigate(
+          recipe.base?.familyCopyId
+            ? familyRecipeHref(recipe.base.familyCopyId)
+            : '/recipes',
+        ),
     });
 
   return (
     <>
       <AppScreenHeader
         back={back}
-        action={
-          !own && canMakeVariant
-            ? { ...makeVariant, icon: <PlusIcon size={20} /> }
-            : undefined
-        }
         trailing={
           own ? (
             <ActionMenu

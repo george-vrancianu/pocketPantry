@@ -51,7 +51,6 @@
   "search": "Search Recipes",
   "cuisine": "Cuisine",
   "method": "Method",
-  "empty": "No Recipes yet.",
   "noMatches": "No Recipes match.",
   "allRecipes": "All Recipes",
   "matches": "Matches",
@@ -63,7 +62,6 @@
   "missingOneVia": "Missing {{name}} for {{title}}",
   "expiring_one": "{{count}} expiring",
   "expiring_other": "{{count}} expiring",
-  "emptyHint": "Scan a plate or make one from a photo.",
   "noMatchesHint": "Try another word or clear a filter.",
   "variantsHint": "Search or pick a filter to see Variants on their own.",
   "minutesShort": "min",
@@ -256,5 +254,52 @@
     "continueNamed": "Continue {{name}}",
     "startNew": "Start new",
     "baseGone": "The Base Recipe this Recipe Draft was a Variant of is gone. It opens as a New Recipe and will be saved as a Base Recipe."
-  }
+  },
+  "explore": {
+    "title": "Explore",
+    "menuItem": "From Explore",
+    "menuNew": "new",
+    "subline": "Add a Recipe to cook, plan and change it, or make a Variant of it.",
+    "back": "Back to your Recipes",
+    "add": "Add {{title}} to your Recipes",
+    "added": "Added {{title}} to your Recipes",
+    "addFailed": "Couldn't add {{title}}. Try again.",
+    "openCopy": "{{title}} is in your Recipes. Open it",
+    "undoFailed": "Couldn't undo adding {{title}}. Try again.",
+    "alreadyAdded": "{{title}} is already in your Recipes",
+    "pill": "Explore",
+    "search": "Search all Recipes",
+    "canMake": "You can make this",
+    "noMatchesHint": "Try another word, or write your own with New Recipe.",
+    "backAdded_one": "Back to your Recipes, {{count}} added",
+    "backAdded_other": "Back to your Recipes, {{count}} added",
+    "showMore_one": "Show {{count}} more",
+    "showMore_other": "Show {{count}} more"
+  },
+  "preview": {
+    "eyebrow": "Explore · Catalog Recipe",
+    "note": "You're previewing a Catalog Recipe. Add it to your Recipes to change it, plan it or cook it from your list.",
+    "addShort": "Add to Family",
+    "inFamily": "In your Recipes",
+    "actions": "Actions for this Recipe"
+  },
+  "quickView": {
+    "eyebrow": "Catalog Recipe",
+    "close": "Close",
+    "missing": "missing",
+    "seeWhole": "See the whole Recipe",
+    "add": "Add to your Recipes",
+    "openCopy": "In your Recipes · Open",
+    "explain": "Adding makes a copy your family can change. Make a Variant opens the editor first.",
+    "explainAdded": "Your copy is yours to change. This Catalog Recipe stays as it is."
+  },
+  "emptyFamily": {
+    "title": "No family Recipes yet",
+    "body": "Recipes you add can be changed however you like. Everyone in your family sees them.",
+    "explore": "Explore Recipes",
+    "newRecipe": "+ New Recipe",
+    "starters": "Start with these · you can make them"
+  },
+  "allHidden": "No Recipes to show.",
+  "allHiddenHint": "Recipes hidden by your Allergies are left out."
 }

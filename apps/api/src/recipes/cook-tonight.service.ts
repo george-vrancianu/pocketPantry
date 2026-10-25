@@ -17,7 +17,13 @@ import {
   loadAllergyWarnings,
   loadViewerAllergyContext,
 } from './recipe-allergens';
-import { ownerOf, recipeTitles, visibleTo } from './recipe-view';
+import {
+  inScope,
+  liveCopiesOf,
+  ownerOf,
+  recipeTitles,
+  visibleTo,
+} from './recipe-view';
 import type {
   CookTonightCard,
   CookTonightQuery,
@@ -45,7 +51,7 @@ export class CookTonightService {
     const rows = await this.database
       .select()
       .from(recipes)
-      .where(and(visibleTo(familyId), isNull(recipes.archivedAt)));
+      .where(and(inScope(familyId, query.scope), isNull(recipes.archivedAt)));
     const matches = await this.matching.matchRecipes(
       familyId,
       rows.map((r) => r.id),
@@ -59,9 +65,25 @@ export class CookTonightService {
     if (qualifying.length === 0)
       return { cards: [], hiddenByAllergiesCount: 0 };
 
+    // A Family Variant of a Catalog Base is grouped under the Family's live copy of that Base.
+    const copyOf = await liveCopiesOf(
+      this.database,
+      familyId,
+      query.scope === 'family'
+        ? [
+            ...new Set(
+              qualifying.flatMap((r) => (r.parentId ? [r.parentId] : [])),
+            ),
+          ]
+        : [],
+    );
     const groups = new Map<string, RecipeRow[]>();
     for (const row of qualifying) {
-      const key = row.parentId ?? row.id;
+      // On the Family list a Variant without a copy of its Base is its own row, so its own card.
+      const key = row.parentId
+        ? (copyOf.get(row.parentId) ??
+          (query.scope === 'family' ? row.id : row.parentId))
+        : row.id;
       groups.set(key, [...(groups.get(key) ?? []), row]);
     }
     // Bases that are not themselves candidates (archived) still title the card.
@@ -128,6 +150,13 @@ export class CookTonightService {
       groupsRanked,
       locale,
     );
+    const copies = await liveCopiesOf(
+      this.database,
+      familyId,
+      groupsRanked.flatMap(({ candidates }) =>
+        candidates[0].row.familyId === null ? [candidates[0].row.id] : [],
+      ),
+    );
     return {
       hiddenByAllergiesCount,
       cards: groupsRanked.map(({ base, candidates }): CookTonightCard => {
@@ -144,6 +173,7 @@ export class CookTonightService {
             title: top.title,
             parentId: top.row.parentId,
             owner: ownerOf(top.row),
+            familyCopyId: copies.get(top.row.id) ?? null,
             servings: top.match.servings,
             prepMinutes: top.row.prepMinutes,
             cookMinutes: top.row.cookMinutes,

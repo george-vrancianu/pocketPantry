@@ -1,6 +1,7 @@
 import {
   BranchIcon,
   Box,
+  CompassIcon,
   Link,
   Stack,
   Typography,
@@ -11,15 +12,20 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { totalMinutes, type RecipeDetail } from '../../../lib/recipes';
+import { recipeHref } from '../../../lib/recipeHref';
+import { InFamilyPill } from '../../../components/InFamilyPill';
 import { OwnerBadge } from './OwnerBadge';
 
 /** The Recipe's eyebrow (Base Recipe link), title with Family pill, fact cells and archived notice. */
 export function RecipeHero({
   recipe,
   servings,
+  preview,
 }: {
   recipe: RecipeDetail;
   servings: number;
+  /** A Catalog Recipe's preview: its own eyebrow, and the "In your Recipes" pill once added. */
+  preview?: { inFamily: boolean };
 }) {
   const { t } = useTranslation('recipes');
   const minutes = totalMinutes(recipe);
@@ -60,9 +66,29 @@ export function RecipeHero({
   return (
     <Stack spacing={1.5}>
       <Box>
+        {preview && !recipe.base ? (
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '.04em',
+              textTransform: 'uppercase',
+              color: tokens.color.muted,
+            }}
+          >
+            <CompassIcon size={13} />
+            {t('preview.eyebrow')}
+          </Box>
+        ) : null}
         {recipe.base ? (
           <Link
-            href={`/recipes/${recipe.base.id}`}
+            href={recipeHref({
+              ...recipe.base,
+              owner: 'catalog',
+            })}
             underline="none"
             sx={{
               display: 'inline-flex',
@@ -89,7 +115,14 @@ export function RecipeHero({
             lineHeight: 1.08,
           }}
         >
-          {recipe.title} <OwnerBadge owner={recipe.owner} />
+          {recipe.title}{' '}
+          {preview ? (
+            preview.inFamily ? (
+              <InFamilyPill />
+            ) : null
+          ) : (
+            <OwnerBadge owner={recipe.owner} />
+          )}
         </Typography>
       </Box>
       <Box

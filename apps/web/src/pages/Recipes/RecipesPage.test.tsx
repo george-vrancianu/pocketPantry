@@ -17,6 +17,9 @@ import { RecipesPage } from './RecipesPage';
  *   "Matches"; the count is part of that heading's text. Each row is a `listitem` whose
  *   text holds the title, family pill, "Variant of", meta, pills and time; the row also
  *   contains the one link to `/recipes/{id}`.
+ * - Not filtering, a Variant sits under its Base (a Family Recipe, or the Family's copy of its
+ *   Catalog Base, matched by `copiedFromId`) and shows only in the Base's "n Variants" count;
+ *   a Variant with no Base in the list is its own row, labelled "Variant of {base}".
  * - Meta parts are joined with " · " in the row's text ("Italian · Baking · Easy · 3 Variants").
  * - Chips are `button`s with `aria-pressed`, named by the Cuisine or Method name; "Clear" is
  *   a `button` shown only while filtering.
@@ -35,6 +38,8 @@ const item = (over: Partial<RecipeListItem>): RecipeListItem => ({
   cookMinutes: 20,
   difficulty: 'easy',
   owner: 'catalog',
+  familyCopyId: null,
+  copiedFromId: null,
   allergyWarning: null,
   ...over,
 });
@@ -56,6 +61,7 @@ const card = (
     title: 'Omelette',
     parentId: null,
     owner: 'catalog',
+    familyCopyId: null,
     servings: 2,
     prepMinutes: 10,
     cookMinutes: 15,
@@ -146,6 +152,7 @@ function setup(
       <Route path="/recipes" element={<RecipesPage />} />
       <Route path="/recipes/new" element={<p>new recipe page</p>} />
       <Route path="/recipes/from-link" element={<p>link step</p>} />
+      <Route path="/recipes/explore" element={<p>explore page</p>} />
       <Route path="/recipes/cook-tonight" element={<p>cook tonight page</p>} />
       <Route path="/pantry" element={<p>pantry page</p>} />
       <Route path="/recipes/:id" element={<p>detail page</p>} />
@@ -195,18 +202,41 @@ describe('RecipesPage', () => {
       expect(rows[1]).toHaveTextContent('Omelette');
     });
 
-    it('offers New Recipe and From a link from the header plus, and opens New Recipe', async () => {
+    it('offers New Recipe, From a link and From Explore (marked new) from the header plus, and opens New Recipe', async () => {
       setup(() => [omelette]);
       await userEvent.click(
         await screen.findByRole('button', { name: 'Add a Recipe' }),
       );
       expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(
-        ['New Recipe', 'From a link'],
+        ['New Recipe', 'From a link', 'From Explore new'],
       );
       await userEvent.click(
         screen.getByRole('menuitem', { name: 'New Recipe' }),
       );
       expect(screen.getByText('new recipe page')).toBeInTheDocument();
+    });
+
+    it('shows the Explore pill before the plus, with no Settings gear, and opens Explore', async () => {
+      setup(() => [omelette]);
+      const pill = await screen.findByRole('link', { name: 'Explore' });
+      const plus = screen.getByRole('button', { name: 'Add a Recipe' });
+      expect(
+        pill.compareDocumentPosition(plus) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(screen.queryByRole('link', { name: /settings/i })).toBeNull();
+      await userEvent.click(pill);
+      expect(screen.getByText('explore page')).toBeInTheDocument();
+    });
+
+    it('opens Explore from the header plus', async () => {
+      setup(() => [omelette]);
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Add a Recipe' }),
+      );
+      await userEvent.click(
+        screen.getByRole('menuitem', { name: 'From Explore new' }),
+      );
+      expect(screen.getByText('explore page')).toBeInTheDocument();
     });
 
     it('opens the link step from the header plus', async () => {
@@ -237,9 +267,18 @@ describe('RecipesPage', () => {
           cuisine: { id: 'c-gr', name: 'Greek' },
           method: { id: 'm-bake', name: 'Baking' },
           difficulty: 'medium',
-          variantCount: 3,
+          copiedFromId: 'cm',
         }),
-        item({ id: 'b', title: 'Toast', difficulty: 'hard', variantCount: 1 }),
+        ...[1, 2, 3].map((n) =>
+          item({ id: `mv${n}`, title: `Mv${n}`, parentId: 'cm' }),
+        ),
+        item({
+          id: 'b',
+          title: 'Toast',
+          difficulty: 'hard',
+          copiedFromId: 'ct',
+        }),
+        item({ id: 'tv', title: 'Tv', parentId: 'ct' }),
         item({ id: 'c', title: 'Water', difficulty: null }),
       ]);
       expect(await findRow('Moussaka')).toHaveTextContent(
@@ -286,14 +325,72 @@ describe('RecipesPage', () => {
       );
     });
 
-    it('labels a Variant with its Base Recipe only while filtering', async () => {
-      setup(() => [frittata]);
-      expect(await findRow('Frittata')).not.toHaveTextContent('Variant of');
+    it('labels a Variant with its Base Recipe while filtering', async () => {
+      setup((url) => (filtered(url) ? [frittata, omelette] : [omelette]));
+      await findRow('Omelette');
 
       await userEvent.click(await chip('Italian'));
       expect(await findRow('Frittata', MATCHES)).toHaveTextContent(
         'Variant of Omelette',
       );
+    });
+
+    it('asks for the Family scope only, in the list and in Cook Tonight', async () => {
+      const cookTonightUrls: string[] = [];
+      const calls = setup(
+        () => [omelette],
+        (url) => {
+          cookTonightUrls.push(url.search);
+          return [];
+        },
+      );
+      await findRow('Omelette');
+      await userEvent.click(await chip('Italian'));
+      await waitFor(() =>
+        expect(lastQuery(calls).get('cuisineId')).toBe('c-it'),
+      );
+      const lists = calls.filter((c) => c.key === 'GET /api/recipes');
+      expect(lists.length).toBeGreaterThan(1);
+      for (const call of lists) {
+        expect(new URLSearchParams(call.search).get('scope')).toBe('family');
+      }
+      await waitFor(() => expect(cookTonightUrls.length).toBeGreaterThan(0));
+      for (const search of cookTonightUrls) {
+        expect(new URLSearchParams(search).get('scope')).toBe('family');
+      }
+    });
+
+    describe('Variants', () => {
+      const copy = item({
+        id: 'copy',
+        title: 'Omelette',
+        owner: 'family',
+        copiedFromId: 'o',
+      });
+      const ownVariant = (parentId: string) =>
+        item({
+          id: 'v',
+          title: 'Frittata',
+          owner: 'family',
+          parentId,
+          base: { id: parentId, title: 'Omelette' },
+        });
+
+      it("groups a Family Variant under the Family's copy of its Catalog Base", async () => {
+        setup(() => [copy, ownVariant('o')]);
+        const row = await findRow('Omelette');
+        expect(row).toHaveTextContent('1 Variant');
+        const list = screen.getByRole('list', { name: ALL });
+        expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+        expect(within(list).queryByText('Frittata')).not.toBeInTheDocument();
+      });
+
+      it('lists a Variant without a copy of its Base as its own row, "Variant of {base}"', async () => {
+        setup(() => [ownVariant('o')]);
+        expect(await findRow('Frittata')).toHaveTextContent(
+          'Variant of Omelette',
+        );
+      });
     });
   });
 
@@ -325,11 +422,10 @@ describe('RecipesPage', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('shows an empty state with a hint', async () => {
+    it('shows chef Gator instead of the list when the Family has no Recipes', async () => {
       setup(() => []);
-      expect(await screen.findByText('No Recipes yet.')).toBeInTheDocument();
       expect(
-        screen.getByText('Scan a plate or make one from a photo.'),
+        await screen.findByText('No family Recipes yet'),
       ).toBeInTheDocument();
     });
 

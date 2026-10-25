@@ -7,8 +7,8 @@ import { radius, shadow } from '../theme/themeVars';
 export type SnackbarProps = {
   open: boolean;
   onClose: () => void;
-  /** Where it sits: `'aboveDock'` clears the floating Dock (and the device's bottom inset), a number is the distance from the bottom in px. Defaults to the bottom edge. */
-  bottom?: 'aboveDock' | number;
+  /** Where it sits: `'aboveDock'` clears the floating Dock (and the device's bottom inset), a number is the distance from the bottom in px, a string a CSS length. Defaults to the bottom edge. */
+  bottom?: 'aboveDock' | number | string;
   /** Usually an `Alert`. */
   children: ReactNode;
 };

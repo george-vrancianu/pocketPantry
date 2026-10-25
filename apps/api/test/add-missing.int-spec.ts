@@ -80,6 +80,7 @@ describe('Add missing for a Meal Plan (integration)', () => {
   type Member = Awaited<ReturnType<typeof member>>;
 
   async function recipe(
+    familyId: string,
     lines: {
       ingredientId?: string;
       /** An Unmatched line, by the name as typed. */
@@ -93,6 +94,7 @@ describe('Add missing for a Meal Plan (integration)', () => {
     const id = crypto.randomUUID();
     await database.insert(recipes).values({
       id,
+      familyId,
       title: `Dish ${stamp}-${++n}`,
       servings: 4,
       archivedAt: over.archived ? new Date() : null,
@@ -168,11 +170,11 @@ describe('Add missing for a Meal Plan (integration)', () => {
 
   /** Two dinners of one dish (4 eggs, 600 g flour) and a lunch of another (1 l milk). */
   async function week(who: Member) {
-    const cake = await recipe([
+    const cake = await recipe(who.familyId, [
       { ingredientId: eggs, quantity: 4, unit: 'pcs' },
       { ingredientId: flour, quantity: 600, unit: 'g' },
     ]);
-    const latte = await recipe([
+    const latte = await recipe(who.familyId, [
       { ingredientId: milk, quantity: 1, unit: 'l' },
     ]);
     const id = await plan(who, TODAY, 3);
@@ -227,7 +229,7 @@ describe('Add missing for a Meal Plan (integration)', () => {
 
   it('keeps counts as counts and leaves amounts under 1000 in g and ml', async () => {
     const ana = await member('units');
-    const dish = await recipe([
+    const dish = await recipe(ana.familyId, [
       { ingredientId: eggs, quantity: 1500, unit: 'pcs' },
       { ingredientId: flour, quantity: 999, unit: 'g' },
     ]);
@@ -251,7 +253,7 @@ describe('Add missing for a Meal Plan (integration)', () => {
     const ana = await member('one-plan');
     const { id } = await week(ana);
     const other = await plan(ana, at(3), 1);
-    const juice = await recipe([
+    const juice = await recipe(ana.familyId, [
       { ingredientId: milk, quantity: 2, unit: 'l' },
     ]);
     await fill(ana, other, 0, 'dinner', juice);
@@ -414,13 +416,13 @@ describe('Add missing for a Meal Plan (integration)', () => {
     const ana = await member('left-out');
     // A Batch with no quantity covers the first use; the second is uncertain.
     await stock(ana.familyId, milk, null, null);
-    const uncertain = await recipe([
+    const uncertain = await recipe(ana.familyId, [
       { ingredientId: milk, quantity: 1, unit: 'l' },
     ]);
-    const optional = await recipe([
+    const optional = await recipe(ana.familyId, [
       { ingredientId: flour, quantity: 100, unit: 'g', optional: true },
     ]);
-    const gone = await recipe([
+    const gone = await recipe(ana.familyId, [
       { ingredientId: eggs, quantity: 2, unit: 'pcs' },
     ]);
     const id = await plan(ana, TODAY, 2);
@@ -456,7 +458,7 @@ describe('Add missing for a Meal Plan (integration)', () => {
       pantryBasic: true,
     });
     basics.push(basic.id);
-    const dish = await recipe([
+    const dish = await recipe(ana.familyId, [
       { ingredientId: basic.id, quantity: 5, unit: 'pcs' },
     ]);
     const id = await plan(ana, TODAY, 1);
@@ -469,7 +471,7 @@ describe('Add missing for a Meal Plan (integration)', () => {
 
   it('adds one Unmatched Ingredient by its name, whatever the case', async () => {
     const ana = await member('unmatched');
-    const dish = await recipe([
+    const dish = await recipe(ana.familyId, [
       { name: 'Dragon Fruit', quantity: 2, unit: 'pcs' },
       { ingredientId: eggs, quantity: 4, unit: 'pcs' },
     ]);
@@ -491,7 +493,7 @@ describe('Add missing for a Meal Plan (integration)', () => {
 
   it('adds one Ingredient only for days inside the window', async () => {
     const ana = await member('beyond');
-    const dish = await recipe([
+    const dish = await recipe(ana.familyId, [
       { ingredientId: eggs, quantity: 4, unit: 'pcs' },
     ]);
     // Days 5 to 9: the last two are beyond the 7-day window.
@@ -507,7 +509,7 @@ describe('Add missing for a Meal Plan (integration)', () => {
 
   it('keeps 3-decimal precision when converting to kg', async () => {
     const ana = await member('precision');
-    const dish = await recipe([
+    const dish = await recipe(ana.familyId, [
       { ingredientId: flour, quantity: 1234.567, unit: 'g' },
     ]);
     const id = await plan(ana, TODAY, 1);

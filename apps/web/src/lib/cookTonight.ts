@@ -15,6 +15,8 @@ export type CookTonightCard = {
     title: string;
     parentId: string | null;
     owner: RecipeOwner;
+    /** The Family's live copy of a Catalog Recipe, else null. */
+    familyCopyId: string | null;
     servings: number;
     prepMinutes: number | null;
     cookMinutes: number | null;
@@ -38,6 +40,8 @@ export function useCookTonight(
   today: string,
   /** Also ask for the Recipes "Hide Recipes with my Allergies" would leave out. */
   showHidden = false,
+  /** `catalog` ranks the Catalog Recipes (Explore); `family` the Family's own. Omitted: both. */
+  scope?: 'family' | 'catalog',
 ) {
   return useQuery({
     queryKey: [
@@ -45,10 +49,12 @@ export function useCookTonight(
       'cook-tonight',
       today,
       ...(showHidden ? ['showHidden'] : []),
+      ...(scope ? [scope] : []),
     ],
     queryFn: () => {
       const params = new URLSearchParams({ today });
       if (showHidden) params.set('showHidden', 'true');
+      if (scope) params.set('scope', scope);
       return apiRequest<CookTonightView>(`/recipes/cook-tonight?${params}`);
     },
   });
@@ -86,4 +92,26 @@ export function canMakeCards(cards: CookTonightCard[]): CookTonightCard[] {
   return cards
     .filter((card) => card.canMake)
     .sort((a, b) => Number(b.expiringCount > 0) - Number(a.expiringCount > 0));
+}
+
+/**
+ * The Base Recipes the Family Can Make, most expiring first, each once. A card's best match can
+ * be a Variant; its group lists the Base (the Variant is reached through the Base). Cards whose
+ * Base is not in `bases` are skipped.
+ */
+export function canMakeBases<T extends { id: string }>(
+  cards: CookTonightCard[],
+  bases: T[],
+): T[] {
+  const byId = new Map(bases.map((base) => [base.id, base]));
+  const seen = new Set<string>();
+  const rows: T[] = [];
+  for (const card of canMakeCards(cards)) {
+    const base = byId.get(card.base.id);
+    if (base && !seen.has(base.id)) {
+      seen.add(base.id);
+      rows.push(base);
+    }
+  }
+  return rows;
 }

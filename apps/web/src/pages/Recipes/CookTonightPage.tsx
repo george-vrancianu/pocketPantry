@@ -9,6 +9,7 @@ import {
   useCookTonight,
   type CookTonightCard,
 } from '../../lib/cookTonight';
+import { recipeHref } from '../../lib/recipeHref';
 import { localIso } from '../../lib/pantry';
 import type { RecipeListItem } from '../../lib/recipes';
 import { RecipeRow } from './components/RecipeRow';
@@ -23,6 +24,7 @@ export function CookTonightPage() {
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     localIso(new Date()),
     showHidden,
+    'family',
   );
   const cards = cookTonight.data?.cards ?? [];
   return (
@@ -77,7 +79,7 @@ function CardSection({
             recipe={baseRow(card)}
             card={card}
             filtering={false}
-            to={`/recipes/${card.recipe.id}`}
+            to={recipeHref(card.recipe)}
           />
         ))}
       </Box>
@@ -104,6 +106,8 @@ function baseRow(card: CookTonightCard): RecipeListItem {
     cookMinutes: recipe.cookMinutes,
     difficulty: null,
     owner: recipe.owner,
+    familyCopyId: null,
+    copiedFromId: null,
     allergyWarning: recipe.allergyWarning,
   };
 }

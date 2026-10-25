@@ -32,7 +32,8 @@
     "cookTonight": {
       "title": "Cook tonight",
       "seeAll": "See all",
-      "empty": "Nothing to cook from your Pantry yet. Add Batches or Recipes to see ideas.",
+      "empty": "Nothing you can make from your Recipes right now.",
+      "explore": "Explore Recipes",
       "missing": "Missing: {{name}}",
       "expiring_one": "uses {{count}} Expiring Soon item",
       "expiring_other": "uses {{count}} Expiring Soon items",

@@ -1,6 +1,7 @@
-import { Box, Stack, TextField, Typography } from '@pocket-pantry/ui';
+import { Box, Link, Stack, TextField, Typography } from '@pocket-pantry/ui';
 import { useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { recipeHref } from '../lib/recipeHref';
 import { useRecipes, type CompactAllergyWarning } from '../lib/recipes';
 import { AllergenIndicator } from './AllergenIndicator';
 import { HiddenByAllergiesNote } from './HiddenByAllergiesNote';
@@ -13,6 +14,8 @@ export type BaseRecipeOption = {
   id: string;
   title: string;
   allergyWarning?: CompactAllergyWarning | null;
+  /** The Family's live copy of this Catalog Base, else null (or unknown). */
+  familyCopyId?: string | null;
 };
 
 /** What the Member has done in the picker; the caller holds it so it survives the picker unmounting. */
@@ -44,27 +47,39 @@ function BaseOption({
   name,
   onSelect,
   allergyWarning,
+  openHref,
+  openLabel,
 }: {
   checked: boolean;
   label: string;
   name: string;
   onSelect: () => void;
   allergyWarning?: CompactAllergyWarning | null;
+  /** Where "Preview" goes, with its accessible name; both or neither. */
+  openHref?: string;
+  openLabel?: { text: string; name: string };
 }) {
   return (
-    <Box
-      component="label"
-      sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 44 }}
-    >
-      <input
-        type="radio"
-        name={name}
-        checked={checked}
-        onChange={onSelect}
-        style={{ width: 20, height: 20 }}
-      />
-      {label}
-      <AllergenIndicator warning={allergyWarning} />
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box
+        component="label"
+        sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 44 }}
+      >
+        <input
+          type="radio"
+          name={name}
+          checked={checked}
+          onChange={onSelect}
+          style={{ width: 20, height: 20 }}
+        />
+        {label}
+        <AllergenIndicator warning={allergyWarning} />
+      </Box>
+      {openHref && openLabel ? (
+        <Link href={openHref} aria-label={openLabel.name}>
+          {openLabel.text}
+        </Link>
+      ) : null}
     </Box>
   );
 }
@@ -155,6 +170,15 @@ export function BaseRecipePicker({
             }
             onSelect={() => setChosen(match.id)}
             allergyWarning={match.allergyWarning}
+            openHref={recipeHref({
+              id: match.id,
+              owner: 'catalog',
+              familyCopyId: match.familyCopyId,
+            })}
+            openLabel={{
+              text: t('plateRecipe.preview'),
+              name: t('plateRecipe.previewLabel', { title: match.title }),
+            }}
           />
         ))}
         {extra ? (

@@ -120,7 +120,9 @@
     "pairing_link_not_found": "Ingredientul sau Rețeta la care trimite această Asociere nu mai există.",
     "pairing_self_link": "O Asociere nu poate trimite la propria Rețetă.",
     "nutrition_note_too_long": "Nota nutrițională poate avea cel mult 500 de caractere.",
-    "nothing_to_translate": "Nu există text sursă de tradus. Adaugă-l mai întâi în Rețetă."
+    "nothing_to_translate": "Nu există text sursă de tradus. Adaugă-l mai întâi în Rețetă.",
+    "copy_family_recipe": "Această Rețetă este deja a voastră, deci nu poate fi adăugată din nou.",
+    "copy_archived": "Această Rețetă nu mai este în Explorează."
   },
   "family_ingredients": {
     "shared_name_exists": "Există deja un ingredient comun cu acest nume. Îmbină-l pe acesta în el.",
@@ -151,7 +153,8 @@
     "already_started": "Un plan început nu poate fi mutat.",
     "day_out_of_range": "Ziua aceea nu face parte din plan.",
     "not_found": "Planul de mese nu mai există.",
-    "recipe_not_found": "Rețeta nu a fost găsită."
+    "recipe_not_found": "Rețeta nu a fost găsită.",
+    "recipe_not_in_family": "Adaugă mai întâi această rețetă la rețetele tale, apoi planific-o."
   },
   "voice": {
     "cap_reached": "Ai folosit toate cele {{cap}} note vocale de azi. Încearcă mâine sau adaugă produsele manual.",

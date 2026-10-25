@@ -14,6 +14,7 @@ import {
   SpicesIcon,
   EarIcon,
   EqualIcon,
+  CompassIcon,
   GlobeIcon,
   ImagePlusIcon,
   LockIcon,
@@ -139,6 +140,7 @@ describe('icons', () => {
       QuoteIcon,
       EqualIcon,
       LockIcon,
+      CompassIcon,
       GlobeIcon,
       ImagePlusIcon,
     ];

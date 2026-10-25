@@ -34,6 +34,7 @@ import type {
   RecipeStepView,
   RecipeTipView,
   RecipeTranslationsView,
+  RecipeScope,
   ResolvedRecipe,
 } from './recipes.schemas';
 
@@ -222,6 +223,26 @@ export async function loadAdminDetail(
   };
 }
 
+/** The Family's live copy of each Catalog Recipe it has added, by source id. */
+export async function liveCopiesOf(
+  executor: Executor,
+  familyId: string,
+  sourceIds: string[],
+): Promise<Map<string, string>> {
+  if (sourceIds.length === 0) return new Map();
+  const rows = await executor
+    .select({ id: recipes.id, copiedFromId: recipes.copiedFromId })
+    .from(recipes)
+    .where(
+      and(
+        eq(recipes.familyId, familyId),
+        inArray(recipes.copiedFromId, sourceIds),
+        isNull(recipes.archivedAt),
+      ),
+    );
+  return new Map(rows.map((r) => [r.copiedFromId!, r.id]));
+}
+
 /** Who owns the Recipe: the Catalog or a Family. */
 export const ownerOf = (row: Pick<RecipeRow, 'familyId'>): RecipeOwner =>
   row.familyId === null ? 'catalog' : 'family';
@@ -229,6 +250,14 @@ export const ownerOf = (row: Pick<RecipeRow, 'familyId'>): RecipeOwner =>
 /** A Recipe the Family may see: a Catalog one or one of its own. */
 export const visibleTo = (familyId: string) =>
   or(isNull(recipes.familyId), eq(recipes.familyId, familyId));
+
+/** `visibleTo`, narrowed to the Family's own or the Catalog's Recipes when a scope is given. */
+export const inScope = (familyId: string, scope: RecipeScope | undefined) =>
+  scope === 'family'
+    ? eq(recipes.familyId, familyId)
+    : scope === 'catalog'
+      ? isNull(recipes.familyId)
+      : visibleTo(familyId);
 
 /** The Recipe row when it is a Catalog Recipe or owned by `familyId`, else undefined. */
 export async function findVisibleRecipe(
