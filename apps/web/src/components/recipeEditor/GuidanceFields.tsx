@@ -358,7 +358,7 @@ export function GuidanceFields({
   );
 }
 
-type RowProps = {
+export type RowProps = {
   pairing: PairingDraft;
   position: number;
   first: boolean;
@@ -371,7 +371,7 @@ type RowProps = {
   onRemove: () => void;
 };
 
-function PairingRow({
+export function PairingRow({
   pairing,
   position,
   first,
