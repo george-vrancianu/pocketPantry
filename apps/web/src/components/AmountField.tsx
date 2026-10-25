@@ -66,6 +66,8 @@ const STRIP_HEIGHT = 40;
 const INNER_RADIUS = `calc(${radius.control} - ${border.field})`;
 
 export type AmountFieldProps = {
+  /** The number input's id, for a host that moves focus to it; generated when left out. */
+  id?: string;
   /** Name of the item whose amount this is, for the accessible names; empty before a pick. */
   name: string;
   quantity: string;
@@ -98,6 +100,7 @@ export type AmountFieldProps = {
  * forms) places it.
  */
 export function AmountField({
+  id,
   name,
   quantity,
   unit,
@@ -113,7 +116,8 @@ export function AmountField({
 }: AmountFieldProps) {
   const { t } = useTranslation('common');
   const errorId = useId();
-  const inputId = useId();
+  const fallbackId = useId();
+  const inputId = id ?? fallbackId;
   const menuId = useId();
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);

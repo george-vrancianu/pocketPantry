@@ -108,7 +108,7 @@ describe('Review polish: focus', () => {
   it('opening a row with a missing quantity focuses Quantity, and shutting it returns to the row', async () => {
     renderReview([line({ quantity: null })]);
     await userEvent.click(row('Parmesan'));
-    expect(screen.getByLabelText('Quantity')).toHaveFocus();
+    expect(screen.getByLabelText(/^Amount of/)).toHaveFocus();
     await userEvent.click(row('Parmesan'));
     expect(row('Parmesan')).toHaveFocus();
   });
@@ -117,7 +117,7 @@ describe('Review polish: focus', () => {
     stubMotion(false);
     renderReview([line({ quantity: null })]);
     await userEvent.click(row('Parmesan'));
-    expect(screen.getByLabelText('Quantity')).toHaveFocus();
+    expect(screen.getByLabelText(/^Amount of/)).toHaveFocus();
     await userEvent.click(row('Parmesan'));
     expect(row('Parmesan')).toHaveFocus();
   });
@@ -153,9 +153,9 @@ describe('Review polish: motion', () => {
     stubMotion(true);
     renderReview([line()]);
     await userEvent.click(row('Parmesan'));
-    expect(screen.getByLabelText('Quantity')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Amount of/)).toBeInTheDocument();
     await userEvent.click(row('Parmesan'));
-    expect(screen.queryByLabelText('Quantity')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Amount of/)).not.toBeInTheDocument();
   });
 
   it('animates the panel away otherwise', async () => {
@@ -163,9 +163,9 @@ describe('Review polish: motion', () => {
     renderReview([line()]);
     await userEvent.click(row('Parmesan'));
     await userEvent.click(row('Parmesan'));
-    expect(screen.getByLabelText('Quantity')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Amount of/)).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.queryByLabelText('Quantity')).not.toBeInTheDocument(),
+      expect(screen.queryByLabelText(/^Amount of/)).not.toBeInTheDocument(),
     );
   });
 });

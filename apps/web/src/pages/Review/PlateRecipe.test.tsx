@@ -361,12 +361,19 @@ describe('Plate Scan: save as a Recipe', () => {
     await userEvent.type(name, 'House sauce');
     await userEvent.click(await screen.findByRole('button', { name: /Rice/ }));
     // The Unmatched row is to check, so it is shown first; Rice's inputs come last.
-    const quantities = screen.getAllByLabelText('Quantity');
+    // Switching the unit converts the amount, so pick it before typing.
+    const units = screen.getAllByRole('button', { name: /^Unit: / });
+    await userEvent.click(units[units.length - 1]);
+    await userEvent.click(
+      within(screen.getByRole('menu', { name: 'Units' })).getByRole(
+        'menuitemradio',
+        { name: 'kg' },
+      ),
+    );
+    const quantities = screen.getAllByLabelText(/^Amount of/);
     fireEvent.change(quantities[quantities.length - 1], {
       target: { value: '120' },
     });
-    const units = screen.getAllByLabelText('Unit');
-    await userEvent.selectOptions(units[units.length - 1], 'kg');
     await userEvent.click(screen.getByRole('button', { name: 'Save Recipe' }));
     await screen.findByText('recipe screen');
     const body = calls.find((c) => c.key === 'POST /api/recipes/from-plate')
@@ -399,11 +406,11 @@ describe('Plate Scan: save as a Recipe', () => {
     await screen.findByRole('radio', { name: 'Pilaf (closest match)' });
     const row = await screen.findByRole('button', { name: /Rice/ });
     await userEvent.click(row);
-    const quantity = screen.getByLabelText('Quantity');
+    const quantity = screen.getByLabelText(/^Amount of/);
     fireEvent.change(quantity, { target: { value: '0' } });
     await userEvent.click(screen.getByRole('button', { name: 'Save Recipe' }));
     await waitFor(() =>
-      expect(screen.getByLabelText('Quantity')).toHaveFocus(),
+      expect(screen.getByLabelText(/^Amount of/)).toHaveFocus(),
     );
     expect(calls.map((c) => c.key)).not.toContain(
       'POST /api/recipes/from-plate',
@@ -415,7 +422,7 @@ describe('Plate Scan: save as a Recipe', () => {
     await openPanel();
     await screen.findByRole('radio', { name: 'Pilaf (closest match)' });
     await userEvent.click(await screen.findByRole('button', { name: /Rice/ }));
-    const quantity = screen.getByLabelText('Quantity');
+    const quantity = screen.getByLabelText(/^Amount of/);
     await userEvent.clear(quantity);
     await userEvent.type(quantity, '120');
     await userEvent.click(screen.getByRole('button', { name: 'Save Recipe' }));
