@@ -11,6 +11,7 @@ import {
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
 import { StatusIcon } from '../../../components/StatusIcon';
+import type { StorageLocation } from '../../../lib/catalog';
 import type { Batch } from '../../../lib/pantry';
 import type { CameraMode } from '../../../lib/cameraMode';
 import { CameraOverlay } from '../../Scan/CameraOverlay';
@@ -28,6 +29,8 @@ type Props = {
   onCancel: () => void;
   /** Start with an Ingredient picked, or an Unmatched name typed in; empty without. */
   start?: AddBatchStart;
+  /** Every pick goes to this Location (a shelf card's "+"). */
+  presetLocation?: StorageLocation;
   /** Told when the camera overlay opens or closes, so a host can leave Escape to the overlay. */
   onCameraOpenChange?: (open: boolean) => void;
   /** The Say it tile; leave out where the Dock has no mic. */
@@ -43,12 +46,13 @@ export function AddBatchForm({
   onSaved,
   onCancel,
   start,
+  presetLocation,
   onCameraOpenChange,
   onSayIt,
   onScanSeveral,
 }: Props) {
   const { t, i18n } = useTranslation('pantry');
-  const form = useAddBatchForm({ onSaved, start });
+  const form = useAddBatchForm({ onSaved, start, presetLocation });
   const id = useId();
   const { t: tReview } = useTranslation('review');
   const { t: tCatalog } = useTranslation('catalog');

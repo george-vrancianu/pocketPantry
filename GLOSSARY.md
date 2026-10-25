@@ -118,6 +118,10 @@ _Avoid_: Storage, place
 The Ingredients a Family most recently added to the Pantry, newest first, whether or not they are still in it.
 _Avoid_: Recent, history, favourites
 
+**Popular to start**:
+A fixed list of eight Ingredients per locale that the Add to Pantry sheet offers when the Family has no Recently Stocked ones.
+_Avoid_: Suggestions, trending
+
 **Product Description**:
 The free-text name of the actual product a Batch came from, such as "Grana Padano 200g", kept alongside the matched Ingredient.
 _Avoid_: Label, brand

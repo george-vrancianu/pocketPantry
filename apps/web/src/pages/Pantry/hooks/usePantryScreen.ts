@@ -55,6 +55,8 @@ export function usePantryScreen() {
   const [adding, setAdding] = useState<{
     open: boolean;
     start?: AddBatchStart;
+    /** A shelf card's Location: every pick in the visit goes there. */
+    location?: StorageLocation;
   }>({ open: false });
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PantryFilter>('all');
@@ -69,6 +71,9 @@ export function usePantryScreen() {
     filter === 'all'
       ? searched
       : searched.filter((batch) => batch.location === filter);
+
+  const liveAll = all.filter(live);
+  const liveShown = shown.filter(live);
 
   const sections = groupByLocation(shown).map((group) => ({
     location: group.location,
@@ -107,14 +112,34 @@ export function usePantryScreen() {
     filter,
     setFilter,
     isLoading: batches.isPending,
-    isEmpty: batches.isSuccess && all.length === 0,
-    noMatches: batches.isSuccess && all.length > 0 && shown.length === 0,
+    // No Batches at all (Expired ones count). A Batch pending its delete is already gone, so the last
+    // one's removal shows this while its Undo toast is up.
+    isEmpty: batches.isSuccess && liveAll.length === 0,
+    // A Location filter with none (and no search) shows that Location's shelf card.
+    emptyShelf:
+      batches.isSuccess &&
+      liveAll.length > 0 &&
+      liveShown.length === 0 &&
+      query === '' &&
+      filter !== 'all'
+        ? filter
+        : null,
+    noMatches:
+      batches.isSuccess &&
+      liveAll.length > 0 &&
+      liveShown.length === 0 &&
+      !(query === '' && filter !== 'all'),
     error: batches.error ? translateApiError(t, batches.error) : null,
     today,
     adding: adding.open,
+    /** The Location a shelf card's "+" presets for the sheet's picks. */
+    addLocation: adding.location,
     /** What the Add to Pantry sheet starts with: nothing (the header "+") or a row's Ingredient. */
     addStart: adding.start,
     startAdding: () => setAdding({ open: true }),
+    /** A shelf card's "+": the sheet with that Location preset. */
+    startAddingAt: (location: StorageLocation) =>
+      setAdding({ open: true, location }),
     /** Add batch from an open card: its Ingredient picked, or its Unmatched name typed in. */
     startAddingTo: (row: PantryRow) =>
       setAdding({
