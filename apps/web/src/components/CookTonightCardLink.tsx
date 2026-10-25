@@ -1,17 +1,9 @@
-import {
-  Box,
-  displayType,
-  Gator,
-  tokens,
-  usePrefersReducedMotion,
-} from '@pocket-pantry/ui';
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { Box, displayType, Gator, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import type { CookTonightCard } from '../../../lib/cookTonight';
-import { cookTonightPanelState } from '../../../lib/cookTonightPanel';
-import { TAP_BEFORE_NEXT_MS } from '../../../lib/gatorTap';
-import { useGatorAlt } from '../../../lib/useGatorAlt';
+import type { CookTonightCard } from '../lib/cookTonight';
+import { cookTonightPanelState } from '../lib/cookTonightPanel';
+import { useGatorAlt } from '../lib/useGatorAlt';
+import { useGatorTapLink } from '../lib/useGatorTapLink';
 import { GatorBubblePanel } from './GatorBubblePanel';
 
 /**
@@ -22,33 +14,12 @@ import { GatorBubblePanel } from './GatorBubblePanel';
 export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
   const { t } = useTranslation('recipes');
   const gatorAlt = useGatorAlt();
-  const navigate = useNavigate();
-  const reduceMotion = usePrefersReducedMotion();
-  const [taps, setTaps] = useState(0);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
   // The card is hidden when the Family has no Recipes, so that state never reaches it.
   const { mood, to, lines } = cookTonightPanelState(cards, false, t);
+  const { taps, onClick } = useGatorTapLink(to);
   if (!to) return null;
   const title = t('cookTonight.title');
   const [line, ...rest] = lines;
-
-  const onClick = (event: MouseEvent<HTMLElement>) => {
-    const plain =
-      event.button === 0 &&
-      !event.metaKey &&
-      !event.ctrlKey &&
-      !event.shiftKey &&
-      !event.altKey;
-    if (reduceMotion || !plain) return;
-    event.preventDefault();
-    if (timer.current) return;
-    setTaps((n) => n + 1);
-    timer.current = setTimeout(() => {
-      timer.current = undefined;
-      navigate(to);
-    }, TAP_BEFORE_NEXT_MS);
-  };
 
   return (
     <GatorBubblePanel

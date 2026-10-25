@@ -20,7 +20,7 @@ import {
   type RecipeBrowse,
   type RecipeListItem,
 } from '../../../lib/recipes';
-import { GatorBubblePanel } from './GatorBubblePanel';
+import { GatorBubblePanel } from '../../../components/GatorBubblePanel';
 import { SectionLabel } from './SectionLabel';
 
 type AddApi = ReturnType<typeof useAddToFamily>;

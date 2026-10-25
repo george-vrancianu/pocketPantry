@@ -6,6 +6,7 @@ import {
   AllergenIndicator,
   allergenIndicatorLabel,
 } from '../../../components/AllergenIndicator';
+import { CookTonightCardLink } from '../../../components/CookTonightCardLink';
 import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { recipeHref } from '../../../lib/recipeHref';
@@ -37,9 +38,14 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
     showHidden,
     'family',
   );
-  const cards = (cookTonight.data?.cards ?? []).slice(
-    0,
-    cardsFor(size, columns),
+  const allCards = cookTonight.data?.cards ?? [];
+  const cards = allCards.slice(0, cardsFor(size, columns));
+
+  const note = (
+    <HiddenByAllergiesNote
+      count={cookTonight.data?.hiddenByAllergiesCount ?? 0}
+      onShow={() => setShowHidden(true)}
+    />
   );
 
   return (
@@ -50,69 +56,84 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
       isLoading={cookTonight.isPending}
       error={cookTonight.error ? translateApiError(t, cookTonight.error) : null}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          mb: '6px',
-        }}
-      >
-        <WidgetTitle icon={<RecipesIcon size={16} />}>
-          {t('widgets.cookTonight.title')}
-        </WidgetTitle>
-        <Box
-          component={Link}
-          to="/recipes"
-          sx={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: tokens.color.accent,
-            textDecoration: 'none',
-          }}
-        >
-          {t('widgets.cookTonight.seeAll')}
-        </Box>
-      </Box>
-      <HiddenByAllergiesNote
-        count={cookTonight.data?.hiddenByAllergiesCount ?? 0}
-        onShow={() => setShowHidden(true)}
-      />
-      {cards.length === 0 ? (
-        <Box sx={{ fontSize: 14, color: tokens.color.muted, py: '10px' }}>
-          {t('widgets.cookTonight.empty')}{' '}
+      {size === 'small' ? (
+        <>
           <Box
-            component={Link}
-            to="/recipes/explore"
             sx={{
-              fontWeight: 700,
-              color: tokens.color.accent,
-              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: '6px',
             }}
           >
-            {t('widgets.cookTonight.explore')}
+            <WidgetTitle icon={<RecipesIcon size={16} />}>
+              {t('widgets.cookTonight.title')}
+            </WidgetTitle>
+            <Box
+              component={Link}
+              to="/recipes"
+              sx={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: tokens.color.accent,
+                textDecoration: 'none',
+              }}
+            >
+              {t('widgets.cookTonight.seeAll')}
+            </Box>
           </Box>
-        </Box>
+          {note}
+          {cards.length === 0 ? (
+            <Box sx={{ fontSize: 14, color: tokens.color.muted, py: '10px' }}>
+              {t('widgets.cookTonight.empty')}{' '}
+              <Box
+                component={Link}
+                to="/recipes/explore"
+                sx={{
+                  fontWeight: 700,
+                  color: tokens.color.accent,
+                  textDecoration: 'none',
+                }}
+              >
+                {t('widgets.cookTonight.explore')}
+              </Box>
+            </Box>
+          ) : (
+            <CardList cards={cards} />
+          )}
+        </>
       ) : (
-        <Box
-          component="ul"
-          sx={{
-            listStyle: 'none',
-            m: 0,
-            p: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          {cards.map((card) => (
-            <li key={card.base.id}>
-              <CookCard card={card} />
-            </li>
-          ))}
+        // Wide and tall: no header row; the panel names the Widget and leads to Cook Tonight.
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <CookTonightCardLink cards={allCards} />
+          {note}
+          <CardList cards={cards} />
         </Box>
       )}
     </WidgetCard>
+  );
+}
+
+function CardList({ cards }: { cards: CookTonightCard[] }) {
+  if (cards.length === 0) return null;
+  return (
+    <Box
+      component="ul"
+      sx={{
+        listStyle: 'none',
+        m: 0,
+        p: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}
+    >
+      {cards.map((card) => (
+        <li key={card.base.id}>
+          <CookCard card={card} />
+        </li>
+      ))}
+    </Box>
   );
 }
 
