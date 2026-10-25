@@ -440,7 +440,7 @@ _Avoid_: Tutorial, onboarding
 ### Intro
 
 **Gator**:
-The app's mascot, an alligator who speaks the app's own lines in the first person. A character, not a feature: what Gator says describes only real features.
+The app's mascot, an alligator who speaks the app's own lines in the first person. A character, not a feature: what Gator says describes only real features. A feature's own name and status shown beside him, even in his speech bubble, are the app's labels, not Gator speaking.
 _Avoid_: Assistant, bot, AI
 
 **Intro**:
