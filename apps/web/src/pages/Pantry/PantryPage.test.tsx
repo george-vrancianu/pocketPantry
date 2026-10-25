@@ -371,10 +371,10 @@ describe('PantryPage', () => {
     });
   });
 
-  it('shows an empty state with no Batches', async () => {
+  it('shows the Empty Pantry with no Batches (see EmptyPantry.test.tsx)', async () => {
     stubPantry([]);
     renderWithProviders(<PantryPage />);
-    expect(await screen.findByText(/Your Pantry is empty/)).toBeInTheDocument();
+    expect(await screen.findByText('Nothing in here yet')).toBeInTheDocument();
   });
 
   it('adds a Batch from the Catalog with pre-filled Location and expiry', async () => {

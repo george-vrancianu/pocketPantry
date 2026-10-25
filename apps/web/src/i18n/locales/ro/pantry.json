@@ -1,7 +1,31 @@
 {
   "title": "Cămară",
   "add": "Adaugă lot",
-  "empty": "Cămara este goală. Adaugă primul lot cu butonul +.",
+  "empty": {
+    "subtitle": "Încă nu e nimic aici",
+    "gatorAlt": "Gator citind o listă. Atinge să-l saluți",
+    "gatorLine": "Spune-mi ce ai și pun eu totul pe raftul potrivit.",
+    "scan": "Scanează",
+    "sayIt": "Spune",
+    "type": "Scrie",
+    "ticked_one": "{{count}} produs bifat în Lista de cumpărături",
+    "ticked_few": "{{count}} produse bifate în Lista de cumpărături",
+    "ticked_other": "{{count}} de produse bifate în Lista de cumpărături",
+    "moveThem": "Mută-le",
+    "shelf": {
+      "fridge": "Frigiderul e gol",
+      "freezer": "Congelatorul e gol",
+      "cupboard": "Dulapul e gol",
+      "spices": "Niciun condiment încă"
+    },
+    "hint": {
+      "fridge": "Lapte, ouă, brânză, resturi",
+      "freezer": "Mazăre, înghețată, o pâine de rezervă",
+      "cupboard": "Paste, orez, conserve, ulei",
+      "spices": "Boia, chimen, oregano"
+    },
+    "addTo": "Adaugă în {{location}}"
+  },
   "expiry": {
     "today": "Astăzi",
     "expired": "Expirat",

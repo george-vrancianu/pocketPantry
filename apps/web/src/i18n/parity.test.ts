@@ -235,6 +235,11 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
     ['scan:typeIt', 'scan:labelFailed', 'scan:labelCap'],
   ],
   [
+    'type',
+    'the verb "Type" (enter by hand) on the Empty Pantry banner, not a Category',
+    ['pantry:empty.type'],
+  ],
+  [
     'token',
     'the Assistant Token (GLOSSARY), shortened to "token" in the Siri section; not the Invite Code',
     [
@@ -466,6 +471,8 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
   'scan:noCamera|import':
     "tells a Member without a camera to use the Scan screen's Import button; it is not the Shopping Template action",
   'common:locations.fridge|fridge':
+    'Fridge is a Location value, not a name for the Pantry',
+  'pantry:empty.shelf.fridge|fridge':
     'Fridge is a Location value, not a name for the Pantry',
   'voice:intro.examples.shopping.three.say|fridge':
     'example of what a Member says out loud',

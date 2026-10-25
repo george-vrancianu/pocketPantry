@@ -18,6 +18,7 @@ import { flashRows } from '../../../lib/rowFlash';
 import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
 import { useDeleteBatch, type Batch } from '../../../lib/pantry';
 import { useNavigate } from 'react-router-dom';
+import type { StorageLocation } from '../../../lib/catalog';
 import type { AddBatchStart } from '../hooks/useAddBatchForm';
 import { useShowsDockMic } from '../../../components/VoiceNote';
 import { useMicTeach } from '../../../components/voice/VoiceHost';
@@ -30,6 +31,8 @@ type Props = {
   onExited?: () => void;
   /** Start with an Ingredient picked, or an Unmatched name typed in; empty without. */
   start?: AddBatchStart;
+  /** Every pick in this visit goes to this Location, camera picks included. */
+  location?: StorageLocation;
 };
 
 /** Distance of the save toast from the bottom while the sheet is open, px (handoff 3.4). */
@@ -43,7 +46,13 @@ const TOAST_BOTTOM = 96;
  * Added strip lists the Batch, and × becomes Done. Each save's toast offers Undo, which deletes that
  * Batch alone. On close the rows created this visit flash on the list.
  */
-export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
+export function AddToPantrySheet({
+  open,
+  onClose,
+  onExited,
+  start,
+  location,
+}: Props) {
   const { t, i18n } = useTranslation('pantry');
   const toast = useToast();
   const deleteBatch = useDeleteBatch();
@@ -207,6 +216,7 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
         <AddBatchForm
           key={formKey}
           start={formKey === 0 ? start : undefined}
+          presetLocation={location}
           onSaved={saved}
           formId={formId}
           onSubmitChange={setSubmit}
