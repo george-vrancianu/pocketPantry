@@ -124,6 +124,7 @@
     "delete": "Șterge",
     "deleteConfirm": "Ștergi această rețetă? Dispare pentru toată familia.",
     "newHeading": "Fă o variantă",
+    "editHeading": "Editează rețeta",
     "title": "Titlu",
     "copyHint": "Copiată din {{source}}. Devine rețetă când o salvezi.",
     "editorTabs": "Filele rețetei",

@@ -116,6 +116,7 @@
     "delete": "Slet",
     "deleteConfirm": "Slet denne opskrift? Den forsvinder for hele din familie.",
     "newHeading": "Lav en variant",
+    "editHeading": "Rediger opskrift",
     "title": "Titel",
     "copyHint": "Kopieret fra {{source}}. Den bliver til en opskrift, når du gemmer den.",
     "editorTabs": "Opskriftens faner",

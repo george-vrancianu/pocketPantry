@@ -105,8 +105,21 @@ export function NewRecipePage() {
   const { t } = useTranslation(['common', 'errors', 'recipes']);
   const route = useRecipeDraftRoute();
   const draftRoute = routePropsOf(route);
-  if (route.error) return <Alert>{translateApiError(t, route.error)}</Alert>;
-  if (route.loading) return <Spinner label={t('common:loading')} />;
+  if (route.error || route.loading) {
+    return (
+      <>
+        <AppScreenHeader
+          title={t('recipes:family.newRecipeHeading')}
+          back={{ label: t('recipes:back'), href: '/recipes' }}
+        />
+        {route.error ? (
+          <Alert>{translateApiError(t, route.error)}</Alert>
+        ) : (
+          <Spinner label={t('common:loading')} />
+        )}
+      </>
+    );
+  }
   // A resumed Recipe Draft holds everything; the state a reload kept would only repeat it.
   const supplied = route.resumed ? null : suppliedOf(location.state);
   const resuming = new URLSearchParams(location.search).has(DRAFT_PARAM);
@@ -561,7 +574,11 @@ export function EditFamilyRecipePage() {
     <FamilyRecipeForm
       // Tip writes refresh `recipe` but must not reset unsaved edits; a save reseeds.
       seedKey={`${recipe.id}-${saves}`}
-      header={{ title: recipe.title, titleRef: headingRef, back }}
+      header={{
+        title: t('recipes:family.editHeading'),
+        titleRef: headingRef,
+        back,
+      }}
       openTab="steps"
       detailsTop={
         recipe.sourceLink && !linkRemoved ? (

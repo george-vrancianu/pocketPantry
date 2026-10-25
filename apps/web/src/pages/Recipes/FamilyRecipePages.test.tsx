@@ -2147,10 +2147,58 @@ describe('Recipe editor shell', () => {
       '/recipes/g',
     );
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      "Grandma's omelette",
+      'Edit Recipe',
     );
     expect(screen.queryByText('Draft saved')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull();
+  });
+
+  it('keeps a Suggest Guidance answer and its Suggested marks across a tab switch', async () => {
+    const user = userEvent.setup({ delay: null });
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    setup('/recipes/new', {
+      'POST /api/recipes/suggest-guidance': async () => {
+        await gate;
+        return Response.json({
+          guidance: { nutritionNote: 'Rich in protein.' },
+          noSuggestions: [],
+        });
+      },
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(screen.getByRole('button', { name: 'Suggest Guidance' }));
+    await screen.findByRole('button', { name: 'Suggesting…' });
+
+    // Away while the request is in flight, and back after it lands.
+    await user.click(screen.getByRole('tab', { name: /^Ingredients/ }));
+    release();
+    await user.click(screen.getByRole('tab', { name: /^Details/ }));
+
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Nutrition Note')).toHaveValue(
+        'Rich in protein.',
+      ),
+    );
+    // The mark stays through another round trip.
+    await user.click(screen.getByRole('tab', { name: /^Steps/ }));
+    await user.click(screen.getByRole('tab', { name: /^Details/ }));
+    expect(
+      within(screen.getByRole('group', { name: /Nutrition Note/ })).getByText(
+        'Suggested',
+      ),
+    ).toBeVisible();
+  });
+
+  it('keeps a Back to the Recipes when the resumed Recipe Draft cannot be read', async () => {
+    setup('/recipes/new?draft=gone', {
+      'GET /api/recipe-drafts/gone': () =>
+        Response.json({ error: 'not_found' }, { status: 404 }),
+    });
+    expect(await screen.findByRole('link', { name: 'Back' })).toHaveAttribute(
+      'href',
+      '/recipes',
+    );
   });
 
   it('counts Ingredients and Steps in the tab names', async () => {
@@ -2206,7 +2254,8 @@ describe('Recipe editor shell', () => {
     setup('/recipes/x/variant/new', variantRoutes);
     expect(await screen.findByLabelText(/^Title/)).toBeVisible();
     expect(screen.getByRole('region', { name: 'Guidance' })).toBeVisible();
-    expect(screen.queryByLabelText('Quantity of Egg')).toBeNull();
+    // The other tabs stay mounted but hidden.
+    expect(screen.getByLabelText('Quantity of Egg')).not.toBeVisible();
     expect(screen.queryByRole('textbox', { name: 'Step 1' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Ingredients ›' }));
@@ -2218,7 +2267,7 @@ describe('Recipe editor shell', () => {
     expect(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
     ).toBeVisible();
-    expect(screen.queryByLabelText(/^Title/)).toBeNull();
+    expect(screen.getByLabelText(/^Title/)).not.toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'Steps ›' }));
     expect(screen.getByLabelText('Step 1')).toBeVisible();

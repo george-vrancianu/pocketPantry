@@ -116,6 +116,7 @@
     "delete": "Delete",
     "deleteConfirm": "Delete this Recipe? It disappears for your whole family.",
     "newHeading": "Make a Variant",
+    "editHeading": "Edit Recipe",
     "title": "Title",
     "copyHint": "Copied from {{source}}. It becomes a Recipe when you save it.",
     "editorTabs": "Recipe tabs",

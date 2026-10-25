@@ -165,7 +165,12 @@ export function FamilyRecipeForm({
         subline={header.subline}
         truncateTitle
         trailing={
-          <Button size="sm" disabled={saving || !canSave} onClick={submit}>
+          <Button
+            size="sm"
+            shape="pill"
+            disabled={saving || !canSave}
+            onClick={submit}
+          >
             {saving ? t('admin:common.saving') : t('admin:common.save')}
           </Button>
         }
@@ -212,113 +217,119 @@ export function FamilyRecipeForm({
             ]}
           />
           {notices || error ? (
-            <Stack spacing={1} sx={{ mt: '8px' }}>
+            // Each line that has content sits 8px under the one above; an empty status line adds nothing.
+            <Stack sx={{ '& > :not(:empty)': { mt: '8px' } }}>
               {notices}
               {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
             </Stack>
           ) : null}
         </Box>
-        {tab !== 'steps' ? (
-          <Stack
-            role="tabpanel"
-            id={segmentedTabPanelId(tabsId, tab)}
-            aria-labelledby={segmentedTabId(tabsId, tab)}
-            spacing={2.5}
-          >
-            {tab === 'details' ? (
-              <>
-                {hint ? (
-                  <Typography variant="body2" color="text.secondary">
-                    {hint}
-                  </Typography>
-                ) : null}
-                {detailsTop}
-                <RecipeMetaFields
-                  draft={draft}
-                  problems={problems}
-                  titleLabel={t('recipes:family.title')}
-                  cuisineLabel={t('recipes:cuisine')}
-                  methodLabel={t('recipes:method')}
-                  cuisines={filters.data?.cuisines ?? []}
-                  methods={filters.data?.methods ?? []}
-                  showTitleError={showTitleError}
-                  onChange={change}
-                  onTitleBlur={() => setTitleTouched(true)}
+        {/* All three panels stay mounted while hidden: Suggest Guidance (in flight or answered) and the Tips and Guidance panels hold state of their own. */}
+        <Stack
+          role="tabpanel"
+          id={segmentedTabPanelId(tabsId, 'details')}
+          aria-labelledby={segmentedTabId(tabsId, 'details')}
+          spacing={2.5}
+          hidden={tab !== 'details'}
+          sx={tab !== 'details' ? { display: 'none' } : undefined}
+        >
+          <>
+            {hint ? (
+              <Typography variant="body2" color="text.secondary">
+                {hint}
+              </Typography>
+            ) : null}
+            {detailsTop}
+            <RecipeMetaFields
+              draft={draft}
+              problems={problems}
+              titleLabel={t('recipes:family.title')}
+              cuisineLabel={t('recipes:cuisine')}
+              methodLabel={t('recipes:method')}
+              cuisines={filters.data?.cuisines ?? []}
+              methods={filters.data?.methods ?? []}
+              showTitleError={showTitleError}
+              onChange={change}
+              onTitleBlur={() => setTitleTouched(true)}
+            />
+            {guidance && guidanceDraft ? (
+              <Stack
+                spacing={2}
+                component="section"
+                aria-label={t('admin:recipe.guidance.title')}
+              >
+                <Typography variant="sectionLabel" color="text.secondary">
+                  {t('admin:recipe.guidance.title')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t('recipes:family.guidanceHint')}
+                </Typography>
+                <FamilyGuidanceFields
+                  draft={guidanceDraft}
+                  onChange={setGuidanceDraft}
+                  momentOptions={guidance.momentOptions}
+                  page={draft}
                 />
-                {guidance && guidanceDraft ? (
-                  <Stack
-                    spacing={2}
-                    component="section"
-                    aria-label={t('admin:recipe.guidance.title')}
+              </Stack>
+            ) : null}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button variant="ghost" onClick={() => goTo('ingredients')}>
+                {t('recipes:family.tabs.toIngredients')}
+              </Button>
+            </Box>
+            {detailsEnd}
+          </>
+        </Stack>
+        <Stack
+          role="tabpanel"
+          id={segmentedTabPanelId(tabsId, 'ingredients')}
+          aria-labelledby={segmentedTabId(tabsId, 'ingredients')}
+          spacing={2.5}
+          hidden={tab !== 'ingredients'}
+          sx={tab !== 'ingredients' ? { display: 'none' } : undefined}
+        >
+          <>
+            <RecipeLinesSection
+              lines={draft.lines}
+              problems={problems}
+              onChange={(lines) => change({ lines })}
+              nameNote={(line) =>
+                line.ingredientId === '' ? (
+                  <Typography
+                    component="span"
+                    variant="meta"
+                    color="text.secondary"
                   >
-                    <Typography variant="sectionLabel" color="text.secondary">
-                      {t('admin:recipe.guidance.title')}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {t('recipes:family.guidanceHint')}
-                    </Typography>
-                    <FamilyGuidanceFields
-                      draft={guidanceDraft}
-                      onChange={setGuidanceDraft}
-                      momentOptions={guidance.momentOptions}
-                      page={draft}
-                    />
-                  </Stack>
-                ) : null}
-                <Box>
-                  <Button variant="ghost" onClick={() => goTo('ingredients')}>
-                    {t('recipes:family.tabs.toIngredients')}
-                  </Button>
-                </Box>
-                {detailsEnd}
-              </>
-            ) : null}
-            {tab === 'ingredients' ? (
-              <>
-                <RecipeLinesSection
-                  lines={draft.lines}
-                  problems={problems}
-                  onChange={(lines) => change({ lines })}
-                  nameNote={(line) =>
-                    line.ingredientId === '' ? (
-                      <Typography
-                        component="span"
-                        variant="meta"
-                        color="text.secondary"
-                      >
-                        {' '}
-                        ({t('recipes:family.freeTextNote')})
-                      </Typography>
-                    ) : null
-                  }
-                >
-                  <CatalogSearch
-                    emptyState={<BrowseByAisle />}
-                    key={searchKey}
-                    onSelect={(ingredient) => {
-                      addLine({
-                        ingredientId: ingredient.id,
-                        name: ingredient.name,
-                        unit: ingredient.defaultUnit,
-                      });
-                      setSearchKey((value) => value + 1);
-                    }}
-                    onUseTyped={(name) => {
-                      addLine({ ingredientId: '', name, unit: 'g' });
-                      setSearchKey((value) => value + 1);
-                    }}
-                  />
-                </RecipeLinesSection>
-                <Box>
-                  <Button variant="ghost" onClick={() => goTo('steps')}>
-                    {t('recipes:family.tabs.toSteps')}
-                  </Button>
-                </Box>
-              </>
-            ) : null}
-          </Stack>
-        ) : null}
-        {/* Kept mounted while hidden: Edit's Tips and Guidance panels hold edits of their own. */}
+                    {' '}
+                    ({t('recipes:family.freeTextNote')})
+                  </Typography>
+                ) : null
+              }
+            >
+              <CatalogSearch
+                emptyState={<BrowseByAisle />}
+                key={searchKey}
+                onSelect={(ingredient) => {
+                  addLine({
+                    ingredientId: ingredient.id,
+                    name: ingredient.name,
+                    unit: ingredient.defaultUnit,
+                  });
+                  setSearchKey((value) => value + 1);
+                }}
+                onUseTyped={(name) => {
+                  addLine({ ingredientId: '', name, unit: 'g' });
+                  setSearchKey((value) => value + 1);
+                }}
+              />
+            </RecipeLinesSection>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button variant="ghost" onClick={() => goTo('steps')}>
+                {t('recipes:family.tabs.toSteps')}
+              </Button>
+            </Box>
+          </>
+        </Stack>
         <Stack
           role="tabpanel"
           id={segmentedTabPanelId(tabsId, 'steps')}

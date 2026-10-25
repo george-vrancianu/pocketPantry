@@ -113,7 +113,7 @@ export function useRecipeDraftFormSession({
   const discardButton: ReactNode =
     draftId && autosave.status !== 'conflict' ? (
       <Button
-        variant="secondary"
+        variant="ghost"
         disabled={discarding || finishing}
         onClick={async () => {
           setDiscarding(true);
