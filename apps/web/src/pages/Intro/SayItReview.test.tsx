@@ -20,7 +20,7 @@ import {
   Where,
 } from '../../test/intro';
 import { renderWithProviders } from '../../test/render';
-import { takeScan, shutter } from '../../test/scan';
+import { photoStack, shutter, stackCount, takeScan } from '../../test/scan';
 import {
   pressDown,
   holdLongEnough,
@@ -520,6 +520,9 @@ describe('Setup: counts across both steps', () => {
     await user.click(screen.getByRole('link', { name: 'Camera' }));
     await waitFor(() => expect(shutter()).toBeInTheDocument());
     takeScan();
+    await waitFor(() => expect(stackCount()).toBe(1));
+    await user.click(photoStack());
+    await user.click((await screen.findAllByTestId('card-result'))[0]);
     await user.click(
       await screen.findByRole('button', { name: 'Add 2 to Pantry' }),
     );

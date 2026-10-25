@@ -47,20 +47,22 @@ describe('Setup 1, Snap', () => {
     expect(
       within(choices).getByRole('radio', { name: 'Receipt' }),
     ).not.toBeChecked();
-    expect(screen.getByText('Tap the camera to start')).toBeInTheDocument();
+    expect(
+      screen.getByText('Tap the camera and snap away'),
+    ).toBeInTheDocument();
   });
 
   it("makes Gator's line follow the pick", async () => {
     const user = await openSnap();
     expect(
       screen.getByText(
-        "Put some food on the counter and snap it. I'll work out what it all is.",
+        "Put some food on the counter and snap it. Take as many photos as you like and I'll work out what it all is.",
       ),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: 'Receipt' }));
     expect(
       screen.getByText(
-        "Snap the receipt from your last shop. I'll put the whole shop away.",
+        "Snap the receipt from your last shop. A long one? Take it in a few photos and I'll put the whole shop away.",
       ),
     ).toBeInTheDocument();
   });

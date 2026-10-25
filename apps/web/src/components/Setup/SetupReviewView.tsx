@@ -41,6 +41,9 @@ type Props = {
   saving: boolean;
   canSave: boolean;
   onSave: () => void;
+  /** Back to the Setup overview, keeping the card. */
+  onBack: () => void;
+  /** Drop this card and take its photo again. */
   onRetake: () => void;
   onSkip: () => void;
   children: ReactNode;
@@ -59,6 +62,7 @@ export function SetupReviewView({
   saving,
   canSave,
   onSave,
+  onBack,
   onRetake,
   onSkip,
   children,
@@ -70,7 +74,10 @@ export function SetupReviewView({
   const [count] = useState(spotted);
   return (
     <SetupReviewFrame bottomRoom>
-      <SetupTopRow onCamera={onRetake} onSkip={onSkip} />
+      <SetupTopRow
+        back={{ label: tReview('title'), onClick: onBack }}
+        onSkip={onSkip}
+      />
       <Box component="header" sx={{ pt: '20px', pb: '14px' }}>
         <Typography variant="h2" component="h1">
           {tReview('title')}
