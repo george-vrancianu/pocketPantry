@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { Batch } from '../../lib/pantry';
+import { clearPick, typeNote } from '../../test/addBatch';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 import {
@@ -190,7 +191,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       screen.getByRole('textbox', { name: /Amount of Yogurt/ }),
     ).toHaveValue('400');
     expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Product description')).toHaveValue(
+    expect(screen.getByLabelText('Note · optional')).toHaveValue(
       'Greek yogurt',
     );
     expect(screen.getByTestId('prefilled-description')).toHaveTextContent(
@@ -244,7 +245,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       ).toHaveValue('Zorblax Crunch'),
     );
     // No Ingredient is picked yet, so the rest of the form waits for one.
-    expect(screen.queryByLabelText('Product description')).toBeNull();
+    expect(screen.queryByLabelText('Note · optional')).toBeNull();
     expect(screen.getByText('Product data: Open Food Facts')).toBeVisible();
     await user.clear(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
@@ -254,7 +255,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       'yog',
     );
     await user.click(await screen.findByRole('option', { name: /Yogurt/ }));
-    expect(screen.getByLabelText('Product description')).toHaveValue(
+    expect(screen.getByLabelText('Note · optional')).toHaveValue(
       'Zorblax Crunch',
     );
   });
@@ -269,20 +270,22 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.type(screen.getByLabelText('Product description'), 'Mine');
+    await typeNote(user, 'Mine');
+    // The camera is for an empty pick: clear it. The note the Member typed stays.
+    await clearPick(user);
     await user.click(cameraButton());
     await decodeAndUse();
 
     await screen.findByText('Product data: Open Food Facts');
     expect(
       screen.getByRole('combobox', {
-        name: 'Ingredient: Milk. Press Backspace to change',
+        name: 'Ingredient: Yogurt. Press Backspace to change',
       }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Product description')).toHaveValue('Mine');
-    expect(screen.getByRole('textbox', { name: /Amount of Milk/ })).toHaveValue(
-      '400',
-    );
+    expect(screen.getByLabelText('Note · optional')).toHaveValue('Mine');
+    expect(
+      screen.getByRole('textbox', { name: /Amount of Yogurt/ }),
+    ).toHaveValue('400');
   });
 
   it('on not found, shows the unknown-barcode card with Take a photo and Type it', async () => {
@@ -370,7 +373,9 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
     await waitFor(() =>
       expect(
         calls.some((call) => call.key === 'POST /api/pantry/batches'),
@@ -411,7 +416,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       expect(screen.queryByTestId('camera-overlay')).toBeNull(),
     );
     await user.click(
-      await screen.findByRole('button', { name: 'Add to Pantry' }),
+      await screen.findByRole('button', { name: /^Add (?!.*to your catalog)/ }),
     );
     await waitFor(() =>
       expect(
@@ -491,6 +496,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     await decodeAndUse();
     await screen.findByText('Product data: Open Food Facts');
 
+    await clearPick(user);
     await user.click(cameraButton());
     await user.click(screen.getByRole('radio', { name: 'Product' }));
     screen.getByRole('button', { name: 'Take photo' }).focus();
@@ -500,7 +506,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     );
   });
 
-  it('with no confident match, drops an earlier untouched pick', async () => {
+  it('with no confident match after a cleared pick, pre-types the search', async () => {
     const user = userEvent.setup();
     let calls = 0;
     stubLookup(() =>
@@ -519,6 +525,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     });
 
     fakeCamera.emit = null;
+    await clearPick(user);
     await user.click(cameraButton());
     await decodeAndUse();
     await waitFor(() =>
@@ -572,7 +579,9 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
     await user.click(cameraButton());
     await decodeAndUse();
     await screen.findByText('Product data: Open Food Facts');
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
 
     await waitFor(() =>
       expect(
@@ -604,7 +613,9 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
 
     await waitFor(() =>
       expect(
@@ -647,7 +658,9 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
 
     await waitFor(() =>
       expect(
@@ -670,7 +683,9 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
       'mil',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
 
     await waitFor(() =>
       expect(
@@ -696,7 +711,7 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
         name: 'Ingredient: Yogurt. Press Backspace to change',
       }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Product description')).toHaveValue(
+    expect(screen.getByLabelText('Note · optional')).toHaveValue(
       'Our usual tub',
     );
     expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
@@ -721,11 +736,11 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
     expect(
       await screen.findByText(/"Zorblax Crunch" will be saved as Unmatched/),
     ).toBeVisible();
-    expect(screen.getByLabelText('Product description')).toHaveValue(
-      'Zorblax tub',
-    );
+    expect(screen.getByLabelText('Note · optional')).toHaveValue('Zorblax tub');
     expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
     await waitFor(() =>
       expect(
         calls.some((call) => call.key === 'POST /api/pantry/batches'),

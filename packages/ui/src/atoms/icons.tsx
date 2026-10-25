@@ -39,6 +39,7 @@ import {
   Snowflake,
   SquareSplitHorizontal,
   LeafyGreen,
+  CalendarDays,
   type LucideProps,
 } from 'lucide-react';
 
@@ -346,3 +347,5 @@ export const FridgeIcon = lucide(Refrigerator);
 export const FreezerIcon = lucide(Snowflake);
 export const CupboardIcon = lucide(SquareSplitHorizontal);
 export const SpicesIcon = lucide(LeafyGreen);
+/** Add to Pantry: the resolved expiry line and the calendar chip. */
+export const CalendarDaysIcon = lucide(CalendarDays);

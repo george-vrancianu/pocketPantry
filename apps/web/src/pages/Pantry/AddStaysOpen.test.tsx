@@ -108,11 +108,12 @@ async function addItem(
   await user.click(
     await sheet.findByRole('option', { name: new RegExp(name) }),
   );
-  await user.type(
-    await sheet.findByRole('textbox', { name: /Amount of/ }),
-    amount,
+  const field = await sheet.findByRole('textbox', { name: /Amount of/ });
+  await user.clear(field);
+  await user.type(field, amount);
+  await user.click(
+    sheet.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
   );
-  await user.click(sheet.getByRole('button', { name: 'Add to Pantry' }));
 }
 
 describe('Add to Pantry sheet after a save', () => {

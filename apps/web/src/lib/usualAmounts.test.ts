@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   convertQuantity,
+  defaultAmount,
   parseTypedNumber,
   stepAmount,
   usualAmountsAscending,
@@ -151,5 +152,14 @@ describe('unitsInFamily', () => {
 
   it('offers every unit when there is none yet', () => {
     expect(unitsInFamily('')).toEqual(['g', 'kg', 'ml', 'l', 'pcs']);
+  });
+});
+
+describe('defaultAmount', () => {
+  it('is the first Usual Amount for counts and the second for mass and volume', () => {
+    expect(defaultAmount('pcs', 'medium')).toBe(6);
+    expect(defaultAmount('g', 'medium')).toBe(500);
+    expect(defaultAmount('l', 'medium')).toBe(0.5);
+    expect(defaultAmount('g', null)).toBe(500);
   });
 });

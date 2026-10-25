@@ -25,6 +25,7 @@ import {
 import { renderWithProviders, stubApi } from '../../test/render';
 import { trackScrolling } from '../../test/scroll';
 import { stubMotion } from '../../test/viewport';
+import { typeNote } from '../../test/addBatch';
 import { PantryPage } from './PantryPage';
 
 const inDays = (days: number) => defaultExpiryDate(days, new Date());
@@ -400,9 +401,7 @@ describe('PantryPage', () => {
       }),
     ).toBeInTheDocument();
     expect(pressedLocation()).toBe('Fridge');
-    expect(
-      screen.getByRole('button', { name: /^Expires, .*, in 30 days$/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/in 30 days/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
 
     expectLocationBelowAmount(
@@ -411,15 +410,17 @@ describe('PantryPage', () => {
     );
 
     await pickLocation(user, 'Freezer');
+    await user.clear(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+    );
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
       '200',
     );
-    await user.type(
-      screen.getByLabelText('Product description'),
-      'Grana Padano 200g',
+    await typeNote(user, 'Grana Padano 200g');
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
     );
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
 
     const post = calls.find((call) => call.key === 'POST /api/pantry/batches');
     expect(post?.body).toEqual({
@@ -448,6 +449,9 @@ describe('PantryPage', () => {
       'parm',
     );
     await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    await user.clear(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+    );
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
       '2',
@@ -472,6 +476,7 @@ describe('PantryPage', () => {
     );
     await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
     const amount = screen.getByRole('textbox', { name: /Amount of Parmesan/ });
+    await user.clear(amount);
     await user.type(amount, '1.5 kg');
 
     expect(amount).toHaveValue('1.5');
@@ -503,6 +508,9 @@ describe('PantryPage', () => {
       'parm',
     );
     await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    await user.clear(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+    );
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
       '1,5 kg',
@@ -511,7 +519,9 @@ describe('PantryPage', () => {
     expect(
       screen.getByRole('button', { name: 'Unit: kg' }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
     await waitFor(() =>
       expect(
         calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
@@ -537,6 +547,7 @@ describe('PantryPage', () => {
       'egg',
     );
     await user.click(await screen.findByRole('option', { name: /Eggs/ }));
+    await user.clear(screen.getByRole('textbox', { name: /Amount of Eggs/ }));
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Eggs/ }),
       '6',
@@ -551,7 +562,9 @@ describe('PantryPage', () => {
     expect(
       screen.getByRole('button', { name: 'Unit: pcs' }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
     await waitFor(() =>
       expect(
         calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
@@ -577,6 +590,7 @@ describe('PantryPage', () => {
       'egg',
     );
     await user.click(await screen.findByRole('option', { name: /Eggs/ }));
+    await user.clear(screen.getByRole('textbox', { name: /Amount of Eggs/ }));
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Eggs/ }),
       '6',
@@ -588,7 +602,9 @@ describe('PantryPage', () => {
 
     // The frozen pieces of Eggs do not carry over: Parmesan opens on its own grams.
     expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
     await waitFor(() =>
       expect(
         calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
@@ -614,6 +630,9 @@ describe('PantryPage', () => {
       'parm',
     );
     await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    await user.clear(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+    );
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
       '2',
@@ -633,7 +652,9 @@ describe('PantryPage', () => {
     expect(
       screen.getByRole('button', { name: 'Unit: kg' }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
     await waitFor(() =>
       expect(
         calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
@@ -652,6 +673,9 @@ describe('PantryPage', () => {
       'parm',
     );
     await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    await user.clear(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+    );
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
       '2',
@@ -667,7 +691,9 @@ describe('PantryPage', () => {
       screen.getByRole('button', { name: 'Unit: kg' }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
     // 2 g is the same amount as 0.002 kg, so the number is rescaled with the unit.
     await waitFor(() =>
       expect(
@@ -698,7 +724,7 @@ describe('PantryPage', () => {
     expect(amount).not.toHaveAttribute('aria-invalid');
     // Out of the amount field (past its unit and Usual Amount chips).
     const fridge = within(locationToggle()).getByRole('button', {
-      name: 'Fridge',
+      name: /^Fridge/,
     });
     await user.click(fridge);
     expect(fridge).toHaveFocus();
@@ -724,7 +750,7 @@ describe('PantryPage', () => {
       'Zorblax paste',
     );
     expect(
-      screen.getByRole('button', { name: 'Add to Pantry' }),
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
     ).toBeDisabled();
 
     const useTyped = await screen.findByRole('option', {
@@ -737,7 +763,9 @@ describe('PantryPage', () => {
     expect(
       screen.getByText(/saved as Unmatched and flagged/),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
 
     const post = calls.find((call) => call.key === 'POST /api/pantry/batches');
     expect(post?.body).toEqual({
@@ -764,7 +792,9 @@ describe('PantryPage', () => {
     await screen.findByRole('option', { name: /Use “Zorblax paste” as typed/ });
     // "Add to your catalog" is the first option when nothing matches (#270); Use as typed is second.
     await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
-    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await user.click(
+      screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+    );
 
     expect(
       calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
@@ -807,8 +837,8 @@ describe('PantryPage', () => {
       const fieldsShown = () => ({
         amount: screen.queryByRole('textbox', { name: /^Amount/ }),
         location: screen.queryByRole('group', { name: 'Location' }),
-        expires: screen.queryByRole('button', { name: /^Expires,/ }),
-        description: screen.queryByLabelText('Product description'),
+        expires: screen.queryByRole('group', { name: 'Expires' }),
+        description: screen.queryByLabelText('Note · optional'),
       });
 
       expect(fieldsShown()).toEqual({
@@ -827,7 +857,9 @@ describe('PantryPage', () => {
       expect(fieldsShown().amount).toBeVisible();
       expect(fieldsShown().location).toBeVisible();
       expect(fieldsShown().expires).toBeVisible();
-      expect(fieldsShown().description).toBeVisible();
+      // The note is folded for a typed pick.
+      expect(fieldsShown().description).toBeNull();
+      expect(screen.getByRole('button', { name: /Add a note/ })).toBeVisible();
     });
 
     it('shows the fields after Use as typed', async () => {
@@ -851,7 +883,7 @@ describe('PantryPage', () => {
         screen.getByRole('textbox', { name: /Amount of Zorblax paste/ }),
       ).toBeVisible();
       expect(locationToggle()).toBeVisible();
-      expect(screen.getByLabelText('Product description')).toBeVisible();
+      expect(screen.getByRole('button', { name: /Add a note/ })).toBeVisible();
     });
   });
 
@@ -884,7 +916,9 @@ describe('PantryPage', () => {
       user: ReturnType<typeof userEvent.setup>,
       calls: ReturnType<typeof stubPantry>,
     ) {
-      await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+      await user.click(
+        screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
+      );
       await waitFor(() =>
         expect(
           calls.find((call) => call.key === 'POST /api/pantry/batches'),
@@ -894,28 +928,34 @@ describe('PantryPage', () => {
         ?.body as { expiryDate: string | null };
     }
 
-    it('shows the Default Expiry as an Expires summary row that opens a dialog', async () => {
+    it('shows the Default Expiry as the selected Usual chip, with the resolved date under the chips', async () => {
       const user = userEvent.setup();
       await addParmesan(user);
 
-      const row = screen.getByRole('button', {
-        name: 'Expires, Friday, November 13, in 30 days',
-      });
-      expect(row).toHaveAttribute('aria-haspopup', 'dialog');
-      expect(row).toHaveTextContent('Fri, Nov 13');
-      expect(row).toHaveTextContent('in 30 days');
-      expect(row).toHaveTextContent('30 d');
+      const chips = screen.getByRole('group', { name: 'Expires' });
+      expect(
+        within(chips).getByRole('button', { name: 'Usual · 1 mo' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(
+        within(chips).getByRole('button', { name: 'Calendar' }),
+      ).toHaveAttribute('aria-haspopup', 'dialog');
+      expect(screen.getByText(/Fri, Nov 13 · in 30 days/)).toHaveTextContent(
+        'Fri, Nov 13 · in 30 days · usual for Parmesan',
+      );
     });
 
     it("opens a sheet titled with the form's context, and a tapped day is saved as that ISO date", async () => {
       const user = userEvent.setup();
       const calls = await addParmesan(user);
+      await user.clear(
+        screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      );
       await user.type(
         screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
         '200',
       );
 
-      await user.click(screen.getByRole('button', { name: /^Expires,/ }));
+      await user.click(screen.getByRole('button', { name: 'Calendar' }));
       const sheet = await screen.findByRole('dialog', { name: 'Expires' });
       expect(
         within(sheet).getByRole('heading', { name: 'Expires' }),
@@ -941,10 +981,12 @@ describe('PantryPage', () => {
         ).not.toBeInTheDocument(),
       );
       expect(
-        screen.getByRole('button', {
-          name: 'Expires, Friday, November 20, in 37 days',
-        }),
-      ).toBeInTheDocument();
+        screen.getByText(/Fri, Nov 20 · in 37 days/),
+      ).not.toHaveTextContent('usual for');
+      expect(screen.getByRole('button', { name: 'Calendar' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
 
       expect((await save(user, calls)).expiryDate).toBe('2026-11-20');
     });
@@ -963,9 +1005,11 @@ describe('PantryPage', () => {
         }),
       );
 
-      expect(
-        screen.getByRole('button', { name: 'Expires, no expiry date' }),
-      ).toBeInTheDocument();
+      expect(screen.getByText('No expiry date')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'No date' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
       expect((await save(user, calls)).expiryDate).toBeNull();
     });
 
@@ -977,7 +1021,7 @@ describe('PantryPage', () => {
       waitFor(() => expect(element).toHaveFocus(), { timeout: 5000 });
 
     async function openSheet(user: ReturnType<typeof userEvent.setup>) {
-      await user.click(screen.getByRole('button', { name: /^Expires,/ }));
+      await user.click(screen.getByRole('button', { name: 'Calendar' }));
       return screen.findByRole('dialog', { name: 'Expires' });
     }
 
@@ -1030,11 +1074,11 @@ describe('PantryPage', () => {
           screen.queryByRole('dialog', { name: 'Expires' }),
         ).not.toBeInTheDocument(),
       );
-      const row = screen.getByRole('button', {
-        name: 'Expires, no expiry date',
-      });
-      expect(row).toHaveTextContent('No expiry date');
-      expect(row).toHaveTextContent('Tap to set one');
+      expect(screen.getByText('No expiry date')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'No date' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
       expect((await save(user, calls)).expiryDate).toBeNull();
     });
 
@@ -1432,9 +1476,7 @@ describe('PantryPage', () => {
           screen.queryByRole('dialog', { name: 'Expires' }),
         ).not.toBeInTheDocument(),
       );
-      expect(
-        screen.getByRole('button', { name: /^Expires, Wednesday, October 28/ }),
-      ).toHaveFocus();
+      expect(screen.getByRole('button', { name: 'Calendar' })).toHaveFocus();
 
       sheet = await openSheet(user);
       await focusLandsOn(quickPick(sheet, /^2 weeks,/));
@@ -1446,7 +1488,7 @@ describe('PantryPage', () => {
           screen.queryByRole('dialog', { name: 'Expires' }),
         ).not.toBeInTheDocument(),
       );
-      expect(screen.getByRole('button', { name: /^Expires,/ })).toHaveFocus();
+      expect(screen.getByRole('button', { name: 'Calendar' })).toHaveFocus();
 
       sheet = await openSheet(user);
       await focusLandsOn(quickPick(sheet, /^Usual,/));
@@ -1455,7 +1497,7 @@ describe('PantryPage', () => {
     it('returns focus to the summary row when the sheet was opened without focusing it', async () => {
       const user = userEvent.setup();
       await addParmesan(user);
-      const row = screen.getByRole('button', { name: /^Expires,/ });
+      const row = screen.getByRole('button', { name: 'Calendar' });
       // A touch tap on some browsers (Safari) doesn't focus the button it opens from.
       fireEvent.click(row);
       const sheet = await screen.findByRole('dialog', { name: 'Expires' });
@@ -1963,11 +2005,7 @@ describe('PantryPage', () => {
               name: 'Ingredient: Milk. Press Backspace to change',
             }),
           ).toHaveValue('Milk');
-          expect(
-            await screen.findByRole('button', {
-              name: /^Expires, .*, in 7 days$/,
-            }),
-          ).toBeInTheDocument();
+          expect(await screen.findByText(/in 7 days/)).toBeInTheDocument();
           expect(pressedLocation()).toBe('Fridge');
           expect(
             screen.getByRole('button', { name: 'Unit: L' }),
@@ -1976,16 +2014,16 @@ describe('PantryPage', () => {
             screen.queryByText(/will be saved as Unmatched/),
           ).not.toBeInTheDocument();
 
+          await user.clear(
+            screen.getByRole('textbox', { name: /Amount of Milk/ }),
+          );
           await user.type(
             screen.getByRole('textbox', { name: /Amount of Milk/ }),
             '2',
           );
-          await user.type(
-            screen.getByLabelText('Product description'),
-            'Fresh',
-          );
+          await typeNote(user, 'Fresh');
           await user.click(
-            screen.getByRole('button', { name: 'Add to Pantry' }),
+            screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
           );
 
           await waitFor(() =>
@@ -2017,7 +2055,7 @@ describe('PantryPage', () => {
           await user.click(addButton('Milk'));
           // The search for Milk's defaults is still out: the Member picks the freezer and a 3-day expiry.
           await pickLocation(user, 'Freezer');
-          await user.click(screen.getByRole('button', { name: /^Expires,/ }));
+          await user.click(screen.getByRole('button', { name: 'Calendar' }));
           const sheet = await screen.findByRole('dialog', { name: 'Expires' });
           await user.click(quickPick(sheet, /^3 days,/));
           await user.click(sheetButton(sheet, 'Done'));
@@ -2033,12 +2071,15 @@ describe('PantryPage', () => {
           });
           expect(pressedLocation()).toBe('Freezer');
 
+          await user.clear(
+            screen.getByRole('textbox', { name: /Amount of Milk/ }),
+          );
           await user.type(
             screen.getByRole('textbox', { name: /Amount of Milk/ }),
             '2',
           );
           await user.click(
-            screen.getByRole('button', { name: 'Add to Pantry' }),
+            screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
           );
 
           await waitFor(() =>
@@ -2072,12 +2113,15 @@ describe('PantryPage', () => {
           expect(
             screen.getByText(/"Zorblax paste" will be saved as Unmatched/),
           ).toBeVisible();
+          await user.clear(
+            screen.getByRole('textbox', { name: /Amount of Zorblax paste/ }),
+          );
           await user.type(
             screen.getByRole('textbox', { name: /Amount of Zorblax paste/ }),
             '1',
           );
           await user.click(
-            screen.getByRole('button', { name: 'Add to Pantry' }),
+            screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
           );
 
           await waitFor(() =>
@@ -2985,10 +3029,13 @@ describe('PantryPage', () => {
       expect(
         within(form).getByRole('textbox', { name: /Amount of Milk/ }),
       ).toHaveValue('0.5');
-      expect(within(form).getByLabelText('Product description')).toHaveValue(
+      expect(within(form).getByLabelText('Note · optional')).toHaveValue(
         'Opened',
       );
 
+      await user.clear(
+        within(form).getByRole('textbox', { name: /Amount of Milk/ }),
+      );
       await user.clear(
         within(form).getByRole('textbox', { name: /Amount of Milk/ }),
       );
@@ -3052,10 +3099,7 @@ describe('PantryPage', () => {
         expect(calls.filter((c) => c.key === 'GET /api/pantry').length).toBe(2),
       );
 
-      await user.type(
-        within(form).getByLabelText('Product description'),
-        ' jar',
-      );
+      await user.type(within(form).getByLabelText('Note · optional'), ' jar');
       await user.click(
         within(form).getByRole('button', { name: 'Save changes' }),
       );
@@ -3207,6 +3251,7 @@ describe('PantryPage', () => {
       renderWithProviders(<PantryPage />);
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
       await openEditor(user);
+      await user.clear(screen.getByRole('textbox', { name: /Amount of Milk/ }));
       await user.clear(screen.getByRole('textbox', { name: /Amount of Milk/ }));
       await user.type(
         screen.getByRole('textbox', { name: /Amount of Milk/ }),
@@ -3596,6 +3641,9 @@ describe('PantryPage', () => {
         await user.clear(
           screen.getByRole('textbox', { name: /Amount of Milk/ }),
         );
+        await user.clear(
+          screen.getByRole('textbox', { name: /Amount of Milk/ }),
+        );
         await user.type(
           screen.getByRole('textbox', { name: /Amount of Milk/ }),
           '2',
@@ -3833,7 +3881,7 @@ describe('PantryPage', () => {
       ).toBeInTheDocument();
       expect(pressedLocation()).toBe('Fridge');
       expect(
-        screen.getByRole('button', { name: 'Add to Pantry' }),
+        screen.getByRole('button', { name: /^Add (?!.*to your catalog)/ }),
       ).toBeInTheDocument();
       expect(
         screen.queryByRole('region', { name: 'Recently stocked' }),

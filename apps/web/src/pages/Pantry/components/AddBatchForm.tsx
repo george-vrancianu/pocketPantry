@@ -1,4 +1,4 @@
-import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
+import { Alert, Button, Stack, Typography } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
@@ -8,8 +8,7 @@ import {
   ListedAllergensNote,
   OpenFoodFactsCredit,
 } from '../../../components/BarcodeLookupNotes';
-import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
-import { LocationToggle } from '../../../components/LocationToggle';
+import { expiryContext } from '../../../components/ExpiryPicker';
 import { StatusIcon } from '../../../components/StatusIcon';
 import type { Batch } from '../../../lib/pantry';
 import type { CameraMode } from '../../../lib/cameraMode';
@@ -20,6 +19,10 @@ import {
   type PrefillField,
 } from '../hooks/useAddBatchForm';
 import { BatchAmountField } from './BatchAmountField';
+import { BatchCard, CardSection } from './BatchCard';
+import { BatchNote } from './BatchNote';
+import { ExpiryChips } from './ExpiryChips';
+import { WhereItGoes } from './WhereItGoes';
 import { QuickRow } from './QuickRow';
 
 type Props = {
@@ -89,11 +92,13 @@ export function AddBatchForm({
       onSubmit={form.submit}
       aria-label={t('form.title')}
     >
-      <QuickRow
-        openerRef={opener}
-        onOpen={(mode) => camera.openCamera(mode)}
-        onSayIt={onSayIt}
-      />
+      {form.ingredient === null ? (
+        <QuickRow
+          openerRef={opener}
+          onOpen={(mode) => camera.openCamera(mode)}
+          onSayIt={onSayIt}
+        />
+      ) : null}
       {camera.open ? (
         <CameraOverlay
           modes={FORM_CAMERA_MODES}
@@ -147,60 +152,75 @@ export function AddBatchForm({
         </Alert>
       ) : null}
       {picked ? (
-        <>
-          <BatchAmountField
-            name={picked}
-            amountScale={form.ingredient?.amountScale}
-            quantity={form.quantity}
-            unit={form.unit}
-            quantityValid={form.quantityValid}
-            onQuantityChange={form.setQuantity}
-            onUnitChange={form.setUnit}
-            onSubmit={() => formRef.current?.requestSubmit()}
-          />
-
-          {mark('amount')}
-          <LocationToggle
-            label={t('form.location')}
-            value={form.location}
-            onChange={form.setLocation}
-          />
-          <ExpiryField
-            id={`${id}-expiry`}
-            label={t('picker.label')}
-            value={form.expiryDate}
-            onChange={form.setExpiryDate}
-            usualDays={form.usualDays}
-            context={expiryContext(
-              {
-                name: picked,
-                quantity: form.quantity,
-                unit: form.unit,
-                location: form.location,
-              },
-              i18n.language,
-              t,
-            )}
-          />
-
-          {mark('expiry')}
-          <TextField
+        <BatchCard>
+          <CardSection label={t('form.amount')}>
+            <BatchAmountField
+              name={picked}
+              amountScale={form.ingredient?.amountScale}
+              quantity={form.quantity}
+              unit={form.unit}
+              quantityValid={form.quantityValid}
+              onQuantityChange={form.setQuantity}
+              onUnitChange={form.setUnit}
+              onSubmit={() => formRef.current?.requestSubmit()}
+            />
+            {mark('amount')}
+          </CardSection>
+          <CardSection
+            label={t('form.where')}
+            hint={
+              form.usualLocation !== null &&
+              form.location === form.usualLocation
+                ? t('form.usualFor', { name: form.leafName })
+                : null
+            }
+          >
+            <WhereItGoes
+              label={t('form.location')}
+              value={form.location}
+              onChange={form.setLocation}
+              usual={form.usualLocation}
+            />
+          </CardSection>
+          <CardSection label={t('picker.label')}>
+            <ExpiryChips
+              value={form.expiryDate}
+              onChange={form.setExpiryDate}
+              usualDays={form.usualDays}
+              name={picked}
+              context={expiryContext(
+                {
+                  name: picked,
+                  quantity: form.quantity,
+                  unit: form.unit,
+                  location: form.location,
+                },
+                i18n.language,
+                t,
+              )}
+            />
+            {mark('expiry')}
+          </CardSection>
+          <BatchNote
             id={`${id}-description`}
-            label={t('form.description')}
-            placeholder={t('form.descriptionPlaceholder')}
             value={form.description}
-            onChange={(event) => form.setDescription(event.target.value)}
-            slotProps={{ htmlInput: { maxLength: 200 } }}
+            onChange={form.setDescription}
           />
           {mark('description')}
-        </>
+        </BatchCard>
       ) : null}
 
       {form.error ? <Alert>{form.error}</Alert> : null}
 
       <Stack direction="row" spacing={1}>
         <Button type="submit" disabled={!form.canSave}>
-          {form.saving ? t('form.saving') : t('form.save')}
+          {form.saving
+            ? t('form.saving')
+            : picked
+              ? t('form.saveName', {
+                  name: picked.toLocaleLowerCase(i18n.language),
+                })
+              : t('form.save')}
         </Button>
         <Button type="button" variant="ghost" onClick={onCancel}>
           {t('form.cancel')}

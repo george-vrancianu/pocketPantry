@@ -15,7 +15,8 @@ export function pressedLocation(scope?: HTMLElement, name = 'Location') {
     .filter((button) => button.getAttribute('aria-pressed') === 'true');
   if (pressed.length !== 1)
     throw new Error(`expected one pressed Location, got ${pressed.length}`);
-  return pressed[0].textContent;
+  // The Catalog default's dot adds a hidden "usual"; the Location is the rest.
+  return (pressed[0].textContent ?? '').replace(/ usual$/, '');
 }
 
 /** Press a Location (by its full name, e.g. "Freezer") in the toggle. */
@@ -27,7 +28,7 @@ export async function pickLocation(
 ) {
   await user.click(
     within(locationToggle(scope, name)).getByRole('button', {
-      name: location,
+      name: new RegExp(`^${location}( usual)?$`),
     }),
   );
 }
