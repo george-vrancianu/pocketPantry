@@ -227,6 +227,23 @@ describe('Review overview', () => {
     expect(gator).toHaveAttribute('aria-hidden', 'true');
   });
 
+  it('plays no Entrance on any card, and loops the reading one in its Signature', async () => {
+    vi.stubGlobal('fetch', () => new Promise<Response>(() => {}));
+    await seed('a', 'product', 'reading');
+    await seed('b', 'product', 'reading');
+    await seedFailed('c', 'product', 'internal');
+    renderOverview();
+    const gators = cards().flatMap((card) => [
+      ...card.querySelectorAll('img[data-mood]'),
+    ]);
+    expect(gators).toHaveLength(3);
+    expect(gators.map((g) => g.getAttribute('data-motion')).sort()).toEqual([
+      'idle',
+      'signature',
+      'signature',
+    ]);
+  });
+
   it('shows the worried Gator, the reason and Retake on a card that failed', async () => {
     await seedFailed('a', 'product', 'internal');
     renderOverview();

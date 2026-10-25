@@ -3,7 +3,7 @@ import {
   Button,
   ClockIcon,
   EarIcon,
-  GatorImage,
+  Gator,
   radius,
   shadow,
   MicOffIcon,
@@ -59,7 +59,15 @@ export function StatusPill({ voice }: { voice: Voice }) {
     if (phase === 'reading') {
       return {
         // The title beside Gator says "Gator's reading your note…", so the image is decorative.
-        icon: <GatorImage mood="thinking" size={52} decorative />,
+        icon: (
+          <Gator
+            mood="thinking"
+            size={52}
+            loop="signature"
+            entrance={false}
+            decorative
+          />
+        ),
         bg: palette('pp-accentTint'),
         fg: palette('pp-accentOnTint'),
         title: t('send.reading'),

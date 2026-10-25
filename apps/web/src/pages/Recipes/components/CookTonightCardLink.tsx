@@ -1,6 +1,7 @@
 import {
   Box,
   displayType,
+  Gator,
   GatorImage,
   radius,
   tokens,
@@ -86,7 +87,12 @@ export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
           <Box sx={{ fontSize: 14, mt: '2px' }}>{secondLine}</Box>
         ) : null}
       </Box>
-      <GatorImage mood={mood} size={104} alt={gatorAlt(mood)} />
+      {mood === 'chef' ? (
+        <Gator mood="chef" size={104} alt={gatorAlt('chef')} />
+      ) : (
+        // chef-flop has no motion art yet.
+        <GatorImage mood={mood} size={104} alt={gatorAlt(mood)} />
+      )}
     </Box>
   );
 }
