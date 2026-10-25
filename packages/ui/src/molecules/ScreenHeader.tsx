@@ -74,8 +74,11 @@ export function ScreenHeader({
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
-        pt: '24px',
-        pb: '14px',
+        // Same box as the DashboardHeader, so every screen's header is as tall as Home's.
+        pt: '28px',
+        pb: '18px',
+        boxSizing: 'content-box',
+        minHeight: '54px',
       }}
     >
       {back ? (
