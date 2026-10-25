@@ -8,6 +8,7 @@ import { IntroProvider } from './lib/useIntro';
 import { AllSetPage } from './pages/Intro/AllSetPage';
 import { LanguagesPage } from './pages/Intro/LanguagesPage';
 import { SetupOrSkipPage } from './pages/Intro/SetupOrSkipPage';
+import { SetupOverviewPage } from './pages/Intro/SetupOverviewPage';
 import { SetupReviewPage } from './pages/Intro/SetupReviewPage';
 import { SayItPage } from './pages/Intro/SayItPage';
 import { IntroCameraPage } from './pages/Intro/IntroCameraPage';
@@ -64,6 +65,7 @@ export function App() {
             <Route path="/intro/setup" element={<SetupOrSkipPage />} />
             <Route path="/intro/snap" element={<SnapPage />} />
             <Route path="/intro/camera" element={<IntroCameraPage />} />
+            <Route path="/intro/review" element={<SetupOverviewPage />} />
             <Route path="/intro/review/:scanId" element={<SetupReviewPage />} />
             <Route path="/intro/say-it" element={<SayItPage />} />
             <Route path="/intro/all-set" element={<AllSetPage />} />

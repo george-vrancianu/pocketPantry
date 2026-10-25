@@ -7,7 +7,14 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine } from '../../lib/scan';
 import { preferenceSaves, stubSetupMember, Where } from '../../test/intro';
 import { renderWithProviders } from '../../test/render';
-import { selected, shutter, takeScan } from '../../test/scan';
+import {
+  flush,
+  photoStack,
+  selected,
+  shutter,
+  stackCount,
+  takeScan,
+} from '../../test/scan';
 
 vi.mock('../../lib/camera', async () =>
   (await import('../../test/scan')).fakeCameraModule(),
@@ -99,20 +106,44 @@ async function openSnap(routes: Parameters<typeof stubSetupMember>[0] = {}) {
   return { user, calls };
 }
 
-/** Snap's camera, a photo of what was picked, and the Setup Review that follows. */
-async function snapAPhoto(
+/** Snap's camera and `n` photos of what was picked: the shutter keeps shooting, each read in the background. */
+async function snapPhotos(
   user: ReturnType<typeof userEvent.setup>,
+  n = 1,
   pick?: string,
 ) {
   if (pick) await user.click(screen.getByRole('radio', { name: pick }));
   await user.click(screen.getByRole('link', { name: 'Camera' }));
   await waitFor(() => expect(shutter()).toBeInTheDocument());
-  takeScan();
+  for (let i = 1; i <= n; i += 1) {
+    await waitFor(() => expect(shutter()).toBeEnabled());
+    takeScan();
+    await waitFor(() => expect(stackCount()).toBe(i));
+  }
+  await flush();
+}
+
+const cards = () => screen.findAllByTestId('review-card');
+const overview = () => screen.findByTestId('review-overview');
+
+/** Opens the Setup overview from the camera's photo stack. */
+async function openOverview(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(photoStack());
+  await overview();
+}
+
+/** Opens the `index`th card (once read) in the Setup line editor. */
+async function openCard(user: ReturnType<typeof userEvent.setup>, index = 0) {
+  const results = await screen.findAllByTestId('card-result');
+  await user.click(results[index]);
+  return banner();
 }
 
 const banner = () => screen.findByTestId('setup-review-banner');
+const bulkSaves = (calls: Awaited<ReturnType<typeof openSnap>>['calls']) =>
+  calls.filter((c) => c.key === 'POST /api/pantry/batches/bulk');
 
-describe('Setup 1: Snap, Setup Review, All set', () => {
+describe('Setup 1: Snap, Setup overview, All set', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
@@ -126,10 +157,23 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
         'aria-disabled',
         'true',
       );
-    await snapAPhoto(user);
+    await snapPhotos(user);
+    // The shutter keeps shooting: the photo did not open an editor.
+    expect(where()).toBe('/intro/camera?mode=ingredients');
+    await openOverview(user);
 
-    // The line editor of that Scan, not the overview, with Gator's count and the one to check.
-    expect(await banner()).toHaveTextContent('I spotted 3 things!');
+    // The real Review overview in the Intro's frame: one card, the Intro's top row, and no app Dock.
+    expect(where()).toBe('/intro/review');
+    expect(await cards()).toHaveLength(1);
+    expect(screen.getByText('1 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Skip' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull();
+    expect(screen.queryByTestId('review-photos-input')).toBeNull();
+    expect(document.querySelector('[data-ground="cream"]')).not.toBeNull();
+    expect(document.querySelector('[data-ground="olive"]')).toBeNull();
+
+    // Opening the card edits it in the real line editor, with Gator's count and the one to check.
+    expect(await openCard(user)).toHaveTextContent('I spotted 3 things!');
     expect(
       within(await banner()).getByText(
         "Check the one I wasn't sure about. Tap any line to fix it.",
@@ -137,20 +181,11 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     ).toBeInTheDocument();
     expect(where()).toMatch(/^\/intro\/review\/.+/);
     expect(screen.getByRole('img', { name: 'Gator, happy' })).toBeVisible();
-    expect(screen.getByText('1 of 2')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Camera/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Skip' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Review' })).toBeInTheDocument();
-    expect(screen.queryByTestId('review-overview')).toBeNull();
-    // The app's Dock is not on this screen: nothing leads away from Setup.
-    expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull();
-    // The normal (cream) ground, not the olive of the step screens.
-    expect(document.querySelector('[data-ground="cream"]')).not.toBeNull();
-    expect(document.querySelector('[data-ground="olive"]')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Add 3 to Pantry' }));
 
-    // Saving the Pantry leads to Say it, which counts what is in the Pantry now.
+    // It was the last card and it was saved: on to Say it, which counts what is in the Pantry now.
     expect(await screen.findByText('3 things in your Pantry')).toBeVisible();
     expect(where()).toBe('/intro/say-it');
     await user.click(screen.getByRole('link', { name: 'Skip' }));
@@ -171,9 +206,8 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     expect(scan?.body).toEqual({
       ingredientsImage: 'data:image/jpeg;base64,YQ==',
     });
-    const save = calls.filter((c) => c.key === 'POST /api/pantry/batches/bulk');
-    expect(save).toHaveLength(1);
-    expect(save[0].body).toMatchObject({
+    expect(bulkSaves(calls)).toHaveLength(1);
+    expect(bulkSaves(calls)[0].body).toMatchObject({
       batches: [
         { ingredientId: 'tomato' },
         { ingredientId: 'onion' },
@@ -189,18 +223,18 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     expect(preferenceSaves(calls)).toEqual([{ introDone: true }]);
   });
 
-  it('opens the same Setup Review for a Receipt, with the count of what was read', async () => {
+  it('opens the same line editor for a Receipt, with the count of what was read', async () => {
     const { user, calls } = await openSnap();
-    await snapAPhoto(user, 'Receipt');
+    await snapPhotos(user, 1, 'Receipt');
+    await openOverview(user);
 
     // Two lines were read; the bag the Scan left out is not counted.
-    expect(await banner()).toHaveTextContent('I spotted 2 things!');
+    expect(await openCard(user)).toHaveTextContent('I spotted 2 things!');
     expect(
       within(await banner()).getByText(
         "Nothing I wasn't sure about. Tap any line to fix it.",
       ),
     ).toBeInTheDocument();
-    expect(where()).toMatch(/^\/intro\/review\/.+/);
 
     await user.click(screen.getByRole('button', { name: 'Add 2 to Pantry' }));
     expect(await screen.findByText('2 things in your Pantry')).toBeVisible();
@@ -212,41 +246,129 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     ).toMatchObject({
       batches: [{ ingredientId: 'milk' }, { ingredientId: 'eggs' }],
     });
-    expect(calls.map((c) => c.key)).not.toContain(
-      'POST /api/pantry/batches/bulk',
+    expect(bulkSaves(calls)).toHaveLength(0);
+  });
+
+  it('gives one card per photo, returns to the overview after saving one, and Add all saves the rest', async () => {
+    const { user, calls } = await openSnap();
+    await snapPhotos(user, 3);
+    await openOverview(user);
+    expect(await cards()).toHaveLength(3);
+
+    // Saving one card goes back to the overview with the others still there; the step does not end.
+    await openCard(user);
+    await user.click(screen.getByRole('button', { name: 'Add 3 to Pantry' }));
+    expect(await overview()).toBeInTheDocument();
+    expect(where()).toBe('/intro/review');
+    expect(await cards()).toHaveLength(2);
+    expect(bulkSaves(calls)).toHaveLength(1);
+
+    await user.click(screen.getByRole('button', { name: 'Add all' }));
+
+    // Every card saved: Say it, and both the pill and All set count the Batches of every save (3 + 3 + 3).
+    expect(await screen.findByText('9 things in your Pantry')).toBeVisible();
+    expect(where()).toBe('/intro/say-it');
+    expect(bulkSaves(calls)).toHaveLength(3);
+    await user.click(screen.getByRole('link', { name: 'Skip' }));
+    expect(await screen.findByText('in your Pantry')).toBeInTheDocument();
+    expect(screen.getByText('9')).toBeInTheDocument();
+  });
+
+  it('shows the photos taken and how many are being read on Snap, and keeps them when going back', async () => {
+    let finish: (response: Response) => void = () => {};
+    const { user } = await openSnap({
+      routes: {
+        'POST /api/scan/ingredients': () =>
+          new Promise<Response>((resolve) => (finish = resolve)) as never,
+      },
+    });
+    expect(screen.queryByTestId('snap-session')).toBeNull();
+    await snapPhotos(user);
+
+    // Back from the camera: Snap shows the shared Scan Session.
+    await user.click(screen.getByRole('button', { name: 'Browser back' }));
+    const session = await screen.findByTestId('snap-session');
+    expect(session).toHaveTextContent('1 photo taken');
+    expect(session).toHaveTextContent('1 still being read');
+
+    // The overview shows the reading card; back to Snap and on to the camera keep the photo.
+    await user.click(
+      within(session).getByRole('button', { name: 'See your photos' }),
+    );
+    await overview();
+    expect(await screen.findByText("Gator's reading this one…")).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Browser back' }));
+    expect(await screen.findByTestId('snap-session')).toBeInTheDocument();
+    await user.click(screen.getByRole('link', { name: 'Camera' }));
+    await waitFor(() => expect(shutter()).toBeInTheDocument());
+    expect(stackCount()).toBe(1);
+
+    finish(Response.json({ lines: COUNTER }));
+    await user.click(screen.getByRole('button', { name: 'Browser back' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('snap-session')).toHaveTextContent('all read'),
     );
   });
 
-  it('goes back to the camera in the same mode on Retake, and again from "‹ Camera"', async () => {
+  it('keeps the photos when the overview goes back to the camera', async () => {
     const { user } = await openSnap();
-    await snapAPhoto(user, 'Receipt');
-    await banner();
-
-    await user.click(screen.getByRole('button', { name: 'Retake' }));
-    await waitFor(() => expect(where()).toBe('/intro/camera?mode=receipt'));
-    expect(selected()).toEqual(['Receipt']);
-
-    takeScan();
-    await banner();
-    await user.click(screen.getByRole('button', { name: /Camera/ }));
-    await waitFor(() => expect(where()).toBe('/intro/camera?mode=receipt'));
-    // The dropped photos are gone: Retake does not pile them up in the Scan Session.
-    expect(screen.queryByTestId('stack-badge')).toBeNull();
+    await snapPhotos(user, 2);
+    await openOverview(user);
+    await user.click(screen.getByRole('link', { name: 'Camera' }));
+    await waitFor(() => expect(where()).toBe('/intro/camera?mode=ingredients'));
+    expect(stackCount()).toBe(2);
   });
 
-  it('leaves no photo in the Scan Session when Back returns from the Setup Review to Snap', async () => {
-    const { user } = await openSnap();
-    await snapAPhoto(user);
-    await banner();
+  it('stays on Snap when everything was discarded', async () => {
+    const { user, calls } = await openSnap();
+    await snapPhotos(user, 2);
+    await openOverview(user);
+    await cards();
+    await user.click(screen.getByRole('button', { name: 'Discard all' }));
 
-    await user.click(screen.getByRole('button', { name: 'Browser back' }));
-    await screen.findByRole('radiogroup', { name: "What's in front of you?" });
+    expect(
+      await screen.findByRole('radiogroup', {
+        name: "What's in front of you?",
+      }),
+    ).toBeInTheDocument();
     expect(where()).toBe('/intro/snap');
+    expect(screen.queryByTestId('snap-session')).toBeNull();
+    expect(bulkSaves(calls)).toHaveLength(0);
+  });
 
-    // The camera opens on an empty Scan Session: the photo from before Back is not stacked under the next.
-    await user.click(screen.getByRole('link', { name: 'Camera' }));
-    await waitFor(() => expect(shutter()).toBeInTheDocument());
-    expect(screen.queryByTestId('stack-badge')).toBeNull();
+  it('moves on after something was saved even when the last card is discarded', async () => {
+    const { user } = await openSnap();
+    await snapPhotos(user, 2);
+    await openOverview(user);
+    await openCard(user);
+    await user.click(screen.getByRole('button', { name: 'Add 3 to Pantry' }));
+    await overview();
+    await user.click(screen.getByRole('button', { name: 'Remove photo' }));
+
+    expect(await screen.findByText('3 things in your Pantry')).toBeVisible();
+    expect(where()).toBe('/intro/say-it');
+  });
+
+  it('merges Receipt Sections into one card', async () => {
+    const { user, calls } = await openSnap();
+    await snapPhotos(user, 2, 'Receipt');
+    await openOverview(user);
+    await cards();
+    await user.click(
+      await screen.findByRole('button', { name: /merge with previous/i }),
+    );
+    expect(await cards()).toHaveLength(1);
+
+    await user.click(screen.getByRole('button', { name: 'Add all' }));
+    // Two sections of two lines each, one Receipt Scan.
+    expect(await screen.findByText('4 things in your Pantry')).toBeVisible();
+    const confirms = calls.filter(
+      (c) => c.key === 'POST /api/scan/receipt/confirm',
+    );
+    expect(confirms).toHaveLength(1);
+    expect((confirms[0].body as { batches: unknown[] }).batches).toHaveLength(
+      4,
+    );
   });
 
   it('skips from Snap, then Say it, to All set with no tiles, and Go to my kitchen still finishes the Intro', async () => {
@@ -275,10 +397,11 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     expect(preferenceSaves(calls)).toEqual([{ introDone: true }]);
   });
 
-  it('skips from the Setup Review to Say it, then All set, without saving anything', async () => {
+  it('skips from the Setup overview to Say it, then All set, without saving anything', async () => {
     const { user, calls } = await openSnap();
-    await snapAPhoto(user);
-    await banner();
+    await snapPhotos(user, 2);
+    await openOverview(user);
+    await cards();
 
     await user.click(screen.getByRole('button', { name: 'Skip' }));
     expect(
@@ -296,12 +419,27 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     ).toBeInTheDocument();
     expect(where()).toBe('/intro/all-set');
     expect(screen.queryByText('in your Pantry')).toBeNull();
-    expect(calls.map((c) => c.key)).not.toContain(
-      'POST /api/pantry/batches/bulk',
-    );
+    expect(bulkSaves(calls)).toHaveLength(0);
   });
 
-  it('shows the normal reading state while the photo is read, then the line editor', async () => {
+  it('goes back to the overview from the line editor, and Retake drops the card for the camera', async () => {
+    const { user } = await openSnap();
+    await snapPhotos(user, 2, 'Receipt');
+    await openOverview(user);
+    await openCard(user);
+
+    await user.click(screen.getByRole('button', { name: /Review/ }));
+    expect(await cards()).toHaveLength(2);
+
+    await openCard(user);
+    await user.click(screen.getByRole('button', { name: 'Retake' }));
+    await waitFor(() => expect(where()).toBe('/intro/camera?mode=receipt'));
+    expect(selected()).toEqual(['Receipt']);
+    // Only the retaken card is dropped.
+    expect(stackCount()).toBe(1);
+  });
+
+  it('shows the card as reading while the photo is read, then it opens in the line editor', async () => {
     let finish: (response: Response) => void = () => {};
     const { user } = await openSnap({
       routes: {
@@ -309,32 +447,39 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
           new Promise<Response>((resolve) => (finish = resolve)) as never,
       },
     });
-    await snapAPhoto(user);
+    await snapPhotos(user);
+    await openOverview(user);
 
     expect(await screen.findByText("Gator's reading this one…")).toBeVisible();
     expect(screen.queryByTestId('setup-review-banner')).toBeNull();
     expect(screen.getByRole('button', { name: 'Skip' })).toBeInTheDocument();
 
     finish(Response.json({ lines: COUNTER }));
-    expect(await banner()).toHaveTextContent('I spotted 3 things!');
+    expect(await openCard(user)).toHaveTextContent('I spotted 3 things!');
   });
 
-  it('says so when the photo could not be read, and Retake goes back to the camera', async () => {
+  it('says so when a photo could not be read, and Retake / Read again work on the card', async () => {
+    let attempts = 0;
     const { user } = await openSnap({
       routes: {
-        'POST /api/scan/ingredients': () =>
-          Response.json(
-            { code: 'scan.nothing_found', params: {} },
-            { status: 422 },
-          ),
+        'POST /api/scan/ingredients': () => {
+          attempts += 1;
+          return attempts === 1
+            ? Response.json({ code: 'internal', params: {} }, { status: 500 })
+            : Response.json({ lines: COUNTER });
+        },
       },
     });
-    await snapAPhoto(user);
+    await snapPhotos(user);
+    await openOverview(user);
 
-    expect(await screen.findByText("Couldn't read, retake")).toBeVisible();
+    const [card] = await cards();
+    await waitFor(() =>
+      expect(card).toHaveTextContent("Couldn't read, retake"),
+    );
     expect(screen.getByRole('img', { name: 'Gator, worried' })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Retake' }));
-    await waitFor(() => expect(where()).toBe('/intro/camera?mode=ingredients'));
+    await user.click(within(card).getByRole('button', { name: 'Read again' }));
+    expect(await openCard(user)).toHaveTextContent('I spotted 3 things!');
   });
 
   it('says so when the Scan Cap is reached, and Retake goes back to the camera', async () => {
@@ -347,12 +492,15 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
           ),
       },
     });
-    await snapAPhoto(user);
+    await snapPhotos(user);
+    await openOverview(user);
 
-    expect(await screen.findByText("Couldn't read, retake")).toBeVisible();
-    expect(screen.getByText('Daily scan limit reached')).toBeVisible();
-    expect(where()).toMatch(/^\/intro\/review\/.+/);
-    await user.click(screen.getByRole('button', { name: 'Retake' }));
+    const [card] = await cards();
+    await waitFor(() =>
+      expect(card).toHaveTextContent("Couldn't read, retake"),
+    );
+    expect(within(card).getByText('Daily scan limit reached')).toBeVisible();
+    await user.click(within(card).getByRole('button', { name: 'Retake' }));
     await waitFor(() => expect(where()).toBe('/intro/camera?mode=ingredients'));
   });
 

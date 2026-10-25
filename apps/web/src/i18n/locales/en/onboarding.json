@@ -31,7 +31,7 @@
     "title": "Fill your Pantry with Gator?",
     "body": "Two quick tries and your kitchen is already in the app. About two minutes.",
     "showMe": "Show me how",
-    "showMeSnap": "1 · Snap a photo",
+    "showMeSnap": "1 · Snap some photos",
     "showMeSay": "2 · Say it",
     "skip": "Skip, take me to the app",
     "skipHint": "Start with an empty Pantry",
@@ -43,8 +43,8 @@
   },
   "snap": {
     "bubble": {
-      "ingredients": "Put some food on the counter and snap it. I'll work out what it all is.",
-      "receipt": "Snap the receipt from your last shop. I'll put the whole shop away."
+      "ingredients": "Put some food on the counter and snap it. Take as many photos as you like and I'll work out what it all is.",
+      "receipt": "Snap the receipt from your last shop. A long one? Take it in a few photos and I'll put the whole shop away."
     },
     "question": "What's in front of you?",
     "choices": {
@@ -58,8 +58,16 @@
       }
     },
     "callout": {
-      "title": "Tap the camera to start",
-      "body": "It's always here, in the middle of the menu"
+      "title": "Tap the camera and snap away",
+      "body": "Take as many photos as you need. The camera is always here, in the middle of the menu"
+    },
+    "session": {
+      "open": "See your photos",
+      "allRead": "all read",
+      "photos_one": "{{count}} photo taken",
+      "photos_other": "{{count}} photos taken",
+      "stillReading_one": "{{count}} still being read",
+      "stillReading_other": "{{count}} still being read"
     }
   },
   "sayIt": {

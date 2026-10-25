@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   addSetupCounts,
+  advanceFrom,
   savedByVoice,
   initialLanguagePicks,
+  INTRO_REVIEW_PATH,
   introPath,
   introRedirect,
   languagePicksBody,
@@ -19,14 +21,13 @@ describe('Intro steps', () => {
     expect(nextStep('languages')).toBe('sign-up');
     expect(nextStep('sign-up')).toBe('setup-or-skip');
     expect(nextStep('setup-or-skip')).toBe('snap');
-    expect(nextStep('setup-review')).toBe('say-it');
+    expect(nextStep('snap')).toBe('say-it');
     expect(nextStep('say-it')).toBe('all-set');
     expect(nextStep('all-set')).toBe('dashboard');
   });
 
   it('skips one step only', () => {
     expect(skipStep('snap')).toBe('say-it');
-    expect(skipStep('setup-review')).toBe('say-it');
     expect(skipStep('say-it')).toBe('all-set');
   });
 });
@@ -145,9 +146,9 @@ describe('the phone language', () => {
 });
 
 describe('introPath', () => {
-  it('gives the path of a step and throws for one with none', () => {
+  it('gives the path of a step', () => {
     expect(introPath('sign-up')).toBe('/sign-up');
-    expect(() => introPath('setup-review')).toThrow();
+    expect(introPath('say-it')).toBe('/intro/say-it');
   });
 });
 
@@ -208,5 +209,30 @@ describe('savedByVoice', () => {
       batches: 0,
       shoppingItems: 0,
     });
+  });
+});
+
+describe('advanceFrom', () => {
+  it('moves on only when the collection is empty and something was saved in the step', () => {
+    expect(advanceFrom('snap', { empty: true, savedHere: true })).toBe(
+      'say-it',
+    );
+    expect(advanceFrom('say-it', { empty: true, savedHere: true })).toBe(
+      'all-set',
+    );
+    expect(advanceFrom('snap', { empty: true, savedHere: false })).toBeNull();
+    expect(advanceFrom('snap', { empty: false, savedHere: true })).toBeNull();
+  });
+});
+
+describe('INTRO_REVIEW_PATH', () => {
+  it('is an Intro screen', () => {
+    expect(
+      introRedirect({
+        pathname: INTRO_REVIEW_PATH,
+        introDone: false,
+        setupStarted: true,
+      }),
+    ).toBeNull();
   });
 });

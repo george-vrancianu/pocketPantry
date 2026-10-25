@@ -1,13 +1,16 @@
 import {
   aboveDock,
   Box,
+  Button,
   color,
   DOCK_HEIGHT,
   IngredientsScanIcon,
   ReceiptIcon,
+  Typography,
 } from '@pocket-pantry/ui';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { AppDock } from '../../components/AppDock';
 import { ChoiceRadioGroup } from '../../components/ChoiceRadioGroup';
 import { IntroLook } from '../../components/IntroLook';
@@ -15,8 +18,13 @@ import { creamFocus } from '../../components/Setup/creamFocus';
 import { GatorBubble } from '../../components/Setup/GatorBubble';
 import { SetupCallout } from '../../components/Setup/SetupCallout';
 import { SetupOliveTopRow } from '../../components/Setup/SetupOliveTopRow';
-import { INTRO_CAMERA_PATH, introPath, skipStep } from '../../lib/intro';
-import { resetScanSession } from '../../lib/scanSession';
+import {
+  INTRO_CAMERA_PATH,
+  INTRO_REVIEW_PATH,
+  introPath,
+  skipStep,
+} from '../../lib/intro';
+import { pendingCount, useScanSession } from '../../lib/scanSession';
 
 type Pick = 'ingredients' | 'receipt';
 
@@ -26,16 +34,16 @@ const SKIP_TO = introPath(skipStep('snap'));
 /**
  * Setup 1, Snap: the olive screen that teaches where the camera lives. Gator's line follows the pick,
  * and the real Dock is shown with only the camera lit, which opens the Scan screen in the picked mode.
+ * It shows the shared Scan Session (photos taken, how many are still being read) with a way to open the
+ * Setup overview; the Scan Session is kept when the Member comes back from the camera.
  */
 export function SnapPage() {
   const { t } = useTranslation('onboarding');
+  const navigate = useNavigate();
   const [pick, setPick] = useState<Pick>('ingredients');
-
-  // Setup takes one photo, so one left from before (browser Back from the Setup Review) must not be stacked
-  // under the next. (Setup is started on Set up or skip: a reload here goes back there.)
-  useEffect(() => {
-    resetScanSession();
-  }, []);
+  const session = useScanSession();
+  const taken = session.scans.length;
+  const reading = pendingCount(session);
 
   return (
     <IntroLook ground="olive">
@@ -59,6 +67,33 @@ export function SnapPage() {
         <GatorBubble live mt="24px">
           {t(`snap.bubble.${pick}`)}
         </GatorBubble>
+
+        {taken > 0 ? (
+          <Box
+            data-testid="snap-session"
+            sx={{
+              mt: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+            }}
+          >
+            <Box role="status">
+              <Typography sx={{ fontWeight: 700 }}>
+                {t('snap.session.photos', { count: taken })}
+              </Typography>
+              <Typography sx={{ fontSize: 13 }}>
+                {reading > 0
+                  ? t('snap.session.stillReading', { count: reading })
+                  : t('snap.session.allRead')}
+              </Typography>
+            </Box>
+            <Button onClick={() => navigate(INTRO_REVIEW_PATH)}>
+              {t('snap.session.open')}
+            </Button>
+          </Box>
+        ) : null}
 
         <Box sx={{ mt: '32px' }}>
           <ChoiceRadioGroup<Pick>

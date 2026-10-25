@@ -15,22 +15,28 @@ const linkButton = {
 } as const;
 
 type Props = {
-  /** Back to the Scan screen, in the same mode. */
-  onCamera: () => void;
+  /** The "‹ label" link back, when the screen has one. */
+  back?: { label: string; onClick: () => void };
   /** Leave Setup's photo step without adding anything. */
   onSkip: () => void;
 };
 
-/** The Setup Review's top row on the cream ground: "‹ Camera", the step's progress ("1 of 2"), Skip. */
-export function SetupTopRow({ onCamera, onSkip }: Props) {
+/** The Setup Review's top row on the cream ground: an optional "‹ Back" link, the step's progress ("1 of 2"), Skip. */
+export function SetupTopRow({ back, onSkip }: Props) {
   const { t } = useTranslation('onboarding');
-  const { t: tReview } = useTranslation('review');
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-      <Box component="button" type="button" onClick={onCamera} sx={linkButton}>
-        <span aria-hidden>‹ </span>
-        {tReview('overview.camera')}
-      </Box>
+      {back ? (
+        <Box
+          component="button"
+          type="button"
+          onClick={back.onClick}
+          sx={linkButton}
+        >
+          <span aria-hidden>‹ </span>
+          {back.label}
+        </Box>
+      ) : null}
       <SetupProgress tone="cream" />
       <Box component="button" type="button" onClick={onSkip} sx={linkButton}>
         {t('setupStep.skip')}

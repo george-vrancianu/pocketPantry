@@ -31,7 +31,7 @@
     "title": "Fyld dit spisekammer med Gator?",
     "body": "To hurtige forsøg, og dit køkken er allerede i appen. Det tager omkring to minutter.",
     "showMe": "Vis mig hvordan",
-    "showMeSnap": "1 · Tag et billede",
+    "showMeSnap": "1 · Tag nogle billeder",
     "showMeSay": "2 · Sig det",
     "skip": "Spring over, tag mig til appen",
     "skipHint": "Start med et tomt spisekammer",
@@ -43,8 +43,8 @@
   },
   "snap": {
     "bubble": {
-      "ingredients": "Stil noget mad på bordet og tag et billede af det. Jeg finder ud af, hvad det hele er.",
-      "receipt": "Tag et billede af kvitteringen fra din sidste indkøbstur. Jeg lægger hele indkøbet på plads."
+      "ingredients": "Stil noget mad på bordet og tag billeder af det. Tag så mange, du vil, så finder jeg ud af, hvad det hele er.",
+      "receipt": "Tag et billede af kvitteringen fra din sidste indkøbstur. Er den lang? Tag flere billeder af den, så lægger jeg hele indkøbet på plads."
     },
     "question": "Hvad har du foran dig?",
     "choices": {
@@ -58,8 +58,16 @@
       }
     },
     "callout": {
-      "title": "Tryk på kameraet for at starte",
-      "body": "Det er altid her, midt i menuen"
+      "title": "Tryk på kameraet og tag løs",
+      "body": "Tag så mange billeder, du har brug for. Kameraet er altid her, midt i menuen"
+    },
+    "session": {
+      "open": "Se dine billeder",
+      "allRead": "alle læst",
+      "photos_one": "{{count}} billede taget",
+      "photos_other": "{{count}} billeder taget",
+      "stillReading_one": "{{count}} læses stadig",
+      "stillReading_other": "{{count}} læses stadig"
     }
   },
   "sayIt": {
