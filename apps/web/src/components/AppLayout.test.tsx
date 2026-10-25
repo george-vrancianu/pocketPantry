@@ -202,7 +202,7 @@ describe('AppLayout Voice Note host', () => {
   );
 
   it.each(['/shopping', '/pantry', '/recipes'])(
-    'puts the mic in the Dock, under the camera, on %s',
+    'puts the mic in the Dock, above the camera, on %s',
     async (route) => {
       renderAt(route);
       const mic = await talkButton();
@@ -210,7 +210,7 @@ describe('AppLayout Voice Note host', () => {
       expect(dock).toContainElement(mic);
       const camera = within(dock).getByRole('link', { name: 'Camera' });
       expect(
-        camera.compareDocumentPosition(mic) & Node.DOCUMENT_POSITION_FOLLOWING,
+        mic.compareDocumentPosition(camera) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     },
   );

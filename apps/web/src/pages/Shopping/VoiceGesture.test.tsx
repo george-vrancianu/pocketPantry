@@ -552,7 +552,7 @@ describe('the recording gesture on the Shopping List', () => {
   });
 
   describe('keyboard order', () => {
-    it('tabs from the page through the Dock, camera before mic', async () => {
+    it('tabs from the page through the Dock, mic before camera', async () => {
       setup();
       renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await talkButton();
@@ -567,11 +567,11 @@ describe('the recording gesture on the Shopping List', () => {
       );
       await userEvent.tab();
       expect(dock.contains(document.activeElement)).toBe(true);
-      camera.focus();
+      button.focus();
       await userEvent.tab();
-      expect(button).toHaveFocus();
-      await userEvent.tab({ shift: true });
       expect(camera).toHaveFocus();
+      await userEvent.tab({ shift: true });
+      expect(button).toHaveFocus();
     });
   });
 });
