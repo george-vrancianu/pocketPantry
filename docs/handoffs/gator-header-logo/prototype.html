@@ -1,0 +1,350 @@
+<title>Gator in the Header</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,500;9..144,600;9..144,700,50&family=Instrument+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&family=Sora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: workbench like the other PocketPantry prototypes — toolbar (variant + theme), notes on the left, the phone on the right.
+   Page chrome is neutral (--pg-*); inside the phone everything is painted by the app theme tokens (docs/themes/themes.ts). */
+:root{
+  --pg-bg:#ECEDE9; --pg-fg:#1A1D1B; --pg-muted:#5F665F; --pg-line:#D5D9D3; --pg-surface:#F7F8F5; --pg-accent:#2E6A4D; --pg-accent-ink:#fff;
+  --pg-font:'DM Sans',ui-sans-serif,system-ui,sans-serif; --pg-mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--pg-bg:#131614;--pg-fg:#E8ECE7;--pg-muted:#9AA69C;--pg-line:#2A302B;--pg-surface:#1B1F1C;--pg-accent:#8BD4A6;--pg-accent-ink:#0B1A10;color-scheme:dark}}
+:root[data-theme="dark"]{--pg-bg:#131614;--pg-fg:#E8ECE7;--pg-muted:#9AA69C;--pg-line:#2A302B;--pg-surface:#1B1F1C;--pg-accent:#8BD4A6;--pg-accent-ink:#0B1A10;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pg-bg);color:var(--pg-fg);font-family:var(--pg-font);font-size:14px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--pg-accent);outline-offset:2px}
+.page{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 60px;max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between}
+.bar h1{font-size:18px;font-weight:700;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.bar h1 small{display:block;font-weight:500;color:var(--pg-muted);font-size:13px;margin-top:2px;max-width:60ch}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.segc{display:flex;flex-wrap:wrap;background:var(--pg-surface);border:1px solid var(--pg-line);border-radius:12px;padding:3px;gap:2px}
+.segc button{border:0;background:transparent;border-radius:9px;height:34px;padding:0 12px;font-weight:600;font-size:13px;color:var(--pg-muted);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.segc button .dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+.segc button[aria-selected="true"]{background:var(--pg-accent);color:var(--pg-accent-ink)}
+.segc.sm button{height:30px;padding:0 10px;font-size:12.5px}
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:28px;align-items:start}
+.left{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{border:1px solid var(--pg-line);background:var(--pg-surface);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel h2{margin:0;font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--pg-muted)}
+.panel p{margin:0;color:var(--pg-muted);font-size:13.5px;max-width:66ch}
+.panel p b{color:var(--pg-fg)}
+.cues{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.cues li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:13.5px}
+.cues li i{font-style:normal;font-weight:700;font-family:var(--pg-mono);font-size:12px;color:var(--pg-accent);padding-top:1px}
+.cues li span{color:var(--pg-muted)}
+.cues li b{color:var(--pg-fg)}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px}
+.opt label{font-size:13.5px;font-weight:600}
+.opt label small{display:block;font-weight:500;color:var(--pg-muted);font-size:12px}
+.tl{display:grid;grid-template-columns:64px minmax(0,1fr);gap:6px 12px;font-size:13px}
+.tl i{font-style:normal;font-family:var(--pg-mono);font-size:12px;color:var(--pg-accent);font-variant-numeric:tabular-nums}
+.tl span{color:var(--pg-muted)}
+.tl b{color:var(--pg-fg)}
+.phonecol{position:sticky;top:16px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.phonecol .note{font-size:12.5px;color:var(--pg-muted);text-align:center;max-width:360px}
+@media (max-width:900px){.bench{grid-template-columns:minmax(0,1fr)}.phonecol{position:static}}
+
+/* ===== Skin-scoped (app theme tokens) ===== */
+.skin{color:var(--ink);font-family:var(--body);font-size:15px;max-width:100%;--amp:1}
+.phone{width:390px;max-width:100%;height:820px;background:var(--bg);border-radius:44px;border:10px solid var(--bezel);position:relative;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.25)}
+.scr{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain;padding:14px 14px 120px;scrollbar-width:none;display:flex;flex-direction:column;gap:14px}
+.scr::-webkit-scrollbar{display:none}
+.scr>*{flex-shrink:0}
+.stat{display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:2px 8px 0}
+.hdr{display:flex;align-items:center;gap:10px;padding:4px 6px 0;min-height:48px}
+.hdr .rt{display:flex;gap:8px;align-items:center;margin-left:auto}
+.hdr .sp{flex:1}
+.circ{all:unset;box-sizing:border-box;width:38px;height:38px;border-radius:50%;border:var(--bw) solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink);cursor:pointer;flex:none}
+.circ svg{width:18px;height:18px}
+.circ.pri{background:var(--primary);color:var(--primary-ink);border-color:transparent;width:44px;height:44px;box-shadow:var(--shadow-btn)}
+.circ.pri svg{width:20px;height:20px}
+.av{width:38px;height:38px;border-radius:50%;background:var(--butter);color:var(--butter-ink);display:grid;place-items:center;font-weight:800;font-size:13px;font-family:var(--display);flex:none}
+.dt{font-size:12.5px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px;min-height:18px}
+.dt .up{display:inline-flex;align-items:center;gap:5px}
+.dt .up svg{width:13px;height:13px}
+.dt .up.ok{color:var(--accent-on-tint)}
+.dt .spin{width:11px;height:11px;border-radius:50%;border:2px solid var(--line-strong);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.greet{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);line-height:1.05;margin:0}
+.hdr .greet{font-size:21px}
+.title{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:28px;line-height:1.05;margin:0}
+.brand{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:19px;line-height:1}
+.lead{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:2px 6px 0}
+.lead .greet{font-size:28px}
+.lead .dt{margin-top:4px}
+.tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tx .dt{min-height:0}
+
+/* ---- logo button ---- */
+.lg{all:unset;box-sizing:border-box;cursor:pointer;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;flex:none;position:relative;-webkit-tap-highlight-color:transparent}
+.lg:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lg.big{width:48px;height:48px}
+.lg svg{width:100%;height:100%;overflow:visible;display:block}
+.lg.tile svg{width:38px;height:38px;border-radius:11px}
+.lg.big.tile svg{width:42px;height:42px;border-radius:12px}
+.lg .gator g[class]:not([transform]){transform-box:fill-box}
+.lg .rig{transform-origin:50% 100%}.lg .eye{transform-origin:50% 55%}.lg .hat{transform-origin:50% 100%}.lg .head{transform-origin:45% 95%}
+.lg.tile .rig{transform-origin:50% 50%}
+.lg.idle .rig{animation:breathe 3.2s ease-in-out infinite}
+.lg.idle .eye{animation:blink 4.4s infinite}
+.lg.idle .hat{animation:hatSway 3.2s ease-in-out infinite}
+.lg.poke .rig{animation:boingOnce .9s linear 1!important}
+.lg.poke .hat{animation:hatHopOnce .9s linear 1!important}
+.lg.poke .eye{animation:squintOnce .9s linear 1!important}
+.lg.tile.poke .rig{animation:none!important}
+.lg.tile.poke .head{animation:boingOnce .9s linear 1!important}
+.lg.busy .eye{animation:blink 1.6s infinite}
+/* dark surfaces: the clay drop shadow vanishes, so the body gets the light rim instead (gator-finish handoff) */
+.skin[data-dark] .lg .rig{filter:none}
+.skin[data-dark] .lg .hd{stroke:#9FD36A;stroke-width:2.5;stroke-opacity:.35}
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.006,1.022)}}
+@keyframes blink{0%,90%,97%,100%{transform:scaleY(1)}93.5%{transform:scaleY(.08)}}
+@keyframes hatSway{0%,100%{transform:rotate(0)}50%{transform:rotate(-4deg)}}
+@keyframes boingOnce{0%,100%{transform:none}15%{transform:scale(1.1,.88)}40%{transform:translateY(-22px) scale(.94,1.1)}62%{transform:translateY(0) scale(1.08,.9)}80%{transform:scale(.98,1.02)}}
+@keyframes hatHopOnce{0%,20%,100%{transform:none}44%{transform:translateY(-10px) rotate(-14deg)}66%{transform:translateY(-2px) rotate(5deg)}84%{transform:none}}
+@keyframes squintOnce{0%,80%,100%{transform:scaleY(1)}12%,60%{transform:scaleY(.15)}}
+
+/* ---- widgets (static sample, same parts as Home) ---- */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;transition:opacity .25s}
+.grid.dim{opacity:.55}
+.w{background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.w.l{grid-column:span 2}
+.wh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:22px}
+.wl{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.wl svg{width:15px;height:15px;flex:none}
+.wm{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.big{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:32px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.big small{font-size:14px;color:var(--muted);font-family:var(--body);font-weight:600;letter-spacing:0;margin-left:3px}
+.verd{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:17px;line-height:1.2}
+.sub{font-size:12.5px;color:var(--muted);line-height:1.4}
+.track{height:7px;border-radius:99px;background:var(--chip);overflow:hidden}
+.track i{display:block;height:100%;border-radius:99px;background:var(--accent)}
+.ringwrap{position:relative;display:grid;place-items:center;flex:none}
+.ringwrap .num{position:absolute;font-family:var(--display);font-weight:var(--display-w);font-size:22px;font-variant-numeric:tabular-nums}
+.hubtop{display:flex;align-items:center;gap:14px}
+.rows{display:flex;flex-direction:column}
+.r{display:flex;align-items:center;gap:10px;min-height:48px;padding:5px 0}
+.r+.r{border-top:1px solid var(--divider)}
+.rn{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs{font-size:12.5px;color:var(--muted)}
+.tile{width:34px;height:34px;border-radius:calc(var(--r-ctl) - 2px);display:grid;place-items:center;font-weight:700;font-size:12.5px;font-family:var(--display);flex:0 0 auto;background:color-mix(in srgb,var(--tc) 18%,var(--card-bg));color:color-mix(in srgb,var(--tc) 75%,var(--ink))}
+.tag{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;flex:0 0 auto}
+.tag.urgent{background:var(--urgent-bg);color:var(--urgent-fg)}
+.tag.soon{background:var(--soon-bg);color:var(--soon-fg)}
+.tag.ok{background:var(--ok-bg);color:var(--ok-fg)}
+.kv{display:flex;justify-content:space-between;font-size:13.5px;padding:2px 0}
+.kv b{font-variant-numeric:tabular-nums}
+/* pantry page bits */
+.search{height:48px;border-radius:16px;background:var(--field-bg);border:var(--bw-field) solid var(--line);display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--muted);font-size:14.5px}
+.search svg{width:18px;height:18px}
+.chips{display:flex;gap:6px;overflow:auto;scrollbar-width:none;padding:0 2px}
+.chips span{flex:none;height:32px;padding:0 12px;border-radius:var(--r-chip);display:inline-flex;align-items:center;font-size:13px;font-weight:600;border:var(--bw) solid var(--line);background:var(--surface)}
+.chips span.on{background:var(--accent-tint);color:var(--accent-on-tint);border-color:transparent}
+.seclabel{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:2px 4px 0;display:flex;justify-content:space-between}
+.card{background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:4px 14px}
+.dock{position:absolute;left:12px;right:12px;bottom:12px;height:72px;background:var(--dock-bg);backdrop-filter:blur(12px);border:var(--bw) solid var(--line);border-radius:var(--r-dock);box-shadow:var(--shadow-float);display:grid;grid-template-columns:repeat(4,1fr);align-items:center;padding:0 6px;z-index:5}
+.dock span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted);height:56px;justify-content:center;border-radius:14px}
+.dock span.on{color:var(--accent)}
+.dock span svg{width:22px;height:22px}
+.toastp{position:absolute;left:20px;right:20px;bottom:98px;background:var(--toast-bg);color:var(--toast-ink);border-radius:var(--r-ctl);padding:12px 16px;font-weight:600;font-size:14px;box-shadow:var(--shadow-float);opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:6}
+.toastp.show{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="page">
+  <div class="bar">
+    <h1>Gator in the header<small>The clay Gator as the app's logo in the top bar. Tap him: he hops (the Tap animation) and the screen refreshes its data. Three ways to make room for the Home greeting.</small></h1>
+    <div class="ctl">
+      <div class="segc" role="tablist" aria-label="Variant" id="varSeg">
+        <button role="tab" data-v="A">A · Beside the greeting</button>
+        <button role="tab" data-v="B">B · Brand bar, greeting below</button>
+        <button role="tab" data-v="C">C · Centred</button>
+      </div>
+      <div class="segc" role="tablist" aria-label="Theme" id="themeSeg"></div>
+    </div>
+  </div>
+
+  <div class="bench">
+    <div class="left">
+      <section class="panel">
+        <h2 id="vTitle">Variant</h2>
+        <p id="vDesc"></p>
+        <ul class="cues" id="vCues"></ul>
+      </section>
+      <section class="panel">
+        <h2>Options</h2>
+        <div class="opts">
+          <div class="opt"><label>Screen<small>Home is where the greeting moves; Pantry shows the same logo in a normal AppScreenHeader</small></label>
+            <div class="segc sm" role="radiogroup" id="scrSeg"><button role="radio" data-v="home" aria-selected="true">Home</button><button role="radio" data-v="pantry">Pantry</button></div></div>
+          <div class="opt"><label>Mark<small>The app-icon tile is the logo (decided 2026-10-25); the bare head is kept for comparison</small></label>
+            <div class="segc sm" role="radiogroup" id="markSeg"><button role="radio" data-v="tile" aria-selected="true">Icon tile (chosen)</button><button role="radio" data-v="head">Head only</button></div></div>
+          <div class="opt"><label>At rest<small>One animated Gator per screen is the rule, so the header one stays still by default</small></label>
+            <div class="segc sm" role="radiogroup" id="restSeg"><button role="radio" data-v="still" aria-selected="true">Still</button><button role="radio" data-v="idle">Idle loop</button></div></div>
+          <div class="opt"><label>Refresh takes<small>How long the sample fetch runs after a tap</small></label>
+            <div class="segc sm" role="radiogroup" id="fetchSeg"><button role="radio" data-v="400">0.4 s</button><button role="radio" data-v="1200" aria-selected="true">1.2 s</button><button role="radio" data-v="3000">3 s</button></div></div>
+          <div class="opt"><label>Name beside the mark<small>Variant B only</small></label>
+            <div class="segc sm" role="radiogroup" id="nameSeg"><button role="radio" data-v="0" aria-selected="true">Off</button><button role="radio" data-v="1">PocketPantry</button></div></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Tap → refresh, step by step</h2>
+        <div class="tl">
+          <i>0 ms</i><span><b>Tap.</b> 10 ms haptic. The Tap animation starts (squash, hop, hat flip, squint; 0.9 s, ends at rest). Every query on the screen is invalidated and refetched.</span>
+          <i>0–end</i><span><b>Fetching.</b> The date line under the greeting (or the Pantry subtitle) becomes “Refreshing…” with a small spinner. Widgets dim to 55 % but keep their numbers, so nothing jumps. Gator blinks faster while the fetch runs longer than his hop.</span>
+          <i>end</i><span><b>Done.</b> Widgets fade back with the new data; the line reads “Updated just now” with a check for 2.5 s, then returns to the date. Rings and counts animate to their new values.</span>
+          <i>fail</i><span><b>Offline.</b> Line reads “Couldn't refresh · showing cached data” in the soon colour; no toast. Gator still hops, the tap always gives feedback.</span>
+          <i>again</i><span><b>Tap while fetching.</b> He hops again; no second fetch is started (the one in flight continues).</span>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Notes</h2>
+        <ul class="cues">
+          <li><i>1</i><span><b>Which Gator.</b> The happy head from the app icon (the one that winks and tips the hat on Log in), in the Soft clay finish from the gator-finish handoff. At 44 pt he is above the 32 pt line where Lit flat takes over, so the gradients and shadow stay.</span></li>
+          <li><i>2</i><span><b>Dark theme.</b> On the dark bar the drop shadow vanishes, so the head gets the light rim (#9FD36A, 2.5 px, 35 %) instead, as the finish handoff says.</span></li>
+          <li><i>3</i><span><b>Pull to refresh stays.</b> Tapping the logo is a second way in, and the only one that works for VoiceOver without a gesture: the button is labelled “PocketPantry · refresh”.</span></li>
+          <li><i>4</i><span><b>Health widget Gator.</b> When Home shows a Gator in the Health widget (dapper, hmm, worried), the header one still only moves on tap, so there is one animated Gator at a time.</span></li>
+        </ul>
+      </section>
+    </div>
+    <div class="phonecol">
+      <div class="skin" id="skin"></div>
+      <div class="note">Sample Family (George and Ana), today is Thu 15 Oct. Tap the Gator in the top bar.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const THEMES={
+  warm:{name:'Warm editorial',dot:'#5F6F2E',dark:false,t:{bg:'#F3EDE1',surface:'#FBF8F1',subtle:'#F6F1E6',ink:'#2B2418',muted:'#766A58',line:'#E6DCCB','line-strong':'#D6C9B2',divider:'#EFE7D8',chip:'#EAE1CF',accent:'#5F6F2E','accent-ink':'#FFFFFF','accent-tint':'#E6EAD2','accent-on-tint':'#4A5722',primary:'#5F6F2E','primary-ink':'#FFFFFF',butter:'#F0C96B','butter-ink':'#4A3608','urgent-bg':'#F8DED1','urgent-fg':'#A8431C','soon-bg':'#F6E5BE','soon-fg':'#704E00','ok-bg':'#E6EAD2','ok-fg':'#4A5722',star:'#C6882A','card-bg':'#FBF8F1','card-line':'#E9E0CF','field-bg':'#FFFDF8','toast-bg':'#2B2418','toast-ink':'#FBF8F1','dock-bg':'rgba(251,248,241,.94)',bezel:'#2B2418',bw:'1px','bw-field':'1.5px','r-card':'16px','r-ctl':'12px','r-chip':'999px','r-dock':'22px','shadow-card':'0 1px 2px rgba(60,40,10,.06), 0 8px 24px -12px rgba(60,40,10,.18)','shadow-btn':'0 4px 12px rgba(95,111,46,.28)','shadow-float':'0 14px 34px -10px rgba(60,40,10,.28)',display:"'Fraunces',Georgia,serif",body:"'Instrument Sans',ui-sans-serif,system-ui,sans-serif",'display-w':'600','display-ls':'-0.015em'}},
+  minimal:{name:'Minimal crisp',dot:'#141614',dark:false,t:{bg:'#FAFAF8',surface:'#FFFFFF',subtle:'#F3F4F1',ink:'#141614',muted:'#6B716B',line:'#E7E9E4','line-strong':'#CDD1CA',divider:'#EEF0EB',chip:'#EEF0EB',accent:'#1E7A4E','accent-ink':'#FFFFFF','accent-tint':'#E1F2E8','accent-on-tint':'#176040',primary:'#141614','primary-ink':'#FFFFFF',butter:'#F5E1A4','butter-ink':'#5A4200','urgent-bg':'#FDE8E2','urgent-fg':'#B33A1E','soon-bg':'#FBF0CC','soon-fg':'#7A5600','ok-bg':'#EEF0EB','ok-fg':'#4D534D',star:'#D1A21C','card-bg':'#FFFFFF','card-line':'#E7E9E4','field-bg':'#FFFFFF','toast-bg':'#141614','toast-ink':'#FFFFFF','dock-bg':'rgba(255,255,255,.96)',bezel:'#141614',bw:'1px','bw-field':'1px','r-card':'12px','r-ctl':'10px','r-chip':'8px','r-dock':'16px','shadow-card':'none','shadow-btn':'none','shadow-float':'0 8px 24px rgba(20,22,20,.10)',display:"'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif",body:"'Figtree',ui-sans-serif,system-ui,sans-serif",'display-w':'700','display-ls':'-0.025em'}},
+  dark:{name:'Dark-first',dot:'#8FE0A8',dark:true,t:{bg:'#0F1512',surface:'#19211C',subtle:'#1F2922',ink:'#ECF2EC',muted:'#97A69B',line:'#26312A','line-strong':'#36433A',divider:'#27322B',chip:'#26312A',accent:'#8FE0A8','accent-ink':'#0B1A10','accent-tint':'#1F3A2A','accent-on-tint':'#A9EDBD',primary:'#8FE0A8','primary-ink':'#0B1A10',butter:'#3D3418','butter-ink':'#F2CF72','urgent-bg':'#3F241B','urgent-fg':'#FFA27E','soon-bg':'#3A3118','soon-fg':'#F2CF72','ok-bg':'#26312A','ok-fg':'#B9C7BC',star:'#F2CF72','card-bg':'#19211C','card-line':'transparent','field-bg':'#111915','toast-bg':'#ECF2EC','toast-ink':'#0F1512','dock-bg':'rgba(25,33,28,.9)',bezel:'#050807',bw:'1px','bw-field':'1px','r-card':'18px','r-ctl':'14px','r-chip':'999px','r-dock':'24px','shadow-card':'0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px -12px rgba(0,0,0,.6)','shadow-btn':'0 6px 18px rgba(143,224,168,.25)','shadow-float':'0 16px 40px rgba(0,0,0,.55)',display:"'Sora',ui-sans-serif,system-ui,sans-serif",body:"'Albert Sans',ui-sans-serif,system-ui,sans-serif",'display-w':'600','display-ls':'-0.02em'}}
+};
+const ORDER=['warm','minimal','dark'];
+const VARS={
+  A:{title:'A · Beside the greeting',desc:'The Gator takes the left edge of the bar and the greeting moves in next to him, one step smaller (21 pt) with the date under it. The bar stays 48 pt tall, the same height as the other screens’ headers, and nothing below moves.',cues:[
+    '<b>Reads as a greeting from him</b>: logo, then “Evening, George” at eye level, like a name tag.',
+    '<b>Cheapest change</b>: the header component gains a leading slot; the greeting shrinks from 28 to 21 pt.',
+    'The greeting line has about 16 characters of room before the actions; Danish and Romanian names fit, long first names truncate with an ellipsis.']},
+  B:{title:'B · Brand bar, greeting below',desc:'The top bar becomes a thin brand bar on every screen (Gator left, actions right, optionally the app name). On Home the greeting drops out of the bar and sits as a large title above the widgets, with the date and refresh status beneath it, the way iOS large titles sit under a compact bar.',cues:[
+    '<b>Same bar everywhere</b>: Home, Pantry, Shopping and Recipes all open with the identical brand bar, so the logo is in the same spot on every tab.',
+    '<b>Greeting keeps its size</b> (28 pt) and gains room to breathe; it scrolls away with the content.',
+    'Costs about 36 pt of vertical space over today’s header on Home.']},
+  C:{title:'C · Centred',desc:'The Gator sits in the middle of the bar with Customise on the left and the avatar on the right. The greeting and date move below the bar as a lead line, same as B.',cues:[
+    '<b>Most “logo”</b>: centred marks read as brand, not as a button, which also makes the tap a small discovery.',
+    '<b>Symmetric bar</b> works on screens with one action on each side; on Pantry (+ only) the left slot stays empty.',
+    'The refresh affordance is weakest here; the Tap hop makes up for it the first time someone tries.']}
+};
+let V='A',THEME='warm',SCR='home',MARK='tile',REST='still',FETCH=1200,NAME=false;
+let busy=false, statusT=null, status='date';
+
+/* ---------- clay Gator (happy head from the app icon, gator-finish handoff) ---------- */
+function defs(s){return '<defs><radialGradient id="clayBody-'+s+'" cx="32%" cy="28%" r="82%"><stop offset="0" stop-color="#8CC65F"/><stop offset=".55" stop-color="#6FAE48"/><stop offset="1" stop-color="#56923A"/></radialGradient><radialGradient id="clayBelly-'+s+'" cx="40%" cy="20%" r="90%"><stop offset="0" stop-color="#F4EFCB"/><stop offset=".7" stop-color="#E8E2B0"/><stop offset="1" stop-color="#D3CB93"/></radialGradient><radialGradient id="claySocket-'+s+'" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#78B64F"/><stop offset="1" stop-color="#528B37"/></radialGradient><radialGradient id="clayHat-'+s+'" cx="35%" cy="25%" r="85%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".7" stop-color="#F6F1E6"/><stop offset="1" stop-color="#E4DCCB"/></radialGradient><linearGradient id="clayBand-'+s+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F8F3E8"/><stop offset="1" stop-color="#E6DECD"/></linearGradient><radialGradient id="clayEye-'+s+'" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E5E6DA"/></radialGradient><radialGradient id="clayPupil-'+s+'" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="#4A5A33"/><stop offset="1" stop-color="#1F2914"/></radialGradient><linearGradient id="tileClay-'+s+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6C7D37"/><stop offset="1" stop-color="#4F5D25"/></linearGradient><filter id="claySoft-'+s+'" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#2B2418" flood-opacity=".22"/></filter><filter id="blur6-'+s+'" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter><filter id="blur3-'+s+'" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3"/></filter><clipPath id="clipBody-'+s+'"><path d="M28 100 C26 62 56 40 92 42 C118 44 134 56 150 62 L198 68 C218 70 228 84 226 98 C224 112 214 122 198 124 L112 136 C78 142 30 138 28 100 Z"/></clipPath><clipPath id="clipHat-'+s+'"><g transform="rotate(-14 64 40)"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g></clipPath><clipPath id="clipTile-'+s+'"><rect x="6" y="6" width="188" height="188" rx="44"/></clipPath></defs>';}
+function headcopy(s){return '<g class="headcopy"><circle cx="124" cy="46" r="17" fill="url(#claySocket-'+s+')"/><g class="eye eye-far"><circle cx="126" cy="44" r="10" fill="url(#clayEye-'+s+')"/><g class="pupil"><circle cx="129" cy="46" r="5" fill="url(#clayPupil-'+s+')"/></g></g><path class="hd" d="M28 100 C26 62 56 40 92 42 C118 44 134 56 150 62 L198 68 C218 70 228 84 226 98 C224 112 214 122 198 124 L112 136 C78 142 30 138 28 100 Z" fill="url(#clayBody-'+s+')"/><g clip-path="url(#clipBody-'+s+')"><ellipse cx="140" cy="140" rx="92" ry="16" fill="#2F5A22" opacity=".42" filter="url(#blur6-'+s+')"/><ellipse cx="200" cy="100" rx="30" ry="34" fill="#2F5A22" opacity=".18" filter="url(#blur6-'+s+')"/><ellipse cx="78" cy="58" rx="42" ry="22" fill="#FFFFFF" opacity=".16" filter="url(#blur6-'+s+')"/></g><path d="M78 114 L218 100 C214 114 208 121 198 124 L112 136 C92 138 80 130 78 114 Z" fill="url(#clayBelly-'+s+')"/><path d="M40 70 l-8 -6 l2 10 Z M50 58 l-6 -8 l0 11 Z M62 50 l-3 -9 l-3 10 Z" fill="url(#claySocket-'+s+')"/><path d="M150 78 q6 4 12 0 M170 80 q6 4 12 0 M160 90 q6 4 12 0" fill="none" stroke="#5E9A3C" stroke-width="3" stroke-linecap="round"/><circle cx="206" cy="74" r="9" fill="url(#clayBody-'+s+')"/><ellipse cx="209" cy="72" rx="3.5" ry="2.5" fill="#3E6B2E"/><g class="hat"><g transform="rotate(-14 64 40)"><g fill="url(#clayHat-'+s+')" stroke="#D9D0BE" stroke-width="5"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><g fill="url(#clayHat-'+s+')"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><path d="M54 22 v12 M64 20 v14 M74 22 v12" stroke="#E2DACB" stroke-width="2.5" stroke-linecap="round"/><g clip-path="url(#clipHat-'+s+')"><ellipse cx="66" cy="38" rx="30" ry="7" fill="#B9AE98" opacity=".45" filter="url(#blur3-'+s+')"/></g><rect x="36" y="34" width="56" height="14" rx="5" fill="url(#clayBand-'+s+')" stroke="#D9D0BE" stroke-width="2.5"/></g></g><circle cx="92" cy="46" r="24" fill="url(#claySocket-'+s+')"/><g class="eye eye-near"><circle cx="94" cy="44" r="16" fill="url(#clayEye-'+s+')"/><g class="pupil"><circle cx="100" cy="46" r="8" fill="url(#clayPupil-'+s+')"/><circle cx="103" cy="43" r="3.4" fill="#fff"/><circle cx="96" cy="50" r="1.4" fill="#fff" opacity=".7"/></g></g><path d="M62 100 Q64 116 80 114 L218 100" fill="none" stroke="#3E6B2E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M100 112 l4 7 l4 -8 Z M122 110 l4 7 l4 -8 Z M144 108 l4 7 l4 -8 Z M166 106 l4 7 l4 -8 Z M188 103 l4 7 l4 -8 Z" fill="#fff"/><path d="M112 114 l4 -7 l4 6 Z M156 109 l4 -7 l4 6 Z M200 104 l3 -6 l3 5 Z" fill="#fff"/><g class="blush"><circle cx="66" cy="96" r="8" fill="#F2A08B" opacity=".5"/></g></g>';}
+function gatorHead(s){return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 -24 226 186" class="gator" aria-hidden="true">'+defs(s)+'<g class="rig" filter="url(#claySoft-'+s+')"><g class="head">'+headcopy(s)+'</g></g></svg>';}
+function gatorTile(s){return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="gator" aria-hidden="true">'+defs(s)+'<g class="rig"><rect x="6" y="6" width="188" height="188" rx="44" fill="url(#tileClay-'+s+')"/><rect x="7.5" y="7.5" width="185" height="185" rx="43" fill="none" stroke="#fff" opacity=".14" stroke-width="3"/><g clip-path="url(#clipTile-'+s+')"><g class="head" filter="url(#claySoft-'+s+')"><g transform="translate(4 50) scale(.8)">'+headcopy(s)+'</g></g></g></g></svg>';}
+function logo(big){ return '<button type="button" class="lg'+(big?' big':'')+(MARK==='tile'?' tile':'')+(REST==='idle'?' idle':'')+'" id="logo" aria-label="PocketPantry · refresh">'+(MARK==='tile'?gatorTile('hdr'):gatorHead('hdr'))+'</button>'; }
+
+/* ---------- icons ---------- */
+const I={sliders:'<path d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.5"/><circle cx="10" cy="17" r="2.5"/>',plus:'<path d="M12 5v14M5 12h14"/>',check:'<path d="M5 12l5 5 9-10"/>',pulse:'<path d="M3 12h4l2-5 4 10 2-5h6"/>',basket:'<path d="M4 10h16l-1.5 9h-13z"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',bag:'<path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',recipes:'<path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>',scan:'<path d="M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3"/><path d="M8 12h8"/>',alert:'<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/>'};
+const svg=(n,sw)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[n]+'</svg>';
+const AISLE={dairy:'#3D7DCA',produce:'#3F9A4A',meat:'#C2453A',dry:'#B9852A'};
+const tile=(t,c)=>'<span class="tile" style="--tc:'+AISLE[c]+'" aria-hidden="true">'+t+'</span>';
+
+function dateLine(){
+  if(status==='busy') return '<span class="up"><span class="spin" aria-hidden="true"></span>Refreshing…</span>';
+  if(status==='done') return '<span class="up ok">'+svg('check',3)+'Updated just now</span>';
+  return SCR==='home'?'Thursday 15 October':'<span>42 items · updated 9:36</span>';
+}
+function ring(v){ const size=76,st=8,r=(size-st)/2,c=2*Math.PI*r; return '<span class="ringwrap"><svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" aria-hidden="true"><circle cx="38" cy="38" r="'+r+'" fill="none" stroke="var(--chip)" stroke-width="'+st+'"/><circle cx="38" cy="38" r="'+r+'" fill="none" stroke="var(--star)" stroke-width="'+st+'" stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+(c*(1-v/100)).toFixed(1)+'" transform="rotate(-90 38 38)"/></svg><span class="num">'+v+'</span></span>'; }
+function widgets(){
+  return '<div class="grid" id="grid">'+
+    '<section class="w l"><div class="wh"><span class="wl">'+svg('pulse')+'Pantry health</span><span class="wm">71</span></div><div class="hubtop">'+ring(71)+'<div class="tx" style="gap:4px"><div class="verd">A few things to sort</div><div class="sub">2 expired, 4 due in 3 days · 3 Staples missing</div></div></div></section>'+
+    '<section class="w"><div class="wh"><span class="wl">'+svg('basket')+'Shopping</span></div><div class="big">7<small>to buy</small></div><div class="track"><i style="width:22%"></i></div><div class="sub">2 of 9 ticked</div></section>'+
+    '<section class="w"><div class="wh"><span class="wl">'+svg('bag')+'Pantry</span></div><div class="kv"><span>Fridge</span><b>11</b></div><div class="kv"><span>Freezer</span><b>3</b></div><div class="kv"><span>Cupboard</span><b>6</b></div><div class="kv"><span>Spices</span><b>1</b></div></section>'+
+    '<section class="w l"><div class="wh"><span class="wl">'+svg('clock')+'Use soon</span><span class="wm">4 this week</span></div><div class="rows">'+
+      '<div class="r">'+tile('Mi','dairy')+'<span class="tx"><span class="rn">Milk</span><span class="rs">1 l · fridge</span></span><span class="tag urgent">Today</span></div>'+
+      '<div class="r">'+tile('Sp','produce')+'<span class="tx"><span class="rn">Spinach</span><span class="rs">200 g · fridge</span></span><span class="tag soon">Tomorrow</span></div>'+
+      '<div class="r">'+tile('Gr','dairy')+'<span class="tx"><span class="rn">Greek yogurt</span><span class="rs">400 g · fridge</span></span><span class="tag soon">2 d left</span></div>'+
+    '</div></section></div>';
+}
+function pantryBody(){
+  const row=(t,c,n,s,tag)=>'<div class="r">'+tile(t,c)+'<span class="tx"><span class="rn">'+n+'</span><span class="rs">'+s+'</span></span>'+tag+'</div>';
+  return '<div class="grid" id="grid" style="display:flex;flex-direction:column;gap:12px">'+
+    '<div class="search">'+svg('search')+'Search your Pantry</div>'+
+    '<div class="chips"><span class="on">All 42</span><span>Fridge 11</span><span>Freezer 3</span><span>Cupboard 6</span><span>Spices 1</span><span>Running low</span></div>'+
+    '<div class="seclabel"><span>Fridge</span><span>11</span></div><div class="card rows">'+
+      row('Mi','dairy','Milk','1 l','<span class="tag urgent">Today</span>')+row('Sp','produce','Spinach','200 g','<span class="tag soon">Tomorrow</span>')+row('Gr','dairy','Greek yogurt','3 batches · 1.05 kg','<span class="tag soon">2 d left</span>')+row('To','produce','Tomatoes','1 kg','<span class="tag ok">3 d</span>')+row('Ch','dairy','Cheddar','200 g','<span class="tag ok">12 d</span>')+row('Ha','meat','Ham','150 g','<span class="tag urgent">Expired</span>')+
+    '</div><div class="seclabel"><span>Freezer</span><span>3</span></div><div class="card rows">'+
+      row('Pe','produce','Peas','450 g','<span class="tag ok">120 d</span>')+row('Ch','meat','Chicken thighs','600 g','<span class="tag ok">60 d</span>')+
+    '</div></div>';
+}
+
+function header(){
+  const acts='<div class="rt"><button class="circ" type="button" aria-label="Customise home">'+svg('sliders')+'</button><span class="av">GV</span></div>';
+  if(SCR==='pantry'){
+    const plus='<div class="rt"><button class="circ pri" type="button" aria-label="Add to Pantry">'+svg('plus',2.4)+'</button></div>';
+    if(V==='C') return '<div class="hdr"><span style="width:44px;flex:none"></span><span class="sp"></span>'+logo()+'<span class="sp"></span>'+plus+'</div><div class="lead"><div class="tx"><h1 class="title">Pantry</h1><div class="dt" id="dt">'+dateLine()+'</div></div></div>';
+    if(V==='B') return '<div class="hdr">'+logo()+(NAME?'<span class="brand">PocketPantry</span>':'')+plus+'</div><div class="lead"><div class="tx"><h1 class="title">Pantry</h1><div class="dt" id="dt">'+dateLine()+'</div></div></div>';
+    return '<div class="hdr">'+logo(true)+'<div class="tx"><h1 class="title">Pantry</h1><div class="dt" id="dt">'+dateLine()+'</div></div>'+plus+'</div>';
+  }
+  if(V==='A') return '<div class="hdr">'+logo(true)+'<div class="tx"><h1 class="greet">Evening, George</h1><div class="dt" id="dt">'+dateLine()+'</div></div>'+acts+'</div>';
+  if(V==='B') return '<div class="hdr">'+logo()+(NAME?'<span class="brand">PocketPantry</span>':'')+acts+'</div><div class="lead"><div class="tx"><h1 class="greet">Evening, George</h1><div class="dt" id="dt">'+dateLine()+'</div></div></div>';
+  return '<div class="hdr"><button class="circ" type="button" aria-label="Customise home">'+svg('sliders')+'</button><span class="sp"></span>'+logo()+'<span class="sp"></span><span class="av">GV</span></div><div class="lead"><div class="tx"><h1 class="greet">Evening, George</h1><div class="dt" id="dt">'+dateLine()+'</div></div></div>';
+}
+
+function render(){
+  const host=document.getElementById('skin'); const th=THEMES[THEME];
+  for(const k in th.t) host.style.setProperty('--'+k,th.t[k]);
+  if(th.dark) host.setAttribute('data-dark',''); else host.removeAttribute('data-dark');
+  const keep=host.querySelector('.scr'); const st=keep?keep.scrollTop:0;
+  let h='<div class="phone"><div class="scr"><div class="stat"><span>9:41</span><span>●●●</span></div>';
+  h+=header();
+  h+=SCR==='home'?widgets():pantryBody();
+  h+='</div><div class="toastp" role="status"></div>';
+  h+='<div class="dock"><span'+(SCR==='pantry'?' class="on"':'')+'>'+svg('bag')+'Pantry</span><span>'+svg('basket')+'Shopping</span><span>'+svg('recipes')+'Recipes</span><span>'+svg('scan')+'Scan</span></div></div>';
+  host.innerHTML=h; host.querySelector('.scr').scrollTop=st;
+  if(busy){ host.querySelector('#logo').classList.add('busy'); host.querySelector('#grid').classList.add('dim'); }
+  panels();
+}
+function setStatus(s){ status=s; const d=document.getElementById('dt'); if(d) d.innerHTML=dateLine(); }
+function tap(){
+  const b=document.getElementById('logo'); if(!b) return;
+  try{ if(navigator.vibrate) navigator.vibrate(10); }catch(_){ }
+  b.classList.remove('poke'); void b.offsetWidth; b.classList.add('poke');
+  if(busy) return; busy=true; clearTimeout(statusT);
+  setStatus('busy'); document.getElementById('grid').classList.add('dim');
+  setTimeout(()=>b.classList.add('busy'),900);
+  setTimeout(()=>{ busy=false; b.classList.remove('busy'); document.getElementById('grid').classList.remove('dim'); setStatus('done'); statusT=setTimeout(()=>setStatus('date'),2500); },FETCH);
+}
+document.getElementById('skin').addEventListener('click',e=>{ if(e.target.closest('#logo')){ tap(); return; } const c=e.target.closest('.circ'); if(c){ const t=document.querySelector('#skin .toastp'); t.textContent=c.getAttribute('aria-label')==='Add to Pantry'?'Opens Add to Pantry':'Opens Customise: reorder, resize, add from the gallery'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); } });
+document.getElementById('skin').addEventListener('animationend',e=>{ if(e.target.closest&&e.target.closest('#logo')&&e.animationName==='boingOnce') document.getElementById('logo').classList.remove('poke'); });
+
+function panels(){
+  const v=VARS[V];
+  document.getElementById('vTitle').textContent=v.title;
+  document.getElementById('vDesc').textContent=v.desc;
+  document.getElementById('vCues').innerHTML=v.cues.map((c,i)=>'<li><i>'+(i+1)+'</i><span>'+c+'</span></li>').join('');
+}
+function seg(id,fn){ const btns=document.querySelectorAll('#'+id+' button'); btns.forEach(b=>b.addEventListener('click',()=>{ btns.forEach(x=>x.setAttribute('aria-selected',x===b)); fn(b.dataset.v||b.dataset.key); })); }
+const themeSeg=document.getElementById('themeSeg');
+ORDER.forEach(k=>{ const b=document.createElement('button'); b.setAttribute('role','tab'); b.dataset.key=k; b.innerHTML='<span class="dot" style="background:'+THEMES[k].dot+'"></span>'+THEMES[k].name; themeSeg.appendChild(b); });
+const store=(k,v)=>{ try{localStorage.setItem(k,v)}catch(_){ } };
+seg('themeSeg',k=>{ THEME=k; render(); store('pp-look',k); });
+seg('varSeg',v=>{ V=v; render(); store('pp-hdr-var',v); });
+seg('scrSeg',v=>{ SCR=v; status='date'; render(); });
+seg('markSeg',v=>{ MARK=v; render(); });
+seg('restSeg',v=>{ REST=v; render(); });
+seg('fetchSeg',v=>{ FETCH=+v; });
+seg('nameSeg',v=>{ NAME=v==='1'; render(); });
+try{ const s=localStorage.getItem('pp-look'); if(s&&THEMES[s]) THEME=s; const v=localStorage.getItem('pp-hdr-var'); if(v&&VARS[v]) V=v; }catch(_){ }
+const hash=location.hash.replace('#',''); if(VARS[hash]) V=hash;
+document.querySelectorAll('#varSeg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===V));
+document.querySelectorAll('#themeSeg button').forEach(b=>b.setAttribute('aria-selected',b.dataset.key===THEME));
+render();
+})();
+</script>
