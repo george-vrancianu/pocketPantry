@@ -197,6 +197,16 @@
       "optionalSub": "opțional",
       "optionalSwitch": "Opțional"
     },
+    "reorder": {
+      "roleDescription": "mobil",
+      "hold": "Ține apăsat pentru a muta",
+      "grip": "Mută {{name}}",
+      "instructions": "Pentru a reordona, ține apăsat pe un rând sau mută focalizarea pe mâner și apasă spațiu pentru a ridica, folosește săgețile pentru a muta, apoi apasă spațiu pentru a lăsa. Apasă Escape pentru a anula.",
+      "pickedUp": "{{name}} a fost ridicat.",
+      "movedTo": "{{name}} a fost mutat pe poziția {{position}} din {{total}}.",
+      "dropped": "{{name}} a fost lăsat pe poziția {{position}} din {{total}}.",
+      "cancelled": "Reordonare anulată."
+    },
     "steps": {
       "title": "Pași",
       "empty": "Niciun Pas încă.",
