@@ -545,4 +545,114 @@ describe('Add to Family (integration)', () => {
       ).variants.map((v) => v.id);
     expect(await ids()).toEqual([mine]);
   });
+  describe('Make a Variant draft on a copy', () => {
+    type Draft = {
+      parentId: string;
+      title: string;
+      lines: { quantity: number | null }[];
+    };
+    const draftOf = async (id: string) =>
+      (await ana.get(`/${id}/variant-draft`).expect(200)).body as Draft;
+    it('branches from the Catalog Base a copy was Copied From, prefilled from the copy', async () => {
+      const src = await makeBase();
+      const id = await copyId(ana, src.id);
+      await database
+        .update(recipes)
+        .set({ title: `Copy ${stamp}-edited` })
+        .where(eq(recipes.id, id));
+      await database
+        .update(recipeIngredientLines)
+        .set({ quantity: 350 })
+        .where(eq(recipeIngredientLines.recipeId, id));
+      const draft = await draftOf(id);
+      expect(draft.parentId).toBe(src.id);
+      expect(draft.title).toBe(`Copy ${stamp}-edited`);
+      expect(draft.lines[0].quantity).toBe(350);
+      // The draft saves end to end under the Catalog Base.
+      const saved = await ana
+        .post('', {
+          title: draft.title,
+          servings: 2,
+          locale: 'en',
+          parentId: draft.parentId,
+          lines: [
+            {
+              ingredientId: seedId.ingredient('flour'),
+              quantity: 350,
+              unit: 'g',
+            },
+          ],
+          steps: [{ text: 'Mix' }],
+        })
+        .expect(201);
+      expect((saved.body as { parentId: string }).parentId).toBe(src.id);
+    });
+
+    it('resolves a copy of a Catalog Variant to its Catalog Base, prefilled from the copy', async () => {
+      const src = await makeBase();
+      const variant = newId();
+      await database.insert(recipes).values({
+        id: variant,
+        parentId: src.id,
+        title: `Copy ${stamp}-variant`,
+        servings: 2,
+      });
+      const id = await copyId(ana, variant);
+      await database
+        .update(recipes)
+        .set({ title: `Copy ${stamp}-vedited` })
+        .where(eq(recipes.id, id));
+      const draft = await draftOf(id);
+      expect(draft.parentId).toBe(src.id);
+      expect(draft.title).toBe(`Copy ${stamp}-vedited`);
+    });
+
+    it('refuses with parent_archived when the Catalog Base is archived', async () => {
+      const src = await makeBase();
+      const variant = newId();
+      await database.insert(recipes).values({
+        id: variant,
+        parentId: src.id,
+        title: `Copy ${stamp}-variant2`,
+        servings: 2,
+      });
+      const baseCopy = await copyId(ana, src.id);
+      const variantCopy = await copyId(ana, variant);
+      await database
+        .update(recipes)
+        .set({ archivedAt: new Date() })
+        .where(eq(recipes.id, src.id));
+      for (const id of [baseCopy, variantCopy]) {
+        expect(
+          (await ana.get(`/${id}/variant-draft`).expect(409)).body,
+        ).toMatchObject({
+          code: 'recipes.parent_archived',
+        });
+      }
+    });
+
+    it('still refuses a Family Base that is not a copy', async () => {
+      const plain = newId();
+      await database.insert(recipes).values({
+        id: plain,
+        familyId: anaFamily,
+        title: `Copy ${stamp}-plain`,
+        servings: 2,
+      });
+      expect(
+        (await ana.get(`/${plain}/variant-draft`).expect(404)).body,
+      ).toMatchObject({
+        code: 'recipes.parent_not_found',
+      });
+    });
+
+    it('reports the Catalog Base a copy came from on its detail', async () => {
+      const src = await makeBase();
+      const id = await copyId(ana, src.id);
+      const detail = (await ana.get(`/${id}?locale=en`).expect(200)).body as {
+        copiedFrom: { id: string; archived: boolean } | null;
+      };
+      expect(detail.copiedFrom).toEqual({ id: src.id, archived: false });
+    });
+  });
 });

@@ -54,6 +54,7 @@ const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   base: null,
   variants: [],
   familyCopyId: null,
+  copiedFrom: null,
   diff: null,
   guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
   allergens: { items: [], uncheckedCount: 0 },
@@ -1116,6 +1117,36 @@ describe('RecipeDetailPage', () => {
       expect(
         within(menu).getByRole('menuitem', { name: 'Edit' }),
       ).toBeInTheDocument();
+      expect(
+        within(menu).queryByRole('menuitem', { name: 'Make a Variant' }),
+      ).toBeNull();
+    });
+
+    it('offers Make a Variant in the menu of a copy of a live Catalog Base', async () => {
+      const user = userEvent.setup();
+      setup(
+        recipe({
+          id: 'c',
+          owner: 'family',
+          copiedFrom: { id: 'o', archived: false },
+        }),
+      );
+      const menu = await openMenu(user);
+      expect(
+        within(menu).getByRole('menuitem', { name: 'Make a Variant' }),
+      ).toHaveAttribute('href', '/recipes/c/variant/new');
+    });
+
+    it('hides Make a Variant on a copy whose Catalog Base is archived', async () => {
+      const user = userEvent.setup();
+      setup(
+        recipe({
+          id: 'c',
+          owner: 'family',
+          copiedFrom: { id: 'o', archived: true },
+        }),
+      );
+      const menu = await openMenu(user);
       expect(
         within(menu).queryByRole('menuitem', { name: 'Make a Variant' }),
       ).toBeNull();

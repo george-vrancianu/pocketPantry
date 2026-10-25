@@ -541,6 +541,8 @@ export type RecipeDetail = ResolvedRecipe & {
   variants: RecipeVariantItem[];
   /** The Family's live copy of a Catalog Recipe, else null (always null on a Family Recipe). */
   familyCopyId: string | null;
+  /** The Catalog Base a Family Base was Copied From, else null. */
+  copiedFrom: { id: string; archived: boolean } | null;
   /** Ingredients that differ from the base; null on a Base Recipe. */
   diff: RecipeDiff | null;
   /** What the Recipe is known to contain, worked out from its own lines. */

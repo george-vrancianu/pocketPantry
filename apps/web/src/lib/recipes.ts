@@ -210,6 +210,8 @@ export type RecipeDetail = {
   variants: RecipeVariantItem[];
   /** The Family's live copy of a Catalog Recipe, else null. */
   familyCopyId: string | null;
+  /** The Catalog Base a Family Base was Copied From, else null. */
+  copiedFrom: { id: string; archived: boolean } | null;
   diff: RecipeDiff | null;
   guidance: RecipeGuidance;
   allergens: RecipeAllergens;
