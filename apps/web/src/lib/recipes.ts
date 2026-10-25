@@ -287,10 +287,11 @@ export function useRecipeFilters(enabled = true) {
 }
 
 /** One Recipe with its text, plus its base, Variants and ingredient diff. */
-export function useRecipe(id: string) {
+export function useRecipe(id: string, enabled = true) {
   return useQuery({
     queryKey: [...recipesQueryKey, 'detail', id],
     queryFn: () => apiRequest<RecipeDetail>(`/recipes/${id}`),
+    enabled,
   });
 }
 
