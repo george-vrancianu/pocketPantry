@@ -114,7 +114,7 @@ describe('Dock with a non-blocking teach', () => {
 
   const micSlotOf = () =>
     document.querySelector<HTMLElement>(
-      '[data-dock-capsule] > div:last-child',
+      '[data-dock-capsule] > div:first-child',
     )!;
 
   function renderHint(half: 'camera' | 'mic') {

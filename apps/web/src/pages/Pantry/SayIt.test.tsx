@@ -27,7 +27,7 @@ function setup(voiceConfigured = true) {
 
 const callout = () => screen.queryByText('Hold the mic, talk, let go');
 const litMic = () =>
-  document.querySelector('[data-dock-capsule] > div:last-child');
+  document.querySelector('[data-dock-capsule] > div:first-child');
 
 async function sayIt() {
   renderInAppLayout(<PantryPage />, '/pantry');
