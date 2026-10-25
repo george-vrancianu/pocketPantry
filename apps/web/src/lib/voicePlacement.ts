@@ -1,34 +1,28 @@
 import { aboveDock, DOCK_HEIGHT } from '@pocket-pantry/ui';
 
-// The Voice Note's notices all hang above the Dock's mic: first the Spoken Language chip's row, which
-// starts where `aboveDock` ends (clear of the capsule's overhang), then whatever sits above it.
+// The Voice Note's notices all hang above the Dock's mic, from `micBottom` up: just above the capsule,
+// which overhangs the Dock.
 
-/** The chip's row: the 30 px chip plus air, px. */
-export const MIC_ROW = 36;
-
-/** CSS `bottom` of the chip row: just above the capsule, which overhangs the Dock. */
+/** CSS `bottom` of the spot just above the capsule, which overhangs the Dock. */
 export const micBottom = {
   xs: aboveDock(DOCK_HEIGHT.xs),
   md: aboveDock(DOCK_HEIGHT.md),
 };
 
-/** Bottom padding that keeps a page's last row clear of the chip row (and its safe-area inset). */
-export const micClearance = {
-  xs: `calc(${micBottom.xs} + ${MIC_ROW}px)`,
-  md: `calc(${micBottom.md} + ${MIC_ROW}px)`,
-};
+/** Bottom padding that keeps a page's last row clear of the capsule (and its safe-area inset). */
+export const micClearance = micBottom;
 
-/** CSS `bottom` of something sitting above the chip row (the Listening card, the tip). */
+/** CSS `bottom` of something sitting `gap` px above the capsule (the Listening card, the tip). */
 export const aboveMic = (gap: number) => ({
-  xs: `calc(${micBottom.xs} + ${MIC_ROW + gap}px)`,
-  md: `calc(${micBottom.md} + ${MIC_ROW + gap}px)`,
+  xs: `calc(${micBottom.xs} + ${gap}px)`,
+  md: `calc(${micBottom.md} + ${gap}px)`,
 });
 
-/** Where a toast sits so it clears the Dock's mic and its chip. */
+/** Where a toast sits so it clears the Dock's mic. */
 export const toastBottom = aboveMic(10);
 
-/** The status pill (and the Listening card) sit this far above the chip row, px. */
-export const PILL_OFFSET = 22;
+/** The status pill (and the Listening card) sit this far above the capsule, px. */
+export const PILL_OFFSET = 10;
 /** The status pill's height (a title line, a one-line hint and its padding), px, plus the air kept above it. */
 export const PILL_HEIGHT = 60;
 export const PILL_GAP = 8;
@@ -53,6 +47,6 @@ export const VOICE_LAYER = {
   scrim: 1100,
   /** The Dock while a Voice Note is held: above the scrim, so the mic is not dimmed. */
   dock: 1150,
-  /** The Listening card, the status pill, the tip, the language menu. */
+  /** The Listening card, the status pill, the tip. */
   card: 1250,
 } as const;

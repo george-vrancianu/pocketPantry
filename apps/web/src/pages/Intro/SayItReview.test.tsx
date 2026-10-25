@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // The fake voice environment registers its mocks, so it comes before anything that reaches the microphone.
 import {
+  openReady,
   mic,
   resetVoiceEnvironment,
   stubVoiceFetch,
@@ -264,7 +265,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
-    const review = await screen.findByRole('dialog', { name: 'Review' });
+    const review = await openReady({ name: 'Review' });
     expect(
       within(review).queryByRole('img', { name: 'Gator, happy' }),
     ).toBeNull();

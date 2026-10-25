@@ -10,7 +10,10 @@ import {
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
+import type { MergedNote } from '../../lib/voiceNote';
 import { formatClock } from '../../lib/voice';
+import { noteHeardMeta } from './noteMeta';
+import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 
 /**
  * "What I heard": a card that shows the first line of the transcript and opens to
@@ -135,6 +138,67 @@ export function HeardCard({
             </Typography>
           </>
         ) : null}
+      </Box>
+    </Box>
+  );
+}
+
+/**
+ * "What I heard" for Review all: every Voice Note's transcript in recording order, each with the list
+ * it was recorded for, its Spoken Language and length.
+ */
+export function MergedHeardCard({ notes }: { notes: MergedNote[] }) {
+  const { t } = useTranslation(['voice', 'settings']);
+  const { spokenLanguage } = usePreferredSpokenLanguage();
+  return (
+    <Box
+      component="section"
+      aria-label={t('voice:review.heard')}
+      sx={{
+        backgroundColor: palette('background-paper'),
+        border: `1px solid ${palette('pp-line')}`,
+        borderRadius: radius.card,
+        p: '12px 14px',
+      }}
+    >
+      <Box sx={{ fontSize: 14, fontWeight: 700, mb: '6px' }}>
+        {t('voice:review.heard')}
+      </Box>
+      <Box component="ol" sx={{ m: 0, p: 0, listStyle: 'none' }}>
+        {notes.map((note) => {
+          const language = note.spokenLanguage ?? spokenLanguage;
+          return (
+            <Box
+              component="li"
+              key={note.id}
+              sx={{
+                py: '8px',
+                '& + &': { borderTop: `1px solid ${palette('divider')}` },
+              }}
+            >
+              <Typography
+                lang={language}
+                sx={{ fontSize: 15, fontWeight: 500, lineHeight: 1.4 }}
+              >
+                {note.transcript}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: palette('text-secondary'),
+                }}
+              >
+                {noteHeardMeta(
+                  t,
+                  note.defaultTarget,
+                  language,
+                  note.durationMs ?? 0,
+                )}
+              </Typography>
+            </Box>
+          );
+        })}
       </Box>
     </Box>
   );

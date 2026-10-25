@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { vi } from 'vitest';
 import type { Recording } from '../lib/microphone';
 import { voiceNote } from '../lib/voiceNote';
@@ -14,7 +14,7 @@ import { holdLongEnough, pressDown } from './voiceHold';
  * - Wake lock: a fake `navigator.wakeLock`; `wake.request` / `wake.released` are its mocks.
  * - Voice Note: the default instance is swapped for a fresh one by `resetVoiceEnvironment`, so no
  *   page test inherits the last one's phase, Voice Cap or lock. The module has no reset of its own.
- * - Send-Voice-Note request: `stubVoiceFetch` wraps the stubbed API and returns what is sent.
+ * - Send-Voice-Note request: `stubVoiceFetch` wraps the stubbed API and returns what is sent; `holdReads()` keeps reads pending.
  *
  * Call `resetVoiceEnvironment()` in `beforeEach` to put all of it back to its defaults.
  */
@@ -55,8 +55,7 @@ vi.mock('../lib/voiceNote', async (importOriginal) => {
   });
   fakes.voice.replace = () => {
     // Settle what the last test left under way, then start over.
-    current.cancelReading();
-    current.cancel({ quiet: true });
+    current.clear();
     unsubscribe();
     current = actual.createVoiceNote();
     unsubscribe = current.subscribe(emit);
@@ -106,9 +105,23 @@ export function removeWakeLock() {
   });
 }
 
+/** A Voice Note read held by `holdReads`: it stays pending until the test settles it. */
+export type PendingRead = {
+  /** The upload, as sent. */
+  body: FormData;
+  /** Answers the read; give `Response.json({ transcript, actions })` or the like. */
+  resolve: (response: Response) => void;
+  /** Fails the read, e.g. with `new TypeError('Failed to fetch')` for no signal. */
+  reject: (error: unknown) => void;
+};
+
 /**
  * Route `fetch` through `fetchMock`, recording every Voice Note upload (a FormData body) and its abort signal.
  * `onRequest` sees every request first, e.g. to capture another body.
+ *
+ * After `holdReads()` the uploads no longer reach `fetchMock`: each one waits in `reads` until the
+ * test calls its `resolve` or `reject` (an abort rejects it, as fetch does), so Voice Notes can
+ * be stacked and settled in any order. `releaseReads()` goes back to answering at once.
  */
 export function stubVoiceFetch(
   fetchMock: (input: RequestInfo | URL, init?: RequestInit) => unknown,
@@ -116,15 +129,33 @@ export function stubVoiceFetch(
 ) {
   const sent: FormData[] = [];
   const signals: AbortSignal[] = [];
+  const reads: PendingRead[] = [];
+  let holding = false;
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
     onRequest?.(input, init);
     if (init?.body instanceof FormData) {
-      sent.push(init.body);
+      const body = init.body;
+      sent.push(body);
       if (init.signal) signals.push(init.signal);
+      if (holding) {
+        return new Promise<Response>((resolve, reject) => {
+          const aborted = () =>
+            reject(new DOMException('Aborted', 'AbortError'));
+          if (init.signal?.aborted) return aborted();
+          reads.push({ body, resolve, reject });
+          init.signal?.addEventListener('abort', aborted, { once: true });
+        });
+      }
     }
     return fetchMock(input, init);
   });
-  return { sent, signals };
+  return {
+    sent,
+    signals,
+    reads,
+    holdReads: () => void (holding = true),
+    releaseReads: () => void (holding = false),
+  };
 }
 
 /** A three second Voice Note recording, as the microphone module hands it over. */
@@ -215,3 +246,12 @@ export const voiceAction = (overrides: Record<string, unknown> = {}) => ({
   defaults: {},
   ...overrides,
 });
+
+/**
+ * Opens the Voice Note that is ready from the Voice Inbox strip (its Review button) and returns
+ * the Review sheet, or the answer sheet for a note of only Pantry Questions.
+ */
+export async function openReady(name?: { name: string }) {
+  fireEvent.click(await screen.findByRole('button', { name: 'Review' }));
+  return screen.findByRole('dialog', name);
+}

@@ -18,24 +18,22 @@ import {
 } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { usePressGesture } from '../../lib/usePressGesture';
-import { LanguageMenu } from './LanguageMenu';
 import { useDockMicSlot, useReportRecording, useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
 import { useElapsedMs } from './useElapsed';
+import { abovePill, aboveMic, VOICE_LAYER } from '../../lib/voicePlacement';
 import {
-  abovePill,
-  aboveMic,
-  micBottom,
-  VOICE_LAYER,
-} from '../../lib/voicePlacement';
-import { isPillUp, useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
+  isPillUp,
+  isStripUp,
+  useVoiceNoteState,
+  voiceNote,
+} from '../../lib/voiceNote';
 import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 
 type Voice = ReturnType<typeof useVoiceNote>;
 
 /**
- * The hold-to-talk mic: the button sits in the lower half of the Dock's capsule, and the Scan
- * Language chip above it, with the page scrim and the Listening card.
+ * The hold-to-talk mic: the button sits in the lower half of the Dock's capsule, with the page scrim and the Listening card.
  */
 export function VoiceButton({
   voice,
@@ -47,8 +45,9 @@ export function VoiceButton({
   const { t } = useTranslation('voice');
   const active = voice.recording || voice.pressing;
   // While the status pill is up (reading, a failure) the tip must not cover its buttons.
-  const { phase, startedAt } = useVoiceNoteState();
-  const pillUp = isPillUp(phase);
+  const state = useVoiceNoteState();
+  const { phase, startedAt } = state;
+  const pillUp = isPillUp(phase) || isStripUp(state);
 
   const host = useVoiceHost();
   const micSlot = useDockMicSlot();
@@ -102,11 +101,7 @@ export function VoiceButton({
             fontWeight: 600,
           }}
         >
-          {voice.tip === 'busy'
-            ? t('send.tipBusy')
-            : voice.tip === 'failed'
-              ? t('send.tipFailed')
-              : t('listening.tip')}
+          {t('listening.tip')}
         </Box>
       ) : null}
       {active ? (
@@ -119,26 +114,6 @@ export function VoiceButton({
           armed={armed}
         />
       ) : null}
-      <Box
-        sx={{
-          position: 'fixed',
-          left: 0,
-          right: 0,
-          bottom: micBottom,
-          zIndex: VOICE_LAYER.card,
-          display: 'flex',
-          justifyContent: 'center',
-          // Only the chip takes taps; the row around it lets them through.
-          pointerEvents: 'none',
-          '& > *': { pointerEvents: 'auto' },
-        }}
-      >
-        <LanguageMenu
-          value={voice.spokenLanguage}
-          disabled={active || voice.sending}
-          onChange={voice.setSpokenLanguage}
-        />
-      </Box>
     </>,
     host,
   );
@@ -198,24 +173,6 @@ export function VoiceButton({
             ) : (
               <MicIcon size={26} />
             )}
-            {voice.kept ? (
-              <Box
-                aria-hidden
-                data-testid="failed-dot"
-                component="span"
-                sx={{
-                  position: 'absolute',
-                  top: 6,
-                  right: 8,
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  backgroundColor: palette('warning-main'),
-                  border: `2px solid ${color.cardBg}`,
-                  boxSizing: 'content-box',
-                }}
-              />
-            ) : null}
           </Box>
         </>,
         micSlot,

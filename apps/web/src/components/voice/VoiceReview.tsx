@@ -22,7 +22,7 @@ import { AddToShoppingListButton } from './AddToShoppingListButton';
 import { applyToast } from './applyResult';
 import { focusVoiceButton } from '../../lib/voiceFocus';
 import { voiceToast } from '../../lib/voicePlacement';
-import { HeardCard } from './HeardCard';
+import { HeardCard, MergedHeardCard } from './HeardCard';
 import { ListPicker, RowListPicker } from './ListPicker';
 import { ReviewFooter } from './ReviewFooter';
 import { VoiceActionRow } from './VoiceActionRow';
@@ -36,7 +36,7 @@ import {
   needsList,
 } from './reviewModel';
 import { translateApiError } from '../../i18n/translateApiError';
-import { usePreferredSpokenLanguage } from '../../lib/useSpokenLanguage';
+import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 import { parseAmountText } from '../../lib/pantry';
 import {
   catalogChangeQueryKeys,
@@ -90,7 +90,8 @@ export function VoiceReview({ setup }: { setup?: VoiceSetup } = {}) {
 function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
   const { t, i18n } = useTranslation(['voice', 'common', 'onboarding']);
   const gatorAlt = useGatorAlt();
-  const { proposal, defaultTarget, phase, recording } = useVoiceNoteState();
+  const { proposal, defaultTarget, phase, recording, merged } =
+    useVoiceNoteState();
   const { spokenLanguage } = usePreferredSpokenLanguage();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -187,9 +188,11 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
     voiceNote.discard();
     // After "Add N to the Shopping List" something was changed, so the hint would be false.
     toast.show(
-      addedFromAnswers
-        ? t('voice:review.footer.discarded')
-        : `${t('voice:review.footer.discarded')} · ${t('voice:review.footer.discardedHint')}`,
+      merged
+        ? t('voice:review.footer.discardedAll')
+        : addedFromAnswers
+          ? t('voice:review.footer.discarded')
+          : `${t('voice:review.footer.discarded')} · ${t('voice:review.footer.discardedHint')}`,
       voiceToast(),
     );
     focusVoiceButton();
@@ -233,7 +236,9 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
 
   const heading = setup
     ? t('onboarding:sayIt.heard.title')
-    : t('voice:review.title');
+    : merged
+      ? t('voice:review.titleAll')
+      : t('voice:review.title');
   const count = changes.length + undecided.length;
   const both = new Set(changes.map((a) => a.target)).size > 1;
   const subline =
@@ -347,6 +352,7 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
               : undefined
           }
           confirming={confirming}
+          merged={merged !== undefined}
           onAsk={() => setConfirming(true)}
           onKeep={() => {
             setConfirming(false);
@@ -377,14 +383,19 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
           <Alert>{translateApiError(t, apply.error)}</Alert>
         ) : null}
 
-        <HeardCard
-          transcript={transcript}
-          language={language}
-          durationMs={recording?.durationMs}
-          defaultOpen={
-            Boolean(setup) || actions.every((a) => a.status === 'notUnderstood')
-          }
-        />
+        {merged ? (
+          <MergedHeardCard notes={merged} />
+        ) : (
+          <HeardCard
+            transcript={transcript}
+            language={language}
+            durationMs={recording?.durationMs}
+            defaultOpen={
+              Boolean(setup) ||
+              actions.every((a) => a.status === 'notUnderstood')
+            }
+          />
+        )}
 
         {answers.length > 0 ? (
           <Group

@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { voiceNote, type VoiceNotice } from '../../lib/voiceNote';
+import { haptic } from '../../lib/haptic';
 import { voiceToast } from '../../lib/voicePlacement';
 
 /**
@@ -36,6 +37,11 @@ export function VoiceNotices() {
             return toast.show(t('send.cancelled'), voiceToast());
           case 'discarded':
             return toast.show(t('send.discarded'), voiceToast());
+          case 'noteReady':
+            // No toast or sound: a short buzz where the device has one.
+            return haptic(14);
+          case 'inboxFull':
+            return toast.show(t('inbox.full'), voiceToast({ abovePill: true }));
           case 'switchedOff':
             // Hides the button and everything that offers a Voice Note.
             return queryClient.setQueryData(['voice', 'config'], {
