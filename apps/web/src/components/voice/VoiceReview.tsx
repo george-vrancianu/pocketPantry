@@ -67,27 +67,29 @@ const quantityText = (action: VoiceReviewAction) =>
   action.quantity === null ? '' : String(action.quantity);
 
 /**
- * What Setup's Say it does with its Review: the Review takes the happy Gator, "Here's what I heard" and
+ * What a host does with its Review once applied (a host's `afterApply` setting): the Review takes the happy Gator, "Here's what I heard" and
  * "Do these N", and hands the result of Apply to the page instead of toasting it. Discard needs nothing:
  * the Review closes and the Member is still on Say it.
  */
-export type VoiceSetup = {
-  /** Apply succeeded (some actions may have been skipped): `actions` are what was sent, as edited. */
-  onApplied: (result: VoiceApplyResult, actions: VoiceReviewAction[]) => void;
-};
+export type AfterApply = (
+  /** Apply succeeded (some actions may have been skipped). */
+  result: VoiceApplyResult,
+  /** What was sent, as edited. */
+  actions: VoiceReviewAction[],
+) => void;
 
 /**
  * Review for a Voice Note, over the current page: the Voice Actions grouped by list, each edited in place, and
  * Discard and Apply. Mounted while there is a Voice Note to review, so each one starts with a clean sheet.
  */
-export function VoiceReview({ setup }: { setup?: VoiceSetup } = {}) {
+export function VoiceReview({ afterApply }: { afterApply?: AfterApply } = {}) {
   const { phase } = useVoiceNoteState();
   return phase === 'review' || phase === 'applying' ? (
-    <ReviewSheet setup={setup} />
+    <ReviewSheet afterApply={afterApply} />
   ) : null;
 }
 
-function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
+function ReviewSheet({ afterApply }: { afterApply?: AfterApply }) {
   const { t, i18n } = useTranslation(['voice', 'common', 'onboarding']);
   const gatorAlt = useGatorAlt();
   const { proposal, defaultTarget, phase, recording, merged } =
@@ -152,10 +154,10 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
     mutationFn: () => applyVoiceActions(applicable),
     onError: () => voiceNote.applyFailed(),
     onSuccess: (result: VoiceApplyResult) => {
-      if (setup) {
+      if (afterApply) {
         voiceNote.applied();
         refreshLists();
-        setup.onApplied(result, applicable);
+        afterApply(result, applicable);
         return;
       }
       const { message, detail } = applyToast(
@@ -234,7 +236,7 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
     if (focusPicker(focusId)) setFocusId(null);
   }, [focusId, openId]);
 
-  const heading = setup
+  const heading = afterApply
     ? t('onboarding:sayIt.heard.title')
     : merged
       ? t('voice:review.titleAll')
@@ -310,12 +312,12 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
             px: 2.5,
             pt: 1.5,
             pb: 1.5,
-            ...(setup
+            ...(afterApply
               ? { display: 'flex', alignItems: 'center', gap: '12px' }
               : {}),
           }}
         >
-          {setup ? (
+          {afterApply ? (
             <Gator mood="happy" size={72} alt={gatorAlt('happy')} />
           ) : null}
           <Box>
@@ -328,7 +330,7 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
             >
               {heading}
             </Typography>
-            {setup ? null : (
+            {afterApply ? null : (
               <Typography
                 sx={{ fontSize: 13, color: palette('text-secondary') }}
               >
@@ -345,7 +347,7 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
           invalid={invalid.size > 0}
           applying={applying}
           applyLabel={
-            setup
+            afterApply
               ? t('onboarding:sayIt.heard.doThese', {
                   count: applicable.length,
                 })
@@ -391,7 +393,7 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
             language={language}
             durationMs={recording?.durationMs}
             defaultOpen={
-              Boolean(setup) ||
+              Boolean(afterApply) ||
               actions.every((a) => a.status === 'notUnderstood')
             }
           />
@@ -469,7 +471,7 @@ function ReviewSheet({ setup }: { setup?: VoiceSetup }) {
           </Group>
         ))}
 
-        {setup ? (
+        {afterApply ? (
           <Typography
             sx={{ px: '4px', fontSize: 13, color: palette('text-secondary') }}
           >

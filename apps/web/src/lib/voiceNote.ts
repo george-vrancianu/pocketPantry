@@ -202,7 +202,7 @@ type VoiceNoteEntry = {
   /** The note's own Spoken Language and length, kept on the note when its recording is dropped. */
   spokenLanguage?: ScanLanguage;
   durationMs?: number;
-  /** Setup's Say it: the note is open from the start and stays open when it is read, with no strip. */
+  /** A host with openWhenReady: the note is open from the start and stays open when it is read, with no strip. */
   openWhenReady?: boolean;
 };
 
@@ -524,7 +524,7 @@ export function createVoiceNote(
     if (starting) starting.cancelled = true;
   }
 
-  /** Setup's nothing-heard note leaves on its own; in the Voice Inbox it stays until retried or discarded. */
+  /** An openWhenReady nothing-heard note leaves on its own; in the Voice Inbox it stays until retried or discarded. */
   const nothingHeardTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
   /** A read note did not reach Review; `keepRecording` holds the audio for Retry. */

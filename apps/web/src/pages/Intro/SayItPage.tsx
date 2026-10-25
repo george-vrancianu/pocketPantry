@@ -15,7 +15,7 @@ import { creamFocus } from '../../components/Setup/creamFocus';
 import { GatorBubble } from '../../components/Setup/GatorBubble';
 import { SetupCallout } from '../../components/Setup/SetupCallout';
 import { SetupOliveTopRow } from '../../components/Setup/SetupOliveTopRow';
-import { VoiceNote } from '../../components/VoiceNote';
+import { VoiceNote, type VoiceNoteSettings } from '../../components/VoiceNote';
 import {
   useDockRaised,
   VoiceHostProvider,
@@ -36,8 +36,12 @@ const SKIP_TO = introPath(skipStep('say-it'));
 /** Where the step after Say it is: "Continue" when there is no mic, and "Do these N" once saved. */
 const CONTINUE_TO = introPath(nextStep('say-it'));
 
-/** The Setup Voice Note's Default List: the Pantry, whatever the route says (ADR 0021, Setup only). */
-const SETUP_DEFAULT_TARGET = 'pantry';
+/** Say it's one-note settings: the status pill, open as soon as read, the Pantry as Default List (ADR 0021). */
+const SAY_IT_VOICE_SETTINGS: VoiceNoteSettings = {
+  indicator: 'pill',
+  openWhenReady: true,
+  defaultTarget: 'pantry',
+};
 
 function ExampleCard({ phrase, result }: { phrase: string; result: string }) {
   return (
@@ -103,8 +107,9 @@ function SayItScreen() {
   const { phase } = useVoiceNoteState();
   const navigate = useNavigate();
   // "Do these N" ran: count only what was really saved, then on to All set.
-  const setup = {
-    onApplied: (result: VoiceApplyResult, actions: VoiceReviewAction[]) => {
+  const settings: VoiceNoteSettings = {
+    ...SAY_IT_VOICE_SETTINGS,
+    afterApply: (result: VoiceApplyResult, actions: VoiceReviewAction[]) => {
       recordSaved(savedByVoice(result.applied, actions));
       void navigate(CONTINUE_TO, { replace: true });
     },
@@ -215,7 +220,7 @@ function SayItScreen() {
             />
           ) : null}
           <VoiceHostSlot />
-          <VoiceNote defaultTarget={SETUP_DEFAULT_TARGET} setup={setup} />
+          <VoiceNote settings={settings} />
           <AppDock teach="mic" />
         </>
       ) : null}
