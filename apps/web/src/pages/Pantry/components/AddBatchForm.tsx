@@ -11,6 +11,7 @@ import {
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
 import { StatusIcon } from '../../../components/StatusIcon';
+import type { Batch } from '../../../lib/pantry';
 import type { CameraMode } from '../../../lib/cameraMode';
 import { CameraOverlay } from '../../Scan/CameraOverlay';
 import {
@@ -22,7 +23,8 @@ import { BatchAmountField } from './BatchAmountField';
 import { QuickRow } from './QuickRow';
 
 type Props = {
-  onSaved: () => void;
+  /** Called with the Batch the save created. */
+  onSaved: (batch: Batch) => void;
   onCancel: () => void;
   /** Start with an Ingredient picked, or an Unmatched name typed in; empty without. */
   start?: AddBatchStart;

@@ -93,7 +93,12 @@
       "photo": "Take a photo",
       "barcode": "Scan barcode",
       "sayIt": "Say it"
-    }
+    },
+    "added": "Added",
+    "done": "Done",
+    "addedToast": "Added {{details}}",
+    "addedList_one": "{{count}} batch added",
+    "addedList_other": "{{count}} batches added"
   },
   "picker": {
     "label": "Expires",

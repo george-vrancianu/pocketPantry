@@ -93,7 +93,12 @@
       "photo": "Tag et billede",
       "barcode": "Scan stregkode",
       "sayIt": "Sig det"
-    }
+    },
+    "added": "Tilføjet",
+    "done": "Færdig",
+    "addedToast": "Tilføjet {{details}}",
+    "addedList_one": "{{count}} parti tilføjet",
+    "addedList_other": "{{count}} partier tilføjet"
   },
   "picker": {
     "label": "Udløber",

@@ -99,7 +99,13 @@
       "photo": "Fă o poză",
       "barcode": "Scanează codul",
       "sayIt": "Spune"
-    }
+    },
+    "added": "Adăugate",
+    "done": "Gata",
+    "addedToast": "Adăugat {{details}}",
+    "addedList_one": "{{count}} lot adăugat",
+    "addedList_few": "{{count}} loturi adăugate",
+    "addedList_other": "{{count}} de loturi adăugate"
   },
   "picker": {
     "label": "Expiră",
