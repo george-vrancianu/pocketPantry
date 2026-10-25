@@ -49,6 +49,7 @@ export {
   type GatorMotion,
   type GatorProps,
 } from './gator/Gator';
+export { GatorLogo, type GatorLogoProps } from './gator/GatorLogo';
 export {
   GATOR_MOODS,
   type AnimatedGatorMood,
@@ -182,6 +183,10 @@ export {
   type SegmentedTab,
   type SegmentedTabsProps,
 } from './molecules/SegmentedTabs';
+export {
+  RefreshStatusLine,
+  type RefreshStatusLineProps,
+} from './molecules/RefreshStatusLine';
 export {
   ScreenHeader,
   type ScreenHeaderAction,
