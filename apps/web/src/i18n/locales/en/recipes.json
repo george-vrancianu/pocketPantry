@@ -132,7 +132,21 @@
     "linkedRecipeUnavailable": "A Recipe you cannot see or that is archived",
     "saved": "Recipe saved.",
     "viewRecipe": "View the Recipe",
-    "moreActions": "More actions"
+    "moreActions": "More actions",
+    "tips": {
+      "newHint": "Add tips to steps after saving the Recipe.",
+      "variantHint": "Copied tips stay with their steps; add your own after saving the Variant.",
+      "deleted": "Tip deleted"
+    },
+    "recipeTips": {
+      "title": "Recipe tips",
+      "hint": "Tips save as soon as you change them; the rest saves with the Recipe.",
+      "tip": "Recipe Tip {{number}}",
+      "delete": "Delete Recipe Tip {{number}}",
+      "new": "New Recipe Tip",
+      "cancelNew": "Cancel the new Recipe Tip",
+      "add": "Add a Recipe Tip"
+    }
   },
   "fewerServings": "Fewer Servings",
   "moreServings": "More Servings",

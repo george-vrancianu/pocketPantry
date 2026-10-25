@@ -206,9 +206,6 @@
       "remove": "Remove Step {{number}}",
       "tipsWarning_one": "Removing Step {{number}} deletes its {{count}} Tip when you save.",
       "tipsWarning_other": "Removing Step {{number}} deletes its {{count}} Tips when you save.",
-      "draftTips": "Tips for Step {{number}}",
-      "removeTip": "Remove Tip {{n}} of Step {{step}}",
-      "removeTipShort": "Remove",
       "removeWithTips": "Remove Step and Tips",
       "keep": "Keep Step",
       "addStart": "Add a Step at the start",
@@ -217,7 +214,15 @@
       "addTimer": "Timer",
       "addTimerFor": "Add a timer to Step {{number}}",
       "clearTimer": "Remove the timer from Step {{number}}",
-      "minutes": "min"
+      "minutes": "min",
+      "tipOf": "Tip {{n}} of Step {{step}}",
+      "deleteTip": "Delete Tip {{n}} of Step {{step}}",
+      "newTip": "New Tip for Step {{number}}",
+      "cancelTip": "Cancel the new Tip for Step {{number}}",
+      "addTip": "Tip",
+      "addTipFor": "Add a Tip to Step {{number}}",
+      "copiedTips_one": "{{count}} tip",
+      "copiedTips_other": "{{count}} tips"
     },
     "variant": {
       "title": "Make a Variant",

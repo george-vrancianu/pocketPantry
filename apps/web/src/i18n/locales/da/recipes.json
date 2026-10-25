@@ -132,7 +132,21 @@
     "linkedRecipeUnavailable": "En opskrift, du ikke kan se, eller som er arkiveret",
     "saved": "Opskriften er gemt.",
     "viewRecipe": "Se opskriften",
-    "moreActions": "Flere handlinger"
+    "moreActions": "Flere handlinger",
+    "tips": {
+      "newHint": "Tilføj tips til trin, når du har gemt opskriften.",
+      "variantHint": "Kopierede tips følger deres trin; tilføj dine egne, når du har gemt varianten.",
+      "deleted": "Tip slettet"
+    },
+    "recipeTips": {
+      "title": "Opskriftens tips",
+      "hint": "Tips gemmes, så snart du ændrer dem; resten gemmes med opskriften.",
+      "tip": "Opskriftens tip {{number}}",
+      "delete": "Slet opskriftens tip {{number}}",
+      "new": "Nyt tip til opskriften",
+      "cancelNew": "Annuller nyt tip til opskriften",
+      "add": "Tilføj et tip til opskriften"
+    }
   },
   "fewerServings": "Færre portioner",
   "moreServings": "Flere portioner",

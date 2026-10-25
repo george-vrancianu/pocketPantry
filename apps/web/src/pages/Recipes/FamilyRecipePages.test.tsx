@@ -847,8 +847,7 @@ describe('NewVariantPage', () => {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
     await openTab(user, 'Steps');
-    expect(await screen.findByText('Room-temperature eggs')).toBeVisible();
-    expect(screen.getByText('Medium heat')).toBeVisible();
+    expect(await screen.findByText('2 tips')).toBeVisible();
 
     // Reordering moves the Tips with their step.
     await user.click(screen.getByRole('button', { name: 'Move Step 2 up' }));
@@ -858,15 +857,10 @@ describe('NewVariantPage', () => {
     expect(
       screen.getByText('Removing Step 3 deletes its 1 Tip when you save.'),
     ).toBeVisible();
-    expect(screen.getByText('Warm plate')).toBeVisible();
     await user.click(screen.getByRole('button', { name: /^Remove Step and/ }));
-    expect(screen.queryByText('Warm plate')).not.toBeInTheDocument();
-    expect(screen.queryByText('Do not stir')).toBeInTheDocument();
-    // The Member removes one Tip before saving.
-    await user.click(
-      screen.getByRole('button', { name: 'Remove Tip 1 of Step 1' }),
-    );
-    expect(screen.queryByText('Medium heat')).not.toBeInTheDocument();
+    // Step 1 (Fry) keeps its two copied Tips, now ahead of the Step that moved down.
+    expect(screen.getAllByText('2 tips')).toHaveLength(1);
+    expect(screen.getAllByText('1 tip')).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
@@ -874,6 +868,7 @@ describe('NewVariantPage', () => {
     expect(post.body).toMatchObject({
       steps: [{ text: 'Fry' }, { text: 'Whisk the eggs' }],
       tips: [
+        { stepIndex: 0, text: 'Medium heat' },
         { stepIndex: 0, text: 'Do not stir' },
         { stepIndex: 1, text: 'Room-temperature eggs' },
       ],
@@ -1245,34 +1240,6 @@ describe('EditFamilyRecipePage', () => {
     )) {
       expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
     }
-  });
-
-  it('adds a Tip and hides an inherited one straight away', async () => {
-    const user = userEvent.setup({ delay: null });
-    const calls = setup('/recipes/g/edit', {
-      'GET /api/recipes/g/edit': () => Response.json(saved),
-      'POST /api/recipes/g/tips': () => Response.json(saved, { status: 201 }),
-      'PUT /api/recipes/g/hidden-tips': () => Response.json(saved),
-    });
-    const tips = await screen.findByRole('region', { name: 'Tips' });
-    await user.type(within(tips).getByLabelText('New Tip'), 'Rest it');
-    await user.click(
-      within(tips).getAllByRole('button', { name: 'Add Tip' })[0]!,
-    );
-    await vi.waitFor(() =>
-      expect(
-        calls.find((c) => c.key === 'POST /api/recipes/g/tips')?.body,
-      ).toEqual({ text: 'Rest it', stepId: null }),
-    );
-    await user.click(
-      within(tips).getByRole('checkbox', { name: 'Show: Nonstick pan' }),
-    );
-    await vi.waitFor(() =>
-      expect(
-        calls.find((c) => c.key === 'PUT /api/recipes/g/hidden-tips')?.body,
-      ).toEqual({ tipIds: ['bt1'] }),
-    );
-    expect(calls.some((c) => c.key === 'POST /api/recipes/g/tips')).toBe(true);
   });
 });
 
@@ -2605,5 +2572,213 @@ describe('Recipe editor Ingredient Lines (#589)', () => {
     await user.click(screen.getByRole('link', { name: 'Back' }));
     expect(await screen.findByText('Detail of the recipe')).toBeVisible();
     await waitFor(() => expect(screen.queryByText('Removed Egg')).toBeNull());
+  });
+});
+
+describe('Recipe editor Tips (#593)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const withTips: FamilyRecipeEdit = {
+    ...saved,
+    steps: [
+      { id: 's1', text: 'Whisk the eggs', timerSeconds: null },
+      { id: 's2', text: 'Fry', timerSeconds: null },
+    ],
+    tips: [
+      { id: 't1', stepId: null, text: 'Use butter' },
+      { id: 't2', stepId: 's1', text: 'Low heat' },
+    ],
+  };
+  const edit = (routes: Parameters<typeof stubApi>[0] = {}) =>
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(withTips),
+      ...routes,
+    });
+  const tipCalls = (calls: ReturnType<typeof setup>) =>
+    calls.filter((c) => /\/tips|hidden-tips/.test(c.key));
+
+  it('adds a Tip under its Step from the Tip chip and saves it on blur', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = edit({
+      'POST /api/recipes/g/tips': () => Response.json({}, { status: 201 }),
+    });
+    await openTab(user, 'Steps');
+    await user.click(
+      screen.getByRole('button', { name: 'Add a Tip to Step 2' }),
+    );
+    const input = screen.getByLabelText('New Tip for Step 2');
+    expect(input).toHaveFocus();
+    await user.type(input, 'Do not stir');
+    expect(tipCalls(calls)).toHaveLength(0);
+    await user.tab();
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes/g/tips')?.body,
+      ).toEqual({ text: 'Do not stir', stepId: 's2' }),
+    );
+  });
+
+  it('drops an empty new Tip row on blur without a request', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = edit();
+    await openTab(user, 'Steps');
+    await user.click(
+      screen.getByRole('button', { name: 'Add a Tip to Step 2' }),
+    );
+    await user.tab();
+    expect(screen.queryByLabelText('New Tip for Step 2')).toBeNull();
+    expect(tipCalls(calls)).toHaveLength(0);
+  });
+
+  it('saves a changed Tip on blur, and only when it changed', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = edit({
+      'PATCH /api/recipes/g/tips/t2': () => Response.json({}),
+    });
+    await openTab(user, 'Steps');
+    const input = screen.getByLabelText('Tip 1 of Step 1');
+    expect(input).toHaveValue('Low heat');
+    await user.click(input);
+    await user.tab();
+    expect(tipCalls(calls)).toHaveLength(0);
+    await user.type(input, ' please');
+    await user.tab();
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'PATCH /api/recipes/g/tips/t2')?.body,
+      ).toEqual({ text: 'Low heat please' }),
+    );
+  });
+
+  it('keeps a Tip with its Step when the Steps are reordered', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await openTab(user, 'Steps');
+    await user.click(screen.getByRole('button', { name: 'Move Step 1 down' }));
+    expect(screen.getByLabelText('Step 2')).toHaveValue('Whisk the eggs');
+    expect(screen.getByLabelText('Tip 1 of Step 2')).toHaveValue('Low heat');
+    expect(screen.queryByLabelText('Tip 1 of Step 1')).toBeNull();
+  });
+
+  it('deletes a Tip only when the Undo window ends', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({
+      delay: null,
+      advanceTimers: vi.advanceTimersByTime,
+    });
+    const calls = edit({
+      'DELETE /api/recipes/g/tips/t2': () =>
+        new Response(null, { status: 204 }),
+    });
+    await openTab(user, 'Steps');
+    await user.click(
+      screen.getByRole('button', { name: 'Delete Tip 1 of Step 1' }),
+    );
+    expect(screen.queryByLabelText('Tip 1 of Step 1')).toBeNull();
+    expect(
+      screen.getByText('Tip deleted').closest('[role="status"]'),
+    ).not.toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS - 100));
+    expect(tipCalls(calls)).toHaveLength(0);
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    await vi.waitFor(() =>
+      expect(calls.some((c) => c.key === 'DELETE /api/recipes/g/tips/t2')).toBe(
+        true,
+      ),
+    );
+  });
+
+  it('cancels the delete when Undo is pressed', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({
+      delay: null,
+      advanceTimers: vi.advanceTimersByTime,
+    });
+    const calls = edit();
+    await openTab(user, 'Steps');
+    await user.click(
+      screen.getByRole('button', { name: 'Delete Tip 1 of Step 1' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByLabelText('Tip 1 of Step 1')).toHaveValue('Low heat');
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 1000));
+    expect(tipCalls(calls)).toHaveLength(0);
+  });
+
+  it('holds the Recipe tips in a card, with the Base Recipe Tips as toggles', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = edit({
+      'POST /api/recipes/g/tips': () => Response.json({}, { status: 201 }),
+      'PUT /api/recipes/g/hidden-tips': () => Response.json(withTips),
+    });
+    await openTab(user, 'Steps');
+    expect(
+      screen.getByText(
+        'Tips save as soon as you change them; the rest saves with the Recipe.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('region', { name: 'Tips' })).toBeNull();
+    const card = screen.getByRole('region', { name: 'Recipe tips' });
+    expect(within(card).getByLabelText('Recipe Tip 1')).toHaveValue(
+      'Use butter',
+    );
+    await user.click(
+      within(card).getByRole('button', { name: 'Add a Recipe Tip' }),
+    );
+    await user.type(within(card).getByLabelText('New Recipe Tip'), 'Rest it');
+    await user.tab();
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes/g/tips')?.body,
+      ).toEqual({ text: 'Rest it', stepId: null }),
+    );
+    await user.click(
+      within(card).getByRole('checkbox', { name: 'Show: Nonstick pan' }),
+    );
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'PUT /api/recipes/g/hidden-tips')?.body,
+      ).toEqual({ tipIds: ['bt1'] }),
+    );
+  });
+
+  it('shows the copied Tip count on a Variant Step, with the hint', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () =>
+        Response.json({
+          ...draft,
+          steps: [
+            { text: 'Whisk', timerSeconds: null },
+            { text: 'Fry', timerSeconds: null },
+          ],
+          tips: [
+            { stepIndex: 0, text: 'A' },
+            { stepIndex: 0, text: 'B' },
+            { stepIndex: 1, text: 'C' },
+          ],
+        }),
+    });
+    await openTab(user, 'Steps');
+    expect(await screen.findByText('2 tips')).toBeVisible();
+    expect(screen.getByText('1 tip')).toBeVisible();
+    expect(
+      screen.getByText(
+        'Copied tips stay with their steps; add your own after saving the Variant.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Tip to Step/ })).toBeNull();
+  });
+
+  it('keeps the New Recipe hint about adding Tips after saving', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    await openTab(user, 'Steps');
+    expect(
+      screen.getByText('Add tips to steps after saving the Recipe.'),
+    ).toBeVisible();
   });
 });

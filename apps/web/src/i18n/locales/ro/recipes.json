@@ -140,7 +140,21 @@
     "linkedRecipeUnavailable": "O rețetă pe care nu o vezi sau care e arhivată",
     "saved": "Rețeta a fost salvată.",
     "viewRecipe": "Vezi rețeta",
-    "moreActions": "Mai multe acțiuni"
+    "moreActions": "Mai multe acțiuni",
+    "tips": {
+      "newHint": "Adaugă sfaturi la pași după ce salvezi rețeta.",
+      "variantHint": "Sfaturile copiate rămân la pașii lor; adaugă-le pe ale tale după ce salvezi Varianta.",
+      "deleted": "Sfat șters"
+    },
+    "recipeTips": {
+      "title": "Sfaturile rețetei",
+      "hint": "Sfaturile se salvează imediat ce le schimbi; restul se salvează cu rețeta.",
+      "tip": "Sfatul rețetei {{number}}",
+      "delete": "Șterge Sfatul rețetei {{number}}",
+      "new": "Sfat nou al rețetei",
+      "cancelNew": "Renunță la Sfatul nou al rețetei",
+      "add": "Adaugă un Sfat al rețetei"
+    }
   },
   "fewerServings": "Mai puține porții",
   "moreServings": "Mai multe porții",

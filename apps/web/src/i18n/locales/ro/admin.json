@@ -209,9 +209,6 @@
       "tipsWarning_one": "Eliminarea pasului {{number}} șterge Sfatul lui la salvare.",
       "tipsWarning_other": "Eliminarea pasului {{number}} șterge cele {{count}} Sfaturi ale lui la salvare.",
       "tipsWarning_few": "Eliminarea pasului {{number}} șterge cele {{count}} Sfaturi ale lui la salvare.",
-      "draftTips": "Sfaturi pentru pasul {{number}}",
-      "removeTip": "Elimină Sfatul {{n}} al pasului {{step}}",
-      "removeTipShort": "Elimină",
       "removeWithTips": "Elimină pasul și Sfaturile",
       "keep": "Păstrează pasul",
       "addStart": "Adaugă un Pas la început",
@@ -220,7 +217,16 @@
       "addTimer": "Cronometru",
       "addTimerFor": "Adaugă un cronometru la pasul {{number}}",
       "clearTimer": "Elimină cronometrul de la pasul {{number}}",
-      "minutes": "min"
+      "minutes": "min",
+      "tipOf": "Sfatul {{n}} al pasului {{step}}",
+      "deleteTip": "Șterge Sfatul {{n}} al pasului {{step}}",
+      "newTip": "Sfat nou pentru pasul {{number}}",
+      "cancelTip": "Renunță la Sfatul nou pentru pasul {{number}}",
+      "addTip": "Sfat",
+      "addTipFor": "Adaugă un Sfat la pasul {{number}}",
+      "copiedTips_one": "{{count}} sfat",
+      "copiedTips_few": "{{count}} sfaturi",
+      "copiedTips_other": "{{count}} de sfaturi"
     },
     "variant": {
       "title": "Creează o variantă",

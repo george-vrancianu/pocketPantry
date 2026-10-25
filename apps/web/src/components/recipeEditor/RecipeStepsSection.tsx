@@ -26,6 +26,8 @@ import {
 } from '../../lib/recipeDraft';
 import { RowControls } from '../RowControls';
 import { StepNumber } from '../StepNumber';
+import type { RecipeTip } from '../../lib/adminRecipes';
+import { NewTipRow, TipRow, type TipActions } from './TipRows';
 
 /** Minutes a Timer starts at when the chip is tapped. */
 const DEFAULT_TIMER = '5';
@@ -36,6 +38,10 @@ type Props = {
   /** How many own Tips a saved Step carries, for the warning before removing it. */
   tipCount: (step: StepDraft) => number;
   onChange: (steps: StepDraft[]) => void;
+  /** A line under the Steps: what happens to Tips here. */
+  hint?: string;
+  /** Edit only: inline Tips under each saved Step, with a Tip chip in the tool row. */
+  stepTips?: { of: (stepId: string) => RecipeTip[]; actions: TipActions };
 };
 
 /** The ordered Steps of a Recipe draft: one block each, with a Timer chip, Move up/down, remove, and add at both ends. */
@@ -44,6 +50,8 @@ export function RecipeStepsSection({
   problems,
   tipCount,
   onChange,
+  hint,
+  stepTips,
 }: Props) {
   const { t } = useTranslation(['admin', 'common']);
   const toast = useToast();
@@ -53,6 +61,15 @@ export function RecipeStepsSection({
   const [openTimers, setOpenTimers] = useState<Set<number>>(new Set());
   /** A saved Step with Tips waiting for the user to confirm its removal. */
   const [removing, setRemoving] = useState<number | null>(null);
+  /** Saved Steps with a blank Tip row open, by Step id. */
+  const [addingTip, setAddingTip] = useState<Set<string>>(new Set());
+  const setTipRow = (stepId: string, open: boolean) =>
+    setAddingTip((old) => {
+      const next = new Set(old);
+      if (open) next.add(stepId);
+      else next.delete(stepId);
+      return next;
+    });
   /** The Step just added, whose text takes focus once it is rendered. */
   const focusKey = useRef<number | null>(null);
   // Undo builds on the newest Steps, not those the toast was shown with.
@@ -223,45 +240,35 @@ export function RecipeStepsSection({
                         },
                       }}
                     />
-                    {step.tips && step.tips.length > 0 ? (
-                      <Stack
-                        component="ul"
-                        spacing={0.5}
-                        aria-label={t('admin:recipe.steps.draftTips', {
-                          number,
-                        })}
-                        sx={{ m: 0, p: 0, listStyle: 'none' }}
-                      >
-                        {step.tips.map((tip, tipIndex) => (
-                          <Stack
-                            component="li"
-                            key={tip.key}
-                            direction="row"
-                            spacing={1}
-                            sx={{ alignItems: 'center' }}
-                          >
-                            <Typography variant="body2" sx={{ flex: 1 }}>
-                              {tip.text}
-                            </Typography>
-                            <Button
-                              variant="ghost"
-                              aria-label={t('admin:recipe.steps.removeTip', {
-                                n: tipIndex + 1,
-                                step: number,
-                              })}
-                              onClick={() =>
-                                changeStep(step.key, {
-                                  tips: (step.tips ?? []).filter(
-                                    (item) => item.key !== tip.key,
-                                  ),
-                                })
-                              }
-                            >
-                              {t('admin:recipe.steps.removeTipShort')}
-                            </Button>
-                          </Stack>
+                    {stepTips && step.id ? (
+                      <>
+                        {stepTips.of(step.id).map((tip, tipIndex) => (
+                          <TipRow
+                            key={`${tip.id}-${tip.text}`}
+                            tip={tip}
+                            label={t('admin:recipe.steps.tipOf', {
+                              n: tipIndex + 1,
+                              step: number,
+                            })}
+                            removeLabel={t('admin:recipe.steps.deleteTip', {
+                              n: tipIndex + 1,
+                              step: number,
+                            })}
+                            actions={stepTips.actions}
+                          />
                         ))}
-                      </Stack>
+                        {addingTip.has(step.id) ? (
+                          <NewTipRow
+                            label={t('admin:recipe.steps.newTip', { number })}
+                            removeLabel={t('admin:recipe.steps.cancelTip', {
+                              number,
+                            })}
+                            stepId={step.id}
+                            actions={stepTips.actions}
+                            onDone={() => setTipRow(step.id!, false)}
+                          />
+                        ) : null}
+                      </>
                     ) : null}
                     <Stack
                       direction="row"
@@ -340,6 +347,28 @@ export function RecipeStepsSection({
                           }}
                         />
                       )}
+                      {stepTips && step.id ? (
+                        <Chip
+                          icon={<span aria-hidden>💡</span>}
+                          label={t('admin:recipe.steps.addTip')}
+                          aria-label={t('admin:recipe.steps.addTipFor', {
+                            number,
+                          })}
+                          onClick={() => setTipRow(step.id!, true)}
+                        />
+                      ) : null}
+                      {step.tips && step.tips.length > 0 ? (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ alignSelf: 'center' }}
+                        >
+                          <span aria-hidden>💡 </span>
+                          {t('admin:recipe.steps.copiedTips', {
+                            count: step.tips.length,
+                          })}
+                        </Typography>
+                      ) : null}
                       <RowControls
                         moveUp={t('admin:recipe.steps.moveUp', { number })}
                         moveDown={t('admin:recipe.steps.moveDown', { number })}
@@ -400,6 +429,11 @@ export function RecipeStepsSection({
           ? addRow(t('admin:recipe.steps.add'), steps.length)
           : null}
       </Card>
+      {hint ? (
+        <Typography variant="body2" color="text.secondary">
+          {hint}
+        </Typography>
+      ) : null}
     </Stack>
   );
 }

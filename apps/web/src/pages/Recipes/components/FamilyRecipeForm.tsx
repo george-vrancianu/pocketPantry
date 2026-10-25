@@ -10,7 +10,14 @@ import {
   tokens,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
-import { useEffect, useId, useState, type ReactNode, type Ref } from 'react';
+import {
+  useEffect,
+  useId,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
@@ -67,6 +74,10 @@ type Props = {
   error: unknown;
   /** How many own Tips a saved Step carries, for the warning before removing it. */
   stepTipCount?: (stepId: string) => number;
+  /** A line under the Steps about Tips (New and Variant). */
+  stepsHint?: string;
+  /** Edit only: Tips edited inline under their Steps. */
+  stepTips?: ComponentProps<typeof RecipeStepsSection>['stepTips'];
   /** The Recipe's guidance (a Variant draft's copy, or a blank one), edited and saved with the document. */
   guidance?: { initial: GuidanceDraft; momentOptions: MomentOption[] };
   /** Tells the page what the form holds now, for siblings that read it (Suggest Guidance on the edit page). */
@@ -97,6 +108,8 @@ export function FamilyRecipeForm({
   saving,
   error,
   stepTipCount,
+  stepsHint,
+  stepTips,
   guidance,
   onDraftChange,
   onChange,
@@ -347,6 +360,8 @@ export function FamilyRecipeForm({
                 ? stepTipCount(step.id)
                 : (step.tips?.length ?? 0)
             }
+            hint={stepsHint}
+            stepTips={stepTips}
             onChange={(steps) => change({ steps })}
           />
           {stepsEnd}
