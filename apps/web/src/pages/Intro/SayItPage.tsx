@@ -8,11 +8,13 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { AppDock } from '../../components/AppDock';
 import { IntroLook } from '../../components/IntroLook';
 import { creamFocus } from '../../components/Setup/creamFocus';
 import { GatorBubble } from '../../components/Setup/GatorBubble';
 import { SetupCallout } from '../../components/Setup/SetupCallout';
+import { useSetupLeave } from '../../components/Setup/SetupLeave';
 import { SetupOliveTopRow } from '../../components/Setup/SetupOliveTopRow';
 import { VoiceNote, type VoiceNoteSettings } from '../../components/VoiceNote';
 import {
@@ -27,10 +29,10 @@ import {
   type VoiceApplyResult,
   type VoiceReviewAction,
 } from '../../lib/voice';
-import { useVoiceNoteState } from '../../lib/voiceNote';
+import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { aboveMic, PILL_OFFSET, VOICE_LAYER } from '../../lib/voicePlacement';
 
-/** Where Skip goes: the Intro module's rule, never a path written here. */
+/** Where Skip goes without a confirm: the Intro module's rule, never a path written here. */
 const SKIP_TO = introPath(skipStep('say-it'));
 /** Where the step after Say it is: "Continue" when there is no mic, and "Do these N" once saved. */
 const CONTINUE_TO = introPath(nextStep('say-it'));
@@ -104,6 +106,18 @@ function SayItScreen() {
   const voice = useVoiceConfig();
   const holding = useDockRaised();
   const { phase, inbox } = useVoiceNoteState();
+  const navigate = useNavigate();
+  // Any Voice Note in the Voice Inbox, one still being read included, is unapplied. Next leaves them for
+  // the Dashboard's strip; a confirmed Skip clears the Voice Inbox, which also ignores a read still in flight.
+  const leave = useSetupLeave({
+    unsaved: inbox.total > 0,
+    lostMessage: t('setupStep.lostNotes', { count: inbox.total }),
+    onNext: () => navigate(CONTINUE_TO, { replace: true }),
+    onSkip: () => {
+      voiceNote.clear();
+      navigate(SKIP_TO, { replace: true });
+    },
+  });
   // Every apply (one note or Review all) adds what the server really saved. Moving on to All set is
   // useAutoAdvance's: once the Voice Inbox is empty and something was saved here.
   const settings: VoiceNoteSettings = {
@@ -138,11 +152,7 @@ function SayItScreen() {
           creamFocus,
         ]}
       >
-        <SetupOliveTopRow
-          step={2}
-          skipTo={SKIP_TO}
-          skipDisabled={inbox.reading > 0}
-        />
+        <SetupOliveTopRow step={2} skipTo={SKIP_TO} leave={leave} />
 
         {counts.batches > 0 ? (
           <Box

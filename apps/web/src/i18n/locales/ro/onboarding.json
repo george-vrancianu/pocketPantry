@@ -43,7 +43,10 @@
     "next": "Înainte",
     "lostPhotos_one": "Sari peste și pierzi această poză? Nu a fost salvată încă.",
     "lostPhotos_few": "Sari peste și pierzi aceste {{count}} poze? Nu au fost salvate încă.",
-    "lostPhotos_other": "Sari peste și pierzi aceste {{count}} de poze? Nu au fost salvate încă."
+    "lostPhotos_other": "Sari peste și pierzi aceste {{count}} de poze? Nu au fost salvate încă.",
+    "lostNotes_one": "Sari peste și pierzi această notă vocală? Nu a fost aplicată încă.",
+    "lostNotes_few": "Sari peste și pierzi aceste {{count}} note vocale? Nu au fost aplicate încă.",
+    "lostNotes_other": "Sari peste și pierzi aceste {{count}} de note vocale? Nu au fost aplicate încă."
   },
   "snap": {
     "bubble": {
