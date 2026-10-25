@@ -1,4 +1,3 @@
-import { tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
 import { FALLBACK_LOCATION } from '../../../lib/catalog';
@@ -41,7 +40,7 @@ export function PopularToStart() {
             name={ingredient.name}
             why={{
               text: `${amount} · ${location}`,
-              color: tokens.color.muted,
+              color: 'text.secondary',
             }}
             label={t('search.popularLabel', {
               name: ingredient.name,

@@ -31,9 +31,11 @@ export const shoppingListChangeQueryKeys = [
 export const recipeChangeQueryKeys = [['recipes'], mealPlanQueryKey] as const;
 
 /** The Family's Recently Stocked Ingredients. Under `['pantry']`, so anything that invalidates the Pantry (Scan save, Finish Shopping, relink, a Batch change) refetches it. */
-export const popularToStartQueryKey = (locale: string) =>
-  ['catalog', 'popular-to-start', locale] as const;
 export const recentlyStockedQueryKey = ['pantry', 'recently-stocked'] as const;
+
+/** Popular to start: names follow the Catalog Language and scope follows the Family, so it sits under `['catalog-search']` where the Catalog Language, Family Settings and Catalog changes already invalidate. */
+export const popularToStartQueryKey = (locale: string) =>
+  ['catalog-search', 'popular-to-start', locale] as const;
 
 /** Everything a Catalog change makes stale: search, the Family catalog, Staples, and the Unmatched items it relinks (Batches, Shopping Items, Template lines, Recipe lines) with the Suggestions built on them. Literals, as the owning modules cannot be imported here without a cycle. */
 export const catalogChangeQueryKeys = [

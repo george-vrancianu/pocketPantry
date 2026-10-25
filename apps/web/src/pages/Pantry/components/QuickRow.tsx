@@ -1,12 +1,11 @@
 import {
   Box,
   CameraIcon,
-  color as themeColor,
+  color,
   focusRing,
   radius,
   ScanBarcodeIcon,
   shadow,
-  tokens,
 } from '@pocket-pantry/ui';
 import type { MouseEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -64,7 +63,6 @@ function Tile({
   openerRef: { current: HTMLButtonElement | null };
   onOpen: () => void;
 }) {
-  const { color } = tokens;
   return (
     <Box
       component="button"
@@ -85,18 +83,18 @@ function Tile({
         font: 'inherit',
         fontSize: 13,
         fontWeight: 700,
-        color: color.ink,
-        backgroundColor: themeColor.cardBg,
-        border: `1px solid ${themeColor.cardLine}`,
+        color: 'text.primary',
+        backgroundColor: color.cardBg,
+        border: `1px solid ${color.cardLine}`,
         borderRadius: radius.card,
         boxShadow: shadow.card,
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.6 : 1,
-        '&:hover': { backgroundColor: color.subtle },
+        '&:hover': { backgroundColor: 'pp.subtle' },
         ...focusRing,
       }}
     >
-      <Box aria-hidden="true" sx={{ display: 'grid', color: color.accent }}>
+      <Box aria-hidden="true" sx={{ display: 'grid', color: 'pp.accent' }}>
         {icon}
       </Box>
       {label}
