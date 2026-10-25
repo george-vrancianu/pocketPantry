@@ -1,4 +1,11 @@
-import { Box, RecipesIcon, tokens, radius } from '@pocket-pantry/ui';
+import {
+  Box,
+  displayType,
+  Gator,
+  RecipesIcon,
+  tokens,
+  radius,
+} from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -6,13 +13,17 @@ import {
   AllergenIndicator,
   allergenIndicatorLabel,
 } from '../../../components/AllergenIndicator';
+import { GatorBubblePanel } from '../../../components/GatorBubblePanel';
 import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { recipeHref } from '../../../lib/recipeHref';
 import { useCookTonight, type CookTonightCard } from '../../../lib/cookTonight';
+import { cookTonightPanelState } from '../../../lib/cookTonightPanel';
 import type { WidgetSize } from '../../../lib/dashboard';
 import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
 import { localIso } from '../../../lib/pantry';
+import { useGatorAlt } from '../../../lib/useGatorAlt';
+import { useGatorTapLink } from '../../../lib/useGatorTapLink';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
@@ -37,9 +48,14 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
     showHidden,
     'family',
   );
-  const cards = (cookTonight.data?.cards ?? []).slice(
-    0,
-    cardsFor(size, columns),
+  const allCards = cookTonight.data?.cards ?? [];
+  const cards = allCards.slice(0, cardsFor(size, columns));
+
+  const note = (
+    <HiddenByAllergiesNote
+      count={cookTonight.data?.hiddenByAllergiesCount ?? 0}
+      onShow={() => setShowHidden(true)}
+    />
   );
 
   return (
@@ -50,69 +66,125 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
       isLoading={cookTonight.isPending}
       error={cookTonight.error ? translateApiError(t, cookTonight.error) : null}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          mb: '6px',
-        }}
-      >
-        <WidgetTitle icon={<RecipesIcon size={16} />}>
-          {t('widgets.cookTonight.title')}
-        </WidgetTitle>
-        <Box
-          component={Link}
-          to="/recipes"
-          sx={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: tokens.color.accent,
-            textDecoration: 'none',
-          }}
-        >
-          {t('widgets.cookTonight.seeAll')}
-        </Box>
-      </Box>
-      <HiddenByAllergiesNote
-        count={cookTonight.data?.hiddenByAllergiesCount ?? 0}
-        onShow={() => setShowHidden(true)}
-      />
-      {cards.length === 0 ? (
-        <Box sx={{ fontSize: 14, color: tokens.color.muted, py: '10px' }}>
-          {t('widgets.cookTonight.empty')}{' '}
+      {size === 'small' ? (
+        <>
           <Box
-            component={Link}
-            to="/recipes/explore"
             sx={{
-              fontWeight: 700,
-              color: tokens.color.accent,
-              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: '6px',
             }}
           >
-            {t('widgets.cookTonight.explore')}
+            <WidgetTitle icon={<RecipesIcon size={16} />}>
+              {t('widgets.cookTonight.title')}
+            </WidgetTitle>
+            <Box
+              component={Link}
+              to="/recipes"
+              sx={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: tokens.color.accent,
+                textDecoration: 'none',
+              }}
+            >
+              {t('widgets.cookTonight.seeAll')}
+            </Box>
           </Box>
-        </Box>
+          {note}
+          {cards.length === 0 ? (
+            <Box sx={{ fontSize: 14, color: tokens.color.muted, py: '10px' }}>
+              {t('widgets.cookTonight.empty')}{' '}
+              <Box
+                component={Link}
+                to="/recipes/explore"
+                sx={{
+                  fontWeight: 700,
+                  color: tokens.color.accent,
+                  textDecoration: 'none',
+                }}
+              >
+                {t('widgets.cookTonight.explore')}
+              </Box>
+            </Box>
+          ) : (
+            <CardList cards={cards} />
+          )}
+        </>
       ) : (
-        <Box
-          component="ul"
-          sx={{
-            listStyle: 'none',
-            m: 0,
-            p: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          {cards.map((card) => (
-            <li key={card.base.id}>
-              <CookCard card={card} />
-            </li>
-          ))}
+        // Wide and tall: no header row; the panel names the Widget and leads to Cook Tonight.
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <CookTonightPanel cards={allCards} />
+          {note}
+          <CardList cards={cards} />
         </Box>
       )}
     </WidgetCard>
+  );
+}
+
+function CardList({ cards }: { cards: CookTonightCard[] }) {
+  if (cards.length === 0) return null;
+  return (
+    <Box
+      component="ul"
+      sx={{
+        listStyle: 'none',
+        m: 0,
+        p: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}
+    >
+      {cards.map((card) => (
+        <li key={card.base.id}>
+          <CookCard card={card} />
+        </li>
+      ))}
+    </Box>
+  );
+}
+
+/** Gator's bubble panel for the wide and tall Widget: the same state and Tap as the Recipes page card. */
+function CookTonightPanel({ cards }: { cards: CookTonightCard[] }) {
+  const { t } = useTranslation('recipes');
+  const gatorAlt = useGatorAlt();
+  // The no-Family-Recipes state is #629's; here the Family is assumed to have Recipes.
+  const { mood, to, lines } = cookTonightPanelState(cards, false, t);
+  const { taps, onClick } = useGatorTapLink(to);
+  if (!to) return null;
+  const title = t('cookTonight.title');
+  const [line, ...rest] = lines;
+
+  return (
+    <GatorBubblePanel
+      to={to}
+      // Block children carry no spaces for a screen reader, so name the link explicitly.
+      label={[title, ...lines].join(', ')}
+      onClick={onClick}
+      gator={
+        <Gator
+          mood={mood}
+          size={170}
+          loop="signature"
+          tapSignal={taps}
+          alt={gatorAlt(mood)}
+        />
+      }
+    >
+      <Box sx={{ ...displayType, fontSize: 18 }}>{title}</Box>
+      <Box sx={{ fontWeight: 700, mt: '4px' }}>{line}</Box>
+      {rest.map((text, i) => (
+        <Box
+          key={i}
+          sx={{ fontSize: 13, mt: '2px', color: tokens.color.accentOnTint }}
+        >
+          {text}
+        </Box>
+      ))}
+    </GatorBubblePanel>
   );
 }
 
