@@ -399,6 +399,71 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     expect(create?.body).not.toHaveProperty('barcode');
   });
 
+  it('sends no barcode when the Member takes a photo after a failed lookup', async () => {
+    const user = userEvent.setup();
+    const calls = stubLookup(
+      () =>
+        Response.json(
+          { code: 'barcode.rate_limited', params: {} },
+          { status: 429, headers: { 'Retry-After': '30' } },
+        ),
+      {
+        'POST /api/scan/product': () =>
+          Response.json({ lines: [{ ...productLine, match: yogurt }] }),
+      },
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    const card = await screen.findByTestId('barcode-card');
+    await within(card).findByText(/Too many Barcode Lookups/);
+    await user.click(
+      within(card).getByRole('button', { name: 'Take a photo' }),
+    );
+    screen.getByRole('button', { name: 'Take photo' }).focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(screen.queryByTestId('camera-overlay')).toBeNull(),
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Add to Pantry' }),
+    );
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.key === 'POST /api/pantry/batches'),
+      ).toBe(true),
+    );
+    const create = calls.find(
+      (call) => call.key === 'POST /api/pantry/batches',
+    );
+    expect(create?.body).not.toHaveProperty('barcode');
+  });
+
+  it('ignores a second read while a lookup is out', async () => {
+    const user = userEvent.setup();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const calls = stubLookup(async () => {
+      await gate;
+      return Response.json(found());
+    });
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    act(() => emitBarcode('4000000000008'));
+    act(() => emitBarcode(CODE));
+    release();
+    await act(async () => {
+      await gate;
+    });
+    await screen.findByRole('button', { name: 'Use this' });
+    expect(
+      calls.filter((c) => c.key.startsWith('GET /api/barcode')),
+    ).toHaveLength(1);
+  });
+
   it('ignores a lookup that lands after the Member switched to Product', async () => {
     const user = userEvent.setup();
     let release: () => void = () => {};

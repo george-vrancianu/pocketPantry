@@ -491,6 +491,65 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     );
   });
 
+  it('with no name and no description, toasts the plain photo line, not a no-match', async () => {
+    const user = userEvent.setup();
+    const { release } = stubProductScan(() =>
+      Response.json({
+        lines: [
+          line({
+            match: null,
+            name: '',
+            productDescription: null,
+            quantity: 250,
+            unit: 'g',
+          }),
+        ],
+      }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await shoot(user);
+    release();
+    expect(
+      await screen.findByText('Read from your photo · check it and add'),
+    ).toBeVisible();
+    expect(screen.queryByText(/Couldn't match/)).toBeNull();
+  });
+
+  it("keeps the Member's own Ingredient pick untagged and silent when the photo only fills the rest", async () => {
+    const user = userEvent.setup();
+    const { release } = stubProductScan(() =>
+      Response.json({
+        lines: [line({ match: milk, name: 'Milk', quantity: 500, unit: 'g' })],
+      }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'yog',
+    );
+    await user.click(await screen.findByRole('option', { name: /Yogurt/ }));
+    await shoot(user);
+    release();
+    await waitFor(() =>
+      expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument(),
+    );
+    expect(
+      await screen.findByRole('combobox', {
+        name: 'Ingredient: Yogurt. Press Backspace to change',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('textbox', { name: /Amount of Yogurt/ }),
+    ).toHaveValue('500');
+    expect(screen.queryByTestId('camera-source-tag')).toBeNull();
+    expect(
+      screen.queryByText('Read from your photo · check it and add'),
+    ).toBeNull();
+    expect(screen.queryByText(/Couldn't match/)).toBeNull();
+  });
+
   it('says the scan cap is used up, in the camera', async () => {
     const user = userEvent.setup();
     const { release } = stubProductScan(() =>

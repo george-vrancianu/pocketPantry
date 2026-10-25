@@ -289,9 +289,9 @@ export function useAddBatchForm({
       });
       const { read } = result;
       const ingredientPicked = touched.ingredient;
-      const filled = prefillNow.current(read, 'search');
+      prefillNow.current(read, 'search');
       // The Member's own Ingredient pick is not "From photo", and the toast only speaks of what the read did.
-      if (!ingredientPicked || filled) setSource('photo');
+      if (!ingredientPicked) setSource('photo');
       if (ingredientPicked) return;
       const name = read.name.trim() || read.productDescription || '';
       if (read.match || !name)

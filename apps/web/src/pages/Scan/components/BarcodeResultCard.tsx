@@ -60,6 +60,7 @@ export function BarcodeResultCard({
   return (
     <Box
       role="status"
+      data-theme="warm"
       data-testid="barcode-card"
       sx={{
         position: 'absolute',
@@ -88,7 +89,7 @@ export function BarcodeResultCard({
             height: 46,
             flex: 'none',
             borderRadius: radius.control,
-            backgroundColor: tokens.color.subtle,
+            backgroundColor: tokens.color.chipNeutral,
             display: 'grid',
             placeItems: 'center',
             '& svg': {
@@ -221,7 +222,9 @@ function CardButton({
       onClick={onClick}
       sx={{
         ...button,
-        backgroundColor: primary ? tokens.color.accent : tokens.color.subtle,
+        backgroundColor: primary
+          ? tokens.color.accent
+          : tokens.color.chipNeutral,
         color: primary ? color.accentInk : INK,
         ...sx,
       }}
