@@ -299,9 +299,9 @@ describe('RecipeFromLinkPage', () => {
     // Matched line with the original amount in its note, and an Unmatched name.
     await user.click(screen.getByRole('tab', { name: /^Ingredients/ }));
     expect(screen.getByLabelText('Quantity of Egg')).toHaveValue('2');
-    expect(screen.getByDisplayValue('2 large')).toBeVisible();
+    expect(screen.getByText(/2 large/)).toBeVisible();
     expect(screen.getByText('Maple syrup')).toBeVisible();
-    expect(screen.getByDisplayValue('to serve')).toBeVisible();
+    expect(screen.getByText(/to serve/)).toBeVisible();
     // Steps with their timers.
     await user.click(screen.getByRole('tab', { name: /^Steps/ }));
     expect(screen.getByDisplayValue('Whisk and fry')).toBeVisible();

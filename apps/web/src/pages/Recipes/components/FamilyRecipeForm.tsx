@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
 import type { FamilyRecipeDocument } from '../../../lib/familyRecipes';
+import { useFamilyCatalog } from '../../../lib/familyCatalog';
 import { useRecipeFilters } from '../../../lib/recipes';
 import type { GuidanceInput } from '../../../lib/adminRecipes';
 import {
@@ -138,6 +139,12 @@ export function FamilyRecipeForm({
 
   const change = (patch: Partial<FamilyDraft>) =>
     setDraft((current) => ({ ...current, ...patch }));
+  // Family Ingredients by id, for the Family pill; ones picked this session count before the refetch.
+  const familyCatalog = useFamilyCatalog();
+  const familyIds = new Set(
+    familyCatalog.data?.ingredients.map((item) => item.id) ?? [],
+  );
+  const [pickedFamily, setPickedFamily] = useState<Set<string>>(new Set());
   const addLine = (line: Pick<LineDraft, 'ingredientId' | 'name' | 'unit'>) =>
     change({
       lines: [
@@ -293,23 +300,17 @@ export function FamilyRecipeForm({
               lines={draft.lines}
               problems={problems}
               onChange={(lines) => change({ lines })}
-              nameNote={(line) =>
-                line.ingredientId === '' ? (
-                  <Typography
-                    component="span"
-                    variant="meta"
-                    color="text.secondary"
-                  >
-                    {' '}
-                    ({t('recipes:family.freeTextNote')})
-                  </Typography>
-                ) : null
+              isFamily={(line) =>
+                familyIds.has(line.ingredientId) ||
+                pickedFamily.has(line.ingredientId)
               }
             >
               <CatalogSearch
                 emptyState={<BrowseByAisle />}
                 key={searchKey}
                 onSelect={(ingredient) => {
+                  if (ingredient.owner === 'family')
+                    setPickedFamily((ids) => new Set(ids).add(ingredient.id));
                   addLine({
                     ingredientId: ingredient.id,
                     name: ingredient.name,
