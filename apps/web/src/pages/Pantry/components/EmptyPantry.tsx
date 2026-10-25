@@ -27,25 +27,40 @@ type Props = {
   onType: () => void;
   /** A shelf card's "+". */
   onAddTo: (location: StorageLocation) => void;
+  /** Owned by the page, so Gator's entrance plays once per visit to it, not once per session. */
+  visit: PantryVisit;
 };
 
-/** Gator's entrance plays on the first visit to the page only; a remount within the visit goes straight to the loop. */
-let entrancePlayed = false;
+export type PantryVisit = {
+  entrancePlayed: () => boolean;
+  markEntrancePlayed: () => void;
+};
+
+/** One visit to the Pantry page; make it once per mount. */
+export function newPantryVisit(): PantryVisit {
+  let played = false;
+  return {
+    entrancePlayed: () => played,
+    markEntrancePlayed: () => {
+      played = true;
+    },
+  };
+}
 
 /**
  * The Empty Pantry (no Batches): dimmed Location chips, the ticked-items bar, Gator's banner with the
  * quickest ways in, and one empty shelf per Location.
  */
-export function EmptyPantry({ onType, onAddTo }: Props) {
+export function EmptyPantry({ onType, onAddTo, visit }: Props) {
   const { t } = useTranslation(['pantry', 'common']);
   const navigate = useNavigate();
   const showsMic = useShowsDockMic();
   const micTeach = useMicTeach();
   const checked = useShoppingList().data?.summary.checked ?? 0;
-  const [entrance] = useState(() => !entrancePlayed);
+  const [entrance] = useState(() => !visit.entrancePlayed());
   useEffect(() => {
-    entrancePlayed = true;
-  }, []);
+    visit.markEntrancePlayed();
+  }, [visit]);
   const [taps, setTaps] = useState(0);
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

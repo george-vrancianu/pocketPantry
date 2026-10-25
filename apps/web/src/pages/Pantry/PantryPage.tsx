@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from '@pocket-pantry/ui';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
@@ -15,7 +15,7 @@ import {
 } from '../../components/RowToggleErrors';
 import { RowHintNote } from '../../components/RowHintNote';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
-import { EmptyPantry } from './components/EmptyPantry';
+import { EmptyPantry, newPantryVisit } from './components/EmptyPantry';
 import { ShelfCard } from './components/ShelfCard';
 import { AddToPantrySheet } from './components/AddToPantrySheet';
 import { LocationSection } from './components/LocationSection';
@@ -29,6 +29,7 @@ export function PantryPage() {
   const screen = usePantryScreen();
   const rowToggleErrors = useRowToggleErrors();
   const rowHint = usePantryRowHint();
+  const [visit] = useState(newPantryVisit);
 
   const focusAdd = useCallback(
     () =>
@@ -37,6 +38,18 @@ export function PantryPage() {
         ?.focus(),
     [t],
   );
+
+  // The last Batch going leaves no section to hand focus on from, so the header "+" takes it.
+  const hadBatches = useRef(false);
+  useEffect(() => {
+    if (
+      screen.isEmpty &&
+      hadBatches.current &&
+      document.activeElement === document.body
+    )
+      focusAdd();
+    hadBatches.current = !screen.isEmpty && !screen.isLoading;
+  }, [screen.isEmpty, screen.isLoading, focusAdd]);
 
   return (
     <RowToggleErrorProvider report={rowToggleErrors.report}>
@@ -74,6 +87,7 @@ export function PantryPage() {
           <EmptyPantry
             onType={screen.startAdding}
             onAddTo={screen.startAddingAt}
+            visit={visit}
           />
         ) : null}
         {!screen.isEmpty && !screen.isLoading && !screen.error ? (
@@ -96,7 +110,7 @@ export function PantryPage() {
             {t('pantry:noMatches')}
           </Typography>
         ) : null}
-        {screen.sections.map((section) => (
+        {(screen.isEmpty ? [] : screen.sections).map((section) => (
           <LocationSection
             key={section.location}
             location={section.location}

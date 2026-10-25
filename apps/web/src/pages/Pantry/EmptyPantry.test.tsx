@@ -250,6 +250,34 @@ describe('the Empty Pantry', () => {
   });
 });
 
+describe("Gator's entrance", () => {
+  const motion = () =>
+    document
+      .querySelector('img[data-mood="list-keeper"]')
+      ?.getAttribute('data-motion');
+
+  it('plays once per visit: not again when the Empty Pantry returns, but on a fresh mount', async () => {
+    let batches: Batch[] = [];
+    stub({ extra: { 'GET /api/pantry': () => Response.json({ batches }) } });
+    const first = renderPantry();
+    await screen.findByText('Nothing in here yet');
+    expect(motion()).toBe('entrance');
+
+    batches = [batch()];
+    await act(() => first.queryClient.invalidateQueries());
+    expect(await screen.findByText('Milk')).toBeInTheDocument();
+    batches = [];
+    await act(() => first.queryClient.invalidateQueries());
+    await screen.findByText('Nothing in here yet');
+    expect(motion()).toBe('signature');
+
+    first.unmount();
+    renderPantry();
+    await screen.findByText('Nothing in here yet');
+    expect(motion()).toBe('entrance');
+  });
+});
+
 describe('a Location filter with none', () => {
   it("shows that Location's shelf card instead of 'No batches match.'", async () => {
     stub({ batches: [batch()] });
@@ -281,6 +309,10 @@ describe('deleting the last Batch', () => {
 
     expect(await screen.findByText('Nothing in here yet')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+    // The pending-delete Batch's section does not sit under the shelf cards.
+    expect(
+      screen.queryByRole('heading', { name: /Fridge · / }),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Undo' }));
     expect(screen.queryByText('Nothing in here yet')).not.toBeInTheDocument();

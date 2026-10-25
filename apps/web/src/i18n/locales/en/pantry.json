@@ -11,7 +11,12 @@
     "ticked_one": "{{count}} ticked on your Shopping List",
     "ticked_other": "{{count}} ticked on your Shopping List",
     "moveThem": "Move them",
-    "shelfEmpty": "{{location}} is empty",
+    "shelf": {
+      "fridge": "Fridge is empty",
+      "freezer": "Freezer is empty",
+      "cupboard": "Cupboard is empty",
+      "spices": "Spices are empty"
+    },
     "hint": {
       "fridge": "Milk, eggs, cheese, leftovers",
       "freezer": "Peas, ice cream, a spare loaf",

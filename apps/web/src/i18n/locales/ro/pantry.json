@@ -12,7 +12,12 @@
     "ticked_few": "{{count}} produse bifate în Lista de cumpărături",
     "ticked_other": "{{count}} de produse bifate în Lista de cumpărături",
     "moveThem": "Mută-le",
-    "shelfEmpty": "{{location}}: gol",
+    "shelf": {
+      "fridge": "Frigider: gol",
+      "freezer": "Congelator: gol",
+      "cupboard": "Dulap: gol",
+      "spices": "Condimente: goale"
+    },
     "hint": {
       "fridge": "Lapte, ouă, brânză, resturi",
       "freezer": "Mazăre, înghețată, o pâine de rezervă",

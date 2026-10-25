@@ -11,7 +11,12 @@
     "ticked_one": "{{count}} afkrydset på din indkøbsliste",
     "ticked_other": "{{count}} afkrydset på din indkøbsliste",
     "moveThem": "Flyt dem",
-    "shelfEmpty": "{{location}} er tom",
+    "shelf": {
+      "fridge": "Køleskabet er tomt",
+      "freezer": "Fryseren er tom",
+      "cupboard": "Skabet er tomt",
+      "spices": "Krydderier er tomme"
+    },
     "hint": {
       "fridge": "Mælk, æg, ost, rester",
       "freezer": "Ærter, is, et ekstra brød",

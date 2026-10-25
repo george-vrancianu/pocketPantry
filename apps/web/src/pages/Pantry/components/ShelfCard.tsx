@@ -60,7 +60,7 @@ export function ShelfCard({ location, onAdd }: Props) {
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography sx={{ fontSize: 15, fontWeight: 700 }}>
-          {t('pantry:empty.shelfEmpty', { location: name })}
+          {t(`pantry:empty.shelf.${location}`)}
         </Typography>
         <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
           {t(`pantry:empty.hint.${location}`)}
