@@ -34,6 +34,7 @@ import type {
   RecipeStepView,
   RecipeTipView,
   RecipeTranslationsView,
+  RecipeScope,
   ResolvedRecipe,
 } from './recipes.schemas';
 
@@ -229,6 +230,14 @@ export const ownerOf = (row: Pick<RecipeRow, 'familyId'>): RecipeOwner =>
 /** A Recipe the Family may see: a Catalog one or one of its own. */
 export const visibleTo = (familyId: string) =>
   or(isNull(recipes.familyId), eq(recipes.familyId, familyId));
+
+/** `visibleTo`, narrowed to the Family's own or the Catalog's Recipes when a scope is given. */
+export const inScope = (familyId: string, scope: RecipeScope | undefined) =>
+  scope === 'family'
+    ? eq(recipes.familyId, familyId)
+    : scope === 'catalog'
+      ? isNull(recipes.familyId)
+      : visibleTo(familyId);
 
 /** The Recipe row when it is a Catalog Recipe or owned by `familyId`, else undefined. */
 export async function findVisibleRecipe(

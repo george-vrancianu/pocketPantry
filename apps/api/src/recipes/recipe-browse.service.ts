@@ -18,6 +18,7 @@ import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
 import {
   findVisibleRecipe,
+  inScope,
   ownerOf,
   recipeTitles,
   resolveRecipe,
@@ -29,6 +30,7 @@ import type {
   RecipeFilters,
   RecipeList,
   RecipeListItem,
+  RecipeScope,
   RecipeVariantItem,
   ResolvedRecipe,
 } from './recipes.schemas';
@@ -52,6 +54,7 @@ export class RecipeBrowseService {
    * With one: matching live Recipes, bases and Variants, each Variant labelled
    * with its base. A base matches on its own fields only. Variants of an
    * archived base stay listed (the archived base itself does not).
+   * `scope=family` always lists Variants, since the Family's Variants are its Recipes.
    */
   async list(
     memberId: string,
@@ -60,8 +63,10 @@ export class RecipeBrowseService {
   ): Promise<RecipeList> {
     const familyId = await this.settings.familyIdOf(memberId);
     const needle = normalizeName(query.search ?? '');
-    // Search and filters list Variants beside bases; so does asking for them outright.
+    // Search and filters list Variants beside bases; so does asking for them outright, and
+    // `scope=family` always does.
     const listsVariants =
+      query.scope === 'family' ||
       needle !== '' ||
       query.cuisineId !== undefined ||
       query.methodId !== undefined ||
@@ -72,7 +77,7 @@ export class RecipeBrowseService {
       .from(recipes)
       .where(
         and(
-          visibleTo(familyId),
+          inScope(familyId, query.scope),
           isNull(recipes.archivedAt),
           listsVariants ? undefined : isNull(recipes.parentId),
           query.cuisineId ? eq(recipes.cuisineId, query.cuisineId) : undefined,
@@ -98,7 +103,7 @@ export class RecipeBrowseService {
       needle === '' ? live : this.matchingTitle(live, needle, titles);
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
-    const counts = await this.variantCounts(familyId, baseIds);
+    const counts = await this.variantCounts(familyId, baseIds, query.scope);
     const [ref, { hides, allergy }] = await Promise.all([
       this.namedRefs(
         this.database,
@@ -297,6 +302,7 @@ export class RecipeBrowseService {
   private async variantCounts(
     familyId: string,
     baseIds: string[],
+    scope: RecipeScope | undefined,
   ): Promise<Map<string, number>> {
     const counts = new Map<string, number>();
     if (baseIds.length === 0) return counts;
@@ -306,7 +312,7 @@ export class RecipeBrowseService {
       .where(
         and(
           inArray(recipes.parentId, baseIds),
-          visibleTo(familyId),
+          inScope(familyId, scope),
           isNull(recipes.archivedAt),
         ),
       );
