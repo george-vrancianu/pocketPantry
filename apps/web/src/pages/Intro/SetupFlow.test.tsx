@@ -435,7 +435,7 @@ describe('Setup 1: Snap, Setup overview, All set', () => {
     await user.click(screen.getByRole('button', { name: 'Skip' }));
     expect(
       await screen.findByText(
-        "Now just tell me what's in the cupboard, or what to buy.",
+        "Now just tell me what's in the cupboard, or what to buy. Leave as many notes as you like.",
       ),
     ).toBeInTheDocument();
     expect(where()).toBe('/intro/say-it');

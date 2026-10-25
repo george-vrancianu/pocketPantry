@@ -73,7 +73,7 @@
   "sayIt": {
     "pill_one": "{{count}} thing in your Pantry",
     "pill_other": "{{count}} things in your Pantry",
-    "bubble": "Now just tell me what's in the cupboard, or what to buy.",
+    "bubble": "Now just tell me what's in the cupboard, or what to buy. Leave as many notes as you like.",
     "examplesLabel": "Things you can say",
     "examples": {
       "pantry": {
@@ -87,7 +87,7 @@
     },
     "callout": {
       "title": "Hold the mic, talk, let go",
-      "body": "Your phone will ask for the microphone. The recording is deleted once I've read it."
+      "body": "Your phone will ask for the microphone. Leave a few notes if you like, then review them together. Each recording is deleted once I've read it."
     },
     "coach": {
       "keepHolding": "Keep holding while you talk.",

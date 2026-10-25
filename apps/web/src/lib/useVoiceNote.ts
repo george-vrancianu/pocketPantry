@@ -8,12 +8,6 @@ import {
 import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { voiceToast } from './voicePlacement';
-import {
-  focusPillAction,
-  focusVoiceButton,
-  isInPill,
-  returnFocusFromPill,
-} from './voiceFocus';
 import { haptic } from './haptic';
 import { QUICK_TAP_MS, type VoiceDefaultTarget } from './voice';
 import { voiceNote, useVoiceNoteState } from './voiceNote';
@@ -27,10 +21,7 @@ import { usePreferredSpokenLanguage } from './usePreferredSpokenLanguage';
  * sends by itself. A recording that fails to send stays in memory for `retry`
  * until the page reloads.
  */
-export function useVoiceNote(
-  defaultTarget: VoiceDefaultTarget,
-  mode: { openWhenReady?: boolean } = {},
-) {
+export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   const { t } = useTranslation(['errors', 'voice']);
   const toast = useToast();
   const { spokenLanguage, spokenLanguageToSend } = usePreferredSpokenLanguage();
@@ -66,7 +57,6 @@ export function useVoiceNote(
   const options = useRef({
     spokenLanguageToSend,
     defaultTarget,
-    openWhenReady: mode.openWhenReady,
     t,
     toast,
   });
@@ -74,7 +64,6 @@ export function useVoiceNote(
     options.current = {
       spokenLanguageToSend,
       defaultTarget,
-      openWhenReady: mode.openWhenReady,
       t,
       toast,
     };
@@ -87,21 +76,16 @@ export function useVoiceNote(
       const { t } = options.current;
       say(`${t('voice:mic.on')} · ${t('voice:mic.onHint')}`);
     },
-    onUnavailable: () =>
-      voiceNote.fail('unavailable', {
-        openWhenReady: options.current.openWhenReady,
-      }),
+    onUnavailable: () => voiceNote.fail('unavailable'),
   });
 
   const { refresh, showBlocked, showIntro } = mic;
 
   const begin = () => {
-    const { defaultTarget, spokenLanguageToSend, openWhenReady } =
-      options.current;
+    const { defaultTarget, spokenLanguageToSend } = options.current;
     return voiceNote.start({
       defaultTarget,
       spokenLanguage: spokenLanguageToSend,
-      openWhenReady,
     });
   };
 
@@ -165,7 +149,6 @@ export function useVoiceNote(
     tipOnArrival.current = false;
     clearTimeout(tipTimer.current);
     setTip(null);
-    voiceNote.dismiss();
     asking.current = true;
     // The microphone sheets stand in for the hold until it is allowed; nothing records and the press resets.
     const permission = await refresh();
@@ -224,34 +207,6 @@ export function useVoiceNote(
     void finish();
   }, [finish, discardRecording, showTip]);
 
-  /** Sends the kept recording again: the same audio, in the language it was recorded in. */
-  const retry = useCallback(() => {
-    // Setup's Reading pill replaces this one and its Cancel takes the focus; elsewhere the strip has no
-    // button while reading, so the focus goes back to the voice button.
-    if (isInPill()) {
-      if (options.current.openWhenReady) focusPillAction();
-      else focusVoiceButton();
-    }
-    void voiceNote.retry();
-  }, []);
-
-  const dismiss = useCallback(() => {
-    returnFocusFromPill();
-    voiceNote.dismiss();
-  }, []);
-
-  /** Drops the kept recording (the pill's Discard). */
-  const discardFailed = useCallback(() => {
-    returnFocusFromPill();
-    voiceNote.discardFailed();
-  }, []);
-
-  /** Gives up waiting for the read. */
-  const cancelReading = useCallback(() => {
-    returnFocusFromPill();
-    voiceNote.cancelReading();
-  }, []);
-
   // Leaving the page drops a recording in progress; a read in flight carries on.
   useEffect(() => {
     unmounted.current = false;
@@ -276,10 +231,6 @@ export function useVoiceNote(
     press,
     release,
     cancel,
-    retry,
-    dismiss,
-    discardFailed,
-    cancelReading,
   };
 }
 

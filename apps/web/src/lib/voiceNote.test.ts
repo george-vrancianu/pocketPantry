@@ -39,7 +39,6 @@ async function record(
   startOptions: {
     spokenLanguage: 'en' | 'ro';
     defaultTarget: 'shopping' | 'pantry';
-    openWhenReady?: boolean;
   } = options,
 ) {
   await note.start(startOptions);
@@ -342,23 +341,6 @@ describe('Voice Note module', () => {
       expect(startMicrophone).toHaveBeenCalledOnce();
       note.discard();
       expect(note.startBlocker()).toBe('none');
-    });
-
-    it('refuses to start while a note that opens itself is still being read', async () => {
-      const { note, startMicrophone } = setup();
-      await record(note, { ...options, openWhenReady: true });
-      expect(note.startBlocker()).toBe('review');
-      expect(await note.start(options)).toBe('refused');
-      expect(startMicrophone).toHaveBeenCalledOnce();
-    });
-
-    it('does not nudge for the note that opens itself (Setup)', async () => {
-      const { note, notices, answer } = setup();
-      await record(note, { ...options, openWhenReady: true });
-      answer(result('a'));
-      await settle();
-      expect(note.getState().phase).toBe('review');
-      expect(notices).toEqual([]);
     });
 
     it('discarding or applying removes only that note', async () => {
@@ -860,16 +842,6 @@ describe('Voice Note module', () => {
         phase: 'review',
         defaultTarget: 'pantry',
       });
-    });
-
-    it('retries the open failed note when no id is given (Setup)', async () => {
-      const ctx = setup();
-      await record(ctx.note, { ...options, openWhenReady: true });
-      ctx.refuse(new ApiError('voice.audio_unreadable', 422));
-      await settle();
-      expect(ctx.note.getState().phase).toBe('failed');
-      void ctx.note.retry();
-      expect(ctx.note.getState().phase).toBe('reading');
     });
 
     it('takes the screen lock again and releases it once', async () => {

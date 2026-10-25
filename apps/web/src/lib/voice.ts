@@ -238,9 +238,6 @@ export function sendVoiceNote({
   });
 }
 
-/** The pill for a note nothing came of closes itself after this long. */
-export const NOTHING_HEARD_MS = 3600;
-
 /** `m:ss` for a length in ms, whole seconds floored (the Listening card, the reading pill and Review). */
 export function formatClock(ms: number): string {
   const whole = Math.floor(ms / 1000);

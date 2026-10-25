@@ -52,7 +52,7 @@ describe('Setup 2, Say it', () => {
     await openSayIt();
     expect(
       await screen.findByText(
-        "Now just tell me what's in the cupboard, or what to buy.",
+        "Now just tell me what's in the cupboard, or what to buy. Leave as many notes as you like.",
       ),
     ).toBeVisible();
     expect(where()).toBe('/intro/say-it');
@@ -74,7 +74,7 @@ describe('Setup 2, Say it', () => {
     expect(await screen.findByText('Hold the mic, talk, let go')).toBeVisible();
     expect(
       screen.getByText(
-        "Your phone will ask for the microphone. The recording is deleted once I've read it.",
+        "Your phone will ask for the microphone. Leave a few notes if you like, then review them together. Each recording is deleted once I've read it.",
       ),
     ).toBeVisible();
   });
@@ -196,34 +196,63 @@ describe('Setup 2, holding the mic', () => {
     expect(mic.start).toHaveBeenCalledTimes(1);
   });
 
-  it('sends the Voice Note with the Pantry as its Default List and opens the real Review', async () => {
+  it('sends the Voice Note with the Pantry as its Default List and keeps it in the Voice Inbox strip', async () => {
     const { sent, button } = await recordNote();
     fireEvent.pointerUp(button);
 
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(await screen.findByText('1 ready')).toBeVisible();
+    expect(screen.getByText('1 Voice Note')).toBeVisible();
+    // Nothing opens by itself.
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(sent).toHaveLength(1);
     expect(sent[0].get('defaultTarget')).toBe('pantry');
     expect(where()).toBe('/intro/say-it');
   });
 
-  it('is single-note: the mic does nothing while the first note is being read', async () => {
+  it('takes several notes: the mic works while the first is being read, and each is in the strip', async () => {
     const { sent, holdReads } = await openSayIt();
     holdReads();
     const button = await talkButton();
-    pressDown(button);
-    await screen.findByText("Gator's listening");
-    await holdLongEnough();
-    fireEvent.pointerUp(button);
-    await waitFor(() => expect(sent).toHaveLength(1));
+    for (const count of [1, 2]) {
+      pressDown(button);
+      await screen.findByText("Gator's listening");
+      await holdLongEnough();
+      fireEvent.pointerUp(button);
+      await waitFor(() => expect(sent).toHaveLength(count));
+    }
 
-    pressDown(button);
-    await holdLongEnough();
-    fireEvent.pointerUp(button);
-
-    expect(mic.start).toHaveBeenCalledTimes(1);
-    expect(sent).toHaveLength(1);
+    expect(mic.start).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText('2 Voice Notes')).toBeVisible();
+    expect(screen.getByText('Reading 2')).toBeVisible();
+    expect(sent.map((note) => note.get('defaultTarget'))).toEqual([
+      'pantry',
+      'pantry',
+    ]);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(screen.queryByText(/Voice Notes?$/)).toBeNull();
+  });
+
+  it('stops at the Voice Inbox limit of 5 notes', async () => {
+    const { sent, holdReads } = await openSayIt();
+    holdReads();
+    const button = await talkButton();
+    for (const count of [1, 2, 3, 4, 5]) {
+      pressDown(button);
+      await screen.findByText("Gator's listening");
+      await holdLongEnough();
+      fireEvent.pointerUp(button);
+      // Only two are read at once; the others wait their turn in the strip.
+      await screen.findByText(
+        count === 1 ? '1 Voice Note' : `${count} Voice Notes`,
+      );
+    }
+
+    pressDown(button);
+    await holdLongEnough();
+    fireEvent.pointerUp(button);
+
+    expect(await screen.findByText('Review your notes first')).toBeVisible();
+    expect(mic.start).toHaveBeenCalledTimes(5);
+    expect(sent).toHaveLength(2);
   });
 
   it("records in the Member's Spoken Language", async () => {
@@ -231,7 +260,7 @@ describe('Setup 2, holding the mic', () => {
       routes: scanLanguagePreference('en', 'ro'),
     });
     fireEvent.pointerUp(button);
-    await screen.findByRole('dialog');
+    await waitFor(() => expect(sent).toHaveLength(1));
     expect(sent[0].get('spokenLanguage')).toBe('ro');
   });
 });
