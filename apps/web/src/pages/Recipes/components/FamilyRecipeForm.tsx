@@ -62,7 +62,7 @@ type Props = {
   detailsTop?: ReactNode;
   /** End of Details, after the "Ingredients ›" link: Discard draft. */
   detailsEnd?: ReactNode;
-  /** End of Steps (Edit's Tips and Guidance panels). */
+  /** End of Steps (Edit's Tips). */
   stepsEnd?: ReactNode;
   /** Pinned under the sticky tabs, visible on every tab: write notice, stale-draft banner, status. */
   notices?: ReactNode;
@@ -81,6 +81,8 @@ type Props = {
   guidance?: {
     initial: GuidanceDraft;
     momentOptions: MomentOption[];
+    /** The saved Recipe being edited, which a Pairing cannot link to. */
+    recipeId?: string;
     /** A Recipe from Link draft: the card says its Guidance is never read from the page. */
     fromLink?: boolean;
   };
@@ -91,7 +93,10 @@ type Props = {
     draft: FamilyDraft;
     guidance: GuidanceDraft | null;
   }) => void;
-  onSave: (document: FamilyRecipeDocument, guidance?: GuidanceInput) => void;
+  onSave: (
+    document: FamilyRecipeDocument,
+    guidance?: GuidanceInput,
+  ) => void | Promise<void>;
 };
 
 /**
@@ -129,14 +134,15 @@ export function FamilyRecipeForm({
   const filters = useRecipeFilters();
   const [draft, setDraft] = useState<FamilyDraft>(initial);
   const [searchKey, setSearchKey] = useState(0);
+  const [guidanceDraft, setGuidanceDraft] = useState<GuidanceDraft | null>(
+    guidance?.initial ?? null,
+  );
   const [seededWith, setSeededWith] = useState(seedKey);
   if (seededWith !== seedKey) {
     setSeededWith(seedKey);
     setDraft(initial);
+    if (guidance) setGuidanceDraft(guidance.initial);
   }
-  const [guidanceDraft, setGuidanceDraft] = useState<GuidanceDraft | null>(
-    guidance?.initial ?? null,
-  );
   const [titleTouched, setTitleTouched] = useState(false);
   const tabsId = useId();
   const [tab, setTab] = useState<EditorTab>(openTab);
@@ -282,6 +288,7 @@ export function FamilyRecipeForm({
                 momentOptions={guidance.momentOptions}
                 page={draft}
                 fromLink={guidance.fromLink}
+                recipeId={guidance.recipeId}
               />
             ) : null}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>

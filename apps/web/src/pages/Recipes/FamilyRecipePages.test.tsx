@@ -161,6 +161,8 @@ function DetailProbe() {
 function setup(route: InitialEntry, routes: Parameters<typeof stubApi>[0]) {
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes/filters': () => Response.json(filters),
+    // Edit's Save also stores the Guidance (#595).
+    'PUT /api/recipes/g/guidance': () => Response.json(saved),
     ...routes,
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -1087,18 +1089,17 @@ describe('EditFamilyRecipePage', () => {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       'PUT /api/recipes/g': () => Response.json(saved),
     });
-    // Unsaved guidance edits must survive the document save and a change of tab.
+    await openTab(user, 'Details');
+    await openGuidance(user);
     fireEvent.change(await screen.findByLabelText('Nutrition Note'), {
       target: { value: 'Still here' },
     });
-    await openTab(user, 'Details');
     fireEvent.change(screen.getByLabelText(/^Title/), {
       target: { value: 'Better omelette' },
     });
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
     await openTab(user, 'Steps');
-    expect(screen.getByLabelText('Nutrition Note')).toHaveValue('Still here');
     expect(
       screen.getByRole('link', { name: 'View the Recipe' }),
     ).toHaveAttribute('href', '/recipes/g');
@@ -1156,18 +1157,24 @@ describe('EditFamilyRecipePage', () => {
     );
   });
 
-  it('saves guidance on its own, keeping Pairing ids and Eating Moments', async () => {
+  it('saves the Recipe, then its Guidance, with one Save (#595)', async () => {
     const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () => Response.json(saved),
-      'PUT /api/recipes/g/guidance': () => Response.json(saved),
+      'PUT /api/recipes/g': () => Response.json(saved),
     });
+    await openTab(user, 'Details');
+    await openGuidance(user);
     const note = await screen.findByLabelText('Nutrition Note');
     await user.clear(note);
     await user.type(note, 'Light');
     expect(await screen.findByLabelText('Reason for Breakfast')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Save guidance' }));
-    expect(await screen.findByText('Guidance saved.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save guidance' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    expect(
+      calls.filter((c) => c.key.startsWith('PUT ')).map((c) => c.key),
+    ).toEqual(['PUT /api/recipes/g', 'PUT /api/recipes/g/guidance']);
     const put = calls.find((c) => c.key === 'PUT /api/recipes/g/guidance')!;
     expect(put.body).toEqual({
       nutritionNote: 'Light',
@@ -1195,17 +1202,92 @@ describe('EditFamilyRecipePage', () => {
         { eatingMomentId: 'em1', polarity: 'good_for', reason: 'Quick start' },
       ],
     });
-    // The document save does not carry guidance.
-    expect(calls.some((c) => c.key === 'PUT /api/recipes/g')).toBe(false);
   });
 
-  it('names the linked Ingredient and Recipe of saved Pairings', async () => {
+  it('says the Guidance was not saved when only it fails, and a retry sends only the Guidance (#595)', async () => {
+    const user = userEvent.setup({ delay: null });
+    let guidanceCalls = 0;
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'PUT /api/recipes/g': () => Response.json(saved),
+      'PUT /api/recipes/g/guidance': () =>
+        ++guidanceCalls === 1
+          ? Response.json({ error: 'boom' }, { status: 500 })
+          : Response.json(saved),
+    });
+    await openTab(user, 'Details');
+    fireEvent.change(await screen.findByLabelText(/^Title/), {
+      target: { value: 'Better omelette' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(
+      await screen.findByText(/Its Guidance was not saved/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Recipe saved.')).toBeNull();
+    expect(screen.getByLabelText(/^Title/)).toHaveValue('Better omelette');
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    expect(screen.queryByText(/was not saved/)).toBeNull();
+    expect(calls.filter((c) => c.key === 'PUT /api/recipes/g')).toHaveLength(1);
+    expect(
+      calls.filter((c) => c.key === 'PUT /api/recipes/g/guidance'),
+    ).toHaveLength(2);
+  });
+
+  it('sends no Guidance when the Recipe fails, names the Recipe, and a retry sends both (#595)', async () => {
+    const user = userEvent.setup({ delay: null });
+    let recipeCalls = 0;
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'PUT /api/recipes/g': () =>
+        ++recipeCalls === 1
+          ? Response.json({ error: 'boom' }, { status: 500 })
+          : Response.json(saved),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Save' }));
+    expect(
+      await screen.findByText(/The Recipe was not saved/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Recipe saved.')).toBeNull();
+    expect(calls.some((c) => c.key === 'PUT /api/recipes/g/guidance')).toBe(
+      false,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    expect(
+      calls.filter((c) => c.key === 'PUT /api/recipes/g/guidance'),
+    ).toHaveLength(1);
+  });
+
+  it('disables Save while the Guidance has a problem (#595)', async () => {
+    const user = userEvent.setup({ delay: null });
     setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () => Response.json(saved),
     });
+    await openTab(user, 'Details');
+    await openGuidance(user);
+    fireEvent.change(await screen.findByLabelText('Nutrition Note'), {
+      target: { value: 'x'.repeat(600) },
+    });
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('names the linked Ingredient and Recipe of saved Pairings', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+    });
+    await openTab(user, 'Details');
+    await openGuidance(user);
+    await user.click(
+      await screen.findByRole('button', { name: 'Edit Orange juice' }),
+    );
     expect(
       await screen.findByText('Linked Ingredient: Orange'),
     ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Edit Toast' }));
     expect(
       await screen.findByRole('option', { name: 'Buttered toast' }),
     ).toBeInTheDocument();
@@ -1234,8 +1316,13 @@ describe('EditFamilyRecipePage', () => {
             },
           ],
         }),
-      'PUT /api/recipes/g/guidance': () => Response.json(saved),
+      'PUT /api/recipes/g': () => Response.json(saved),
     });
+    await openTab(user, 'Details');
+    await openGuidance(user);
+    await user.click(
+      await screen.findByRole('button', { name: 'Edit Orange juice' }),
+    );
     await user.selectOptions(
       await screen.findByLabelText('Link of Pairing 1'),
       'recipe',
@@ -1244,7 +1331,7 @@ describe('EditFamilyRecipePage', () => {
       await screen.findByLabelText('Linked Recipe of Pairing 1'),
       'r9',
     );
-    await user.click(screen.getByRole('button', { name: 'Save guidance' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'PUT /api/recipes/g/guidance')?.body,
@@ -1263,6 +1350,11 @@ describe('EditFamilyRecipePage', () => {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       'GET /api/catalog/search': () => Response.json({ results: [] }),
     });
+    await openTab(user, 'Details');
+    await openGuidance(user);
+    await user.click(
+      await screen.findByRole('button', { name: 'Edit Orange juice' }),
+    );
     await user.selectOptions(
       await screen.findByLabelText('Link of Pairing 1'),
       'ingredient',
@@ -1514,6 +1606,11 @@ describe('Family Recipe Browse by aisle', () => {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       ...aisleRoutes,
     });
+    await openTab(user, 'Details');
+    await openGuidance(user);
+    await user.click(
+      await screen.findByRole('button', { name: 'Edit Orange juice' }),
+    );
     await user.selectOptions(
       await screen.findByLabelText('Link of Pairing 1'),
       'ingredient',
@@ -1558,6 +1655,11 @@ describe('Family Recipe form: Add to your catalog (#270)', () => {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       'GET /api/catalog/search': () => Response.json({ results: [] }),
     });
+    await openTab(user, 'Details');
+    await openGuidance(user);
+    await user.click(
+      await screen.findByRole('button', { name: 'Edit Orange juice' }),
+    );
     await user.selectOptions(
       await screen.findByLabelText('Link of Pairing 1'),
       'ingredient',
@@ -2093,10 +2195,8 @@ describe('Suggest Guidance', () => {
     fireEvent.change(screen.getByLabelText(/^Title/), {
       target: { value: 'Unsaved title' },
     });
-    await openTab(user, 'Steps');
 
-    // Edit keeps its own Guidance panel and button (the one Save comes later).
-    await user.click(screen.getByRole('button', { name: 'Suggest Guidance' }));
+    await user.click(suggestButton());
 
     await vi.waitFor(() => expect(noteField()).toHaveValue(NOTE));
     expect(calls.find((c) => c.key === suggestRoute)?.body).toMatchObject({
