@@ -1,4 +1,10 @@
 {
   "home": "Acasă",
-  "settings": "Setări"
+  "settings": "Setări",
+  "refresh": {
+    "button": "Reîmprospătează",
+    "busy": "Se reîmprospătează…",
+    "done": "Actualizat chiar acum",
+    "failed": "Nu s-a putut reîmprospăta · se afișează ce aveai"
+  }
 }

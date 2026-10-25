@@ -41,6 +41,16 @@ import { resetRowFlash } from '../../lib/rowFlash';
 import { voiceNote } from '../../lib/voiceNote';
 import { ShoppingPage } from './ShoppingPage';
 
+/** The Voice Note's status; the header's refresh status line is a status too, empty at rest. */
+const statusNote = () => {
+  const note = screen
+    .getAllByRole('status')
+    .find((status) => status.textContent !== '');
+  if (!note) throw new Error('No status with text');
+  return note;
+};
+const findStatusNote = () => waitFor(statusNote);
+
 const emptyList = {
   id: 'l1',
   groups: [],
@@ -117,7 +127,7 @@ describe('Voice Note on the Shopping List', () => {
 
     // Held: the listening Gator sits in the Listening card, decorative beside its title.
     const button = await hold();
-    expect(screen.getByRole('status')).toHaveTextContent("Gator's listening");
+    expect(statusNote()).toHaveTextContent("Gator's listening");
     expect(gator('listening')).not.toBeNull();
     expect(gator('listening')).toHaveAttribute('alt', '');
 
@@ -134,11 +144,9 @@ describe('Voice Note on the Shopping List', () => {
     renderInAppLayout(<ShoppingPage />, '/shopping');
 
     const button = await hold();
-    expect(screen.getByRole('status')).toHaveTextContent(
-      /Gator's listening\s*0:00/,
-    );
+    expect(statusNote()).toHaveTextContent(/Gator's listening\s*0:00/);
     await act(() => vi.advanceTimersByTimeAsync(7000));
-    expect(screen.getByRole('status')).toHaveTextContent(
+    expect(statusNote()).toHaveTextContent(
       /Gator's listening\s*0:07\s*\/ 1:00/,
     );
     expect(button).toHaveAttribute('aria-pressed', 'true');
@@ -305,7 +313,7 @@ describe('Voice Note on the Shopping List', () => {
     // Newest on the right; silence on the left.
     expect((bars[29] as HTMLElement).style.height).toBe('38px');
     expect((bars[0] as HTMLElement).style.height).toBe('3px');
-    const card = screen.getByRole('status');
+    const card = statusNote();
     expect(card).toHaveTextContent('Let go to send · slide off to cancel');
     expect(card).toHaveTextContent(
       'Goes to your Shopping List. Say “in the pantry” to add stock.',
@@ -324,7 +332,7 @@ describe('Voice Note on the Shopping List', () => {
 
       fireEvent.pointerUp(await hold());
 
-      const strip = await screen.findByRole('status');
+      const strip = await findStatusNote();
       expect(strip).toHaveTextContent('1 Voice Note');
       expect(strip).toHaveTextContent('Reading 1');
       expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
@@ -387,7 +395,7 @@ describe('Voice Note on the Shopping List', () => {
 
       const button = await hold();
       expect(mic.start).toHaveBeenCalledOnce();
-      expect(screen.getByRole('status')).toHaveTextContent("Gator's listening");
+      expect(statusNote()).toHaveTextContent("Gator's listening");
       fireEvent.pointerUp(button);
 
       expect(await screen.findByText('2 Voice Notes')).toBeVisible();
@@ -399,7 +407,7 @@ describe('Voice Note on the Shopping List', () => {
       setup();
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
-      const strip = await screen.findByRole('status');
+      const strip = await findStatusNote();
       await screen.findByRole('button', { name: 'Review' });
       expect(strip).toHaveTextContent('1 ready');
       expect(await openReady()).toBeVisible();
@@ -426,7 +434,7 @@ describe('Voice Note on the Shopping List', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(
         '1 Voice Note failed',
       );
-      const strip = screen.getByRole('status');
+      const strip = statusNote();
       expect(strip).toHaveTextContent('1 Voice Note');
       expect(strip).toHaveTextContent('1 failed');
       const dialog = await openSheet();
@@ -539,7 +547,7 @@ describe('Voice Note on the Shopping List', () => {
       await screen.findByRole('alert');
       fireEvent.pointerUp(await hold());
 
-      const strip = await screen.findByRole('status');
+      const strip = await findStatusNote();
       await waitFor(() => expect(strip).toHaveTextContent('1 ready'));
       expect(strip).toHaveTextContent('1 failed');
       expect(await openReady()).toBeVisible();
@@ -561,7 +569,7 @@ describe('Voice Note on the Shopping List', () => {
 
       // Recording hides the strip; it comes back with the same failed note.
       fireEvent.pointerUp(await hold());
-      const strip = await screen.findByRole('status');
+      const strip = await findStatusNote();
       await waitFor(() => expect(strip).toHaveTextContent('1 ready'));
 
       expect(strip).toHaveTextContent('1 failed');
@@ -691,7 +699,7 @@ describe('Voice Note on the Shopping List', () => {
       act(() => reads[0].reject(new TypeError('offline')));
 
       await waitFor(() => expect(reads).toHaveLength(2));
-      expect(screen.getByRole('status')).toHaveTextContent('Reading 1');
+      expect(statusNote()).toHaveTextContent('Reading 1');
       act(() =>
         reads[1].resolve(Response.json({ transcript: 'bread', actions: [] })),
       );
@@ -1720,7 +1728,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     expect(
       screen.getByText('Eggs was already ticked, so that one counts as done.'),
     ).toBeVisible();
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(statusNote()).toBeInTheDocument();
   });
 
   it('keeps the toast for 5.2 seconds without an Undo', async () => {

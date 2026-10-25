@@ -1,4 +1,10 @@
 {
   "home": "Home",
-  "settings": "Settings"
+  "settings": "Settings",
+  "refresh": {
+    "button": "Refresh",
+    "busy": "Refreshing…",
+    "done": "Updated just now",
+    "failed": "Couldn't refresh · showing what you had"
+  }
 }

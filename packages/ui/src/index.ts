@@ -49,6 +49,7 @@ export {
   type GatorMotion,
   type GatorProps,
 } from './gator/Gator';
+export { GatorLogo, type GatorLogoProps } from './gator/GatorLogo';
 export {
   GATOR_MOODS,
   type AnimatedGatorMood,
