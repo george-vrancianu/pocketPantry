@@ -33,7 +33,7 @@ export type AnimatedGatorMood = keyof typeof GATOR_GEOMETRY;
  * The disappointed chef has one still drawing and no motion art, so it has no
  * padding: `drawing` and `view` are the same box.
  */
-const STILL_GEOMETRY = {
+export const STILL_GEOMETRY = {
   'chef-flop': { drawing: [0, -6, 280, 252], view: [0, -6, 280, 252] },
 } as const satisfies Record<string, { drawing: Box; view: Box }>;
 
@@ -44,14 +44,17 @@ export const GATOR_MOODS = [
   ...(Object.keys(STILL_GEOMETRY) as (keyof typeof STILL_GEOMETRY)[]),
 ] as const satisfies readonly GatorMood[];
 
+const GEOMETRY: Record<GatorMood, { drawing: Box; view: Box }> = {
+  ...GATOR_GEOMETRY,
+  ...STILL_GEOMETRY,
+};
+
 /**
  * How to size the image so the drawing renders `size` wide and keeps the
  * layout box it always had; the padding hangs out through negative margins.
  */
 export function gatorLayout(mood: GatorMood, size: number) {
-  const { drawing, view } = (
-    mood in STILL_GEOMETRY ? STILL_GEOMETRY : GATOR_GEOMETRY
-  )[mood as never] as { drawing: Box; view: Box };
+  const { drawing, view } = GEOMETRY[mood];
   const scale = size / drawing[2];
   return {
     /** The layout box: what the old static art took up. */

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
+import CHEF_FLOP from './art/gator-chef-flop.svg?url';
 import { type GatorMood, gatorLayout } from './gatorGeometry';
 
 export type GatorLoop = 'idle' | 'signature';
@@ -19,12 +20,6 @@ const FILES = import.meta.glob<string>(
 );
 
 // chef-flop has no motion art: its one still drawing stands in for every variant.
-const CHEF_FLOP = import.meta.glob<string>('./art/gator-chef-flop.svg', {
-  query: '?url',
-  import: 'default',
-  eager: true,
-})['./art/gator-chef-flop.svg']!;
-
 const ART: Record<string, Partial<Record<Variant, string>>> = {};
 for (const [path, url] of Object.entries(FILES)) {
   const [, mood, variant] = VARIANT_FILE.exec(path)!;

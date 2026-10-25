@@ -5,12 +5,21 @@ import {
   render,
   screen,
 } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+  vi,
+} from 'vitest';
 import { Gator, ONE_SHOT_MS, type GatorProps } from './Gator';
 import chefFlopArt from './art/gator-chef-flop.svg?raw';
 import {
   GATOR_GEOMETRY,
   GATOR_MOODS,
+  STILL_GEOMETRY,
   type AnimatedGatorMood,
   type GatorMood,
 } from './gatorGeometry';
@@ -419,6 +428,19 @@ describe('Gator', () => {
     // @ts-expect-error alt is required unless decorative
     const bad: GatorProps = { mood: 'happy' };
     expect(bad).toBeTruthy();
+    expectTypeOf<{ mood: 'happy' }>().not.toExtend<GatorProps>();
+    expectTypeOf<{ mood: 'happy'; alt: string }>().toExtend<GatorProps>();
+    expectTypeOf<{ mood: 'happy'; decorative: true }>().toExtend<GatorProps>();
+    expectTypeOf<{
+      mood: 'happy';
+      decorative: true;
+      alt: string;
+    }>().not.toExtend<GatorProps>();
+    expectTypeOf<{
+      mood: 'happy';
+      decorative: true;
+      onClick: () => void;
+    }>().not.toExtend<GatorProps>();
   });
 });
 
@@ -444,6 +466,12 @@ describe('Gator art', () => {
       }
     },
   );
+
+  it('gives the still chef-flop the viewBox of its art', () => {
+    expect(/viewBox="([^"]*)"/.exec(chefFlopArt)?.[1]).toBe(
+      STILL_GEOMETRY['chef-flop'].view.join(' '),
+    );
+  });
 
   it('keeps every Gator animated art file free of external references', () => {
     for (const text of Object.values(art)) {
