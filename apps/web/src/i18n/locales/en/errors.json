@@ -183,6 +183,11 @@
   "guidance": {
     "nothing_to_suggest": "Everything Suggest Guidance can fill is already filled. Clear a field and press Suggest Guidance again.",
     "suggest_unavailable": "Suggest Guidance is not working right now. Please try again in a moment.",
-    "suggest_failed": "We could not suggest Guidance. Try again, or write it yourself."
+    "suggest_failed": "We could not suggest Guidance. Try again, or write it yourself.",
+    "cap_reached_one": "You have used your {{count}} Suggest Guidance request for today. Your requests reset on {{when}}.",
+    "cap_reached_other": "You have used all {{count}} Suggest Guidance requests for today. Your requests reset on {{when}}.",
+    "cap_reached_no_time_one": "You have used your {{count}} Suggest Guidance request for today. Try again tomorrow.",
+    "cap_reached_no_time_other": "You have used all {{count}} Suggest Guidance requests for today. Try again tomorrow.",
+    "cap_reached_unknown": "You have used all of today's Suggest Guidance requests. Try again tomorrow."
   }
 }

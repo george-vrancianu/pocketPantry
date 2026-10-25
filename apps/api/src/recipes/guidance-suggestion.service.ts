@@ -7,6 +7,7 @@ import { pairingKind, pairingPrinciple } from '../database/schema';
 import { ApiException } from '../common/api-exception';
 import { catalogPrompt } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
+import { ScanCapService } from '../scan/scan-cap.service';
 import { LANGUAGE_NAMES } from '../scan/scan-language';
 import { SettingsService } from '../settings/settings.service';
 import {
@@ -22,6 +23,7 @@ import {
   type SuggestGuidanceBody,
 } from './guidance-suggestion.schemas';
 import {
+  NO_CONTEXT,
   memberSuggestionContext,
   type SuggestionContext,
 } from './guidance-suggestion-context';
@@ -46,6 +48,7 @@ export class GuidanceSuggestionService {
     private readonly ingredientCatalog: IngredientCatalogService,
     private readonly browse: RecipeBrowseService,
     private readonly settings: SettingsService,
+    private readonly caps: ScanCapService,
   ) {}
 
   async suggest(
@@ -68,23 +71,41 @@ export class GuidanceSuggestionService {
     const nameOf = (list: { id: string; name: string }[], id: string | null) =>
       list.find((item) => item.id === id)?.name ?? null;
 
-    const context = await memberSuggestionContext(this.database, {
-      memberId,
-      familyId,
-      locale,
-      catalog,
-      recipeId: body.recipeId,
-    });
+    // Links and Allergens matter only for Pairings; no lookups otherwise.
+    const context = wanted.includes('pairings')
+      ? await memberSuggestionContext(this.database, {
+          memberId,
+          familyId,
+          locale,
+          catalog,
+          recipeId: body.recipeId,
+        })
+      : NO_CONTEXT;
 
-    const answer = await this.ask({
-      prompt: suggestionPrompt(wanted, locale, context, {
-        recipe: body.recipe,
-        ingredientName: (id) => names.get(id) ?? null,
-        cuisine: nameOf(lists.cuisines, body.recipe.cuisineId),
-        method: nameOf(lists.methods, body.recipe.methodId),
-      }),
-    });
-    return suggestionOf(answer, wanted, context);
+    // The Guidance Cap: a use is counted just before the AI call (throwing guidance.cap_reached
+    // at the cap) and handed back when the call, or the reading of its answer, fails or when
+    // no field got a proposal. All of it sits inside the try: suggestionOf runs outside `ask`.
+    const day = await this.caps.consume(memberId, new Date(), 'guidance');
+    let suggestion: GuidanceSuggestion;
+    try {
+      const answer = await this.ask({
+        prompt: suggestionPrompt(wanted, locale, context, {
+          recipe: body.recipe,
+          ingredientName: (id) => names.get(id) ?? null,
+          cuisine: nameOf(lists.cuisines, body.recipe.cuisineId),
+          method: nameOf(lists.methods, body.recipe.methodId),
+        }),
+      });
+      suggestion = suggestionOf(answer, wanted, context);
+    } catch (error) {
+      await this.caps.refund(memberId, day, 'guidance');
+      throw error;
+    }
+    // Nothing usable is still a normal answer, but it costs the Member nothing.
+    if (Object.keys(suggestion.guidance).length === 0) {
+      await this.caps.refund(memberId, day, 'guidance');
+    }
+    return suggestion;
   }
 
   /** The one place the model is called. Unusable output is `scan.result_invalid`, as for Recipe from Link. */
@@ -98,7 +119,7 @@ export class GuidanceSuggestionService {
             ...request,
             schemaName: GUIDANCE_SUGGESTION_SCHEMA_NAME,
             schema: guidanceSuggestionJsonSchema,
-            maxOutputTokens: 2000,
+            maxOutputTokens: 4000,
             model: 'text',
           })
         ).data,

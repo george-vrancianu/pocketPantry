@@ -93,6 +93,9 @@ never reach a client.
   per UTC day, default 50; `0` disables it, counted independently);
   `LINK_DAILY_CAP` is the Link Cap (Recipe from Link reads that reach the AI,
   per Member per UTC day, default 20; `0` disables it, counted independently);
+  `GUIDANCE_DAILY_CAP` is the Guidance Cap (Suggest Guidance requests for
+  Members, per Member per UTC day, default 20; `0` disables it, counted
+  independently; Admin Catalog requests are never counted);
   `SCAN_MATCH_CONFIDENCE_THRESHOLD` is the confidence below which a Match
   becomes Unmatched and an image read is flagged low-confidence.
   `POST /api/scan/plate` also returns a short-lived (one hour) HMAC-SHA256

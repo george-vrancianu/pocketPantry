@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { count, eq } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
 import { StructuredOutputAiError } from '../src/ai/structured-output-ai.service';
 import { seedId } from '../src/catalog/seed/seed-catalog';
@@ -11,8 +11,10 @@ import {
   recipeIngredientLines,
   recipePairings,
   recipes,
+  scanUsage,
 } from '../src/database/schema';
 import type { GuidanceSuggestion } from '../src/recipes/guidance-suggestion.schemas';
+import { ScanCapService } from '../src/scan/scan-cap.service';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
@@ -510,6 +512,117 @@ describe('Suggest Guidance (integration)', () => {
       expect((res.body as GuidanceSuggestion).noSuggestions).toContain(
         'pairings',
       );
+    });
+  });
+
+  describe('the Guidance Cap', () => {
+    // The test env sets GUIDANCE_DAILY_CAP to 2 and LINK_DAILY_CAP to 2.
+    let cookie: string;
+    let memberId: string;
+    const usage = async (kind: 'guidance' | 'link') =>
+      (
+        await database
+          .select({ count: scanUsage.count })
+          .from(scanUsage)
+          .where(
+            and(eq(scanUsage.memberId, memberId), eq(scanUsage.kind, kind)),
+          )
+      )[0]?.count ?? 0;
+
+    beforeEach(async () => {
+      cookie = await signUp(
+        app,
+        `guidance-cap-${stamp}-${++memberCount}@example.com`,
+        'C',
+      );
+      member = client(app, cookie, '/api/recipes');
+      memberId = (
+        (await client(app, cookie, '/api/auth').get('/get-session')).body as {
+          user: { id: string };
+        }
+      ).user.id;
+    });
+
+    it('counts a request that gets a proposal and refuses the next at the cap with the time it lifts and no AI call', async () => {
+      await suggest(request()).expect(200);
+      expect(await usage('guidance')).toBe(1);
+      await suggest(request()).expect(200);
+      expect(prompts).toHaveLength(2);
+
+      const res = await suggest(request()).expect(429);
+      const body = res.body as {
+        code: string;
+        params: { cap: number; resetsAt: string };
+      };
+      expect(body.code).toBe('guidance.cap_reached');
+      expect(body.params.cap).toBe(2);
+      const resetsAt = Date.parse(body.params.resetsAt);
+      expect(resetsAt).toBeGreaterThan(Date.now());
+      expect(resetsAt - Date.now()).toBeLessThanOrEqual(86_400_000);
+      expect(new Date(resetsAt).toISOString()).toMatch(/T00:00:00\.000Z$/);
+      expect(prompts).toHaveLength(2);
+      expect(await usage('guidance')).toBe(2);
+    });
+
+    it('hands back a request the provider failed or whose answer was unusable', async () => {
+      answer = () =>
+        Promise.reject(new StructuredOutputAiError('failed', null));
+      await suggest(request()).expect(502);
+      respondWith({ nope: true });
+      await suggest(request()).expect(502);
+      expect(await usage('guidance')).toBe(0);
+
+      respondWith({ nutritionNote: 'Rich and filling.', pairings: null });
+      await suggest(request()).expect(200);
+      await suggest(request()).expect(200);
+      await suggest(request()).expect(429);
+    });
+
+    it('hands back a request where no field got a proposal, as a normal answer', async () => {
+      respondWith({ nutritionNote: null, pairings: null });
+      for (let i = 0; i < 3; i++) {
+        const res = await suggest(request()).expect(200);
+        expect(res.body as GuidanceSuggestion).toEqual({
+          guidance: {},
+          noSuggestions: ['pairings', 'nutritionNote'],
+        });
+      }
+      expect(await usage('guidance')).toBe(0);
+    });
+
+    it('does not count the refusal when no field is empty', async () => {
+      await suggest(request({ nutritionNote: 'Already written.' })).expect(400);
+      await suggest(request()).expect(200);
+      expect(await usage('guidance')).toBe(1);
+    });
+
+    it('is separate from the Link Cap in both directions', async () => {
+      const caps = app.get(ScanCapService);
+      await suggest(request()).expect(200);
+      await suggest(request()).expect(200);
+      await suggest(request()).expect(429);
+      // A full Guidance Cap leaves the Link Cap alone.
+      await caps.consume(memberId, new Date(), 'link');
+      await caps.consume(memberId, new Date(), 'link');
+      await expect(
+        caps.consume(memberId, new Date(), 'link'),
+      ).rejects.toMatchObject({ code: 'link.cap_reached' });
+
+      // A full Link Cap, in turn, leaves Suggest Guidance alone.
+      const other = await signUp(
+        app,
+        `guidance-cap-link-${stamp}-${++memberCount}@example.com`,
+        'L',
+      );
+      const otherId = (
+        (await client(app, other, '/api/auth').get('/get-session')).body as {
+          user: { id: string };
+        }
+      ).user.id;
+      await caps.consume(otherId, new Date(), 'link');
+      await caps.consume(otherId, new Date(), 'link');
+      await suggest(request(), client(app, other, '/api/recipes')).expect(200);
+      expect(await usage('link')).toBe(2);
     });
   });
 });

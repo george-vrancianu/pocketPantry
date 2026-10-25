@@ -190,4 +190,26 @@ describe('Daily caps counted by kind (integration)', () => {
       .where(eq(scanUsage.memberId, memberId));
     expect(scanRows).toEqual([{ kind: 'scan', count: 3 }]);
   });
+
+  it('caps Suggest Guidance with the reset time, apart from the Link Cap', async () => {
+    const memberId = await signUp('guidance');
+    await cap.consume(memberId, now, 'guidance');
+    await cap.consume(memberId, now, 'guidance');
+    await expect(cap.consume(memberId, now, 'guidance')).rejects.toMatchObject({
+      code: 'guidance.cap_reached',
+      params: { cap: 2, resetsAt: '2020-05-02T00:00:00.000Z' },
+    });
+
+    // A full Guidance Cap leaves the Link Cap alone, and a refund gives one use back.
+    await cap.consume(memberId, now, 'link');
+    await cap.refund(memberId, '2020-05-01', 'guidance');
+    await cap.consume(memberId, now, 'guidance');
+    await expect(cap.consume(memberId, now, 'guidance')).rejects.toMatchObject({
+      code: 'guidance.cap_reached',
+    });
+    await cap.consume(memberId, now, 'link');
+    await expect(cap.consume(memberId, now, 'link')).rejects.toMatchObject({
+      code: 'link.cap_reached',
+    });
+  });
 });

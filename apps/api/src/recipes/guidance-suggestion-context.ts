@@ -30,6 +30,14 @@ export type SuggestionContext = {
   unsafeLinkIds: ReadonlySet<string>;
 };
 
+/** For requests that do not ask for Pairings: nothing to link to, nothing to avoid. */
+export const NO_CONTEXT: SuggestionContext = {
+  catalog: { categories: [], ingredients: [] },
+  linkableRecipes: [],
+  avoidAllergens: [],
+  unsafeLinkIds: new Set(),
+};
+
 /** The context of a Member: Catalog and Family Recipes to link, the Family's Allergies to avoid. */
 export async function memberSuggestionContext(
   executor: Executor,
