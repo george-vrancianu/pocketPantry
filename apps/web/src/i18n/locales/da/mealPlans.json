@@ -81,6 +81,9 @@
   },
   "picker": {
     "title": "Vælg en opskrift",
-    "for": "{{mealtime}}, {{day}}"
+    "for": "{{mealtime}}, {{day}}",
+    "emptyFamily": "Ingen opskrifter i familien endnu. Vælg en fra Udforsk nedenfor.",
+    "explore": "Udforsk",
+    "exploreHint": "Når du vælger en, føjes den til dine opskrifter og planlægges."
   }
 }

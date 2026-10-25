@@ -1,6 +1,10 @@
 import { Alert, Box, Sheet, Spinner, Typography } from '@pocket-pantry/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ExploreRow } from '../../../components/ExploreRow';
+import { apiRequest } from '../../../lib/api';
+import { recipeChangeQueryKeys } from '../../../lib/queryKeys';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   isFiltering,
@@ -23,7 +27,11 @@ type Props = {
   onClose: () => void;
 };
 
-/** Every Recipe the Family can see, with the Recipes list's search and filters. */
+/**
+ * The Family's Recipes first, then an Explore section of Catalog Recipes (ADR 0029): Plans use
+ * Family Recipes only, so picking a Catalog Recipe Adds it to the Family and plans the copy.
+ * Both lists share the Recipes list's search and filters.
+ */
 export function RecipePickerSheet({
   open,
   context,
@@ -43,10 +51,48 @@ export function RecipePickerSheet({
   const recipes = useRecipes(browse, {
     includeVariants: true,
     showHidden: true,
+    scope: 'family',
+    enabled: open,
+  });
+  const explore = useRecipes(browse, {
+    includeVariants: true,
+    showHidden: true,
+    scope: 'catalog',
     enabled: open,
   });
   const filters = useRecipeFilters(open);
+  const queryClient = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
   const items = recipes.data?.recipes ?? [];
+  // A Catalog Recipe the Family already has is listed above as its copy.
+  const catalogItems = (explore.data?.recipes ?? []).filter(
+    (recipe) => recipe.familyCopyId === null,
+  );
+  const pickCatalog = async (recipe: {
+    id: string;
+    familyCopyId: string | null;
+  }) => {
+    if (busy || adding) return;
+    setAddError(null);
+    setAdding(true);
+    try {
+      const copy = await apiRequest<{ id: string; created: boolean }>(
+        `/recipes/${recipe.id}/copy`,
+        { method: 'POST' },
+      );
+      await Promise.all(
+        recipeChangeQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
+      onPick(copy.id);
+    } catch (error) {
+      setAddError(translateApiError(t, error));
+    } finally {
+      setAdding(false);
+    }
+  };
   const filtering = isFiltering(browse);
   return (
     <Sheet
@@ -71,13 +117,16 @@ export function RecipePickerSheet({
     >
       <Box sx={{ px: 3, pb: 2 }}>
         {error ? <Alert>{error}</Alert> : null}
+        {addError ? <Alert>{addError}</Alert> : null}
         {recipes.error ? (
           <Alert>{translateApiError(t, recipes.error)}</Alert>
         ) : null}
         {recipes.isPending ? <Spinner label={t('common:loading')} /> : null}
         {recipes.data && items.length === 0 ? (
           <Typography color="text.secondary">
-            {filtering ? t('recipes:noMatches') : t('recipes:empty')}
+            {filtering
+              ? t('recipes:noMatches')
+              : t('mealPlans:picker.emptyFamily')}
           </Typography>
         ) : null}
         <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
@@ -93,6 +142,37 @@ export function RecipePickerSheet({
             />
           ))}
         </Box>
+        {catalogItems.length > 0 ? (
+          <section>
+            <Typography
+              component="h3"
+              variant="h3"
+              id="picker-explore"
+              sx={{ mt: 2 }}
+            >
+              {t('mealPlans:picker.explore')}
+            </Typography>
+            <Typography variant="meta" color="text.secondary">
+              {t('mealPlans:picker.exploreHint')}
+            </Typography>
+            <Box
+              component="ul"
+              aria-labelledby="picker-explore"
+              sx={{ listStyle: 'none', m: 0, p: 0 }}
+            >
+              {catalogItems.map((recipe) => (
+                <ExploreRow
+                  key={recipe.id}
+                  recipe={recipe}
+                  state={{ status: adding ? 'adding' : 'none' }}
+                  onAdd={() => void pickCatalog(recipe)}
+                  onOpen={() => void pickCatalog(recipe)}
+                  filtering
+                />
+              ))}
+            </Box>
+          </section>
+        ) : null}
       </Box>
     </Sheet>
   );

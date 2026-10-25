@@ -44,7 +44,19 @@ export class RecipeCopyService {
     sourceId: string,
     locale: CatalogLocale,
   ): Promise<{ id: string; created: boolean }> {
-    const familyId = await this.settings.familyIdOf(memberId);
+    return this.copyFor(
+      await this.settings.familyIdOf(memberId),
+      sourceId,
+      locale,
+    );
+  }
+
+  /** `copy` for a Family with no acting Member (the Meal Plan slot migration mirrors it in SQL). */
+  async copyFor(
+    familyId: string,
+    sourceId: string,
+    locale: CatalogLocale,
+  ): Promise<{ id: string; created: boolean }> {
     const source = await this.readSource(this.database, sourceId, familyId);
     const live = await this.liveCopy(this.database, familyId, sourceId);
     if (live) return { id: live, created: false };

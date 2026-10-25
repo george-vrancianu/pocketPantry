@@ -88,6 +88,9 @@
   },
   "picker": {
     "title": "Alege o rețetă",
-    "for": "{{mealtime}}, {{day}}"
+    "for": "{{mealtime}}, {{day}}",
+    "emptyFamily": "Încă nu ai rețete în familie. Alege una din Explorează, mai jos.",
+    "explore": "Explorează",
+    "exploreHint": "Dacă alegi una, o adaugi la rețetele tale și o planifici."
   }
 }
