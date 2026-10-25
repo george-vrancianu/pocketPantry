@@ -35,7 +35,7 @@ export function DashboardPage() {
   return (
     <>
       <DashboardHeader
-        leading={inLayout ? <RefreshMark /> : undefined}
+        leading={inLayout ? <RefreshMark size={42} /> : undefined}
         greeting={t(`greeting.${greetingKeyForHour(now.getHours())}`)}
         subline={inLayout ? <RefreshStatus rest={date} /> : date}
         actions={

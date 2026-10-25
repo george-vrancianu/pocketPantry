@@ -205,15 +205,15 @@ describe('DashboardPage header', () => {
     const calls = stubDash(layout);
     renderInAppLayout(<DashboardPage />, '/');
     await settle();
-    const before = calls.filter((c) => c.key === 'GET /api/dashboard-layout');
+    const count = () =>
+      calls.filter((c) => c.key === 'GET /api/dashboard-layout').length;
+    const before = count();
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(screen.getByRole('status')).toHaveTextContent('Refreshing…');
     await settle();
     expect(screen.getByRole('status')).toHaveTextContent('Updated just now');
-    expect(
-      calls.filter((c) => c.key === 'GET /api/dashboard-layout').length,
-    ).toBeGreaterThan(before.length);
+    expect(count()).toBeGreaterThan(before);
     await elapse(2500);
     expect(screen.getByRole('status')).toHaveTextContent('Sunday, October 25');
   });
@@ -227,8 +227,9 @@ describe('DashboardPage header', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     await settle();
-    expect(screen.getByRole('status')).not.toHaveTextContent('Sunday');
-    expect(screen.getByRole('status')).not.toHaveTextContent('Refreshing');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "Couldn't refresh · showing what you had",
+    );
     await elapse(4000);
     expect(screen.getByRole('status')).toHaveTextContent('Sunday, October 25');
   });

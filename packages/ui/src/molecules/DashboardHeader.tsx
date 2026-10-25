@@ -30,6 +30,9 @@ export function DashboardHeader({
         gap: '12px',
         pt: '28px',
         pb: '18px',
+        // Keeps the old date + h1 header's content height (about 54px) so the widget grid starts where it did.
+        boxSizing: 'content-box',
+        minHeight: '54px',
       }}
     >
       {leading}
