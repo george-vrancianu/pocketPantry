@@ -1,10 +1,16 @@
 import Box from '@mui/material/Box';
-import type { MouseEventHandler, ReactNode, Ref } from 'react';
+import {
+  useState,
+  type MouseEventHandler,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import { BackIcon, HomeIcon } from '../atoms/icons';
 import { IconButton } from '../atoms/IconButton';
 import { ActionMenu, type ActionMenuItem } from './ActionMenu';
 import { Typography } from '../atoms/Typography';
 import { tokens } from '../theme/tokens';
+import { radius } from '../theme/themeVars';
 
 export type ScreenHeaderAction = {
   /** Accessible name of the icon-only button. */
@@ -30,7 +36,14 @@ export type ScreenHeaderProps = {
   /** Content right-aligned in the header, e.g. counter chips on wide screens. */
   trailing?: ReactNode;
   /** A Back link to `href`, in place of the Home button. */
-  back?: { label: string; href: string };
+  back?: {
+    label: string;
+    href: string;
+    /** A "+n" count on Back's corner, hidden at 0; the label should name it too. It bumps when it grows. */
+    badge?: number;
+    /** Called on click; the screen may `preventDefault()` to leave with its own motion. */
+    onClick?: MouseEventHandler<HTMLElement>;
+  };
   /** Makes the title programmatically focusable, so a screen can move focus to it. Needs `title`. */
   titleRef?: Ref<HTMLHeadingElement>;
 };
@@ -57,9 +70,16 @@ export function ScreenHeader({
       }}
     >
       {back ? (
-        <IconButton label={back.label} href={back.href}>
-          <BackIcon size={20} />
-        </IconButton>
+        <Box sx={{ position: 'relative', display: 'flex' }}>
+          <IconButton
+            label={back.label}
+            href={back.href}
+            onClick={back.onClick}
+          >
+            <BackIcon size={20} />
+          </IconButton>
+          {back.badge ? <BackBadge count={back.badge} /> : null}
+        </Box>
       ) : home ? (
         <IconButton label={home.label} href={home.href ?? '/'}>
           <HomeIcon size={20} />
@@ -85,8 +105,12 @@ export function ScreenHeader({
           </Typography>
         ) : null}
       </Box>
-      {trailing}
-      {action ? <HeaderAction {...action} /> : null}
+      {trailing || action ? (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {trailing}
+          {action ? <HeaderAction {...action} /> : null}
+        </Box>
+      ) : null}
     </Box>
   );
 }
@@ -118,5 +142,51 @@ function HeaderAction({
     >
       {icon}
     </IconButton>
+  );
+}
+
+/** The "+n" pill on Back's corner; it bumps when the count grows, not when Undo shrinks it. */
+function BackBadge({ count }: { count: number }) {
+  const [previous, setPrevious] = useState(count);
+  const [bump, setBump] = useState(0);
+  if (count !== previous) {
+    setPrevious(count);
+    if (count > previous) setBump((n) => n + 1);
+  }
+  return (
+    <Box
+      key={bump}
+      aria-hidden
+      data-testid="back-badge"
+      sx={{
+        position: 'absolute',
+        top: '-4px',
+        right: '-6px',
+        minWidth: 20,
+        height: 20,
+        px: '5px',
+        boxSizing: 'border-box',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: radius.pill,
+        bgcolor: tokens.color.accent,
+        color: 'pp.accentInk',
+        boxShadow: `0 0 0 2px ${tokens.color.bg}`,
+        fontSize: 11,
+        fontWeight: 700,
+        pointerEvents: 'none',
+        '@keyframes pp-back-badge-bump': {
+          '0%': { transform: 'scale(1)' },
+          '40%': { transform: 'scale(1.3)' },
+          '100%': { transform: 'scale(1)' },
+        },
+        '@media (prefers-reduced-motion: no-preference)': {
+          animation: 'pp-back-badge-bump 400ms ease-out',
+        },
+      }}
+    >
+      +{count}
+    </Box>
   );
 }

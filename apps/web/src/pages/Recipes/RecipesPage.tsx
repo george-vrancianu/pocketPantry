@@ -1,8 +1,9 @@
 import {
   Alert,
   Box,
-  GlobeIcon,
+  CompassIcon,
   PlusIcon,
+  radius,
   Spinner,
   Stack,
   tokens,
@@ -28,6 +29,44 @@ import { CookTonightCardLink } from './components/CookTonightCardLink';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
 import { SectionLabel } from './components/SectionLabel';
+
+/** The header's one second button besides "+" (ADR 0027 amendment): a way into Explore. */
+function ExplorePill() {
+  const { t } = useTranslation('recipes');
+  return (
+    <Box
+      component={Link}
+      to="/recipes/explore"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        height: 40,
+        boxSizing: 'border-box',
+        pl: '10px',
+        pr: '13px',
+        borderRadius: radius.pill,
+        bgcolor: tokens.color.surface,
+        border: `1px solid ${tokens.color.line}`,
+        color: tokens.color.ink,
+        fontSize: 13.5,
+        fontWeight: 700,
+        textDecoration: 'none',
+        flexShrink: 0,
+        '&:hover, &:active': { bgcolor: tokens.color.subtle },
+      }}
+    >
+      <Box
+        component="span"
+        aria-hidden
+        sx={{ display: 'flex', color: tokens.color.accent }}
+      >
+        <CompassIcon size={18} />
+      </Box>
+      {t('explore.pill')}
+    </Box>
+  );
+}
 
 /** Browse Recipes: Base Recipes by default, Variants too once a search or filter is active. */
 export function RecipesPage() {
@@ -62,6 +101,7 @@ export function RecipesPage() {
     <>
       <AppScreenHeader
         title={t('recipes:title')}
+        trailing={<ExplorePill />}
         action={{
           label: t('recipes:add'),
           icon: <PlusIcon size={20} />,
@@ -73,7 +113,8 @@ export function RecipesPage() {
             },
             {
               label: t('recipes:explore.menuItem'),
-              icon: <GlobeIcon size={18} />,
+              icon: <CompassIcon size={18} />,
+              dividerBefore: true,
               badge: t('recipes:explore.menuNew'),
               href: '/recipes/explore',
             },

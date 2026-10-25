@@ -212,6 +212,18 @@ describe('RecipesPage', () => {
       expect(screen.getByText('new recipe page')).toBeInTheDocument();
     });
 
+    it('shows the Explore pill before the plus, with no Settings gear, and opens Explore', async () => {
+      setup(() => [omelette]);
+      const pill = await screen.findByRole('link', { name: 'Explore' });
+      const plus = screen.getByRole('button', { name: 'Add a Recipe' });
+      expect(
+        pill.compareDocumentPosition(plus) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(screen.queryByRole('link', { name: /settings/i })).toBeNull();
+      await userEvent.click(pill);
+      expect(screen.getByText('explore page')).toBeInTheDocument();
+    });
+
     it('opens Explore from the header plus', async () => {
       setup(() => [omelette]);
       await userEvent.click(

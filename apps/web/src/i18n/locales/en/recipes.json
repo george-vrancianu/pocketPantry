@@ -269,7 +269,15 @@
     "inFamily": "In your Recipes",
     "openCopy": "{{title}} is in your Recipes. Open it",
     "undoFailed": "Couldn't undo adding {{title}}. Try again.",
-    "alreadyAdded": "{{title}} is already in your Recipes"
+    "alreadyAdded": "{{title}} is already in your Recipes",
+    "pill": "Explore",
+    "search": "Search all Recipes",
+    "canMake": "You can make this",
+    "noMatchesHint": "Try another word, or write your own with New Recipe.",
+    "backAdded_one": "Back to your Recipes, {{count}} added",
+    "backAdded_other": "Back to your Recipes, {{count}} added",
+    "showMore_one": "Show {{count}} more",
+    "showMore_other": "Show {{count}} more"
   },
   "preview": {
     "eyebrow": "Explore · Catalog Recipe",

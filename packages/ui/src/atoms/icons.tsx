@@ -1,5 +1,6 @@
 import type { ComponentType, SVGProps } from 'react';
 import {
+  Compass,
   House,
   LayoutGrid,
   Settings,
@@ -332,6 +333,8 @@ export const LockIcon = lucide(Lock);
 export const CameraIcon = lucide(Camera);
 /** Scan camera: the Scan Language chip's globe. */
 export const GlobeIcon = lucide(Globe);
+/** Explore: the header pill, the "+" menu item and the empty Recipes page. */
+export const CompassIcon = lucide(Compass);
 /** Review overview: "Add from photos". */
 export const ImagePlusIcon = lucide(ImagePlus);
 export const ReceiptIcon = lucide(ReceiptText);

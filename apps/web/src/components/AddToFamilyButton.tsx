@@ -41,6 +41,12 @@ export function AddToFamilyButton({ title, state, onAdd }: Props) {
     textDecoration: 'none',
     font: 'inherit',
   } as const;
+  const hover = {
+    '&:hover': {
+      bgcolor: tokens.color.accentTint,
+      color: tokens.color.accentOnTint,
+    },
+  } as const;
   if (state.status === 'none') {
     return (
       <Box
@@ -53,10 +59,10 @@ export function AddToFamilyButton({ title, state, onAdd }: Props) {
         }}
         sx={{
           ...base,
+          color: tokens.color.accent,
           border: `1.5px solid ${tokens.color.accent}`,
           bgcolor: tokens.color.surface,
-          color: tokens.color.accent,
-          '&:hover': { bgcolor: tokens.color.accentTint },
+          ...hover,
         }}
       >
         <PlusIcon size={18} />
