@@ -33,6 +33,12 @@ export type ScreenHeaderProps = {
   home?: { label: string; href?: string };
   /** The single action on the right, the only button there: add, search or share. */
   action?: ScreenHeaderAction;
+  /** A small muted line under the title (and subtitle), e.g. a status. Needs `title`; ignored without it. */
+  subline?: ReactNode;
+  /** Keep the title to one line with an ellipsis, so a long title never pushes the action off. */
+  truncateTitle?: boolean;
+  /** A mark before the title, on a tab root (e.g. the Gator logo). Not counted toward the one-button rule. */
+  leading?: ReactNode;
   /** Content right-aligned in the header, e.g. counter chips on wide screens. */
   trailing?: ReactNode;
   /** A Back link to `href`, in place of the Home button. */
@@ -52,6 +58,9 @@ export type ScreenHeaderProps = {
 export function ScreenHeader({
   title,
   subtitle,
+  subline,
+  truncateTitle,
+  leading,
   home,
   action,
   trailing,
@@ -85,6 +94,7 @@ export function ScreenHeader({
           <HomeIcon size={20} />
         </IconButton>
       ) : null}
+      {leading}
       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
         {title ? (
           <Typography
@@ -92,7 +102,17 @@ export function ScreenHeader({
             component="h1"
             ref={titleRef}
             tabIndex={titleRef ? -1 : undefined}
-            sx={{ outline: 'none', overflowWrap: 'break-word' }}
+            sx={{
+              outline: 'none',
+              overflowWrap: 'break-word',
+              ...(truncateTitle
+                ? {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }
+                : {}),
+            }}
           >
             {title}
           </Typography>
@@ -103,6 +123,18 @@ export function ScreenHeader({
           >
             {subtitle}
           </Typography>
+        ) : null}
+        {title && subline ? (
+          <Box
+            sx={{
+              fontSize: 12.5,
+              color: tokens.color.muted,
+              mt: '2px',
+              minHeight: '1.4em',
+            }}
+          >
+            {subline}
+          </Box>
         ) : null}
       </Box>
       {trailing || action ? (
