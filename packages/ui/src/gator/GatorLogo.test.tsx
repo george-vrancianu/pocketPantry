@@ -113,4 +113,36 @@ describe('GatorLogo', () => {
       expect(motion()).toBe('idle');
     });
   });
+
+  describe('success signal', () => {
+    const mount = (n: number) => <GatorLogo label="Refresh" successCount={n} />;
+    beforeEach(() => resetGatorLogoEntrance());
+
+    it('plays the head-only re-entrance when the count rises, then idles', () => {
+      const { rerender } = render(mount(0));
+      advance(ONE_SHOT_MS.entrance);
+      expect(motion()).toBe('idle');
+      rerender(mount(1));
+      expect(motion()).toBe('reentrance');
+      advance(1300);
+      expect(motion()).toBe('idle');
+    });
+
+    it('cuts to the Tap on a click during the re-entrance', () => {
+      const { rerender } = render(mount(0));
+      advance(ONE_SHOT_MS.entrance);
+      rerender(mount(1));
+      fireEvent.click(screen.getByRole('button'));
+      expect(motion()).toBe('tap');
+      advance(ONE_SHOT_MS.tap);
+      expect(motion()).toBe('idle');
+    });
+
+    it('stays still under reduced motion', () => {
+      stubReducedMotion(true);
+      const { rerender } = render(mount(0));
+      rerender(mount(1));
+      expect(motion()).toBe('idle');
+    });
+  });
 });

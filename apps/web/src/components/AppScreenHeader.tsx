@@ -15,10 +15,11 @@ const REFRESH_ROOTS = ['/pantry', '/shopping', '/recipes'];
 
 function RefreshMark() {
   const { t } = useTranslation('screenHeader');
-  const { run } = useRefreshScreen();
+  const { run, successCount } = useRefreshScreen();
   return (
     <GatorLogo
       label={t('refresh.button')}
+      successCount={successCount}
       onClick={() => {
         haptic(10);
         void run();
