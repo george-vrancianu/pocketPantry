@@ -1,9 +1,37 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GatorLogo } from './GatorLogo';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { GatorLogo, resetGatorLogoEntrance } from './GatorLogo';
+import { ONE_SHOT_MS } from './Gator';
+
+function stubReducedMotion(reduce: boolean) {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: reduce && query.includes('reduce'),
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+  }));
+}
+const motion = () => screen.getByRole('button').getAttribute('data-motion');
+const advance = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  stubReducedMotion(false);
+  resetGatorLogoEntrance();
+});
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
   document.documentElement.removeAttribute('data-theme');
 });
 
@@ -35,5 +63,54 @@ describe('GatorLogo', () => {
     document.documentElement.setAttribute('data-theme', 'dark');
     expect(getComputedStyle(head).filter).toBe('none');
     expect(getComputedStyle(hd).stroke).toBe('rgb(159, 211, 106)');
+  });
+
+  it('plays the Entrance on the first mount, then idles', () => {
+    render(<GatorLogo label="Refresh" />);
+    expect(motion()).toBe('entrance');
+    advance(ONE_SHOT_MS.entrance);
+    expect(motion()).toBe('idle');
+  });
+
+  it('starts a later mount in idle', () => {
+    render(<GatorLogo label="Refresh" />);
+    cleanup();
+    render(<GatorLogo label="Refresh" />);
+    expect(motion()).toBe('idle');
+  });
+
+  it('plays the Tap on each click, then idles', () => {
+    render(<GatorLogo label="Refresh" />);
+    advance(ONE_SHOT_MS.entrance);
+    fireEvent.click(screen.getByRole('button'));
+    expect(motion()).toBe('tap');
+    advance(ONE_SHOT_MS.tap);
+    expect(motion()).toBe('idle');
+    fireEvent.click(screen.getByRole('button'));
+    expect(motion()).toBe('tap');
+  });
+
+  it('cuts the Entrance to the Tap on a click', () => {
+    render(<GatorLogo label="Refresh" />);
+    advance(300);
+    fireEvent.click(screen.getByRole('button'));
+    expect(motion()).toBe('tap');
+    advance(ONE_SHOT_MS.tap);
+    expect(motion()).toBe('idle');
+  });
+
+  describe('with reduced motion', () => {
+    beforeEach(() => stubReducedMotion(true));
+
+    it('never plays a one-shot, and onClick fires once per click', () => {
+      const onClick = vi.fn();
+      render(<GatorLogo label="Refresh" onClick={onClick} />);
+      expect(motion()).toBe('idle');
+      fireEvent.click(screen.getByRole('button'));
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(motion()).toBe('idle');
+      advance(ONE_SHOT_MS.entrance);
+      expect(motion()).toBe('idle');
+    });
   });
 });
