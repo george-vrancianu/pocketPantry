@@ -198,8 +198,10 @@ describe('Plate Scan in the Scan Session', () => {
     await userEvent.click(await screen.findByTestId('card-result'));
     await userEvent.click(await findReviewRow('Milk'));
     const milkCard = screen.getByRole('group', { name: 'Milk' });
-    expect(within(milkCard).getByLabelText('Quantity')).toHaveValue(200);
-    expect(within(milkCard).queryByLabelText('Expiry date')).toBeNull();
+    expect(within(milkCard).getByLabelText(/^Amount of/)).toHaveValue('200');
+    expect(
+      within(milkCard).queryByRole('button', { name: /^Expires/ }),
+    ).toBeNull();
     await userEvent.click(
       screen.getByRole('button', { name: 'Add 2 items to shopping list' }),
     );

@@ -16,14 +16,15 @@ import {
   type RowStatus,
 } from '../../../lib/review';
 import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
+import { AmountField } from '../../../components/AmountField';
+import { ExpiryField } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
-import { Field, controlSx, fieldLabelSx } from './Field';
+import { Field, controlSx } from './Field';
 import {
   CategorySelect,
   DescriptionInput,
-  ExpiryButton,
   NameInput,
-  QuantityUnitInput,
+  useReviewLineExpiry,
 } from './RowInputs';
 import { fieldId, panelId } from './layout';
 
@@ -61,6 +62,7 @@ export function RowEditPanel({
   accessibleName,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry', 'common']);
+  const expiry = useReviewLineExpiry(line, onChange);
   const unmatched = line.match === null;
   const name = displayName(line);
   const invalid = invalidFields(line);
@@ -104,15 +106,8 @@ export function RowEditPanel({
       {line.lookup ? (
         <BarcodeLookupNotes lookup={line.lookup} mb="8px" />
       ) : null}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '8px',
-          alignItems: 'start',
-        }}
-      >
-        <Field htmlFor={id('match')} label={t('review:field.match')} wide>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <Field htmlFor={id('match')} label={t('review:field.match')}>
           <Box
             id={id('match')}
             component="button"
@@ -170,7 +165,6 @@ export function RowEditPanel({
           <Field
             htmlFor={id('name')}
             label={t('review:field.name')}
-            wide
             error={
               invalid.includes('name') ? t('review:error.name') : undefined
             }
@@ -187,11 +181,7 @@ export function RowEditPanel({
         ) : null}
 
         {unmatched && !shopping ? (
-          <Field
-            htmlFor={id('category')}
-            label={t('review:field.category')}
-            wide
-          >
+          <Field htmlFor={id('category')} label={t('review:field.category')}>
             <CategorySelect
               line={line}
               onChange={onChange}
@@ -206,7 +196,6 @@ export function RowEditPanel({
           <Field
             htmlFor={id('description')}
             label={t('review:field.description')}
-            wide
           >
             <DescriptionInput
               line={line}
@@ -216,51 +205,53 @@ export function RowEditPanel({
           </Field>
         )}
 
-        <Field
-          htmlFor={id('quantity')}
-          label={t('review:field.quantity')}
-          error={
-            invalid.includes('quantity')
-              ? t('pantry:form.quantityInvalid')
-              : undefined
-          }
-          errorId={`${id('quantity')}-error`}
-        >
-          <QuantityUnitInput
-            line={line}
-            onChange={onChange}
+        {/* The same amount, Location and expiry fields as adding a Batch in the Pantry, one per line. */}
+        <Box sx={{ minWidth: 0 }}>
+          <AmountField
             id={id('quantity')}
-            invalid={invalid.includes('quantity')}
-            errorId={`${id('quantity')}-error`}
+            name={name}
+            quantity={line.quantity}
+            unit={line.unit}
+            onQuantityChange={(quantity, unit) =>
+              onChange({ quantity, ...(unit ? { unit } : {}) })
+            }
+            onUnitChange={(unit) => {
+              if (unit) onChange({ unit });
+            }}
+            error={
+              invalid.includes('quantity')
+                ? t('pantry:form.quantityInvalid')
+                : null
+            }
+            // Enter has no save here; Confirm below closes the row.
+            onSubmit={() => {}}
+            // A Review line always carries a unit.
+            allowNoUnit={false}
+            amountScale={line.match?.amountScale}
+            label={t('common:amount.placeholder')}
+            height={56}
+            // A misread amount is corrected here, not converted: a new unit keeps the number.
+            rescaleOnUnitChange={false}
           />
-        </Field>
+        </Box>
 
         {shopping ? null : (
-          <Field
-            htmlFor={id('expiry')}
-            label={t('review:field.expiry')}
-            error={expiryError ? t('review:error.expiry') : undefined}
-            errorId={`${id('expiry')}-error`}
-          >
-            <ExpiryButton
-              line={line}
-              onChange={onChange}
-              id={id('expiry')}
-              error={expiryError}
-              errorId={`${id('expiry')}-error`}
-              labelId={`${id('expiry')}-label`}
-            />
-          </Field>
-        )}
-
-        {/* The toggle needs the panel's full width for four Locations on a phone. */}
-        {shopping ? null : (
-          <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}>
+          <Box sx={{ minWidth: 0 }}>
             <LocationToggle
-              label={t('review:field.location')}
+              label={t('pantry:form.location')}
               value={line.location}
               onChange={(location) => onChange({ location })}
-              captionSx={fieldLabelSx}
+            />
+          </Box>
+        )}
+
+        {shopping ? null : (
+          <Box sx={{ minWidth: 0 }}>
+            <ExpiryField
+              id={id('expiry')}
+              label={t('pantry:picker.label')}
+              {...expiry}
+              error={expiryError ? t('review:error.expiry') : null}
             />
           </Box>
         )}
@@ -269,8 +260,7 @@ export function RowEditPanel({
           sx={{
             display: 'flex',
             gap: '8px',
-            alignSelf: 'end',
-            ...(shopping ? {} : { gridColumn: '1 / -1', justifySelf: 'end' }),
+            alignSelf: 'flex-end',
           }}
         >
           <IconButton

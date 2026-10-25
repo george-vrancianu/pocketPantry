@@ -448,8 +448,10 @@ describe('Barcode on the Scan page', () => {
       );
       await user.click(screen.getByTestId('card-result'));
       await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
-      expect(await screen.findByLabelText('Quantity')).toHaveValue(400);
-      expect(screen.getByLabelText('Unit')).toHaveValue('g');
+      expect(await screen.findByLabelText(/^Amount of/)).toHaveValue('400');
+      expect(
+        screen.getByRole('button', { name: 'Unit: g' }),
+      ).toBeInTheDocument();
       expect(screen.getByLabelText('Product description')).toHaveValue(
         'Greek yogurt',
       );
@@ -820,7 +822,7 @@ describe('Barcode on the Scan page', () => {
 
     it('gives no credit to a Known Barcode line', async () => {
       await openLine(found({ source: 'known_barcode' }));
-      await screen.findByLabelText('Quantity');
+      await screen.findByLabelText(/^Amount of/);
       expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
     });
 
@@ -931,7 +933,7 @@ describe('Barcode on the Scan page', () => {
       await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
       await user.click(await screen.findByRole('button', { name: /Milk/ }));
-      await screen.findByLabelText('Quantity');
+      await screen.findByLabelText(/^Amount of/);
       expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
       expect(screen.queryByText(/This product lists/)).toBeNull();
     });

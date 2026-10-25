@@ -20,7 +20,7 @@ export const controlSx = {
 } as const;
 
 /** The small caption above each control in the edit panel. */
-export const fieldLabelSx = {
+const fieldLabelSx = {
   display: 'block',
   mb: '4px',
   fontSize: 11,
@@ -32,8 +32,6 @@ type Props = {
   /** The id of the control inside, so the visible label is its accessible name. */
   htmlFor: string;
   label: string;
-  /** Spans both columns of the panel grid. */
-  wide?: boolean;
   /** Inline error text; the control points at it with `errorId`. */
   error?: string;
   errorId?: string;
@@ -41,16 +39,9 @@ type Props = {
 };
 
 /** A labelled control with its inline error under it. */
-export function Field({
-  htmlFor,
-  label,
-  wide,
-  error,
-  errorId,
-  children,
-}: Props) {
+export function Field({ htmlFor, label, error, errorId, children }: Props) {
   return (
-    <Box sx={{ gridColumn: wide ? '1 / -1' : undefined, minWidth: 0 }}>
+    <Box sx={{ minWidth: 0 }}>
       <Box
         component="label"
         id={`${htmlFor}-label`}

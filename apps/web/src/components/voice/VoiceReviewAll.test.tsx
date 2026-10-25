@@ -298,7 +298,7 @@ describe('Review all in the Voice Inbox', () => {
         dialog.getByRole('region', { name: 'Shopping List' }),
       ).getAllByRole('button', { expanded: false })[1],
     );
-    const amount = dialog.getByRole('textbox', { name: 'Amount of Eggs' });
+    const amount = dialog.getByRole('textbox', { name: /^Amount of Eggs,/ });
     await userEvent.clear(amount);
     await userEvent.type(amount, '9');
 
@@ -307,9 +307,9 @@ describe('Review all in the Voice Inbox', () => {
       dialog.getByRole('button', { name: 'Apply 2 changes' }),
     );
     expect(await dialog.findByRole('alert')).toBeVisible();
-    expect(dialog.getByRole('textbox', { name: 'Amount of Eggs' })).toHaveValue(
-      '9',
-    );
+    expect(
+      dialog.getByRole('textbox', { name: /^Amount of Eggs,/ }),
+    ).toHaveValue('9');
 
     applyStatus = 201;
     await userEvent.click(
