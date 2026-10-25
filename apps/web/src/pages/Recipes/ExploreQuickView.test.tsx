@@ -101,6 +101,7 @@ const detail: RecipeDetail = {
   allergyWarning: null,
   sourceLink: null,
   sourceLanguage: null,
+  copiedFrom: null,
 };
 const spicy: RecipeDetail = {
   ...detail,
