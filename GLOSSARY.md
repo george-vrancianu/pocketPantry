@@ -448,7 +448,7 @@ The screens a new Member goes through once, after which they land on the Dashboa
 _Avoid_: Onboarding, tutorial, walkthrough, welcome flow
 
 **Setup**:
-The two optional tries in the Intro, one Scan and one Voice Note, each taken from the real Dock and saved through the real Review. Either can be skipped.
+The two optional tries in the Intro, a Scan Session and a Voice Inbox, each taken from the real Dock and saved through the real Review. Either can be skipped. Whatever the Member leaves unsaved when they carry on goes with them into the app.
 _Avoid_: Demo, practice, trial
 
 ### Dashboard
