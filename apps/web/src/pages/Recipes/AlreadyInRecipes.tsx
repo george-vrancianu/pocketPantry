@@ -1,4 +1,4 @@
-import { Button, Stack, Typography } from '@pocket-pantry/ui';
+import { Button, Stack, Typography, radius } from '@pocket-pantry/ui';
 import { forwardRef, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -18,6 +18,13 @@ export const AlreadyInRecipes = forwardRef<
     <Stack
       component="section"
       spacing={1.5}
+      sx={{
+        p: '16px',
+        border: '2px solid',
+        borderColor: 'pp.cardLine',
+        borderRadius: radius.control,
+        backgroundColor: 'pp.cardBg',
+      }}
       aria-labelledby={headingId}
       aria-describedby={bodyId}
     >
@@ -34,10 +41,10 @@ export const AlreadyInRecipes = forwardRef<
         {t('fromLink.duplicate.body')}
       </Typography>
       <Stack direction="row" spacing={1.5}>
-        <Button href={`/recipes/${recipeId}`}>
+        <Button fullWidth href={`/recipes/${recipeId}`}>
           {t('fromLink.duplicate.open')}
         </Button>
-        <Button variant="secondary" onClick={onReadAgain}>
+        <Button variant="secondary" fullWidth onClick={onReadAgain}>
           {t('fromLink.duplicate.readAgain')}
         </Button>
       </Stack>

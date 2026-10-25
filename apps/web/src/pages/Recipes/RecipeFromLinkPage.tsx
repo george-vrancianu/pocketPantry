@@ -6,8 +6,9 @@ import {
   Spinner,
   TextField,
   Typography,
+  radius,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AlreadyInRecipes } from './AlreadyInRecipes';
@@ -43,6 +44,13 @@ const READING_ERRORS: Record<string, string> = {
  * already one of the Family's Recipes answers "Already in your Recipes" (Open, or Read again with
  * `force`) instead of a draft; it shows only for a link.
  */
+const fieldSx = {
+  '& .MuiOutlinedInput-root': { minHeight: 44, borderRadius: radius.control },
+  '& .MuiOutlinedInput-root:not(.MuiInputBase-multiline) input': {
+    py: '10px',
+  },
+};
+
 export function RecipeFromLinkPage() {
   const { t, i18n } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
@@ -60,6 +68,7 @@ export function RecipeFromLinkPage() {
   const modeChanged = useRef(false);
   const cancelButton = useRef<HTMLButtonElement>(null);
   const wasPending = useRef(false);
+  const fieldId = useId();
 
   // The field is disabled while reading; when the read ends (Cancel or an error), focus returns to it.
   useEffect(() => {
@@ -202,36 +211,53 @@ export function RecipeFromLinkPage() {
             {t('recipes:fromLink.pasteInstead')}
           </Button>
         ) : null}
-        {mode === 'text' ? (
-          <TextField
-            multiline
-            minRows={6}
-            label={t('recipes:fromLink.textLabel')}
-            value={pasted}
-            inputRef={field}
-            disabled={read.isPending}
-            onChange={(event) => setPasted(event.target.value)}
-            slotProps={{ htmlInput: { maxLength: MAX_PASTED_TEXT_LENGTH } }}
-          />
-        ) : (
-          <TextField
-            type="url"
-            label={t('recipes:fromLink.label')}
-            value={url}
-            inputRef={field}
-            disabled={read.isPending}
-            onChange={(event) => editUrl(event.target.value)}
-            slotProps={{
-              htmlInput: {
-                maxLength: MAX_LINK_LENGTH,
-                inputMode: 'url',
-                autoCapitalize: 'none',
-                autoCorrect: 'off',
-                spellCheck: false,
-              },
-            }}
-          />
-        )}
+        <Box>
+          <Typography
+            component="label"
+            htmlFor={fieldId}
+            variant="sectionLabel"
+            color="text.secondary"
+            sx={{ display: 'block', mb: '6px' }}
+          >
+            {t(
+              mode === 'text'
+                ? 'recipes:fromLink.textLabel'
+                : 'recipes:fromLink.label',
+            )}
+          </Typography>
+          {mode === 'text' ? (
+            <TextField
+              id={fieldId}
+              multiline
+              minRows={6}
+              value={pasted}
+              inputRef={field}
+              disabled={read.isPending}
+              onChange={(event) => setPasted(event.target.value)}
+              sx={fieldSx}
+              slotProps={{ htmlInput: { maxLength: MAX_PASTED_TEXT_LENGTH } }}
+            />
+          ) : (
+            <TextField
+              id={fieldId}
+              type="url"
+              value={url}
+              inputRef={field}
+              disabled={read.isPending}
+              onChange={(event) => editUrl(event.target.value)}
+              sx={fieldSx}
+              slotProps={{
+                htmlInput: {
+                  maxLength: MAX_LINK_LENGTH,
+                  inputMode: 'url',
+                  autoCapitalize: 'none',
+                  autoCorrect: 'off',
+                  spellCheck: false,
+                },
+              }}
+            />
+          )}
+        </Box>
         <Button
           variant="ghost"
           disabled={read.isPending}
@@ -247,7 +273,11 @@ export function RecipeFromLinkPage() {
           onChange={setLanguage}
           input={mode}
         />
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{ alignItems: 'center', justifyContent: 'center' }}
+        >
           {read.isPending ? (
             <Box aria-hidden>
               <Spinner label={t('recipes:fromLink.reading')} />
@@ -258,7 +288,12 @@ export function RecipeFromLinkPage() {
           </Typography>
         </Stack>
         {read.isPending ? (
-          <Button variant="secondary" onClick={cancel} ref={cancelButton}>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={cancel}
+            ref={cancelButton}
+          >
             {t('common:cancel')}
           </Button>
         ) : mode === 'link' && duplicate !== null ? (
@@ -268,7 +303,7 @@ export function RecipeFromLinkPage() {
             onReadAgain={() => start(true)}
           />
         ) : (
-          <Button type="submit" disabled={empty}>
+          <Button type="submit" fullWidth disabled={empty}>
             {t('recipes:fromLink.submit')}
           </Button>
         )}
