@@ -139,6 +139,7 @@
       "deleted": "Tip deleted"
     },
     "recipeTips": {
+      "placeholder": "A tip for this recipe",
       "title": "Recipe tips",
       "hint": "Tips save as soon as you change them; the rest saves with the Recipe.",
       "tip": "Recipe Tip {{number}}",

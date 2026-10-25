@@ -87,6 +87,7 @@ export function RecipeTipsCard({
             key={`${tip.id}-${tip.text}`}
             tip={tip}
             label={t('recipes:family.recipeTips.tip', { number: index + 1 })}
+            placeholder={t('recipes:family.recipeTips.placeholder')}
             removeLabel={t('recipes:family.recipeTips.delete', {
               number: index + 1,
             })}
@@ -96,6 +97,7 @@ export function RecipeTipsCard({
         {adding ? (
           <NewTipRow
             label={t('recipes:family.recipeTips.new')}
+            placeholder={t('recipes:family.recipeTips.placeholder')}
             removeLabel={t('recipes:family.recipeTips.cancelNew')}
             stepId={null}
             actions={actions}

@@ -1,6 +1,5 @@
 import { CloseIcon, IconButton, Stack, TextField } from '@pocket-pantry/ui';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import type { RecipeTip } from '../../lib/adminRecipes';
 
 /** What the inline Tip rows need from the page: Tips save on blur, and a delete is deferred behind Undo. */
@@ -29,13 +28,19 @@ const Bulb = () => (
 type RowProps = {
   tip: RecipeTip;
   label: string;
+  placeholder: string;
   removeLabel: string;
   actions: TipActions;
 };
 
 /** A saved Tip: bulb, input that saves a change on blur, and ×. */
-export function TipRow({ tip, label, removeLabel, actions }: RowProps) {
-  const { t } = useTranslation('admin');
+export function TipRow({
+  tip,
+  label,
+  placeholder,
+  removeLabel,
+  actions,
+}: RowProps) {
   const [text, setText] = useState(tip.text);
   return (
     <Stack direction="row" spacing={1} sx={rowSx}>
@@ -52,7 +57,7 @@ export function TipRow({ tip, label, removeLabel, actions }: RowProps) {
           else if (value !== tip.text) actions.update(tip.id, value);
         }}
         sx={{ flex: 1 }}
-        placeholder={t('recipe.steps.tipPlaceholder')}
+        placeholder={placeholder}
         slotProps={{ htmlInput: { 'aria-label': label } }}
       />
       <IconButton
@@ -69,6 +74,7 @@ export function TipRow({ tip, label, removeLabel, actions }: RowProps) {
 
 type NewProps = {
   label: string;
+  placeholder: string;
   removeLabel: string;
   stepId: string | null;
   actions: TipActions;
@@ -79,12 +85,12 @@ type NewProps = {
 /** A blank Tip row: saves on blur when it has text, and goes away when it has none. */
 export function NewTipRow({
   label,
+  placeholder,
   removeLabel,
   stepId,
   actions,
   onDone,
 }: NewProps) {
-  const { t } = useTranslation('admin');
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const save = () => {
@@ -105,7 +111,7 @@ export function NewTipRow({
         onChange={(event) => setText(event.target.value)}
         onBlur={save}
         sx={{ flex: 1 }}
-        placeholder={t('recipe.steps.tipPlaceholder')}
+        placeholder={placeholder}
         slotProps={{ htmlInput: { 'aria-label': label } }}
       />
       <IconButton

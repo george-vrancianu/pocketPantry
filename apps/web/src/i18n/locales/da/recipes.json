@@ -139,6 +139,7 @@
       "deleted": "Tip slettet"
     },
     "recipeTips": {
+      "placeholder": "Et tip til denne opskrift",
       "title": "Opskriftens tips",
       "hint": "Tips gemmes, så snart du ændrer dem; resten gemmes med opskriften.",
       "tip": "Opskriftens tip {{number}}",

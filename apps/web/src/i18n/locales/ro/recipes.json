@@ -147,6 +147,7 @@
       "deleted": "Sfat șters"
     },
     "recipeTips": {
+      "placeholder": "Un sfat pentru această rețetă",
       "title": "Sfaturile rețetei",
       "hint": "Sfaturile se salvează imediat ce le schimbi; restul se salvează cu rețeta.",
       "tip": "Sfatul rețetei {{number}}",

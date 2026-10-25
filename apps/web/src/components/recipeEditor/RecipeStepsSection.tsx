@@ -371,6 +371,7 @@ export function RecipeStepsSection({
                               n: tipIndex + 1,
                               step: number,
                             })}
+                            placeholder={t('admin:recipe.steps.tipPlaceholder')}
                             removeLabel={t('admin:recipe.steps.deleteTip', {
                               n: tipIndex + 1,
                               step: number,
@@ -381,6 +382,7 @@ export function RecipeStepsSection({
                         {addingTip.has(step.id) ? (
                           <NewTipRow
                             label={t('admin:recipe.steps.newTip', { number })}
+                            placeholder={t('admin:recipe.steps.tipPlaceholder')}
                             removeLabel={t('admin:recipe.steps.cancelTip', {
                               number,
                             })}

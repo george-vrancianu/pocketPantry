@@ -2764,6 +2764,10 @@ describe('Recipe editor Tips (#593)', () => {
     expect(within(card).getByLabelText('Recipe Tip 1')).toHaveValue(
       'Use butter',
     );
+    expect(within(card).getByLabelText('Recipe Tip 1')).toHaveAttribute(
+      'placeholder',
+      'A tip for this recipe',
+    );
     await user.click(
       within(card).getByRole('button', { name: 'Add a Recipe Tip' }),
     );
