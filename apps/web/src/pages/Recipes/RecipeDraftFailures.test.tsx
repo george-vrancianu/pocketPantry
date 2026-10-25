@@ -412,6 +412,61 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
       expect(post.body).not.toHaveProperty('recipeDraftId');
     });
 
+    it('saves without ending the newer Recipe Draft when the conflict shows only during the flush of Save', async () => {
+      const calls = setup({
+        [POST]: () => created(),
+        [PUT]: conflict,
+        'POST /api/recipes': () =>
+          Response.json(
+            { id: 'new-recipe', title: 'Gran stew' },
+            { status: 201 },
+          ),
+      });
+      const user = typer();
+      const title = await screen.findByLabelText(/^Title/);
+      await user.type(title, 'Gran');
+      await elapse(1600);
+      expect(sent(calls, POST)).toHaveLength(1);
+      // Nothing has failed yet; the edit is still inside its quiet period.
+      await user.type(title, ' stew');
+      expect(sent(calls, PUT)).toHaveLength(0);
+      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+      expect(sent(calls, PUT)).toHaveLength(1);
+      const [post] = sent(calls, 'POST /api/recipes');
+      expect(post.body).not.toHaveProperty('recipeDraftId');
+    });
+
+    it('keeps the form and discards nothing when the conflict shows only during the flush of Discard draft', async () => {
+      const calls = setup({
+        [POST]: () => created(),
+        [PUT]: conflict,
+        [`DELETE /api/recipe-drafts/${DRAFT_ID}`]: () =>
+          new Response(null, { status: 204 }),
+        [GET]: () =>
+          Response.json(stored(titled('Gran stew, as on the phone'), 5)),
+      });
+      const user = typer();
+      const title = await screen.findByLabelText(/^Title/);
+      await user.type(title, 'Gran');
+      await elapse(1600);
+      expect(sent(calls, POST)).toHaveLength(1);
+      await user.type(title, ' stew');
+      expect(sent(calls, PUT)).toHaveLength(0);
+      await user.click(screen.getByRole('button', { name: 'Discard draft' }));
+      expect(
+        await screen.findByRole('button', { name: 'Load latest' }),
+      ).toBeVisible();
+      expect(sent(calls, PUT)).toHaveLength(1);
+      // Well past the Undo window of a discard.
+      await elapse(30_000);
+      expect(screen.queryByText('Recipes page')).toBeNull();
+      expect(screen.getByLabelText(/^Title/)).toHaveValue('Gran stew');
+      expect(
+        calls.filter((call) => call.key.startsWith('DELETE ')),
+      ).toHaveLength(0);
+    });
+
     it('asks before leaving, since the edits here are not saved', async () => {
       const { user } = await conflicted();
       await screen.findByRole('button', { name: 'Load latest' });
