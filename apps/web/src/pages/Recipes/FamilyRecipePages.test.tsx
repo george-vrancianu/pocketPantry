@@ -3114,6 +3114,10 @@ describe('Recipe editor reorder by hold, grip or keyboard (#592)', () => {
     expect(row).not.toHaveAttribute('data-lifted');
     await act(() => vi.advanceTimersByTimeAsync(300));
     expect(row).toHaveAttribute('data-lifted');
+    fireEvent.pointerUp(document, { pointerId: 1 });
+    // dnd-kit swallows clicks for 50 ms after a drop.
+    await act(() => vi.advanceTimersByTimeAsync(100));
+    expect(row).not.toHaveAttribute('data-lifted');
   });
 
   it('lifts a touch hold on the row body, but not a touch on a control or a touch pointer', async () => {
@@ -3134,18 +3138,23 @@ describe('Recipe editor reorder by hold, grip or keyboard (#592)', () => {
     });
     await act(() => vi.advanceTimersByTimeAsync(600));
     expect(row).not.toHaveAttribute('data-lifted');
+    fireEvent.pointerUp(row.querySelector('p')!, { pointerId: 2 });
 
     fireEvent.touchStart(quantity, { touches: [point] });
     await act(() => vi.advanceTimersByTimeAsync(600));
     expect(row).not.toHaveAttribute('data-lifted');
-    fireEvent.touchEnd(document);
+    fireEvent.touchEnd(quantity, { changedTouches: [point] });
 
-    fireEvent.touchStart(row.querySelector('p')!, { touches: [point] });
+    const body = row.querySelector('p')!;
+    fireEvent.touchStart(body, { touches: [point] });
     await act(() => vi.advanceTimersByTimeAsync(300));
     expect(row).not.toHaveAttribute('data-lifted');
     await act(() => vi.advanceTimersByTimeAsync(300));
     expect(row).toHaveAttribute('data-lifted');
-    fireEvent.touchEnd(document);
+    fireEvent.touchEnd(body, { changedTouches: [point] });
+    // dnd-kit swallows clicks for 50 ms after a drop.
+    await act(() => vi.advanceTimersByTimeAsync(100));
+    expect(row).not.toHaveAttribute('data-lifted');
   });
 });
 
