@@ -63,17 +63,17 @@ export function SummaryCard({
               ? t('summary.empty')
               : t('summary.inBasket', { checked, total })}
           </Typography>
-          {total > 0 ? (
-            <ProgressBar
-              label={t('summary.progress')}
-              value={checked}
-              max={total}
-              size="large"
-            />
-          ) : null}
         </Box>
         {onImport ? <ImportPill ref={importRef} onClick={onImport} /> : null}
       </Box>
+      {total > 0 ? (
+        <ProgressBar
+          label={t('summary.progress')}
+          value={checked}
+          max={total}
+          size="large"
+        />
+      ) : null}
       {checked > 0 ? (
         <Box
           sx={{
