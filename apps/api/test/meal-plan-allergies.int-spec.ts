@@ -74,13 +74,25 @@ describe('Meal Plans and Allergies (integration)', () => {
       .expect(201);
   }
 
+  async function familyIdOf(email: string) {
+    const [{ familyId }] = await database
+      .select({ familyId: user.familyId })
+      .from(user)
+      .where(eq(user.email, email));
+    return familyId;
+  }
   const milkRecipeIds: string[] = [];
-  /** A Catalog Recipe with a milk line, required or optional, and any other required lines. */
-  async function milkRecipe(optional = false, otherSlugs: string[] = []) {
+  /** A Family Recipe (Plans take no other) with a milk line, required or optional, and any other required lines. */
+  async function milkRecipe(
+    email: string,
+    optional = false,
+    otherSlugs: string[] = [],
+  ) {
     const id = crypto.randomUUID();
     milkRecipeIds.push(id);
     await database.insert(recipes).values({
       id,
+      familyId: await familyIdOf(email),
       title: `Milk dish ${stamp}-${++n}`,
       servings: 4,
     });
@@ -138,6 +150,7 @@ describe('Meal Plans and Allergies (integration)', () => {
     const id = crypto.randomUUID();
     await database.insert(recipes).values({
       id,
+      familyId: await familyIdOf(email),
       title: `Egg dish ${stamp}-${++n}`,
       servings: 4,
     });
@@ -177,7 +190,7 @@ describe('Meal Plans and Allergies (integration)', () => {
       await ana.settings
         .put('/preferences', { hideRecipesWithAllergies: true })
         .expect(200);
-      const recipe = await milkRecipe();
+      const recipe = await milkRecipe(ana.email);
       const plan = await createPlan(bob.plans);
       await bob.plans
         .put(`/${plan.id}/slots/0/dinner${q}`, { recipeId: recipe })
@@ -222,7 +235,7 @@ describe('Meal Plans and Allergies (integration)', () => {
 
     it('has no warning without a matching Allergy', async () => {
       const ana = await member('warn-none');
-      const recipe = await milkRecipe();
+      const recipe = await milkRecipe(ana.email);
       const plan = await createPlan(ana.plans);
       await ana.plans
         .put(`/${plan.id}/slots/0/dinner${q}`, { recipeId: recipe })
@@ -237,7 +250,7 @@ describe('Meal Plans and Allergies (integration)', () => {
     it('places the best milk Recipe when nobody is allergic', async () => {
       const ana = await member('fill-free');
       await stockMilk(ana.email);
-      const recipe = await milkRecipe();
+      const recipe = await milkRecipe(ana.email);
       const plan = await fill(ana.plans, (await createPlan(ana.plans)).id);
       expect(plan.slots.map((s) => s.recipeId)).toContain(recipe);
     });
@@ -249,7 +262,7 @@ describe('Meal Plans and Allergies (integration)', () => {
       await stockMilk(ana.email);
       await bob.settings.put('/allergies', { allergenIds: [MILK] }).expect(200);
       // Neither Member hides: the Family's Allergies still bind Fill.
-      await milkRecipe();
+      await milkRecipe(ana.email);
       const milkFree = await milkFreeRecipe(ana.email);
       const plan = await fill(ana.plans, (await createPlan(ana.plans)).id);
       expectFilledWithoutMilkRecipes(plan, milkFree);
@@ -261,7 +274,7 @@ describe('Meal Plans and Allergies (integration)', () => {
       await ana.settings
         .post('/family-allergies', { allergenId: MILK, label: 'Mia' })
         .expect(201);
-      await milkRecipe();
+      await milkRecipe(ana.email);
       const milkFree = await milkFreeRecipe(ana.email);
       const plan = await fill(ana.plans, (await createPlan(ana.plans)).id);
       expectFilledWithoutMilkRecipes(plan, milkFree);
@@ -272,7 +285,7 @@ describe('Meal Plans and Allergies (integration)', () => {
       await stockMilk(ana.email, 'eggs', 50, 'pcs');
       await ana.settings.put('/allergies', { allergenIds: [MILK] }).expect(200);
       // Its eggs are Expiring Soon, so it outranks the rest; the milk is optional.
-      const recipe = await milkRecipe(true, ['eggs']);
+      const recipe = await milkRecipe(ana.email, true, ['eggs']);
       const plan = await fill(ana.plans, (await createPlan(ana.plans)).id);
       expect(plan.slots.map((s) => s.recipeId)).toContain(recipe);
     });
@@ -280,7 +293,7 @@ describe('Meal Plans and Allergies (integration)', () => {
     it('keeps a milk Recipe the Member put in a slot', async () => {
       const ana = await member('fill-kept');
       await ana.settings.put('/allergies', { allergenIds: [MILK] }).expect(200);
-      const recipe = await milkRecipe();
+      const recipe = await milkRecipe(ana.email);
       const plan = await createPlan(ana.plans);
       await ana.plans
         .put(`/${plan.id}/slots/0/dinner${q}`, { recipeId: recipe })

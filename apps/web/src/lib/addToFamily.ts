@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@pocket-pantry/ui';
@@ -18,6 +18,20 @@ export type AddableRecipe = {
   familyCopyId: string | null;
 };
 
+/** `POST /recipes/:id/copy`: the Family's live copy of a Catalog Recipe, made if it had none. */
+export const copyToFamily = (id: string) =>
+  apiRequest<{ id: string; created: boolean }>(`/recipes/${id}/copy`, {
+    method: 'POST',
+  });
+
+/** Refetches every list and detail a copy or its Undo changes (all under `recipes`). */
+export const refreshAfterCopy = (queryClient: QueryClient) =>
+  Promise.all(
+    recipeChangeQueryKeys.map((queryKey) =>
+      queryClient.invalidateQueries({ queryKey }),
+    ),
+  );
+
 /**
  * Add to Family from any Catalog Recipe row (ADR 0029): copies it with
  * `POST /recipes/:id/copy`, optimistically. The add shows at once, a toast
@@ -32,7 +46,7 @@ export function useAddToFamily() {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [overrides, setAddStates] = useState<Record<string, AddState>>({});
+  const [overrides, setOverrides] = useState<Record<string, AddState>>({});
   // The copy request of each source in flight, so Undo can wait for the copy id.
   const pending = useRef(
     new Map<string, Promise<{ id: string; created: boolean }>>(),
@@ -47,7 +61,7 @@ export function useAddToFamily() {
 
   const set = useCallback((id: string, value: AddState | null) => {
     if (!mounted.current) return;
-    setAddStates((prev) => {
+    setOverrides((prev) => {
       const next = { ...prev };
       if (value) next[id] = value;
       else delete next[id];
@@ -58,11 +72,7 @@ export function useAddToFamily() {
   // Once the refetch has landed the server's answer is the truth again.
   const settle = useCallback(
     async (id: string) => {
-      await Promise.all(
-        recipeChangeQueryKeys.map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey }),
-        ),
-      );
+      await refreshAfterCopy(queryClient);
       set(id, null);
     },
     [queryClient, set],
@@ -86,10 +96,7 @@ export function useAddToFamily() {
     async (recipe: AddableRecipe) => {
       if (pending.current.has(recipe.id)) return;
       set(recipe.id, { status: 'adding' });
-      const request = apiRequest<{ id: string; created: boolean }>(
-        `/recipes/${recipe.id}/copy`,
-        { method: 'POST' },
-      );
+      const request = copyToFamily(recipe.id);
       pending.current.set(recipe.id, request);
       // Optimistic: the toast is up before the copy is, and Undo waits for the copy's id.
       // Undo only archives a copy this tap made: if the Family already had one, the toast is replaced.

@@ -15,7 +15,6 @@ import {
   type ForecastListEntry,
   type Mealtime,
 } from '../recipes/matching/plan-forecast';
-import { visibleTo } from '../recipes/recipe-view';
 import { loadFillBlocks } from './plan-allergies';
 import {
   loadBatches,
@@ -42,7 +41,7 @@ export type LoadedFill = {
 /**
  * Loads what `fillPlan` needs for one plan: its slots, empty ones included,
  * plus the Family's other filled slots from two days before `today` on (they
- * share the stock and the variety window); the Recipes the Family can see
+ * share the stock and the variety window); the Family's own Recipes
  * (and those the slots use), with lines and Eating Moment uses; the Eating
  * Moments; the unexpired Batches and the active Shopping List; and which Recipes
  * the Family's Allergies rule out (`blocksFill`).
@@ -94,7 +93,7 @@ export async function loadFill(
   const visible = await executor
     .select()
     .from(recipes)
-    .where(and(visibleTo(familyId), isNull(recipes.archivedAt)));
+    .where(and(eq(recipes.familyId, familyId), isNull(recipes.archivedAt)));
   const known = new Set(visible.map((recipe) => recipe.id));
   const extraIds = [
     ...new Set(

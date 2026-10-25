@@ -6,6 +6,7 @@ import type { Database } from '../src/database/database.types';
 import {
   batches,
   ingredients,
+  mealPlanSlots,
   mealPlans,
   recipeIngredientLines,
   recipeTranslations,
@@ -107,6 +108,22 @@ describe('Meal Plans (integration)', () => {
       title: `Catalog dish ${stamp}-${++n}`,
       servings: 4,
       archivedAt: archived ? new Date() : null,
+    });
+    return id;
+  }
+
+  /** A Recipe owned by the Member's Family: the only kind a Plan Slot takes. */
+  async function ownRecipe(email: string) {
+    const [{ familyId }] = await database
+      .select({ familyId: user.familyId })
+      .from(user)
+      .where(eq(user.email, email));
+    const id = crypto.randomUUID();
+    await database.insert(recipes).values({
+      id,
+      familyId,
+      title: `Own dish ${stamp}-${++n}`,
+      servings: 4,
     });
     return id;
   }
@@ -318,8 +335,8 @@ describe('Meal Plans (integration)', () => {
     });
 
     it('refuses to shorten away a past day, but drops future slots', async () => {
-      const { api } = await member('shorten');
-      const recipe = await catalogRecipe();
+      const { api, email } = await member('shorten');
+      const recipe = await ownRecipe(email);
       const plan = await create(api, { startDate: at(0), days: 4 });
       for (const day of [0, 2, 3]) {
         await api
@@ -405,7 +422,7 @@ describe('Meal Plans (integration)', () => {
     it('sets, replaces and clears slots; the read gives date, title and effective servings', async () => {
       const ana = await member('slots');
       const own = await familyRecipe(ana, 'Omelette');
-      const catalog = await catalogRecipe();
+      const catalog = await ownRecipe(ana.email);
       const plan = await create(ana.api, { startDate: at(2), days: 3 });
 
       await ana.api
@@ -507,11 +524,29 @@ describe('Meal Plans (integration)', () => {
       }
       await ana.api
         .put(slotPath(plan.id, 0, 'dinner'), {
-          recipeId: await catalogRecipe(),
+          recipeId: await ownRecipe(bob.email),
           servings: 1001,
         })
         .expect(400);
       expect((await read(ana.api, plan.id)).slots).toEqual([]);
+    });
+
+    it('refuses a Catalog Recipe with meal_plan.recipe_not_in_family and leaves the slot as it was', async () => {
+      const { api, email } = await member('slot-catalog');
+      const own = await ownRecipe(email);
+      const plan = await create(api);
+      await api
+        .put(slotPath(plan.id, 0, 'dinner'), { recipeId: own })
+        .expect(200);
+      const res = await api
+        .put(slotPath(plan.id, 0, 'dinner'), {
+          recipeId: await catalogRecipe(),
+        })
+        .expect(409);
+      expect(code(res)).toBe('meal_plan.recipe_not_in_family');
+      expect((await read(api, plan.id)).slots).toEqual([
+        expect.objectContaining({ recipeId: own }),
+      ]);
     });
 
     it("answers 404 for another Family's plan", async () => {
@@ -526,8 +561,8 @@ describe('Meal Plans (integration)', () => {
     });
 
     it('lets a slot without its own servings follow the plan, and an overridden one keep its own', async () => {
-      const { api } = await member('follow');
-      const recipe = await catalogRecipe();
+      const { api, email } = await member('follow');
+      const recipe = await ownRecipe(email);
       const plan = await create(api, { servings: 2 });
       await api
         .put(slotPath(plan.id, 0, 'breakfast'), { recipeId: recipe })
@@ -568,8 +603,8 @@ describe('Meal Plans (integration)', () => {
     });
 
     it('moves every slot with the plan, drops slots past a shorter end, and adds empty days when lengthened', async () => {
-      const { api } = await member('resize');
-      const recipe = await catalogRecipe();
+      const { api, email } = await member('resize');
+      const recipe = await ownRecipe(email);
       const plan = await create(api, { startDate: at(0), days: 4 });
       for (const day of [0, 2, 3]) {
         await api
@@ -602,8 +637,8 @@ describe('Meal Plans (integration)', () => {
     });
 
     it('removes the slots with the plan but keeps the Recipe', async () => {
-      const { api } = await member('delete');
-      const recipe = await catalogRecipe();
+      const { api, email } = await member('delete');
+      const recipe = await ownRecipe(email);
       const plan = await create(api);
       await api
         .put(slotPath(plan.id, 0, 'lunch'), { recipeId: recipe })
@@ -624,14 +659,14 @@ describe('Meal Plans (integration)', () => {
       `/${planId}/fill?locale=en&today=${today}`;
 
     it('writes only empty slots on today or later, keeps the Member picks and returns the forecast', async () => {
-      const { api } = await member('fill');
-      const pick = await catalogRecipe();
-      await catalogRecipe();
+      const { api, email } = await member('fill');
+      const pick = await ownRecipe(email);
+      await ownRecipe(email);
       const plan = await create(api, { days: 3 });
       await api
         .put(slotPath(plan.id, 1, 'lunch'), { recipeId: pick })
         .expect(200);
-      const pastPick = await catalogRecipe();
+      const pastPick = await ownRecipe(email);
       await api
         .put(slotPath(plan.id, 0, 'dinner'), { recipeId: pastPick })
         .expect(200);
@@ -688,7 +723,7 @@ describe('Meal Plans (integration)', () => {
         // Expiring Soon, so it outranks Recipes that use nothing from the Pantry.
         expiryDate: at(1),
       });
-      const makeable = await catalogRecipe();
+      const makeable = await ownRecipe(email);
       await database.insert(recipeIngredientLines).values({
         id: crypto.randomUUID(),
         recipeId: makeable,
@@ -706,6 +741,21 @@ describe('Meal Plans (integration)', () => {
       // Variety allows the Recipe once; every placed slot is covered.
       expect(slots.filter((s) => s.recipeId === makeable)).toHaveLength(1);
       expect(slots.every((s) => s.status === 'covered')).toBe(true);
+    });
+
+    it('draws from the Family Recipes only, never the Catalog', async () => {
+      const { api, email } = await member('fill-family-only');
+      const catalogIds = [await catalogRecipe(), await catalogRecipe()];
+      const own = await ownRecipe(email);
+      const plan = await create(api, { days: 2 });
+      const res = await api
+        .post(fillPath(plan.id), { onlyWhatIHave: false })
+        .expect(201);
+      const placed = (res.body as PlanDetail).slots.map(
+        (slot) => slot.recipeId,
+      );
+      expect(placed).toContain(own);
+      for (const id of catalogIds) expect(placed).not.toContain(id);
     });
 
     it('requires the switch, and answers 404 for another Family plan', async () => {
@@ -730,7 +780,7 @@ describe('Meal Plans (integration)', () => {
 
     /** A Catalog Recipe with a Romanian title that needs milk (named "Lapte" in Romanian). */
     async function romanianRecipe() {
-      const id = await catalogRecipe();
+      const id = await catalogRecipe(); // a legacy slot: the API no longer sets Catalog Recipes
       await database.insert(recipeIngredientLines).values({
         id: crypto.randomUUID(),
         recipeId: id,
@@ -747,7 +797,12 @@ describe('Meal Plans (integration)', () => {
 
     async function slotView(api: Api, recipeId: string) {
       const plan = await create(api, { days: 3 });
-      await api.put(`/${plan.id}/slots/1/dinner${q}`, { recipeId }).expect(200);
+      await database.insert(mealPlanSlots).values({
+        mealPlanId: plan.id,
+        dayIndex: 1,
+        mealtime: 'dinner',
+        recipeId,
+      });
       const res = await api.get(`/${plan.id}${q}`).expect(200);
       return (res.body as PlanDetail).slots[0];
     }

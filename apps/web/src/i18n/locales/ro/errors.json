@@ -153,7 +153,8 @@
     "already_started": "Un plan început nu poate fi mutat.",
     "day_out_of_range": "Ziua aceea nu face parte din plan.",
     "not_found": "Planul de mese nu mai există.",
-    "recipe_not_found": "Rețeta nu a fost găsită."
+    "recipe_not_found": "Rețeta nu a fost găsită.",
+    "recipe_not_in_family": "Adaugă mai întâi această rețetă la rețetele tale, apoi planific-o."
   },
   "voice": {
     "cap_reached": "Ai folosit toate cele {{cap}} note vocale de azi. Încearcă mâine sau adaugă produsele manual.",

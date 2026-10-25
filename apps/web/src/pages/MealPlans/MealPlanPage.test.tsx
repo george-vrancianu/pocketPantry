@@ -81,6 +81,10 @@ function setup(view: MealPlanDetail = week(), extra = {}) {
     'GET /api/meal-plans/p1': () => Response.json(view),
     'GET /api/recipes': (url) => {
       const search = url.searchParams.get('search');
+      // The picker asks twice: the Family's Recipes, then the Catalog's for its Explore section.
+      if (url.searchParams.get('scope') === 'catalog') {
+        return Response.json({ recipes: [] });
+      }
       return Response.json({
         recipes: [
           recipe('rc-1', 'Lemon pasta'),
@@ -591,15 +595,18 @@ describe('Meal Plan page', () => {
 
   it('labels a Variant in the picker without a search', async () => {
     setup(week(), {
-      'GET /api/recipes': () =>
+      'GET /api/recipes': (url: URL) =>
         Response.json({
-          recipes: [
-            {
-              ...recipe('rc-3', 'Spicy curry'),
-              parentId: 'rc-2',
-              base: { id: 'rc-2', title: 'Green curry' },
-            },
-          ],
+          recipes:
+            url.searchParams.get('scope') === 'catalog'
+              ? []
+              : [
+                  {
+                    ...recipe('rc-3', 'Spicy curry'),
+                    parentId: 'rc-2',
+                    base: { id: 'rc-2', title: 'Green curry' },
+                  },
+                ],
         }),
     });
     const u = userEvent.setup();
@@ -612,6 +619,66 @@ describe('Meal Plan page', () => {
     expect(
       await within(picker).findByText('Variant of Green curry'),
     ).toBeVisible();
+  });
+
+  it('lists Family Recipes first, then Explore, and a Catalog pick adds it to the Family and plans the copy', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const api = setup(week(), {
+      'GET /api/recipes': (url: URL) =>
+        Response.json({
+          recipes:
+            url.searchParams.get('scope') === 'catalog'
+              ? [
+                  recipe('cat-1', 'Pad thai'),
+                  recipe('cat-3', 'Ramen'),
+                  { ...recipe('cat-2', 'Already mine'), familyCopyId: 'fam-1' },
+                ]
+              : [{ ...recipe('fam-1', 'Already mine'), owner: 'family' }],
+        }),
+      'POST /api/recipes/cat-1/copy': async () => {
+        await gate;
+        return Response.json({ id: 'copy-1', created: true });
+      },
+    });
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /^Add Lunch/ }));
+    const picker = await screen.findByRole('dialog', {
+      name: 'Choose a Recipe',
+    });
+    const explore = await within(picker).findByRole('heading', {
+      name: 'Explore',
+    });
+    const mine = within(picker).getByText('Already mine');
+    expect(
+      mine.compareDocumentPosition(explore) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // A Catalog Recipe the Family already has is only listed once, as its copy.
+    expect(within(picker).getAllByText('Already mine')).toHaveLength(1);
+
+    await u.click(await within(picker).findByText('Pad thai'));
+    // Only the picked row shows it is being added; the others stay ready.
+    expect(await within(picker).findAllByText('In your Recipes')).toHaveLength(
+      1,
+    );
+    expect(
+      within(picker).getByRole('button', { name: 'Add Ramen to your Recipes' }),
+    ).toBeVisible();
+    release();
+
+    await waitFor(() =>
+      expect(
+        api.calls.find((c) => c.key === 'PUT /api/meal-plans/p1/slots/1/lunch')
+          ?.body,
+      ).toEqual({ recipeId: 'copy-1' }),
+    );
+    expect(
+      api.calls.some((c) => c.key === 'POST /api/recipes/cat-1/copy'),
+    ).toBe(true);
   });
 
   it('has no Servings stepper for an unavailable Recipe', async () => {

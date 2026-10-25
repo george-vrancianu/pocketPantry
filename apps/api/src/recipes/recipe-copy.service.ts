@@ -44,7 +44,22 @@ export class RecipeCopyService {
     sourceId: string,
     locale: CatalogLocale,
   ): Promise<{ id: string; created: boolean }> {
-    const familyId = await this.settings.familyIdOf(memberId);
+    return this.copyFor(
+      await this.settings.familyIdOf(memberId),
+      sourceId,
+      locale,
+    );
+  }
+
+  /**
+   * `copy` for a Family, without an acting Member. Migration 0045 mirrors this copy in SQL
+   * (it cannot call TypeScript), so the two must stay in parity.
+   */
+  async copyFor(
+    familyId: string,
+    sourceId: string,
+    locale: CatalogLocale,
+  ): Promise<{ id: string; created: boolean }> {
     const source = await this.readSource(this.database, sourceId, familyId);
     const live = await this.liveCopy(this.database, familyId, sourceId);
     if (live) return { id: live, created: false };
@@ -54,6 +69,19 @@ export class RecipeCopyService {
       catalogScope(familyId),
       source,
       locale,
+    );
+    // The resolved view drops the names of Unmatched lines; the copy keeps them.
+    const names = new Map(
+      (
+        await this.database
+          .select({
+            id: recipeIngredientLines.id,
+            rawName: recipeIngredientLines.rawName,
+            normalizedName: recipeIngredientLines.normalizedName,
+          })
+          .from(recipeIngredientLines)
+          .where(eq(recipeIngredientLines.recipeId, sourceId))
+      ).map((row) => [row.id, row]),
     );
     const hidden = await this.database
       .select({ tipId: recipeHiddenTips.tipId })
@@ -88,6 +116,8 @@ export class RecipeCopyService {
             recipeId: copyId,
             position,
             ingredientId: line.ingredientId,
+            rawName: names.get(line.id)?.rawName ?? null,
+            normalizedName: names.get(line.id)?.normalizedName ?? null,
             quantity: line.quantity,
             unit: line.unit,
             optional: line.optional,

@@ -405,7 +405,7 @@ export class MealPlansService {
       const plan = await this.findPlan(tx, familyId, id);
       assertEditableDay(plan, dayIndex, today);
       const [recipe] = await tx
-        .select({ id: recipes.id })
+        .select({ id: recipes.id, familyId: recipes.familyId })
         .from(recipes)
         .where(
           and(
@@ -415,6 +415,10 @@ export class MealPlansService {
           ),
         );
       if (!recipe) throw new ApiException(404, 'meal_plan.recipe_not_found');
+      // Plans use Family Recipes only (ADR 0029): a Catalog Recipe is added to the Family first.
+      if (recipe.familyId === null) {
+        throw new ApiException(409, 'meal_plan.recipe_not_in_family');
+      }
       const servings = body.servings ?? null;
       await tx
         .insert(mealPlanSlots)
