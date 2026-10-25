@@ -34,6 +34,14 @@ const READING_ERRORS: Record<string, string> = {
   'scan.result_invalid': 'errors:link.reading_failed',
 };
 
+/** The editor's 44 pt field. */
+const fieldSx = {
+  '& .MuiOutlinedInput-root': { minHeight: 44, borderRadius: radius.control },
+  '& .MuiOutlinedInput-root:not(.MuiInputBase-multiline) input': {
+    py: '10px',
+  },
+};
+
 /**
  * "From a link": the Member gives the address of a recipe page and it opens the New Recipe
  * page filled in. Leaving the step cancels a read in progress, and a cancelled read never
@@ -44,13 +52,6 @@ const READING_ERRORS: Record<string, string> = {
  * already one of the Family's Recipes answers "Already in your Recipes" (Open, or Read again with
  * `force`) instead of a draft; it shows only for a link.
  */
-const fieldSx = {
-  '& .MuiOutlinedInput-root': { minHeight: 44, borderRadius: radius.control },
-  '& .MuiOutlinedInput-root:not(.MuiInputBase-multiline) input': {
-    py: '10px',
-  },
-};
-
 export function RecipeFromLinkPage() {
   const { t, i18n } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
