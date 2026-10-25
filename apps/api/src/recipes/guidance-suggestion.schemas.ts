@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
+import {
+  guidanceBody,
+  type GuidanceBody,
+  type PairingInput,
+} from './recipe-guidance.schemas';
 import { familyLineInput, recipeDocument, MAX_LINES } from './recipes.schemas';
 
 /** Structured-output schema name of a Suggest Guidance answer. */
@@ -14,16 +18,20 @@ export const GUIDANCE_FIELDS = [
 export type GuidanceField = (typeof GUIDANCE_FIELDS)[number];
 
 /**
- * The fields Suggest Guidance proposes. Tracer: the Nutrition Note only. Pairings and
- * Eating Moments join this list when their proposal is built; the request, the empty check
- * and the response already carry all three.
+ * The fields Suggest Guidance proposes. A field joins this list with one entry in the answer
+ * schema, one `asks` line in the prompt and one case in `suggestionOf`; the request, the
+ * empty check and the response already carry all three.
  */
 export const COVERED_GUIDANCE_FIELDS: readonly GuidanceField[] = [
+  'pairings',
   'nutritionNote',
 ];
 
 /** The page's current Recipe content, as the Family Recipe form holds it (unsaved edits included). */
 const suggestionRecipe = recipeDocument.extend({
+  // The form may be half done: a missing Title or Servings is simply not told to the model.
+  title: recipeDocument.shape.title.optional(),
+  servings: recipeDocument.shape.servings.optional(),
   lines: z.array(familyLineInput).max(MAX_LINES).default([]),
 });
 
@@ -43,6 +51,22 @@ export type SuggestGuidanceBody = z.infer<typeof suggestGuidanceBody>;
 
 /** What the model returns; the service judges every value, so it is loosely typed. */
 export const guidanceSuggestionSchema = z.object({
+  /** Up to 10 ideas; null when there are none. */
+  pairings: z
+    .array(
+      z.object({
+        kind: z.string(),
+        label: z.string(),
+        reason: z.string(),
+        /** One of the fixed Pairing Principles, null when none fits. */
+        principle: z.string().nullable(),
+        /** An offered Catalog Ingredient id, or null. */
+        ingredientId: z.string().nullable(),
+        /** An offered Recipe id, or null. */
+        recipeId: z.string().nullable(),
+      }),
+    )
+    .nullable(),
   /** Good and bad, no values; null when there is nothing worth saying. */
   nutritionNote: z.string().nullable(),
 });
@@ -53,12 +77,20 @@ export const guidanceSuggestionJsonSchema = z.toJSONSchema(
   { target: 'draft-7' },
 );
 
+/** A proposed Pairing: the Guidance body's Pairing, plus the name of what it links to, so the form can show it. */
+export type SuggestedPairing = PairingInput & {
+  linkedIngredientName: string | null;
+  linkedRecipeTitle: string | null;
+};
+
 /**
  * The answer: the Guidance body restricted to the fields that were empty and got a
  * proposal, and the empty, covered fields with nothing worth proposing.
  */
 export type GuidanceSuggestion = {
-  guidance: Partial<GuidanceBody>;
+  guidance: Partial<Omit<GuidanceBody, 'pairings'>> & {
+    pairings?: SuggestedPairing[];
+  };
   noSuggestions: GuidanceField[];
 };
 

@@ -12,8 +12,10 @@ export const MAX_EATING_MOMENTS = 10;
 /** Counted in characters; checked by the service so the refusal is a coded error. */
 export const MAX_NUTRITION_NOTE = 500;
 
-const label = z.string().trim().min(1).max(200);
-const reason = z.string().trim().min(1).max(1000);
+export const MAX_PAIRING_LABEL = 200;
+export const MAX_PAIRING_REASON = 1000;
+const label = z.string().trim().min(1).max(MAX_PAIRING_LABEL);
+const reason = z.string().trim().min(1).max(MAX_PAIRING_REASON);
 /** A generous safety cap: the real limit is MAX_NUTRITION_NOTE, enforced with its own code. */
 const nutritionNote = z.string().trim().min(1).max(5000);
 

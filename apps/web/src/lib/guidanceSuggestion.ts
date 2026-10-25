@@ -1,27 +1,48 @@
 import type { GuidanceInput } from './adminRecipes';
-import { toGuidanceInput, type GuidanceDraft } from './guidanceDraft';
+import {
+  toGuidanceInput,
+  type GuidanceDraft,
+  type PairingDraft,
+} from './guidanceDraft';
+import { newKey } from './recipeDraft';
 
 /** The three fields of Guidance (mirror of the API's `GuidanceField`). */
 export type GuidanceField = 'pairings' | 'nutritionNote' | 'eatingMoments';
 
 /**
  * The fields Suggest Guidance proposes (mirror of the API's `COVERED_GUIDANCE_FIELDS`).
- * Tracer: the Nutrition Note only; Pairings and Eating Moments join here when the API covers them.
+ * Eating Moments join here when the API covers them (plus a branch in `mergeSuggestion`).
  */
 export const COVERED_GUIDANCE_FIELDS: readonly GuidanceField[] = [
+  'pairings',
   'nutritionNote',
 ];
 
+/** A proposed Pairing: the Guidance input's, plus the name of what it links to. */
+export type SuggestedPairing = GuidanceInput['pairings'][number] & {
+  linkedIngredientName?: string | null;
+  linkedRecipeTitle?: string | null;
+};
+
 /** The answer (mirror of the API's `GuidanceSuggestion`): the Guidance body restricted to the fields that were empty, and the ones with nothing to propose. */
 export type GuidanceSuggestion = {
-  guidance: Partial<GuidanceInput>;
+  guidance: Partial<Omit<GuidanceInput, 'pairings'>> & {
+    pairings?: SuggestedPairing[];
+  };
   noSuggestions: GuidanceField[];
 };
 
-/** The fields of the form that are empty now (a Pairing row or Eating Moment counts as filled). */
+/**
+ * A Pairing row that is filled in: the only kind the request carries (the API refuses the
+ * rest), so the only kind that makes the Pairings "filled" for Suggest Guidance.
+ */
+export const isCompletePairing = (p: Pick<PairingDraft, 'label' | 'reason'>) =>
+  p.label.trim() !== '' && p.reason.trim() !== '';
+
+/** The fields of the form that are empty now (Pairings: no filled-in row; an Eating Moment counts as filled). */
 export function emptyGuidanceFields(draft: GuidanceDraft): GuidanceField[] {
   const empty: Record<GuidanceField, boolean> = {
-    pairings: draft.pairings.length === 0,
+    pairings: !draft.pairings.some(isCompletePairing),
     nutritionNote: draft.nutritionNote.trim() === '',
     eatingMoments: draft.eatingMoments.length === 0,
   };
@@ -45,7 +66,7 @@ export function guidanceForRequest(draft: GuidanceDraft): GuidanceInput {
     ...input,
     nutritionNote:
       input.nutritionNote?.slice(0, NUTRITION_NOTE_MAX_LENGTH) ?? null,
-    pairings: input.pairings.filter((p) => p.label !== '' && p.reason !== ''),
+    pairings: input.pairings.filter(isCompletePairing),
   };
 }
 
@@ -60,11 +81,44 @@ export function mergeSuggestion(
   const empty = fillableFields(draft);
   const filled: GuidanceField[] = [];
   let next = draft;
-  // Pairings and Eating Moments rows (each with `suggested: true`) are merged here when covered.
+  // Eating Moments rows (each with `suggested: true`) are merged here when covered.
+  const { pairings } = suggestion.guidance;
+  if (empty.includes('pairings') && pairings && pairings.length > 0) {
+    next = {
+      ...next,
+      // Rows with some text typed stay after the proposal; rows with nothing in them make way.
+      pairings: [
+        ...pairings.map(pairingRow),
+        ...next.pairings.filter((p) => p.label !== '' || p.reason !== ''),
+      ],
+    };
+    filled.push('pairings');
+  }
   const { nutritionNote } = suggestion.guidance;
   if (empty.includes('nutritionNote') && nutritionNote?.trim()) {
     next = { ...next, nutritionNote, nutritionNoteSuggested: true };
     filled.push('nutritionNote');
   }
   return { draft: next, filled };
+}
+
+/** A proposed Pairing as a form row, marked suggested, its link named as the server named it. */
+function pairingRow(p: SuggestedPairing): PairingDraft {
+  const linkType = p.linkedIngredientId
+    ? 'ingredient'
+    : p.linkedRecipeId
+      ? 'recipe'
+      : 'none';
+  return {
+    key: newKey(),
+    kind: p.kind,
+    label: p.label,
+    reason: p.reason,
+    principle: p.principle ?? '',
+    linkType,
+    linkTarget: p.linkedIngredientId ?? p.linkedRecipeId ?? '',
+    linkName: p.linkedIngredientName ?? undefined,
+    linkTitle: p.linkedRecipeTitle ?? undefined,
+    suggested: true,
+  };
 }

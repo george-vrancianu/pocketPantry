@@ -233,17 +233,16 @@ export function useSetFamilyGuidance(id: string) {
 
 /** What Suggest Guidance sends for a Family Recipe: the page as it is now, and the Guidance on the form. */
 export type SuggestFamilyGuidanceRequest = {
-  recipe: Pick<
-    FamilyRecipeDocument,
-    | 'title'
-    | 'servings'
-    | 'prepMinutes'
-    | 'cookMinutes'
-    | 'cuisineId'
-    | 'methodId'
-    | 'lines'
-    | 'steps'
-  >;
+  recipe: Partial<Pick<FamilyRecipeDocument, 'title' | 'servings'>> &
+    Pick<
+      FamilyRecipeDocument,
+      | 'prepMinutes'
+      | 'cookMinutes'
+      | 'cuisineId'
+      | 'methodId'
+      | 'lines'
+      | 'steps'
+    >;
   guidance: GuidanceInput;
   /** The saved Recipe being edited, if any. */
   recipeId?: string;
