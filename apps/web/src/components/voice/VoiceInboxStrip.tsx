@@ -103,8 +103,9 @@ function Strip({
   const host = useVoiceHost();
   const { reading, ready, failed } = state.inbox;
   const total = reading + ready + failed;
+  const busy = reading > 0;
   const summary = [
-    reading > 0 ? t('inbox.reading', { count: reading }) : null,
+    busy ? t('inbox.reading', { count: reading }) : null,
     ready > 0 ? t('inbox.ready', { count: ready }) : null,
     failed > 0 ? t('inbox.failed', { count: failed }) : null,
   ]
@@ -147,9 +148,9 @@ function Strip({
           sx={{ flex: 'none', display: 'flex', alignItems: 'center' }}
         >
           <Gator
-            mood={reading > 0 ? 'thinking' : 'happy'}
+            mood={busy ? 'thinking' : 'happy'}
             size={44}
-            loop={reading > 0 ? 'signature' : 'idle'}
+            loop={busy ? 'signature' : 'idle'}
             entrance={false}
             decorative
           />

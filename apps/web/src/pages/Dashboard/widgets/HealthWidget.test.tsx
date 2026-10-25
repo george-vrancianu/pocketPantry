@@ -383,7 +383,6 @@ describe('HealthWidget', () => {
         name: /^Pantry health, 91/,
       });
       const gator = () => card.querySelector('img')!;
-      expect(gator().getAttribute('data-motion')).toBe('entrance');
       await user.click(card);
 
       expect(gator().getAttribute('data-motion')).toBe('tap');

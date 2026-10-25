@@ -85,7 +85,9 @@ export function HealthGator({
   // After a band change the face never plays an Entrance, even if the band comes back.
   const [changed, setChanged] = useState(false);
   // Warm every band's loop, so the incoming face isn't blank while the old one fades out.
-  useEffect(() => warmGatorLoops(HEALTH_MOODS, 'idle'), []);
+  useEffect(() => {
+    warmGatorLoops(HEALTH_MOODS, 'idle');
+  }, []);
   const [previous, setPrevious] = useState(mood);
   const [leaving, setLeaving] = useState<AnimatedGatorMood | null>(null);
   if (previous !== mood) {

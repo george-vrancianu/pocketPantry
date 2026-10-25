@@ -11,7 +11,6 @@ export type GatorMotion = GatorLoop | 'entrance' | 'tap';
 export const ONE_SHOT_MS = { entrance: 1300, tap: 900 } as const;
 type OneShot = keyof typeof ONE_SHOT_MS;
 
-type Variant = GatorMotion;
 const VARIANT_FILE = /gator-(.+)-(idle|signature|entrance|tap)\.svg$/;
 
 const FILES = import.meta.glob<string>(
@@ -19,12 +18,12 @@ const FILES = import.meta.glob<string>(
   { query: '?url', import: 'default', eager: true },
 );
 
-// chef-flop has no motion art: its one still drawing stands in for every variant.
-const ART: Record<string, Partial<Record<Variant, string>>> = {};
+const ART: Record<string, Partial<Record<GatorMotion, string>>> = {};
 for (const [path, url] of Object.entries(FILES)) {
   const [, mood, variant] = VARIANT_FILE.exec(path)!;
-  (ART[mood!] ??= {})[variant as Variant] = url;
+  (ART[mood!] ??= {})[variant as GatorMotion] = url;
 }
+// chef-flop has no motion art: its one still drawing stands in for every variant.
 ART['chef-flop'] = {
   idle: CHEF_FLOP,
   signature: CHEF_FLOP,
