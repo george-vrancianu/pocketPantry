@@ -3,13 +3,13 @@ import {
   Button,
   CompassIcon,
   displayType,
-  Gator,
   radius,
   Stack,
   tokens,
 } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
+import { EmptyPotPanel } from '../../../components/EmptyPotPanel';
 import { ExploreRow } from '../../../components/ExploreRow';
 import { QuickViewSheet } from '../../../components/QuickViewSheet';
 import type { useAddToFamily } from '../../../lib/addToFamily';
@@ -20,59 +20,12 @@ import {
   type RecipeBrowse,
   type RecipeListItem,
 } from '../../../lib/recipes';
-import { GatorBubblePanel } from '../../../components/GatorBubblePanel';
 import { SectionLabel } from './SectionLabel';
 
 type AddApi = ReturnType<typeof useAddToFamily>;
 
 const STARTERS = 3;
 const NO_BROWSE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
-
-/** Gator's panel: the chef whole on the accent tint, with his empty-pot line in a bubble beside him. */
-function GatorPanel() {
-  const { t } = useTranslation('gator');
-  const [taps, setTaps] = useState(0);
-  return (
-    <GatorBubblePanel
-      gator={
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('chef.alt')}
-          onClick={() => setTaps((n) => n + 1)}
-          sx={{
-            display: 'block',
-            p: 0,
-            border: 0,
-            background: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <Gator
-            mood="chef"
-            size={170}
-            loop="signature"
-            tapSignal={taps}
-            decorative
-          />
-        </Box>
-      }
-    >
-      <Trans
-        t={t}
-        i18nKey="chef.emptyFamily"
-        components={{
-          b: (
-            <Box
-              component="b"
-              sx={{ fontWeight: 700, color: tokens.color.accentOnTint }}
-            />
-          ),
-        }}
-      />
-    </GatorBubblePanel>
-  );
-}
 
 /** Up to three Catalog Bases the Family can make now, each one tap from being added. Hidden when there are none. */
 function Starters({ add, stateOf }: AddApi) {
@@ -145,7 +98,7 @@ export function EmptyFamilyRecipes({
   const { t } = useTranslation('recipes');
   return (
     <Stack spacing={0} useFlexGap sx={{ pt: '4px' }}>
-      <GatorPanel />
+      <EmptyPotPanel />
       <Box
         component="h2"
         sx={{

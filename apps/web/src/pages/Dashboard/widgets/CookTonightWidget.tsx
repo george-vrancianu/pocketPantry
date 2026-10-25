@@ -14,8 +14,15 @@ import { useCookTonight, type CookTonightCard } from '../../../lib/cookTonight';
 import type { WidgetSize } from '../../../lib/dashboard';
 import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
 import { localIso } from '../../../lib/pantry';
+import {
+  hasNoFamilyRecipes,
+  useRecipes,
+  type RecipeBrowse,
+} from '../../../lib/recipes';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
+
+const NO_BROWSE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
 
 /**
  * How many cards a Widget has room for; the API ranks them, the Widget only cuts.
@@ -38,6 +45,9 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
     showHidden,
     'family',
   );
+  // The wide/tall panel needs to know if the Family has any Recipes; the small Widget doesn't.
+  const wide = size !== 'small';
+  const recipes = useRecipes(NO_BROWSE, { scope: 'family', enabled: wide });
   const allCards = cookTonight.data?.cards ?? [];
   const cards = allCards.slice(0, cardsFor(size, columns));
 
@@ -53,8 +63,13 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
       label={t('widgets.cookTonight.title')}
       size={size}
       columns={columns}
-      isLoading={cookTonight.isPending}
-      error={cookTonight.error ? translateApiError(t, cookTonight.error) : null}
+      // Either answer missing or failed is never read as Nothing or an empty Family (Story 27).
+      isLoading={cookTonight.isPending || (wide && recipes.isPending)}
+      error={
+        cookTonight.error || (wide && recipes.error)
+          ? translateApiError(t, cookTonight.error ?? recipes.error)
+          : null
+      }
     >
       {size === 'small' ? (
         <>
@@ -105,7 +120,10 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
       ) : (
         // Wide and tall: no header row; the panel names the Widget and leads to Cook Tonight.
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <CookTonightCardLink cards={allCards} />
+          <CookTonightCardLink
+            cards={allCards}
+            noRecipes={hasNoFamilyRecipes(recipes.data)}
+          />
           {note}
           <CardList cards={cards} />
         </Box>
