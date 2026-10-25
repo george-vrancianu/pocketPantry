@@ -57,11 +57,9 @@ describe('The Scan screen takes its behaviour from the host', () => {
     ).toBeInTheDocument();
   });
 
-  it('hides Import, calls the host after the shutter and sends Close where the host says', async () => {
-    const onShot = vi.fn();
+  it('hides Import, sends Close where the host says', async () => {
     renderCamera({
       importOffered: false,
-      onShot,
       closeTo: '/host/home',
       modes: ['ingredients', 'receipt'],
     });
@@ -69,7 +67,6 @@ describe('The Scan screen takes its behaviour from the host', () => {
       screen.queryByRole('button', { name: 'Import from photos' }),
     ).toBeNull();
     await scanOnce();
-    expect(onShot).toHaveBeenCalledTimes(1);
     expect(where()).toBe('/host/camera?mode=ingredients');
     expect(shutter()).toBeInTheDocument();
 

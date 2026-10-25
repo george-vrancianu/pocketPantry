@@ -535,7 +535,7 @@ describe('Voice Note module', () => {
       const { note, notices } = await failedWith(
         new ApiError('network_error', 0),
       );
-      note.dismiss(failure(note)?.id);
+      note.dismiss(failure(note)?.id ?? -1);
       expect(note.getState().inbox.total).toBe(0);
       expect(notices).toEqual([]);
     });
@@ -544,15 +544,15 @@ describe('Voice Note module', () => {
       const { note, notices } = await failedWith(
         new ApiError('network_error', 0),
       );
-      note.discardFailed(failure(note)?.id);
+      note.discardFailed(failure(note)?.id ?? -1);
       expect(note.getState().inbox.total).toBe(0);
       expect(notices).toEqual(['discarded']);
     });
 
     it('ignores both outside a failure', async () => {
       const { note, notices } = await inReview('a');
-      note.dismiss();
-      note.discardFailed();
+      note.dismiss(1);
+      note.discardFailed(1);
       expect(note.getState().phase).toBe('review');
       expect(notices).toEqual(['noteReady']);
     });

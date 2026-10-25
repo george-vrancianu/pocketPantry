@@ -557,6 +557,20 @@ describe('Setup 1: Snap, Setup overview, All set', () => {
     expect(where()).toBe('/intro/snap');
   });
 
+  it('keeps the photos when Close goes back to Snap, without asking', async () => {
+    const confirm = vi.spyOn(window, 'confirm');
+    const { user } = await openSnap();
+    await snapPhotos(user, 2);
+
+    await user.click(screen.getByRole('button', { name: 'Close scanner' }));
+    await screen.findByRole('radiogroup', { name: "What's in front of you?" });
+
+    expect(where()).toBe('/intro/snap');
+    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.getByText('2 photos taken')).toBeInTheDocument();
+    confirm.mockRestore();
+  });
+
   it('stays on All set and says so when the Intro could not be marked done', async () => {
     const { user, calls } = await openSnap({ finishFails: true });
     await user.click(screen.getByRole('link', { name: 'Skip' }));

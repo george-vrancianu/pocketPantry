@@ -595,12 +595,12 @@ export function createVoiceNote(
     // A note is already under way (the microphone starting, recording, audio being finalised): ignore silently.
     if (starting || session || finishing) return 'active';
     const open = openNote();
-    // The mic is not offered while the open note is a Review or answer sheet, or still being read (Say it's single note).
-    if (store.merged || (open && open.phase !== 'failed')) return 'review';
+    // The mic is not offered while a Review or answer sheet is open.
+    if (store.merged || open) return 'review';
     // Failures with no recording kept (Voice Cap on the press, no microphone, too long, unsupported) cannot
-    // be retried and do not count toward the limit; Say it's open failure is dropped by this press.
+    // be retried and do not count toward the limit.
     const counted = store.notes.filter(
-      (n) => !(n.phase === 'failed' && (!n.recording || n.id === open?.id)),
+      (n) => !(n.phase === 'failed' && !n.recording),
     ).length;
     if (counted >= MAX_NOTES) return 'full';
     return isCapReached() ? 'capped' : 'none';
@@ -1007,12 +1007,12 @@ export function createVoiceNote(
     },
     open: openOne,
     /** Drops a failure and its kept recording. */
-    dismiss(id?: number) {
+    dismiss(id: number) {
       const note = failedNote(id);
       if (note) removeNote(note.id);
     },
     /** Drops a failure and its kept recording, and says so. */
-    discardFailed(id?: number) {
+    discardFailed(id: number) {
       const note = failedNote(id);
       if (!note) return;
       removeNote(note.id);

@@ -44,7 +44,7 @@ import { EXCLUDED_TOGGLE_ID, fieldId, rowId } from '../components/layout';
 export function useReviewScreen(
   /**
    * The host's settings: when the card is saved the host takes over (the Intro counts the Batches and
-   * moves on) instead of landing on the Pantry. A Receipt's unticked Shopping Items are not told: a new
+   * returns to its overview) instead of landing on the Pantry. A Receipt's unticked Shopping Items are not told: a new
    * Member has none.
    */
   host?: { onSaved: (saved: number) => void },
