@@ -317,6 +317,19 @@
         "moveUp": "Mută {{name}} mai sus",
         "moveDown": "Mută {{name}} mai jos",
         "unknown": "Moment de servire"
+      },
+      "suggest": {
+        "button": "Sugerează recomandări",
+        "working": "Se sugerează…",
+        "allFilled": "Tot ce poate completa Sugerează recomandări este deja completat. Golește un câmp pentru a primi o sugestie.",
+        "mark": "Sugerat",
+        "none": "Nicio sugestie pentru {{field}}.",
+        "added": "Sugerat: {{fields}}. Nu se salvează nimic până nu salvezi.",
+        "fields": {
+          "pairings": "Asocieri",
+          "nutritionNote": "Notă nutrițională",
+          "eatingMoments": "Momente de consum"
+        }
       }
     },
     "allergens": {

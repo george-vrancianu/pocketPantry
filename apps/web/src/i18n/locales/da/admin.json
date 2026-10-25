@@ -314,6 +314,19 @@
         "moveUp": "Flyt {{name}} op",
         "moveDown": "Flyt {{name}} ned",
         "unknown": "Spisetidspunkt"
+      },
+      "suggest": {
+        "button": "Foreslå vejledning",
+        "working": "Foreslår…",
+        "allFilled": "Alt, som Foreslå vejledning kan udfylde, er allerede udfyldt. Ryd et felt for at få et forslag.",
+        "mark": "Foreslået",
+        "none": "Ingen forslag til {{field}}.",
+        "added": "Foreslået: {{fields}}. Intet gemmes, før du gemmer.",
+        "fields": {
+          "pairings": "Passer godt til",
+          "nutritionNote": "Ernæringsnote",
+          "eatingMoments": "Spisetidspunkter"
+        }
       }
     },
     "allergens": {

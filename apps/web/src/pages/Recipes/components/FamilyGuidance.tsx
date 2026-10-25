@@ -3,9 +3,17 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
+  suggestFamilyGuidance,
   useSetFamilyGuidance,
   type FamilyRecipeEdit,
 } from '../../../lib/familyRecipes';
+import { emptyDraft } from '../../../lib/recipeDraft';
+import { useGuidanceSuggestion } from '../../../components/recipeEditor/SuggestGuidance';
+import {
+  draftOfEdit,
+  suggestionRecipeOf,
+  type FamilyDraft,
+} from '../familyDraft';
 import { useRecipeFilters, useRecipes } from '../../../lib/recipes';
 import {
   GuidanceFields,
@@ -89,6 +97,8 @@ type FieldsProps = {
   momentOptions: MomentOption[];
   /** The Recipe being edited, which a Pairing cannot link to. */
   recipeId?: string;
+  /** The Recipe content on the page now, which Suggest Guidance reads; without it there is no button. */
+  page?: FamilyDraft;
 };
 
 /** The shared guidance fields with the Family's Recipe picker and Eating Moment list. */
@@ -97,7 +107,18 @@ export function FamilyGuidanceFields({
   onChange,
   momentOptions,
   recipeId,
+  page,
 }: FieldsProps) {
+  const suggestion = useGuidanceSuggestion({
+    draft,
+    onChange,
+    send: (guidance) =>
+      suggestFamilyGuidance({
+        recipe: suggestionRecipeOf(page ?? emptyDraft()),
+        guidance,
+        ...(recipeId ? { recipeId } : {}),
+      }),
+  });
   const RecipePicker = useMemo(
     () =>
       function Picker(props: RecipePickerProps) {
@@ -111,12 +132,22 @@ export function FamilyGuidanceFields({
       onChange={onChange}
       momentOptions={momentOptions}
       RecipePicker={RecipePicker}
+      suggestion={page ? suggestion : undefined}
     />
   );
 }
 
-/** Guidance of a saved Family Recipe, with its own Save. */
-export function FamilyGuidance({ recipe }: { recipe: FamilyRecipeEdit }) {
+/**
+ * Guidance of a saved Family Recipe, with its own Save. `page` is the Recipe form above it as
+ * it is now (unsaved edits included), which Suggest Guidance reads; absent, the saved Recipe.
+ */
+export function FamilyGuidance({
+  recipe,
+  page,
+}: {
+  recipe: FamilyRecipeEdit;
+  page?: FamilyDraft | null;
+}) {
   const { t } = useTranslation(['admin', 'errors']);
   const save = useSetFamilyGuidance(recipe.id);
   const momentOptions = useMomentOptions();
@@ -157,6 +188,7 @@ export function FamilyGuidance({ recipe }: { recipe: FamilyRecipeEdit }) {
         }}
         momentOptions={momentOptions}
         recipeId={recipe.id}
+        page={page ?? draftOfEdit(recipe)}
       />
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Button

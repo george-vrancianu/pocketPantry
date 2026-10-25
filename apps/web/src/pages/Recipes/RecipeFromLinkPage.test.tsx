@@ -302,6 +302,45 @@ describe('RecipeFromLinkPage', () => {
     expect(screen.queryByRole('radio')).toBeNull();
   });
 
+  it('offers Suggest Guidance on the draft, which reads the lines and Steps just read in', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { calls } = setup({
+      'POST /api/recipes/from-link': () => Response.json(read()),
+      'POST /api/recipes/suggest-guidance': () =>
+        Response.json({
+          guidance: { nutritionNote: 'Sweet and filling. Low in fibre.' },
+          noSuggestions: [],
+        }),
+    });
+    await submit(user, 'https://www.example.com/pancakes');
+    await screen.findByLabelText(/^Title/);
+
+    await user.click(screen.getByRole('button', { name: 'Suggest Guidance' }));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Nutrition Note')).toHaveValue(
+        'Sweet and filling. Low in fibre.',
+      ),
+    );
+    expect(screen.getByText('Suggested')).toBeVisible();
+    expect(
+      calls.find((c) => c.key === 'POST /api/recipes/suggest-guidance')?.body,
+    ).toMatchObject({
+      recipe: {
+        title: 'Blog pancakes',
+        cuisineId: 'c-fr',
+        lines: [
+          { ingredientId: 'egg', quantity: 2, unit: 'pcs' },
+          { ingredientId: null, rawName: 'Maple syrup' },
+        ],
+        steps: [{ text: 'Whisk and fry' }, { text: 'Serve warm' }],
+      },
+      guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
+    });
+    // The read itself never invents Guidance, and suggesting stores nothing.
+    expect(calls.some((c) => c.key === 'POST /api/recipes')).toBe(false);
+  });
+
   it('needs Servings when the page had none, then saves with the Source Link', async () => {
     const user = userEvent.setup({ delay: null });
     const { calls } = setup({
