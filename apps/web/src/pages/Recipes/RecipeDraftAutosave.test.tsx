@@ -362,7 +362,7 @@ describe('Recipe Drafts autosave on New Recipe', () => {
         Response.json({ id: DRAFT_ID, version: 8 }),
     });
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('Gran st');
-    expect(screen.getByLabelText(/^Servings/)).toHaveValue('4x');
+    expect(screen.getByLabelText(/^Serves/)).toHaveValue('4x');
     await user.click(screen.getByRole('tab', { name: /^Ingredients/ }));
     expect(screen.getByLabelText('Quantity of Flour')).toHaveValue('1/2 ab');
     // A line whose Ingredient is gone is an Unmatched name.
