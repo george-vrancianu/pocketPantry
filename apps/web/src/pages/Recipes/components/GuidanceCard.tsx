@@ -14,11 +14,12 @@ import {
   tokens,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PairingRow,
   type MomentOption,
+  type RecipePickerProps,
 } from '../../../components/recipeEditor/GuidanceFields';
 import {
   SuggestedMark,
@@ -63,6 +64,8 @@ type Props = {
   page: FamilyDraft;
   /** A Recipe from Link draft: its Guidance is never read from the page. */
   fromLink?: boolean;
+  /** The saved Recipe being edited, which a Pairing cannot link to. */
+  recipeId?: string;
 };
 
 /** How many Pairings, Eating Moments and Nutrition Notes are set. */
@@ -82,6 +85,7 @@ export function GuidanceCard({
   momentOptions,
   page,
   fromLink,
+  recipeId,
 }: Props) {
   const { t } = useTranslation(['recipes', 'admin']);
   const reduceMotion = usePrefersReducedMotion();
@@ -92,8 +96,19 @@ export function GuidanceCard({
     draft,
     onChange,
     send: (guidance) =>
-      suggestFamilyGuidance({ recipe: suggestionRecipeOf(page), guidance }),
+      suggestFamilyGuidance({
+        recipe: suggestionRecipeOf(page),
+        guidance,
+        ...(recipeId ? { recipeId } : {}),
+      }),
   });
+  const RecipePicker = useMemo(
+    () =>
+      function Picker(props: RecipePickerProps) {
+        return <FamilyRecipePicker {...props} excludeId={recipeId} />;
+      },
+    [recipeId],
+  );
   const problems = guidanceProblems(draft);
   const hasProblem = hasGuidanceProblem(draft);
   const set = guidanceSetCount(draft);
@@ -294,7 +309,7 @@ export function GuidanceCard({
                   position={index + 1}
                   first={index === 0}
                   last={index === draft.pairings.length - 1}
-                  RecipePicker={FamilyRecipePicker}
+                  RecipePicker={RecipePicker}
                   onChange={(patch) => patchPairing(pairing.key, patch)}
                   onMove={(offset) => {
                     const next = [...draft.pairings];

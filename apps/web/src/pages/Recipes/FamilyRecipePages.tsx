@@ -28,6 +28,7 @@ import { translateApiError } from '../../i18n/translateApiError';
 import {
   useFamilyRecipeEdit,
   useFamilyTipWrites,
+  useSetFamilyGuidance,
   useUpdateFamilyRecipe,
   useVariantDraft,
   type FamilyRecipeDraft,
@@ -42,11 +43,11 @@ import {
   useRecipe,
   type RecipeDetail,
 } from '../../lib/recipes';
-import { FamilyGuidance, useMomentOptions } from './components/FamilyGuidance';
+import { useMomentOptions } from './components/FamilyGuidance';
 import {
+  documentOf,
   draftOfEdit,
   draftOfVariantDraft,
-  type FamilyDraft,
   type NewRecipeDraft,
 } from './familyDraft';
 import { FamilyRecipeForm } from './components/FamilyRecipeForm';
@@ -551,6 +552,8 @@ export function EditFamilyRecipePage() {
   const { id = '' } = useParams();
   const query = useFamilyRecipeEdit(id);
   const update = useUpdateFamilyRecipe(id);
+  const setGuidance = useSetFamilyGuidance(id);
+  const momentOptions = useMomentOptions();
   const tipWrites = useFamilyTipWrites(id);
   // Deleting a Tip waits for its Undo window to end (ADR 0009).
   const tipRemoval = useDeferredRemoval(
@@ -558,12 +561,26 @@ export function EditFamilyRecipePage() {
     tipWrites.remove.mutateAsync,
   );
   const recipe = query.data;
-  /** Bumped after each save so the form reseeds with the new line and Step ids. */
-  const [saves, setSaves] = useState(0);
+  /** Bumped when the Recipe is stored so the form reseeds with the new line and Step ids. */
+  const [recipeSaves, setRecipeSaves] = useState(0);
+  /** Bumped when the Guidance is stored so its card reseeds; a Recipe-only save keeps Guidance edits. */
+  const [guidanceSaves, setGuidanceSaves] = useState(0);
   /** The Member dropped the Source Link; it is only sent (and gone) once they save. */
   const [linkRemoved, setLinkRemoved] = useState(false);
-  /** What the form holds now, for Suggest Guidance in the Guidance section below it. */
-  const [page, setPage] = useState<FamilyDraft | null>(null);
+  /** The Guidance as the last save stored it; reseeds the Guidance card after a save. */
+  const [savedGuidance, setSavedGuidance] = useState<GuidanceDraft | null>(
+    null,
+  );
+  /** Both parts are saved (shows "Recipe saved."); cleared by the next Save. */
+  const [saved, setSaved] = useState(false);
+  /** The part the last Save could not store, and why. */
+  const [failure, setFailure] = useState<{
+    part: 'recipe' | 'guidance';
+    error: unknown;
+  } | null>(null);
+  /** The Recipe document as last stored (what the form reseeded with): a Save with the same document does not resend it. */
+  const storedRecipe = useRef<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const back = { label: t('recipes:back'), href: `/recipes/${id}` };
@@ -605,7 +622,8 @@ export function EditFamilyRecipePage() {
   return (
     <FamilyRecipeForm
       // Tip writes refresh `recipe` but must not reset unsaved edits; a save reseeds.
-      seedKey={`${recipe.id}-${saves}`}
+      seedKey={`${recipe.id}-${recipeSaves}`}
+      guidanceSeedKey={`${recipe.id}-${guidanceSaves}`}
       header={{
         title: t('recipes:family.editHeading'),
         titleRef: headingRef,
@@ -628,8 +646,15 @@ export function EditFamilyRecipePage() {
       notices={
         <>
           <Typography role="status" variant="body2">
-            {saves > 0 && !update.isPending ? t('recipes:family.saved') : null}
+            {saved && !saving ? t('recipes:family.saved') : null}
           </Typography>
+          {failure ? (
+            <Alert>
+              {t(`recipes:family.saveFailed.${failure.part}`, {
+                reason: translateApiError(t, failure.error),
+              })}
+            </Alert>
+          ) : null}
           {tipError ? <Alert>{translateApiError(t, tipError)}</Alert> : null}
         </>
       }
@@ -643,13 +668,16 @@ export function EditFamilyRecipePage() {
             busy={tipWrites.hide.isPending}
             onHide={(tipIds) => tipWrites.hide.mutate(tipIds)}
           />
-          <FamilyGuidance recipe={recipe} page={page} />
         </>
       }
       initial={draftOfEdit(recipe)}
-      onDraftChange={setPage}
-      saving={update.isPending}
-      error={update.error}
+      guidance={{
+        initial: savedGuidance ?? toGuidanceDraft(recipe),
+        momentOptions,
+        recipeId: recipe.id,
+      }}
+      saving={saving}
+      error={null}
       stepTipCount={(stepId) =>
         tips.filter((tip) => tip.stepId === stepId).length
       }
@@ -657,18 +685,42 @@ export function EditFamilyRecipePage() {
         of: (stepId) => tips.filter((tip) => tip.stepId === stepId),
         actions: tipActions,
       }}
-      onSave={(document) =>
-        update.mutate(
-          // `null` clears the link (and its language); leaving it out keeps both.
-          linkRemoved ? { ...document, sourceLink: null } : document,
-          {
-            onSuccess: () => {
-              setSaves((count) => count + 1);
+      onSave={async (document, guidance) => {
+        // Edit always passes `guidance`; without it there is nothing to store.
+        if (!guidance) return;
+        // `null` clears the link (and its language); leaving it out keeps both.
+        const body = linkRemoved ? { ...document, sourceLink: null } : document;
+        const key = JSON.stringify(body);
+        setSaving(true);
+        setSaved(false);
+        setFailure(null);
+        try {
+          if (storedRecipe.current !== key) {
+            try {
+              const stored = await update.mutateAsync(body);
+              storedRecipe.current = JSON.stringify(
+                documentOf(draftOfEdit(stored)),
+              );
               setLinkRemoved(false);
-            },
-          },
-        )
-      }
+              setRecipeSaves((count) => count + 1);
+            } catch (error) {
+              setFailure({ part: 'recipe', error });
+              return;
+            }
+          }
+          try {
+            const stored = await setGuidance.mutateAsync(guidance);
+            setSavedGuidance(toGuidanceDraft(stored));
+          } catch (error) {
+            setFailure({ part: 'guidance', error });
+            return;
+          }
+          setGuidanceSaves((count) => count + 1);
+          setSaved(true);
+        } finally {
+          setSaving(false);
+        }
+      }}
     />
   );
 }
