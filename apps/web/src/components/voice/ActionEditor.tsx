@@ -15,12 +15,7 @@ import { LocationToggle } from '../LocationToggle';
 import { CatalogSearch } from '../catalogSearch/CatalogSearch';
 import { ExpiryField, expiryContext } from '../ExpiryPicker';
 import type { CatalogSearchResult, Unit } from '../../lib/catalog';
-import {
-  dateAndRelativeDay,
-  defaultExpiryDate,
-  fullDate,
-  useExpiryTags,
-} from '../../lib/pantry';
+import { defaultExpiryDate, fullDate, useExpiryTags } from '../../lib/pantry';
 import { useToday } from '../../lib/useToday';
 import type { VoiceBatchRow, VoiceReviewAction } from '../../lib/voice';
 import { voiceNote } from '../../lib/voiceNote';
@@ -79,21 +74,26 @@ function AmountEditor({
   const setUnit = (unit: Unit | '') =>
     voiceNote.edit(action.id, { unit: unit === '' ? null : unit });
   return (
-    <AmountField
-      name={displayName(action)}
-      quantity={typed}
-      unit={action.unit ?? ''}
-      onQuantityChange={(quantity, unit) => {
-        onTyped(quantity);
-        if (unit !== undefined) setUnit(unit);
-      }}
-      onUnitChange={setUnit}
-      error={invalid ? t('common:amount.invalid') : null}
-      // Enter has no save here; Done below closes the row.
-      onSubmit={() => {}}
-      amountScale={action.ingredient?.amountScale}
-      label={t('voice:review.edit.amount')}
-    />
+    // Pulled out of the editor's 57 px indent like the Location toggle, so the three fields share a left edge.
+    <Box sx={{ ml: '-45px' }}>
+      <AmountField
+        name={displayName(action)}
+        quantity={typed}
+        unit={action.unit ?? ''}
+        onQuantityChange={(quantity, unit) => {
+          onTyped(quantity);
+          if (unit !== undefined) setUnit(unit);
+        }}
+        onUnitChange={setUnit}
+        error={invalid ? t('common:amount.invalid') : null}
+        // Enter has no save here; Done below closes the row.
+        onSubmit={() => {}}
+        amountScale={action.ingredient?.amountScale}
+        label={t('voice:review.edit.amount')}
+        // A misheard amount is corrected here, not converted: a new unit keeps the number.
+        rescaleOnUnitChange={false}
+      />
+    </Box>
   );
 }
 
@@ -108,24 +108,24 @@ function ExpiresEditor({
   /** The expiry the server heard, to tell it from one picked here. */
   spokenExpiry: string | null;
 }) {
-  const { t, i18n } = useTranslation(['voice', 'pantry', 'common']);
-  const today = useToday();
+  const { t, i18n } = useTranslation(['voice', 'common']);
   const expiry = effectiveExpiry(action);
   const location = effectiveLocation(action);
   const name = displayName(action);
 
+  // Only where the date came from; the ExpiryField above already shows the date itself.
   let source: string | null = null;
   if (expiry !== null) {
-    const when = dateAndRelativeDay(expiry, today, i18n.language).date;
     if (action.expiresOn === null) {
-      source = `${when} · ${t('voice:review.edit.defaultExpiry')}`;
+      source = t('voice:review.edit.defaultExpiry');
     } else if (action.expiresOn === spokenExpiry) {
-      source = `${when} · ${t('voice:review.edit.fromSpeech')}`;
+      source = t('voice:review.edit.fromSpeech');
     }
   }
 
   return (
-    <Box>
+    // Pulled out of the editor's 57 px indent like the Location toggle, so the three fields share a left edge.
+    <Box sx={{ ml: '-45px' }}>
       <ExpiryField
         label={t('voice:review.edit.expires')}
         value={expiry}
@@ -148,7 +148,14 @@ function ExpiresEditor({
               )
         }
       />
-      {source ? <Typography sx={note}>{source}</Typography> : null}
+      {source ? (
+        // The copy is lowercase ("from what you said"), so capitalize it as a standalone line.
+        <Typography
+          sx={{ ...note, '&::first-letter': { textTransform: 'uppercase' } }}
+        >
+          {source}
+        </Typography>
+      ) : null}
     </Box>
   );
 }
@@ -157,7 +164,7 @@ function LocationEditor({ action }: { action: VoiceReviewAction }) {
   const { t } = useTranslation(['voice', 'common']);
   return (
     <Box>
-      {/* Pulled out of the editor's 57 px indent (to 12 px from the row edge) so the Romanian labels fit whole at 320 px. */}
+      {/* Pulled out of the editor's 57 px indent (to 12 px from the row edge) so the Romanian labels fit whole at 320 px; the amount and expiry fields do the same. */}
       <Box sx={{ ml: '-45px' }}>
         <LocationToggle
           label={t('voice:review.edit.location')}
