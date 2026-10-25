@@ -24,6 +24,7 @@ import {
   MIN_BATCHES_FOR_SCORE,
   verdictOf,
 } from '../../../lib/health';
+import { TAP_BEFORE_NEXT_MS } from '../../../lib/gatorTap';
 import { usePantryHealth } from '../../../lib/usePantryHealth';
 import { useToday } from '../../../lib/useToday';
 import {
@@ -32,9 +33,6 @@ import {
 } from '../../../components/HealthSheet/todoText';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
-
-/** How long Gator's Tap shows on the card before the sheet covers it. */
-export const TAP_BEFORE_SHEET_MS = 500;
 
 /** The Pantry Health score in a ring with its verdict and to-do count; tapping it plays Gator's Tap, then opens the sheet. */
 export function HealthWidget({ size, columns }: WidgetProps) {
@@ -49,7 +47,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
     const timer = setTimeout(() => {
       setOpening(false);
       setOpen(true);
-    }, TAP_BEFORE_SHEET_MS);
+    }, TAP_BEFORE_NEXT_MS);
     return () => clearTimeout(timer);
   }, [opening]);
   const state = usePantryHealth();
