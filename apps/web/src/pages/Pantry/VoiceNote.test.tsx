@@ -225,7 +225,7 @@ describe('Voice Notes on the Pantry page', () => {
       }),
     );
     expect(await screen.findByText("Gator's listening")).toBeVisible();
-    // The header's refresh status line is also a status, empty at rest.
+    // The refresh loader's live region is also a status, empty at rest.
     const note = screen
       .getAllByRole('status')
       .find((status) => status.textContent !== '');

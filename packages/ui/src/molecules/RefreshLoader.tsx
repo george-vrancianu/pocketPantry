@@ -51,6 +51,7 @@ export function RefreshLoader({ state, labels }: RefreshLoaderProps) {
           position: 'fixed',
           top: 0,
           left: '50%',
+          // Above the page and the raised Dock, below sheets and dialogs (MUI modal 1300).
           zIndex: 1250,
           pointerEvents: 'none',
           transform: down
@@ -70,7 +71,7 @@ export function RefreshLoader({ state, labels }: RefreshLoaderProps) {
             width: 44,
             height: 44,
             borderRadius: '50%',
-            bgcolor: 'background.paper',
+            bgcolor: color.cardBg,
             boxShadow: shadow.float,
             display: 'flex',
             alignItems: 'center',

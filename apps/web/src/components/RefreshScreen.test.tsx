@@ -403,9 +403,64 @@ describe('Refresh state follows the screen', () => {
     const content = screen.getByText('Shopping content');
     expect(getComputedStyle(content).opacity).toBe('1');
     release();
-    await settle();
+    await elapse(MIN_BUSY_MS + REFRESH_LOADER_RETRACT_MS);
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
     expect(getComputedStyle(content).opacity).toBe('1');
+    expect(loaderShown()).toBe('false');
+  });
+
+  it("does not re-enter the next screen's mark for a run done on the screen just left", async () => {
+    vi.stubGlobal(
+      'fetch',
+      stubApi({
+        'GET /api/voice/config': () => Response.json({ configured: true }),
+        'GET /api/staples': () => Response.json({ staples: [] }),
+        'GET /api/settings/preferences': () => Response.json({}),
+      }).fetchMock,
+    );
+    openTwoScreens();
+    await elapse(1300);
+    tap();
+    await finish();
+    expect(screen.getByRole('status')).toHaveTextContent('Updated just now');
+    fireEvent.click(screen.getByRole('link', { name: 'Go on' }));
+    await settle();
+    expect(screen.getByText('Shopping content')).toBeInTheDocument();
+    await elapse(REFRESH_LOADER_RETRACT_MS + 100);
+    expect(
+      screen
+        .getByRole('button', { name: 'Refresh' })
+        .getAttribute('data-motion'),
+    ).not.toBe('reentrance');
+  });
+
+  it('plays one re-entrance, for the newer run, when the Member taps again while the loader tucks up', async () => {
+    vi.stubGlobal(
+      'fetch',
+      stubApi({
+        'GET /api/voice/config': () => Response.json({ configured: true }),
+        'GET /api/staples': () => Response.json({ staples: [] }),
+        'GET /api/settings/preferences': () => Response.json({}),
+      }).fetchMock,
+    );
+    openTwoScreens();
+    await elapse(1300);
+    const motion = () =>
+      screen
+        .getByRole('button', { name: 'Refresh' })
+        .getAttribute('data-motion');
+    tap();
+    await elapse(900);
+    // Done at 700 ms; the second tap lands at 900 ms, while the loader tucks up. Its Tap motion ends at 1800 ms.
+    tap();
+    await elapse(1000);
+    // The second run is done at 1600 ms; its re-entrance waits for the tuck, until 1980 ms.
+    expect(loaderShown()).toBe('false');
+    expect(motion()).toBe('idle');
+    await elapse(MIN_BUSY_MS + REFRESH_LOADER_RETRACT_MS - 1000 - 1);
+    expect(motion()).toBe('idle');
+    await elapse(1);
+    expect(motion()).toBe('reentrance');
   });
 
   it('comes back idle and at full opacity after a round trip begun while busy', async () => {
