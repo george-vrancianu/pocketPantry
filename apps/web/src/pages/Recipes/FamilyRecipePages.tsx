@@ -167,7 +167,8 @@ function NewRecipeContent({
   );
   const plateScan = resumedForm ? resumedForm.plateScan : supplied?.plateScan;
   // Plate matches and the base picked before leaving are not stored: asked for again.
-  const again = useResumedPlateBases(resumedForm);
+  // Once Save is tapped they stop, so the save's refetches do not wait on them.
+  const resumedBases = useResumedPlateBases(resumedForm, !finishing);
   const sourceLanguage = resumedForm
     ? resumedForm.sourceLanguage
     : supplied?.sourceLanguage;
@@ -187,26 +188,26 @@ function NewRecipeContent({
           )),
       showHidden: true,
     },
-    showHidden,
+    showHidden && !finishing,
   );
-  const suppliedBases = supplied?.closestBases ?? again.closest;
-  const suppliedHidden =
-    supplied?.hiddenByAllergiesCount ?? again.hiddenByAllergiesCount;
-  const closestBases = revealed.data?.matches ?? suppliedBases;
+  const offeredBases = supplied?.closestBases ?? resumedBases.closest;
+  const offeredHidden =
+    supplied?.hiddenByAllergiesCount ?? resumedBases.hiddenByAllergiesCount;
+  const closestBases = revealed.data?.matches ?? offeredBases;
   const hiddenCount = revealed.data
     ? revealed.data.hiddenByAllergiesCount
-    : suppliedHidden;
+    : offeredHidden;
   // Nothing close and nothing hidden (or not matched yet): no picker, a Base Recipe.
   // A resumed pick counts too: matches may be slow, empty or failed, and the pick must still be saved (ADR 0028).
   const hasBases =
-    suppliedBases.length > 0 ||
-    suppliedHidden > 0 ||
-    Boolean(resumedForm?.pickedBaseId);
+    offeredBases.length > 0 ||
+    offeredHidden > 0 ||
+    (Boolean(resumedForm?.pickedBaseId) && !resumedBases.gone);
   // What the Member picked before leaving stays picked (named once looked up).
   const pick = {
     ...basePick,
     chosen: basePick.chosen ?? resumedForm?.pickedBaseId ?? null,
-    another: basePick.another ?? again.picked,
+    another: basePick.another ?? resumedBases.picked,
   };
   const [initial] = useState(() =>
     resumedForm
@@ -234,7 +235,7 @@ function NewRecipeContent({
       ...formState,
       sourceLink,
       sourceLanguage,
-      pickedBaseId: parentId,
+      pickedBaseId: hasBases ? parentId : null,
       plateScan,
     }),
     // A supplied fill is kept at once, so nothing counts as blank.
@@ -266,7 +267,7 @@ function NewRecipeContent({
         trailing={<RecipeDraftStatus status={autosave.status} />}
       />
       <Stack spacing={2.5}>
-        {hasBases && again.ready ? (
+        {hasBases && resumedBases.ready ? (
           <BaseRecipePicker
             pick={pick}
             onPick={setBasePick}

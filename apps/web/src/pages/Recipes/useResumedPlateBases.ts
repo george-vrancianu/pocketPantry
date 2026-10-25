@@ -1,4 +1,5 @@
 import type { BaseRecipeOption } from '../../components/BaseRecipePicker';
+import { ApiError } from '../../lib/api';
 import { usePlateMatches } from '../../lib/plateRecipe';
 import type { RecipeDraftForm } from '../../lib/recipeDraftContent';
 import { useRecipe } from '../../lib/recipes';
@@ -28,27 +29,39 @@ const offersBases = (form: RecipeDraftForm | null) =>
  * picked before leaving is looked up by id for its name, since one picked
  * through search is stored only as `pickedBaseId`.
  */
-export function useResumedPlateBases(form: RecipeDraftForm | null): {
+export function useResumedPlateBases(
+  form: RecipeDraftForm | null,
+  /** False once the Recipe is being saved: the queries stop, so the save's refetches do not wait on them. */
+  active = true,
+): {
   closest: BaseRecipeOption[];
   hiddenByAllergiesCount: number;
   /** The base picked before leaving, once named; null when there was none or it is gone. */
   picked: BaseRecipeOption | null;
+  /** The picked base was deleted or archived since: the pick is dropped and the picker moves on. */
+  gone: boolean;
   /** The picker may be shown: the picked base (if any) is named. If its name cannot be looked up, the picker stays away and the pick is kept as it is. */
   ready: boolean;
 } {
   const asks = offersBases(form);
   const matches = usePlateMatches(
     plateMatchInput(form?.draft.title ?? '', form?.draft.lines ?? []),
-    asks,
+    asks && active,
   );
   const pickedId = asks ? (form?.pickedBaseId ?? '') : '';
-  const base = useRecipe(pickedId, pickedId !== '');
+  const base = useRecipe(pickedId, pickedId !== '' && active);
+  const gone =
+    base.data?.archived === true ||
+    (base.error instanceof ApiError && base.error.status === 404);
   return {
     closest: matches.data?.matches ?? [],
     hiddenByAllergiesCount: matches.data?.hiddenByAllergiesCount ?? 0,
-    picked: base.data
-      ? { id: base.data.id, title: base.data.title, allergyWarning: null }
-      : null,
-    ready: pickedId === '' || base.data !== undefined,
+    gone,
+    picked:
+      base.data && !gone
+        ? // The picker's compact warning is not derived from the detail's: the pick is named only.
+          { id: base.data.id, title: base.data.title, allergyWarning: null }
+        : null,
+    ready: pickedId === '' || base.data !== undefined || gone,
   };
 }

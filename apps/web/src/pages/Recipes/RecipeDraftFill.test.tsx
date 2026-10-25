@@ -386,6 +386,9 @@ describe('Recipe Drafts for supplied fills', () => {
       expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
         parentId: 'base-waffles',
       });
+      // The refetches after the create do not wait on the slow matches.
+      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+      expect(sent(calls, 'POST /api/recipes/plate-matches')).toHaveLength(1);
     });
 
     it.each([
@@ -433,6 +436,69 @@ describe('Recipe Drafts for supplied fills', () => {
       expect(await screen.findByText('Detail of the recipe')).toBeVisible();
       expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
         parentId: 'base-waffles',
+      });
+    });
+
+    describe('when the picked base is gone', () => {
+      const goneRoutes = (
+        base: () => Response,
+        matches: unknown[] = [
+          {
+            id: 'base-crepes',
+            title: 'Crepes',
+            score: 0.8,
+            allergyWarning: null,
+          },
+        ],
+      ) => ({
+        ...resumeRoutes(),
+        ...saveRoutes,
+        'GET /api/recipes/base-waffles': base,
+        'POST /api/recipes/plate-matches': () =>
+          Response.json({ matches, hiddenByAllergiesCount: 0 }),
+      });
+      const notFound = () =>
+        Response.json({ error: 'not_found' }, { status: 404 });
+      const archived = () =>
+        Response.json({
+          id: 'base-waffles',
+          owner: 'catalog',
+          title: 'Waffles',
+          archived: true,
+          allergyWarning: null,
+        });
+
+      it.each([
+        ['is deleted', notFound],
+        ['is archived', archived],
+      ])('moves to the top match when the base %s', async (_n, base) => {
+        const user = typer();
+        const calls = setup(`/recipes/new?draft=${DRAFT_ID}`, goneRoutes(base));
+        expect(
+          await screen.findByRole('radio', { name: /Crepes/ }),
+        ).toBeChecked();
+        expect(screen.queryByRole('radio', { name: 'Waffles' })).toBeNull();
+        await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+        expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+        expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
+          parentId: 'base-crepes',
+        });
+      });
+
+      it('sends no base when it is gone and nothing else matches', async () => {
+        const user = typer();
+        const calls = setup(
+          `/recipes/new?draft=${DRAFT_ID}`,
+          goneRoutes(notFound, []),
+        );
+        await screen.findByLabelText(/^Title/);
+        await elapse(500);
+        await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+        expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+        expect(sent(calls, 'POST /api/recipes')[0].body).not.toHaveProperty(
+          'parentId',
+          'base-waffles',
+        );
       });
     });
 
