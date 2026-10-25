@@ -147,6 +147,13 @@
       "new": "New Recipe Tip",
       "cancelNew": "Cancel the new Recipe Tip",
       "add": "Add a Recipe Tip"
+    },
+    "details": {
+      "titlePlaceholder": "Recipe title",
+      "servesRequired": "Enter how many it serves.",
+      "levelCycle": "Level: {{value}}. Tap to change",
+      "prep": "Prep",
+      "cook": "Cook"
     }
   },
   "fewerServings": "Fewer Servings",

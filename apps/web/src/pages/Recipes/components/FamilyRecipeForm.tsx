@@ -35,7 +35,7 @@ import { FamilyGuidanceFields } from './FamilyGuidance';
 import { AppScreenHeader } from '../../../components/AppScreenHeader';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { RecipeLinesSection } from '../../../components/recipeEditor/RecipeLinesSection';
-import { RecipeMetaFields } from '../../../components/recipeEditor/RecipeMetaFields';
+import { FamilyDetailsBasics } from './FamilyDetailsBasics';
 import { RecipeStepsSection } from '../../../components/recipeEditor/RecipeStepsSection';
 import { documentOf, type FamilyDraft } from '../familyDraft';
 import {
@@ -254,18 +254,11 @@ export function FamilyRecipeForm({
           sx={tab !== 'details' ? { display: 'none' } : undefined}
         >
           <>
-            {hint ? (
-              <Typography variant="body2" color="text.secondary">
-                {hint}
-              </Typography>
-            ) : null}
             {detailsTop}
-            <RecipeMetaFields
+            <FamilyDetailsBasics
               draft={draft}
               problems={problems}
-              titleLabel={t('recipes:family.title')}
-              cuisineLabel={t('recipes:cuisine')}
-              methodLabel={t('recipes:method')}
+              hint={hint}
               cuisines={filters.data?.cuisines ?? []}
               methods={filters.data?.methods ?? []}
               showTitleError={showTitleError}

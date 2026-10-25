@@ -147,6 +147,13 @@
       "new": "Nyt tip til opskriften",
       "cancelNew": "Annuller nyt tip til opskriften",
       "add": "Tilføj et tip til opskriften"
+    },
+    "details": {
+      "titlePlaceholder": "Opskriftens titel",
+      "servesRequired": "Angiv, hvor mange den rækker til.",
+      "levelCycle": "Niveau: {{value}}. Tryk for at skifte",
+      "prep": "Forberedelse",
+      "cook": "Tilberedning"
     }
   },
   "fewerServings": "Færre portioner",
