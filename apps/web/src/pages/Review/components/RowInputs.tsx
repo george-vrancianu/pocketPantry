@@ -2,6 +2,7 @@ import { Box, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { ExpirySheet, expiryContext } from '../../../components/ExpiryPicker';
 import { LOCATIONS, UNITS, type CatalogParent } from '../../../lib/catalog';
+import type { IsoDate } from '../../../lib/pantry';
 import {
   formatDate,
   isIsoDate,
@@ -12,8 +13,9 @@ import { displayName, type ReviewLine } from '../../../lib/review';
 import { controlSx } from './Field';
 
 /**
- * The inputs of a Review line, shared by the phone edit panel and the tablet
- * table so the two layouts arrange the same fields without forking them.
+ * The inputs of a Review line for the tablet table, plus the Name, Description and Category inputs the phone edit
+ * panel shares with it. The phone panel's amount, Location and expiry use the shared AmountField, LocationToggle and
+ * ExpiryField; `useReviewLineExpiry` maps a line onto the expiry picker for both layouts.
  * `ariaLabel` names a control where the layout has no visible per-row label.
  */
 
@@ -196,9 +198,31 @@ export function ExpiryInput({
 }
 
 /**
- * The expiry picker's sheet for one line. A date (or No expiry) picked in it is written to the line as an explicit
- * expiry, the same as a typed one. Usual is the Match's Default Expiry; there is none for an Unmatched line.
+ * The expiry picker's props for one line: its date, what a pick writes back, the Usual quick pick and the context
+ * line. A date (or No expiry) picked is written to the line as an explicit expiry, the same as a typed one. Usual is
+ * the Match's Default Expiry; there is none for an Unmatched line.
  */
+export function useReviewLineExpiry(line: ReviewLine, onChange: Change) {
+  const { t, i18n } = useTranslation(['pantry', 'common']);
+  return {
+    value: isIsoDate(line.expiryDate) ? line.expiryDate : null,
+    onChange: (value: IsoDate | null) =>
+      onChange({ expiryDate: value ?? '', expiryExplicit: true }),
+    usualDays: line.match?.defaults.expiryDays ?? null,
+    context: expiryContext(
+      {
+        name: displayName(line),
+        quantity: line.quantity,
+        unit: line.unit,
+        location: line.location,
+      },
+      i18n.language,
+      t,
+    ),
+  };
+}
+
+/** The expiry picker's sheet for one line, for the tablet table. */
 export function ReviewLineExpirySheet({
   line,
   onChange,
@@ -213,28 +237,15 @@ export function ReviewLineExpirySheet({
   /** After the close transition, to put focus back on the opener. */
   onExited?: () => void;
 }) {
-  const { t, i18n } = useTranslation(['pantry', 'common']);
+  const { t } = useTranslation('pantry');
+  const expiry = useReviewLineExpiry(line, onChange);
   return (
     <ExpirySheet
       open={open}
       onClose={onClose}
       onExited={onExited}
-      value={isIsoDate(line.expiryDate) ? line.expiryDate : null}
-      onChange={(value) =>
-        onChange({ expiryDate: value ?? '', expiryExplicit: true })
-      }
-      usualDays={line.match?.defaults.expiryDays ?? null}
-      context={expiryContext(
-        {
-          name: displayName(line),
-          quantity: line.quantity,
-          unit: line.unit,
-          location: line.location,
-        },
-        i18n.language,
-        t,
-      )}
-      title={t('pantry:picker.label')}
+      {...expiry}
+      title={t('picker.label')}
     />
   );
 }

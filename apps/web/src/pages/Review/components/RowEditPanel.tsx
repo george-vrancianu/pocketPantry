@@ -17,11 +17,15 @@ import {
 } from '../../../lib/review';
 import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
 import { AmountField } from '../../../components/AmountField';
-import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
+import { ExpiryField } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
-import { isIsoDate } from '../../../lib/dateFormat';
 import { Field, controlSx } from './Field';
-import { CategorySelect, DescriptionInput, NameInput } from './RowInputs';
+import {
+  CategorySelect,
+  DescriptionInput,
+  NameInput,
+  useReviewLineExpiry,
+} from './RowInputs';
 import { fieldId, panelId } from './layout';
 
 type Props = {
@@ -57,7 +61,8 @@ export function RowEditPanel({
   blocked,
   accessibleName,
 }: Props) {
-  const { t, i18n } = useTranslation(['review', 'pantry', 'common']);
+  const { t } = useTranslation(['review', 'pantry', 'common']);
+  const expiry = useReviewLineExpiry(line, onChange);
   const unmatched = line.match === null;
   const name = displayName(line);
   const invalid = invalidFields(line);
@@ -101,15 +106,8 @@ export function RowEditPanel({
       {line.lookup ? (
         <BarcodeLookupNotes lookup={line.lookup} mb="8px" />
       ) : null}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '8px',
-          alignItems: 'start',
-        }}
-      >
-        <Field htmlFor={id('match')} label={t('review:field.match')} wide>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <Field htmlFor={id('match')} label={t('review:field.match')}>
           <Box
             id={id('match')}
             component="button"
@@ -167,7 +165,6 @@ export function RowEditPanel({
           <Field
             htmlFor={id('name')}
             label={t('review:field.name')}
-            wide
             error={
               invalid.includes('name') ? t('review:error.name') : undefined
             }
@@ -184,11 +181,7 @@ export function RowEditPanel({
         ) : null}
 
         {unmatched && !shopping ? (
-          <Field
-            htmlFor={id('category')}
-            label={t('review:field.category')}
-            wide
-          >
+          <Field htmlFor={id('category')} label={t('review:field.category')}>
             <CategorySelect
               line={line}
               onChange={onChange}
@@ -203,7 +196,6 @@ export function RowEditPanel({
           <Field
             htmlFor={id('description')}
             label={t('review:field.description')}
-            wide
           >
             <DescriptionInput
               line={line}
@@ -214,7 +206,7 @@ export function RowEditPanel({
         )}
 
         {/* The same amount, Location and expiry fields as adding a Batch in the Pantry, one per line. */}
-        <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}>
+        <Box sx={{ minWidth: 0 }}>
           <AmountField
             id={id('quantity')}
             name={name}
@@ -238,11 +230,13 @@ export function RowEditPanel({
             amountScale={line.match?.amountScale}
             label={t('common:amount.placeholder')}
             height={56}
+            // A misread amount is corrected here, not converted: a new unit keeps the number.
+            rescaleOnUnitChange={false}
           />
         </Box>
 
         {shopping ? null : (
-          <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}>
+          <Box sx={{ minWidth: 0 }}>
             <LocationToggle
               label={t('pantry:form.location')}
               value={line.location}
@@ -252,34 +246,13 @@ export function RowEditPanel({
         )}
 
         {shopping ? null : (
-          <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}>
+          <Box sx={{ minWidth: 0 }}>
             <ExpiryField
               id={id('expiry')}
               label={t('pantry:picker.label')}
-              value={isIsoDate(line.expiryDate) ? line.expiryDate : null}
-              onChange={(value) =>
-                onChange({ expiryDate: value ?? '', expiryExplicit: true })
-              }
-              usualDays={line.match?.defaults.expiryDays ?? null}
-              context={expiryContext(
-                {
-                  name,
-                  quantity: line.quantity,
-                  unit: line.unit,
-                  location: line.location,
-                },
-                i18n.language,
-                t,
-              )}
+              {...expiry}
+              error={expiryError ? t('review:error.expiry') : null}
             />
-            {expiryError ? (
-              <Box
-                id={`${id('expiry')}-error`}
-                sx={{ mt: '4px', fontSize: 12, color: tokens.color.urgentFg }}
-              >
-                {t('review:error.expiry')}
-              </Box>
-            ) : null}
           </Box>
         )}
 
@@ -287,8 +260,7 @@ export function RowEditPanel({
           sx={{
             display: 'flex',
             gap: '8px',
-            gridColumn: '1 / -1',
-            justifySelf: 'end',
+            alignSelf: 'flex-end',
           }}
         >
           <IconButton
