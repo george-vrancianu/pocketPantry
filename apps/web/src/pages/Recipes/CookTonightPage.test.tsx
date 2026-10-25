@@ -265,6 +265,18 @@ describe('CookTonightPage', () => {
     ).toBe(true);
   });
 
+  it('asks for the Family scope only', async () => {
+    const calls = setup([base('a', 'Pancakes')]);
+    await section('You can make this');
+    const asked = calls.filter(
+      (c) => c.key === 'GET /api/recipes/cook-tonight',
+    );
+    expect(asked.length).toBeGreaterThan(0);
+    for (const call of asked) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('family');
+    }
+  });
+
   it('has no Allergies note when nothing is hidden', async () => {
     setup([base('a', 'Pancakes')]);
     await section('You can make this');

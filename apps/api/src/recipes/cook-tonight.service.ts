@@ -65,9 +65,25 @@ export class CookTonightService {
     if (qualifying.length === 0)
       return { cards: [], hiddenByAllergiesCount: 0 };
 
+    // A Family Variant of a Catalog Base is grouped under the Family's live copy of that Base.
+    const copyOf = await liveCopiesOf(
+      this.database,
+      familyId,
+      query.scope === 'family'
+        ? [
+            ...new Set(
+              qualifying.flatMap((r) => (r.parentId ? [r.parentId] : [])),
+            ),
+          ]
+        : [],
+    );
     const groups = new Map<string, RecipeRow[]>();
     for (const row of qualifying) {
-      const key = row.parentId ?? row.id;
+      // On the Family list a Variant without a copy of its Base is its own row, so its own card.
+      const key = row.parentId
+        ? (copyOf.get(row.parentId) ??
+          (query.scope === 'family' ? row.id : row.parentId))
+        : row.id;
       groups.set(key, [...(groups.get(key) ?? []), row]);
     }
     // Bases that are not themselves candidates (archived) still title the card.

@@ -219,7 +219,7 @@ export class RecipeBrowseService {
       loadViewerAllergies(this.database, memberId, familyId),
       row.parentId
         ? Promise.resolve([])
-        : this.variantsOf(row.id, familyId, locale),
+        : this.variantsOfBase(row, familyId, locale),
       baseAndDiff(),
     ]);
 
@@ -309,10 +309,33 @@ export class RecipeBrowseService {
     };
   }
 
+  /**
+   * A Base's Variants. A Family copy of a Catalog Base also lists the Family's own live
+   * Variants of that Catalog Base: they are grouped under the copy on the Recipes list.
+   */
+  private async variantsOfBase(
+    row: RecipeRow,
+    familyId: string,
+    locale: CatalogLocale,
+  ): Promise<RecipeVariantItem[]> {
+    const own = await this.variantsOf(row.id, familyId, locale);
+    if (row.familyId === null || !row.copiedFromId) return own;
+    const grouped = await this.variantsOf(
+      row.copiedFromId,
+      familyId,
+      locale,
+      true,
+    );
+    return [...own, ...grouped].sort((a, b) =>
+      a.title.localeCompare(b.title, locale),
+    );
+  }
+
   private async variantsOf(
     baseId: string,
     familyId: string,
     locale: CatalogLocale,
+    familyOnly = false,
   ): Promise<RecipeVariantItem[]> {
     const rows = await this.database
       .select()
@@ -320,7 +343,7 @@ export class RecipeBrowseService {
       .where(
         and(
           eq(recipes.parentId, baseId),
-          visibleTo(familyId),
+          familyOnly ? eq(recipes.familyId, familyId) : visibleTo(familyId),
           isNull(recipes.archivedAt),
         ),
       );
