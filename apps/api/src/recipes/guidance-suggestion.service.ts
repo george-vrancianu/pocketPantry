@@ -291,9 +291,18 @@ function suggestionOf(
   return { guidance, noSuggestions };
 }
 
-/** At most `max` code points of the trimmed text (trimmed again, so a cut never ends on a space). */
-const clip = (text: string, max: number) =>
-  [...text.trim()].slice(0, max).join('').trim();
+/**
+ * At most `max` UTF-16 units of the trimmed text, as zod `.max()` and the web `maxLength` count,
+ * never splitting a surrogate pair (trimmed again).
+ */
+const clipUnits = (text: string, max: number) => {
+  let out = '';
+  for (const char of text.trim()) {
+    if (out.length + char.length > max) break;
+    out += char;
+  }
+  return out.trim();
+};
 
 /** Mirrors the shared `reason` schema in recipe-guidance.schemas.ts, which both `eatingMomentUseInput` and Pairings use. */
 const MAX_EATING_MOMENT_REASON = MAX_PAIRING_REASON;
@@ -322,7 +331,7 @@ function eatingMomentsOf(
     )
       continue;
     // The reason is optional on an Eating Moment: a blank one is kept as none.
-    const reason = clip(idea.reason, MAX_EATING_MOMENT_REASON);
+    const reason = clipUnits(idea.reason, MAX_EATING_MOMENT_REASON);
     seen.add(id);
     result.push({
       eatingMomentId: id,
@@ -357,8 +366,8 @@ function pairingsOf(
     if (ids.some((id) => context.unsafeLinkIds.has(id))) continue;
     const kind = idea.kind.trim();
     if (!(pairingKind.enumValues as readonly string[]).includes(kind)) continue;
-    const label = clip(idea.label, MAX_PAIRING_LABEL);
-    const reason = clip(idea.reason, MAX_PAIRING_REASON);
+    const label = clipUnits(idea.label, MAX_PAIRING_LABEL);
+    const reason = clipUnits(idea.reason, MAX_PAIRING_REASON);
     if (label === '' || reason === '') continue;
     const principle = (
       pairingPrinciple.enumValues as readonly string[]

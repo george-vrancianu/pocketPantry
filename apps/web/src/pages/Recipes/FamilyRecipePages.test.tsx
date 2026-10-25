@@ -2001,6 +2001,22 @@ describe('Suggest Guidance', () => {
       ).not.toBeInTheDocument();
     });
 
+    it('clears the Suggested chip of a Pairing once the Member edits it', async () => {
+      const { user } = await titleAndSuggest({
+        [suggestRoute]: () =>
+          Response.json({
+            guidance: { pairings: [idea, { ...idea, label: 'Toast' }] },
+            noSuggestions: ['nutritionNote'],
+          }),
+      });
+      await user.click(suggestButton());
+      await screen.findByLabelText('Label of Pairing 2');
+      expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(2);
+
+      await user.type(screen.getByLabelText('Label of Pairing 1'), '!');
+      expect(within(pairingsGroup()).getAllByText('Suggested')).toHaveLength(1);
+    });
+
     it("keeps a partly typed Pairing row as the Member's own: Pairings are not proposed beside it", async () => {
       const { user, calls } = await titleAndSuggest({
         [suggestRoute]: noteOnly,

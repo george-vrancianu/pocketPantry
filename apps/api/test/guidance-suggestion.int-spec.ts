@@ -496,6 +496,17 @@ describe('Suggest Guidance (integration)', () => {
       expect(pairings?.[0].reason).toHaveLength(1000);
     });
 
+    it('clips emoji-heavy label and reason to the save limits in UTF-16 units, without splitting a pair', async () => {
+      propose(
+        idea({ label: `a${'😀'.repeat(300)}`, reason: `a${'😀'.repeat(900)}` }),
+      );
+      const [pairing] = (await pairingsOf()) ?? [];
+      expect(pairing.label.length).toBeLessThanOrEqual(200);
+      expect(pairing.reason.length).toBeLessThanOrEqual(1000);
+      expect(pairing.label).toBe(`a${'😀'.repeat(99)}`);
+      expect(pairing.reason).toBe(`a${'😀'.repeat(499)}`);
+    });
+
     it('drops an unknown principle but keeps the Pairing, and skips unusable ones', async () => {
       propose(
         idea({ label: 'Wine', principle: 'because_i_said_so' }),
@@ -708,6 +719,12 @@ describe('Suggest Guidance (integration)', () => {
       propose(use(ids.brunch, 'good_for', `  ${'r'.repeat(1500)}  `));
       const moments = await momentsOf();
       expect(moments?.[0].reason).toHaveLength(1000);
+    });
+
+    it('clips an emoji-heavy reason to 1000 UTF-16 units, without splitting a pair', async () => {
+      propose(use(ids.brunch, 'good_for', `a${'😀'.repeat(900)}`));
+      const moments = await momentsOf();
+      expect(moments?.[0].reason).toBe(`a${'😀'.repeat(499)}`);
     });
 
     it('trims to 10 Eating Moments', async () => {
