@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
   useCallback,
@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export type RefreshState = 'idle' | 'busy' | 'done' | 'failed';
 
@@ -22,8 +23,26 @@ const RefreshContext = createContext<Refresh | undefined>(undefined);
 /** Owns the screen refresh for the app layout: the header (mark, status line) and the content region both read it. */
 export function RefreshProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [state, setState] = useState<RefreshState>('idle');
+  const { pathname } = useLocation();
+  // The state belongs to the screen it was set on: on another path it reads as idle.
+  const [entry, setEntry] = useState<{ state: RefreshState; path: string }>({
+    state: 'idle',
+    path: pathname,
+  });
+  const state = entry.path === pathname ? entry.state : 'idle';
+  const setState = useCallback(
+    (next: RefreshState) => setEntry({ state: next, path: pathname }),
+    [pathname],
+  );
   const busy = useRef(false);
+  // Bumped on each run and on each path change: a run whose id is stale started on another screen.
+  const runId = useRef(0);
+
+  // A run in flight on the screen just left is dropped.
+  useEffect(() => {
+    runId.current += 1;
+    busy.current = false;
+  }, [pathname]);
 
   // `done` and `failed` clear on their own.
   useEffect(() => {
@@ -33,32 +52,38 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
       state === 'done' ? DONE_MS : FAILED_MS,
     );
     return () => clearTimeout(timer);
-  }, [state]);
+  }, [state, setState]);
 
   const run = useCallback(async () => {
     if (busy.current) return;
     busy.current = true;
+    const id = ++runId.current;
     setState('busy');
     let failed = false;
     try {
-      await queryClient.refetchQueries(
-        { type: 'active' },
-        { throwOnError: true },
-      );
+      // Without `throwOnError` this waits for every query and swallows their errors.
+      await queryClient.refetchQueries({ type: 'active' });
     } catch {
       failed = true;
     }
+    if (id !== runId.current) return;
+    // A paused query (offline) resolves at once and keeps its old data: that is not an update.
     if (
+      !onlineManager.isOnline() ||
       queryClient
         .getQueryCache()
         .findAll({ type: 'active' })
-        .some((query) => query.state.status === 'error')
+        .some(
+          (query) =>
+            query.state.status === 'error' ||
+            query.state.fetchStatus === 'paused',
+        )
     ) {
       failed = true;
     }
     busy.current = false;
     setState(failed ? 'failed' : 'done');
-  }, [queryClient]);
+  }, [queryClient, setState]);
 
   const value = useMemo(() => ({ state, run }), [state, run]);
   return <RefreshContext value={value}>{children}</RefreshContext>;

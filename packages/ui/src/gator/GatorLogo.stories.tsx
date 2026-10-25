@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import Box from '@mui/material/Box';
 import { useState } from 'react';
-import { CheckIcon, PlusIcon } from '../atoms/icons';
+import { PlusIcon } from '../atoms/icons';
+import { RefreshStatusLine } from '../molecules/RefreshStatusLine';
 import { ScreenHeader } from '../molecules/ScreenHeader';
-import { tokens } from '../theme/tokens';
 import { GatorLogo } from './GatorLogo';
 
 const meta: Meta<typeof GatorLogo> = {
@@ -20,34 +20,12 @@ export const Mark: Story = {};
 
 export const Dashboard42: Story = { args: { size: 42 } };
 
-type Status = 'rest' | 'busy' | 'done' | 'failed';
+type Status = 'idle' | 'busy' | 'done' | 'failed';
 
-const STATUS: Record<Status, React.ReactNode> = {
-  rest: <Box role="status" />,
-  busy: (
-    <Box role="status" sx={{ fontWeight: 600 }}>
-      Refreshing…
-    </Box>
-  ),
-  done: (
-    <Box
-      role="status"
-      sx={{
-        display: 'flex',
-        gap: '6px',
-        fontWeight: 600,
-        color: tokens.color.accentOnTint,
-      }}
-    >
-      <CheckIcon size={13} />
-      Updated just now
-    </Box>
-  ),
-  failed: (
-    <Box role="status" sx={{ fontWeight: 600, color: tokens.color.soonFg }}>
-      Couldn&apos;t refresh · showing what you had
-    </Box>
-  ),
+const LABELS = {
+  busy: 'Refreshing…',
+  done: 'Updated just now',
+  failed: "Couldn't refresh · showing what you had",
 };
 
 function TabRootHeader({ status }: { status: Status }) {
@@ -59,7 +37,7 @@ function TabRootHeader({ status }: { status: Status }) {
         leading={
           <GatorLogo label="Refresh" onClick={() => setTaps((n) => n + 1)} />
         }
-        subline={STATUS[status]}
+        subline={<RefreshStatusLine state={status} labels={LABELS} />}
         action={{ label: 'Add', icon: <PlusIcon size={20} /> }}
       />
       <Box
@@ -76,7 +54,7 @@ function TabRootHeader({ status }: { status: Status }) {
 
 /** A tab-root header at rest, busy, done and failed; switch the Theme in the toolbar. */
 export const HeaderRest: Story = {
-  render: () => <TabRootHeader status="rest" />,
+  render: () => <TabRootHeader status="idle" />,
 };
 export const HeaderBusy: Story = {
   render: () => <TabRootHeader status="busy" />,

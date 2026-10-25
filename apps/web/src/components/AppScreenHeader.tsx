@@ -51,6 +51,8 @@ export function AppScreenHeader({
       title={title}
       leading={tabRoot ? <RefreshMark /> : undefined}
       subline={tabRoot ? <RefreshStatus /> : undefined}
+      // With the mark, the Explore pill and the action in one row, a long title would break mid-word at 360 px.
+      truncateTitle={tabRoot}
       subtitle={subtitle}
       home={dockStateFor(pathname).visible ? undefined : { label: t('home') }}
       action={action}
