@@ -25,6 +25,7 @@ import {
   defaultExpiryDate,
   parseAmountText,
   useAddBatch,
+  type Batch,
   type IsoDate,
 } from '../../../lib/pantry';
 
@@ -48,7 +49,8 @@ export function useAddBatchForm({
   onSaved,
   start,
 }: {
-  onSaved: () => void;
+  /** Called with the Batch the save created. */
+  onSaved: (batch: Batch) => void;
   start?: AddBatchStart;
 }) {
   const { t, i18n } = useTranslation();
@@ -356,7 +358,7 @@ export function useAddBatchForm({
           ? { barcode: barcodeToSend }
           : {}),
       },
-      { onSuccess: onSaved },
+      { onSuccess: (batch) => onSaved(batch) },
     );
   };
 

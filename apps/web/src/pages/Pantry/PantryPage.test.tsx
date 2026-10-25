@@ -430,7 +430,8 @@ describe('PantryPage', () => {
       expiryDate: inDays(30),
       productDescription: 'Grana Padano 200g',
     });
-    // Back on the list after saving, with focus on the Add button.
+    // The sheet stays open after a save; Done goes back to the list, with focus on the Add button.
+    await user.click(await screen.findByRole('button', { name: 'Done' }));
     const addButton = await screen.findByRole('button', { name: 'Add batch' });
     expect(addButton).toHaveFocus();
   });
@@ -2000,7 +2001,8 @@ describe('PantryPage', () => {
               productDescription: 'Fresh',
             }),
           );
-          // Back on the Pantry with Milk still open, now with the new Batch.
+          // Done goes back to the Pantry with Milk still open, now with the new Batch.
+          await user.click(await screen.findByRole('button', { name: 'Done' }));
           await waitFor(() => expect(batchRows()).toHaveLength(2));
           expect(batchRows()[1]).toHaveTextContent(/Fresh/);
         });

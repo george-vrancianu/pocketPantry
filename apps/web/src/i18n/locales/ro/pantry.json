@@ -93,7 +93,13 @@
       "photo": "Fă o poză",
       "barcode": "Scanează codul",
       "sayIt": "Spune"
-    }
+    },
+    "added": "Adăugate",
+    "done": "Gata",
+    "addedToast": "Adăugat {{details}}",
+    "addedList_one": "{{count}} articol adăugat",
+    "addedList_few": "{{count}} articole adăugate",
+    "addedList_other": "{{count}} de articole adăugate"
   },
   "picker": {
     "label": "Expiră",
