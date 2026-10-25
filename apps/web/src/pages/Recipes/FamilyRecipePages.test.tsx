@@ -266,7 +266,7 @@ describe('NewRecipePage with a supplied draft', () => {
     await openTab(user, 'Steps');
     expect(screen.getByDisplayValue('Whisk and fry')).toBeVisible();
     await openTab(user, 'Details');
-    const servings = screen.getByLabelText(/^Servings/);
+    const servings = screen.getByLabelText(/^Serves/);
     expect(servings).toHaveValue('');
     const save = screen.getByRole('button', { name: 'Save' });
     expect(save).toBeDisabled();
@@ -293,7 +293,7 @@ describe('NewRecipePage with a supplied draft', () => {
     const calls = setup(newRecipeWith(sourced), {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.type(await screen.findByLabelText(/^Serves/), '4');
     expect(screen.getByRole('radio', { name: /Crepes/ })).toBeChecked();
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Detail of the recipe')).toBeVisible();
@@ -307,7 +307,7 @@ describe('NewRecipePage with a supplied draft', () => {
     const calls = setup(newRecipeWith(sourced), {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.type(await screen.findByLabelText(/^Serves/), '4');
     await user.click(screen.getByRole('radio', { name: 'Waffles' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
@@ -322,7 +322,7 @@ describe('NewRecipePage with a supplied draft', () => {
     const calls = setup(newRecipeWith(sourced), {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.type(await screen.findByLabelText(/^Serves/), '4');
     await user.click(screen.getByRole('radio', { name: /standalone/i }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
@@ -343,7 +343,7 @@ describe('NewRecipePage with a supplied draft', () => {
     const calls = setup(newRecipeWith(fromLink), {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.type(await screen.findByLabelText(/^Serves/), '4');
     await user.click(screen.getByRole('radio', { name: 'Waffles' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
@@ -362,7 +362,7 @@ describe('NewRecipePage with a supplied draft', () => {
     const calls = setup(newRecipeWith(fromLink), {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.type(await screen.findByLabelText(/^Serves/), '4');
     await user.click(screen.getByRole('radio', { name: /standalone/i }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
@@ -380,7 +380,7 @@ describe('NewRecipePage with a supplied draft', () => {
     const calls = setup(newRecipeWith(fromLink), {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.type(await screen.findByLabelText(/^Serves/), '4');
     await user.click(screen.getByRole('button', { name: 'Remove link' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
@@ -418,7 +418,7 @@ describe('NewRecipePage with a supplied draft', () => {
         'POST /api/recipes': () => Response.json(saved, { status: 201 }),
       },
     );
-    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.type(await screen.findByLabelText(/^Serves/), '4');
     // Edits to the form do not change what is asked.
     await user.type(screen.getByLabelText(/^Title/), ' edited');
     expect(screen.getByText('1 Recipe hidden by your Allergies')).toBeVisible();
@@ -478,7 +478,7 @@ describe('NewRecipePage with a supplied draft', () => {
         'POST /api/recipes': () => Response.json(saved, { status: 201 }),
       },
     );
-    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.type(await screen.findByLabelText(/^Serves/), '4');
     await user.click(screen.getByRole('radio', { name: 'Base e' }));
     await user.click(screen.getByRole('button', { name: 'Show' }));
     expect(
@@ -562,7 +562,7 @@ describe('NewRecipePage with a supplied draft', () => {
         'POST /api/recipes': () => Response.json(saved, { status: 201 }),
       },
     );
-    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.type(await screen.findByLabelText(/^Serves/), '4');
     expect(
       screen.getByText('2 Recipes hidden by your Allergies'),
     ).toBeVisible();
@@ -654,7 +654,7 @@ describe('NewRecipePage with a supplied draft', () => {
     const calls = setup(newRecipeWith({ ...sourced, closestBases: [] }), {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await user.type(await screen.findByLabelText(/^Servings/), '4');
+    await user.type(await screen.findByLabelText(/^Serves/), '4');
     expect(screen.queryByRole('radio')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await vi.waitFor(() =>
@@ -2361,9 +2361,9 @@ describe('Recipe editor shell', () => {
     const user = userEvent.setup({ delay: null });
     setup('/recipes/new', {});
     const details = await screen.findByRole('tab', { name: /^Details/ });
-    await user.clear(screen.getByLabelText(/^Servings/));
+    await user.clear(screen.getByLabelText(/^Serves/));
     expect(details).toHaveAccessibleName('Details, Needs attention');
-    await user.type(screen.getByLabelText(/^Servings/), '4');
+    await user.type(screen.getByLabelText(/^Serves/), '4');
     // An untouched blank title does not nag yet.
     expect(details).toHaveAccessibleName('Details');
     await user.click(screen.getByLabelText(/^Title/));
@@ -2505,13 +2505,17 @@ describe('Recipe editor Steps (#591)', () => {
     expect(screen.getByLabelText('Timer for Step 1 (minutes)')).toHaveValue(
       '1.5',
     );
-    expect(screen.getAllByText('min')).toHaveLength(1);
+    expect(
+      within(screen.getByRole('tabpanel')).getAllByText('min'),
+    ).toHaveLength(1);
     await user.click(
       screen.getByRole('button', { name: 'Add a timer to Step 2' }),
     );
     const timer = screen.getByLabelText('Timer for Step 2 (minutes)');
     expect(timer).toHaveValue('5');
-    expect(screen.getAllByText('min')).toHaveLength(2);
+    expect(
+      within(screen.getByRole('tabpanel')).getAllByText('min'),
+    ).toHaveLength(2);
     await user.clear(timer);
     expect(screen.queryByText(/The timer must be a positive/)).toBeNull();
     await user.type(timer, 'x');
@@ -2995,5 +2999,111 @@ describe('Recipe editor Tips (#593)', () => {
     expect(
       screen.getByText('Add tips to steps after saving the Recipe.'),
     ).toBeVisible();
+  });
+});
+
+describe('Details basics of the editor', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('replaces the hint with "Enter a title." once a blank title is left', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    const title = await screen.findByPlaceholderText('Recipe title');
+    expect(screen.queryByText('Enter a title.')).not.toBeInTheDocument();
+    await user.click(title);
+    await user.tab();
+    expect(screen.getByText('Enter a title.')).toBeVisible();
+    expect(title).toHaveAccessibleDescription('Enter a title.');
+    expect(
+      screen.queryByText(/Kept as your draft until you save/),
+    ).not.toBeInTheDocument();
+    await user.type(title, 'Stew');
+    expect(screen.queryByText('Enter a title.')).not.toBeInTheDocument();
+    expect(screen.getByText(/Kept as your draft until you save/)).toBeVisible();
+  });
+
+  it('cycles Level through Not set, Easy, Medium and Hard, and saves the picked one', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', {
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.type(screen.getByLabelText(/^Serves/), '4');
+    const level = (value: string) =>
+      screen.getByRole('button', { name: `Level: ${value}. Tap to change` });
+    await user.click(level('Not set'));
+    await user.click(level('Easy'));
+    await user.click(level('Medium'));
+    expect(level('Hard')).toBeVisible();
+    await user.click(level('Hard'));
+    expect(level('Not set')).toBeVisible();
+    await user.click(level('Not set'));
+    await user.click(level('Easy'));
+    await user.click(level('Medium'));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Detail of the recipe');
+    const post = calls.find((c) => c.key === 'POST /api/recipes');
+    expect(post?.body).toMatchObject({ difficulty: 'hard' });
+  });
+
+  it('requires Serves: says so under the strip and outlines the cell', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    const serves = await screen.findByLabelText(/^Serves/);
+    expect(serves).toHaveValue('4');
+    expect(screen.queryByText('Enter how many it serves.')).toBeNull();
+    await user.clear(serves);
+    expect(screen.getByText('Enter how many it serves.')).toBeVisible();
+    expect(serves).toHaveAttribute('aria-invalid', 'true');
+    expect(serves).toHaveAccessibleDescription('Enter how many it serves.');
+    await user.type(serves, '4');
+    expect(
+      screen.queryByText('Enter how many it serves.'),
+    ).not.toBeInTheDocument();
+    expect(serves).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('shows one facts message at a time, for the first offending cell', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {});
+    const serves = await screen.findByLabelText(/^Serves/);
+    await user.clear(serves);
+    await user.type(serves, '0');
+    await user.type(screen.getByLabelText(/^Prep/), 'x');
+    await user.type(screen.getByLabelText(/^Cook/), 'y');
+    expect(
+      screen.getByText('Servings must be a whole number from 1 to 1000.'),
+    ).toBeVisible();
+    expect(
+      screen.queryByText('Minutes must be a whole number, or blank.'),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/^Serves/)).toHaveAccessibleDescription(
+      'Servings must be a whole number from 1 to 1000.',
+    );
+    expect(screen.getByLabelText(/^Prep/)).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(screen.getByLabelText(/^Prep/)).not.toHaveAccessibleDescription();
+    // Only the cell that owns the message is outlined.
+    expect(screen.getByLabelText(/^Serves/).closest('label')).toHaveAttribute(
+      'data-invalid',
+      'true',
+    );
+    expect(screen.getByLabelText(/^Prep/).closest('label')).not.toHaveAttribute(
+      'data-invalid',
+    );
+    await user.clear(screen.getByLabelText(/^Serves/));
+    await user.type(screen.getByLabelText(/^Serves/), '2');
+    expect(screen.getByLabelText(/^Prep/).closest('label')).toHaveAttribute(
+      'data-invalid',
+      'true',
+    );
+    expect(
+      screen.getByText('Minutes must be a whole number, or blank.'),
+    ).toBeVisible();
+    expect(screen.getByLabelText(/^Prep/)).toHaveAccessibleDescription(
+      'Minutes must be a whole number, or blank.',
+    );
   });
 });

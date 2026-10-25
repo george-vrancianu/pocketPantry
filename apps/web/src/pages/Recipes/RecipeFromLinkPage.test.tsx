@@ -368,7 +368,7 @@ describe('RecipeFromLinkPage', () => {
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
     await submit(user, 'https://www.example.com/pancakes');
-    const servings = await screen.findByLabelText(/^Servings/);
+    const servings = await screen.findByLabelText(/^Serves/);
     expect(servings).toHaveValue('');
     const save = screen.getByRole('button', { name: 'Save' });
     expect(save).toBeDisabled();
