@@ -85,7 +85,7 @@ export function HealthSheet({ open, onClose, state, today }: Props) {
               />
             ) : null}
           </Box>
-          <HealthGator health={health} size={56} />
+          <HealthGator health={health} size={56} entrance />
           <IconButton
             ref={closeButton}
             label={t('health.close')}

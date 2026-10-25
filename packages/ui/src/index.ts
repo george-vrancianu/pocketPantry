@@ -50,6 +50,7 @@ export {
 } from './gator/GatorImage';
 export {
   Gator,
+  warmGatorLoops,
   type GatorLoop,
   type GatorMotion,
   type GatorProps,

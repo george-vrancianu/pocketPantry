@@ -1,4 +1,10 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Gator, ONE_SHOT_MS, type GatorProps } from './Gator';
 import { GATOR_GEOMETRY, type AnimatedGatorMood } from './gatorGeometry';
@@ -56,6 +62,131 @@ afterEach(() => {
 });
 
 describe('Gator', () => {
+  describe('Tap', () => {
+    function spyOnImages() {
+      const srcs: string[] = [];
+      vi.stubGlobal(
+        'Image',
+        class {
+          set src(value: string) {
+            srcs.push(value);
+          }
+        },
+      );
+      return srcs;
+    }
+    const tapUrl = (mood: string) => new RegExp(`gator-${mood}-tap\\.svg`);
+
+    it('fetches no Tap file for a Gator that cannot tap', () => {
+      const srcs = spyOnImages();
+      render(<Gator mood="happy" alt="a" />);
+      expect(srcs.some((src) => tapUrl('happy').test(src))).toBe(false);
+    });
+
+    it('warms the Tap file when a parent can start one', () => {
+      const srcs = spyOnImages();
+      render(<Gator mood="happy" alt="a" tapSignal={0} />);
+      expect(srcs.some((src) => tapUrl('happy').test(src))).toBe(true);
+    });
+
+    it('is a button named by its alt, and taps then returns to the loop', () => {
+      const onClick = vi.fn();
+      const { container } = render(
+        <Gator
+          mood="happy"
+          alt="Gator, happy"
+          entrance={false}
+          onClick={onClick}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Gator, happy' }));
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(motion(container)).toBe('tap');
+      advance(ONE_SHOT_MS.tap - 1);
+      expect(motion(container)).toBe('tap');
+      advance(1);
+      expect(motion(container)).toBe('idle');
+    });
+
+    it('returns to the signature loop after the Tap', () => {
+      const { container } = render(
+        <Gator
+          mood="happy"
+          alt="a"
+          entrance={false}
+          loop="signature"
+          onClick={() => {}}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button'));
+      advance(ONE_SHOT_MS.tap);
+      expect(motion(container)).toBe('signature');
+    });
+
+    it('restarts on a second click, from the first frame', () => {
+      const onClick = vi.fn();
+      const { container } = render(
+        <Gator mood="happy" alt="a" entrance={false} onClick={onClick} />,
+      );
+      const button = screen.getByRole('button');
+      fireEvent.click(button);
+      const first = image(container);
+      advance(500);
+      fireEvent.click(button);
+      expect(image(container)).not.toBe(first);
+      advance(ONE_SHOT_MS.tap - 1);
+      expect(motion(container)).toBe('tap');
+      expect(onClick).toHaveBeenCalledTimes(2);
+      advance(1);
+      expect(motion(container)).toBe('idle');
+    });
+
+    it('plays the Tap during the Entrance, then the loop', () => {
+      const { container } = render(
+        <Gator mood="happy" alt="a" onClick={() => {}} />,
+      );
+      advance(300);
+      fireEvent.click(screen.getByRole('button'));
+      expect(motion(container)).toBe('tap');
+      advance(ONE_SHOT_MS.tap);
+      expect(motion(container)).toBe('idle');
+    });
+
+    it('is not a button without onClick, and a click changes nothing', () => {
+      const { container } = render(
+        <Gator mood="happy" alt="a" entrance={false} />,
+      );
+      expect(screen.queryByRole('button')).toBeNull();
+      fireEvent.click(image(container));
+      expect(motion(container)).toBe('idle');
+    });
+
+    it('plays when a parent bumps tapSignal, with no button', () => {
+      const { container, rerender } = render(
+        <Gator mood="happy" alt="a" entrance={false} tapSignal={0} />,
+      );
+      expect(motion(container)).toBe('idle');
+      rerender(<Gator mood="happy" alt="a" entrance={false} tapSignal={1} />);
+      expect(motion(container)).toBe('tap');
+      expect(screen.queryByRole('button')).toBeNull();
+      advance(ONE_SHOT_MS.tap);
+      expect(motion(container)).toBe('idle');
+    });
+
+    it('shows no Tap under reduced motion, but onClick still fires', () => {
+      stubReducedMotion(true);
+      const onClick = vi.fn();
+      const { container, rerender } = render(
+        <Gator mood="happy" alt="a" onClick={onClick} tapSignal={0} />,
+      );
+      fireEvent.click(screen.getByRole('button'));
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(motion(container)).toBe('idle');
+      rerender(<Gator mood="happy" alt="a" onClick={onClick} tapSignal={1} />);
+      expect(motion(container)).toBe('idle');
+    });
+  });
+
   it.each(Object.entries(ALTS))('renders %s with its alt', (mood, alt) => {
     const { container } = render(
       <Gator mood={mood as AnimatedGatorMood} alt={alt} />,
@@ -307,7 +438,7 @@ describe('Gator art', () => {
   it.each(MOODS)('ends the %s Tap within 900 ms', (mood) => {
     const longest = longestAnimationMs(artOf(mood, 'tap')!);
     expect(longest).toBeGreaterThan(0);
-    expect(longest).toBeLessThanOrEqual(900);
+    expect(longest).toBeLessThanOrEqual(ONE_SHOT_MS.tap);
   });
 
   it.each(MOODS)('stops the %s loops under reduced motion', (mood) => {
