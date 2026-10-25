@@ -16,6 +16,7 @@ import {
   type RecipeDraftForm,
 } from '../../lib/recipeDraftContent';
 import { useRecipeDraftRoute } from './useRecipeDraftRoute';
+import { plateMatchInput, useResumedPlateBases } from './useResumedPlateBases';
 import { RecipeDraftLimitNotice } from './components/RecipeDraftLimitNotice';
 import type { DiscardedDraftState } from './useRecipeDraftDiscard';
 import { useRecipeDraftAutosave } from '../../lib/recipeDraftAutosave';
@@ -86,6 +87,8 @@ export type NewRecipeState = {
   sourceLink?: string | null;
   /** The language the page was translated from (a code like "fr"); only kept with the Source Link. */
   sourceLanguage?: string | null;
+  /** The fill came from a Plate Scan: the Recipe Draft is marked so (ADR 0028). */
+  plateScan?: boolean;
 };
 
 const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
@@ -100,7 +103,8 @@ export function NewRecipePage() {
   return (
     <NewRecipeContent
       key={route.formKey}
-      supplied={suppliedOf(location.state)}
+      // A resumed Recipe Draft holds everything; the state a reload kept would only repeat it.
+      supplied={route.resumed ? null : suppliedOf(location.state)}
       resumed={route.resumed}
       onDraftId={route.onDraftId}
     />
@@ -116,6 +120,7 @@ function suppliedOf(state: unknown): NewRecipeState | null {
     hiddenByAllergiesCount,
     sourceLink,
     sourceLanguage,
+    plateScan,
   } = state as Partial<NewRecipeState>;
   if (typeof draft !== 'object' || draft === null) return null;
   if (!Array.isArray(draft.lines) || !Array.isArray(draft.steps)) return null;
@@ -141,6 +146,7 @@ function suppliedOf(state: unknown): NewRecipeState | null {
     typeof sourceLanguage !== 'string'
   )
     return null;
+  if (plateScan !== undefined && typeof plateScan !== 'boolean') return null;
   return state as NewRecipeState;
 }
 
@@ -160,11 +166,18 @@ function NewRecipeContent({
   // True from the tap on Save until the create answers, so a second tap cannot make a second Recipe.
   const [finishing, setFinishing] = useState(false);
   const momentOptions = useMomentOptions();
-  const [parentId, setParentId] = useState<string | null>(null);
   // The Member may drop the Source Link before saving, but not change it.
   const [resumedForm] = useState(() =>
     resumed ? formOfContent(resumed.content) : null,
   );
+  // The picked base: a resumed one, else the top match the picker starts on.
+  const [parentId, setParentId] = useState<string | null>(
+    resumedForm?.pickedBaseId ?? supplied?.closestBases?.[0]?.id ?? null,
+  );
+  const plateScan = resumedForm ? resumedForm.plateScan : supplied?.plateScan;
+  // Plate matches and the base picked before leaving are not stored: asked for again.
+  // Once Save is tapped they stop, so the save's refetches do not wait on them.
+  const resumedBases = useResumedPlateBases(resumedForm, !finishing);
   const sourceLanguage = resumedForm
     ? resumedForm.sourceLanguage
     : supplied?.sourceLanguage;
@@ -176,26 +189,39 @@ function NewRecipeContent({
   const [showHidden, setShowHidden] = useState(false);
   const revealed = usePlateMatches(
     {
-      dishTitle: supplied?.draft.title ?? '',
-      ingredientIds: [
-        ...new Set(
-          (supplied?.draft.lines ?? []).flatMap((line) =>
-            line.ingredientId ? [line.ingredientId] : [],
-          ),
-        ),
-      ],
+      ...(resumedForm
+        ? plateMatchInput(resumedForm.draft.title, resumedForm.draft.lines)
+        : plateMatchInput(
+            supplied?.draft.title ?? '',
+            supplied?.draft.lines ?? [],
+          )),
       showHidden: true,
     },
-    showHidden,
+    showHidden && !finishing,
   );
-  const suppliedBases = supplied?.closestBases ?? [];
-  const suppliedHidden = supplied?.hiddenByAllergiesCount ?? 0;
-  const closestBases = revealed.data?.matches ?? suppliedBases;
+  const offeredBases = supplied?.closestBases ?? resumedBases.closest;
+  const offeredHidden =
+    supplied?.hiddenByAllergiesCount ?? resumedBases.hiddenByAllergiesCount;
+  const closestBases = revealed.data?.matches ?? offeredBases;
   const hiddenCount = revealed.data
     ? revealed.data.hiddenByAllergiesCount
-    : suppliedHidden;
+    : offeredHidden;
   // Nothing close and nothing hidden (or not matched yet): no picker, a Base Recipe.
-  const hasBases = suppliedBases.length > 0 || suppliedHidden > 0;
+  // A resumed pick counts too: matches may be slow, empty or failed, and the pick must still be saved (ADR 0028).
+  const hasBases =
+    offeredBases.length > 0 ||
+    offeredHidden > 0 ||
+    (Boolean(resumedForm?.pickedBaseId) && !resumedBases.gone);
+  // What the Member picked before leaving stays picked (named once looked up).
+  const pick = {
+    ...basePick,
+    // A Plate Scan draft stores Standalone as no pick: it must not fall back to the top match.
+    chosen:
+      basePick.chosen ??
+      resumedForm?.pickedBaseId ??
+      (resumedForm?.plateScan ? STANDALONE : null),
+    another: basePick.another ?? resumedBases.picked,
+  };
   const [initial] = useState(() =>
     resumedForm
       ? resumedForm.draft
@@ -210,7 +236,7 @@ function NewRecipeContent({
         ? namedGuidance(supplied.draft, undefined)
         : toGuidanceDraft(blankGuidance)),
   );
-  // What the form holds now, for the Recipe Draft. A supplied fill is not kept yet.
+  // What the form holds now, for the Recipe Draft.
   const [formState, setFormState] = useState<RecipeDraftForm>({
     draft: initial,
     guidance: initialGuidance,
@@ -218,16 +244,29 @@ function NewRecipeContent({
   const autosave = useRecipeDraftAutosave({
     kind: 'new_recipe',
     baseRecipeId: null,
-    content: contentOfForm({ ...formState, sourceLink, sourceLanguage }),
-    blank: contentOfForm({
-      draft: emptyDraft(),
-      guidance: toGuidanceDraft(blankGuidance),
+    content: contentOfForm({
+      ...formState,
+      sourceLink,
+      sourceLanguage,
+      pickedBaseId: hasBases ? parentId : null,
+      plateScan,
     }),
+    // A supplied fill is kept at once, so nothing counts as blank.
+    blank: supplied
+      ? null
+      : contentOfForm({
+          draft: emptyDraft(),
+          guidance: toGuidanceDraft(blankGuidance),
+        }),
     resumed: resumed ? { id: resumed.id, version: resumed.version } : undefined,
-    enabled: supplied === null,
   });
-  const { draftId } = autosave;
+  const { draftId, flush } = autosave;
   const [discarding, setDiscarding] = useState(false);
+  // A read that counted against a Cap must not be lost: no waiting for an edit.
+  useEffect(() => {
+    if (supplied) void flush();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     // Only a new id goes to the URL, and not while the Recipe is being saved: the page is about to leave.
     if (draftId && !finishing) onDraftId(draftId);
@@ -242,9 +281,9 @@ function NewRecipeContent({
         trailing={<RecipeDraftStatus status={autosave.status} />}
       />
       <Stack spacing={2.5}>
-        {hasBases ? (
+        {hasBases && resumedBases.ready ? (
           <BaseRecipePicker
-            pick={basePick}
+            pick={pick}
             onPick={setBasePick}
             closest={closestBases}
             loading={showHidden && (revealed.isPending || revealed.isFetching)}
@@ -258,9 +297,9 @@ function NewRecipeContent({
               // Keep the current pick: the revealed list may rank it lower or drop it, so it stays offered.
               const current = closestBases.find((b) => b.id === parentId);
               setBasePick({
-                ...basePick,
+                ...pick,
                 chosen: parentId ?? STANDALONE,
-                another: current ?? basePick.another,
+                another: current ?? pick.another,
               });
               setShowHidden(true);
             }}

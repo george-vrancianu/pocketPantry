@@ -21,14 +21,20 @@ export type PairingDraft = {
   linkName?: string;
   /** Title of the linked Recipe, when the server named it. */
   linkTitle?: string;
+  /** Proposed by Suggest Guidance and not saved yet; only carried by a Recipe Draft (ADR 0028). */
+  suggested?: boolean;
 };
 export type EatingMomentDraft = {
   eatingMomentId: string;
   polarity: EatingMomentPolarity;
   reason: string;
+  /** Proposed by Suggest Guidance and not saved yet. */
+  suggested?: boolean;
 };
 export type GuidanceDraft = {
   nutritionNote: string;
+  /** The note was proposed by Suggest Guidance and not saved yet. */
+  nutritionNoteSuggested?: boolean;
   pairings: PairingDraft[];
   eatingMoments: EatingMomentDraft[];
 };

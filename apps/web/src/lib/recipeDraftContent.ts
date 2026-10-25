@@ -52,6 +52,9 @@ export function contentOfForm(form: RecipeDraftForm): RecipeDraftContent {
     guidance: guidance
       ? {
           nutritionNote: guidance.nutritionNote,
+          ...(guidance.nutritionNoteSuggested
+            ? { nutritionNoteSuggested: true }
+            : {}),
           pairings: guidance.pairings.map((pairing) => ({
             ...(pairing.id ? { id: pairing.id } : {}),
             kind: pairing.kind,
@@ -62,11 +65,13 @@ export function contentOfForm(form: RecipeDraftForm): RecipeDraftContent {
             linkTarget: pairing.linkTarget,
             ...(pairing.linkName ? { linkName: pairing.linkName } : {}),
             ...(pairing.linkTitle ? { linkTitle: pairing.linkTitle } : {}),
+            ...(pairing.suggested ? { suggested: true } : {}),
           })),
           eatingMoments: guidance.eatingMoments.map((moment) => ({
             eatingMomentId: moment.eatingMomentId,
             polarity: moment.polarity,
             reason: moment.reason,
+            ...(moment.suggested ? { suggested: true } : {}),
           })),
         }
       : null,
@@ -112,6 +117,9 @@ export function formOfContent(content: RecipeDraftContent): RecipeDraftForm {
     guidance: content.guidance
       ? {
           nutritionNote: content.guidance.nutritionNote,
+          ...(content.guidance.nutritionNoteSuggested
+            ? { nutritionNoteSuggested: true }
+            : {}),
           pairings: content.guidance.pairings.map((pairing) => ({
             key: newKey(),
             ...(pairing.id ? { id: pairing.id } : {}),
@@ -123,11 +131,13 @@ export function formOfContent(content: RecipeDraftContent): RecipeDraftForm {
             linkTarget: pairing.linkTarget,
             ...(pairing.linkName ? { linkName: pairing.linkName } : {}),
             ...(pairing.linkTitle ? { linkTitle: pairing.linkTitle } : {}),
+            ...(pairing.suggested ? { suggested: true } : {}),
           })),
           eatingMoments: content.guidance.eatingMoments.map((moment) => ({
             eatingMomentId: moment.eatingMomentId,
             polarity: moment.polarity,
             reason: moment.reason,
+            ...(moment.suggested ? { suggested: true } : {}),
           })),
         }
       : null,
