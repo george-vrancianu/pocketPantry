@@ -236,6 +236,17 @@ export class RecipeBrowseService {
             row.id,
           ) ?? null)
         : null;
+    const [copiedFromRow] =
+      row.familyId !== null && row.parentId === null && row.copiedFromId
+        ? await this.database
+            .select({ archivedAt: recipes.archivedAt })
+            .from(recipes)
+            .where(eq(recipes.id, row.copiedFromId))
+        : [];
+    const copiedFrom =
+      row.copiedFromId && copiedFromRow
+        ? { id: row.copiedFromId, archived: copiedFromRow.archivedAt !== null }
+        : null;
     // A Pairing's Catalog Recipe link also names the Family's live copy of it.
     const pairedIds = resolved.guidance.pairings.flatMap((p) =>
       p.link?.type === 'recipe' && p.link.owner === 'catalog'
@@ -263,6 +274,7 @@ export class RecipeBrowseService {
       base,
       variants,
       familyCopyId,
+      copiedFrom,
       diff,
       allergens,
       allergyWarning,

@@ -32,12 +32,17 @@ export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
     return <AppScreenHeader back={back} title={t('recipes:title')} />;
 
   const own = recipe.owner === 'family' && !recipe.archived;
-  // A Variant's parent is a Catalog Base Recipe, so a Family Base Recipe
-  // gets none; the Recipe and its base must also be live.
+  // A Variant's parent is a Catalog Base Recipe. A Family Base gets one only
+  // when it is a copy (the draft branches from the Base it was Copied From);
+  // the Recipe and that Catalog Base must also be live.
   const canMakeVariant =
     !recipe.archived &&
     !recipe.base?.archived &&
-    !(recipe.owner === 'family' && recipe.parentId === null);
+    !(
+      recipe.owner === 'family' &&
+      recipe.parentId === null &&
+      (!recipe.copiedFrom || recipe.copiedFrom.archived)
+    );
   const makeVariant = {
     label: t('recipes:family.makeVariant'),
     href: `/recipes/${recipe.id}/variant/new`,

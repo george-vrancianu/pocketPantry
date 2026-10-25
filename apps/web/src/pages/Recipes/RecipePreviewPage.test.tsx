@@ -58,6 +58,7 @@ const soup: RecipeDetail = {
     },
   ],
   familyCopyId: null,
+  copiedFrom: null,
   diff: null,
   guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
   allergens: { items: [], uncheckedCount: 0 },

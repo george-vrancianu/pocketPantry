@@ -71,8 +71,10 @@ export class FamilyRecipesService {
 
   /**
    * The unsaved "Make a variant" draft from a Recipe the Family can see. The
-   * parent is the source's Catalog base: the source itself, or the base of a
-   * Variant (Catalog or the Family's own). A Family Base Recipe has no
+   * parent is the source's Catalog base: the source itself, the base of a
+   * Variant (Catalog, the Family's own, or a copy of a Catalog Variant), or
+   * the Catalog Base a Family copy was Copied From (ADR 0029); content is
+   * prefilled from the source. A Family Base that is not a copy has no
    * Catalog base, so it is refused (404 `recipes.parent_not_found`); a base
    * that is archived is refused too (409 `recipes.parent_archived`).
    */
@@ -84,10 +86,14 @@ export class FamilyRecipesService {
     const familyId = await this.settings.familyIdOf(memberId);
     const row = await findVisibleRecipe(this.database, id, familyId);
     if (!row) throw recipeNotFound();
-    const parentId = row.parentId ?? row.id;
-    if (row.familyId !== null && row.parentId === null) {
+    // A copy of a Catalog Base branches from the Base it was Copied From.
+    const isFamilyBase = row.familyId !== null && row.parentId === null;
+    if (isFamilyBase && !row.copiedFromId) {
       throw new ApiException(404, 'recipes.parent_not_found');
     }
+    const parentId = isFamilyBase
+      ? (row.copiedFromId as string)
+      : (row.parentId ?? row.id);
     const [base] = await this.database
       .select({ archivedAt: recipes.archivedAt })
       .from(recipes)
