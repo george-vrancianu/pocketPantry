@@ -28,7 +28,11 @@ import type { RecipeDetailLine } from '../../lib/recipes';
 import { AllergyWarningBanner } from './components/AllergyWarningBanner';
 import { RecipeHero } from './components/RecipeHero';
 import { RecipeHeader } from './components/RecipeHeader';
-import { PREVIEW_BAR_HEIGHT, PreviewBar } from './components/PreviewBar';
+import {
+  PREVIEW_BAR_CLEARANCE,
+  PREVIEW_BAR_HEIGHT,
+  PreviewBar,
+} from './components/PreviewBar';
 import { PreviewNote } from './components/PreviewNote';
 import { linesToAdd } from './components/PantryStatus';
 import { DETAIL_SECTIONS, type DetailTab } from './components/sections';
@@ -98,7 +102,9 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
     window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   };
   // The toasts of an add sit above the bar that replaces the Dock.
-  const addToFamily = useAddToFamily({ toastBottom: PREVIEW_BAR_HEIGHT });
+  const addToFamily = useAddToFamily(
+    preview ? { toastBottom: PREVIEW_BAR_CLEARANCE } : {},
+  );
   const addState = recipe
     ? addToFamily.stateOf({
         id: recipe.id,
@@ -241,7 +247,8 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
           <Box aria-hidden sx={{ height: PREVIEW_BAR_HEIGHT }} />
           <PreviewBar
             recipeId={recipe.id}
-            canMakeVariant={!recipe.base?.archived}
+            title={recipe.title}
+            canMakeVariant={!recipe.archived && !recipe.base?.archived}
             state={addState}
             onAdd={() => void addToFamily.add(recipe)}
           />
@@ -250,7 +257,7 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
       <Snackbar
         open={toast !== null}
         onClose={() => setToast(null)}
-        bottom={preview ? PREVIEW_BAR_HEIGHT : 'aboveDock'}
+        bottom={preview ? PREVIEW_BAR_CLEARANCE : 'aboveDock'}
       >
         <Alert severity="success" role="status">
           {toast}

@@ -46,7 +46,7 @@ export function useAddToFamily({
   toastBottom,
 }: {
   /** Distance of the toasts from the bottom, px, when a bar sits where the Dock would. */
-  toastBottom?: number;
+  toastBottom?: number | string;
 } = {}) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const toastApi = useToast();

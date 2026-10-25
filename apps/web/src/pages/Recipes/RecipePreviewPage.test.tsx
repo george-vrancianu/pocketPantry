@@ -164,7 +164,9 @@ describe('RecipePreviewPage', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Add to family' }),
     );
-    const open = await screen.findByRole('link', { name: 'In your Recipes' });
+    const open = await screen.findByRole('link', {
+      name: 'Soup is in your Recipes. Open it',
+    });
     expect(open).toHaveAttribute('href', '/recipes/copy-1');
     expect(copy).toBe('copy-1');
     expect(
@@ -178,7 +180,9 @@ describe('RecipePreviewPage', () => {
   it('starts as In your Recipes when the Family already has a copy', async () => {
     setup({ ...soup, familyCopyId: 'copy-9' });
     expect(
-      await screen.findByRole('link', { name: 'In your Recipes' }),
+      await screen.findByRole('link', {
+        name: 'Soup is in your Recipes. Open it',
+      }),
     ).toHaveAttribute('href', '/recipes/copy-9');
   });
 
@@ -201,14 +205,45 @@ describe('RecipePreviewPage', () => {
     expect(screen.getByRole('note')).toBeVisible();
   });
 
-  it('ends the Steps tab with the note and keeps Servings and the shopping adds', async () => {
+  it('keeps the Servings stepper, the add-missing button and the per-line add, and ends Steps with the note', async () => {
     const user = userEvent.setup();
-    setup(soup);
+    setup(soup, {
+      'GET /api/recipes/soup/pantry-match': () =>
+        Response.json({
+          servings: 2,
+          canMake: false,
+          shortOrMissingCount: 1,
+          expiringCoveredCount: 0,
+          coverageRatio: 0,
+          lines: [
+            {
+              lineId: 'l1',
+              ingredientId: 'water',
+              name: 'Water',
+              status: 'missing',
+              optional: false,
+              pantryBasic: false,
+              quantity: 1,
+              unit: 'ml',
+              shortfall: null,
+              usesExpiringSoon: false,
+              onShoppingList: false,
+            },
+          ],
+        }),
+    });
     expect(
-      await screen
-        .findByRole('button', { name: /Serving/ }, { timeout: 3000 })
-        .catch(() => null),
-    ).not.toBeUndefined();
+      await screen.findByRole('button', { name: 'More Servings' }),
+    ).toBeVisible();
+    expect(
+      await screen.findByRole('button', {
+        name: 'Add 1 missing to Shopping List',
+      }),
+    ).toBeVisible();
+    await user.click(await screen.findByRole('button', { name: /Water/ }));
+    expect(
+      await screen.findByRole('button', { name: 'Add Water to Shopping List' }),
+    ).toBeVisible();
     await user.click(screen.getByRole('tab', { name: /Steps/ }));
     expect(await screen.findByText('Boil it')).toBeVisible();
     expect(screen.getByRole('note')).toBeVisible();

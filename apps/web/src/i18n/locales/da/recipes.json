@@ -275,11 +275,8 @@
     "eyebrow": "Udforsk · Katalogopskrift",
     "note": "Du ser en forhåndsvisning af en katalogopskrift. Føj den til dine opskrifter for at ændre den, planlægge den eller lave den fra din liste.",
     "addShort": "Føj til familien",
-    "adding": "Føjer til familien",
     "inFamily": "I dine opskrifter",
     "openCopy": "{{title}} er i dine opskrifter. Åbn den",
-    "actions": "Handlinger for denne opskrift",
-    "noVariants": "Ingen varianter endnu.",
-    "openVariant": "Vis {{title}}"
+    "actions": "Handlinger for denne opskrift"
   }
 }

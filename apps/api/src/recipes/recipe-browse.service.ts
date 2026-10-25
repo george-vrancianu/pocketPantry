@@ -222,15 +222,15 @@ export class RecipeBrowseService {
       locale,
       viewerAllergies,
     );
-    const [copyId] =
+    const familyCopyId =
       row.familyId === null
-        ? (await this.liveCopies(familyId, [row.id])).values()
-        : [];
+        ? ((await this.liveCopies(familyId, [row.id])).get(row.id) ?? null)
+        : null;
     return {
       ...resolved,
       base,
       variants,
-      familyCopyId: copyId ?? null,
+      familyCopyId,
       diff,
       allergens,
       allergyWarning,

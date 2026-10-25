@@ -275,11 +275,8 @@
     "eyebrow": "Explore · Catalog Recipe",
     "note": "You're previewing a Catalog Recipe. Add it to your Recipes to change it, plan it or cook it from your list.",
     "addShort": "Add to family",
-    "adding": "Adding to family",
     "inFamily": "In your Recipes",
     "openCopy": "{{title}} is in your Recipes. Open it",
-    "actions": "Actions for this Recipe",
-    "noVariants": "No Variants yet.",
-    "openVariant": "Preview {{title}}"
+    "actions": "Actions for this Recipe"
   }
 }

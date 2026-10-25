@@ -11,10 +11,14 @@ import type { AddState } from '../../../lib/addToFamily';
 
 /** Height the bar takes, px, so the page can leave room under its content and toasts can sit above it. */
 export const PREVIEW_BAR_HEIGHT = 100;
+/** The same, as a CSS `bottom` that also clears the device's bottom inset. */
+export const PREVIEW_BAR_CLEARANCE = `calc(${PREVIEW_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`;
 
 type Props = {
   /** The previewed Recipe's id: Make a Variant opens `/recipes/{id}/variant/new` (a Variant branches from its Base). */
   recipeId: string;
+  /** The Recipe's title, to name the added button. */
+  title: string;
   /** Whether the Recipe can have a Variant made of it (its Base is not archived). */
   canMakeVariant?: boolean;
   state: AddState;
@@ -27,6 +31,7 @@ type Props = {
  */
 export function PreviewBar({
   recipeId,
+  title,
   canMakeVariant = true,
   state,
   onAdd,
@@ -80,6 +85,7 @@ export function PreviewBar({
           variant="tonal"
           fullWidth
           href={`/recipes/${state.copyId}`}
+          aria-label={t('preview.openCopy', { title })}
           startIcon={<CheckIcon size={18} />}
           sx={{ whiteSpace: 'nowrap' }}
         >
@@ -89,6 +95,7 @@ export function PreviewBar({
         <Button
           variant="tonal"
           fullWidth
+          aria-label={t('preview.openCopy', { title })}
           aria-disabled
           aria-busy
           startIcon={<CheckIcon size={18} />}
