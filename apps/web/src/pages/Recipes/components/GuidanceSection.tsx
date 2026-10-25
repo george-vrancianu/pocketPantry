@@ -142,7 +142,14 @@ function WhenToEatSection({ moments }: { moments: DetailEatingMoment[] }) {
                 gap: '4px',
               }}
             >
-              <Tag tone={avoid ? 'soon' : 'ok'}>
+              <Tag
+                tone={avoid ? 'soon' : 'ok'}
+                sx={{
+                  whiteSpace: 'normal',
+                  maxWidth: '100%',
+                  overflowWrap: 'anywhere',
+                }}
+              >
                 {t(`eatingPolarity.${moment.polarity}`)} · {moment.name}
               </Tag>
               {moment.reason ? (

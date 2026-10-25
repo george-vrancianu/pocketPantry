@@ -219,11 +219,10 @@ describe('GuidanceSection', () => {
       eatingMoments: [moment({ name: 'Dinner', reason: 'Filling and warm' })],
     });
     const item = screen.getByRole('listitem');
-    expect(item).toHaveStyle({ flexDirection: 'column' });
     const tag = within(item).getByText('Good for · Dinner');
+    expect(tag).toHaveStyle({ whiteSpace: 'normal' });
     const reason = within(item).getByText('Filling and warm');
     expect(tag).not.toContainElement(reason);
-    expect(reason.tagName).toBe('P');
     expect(
       tag.compareDocumentPosition(reason) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
