@@ -39,7 +39,10 @@
     },
     "addToCatalog": "Adaugă „{{query}}” în catalogul tău",
     "addToCatalogHint": "Alege categoria o singură dată · doar familia ta o vede",
-    "familyTag": "Familie"
+    "familyTag": "Familie",
+    "placeholderAdd": "Sau scrie, de ex. lapte",
+    "popularToStart": "Populare pentru început",
+    "popularLabel": "{{name}}, {{amount}} · {{location}}"
   },
   "catalogAdd": {
     "title": "Adaugă în catalogul tău",

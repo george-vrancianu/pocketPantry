@@ -313,7 +313,8 @@ export function useAddBatchForm({
     : null;
   const camera = {
     open: cameraOpen,
-    openCamera: () => open(loadOverlayMode(), false),
+    /** Opens the overlay in `mode`, or the one the Member used last. */
+    openCamera: (mode: CameraMode = loadOverlayMode()) => open(mode, false),
     cancel: () => setCameraOpen(false),
     onResult: onCameraResult,
     /** The mode the overlay opens in. */

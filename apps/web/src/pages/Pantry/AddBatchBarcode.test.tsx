@@ -97,8 +97,7 @@ function stubLookup(
 async function openForm(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: 'Add batch' }));
 }
-const cameraButton = () =>
-  screen.getByRole('button', { name: 'Fill from the camera' });
+const cameraButton = () => screen.getByRole('button', { name: 'Scan barcode' });
 
 async function decode(code = CODE) {
   await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
@@ -144,8 +143,9 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     await user.click(screen.getByRole('radio', { name: 'Product' }));
     await user.click(screen.getByRole('button', { name: 'Close scanner' }));
 
-    await user.click(cameraButton());
-    expect(screen.getByRole('radio', { name: 'Product' })).toBeChecked();
+    expect(localStorage.getItem('pocket-pantry.camera-overlay-mode')).toBe(
+      'product',
+    );
     expect(localStorage.getItem('pocket-pantry.scan-mode')).toBe('plate');
   });
 
@@ -380,9 +380,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     stubLookup(() => Response.json(found()));
     renderWithProviders(<PantryPage />, { locale: 'da' });
     await user.click(await screen.findByRole('button', { name: /^Tilføj/ }));
-    await user.click(
-      screen.getByRole('button', { name: 'Udfyld med kameraet' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Scan stregkode' }));
     expect(screen.getByRole('radio', { name: 'Stregkode' })).toBeChecked();
   });
 
@@ -391,7 +389,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     stubLookup(() => Response.json(found()));
     renderWithProviders(<PantryPage />, { locale: 'ro' });
     await user.click(await screen.findByRole('button', { name: /^Adaugă/ }));
-    await user.click(screen.getByRole('button', { name: /camera/ }));
+    await user.click(screen.getByRole('button', { name: 'Scanează codul' }));
     expect(screen.getByRole('radio', { name: 'Cod de bare' })).toBeChecked();
   });
 });

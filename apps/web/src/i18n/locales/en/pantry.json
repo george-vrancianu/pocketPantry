@@ -82,6 +82,11 @@
       "credit": "Product data: Open Food Facts",
       "lookingUp": "Looking up the barcode…",
       "listsAllergens": "This product lists {{names}}"
+    },
+    "quick": {
+      "label": "Add quickly",
+      "photo": "Take a photo",
+      "barcode": "Scan barcode"
     }
   },
   "picker": {

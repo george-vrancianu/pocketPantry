@@ -3,7 +3,7 @@ import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
-import { RecentlyStocked } from '../../../components/catalogSearch/emptyState/RecentlyStocked';
+import { RecentlyStockedOrPopular } from '../../../components/catalogSearch/emptyState/RecentlyStockedOrPopular';
 import {
   ListedAllergensNote,
   OpenFoodFactsCredit,
@@ -19,6 +19,7 @@ import {
   type PrefillField,
 } from '../hooks/useAddBatchForm';
 import { BatchAmountField } from './BatchAmountField';
+import { QuickRow } from './QuickRow';
 
 type Props = {
   onSaved: () => void;
@@ -43,7 +44,8 @@ export function AddBatchForm({
   const id = useId();
   const { t: tReview } = useTranslation('review');
   const { t: tScan } = useTranslation('scan');
-  const cameraButton = useRef<HTMLButtonElement>(null);
+  const { t: tCatalog } = useTranslation('catalog');
+  const opener = useRef<HTMLButtonElement | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const picked = form.ingredient?.name ?? form.unmatchedName;
   const { camera } = form;
@@ -51,7 +53,7 @@ export function AddBatchForm({
   // After the overlay closes, focus goes back to the button that opened it.
   const wasOpen = useRef(false);
   useEffect(() => {
-    if (wasOpen.current && !camera.open) cameraButton.current?.focus();
+    if (wasOpen.current && !camera.open) opener.current?.focus();
     wasOpen.current = camera.open;
   }, [camera.open]);
   useEffect(() => {
@@ -78,18 +80,11 @@ export function AddBatchForm({
       onSubmit={form.submit}
       aria-label={t('form.title')}
     >
-      <Button
-        type="button"
-        variant="ghost"
-        ref={cameraButton}
-        aria-disabled={busy || undefined}
-        className={busy ? 'Mui-disabled' : undefined}
-        onClick={() => {
-          if (!busy) camera.openCamera();
-        }}
-      >
-        {t('form.prefill.open')}
-      </Button>
+      <QuickRow
+        disabled={busy}
+        openerRef={opener}
+        onOpen={(mode) => camera.openCamera(mode)}
+      />
       {busy ? (
         <Typography role="status" color="text.secondary">
           {camera.lookingUp
@@ -117,6 +112,7 @@ export function AddBatchForm({
 
       <CatalogSearch
         autoFocus
+        placeholder={tCatalog('search.placeholderAdd')}
         defaultQuery={form.initialQuery}
         selected={form.selected}
         onSelect={form.selectIngredient}
@@ -125,7 +121,7 @@ export function AddBatchForm({
         newIngredientAllergenIds={camera.listedAllergenIds}
         emptyState={
           <>
-            <RecentlyStocked />
+            <RecentlyStockedOrPopular />
             <BrowseByAisle />
           </>
         }

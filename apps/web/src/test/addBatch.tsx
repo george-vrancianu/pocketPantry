@@ -29,7 +29,9 @@ export async function openOverlay(mode: 'product' | 'barcode') {
   renderWithProviders(<PantryPage />);
   await user.click(await screen.findByRole('button', { name: 'Add batch' }));
   await user.click(
-    screen.getByRole('button', { name: 'Fill from the camera' }),
+    screen.getByRole('button', {
+      name: mode === 'product' ? 'Take a photo' : 'Scan barcode',
+    }),
   );
   return user;
 }

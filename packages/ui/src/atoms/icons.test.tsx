@@ -11,6 +11,7 @@ import {
   CupboardIcon,
   FreezerIcon,
   FridgeIcon,
+  ScanBarcodeIcon,
   SpicesIcon,
   EarIcon,
   EqualIcon,
@@ -158,6 +159,7 @@ describe('icons', () => {
 
   it.each([
     ['Fridge', FridgeIcon],
+    ['ScanBarcode', ScanBarcodeIcon],
     ['Freezer', FreezerIcon],
     ['Cupboard', CupboardIcon],
     ['Spices', SpicesIcon],

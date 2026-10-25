@@ -120,8 +120,7 @@ async function openForm(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: 'Add batch' }));
 }
 
-const cameraButton = () =>
-  screen.getByRole('button', { name: 'Fill from the camera' });
+const cameraButton = () => screen.getByRole('button', { name: 'Take a photo' });
 
 async function shoot(user: ReturnType<typeof userEvent.setup>) {
   await user.click(cameraButton());
@@ -260,7 +259,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     );
     renderWithProviders(<PantryPage />, { locale: 'ro' });
     await user.click(await screen.findByRole('button', { name: /^Adaugă/ }));
-    await user.click(screen.getByRole('button', { name: /camera/ }));
+    await user.click(screen.getByRole('button', { name: 'Fă o poză' }));
     screen.getByRole('button', { name: 'Fă o fotografie' }).focus();
     await user.keyboard('{Enter}');
     release();

@@ -37,7 +37,10 @@
     },
     "addToCatalog": "Add “{{query}}” to your catalog",
     "addToCatalogHint": "Pick its category once · only your family sees it",
-    "familyTag": "Family"
+    "familyTag": "Family",
+    "placeholderAdd": "Or type it, e.g. milk",
+    "popularToStart": "Popular to start",
+    "popularLabel": "{{name}}, {{amount}} · {{location}}"
   },
   "catalogAdd": {
     "title": "Add to your catalog",

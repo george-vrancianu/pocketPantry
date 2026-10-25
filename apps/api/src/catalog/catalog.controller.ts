@@ -22,6 +22,7 @@ import { catalogScope, SHARED_ONLY, type CatalogScope } from './catalog-scope';
 import { FamilyIngredientsService } from './family-ingredients.service';
 import { FamilyCatalogService } from './family-catalog.service';
 import { FamilySynonymsService } from './family-synonyms.service';
+import { popularToStartIds } from './popular-to-start';
 import { CatalogSearchService } from './catalog-search.service';
 import {
   catalogAislesQuery,
@@ -44,6 +45,8 @@ import {
   type CatalogAisle,
   type CatalogAislesQuery,
   catalogSearchQuery,
+  popularToStartQuery,
+  type PopularToStartQuery,
   type CatalogParent,
   type CatalogSearchQuery,
   type CatalogSearchResult,
@@ -134,6 +137,31 @@ export class CatalogController {
           parentCategoryId: query.parentCategoryId,
         },
       ),
+    };
+  }
+
+  @Get('popular-to-start')
+  @ApiOperation({
+    summary:
+      'The fixed Popular to start Ingredients for a UI locale, for a Family with nothing Recently Stocked',
+  })
+  async popularToStart(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(popularToStartQuery))
+    query: PopularToStartQuery,
+  ): Promise<{ ingredients: CatalogSearchResult[] }> {
+    const ids = popularToStartIds(query.locale);
+    const found = await this.searchService.mapByIds(
+      await this.settings.catalogScopeForMember(member.id),
+      ids,
+      await this.languages.catalogLanguageOf(member.id),
+      await this.settings.expiryOverridesForMember(member.id),
+    );
+    return {
+      ingredients: ids.flatMap((id) => {
+        const ingredient = found.get(id);
+        return ingredient ? [ingredient] : [];
+      }),
     };
   }
 

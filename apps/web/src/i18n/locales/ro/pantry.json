@@ -88,6 +88,11 @@
       "credit": "Date despre produs: Open Food Facts",
       "lookingUp": "Caut codul de bare…",
       "listsAllergens": "Acest produs menționează {{names}}"
+    },
+    "quick": {
+      "label": "Adaugă rapid",
+      "photo": "Fă o poză",
+      "barcode": "Scanează codul"
     }
   },
   "picker": {
