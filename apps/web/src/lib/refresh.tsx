@@ -9,9 +9,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import type { RefreshStatusLineProps } from '@pocket-pantry/ui';
 import { useLocation } from 'react-router-dom';
 
-export type RefreshState = 'idle' | 'busy' | 'done' | 'failed';
+export type RefreshState = RefreshStatusLineProps['state'];
 
 type Refresh = { state: RefreshState; run: () => Promise<void> };
 
@@ -24,11 +25,15 @@ const RefreshContext = createContext<Refresh | undefined>(undefined);
 export function RefreshProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const { pathname } = useLocation();
-  // The state belongs to the screen it was set on: on another path it reads as idle.
+  // The state belongs to the screen it was set on: on another path it starts over idle.
   const [entry, setEntry] = useState<{ state: RefreshState; path: string }>({
     state: 'idle',
     path: pathname,
   });
+  if (entry.path !== pathname) {
+    // Reset during render (not in an effect), so a round trip never revives the old state.
+    setEntry({ state: 'idle', path: pathname });
+  }
   const state = entry.path === pathname ? entry.state : 'idle';
   const setState = useCallback(
     (next: RefreshState) => setEntry({ state: next, path: pathname }),

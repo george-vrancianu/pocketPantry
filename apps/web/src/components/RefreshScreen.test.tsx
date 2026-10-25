@@ -311,6 +311,58 @@ describe('Refresh state follows the screen', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
     expect(getComputedStyle(content).opacity).toBe('1');
   });
+
+  it('comes back idle and at full opacity after a round trip begun while busy', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const { fetchMock } = stubApi({
+      'GET /api/voice/config': () => Response.json({ configured: true }),
+      'GET /api/staples': async () => {
+        await gate;
+        return Response.json({ staples: [] });
+      },
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    openTwoScreens();
+    await settle();
+    tap();
+    fireEvent.click(screen.getByRole('link', { name: 'Go on' }));
+    await settle();
+    release();
+    await settle();
+    fireEvent.click(screen.getByRole('link', { name: 'Go on' }));
+    await settle();
+    fireEvent.click(screen.getByRole('link', { name: 'Go on' }));
+    await settle();
+    await elapse(10000);
+    const content = screen.getByText('Pantry content');
+    expect(getComputedStyle(content).opacity).toBe('1');
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('does not show "Updated just now" again after a round trip', async () => {
+    vi.stubGlobal(
+      'fetch',
+      stubApi({
+        'GET /api/voice/config': () => Response.json({ configured: true }),
+        'GET /api/staples': () => Response.json({ staples: [] }),
+        'GET /api/settings/preferences': () => Response.json({}),
+      }).fetchMock,
+    );
+    openTwoScreens();
+    await settle();
+    tap();
+    await settle();
+    expect(screen.getByRole('status')).toHaveTextContent('Updated just now');
+    fireEvent.click(screen.getByRole('link', { name: 'Go on' }));
+    await settle();
+    fireEvent.click(screen.getByRole('link', { name: 'Go on' }));
+    await settle();
+    fireEvent.click(screen.getByRole('link', { name: 'Go on' }));
+    await settle();
+    expect(screen.getByText('Pantry content')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
 });
 
 describe('Tab-root header controls beside the mark', () => {
