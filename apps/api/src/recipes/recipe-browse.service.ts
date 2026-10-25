@@ -19,6 +19,7 @@ import { recipeNotFound } from './recipe-errors';
 import {
   findVisibleRecipe,
   inScope,
+  liveCopiesOf,
   ownerOf,
   recipeTitles,
   resolveRecipe,
@@ -226,8 +227,30 @@ export class RecipeBrowseService {
       row.familyId === null
         ? ((await this.liveCopies(familyId, [row.id])).get(row.id) ?? null)
         : null;
+    // A Pairing's Catalog Recipe link also names the Family's live copy of it.
+    const pairedIds = resolved.guidance.pairings.flatMap((p) =>
+      p.link?.type === 'recipe' && p.link.owner === 'catalog'
+        ? [p.link.id]
+        : [],
+    );
+    const pairedCopies = await this.liveCopies(familyId, pairedIds);
+    const guidance = {
+      ...resolved.guidance,
+      pairings: resolved.guidance.pairings.map((p) =>
+        p.link?.type === 'recipe' && p.link.owner === 'catalog'
+          ? {
+              ...p,
+              link: {
+                ...p.link,
+                familyCopyId: pairedCopies.get(p.link.id) ?? null,
+              },
+            }
+          : p,
+      ),
+    };
     return {
       ...resolved,
+      guidance,
       base,
       variants,
       familyCopyId,
@@ -320,18 +343,7 @@ export class RecipeBrowseService {
     familyId: string,
     sourceIds: string[],
   ): Promise<Map<string, string>> {
-    if (sourceIds.length === 0) return new Map();
-    const rows = await this.database
-      .select({ id: recipes.id, copiedFromId: recipes.copiedFromId })
-      .from(recipes)
-      .where(
-        and(
-          eq(recipes.familyId, familyId),
-          inArray(recipes.copiedFromId, sourceIds),
-          isNull(recipes.archivedAt),
-        ),
-      );
-    return new Map(rows.map((r) => [r.copiedFromId!, r.id]));
+    return liveCopiesOf(this.database, familyId, sourceIds);
   }
 
   private async variantCounts(

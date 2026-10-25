@@ -224,6 +224,26 @@ export async function loadAdminDetail(
 }
 
 /** Who owns the Recipe: the Catalog or a Family. */
+/** The Family's live copy of each Catalog Recipe it has added, by source id. */
+export async function liveCopiesOf(
+  executor: Executor,
+  familyId: string,
+  sourceIds: string[],
+): Promise<Map<string, string>> {
+  if (sourceIds.length === 0) return new Map();
+  const rows = await executor
+    .select({ id: recipes.id, copiedFromId: recipes.copiedFromId })
+    .from(recipes)
+    .where(
+      and(
+        eq(recipes.familyId, familyId),
+        inArray(recipes.copiedFromId, sourceIds),
+        isNull(recipes.archivedAt),
+      ),
+    );
+  return new Map(rows.map((r) => [r.copiedFromId!, r.id]));
+}
+
 export const ownerOf = (row: Pick<RecipeRow, 'familyId'>): RecipeOwner =>
   row.familyId === null ? 'catalog' : 'family';
 

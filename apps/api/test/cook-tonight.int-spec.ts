@@ -31,6 +31,7 @@ type Card = {
     title: string;
     parentId: string | null;
     owner: 'catalog' | 'family';
+    familyCopyId: string | null;
     servings: number;
   };
   canMake: boolean;
@@ -65,6 +66,7 @@ describe('Cook Tonight (integration)', () => {
       parentId?: string;
       archived?: boolean;
       title?: string;
+      copiedFromId?: string;
     } = {},
   ) {
     const id = crypto.randomUUID();
@@ -72,6 +74,7 @@ describe('Cook Tonight (integration)', () => {
       id,
       familyId: opts.familyId ?? null,
       parentId: opts.parentId ?? null,
+      copiedFromId: opts.copiedFromId ?? null,
       title: opts.title ?? `Tonight ${stamp}-${++n}`,
       servings: 2,
       archivedAt: opts.archived ? new Date() : null,
@@ -385,6 +388,22 @@ describe('Cook Tonight (integration)', () => {
             .expect(200)
         ).body as { cards: Card[] }
       ).cards;
+
+    it('names the Family live copy of a Catalog card in familyCopyId, null without one', async () => {
+      const line = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];
+      const withCopy = await makeRecipe(line);
+      const without = await makeRecipe(line);
+      const copy = await makeRecipe(line, {
+        familyId: anaFamily,
+        copiedFromId: withCopy,
+      });
+      await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+      const cards = await cardsIn('catalog');
+      const copyOf = (id: string) =>
+        cards.find((c) => c.base.id === id)!.recipe.familyCopyId;
+      expect(copyOf(withCopy)).toBe(copy);
+      expect(copyOf(without)).toBeNull();
+    });
 
     it('returns only the Family cards on family and only Catalog cards on catalog, mixed with no scope', async () => {
       const line = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];

@@ -15,7 +15,7 @@ import { RecipeDetailPage } from './RecipeDetailPage';
 const detail: RecipeDetail = {
   id: 'r1',
   parentId: null,
-  owner: 'catalog',
+  owner: 'family',
   title: 'Pancakes',
   servings: 2,
   prepMinutes: null,

@@ -115,7 +115,14 @@ export type RecipeDiff = {
 
 export type PairingLink =
   | { type: 'ingredient'; id: string; name: string }
-  | { type: 'recipe'; id: string; title: string };
+  | {
+      type: 'recipe';
+      id: string;
+      title: string;
+      owner: RecipeOwner;
+      /** The Family's live copy when the linked Recipe is a Catalog Recipe, else null. */
+      familyCopyId?: string | null;
+    };
 export type DetailPairing = {
   id: string;
   kind: PairingKind;

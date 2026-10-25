@@ -652,6 +652,8 @@ export type CookTonightCard = {
     title: string;
     parentId: string | null;
     owner: RecipeOwner;
+    /** The Family's live copy of a Catalog Recipe, else null. */
+    familyCopyId: string | null;
     servings: number;
     prepMinutes: number | null;
     cookMinutes: number | null;

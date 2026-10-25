@@ -463,4 +463,23 @@ describe('Add to Family (integration)', () => {
     };
     expect(own.familyCopyId).toBeNull();
   });
+
+  it('puts familyCopyId on a Pairing link to a Catalog Recipe: the live copy, null without one or for another Family', async () => {
+    const src = await makeBase();
+    const linkOf = async (as: ReturnType<typeof client>) =>
+      (
+        (await as.get(`/${src.id}?locale=en`).expect(200)).body as {
+          guidance: {
+            pairings: { link: { id: string; familyCopyId?: string | null } }[];
+          };
+        }
+      ).guidance.pairings[0].link;
+    expect((await linkOf(ana)).familyCopyId).toBeNull();
+    const id = await copyId(ana, src.linked);
+    expect(await linkOf(ana)).toMatchObject({
+      id: src.linked,
+      familyCopyId: id,
+    });
+    expect((await linkOf(ben)).familyCopyId).toBeNull();
+  });
 });

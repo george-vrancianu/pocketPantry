@@ -8,6 +8,7 @@ import {
 } from '../../../components/AllergenIndicator';
 import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
+import { catalogRecipeHref } from '../../../lib/catalogRecipeHref';
 import { useCookTonight, type CookTonightCard } from '../../../lib/cookTonight';
 import type { WidgetSize } from '../../../lib/dashboard';
 import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
@@ -142,7 +143,11 @@ function CookCard({ card }: { card: CookTonightCard }) {
   return (
     <Box
       component={Link}
-      to={`/recipes/${recipe.id}`}
+      to={
+        recipe.owner === 'catalog'
+          ? catalogRecipeHref(recipe.id, recipe.familyCopyId)
+          : `/recipes/${recipe.id}`
+      }
       aria-label={name}
       sx={{
         display: 'block',
