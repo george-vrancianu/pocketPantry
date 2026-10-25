@@ -32,7 +32,7 @@ type IntroApi = {
   savedSteps: ReadonlySet<IntroStep>;
   /** Called by Set up or skip: a new visit to Setup starts counting from zero. */
   resumeSetup: () => void;
-  /** The Member chose "Show me how": the Scan screen may be used from Setup. */
+  /** The Member chose "Show me how": Setup has started. */
   setupStarted: boolean;
   startSetup: () => void;
   /** Picks that sign-up could not save, so Set up or skip can say what the Member chose; in memory only. */
@@ -124,7 +124,7 @@ export function useIntro(): IntroApi {
  * The auto-advance rule (`advanceFrom` in `intro.ts`) for a step that holds a collection: when `empty`
  * turns true and a save was recorded for `step`, goes on to the next step (replacing this one in the
  * history). Returns whether it is moving on, so the screen can render nothing meanwhile. Use it on any
- * screen of the step: Snap's overview now, Say it's Voice Inbox later.
+ * screen of the step: Snap's overview and Say it's Voice Inbox.
  */
 export function useAutoAdvance(step: IntroStep, empty: boolean): boolean {
   const navigate = useNavigate();

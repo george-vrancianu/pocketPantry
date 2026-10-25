@@ -209,12 +209,13 @@ export function ReviewOverviewPage({
         const failures = await saveScan(scan);
         if (failures)
           notTicked += failures.missing + failures.changed + failures.other;
-        settings.onCardSaved?.(lines.length);
         dispatchScanSession({ type: 'remove', id: scan.id });
         added.current += 1;
       } catch (error) {
         fail(scan.id, translateApiError(tAll, error));
+        continue;
       }
+      settings.onCardSaved?.(lines.length);
     }
     setSaving(false);
     // Failed reads are dropped with the rest; only a card whose save failed keeps the Member here.

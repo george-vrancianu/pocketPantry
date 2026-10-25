@@ -35,7 +35,7 @@ export type VoiceNoteSettings = {
   afterApply?: AfterApply;
 };
 
-/** Today's in-app settings: the Voice Inbox strip, notes wait to be opened, the route's Default List, a toast. */
+/** Today's in-app settings: the Voice Inbox strip, the route's Default List, a toast. */
 export const APP_VOICE_SETTINGS: VoiceNoteSettings = {
   reviewLook: 'app',
   toastOnApply: true,

@@ -57,13 +57,12 @@ export type ScanScreenModes = {
   onCardAdded?: (thumbnail: string, mode: CameraMode) => void;
   /** Whether Import (Add from photos) is offered. Defaults to true. */
   importOffered?: boolean;
-  /** A camera Scan just joined the Scan Session: where the Member goes next. Defaults to staying on the camera. */
-  onShot?: (scanId: string) => void;
   /** The photo stack was pressed: where it goes. Defaults to the app's Review overview. */
   openStack?: (firstScanId: string | undefined) => void;
   /**
-   * Where Close goes (replacing the camera in the history). Without it Close goes back to wherever the
-   * Member came from, or home when the camera was the first page.
+   * Where Close goes (replacing the camera in the history), keeping the Scan Session: the host owns what
+   * happens to the photos. Without it Close goes back to wherever the Member came from, or home when the
+   * camera was the first page, and asks before discarding photos.
    */
   closeTo?: string;
 };
@@ -184,10 +183,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     });
   }, [location, navigate]);
   const cardAdded = useRef(config.onCardAdded);
-  const shot = useRef(config.onShot);
   useLayoutEffect(() => {
     cardAdded.current = config.onCardAdded;
-    shot.current = config.onShot;
   });
 
   const reading = resizing;
@@ -239,7 +236,6 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     });
     cardAdded.current?.(image, mode);
     readScans();
-    shot.current?.(id);
     // The full frame, before it was resized for the read: barcodes need the resolution.
     if (mode === 'product')
       decodePhotoBarcode(id, frame, (photo) => readBarcode(photo));
@@ -422,19 +418,20 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     // Back to wherever the Member came from, or home when this was the first page.
     close: () => {
       const { closeTo } = config;
+      if (closeTo !== undefined) {
+        clearScanLanguageOverride();
+        navigate(closeTo, { replace: true });
+        return;
+      }
       const taken = session.scans.length;
       if (taken > 0) {
         if (!window.confirm(t('scan:discardScans', { count: taken }))) return;
         resetScanSession();
         // Nothing is left to go back to: the overview and the camera of this Session are empty.
-        navigate(closeTo ?? '/', { replace: closeTo !== undefined });
+        navigate('/');
         return;
       }
       clearScanLanguageOverride();
-      if (closeTo !== undefined) {
-        navigate(closeTo, { replace: true });
-        return;
-      }
       if (location.key === 'default') navigate('/');
       else navigate(-1);
     },
