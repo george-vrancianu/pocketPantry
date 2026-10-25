@@ -11,6 +11,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
+import { capMessage } from '../../lib/capMessage';
 import type { GuidanceInput } from '../../lib/adminRecipes';
 import type { GuidanceDraft } from '../../lib/guidanceDraft';
 import {
@@ -62,7 +63,7 @@ export function useGuidanceSuggestion({
   onChange,
   send,
 }: Options): GuidanceSuggestionControl {
-  const { t } = useTranslation(['admin', 'errors']);
+  const { t, i18n } = useTranslation(['admin', 'errors']);
   const toast = useToast();
   const [working, setWorking] = useState(false);
   const [result, setResult] = useState<{
@@ -101,6 +102,18 @@ export function useGuidanceSuggestion({
       })
       .catch((error: unknown) => {
         if (!mounted.current) return;
+        if (
+          error instanceof ApiError &&
+          error.code === 'guidance.cap_reached'
+        ) {
+          toast.show(
+            capMessage(t, i18n.language, error.params, 'errors:guidance'),
+            {
+              polite: true,
+            },
+          );
+          return;
+        }
         const key =
           error instanceof ApiError ? SUGGEST_ERRORS[error.code] : undefined;
         toast.show(key ? t(key) : translateApiError(t, error), {

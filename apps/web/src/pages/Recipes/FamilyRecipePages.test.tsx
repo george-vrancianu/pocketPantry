@@ -1717,6 +1717,59 @@ describe('Suggest Guidance', () => {
     expect(suggestButton()).toBeEnabled();
   });
 
+  describe('the Guidance Cap', () => {
+    afterEach(() => vi.useRealTimers());
+
+    const pressAtCap = async (params: object) => {
+      const user = userEvent.setup({ delay: null });
+      setup('/recipes/new', {
+        [suggestRoute]: () =>
+          Response.json(
+            { code: 'guidance.cap_reached', params },
+            { status: 429 },
+          ),
+      });
+      await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+      await user.click(suggestButton());
+    };
+
+    it("says when Suggest Guidance is available again, in the Member's own time, and leaves the form untouched", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date('2026-05-01T10:00:00Z'));
+      const resetsAt = '2026-05-02T00:00:00.000Z';
+      await pressAtCap({ cap: 20, resetsAt });
+      const when = new Intl.DateTimeFormat('en-GB', {
+        weekday: 'long',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(Date.parse(resetsAt));
+      const toast = await screen.findByText(
+        `You have used all 20 Suggest Guidance requests for today. Your requests reset on ${when}.`,
+      );
+      expect(toast.closest('[role="status"]')).not.toBeNull();
+      expect(noteField()).toHaveValue('');
+      expect(screen.getByLabelText(/^Title/)).toHaveValue('Gran stew');
+    });
+
+    it('says to try tomorrow when the reset time is missing', async () => {
+      await pressAtCap({ cap: 20 });
+      expect(
+        await screen.findByText(
+          'You have used all 20 Suggest Guidance requests for today. Try again tomorrow.',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('leaves the number out when the cap is missing', async () => {
+      await pressAtCap({});
+      expect(
+        await screen.findByText(
+          "You have used all of today's Suggest Guidance requests. Try again tomorrow.",
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
   it('on the edit page reads unsaved edits and names the Recipe being edited', async () => {
     const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/g/edit', {
