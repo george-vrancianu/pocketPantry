@@ -16,6 +16,7 @@ import { LANGUAGE_NAMES } from '../scan/scan-language';
 import { SettingsService } from '../settings/settings.service';
 import {
   COVERED_GUIDANCE_FIELDS,
+  GUIDANCE_FIELDS,
   GUIDANCE_SUGGESTION_SCHEMA_NAME,
   emptyGuidanceFields,
   guidanceSuggestionJsonSchema,
@@ -62,11 +63,11 @@ export class GuidanceSuggestionService {
     body: SuggestGuidanceBody,
     locale: CatalogLocale,
   ): Promise<GuidanceSuggestion> {
-    const wanted = emptyGuidanceFields(body.guidance).filter((field) =>
+    const empty = emptyGuidanceFields(body.guidance).filter((field) =>
       COVERED_GUIDANCE_FIELDS.includes(field),
     );
     // Nothing to fill: refused before any lookup or AI call.
-    if (wanted.length === 0) {
+    if (empty.length === 0) {
       throw new ApiException(400, 'guidance.nothing_to_suggest');
     }
 
@@ -79,7 +80,13 @@ export class GuidanceSuggestionService {
 
     // The unarchived, Admin-curated Eating Moments (named in `locale`), offered only when wanted.
     // Admin mode (#556) passes the same kind of list, named in the base language.
-    const moments = wanted.includes('eatingMoments') ? lists.eatingMoments : [];
+    const moments = empty.includes('eatingMoments') ? lists.eatingMoments : [];
+    // With no Eating Moment to choose from there is nothing to ask for: straight to "no suggestions".
+    const unasked = empty.filter(
+      (field) => field === 'eatingMoments' && moments.length === 0,
+    );
+    const wanted = empty.filter((field) => !unasked.includes(field));
+    if (wanted.length === 0) return { guidance: {}, noSuggestions: unasked };
 
     // Links and Allergens matter only for Pairings; no lookups otherwise.
     const context = wanted.includes('pairings')
@@ -111,6 +118,10 @@ export class GuidanceSuggestionService {
       await this.caps.refund(memberId, day, 'guidance');
       throw error;
     }
+    suggestion.noSuggestions = GUIDANCE_FIELDS.filter(
+      (field) =>
+        unasked.includes(field) || suggestion.noSuggestions.includes(field),
+    );
     // Nothing usable is still a normal answer, but it costs the Member nothing.
     if (Object.keys(suggestion.guidance).length === 0) {
       await this.caps.refund(memberId, day, 'guidance');
@@ -182,7 +193,7 @@ function suggestionOf(
 const clip = (text: string, max: number) =>
   [...text.trim()].slice(0, max).join('').trim();
 
-/** The reason of an Eating Moment shares the Pairing reason's limit (both are `reason` in the Guidance schemas). */
+/** Mirrors the shared `reason` schema in recipe-guidance.schemas.ts, which both `eatingMomentUseInput` and Pairings use. */
 const MAX_EATING_MOMENT_REASON = MAX_PAIRING_REASON;
 
 /** An Eating Moment the model may use: unarchived and Admin-curated. */

@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { and, count, eq } from 'drizzle-orm';
+import { and, count, eq, ilike } from 'drizzle-orm';
 import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
 import { StructuredOutputAiError } from '../src/ai/structured-output-ai.service';
 import { seedId } from '../src/catalog/seed/seed-catalog';
@@ -642,6 +642,12 @@ describe('Suggest Guidance (integration)', () => {
           archivedAt,
         })),
       );
+    });
+
+    afterAll(async () => {
+      await database
+        .delete(eatingMoments)
+        .where(ilike(eatingMoments.name, `%${tag}%`));
     });
 
     it('offers only unarchived Eating Moments, by id, and proposes Good for and Avoid with reasons', async () => {
