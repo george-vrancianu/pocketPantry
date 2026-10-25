@@ -12,7 +12,7 @@ Walking round the kitchen, a Member wants to say "two yogurts in the fridge", op
 - **Review is unchanged for one Voice Note.** An answers-only Voice Note opens the answer sheet, with the answers as they were when read.
 - **"Review all" merges every read Voice Note with Voice Actions into one Review:** every transcript under "What I heard" in recording order, one answer card, and the Voice Actions grouped by list, each keeping the list its own note resolved. Nothing is de-duplicated; Voice Actions apply in recording order, in one Apply and one transaction. On success every merged Voice Note leaves the Voice Inbox; on an error they all stay with their edits. Discarding asks once and discards them all. A merge over 50 Voice Actions (the apply limit) is refused. The API is unchanged: apply already takes a flat list of Voice Actions.
 - **The Spoken Language chip above the Dock is removed,** on every page and in Setup. A Voice Note is spoken in the Member's Spoken Language preference. A Voice Note that failed or heard nothing can be read again in another language from its row in the Voice Inbox; that read counts against the Voice Cap.
-- **Setup keeps one Voice Note,** reviewed at once, with no Voice Inbox.
+- ~~**Setup keeps one Voice Note,** reviewed at once, with no Voice Inbox.~~ Superseded by [ADR 0030](0030-setup-uses-the-scan-session-and-voice-inbox.md): Setup uses the Voice Inbox.
 
 ## Considered options
 
