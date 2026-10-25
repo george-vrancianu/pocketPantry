@@ -3,7 +3,13 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { IntroLook } from '../../components/IntroLook';
-import { INTRO_PATHS, introPath, nextStep, skipStep } from '../../lib/intro';
+import {
+  INTRO_CAMERA_PATH,
+  INTRO_PATHS,
+  introPath,
+  nextStep,
+  skipStep,
+} from '../../lib/intro';
 import { readScans } from '../../lib/scanReads';
 import {
   canRetry,
@@ -16,7 +22,10 @@ import {
 import { useGatorAlt } from '../../lib/useGatorAlt';
 import { useIntro } from '../../lib/useIntro';
 import { ReviewPage } from '../Review/ReviewPage';
-import { SetupReviewFrame } from '../../components/Setup/SetupReviewView';
+import {
+  SetupReviewFrame,
+  SetupReviewView,
+} from '../../components/Setup/SetupReviewView';
 import { SetupTopRow } from '../../components/Setup/SetupTopRow';
 
 /** Setup's Review while the photo is still being read, or when the read failed. */
@@ -123,7 +132,7 @@ export function SetupReviewPage() {
   const onRetake = () => {
     const { mode } = scan;
     drop();
-    navigate(`/scan?mode=${mode}`, { replace: true });
+    navigate(`${INTRO_CAMERA_PATH}?mode=${mode}`, { replace: true });
   };
   const onSkip = () => {
     drop();
@@ -137,14 +146,16 @@ export function SetupReviewPage() {
       {scanDisplayState(scan) === 'read' ? (
         <ReviewPage
           key={scan.id}
-          setup={{
+          settings={{
+            renderFrame: (frame) => (
+              <SetupReviewView {...frame} onRetake={onRetake} onSkip={onSkip} />
+            ),
             onSaved: (saved) => {
               setLeaving(true);
               recordSaved({ batches: saved });
               navigate(introPath(nextStep('setup-review')), { replace: true });
             },
             onRetake,
-            onSkip,
           }}
         />
       ) : (

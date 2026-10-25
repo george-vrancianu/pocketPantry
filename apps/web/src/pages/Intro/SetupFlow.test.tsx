@@ -223,13 +223,13 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     await banner();
 
     await user.click(screen.getByRole('button', { name: 'Retake' }));
-    await waitFor(() => expect(where()).toBe('/scan?mode=receipt'));
+    await waitFor(() => expect(where()).toBe('/intro/camera?mode=receipt'));
     expect(selected()).toEqual(['Receipt']);
 
     takeScan();
     await banner();
     await user.click(screen.getByRole('button', { name: /Camera/ }));
-    await waitFor(() => expect(where()).toBe('/scan?mode=receipt'));
+    await waitFor(() => expect(where()).toBe('/intro/camera?mode=receipt'));
     // The dropped photos are gone: Retake does not pile them up in the Scan Session.
     expect(screen.queryByTestId('stack-badge')).toBeNull();
   });
@@ -334,7 +334,7 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     expect(await screen.findByText("Couldn't read, retake")).toBeVisible();
     expect(screen.getByRole('img', { name: 'Gator, worried' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Retake' }));
-    await waitFor(() => expect(where()).toBe('/scan?mode=ingredients'));
+    await waitFor(() => expect(where()).toBe('/intro/camera?mode=ingredients'));
   });
 
   it('says so when the Scan Cap is reached, and Retake goes back to the camera', async () => {
@@ -353,7 +353,7 @@ describe('Setup 1: Snap, Setup Review, All set', () => {
     expect(screen.getByText('Daily scan limit reached')).toBeVisible();
     expect(where()).toMatch(/^\/intro\/review\/.+/);
     await user.click(screen.getByRole('button', { name: 'Retake' }));
-    await waitFor(() => expect(where()).toBe('/scan?mode=ingredients'));
+    await waitFor(() => expect(where()).toBe('/intro/camera?mode=ingredients'));
   });
 
   it('keeps the Scan screen to Setup: two modes, no Import, and Close goes back to Snap', async () => {

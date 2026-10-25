@@ -15,7 +15,7 @@ import { creamFocus } from '../../components/Setup/creamFocus';
 import { GatorBubble } from '../../components/Setup/GatorBubble';
 import { SetupCallout } from '../../components/Setup/SetupCallout';
 import { SetupOliveTopRow } from '../../components/Setup/SetupOliveTopRow';
-import { introPath, skipStep } from '../../lib/intro';
+import { INTRO_CAMERA_PATH, introPath, skipStep } from '../../lib/intro';
 import { resetScanSession } from '../../lib/scanSession';
 
 type Pick = 'ingredients' | 'receipt';
@@ -88,7 +88,10 @@ export function SnapPage() {
         body={t('snap.callout.body')}
         bottom={aboveDock(DOCK_HEIGHT.xs)}
       />
-      <AppDock teach="camera" cameraHref={`/scan?mode=${pick}`} />
+      <AppDock
+        teach="camera"
+        cameraHref={`${INTRO_CAMERA_PATH}?mode=${pick}`}
+      />
     </IntroLook>
   );
 }
