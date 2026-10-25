@@ -27,6 +27,8 @@ export function PageLayout({
         backgroundColor: tokens.color.bg,
         color: tokens.color.ink,
         px: { xs: '20px', md: '48px' },
+        // A page sliding in from the edge must not widen the document; clip makes no scroll container, so sticky still works.
+        overflowX: 'clip',
         pb: withDock ? (dockClearance ?? '132px') : '24px',
       }}
     >
@@ -35,8 +37,6 @@ export function PageLayout({
         sx={{
           maxWidth: wide ? 1180 : 960,
           mx: 'auto',
-          // A page sliding in from the edge must not widen the document; clip makes no scroll container, so sticky still works.
-          overflowX: 'clip',
         }}
       >
         {children}
