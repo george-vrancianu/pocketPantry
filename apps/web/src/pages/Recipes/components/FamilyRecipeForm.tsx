@@ -38,6 +38,11 @@ type Props = {
   guidance?: { initial: GuidanceDraft; momentOptions: MomentOption[] };
   /** Tells the page what the form holds now, for siblings that read it (Suggest Guidance on the edit page). */
   onDraftChange?: (draft: FamilyDraft) => void;
+  /** Reports the form as it is, on mount and after every change (for the Recipe Draft). */
+  onChange?: (state: {
+    draft: FamilyDraft;
+    guidance: GuidanceDraft | null;
+  }) => void;
   onSave: (document: FamilyRecipeDocument, guidance?: GuidanceInput) => void;
   onCancel: () => void;
 };
@@ -57,6 +62,7 @@ export function FamilyRecipeForm({
   stepTipCount,
   guidance,
   onDraftChange,
+  onChange,
   onSave,
   onCancel,
 }: Props) {
@@ -69,6 +75,11 @@ export function FamilyRecipeForm({
   );
   const [titleTouched, setTitleTouched] = useState(false);
   useEffect(() => onDraftChange?.(draft), [draft, onDraftChange]);
+  useEffect(() => {
+    onChange?.({ draft, guidance: guidanceDraft });
+    // The latest `onChange` is enough; only edits report.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, guidanceDraft]);
   const problems = problemsOf(draft);
   const guidanceBad = guidanceDraft
     ? Object.values(guidanceProblems(guidanceDraft)).some(

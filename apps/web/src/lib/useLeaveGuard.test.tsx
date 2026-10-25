@@ -1,0 +1,147 @@
+import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {
+  BrowserRouter,
+  Link,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useLeaveGuard } from './useLeaveGuard';
+
+/** The router the app really uses (`<BrowserRouter>`), where `useBlocker` does not exist. */
+let ask = false;
+
+function Form() {
+  const navigate = useNavigate();
+  useLeaveGuard(() => ask, 'Leave?');
+  return (
+    <>
+      <p>form</p>
+      <Link to="/other">other</Link>
+      <button type="button" onClick={() => navigate(-1)}>
+        go back
+      </button>
+      <button
+        type="button"
+        onClick={() => navigate('/form?draft=1', { replace: true })}
+      >
+        add draft id
+      </button>
+    </>
+  );
+}
+
+function Page({ name }: { name: string }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return (
+    <>
+      <p>{`${name} at ${location.pathname}${location.search}`}</p>
+      <button type="button" onClick={() => navigate('/form')}>
+        open form
+      </button>
+    </>
+  );
+}
+
+const mount = async () => {
+  window.history.replaceState(null, '', '/start');
+  render(
+    <BrowserRouter>
+      <Routes>
+        <Route path="/start" element={<Page name="start" />} />
+        <Route path="/form" element={<Form />} />
+        <Route path="/other" element={<Page name="other" />} />
+      </Routes>
+    </BrowserRouter>,
+  );
+  await userEvent.click(screen.getByRole('button', { name: 'open form' }));
+  await screen.findByText('form');
+};
+
+describe('useLeaveGuard on a BrowserRouter', () => {
+  let confirm: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    ask = false;
+    confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  });
+  afterEach(() => confirm.mockRestore());
+
+  it('lets everything through while nothing is unsaved', async () => {
+    await mount();
+    await userEvent.click(screen.getByRole('link', { name: 'other' }));
+    expect(await screen.findByText('other at /other')).toBeVisible();
+    expect(confirm).not.toHaveBeenCalled();
+    const unload = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(false);
+  });
+
+  it('asks before a link, and stays or goes by the answer', async () => {
+    await mount();
+    ask = true;
+    await userEvent.click(screen.getByRole('link', { name: 'other' }));
+    expect(confirm).toHaveBeenCalledWith('Leave?');
+    expect(screen.getByText('form')).toBeVisible();
+    confirm.mockReturnValue(true);
+    await userEvent.click(screen.getByRole('link', { name: 'other' }));
+    expect(await screen.findByText('other at /other')).toBeVisible();
+  });
+
+  it('does not ask when the address only gains its draft id (a replace on the same path)', async () => {
+    await mount();
+    ask = true;
+    await userEvent.click(screen.getByRole('button', { name: 'add draft id' }));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(window.location.search).toBe('?draft=1');
+  });
+
+  it('asks on the browser Back button and puts the page back when declined', async () => {
+    await mount();
+    ask = true;
+    act(() => window.history.back());
+    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(1));
+    // The move is undone, and the router never saw it.
+    await waitFor(() => expect(window.location.pathname).toBe('/form'));
+    expect(screen.getByText('form')).toBeVisible();
+    expect(confirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('goes back when the Member agrees', async () => {
+    await mount();
+    ask = true;
+    confirm.mockReturnValue(true);
+    act(() => window.history.back());
+    expect(await screen.findByText('start at /start')).toBeVisible();
+    expect(confirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks on unload, and takes its hold off the router when the form goes', async () => {
+    await mount();
+    ask = true;
+    const unload = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(true);
+    confirm.mockReturnValue(true);
+    await userEvent.click(screen.getByRole('link', { name: 'other' }));
+    await screen.findByText('other at /other');
+    confirm.mockClear();
+    await userEvent.click(screen.getByRole('button', { name: 'open form' }));
+    await screen.findByText('form');
+    // Gone and back: one guard, not two.
+    await userEvent.click(screen.getByRole('link', { name: 'other' }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks exactly once for navigate(-1), and goes back when the Member agrees', async () => {
+    await mount();
+    ask = true;
+    confirm.mockReturnValue(true);
+    await userEvent.click(screen.getByRole('button', { name: 'go back' }));
+    expect(await screen.findByText('start at /start')).toBeVisible();
+    expect(confirm).toHaveBeenCalledTimes(1);
+  });
+});

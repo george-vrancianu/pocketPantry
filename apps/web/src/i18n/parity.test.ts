@@ -432,6 +432,14 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
       'plain "in stock" availability phrase, not the Pantry noun',
     ]),
   ),
+  'recipes:recipeDraft.saved|draft':
+    'the status "Draft saved" in the Recipe Draft form header; the exact copy of the ticket, next to the Recipe form it belongs to',
+  'recipes:drafts.entry|draft':
+    'the Recipes page entry "Drafts (N)", the exact copy of ticket #547; it opens the list titled "Recipe Drafts"',
+  'recipes:drafts.discard|draft':
+    'the action "Discard draft", the exact copy of ticket #547, on a Recipe Draft row and in its form',
+  'recipes:drafts.continueTitle|draft':
+    'the prompt "Continue your draft?", the exact copy of ticket #548, shown over the unfinished Recipe Drafts it lists',
   'scan:import.label|import':
     "the Scan screen's Import button adds photos to the Scan Session; it is not the Shopping Template action",
   'scan:noCamera|import':
