@@ -1,16 +1,14 @@
-import { RefreshStatusLine } from '@pocket-pantry/ui';
-import type { ReactNode } from 'react';
+import { RefreshLoader } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useRefreshScreen } from '../lib/refresh';
 
-/** The refresh status line, with its copy and the layout's refresh state. */
-export function RefreshStatus({ rest }: { rest?: ReactNode }) {
+/** The layout's refresh loader, with its copy: it drops from the top of the app while the screen refreshes. */
+export function RefreshLoaderSlot() {
   const { t } = useTranslation('screenHeader');
   const { state } = useRefreshScreen();
   return (
-    <RefreshStatusLine
+    <RefreshLoader
       state={state}
-      rest={rest}
       labels={{
         busy: t('refresh.busy'),
         done: t('refresh.done'),

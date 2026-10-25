@@ -9,24 +9,29 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { RefreshStatusLineProps } from '@pocket-pantry/ui';
+import {
+  REFRESH_LOADER_RETRACT_MS,
+  type RefreshLoaderProps,
+} from '@pocket-pantry/ui';
 import { useLocation } from 'react-router-dom';
 
-export type RefreshState = RefreshStatusLineProps['state'];
+export type RefreshState = RefreshLoaderProps['state'];
 
 type Refresh = {
   state: RefreshState;
-  /** Rises by one on each successful refresh. */
+  /** Rises by one on each successful refresh, once the loader has tucked back up. */
   successCount: number;
   run: () => Promise<void>;
 };
 
 const DONE_MS = 2500;
 const FAILED_MS = 4000;
+/** The loader stays down at least this long, so a quick refresh does not flicker. */
+export const MIN_BUSY_MS = 700;
 
 const RefreshContext = createContext<Refresh | undefined>(undefined);
 
-/** Owns the screen refresh for the app layout: the header (mark, status line) and the content region both read it. */
+/** Owns the screen refresh for the app layout: the header's mark, the loader and the content region all read it. */
 export function RefreshProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const { pathname } = useLocation();
@@ -71,12 +76,15 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
     const id = ++runId.current;
     setState('busy');
     let failed = false;
+    const started = Date.now();
     try {
       // Without `throwOnError` this waits for every query and swallows their errors.
       await queryClient.refetchQueries({ type: 'active' });
     } catch {
       failed = true;
     }
+    const hold = MIN_BUSY_MS - (Date.now() - started);
+    if (hold > 0) await new Promise((resolve) => setTimeout(resolve, hold));
     if (id !== runId.current) return;
     // A paused query (offline) resolves at once and keeps its old data: that is not an update.
     if (
@@ -94,7 +102,11 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
     }
     busy.current = false;
     setState(failed ? 'failed' : 'done');
-    if (!failed) setSuccessCount((n) => n + 1);
+    // The mark's re-entrance plays once the loader is back up, not under it.
+    if (!failed)
+      setTimeout(() => {
+        if (id === runId.current) setSuccessCount((n) => n + 1);
+      }, REFRESH_LOADER_RETRACT_MS);
   }, [queryClient, setState]);
 
   const value = useMemo(

@@ -4,6 +4,8 @@ import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PantryPage } from '../pages/Pantry/PantryPage';
 import { RecipesPage } from '../pages/Recipes/RecipesPage';
+import { REFRESH_LOADER_RETRACT_MS } from '@pocket-pantry/ui';
+import { MIN_BUSY_MS } from '../lib/refresh';
 import { AppLayout } from './AppLayout';
 import {
   renderInAppLayout,
@@ -57,6 +59,10 @@ const elapse = (ms: number) =>
   act(async () => {
     await vi.advanceTimersByTimeAsync(ms);
   });
+/** Lets the loader's minimum time down run out, so the run's outcome lands. */
+const finish = () => elapse(MIN_BUSY_MS);
+const loaderShown = () =>
+  screen.getByTestId('refresh-loader').getAttribute('data-shown');
 const tap = () =>
   fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
 const gets = (calls: Array<{ key: string }>) =>
@@ -76,11 +82,12 @@ describe('Refresh mark on a tab root', () => {
     vi.useRealTimers();
   });
 
-  it('refetches, reports Refreshing then Updated just now, and clears after 2.5 s', async () => {
+  it('refetches, drops the loader while saying Refreshing, then tucks it up and says Updated just now until 2.5 s', async () => {
     stubPantry(() => Response.json({ batches: [batch] }));
     await openPantry();
     expect(screen.getByText('Milk')).toBeInTheDocument();
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(loaderShown()).toBe('false');
     let release!: () => void;
     const gate = new Promise<void>((resolve) => (release = resolve));
     stubPantry(async () => {
@@ -89,13 +96,38 @@ describe('Refresh mark on a tab root', () => {
     });
     tap();
     expect(screen.getByRole('status')).toHaveTextContent('Refreshing…');
+    expect(loaderShown()).toBe('true');
     release();
-    await settle();
+    await finish();
     expect(screen.getByRole('status')).toHaveTextContent('Updated just now');
+    expect(loaderShown()).toBe('false');
     await elapse(2499);
     expect(screen.getByRole('status')).toHaveTextContent('Updated just now');
     await elapse(1);
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('keeps the loader down 0.7 s even when the requests answer at once', async () => {
+    stubPantry(() => Response.json({ batches: [batch] }));
+    await openPantry();
+    tap();
+    await elapse(MIN_BUSY_MS - 1);
+    expect(loaderShown()).toBe('true');
+    expect(screen.getByRole('status')).toHaveTextContent('Refreshing…');
+    await elapse(1);
+    expect(loaderShown()).toBe('false');
+    expect(screen.getByRole('status')).toHaveTextContent('Updated just now');
+  });
+
+  it('keeps the refresh copy out of the header', async () => {
+    stubPantry(() => Response.json({ batches: [batch] }));
+    await openPantry();
+    tap();
+    expect(screen.getByRole('banner')).not.toHaveTextContent('Refreshing…');
+    await finish();
+    expect(screen.getByRole('banner')).not.toHaveTextContent(
+      'Updated just now',
+    );
   });
 
   it('repeats the screen requests on a tap', async () => {
@@ -117,39 +149,40 @@ describe('Refresh mark on a tab root', () => {
       return Response.json({ batches: [batch] });
     });
     const content = () =>
-      getComputedStyle(
-        screen.getByRole('status').closest('header')!.nextElementSibling!,
-      );
+      getComputedStyle(screen.getByRole('banner').nextElementSibling!);
     expect(content().opacity).toBe('1');
     tap();
     tap();
     expect(gets(calls)).toBe(1);
     expect(content().opacity).toBe('0.55');
     release();
-    await settle();
+    await finish();
     expect(gets(calls)).toBe(1);
     expect(content().opacity).toBe('1');
   });
 
-  it('shows the failure line, keeps the data shown, and clears after 4 s', async () => {
+  it('says the failure, keeps the data shown, and clears after 4 s', async () => {
     stubPantry(() => Response.json({ batches: [batch] }));
     await openPantry();
     stubPantry(() =>
       Response.json({ code: 'boom', params: {} }, { status: 500 }),
     );
     tap();
-    await settle();
+    await finish();
     expect(screen.getByRole('status')).toHaveTextContent(
       "Couldn't refresh · showing what you had",
     );
     expect(screen.getByText('Milk')).toBeInTheDocument();
-    await elapse(3999);
+    expect(loaderShown()).toBe('true');
+    await elapse(1100);
+    expect(loaderShown()).toBe('false');
+    await elapse(3999 - 1100);
     expect(screen.getByRole('status')).not.toBeEmptyDOMElement();
     await elapse(1);
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 
-  it("re-enters the mark's head after a successful refresh, not after a failed one", async () => {
+  it("re-enters the mark's head once the loader is back up after a successful refresh, not after a failed one", async () => {
     const motion = () =>
       screen
         .getByRole('button', { name: 'Refresh' })
@@ -173,6 +206,10 @@ describe('Refresh mark on a tab root', () => {
     await settle();
     expect(motion()).toBe('tap');
     await elapse(900);
+    expect(motion()).toBe('idle');
+    await elapse(MIN_BUSY_MS + REFRESH_LOADER_RETRACT_MS - 900 - 1);
+    expect(motion()).toBe('idle');
+    await elapse(1);
     expect(motion()).toBe('reentrance');
   });
 
@@ -195,7 +232,7 @@ describe('Refresh mark on a tab root', () => {
     await settle();
     expect(gets(calls)).toBe(1);
     release();
-    await settle();
+    await finish();
     expect(screen.getByRole('status')).toHaveTextContent("Couldn't refresh");
   });
 
@@ -205,7 +242,7 @@ describe('Refresh mark on a tab root', () => {
     onlineManager.setOnline(false);
     try {
       tap();
-      await settle();
+      await finish();
       expect(screen.getByRole('status')).toHaveTextContent(
         "Couldn't refresh · showing what you had",
       );
@@ -248,7 +285,7 @@ describe('Refresh mark on a tab root', () => {
       const status = screen.getByRole('status');
       expect(status).toHaveTextContent(busy);
       release();
-      await settle();
+      await finish();
       expect(screen.getByRole('status')).toHaveTextContent(done);
     },
   );
@@ -267,7 +304,7 @@ describe('Refresh mark on a tab root', () => {
       Response.json({ code: 'boom', params: {} }, { status: 500 }),
     );
     fireEvent.click(screen.getByRole('button', { name }));
-    await settle();
+    await finish();
     expect(screen.getByRole('status')).toHaveTextContent(failed);
   });
 });
@@ -338,7 +375,7 @@ describe('Refresh state follows the screen', () => {
     openTwoScreens();
     await settle();
     tap();
-    await settle();
+    await finish();
     expect(screen.getByRole('status')).toHaveTextContent('Updated just now');
     fireEvent.click(screen.getByRole('link', { name: 'Go on' }));
     await settle();
@@ -411,7 +448,7 @@ describe('Refresh state follows the screen', () => {
     openTwoScreens();
     await settle();
     tap();
-    await settle();
+    await finish();
     expect(screen.getByRole('status')).toHaveTextContent('Updated just now');
     fireEvent.click(screen.getByRole('link', { name: 'Go on' }));
     await settle();
