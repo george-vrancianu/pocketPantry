@@ -11,12 +11,29 @@ import {
   type RecipeDraftContent,
   type RecipeDraftKind,
 } from './recipeDrafts';
+import { ApiError } from './api';
 import { trackDraftWrite } from './recipeDraftWrites';
 
 /** Quiet time after the last edit before it is sent. */
 export const AUTOSAVE_DELAY_MS = 1500;
 
-export type AutosaveStatus = 'idle' | 'saving' | 'saved';
+/** Waits before the 1st, 2nd, ... retry of a failed save; the last one repeats. */
+export const AUTOSAVE_RETRY_DELAYS_MS = [3000, 6000, 12_000, 24_000, 30_000];
+
+/**
+ * `failed`: the last save failed and is being retried (the header says so).
+ * `conflict`: another device or tab saved a newer version; autosave has stopped
+ * until the form is reloaded from the server.
+ */
+export type AutosaveStatus =
+  'idle' | 'saving' | 'saved' | 'failed' | 'conflict';
+
+const isConflict = (caught: unknown) =>
+  caught instanceof ApiError &&
+  caught.code === 'recipe_drafts.version_conflict';
+/** The cap does not clear by waiting: only the Member finishing or discarding a Recipe Draft does. */
+const isCap = (caught: unknown) =>
+  caught instanceof ApiError && caught.code === 'recipe_drafts.limit_reached';
 
 export type AutosaveOptions = {
   /** What the Recipe Draft is for, and (for a Variant) its base. Fixed once it exists. */
@@ -40,6 +57,8 @@ export type Autosave = {
   status: AutosaveStatus;
   /** The last write's error, until a write succeeds again (the cap `recipe_drafts.limit_reached` shows from it). */
   error: unknown;
+  /** True while the last save failed or lost to a newer version, so leaving would lose edits. Read when needed (it is current even before a re-render). */
+  hasUnsaved: () => boolean;
   /** The Recipe Draft's id once it exists. */
   draftId: string | null;
   /** Sends what is pending now (after a request in flight); resolves to the Recipe Draft id, or null if there is none. Never rejects. */
@@ -88,6 +107,12 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     timer: null as ReturnType<typeof setTimeout> | null,
     stopped: false,
     paused: false,
+    /** The last write failed and the edits are not on the server. */
+    failed: false,
+    failures: 0,
+    conflict: false,
+    keepalive: false,
+    disposed: false,
   });
 
   const isUnchanged = (current: string) => {
@@ -100,11 +125,17 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     );
   };
 
-  const drain = useCallback((keepalive = false): Promise<void> => {
+  const drain = useCallback(function drain(
+    keepalive = false,
+    force = false,
+  ): Promise<void> {
     const state = run.current;
     if (state.timer) clearTimeout(state.timer);
     state.timer = null;
-    if (state.stopped || state.paused) return Promise.resolve();
+    // `force` (the form closing) sends even while paused: nothing may be lost, and a Recipe Draft already consumed just refuses.
+    if (state.stopped || state.conflict || (state.paused && !force))
+      return Promise.resolve();
+    if (keepalive) state.keepalive = true;
     if (state.busy) {
       // Something is in flight: send the newest right after it.
       state.again = true;
@@ -117,7 +148,9 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
           const { content, kind, baseRecipeId } = latest.current;
           const sending = JSON.stringify(content);
           if (state.stopped || isUnchanged(sending)) break;
-          setStatus('saving');
+          // A failed save keeps saying so while it is retried.
+          if (!state.failed) setStatus('saving');
+          const { keepalive } = state;
           if (state.id === null) {
             const made = await writes.current.create({
               kind,
@@ -138,19 +171,39 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
             state.version = saved.version;
           }
           state.sent = sending;
+          state.failed = false;
+          state.failures = 0;
           setError(null);
+          // Edits made during the request (`again`) go out right after it, not a quiet period later.
         } while (state.again);
         if (!state.stopped) {
-          setStatus(
-            isUnchanged(JSON.stringify(latest.current.content))
-              ? 'saved'
-              : 'saving',
-          );
+          const settled = isUnchanged(JSON.stringify(latest.current.content));
+          setStatus(settled ? 'saved' : 'saving');
         }
       } catch (caught) {
-        // Failure handling (notice, retry, conflicts) is not here yet.
         setError(caught);
-        setStatus('idle');
+        if (state.stopped) return;
+        state.failed = true;
+        if (isConflict(caught)) {
+          state.conflict = true;
+          setStatus('conflict');
+        } else if (isCap(caught)) {
+          setStatus('idle');
+        } else {
+          setStatus('failed');
+          // Retry, a little later each time. A closed form does not retry (its one last try was this).
+          const wait =
+            AUTOSAVE_RETRY_DELAYS_MS[
+              Math.min(state.failures, AUTOSAVE_RETRY_DELAYS_MS.length - 1)
+            ];
+          state.failures += 1;
+          if (!state.disposed && !state.paused) {
+            state.timer = setTimeout(() => {
+              state.timer = null;
+              void drain();
+            }, wait);
+          }
+        }
       }
     };
     // Cleared after the assignment, even when `send` finishes without waiting.
@@ -165,17 +218,24 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     const state = run.current;
     if (state.timer) clearTimeout(state.timer);
     state.timer = null;
-    if (state.stopped || state.paused) return;
+    if (state.stopped || state.paused || state.conflict) return;
     if (isUnchanged(JSON.stringify(latest.current.content))) {
       // Back to what the server holds (or to blank): nothing is pending any more.
       if (!state.busy) {
-        setStatus((now) =>
-          now === 'saving' ? (state.id ? 'saved' : 'idle') : now,
-        );
+        if (state.failed) {
+          state.failed = false;
+          state.failures = 0;
+          setError(null);
+          setStatus(state.id ? 'saved' : 'idle');
+        } else {
+          setStatus((now) =>
+            now === 'saving' ? (state.id ? 'saved' : 'idle') : now,
+          );
+        }
       }
       return;
     }
-    setStatus('saving');
+    if (!state.failed) setStatus('saving');
     state.timer = setTimeout(() => {
       state.timer = null;
       void drain();
@@ -186,11 +246,14 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
   // Leaving the form sends what is pending; so does the page going away, which must outlive it.
   useEffect(() => {
     const onHide = () => void drain(true);
+    const state = run.current;
+    state.disposed = false;
     window.addEventListener('pagehide', onHide);
     return () => {
       window.removeEventListener('pagehide', onHide);
-      // Tracked, so a Recipe Draft read right after waits for this last write.
-      trackDraftWrite(drain());
+      state.disposed = true;
+      // Tracked, so a Recipe Draft read right after waits for this last write. Forced: also while paused.
+      trackDraftWrite(drain(false, true));
     };
   }, [drain]);
 
@@ -198,6 +261,11 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     await drain();
     return run.current.id;
   }, [drain]);
+
+  const hasUnsaved = useCallback(() => {
+    const state = run.current;
+    return !state.stopped && state.failed;
+  }, []);
 
   const stop = useCallback(() => {
     const state = run.current;
@@ -218,5 +286,5 @@ export function useRecipeDraftAutosave(options: AutosaveOptions): Autosave {
     schedule();
   }, [schedule]);
 
-  return { status, error, draftId, flush, pause, resume, stop };
+  return { status, error, draftId, hasUnsaved, flush, pause, resume, stop };
 }

@@ -18,6 +18,8 @@ export function useRecipeDraftRoute(): {
   error: unknown;
   /** Call with the id once it exists: puts it in the URL by replacing the entry. */
   onDraftId: (id: string) => void;
+  /** Reload the form on this Recipe Draft as fetched now (a version conflict's "Load latest"): the form remounts on it, with its new version. */
+  adopt: (latest: RecipeDraftView) => void;
 } {
   const location = useLocation();
   const navigate = useNavigate();
@@ -28,6 +30,9 @@ export function useRecipeDraftRoute(): {
     key: location.key,
     seen: location.key,
     own: null as string | null,
+    /** A Recipe Draft fetched on purpose to replace the form's content. */
+    adopted: null as RecipeDraftView | null,
+    reloads: 0,
   });
   if (formInstance.seen !== location.key) {
     const ours = formInstance.own !== null && draftParam === formInstance.own;
@@ -35,16 +40,35 @@ export function useRecipeDraftRoute(): {
       key: ours ? formInstance.key : location.key,
       seen: location.key,
       own: ours ? formInstance.own : null,
+      adopted: null,
+      reloads: 0,
     });
   }
   const resumeId =
-    draftParam !== null && draftParam !== formInstance.own ? draftParam : null;
+    draftParam !== null &&
+    draftParam !== formInstance.own &&
+    !formInstance.adopted
+      ? draftParam
+      : null;
   const resuming = useRecipeDraft(resumeId, formInstance.key);
   return {
-    formKey: formInstance.key,
-    resumed: resumeId !== null ? resuming.data : undefined,
+    formKey: formInstance.reloads
+      ? `${formInstance.key}:${formInstance.reloads}`
+      : formInstance.key,
+    resumed: formInstance.adopted
+      ? formInstance.adopted
+      : resumeId !== null
+        ? resuming.data
+        : undefined,
     loading: resumeId !== null && !resuming.data && !resuming.error,
     error: resumeId !== null ? resuming.error : null,
+    adopt: (latest) =>
+      setFormInstance((current) => ({
+        ...current,
+        own: null,
+        adopted: latest,
+        reloads: current.reloads + 1,
+      })),
     onDraftId: (id) => {
       if (id === draftParam) return;
       setFormInstance((current) => ({ ...current, own: id }));

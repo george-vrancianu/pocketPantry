@@ -182,6 +182,7 @@
   },
   "recipe_drafts": {
     "not_found": "Opskriftkladden findes ikke mere. Den kan være kasseret eller gemt for længe.",
-    "limit_reached": "Du har allerede {{max}} opskriftkladder. Gør en færdig eller kassér en for at starte en ny."
+    "limit_reached": "Du har allerede {{max}} opskriftkladder. Gør en færdig eller kassér en for at starte en ny.",
+    "version_conflict": "Denne opskriftkladde er ændret på en anden enhed. Hent den nyeste version for at fortsætte."
   }
 }

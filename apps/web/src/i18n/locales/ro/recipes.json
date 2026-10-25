@@ -235,7 +235,13 @@
   },
   "recipeDraft": {
     "saving": "Se salvează…",
-    "saved": "Ciornă salvată"
+    "saved": "Ciornă salvată",
+    "saveFailed": "Nu am putut salva ciorna de rețetă, încerc din nou",
+    "leaveConfirm": "Ultimele tale modificări la această ciornă de rețetă nu sunt salvate încă. Pleci oricum?",
+    "conflictTitle": "Această ciornă de rețetă a fost modificată pe alt dispozitiv",
+    "conflictHint": "Modificările de aici nu sunt salvate. Încarcă ultima versiune ca să continui de la ea.",
+    "loadLatest": "Încarcă ultima versiune",
+    "loadLatestFailed": "Nu am putut încărca ultima versiune. Încearcă din nou."
   },
   "drafts": {
     "entry": "Ciorne ({{count}})",

@@ -182,6 +182,7 @@
   },
   "recipe_drafts": {
     "not_found": "That Recipe Draft is gone. It may have been discarded or kept too long.",
-    "limit_reached": "You already keep {{max}} Recipe Drafts. Finish or discard one to start another."
+    "limit_reached": "You already keep {{max}} Recipe Drafts. Finish or discard one to start another.",
+    "version_conflict": "This Recipe Draft was changed on another device. Load the latest to carry on."
   }
 }

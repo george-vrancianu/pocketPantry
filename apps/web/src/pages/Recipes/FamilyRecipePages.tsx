@@ -9,7 +9,9 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { RecipeDraftConflictBanner } from '../../components/RecipeDraftConflictBanner';
 import { RecipeDraftStatus } from '../../components/RecipeDraftStatus';
+import { useLeaveGuard } from '../../lib/useLeaveGuard';
 import {
   contentOfForm,
   formOfContent,
@@ -107,6 +109,7 @@ export function NewRecipePage() {
       supplied={route.resumed ? null : suppliedOf(location.state)}
       resumed={route.resumed}
       onDraftId={route.onDraftId}
+      onLoadLatest={route.adopt}
     />
   );
 }
@@ -154,10 +157,12 @@ function NewRecipeContent({
   supplied,
   resumed,
   onDraftId,
+  onLoadLatest,
 }: {
   supplied: NewRecipeState | null;
   resumed?: RecipeDraftView;
   onDraftId: (id: string) => void;
+  onLoadLatest: (latest: RecipeDraftView) => void;
 }) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
@@ -261,6 +266,8 @@ function NewRecipeContent({
     resumed: resumed ? { id: resumed.id, version: resumed.version } : undefined,
   });
   const { draftId, flush } = autosave;
+  // A save that failed (or lost to another device) is not on the server: ask before leaving.
+  useLeaveGuard(autosave.hasUnsaved, t('recipes:recipeDraft.leaveConfirm'));
   const [discarding, setDiscarding] = useState(false);
   // A read that counted against a Cap must not be lost: no waiting for an edit.
   useEffect(() => {
@@ -318,6 +325,12 @@ function NewRecipeContent({
           />
         ) : null}
         <RecipeDraftLimitNotice error={autosave.error} />
+        {autosave.status === 'conflict' && draftId ? (
+          <RecipeDraftConflictBanner
+            draftId={draftId}
+            onLoaded={onLoadLatest}
+          />
+        ) : null}
         <FamilyRecipeForm
           heading={t('recipes:family.newRecipeHeading')}
           description={t('recipes:family.newRecipeHint')}
