@@ -130,10 +130,14 @@ describe('ShoppingPage', () => {
     const pill = await screen.findByRole('button', {
       name: 'Import from a template',
     });
-    let card = screen.getByText('1 to buy').parentElement;
-    while (card && !card.contains(pill)) card = card.parentElement;
+    let row = screen.getByText('1 to buy').parentElement;
+    while (row && !row.contains(pill)) row = row.parentElement;
+    // The bar runs the card's full width under that row, not beside the pill.
+    const bar = screen.getByRole('progressbar');
+    expect(row?.contains(bar)).toBe(false);
+    const card = row?.parentElement;
     expect(card?.contains(header)).toBe(false);
-    expect(card?.contains(screen.getByRole('progressbar'))).toBe(true);
+    expect(card?.contains(bar)).toBe(true);
     expect(
       within(header).queryByRole('button', { name: 'Import from a template' }),
     ).toBeNull();
