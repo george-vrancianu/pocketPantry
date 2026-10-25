@@ -1,4 +1,5 @@
-import { screen } from '@testing-library/react';
+import { useState } from 'react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
@@ -296,10 +297,11 @@ describe('RecipeForm', () => {
     );
     const timer = screen.getByLabelText('Timer for Step 1 (minutes)');
     await user.clear(timer);
+    expect(screen.queryByText(/The timer must be a positive/)).toBeNull();
+    await enter(timer, '0.001');
     expect(
       screen.getByText(/The timer must be a positive/),
     ).toBeInTheDocument();
-    await enter(timer, '0.001');
     expect(save).toBeDisabled();
     await user.clear(timer);
     await enter(timer, '0.0167');
@@ -438,9 +440,9 @@ describe('RecipeForm Steps (#591)', () => {
     vi.unstubAllGlobals();
   });
 
-  const show = (withTip = false) => {
+  const show = (withTip = false, hideable = false) => {
     vi.stubGlobal('fetch', stubApi({}).fetchMock);
-    return renderWithProviders(
+    const form = (
       <RecipeForm
         recipe={
           withTip
@@ -453,8 +455,21 @@ describe('RecipeForm Steps (#591)', () => {
         catalog={catalog}
         onSaved={vi.fn()}
         onCancel={vi.fn()}
-      />,
+      />
     );
+    /** Unmounts only the form, keeping the toast provider up. */
+    const Hideable = () => {
+      const [hidden, setHidden] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setHidden(true)}>
+            Hide form
+          </button>
+          {hidden ? null : form}
+        </>
+      );
+    };
+    return renderWithProviders(hideable ? <Hideable /> : form);
   };
 
   it('turns the Timer chip into a minutes field starting at 5, and × back', async () => {
@@ -469,9 +484,19 @@ describe('RecipeForm Steps (#591)', () => {
     const timer = screen.getByLabelText('Timer for Step 1 (minutes)');
     expect(timer).toHaveValue('5');
     await user.clear(timer);
+    expect(screen.queryByText(/The timer must be a positive/)).toBeNull();
+    await user.type(timer, 'x');
+    const error = screen.getByText(/The timer must be a positive number/);
+    expect(timer).toHaveAttribute('aria-describedby', error.id);
+    await user.clear(timer);
+    await user.tab();
+    expect(screen.queryByLabelText('Timer for Step 1 (minutes)')).toBeNull();
     expect(
-      screen.getByText(/The timer must be a positive number of minutes/),
+      screen.getByRole('button', { name: 'Add a timer to Step 1' }),
     ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: 'Add a timer to Step 1' }),
+    );
     await user.click(
       screen.getByRole('button', { name: 'Remove the timer from Step 1' }),
     );
@@ -511,7 +536,7 @@ describe('RecipeForm Steps (#591)', () => {
 
   it('removes a Step with an Undo toast that restores it, and closes the toast on unmount', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    const view = show();
+    show(false, true);
     const user = userEvent.setup({
       advanceTimers: vi.advanceTimersByTime,
     });
@@ -526,8 +551,11 @@ describe('RecipeForm Steps (#591)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Remove Step 2' }));
     expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
-    view.unmount();
-    await vi.advanceTimersByTimeAsync(10_000);
-    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Hide form' }));
+    expect(screen.queryByLabelText('Step 1')).toBeNull();
+    // Gone within the toast's exit animation, well before its 5 s window ends.
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull(),
+    );
   });
 });

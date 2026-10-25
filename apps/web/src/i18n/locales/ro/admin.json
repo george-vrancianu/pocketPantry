@@ -217,8 +217,7 @@
       "addTimer": "Cronometru",
       "addTimerFor": "Adaugă un cronometru la pasul {{number}}",
       "clearTimer": "Elimină cronometrul de la pasul {{number}}",
-      "minutes": "min",
-      "removed": "Pasul {{number}} a fost eliminat"
+      "minutes": "min"
     },
     "variant": {
       "title": "Creează o variantă",

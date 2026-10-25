@@ -214,8 +214,7 @@
       "addTimer": "Timer",
       "addTimerFor": "Tilføj en timer til trin {{number}}",
       "clearTimer": "Fjern timeren fra trin {{number}}",
-      "minutes": "min",
-      "removed": "Trin {{number}} er fjernet"
+      "minutes": "min"
     },
     "variant": {
       "title": "Lav en variant",

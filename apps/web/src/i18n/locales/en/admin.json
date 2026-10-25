@@ -214,8 +214,7 @@
       "addTimer": "Timer",
       "addTimerFor": "Add a timer to Step {{number}}",
       "clearTimer": "Remove the timer from Step {{number}}",
-      "minutes": "min",
-      "removed": "Removed Step {{number}}"
+      "minutes": "min"
     },
     "variant": {
       "title": "Make a Variant",

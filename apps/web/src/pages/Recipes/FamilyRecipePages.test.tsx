@@ -2367,9 +2367,7 @@ describe('Recipe editor Steps (#591)', () => {
     expect(timer).toHaveValue('5');
     expect(screen.getAllByText('min')).toHaveLength(2);
     await user.clear(timer);
-    expect(
-      screen.getByText(/The timer must be a positive number of minutes/),
-    ).toBeVisible();
+    expect(screen.queryByText(/The timer must be a positive/)).toBeNull();
     await user.type(timer, 'x');
     expect(
       screen.getByText(/The timer must be a positive number of minutes/),
