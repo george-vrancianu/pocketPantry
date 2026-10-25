@@ -36,7 +36,7 @@ export function SetupReviewPage() {
   if (!scan || scanDisplayState(scan) !== 'read')
     return leaving ? null : <Navigate to={INTRO_REVIEW_PATH} replace />;
 
-  const onBack = () => navigate(INTRO_REVIEW_PATH);
+  const onBack = () => navigate(INTRO_REVIEW_PATH, { replace: true });
   const onRetake = () => {
     const { mode } = scan;
     setLeaving(true);

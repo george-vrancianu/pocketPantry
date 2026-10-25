@@ -336,6 +336,35 @@ describe('Setup 1: Snap, Setup overview, All set', () => {
     expect(bulkSaves(calls)).toHaveLength(0);
   });
 
+  it('stays on Snap when Add all saves nothing because no card had a savable line', async () => {
+    const { user, calls } = await openSnap({
+      routes: {
+        'POST /api/scan/ingredients': () =>
+          Response.json({
+            lines: [
+              line('bag', 'SACOSA', {
+                match: null,
+                excluded: { reason: 'other' },
+              }),
+            ],
+          }),
+      },
+    });
+    await snapPhotos(user);
+    await openOverview(user);
+    const addAll = screen.getByRole('button', { name: 'Add all' });
+    await waitFor(() => expect(addAll).toBeEnabled());
+    await user.click(addAll);
+
+    expect(
+      await screen.findByRole('radiogroup', {
+        name: "What's in front of you?",
+      }),
+    ).toBeInTheDocument();
+    expect(where()).toBe('/intro/snap');
+    expect(bulkSaves(calls)).toHaveLength(0);
+  });
+
   it('moves on after something was saved even when the last card is discarded', async () => {
     const { user } = await openSnap();
     await snapPhotos(user, 2);

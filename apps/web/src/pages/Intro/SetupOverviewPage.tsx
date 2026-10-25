@@ -42,7 +42,6 @@ export function SetupOverviewPage() {
   const backToSnapIfNothingSaved = () => {
     if (!savedSteps.has('snap')) navigate(INTRO_PATHS.snap, { replace: true });
   };
-  const addedAll = () => {};
 
   return (
     <IntroLook>
@@ -54,7 +53,9 @@ export function SetupOverviewPage() {
           cardPath: setupReviewPath,
           importOffered: false,
           onCardSaved: (lines) => recordSaved({ batches: lines }, 'snap'),
-          afterAddAll: addedAll,
+          afterAddAll: (added) => {
+            if (added === 0) backToSnapIfNothingSaved();
+          },
           afterDiscardAll: backToSnapIfNothingSaved,
           afterRemove: (remaining) => {
             if (remaining === 0) backToSnapIfNothingSaved();
