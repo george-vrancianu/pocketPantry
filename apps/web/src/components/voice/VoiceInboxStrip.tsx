@@ -44,22 +44,30 @@ export function VoiceInboxStrip() {
   const [mounted, setMounted] = useState(false);
   const up = isStripUp(state);
 
-  // Announced assertively once, when a note fails, even if it fails while the strip is hidden. Kept
-  // here, not in the strip, which unmounts whenever it hides and would announce the same failure again.
+  // Announced assertively once, when a note fails, even if it fails while the strip is hidden. The
+  // announced count lives in the Voice Note store: this component remounts when the Dock hides or the
+  // Member changes page, and would announce the same failure again. A drop (a failed note retried or
+  // discarded) takes the alert down rather than announcing the smaller count.
   const failed = state.inbox.failed;
-  const [seenFailed, setSeenFailed] = useState(0);
-  const [alertPending, setAlertPending] = useState(false);
-  if (failed !== seenFailed) {
-    setSeenFailed(failed);
-    setAlertPending(failed > seenFailed);
+  const [alertedAt, setAlertedAt] = useState(0);
+  const [wasUp, setWasUp] = useState(up);
+  const isNew = failed > voiceNote.announcedFailed();
+  if (isNew && alertedAt !== failed) setAlertedAt(failed);
+  if (up !== wasUp) {
+    setWasUp(up);
+    // The alert goes with the strip, which comes back without it.
+    if (!up && !isNew) setAlertedAt(0);
   }
+  useEffect(() => {
+    voiceNote.announceFailed(failed);
+  }, [failed]);
+  const alerting = alertedAt > 0 && failed >= alertedAt;
   return (
     <>
       {up ? (
         <Strip
           state={state}
-          alertPending={alertPending}
-          onAlerted={() => setAlertPending(false)}
+          alerting={alerting}
           openSheet={() => {
             setMounted(true);
             setWantSheet(true);
@@ -84,13 +92,11 @@ export function VoiceInboxStrip() {
 
 function Strip({
   state,
-  alertPending,
-  onAlerted,
+  alerting,
   openSheet,
 }: {
   state: VoiceNoteState;
-  alertPending: boolean;
-  onAlerted: () => void;
+  alerting: boolean;
   openSheet: () => void;
 }) {
   const { t } = useTranslation('voice');
@@ -104,14 +110,6 @@ function Strip({
   ]
     .filter(Boolean)
     .join(' · ');
-
-  // The alert stays up while this strip is, once a failure has put it there.
-  const [alerting, setAlerting] = useState(alertPending);
-  if (alertPending && !alerting) setAlerting(true);
-  if (failed === 0 && alerting) setAlerting(false);
-  useEffect(() => {
-    if (alertPending) onAlerted();
-  }, [alertPending, onAlerted]);
 
   const open = () => {
     if (ready === 1) voiceNote.openReady();

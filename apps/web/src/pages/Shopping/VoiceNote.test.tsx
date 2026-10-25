@@ -28,7 +28,13 @@ import {
   pressDown,
   useVoiceTimers,
 } from '../../test/voiceHold';
-import { renderInAppLayout, stubApi } from '../../test/render';
+import {
+  renderInAppLayout,
+  renderWithProviders,
+  stubApi,
+} from '../../test/render';
+import { AppLayout } from '../../components/AppLayout';
+import { Route, Routes } from 'react-router-dom';
 import { scanLanguagePreference } from '../../test/scan';
 import { stubMotion } from '../../test/viewport';
 import { resetRowFlash } from '../../lib/rowFlash';
@@ -560,6 +566,54 @@ describe('Voice Note on the Shopping List', () => {
 
       expect(strip).toHaveTextContent('1 failed');
       expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('does not announce a failed note again after the Member goes to another page', async () => {
+      setup({ note: () => error('voice.provider_unavailable', 502) });
+      renderWithProviders(
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/shopping" element={<ShoppingPage />} />
+            <Route path="/pantry" element={<p>Pantry page</p>} />
+          </Route>
+        </Routes>,
+        { route: '/shopping' },
+      );
+      fireEvent.pointerUp(await hold());
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        '1 Voice Note failed',
+      );
+
+      fireEvent.click(screen.getByRole('link', { name: 'Pantry' }));
+      await screen.findByText('Pantry page');
+
+      expect(await screen.findByText('1 failed')).toBeVisible();
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('takes the alert down, not announcing a smaller count, when one of two failed notes is discarded', async () => {
+      setup({ note: () => error('voice.provider_unavailable', 502) });
+      renderInAppLayout(<ShoppingPage />, '/shopping');
+      fireEvent.pointerUp(await hold());
+      await screen.findByText('1 failed');
+      fireEvent.pointerUp(await hold());
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        '2 Voice Notes failed',
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Voice Inbox',
+      });
+      await userEvent.click(
+        within(dialog).getAllByRole('button', { name: /^Discard/ })[0],
+      );
+
+      await waitFor(() =>
+        expect(within(dialog).getAllByRole('listitem')).toHaveLength(1),
+      );
+      // The sheet hides the strip from assistive tech, but a live region still speaks when it changes.
+      expect(screen.queryByRole('alert', { hidden: true })).toBeNull();
     });
 
     it('retries a failed note from its row in the same Spoken Language', async () => {
