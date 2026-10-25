@@ -43,6 +43,7 @@ const detail: RecipeDetail = {
   tips: [],
   base: null,
   variants: [],
+  familyCopyId: null,
   diff: null,
   guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
   allergens: { items: [], uncheckedCount: 0 },

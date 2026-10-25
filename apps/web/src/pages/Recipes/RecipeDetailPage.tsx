@@ -12,7 +12,9 @@ import {
 } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
+import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { useAddToFamily } from '../../lib/addToFamily';
 import { SourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
@@ -26,17 +28,28 @@ import type { RecipeDetailLine } from '../../lib/recipes';
 import { AllergyWarningBanner } from './components/AllergyWarningBanner';
 import { RecipeHero } from './components/RecipeHero';
 import { RecipeHeader } from './components/RecipeHeader';
+import {
+  PREVIEW_BAR_CLEARANCE,
+  PREVIEW_BAR_HEIGHT,
+  PreviewBar,
+} from './components/PreviewBar';
+import { PreviewNote } from './components/PreviewNote';
 import { linesToAdd } from './components/PantryStatus';
 import { DETAIL_SECTIONS, type DetailTab } from './components/sections';
 
 /** One Recipe. Keyed by id so Servings and add results never leak across a Variant <-> base link. */
-export function RecipeDetailPage() {
+export function RecipeDetailPage({ preview = false }: { preview?: boolean }) {
   const { id = '' } = useParams();
-  return <RecipeDetail key={id} id={id} />;
+  return <RecipeDetail key={id} id={id} preview={preview} />;
+}
+
+/** `/recipes/explore/:id`: a Catalog Recipe's read-only preview, in the detail page's preview mode. */
+export function RecipePreviewPage() {
+  return <RecipeDetailPage preview />;
 }
 
 /** Header, then the sections; a Variant links back to its base. */
-function RecipeDetail({ id }: { id: string }) {
+function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
   const { t } = useTranslation(['recipes', 'common']);
   const query = useRecipe(id);
   const recipe = query.data;
@@ -88,11 +101,33 @@ function RecipeDetail({ id }: { id: string }) {
     setTab(next);
     window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   };
+  // The toasts of an add sit above the bar that replaces the Dock.
+  const addToFamily = useAddToFamily(
+    preview ? { toastBottom: PREVIEW_BAR_CLEARANCE } : {},
+  );
+  const addState = recipe
+    ? addToFamily.stateOf({
+        id: recipe.id,
+        title: recipe.title,
+        familyCopyId: recipe.familyCopyId,
+      })
+    : undefined;
   const toBuy = match?.shortOrMissingCount ?? 0;
 
+  // The Family's own Recipes have no preview; they open as themselves.
+  if (preview && recipe && recipe.owner === 'family') {
+    return <Navigate replace to={`/recipes/${recipe.id}`} />;
+  }
   return (
     <>
-      <RecipeHeader recipe={recipe} />
+      {preview ? (
+        <AppScreenHeader
+          back={{ label: t('recipes:back'), href: '/recipes/explore' }}
+          {...(recipe ? {} : { title: t('recipes:explore.title') })}
+        />
+      ) : (
+        <RecipeHeader recipe={recipe} />
+      )}
       <Stack spacing={2.5}>
         {query.error ? (
           <Alert>
@@ -104,7 +139,13 @@ function RecipeDetail({ id }: { id: string }) {
         {query.isPending ? <Spinner label={t('common:loading')} /> : null}
         {recipe ? (
           <>
-            <RecipeHero recipe={recipe} servings={servings} />
+            <RecipeHero
+              recipe={recipe}
+              servings={servings}
+              {...(preview
+                ? { preview: { inFamily: addState?.status !== 'none' } }
+                : {})}
+            />
             {recipe.sourceLink ? (
               <Box>
                 <SourceLink
@@ -157,6 +198,19 @@ function RecipeDetail({ id }: { id: string }) {
                     key={key}
                     recipe={recipe}
                     servings={servings}
+                    preview={
+                      preview
+                        ? {
+                            stateOf: (variant) =>
+                              addToFamily.stateOf({
+                                id: variant.id,
+                                title: variant.title,
+                                familyCopyId: variant.familyCopyId,
+                              }),
+                            onAdd: (variant) => void addToFamily.add(variant),
+                          }
+                        : undefined
+                    }
                     onServingsChange={(next) => {
                       setPicked(next);
                       setAddedList(false);
@@ -182,14 +236,28 @@ function RecipeDetail({ id }: { id: string }) {
                   />
                 ),
               )}
+              {preview ? <PreviewNote /> : null}
             </Stack>
           </>
         ) : null}
       </Stack>
+      {preview && recipe && addState ? (
+        <>
+          {/* Room under the content for the fixed bar. */}
+          <Box aria-hidden sx={{ height: PREVIEW_BAR_HEIGHT }} />
+          <PreviewBar
+            recipeId={recipe.id}
+            title={recipe.title}
+            canMakeVariant={!recipe.archived && !recipe.base?.archived}
+            state={addState}
+            onAdd={() => void addToFamily.add(recipe)}
+          />
+        </>
+      ) : null}
       <Snackbar
         open={toast !== null}
         onClose={() => setToast(null)}
-        bottom="aboveDock"
+        bottom={preview ? PREVIEW_BAR_CLEARANCE : 'aboveDock'}
       >
         <Alert severity="success" role="status">
           {toast}

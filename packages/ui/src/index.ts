@@ -148,6 +148,7 @@ export {
   BackIcon,
   MoreIcon,
   BranchIcon,
+  EyeIcon,
   RunningLowIcon,
   MicIcon,
   MicOffIcon,

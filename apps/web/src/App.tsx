@@ -28,7 +28,10 @@ import {
   NewVariantPage,
 } from './pages/Recipes/FamilyRecipePages';
 import { CookTonightPage } from './pages/Recipes/CookTonightPage';
-import { RecipeDetailPage } from './pages/Recipes/RecipeDetailPage';
+import {
+  RecipeDetailPage,
+  RecipePreviewPage,
+} from './pages/Recipes/RecipeDetailPage';
 import { RecipeFromLinkPage } from './pages/Recipes/RecipeFromLinkPage';
 import { RecipeDraftsPage } from './pages/Recipes/RecipeDraftsPage';
 import { RecipesPage } from './pages/Recipes/RecipesPage';
@@ -93,6 +96,10 @@ export function App() {
               <Route
                 path="recipes/from-link"
                 element={<RecipeFromLinkPage />}
+              />
+              <Route
+                path="recipes/explore/:id"
+                element={<RecipePreviewPage />}
               />
               <Route path="recipes/:id" element={<RecipeDetailPage />} />
               <Route

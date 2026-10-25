@@ -1,5 +1,5 @@
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@pocket-pantry/ui';
 import { apiRequest } from './api';
@@ -44,12 +44,30 @@ export const refreshAfterCopy = (queryClient: QueryClient) =>
  */
 export function useAddToFamily({
   onNet,
+  toastBottom,
 }: {
   /** +1 when a tap made a copy, -1 when Undo archived it (the Back badge counts net adds). */
   onNet?: (delta: 1 | -1) => void;
+  /** Distance of the toasts from the bottom, px, when a bar sits where the Dock would. */
+  toastBottom?: number | string;
 } = {}) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
-  const toast = useToast();
+  const toastApi = useToast();
+  const toast = useMemo(
+    () => ({
+      show: (
+        message: string,
+        options: Parameters<typeof toastApi.show>[1] = {},
+      ) =>
+        toastApi.show(
+          message,
+          toastBottom === undefined
+            ? options
+            : { ...options, bottom: toastBottom },
+        ),
+    }),
+    [toastApi, toastBottom],
+  );
   const queryClient = useQueryClient();
   const [overrides, setOverrides] = useState<Record<string, AddState>>({});
   // The copy request of each source in flight, so Undo can wait for the copy id.

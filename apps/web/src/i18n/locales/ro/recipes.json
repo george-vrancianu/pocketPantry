@@ -296,5 +296,13 @@
     "showMore_one": "Arată încă {{count}}",
     "showMore_few": "Arată încă {{count}}",
     "showMore_other": "Arată încă {{count}}"
+  },
+  "preview": {
+    "eyebrow": "Explorează · Rețetă din Catalog",
+    "note": "Previzualizezi o rețetă din Catalog. Adaug-o la Rețetele tale ca să o schimbi, să o planifici sau să o gătești din lista ta.",
+    "addShort": "Adaugă în familie",
+    "inFamily": "În Rețetele tale",
+    "openCopy": "{{title}} este în Rețetele tale. Deschide-o",
+    "actions": "Acțiuni pentru această rețetă"
   }
 }

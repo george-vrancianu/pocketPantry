@@ -13,7 +13,11 @@ import type {
   PantryMatch,
   RecipeDetail,
   RecipeDetailLine,
+  RecipeVariantItem,
 } from '../../../lib/recipes';
+import type { AddState } from '../../../lib/addToFamily';
+import { AddToFamilyButton } from '../../../components/AddToFamilyButton';
+import { recipeHref } from '../previewHref';
 import { GuidanceSection } from './GuidanceSection';
 import { IngredientList, lineAmount, type LineAllergy } from './IngredientList';
 import { OwnerBadge } from './OwnerBadge';
@@ -23,7 +27,15 @@ import { Section } from './Section';
 import { ServingsStepper } from './Servings';
 import { StepList, TipCallout } from './StepList';
 
+/** What a Catalog Recipe's preview adds to its sections: its Variants carry add buttons and open previews. */
+export type PreviewSectionProps = {
+  stateOf: (variant: RecipeVariantItem) => AddState;
+  onAdd: (variant: RecipeVariantItem) => void;
+};
+
 export type SectionProps = {
+  /** Set on a Catalog Recipe's preview. */
+  preview?: PreviewSectionProps | undefined;
   recipe: RecipeDetail;
   /** The Servings picked; the Recipe's own until the Member steps it. */
   servings: number;
@@ -280,12 +292,16 @@ function WhatsDifferentSection({ recipe }: SectionProps) {
 }
 
 /** A base Recipe's Variants with their Cuisine and Method. */
-function VariantsSection({ recipe }: SectionProps) {
+function VariantsSection({ recipe, preview }: SectionProps) {
   const { t } = useTranslation('recipes');
   if (recipe.parentId !== null) return null;
+  // The preview shows the Catalog's Variants only; the Family's own are reached from its copy.
+  const variants = preview
+    ? recipe.variants.filter((variant) => variant.owner === 'catalog')
+    : recipe.variants;
   return (
     <Section title={t('sections.variants')}>
-      {recipe.variants.length === 0 ? (
+      {variants.length === 0 ? (
         <Typography color="text.secondary">{t('noVariants')}</Typography>
       ) : (
         <Stack
@@ -293,11 +309,30 @@ function VariantsSection({ recipe }: SectionProps) {
           spacing={1}
           sx={{ listStyle: 'none', m: 0, p: 0 }}
         >
-          {recipe.variants.map((variant) => (
-            <Box component="li" key={variant.id}>
-              <Link href={`/recipes/${variant.id}`}>{variant.title}</Link>{' '}
-              <OwnerBadge owner={variant.owner} />
-              <RecipeMeta cuisine={variant.cuisine} method={variant.method} />
+          {variants.map((variant) => (
+            <Box
+              component="li"
+              key={variant.id}
+              sx={
+                preview
+                  ? { display: 'flex', alignItems: 'center', gap: '10px' }
+                  : undefined
+              }
+            >
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Link href={recipeHref(variant.id, preview !== undefined)}>
+                  {variant.title}
+                </Link>{' '}
+                <OwnerBadge owner={variant.owner} />
+                <RecipeMeta cuisine={variant.cuisine} method={variant.method} />
+              </Box>
+              {preview ? (
+                <AddToFamilyButton
+                  title={variant.title}
+                  state={preview.stateOf(variant)}
+                  onAdd={() => preview.onAdd(variant)}
+                />
+              ) : null}
             </Box>
           ))}
         </Stack>

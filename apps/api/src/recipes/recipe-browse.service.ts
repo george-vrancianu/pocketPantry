@@ -222,10 +222,15 @@ export class RecipeBrowseService {
       locale,
       viewerAllergies,
     );
+    const familyCopyId =
+      row.familyId === null
+        ? ((await this.liveCopies(familyId, [row.id])).get(row.id) ?? null)
+        : null;
     return {
       ...resolved,
       base,
       variants,
+      familyCopyId,
       diff,
       allergens,
       allergyWarning,
@@ -288,6 +293,10 @@ export class RecipeBrowseService {
         ),
       );
     const titles = await recipeTitles(this.database, rows, locale);
+    const copies = await this.liveCopies(
+      familyId,
+      rows.filter((r) => r.familyId === null).map((r) => r.id),
+    );
     const ref = await this.namedRefs(
       this.database,
       catalogScope(familyId),
@@ -301,6 +310,7 @@ export class RecipeBrowseService {
         cuisine: ref.cuisine(row.cuisineId),
         method: ref.method(row.methodId),
         owner: ownerOf(row),
+        familyCopyId: copies.get(row.id) ?? null,
       }))
       .sort((a, b) => byTitle(locale)(a, b) || a.id.localeCompare(b.id));
   }
