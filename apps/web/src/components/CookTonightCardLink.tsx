@@ -1,6 +1,5 @@
-import { Box, displayType, Gator, tokens } from '@pocket-pantry/ui';
+import { Box, displayType, Gator, Link, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import type { CookTonightCard } from '../lib/cookTonight';
 import { cookTonightPanelState } from '../lib/cookTonightPanel';
 import { useGatorAlt } from '../lib/useGatorAlt';
@@ -76,19 +75,9 @@ function EmptyPot() {
         sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', px: '4px' }}
       >
         {links.map(({ to, label }) => (
-          <Box
-            key={to}
-            component={Link}
-            to={to}
-            sx={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: tokens.color.accent,
-              textDecoration: 'none',
-            }}
-          >
+          <Link key={to} href={to} underline="none" sx={{ fontSize: 14 }}>
             {label}
-          </Box>
+          </Link>
         ))}
       </Box>
     </Box>

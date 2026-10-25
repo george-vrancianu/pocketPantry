@@ -1,9 +1,12 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactNode } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Batch } from '../../../lib/pantry';
 import type { ShoppingItem, ShoppingList } from '../../../lib/shopping';
+import { useCookTonight } from '../../../lib/cookTonight';
+import { localIso } from '../../../lib/pantry';
 import { renderWithProviders, stubApi } from '../../../test/render';
 import { stubMotion } from '../../../test/viewport';
 import { BudgetWidget, NutritionWidget } from './PlaceholderWidgets';
@@ -825,17 +828,32 @@ describe('CookTonightWidget for a Family with no Recipes', () => {
   function Where() {
     return <p>at {useLocation().pathname}</p>;
   }
-  function renderAt(size: 'small' | 'wide' | 'tall' = 'wide') {
+  /** Shares Cook Tonight's query with the Widget, so it shows once that answer is in. */
+  function CookTonightProbe() {
+    // oxlint-disable-next-line react/purity -- same key as the Widget's own call; the test day never rolls over
+    const { data } = useCookTonight(localIso(new Date()), false, 'family');
+    return data ? <p>ct ready</p> : null;
+  }
+  function renderAt(
+    size: 'small' | 'wide' | 'tall' = 'wide',
+    probe?: ReactNode,
+  ) {
     renderWithProviders(
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <CookTonightWidget size={size} columns={size === 'tall' ? 4 : 2} />
-          }
-        />
-        <Route path="*" element={<Where />} />
-      </Routes>,
+      <>
+        {probe}
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <CookTonightWidget
+                size={size}
+                columns={size === 'tall' ? 4 : 2}
+              />
+            }
+          />
+          <Route path="*" element={<Where />} />
+        </Routes>
+      </>,
     );
   }
   const POT = /My pot's empty!/;
@@ -916,12 +934,15 @@ describe('CookTonightWidget for a Family with no Recipes', () => {
       'GET /api/recipes': () => new Promise<Response>(() => {}),
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderAt();
+    renderAt('wide', <CookTonightProbe />);
 
-    // Cook Tonight has been asked (and answers empty); the list never answers.
-    await waitFor(() =>
-      expect(calls.map((call) => call.key)).toContain('GET /api/recipes'),
-    );
+    // Cook Tonight has answered (empty); only the Recipe list is still pending.
+    await screen.findByText('ct ready');
+    expect(calls.map((call) => call.key)).toContain('GET /api/recipes');
+    const region = screen.getByRole('region', { name: 'Cook tonight' });
+    expect(
+      within(region).getByRole('progressbar', { name: 'Loading' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(POT)).toBeNull();
     expect(screen.queryByRole('link', { name: /^Cook tonight, / })).toBeNull();
   });
