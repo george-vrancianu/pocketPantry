@@ -28,7 +28,7 @@ type Props = {
   /** Told when the camera overlay opens or closes, so a host can leave Escape to the overlay. */
   onCameraOpenChange?: (open: boolean) => void;
   /** Scan several, from the camera: the host closes the sheet and opens the Scan page in this mode. */
-  onScanSeveral?: (mode: CameraMode) => void;
+  onScanSeveral: (mode: CameraMode) => void;
 };
 
 /** The camera the form opens: a Product photo or a barcode, never the Scan page's other modes. */
@@ -96,7 +96,7 @@ export function AddBatchForm({
           defaultMode={camera.openMode}
           onModeChange={saveOverlayMode}
           onResult={camera.onResult}
-          onScanSeveral={(mode) => onScanSeveral?.(mode)}
+          onScanSeveral={onScanSeveral}
           onCancel={camera.cancel}
         />
       ) : null}

@@ -1,16 +1,25 @@
-import { Box, Typography, usePrefersReducedMotion } from '@pocket-pantry/ui';
+import {
+  Box,
+  color,
+  radius,
+  shadow,
+  tokens,
+  Typography,
+  usePrefersReducedMotion,
+} from '@pocket-pantry/ui';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
 import type { BarcodeLookup } from '../../../lib/barcode';
 import { BARCODE_GLYPH } from './barcodeGlyph';
 
-const INK = '#2B2418';
-const MUTED = '#766A58';
+const INK = tokens.color.ink;
+const MUTED = tokens.color.muted;
 
 const button = {
   minHeight: 42,
   border: 0,
-  borderRadius: '12px',
+  borderRadius: radius.control,
   font: 'inherit',
   fontSize: 14,
   fontWeight: 700,
@@ -21,7 +30,7 @@ type Props = {
   code: string;
   /** Null while the lookup is out. */
   lookup: BarcodeLookup | null;
-  /** The lookup failed: shown instead of the product, with only Scan again. */
+  /** The lookup failed: shown instead of the product, with Scan again, and Type it / Take a photo. */
   error?: string;
   onScanAgain: () => void;
   onUse: () => void;
@@ -58,10 +67,10 @@ export function BarcodeResultCard({
         right: 14,
         bottom: 190,
         p: 1.5,
-        borderRadius: '18px',
-        backgroundColor: 'rgba(251,248,241,.97)',
+        borderRadius: radius.sheet,
+        backgroundColor: tokens.color.surface,
         color: INK,
-        boxShadow: '0 14px 34px rgba(0,0,0,.4)',
+        boxShadow: shadow.float,
         ...(!reduced && {
           animation: 'pp-card-up 280ms ease-out',
           '@keyframes pp-card-up': {
@@ -78,8 +87,8 @@ export function BarcodeResultCard({
             width: 46,
             height: 46,
             flex: 'none',
-            borderRadius: '12px',
-            backgroundColor: '#EAE1CF',
+            borderRadius: radius.control,
+            backgroundColor: tokens.color.subtle,
             display: 'grid',
             placeItems: 'center',
             '& svg': {
@@ -156,69 +165,68 @@ export function BarcodeResultCard({
           />
         </Box>
       ) : null}
-      {error ? (
-        <Box
-          component="button"
-          type="button"
-          onClick={onScanAgain}
-          sx={{
-            ...button,
-            width: '100%',
-            backgroundColor: '#EAE1CF',
-            color: INK,
-          }}
-        >
-          {t('barcode.scanAgain')}
-        </Box>
-      ) : lookup === null ? null : (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1.3fr',
-            gap: 1,
-          }}
-        >
-          {found ? (
-            <>
-              <Box
-                component="button"
-                type="button"
-                onClick={onScanAgain}
-                sx={{ ...button, backgroundColor: '#EAE1CF', color: INK }}
-              >
-                {t('barcode.scanAgain')}
-              </Box>
-              <Box
-                component="button"
-                type="button"
-                onClick={onUse}
-                sx={{ ...button, backgroundColor: '#5F6F2E', color: '#fff' }}
-              >
-                {t('barcode.use')}
-              </Box>
-            </>
-          ) : (
-            <>
-              <Box
-                component="button"
-                type="button"
-                onClick={onTypeIt}
-                sx={{ ...button, backgroundColor: '#EAE1CF', color: INK }}
-              >
-                {t('typeIt')}
-              </Box>
-              <Box
-                component="button"
-                type="button"
-                onClick={onTakePhoto}
-                sx={{ ...button, backgroundColor: '#5F6F2E', color: '#fff' }}
-              >
-                {t('barcode.takePhoto')}
-              </Box>
-            </>
-          )}
+      {lookup === null && !error ? null : (
+        <Box sx={{ display: 'grid', gap: 1 }}>
+          {error ? (
+            <CardButton onClick={onScanAgain} sx={{ width: '100%' }}>
+              {t('barcode.scanAgain')}
+            </CardButton>
+          ) : null}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1.3fr',
+              gap: 1,
+            }}
+          >
+            {found ? (
+              <>
+                <CardButton onClick={onScanAgain}>
+                  {t('barcode.scanAgain')}
+                </CardButton>
+                <CardButton primary onClick={onUse}>
+                  {t('barcode.use')}
+                </CardButton>
+              </>
+            ) : (
+              <>
+                <CardButton onClick={onTypeIt}>{t('typeIt')}</CardButton>
+                <CardButton primary onClick={onTakePhoto}>
+                  {t('barcode.takePhoto')}
+                </CardButton>
+              </>
+            )}
+          </Box>
         </Box>
       )}
+    </Box>
+  );
+}
+
+function CardButton({
+  primary = false,
+  onClick,
+  sx,
+  children,
+}: {
+  primary?: boolean;
+  onClick: () => void;
+  sx?: object;
+  children: ReactNode;
+}) {
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={onClick}
+      sx={{
+        ...button,
+        backgroundColor: primary ? tokens.color.accent : tokens.color.subtle,
+        color: primary ? color.accentInk : INK,
+        ...sx,
+      }}
+    >
+      {children}
     </Box>
   );
 }

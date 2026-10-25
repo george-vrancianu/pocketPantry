@@ -181,7 +181,7 @@ export function useAddBatchForm({
    */
   const applyPrefill = (
     read: ProposedLine,
-    /** With no Match: keep the read name as a typed Unmatched name (Product Scan), or pre-type it in the Ingredient search (Barcode Lookup). */
+    /** With no Match: keep the read name as a typed Unmatched name (a Known Barcode's saved name), or pre-type it in the Ingredient search (Product Scan, Barcode Lookup). */
     noMatch: 'typed-name' | 'search' = 'typed-name',
   ) => {
     const marks = new Set<PrefillField>();
@@ -240,6 +240,7 @@ export function useAddBatchForm({
       marks.add('description');
     }
     setPrefilled((was) => new Set([...was, ...marks]));
+    return marks.size > 0;
   };
   // The read outlives the render that started it: it fills what is untouched when it lands.
   const prefillNow = useRef(applyPrefill);
@@ -287,17 +288,16 @@ export function useAddBatchForm({
         if (code && current === cameraResults.current) setBarcodeToSend(code);
       });
       const { read } = result;
-      prefillNow.current(read, 'search');
-      setSource('photo');
-      if (read.match)
+      const ingredientPicked = touched.ingredient;
+      const filled = prefillNow.current(read, 'search');
+      // The Member's own Ingredient pick is not "From photo", and the toast only speaks of what the read did.
+      if (!ingredientPicked || filled) setSource('photo');
+      if (ingredientPicked) return;
+      const name = read.name.trim() || read.productDescription || '';
+      if (read.match || !name)
         toast.show(t('pantry:form.toast.photo'), { polite: true });
       else
-        toast.show(
-          t('pantry:form.toast.noMatch', {
-            name: read.name.trim() || read.productDescription || '',
-          }),
-          { polite: true },
-        );
+        toast.show(t('pantry:form.toast.noMatch', { name }), { polite: true });
       return;
     }
     const { lookup } = result;

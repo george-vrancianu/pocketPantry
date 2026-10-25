@@ -48,7 +48,7 @@ function ScanLine({ animated }: { animated: boolean }) {
         right: '7%',
         top: '50%',
         height: 2,
-        borderRadius: 1,
+        borderRadius: '999px',
         backgroundColor: tokens.color.accent,
         boxShadow: `0 0 12px 2px ${translucent(tokens.color.accent, 70)}`,
         ...(animated && {

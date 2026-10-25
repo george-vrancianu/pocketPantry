@@ -195,6 +195,9 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       'Scanned',
     );
     expect(
+      await screen.findByText(/Found by barcode · Greek yogurt/),
+    ).toBeVisible();
+    expect(
       await screen.findByRole('combobox', {
         name: 'Ingredient: Yogurt. Press Backspace to change',
       }),
@@ -349,6 +352,78 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     ).toBeVisible();
     expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Scan again' })).toBeVisible();
+  });
+
+  it('offers Type it and Take a photo after a failed lookup, without teaching the code', async () => {
+    const user = userEvent.setup();
+    const calls = stubLookup(() =>
+      Response.json(
+        { code: 'barcode.rate_limited', params: {} },
+        { status: 429, headers: { 'Retry-After': '30' } },
+      ),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    const card = await screen.findByTestId('barcode-card');
+    expect(
+      await within(card).findByText(/Too many Barcode Lookups/),
+    ).toBeVisible();
+    expect(
+      within(card).queryByText("We don't know this barcode yet"),
+    ).toBeNull();
+    expect(
+      within(card).getByRole('button', { name: 'Scan again' }),
+    ).toBeVisible();
+    expect(
+      within(card).getByRole('button', { name: 'Take a photo' }),
+    ).toBeVisible();
+    await user.click(within(card).getByRole('button', { name: 'Type it' }));
+    expect(screen.queryByTestId('camera-overlay')).toBeNull();
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'mil',
+    );
+    await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.key === 'POST /api/pantry/batches'),
+      ).toBe(true),
+    );
+    const create = calls.find(
+      (call) => call.key === 'POST /api/pantry/batches',
+    );
+    expect(create?.body).toMatchObject({ ingredientId: 'milk-id' });
+    expect(create?.body).not.toHaveProperty('barcode');
+  });
+
+  it('ignores a lookup that lands after the Member switched to Product', async () => {
+    const user = userEvent.setup();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const calls = stubLookup(async () => {
+      await gate;
+      return Response.json(found());
+    });
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    expect(await screen.findByText('Looking up the barcode…')).toBeVisible();
+    await user.click(screen.getByRole('radio', { name: 'Product' }));
+    expect(screen.queryByTestId('barcode-card')).toBeNull();
+    release();
+    await act(async () => {
+      await gate;
+    });
+    await waitFor(() =>
+      expect(
+        calls.filter((c) => c.key.startsWith('GET /api/barcode')),
+      ).toHaveLength(1),
+    );
+    expect(screen.queryByTestId('barcode-card')).toBeNull();
   });
 
   it('says to wait on the card when the lookup is rate limited', async () => {

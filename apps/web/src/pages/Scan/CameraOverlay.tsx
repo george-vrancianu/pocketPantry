@@ -2,6 +2,7 @@ import {
   Alert,
   bodyFont,
   Box,
+  radius,
   tokens,
   Typography,
   useForcedThemeColor,
@@ -111,7 +112,7 @@ export function CameraOverlay({
   const [card, setCard] = useState<{
     code: string;
     lookup: BarcodeLookup | null;
-    /** The lookup failed (unavailable, rate limited): said on the card, with only Scan again. */
+    /** The lookup failed (unavailable, rate limited): said on the card, with Scan again, Type it and Take a photo. */
     error?: unknown;
   } | null>(null);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
@@ -123,6 +124,14 @@ export function CameraOverlay({
   const [viewfinder, setViewfinder] = useState<HTMLElement | null>(null);
   const [sliding, setSliding] = useState(false);
   const shooting = useRef(false);
+  // The Barcode Lookup in flight (its number), so a result that lands after the card was dismissed
+  // or the mode changed is ignored, and a second code read meanwhile starts no second lookup.
+  const lookupSeq = useRef(0);
+  const lookupPending = useRef<number | null>(null);
+  const dismissCard = () => {
+    lookupPending.current = null;
+    setCard(null);
+  };
   const { videoRef } = camera;
 
   // Focus moves into the dialog on open, and Escape closes it as Close does.
@@ -139,6 +148,7 @@ export function CameraOverlay({
   });
   const cancel = () => {
     closed.current = true;
+    lookupPending.current = null;
     cancelRef.current();
   };
   // Escape inside the overlay is taken here and stops, so a host dialog around it (the Add to Pantry
@@ -174,17 +184,19 @@ export function CameraOverlay({
   useEffect(() => {
     if (mode !== 'barcode' || camera.status !== 'ready' || reading) return;
     return watchBarcodes((code) => {
-      if (closed.current) return;
+      if (closed.current || lookupPending.current !== null) return;
+      const seq = ++lookupSeq.current;
+      lookupPending.current = seq;
       navigator.vibrate?.(12);
       setCard({ code, lookup: null });
       lookUp(code, {
-        onSuccess: (lookup) => setCard({ code, lookup }),
-        onError: (error) =>
-          setCard({
-            code,
-            lookup: null,
-            error,
-          }),
+        onSuccess: (lookup) => {
+          if (lookupPending.current === seq) setCard({ code, lookup });
+        },
+        onError: (error) => {
+          if (lookupPending.current === seq)
+            setCard({ code, lookup: null, error });
+        },
       });
     });
   }, [mode, camera.status, watchBarcodes, reading, lookUp]);
@@ -196,14 +208,17 @@ export function CameraOverlay({
   };
   const takePhotoOfCard = () => {
     if (!card) return;
-    setPendingCode(card.code);
-    setCard(null);
+    // A failed lookup says nothing about the code, so it is not taught as unknown.
+    setPendingCode(card.error === undefined ? card.code : null);
+    dismissCard();
     setMode('product');
-    onModeChange?.('product');
   };
   const typeIt = () => {
     closed.current = true;
-    onResult({ kind: 'type', code: card?.code ?? pendingCode });
+    onResult({
+      kind: 'type',
+      code: card ? (card.error === undefined ? card.code : null) : pendingCode,
+    });
   };
 
   const shoot = async () => {
@@ -378,7 +393,7 @@ export function CameraOverlay({
                 const picked = modes.find((item) => item === next);
                 if (!picked) return;
                 setMode(picked);
-                setCard(null);
+                dismissCard();
                 setFailed(null);
                 if (picked === 'barcode') setPendingCode(null);
                 onModeChange?.(picked);
@@ -408,7 +423,7 @@ export function CameraOverlay({
             gap: 1,
             py: 0.75,
             px: 1.375,
-            borderRadius: 999,
+            borderRadius: radius.pill,
             backgroundColor: translucent(tokens.color.accent, 16),
             color: tokens.color.accent,
             fontSize: 12,
@@ -477,8 +492,8 @@ export function CameraOverlay({
             transform: 'translateX(-50%)',
             px: 1.75,
             py: 1.125,
-            borderRadius: 999,
-            backgroundColor: 'rgba(0,0,0,.62)',
+            borderRadius: radius.pill,
+            backgroundColor: shade(80),
             fontSize: 13,
             fontWeight: 600,
             whiteSpace: 'nowrap',
@@ -496,7 +511,7 @@ export function CameraOverlay({
               ? undefined
               : translateApiError(tAll, card.error)
           }
-          onScanAgain={() => setCard(null)}
+          onScanAgain={dismissCard}
           onUse={confirmCard}
           onTakePhoto={takePhotoOfCard}
           onTypeIt={typeIt}

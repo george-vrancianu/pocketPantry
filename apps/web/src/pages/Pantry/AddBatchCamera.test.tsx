@@ -161,6 +161,33 @@ describe('The add-Batch camera hand-offs', () => {
     );
   });
 
+  it('Scan several from Product opens the Scan page in Product mode', async () => {
+    stubPantry();
+    localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
+    const user = userEvent.setup();
+    function Where() {
+      const location = useLocation();
+      return (
+        <output data-testid="where">
+          {location.pathname + location.search}
+        </output>
+      );
+    }
+    renderWithProviders(
+      <>
+        <PantryPage />
+        <Where />
+      </>,
+      { route: '/pantry' },
+    );
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Fill from the camera' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Scan several' }));
+    expect(screen.getByTestId('where')).toHaveTextContent('/scan?mode=product');
+  });
+
   it('sweeps a scan line in the Barcode guide, and hides it in Product', async () => {
     stubPantry();
     const user = await openOverlay('barcode');

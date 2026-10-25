@@ -200,6 +200,29 @@ describe('Barcode on the Scan page', () => {
       expect(screen.queryByTestId('scan-line')).toBeNull();
     });
 
+    it('brings the scan line back 1.2 s after a read', async () => {
+      renderScan('/scan?mode=barcode');
+      await waitFor(() => expect(fakeCamera.emit).not.toBeNull());
+      vi.useFakeTimers();
+      try {
+        await act(async () => {
+          emitBarcode(A);
+          await vi.advanceTimersByTimeAsync(0);
+        });
+        expect(screen.queryByTestId('scan-line')).toBeNull();
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(1199);
+        });
+        expect(screen.queryByTestId('scan-line')).toBeNull();
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(1);
+        });
+        expect(screen.getByTestId('scan-line')).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('holds the scan line still under reduced motion', () => {
       stubMatchMedia((query) => query.includes('prefers-reduced-motion'));
       renderScan('/scan?mode=barcode');

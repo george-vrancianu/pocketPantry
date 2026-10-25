@@ -484,6 +484,11 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     expect(
       await screen.findByText("Couldn't match Zorblax · pick the closest"),
     ).toBeVisible();
+    // The note is read into the form; its field shows once an Ingredient is picked.
+    await user.click(await screen.findByRole('option', { name: /Yogurt/ }));
+    expect(screen.getByLabelText('Product description')).toHaveValue(
+      'Greek yogurt 500 g',
+    );
   });
 
   it('says the scan cap is used up, in the camera', async () => {
