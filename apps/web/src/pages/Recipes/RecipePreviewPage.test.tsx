@@ -133,7 +133,7 @@ describe('RecipePreviewPage', () => {
       within(bar).getByRole('link', { name: 'Make a Variant' }),
     ).toHaveAttribute('href', '/recipes/soup/variant/new');
     expect(
-      within(bar).getByRole('button', { name: 'Add to family' }),
+      within(bar).getByRole('button', { name: 'Add to Family' }),
     ).toBeEnabled();
     expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull();
     expect(dockStateFor('/recipes/explore/soup').visible).toBe(false);
@@ -163,7 +163,7 @@ describe('RecipePreviewPage', () => {
       },
     });
     await user.click(
-      await screen.findByRole('button', { name: 'Add to family' }),
+      await screen.findByRole('button', { name: 'Add to Family' }),
     );
     const open = await screen.findByRole('link', {
       name: 'Soup is in your Recipes. Open it',

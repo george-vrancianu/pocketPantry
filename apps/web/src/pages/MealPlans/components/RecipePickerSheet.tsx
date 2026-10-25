@@ -68,6 +68,7 @@ export function RecipePickerSheet({
   const catalogItems = (explore.data?.recipes ?? []).filter(
     (recipe) => recipe.familyCopyId === null,
   );
+  // Not `useAddToFamily`: the sheet closes on a pick, so there is no Undo to offer.
   const pickCatalog = async (recipe: {
     id: string;
     familyCopyId: string | null;

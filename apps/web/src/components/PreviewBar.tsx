@@ -7,6 +7,7 @@ import {
   tokens,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { familyRecipeHref } from '../lib/recipeHref';
 import type { AddState } from '../lib/addToFamily';
 
 /** Height the bar takes, px, so the page can leave room under its content and toasts can sit above it. */
@@ -84,8 +85,8 @@ export function PreviewBar({
         <Button
           variant="tonal"
           fullWidth
-          href={`/recipes/${state.copyId}`}
-          aria-label={t('preview.openCopy', { title })}
+          href={familyRecipeHref(state.copyId)}
+          aria-label={t('explore.openCopy', { title })}
           startIcon={<CheckIcon size={18} />}
           sx={{ whiteSpace: 'nowrap' }}
         >
@@ -95,7 +96,7 @@ export function PreviewBar({
         <Button
           variant="tonal"
           fullWidth
-          aria-label={t('preview.openCopy', { title })}
+          aria-label={t('explore.openCopy', { title })}
           aria-disabled
           aria-busy
           startIcon={<CheckIcon size={18} />}

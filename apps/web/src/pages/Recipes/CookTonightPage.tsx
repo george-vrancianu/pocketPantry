@@ -9,7 +9,7 @@ import {
   useCookTonight,
   type CookTonightCard,
 } from '../../lib/cookTonight';
-import { catalogRecipeHref } from '../../lib/catalogRecipeHref';
+import { recipeHref } from '../../lib/recipeHref';
 import { localIso } from '../../lib/pantry';
 import type { RecipeListItem } from '../../lib/recipes';
 import { RecipeRow } from './components/RecipeRow';
@@ -79,7 +79,7 @@ function CardSection({
             recipe={baseRow(card)}
             card={card}
             filtering={false}
-            to={catalogRecipeHref(card.recipe)}
+            to={recipeHref(card.recipe)}
           />
         ))}
       </Box>

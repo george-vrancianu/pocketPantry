@@ -279,9 +279,8 @@
   "preview": {
     "eyebrow": "Explore · Catalog Recipe",
     "note": "You're previewing a Catalog Recipe. Add it to your Recipes to change it, plan it or cook it from your list.",
-    "addShort": "Add to family",
+    "addShort": "Add to Family",
     "inFamily": "In your Recipes",
-    "openCopy": "{{title}} is in your Recipes. Open it",
     "actions": "Actions for this Recipe"
   },
   "quickView": {

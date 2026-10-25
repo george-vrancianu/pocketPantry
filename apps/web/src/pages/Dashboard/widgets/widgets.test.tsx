@@ -527,7 +527,9 @@ describe('CookTonightWidget', () => {
     renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
 
     expect(
-      await screen.findByText(/Nothing to cook from your Recipes yet/),
+      await screen.findByText(
+        /Nothing you can make from your Recipes right now/,
+      ),
     ).toBeInTheDocument();
   });
 
@@ -547,7 +549,7 @@ describe('CookTonightWidget', () => {
 
     renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
 
-    await screen.findByText(/Nothing to cook/);
+    await screen.findByText(/Nothing you can make/);
     const search = new URLSearchParams(calls[0]?.search);
     expect(calls[0]?.key).toBe('GET /api/recipes/cook-tonight');
     expect(search.get('today')).toBe(isoIn(0));

@@ -397,7 +397,7 @@ describe('Explore and the preview round trip', () => {
   it('Back from a preview opened directly goes to Explore, and its adds do not count', async () => {
     setup('/recipes/explore/soup');
     const u = user();
-    await u.click(await screen.findByRole('button', { name: 'Add to family' }));
+    await u.click(await screen.findByRole('button', { name: 'Add to Family' }));
     await act(async () => {});
     await u.click(screen.getByRole('link', { name: /Back/ }));
     expect(await screen.findByTestId('explore-page')).toBeVisible();
@@ -450,7 +450,7 @@ describe('Explore and the preview round trip', () => {
     await u.click(await screen.findByRole('tab', { name: 'About' }));
     await u.click(await screen.findByRole('link', { name: 'Spicy soup' }));
     await screen.findByRole('heading', { level: 1, name: /Spicy soup/ });
-    await u.click(await screen.findByRole('button', { name: 'Add to family' }));
+    await u.click(await screen.findByRole('button', { name: 'Add to Family' }));
     await waitFor(() => expect(exploreAdds.get()).toBe(1));
   });
 

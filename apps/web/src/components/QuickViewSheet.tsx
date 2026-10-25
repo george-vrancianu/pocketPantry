@@ -14,10 +14,12 @@ import {
   radius,
   tokens,
   useToast,
+  visuallyHidden,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { familyRecipeHref, recipeHref } from '../lib/recipeHref';
 import type { AddState, AddableRecipe } from '../lib/addToFamily';
 import type { CookTonightCard } from '../lib/cookTonight';
 import {
@@ -107,7 +109,9 @@ export function QuickViewSheet({
   const added = state.status !== 'none';
   const openPreview = (id: string) => {
     onClose();
-    navigate(`/recipes/explore/${id}`, { state: { fromExplore: true } });
+    navigate(recipeHref({ id, owner: 'catalog' }), {
+      state: { fromExplore: true },
+    });
   };
 
   return (
@@ -380,7 +384,7 @@ export function QuickViewSheet({
             <Button
               variant="tonal"
               fullWidth
-              href={`/recipes/${state.copyId}`}
+              href={familyRecipeHref(state.copyId)}
               startIcon={<CheckIcon size={18} />}
               sx={{ height: 48 }}
             >
@@ -423,15 +427,6 @@ export function QuickViewSheet({
     </Sheet>
   );
 }
-
-const visuallyHidden = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-} as const;
 
 /** The Recipe's icon tile: up to four of its Ingredient icons. */
 function Cluster({

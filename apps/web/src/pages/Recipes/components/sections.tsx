@@ -17,7 +17,7 @@ import type {
 } from '../../../lib/recipes';
 import type { AddState } from '../../../lib/addToFamily';
 import { AddToFamilyButton } from '../../../components/AddToFamilyButton';
-import { catalogRecipeHref } from '../../../lib/catalogRecipeHref';
+import { recipeHref } from '../../../lib/recipeHref';
 import { GuidanceSection } from './GuidanceSection';
 import { IngredientList, lineAmount, type LineAllergy } from './IngredientList';
 import { OwnerBadge } from './OwnerBadge';
@@ -323,7 +323,7 @@ function VariantsSection({ recipe, preview }: SectionProps) {
             >
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Link
-                  href={catalogRecipeHref(variant)}
+                  href={recipeHref(variant)}
                   {...(preview?.fromExplore
                     ? { state: { fromExplore: true } }
                     : {})}

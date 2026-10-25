@@ -432,10 +432,6 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
       'plain "in stock" availability phrase, not the Pantry noun',
     ]),
   ),
-  'review:plateRecipe.preview|preview':
-    'the link to the Catalog Recipe preview (Explore), not the Review screen; "preview" is the Glossary verb for browsing a Catalog Recipe',
-  'review:plateRecipe.previewLabel|preview':
-    'accessible label of the Catalog Recipe preview link in the Plate Recipe picker, not the Review screen',
   'recipes:recipeDraft.saved|draft':
     'the status "Draft saved" in the Recipe Draft form header; the exact copy of the ticket, next to the Recipe form it belongs to',
   'recipes:drafts.entry|draft':

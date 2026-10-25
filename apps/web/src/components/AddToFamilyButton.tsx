@@ -8,6 +8,7 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { familyRecipeHref } from '../lib/recipeHref';
 import type { AddState } from '../lib/addToFamily';
 
 type Props = {
@@ -100,7 +101,7 @@ export function AddToFamilyButton({ title, state, onAdd }: Props) {
   return state.status === 'added' ? (
     <Box
       component={Link}
-      to={`/recipes/${state.copyId}`}
+      to={familyRecipeHref(state.copyId)}
       aria-label={name}
       sx={added}
     >

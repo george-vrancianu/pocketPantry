@@ -12,7 +12,7 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { totalMinutes, type RecipeDetail } from '../../../lib/recipes';
-import { catalogRecipeHref } from '../../../lib/catalogRecipeHref';
+import { recipeHref } from '../../../lib/recipeHref';
 import { InFamilyPill } from '../../../components/InFamilyPill';
 import { OwnerBadge } from './OwnerBadge';
 
@@ -85,7 +85,7 @@ export function RecipeHero({
         ) : null}
         {recipe.base ? (
           <Link
-            href={catalogRecipeHref({
+            href={recipeHref({
               ...recipe.base,
               owner: 'catalog',
             })}

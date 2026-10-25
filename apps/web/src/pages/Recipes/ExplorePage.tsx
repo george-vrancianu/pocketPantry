@@ -6,6 +6,7 @@ import {
   Stack,
   displayType,
   tokens,
+  usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +16,7 @@ import { ExploreRow } from '../../components/ExploreRow';
 import { QuickViewSheet } from '../../components/QuickViewSheet';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../i18n/translateApiError';
+import { isPlainClick } from '../../lib/isPlainClick';
 import { localIso } from '../../lib/pantry';
 import { useAddToFamily } from '../../lib/addToFamily';
 import { exploreAdds, useExploreAdds } from '../../lib/exploreAdds';
@@ -77,6 +79,7 @@ export function ExplorePage() {
   });
   const [showHidden, setShowHidden] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const reduceMotion = usePrefersReducedMotion();
   const navigate = useNavigate();
   // A native listener: React skips `animationend` where the browser (or jsdom) has no CSS animations.
   const pageRef = useRef<HTMLDivElement>(null);
@@ -203,17 +206,9 @@ export function ExplorePage() {
           href: '/recipes',
           badge: added,
           onClick: (event) => {
-            const plain =
-              event.button === 0 &&
-              !event.metaKey &&
-              !event.ctrlKey &&
-              !event.shiftKey &&
-              !event.altKey;
-            const still = window.matchMedia(
-              '(prefers-reduced-motion: reduce)',
-            ).matches;
+            const plain = isPlainClick(event);
             if (plain) exploreAdds.reset();
-            if (!plain || still) return;
+            if (!plain || reduceMotion) return;
             event.preventDefault();
             setLeaving(true);
           },

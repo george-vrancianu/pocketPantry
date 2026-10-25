@@ -185,11 +185,12 @@ describe('Plate Scan: save as a Recipe', () => {
     renderPlate();
     await openPanel();
     expect(
-      await screen.findByRole('link', { name: 'Preview Pilaf' }),
+      await screen.findByRole('link', { name: 'View Pilaf' }),
     ).toHaveAttribute('href', '/recipes/pilaf-copy');
-    expect(
-      screen.getByRole('link', { name: 'Preview Risotto' }),
-    ).toHaveAttribute('href', '/recipes/explore/risotto-id');
+    expect(screen.getByRole('link', { name: 'View Risotto' })).toHaveAttribute(
+      'href',
+      '/recipes/explore/risotto-id',
+    );
   });
 
   it('saves a standalone Recipe when chosen', async () => {

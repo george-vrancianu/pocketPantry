@@ -1,7 +1,7 @@
 import { Box, Link, Stack, TextField, Typography } from '@pocket-pantry/ui';
 import { useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { catalogRecipeHref } from '../lib/catalogRecipeHref';
+import { recipeHref } from '../lib/recipeHref';
 import { useRecipes, type CompactAllergyWarning } from '../lib/recipes';
 import { AllergenIndicator } from './AllergenIndicator';
 import { HiddenByAllergiesNote } from './HiddenByAllergiesNote';
@@ -170,7 +170,7 @@ export function BaseRecipePicker({
             }
             onSelect={() => setChosen(match.id)}
             allergyWarning={match.allergyWarning}
-            openHref={catalogRecipeHref({
+            openHref={recipeHref({
               id: match.id,
               owner: 'catalog',
               familyCopyId: match.familyCopyId,

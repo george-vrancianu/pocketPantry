@@ -248,6 +248,16 @@ describe('RecipesPage when the Family has no Recipes', () => {
       expect(scopes).toContain('catalog');
     });
 
+    it('opens the quick view when a starter row is tapped', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      setup({ catalog: [catalogBases[0]!], cards: [card('omelette')] });
+      await addButton('omelette');
+      await user.click(screen.getByRole('button', { name: /^omelette/ }));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('Catalog Recipe')).toBeVisible();
+      expect(within(dialog).getByText('omelette')).toBeVisible();
+    });
+
     it('leaves out Recipes the API hid (they are in neither list)', async () => {
       setup({
         catalog: [catalogBases[0]!],

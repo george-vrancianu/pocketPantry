@@ -32,13 +32,7 @@ export function PageLayout({
         pb: withDock ? (dockClearance ?? '132px') : '24px',
       }}
     >
-      <Box
-        component="main"
-        sx={{
-          maxWidth: wide ? 1180 : 960,
-          mx: 'auto',
-        }}
-      >
+      <Box component="main" sx={{ maxWidth: wide ? 1180 : 960, mx: 'auto' }}>
         {children}
       </Box>
     </Box>

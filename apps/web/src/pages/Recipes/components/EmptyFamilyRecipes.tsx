@@ -12,11 +12,18 @@ import {
 import { useId, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { ExploreRow } from '../../../components/ExploreRow';
+import { QuickViewSheet } from '../../../components/QuickViewSheet';
 import type { useAddToFamily } from '../../../lib/addToFamily';
 import { canMakeBases, useCookTonight } from '../../../lib/cookTonight';
 import { localIso } from '../../../lib/pantry';
-import { useRecipes, type RecipeBrowse } from '../../../lib/recipes';
+import {
+  useRecipes,
+  type RecipeBrowse,
+  type RecipeListItem,
+} from '../../../lib/recipes';
 import { SectionLabel } from './SectionLabel';
+
+type AddApi = ReturnType<typeof useAddToFamily>;
 
 const STARTERS = 3;
 const NO_BROWSE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
@@ -114,8 +121,6 @@ function GatorPanel() {
 }
 
 /** Up to three Catalog Bases the Family can make now, each one tap from being added. Hidden when there are none. */
-type AddApi = ReturnType<typeof useAddToFamily>;
-
 function Starters({ add, stateOf }: AddApi) {
   const { t } = useTranslation('recipes');
   const recipes = useRecipes(NO_BROWSE, { scope: 'catalog' });
@@ -126,6 +131,8 @@ function Starters({ add, stateOf }: AddApi) {
     'catalog',
   );
   const headingId = useId();
+  const [quick, setQuick] = useState<RecipeListItem | null>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
   const cards = cookTonight.data?.cards ?? [];
   const starters = canMakeBases(cards, recipes.data?.recipes ?? [])
     // Defensive: bases only.
@@ -133,25 +140,42 @@ function Starters({ add, stateOf }: AddApi) {
     .slice(0, STARTERS);
   if (starters.length === 0) return null;
   return (
-    <section>
-      <SectionLabel id={headingId}>{t('emptyFamily.starters')}</SectionLabel>
-      <Box
-        component="ul"
-        aria-labelledby={headingId}
-        sx={{ listStyle: 'none', m: 0, p: 0 }}
-      >
-        {starters.map((recipe) => (
-          <ExploreRow
-            key={recipe.id}
-            recipe={recipe}
-            state={stateOf(recipe)}
-            onAdd={() => add(recipe)}
-            card={cards.find((card) => card.base.id === recipe.id)}
-            hideCanMake
-          />
-        ))}
-      </Box>
-    </section>
+    <>
+      <section>
+        <SectionLabel id={headingId}>{t('emptyFamily.starters')}</SectionLabel>
+        <Box
+          component="ul"
+          aria-labelledby={headingId}
+          sx={{ listStyle: 'none', m: 0, p: 0 }}
+        >
+          {starters.map((recipe) => (
+            <ExploreRow
+              key={recipe.id}
+              recipe={recipe}
+              state={stateOf(recipe)}
+              onAdd={() => add(recipe)}
+              card={cards.find((card) => card.base.id === recipe.id)}
+              hideCanMake
+              onOpen={() => {
+                setQuick(recipe);
+                setQuickOpen(true);
+              }}
+            />
+          ))}
+        </Box>
+      </section>
+      {quick ? (
+        <QuickViewSheet
+          recipe={quick}
+          open={quickOpen}
+          onClose={() => setQuickOpen(false)}
+          card={cards.find((card) => card.base.id === quick.id)}
+          state={stateOf(quick)}
+          onAdd={(recipe) => void add(recipe)}
+          stateOf={stateOf}
+        />
+      ) : null}
+    </>
   );
 }
 

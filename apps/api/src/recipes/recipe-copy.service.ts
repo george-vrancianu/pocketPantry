@@ -52,7 +52,7 @@ export class RecipeCopyService {
   }
 
   /**
-   * `copy` for a Family, without an acting Member. Migration 0045 mirrors this copy in SQL
+   * `copy` for a Family, without an acting Member. Migration 0046 mirrors this copy in SQL
    * (it cannot call TypeScript), so the two must stay in parity.
    */
   async copyFor(

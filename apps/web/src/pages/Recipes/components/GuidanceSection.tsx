@@ -9,7 +9,7 @@ import {
 } from '@pocket-pantry/ui';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
-import { catalogRecipeHref } from '../../../lib/catalogRecipeHref';
+import { recipeHref } from '../../../lib/recipeHref';
 import type { PairingKind } from '../../../lib/recipeVocabulary';
 import type { DetailEatingMoment, DetailPairing } from '../../../lib/recipes';
 import { AllergensCard } from './AllergensCard';
@@ -34,7 +34,7 @@ function PairingItem({ pairing }: { pairing: DetailPairing }) {
       <Box sx={{ fontSize: 15, fontWeight: 700 }}>
         {link?.type === 'recipe' ? (
           <Link
-            href={catalogRecipeHref(link)}
+            href={recipeHref(link)}
             title={link.title}
             underline="none"
             sx={{ color: tokens.color.accent, fontWeight: 700 }}

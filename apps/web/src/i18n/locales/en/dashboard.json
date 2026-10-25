@@ -32,7 +32,7 @@
     "cookTonight": {
       "title": "Cook tonight",
       "seeAll": "See all",
-      "empty": "Nothing to cook from your Recipes yet.",
+      "empty": "Nothing you can make from your Recipes right now.",
       "explore": "Explore Recipes",
       "missing": "Missing: {{name}}",
       "expiring_one": "uses {{count}} Expiring Soon item",

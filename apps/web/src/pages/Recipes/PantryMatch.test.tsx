@@ -495,11 +495,17 @@ describe('Recipe detail Pantry status', () => {
         id: 'r1',
         title: 'Pancakes',
         archived: false,
-        familyCopyId: 'r1',
+        familyCopyId: 'r1-copy',
       },
     };
     const { fetchMock, calls } = stubApi({
       'GET /api/recipes/r1': () => Response.json(detail),
+      'GET /api/recipes/r1-copy': () =>
+        Response.json({ ...detail, id: 'r1-copy' }),
+      'GET /api/recipes/r1-copy/pantry-match': (url) =>
+        Response.json(
+          match({ servings: Number(url.searchParams.get('servings')) }),
+        ),
       'GET /api/recipes/v1': () => Response.json(variant),
       'GET /api/recipes/r1/pantry-match': (url) =>
         Response.json(
@@ -524,8 +530,9 @@ describe('Recipe detail Pantry status', () => {
     await user.click(screen.getByRole('link', { name: /Variant of Pancakes/ }));
     expect(await screen.findByText('2 Servings')).toBeVisible();
     const baseMatches = calls.filter(
-      (c) => c.key === 'GET /api/recipes/r1/pantry-match',
+      (c) => c.key === 'GET /api/recipes/r1-copy/pantry-match',
     );
+    expect(baseMatches.length).toBeGreaterThan(0);
     expect(baseMatches.every((c) => c.search.includes('servings=2'))).toBe(
       true,
     );

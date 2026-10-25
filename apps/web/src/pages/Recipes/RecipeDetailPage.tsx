@@ -21,7 +21,8 @@ import {
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { useAddToFamily } from '../../lib/addToFamily';
 import { exploreAdds } from '../../lib/exploreAdds';
-import { catalogRecipeHref } from '../../lib/catalogRecipeHref';
+import { isPlainClick } from '../../lib/isPlainClick';
+import { recipeHref } from '../../lib/recipeHref';
 import { SourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
@@ -133,14 +134,7 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
   const hasHistory =
     ((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0;
   const leavePreview = (event: MouseEvent<HTMLElement>) => {
-    if (
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    )
-      return;
+    if (!isPlainClick(event)) return;
     event.preventDefault();
     if (hasHistory) navigate(-1);
     else navigate('/recipes/explore', { state: { noSlide: true } });
@@ -160,7 +154,7 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
   }
   // A Catalog Recipe opens as the Family's copy, else as its preview.
   if (!preview && recipe && recipe.owner === 'catalog') {
-    return <Navigate replace to={catalogRecipeHref(recipe)} />;
+    return <Navigate replace to={recipeHref(recipe)} />;
   }
   return (
     <>
