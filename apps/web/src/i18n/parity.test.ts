@@ -220,6 +220,26 @@ const PLAIN_WORDS: Record<string, string> = {
 /** Exceptions found when the broad whitelist was narrowed: term, reason, keys. */
 const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   [
+    'brand',
+    'a product maker named as an example in the Note hint (Add to Pantry), not a Brand Ingredient',
+    ['pantry:form.addNote', 'pantry:form.descriptionPlaceholder'],
+  ],
+  [
+    'label',
+    'the printed label of a product the camera reads, not a Product Description',
+    ['scan:readingLabel', 'scan:labelFailed'],
+  ],
+  [
+    'type',
+    'the verb "type it" (enter by hand) in the Add to Pantry camera, not a Category',
+    ['scan:typeIt', 'scan:labelFailed', 'scan:labelCap'],
+  ],
+  [
+    'type',
+    'the verb "Type" (enter by hand) on the Empty Pantry banner, not a Category',
+    ['pantry:empty.type'],
+  ],
+  [
     'token',
     'the Assistant Token (GLOSSARY), shortened to "token" in the Siri section; not the Invite Code',
     [
@@ -376,7 +396,11 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   [
     'type',
     'plain verb ("Type an ingredient"), not a Category type',
-    ['catalog:catalogAdd.typeToSearch', 'catalog:search.placeholder'],
+    [
+      'catalog:catalogAdd.typeToSearch',
+      'catalog:search.placeholder',
+      'catalog:search.placeholderAdd',
+    ],
   ],
   [
     'unknown',
@@ -432,8 +456,14 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
       'plain "in stock" availability phrase, not the Pantry noun',
     ]),
   ),
+  'voice:teach.line|fridge':
+    'the example sentence a Member can say (design copy); the Location is Fridge, spoken in lower case',
   'recipes:recipeDraft.saved|draft':
     'the status "Draft saved" in the Recipe Draft form header; the exact copy of the ticket, next to the Recipe form it belongs to',
+  'recipes:family.newRecipeHint|draft':
+    'the editor hint of design v3, the exact copy of ticket #587: "Kept as your draft until you save it as one of your family\'s Recipes."',
+  'recipes:family.tabs.details|details':
+    "the editor's first tab, named Details by design v3 (ticket #587); a tab, not the glossary's metadata term",
   'recipes:drafts.entry|draft':
     'the Recipes page entry "Drafts (N)", the exact copy of ticket #547; it opens the list titled "Recipe Drafts"',
   'recipes:drafts.discard|draft':
@@ -445,6 +475,8 @@ const GLOSSARY_EXCEPTIONS: Record<string, string> = {
   'scan:noCamera|import':
     "tells a Member without a camera to use the Scan screen's Import button; it is not the Shopping Template action",
   'common:locations.fridge|fridge':
+    'Fridge is a Location value, not a name for the Pantry',
+  'pantry:empty.shelf.fridge|fridge':
     'Fridge is a Location value, not a name for the Pantry',
   'voice:intro.examples.shopping.three.say|fridge':
     'example of what a Member says out loud',

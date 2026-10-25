@@ -42,6 +42,13 @@ function stubPantry(
     'GET /api/voice/config': () => Response.json({ configured: true }),
     'GET /api/staples': staples,
     'GET /api/settings/preferences': () => Response.json({}),
+    // The Empty Pantry state reads the Shopping List for its shelf cards.
+    'GET /api/shopping-list': () =>
+      Response.json({
+        id: 'l1',
+        groups: [],
+        summary: { remaining: 0, checked: 0 },
+      }),
     'GET /api/pantry/recently-stocked': () =>
       Response.json({ ingredients: [] }),
     'GET /api/settings/family': () =>

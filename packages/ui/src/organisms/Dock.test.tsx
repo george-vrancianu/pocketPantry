@@ -1,5 +1,6 @@
 import { cleanup, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { paintedColour } from '../test/colour';
 import { renderWithTheme as render } from '../test/render';
 import { Dock } from './Dock';
 import { DockCapsule } from './DockCapsule';
@@ -32,8 +33,9 @@ function renderDock(teach?: 'camera' | 'mic') {
 }
 
 /** Whether the lit camera half animates a pulse ring: its own CSS rules name the pulse. */
-const pulses = () => {
-  const lit = screen.getByRole('link', { name: 'Camera' });
+const pulses = (
+  lit: HTMLElement = screen.getByRole('link', { name: 'Camera' }),
+) => {
   return Array.from(document.styleSheets)
     .flatMap((sheet) => Array.from(sheet.cssRules))
     .filter((rule) =>
@@ -101,6 +103,77 @@ describe('Dock teaching the mic', () => {
     }
     expect(screen.queryByRole('link')).toBeNull();
     expect(screen.queryByRole('button', { name: /Voice Note/ })).toBeNull();
+  });
+});
+
+describe('Dock with a non-blocking teach', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const micSlotOf = () =>
+    document.querySelector<HTMLElement>(
+      '[data-dock-capsule] > div:first-child',
+    )!;
+
+  function renderHint(half: 'camera' | 'mic') {
+    return render(
+      <Dock
+        label="Main"
+        items={items}
+        activeKey="Pantry"
+        centre={
+          <DockCapsule
+            cameraLabel="Camera"
+            cameraHref="/scan"
+            micSlot={() => undefined}
+            highlight={half}
+          />
+        }
+      />,
+    );
+  }
+
+  it('leaves the tabs and the camera usable while the mic half is lit', () => {
+    renderHint('mic');
+    for (const name of ['Camera', 'Home', 'Shopping', 'Pantry', 'Recipes']) {
+      const control = screen.getByRole('link', { name });
+      expect(control.hasAttribute('aria-disabled')).toBe(false);
+      expect(control.getAttribute('tabindex')).not.toBe('-1');
+    }
+    expect(
+      screen.getByRole('link', { name: 'Pantry' }).getAttribute('aria-current'),
+    ).toBe('page');
+  });
+
+  it('lights the mic half with the butter fill and the pulse ring, and does not dim the camera', () => {
+    renderHint('mic');
+    expect(paintedColour(micSlotOf(), 'background-color').toUpperCase()).toBe(
+      '#F0C96B',
+    );
+    expect(pulses(micSlotOf())).toBe(true);
+    expect(
+      getComputedStyle(screen.getByRole('link', { name: 'Camera' })).opacity,
+    ).not.toBe('0.4');
+  });
+
+  it('lights the chosen half with the pulse ring', () => {
+    renderHint('camera');
+    expect(pulses()).toBe(true);
+  });
+
+  it('does not pulse under reduced motion', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+    }));
+    renderHint('camera');
+    expect(pulses()).toBe(false);
   });
 });
 

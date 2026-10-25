@@ -348,7 +348,7 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
       await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
       await elapse(1600);
       await screen.findByText(FAILED);
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       expect(await screen.findByText('Detail of the recipe')).toBeVisible();
       expect(confirm).not.toHaveBeenCalled();
     });
@@ -370,6 +370,19 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
       await elapse(1600);
       return { user, calls, title };
     };
+
+    it('pins the notice under the tabs, visible on every tab', async () => {
+      const { user } = await conflicted();
+      await screen.findByText(
+        'This Recipe Draft was changed on another device',
+      );
+      for (const name of [/^Ingredients/, /^Steps/, /^Details/]) {
+        await user.click(screen.getByRole('tab', { name }));
+        expect(
+          screen.getByRole('button', { name: 'Load latest' }),
+        ).toBeVisible();
+      }
+    });
 
     it('stops autosave and says the Recipe Draft was changed on another device', async () => {
       const { user, calls, title } = await conflicted();
@@ -406,7 +419,7 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
       expect(
         screen.queryByRole('button', { name: 'Discard draft' }),
       ).toBeNull();
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       expect(await screen.findByText('Detail of the recipe')).toBeVisible();
       const [post] = sent(calls, 'POST /api/recipes');
       expect(post.body).not.toHaveProperty('recipeDraftId');
@@ -430,7 +443,7 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
       // Nothing has failed yet; the edit is still inside its quiet period.
       await user.type(title, ' stew');
       expect(sent(calls, PUT)).toHaveLength(0);
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       expect(await screen.findByText('Detail of the recipe')).toBeVisible();
       expect(sent(calls, PUT)).toHaveLength(1);
       const [post] = sent(calls, 'POST /api/recipes');
@@ -566,7 +579,7 @@ describe('Recipe Draft save failures, leave guard and version conflict', () => {
       const title = await screen.findByLabelText(/^Title/);
       await user.type(title, 'Gran stew');
       await elapse(1600);
-      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      await user.click(screen.getByRole('button', { name: 'Save' }));
       await elapse(100);
       expect(sent(calls, 'POST /api/recipes')).toHaveLength(1);
       await user.type(title, '!');

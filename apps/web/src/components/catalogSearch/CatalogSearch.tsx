@@ -3,7 +3,9 @@ import {
   tokens,
   usePrefersReducedMotion,
   visuallyHidden,
+  focusRing,
   radius,
+  shadow,
 } from '@pocket-pantry/ui';
 import {
   useId,
@@ -40,6 +42,8 @@ export type CatalogSearchProps = {
   onQueryChange?: (query: string) => void;
   /** Accessible name of the input and its listbox; defaults to the generic search label. */
   label?: string;
+  /** Placeholder of the empty field; defaults to the generic one. */
+  placeholder?: string;
   /** Id of an element that describes the input. */
   describedBy?: string;
   /** Show the default unit as a chip on each row (default true). */
@@ -51,6 +55,10 @@ export type CatalogSearchProps = {
    * `onQueryChange` reports an empty query (and may also drop it for any change).
    */
   selected?: CatalogSearchResult | null;
+  /** A pill shown in the token after the name. */
+  selectedTag?: ReactNode;
+  /** Shown in the token in place of "{leaf} · {aisle}". */
+  selectedMeta?: string;
   /**
    * Host blocks shown while the field is focused and empty. Blocks reach the
    * search through `useEmptyStateSearch` (pick, open an Aisle), not props.
@@ -76,6 +84,11 @@ export type CatalogSearchProps = {
   inputRef?: RefObject<HTMLInputElement | null>;
   /** Allergens a Family Ingredient created from this search starts with ticked (a proposal, not a tag). */
   newIngredientAllergenIds?: readonly string[];
+  /**
+   * Inline presentation: the empty state and the results float in a popover
+   * under the field instead of pushing the page down. Default off.
+   */
+  inline?: boolean;
 };
 
 /**
@@ -88,9 +101,12 @@ export function CatalogSearch({
   autoFocus,
   onQueryChange,
   label,
+  placeholder,
   describedBy,
   showUnit = true,
   selected = null,
+  selectedTag,
+  selectedMeta,
   emptyState,
   onUseTyped,
   scope = 'family',
@@ -99,6 +115,7 @@ export function CatalogSearch({
   defaultOpen = false,
   inputRef: hostInputRef,
   newIngredientAllergenIds,
+  inline = false,
 }: CatalogSearchProps) {
   const { t } = useTranslation('catalog');
   const id = useId();
@@ -316,11 +333,45 @@ export function CatalogSearch({
     (aisleShown ||
       (typed !== '' && (expanded || firstLoad || failed || noMatch)));
 
+  const cardSurface = {
+    borderRadius: radius.card,
+    border: `1px solid ${tokens.color.line}`,
+    backgroundColor: tokens.color.surface,
+  };
+  const popoverSx = inline
+    ? {
+        position: 'absolute' as const,
+        left: 0,
+        right: 0,
+        top: '100%',
+        zIndex: 5,
+        maxHeight: 360,
+        overflowY: 'auto' as const,
+        ...cardSurface,
+        boxShadow: shadow.float,
+      }
+    : null;
+  const popoverOpen = inline && (emptyShown || panelVisible);
+
   return (
-    <Box sx={{ position: 'relative' }}>
+    <Box
+      sx={{ position: 'relative' }}
+      onBlur={
+        inline
+          ? (event) => {
+              // Focus left the search (a tap or click outside, or Tab away): close the popover.
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setOpen(false);
+                setActiveIndex(-1);
+              }
+            }
+          : undefined
+      }
+    >
       <SearchField
         inputRef={inputRef}
         label={name}
+        placeholder={placeholder}
         value={query}
         onChange={change}
         onKeyDown={keyDown}
@@ -331,6 +382,8 @@ export function CatalogSearch({
         expanded={expanded}
         activeOptionId={expanded && active >= 0 ? optionId(active) : undefined}
         selected={selected}
+        selectedTag={selectedTag}
+        selectedMeta={selectedMeta}
         onClear={clear}
         canClear={aisle !== null}
         addToCatalog={
@@ -348,113 +401,148 @@ export function CatalogSearch({
       <Box role="status" aria-live="polite" sx={visuallyHidden}>
         {status}
       </Box>
-      {emptyShown ? (
-        // Taps inside land without the field losing focus. A block that renders nothing leaves no gap.
-        <Box
-          onMouseDown={(event) => event.preventDefault()}
-          sx={{ mt: 2, '&:empty': { display: 'none' } }}
-        >
-          <CatalogSearchEmptyStateContext.Provider
-            value={{
-              select,
-              scope,
-              openAisle: (opened) => {
-                setAisle(opened);
-                setParentCategoryId(null);
-                setActiveIndex(-1);
-                // The chip that opened it is gone; keep keyboard focus in the field.
-                inputRef.current?.focus();
-              },
+      <Box
+        sx={popoverOpen ? popoverSx : undefined}
+        hidden={inline && !popoverOpen}
+        // Taps inside the popover keep focus in the field, so they don't read as leaving it.
+        onMouseDown={inline ? (event) => event.preventDefault() : undefined}
+      >
+        {emptyShown ? (
+          // Taps inside land without the field losing focus. A block that renders nothing leaves no gap.
+          <Box
+            onMouseDown={(event) => event.preventDefault()}
+            sx={{
+              mt: inline ? 0 : 2,
+              p: inline ? '12px 12px 4px' : 0,
+              '&:empty': { display: 'none' },
             }}
           >
-            {emptyState}
-          </CatalogSearchEmptyStateContext.Provider>
-        </Box>
-      ) : null}
-      <Box
-        hidden={!panelVisible}
-        sx={{
-          mt: 1,
-          borderRadius: radius.card,
-          border: `1px solid ${tokens.color.line}`,
-          backgroundColor: tokens.color.surface,
-          overflow: 'hidden',
-        }}
-      >
-        {aisle && aisleShown ? (
-          <AisleViewHeader
-            aisle={aisle}
-            parentCategoryId={parentCategoryId}
-            onParentCategory={(id) => {
-              setParentCategoryId(id);
-              setActiveIndex(-1);
-            }}
-            failed={failed}
-            query={search.query}
-            count={
-              search.data && !search.isSearching && !failed
-                ? search.data.length
-                : null
-            }
-            onLeave={leaveAisle}
-          />
-        ) : null}
-        {failed ? (
-          <ErrorRow
-            onRetry={() => {
-              // The error row unmounts as the refetch starts; keep focus in the field.
-              inputRef.current?.focus();
-              void search.refetch();
-            }}
-          />
-        ) : null}
-        {firstLoad ? <SearchSkeleton animate={!reducedMotion} /> : null}
-        {noMatch ? (
-          <NoMatchRow query={search.query} inAisle={aisle !== null} />
+            <CatalogSearchEmptyStateContext.Provider
+              value={{
+                select,
+                scope,
+                openAisle: (opened) => {
+                  setAisle(opened);
+                  setParentCategoryId(null);
+                  setActiveIndex(-1);
+                  // The chip that opened it is gone; keep keyboard focus in the field.
+                  inputRef.current?.focus();
+                },
+              }}
+            >
+              {emptyState}
+            </CatalogSearchEmptyStateContext.Provider>
+          </Box>
         ) : null}
         <Box
-          component="ul"
-          id={listId}
-          role="listbox"
-          aria-label={name}
-          hidden={!expanded}
-          sx={{ listStyle: 'none', m: 0, p: 0 }}
-        >
-          {addOptionOffered ? (
-            <AddToCatalogRow
-              id={optionId(0)}
-              name={typed}
-              active={active === 0}
-              onSelect={openAdd}
-            />
-          ) : null}
-          {expanded &&
-            results.map((result, index) => (
-              <SearchResultRow
-                key={result.id}
-                id={optionId(addOffset + index)}
-                result={result}
-                query={typed}
-                showUnit={showUnit}
-                active={addOffset + index === active}
-                dimmed={
-                  refetching && !reducedMotion && addOffset + index !== active
+          hidden={!panelVisible}
+          sx={
+            inline
+              ? { overflow: 'hidden' }
+              : {
+                  mt: 1,
+                  ...cardSurface,
+                  overflow: 'hidden',
                 }
-                first={index === 0}
-                tag={rowTag?.({ ingredientId: result.id, name: result.name })}
-                onSelect={() => select(result)}
-              />
-            ))}
-          {useTypedOffered ? (
-            <UseTypedRow
-              id={optionId(addOffset + results.length)}
-              name={typed}
-              active={addOffset + results.length === active}
-              first={addOffset + results.length === 0}
-              tag={rowTag?.({ ingredientId: null, name: typed })}
-              onSelect={pickTyped}
+          }
+        >
+          {inline && aisle && aisleShown ? (
+            <Box
+              component="button"
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={leaveAisle}
+              sx={{
+                display: 'block',
+                border: 0,
+                background: 'transparent',
+                color: tokens.color.accent,
+                font: 'inherit',
+                fontSize: 13,
+                fontWeight: 600,
+                p: '10px 14px 0',
+                cursor: 'pointer',
+                ...focusRing,
+              }}
+            >
+              {`‹ ${t('search.backToAisles')}`}
+            </Box>
+          ) : null}
+          {aisle && aisleShown ? (
+            <AisleViewHeader
+              aisle={aisle}
+              parentCategoryId={parentCategoryId}
+              onParentCategory={(id) => {
+                setParentCategoryId(id);
+                setActiveIndex(-1);
+              }}
+              failed={failed}
+              query={search.query}
+              count={
+                search.data && !search.isSearching && !failed
+                  ? search.data.length
+                  : null
+              }
+              onLeave={leaveAisle}
             />
           ) : null}
+          {failed ? (
+            <ErrorRow
+              onRetry={() => {
+                // The error row unmounts as the refetch starts; keep focus in the field.
+                inputRef.current?.focus();
+                void search.refetch();
+              }}
+            />
+          ) : null}
+          {firstLoad ? <SearchSkeleton animate={!reducedMotion} /> : null}
+          {noMatch ? (
+            <NoMatchRow query={search.query} inAisle={aisle !== null} />
+          ) : null}
+          <Box
+            component="ul"
+            id={listId}
+            role="listbox"
+            aria-label={name}
+            hidden={!expanded}
+            sx={{ listStyle: 'none', m: 0, p: 0 }}
+          >
+            {addOptionOffered ? (
+              <AddToCatalogRow
+                id={optionId(0)}
+                name={typed}
+                active={active === 0}
+                onSelect={openAdd}
+              />
+            ) : null}
+            {expanded &&
+              results.map((result, index) => (
+                <SearchResultRow
+                  key={result.id}
+                  id={optionId(addOffset + index)}
+                  result={result}
+                  query={typed}
+                  showUnit={showUnit}
+                  active={addOffset + index === active}
+                  dimmed={
+                    refetching && !reducedMotion && addOffset + index !== active
+                  }
+                  first={index === 0}
+                  tag={rowTag?.({ ingredientId: result.id, name: result.name })}
+                  onSelect={() => select(result)}
+                />
+              ))}
+            {useTypedOffered ? (
+              <UseTypedRow
+                id={optionId(addOffset + results.length)}
+                name={typed}
+                active={addOffset + results.length === active}
+                first={addOffset + results.length === 0}
+                tag={rowTag?.({ ingredientId: null, name: typed })}
+                onSelect={pickTyped}
+              />
+            ) : null}
+          </Box>
         </Box>
       </Box>
       <AddToCatalog

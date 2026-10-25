@@ -8,9 +8,11 @@ import {
   HourglassIcon,
   PulseIcon,
   CopyIcon,
+  CalendarDaysIcon,
   CupboardIcon,
   FreezerIcon,
   FridgeIcon,
+  ScanBarcodeIcon,
   SpicesIcon,
   EarIcon,
   EqualIcon,
@@ -158,8 +160,10 @@ describe('icons', () => {
 
   it.each([
     ['Fridge', FridgeIcon],
+    ['ScanBarcode', ScanBarcodeIcon],
     ['Freezer', FreezerIcon],
     ['Cupboard', CupboardIcon],
+    ['CalendarDays', CalendarDaysIcon],
     ['Spices', SpicesIcon],
   ])('draw the %s Location as a decorative 2 px stroke glyph', (_, Glyph) => {
     const { container } = render(<Glyph />);

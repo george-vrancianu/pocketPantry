@@ -1,4 +1,5 @@
 import { Box, CloseIcon, IconButton, tokens, radius } from '@pocket-pantry/ui';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { IngredientIconSlot } from '../IngredientIconSlot';
@@ -9,14 +10,21 @@ import { resultMeta } from './SearchResultRow';
 export function SelectedToken({
   selected,
   onClear,
+  tag,
+  meta,
 }: {
   selected: CatalogSearchResult;
   onClear: () => void;
+  /** A pill after the name, e.g. where the pick came from. */
+  tag?: ReactNode;
+  /** Replaces the "{leaf} · {aisle}" line. */
+  meta?: string;
 }) {
   const { color } = tokens;
   const { t } = useTranslation('catalog');
   return (
     <Box
+      data-testid="selected-token"
       // Focus stays in the (visually hidden) input.
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClear}
@@ -44,13 +52,29 @@ export function SelectedToken({
           sx={{
             fontSize: 15,
             fontWeight: 600,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            minWidth: 0,
           }}
         >
-          {selected.name}
-          {selected.owner === 'family' ? <FamilyTag /> : null}
+          <Box
+            component="span"
+            sx={{
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {selected.name}
+          </Box>
+          <Box
+            component="span"
+            sx={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center' }}
+          >
+            {selected.owner === 'family' ? <FamilyTag /> : null}
+            {tag}
+          </Box>
         </Box>
         <Box
           sx={{
@@ -62,7 +86,7 @@ export function SelectedToken({
             whiteSpace: 'nowrap',
           }}
         >
-          {resultMeta(selected)}
+          {meta ?? resultMeta(selected)}
         </Box>
       </Box>
       <IconButton

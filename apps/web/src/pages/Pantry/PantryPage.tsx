@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from '@pocket-pantry/ui';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
@@ -15,7 +15,9 @@ import {
 } from '../../components/RowToggleErrors';
 import { RowHintNote } from '../../components/RowHintNote';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
-import { AddBatchForm } from './components/AddBatchForm';
+import { EmptyPantry, newPantryVisit } from './components/EmptyPantry';
+import { ShelfCard } from './components/ShelfCard';
+import { AddToPantrySheet } from './components/AddToPantrySheet';
 import { LocationSection } from './components/LocationSection';
 import { RowKeyHints } from './components/RowKeyHints';
 import { PantryFilters } from './components/PantryFilters';
@@ -27,6 +29,7 @@ export function PantryPage() {
   const screen = usePantryScreen();
   const rowToggleErrors = useRowToggleErrors();
   const rowHint = usePantryRowHint();
+  const [visit] = useState(newPantryVisit);
 
   const focusAdd = useCallback(
     () =>
@@ -36,88 +39,92 @@ export function PantryPage() {
     [t],
   );
 
-  // The form replaces the list and the header's Add button while open: afterwards put focus back on
-  // the Ingredient row whose Add batch button opened it, or else on the header's Add button.
-  const wasAdding = useRef<{ from?: string } | null>(null);
+  // The last Batch going leaves no section to hand focus on from, so the header "+" takes it.
+  const hadBatches = useRef(false);
   useEffect(() => {
-    const closedAdding = wasAdding.current;
-    if (closedAdding && !screen.adding) {
-      const row = [
-        ...document.querySelectorAll<HTMLElement>('[data-open-key]'),
-      ].find((element) => element.dataset.openKey === closedAdding.from);
-      if (row) row.focus();
-      else focusAdd();
-    }
-    wasAdding.current = screen.adding ? { from: screen.addingFrom } : null;
-  }, [screen.adding, screen.addingFrom, focusAdd]);
+    if (
+      screen.isEmpty &&
+      hadBatches.current &&
+      document.activeElement === document.body
+    )
+      focusAdd();
+    hadBatches.current = !screen.isEmpty && !screen.isLoading && !screen.error;
+  }, [screen.isEmpty, screen.isLoading, screen.error, focusAdd]);
 
   return (
     <RowToggleErrorProvider report={rowToggleErrors.report}>
       <UnverifiedToast />
       <AppScreenHeader
         title={t('pantry:title')}
-        action={
-          screen.adding
-            ? undefined
-            : {
-                label: t('pantry:add'),
-                icon: <PlusIcon size={20} />,
-                onClick: screen.startAdding,
-              }
-        }
+        subtitle={screen.isEmpty ? t('pantry:empty.subtitle') : undefined}
+        action={{
+          label: t('pantry:add'),
+          icon: <PlusIcon size={20} />,
+          onClick: screen.startAdding,
+        }}
       />
       <RowHintNote hint={rowHint.hint} />
-      {screen.adding ? (
-        <AddBatchForm
-          start={screen.addStart}
-          onSaved={screen.stopAdding}
-          onCancel={screen.stopAdding}
-        />
-      ) : (
-        <Stack spacing={1}>
-          {screen.error ? <Alert>{screen.error}</Alert> : null}
-          {rowToggleErrors.message ? (
-            <Alert>{rowToggleErrors.message}</Alert>
-          ) : null}
-          {screen.error ? (
-            <Button onClick={screen.retry}>{t('common:retry')}</Button>
-          ) : null}
-          {screen.isLoading ? <Spinner label={t('common:loading')} /> : null}
-          {screen.isEmpty ? (
-            <Typography color="text.secondary">{t('pantry:empty')}</Typography>
-          ) : null}
-          {!screen.isEmpty && !screen.isLoading && !screen.error ? (
-            <PantryFilters
-              query={screen.query}
-              onQueryChange={screen.setQuery}
-              filter={screen.filter}
-              onFilterChange={screen.setFilter}
-              counts={screen.counts}
-            />
-          ) : null}
-          {screen.noMatches ? (
-            <Typography color="text.secondary">
-              {t('pantry:noMatches')}
-            </Typography>
-          ) : null}
-          {screen.sections.map((section) => (
-            <LocationSection
-              key={section.location}
-              location={section.location}
-              batchCount={section.batchCount}
-              rows={section.rows}
-              today={screen.today}
-              onToggleOpen={screen.toggleOpen}
-              onRemoveBatch={(batch) =>
-                screen.removeBatch(batch.id, batch.name)
-              }
-              onAddBatch={screen.startAddingTo}
-              onEmptied={focusAdd}
-              rowHint={rowHint}
-            />
-          ))}
-        </Stack>
-      )}
+      {/* The list stays rendered behind the sheet. */}
+      <AddToPantrySheet
+        open={screen.adding}
+        start={screen.addStart}
+        location={screen.addLocation}
+        onClose={screen.stopAdding}
+        onExited={() => {
+          if (document.activeElement === document.body) focusAdd();
+        }}
+      />
+      <Stack spacing={1}>
+        {screen.error ? <Alert>{screen.error}</Alert> : null}
+        {rowToggleErrors.message ? (
+          <Alert>{rowToggleErrors.message}</Alert>
+        ) : null}
+        {screen.error ? (
+          <Button onClick={screen.retry}>{t('common:retry')}</Button>
+        ) : null}
+        {screen.isLoading ? <Spinner label={t('common:loading')} /> : null}
+        {screen.isEmpty ? (
+          <EmptyPantry
+            onType={screen.startAdding}
+            onAddTo={screen.startAddingAt}
+            visit={visit}
+          />
+        ) : null}
+        {!screen.isEmpty && !screen.isLoading && !screen.error ? (
+          <PantryFilters
+            query={screen.query}
+            onQueryChange={screen.setQuery}
+            filter={screen.filter}
+            onFilterChange={screen.setFilter}
+            counts={screen.counts}
+          />
+        ) : null}
+        {screen.emptyShelf ? (
+          <ShelfCard
+            location={screen.emptyShelf}
+            onAdd={screen.startAddingAt}
+          />
+        ) : null}
+        {screen.noMatches ? (
+          <Typography color="text.secondary">
+            {t('pantry:noMatches')}
+          </Typography>
+        ) : null}
+        {(screen.isEmpty ? [] : screen.sections).map((section) => (
+          <LocationSection
+            key={section.location}
+            location={section.location}
+            batchCount={section.batchCount}
+            rows={section.rows}
+            today={screen.today}
+            onToggleOpen={screen.toggleOpen}
+            onRemoveBatch={(batch) => screen.removeBatch(batch.id, batch.name)}
+            onAddBatch={screen.startAddingTo}
+            onEmptied={focusAdd}
+            rowHint={rowHint}
+          />
+        ))}
+      </Stack>
       <RowKeyHints />
     </RowToggleErrorProvider>
   );

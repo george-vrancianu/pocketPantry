@@ -31,6 +31,7 @@ import {
   Equal,
   Lock,
   Camera,
+  ScanBarcode,
   Globe,
   ImagePlus,
   ReceiptText,
@@ -38,6 +39,8 @@ import {
   Snowflake,
   SquareSplitHorizontal,
   LeafyGreen,
+  CalendarDays,
+  Link2,
   type LucideProps,
 } from 'lucide-react';
 
@@ -312,6 +315,8 @@ export const ArrowLeftIcon = lucide(ArrowLeft);
 export const SwapIcon = lucide(ArrowLeftRight);
 export const PeopleIcon = lucide(Users);
 export const BranchIcon = lucide(GitBranch);
+/** A Recipe's Source Link row. */
+export const LinkIcon = lucide(Link2);
 export const EyeIcon = lucide(Eye);
 export const RunningLowIcon = lucide(BatteryLow);
 
@@ -331,6 +336,8 @@ export const EqualIcon = lucide(Equal);
 export const LockIcon = lucide(Lock);
 /** The Dock's stacked Camera/Mic button: open the camera. */
 export const CameraIcon = lucide(Camera);
+/** Add to Pantry quick row: "Scan barcode". */
+export const ScanBarcodeIcon = lucide(ScanBarcode);
 /** Scan camera: the Scan Language chip's globe. */
 export const GlobeIcon = lucide(Globe);
 /** Explore: the header pill, the "+" menu item and the empty Recipes page. */
@@ -343,3 +350,5 @@ export const FridgeIcon = lucide(Refrigerator);
 export const FreezerIcon = lucide(Snowflake);
 export const CupboardIcon = lucide(SquareSplitHorizontal);
 export const SpicesIcon = lucide(LeafyGreen);
+/** Add to Pantry: the resolved expiry line and the calendar chip. */
+export const CalendarDaysIcon = lucide(CalendarDays);

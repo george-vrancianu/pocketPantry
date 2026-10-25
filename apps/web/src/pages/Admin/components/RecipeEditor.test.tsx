@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
 import type { AdminRecipe } from '../../../lib/adminRecipes';
+import { stubRowLayout } from '../../../test/layout';
 import { renderWithProviders, stubApi } from '../../../test/render';
 import { RecipeEditor } from './RecipeEditor';
 
@@ -430,5 +431,37 @@ describe('RecipeEditor Suggest Guidance', () => {
     expect(
       screen.getAllByRole('button', { name: 'Suggest Guidance' }),
     ).toHaveLength(1);
+  });
+});
+
+describe('RecipeEditor reorder (#592)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('reorders a Step with the keyboard and saves the new order with ids kept', async () => {
+    stubRowLayout();
+    const { calls } = open(base, {
+      'PUT /api/admin/recipes/r1': () => Response.json(base),
+    });
+    const user = userEvent.setup({ delay: null });
+    const grip = await screen.findByRole('button', { name: 'Move Step 1' });
+    grip.focus();
+    await user.keyboard(' ');
+    await user.keyboard('{ArrowDown}');
+    await user.keyboard(' ');
+    expect(screen.getByLabelText('Step 1')).toHaveValue('Simmer');
+    expect(screen.getByLabelText('Step 2')).toHaveValue('Chop');
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(calls.some((c) => c.key === 'PUT /api/admin/recipes/r1')).toBe(
+        true,
+      ),
+    );
+    const put = calls.find((c) => c.key === 'PUT /api/admin/recipes/r1')!;
+    expect(
+      (put.body as { steps: { id: string }[] }).steps.map((s) => s.id),
+    ).toEqual(['s2', 's1']);
   });
 });

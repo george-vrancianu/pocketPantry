@@ -1,7 +1,30 @@
 {
   "title": "Spisekammer",
   "add": "Tilføj parti",
-  "empty": "Dit spisekammer er tomt. Tilføj dit første parti med +-knappen.",
+  "empty": {
+    "subtitle": "Der er ikke noget her endnu",
+    "gatorAlt": "Gator læser en liste. Tryk for at sige hej",
+    "gatorLine": "Fortæl mig, hvad du har, så lægger jeg det på den rigtige hylde.",
+    "scan": "Scan",
+    "sayIt": "Sig det",
+    "type": "Skriv",
+    "ticked_one": "{{count}} afkrydset på din indkøbsliste",
+    "ticked_other": "{{count}} afkrydset på din indkøbsliste",
+    "moveThem": "Flyt dem",
+    "shelf": {
+      "fridge": "Køleskabet er tomt",
+      "freezer": "Fryseren er tom",
+      "cupboard": "Skabet er tomt",
+      "spices": "Krydderierne er tomme"
+    },
+    "hint": {
+      "fridge": "Mælk, æg, ost, rester",
+      "freezer": "Ærter, is, et ekstra brød",
+      "cupboard": "Pasta, ris, dåser, olie",
+      "spices": "Paprika, spidskommen, oregano"
+    },
+    "addTo": "Tilføj til {{location}}"
+  },
   "expiry": {
     "today": "I dag",
     "expired": "Udløbet",
@@ -64,24 +87,48 @@
     "save": "Gem ændringer"
   },
   "form": {
+    "close": "Luk",
     "title": "Tilføj til spisekammeret",
     "cancel": "Annuller",
-    "save": "Tilføj til spisekammeret",
     "saving": "Gemmer",
     "location": "Placering",
-    "description": "Produktbeskrivelse",
-    "descriptionPlaceholder": "f.eks. Grana Padano 200 g",
+    "description": "Note · valgfri",
+    "descriptionPlaceholder": "Mærke eller størrelse, fx Arla 3,5 %",
     "unmatchedNotice": "\"{{name}}\" gemmes som umatchet og markeres til gennemgang.",
     "quantityInvalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler og uden eksponent.",
     "prefill": {
-      "open": "Udfyld med kameraet",
-      "reading": "Læser produktfotoet…",
-      "cap": "Du har brugt alle dagens scanninger. Scan en stregkode eller udfyld formularen selv.",
       "mark": "Udfyldt fra produktet",
       "credit": "Produktdata: Open Food Facts",
-      "lookingUp": "Slår stregkoden op…",
       "listsAllergens": "Dette produkt angiver {{names}}"
-    }
+    },
+    "tag": {
+      "photo": "Fra foto",
+      "scanned": "Scannet"
+    },
+    "toast": {
+      "photo": "Læst fra dit foto · tjek og tilføj",
+      "noMatch": "Kunne ikke finde {{name}} · vælg det nærmeste",
+      "barcode": "Fundet med stregkode · {{name}}"
+    },
+    "quick": {
+      "label": "Tilføj hurtigt",
+      "photo": "Tag et billede",
+      "barcode": "Scan stregkode",
+      "sayIt": "Sig det"
+    },
+    "added": "Tilføjet",
+    "done": "Færdig",
+    "addedToast": "Tilføjet {{details}}",
+    "addedList_one": "{{count}} parti tilføjet",
+    "addedList_other": "{{count}} partier tilføjet",
+    "amount": "Mængde",
+    "where": "Hvor det skal hen",
+    "usualDot": "sædvanlig",
+    "usualFor": "sædvanlig for {{name}}",
+    "usualChip": "Sædvanlig · {{value}}",
+    "noDate": "Ingen dato",
+    "addNote": "+ Tilføj en note (mærke, størrelse)",
+    "saveName": "Tilføj {{name}}"
   },
   "picker": {
     "label": "Udløber",

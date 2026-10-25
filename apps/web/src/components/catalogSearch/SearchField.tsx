@@ -10,7 +10,7 @@ import {
   border,
   color as themeColor,
 } from '@pocket-pantry/ui';
-import type { ChangeEvent, KeyboardEvent, Ref } from 'react';
+import type { ChangeEvent, KeyboardEvent, ReactNode, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { ADD_TO_CATALOG_TRIGGER } from './AddToCatalog';
@@ -20,6 +20,8 @@ export type SearchFieldProps = {
   inputRef: Ref<HTMLInputElement>;
   /** Accessible name when nothing is selected. */
   label: string;
+  /** Placeholder when empty; defaults to the generic search one. */
+  placeholder?: string;
   value: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
@@ -32,6 +34,10 @@ export type SearchFieldProps = {
   activeOptionId?: string;
   /** The picked ingredient; the field then shows it as a token over a hidden input. */
   selected: CatalogSearchResult | null;
+  /** Shown in the token after the name. */
+  selectedTag?: ReactNode;
+  /** Shown in the token in place of the leaf and Aisle. */
+  selectedMeta?: string;
   /** Clears the text (and the selection); wired to × and to the token. */
   onClear: () => void;
   /** Show the clear × even with no text (an Aisle is open). */
@@ -49,6 +55,7 @@ const SPINNER_SIZE = 18;
 export function SearchField({
   inputRef,
   label,
+  placeholder,
   value,
   onChange,
   onKeyDown,
@@ -59,6 +66,8 @@ export function SearchField({
   expanded,
   activeOptionId,
   selected,
+  selectedTag,
+  selectedMeta,
   onClear,
   canClear = false,
   addToCatalog = null,
@@ -145,7 +154,7 @@ export function SearchField({
         spellCheck={false}
         enterKeyHint="search"
         autoFocus={autoFocus}
-        placeholder={t('search.placeholder')}
+        placeholder={placeholder ?? t('search.placeholder')}
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
@@ -186,7 +195,12 @@ export function SearchField({
         {rightSlot}
       </Box>
       {selected ? (
-        <SelectedToken selected={selected} onClear={onClear} />
+        <SelectedToken
+          selected={selected}
+          onClear={onClear}
+          tag={selectedTag}
+          meta={selectedMeta}
+        />
       ) : null}
     </Box>
   );

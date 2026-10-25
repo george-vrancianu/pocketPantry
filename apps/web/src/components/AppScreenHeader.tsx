@@ -10,13 +10,22 @@ const REFRESH_ROOTS = ['/pantry', '/shopping', '/recipes'];
 
 type Props = Pick<
   ScreenHeaderProps,
-  'title' | 'subtitle' | 'action' | 'trailing' | 'titleRef' | 'back'
+  | 'title'
+  | 'subtitle'
+  | 'subline'
+  | 'truncateTitle'
+  | 'action'
+  | 'trailing'
+  | 'titleRef'
+  | 'back'
 >;
 
 /** The screen header; Home shows only where the Dock is hidden, since the Dock carries Home everywhere else. */
 export function AppScreenHeader({
   title,
   subtitle,
+  subline,
+  truncateTitle,
   action,
   trailing,
   titleRef,
@@ -32,8 +41,9 @@ export function AppScreenHeader({
       title={title}
       leading={tabRoot ? <RefreshMark /> : undefined}
       // With the mark, the Explore pill and the action in one row, a long title would break mid-word at 360 px.
-      truncateTitle={tabRoot}
       subtitle={subtitle}
+      subline={tabRoot ? <RefreshStatus /> : subline}
+      truncateTitle={tabRoot || truncateTitle}
       home={dockStateFor(pathname).visible ? undefined : { label: t('home') }}
       action={action}
       trailing={trailing}

@@ -83,8 +83,7 @@
   "overlay": {
     "noCamera": "Kameraet er ikke tilgængeligt. Tjek kameratilladelsen, eller udfyld formularen selv.",
     "photoFailed": "Det foto kunne ikke bruges. Prøv igen.",
-    "pointAtBarcode": "Ret kameraet mod stregkoden.",
-    "barcodeNotFound": "Der blev ikke fundet noget produkt til den stregkode. Tag i stedet et foto af produktet."
+    "pointAtBarcode": "Ret kameraet mod stregkoden."
   },
   "torch": "Lommelygte",
   "stack": {
@@ -108,5 +107,19 @@
     "label": "Importér fra fotos",
     "added_one": "{{count}} foto tilføjet · {{mode}}",
     "added_other": "{{count}} fotos tilføjet · {{mode}}"
-  }
+  },
+  "addsToPantry": "Tilføjes til dit spisekammer",
+  "scanSeveral": "Scan flere",
+  "readingLabel": "Gator læser etiketten…",
+  "labelFailed": "Kunne ikke læse etiketten. Prøv igen eller skriv det.",
+  "typeIt": "Skriv det",
+  "barcode": {
+    "scanAgain": "Scan igen",
+    "use": "Brug denne",
+    "unknown": "Vi kender ikke denne stregkode endnu",
+    "takePhoto": "Tag et foto",
+    "lookingUp": "Slår stregkoden op…",
+    "ingredientAisle": "{{ingredient}} · {{aisle}}"
+  },
+  "labelCap": "Du har brugt alle dagens scanninger. Scan en stregkode eller skriv det."
 }

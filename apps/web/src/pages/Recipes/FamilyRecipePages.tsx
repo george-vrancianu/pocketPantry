@@ -1,12 +1,7 @@
 import { Alert, Link, Spinner, Stack, Typography } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Navigate,
-  useLocation,
-  useNavigate,
-  useParams,
-} from 'react-router-dom';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { RecipeDraftStatus } from '../../components/RecipeDraftStatus';
 import {
   useRecipeDraftFormSession,
@@ -22,7 +17,6 @@ import { RecipeDraftContinue } from './RecipeDraftContinue';
 import { plateMatchInput, useResumedPlateBases } from './useResumedPlateBases';
 import { useRecipeDraftAutosave } from '../../lib/recipeDraftAutosave';
 import {
-  BaseRecipePicker,
   STANDALONE,
   noBasePick,
   type BaseRecipeOption,
@@ -33,22 +27,36 @@ import { translateApiError } from '../../i18n/translateApiError';
 import {
   useFamilyRecipeEdit,
   useFamilyTipWrites,
+  useSetFamilyGuidance,
   useUpdateFamilyRecipe,
   useVariantDraft,
   type FamilyRecipeDraft,
 } from '../../lib/familyRecipes';
-import { TipsEditor } from '../../components/recipeEditor/RecipeTips';
+import { useLeaveGuard } from '../../lib/useLeaveGuard';
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval';
+import { RecipeTipsCard } from './components/RecipeTipsCard';
 import { emptyDraft } from '../../lib/recipeDraft';
-import { toGuidanceDraft, type GuidanceDraft } from '../../lib/guidanceDraft';
-import { usePlateMatches } from '../../lib/plateRecipe';
-import { useRecipe, type RecipeDetail } from '../../lib/recipes';
-import { FamilyGuidance, useMomentOptions } from './components/FamilyGuidance';
 import {
+  toGuidanceDraft,
+  toGuidanceInput,
+  type GuidanceDraft,
+} from '../../lib/guidanceDraft';
+import { usePlateMatches } from '../../lib/plateRecipe';
+import {
+  recipesQueryKey,
+  useRecipe,
+  type RecipeDetail,
+} from '../../lib/recipes';
+import { useMomentOptions } from './components/FamilyGuidance';
+import {
+  documentOf,
   draftOfEdit,
   draftOfVariantDraft,
   type FamilyDraft,
   type NewRecipeDraft,
 } from './familyDraft';
+import { BaseRecipeCard } from './components/BaseRecipeCard';
+import { VariantOfRow } from './components/VariantOfRow';
 import { FamilyRecipeForm } from './components/FamilyRecipeForm';
 
 /** The draft's guidance with its Pairing links named from the source Recipe (same order). */
@@ -110,8 +118,21 @@ export function NewRecipePage() {
   const { t } = useTranslation(['common', 'errors', 'recipes']);
   const route = useRecipeDraftRoute();
   const draftRoute = routePropsOf(route);
-  if (route.error) return <Alert>{translateApiError(t, route.error)}</Alert>;
-  if (route.loading) return <Spinner label={t('common:loading')} />;
+  if (route.error || route.loading) {
+    return (
+      <>
+        <AppScreenHeader
+          title={t('recipes:family.newRecipeHeading')}
+          back={{ label: t('recipes:back'), href: '/recipes' }}
+        />
+        {route.error ? (
+          <Alert>{translateApiError(t, route.error)}</Alert>
+        ) : (
+          <Spinner label={t('common:loading')} />
+        )}
+      </>
+    );
+  }
   // A resumed Recipe Draft holds everything; the state a reload kept would only repeat it.
   const supplied = route.resumed ? null : suppliedOf(location.state);
   const resuming = new URLSearchParams(location.search).has(DRAFT_PARAM);
@@ -176,7 +197,6 @@ function NewRecipeContent({
 }) {
   const { resumed } = draftRoute;
   const { t } = useTranslation(['recipes', 'common', 'errors']);
-  const navigate = useNavigate();
   const [basePick, setBasePick] = useState(noBasePick);
   // True from the tap on Save until the create answers, so a second tap cannot make a second Recipe.
   const [finishing, setFinishing] = useState(false);
@@ -196,9 +216,12 @@ function NewRecipeContent({
   const sourceLanguage = resumedForm
     ? resumedForm.sourceLanguage
     : supplied?.sourceLanguage;
-  const [sourceLink, setSourceLink] = useState(
-    resumedForm ? resumedForm.sourceLink : (supplied?.sourceLink ?? null),
-  );
+  const offeredLink = resumedForm
+    ? resumedForm.sourceLink
+    : (supplied?.sourceLink ?? null);
+  // Removing the link is undoable until the Member saves: it is only left out of the Recipe Draft and the save.
+  const [linkRemoved, setLinkRemoved] = useState(false);
+  const sourceLink = linkRemoved ? null : offeredLink;
   const headingRef = useRef<HTMLHeadingElement>(null);
   // "Show" in the hidden-by-Allergies note asks the ranking again, hidden ones too, for the draft as it arrived.
   const [showHidden, setShowHidden] = useState(false);
@@ -288,15 +311,43 @@ function NewRecipeContent({
   }, []);
 
   return (
-    <>
-      <AppScreenHeader
-        title={t('recipes:family.newRecipeHeading')}
-        titleRef={headingRef}
-        trailing={<RecipeDraftStatus status={autosave.status} />}
-      />
-      <Stack spacing={2.5}>
-        {hasBases && resumedBases.ready ? (
-          <BaseRecipePicker
+    <FamilyRecipeForm
+      header={{
+        title: t('recipes:family.newRecipeHeading'),
+        titleRef: headingRef,
+        back: { label: t('recipes:back'), href: '/recipes' },
+        subline: <RecipeDraftStatus status={autosave.status} />,
+      }}
+      openTab="details"
+      hint={t('recipes:family.newRecipeHint')}
+      stepsHint={t('recipes:family.tips.newHint')}
+      detailsTop={
+        <>
+          {offeredLink ? (
+            <RemovableSourceLink
+              href={offeredLink}
+              translatedFrom={sourceLanguage}
+              removed={linkRemoved}
+              onRemove={() => setLinkRemoved(true)}
+              onUndo={() => setLinkRemoved(false)}
+            />
+          ) : null}
+          {resumed?.kind === 'variant' && !resumed.baseAvailable ? (
+            <Alert severity="info">{t('recipes:drafts.baseGone')}</Alert>
+          ) : null}
+        </>
+      }
+      belowTitle={
+        hasBases && resumedBases.ready ? (
+          <BaseRecipeCard
+            pickedTitle={
+              parentId === null
+                ? null
+                : (closestBases.find((b) => b.id === parentId)?.title ??
+                  (pick.another?.id === parentId ? pick.another.title : null) ??
+                  resumedBases.picked?.title ??
+                  null)
+            }
             pick={pick}
             onPick={setBasePick}
             closest={closestBases}
@@ -319,48 +370,32 @@ function NewRecipeContent({
             }}
             onChange={setParentId}
           />
-        ) : null}
-        {sourceLink ? (
-          <RemovableSourceLink
-            href={sourceLink}
-            translatedFrom={sourceLanguage}
-            onRemove={() => {
-              setSourceLink(null);
-              // The button unmounts with the row: keep focus on the page.
-              headingRef.current?.focus();
-            }}
-          />
-        ) : null}
-        {resumed?.kind === 'variant' && !resumed.baseAvailable ? (
-          <Alert severity="info">{t('recipes:drafts.baseGone')}</Alert>
-        ) : null}
-        {session.notices}
-        <FamilyRecipeForm
-          heading={t('recipes:family.newRecipeHeading')}
-          description={t('recipes:family.newRecipeHint')}
-          initial={initial}
-          saveLabel={t('recipes:family.save')}
-          saving={session.saving}
-          error={session.create.error}
-          guidance={{ initial: initialGuidance, momentOptions }}
-          onChange={setFormState}
-          onSave={(document, guidance) =>
-            session.save({
-              parentId: hasBases ? parentId : null,
-              document,
-              guidance,
-              extra: {
-                ...(sourceLink ? { sourceLink } : {}),
-                // The language note belongs to the link: no link, no note.
-                ...(sourceLink && sourceLanguage ? { sourceLanguage } : {}),
-              },
-            })
-          }
-          onCancel={() => navigate('/recipes')}
-        />
-        {session.discardButton}
-      </Stack>
-    </>
+        ) : null
+      }
+      notices={session.notices}
+      detailsEnd={session.discardButton}
+      initial={initial}
+      saving={session.saving}
+      error={session.create.error}
+      guidance={{
+        initial: initialGuidance,
+        momentOptions,
+        fromLink: Boolean(offeredLink),
+      }}
+      onChange={setFormState}
+      onSave={(document, guidance) =>
+        session.save({
+          parentId: hasBases ? parentId : null,
+          document,
+          guidance,
+          extra: {
+            ...(sourceLink ? { sourceLink } : {}),
+            // The language note belongs to the link: no link, no note.
+            ...(sourceLink && sourceLanguage ? { sourceLanguage } : {}),
+          },
+        })
+      }
+    />
   );
 }
 
@@ -427,11 +462,20 @@ function NewVariantContent({
   draftRoute: RecipeDraftRouteProps;
 }) {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
-  const navigate = useNavigate();
   const draft = useVariantDraft(id);
   // The draft carries link ids only; the source's own view names them.
   const source = useRecipe(id);
-  const ready = draft.data !== undefined && !source.isPending;
+  // ADR 0029: on a Family's copy the Variant still branches from the Catalog Base, which the copy's own view does not name.
+  const baseId = draft.data?.parentId;
+  const fetchesBase = baseId !== undefined && baseId !== id;
+  const catalogBase = useRecipe(baseId ?? '', fetchesBase, false);
+  // A disabled query is "pending" for ever: wait only for a Base that is being fetched.
+  const ready =
+    draft.data !== undefined &&
+    !source.isPending &&
+    !(fetchesBase && catalogBase.isPending);
+  // When the Base cannot be fetched, name nothing rather than the Family's copy.
+  const baseTitle = fetchesBase ? catalogBase.data?.title : source.data?.title;
 
   return (
     <>
@@ -452,8 +496,8 @@ function NewVariantContent({
           baseId={id}
           prefill={draft.data}
           source={source.data}
+          baseTitle={baseTitle}
           draftRoute={draftRoute}
-          onCancel={() => navigate(`/recipes/${id}`)}
         />
       ) : null}
     </>
@@ -465,14 +509,15 @@ function VariantForm({
   baseId,
   prefill,
   source,
+  baseTitle,
   draftRoute,
-  onCancel,
 }: {
   baseId: string;
   prefill: FamilyRecipeDraft;
   source: RecipeDetail | undefined;
+  /** The Catalog Base this Variant branches from (not the copy it was filled from). */
+  baseTitle: string | undefined;
   draftRoute: RecipeDraftRouteProps;
-  onCancel: () => void;
 }) {
   const { resumed } = draftRoute;
   const { t } = useTranslation(['recipes', 'common', 'errors']);
@@ -506,116 +551,236 @@ function VariantForm({
   });
 
   return (
-    <>
-      <AppScreenHeader
-        title={t('recipes:family.newHeading')}
-        trailing={<RecipeDraftStatus status={autosave.status} />}
-      />
-      <Stack spacing={2.5}>
-        {session.notices}
-        <FamilyRecipeForm
-          heading={t('recipes:family.newHeading')}
-          description={`${t('recipes:family.copyHint')} ${t('recipes:family.tipsHint')}`}
-          initial={initial.draft}
-          saveLabel={t('recipes:family.create')}
-          saving={session.saving}
-          error={session.create.error}
-          guidance={{ initial: initial.guidance, momentOptions }}
-          onChange={setFormState}
-          onSave={(document, guidance) =>
-            session.save({ parentId: prefill.parentId, document, guidance })
-          }
-          onCancel={onCancel}
-        />
-        {session.discardButton}
-      </Stack>
-    </>
+    <FamilyRecipeForm
+      header={{
+        title: t('recipes:family.newHeading'),
+        back: { label: t('recipes:back'), href: `/recipes/${baseId}` },
+        subline: <RecipeDraftStatus status={autosave.status} />,
+      }}
+      openTab="details"
+      stepsHint={t('recipes:family.tips.variantHint')}
+      hint={t('recipes:family.copyHint', {
+        source: source?.title ?? prefill.title,
+      })}
+      belowTitle={baseTitle ? <VariantOfRow title={baseTitle} /> : null}
+      notices={session.notices}
+      detailsEnd={session.discardButton}
+      initial={initial.draft}
+      saving={session.saving}
+      error={session.create.error}
+      guidance={{ initial: initial.guidance, momentOptions }}
+      onChange={setFormState}
+      onSave={(document, guidance) =>
+        session.save({ parentId: prefill.parentId, document, guidance })
+      }
+    />
   );
 }
 
 /** Edit one of the Family's own Recipes, with its own Tips below. */
+type FormState = { draft: FamilyDraft; guidance: GuidanceDraft | null };
+
 export function EditFamilyRecipePage() {
   const { t } = useTranslation(['recipes', 'common', 'errors']);
   const { id = '' } = useParams();
-  const navigate = useNavigate();
   const query = useFamilyRecipeEdit(id);
   const update = useUpdateFamilyRecipe(id);
+  const setGuidance = useSetFamilyGuidance(id);
+  const momentOptions = useMomentOptions();
   const tipWrites = useFamilyTipWrites(id);
+  // Deleting a Tip waits for its Undo window to end (ADR 0009).
+  const tipRemoval = useDeferredRemoval(
+    [...recipesQueryKey, 'edit', id],
+    tipWrites.remove.mutateAsync,
+  );
   const recipe = query.data;
-  /** Bumped after each save so the form reseeds with the new line and Step ids. */
-  const [saves, setSaves] = useState(0);
+  /** Bumped when the Recipe is stored so the form reseeds with the new line and Step ids. */
+  const [recipeSaves, setRecipeSaves] = useState(0);
+  /** Bumped when the Guidance is stored so its card reseeds; a Recipe-only save keeps Guidance edits. */
+  const [guidanceSaves, setGuidanceSaves] = useState(0);
   /** The Member dropped the Source Link; it is only sent (and gone) once they save. */
   const [linkRemoved, setLinkRemoved] = useState(false);
-  /** What the form holds now, for Suggest Guidance in the Guidance section below it. */
-  const [page, setPage] = useState<FamilyDraft | null>(null);
+  /** The Guidance as the last save stored it; reseeds the Guidance card after a save. */
+  const [savedGuidance, setSavedGuidance] = useState<GuidanceDraft | null>(
+    null,
+  );
+  /** Both parts are saved (shows "Recipe saved."); cleared by the next Save. */
+  const [saved, setSaved] = useState(false);
+  /** The part the last Save could not store, and why. */
+  const [failure, setFailure] = useState<{
+    part: 'recipe' | 'guidance';
+    error: unknown;
+  } | null>(null);
+  /** The Recipe document as last stored (what the form reseeded with): a Save with the same document does not resend it. */
+  const storedRecipe = useRef<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  /** The form as it is now, reported on every change; read when the Member leaves. */
+  const formNow = useRef<FormState | null>(null);
+  /** Whether the form holds unsaved edits, so "Recipe saved." goes when new ones arrive. */
+  const [dirty, setDirty] = useState(false);
 
+  // Unsaved edits to the Recipe or its Guidance (Tips save at once and never count).
+  const hasUnsaved = (now: typeof formNow.current) => {
+    if (!now || !recipe) return false;
+    const recipeBase =
+      storedRecipe.current ?? JSON.stringify(documentOf(draftOfEdit(recipe)));
+    if (linkRemoved || JSON.stringify(documentOf(now.draft)) !== recipeBase)
+      return true;
+    const guidanceBase = savedGuidance ?? toGuidanceDraft(recipe);
+    return (
+      now.guidance !== null &&
+      JSON.stringify(toGuidanceInput(now.guidance)) !==
+        JSON.stringify(toGuidanceInput(guidanceBase))
+    );
+  };
+  useLeaveGuard(
+    () => hasUnsaved(formNow.current),
+    t('recipes:family.leaveConfirm'),
+  );
+
+  const back = { label: t('recipes:back'), href: `/recipes/${id}` };
+  // A failed delete is reported by the deferred-removal toast, not here.
+  const tipError =
+    tipWrites.add.error ?? tipWrites.update.error ?? tipWrites.hide.error;
+  const tips = (recipe?.tips ?? []).filter(
+    (tip) => !tipRemoval.hiddenIds.has(tip.id),
+  );
+  const tipActions = {
+    add: (text: string, stepId: string | null) =>
+      tipWrites.add.mutateAsync({ text, stepId }),
+    update: (tipId: string, text: string) =>
+      tipWrites.update.mutate({ tipId, text }),
+    remove: (tipId: string) =>
+      tipRemoval.remove(tipId, '', t('recipes:family.tips.deleted'), {
+        polite: true,
+      }),
+  };
+  if (!recipe || recipe.archived) {
+    return (
+      <>
+        <AppScreenHeader
+          title={recipe?.title ?? t('recipes:title')}
+          back={back}
+        />
+        <Stack spacing={3}>
+          {query.error ? (
+            <Alert>{translateApiError(t, query.error)}</Alert>
+          ) : null}
+          {query.isPending ? <Spinner label={t('common:loading')} /> : null}
+          {recipe?.archived ? (
+            <Typography>{t('recipes:family.unavailable')}</Typography>
+          ) : null}
+        </Stack>
+      </>
+    );
+  }
   return (
-    <>
-      <AppScreenHeader
-        title={recipe?.title ?? t('recipes:title')}
-        titleRef={headingRef}
-      />
-      <Stack spacing={3}>
-        {query.error ? (
-          <Alert>{translateApiError(t, query.error)}</Alert>
-        ) : null}
-        {query.isPending ? <Spinner label={t('common:loading')} /> : null}
-        {recipe && !recipe.archived ? (
-          <>
-            {recipe.sourceLink && !linkRemoved ? (
-              <RemovableSourceLink
-                href={recipe.sourceLink}
-                translatedFrom={recipe.sourceLanguage}
-                onRemove={() => {
-                  setLinkRemoved(true);
-                  // The button unmounts with the row: keep focus on the page.
-                  headingRef.current?.focus();
-                }}
-              />
-            ) : null}
-            <FamilyRecipeForm
-              // Tip writes refresh `recipe` but must not reset unsaved edits; a save reseeds.
-              key={`${recipe.id}-${saves}`}
-              heading={t('recipes:family.editHeading')}
-              initial={draftOfEdit(recipe)}
-              onDraftChange={setPage}
-              saveLabel={t('recipes:family.save')}
-              saving={update.isPending}
-              error={update.error}
-              stepTipCount={(stepId) =>
-                recipe.tips.filter((tip) => tip.stepId === stepId).length
-              }
-              onSave={(document) =>
-                update.mutate(
-                  // `null` clears the link (and its language); leaving it out keeps both.
-                  linkRemoved ? { ...document, sourceLink: null } : document,
-                  {
-                    onSuccess: () => {
-                      setSaves((count) => count + 1);
-                      setLinkRemoved(false);
-                    },
-                  },
-                )
-              }
-              onCancel={() => navigate(`/recipes/${id}`)}
-            />
-            <Typography role="status" variant="body2">
-              {saves > 0 && !update.isPending
-                ? t('recipes:family.saved')
-                : null}
-            </Typography>
-            <Link href={`/recipes/${id}`}>
-              {t('recipes:family.viewRecipe')}
-            </Link>
-            <TipsEditor recipe={{ ...recipe, id }} writes={tipWrites} />
-            <FamilyGuidance recipe={recipe} page={page} />
-          </>
-        ) : null}
-        {recipe?.archived ? (
-          <Typography>{t('recipes:family.unavailable')}</Typography>
-        ) : null}
-      </Stack>
-    </>
+    <FamilyRecipeForm
+      // Tip writes refresh `recipe` but must not reset unsaved edits; a save reseeds.
+      seedKey={`${recipe.id}-${recipeSaves}`}
+      guidanceSeedKey={`${recipe.id}-${guidanceSaves}`}
+      header={{
+        title: t('recipes:family.editHeading'),
+        titleRef: headingRef,
+        back,
+      }}
+      openTab="steps"
+      detailsTop={
+        recipe.sourceLink ? (
+          <RemovableSourceLink
+            href={recipe.sourceLink}
+            translatedFrom={recipe.sourceLanguage}
+            removed={linkRemoved}
+            onRemove={() => setLinkRemoved(true)}
+            onUndo={() => setLinkRemoved(false)}
+          />
+        ) : null
+      }
+      notices={
+        <>
+          <Typography role="status" variant="body2">
+            {saved && !saving && !dirty && !linkRemoved
+              ? t('recipes:family.saved')
+              : null}
+          </Typography>
+          {failure ? (
+            <Alert>
+              {t(`recipes:family.saveFailed.${failure.part}`, {
+                reason: translateApiError(t, failure.error),
+              })}
+            </Alert>
+          ) : null}
+          {tipError ? <Alert>{translateApiError(t, tipError)}</Alert> : null}
+        </>
+      }
+      stepsEnd={
+        <>
+          <Link href={`/recipes/${id}`}>{t('recipes:family.viewRecipe')}</Link>
+          <RecipeTipsCard
+            tips={tips.filter((tip) => tip.stepId === null)}
+            parentTips={recipe.parentTips ?? undefined}
+            actions={tipActions}
+            busy={tipWrites.hide.isPending}
+            onHide={(tipIds) => tipWrites.hide.mutate(tipIds)}
+          />
+        </>
+      }
+      initial={draftOfEdit(recipe)}
+      guidance={{
+        initial: savedGuidance ?? toGuidanceDraft(recipe),
+        momentOptions,
+        recipeId: recipe.id,
+      }}
+      onChange={(state) => {
+        formNow.current = state;
+        setDirty(hasUnsaved(state));
+      }}
+      saving={saving}
+      error={null}
+      stepTipCount={(stepId) =>
+        tips.filter((tip) => tip.stepId === stepId).length
+      }
+      stepTips={{
+        of: (stepId) => tips.filter((tip) => tip.stepId === stepId),
+        actions: tipActions,
+      }}
+      onSave={async (document, guidance) => {
+        // Edit always passes `guidance`; without it there is nothing to store.
+        if (!guidance) return;
+        // `null` clears the link (and its language); leaving it out keeps both.
+        const body = linkRemoved ? { ...document, sourceLink: null } : document;
+        const key = JSON.stringify(body);
+        setSaving(true);
+        setSaved(false);
+        setFailure(null);
+        try {
+          if (storedRecipe.current !== key) {
+            try {
+              const stored = await update.mutateAsync(body);
+              storedRecipe.current = JSON.stringify(
+                documentOf(draftOfEdit(stored)),
+              );
+              setLinkRemoved(false);
+              setRecipeSaves((count) => count + 1);
+            } catch (error) {
+              setFailure({ part: 'recipe', error });
+              return;
+            }
+          }
+          try {
+            const stored = await setGuidance.mutateAsync(guidance);
+            setSavedGuidance(toGuidanceDraft(stored));
+          } catch (error) {
+            setFailure({ part: 'guidance', error });
+            return;
+          }
+          setGuidanceSaves((count) => count + 1);
+          setSaved(true);
+        } finally {
+          setSaving(false);
+        }
+      }}
+    />
   );
 }
