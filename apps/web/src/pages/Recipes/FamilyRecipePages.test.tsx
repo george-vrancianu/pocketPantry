@@ -15,6 +15,7 @@ import type {
   FamilyRecipeEdit,
 } from '../../lib/familyRecipes';
 import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
+import { stubRowLayout } from '../../test/layout';
 import { stubViewport } from '../../test/viewport';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { useRecipe } from '../../lib/recipes';
@@ -2995,5 +2996,122 @@ describe('Recipe editor Tips (#593)', () => {
     expect(
       screen.getByText('Add tips to steps after saving the Recipe.'),
     ).toBeVisible();
+  });
+});
+
+describe('Recipe editor reorder by hold, grip or keyboard (#592)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  const twoSteps: FamilyRecipeEdit = {
+    ...saved,
+    steps: [
+      { id: 's1', text: 'Whisk the eggs', timerSeconds: null },
+      { id: 's2', text: 'Fry', timerSeconds: null },
+    ],
+    tips: [{ id: 't2', stepId: 's1', text: 'Low heat' }],
+  };
+  const edit = () =>
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(twoSteps),
+      'PUT /api/recipes/g': () => Response.json(twoSteps),
+    });
+
+  const pickUpAndMoveDown = async (
+    user: ReturnType<typeof userEvent.setup>,
+    grip: HTMLElement,
+  ) => {
+    grip.focus();
+    await user.keyboard(' ');
+    await user.keyboard('{ArrowDown}');
+    await user.keyboard(' ');
+  };
+
+  it('reorders a line with the keyboard, announces it, and saves the new order', async () => {
+    stubRowLayout();
+    const user = userEvent.setup({ delay: null });
+    const calls = edit();
+    await openTab(user, 'Ingredients');
+    await screen.findByLabelText('Quantity of Egg');
+    await pickUpAndMoveDown(
+      user,
+      screen.getByRole('button', { name: 'Move Egg' }),
+    );
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('Gran’s herbs');
+    expect(items[1]).toHaveTextContent('Egg');
+    expect(document.body).toHaveTextContent('Egg dropped at position 2 of 2.');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Recipe saved.');
+    const put = calls.find((c) => c.key === 'PUT /api/recipes/g')!;
+    expect(
+      (put.body as { lines: { id: string }[] }).lines.map((l) => l.id),
+    ).toEqual(['l2', 'l1']);
+  });
+
+  it('reorders a Step with the keyboard keeping its id and Tip, and saves the order', async () => {
+    stubRowLayout();
+    const user = userEvent.setup({ delay: null });
+    const calls = edit();
+    await openTab(user, 'Steps');
+    await pickUpAndMoveDown(
+      user,
+      screen.getByRole('button', { name: 'Move Step 1' }),
+    );
+    expect(screen.getByLabelText('Step 1')).toHaveValue('Fry');
+    expect(screen.getByLabelText('Step 2')).toHaveValue('Whisk the eggs');
+    expect(screen.getByLabelText('Tip 1 of Step 2')).toHaveValue('Low heat');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Recipe saved.');
+    const put = calls.find((c) => c.key === 'PUT /api/recipes/g')!;
+    expect(
+      (put.body as { steps: { id: string }[] }).steps.map((s) => s.id),
+    ).toEqual(['s2', 's1']);
+  });
+
+  it('describes each row as "Hold to move"', async () => {
+    const user = userEvent.setup({ delay: null });
+    edit();
+    await openTab(user, 'Steps');
+    const row = screen.getByLabelText('Step 1').closest('li')!;
+    expect(row).toHaveAccessibleDescription('Hold to move');
+  });
+
+  it('lifts a row held for 500 ms and not one held on the quantity input', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    stubRowLayout();
+    edit();
+    await openTab(
+      userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime }),
+      'Ingredients',
+    );
+    const quantity = await screen.findByLabelText('Quantity of Egg');
+    const row = quantity.closest('li')!;
+    const press = (target: Element) =>
+      fireEvent.pointerDown(target, {
+        pointerId: 1,
+        isPrimary: true,
+        button: 0,
+        clientX: 10,
+        clientY: 10,
+      });
+
+    press(quantity);
+    await act(() => vi.advanceTimersByTimeAsync(600));
+    expect(row).not.toHaveAttribute('data-lifted');
+    fireEvent.pointerUp(quantity, { pointerId: 1 });
+
+    press(screen.getByRole('button', { name: 'Move Egg' }));
+    await act(() => vi.advanceTimersByTimeAsync(10));
+    expect(row).toHaveAttribute('data-lifted');
+    fireEvent.pointerUp(document, { pointerId: 1 });
+    press(row.querySelector('p')!);
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(row).not.toHaveAttribute('data-lifted');
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(row).toHaveAttribute('data-lifted');
   });
 });
