@@ -1,5 +1,5 @@
 {
-  "id": "0ef47e02-6cc1-4957-b1fd-db129b7aa65b",
+  "id": "ee3f1af5-ad3b-49fc-a9a4-d36003e899ca",
   "prevId": "24bf3065-6ebb-4607-a19c-49f810f8e695",
   "version": "7",
   "dialect": "postgresql",
@@ -2456,6 +2456,139 @@
             "id"
           ],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.recipe_drafts": {
+      "name": "recipe_drafts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "member_id": {
+          "name": "member_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "family_id": {
+          "name": "family_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "recipe_draft_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_recipe_id": {
+          "name": "base_recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content": {
+          "name": "content",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "recipe_drafts_member_updated_idx": {
+          "name": "recipe_drafts_member_updated_idx",
+          "columns": [
+            {
+              "expression": "member_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "recipe_drafts_member_id_user_id_fk": {
+          "name": "recipe_drafts_member_id_user_id_fk",
+          "tableFrom": "recipe_drafts",
+          "tableTo": "user",
+          "columnsFrom": [
+            "member_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recipe_drafts_family_id_family_id_fk": {
+          "name": "recipe_drafts_family_id_family_id_fk",
+          "tableFrom": "recipe_drafts",
+          "tableTo": "family",
+          "columnsFrom": [
+            "family_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recipe_drafts_base_recipe_id_recipes_id_fk": {
+          "name": "recipe_drafts_base_recipe_id_recipes_id_fk",
+          "tableFrom": "recipe_drafts",
+          "tableTo": "recipes",
+          "columnsFrom": [
+            "base_recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -5409,6 +5542,14 @@
         "hard"
       ]
     },
+    "public.recipe_draft_kind": {
+      "name": "recipe_draft_kind",
+      "schema": "public",
+      "values": [
+        "new_recipe",
+        "variant"
+      ]
+    },
     "public.shopping_list_status": {
       "name": "shopping_list_status",
       "schema": "public",
@@ -5455,8 +5596,7 @@
         "scan",
         "voice",
         "assistant",
-        "link",
-        "guidance"
+        "link"
       ]
     },
     "public.user_role": {

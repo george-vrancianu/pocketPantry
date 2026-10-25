@@ -189,5 +189,10 @@
     "cap_reached_no_time_one": "You have used your {{count}} Suggest Guidance request for today. Try again tomorrow.",
     "cap_reached_no_time_other": "You have used all {{count}} Suggest Guidance requests for today. Try again tomorrow.",
     "cap_reached_unknown": "You have used all of today's Suggest Guidance requests. Try again tomorrow."
+  },
+  "recipe_drafts": {
+    "not_found": "That Recipe Draft is gone. It may have been discarded or kept too long.",
+    "limit_reached": "You already keep {{max}} Recipe Drafts. Finish or discard one to start another.",
+    "version_conflict": "This Recipe Draft was changed on another device. Load the latest to carry on."
   }
 }

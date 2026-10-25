@@ -17,6 +17,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import type { OpenFoodFactsProduct } from '../barcode/open-food-facts.client';
+import type { RecipeDraftContent } from '../recipe-drafts/recipe-drafts.schemas';
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true })
@@ -1282,3 +1283,40 @@ export const openFoodFactsCache = pgTable('open_food_facts_cache', {
   product: jsonb('product').$type<OpenFoodFactsProduct | null>(),
   fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
 });
+
+// Recipe Draft (ADR 0028): a Member's unsaved New Recipe or new Variant, kept on the server.
+// Private to its Member and never a Recipe. `content` is the form state as typed (half-typed
+// values included). Deleted lazily 30 days after `updatedAt`, with the Member's other
+// Recipe Drafts when they leave the Family.
+export const recipeDraftKind = pgEnum('recipe_draft_kind', [
+  'new_recipe',
+  'variant',
+]);
+
+export const recipeDrafts = pgTable(
+  'recipe_drafts',
+  {
+    id: uuid('id').primaryKey(),
+    memberId: text('member_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    kind: recipeDraftKind('kind').notNull(),
+    // Set to none when the base Recipe is deleted.
+    baseRecipeId: uuid('base_recipe_id').references(() => recipes.id, {
+      onDelete: 'set null',
+    }),
+    content: jsonb('content').$type<RecipeDraftContent>().notNull(),
+    // Optimistic concurrency: the client sends the version it last saw.
+    version: integer('version').notNull().default(1),
+    ...timestamps,
+  },
+  (table) => [
+    index('recipe_drafts_member_updated_idx').on(
+      table.memberId,
+      table.updatedAt,
+    ),
+  ],
+);
