@@ -1,4 +1,4 @@
-import { Box, GatorImage, radius, Typography } from '@pocket-pantry/ui';
+import { Box, Gator, radius, Typography } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useGatorAlt } from '../../lib/useGatorAlt';
 
@@ -16,7 +16,12 @@ export function GatorBubble({ children, live = false, mt = '20px' }: Props) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mt }}>
       <Box sx={{ flexShrink: 0 }}>
-        <GatorImage mood="talking" size={132} alt={gatorAlt('talking')} />
+        <Gator
+          mood="talking"
+          size={132}
+          loop="signature"
+          alt={gatorAlt('talking')}
+        />
       </Box>
       <Typography
         role={live ? 'status' : undefined}
