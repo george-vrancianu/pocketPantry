@@ -3013,6 +3013,7 @@ describe('Details basics of the editor', () => {
     await user.click(title);
     await user.tab();
     expect(screen.getByText('Enter a title.')).toBeVisible();
+    expect(title).toHaveAccessibleDescription('Enter a title.');
     expect(
       screen.queryByText(/Kept as your draft until you save/),
     ).not.toBeInTheDocument();
@@ -3084,8 +3085,20 @@ describe('Details basics of the editor', () => {
       'true',
     );
     expect(screen.getByLabelText(/^Prep/)).not.toHaveAccessibleDescription();
+    // Only the cell that owns the message is outlined.
+    expect(screen.getByLabelText(/^Serves/).closest('label')).toHaveAttribute(
+      'data-invalid',
+      'true',
+    );
+    expect(screen.getByLabelText(/^Prep/).closest('label')).not.toHaveAttribute(
+      'data-invalid',
+    );
     await user.clear(screen.getByLabelText(/^Serves/));
     await user.type(screen.getByLabelText(/^Serves/), '2');
+    expect(screen.getByLabelText(/^Prep/).closest('label')).toHaveAttribute(
+      'data-invalid',
+      'true',
+    );
     expect(
       screen.getByText('Minutes must be a whole number, or blank.'),
     ).toBeVisible();

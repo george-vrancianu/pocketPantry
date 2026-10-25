@@ -56,6 +56,8 @@ const cellLabelSx = {
   color: tokens.color.muted,
 } as const;
 
+const cellUnitSx = { ...cellLabelSx, textTransform: 'none' } as const;
+
 const cellValueSx = {
   width: '100%',
   minWidth: 0,
@@ -84,6 +86,7 @@ export function FamilyDetailsBasics({
 }: Props) {
   const { t } = useTranslation(['admin', 'recipes']);
   const messageId = useId();
+  const titleMsgId = useId();
 
   const levels: (Difficulty | '')[] = ['', ...DIFFICULTIES];
   const nextLevel = () =>
@@ -116,9 +119,13 @@ export function FamilyDetailsBasics({
     placeholder: string,
     unit?: string,
   ) => {
-    const invalid = factsMessage?.key === key;
+    const hasMessage = factsMessage?.key === key;
     return (
-      <Box component="label" sx={cellSx(problems[key])}>
+      <Box
+        component="label"
+        data-invalid={hasMessage ? 'true' : undefined}
+        sx={cellSx(hasMessage)}
+      >
         <Box component="span" sx={cellLabelSx}>
           {label}
         </Box>
@@ -129,7 +136,7 @@ export function FamilyDetailsBasics({
           autoComplete="off"
           aria-label={label}
           aria-invalid={problems[key] ? true : undefined}
-          aria-describedby={invalid ? messageId : undefined}
+          aria-describedby={hasMessage ? messageId : undefined}
           placeholder={placeholder}
           value={draft[key]}
           onChange={(event: ChangeEvent<HTMLInputElement>) =>
@@ -137,7 +144,7 @@ export function FamilyDetailsBasics({
           }
           sx={cellValueSx}
         />
-        <Box component="span" sx={{ ...cellLabelSx, textTransform: 'none' }}>
+        <Box component="span" sx={cellUnitSx}>
           {unit ?? ' '}
         </Box>
       </Box>
@@ -155,6 +162,7 @@ export function FamilyDetailsBasics({
           autoComplete="off"
           aria-label={t('recipes:family.title')}
           aria-invalid={showTitleError ? true : undefined}
+          aria-describedby={showTitleError || hint ? titleMsgId : undefined}
           placeholder={t('recipes:family.details.titlePlaceholder')}
           value={draft.title}
           onChange={(event: ChangeEvent<HTMLInputElement>) =>
@@ -181,6 +189,7 @@ export function FamilyDetailsBasics({
         />
         {showTitleError ? (
           <Typography
+            id={titleMsgId}
             variant="caption"
             sx={{ display: 'block', mt: '6px', color: tokens.color.urgentFg }}
           >
@@ -188,6 +197,7 @@ export function FamilyDetailsBasics({
           </Typography>
         ) : hint ? (
           <Typography
+            id={titleMsgId}
             variant="caption"
             sx={{ display: 'block', mt: '6px', color: tokens.color.muted }}
           >
@@ -246,10 +256,7 @@ export function FamilyDetailsBasics({
             >
               {levelText}
             </Box>
-            <Box
-              component="span"
-              sx={{ ...cellLabelSx, textTransform: 'none' }}
-            >
+            <Box component="span" sx={cellUnitSx}>
               {' '}
             </Box>
           </Box>
