@@ -88,12 +88,8 @@ export class FamilyRecipesService {
     if (!row) throw recipeNotFound();
     // A copy of a Catalog Base branches from the Base it was Copied From.
     const isFamilyBase = row.familyId !== null && row.parentId === null;
-    if (isFamilyBase && !row.copiedFromId) {
-      throw new ApiException(404, 'recipes.parent_not_found');
-    }
-    const parentId = isFamilyBase
-      ? (row.copiedFromId as string)
-      : (row.parentId ?? row.id);
+    const parentId = isFamilyBase ? row.copiedFromId : (row.parentId ?? row.id);
+    if (!parentId) throw new ApiException(404, 'recipes.parent_not_found');
     const [base] = await this.database
       .select({ archivedAt: recipes.archivedAt })
       .from(recipes)

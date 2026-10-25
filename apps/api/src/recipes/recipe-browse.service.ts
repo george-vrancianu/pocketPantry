@@ -244,7 +244,7 @@ export class RecipeBrowseService {
             .where(eq(recipes.id, row.copiedFromId))
         : [];
     const copiedFrom =
-      row.copiedFromId && copiedFromRow
+      copiedFromRow && row.copiedFromId
         ? { id: row.copiedFromId, archived: copiedFromRow.archivedAt !== null }
         : null;
     // A Pairing's Catalog Recipe link also names the Family's live copy of it.

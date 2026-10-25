@@ -553,10 +553,6 @@ describe('Add to Family (integration)', () => {
     };
     const draftOf = async (id: string) =>
       (await ana.get(`/${id}/variant-draft`).expect(200)).body as Draft;
-    const errorOf = (res: { body: unknown }) =>
-      (res.body as { error?: { code?: string }; code?: string }).error?.code ??
-      (res.body as { code?: string }).code;
-
     it('branches from the Catalog Base a copy was Copied From, prefilled from the copy', async () => {
       const src = await makeBase();
       const id = await copyId(ana, src.id);
@@ -572,6 +568,24 @@ describe('Add to Family (integration)', () => {
       expect(draft.parentId).toBe(src.id);
       expect(draft.title).toBe(`Copy ${stamp}-edited`);
       expect(draft.lines[0].quantity).toBe(350);
+      // The draft saves end to end under the Catalog Base.
+      const saved = await ana
+        .post('', {
+          title: draft.title,
+          servings: 2,
+          locale: 'en',
+          parentId: draft.parentId,
+          lines: [
+            {
+              ingredientId: seedId.ingredient('flour'),
+              quantity: 350,
+              unit: 'g',
+            },
+          ],
+          steps: [{ text: 'Mix' }],
+        })
+        .expect(201);
+      expect((saved.body as { parentId: string }).parentId).toBe(src.id);
     });
 
     it('resolves a copy of a Catalog Variant to its Catalog Base, prefilled from the copy', async () => {
@@ -609,9 +623,11 @@ describe('Add to Family (integration)', () => {
         .set({ archivedAt: new Date() })
         .where(eq(recipes.id, src.id));
       for (const id of [baseCopy, variantCopy]) {
-        expect(errorOf(await ana.get(`/${id}/variant-draft`).expect(409))).toBe(
-          'recipes.parent_archived',
-        );
+        expect(
+          (await ana.get(`/${id}/variant-draft`).expect(409)).body,
+        ).toMatchObject({
+          code: 'recipes.parent_archived',
+        });
       }
     });
 
@@ -624,8 +640,10 @@ describe('Add to Family (integration)', () => {
         servings: 2,
       });
       expect(
-        errorOf(await ana.get(`/${plain}/variant-draft`).expect(404)),
-      ).toBe('recipes.parent_not_found');
+        (await ana.get(`/${plain}/variant-draft`).expect(404)).body,
+      ).toMatchObject({
+        code: 'recipes.parent_not_found',
+      });
     });
 
     it('reports the Catalog Base a copy came from on its detail', async () => {
