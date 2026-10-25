@@ -350,6 +350,26 @@ describe('Add to Family (integration)', () => {
     expect((await row(fresh)).archivedAt).toBeNull();
   });
 
+  it('keeps the name of an Unmatched ingredient line', async () => {
+    const src = await makeBase();
+    await database.insert(recipeIngredientLines).values({
+      id: newId(),
+      recipeId: src.id,
+      position: 5,
+      rawName: 'Secret spice',
+      normalizedName: 'secret spice',
+    });
+    const copy = await copyId(ana, src.id);
+    const lines = await database
+      .select()
+      .from(recipeIngredientLines)
+      .where(eq(recipeIngredientLines.recipeId, copy));
+    expect(lines.find((l) => l.rawName === 'Secret spice')).toMatchObject({
+      ingredientId: null,
+      normalizedName: 'secret spice',
+    });
+  });
+
   it('gives each Family its own copy', async () => {
     const src = await makeBase();
     const mine = await copyId(ana, src.id);

@@ -51,7 +51,10 @@ export class RecipeCopyService {
     );
   }
 
-  /** `copy` for a Family with no acting Member (the Meal Plan slot migration mirrors it in SQL). */
+  /**
+   * `copy` for a Family, without an acting Member. Migration 0045 mirrors this copy in SQL
+   * (it cannot call TypeScript), so the two must stay in parity.
+   */
   async copyFor(
     familyId: string,
     sourceId: string,
@@ -66,6 +69,19 @@ export class RecipeCopyService {
       catalogScope(familyId),
       source,
       locale,
+    );
+    // The resolved view drops the names of Unmatched lines; the copy keeps them.
+    const names = new Map(
+      (
+        await this.database
+          .select({
+            id: recipeIngredientLines.id,
+            rawName: recipeIngredientLines.rawName,
+            normalizedName: recipeIngredientLines.normalizedName,
+          })
+          .from(recipeIngredientLines)
+          .where(eq(recipeIngredientLines.recipeId, sourceId))
+      ).map((row) => [row.id, row]),
     );
     const hidden = await this.database
       .select({ tipId: recipeHiddenTips.tipId })
@@ -100,6 +116,8 @@ export class RecipeCopyService {
             recipeId: copyId,
             position,
             ingredientId: line.ingredientId,
+            rawName: names.get(line.id)?.rawName ?? null,
+            normalizedName: names.get(line.id)?.normalizedName ?? null,
             quantity: line.quantity,
             unit: line.unit,
             optional: line.optional,

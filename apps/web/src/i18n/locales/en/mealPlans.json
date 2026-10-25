@@ -82,7 +82,8 @@
   "picker": {
     "title": "Choose a Recipe",
     "for": "{{mealtime}} on {{day}}",
-    "emptyFamily": "No Recipes in your Family yet. Pick one from Explore below.",
+    "emptyFamily": "No Recipes in your Family yet.",
+    "exploreLoading": "Loading Explore",
     "explore": "Explore",
     "exploreHint": "Picking one adds it to your Recipes and plans it."
   }

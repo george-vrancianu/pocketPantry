@@ -83,7 +83,7 @@ SELECT
   COALESCE(tt."text", tip."text")
 FROM "mp_copy_map" m
 INNER JOIN "recipe_tips" tip ON tip."recipe_id" = m."source_id"
-LEFT JOIN "mp_step_map" sm ON sm."old_id" = tip."step_id"
+LEFT JOIN "mp_step_map" sm ON sm."copy_id" = m."copy_id" AND sm."old_id" = tip."step_id"
 LEFT JOIN "recipe_tip_translations" tt ON tt."tip_id" = tip."id" AND tt."locale" = m."locale"
 WHERE m."is_new";--> statement-breakpoint
 INSERT INTO "recipe_hidden_tips" ("recipe_id", "tip_id")
@@ -119,7 +119,7 @@ INNER JOIN "eating_moments" em ON em."id" = u."eating_moment_id" AND em."archive
 LEFT JOIN "recipe_eating_moment_translations" ut ON ut."recipe_eating_moment_id" = u."id" AND ut."locale" = m."locale"
 WHERE m."is_new";--> statement-breakpoint
 UPDATE "meal_plan_slots" s
-SET "recipe_id" = m."copy_id"
+SET "recipe_id" = m."copy_id", "updated_at" = now()
 FROM "meal_plans" p, "mp_copy_map" m
 WHERE p."id" = s."meal_plan_id"
   AND m."family_id" = p."family_id"

@@ -322,6 +322,38 @@ describe('Migration 0045: Meal Plan slots use Family Recipes (integration)', () 
     expect(await slotRecipe(ids.otherPlan, 0)).toBe(other[0].id);
   });
 
+  it("gives each of two Families exactly one Step Tip per fresh copy, on that copy's own step", async () => {
+    await seedCatalog();
+    await seedFamily(ids.family, ids.owner, ids.plan, 'en');
+    await seedFamily(ids.otherFamily, ids.otherOwner, ids.otherPlan, 'en');
+    await slot(ids.plan, 0, ids.base);
+    await slot(ids.otherPlan, 0, ids.base);
+
+    await migrate();
+
+    for (const familyId of [ids.family, ids.otherFamily]) {
+      const [copy] = await copiesOf(familyId);
+      const tips = await rows<{
+        step_id: string | null;
+        text: string;
+        position: number;
+      }>(
+        `select step_id, text, position from recipe_tips where recipe_id = $1 order by position`,
+        [copy.id],
+      );
+      expect(tips.map((t) => [t.text, t.position])).toEqual([
+        ['Slowly', 0],
+        ['Salt', 1],
+      ]);
+      const own = await rows<{ id: string }>(
+        `select id from recipe_steps where recipe_id = $1`,
+        [copy.id],
+      );
+      expect(own).toHaveLength(1);
+      expect(tips[0].step_id).toBe(own[0].id);
+    }
+  });
+
   it('is safe to run again: no new copies, slots stay put', async () => {
     await seedCatalog();
     await seedFamily(ids.family, ids.owner, ids.plan, 'ro');

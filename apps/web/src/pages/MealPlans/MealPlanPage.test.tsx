@@ -622,6 +622,10 @@ describe('Meal Plan page', () => {
   });
 
   it('lists Family Recipes first, then Explore, and a Catalog pick adds it to the Family and plans the copy', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const api = setup(week(), {
       'GET /api/recipes': (url: URL) =>
         Response.json({
@@ -629,12 +633,15 @@ describe('Meal Plan page', () => {
             url.searchParams.get('scope') === 'catalog'
               ? [
                   recipe('cat-1', 'Pad thai'),
+                  recipe('cat-3', 'Ramen'),
                   { ...recipe('cat-2', 'Already mine'), familyCopyId: 'fam-1' },
                 ]
               : [{ ...recipe('fam-1', 'Already mine'), owner: 'family' }],
         }),
-      'POST /api/recipes/cat-1/copy': () =>
-        Response.json({ id: 'copy-1', created: true }),
+      'POST /api/recipes/cat-1/copy': async () => {
+        await gate;
+        return Response.json({ id: 'copy-1', created: true });
+      },
     });
     const u = userEvent.setup();
     renderPage();
@@ -654,6 +661,14 @@ describe('Meal Plan page', () => {
     expect(within(picker).getAllByText('Already mine')).toHaveLength(1);
 
     await u.click(await within(picker).findByText('Pad thai'));
+    // Only the picked row shows it is being added; the others stay ready.
+    expect(await within(picker).findAllByText('In your Recipes')).toHaveLength(
+      1,
+    );
+    expect(
+      within(picker).getByRole('button', { name: 'Add Ramen to your Recipes' }),
+    ).toBeVisible();
+    release();
 
     await waitFor(() =>
       expect(

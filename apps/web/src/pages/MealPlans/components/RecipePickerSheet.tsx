@@ -3,8 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExploreRow } from '../../../components/ExploreRow';
-import { apiRequest } from '../../../lib/api';
-import { recipeChangeQueryKeys } from '../../../lib/queryKeys';
+import { copyToFamily, refreshAfterCopy } from '../../../lib/addToFamily';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   isFiltering,
@@ -62,7 +61,7 @@ export function RecipePickerSheet({
   });
   const filters = useRecipeFilters(open);
   const queryClient = useQueryClient();
-  const [adding, setAdding] = useState(false);
+  const [addingId, setAddingId] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const items = recipes.data?.recipes ?? [];
   // A Catalog Recipe the Family already has is listed above as its copy.
@@ -73,24 +72,17 @@ export function RecipePickerSheet({
     id: string;
     familyCopyId: string | null;
   }) => {
-    if (busy || adding) return;
+    if (busy || addingId) return;
     setAddError(null);
-    setAdding(true);
+    setAddingId(recipe.id);
     try {
-      const copy = await apiRequest<{ id: string; created: boolean }>(
-        `/recipes/${recipe.id}/copy`,
-        { method: 'POST' },
-      );
-      await Promise.all(
-        recipeChangeQueryKeys.map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey }),
-        ),
-      );
+      const copy = await copyToFamily(recipe.id);
+      await refreshAfterCopy(queryClient);
       onPick(copy.id);
     } catch (error) {
       setAddError(translateApiError(t, error));
     } finally {
-      setAdding(false);
+      setAddingId(null);
     }
   };
   const filtering = isFiltering(browse);
@@ -142,6 +134,12 @@ export function RecipePickerSheet({
             />
           ))}
         </Box>
+        {explore.error ? (
+          <Alert>{translateApiError(t, explore.error)}</Alert>
+        ) : null}
+        {explore.isPending ? (
+          <Spinner label={t('mealPlans:picker.exploreLoading')} />
+        ) : null}
         {catalogItems.length > 0 ? (
           <section>
             <Typography
@@ -164,7 +162,7 @@ export function RecipePickerSheet({
                 <ExploreRow
                   key={recipe.id}
                   recipe={recipe}
-                  state={{ status: adding ? 'adding' : 'none' }}
+                  state={{ status: addingId === recipe.id ? 'adding' : 'none' }}
                   onAdd={() => void pickCatalog(recipe)}
                   onOpen={() => void pickCatalog(recipe)}
                   filtering
