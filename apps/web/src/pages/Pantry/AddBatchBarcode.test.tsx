@@ -424,30 +424,6 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     expect(create?.body).not.toHaveProperty('barcode');
   });
 
-  it('ignores a second read while a lookup is out', async () => {
-    const user = userEvent.setup();
-    let release: () => void = () => {};
-    const gate = new Promise<void>((resolve) => (release = resolve));
-    const calls = stubLookup(async () => {
-      await gate;
-      return Response.json(found());
-    });
-    renderWithProviders(<PantryPage />);
-    await openForm(user);
-    await user.click(cameraButton());
-    await decode();
-    act(() => emitBarcode('4000000000008'));
-    act(() => emitBarcode(CODE));
-    release();
-    await act(async () => {
-      await gate;
-    });
-    await screen.findByRole('button', { name: 'Use this' });
-    expect(
-      calls.filter((c) => c.key.startsWith('GET /api/barcode')),
-    ).toHaveLength(1);
-  });
-
   it('ignores a lookup that lands after the Member switched to Product', async () => {
     const user = userEvent.setup();
     let release: () => void = () => {};

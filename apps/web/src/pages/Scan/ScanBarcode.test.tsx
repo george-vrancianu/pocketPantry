@@ -153,17 +153,6 @@ describe('Barcode on the Scan page', () => {
       renderScan();
       expect(selected()).toEqual(['Barcode']);
     });
-
-    it("keeps apart from the add-Batch overlay's remembered mode", async () => {
-      const user = userEvent.setup();
-      localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
-      renderScan();
-      await user.click(screen.getByRole('radio', { name: 'Barcode' }));
-      expect(localStorage.getItem('pocket-pantry.camera-overlay-mode')).toBe(
-        'product',
-      );
-      expect(localStorage.getItem('pocket-pantry.scan-mode')).toBe('barcode');
-    });
   });
 
   describe('the controls', () => {

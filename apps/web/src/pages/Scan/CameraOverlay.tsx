@@ -69,8 +69,6 @@ type Props = {
   modes: readonly CameraMode[];
   /** The mode the camera opens in; the first of `modes` when it is not one of them. */
   defaultMode: CameraMode;
-  /** The Member picked a mode on the slider: the opener may remember it. */
-  onModeChange?: (mode: CameraMode) => void;
   /** A label was read, a barcode was confirmed, or the Member chose to type: the opener closes the overlay and applies it. */
   onResult: (result: CameraResult) => void;
   /** Scan several: the opener closes what the camera was opened over and opens the Scan page in this mode. */
@@ -81,15 +79,14 @@ type Props = {
 
 /**
  * The camera as a full-screen overlay for a page that needs one photo back (the add-Batch form),
- * not a Scan Session. Its mode lives in the overlay, never in the URL, and the opener decides what
- * to remember: it is opened over a page whose own address and settings are not its to change. The
+ * not a Scan Session. Its mode lives in the overlay, never in the URL: it is opened over a page
+ * whose own address and settings are not its to change. The
  * Scan Language is the Scan page's remembered one, and only Product mode has it: a Barcode Lookup
  * is not a Scan.
  */
 export function CameraOverlay({
   modes,
   defaultMode,
-  onModeChange,
   onResult,
   onScanSeveral,
   onCancel,
@@ -125,7 +122,8 @@ export function CameraOverlay({
   const [sliding, setSliding] = useState(false);
   const shooting = useRef(false);
   // The Barcode Lookup in flight (its number), so a result that lands after the card was dismissed
-  // or the mode changed is ignored, and a second code read meanwhile starts no second lookup.
+  // or the mode changed is ignored. The pending check is defensive: the watcher stops after the first
+  // code, so a second read cannot arrive while a lookup is out.
   const lookupSeq = useRef(0);
   const lookupPending = useRef<number | null>(null);
   const dismissCard = () => {
@@ -396,7 +394,6 @@ export function CameraOverlay({
                 dismissCard();
                 setFailed(null);
                 if (picked === 'barcode') setPendingCode(null);
-                onModeChange?.(picked);
               }}
             />
           ) : (

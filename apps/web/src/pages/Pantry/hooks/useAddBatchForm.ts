@@ -239,7 +239,6 @@ export function useAddBatchForm({
       marks.add('description');
     }
     setPrefilled((was) => new Set([...was, ...marks]));
-    return marks.size > 0;
   };
   // The read outlives the render that started it: it fills what is untouched when it lands.
   const prefillNow = useRef(applyPrefill);
