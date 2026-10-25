@@ -32,6 +32,7 @@ import {
 import {
   emptyPairing,
   guidanceProblems,
+  hasGuidanceProblem,
   noteLength,
   type EatingMomentDraft,
   type GuidanceDraft,
@@ -94,15 +95,20 @@ export function GuidanceCard({
       suggestFamilyGuidance({ recipe: suggestionRecipeOf(page), guidance }),
   });
   const problems = guidanceProblems(draft);
-  const hasProblem =
-    problems.pairing || problems.note || problems.linkPosition !== null;
+  const hasProblem = hasGuidanceProblem(draft);
   const set = guidanceSetCount(draft);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const wasAllFilled = useRef(suggestion.allFilled);
   // The Suggest button leaves once every field is filled; keep focus on the row.
   useEffect(() => {
-    if (suggestion.allFilled && document.activeElement === document.body) {
+    if (
+      !wasAllFilled.current &&
+      suggestion.allFilled &&
+      document.activeElement === document.body
+    ) {
       toggleRef.current?.focus();
     }
+    wasAllFilled.current = suggestion.allFilled;
   }, [suggestion.allFilled]);
   const subline =
     set > 0

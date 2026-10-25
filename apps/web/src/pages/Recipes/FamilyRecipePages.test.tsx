@@ -813,6 +813,17 @@ describe('NewRecipePage', () => {
 describe('NewVariantPage', () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  it('does not move focus to the Guidance row when the draft arrives fully filled', async () => {
+    setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(draft),
+    });
+    await screen.findByLabelText(/^Title/);
+    expect(
+      screen.queryByRole('button', { name: 'Suggest' }),
+    ).not.toBeInTheDocument();
+    expect(guidanceToggle()).not.toHaveFocus();
+  });
+
   it('prefills from the draft', async () => {
     const user = userEvent.setup({ delay: null });
     setup('/recipes/x/variant/new', {

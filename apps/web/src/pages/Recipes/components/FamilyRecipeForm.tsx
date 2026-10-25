@@ -25,7 +25,7 @@ import { useFamilyCatalog } from '../../../lib/familyCatalog';
 import { useRecipeFilters } from '../../../lib/recipes';
 import type { GuidanceInput } from '../../../lib/adminRecipes';
 import {
-  guidanceProblems,
+  hasGuidanceProblem,
   toGuidanceInput,
   type GuidanceDraft,
 } from '../../../lib/guidanceDraft';
@@ -153,11 +153,7 @@ export function FamilyRecipeForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft, guidanceDraft]);
   const problems = problemsOf(draft);
-  const guidanceBad = guidanceDraft
-    ? Object.values(guidanceProblems(guidanceDraft)).some(
-        (problem) => problem !== false && problem !== null,
-      )
-    : false;
+  const guidanceBad = guidanceDraft ? hasGuidanceProblem(guidanceDraft) : false;
   const showTitleError = problems.title && titleTouched;
 
   const change = (patch: Partial<FamilyDraft>) =>
