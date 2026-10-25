@@ -173,7 +173,14 @@
       "levelCycle": "Level: {{value}}. Tap to change",
       "prep": "Prep",
       "cook": "Cook"
-    }
+    },
+    "baseCard": {
+      "closest": "closest match",
+      "subline": "Pick the Catalog Recipe this one is a Variant of, or keep it standalone.",
+      "savesVariant": "Saves as a Variant of <b>{{title}}</b>.",
+      "savesBase": "Saves as its own Base Recipe."
+    },
+    "variantOf": "Variant of <b>{{title}}</b>"
   },
   "fewerServings": "Fewer Servings",
   "moreServings": "More Servings",
@@ -259,7 +266,8 @@
   "sourceLink": {
     "from": "From {{host}} ↗",
     "remove": "Remove link",
-    "translatedFrom": "Translated from {{language}}"
+    "translatedFrom": "Translated from {{language}}",
+    "removed": "Link removed. It goes when you save."
   },
   "recipeDraft": {
     "saving": "Saving…",

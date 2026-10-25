@@ -315,8 +315,14 @@ export function useRecipeFilters(enabled = true) {
 }
 
 /** One Recipe with its text, plus its base, Variants and ingredient diff. */
-export function useRecipe(id: string, enabled = true) {
+export function useRecipe(
+  id: string,
+  enabled = true,
+  /** `false` to fail at once instead of retrying (a side lookup that must not hold a form). */
+  retry?: boolean,
+) {
   return useQuery({
+    ...(retry === undefined ? {} : { retry }),
     queryKey: [...recipesQueryKey, 'detail', id],
     queryFn: () => apiRequest<RecipeDetail>(`/recipes/${id}`),
     enabled,

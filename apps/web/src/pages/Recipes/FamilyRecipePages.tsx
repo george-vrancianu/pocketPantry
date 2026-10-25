@@ -17,7 +17,6 @@ import { RecipeDraftContinue } from './RecipeDraftContinue';
 import { plateMatchInput, useResumedPlateBases } from './useResumedPlateBases';
 import { useRecipeDraftAutosave } from '../../lib/recipeDraftAutosave';
 import {
-  BaseRecipePicker,
   STANDALONE,
   noBasePick,
   type BaseRecipeOption,
@@ -56,6 +55,8 @@ import {
   type FamilyDraft,
   type NewRecipeDraft,
 } from './familyDraft';
+import { BaseRecipeCard } from './components/BaseRecipeCard';
+import { VariantOfRow } from './components/VariantOfRow';
 import { FamilyRecipeForm } from './components/FamilyRecipeForm';
 
 /** The draft's guidance with its Pairing links named from the source Recipe (same order). */
@@ -215,9 +216,12 @@ function NewRecipeContent({
   const sourceLanguage = resumedForm
     ? resumedForm.sourceLanguage
     : supplied?.sourceLanguage;
-  const [sourceLink, setSourceLink] = useState(
-    resumedForm ? resumedForm.sourceLink : (supplied?.sourceLink ?? null),
-  );
+  const offeredLink = resumedForm
+    ? resumedForm.sourceLink
+    : (supplied?.sourceLink ?? null);
+  // Removing the link is undoable until the Member saves: it is only left out of the Recipe Draft and the save.
+  const [linkRemoved, setLinkRemoved] = useState(false);
+  const sourceLink = linkRemoved ? null : offeredLink;
   const headingRef = useRef<HTMLHeadingElement>(null);
   // "Show" in the hidden-by-Allergies note asks the ranking again, hidden ones too, for the draft as it arrived.
   const [showHidden, setShowHidden] = useState(false);
@@ -319,48 +323,54 @@ function NewRecipeContent({
       stepsHint={t('recipes:family.tips.newHint')}
       detailsTop={
         <>
-          {hasBases && resumedBases.ready ? (
-            <BaseRecipePicker
-              pick={pick}
-              onPick={setBasePick}
-              closest={closestBases}
-              loading={
-                showHidden && (revealed.isPending || revealed.isFetching)
-              }
-              hiddenByAllergiesCount={hiddenCount}
-              onShowHidden={() => {
-                // A failed Show leaves the answer in error (it never goes stale): ask again.
-                if (showHidden) {
-                  if (revealed.isError) void revealed.refetch();
-                  return;
-                }
-                // Keep the current pick: the revealed list may rank it lower or drop it, so it stays offered.
-                const current = closestBases.find((b) => b.id === parentId);
-                setBasePick({
-                  ...pick,
-                  chosen: parentId ?? STANDALONE,
-                  another: current ?? pick.another,
-                });
-                setShowHidden(true);
-              }}
-              onChange={setParentId}
-            />
-          ) : null}
-          {sourceLink ? (
+          {offeredLink ? (
             <RemovableSourceLink
-              href={sourceLink}
+              href={offeredLink}
               translatedFrom={sourceLanguage}
-              onRemove={() => {
-                setSourceLink(null);
-                // The button unmounts with the row: keep focus on the page.
-                headingRef.current?.focus();
-              }}
+              removed={linkRemoved}
+              onRemove={() => setLinkRemoved(true)}
+              onUndo={() => setLinkRemoved(false)}
             />
           ) : null}
           {resumed?.kind === 'variant' && !resumed.baseAvailable ? (
             <Alert severity="info">{t('recipes:drafts.baseGone')}</Alert>
           ) : null}
         </>
+      }
+      belowTitle={
+        hasBases && resumedBases.ready ? (
+          <BaseRecipeCard
+            pickedTitle={
+              parentId === null
+                ? null
+                : (closestBases.find((b) => b.id === parentId)?.title ??
+                  (pick.another?.id === parentId ? pick.another.title : null) ??
+                  resumedBases.picked?.title ??
+                  null)
+            }
+            pick={pick}
+            onPick={setBasePick}
+            closest={closestBases}
+            loading={showHidden && (revealed.isPending || revealed.isFetching)}
+            hiddenByAllergiesCount={hiddenCount}
+            onShowHidden={() => {
+              // A failed Show leaves the answer in error (it never goes stale): ask again.
+              if (showHidden) {
+                if (revealed.isError) void revealed.refetch();
+                return;
+              }
+              // Keep the current pick: the revealed list may rank it lower or drop it, so it stays offered.
+              const current = closestBases.find((b) => b.id === parentId);
+              setBasePick({
+                ...pick,
+                chosen: parentId ?? STANDALONE,
+                another: current ?? pick.another,
+              });
+              setShowHidden(true);
+            }}
+            onChange={setParentId}
+          />
+        ) : null
       }
       notices={session.notices}
       detailsEnd={session.discardButton}
@@ -455,7 +465,17 @@ function NewVariantContent({
   const draft = useVariantDraft(id);
   // The draft carries link ids only; the source's own view names them.
   const source = useRecipe(id);
-  const ready = draft.data !== undefined && !source.isPending;
+  // ADR 0029: on a Family's copy the Variant still branches from the Catalog Base, which the copy's own view does not name.
+  const baseId = draft.data?.parentId;
+  const fetchesBase = baseId !== undefined && baseId !== id;
+  const catalogBase = useRecipe(baseId ?? '', fetchesBase, false);
+  // A disabled query is "pending" for ever: wait only for a Base that is being fetched.
+  const ready =
+    draft.data !== undefined &&
+    !source.isPending &&
+    !(fetchesBase && catalogBase.isPending);
+  // When the Base cannot be fetched, name nothing rather than the Family's copy.
+  const baseTitle = fetchesBase ? catalogBase.data?.title : source.data?.title;
 
   return (
     <>
@@ -476,6 +496,7 @@ function NewVariantContent({
           baseId={id}
           prefill={draft.data}
           source={source.data}
+          baseTitle={baseTitle}
           draftRoute={draftRoute}
         />
       ) : null}
@@ -488,11 +509,14 @@ function VariantForm({
   baseId,
   prefill,
   source,
+  baseTitle,
   draftRoute,
 }: {
   baseId: string;
   prefill: FamilyRecipeDraft;
   source: RecipeDetail | undefined;
+  /** The Catalog Base this Variant branches from (not the copy it was filled from). */
+  baseTitle: string | undefined;
   draftRoute: RecipeDraftRouteProps;
 }) {
   const { resumed } = draftRoute;
@@ -538,6 +562,7 @@ function VariantForm({
       hint={t('recipes:family.copyHint', {
         source: source?.title ?? prefill.title,
       })}
+      belowTitle={baseTitle ? <VariantOfRow title={baseTitle} /> : null}
       notices={session.notices}
       detailsEnd={session.discardButton}
       initial={initial.draft}
@@ -658,15 +683,13 @@ export function EditFamilyRecipePage() {
       }}
       openTab="steps"
       detailsTop={
-        recipe.sourceLink && !linkRemoved ? (
+        recipe.sourceLink ? (
           <RemovableSourceLink
             href={recipe.sourceLink}
             translatedFrom={recipe.sourceLanguage}
-            onRemove={() => {
-              setLinkRemoved(true);
-              // The button unmounts with the row: keep focus on the page.
-              headingRef.current?.focus();
-            }}
+            removed={linkRemoved}
+            onRemove={() => setLinkRemoved(true)}
+            onUndo={() => setLinkRemoved(false)}
           />
         ) : null
       }
