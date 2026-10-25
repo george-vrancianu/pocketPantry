@@ -231,13 +231,27 @@ describe('Refresh mark on a tab root', () => {
   });
 
   it.each([
-    ['ro', 'Reîmprospătează'],
-    ['da', 'Opdater'],
-  ] as const)('names the button in %s', async (locale, name) => {
-    stubPantry(() => Response.json({ batches: [] }));
-    await openPantry(locale);
-    expect(screen.getByRole('button', { name })).toBeInTheDocument();
-  });
+    ['ro', 'Reîmprospătează', 'Se reîmprospătează…', 'Actualizat chiar acum'],
+    ['da', 'Opdater', 'Opdaterer…', 'Opdateret lige nu'],
+  ] as const)(
+    'names the button and says the status in %s',
+    async (locale, name, busy, done) => {
+      stubPantry(() => Response.json({ batches: [] }));
+      await openPantry(locale);
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      stubPantry(async () => {
+        await gate;
+        return Response.json({ batches: [] });
+      });
+      fireEvent.click(screen.getByRole('button', { name }));
+      const status = screen.getByRole('status');
+      expect(status).toHaveTextContent(busy);
+      release();
+      await settle();
+      expect(screen.getByRole('status')).toHaveTextContent(done);
+    },
+  );
 });
 
 describe('Refresh mark placement', () => {

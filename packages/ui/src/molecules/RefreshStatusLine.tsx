@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 import { CheckIcon } from '../atoms/icons';
 import { tokens } from '../theme/tokens';
+import { color } from '../theme/themeVars';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 
 export type RefreshStatusLineProps = {
@@ -52,7 +53,7 @@ export function RefreshStatusLine({
                     height: 11,
                     boxSizing: 'border-box',
                     borderRadius: '50%',
-                    border: `2px solid ${tokens.color.line}`,
+                    border: `2px solid ${color.lineStrong}`,
                     borderTopColor: tokens.color.accent,
                     '@keyframes pp-refresh-spin': {
                       to: { transform: 'rotate(360deg)' },

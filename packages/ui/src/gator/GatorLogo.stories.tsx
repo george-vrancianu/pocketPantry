@@ -66,7 +66,7 @@ export const Dark: Story = {
   render: () => (
     <Box
       data-theme="dark"
-      sx={{ display: 'flex', gap: 2, p: 2, bgcolor: '#14160f' }}
+      sx={{ display: 'flex', gap: 2, p: 2, bgcolor: 'background.default' }}
     >
       <GatorLogo label="Refresh" size={38} />
       <GatorLogo label="Refresh" size={42} />

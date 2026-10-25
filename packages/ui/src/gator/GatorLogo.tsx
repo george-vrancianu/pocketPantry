@@ -10,6 +10,7 @@ import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 import { ONE_SHOT_MS } from './Gator';
 import { focusRingStyle } from '../theme/focusRing';
 import logoArt from './art/app-logo-static.svg?raw';
+import { LOGO_DARK_RIM, logoTileRadius } from './art/logoArt';
 
 export type GatorLogoProps = {
   /** Accessible name of the button, e.g. "Refresh". */
@@ -206,12 +207,11 @@ export function GatorLogo({
         '&:focus-visible': { outline: 'none' },
         '&:focus-visible > svg': {
           ...focusRingStyle,
-          // The tile's corner radius: rx 44 of 188 in the 200 viewBox.
-          borderRadius: `${(size * 44) / 200}px`,
+          borderRadius: logoTileRadius(size),
         },
         '[data-theme="dark"] & .head': { filter: 'none' },
         '[data-theme="dark"] & .hd': {
-          stroke: '#9FD36A',
+          stroke: LOGO_DARK_RIM,
           strokeWidth: 2.5,
           strokeOpacity: 0.35,
         },

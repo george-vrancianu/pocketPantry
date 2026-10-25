@@ -9,7 +9,7 @@ import {
   Spinner,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { RefreshMark } from '../../components/AppScreenHeader';
+import { RefreshMark } from '../../components/RefreshMark';
 import { RefreshStatus } from '../../components/RefreshStatus';
 import { translateApiError } from '../../i18n/translateApiError';
 import { useDashboardLayout } from '../../lib/dashboard';

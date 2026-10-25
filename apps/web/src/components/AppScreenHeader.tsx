@@ -1,33 +1,13 @@
-import {
-  GatorLogo,
-  ScreenHeader,
-  type ScreenHeaderProps,
-} from '@pocket-pantry/ui';
+import { ScreenHeader, type ScreenHeaderProps } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { dockStateFor } from '../lib/dockState';
-import { haptic } from '../lib/haptic';
-import { useOptionalRefreshScreen, useRefreshScreen } from '../lib/refresh';
+import { useOptionalRefreshScreen } from '../lib/refresh';
+import { RefreshMark } from './RefreshMark';
 import { RefreshStatus } from './RefreshStatus';
 
 /** Dock tabs whose root screen carries the refresh mark (the Dashboard's header is its own). */
 const REFRESH_ROOTS = ['/pantry', '/shopping', '/recipes'];
-
-export function RefreshMark({ size }: { size?: 38 | 42 }) {
-  const { t } = useTranslation('screenHeader');
-  const { run, successCount } = useRefreshScreen();
-  return (
-    <GatorLogo
-      size={size}
-      label={t('refresh.button')}
-      successCount={successCount}
-      onClick={() => {
-        haptic(10);
-        void run();
-      }}
-    />
-  );
-}
 
 type Props = Pick<
   ScreenHeaderProps,
