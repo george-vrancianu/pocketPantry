@@ -1,6 +1,10 @@
-import { screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderWithProviders, stubApi } from '../../test/render';
+import { act, fireEvent, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  renderInAppLayout,
+  renderWithProviders,
+  stubApi,
+} from '../../test/render';
 import { stubViewport } from '../../test/viewport';
 import { DashboardPage } from './DashboardPage';
 
@@ -137,5 +141,95 @@ describe('DashboardPage', () => {
     expect(
       screen.getByRole('button', { name: 'Try again' }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('DashboardPage header', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    vi.setSystemTime(new Date(2026, 9, 25, 19, 0));
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  const settle = () =>
+    act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+  const elapse = (ms: number) =>
+    act(async () => {
+      await vi.advanceTimersByTimeAsync(ms);
+    });
+
+  function stubDash(layout: () => Response | Promise<Response>) {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/dashboard-layout': layout,
+      'GET /api/pantry': () => Response.json({ batches: [] }),
+      'GET /api/shopping-list': () =>
+        Response.json({
+          id: 'l',
+          groups: [],
+          summary: { remaining: 0, checked: 0 },
+        }),
+      'GET /api/voice/config': () => Response.json({ configured: true }),
+      'GET /api/staples': () => Response.json({ staples: [] }),
+      'GET /api/settings/preferences': () => Response.json({}),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return calls;
+  }
+  const layout = () =>
+    Response.json({ widgets: [{ id: 'a', type: 'budget', size: 'small' }] });
+
+  it('shows the Refresh button, the greeting and the date under it, with the actions at the end', async () => {
+    stubDash(layout);
+    renderInAppLayout(<DashboardPage />, '/');
+    await settle();
+
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Good evening' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Sunday, October 25');
+    const header = screen.getByRole('banner');
+    const links = within(header).getAllByRole('link');
+    expect(links.map((l) => l.getAttribute('aria-label'))).toEqual([
+      'Customise dashboard',
+      'Settings',
+    ]);
+  });
+
+  it('refetches on a tap: Refreshing, Updated just now, then the date again', async () => {
+    const calls = stubDash(layout);
+    renderInAppLayout(<DashboardPage />, '/');
+    await settle();
+    const before = calls.filter((c) => c.key === 'GET /api/dashboard-layout');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Refreshing…');
+    await settle();
+    expect(screen.getByRole('status')).toHaveTextContent('Updated just now');
+    expect(
+      calls.filter((c) => c.key === 'GET /api/dashboard-layout').length,
+    ).toBeGreaterThan(before.length);
+    await elapse(2500);
+    expect(screen.getByRole('status')).toHaveTextContent('Sunday, October 25');
+  });
+
+  it('reports a failed refresh, then the date', async () => {
+    let fail = false;
+    stubDash(() => (fail ? Response.error() : layout()));
+    renderInAppLayout(<DashboardPage />, '/');
+    await settle();
+    fail = true;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await settle();
+    expect(screen.getByRole('status')).not.toHaveTextContent('Sunday');
+    expect(screen.getByRole('status')).not.toHaveTextContent('Refreshing');
+    await elapse(4000);
+    expect(screen.getByRole('status')).toHaveTextContent('Sunday, October 25');
   });
 });

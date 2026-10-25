@@ -13,7 +13,7 @@ import { RefreshStatus } from './RefreshStatus';
 /** Dock tabs whose root screen carries the refresh mark (the Dashboard's header is its own). */
 const REFRESH_ROOTS = ['/pantry', '/shopping', '/recipes'];
 
-function RefreshMark() {
+export function RefreshMark() {
   const { t } = useTranslation('screenHeader');
   const { run } = useRefreshScreen();
   return (
