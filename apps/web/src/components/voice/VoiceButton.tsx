@@ -33,7 +33,7 @@ import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 type Voice = ReturnType<typeof useVoiceNote>;
 
 /**
- * The hold-to-talk mic: the button sits in the lower half of the Dock's capsule, with the page scrim and the Listening card.
+ * The hold-to-talk mic: the button sits in the upper half of the Dock's capsule, with the page scrim and the Listening card.
  */
 export function VoiceButton({
   voice,
@@ -147,7 +147,7 @@ export function VoiceButton({
                 justifyContent: 'center',
                 p: 0,
                 border: 0,
-                borderRadius: `0 0 ${radius.pill} ${radius.pill}`,
+                borderRadius: `${radius.pill} ${radius.pill} 0 0`,
                 backgroundColor: armed
                   ? `color-mix(in srgb, ${palette('text-primary')} 55%, ${color.cardBg})`
                   : active
