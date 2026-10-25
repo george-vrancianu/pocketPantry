@@ -165,10 +165,13 @@ describe('Refresh mark on a tab root', () => {
     expect(motion()).toBe('tap');
     await elapse(900);
     expect(motion()).toBe('idle');
-    await elapse(4000);
+    await elapse(1300);
+    expect(motion()).toBe('idle');
+    await elapse(2700);
     stubPantry(() => Response.json({ batches: [batch] }));
     tap();
     await settle();
+    expect(motion()).toBe('tap');
     await elapse(900);
     expect(motion()).toBe('reentrance');
   });

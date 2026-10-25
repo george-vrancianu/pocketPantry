@@ -39,7 +39,8 @@ export function resetGatorLogoEntrance() {
 
 const ONE_SHOT_DURATION: Record<OneShot, number> = {
   ...ONE_SHOT_MS,
-  reentrance: 1300,
+  // Same 1.3 s keyframes as the Entrance, head only.
+  reentrance: ONE_SHOT_MS.entrance,
 };
 
 /** Keyframes ported from the app-icon art; the tile never moves in idle or Tap. */
@@ -148,16 +149,27 @@ export function GatorLogo({
   // Each Tap restarts the animation by remounting the svg.
   const [taps, setTaps] = useState(0);
   const seenSuccess = useRef(successCount);
+  const pendingReentrance = useRef(false);
   useEffect(() => {
-    if (successCount > seenSuccess.current) setShot('reentrance');
+    if (successCount > seenSuccess.current && !reduceMotion) {
+      // The Tap that started the refresh plays out first; the timer below hands over.
+      if (shot === 'tap') pendingReentrance.current = true;
+      else setShot('reentrance');
+    }
     seenSuccess.current = successCount;
+    // Only the count changing matters here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [successCount]);
   useEffect(() => {
     entrancePlayed = true;
   }, []);
   useEffect(() => {
     if (!shot) return;
-    const id = setTimeout(() => setShot(null), ONE_SHOT_DURATION[shot]);
+    const id = setTimeout(() => {
+      const next = pendingReentrance.current;
+      pendingReentrance.current = false;
+      setShot(next ? 'reentrance' : null);
+    }, ONE_SHOT_DURATION[shot]);
     return () => clearTimeout(id);
   }, [shot, taps]);
   // With reduced motion there are no one-shots at all.
@@ -173,6 +185,7 @@ export function GatorLogo({
       data-motion={motion}
       onClick={(e) => {
         setTaps((n) => n + 1);
+        pendingReentrance.current = false;
         setShot('tap');
         onClick?.(e);
       }}
