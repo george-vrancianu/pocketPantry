@@ -402,15 +402,49 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
   });
 
-  it('cannot be skipped while Gator is still reading a note, so that note is not lost', async () => {
+  it('asks before Skip drops a note Gator is still reading, and a late answer does not bring it back', async () => {
+    let answer: (response: Response) => void = () => {};
     await openSayIt(undefined, undefined, {
-      routes: { 'POST /api/voice': () => new Promise<Response>(() => {}) },
+      routes: {
+        'POST /api/voice': () =>
+          new Promise<Response>((resolve) => {
+            answer = resolve;
+          }),
+      },
     });
+    const user = userEvent.setup();
     expect(screen.getByRole('link', { name: 'Skip' })).toBeVisible();
     await record();
     await screen.findByText('Reading 1');
     expect(screen.queryByRole('link', { name: 'Skip' })).toBeNull();
-    expect(screen.getByText('Skip')).toHaveAttribute('aria-disabled', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(
+      screen.getByText("Skip and lose this note? It hasn't been applied yet."),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('button', { name: 'Skip' })).toHaveFocus();
+    expect(where()).toBe('/intro/say-it');
+    expect(screen.getByText('Reading 1')).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(
+      await screen.findByText(
+        "You're all set! I'll keep an eye on your kitchen.",
+      ),
+    ).toBeInTheDocument();
+    expect(where()).toBe('/intro/all-set');
+
+    // The read finishes after the drop: the note must not land in the Voice Inbox.
+    await act(async () => {
+      answer(Response.json(HEARD, { status: 201 }));
+      await Promise.resolve();
+    });
+    await user.click(screen.getByRole('button', { name: 'Go to my kitchen' }));
+    await screen.findByRole('link', { name: 'Customise dashboard' });
+    expect(screen.queryByText('1 ready')).toBeNull();
+    expect(screen.queryByText('Reading 1')).toBeNull();
   });
 
   it('keeps a note that cannot be read in the Voice Inbox with Retry and Discard', async () => {
@@ -839,5 +873,94 @@ describe('Setup 2: several Voice Notes', () => {
     expect(where()).toBe('/intro/say-it');
     expect(screen.getByText('Hold the mic, talk, let go')).toBeVisible();
     expect(writes(calls)).toEqual(['POST /api/voice', 'POST /api/voice']);
+  });
+});
+
+describe('Setup 2: Next and the Skip that asks first', () => {
+  beforeEach(() => {
+    useVoiceTimers();
+    resetVoiceEnvironment();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows no Next while the Voice Inbox is empty, and Skip moves on with no confirm', async () => {
+    await openSayIt();
+    const user = userEvent.setup();
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+    await user.click(screen.getByRole('link', { name: 'Skip' }));
+    expect(
+      await screen.findByText(
+        "You're all set! I'll keep an eye on your kitchen.",
+      ),
+    ).toBeInTheDocument();
+    expect(where()).toBe('/intro/all-set');
+    expect(screen.queryByText(/applied yet/)).toBeNull();
+  });
+
+  it('Next moves on to All set, and the note waits in the Voice Inbox on the Dashboard', async () => {
+    await openSayIt();
+    const user = userEvent.setup();
+    await record();
+    await screen.findByText('1 ready');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(
+      await screen.findByText(
+        "You're all set! I'll keep an eye on your kitchen.",
+      ),
+    ).toBeInTheDocument();
+    expect(where()).toBe('/intro/all-set');
+    await user.click(screen.getByRole('button', { name: 'Go to my kitchen' }));
+    await screen.findByRole('link', { name: 'Customise dashboard' });
+    expect(await screen.findByText('1 ready')).toBeVisible();
+  });
+
+  it('Skip with a ready note asks first: Cancel keeps it, Confirm drops it and moves on', async () => {
+    await openSayIt();
+    const user = userEvent.setup();
+    await record();
+    await screen.findByText('1 ready');
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(
+      screen.getByText("Skip and lose this note? It hasn't been applied yet."),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByText(/applied yet/)).toBeNull();
+    expect(screen.getByText('1 ready')).toBeVisible();
+    expect(where()).toBe('/intro/say-it');
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(
+      await screen.findByText(
+        "You're all set! I'll keep an eye on your kitchen.",
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Go to my kitchen' }));
+    await screen.findByRole('link', { name: 'Customise dashboard' });
+    expect(screen.queryByText('1 ready')).toBeNull();
+  });
+
+  it('names the number of notes that would be lost', async () => {
+    const riceNote = {
+      transcript: 'We have rice.',
+      actions: [HEARD.actions[0]],
+    };
+    await openSayIt(riceNote);
+    const user = userEvent.setup();
+    await record();
+    await screen.findByText('1 ready');
+    await record();
+    await screen.findByText('2 ready');
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(
+      screen.getByText(
+        "Skip and lose these 2 notes? They haven't been applied yet.",
+      ),
+    ).toBeInTheDocument();
   });
 });

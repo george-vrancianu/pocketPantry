@@ -42,7 +42,9 @@
     "skip": "Skip",
     "next": "Next",
     "lostPhotos_one": "Skip and lose this photo? It hasn't been saved yet.",
-    "lostPhotos_other": "Skip and lose these {{count}} photos? They haven't been saved yet."
+    "lostPhotos_other": "Skip and lose these {{count}} photos? They haven't been saved yet.",
+    "lostNotes_one": "Skip and lose this note? It hasn't been applied yet.",
+    "lostNotes_other": "Skip and lose these {{count}} notes? They haven't been applied yet."
   },
   "snap": {
     "bubble": {
