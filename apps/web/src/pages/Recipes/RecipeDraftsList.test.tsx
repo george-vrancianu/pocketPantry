@@ -150,7 +150,7 @@ describe('Recipe Drafts list and discard', () => {
 
     it('shows nothing when there are none', async () => {
       setup([]);
-      await screen.findByText('No Recipes yet.');
+      await screen.findByText('No family Recipes yet');
       expect(screen.queryByRole('link', { name: /^Drafts/ })).toBeNull();
     });
 
@@ -444,7 +444,7 @@ describe('Recipe Drafts list and discard', () => {
       );
       expect(await screen.findByText('Recipe Draft discarded')).toBeVisible();
       // Back on Recipes, where the entry is gone with its only Recipe Draft.
-      expect(await screen.findByText('No Recipes yet.')).toBeVisible();
+      expect(await screen.findByText('No family Recipes yet')).toBeVisible();
       expect(screen.queryByRole('link', { name: /^Drafts/ })).toBeNull();
       expect(deletes(calls)).toEqual([]);
       await elapse(UNDO_WINDOW_MS + 500);
@@ -465,12 +465,12 @@ describe('Recipe Drafts list and discard', () => {
       await u.click(
         await screen.findByRole('button', { name: 'Discard draft' }),
       );
-      expect(await screen.findByText('No Recipes yet.')).toBeVisible();
+      expect(await screen.findByText('No family Recipes yet')).toBeVisible();
       await u.click(screen.getByRole('button', { name: 'go back' }));
       await elapse(100);
       expect(screen.queryByLabelText(/^Title/)).toBeNull();
       expect(screen.queryByText(/^at \/recipes\/new/)).toBeNull();
-      expect(screen.getByText('No Recipes yet.')).toBeVisible();
+      expect(screen.getByText('No family Recipes yet')).toBeVisible();
     });
 
     it('sends nothing on Undo, and the Recipe Draft is back in the entry', async () => {

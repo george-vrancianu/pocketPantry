@@ -14,5 +14,9 @@
     "health-hmm": "Gator, with a raised eyebrow",
     "chef": "Gator, cooking",
     "chef-flop": "Gator, disappointed, with the cooking tools dropped"
+  },
+  "chef": {
+    "emptyFamily": "My pot's empty! Grab a few Recipes from <b>Explore</b>, or write down one of yours.",
+    "alt": "Gator the chef, stirring an empty pot. Tap to say hi"
   }
 }

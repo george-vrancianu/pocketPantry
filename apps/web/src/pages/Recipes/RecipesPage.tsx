@@ -9,7 +9,7 @@ import {
   tokens,
   displayType,
 } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
@@ -26,6 +26,7 @@ import {
 } from '../../lib/recipes';
 import { useRecipeDrafts } from '../../lib/recipeDrafts';
 import { useRecipeDraftDiscard } from './useRecipeDraftDiscard';
+import { EmptyFamilyRecipes } from './components/EmptyFamilyRecipes';
 import { CookTonightCardLink } from './components/CookTonightCardLink';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
@@ -128,6 +129,9 @@ export function RecipesPage() {
   // Not searching: a Variant sits under its Base (a Family Recipe, or the Family's copy of its
   // Catalog Base); one without a Base in the list is its own row, labelled "Variant of {base}".
   const items = filtering ? found : groupVariants(found);
+  // No live Recipes (archived ones aren't listed): chef Gator replaces the search, chips and list.
+  const empty = !filtering && recipes.data !== undefined && items.length === 0;
+  const addButton = useRef<HTMLButtonElement>(null);
   const cards = cookTonight.data?.cards ?? [];
   const index = indexCards(cards);
 
@@ -139,6 +143,7 @@ export function RecipesPage() {
         action={{
           label: t('recipes:add'),
           icon: <PlusIcon size={20} />,
+          buttonRef: addButton,
           items: [
             { label: t('recipes:family.newRecipe'), href: '/recipes/new' },
             {
@@ -158,7 +163,7 @@ export function RecipesPage() {
       {/* Flex gap leaves the children's margins alone, so the filters can bleed to the screen edges. */}
       <Stack spacing={1.5} useFlexGap>
         {/* Hidden until the answer arrives, so an error or a slow load never reads as "nothing to cook". */}
-        {!filtering && cookTonight.data && !cookTonight.error ? (
+        {!filtering && !empty && cookTonight.data && !cookTonight.error ? (
           <CookTonightCardLink cards={cards} />
         ) : null}
         {draftCount > 0 ? (
@@ -175,11 +180,13 @@ export function RecipesPage() {
             {t('recipes:drafts.entry', { count: draftCount })}
           </Box>
         ) : null}
-        <RecipeFilters
-          value={browse}
-          onChange={setBrowse}
-          options={filters.data}
-        />
+        {empty ? null : (
+          <RecipeFilters
+            value={browse}
+            onChange={setBrowse}
+            options={filters.data}
+          />
+        )}
         <HiddenByAllergiesNote
           count={
             filtering
@@ -195,18 +202,16 @@ export function RecipesPage() {
           <Alert>{translateApiError(t, recipes.error)}</Alert>
         ) : null}
         {recipes.isPending ? <Spinner label={t('common:loading')} /> : null}
-        {recipes.data && items.length === 0 ? (
+        {empty ? (
+          <EmptyFamilyRecipes onNewRecipe={() => addButton.current?.click()} />
+        ) : null}
+        {recipes.data && filtering && items.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: '32px' }}>
-            <Box
-              sx={{
-                ...displayType,
-                fontSize: 18,
-              }}
-            >
-              {filtering ? t('recipes:noMatches') : t('recipes:empty')}
+            <Box sx={{ ...displayType, fontSize: 18 }}>
+              {t('recipes:noMatches')}
             </Box>
             <Box sx={{ fontSize: 14, color: tokens.color.muted, mt: '4px' }}>
-              {filtering ? t('recipes:noMatchesHint') : t('recipes:emptyHint')}
+              {t('recipes:noMatchesHint')}
             </Box>
           </Box>
         ) : null}

@@ -51,7 +51,6 @@
   "search": "Søg opskrifter",
   "cuisine": "Køkken",
   "method": "Metode",
-  "empty": "Ingen opskrifter endnu.",
   "noMatches": "Ingen opskrifter passer.",
   "allRecipes": "Alle opskrifter",
   "matches": "Resultater",
@@ -63,7 +62,6 @@
   "missingOneVia": "Mangler {{name}} til {{title}}",
   "expiring_one": "{{count}} udløber snart",
   "expiring_other": "{{count}} udløber snart",
-  "emptyHint": "Scan en tallerken eller lav en ud fra et foto.",
   "noMatchesHint": "Prøv et andet ord, eller ryd et filter.",
   "variantsHint": "Søg eller vælg et filter for at se varianter for sig.",
   "minutesShort": "min",
@@ -286,5 +284,12 @@
     "inFamily": "I dine opskrifter",
     "openCopy": "{{title}} er i dine opskrifter. Åbn den",
     "actions": "Handlinger for denne opskrift"
+  },
+  "emptyFamily": {
+    "title": "Ingen familieopskrifter endnu",
+    "body": "Opskrifter, du tilføjer, kan ændres, som du vil. Hele familien kan se dem.",
+    "explore": "Udforsk opskrifter",
+    "newRecipe": "+ Ny opskrift",
+    "starters": "Start med disse · du kan lave dem"
   }
 }
