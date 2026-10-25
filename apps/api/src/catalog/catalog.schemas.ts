@@ -28,6 +28,12 @@ export const catalogSearchQuery = z.object({
 });
 export type CatalogSearchQuery = z.infer<typeof catalogSearchQuery>;
 
+export const popularToStartQuery = z.object({
+  // The UI locale picks the list; names come back in the Catalog Language.
+  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+});
+export type PopularToStartQuery = z.infer<typeof popularToStartQuery>;
+
 export type CatalogParent = { id: string; name: string };
 
 export const catalogAislesQuery = z.object({

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useToast } from '@pocket-pantry/ui';
 import {
+  FALLBACK_LOCATION,
   useCatalogSearch,
   type CatalogAllergen,
   type CatalogSearchResult,
@@ -17,7 +18,7 @@ import {
 } from '../../../lib/catalog';
 import { barcodeLine } from '../../../lib/barcode';
 import { isValidBarcode } from '../../../lib/gtin';
-import { loadOverlayMode, type CameraMode } from '../../../lib/cameraMode';
+import type { CameraMode } from '../../../lib/cameraMode';
 import { type ProposedLine } from '../../../lib/scan';
 import type { CameraResult } from '../../Scan/CameraOverlay';
 import {
@@ -37,8 +38,6 @@ export type AddBatchStart =
 
 /** The fields Prefill fills, and that are marked until the Member edits them. */
 export type PrefillField = 'ingredient' | 'amount' | 'expiry' | 'description';
-
-const FALLBACK_LOCATION: StorageLocation = 'cupboard';
 
 /** The picked Ingredient: a Catalog search result, or a starting one whose defaults are still loading. */
 type PickedIngredient = Pick<CatalogSearchResult, 'id' | 'name'> &
@@ -265,7 +264,7 @@ export function useAddBatchForm({
   // decoded from a Product photo. The Batch stores none.
   const [barcodeToSend, setBarcodeToSend] = useState<string | null>(null);
   const toast = useToast();
-  const openCamera = (mode: CameraMode = loadOverlayMode()) => {
+  const openCamera = (mode: CameraMode) => {
     setOpenMode(mode);
     setTypeRequested(false);
     setCameraOpen(true);
@@ -323,7 +322,7 @@ export function useAddBatchForm({
   };
   const camera = {
     open: cameraOpen,
-    /** Opens the camera in `mode`, or the last one the Member used. */
+    /** Opens the overlay in `mode`: Product (photo) or Barcode. */
     openCamera,
     cancel: () => setCameraOpen(false),
     onResult: onCameraResult,

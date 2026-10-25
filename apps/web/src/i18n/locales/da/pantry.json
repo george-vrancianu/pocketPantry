@@ -75,7 +75,6 @@
     "unmatchedNotice": "\"{{name}}\" gemmes som umatchet og markeres til gennemgang.",
     "quantityInvalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler og uden eksponent.",
     "prefill": {
-      "open": "Udfyld med kameraet",
       "mark": "Udfyldt fra produktet",
       "credit": "Produktdata: Open Food Facts",
       "listsAllergens": "Dette produkt angiver {{names}}"
@@ -88,6 +87,11 @@
       "photo": "Læst fra dit foto · tjek og tilføj",
       "noMatch": "Kunne ikke finde {{name}} · vælg det nærmeste",
       "barcode": "Fundet med stregkode · {{name}}"
+    },
+    "quick": {
+      "label": "Tilføj hurtigt",
+      "photo": "Tag et billede",
+      "barcode": "Scan stregkode"
     }
   },
   "picker": {

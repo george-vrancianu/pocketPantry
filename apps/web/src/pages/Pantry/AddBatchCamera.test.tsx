@@ -129,7 +129,6 @@ describe('The add-Batch camera hand-offs', () => {
 
   it('says it adds to the Pantry, and Scan several closes the sheet and opens the Scan page in the same mode', async () => {
     stubPantry();
-    localStorage.setItem('pocket-pantry.camera-overlay-mode', 'barcode');
     const user = userEvent.setup();
     function Where() {
       const location = useLocation();
@@ -147,9 +146,7 @@ describe('The add-Batch camera hand-offs', () => {
       { route: '/pantry' },
     );
     await user.click(await screen.findByRole('button', { name: 'Add batch' }));
-    await user.click(
-      screen.getByRole('button', { name: 'Fill from the camera' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Scan barcode' }));
     const pill = within(screen.getByTestId('adds-to-pantry'));
     expect(pill.getByText('Adds to your Pantry')).toBeVisible();
     await user.click(pill.getByRole('button', { name: 'Scan several' }));
@@ -163,7 +160,6 @@ describe('The add-Batch camera hand-offs', () => {
 
   it('Scan several from Product opens the Scan page in Product mode', async () => {
     stubPantry();
-    localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
     const user = userEvent.setup();
     function Where() {
       const location = useLocation();
@@ -181,9 +177,7 @@ describe('The add-Batch camera hand-offs', () => {
       { route: '/pantry' },
     );
     await user.click(await screen.findByRole('button', { name: 'Add batch' }));
-    await user.click(
-      screen.getByRole('button', { name: 'Fill from the camera' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Take a photo' }));
     await user.click(screen.getByRole('button', { name: 'Scan several' }));
     expect(screen.getByTestId('where')).toHaveTextContent('/scan?mode=product');
   });

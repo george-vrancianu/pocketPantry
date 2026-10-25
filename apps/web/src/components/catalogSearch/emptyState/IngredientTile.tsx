@@ -8,7 +8,7 @@ import {
 import type { ReactNode } from 'react';
 
 /** The line under a tile's name: a 12px decorative glyph, then text, in the reason's colour. */
-export type TileWhy = { glyph: string; text: string; color: string };
+export type TileWhy = { glyph?: string; text: string; color: string };
 
 export type IngredientTileProps = {
   ingredientId: string;
@@ -87,13 +87,15 @@ export function IngredientTile({
             color: why.color,
           }}
         >
-          <Box
-            component="span"
-            aria-hidden="true"
-            sx={{ fontSize: 12, flexShrink: 0 }}
-          >
-            {why.glyph}
-          </Box>
+          {why.glyph ? (
+            <Box
+              component="span"
+              aria-hidden="true"
+              sx={{ fontSize: 12, flexShrink: 0 }}
+            >
+              {why.glyph}
+            </Box>
+          ) : null}
           <Box
             component="span"
             sx={{

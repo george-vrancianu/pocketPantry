@@ -386,7 +386,11 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   [
     'type',
     'plain verb ("Type an ingredient"), not a Category type',
-    ['catalog:catalogAdd.typeToSearch', 'catalog:search.placeholder'],
+    [
+      'catalog:catalogAdd.typeToSearch',
+      'catalog:search.placeholder',
+      'catalog:search.placeholderAdd',
+    ],
   ],
   [
     'unknown',

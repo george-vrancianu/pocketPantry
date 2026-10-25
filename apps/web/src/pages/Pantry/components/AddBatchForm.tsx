@@ -3,7 +3,7 @@ import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
-import { RecentlyStocked } from '../../../components/catalogSearch/emptyState/RecentlyStocked';
+import { RecentlyStockedOrPopular } from '../../../components/catalogSearch/emptyState/RecentlyStockedOrPopular';
 import {
   ListedAllergensNote,
   OpenFoodFactsCredit,
@@ -11,7 +11,7 @@ import {
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
 import { StatusIcon } from '../../../components/StatusIcon';
-import { saveOverlayMode, type CameraMode } from '../../../lib/cameraMode';
+import type { CameraMode } from '../../../lib/cameraMode';
 import { CameraOverlay } from '../../Scan/CameraOverlay';
 import {
   useAddBatchForm,
@@ -19,6 +19,7 @@ import {
   type PrefillField,
 } from '../hooks/useAddBatchForm';
 import { BatchAmountField } from './BatchAmountField';
+import { QuickRow } from './QuickRow';
 
 type Props = {
   onSaved: () => void;
@@ -45,7 +46,8 @@ export function AddBatchForm({
   const form = useAddBatchForm({ onSaved, start });
   const id = useId();
   const { t: tReview } = useTranslation('review');
-  const cameraButton = useRef<HTMLButtonElement>(null);
+  const { t: tCatalog } = useTranslation('catalog');
+  const opener = useRef<HTMLButtonElement | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const picked = form.ingredient?.name ?? form.unmatchedName;
   const { camera } = form;
@@ -54,7 +56,7 @@ export function AddBatchForm({
   const wasOpen = useRef(false);
   useEffect(() => {
     if (wasOpen.current && !camera.open)
-      (camera.typeRequested ? searchInput : cameraButton).current?.focus();
+      (camera.typeRequested ? searchInput : opener).current?.focus();
     wasOpen.current = camera.open;
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- only when the camera opens or closes
   }, [camera.open]);
@@ -82,19 +84,11 @@ export function AddBatchForm({
       onSubmit={form.submit}
       aria-label={t('form.title')}
     >
-      <Button
-        type="button"
-        variant="ghost"
-        ref={cameraButton}
-        onClick={() => camera.openCamera()}
-      >
-        {t('form.prefill.open')}
-      </Button>
+      <QuickRow openerRef={opener} onOpen={(mode) => camera.openCamera(mode)} />
       {camera.open ? (
         <CameraOverlay
           modes={FORM_CAMERA_MODES}
           defaultMode={camera.openMode}
-          onModeChange={saveOverlayMode}
           onResult={camera.onResult}
           onScanSeveral={onScanSeveral}
           onCancel={camera.cancel}
@@ -106,6 +100,7 @@ export function AddBatchForm({
       <CatalogSearch
         autoFocus
         inputRef={searchInput}
+        placeholder={tCatalog('search.placeholderAdd')}
         defaultQuery={form.initialQuery}
         selected={form.selected}
         onSelect={form.selectIngredient}
@@ -114,7 +109,7 @@ export function AddBatchForm({
         newIngredientAllergenIds={camera.listedAllergenIds}
         emptyState={
           <>
-            <RecentlyStocked />
+            <RecentlyStockedOrPopular />
             <BrowseByAisle />
           </>
         }

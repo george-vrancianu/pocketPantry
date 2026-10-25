@@ -20,6 +20,8 @@ export type SearchFieldProps = {
   inputRef: Ref<HTMLInputElement>;
   /** Accessible name when nothing is selected. */
   label: string;
+  /** Placeholder when empty; defaults to the generic search one. */
+  placeholder?: string;
   value: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
@@ -49,6 +51,7 @@ const SPINNER_SIZE = 18;
 export function SearchField({
   inputRef,
   label,
+  placeholder,
   value,
   onChange,
   onKeyDown,
@@ -145,7 +148,7 @@ export function SearchField({
         spellCheck={false}
         enterKeyHint="search"
         autoFocus={autoFocus}
-        placeholder={t('search.placeholder')}
+        placeholder={placeholder ?? t('search.placeholder')}
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
