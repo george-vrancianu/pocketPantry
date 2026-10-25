@@ -21,3 +21,14 @@ describe('RefreshStatusLine', () => {
     expect(screen.getByRole('status').textContent).toBe(text);
   });
 });
+
+describe('RefreshStatusLine rest', () => {
+  it('shows the rest text when idle and the state text otherwise', () => {
+    const { rerender } = render(
+      <RefreshStatusLine state="idle" labels={labels} rest="Sunday" />,
+    );
+    expect(screen.getByRole('status').textContent).toBe('Sunday');
+    rerender(<RefreshStatusLine state="done" labels={labels} rest="Sunday" />);
+    expect(screen.getByRole('status').textContent).toBe('Updated');
+  });
+});

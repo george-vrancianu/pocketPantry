@@ -188,6 +188,10 @@ export {
   type RefreshStatusLineProps,
 } from './molecules/RefreshStatusLine';
 export {
+  DashboardHeader,
+  type DashboardHeaderProps,
+} from './molecules/DashboardHeader';
+export {
   ScreenHeader,
   type ScreenHeaderAction,
   type ScreenHeaderProps,

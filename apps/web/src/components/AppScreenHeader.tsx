@@ -13,11 +13,12 @@ import { RefreshStatus } from './RefreshStatus';
 /** Dock tabs whose root screen carries the refresh mark (the Dashboard's header is its own). */
 const REFRESH_ROOTS = ['/pantry', '/shopping', '/recipes'];
 
-function RefreshMark() {
+export function RefreshMark({ size }: { size?: 38 | 42 }) {
   const { t } = useTranslation('screenHeader');
   const { run, successCount } = useRefreshScreen();
   return (
     <GatorLogo
+      size={size}
       label={t('refresh.button')}
       successCount={successCount}
       onClick={() => {

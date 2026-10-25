@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import type { ReactNode } from 'react';
 import { CheckIcon } from '../atoms/icons';
 import { tokens } from '../theme/tokens';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
@@ -6,10 +7,16 @@ import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 export type RefreshStatusLineProps = {
   state: 'idle' | 'busy' | 'done' | 'failed';
   labels: { busy: string; done: string; failed: string };
+  /** What the line shows at rest (e.g. today's date); empty by default. */
+  rest?: ReactNode;
 };
 
-/** The status line under a tab root's title: empty at rest; a polite live region so the outcome is announced. */
-export function RefreshStatusLine({ state, labels }: RefreshStatusLineProps) {
+/** The status line under a tab root's title: empty (or `rest`) at rest; a polite live region so the outcome is announced. */
+export function RefreshStatusLine({
+  state,
+  labels,
+  rest,
+}: RefreshStatusLineProps) {
   const reduceMotion = usePrefersReducedMotion();
   return (
     <Box
@@ -63,7 +70,9 @@ export function RefreshStatusLine({ state, labels }: RefreshStatusLineProps) {
         </>
       ) : state === 'failed' ? (
         labels.failed
-      ) : null}
+      ) : (
+        (rest ?? null)
+      )}
     </Box>
   );
 }
