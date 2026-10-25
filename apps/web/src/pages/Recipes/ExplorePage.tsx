@@ -7,8 +7,16 @@ import {
   displayType,
   tokens,
 } from '@pocket-pantry/ui';
-import { useCallback, useId, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ExploreRow } from '../../components/ExploreRow';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
@@ -34,16 +42,25 @@ import { SectionLabel } from './components/SectionLabel';
 /** Rows a group shows before "Show n more". */
 const LIMIT = 4;
 
-/** Slides in from the right (320 ms); no motion under reduced motion. */
-const slideIn = {
-  '@keyframes ppExploreSlideIn': {
-    from: { transform: 'translateX(100%)' },
-    to: { transform: 'translateX(0)' },
-  },
-  '@media (prefers-reduced-motion: no-preference)': {
-    animation: 'ppExploreSlideIn 320ms cubic-bezier(.2,.8,.2,1)',
-  },
-} as const;
+const SLIDE = '320ms cubic-bezier(.2,.8,.2,1) forwards';
+
+/** Slides in from the right and, on Back, out to it; no motion under reduced motion. */
+const slideSx = (leaving: boolean) =>
+  ({
+    // The off-screen start must not widen the page (sideways pan on iOS).
+    overflowX: 'clip',
+    '@keyframes pp-explore-slide-in': {
+      from: { transform: 'translateX(100%)' },
+      to: { transform: 'translateX(0)' },
+    },
+    '@keyframes pp-explore-slide-out': {
+      from: { transform: 'translateX(0)' },
+      to: { transform: 'translateX(100%)' },
+    },
+    '@media (prefers-reduced-motion: no-preference)': {
+      animation: `${leaving ? 'pp-explore-slide-out' : 'pp-explore-slide-in'} ${SLIDE}`,
+    },
+  }) as const;
 
 /**
  * Explore (`/recipes/explore`): the Catalog Base Recipes, each one tap from being added to the
@@ -58,6 +75,19 @@ export function ExplorePage() {
     methodId: '',
   });
   const [showHidden, setShowHidden] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const navigate = useNavigate();
+  // A native listener: React skips `animationend` where the browser (or jsdom) has no CSS animations.
+  const pageRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!leaving || !page) return;
+    const done = (event: Event) => {
+      if (event.target === page) navigate('/recipes');
+    };
+    page.addEventListener('animationend', done);
+    return () => page.removeEventListener('animationend', done);
+  }, [leaving, navigate]);
   // Net adds this visit: the Back badge. It resets when the page unmounts.
   const [added, setAdded] = useState(0);
   const onNet = useCallback(
@@ -112,7 +142,7 @@ export function ExplorePage() {
     options: { hideCanMake?: boolean } = {},
   ) => (
     <Group
-      key={label}
+      key={`${label}|${browse.search}|${browse.cuisineId}|${browse.methodId}`}
       label={label}
       rows={rows}
       render={(recipe) => (
@@ -130,7 +160,7 @@ export function ExplorePage() {
   );
 
   return (
-    <Box sx={slideIn}>
+    <Box sx={slideSx(leaving)} ref={pageRef}>
       <AppScreenHeader
         title={t('recipes:explore.title')}
         back={{
@@ -140,6 +170,20 @@ export function ExplorePage() {
               : t('recipes:explore.back'),
           href: '/recipes',
           badge: added,
+          onClick: (event) => {
+            const plain =
+              event.button === 0 &&
+              !event.metaKey &&
+              !event.ctrlKey &&
+              !event.shiftKey &&
+              !event.altKey;
+            const still = window.matchMedia(
+              '(prefers-reduced-motion: reduce)',
+            ).matches;
+            if (!plain || still) return;
+            event.preventDefault();
+            setLeaving(true);
+          },
         }}
       />
       <Stack spacing={1.5} useFlexGap>
@@ -177,9 +221,7 @@ export function ExplorePage() {
           : null}
         {rest.length > 0
           ? group(
-              filtering
-                ? t('recipes:explore.matches')
-                : t('recipes:explore.allRecipes'),
+              filtering ? t('recipes:matches') : t('recipes:allRecipes'),
               rest,
             )
           : null}

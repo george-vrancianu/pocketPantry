@@ -273,8 +273,6 @@
     "pill": "Explore",
     "search": "Search all Recipes",
     "canMake": "You can make this",
-    "allRecipes": "All Recipes",
-    "matches": "Matches",
     "noMatchesHint": "Try another word, or write your own with New Recipe.",
     "backAdded_one": "Back to your Recipes, {{count}} added",
     "backAdded_other": "Back to your Recipes, {{count}} added",

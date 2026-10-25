@@ -273,8 +273,6 @@
     "pill": "Udforsk",
     "search": "Søg i alle opskrifter",
     "canMake": "Det kan du lave",
-    "allRecipes": "Alle opskrifter",
-    "matches": "Resultater",
     "noMatchesHint": "Prøv et andet ord, eller skriv din egen med Ny opskrift.",
     "backAdded_one": "Tilbage til dine opskrifter, {{count}} tilføjet",
     "backAdded_other": "Tilbage til dine opskrifter, {{count}} tilføjet",

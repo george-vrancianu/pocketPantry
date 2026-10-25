@@ -383,3 +383,39 @@ describe('ExplorePage Back badge', () => {
     ).toBeVisible();
   });
 });
+
+describe('ExplorePage Back', () => {
+  const original = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = original;
+    vi.unstubAllGlobals();
+  });
+  const reduceMotion = (reduce: boolean) => {
+    window.matchMedia = ((query: string) => ({
+      ...original(query),
+      matches: reduce && query.includes('prefers-reduced-motion: reduce'),
+    })) as typeof window.matchMedia;
+  };
+
+  it('goes back at once under reduced motion', async () => {
+    reduceMotion(true);
+    setupGroups({ list: () => [base('a')] });
+    await userEvent.click(
+      await screen.findByRole('link', { name: 'Back to your Recipes' }),
+    );
+    expect(await screen.findByText('recipes page')).toBeVisible();
+  });
+
+  it('slides out first, then goes back when the animation ends', async () => {
+    reduceMotion(false);
+    setupGroups({ list: () => [base('a')] });
+    const back = await screen.findByRole('link', {
+      name: 'Back to your Recipes',
+    });
+    await userEvent.click(back);
+    expect(screen.queryByText('recipes page')).toBeNull();
+    const el = screen.getByRole('banner').parentElement!;
+    el.dispatchEvent(new Event('animationend', { bubbles: true }));
+    expect(await screen.findByText('recipes page')).toBeVisible();
+  });
+});
