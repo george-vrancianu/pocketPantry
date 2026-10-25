@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
-import { type AnimatedGatorMood, gatorLayout } from './gatorGeometry';
+import CHEF_FLOP from './art/gator-chef-flop.svg?url';
+import { type GatorMood, gatorLayout } from './gatorGeometry';
 
 export type GatorLoop = 'idle' | 'signature';
 /** Everything the image can show; `data-motion` carries it. */
@@ -18,14 +19,21 @@ const FILES = import.meta.glob<string>(
   { query: '?url', import: 'default', eager: true },
 );
 
+// chef-flop has no motion art: its one still drawing stands in for every variant.
 const ART: Record<string, Partial<Record<Variant, string>>> = {};
 for (const [path, url] of Object.entries(FILES)) {
   const [, mood, variant] = VARIANT_FILE.exec(path)!;
   (ART[mood!] ??= {})[variant as Variant] = url;
 }
+ART['chef-flop'] = {
+  idle: CHEF_FLOP,
+  signature: CHEF_FLOP,
+  entrance: CHEF_FLOP,
+  tap: CHEF_FLOP,
+};
 
 /** Warms the cache with these moods' loops, so a face that mounts later doesn't show an empty box. */
-export function warmGatorLoops(moods: AnimatedGatorMood[], loop: GatorLoop) {
+export function warmGatorLoops(moods: GatorMood[], loop: GatorLoop) {
   for (const mood of moods) {
     const src = ART[mood]?.[loop];
     if (src) new Image().src = src;
@@ -33,7 +41,7 @@ export function warmGatorLoops(moods: AnimatedGatorMood[], loop: GatorLoop) {
 }
 
 export type GatorProps = {
-  mood: AnimatedGatorMood;
+  mood: GatorMood;
   /** Pixel width of the drawing itself; its padding hangs outside. */
   size?: number;
   /** The resting loop: breathing and blinking, or the pose's own action. */

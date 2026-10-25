@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Box, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Gator, type GatorLoop } from './Gator';
-import { GATOR_GEOMETRY, type AnimatedGatorMood } from './gatorGeometry';
+import { GATOR_MOODS, type GatorMood } from './gatorGeometry';
 
-const MOODS = Object.keys(GATOR_GEOMETRY) as AnimatedGatorMood[];
+const MOODS = GATOR_MOODS;
 
 const meta: Meta<typeof Gator> = {
   title: 'Atoms/Gator',
@@ -112,7 +112,7 @@ export const AllMoodsSignatureWithoutEntrance: Story = {
 export const Switching: Story = {
   render: () => {
     const [loop, setLoop] = useState<GatorLoop>('idle');
-    const [mood, setMood] = useState<AnimatedGatorMood>('shopping-buddy');
+    const [mood, setMood] = useState<GatorMood>('shopping-buddy');
     return (
       <Box>
         <Box

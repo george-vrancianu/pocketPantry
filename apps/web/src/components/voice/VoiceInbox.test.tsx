@@ -140,7 +140,7 @@ describe('the Voice Inbox strip', () => {
     expect(strip()).toHaveTextContent('Reading 2 · 1 ready');
   });
 
-  it('keeps the strip Gator on its Signature while a note is read, and idle with no Entrance after', async () => {
+  it('keeps the strip Gator on its Signature while a note is read, then rests on idle once it is ready', async () => {
     renderAt();
     await speak(1);
     await screen.findByText('1 Voice Note');

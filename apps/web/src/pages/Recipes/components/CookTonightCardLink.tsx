@@ -2,7 +2,6 @@ import {
   Box,
   displayType,
   Gator,
-  GatorImage,
   radius,
   tokens,
   type GatorMood,
@@ -77,7 +76,6 @@ export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
         bgcolor: tokens.color.accentTint,
         color: tokens.color.accentOnTint,
         textDecoration: 'none',
-        overflow: 'hidden',
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -87,12 +85,7 @@ export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
           <Box sx={{ fontSize: 14, mt: '2px' }}>{secondLine}</Box>
         ) : null}
       </Box>
-      {mood === 'chef' ? (
-        <Gator mood="chef" size={104} alt={gatorAlt('chef')} />
-      ) : (
-        // chef-flop has no motion art yet.
-        <GatorImage mood={mood} size={104} alt={gatorAlt(mood)} />
-      )}
+      <Gator mood={mood} size={104} alt={gatorAlt(mood)} />
     </Box>
   );
 }
