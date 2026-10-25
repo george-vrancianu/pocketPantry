@@ -144,6 +144,7 @@
       "donePairing": "Done"
     },
     "linkedRecipeUnavailable": "A Recipe you cannot see or that is archived",
+    "leaveConfirm": "Discard your changes?",
     "saved": "Recipe saved.",
     "saveFailed": {
       "recipe": "The Recipe was not saved: {{reason}}",

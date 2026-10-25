@@ -153,6 +153,7 @@
       "donePairing": "Gata"
     },
     "linkedRecipeUnavailable": "O rețetă pe care nu o vezi sau care e arhivată",
+    "leaveConfirm": "Renunți la modificări?",
     "saved": "Rețeta a fost salvată.",
     "saveFailed": {
       "recipe": "Rețeta nu a fost salvată: {{reason}}",

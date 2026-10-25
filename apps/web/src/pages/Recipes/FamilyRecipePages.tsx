@@ -32,10 +32,15 @@ import {
   useVariantDraft,
   type FamilyRecipeDraft,
 } from '../../lib/familyRecipes';
+import { useLeaveGuard } from '../../lib/useLeaveGuard';
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval';
 import { RecipeTipsCard } from './components/RecipeTipsCard';
 import { emptyDraft } from '../../lib/recipeDraft';
-import { toGuidanceDraft, type GuidanceDraft } from '../../lib/guidanceDraft';
+import {
+  toGuidanceDraft,
+  toGuidanceInput,
+  type GuidanceDraft,
+} from '../../lib/guidanceDraft';
 import { usePlateMatches } from '../../lib/plateRecipe';
 import {
   recipesQueryKey,
@@ -47,6 +52,7 @@ import {
   documentOf,
   draftOfEdit,
   draftOfVariantDraft,
+  type FamilyDraft,
   type NewRecipeDraft,
 } from './familyDraft';
 import { BaseRecipeCard } from './components/BaseRecipeCard';
@@ -607,6 +613,27 @@ export function EditFamilyRecipePage() {
   const storedRecipe = useRef<string | null>(null);
   const [saving, setSaving] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  /** The form as it is now, reported on every change; read when the Member leaves. */
+  const formNow = useRef<{
+    draft: FamilyDraft;
+    guidance: GuidanceDraft | null;
+  } | null>(null);
+
+  // Unsaved edits to the Recipe or its Guidance (Tips save at once and never count).
+  useLeaveGuard(() => {
+    const now = formNow.current;
+    if (!now || !recipe) return false;
+    const recipeBase =
+      storedRecipe.current ?? JSON.stringify(documentOf(draftOfEdit(recipe)));
+    if (linkRemoved || JSON.stringify(documentOf(now.draft)) !== recipeBase)
+      return true;
+    const guidanceBase = savedGuidance ?? toGuidanceDraft(recipe);
+    return (
+      now.guidance !== null &&
+      JSON.stringify(toGuidanceInput(now.guidance)) !==
+        JSON.stringify(toGuidanceInput(guidanceBase))
+    );
+  }, t('recipes:family.leaveConfirm'));
 
   const back = { label: t('recipes:back'), href: `/recipes/${id}` };
   // A failed delete is reported by the deferred-removal toast, not here.
@@ -698,6 +725,9 @@ export function EditFamilyRecipePage() {
         initial: savedGuidance ?? toGuidanceDraft(recipe),
         momentOptions,
         recipeId: recipe.id,
+      }}
+      onChange={(state) => {
+        formNow.current = state;
       }}
       saving={saving}
       error={null}
