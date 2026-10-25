@@ -153,7 +153,8 @@
     "already_started": "En plan, der er startet, kan ikke flyttes.",
     "day_out_of_range": "Den dag er ikke en del af planen.",
     "not_found": "Madplanen findes ikke længere.",
-    "recipe_not_found": "Opskriften kunne ikke findes."
+    "recipe_not_found": "Opskriften kunne ikke findes.",
+    "recipe_not_in_family": "Føj først opskriften til dine opskrifter, og planlæg den derefter."
   },
   "voice": {
     "cap_reached": "Du har brugt alle {{cap}} stemmenoter i dag. Prøv igen i morgen, eller tilføj varer manuelt.",
