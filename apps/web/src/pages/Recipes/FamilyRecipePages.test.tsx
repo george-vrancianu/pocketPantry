@@ -2505,13 +2505,17 @@ describe('Recipe editor Steps (#591)', () => {
     expect(screen.getByLabelText('Timer for Step 1 (minutes)')).toHaveValue(
       '1.5',
     );
-    expect(screen.getAllByText('min')).toHaveLength(1);
+    expect(
+      within(screen.getByRole('tabpanel')).getAllByText('min'),
+    ).toHaveLength(1);
     await user.click(
       screen.getByRole('button', { name: 'Add a timer to Step 2' }),
     );
     const timer = screen.getByLabelText('Timer for Step 2 (minutes)');
     expect(timer).toHaveValue('5');
-    expect(screen.getAllByText('min')).toHaveLength(2);
+    expect(
+      within(screen.getByRole('tabpanel')).getAllByText('min'),
+    ).toHaveLength(2);
     await user.clear(timer);
     expect(screen.queryByText(/The timer must be a positive/)).toBeNull();
     await user.type(timer, 'x');
