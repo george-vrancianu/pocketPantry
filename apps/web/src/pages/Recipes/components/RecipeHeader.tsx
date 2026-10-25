@@ -17,8 +17,8 @@ import type { RecipeDetail } from '../../../lib/recipes';
 
 /**
  * The Recipe screen's header: Back to the list, and what a Member can do with
- * the Recipe. The Family's own live
- * Recipe keeps Make a Variant, Edit and Delete (archive) in a menu.
+ * the Recipe. The Family's own live Recipe keeps Make a Variant, Edit and
+ * Delete (archive) in a menu.
  */
 export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
   const { t } = useTranslation(['recipes', 'errors']);
@@ -50,8 +50,14 @@ export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
 
   const remove = () =>
     archive.mutate(undefined, {
+      // A Variant's base is the Catalog Base, which has no page of its own for the Family:
+      // go to the Family's copy of it, if any.
       onSuccess: () =>
-        navigate(recipe.base ? `/recipes/${recipe.base.id}` : '/recipes'),
+        navigate(
+          recipe.base?.familyCopyId
+            ? `/recipes/${recipe.base.familyCopyId}`
+            : '/recipes',
+        ),
     });
 
   return (

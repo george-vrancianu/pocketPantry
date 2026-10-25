@@ -3,12 +3,10 @@ import { useTranslation } from 'react-i18next';
 import type { CookTonightCard } from '../lib/cookTonight';
 import type { AddState } from '../lib/addToFamily';
 import { totalMinutes, type RecipeListItem } from '../lib/recipes';
-import {
-  RecipeRowLayout,
-  StatusPills,
-} from '../pages/Recipes/components/RecipeRow';
 import { AddToFamilyButton } from './AddToFamilyButton';
 import { InFamilyPill } from './InFamilyPill';
+import { RecipeRowLayout } from './RecipeRowLayout';
+import { StatusPills } from './StatusPills';
 
 type Props = {
   recipe: RecipeListItem;

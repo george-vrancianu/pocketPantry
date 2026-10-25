@@ -26,7 +26,7 @@ import {
   useRecipePantryMatch,
   type RecipeListItem,
 } from '../lib/recipes';
-import { StatusPills } from '../pages/Recipes/components/RecipeRow';
+import { StatusPills } from './StatusPills';
 import { AddToFamilyButton } from './AddToFamilyButton';
 
 type Props = {

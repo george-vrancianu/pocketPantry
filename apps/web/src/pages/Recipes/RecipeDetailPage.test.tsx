@@ -1175,7 +1175,42 @@ describe('RecipeDetailPage', () => {
       expect(screen.queryByRole('link', { name: 'Make a Variant' })).toBeNull();
     });
 
-    it('archives after a confirm and goes back to the base', async () => {
+    it("archives after a confirm and goes to the Family's copy of the base", async () => {
+      const user = userEvent.setup();
+      const calls = setup(
+        recipe({
+          id: 'g',
+          owner: 'family',
+          parentId: 'o',
+          base: {
+            id: 'o',
+            title: 'Omelette',
+            archived: false,
+            familyCopyId: 'oc',
+          },
+        }),
+        '/recipes/g',
+        {
+          'POST /api/recipes/g/archive': () => Response.json({ id: 'g' }),
+          'GET /api/recipes/oc': () =>
+            Response.json(recipe({ id: 'oc', title: 'Omelette' })),
+        },
+      );
+      const menu = await openMenu(user);
+      await user.click(within(menu).getByRole('menuitem', { name: 'Delete' }));
+      expect(
+        calls.some((call) => call.key === 'POST /api/recipes/g/archive'),
+      ).toBe(false);
+      await user.click(await screen.findByRole('button', { name: 'Confirm' }));
+      await vi.waitFor(() =>
+        expect(calls.map((call) => call.key)).toContain('GET /api/recipes/oc'),
+      );
+      expect(calls.map((call) => call.key)).toContain(
+        'POST /api/recipes/g/archive',
+      );
+    });
+
+    it('goes to the list after deleting a Variant whose Catalog base has no Family copy', async () => {
       const user = userEvent.setup();
       const calls = setup(
         recipe({
@@ -1190,24 +1225,13 @@ describe('RecipeDetailPage', () => {
           },
         }),
         '/recipes/g',
-        {
-          'POST /api/recipes/g/archive': () => Response.json({ id: 'g' }),
-          'GET /api/recipes/o': () =>
-            Response.json(recipe({ id: 'o', title: 'Omelette' })),
-        },
+        { 'POST /api/recipes/g/archive': () => Response.json({ id: 'g' }) },
       );
       const menu = await openMenu(user);
       await user.click(within(menu).getByRole('menuitem', { name: 'Delete' }));
-      expect(
-        calls.some((call) => call.key === 'POST /api/recipes/g/archive'),
-      ).toBe(false);
       await user.click(await screen.findByRole('button', { name: 'Confirm' }));
-      await vi.waitFor(() =>
-        expect(calls.map((call) => call.key)).toContain('GET /api/recipes/o'),
-      );
-      expect(calls.map((call) => call.key)).toContain(
-        'POST /api/recipes/g/archive',
-      );
+      expect(await screen.findByText('All recipes page')).toBeInTheDocument();
+      expect(calls.map((call) => call.key)).not.toContain('GET /api/recipes/o');
     });
 
     it('goes to the list after deleting a standalone Family Recipe', async () => {
