@@ -30,12 +30,13 @@ const timestamps = {
 };
 
 export const userRole = pgEnum('user_role', ['admin', 'regular']);
-// What a daily cap counts: Scans, Voice Notes, Assistant Requests or Recipe from Link reads.
+// What a daily cap counts: Scans, Voice Notes, Assistant Requests, Recipe from Link reads or Suggest Guidance requests.
 export const usageKind = pgEnum('usage_kind', [
   'scan',
   'voice',
   'assistant',
   'link',
+  'guidance',
 ]);
 export const familyRole = pgEnum('family_role', ['owner', 'member']);
 

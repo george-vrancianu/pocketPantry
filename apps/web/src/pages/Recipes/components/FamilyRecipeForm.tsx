@@ -36,6 +36,8 @@ type Props = {
   stepTipCount?: (stepId: string) => number;
   /** The Recipe's guidance (a Variant draft's copy, or a blank one), edited and saved with the document. */
   guidance?: { initial: GuidanceDraft; momentOptions: MomentOption[] };
+  /** Tells the page what the form holds now, for siblings that read it (Suggest Guidance on the edit page). */
+  onDraftChange?: (draft: FamilyDraft) => void;
   /** Reports the form as it is, on mount and after every change (for the Recipe Draft). */
   onChange?: (state: {
     draft: FamilyDraft;
@@ -59,6 +61,7 @@ export function FamilyRecipeForm({
   error,
   stepTipCount,
   guidance,
+  onDraftChange,
   onChange,
   onSave,
   onCancel,
@@ -71,6 +74,7 @@ export function FamilyRecipeForm({
     guidance?.initial ?? null,
   );
   const [titleTouched, setTitleTouched] = useState(false);
+  useEffect(() => onDraftChange?.(draft), [draft, onDraftChange]);
   useEffect(() => {
     onChange?.({ draft, guidance: guidanceDraft });
     // The latest `onChange` is enough; only edits report.
@@ -180,6 +184,7 @@ export function FamilyRecipeForm({
             draft={guidanceDraft}
             onChange={setGuidanceDraft}
             momentOptions={guidance.momentOptions}
+            page={draft}
           />
         </Stack>
       ) : null}

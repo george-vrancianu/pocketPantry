@@ -182,6 +182,18 @@
     "cap_reached_no_time_other": "Ai folosit toate cele {{count}} de citiri de rețete din linkuri de azi. Încearcă mâine.",
     "cap_reached_unknown": "Ai folosit toate citirile de rețete din linkuri de azi. Încearcă mâine."
   },
+  "guidance": {
+    "nothing_to_suggest": "Tot ce poate completa Sugerează recomandări este deja completat. Golește un câmp și apasă din nou Sugerează recomandări.",
+    "suggest_unavailable": "Sugerează recomandări nu este disponibil acum. Încearcă din nou peste puțin timp.",
+    "suggest_failed": "Nu am putut sugera recomandări. Încearcă din nou sau scrie-le tu.",
+    "cap_reached_one": "Ai folosit singura cerere Sugerează recomandări de azi. Cererile se reînnoiesc {{when}}.",
+    "cap_reached_few": "Ai folosit toate cele {{count}} cereri Sugerează recomandări de azi. Cererile se reînnoiesc {{when}}.",
+    "cap_reached_other": "Ai folosit toate cele {{count}} de cereri Sugerează recomandări de azi. Cererile se reînnoiesc {{when}}.",
+    "cap_reached_no_time_one": "Ai folosit singura cerere Sugerează recomandări de azi. Încearcă mâine.",
+    "cap_reached_no_time_few": "Ai folosit toate cele {{count}} cereri Sugerează recomandări de azi. Încearcă mâine.",
+    "cap_reached_no_time_other": "Ai folosit toate cele {{count}} de cereri Sugerează recomandări de azi. Încearcă mâine.",
+    "cap_reached_unknown": "Ai folosit toate cererile Sugerează recomandări de azi. Încearcă mâine."
+  },
   "recipe_drafts": {
     "not_found": "Acea ciornă de rețetă nu mai există. Poate a fost eliminată sau păstrată prea mult.",
     "limit_reached": "Ai deja {{max}} de ciorne de rețete. Termină sau elimină una ca să începi alta.",

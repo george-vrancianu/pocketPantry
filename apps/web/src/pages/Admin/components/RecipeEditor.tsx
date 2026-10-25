@@ -1,8 +1,10 @@
 import { Alert, Spinner, Stack } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import type { AdminCatalog } from '../../../lib/admin';
 import { useAdminRecipe } from '../../../lib/adminRecipes';
+import type { RecipeDraft } from '../../../lib/recipeDraft';
 import { RecipeAllergens } from './RecipeAllergens';
 import { RecipeActions } from './RecipeActions';
 import { RecipeGuidance } from './RecipeGuidance';
@@ -28,6 +30,8 @@ export function RecipeEditor({ recipeId, catalog, onOpen, onClose }: Props) {
   const { t } = useTranslation(['admin', 'common', 'errors']);
   const query = useAdminRecipe(recipeId);
   const recipe = query.data;
+  // The form as it is now (unsaved edits included), which Suggest Guidance below it reads.
+  const [page, setPage] = useState<RecipeDraft | null>(null);
 
   if (recipeId === null) {
     return (
@@ -52,11 +56,12 @@ export function RecipeEditor({ recipeId, catalog, onOpen, onClose }: Props) {
         catalog={catalog}
         onSaved={() => {}}
         onCancel={onClose}
+        onDraftChange={setPage}
       />
       <RecipeActions recipe={recipe} onOpen={onOpen} />
       <RecipeAllergens recipeId={recipe.id} />
       <RecipeTips recipe={recipe} />
-      <RecipeGuidance recipe={recipe} catalog={catalog} />
+      <RecipeGuidance recipe={recipe} catalog={catalog} page={page} />
       <RecipeTranslations recipe={recipe} catalog={catalog} />
     </Stack>
   );

@@ -15,6 +15,12 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminRoleGuard } from '../auth/admin-role.guard';
 import { AuthGuard } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { GuidanceSuggestionService } from '../recipes/guidance-suggestion.service';
+import {
+  adminSuggestGuidanceBody,
+  type AdminSuggestGuidanceBody,
+  type GuidanceSuggestion,
+} from '../recipes/guidance-suggestion.schemas';
 import { RecipeGuidanceService } from '../recipes/recipe-guidance.service';
 import {
   guidanceBody,
@@ -58,6 +64,7 @@ export class AdminRecipesController {
     private readonly tips: RecipeTipsService,
     private readonly translations: RecipeTranslationsService,
     private readonly guidance: RecipeGuidanceService,
+    private readonly guidanceSuggestion: GuidanceSuggestionService,
   ) {}
 
   @Get()
@@ -73,6 +80,19 @@ export class AdminRecipesController {
   @ApiOperation({ summary: 'Admin only: create a Base Recipe' })
   create(@Body(new ZodValidationPipe(recipeDocument)) body: RecipeDocument) {
     return this.recipes.create(body);
+  }
+
+  @Post('suggest-guidance')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Admin only: propose Guidance for the empty fields of a Catalog Recipe as the editor holds it, in the base language, linking only to Catalog Ingredients and Recipes; never counted against a cap, nothing is saved',
+  })
+  suggestGuidance(
+    @Body(new ZodValidationPipe(adminSuggestGuidanceBody))
+    body: AdminSuggestGuidanceBody,
+  ): Promise<GuidanceSuggestion> {
+    return this.guidanceSuggestion.suggestForCatalog(body);
   }
 
   @Get(':id')

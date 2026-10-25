@@ -180,6 +180,16 @@
     "cap_reached_no_time_other": "Du har brugt alle {{count}} opskriftslæsninger fra links i dag. Prøv igen i morgen.",
     "cap_reached_unknown": "Du har brugt alle dagens opskriftslæsninger fra links. Prøv igen i morgen."
   },
+  "guidance": {
+    "nothing_to_suggest": "Alt, som Foreslå vejledning kan udfylde, er allerede udfyldt. Ryd et felt, og tryk på Foreslå vejledning igen.",
+    "suggest_unavailable": "Foreslå vejledning er ikke tilgængelig lige nu. Prøv igen om lidt.",
+    "suggest_failed": "Vi kunne ikke foreslå vejledning. Prøv igen, eller skriv den selv.",
+    "cap_reached_one": "Du har brugt din {{count}} anmodning i Foreslå vejledning i dag. Dine anmodninger nulstilles {{when}}.",
+    "cap_reached_other": "Du har brugt alle {{count}} anmodninger i Foreslå vejledning i dag. Dine anmodninger nulstilles {{when}}.",
+    "cap_reached_no_time_one": "Du har brugt din {{count}} anmodning i Foreslå vejledning i dag. Prøv igen i morgen.",
+    "cap_reached_no_time_other": "Du har brugt alle {{count}} anmodninger i Foreslå vejledning i dag. Prøv igen i morgen.",
+    "cap_reached_unknown": "Du har brugt alle dagens anmodninger i Foreslå vejledning. Prøv igen i morgen."
+  },
   "recipe_drafts": {
     "not_found": "Opskriftkladden findes ikke mere. Den kan være kasseret eller gemt for længe.",
     "limit_reached": "Du har allerede {{max}} opskriftkladder. Gør en færdig eller kassér en for at starte en ny.",

@@ -11,6 +11,7 @@ process.env.SCAN_DAILY_CAP = '3';
 process.env.VOICE_DAILY_CAP = '2';
 process.env.ASSISTANT_DAILY_CAP = '2';
 process.env.LINK_DAILY_CAP = '2';
+process.env.GUIDANCE_DAILY_CAP = '2';
 // Out of the way for most suites; family-join-rate-limit lowers them.
 process.env.INVITE_CODE_LIMIT_PER_USER = '1000';
 process.env.INVITE_CODE_LIMIT_PER_IP = '1000';
