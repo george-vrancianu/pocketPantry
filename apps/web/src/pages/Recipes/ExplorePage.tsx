@@ -9,7 +9,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ExploreRow } from '../../components/ExploreRow';
 import { QuickViewSheet } from '../../components/QuickViewSheet';
@@ -36,6 +36,8 @@ import { SectionLabel } from './components/SectionLabel';
 
 /** Rows a group shows before "Show n more". */
 const LIMIT = 4;
+/** Lifts a toast above the quick view's action buttons, px. */
+const QUICK_VIEW_TOAST_BOTTOM = 170;
 
 const SLIDE = '320ms cubic-bezier(.2,.8,.2,1)';
 
@@ -93,14 +95,15 @@ export function ExplorePage() {
   // Net adds this visit: the Back badge. It outlives the page so that a round trip through a
   // preview keeps it; a fresh visit (not Back from a preview) starts again at 0.
   const added = useExploreAdds();
-  const location = useLocation();
-  const returning =
-    useNavigationType() === 'POP' ||
-    (location.state as { fromPreview?: boolean } | null)?.fromPreview === true;
-  const [enter] = useState(!returning);
-  useEffect(() => {
-    if (!returning) exploreAdds.reset();
-  }, [returning]);
+  // Returning means coming back from a preview this page opened (not merely a POP: a reload or a
+  // Back from elsewhere is a fresh visit and slides in). The reset is synchronous so no stale
+  // count paints; it is idempotent, so a double render is harmless.
+  const [enter] = useState(() => {
+    if (exploreAdds.parked()) return false;
+    exploreAdds.reset();
+    return true;
+  });
+  useEffect(() => exploreAdds.unpark(), []);
   const [quick, setQuick] = useState<RecipeListItem | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
   const recipes = useRecipes(browse, { showHidden, scope: 'catalog' });
@@ -111,9 +114,16 @@ export function ExplorePage() {
     'catalog',
   );
   const filters = useRecipeFilters();
-  const { add, stateOf } = useAddToFamily({ onNet: exploreAdds.bump });
+  const { add, stateOf } = useAddToFamily({
+    onNet: exploreAdds.bump,
+    // While the quick view is open its buttons sit at the bottom: lift the toast clear of them.
+    ...(quickOpen ? { toastBottom: QUICK_VIEW_TOAST_BOTTOM } : {}),
+  });
   const filtering = isFiltering(browse);
   const items = recipes.data?.recipes ?? [];
+  const quickRecipe = quick
+    ? (items.find((item) => item.id === quick.id) ?? quick)
+    : null;
   const cards = cookTonight.data?.cards ?? [];
   const index = indexCards(cards);
 
@@ -190,10 +200,10 @@ export function ExplorePage() {
               !event.ctrlKey &&
               !event.shiftKey &&
               !event.altKey;
-            exploreAdds.reset();
             const still = window.matchMedia(
               '(prefers-reduced-motion: reduce)',
             ).matches;
+            if (plain) exploreAdds.reset();
             if (!plain || still) return;
             event.preventDefault();
             setLeaving(true);
@@ -240,13 +250,13 @@ export function ExplorePage() {
             )
           : null}
       </Stack>
-      {quick ? (
+      {quickRecipe ? (
         <QuickViewSheet
-          recipe={items.find((item) => item.id === quick.id) ?? quick}
+          recipe={quickRecipe}
           open={quickOpen}
           onClose={() => setQuickOpen(false)}
-          card={cardFor(index, quick)}
-          state={stateOf(items.find((item) => item.id === quick.id) ?? quick)}
+          card={cardFor(index, quickRecipe)}
+          state={stateOf(quickRecipe)}
           onAdd={(recipe) => void add(recipe)}
           stateOf={stateOf}
         />

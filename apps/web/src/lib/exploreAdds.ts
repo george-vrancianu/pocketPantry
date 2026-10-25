@@ -6,6 +6,8 @@ import { useSyncExternalStore } from 'react';
  * the preview count too. Explore resets it on a fresh visit and when the Member goes Back.
  */
 let net = 0;
+/** A preview opened from Explore is showing: Explore is being returned to, not visited afresh. */
+let isParked = false;
 const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((listener) => listener());
@@ -15,6 +17,13 @@ export const exploreAdds = {
   bump(delta: 1 | -1) {
     net = Math.max(0, net + delta);
     emit();
+  },
+  parked: () => isParked,
+  park() {
+    isParked = true;
+  },
+  unpark() {
+    isParked = false;
   },
   reset() {
     if (net === 0) return;

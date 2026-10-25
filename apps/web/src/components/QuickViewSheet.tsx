@@ -15,7 +15,7 @@ import {
   tokens,
   useToast,
 } from '@pocket-pantry/ui';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { AddState, AddableRecipe } from '../lib/addToFamily';
@@ -67,7 +67,6 @@ export function QuickViewSheet({
   const { t } = useTranslation('recipes');
   const navigate = useNavigate();
   const toast = useToast();
-  const titleId = useId();
   const closeButton = useRef<HTMLButtonElement>(null);
   // Opening the sheet hides any toast that is showing.
   useEffect(() => {
@@ -108,7 +107,7 @@ export function QuickViewSheet({
   const added = state.status !== 'none';
   const openPreview = (id: string) => {
     onClose();
-    navigate(`/recipes/explore/${id}`);
+    navigate(`/recipes/explore/${id}`, { state: { fromExplore: true } });
   };
 
   return (
@@ -151,10 +150,7 @@ export function QuickViewSheet({
                 t('quickView.eyebrow')
               )}
             </Box>
-            <Box
-              id={titleId}
-              sx={{ ...displayType, fontSize: 23, lineHeight: 1.15 }}
-            >
+            <Box sx={{ ...displayType, fontSize: 23, lineHeight: 1.15 }}>
               {recipe.title}
             </Box>
           </Box>
@@ -390,22 +386,13 @@ export function QuickViewSheet({
             >
               {t('quickView.openCopy')}
             </Button>
-          ) : state.status === 'adding' ? (
-            <Button
-              variant="tonal"
-              fullWidth
-              aria-disabled
-              aria-busy
-              startIcon={<CheckIcon size={18} />}
-              sx={{ height: 48 }}
-            >
-              {t('quickView.openCopy')}
-            </Button>
           ) : (
             <Button
               variant="primary"
               fullWidth
-              onClick={() => onAdd(recipe)}
+              {...(state.status === 'adding'
+                ? { 'aria-disabled': true, 'aria-busy': true }
+                : { onClick: () => onAdd(recipe) })}
               startIcon={<PlusIcon size={18} />}
               sx={{ height: 48 }}
             >

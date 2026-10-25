@@ -282,7 +282,6 @@
     "add": "Adaugă {{title}} la Rețetele tale",
     "added": "{{title}} a fost adăugată la Rețetele tale",
     "addFailed": "Nu am putut adăuga {{title}}. Încearcă din nou.",
-    "inFamily": "În Rețetele tale",
     "openCopy": "{{title}} este în Rețetele tale. Deschide-o",
     "undoFailed": "Nu am putut anula adăugarea {{title}}. Încearcă din nou.",
     "alreadyAdded": "{{title}} este deja în Rețetele tale",

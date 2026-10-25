@@ -10,7 +10,7 @@ import {
   tokens,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
-import { useId, useState, type MouseEvent } from 'react';
+import { useEffect, useId, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Navigate,
@@ -108,15 +108,26 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
     setTab(next);
     window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   };
+  const fromExplore =
+    (useLocation().state as { fromExplore?: boolean } | null)?.fromExplore ===
+    true;
   // The toasts of an add sit above the bar that replaces the Dock.
   const addToFamily = useAddToFamily(
     preview
-      ? { toastBottom: PREVIEW_BAR_CLEARANCE, onNet: exploreAdds.bump }
+      ? {
+          toastBottom: PREVIEW_BAR_CLEARANCE,
+          // Only a preview opened from Explore counts toward its Back badge.
+          ...(fromExplore ? { onNet: exploreAdds.bump } : {}),
+        }
       : {},
   );
+  useEffect(() => {
+    if (preview && fromExplore) exploreAdds.park();
+  }, [preview, fromExplore]);
   const navigate = useNavigate();
-  // `default` is the first entry of the session: no in-app history to go back to.
-  const hasHistory = useLocation().key !== 'default';
+  // React Router's history index: a replace (a redirect at load) does not raise it.
+  const hasHistory =
+    ((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0;
   const leavePreview = (event: MouseEvent<HTMLElement>) => {
     if (
       event.button !== 0 ||
@@ -128,7 +139,7 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
       return;
     event.preventDefault();
     if (hasHistory) navigate(-1);
-    else navigate('/recipes/explore', { state: { fromPreview: true } });
+    else navigate('/recipes/explore');
   };
   const addState = recipe
     ? addToFamily.stateOf({

@@ -266,7 +266,6 @@
     "add": "Tilføj {{title}} til dine opskrifter",
     "added": "{{title}} er tilføjet til dine opskrifter",
     "addFailed": "Kunne ikke tilføje {{title}}. Prøv igen.",
-    "inFamily": "I dine opskrifter",
     "openCopy": "{{title}} er i dine opskrifter. Åbn den",
     "undoFailed": "Kunne ikke fortryde tilføjelsen af {{title}}. Prøv igen.",
     "alreadyAdded": "{{title}} er allerede i dine opskrifter",

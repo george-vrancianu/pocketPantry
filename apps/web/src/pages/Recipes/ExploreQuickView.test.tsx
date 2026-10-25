@@ -13,7 +13,7 @@ import { exploreAdds } from '../../lib/exploreAdds';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubMatchMedia } from '../../test/viewport';
 import { ExplorePage } from './ExplorePage';
-import { RecipePreviewPage } from './RecipeDetailPage';
+import { RecipeDetailPage, RecipePreviewPage } from './RecipeDetailPage';
 
 /*
  * DOM contract: tapping a row's body opens a `dialog` named by the Recipe's title. It holds a
@@ -162,6 +162,7 @@ function setup(route = '/recipes/explore') {
     <Routes>
       <Route path="/recipes/explore" element={<ExplorePage />} />
       <Route path="/recipes/explore/:id" element={<RecipePreviewPage />} />
+      <Route path="/recipes/:id" element={<RecipeDetailPage />} />
       <Route
         path="/recipes"
         element={<Link to="/recipes/explore">to explore</Link>}
@@ -384,14 +385,22 @@ describe('Explore and the preview round trip', () => {
     expect(getComputedStyle(page).animationName).not.toContain('slide-in');
   });
 
-  it('Back from a preview opened directly goes to Explore, with no slide and the badge kept', async () => {
+  it('Back from a preview opened directly goes to Explore, and its adds do not count', async () => {
     setup('/recipes/explore/soup');
     const u = user();
     await u.click(await screen.findByRole('button', { name: 'Add to family' }));
-    await waitFor(() => expect(exploreAdds.get()).toBe(1));
+    await act(async () => {});
     await u.click(screen.getByRole('link', { name: /Back/ }));
     expect(await screen.findByTestId('explore-page')).toBeVisible();
-    expect(screen.getByTestId('back-badge')).toHaveTextContent('+1');
+    expect(exploreAdds.get()).toBe(0);
+    expect(screen.queryByTestId('back-badge')).toBeNull();
+  });
+
+  it('Back after a redirect at load (a deep link) lands on Explore, not out of the app', async () => {
+    setup('/recipes/soup');
+    await screen.findByRole('heading', { level: 1, name: /Soup/ });
+    await user().click(screen.getByRole('link', { name: /Back/ }));
+    expect(await screen.findByTestId('explore-page')).toBeVisible();
   });
 
   it('a fresh visit to Explore starts the badge at 0', async () => {
