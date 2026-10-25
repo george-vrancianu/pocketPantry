@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  openReady,
   fakeSession,
   hold as holdOn,
   mic,
@@ -136,7 +137,7 @@ describe('the recording gesture on the Shopping List', () => {
       fireEvent.pointerMove(button, { clientX: 60, clientY: 530 });
       expect(session.cancel).not.toHaveBeenCalled();
       fireEvent.pointerUp(button);
-      await screen.findByRole('dialog');
+      await openReady();
       expect(sent).toHaveLength(1);
     });
 
@@ -167,7 +168,7 @@ describe('the recording gesture on the Shopping List', () => {
 
       const again = await hold();
       await holdFor(60_000);
-      await screen.findByRole('dialog');
+      await openReady();
       vibrate.mockClear();
       fireEvent.pointerMove(again, { clientX: 10, clientY: 530 });
       expect(vibrate).not.toHaveBeenCalled();
@@ -207,7 +208,7 @@ describe('the recording gesture on the Shopping List', () => {
       expect(sent).toHaveLength(0);
 
       fireEvent.pointerUp(button);
-      await screen.findByRole('dialog');
+      await openReady();
       expect(sent).toHaveLength(1);
     });
 
@@ -343,9 +344,7 @@ describe('the recording gesture on the Shopping List', () => {
       expect(
         await screen.findByText('Stopped at 1 minute · Sending what you said.'),
       ).toBeVisible();
-      expect(await screen.findByRole('dialog')).toHaveTextContent(
-        'What I heard',
-      );
+      expect(await openReady()).toHaveTextContent('What I heard');
       expect(sent).toHaveLength(1);
     });
 
@@ -375,9 +374,7 @@ describe('the recording gesture on the Shopping List', () => {
       await holdLongEnough();
       fireEvent.keyUp(button, { key: ' ' });
 
-      expect(await screen.findByRole('dialog')).toHaveTextContent(
-        'What I heard',
-      );
+      expect(await openReady()).toHaveTextContent('What I heard');
       expect(mic.start).toHaveBeenCalledTimes(1);
       expect(sent).toHaveLength(1);
     });
@@ -428,9 +425,7 @@ describe('the recording gesture on the Shopping List', () => {
       expect(sent).toHaveLength(0);
 
       fireEvent.click(button);
-      expect(await screen.findByRole('dialog')).toHaveTextContent(
-        'What I heard',
-      );
+      expect(await openReady()).toHaveTextContent('What I heard');
       expect(sent).toHaveLength(1);
     });
 
@@ -454,7 +449,7 @@ describe('the recording gesture on the Shopping List', () => {
       const button = await hold();
       fireEvent.pointerUp(button);
       fireEvent.click(button);
-      await screen.findByRole('dialog');
+      await openReady();
       expect(mic.start).toHaveBeenCalledTimes(1);
       expect(session.stop).toHaveBeenCalledTimes(1);
     });
@@ -531,7 +526,7 @@ describe('the recording gesture on the Shopping List', () => {
       expect(released).not.toHaveBeenCalled();
 
       fireEvent.pointerUp(button);
-      await screen.findByRole('dialog');
+      await openReady();
       expect(request).toHaveBeenCalledTimes(1);
       await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
     });
@@ -542,7 +537,7 @@ describe('the recording gesture on the Shopping List', () => {
       renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       fireEvent.pointerUp(button);
-      expect(await screen.findByRole('dialog')).toBeInTheDocument();
+      expect(await openReady()).toBeInTheDocument();
       expect(released).not.toHaveBeenCalled();
     });
 
@@ -552,29 +547,24 @@ describe('the recording gesture on the Shopping List', () => {
       renderInAppLayout(<ShoppingPage />, '/shopping');
       const button = await hold();
       fireEvent.pointerUp(button);
-      expect(await screen.findByRole('dialog')).toBeInTheDocument();
+      expect(await openReady()).toBeInTheDocument();
     });
   });
 
   describe('keyboard order', () => {
-    it('tabs from the page to the Spoken Language chip, then through the Dock, camera before mic', async () => {
+    it('tabs from the page through the Dock, camera before mic', async () => {
       setup();
       renderInAppLayout(<ShoppingPage />, '/shopping');
-      const chip = await screen.findByRole('button', {
-        name: /Spoken Language: English/,
-      });
       const button = await talkButton();
       const dock = screen.getByRole('navigation');
       const camera = screen.getByRole('link', { name: 'Camera' });
 
-      chip.focus();
-      // Before the chip is the page itself.
+      dock.querySelector<HTMLElement>('a,button')?.focus();
+      // Before the Dock is the page itself.
       await userEvent.tab({ shift: true });
       expect(document.querySelector('main')).toContainElement(
         document.activeElement as HTMLElement,
       );
-      await userEvent.tab();
-      expect(chip).toHaveFocus();
       await userEvent.tab();
       expect(dock.contains(document.activeElement)).toBe(true);
       camera.focus();

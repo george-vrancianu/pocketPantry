@@ -90,12 +90,6 @@
     "stopped": "Oprit la 1 minut",
     "stoppedHint": "Se trimite ce ai spus."
   },
-  "languageMenu": {
-    "chipLabel": "Limba vorbită: {{language}}. Schimbă",
-    "title": "Limba vorbită",
-    "saved": "Limba vorbită: {{language}}",
-    "savedHint": "Doar pentru această notă vocală."
-  },
   "review": {
     "title": "Verificare",
     "subline_one": "{{count}} modificare · nimic nu se salvează până nu apeși Aplică",
@@ -194,7 +188,10 @@
       "keep": "Continuă verificarea",
       "discarded": "Nota vocală a fost eliminată",
       "discardedHint": "Nu s-a schimbat nimic.",
-      "pickList": "Alege mai întâi o listă"
+      "pickList": "Alege mai întâi o listă",
+      "confirmAll": "Renunți la toate aceste note vocale?",
+      "confirmAllHint": "Nu se schimbă nimic și va trebui să le spui din nou.",
+      "discardedAll": "Notele vocale au fost eliminate"
     },
     "pickList": {
       "label": "Lista pentru {{name}}",
@@ -204,7 +201,8 @@
     "putAll": {
       "label": "Pune tot pe:",
       "name": "Pune tot pe"
-    }
+    },
+    "titleAll": "Verifică toate"
   },
   "toast": {
     "applied_one": "{{count}} modificare aplicată",
@@ -270,8 +268,6 @@
     "tooLong": "Înregistrarea a fost prea lungă. Încearcă una mai scurtă.",
     "unsupportedTitle": "Nu se poate citi înregistrarea",
     "unsupported": "Formatul de înregistrare al acestui browser nu este acceptat",
-    "tipBusy": "Încă citesc ultima notă",
-    "tipFailed": "Reîncearcă sau șterge mai întâi ultima notă",
     "noRecording": "Nu se poate înregistra aici"
   },
   "answers": {
@@ -290,5 +286,43 @@
     "addToList_one": "Adaugă {{count}} în Lista de cumpărături",
     "addToList_few": "Adaugă {{count}} în Lista de cumpărături",
     "addToList_other": "Adaugă {{count}} în Lista de cumpărături"
+  },
+  "inbox": {
+    "title_one": "{{count}} notă vocală",
+    "title_few": "{{count}} note vocale",
+    "title_other": "{{count}} de note vocale",
+    "reading": "Citesc {{count}}",
+    "ready": "{{count}} gata",
+    "failed_one": "{{count}} notă eșuată",
+    "failed_few": "{{count}} note eșuate",
+    "failed_other": "{{count}} de note eșuate",
+    "failedAlert_one": "{{count}} notă vocală a eșuat",
+    "failedAlert_few": "{{count}} note vocale au eșuat",
+    "failedAlert_other": "{{count}} de note vocale au eșuat",
+    "retryNote": "Reîncearcă: {{preview}}",
+    "retryOtherNote": "Reîncearcă în altă limbă: {{preview}}",
+    "currentLanguage": "{{language}} (curentă)",
+    "discardNote": "Șterge: {{preview}}",
+    "review": "Verificare",
+    "full": "Verifică mai întâi notele",
+    "sheetTitle": "Inbox vocal",
+    "preview": "Notă vocală · {{duration}}",
+    "noList": "Fără listă",
+    "open": "Deschide",
+    "openCount": "Deschide ({{count}})",
+    "see": "Vezi",
+    "cancel": "Anulează",
+    "reviewNote": "Verifică: {{preview}}",
+    "seeNote": "Vezi: {{preview}}",
+    "cancelNote": "Anulează citirea: {{preview}}",
+    "state": {
+      "reading": "Se citește",
+      "review": "Gata de verificat",
+      "answers": "Răspunsuri gata",
+      "applying": "Se aplică",
+      "failed": "Nu a putut fi citită"
+    },
+    "reviewAll": "Verifică toate ({{count}})",
+    "reviewAllTooMany": "Sunt mai mult de {{max}} de modificări pentru o singură aplicare. Verifică unele dintre notele vocale separat."
   }
 }

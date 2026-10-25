@@ -262,6 +262,10 @@ describe('Voice Note microphone sheets', () => {
       );
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
+        '1 Voice Note failed',
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+      expect(await screen.findByRole('dialog')).toHaveTextContent(
         /cannot record audio/i,
       );
     });

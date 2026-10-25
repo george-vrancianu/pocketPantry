@@ -2,6 +2,7 @@ import { VoiceReview, type VoiceSetup } from './voice/VoiceReview';
 import { VoiceAnswers } from './voice/VoiceAnswerSheet';
 import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
+import { VoiceInboxStrip } from './voice/VoiceInboxStrip';
 import { StatusPill } from './voice/StatusPill';
 import { useVoiceConfigured, type VoiceDefaultTarget } from '../lib/voice';
 import { useVoiceNote } from '../lib/useVoiceNote';
@@ -18,7 +19,7 @@ export function defaultTargetFor(pathname: string): VoiceDefaultTarget {
 
 /**
  * Voice Notes, hosted once in the app layout: the hold-to-talk mic in the Dock's capsule with
- * the Spoken Language chip above it, its notices, and the Review sheet that shows "What I heard".
+ * its notices, and the Review sheet that shows "What I heard".
  * Shown on every page with the Dock, acting on that page's list on the Shopping List and the Pantry and on no
  * list elsewhere (Setup's Say it is the one exception and passes its own). Hidden until the server says transcription is configured.
  */
@@ -57,13 +58,15 @@ function VoiceNoteControls({
   defaultTarget: VoiceDefaultTarget;
   setup?: VoiceSetup;
 }) {
-  const voice = useVoiceNote(defaultTarget);
+  const voice = useVoiceNote(defaultTarget, {
+    openWhenReady: setup !== undefined,
+  });
 
   return (
     <>
       <VoiceButton voice={voice} target={defaultTarget} />
 
-      <StatusPill voice={voice} />
+      {setup ? <StatusPill voice={voice} /> : <VoiceInboxStrip />}
 
       <MicSheets mic={voice.mic} target={defaultTarget} />
 

@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  openReady,
   mic,
   recordAndSend,
   resetVoiceEnvironment,
@@ -73,7 +74,8 @@ describe('Voice Notes on the Pantry page', () => {
         Response.json({ results: [yogurt, rice] }),
       'POST /api/voice': () => {
         reads += 1;
-        if (reads === 1 && firstRead === 'fails') {
+        // A network error is tried once more by itself.
+        if (reads <= 2 && firstRead === 'fails') {
           return Promise.reject(new TypeError('Failed to fetch'));
         }
         if (reads === 1 && firstRead === 'hangs')
@@ -104,7 +106,7 @@ describe('Voice Notes on the Pantry page', () => {
     await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
-    return screen.findByRole('dialog');
+    return openReady();
   }
 
   beforeEach(() => {
@@ -119,6 +121,15 @@ describe('Voice Notes on the Pantry page', () => {
     vi.unstubAllGlobals();
   });
 
+  it('has no Spoken Language chip above the Dock', async () => {
+    setup([]);
+    renderInAppLayout(<PantryPage />, '/pantry');
+    await screen.findByRole('button', { name: /hold to record a voice note/i });
+    expect(
+      screen.queryByRole('button', { name: /Spoken Language/ }),
+    ).toBeNull();
+  });
+
   it('shows a note that failed on the Shopping List here too, and retries it for its own page', async () => {
     // Recorded on the Shopping List, then the Member moved to the Pantry (not a reload).
     const { sent } = setup([], undefined, [], 'fails');
@@ -128,25 +139,30 @@ describe('Voice Notes on the Pantry page', () => {
     });
     renderInAppLayout(<PantryPage />, '/pantry');
 
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent("Couldn't send");
-    expect(screen.getByTestId('failed-dot')).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '1 Voice Note failed',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Voice Inbox' });
 
-    await userEvent.click(within(alert).getByRole('button', { name: 'Retry' }));
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: /^Retry:/ }),
+    );
+    await userEvent.keyboard('{Escape}');
 
-    expect(await screen.findByRole('dialog')).toBeVisible();
+    expect(await openReady()).toBeVisible();
     expect(sent[0].get('spokenLanguage')).toBe('ro');
     expect(sent[0].get('defaultTarget')).toBe('shopping');
   });
 
-  it('keeps the voice button, the pill and a read going while a Batch is added', async () => {
+  it('keeps the voice button, the strip and a read going while a Batch is added', async () => {
     setup([], undefined, [], 'hangs');
     await recordAndSend({
       spokenLanguage: 'en',
       defaultTarget: 'pantry',
     });
     renderInAppLayout(<PantryPage />, '/pantry');
-    await screen.findByText("Gator's reading your note…");
+    await screen.findByText('Reading 1');
 
     await userEvent.click(screen.getByRole('button', { name: 'Add batch' }));
 
@@ -157,14 +173,7 @@ describe('Voice Notes on the Pantry page', () => {
     expect(
       screen.getByRole('button', { name: /hold to record a voice note/i }),
     ).toBeVisible();
-    expect(screen.getByText("Gator's reading your note…")).toBeVisible();
-
-    // Its Cancel still works over the form.
-    const pill = screen
-      .getByText("Gator's reading your note…")
-      .closest('[role="status"]') as HTMLElement;
-    await userEvent.click(within(pill).getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByText("Gator's reading your note…")).toBeNull();
+    expect(screen.getByText('Reading 1')).toBeVisible();
   });
 
   it('puts the voice button on the Pantry page and records for the Pantry', async () => {
