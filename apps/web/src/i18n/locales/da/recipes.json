@@ -241,6 +241,7 @@
     "discarded": "Opskriftkladde kasseret",
     "removeQuestion": "Kassér {{name}}?",
     "context": "fra dine opskriftkladder",
-    "removeAction": "Kassér {{name}}"
+    "removeAction": "Kassér {{name}}",
+    "variantOf": "Variant af {{base}}"
   }
 }

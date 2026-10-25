@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Fragment, StrictMode } from 'react';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
@@ -59,6 +60,7 @@ function setup(
   routes: Parameters<typeof stubApi>[0] = {},
   route = '/recipes',
   locale: 'en' | 'ro' | 'da' = 'en',
+  strict = false,
 ) {
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes': () =>
@@ -70,30 +72,33 @@ function setup(
     ...routes,
   });
   vi.stubGlobal('fetch', fetchMock);
+  const Mode = strict ? StrictMode : Fragment;
   renderWithProviders(
-    <Routes>
-      <Route path="/recipes" element={<RecipesPage />} />
-      <Route
-        path="/recipes/drafts"
-        element={
-          <>
-            <Where />
-            <RecipeDraftsPage />
-          </>
-        }
-      />
-      <Route
-        path="/recipes/new"
-        element={
-          <>
-            <Link to={`/recipes/new?draft=${ID_A}`}>reopen</Link>
-            <Where />
-            <NewRecipePage />
-          </>
-        }
-      />
-      <Route path="/recipes/:id/variant/new" element={<Where />} />
-    </Routes>,
+    <Mode>
+      <Routes>
+        <Route path="/recipes" element={<RecipesPage />} />
+        <Route
+          path="/recipes/drafts"
+          element={
+            <>
+              <Where />
+              <RecipeDraftsPage />
+            </>
+          }
+        />
+        <Route
+          path="/recipes/new"
+          element={
+            <>
+              <Link to={`/recipes/new?draft=${ID_A}`}>reopen</Link>
+              <Where />
+              <NewRecipePage />
+            </>
+          }
+        />
+        <Route path="/recipes/:id/variant/new" element={<Where />} />
+      </Routes>
+    </Mode>,
     { route, locale },
   );
   return calls;
@@ -191,6 +196,25 @@ describe('Recipe Drafts list and discard', () => {
       // No origin: no origin line at all.
       expect(plain).toContain('Untitled recipe');
       expect(plain).not.toMatch(/Plate scan|From /);
+    });
+
+    it.each([
+      ['ro', 'Variantă a rețetei Omelette'],
+      ['da', 'Variant af Omelette'],
+    ] as const)('capitalises the Variant line in %s', async (locale, text) => {
+      setup(
+        [
+          summary({
+            kind: 'variant',
+            baseRecipeId: 'b',
+            baseRecipeName: 'Omelette',
+          }),
+        ],
+        {},
+        '/recipes/drafts',
+        locale,
+      );
+      expect(await screen.findByText(text)).toBeVisible();
     });
 
     it('explains an empty list', async () => {
@@ -317,7 +341,11 @@ describe('Recipe Drafts list and discard', () => {
       await open(u);
       expect(screen.queryByRole('link', { name: /Gran stew/ })).toBeNull();
       expect(screen.getByRole('link', { name: /Other/ })).toBeVisible();
-      expect(await screen.findByText('Recipe Draft discarded')).toBeVisible();
+      const toast = await screen.findByText('Recipe Draft discarded');
+      expect(toast).toBeVisible();
+      // A polite status, not an alert.
+      expect(toast.closest('[role="status"]')).not.toBeNull();
+      expect(screen.queryByRole('alert')).toBeNull();
       expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
       await elapse(UNDO_WINDOW_MS - 500);
       expect(deletes(calls)).toEqual([]);
@@ -426,6 +454,27 @@ describe('Recipe Drafts list and discard', () => {
       expect(deletes(calls)).toEqual([]);
     });
 
+    it('keeps the DELETE back until the Undo window ends under StrictMode too', async () => {
+      const u = user();
+      const calls = setup(
+        [summary({})],
+        resumable,
+        `/recipes/new?draft=${ID_A}`,
+        'en',
+        true,
+      );
+      await screen.findByLabelText(/^Title/);
+      await u.click(
+        await screen.findByRole('button', { name: 'Discard draft' }),
+      );
+      expect(await screen.findByText('Recipe Draft discarded')).toBeVisible();
+      await elapse(UNDO_WINDOW_MS - 1000);
+      expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
+      expect(deletes(calls)).toEqual([]);
+      await elapse(1500);
+      expect(deletes(calls)).toHaveLength(1);
+    });
+
     it('is not offered before there is a Recipe Draft', async () => {
       setup([], {}, '/recipes/new');
       await screen.findByLabelText(/^Title/);
@@ -461,7 +510,7 @@ describe('Recipe Drafts list and discard', () => {
     it.each([
       [
         'ro',
-        'Ai deja 20 ciorne de rețete. Termină sau elimină una ca să începi alta.',
+        'Ai deja 20 de ciorne de rețete. Termină sau elimină una ca să începi alta.',
       ],
       [
         'da',

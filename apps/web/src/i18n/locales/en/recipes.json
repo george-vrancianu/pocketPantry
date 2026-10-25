@@ -241,6 +241,7 @@
     "discarded": "Recipe Draft discarded",
     "removeQuestion": "Discard {{name}}?",
     "context": "from your Recipe Drafts",
-    "removeAction": "Discard {{name}}"
+    "removeAction": "Discard {{name}}",
+    "variantOf": "Variant of {{base}}"
   }
 }

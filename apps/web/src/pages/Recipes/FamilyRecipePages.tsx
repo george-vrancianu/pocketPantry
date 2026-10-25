@@ -284,7 +284,7 @@ function NewRecipeContent({
           description={t('recipes:family.newRecipeHint')}
           initial={initial}
           saveLabel={t('recipes:family.save')}
-          saving={create.isPending || finishing}
+          saving={create.isPending || finishing || discarding}
           error={create.error}
           guidance={{ initial: initialGuidance, momentOptions }}
           onChange={setFormState}
@@ -334,7 +334,7 @@ function NewRecipeContent({
               const state: DiscardedDraftState | null = id
                 ? { discardRecipeDraft: { id } }
                 : null;
-              navigate('/recipes', { state });
+              navigate('/recipes', { replace: true, state });
             }}
           >
             {t('recipes:drafts.discard')}

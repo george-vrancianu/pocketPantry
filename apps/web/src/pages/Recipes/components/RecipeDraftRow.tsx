@@ -33,7 +33,7 @@ export function RecipeDraftRow({
   const kind =
     draft.kind === 'variant'
       ? draft.baseRecipeName
-        ? t('recipes:variantOf', { base: draft.baseRecipeName })
+        ? t('recipes:drafts.variantOf', { base: draft.baseRecipeName })
         : t('recipes:drafts.variant')
       : t('recipes:drafts.newRecipe');
   const origin =

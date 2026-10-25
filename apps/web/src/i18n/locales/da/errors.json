@@ -181,7 +181,7 @@
     "cap_reached_unknown": "Du har brugt alle dagens opskriftslæsninger fra links. Prøv igen i morgen."
   },
   "recipe_drafts": {
-    "not_found": "Den kladde findes ikke mere. Den kan være kasseret eller gemt for længe.",
+    "not_found": "Opskriftkladden findes ikke mere. Den kan være kasseret eller gemt for længe.",
     "limit_reached": "Du har allerede {{max}} opskriftkladder. Gør en færdig eller kassér en for at starte en ny."
   }
 }

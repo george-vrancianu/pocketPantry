@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import { draftWritesSettled } from './recipeDraftWrites';
+import { draftWritesSettled, trackDraftWrite } from './recipeDraftWrites';
 import type { Difficulty } from './recipeVocabulary';
 import type { PairingKind, PairingPrinciple } from './recipeVocabulary';
 import type { EatingMomentPolarity } from './adminRecipes';
@@ -174,7 +174,24 @@ export function useUpdateRecipeDraft() {
 }
 
 export function useDeleteRecipeDraft() {
-  return useDraftWrite((id: string) =>
-    apiRequest<void>(`/recipe-drafts/${id}`, { method: 'DELETE' }),
-  );
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => {
+      const sending = apiRequest<void>(`/recipe-drafts/${id}`, {
+        method: 'DELETE',
+      });
+      // A Recipe Draft read right after waits for the delete.
+      trackDraftWrite(sending);
+      return sending;
+    },
+    // Out of the list at once, so it cannot flash back on a page that reads the cached list before the refetch.
+    onMutate: (id) =>
+      queryClient.setQueryData<RecipeDraftSummary[]>(
+        recipeDraftsListKey,
+        (list) => list?.filter((draft) => draft.id !== id),
+      ),
+    // Settled, so a failed delete brings the row back from the server.
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: recipeDraftsListKey }),
+  });
 }

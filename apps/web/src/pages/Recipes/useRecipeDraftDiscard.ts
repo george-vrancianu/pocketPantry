@@ -34,20 +34,26 @@ export function useRecipeDraftDiscard({
     recipeDraftsListKey,
     remove.mutateAsync,
   );
-  const discard = (id: string) => removal.remove(id, '', t('drafts.discarded'));
+  // The Undo toast is a polite status (CODING_STANDARDS).
+  const discard = (id: string) =>
+    removal.remove(id, '', t('drafts.discarded'), { polite: true });
   const location = useLocation();
   const navigate = useNavigate();
   const taken = useRef<string | null>(null);
   const handedId = takeFromForm ? discardedOf(location.state) : null;
   useEffect(() => {
     if (handedId === null || taken.current === location.key) return;
-    taken.current = location.key;
-    removal.remove(handedId, '', t('drafts.discarded'));
-    // A reload or Back must not discard it again.
-    navigate(
-      { pathname: location.pathname, search: location.search },
-      { replace: true, state: null },
-    );
+    // Deferred, so StrictMode's trial unmount (which sends a waiting removal at once) cancels it before it starts.
+    const timer = setTimeout(() => {
+      taken.current = location.key;
+      discard(handedId);
+      // A reload or Back must not discard it again.
+      navigate(
+        { pathname: location.pathname, search: location.search },
+        { replace: true, state: null },
+      );
+    }, 0);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handedId, location.key]);
   return { hiddenIds: removal.hiddenIds, discard };
