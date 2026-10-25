@@ -426,6 +426,10 @@ export type RecipeListItem = {
   cookMinutes: number | null;
   difficulty: AdminRecipeDetail['difficulty'];
   owner: RecipeOwner;
+  /** On a Catalog Recipe: the Family's live copy of it (Add to Family), else null. Always null on a Family Recipe. */
+  familyCopyId: string | null;
+  /** On a Family copy: the Catalog Recipe it was Copied From, else null. Groups a Family Variant under the Family's copy of its Base. */
+  copiedFromId: string | null;
   /** The compact Allergy Warning, judged on this Recipe's own lines; null when nothing the viewer must avoid is, or might be, in it. */
   allergyWarning: CompactAllergyWarning | null;
 };

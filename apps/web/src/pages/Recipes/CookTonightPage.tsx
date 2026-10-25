@@ -104,6 +104,8 @@ function baseRow(card: CookTonightCard): RecipeListItem {
     cookMinutes: recipe.cookMinutes,
     difficulty: null,
     owner: recipe.owner,
+    familyCopyId: null,
+    copiedFromId: null,
     allergyWarning: recipe.allergyWarning,
   };
 }

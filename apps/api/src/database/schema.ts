@@ -875,6 +875,10 @@ export const recipes = pgTable(
     sourceLink: text('source_link'),
     // Recipe from Link: the page's detected language, only when the Recipe was translated out of it. Never copied to a Variant.
     sourceLanguage: text('source_language'),
+    // Add to Family: the Catalog Recipe this Family Recipe was Copied From (ADR 0029). Set only on Family copies.
+    copiedFromId: uuid('copied_from_id').references(
+      (): AnyPgColumn => recipes.id,
+    ),
     ...timestamps,
   },
   (table) => [
@@ -884,6 +888,12 @@ export const recipes = pgTable(
     index('recipes_family_source_link_idx')
       .on(table.familyId, table.sourceLink)
       .where(sql`${table.sourceLink} IS NOT NULL`),
+    // At most one live copy of a Catalog Recipe per Family; an archived copy frees the slot.
+    uniqueIndex('recipes_family_copied_from_live_idx')
+      .on(table.familyId, table.copiedFromId)
+      .where(
+        sql`${table.copiedFromId} IS NOT NULL AND ${table.archivedAt} IS NULL`,
+      ),
     index('recipes_cuisine_idx').on(table.cuisineId),
     index('recipes_method_idx').on(table.methodId),
     check('recipes_servings_positive', sql`${table.servings} > 0`),

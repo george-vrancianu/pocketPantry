@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  GlobeIcon,
   PlusIcon,
   Spinner,
   Stack,
@@ -69,6 +70,12 @@ export function RecipesPage() {
             {
               label: t('recipes:fromLink.menuItem'),
               href: '/recipes/from-link',
+            },
+            {
+              label: t('recipes:explore.menuItem'),
+              icon: <GlobeIcon size={18} />,
+              badge: t('recipes:explore.menuNew'),
+              href: '/recipes/explore',
             },
           ],
         }}

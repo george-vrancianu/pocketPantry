@@ -272,5 +272,19 @@
     "continueNamed": "Continuă {{name}}",
     "startNew": "Începe una nouă",
     "baseGone": "Rețeta de bază a cărei variantă era această ciornă de rețetă nu mai există. Se deschide ca rețetă nouă și va fi salvată ca rețetă de bază."
+  },
+  "explore": {
+    "title": "Explorează",
+    "menuItem": "Din Explorează",
+    "menuNew": "nou",
+    "subline": "Adaugă o Rețetă ca să o gătești, să o planifici și să o schimbi, sau fă o Variantă din ea.",
+    "back": "Înapoi la Rețetele tale",
+    "add": "Adaugă {{title}} la Rețetele tale",
+    "added": "{{title}} a fost adăugată la Rețetele tale",
+    "addFailed": "Nu am putut adăuga {{title}}. Încearcă din nou.",
+    "inFamily": "În Rețetele tale",
+    "openCopy": "{{title}} este în Rețetele tale. Deschide-o",
+    "undoFailed": "Nu am putut anula adăugarea {{title}}. Încearcă din nou.",
+    "alreadyAdded": "{{title}} este deja în Rețetele tale"
   }
 }

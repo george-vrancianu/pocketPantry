@@ -68,6 +68,8 @@ const recipe = (id: string, title: string): RecipeListItem => ({
   cookMinutes: 20,
   difficulty: null,
   owner: 'catalog',
+  familyCopyId: null,
+  copiedFromId: null,
   allergyWarning: null,
 });
 

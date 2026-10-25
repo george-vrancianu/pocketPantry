@@ -57,6 +57,10 @@ export type RecipeListItem = {
   cookMinutes: number | null;
   difficulty: Difficulty | null;
   owner: RecipeOwner;
+  /** On a Catalog Recipe: the Family's live copy of it (Add to Family), else null. */
+  familyCopyId: string | null;
+  /** On a Family copy: the Catalog Recipe it was Copied From, else null. */
+  copiedFromId: string | null;
   allergyWarning: CompactAllergyWarning | null;
 };
 
@@ -238,6 +242,7 @@ export function useRecipes(
     searchOnly = false,
     includeVariants = false,
     showHidden = false,
+    scope,
     enabled = true,
   }: {
     searchOnly?: boolean;
@@ -247,6 +252,8 @@ export function useRecipes(
      * Pairing picker always pass it: Plan Slots and Pairing links never hide.
      */
     showHidden?: boolean;
+    /** `catalog` lists Catalog Recipes (Explore); `family` the Family's own. Omitted: both, as before. */
+    scope?: 'family' | 'catalog';
     enabled?: boolean;
   } = {},
 ) {
@@ -256,6 +263,7 @@ export function useRecipes(
     queryKey: [
       ...recipesQueryKey,
       'list',
+      scope ?? 'all',
       search,
       cuisineId,
       methodId,
@@ -269,6 +277,7 @@ export function useRecipes(
       if (methodId) params.set('methodId', methodId);
       if (includeVariants) params.set('includeVariants', 'true');
       if (showHidden) params.set('showHidden', 'true');
+      if (scope) params.set('scope', scope);
       return apiRequest<RecipeList>(`/recipes?${params}`);
     },
     // `searchOnly`: nothing to fetch until a search term has settled (the debounce has run).

@@ -32,6 +32,7 @@ import { RecipeDetailPage } from './pages/Recipes/RecipeDetailPage';
 import { RecipeFromLinkPage } from './pages/Recipes/RecipeFromLinkPage';
 import { RecipeDraftsPage } from './pages/Recipes/RecipeDraftsPage';
 import { RecipesPage } from './pages/Recipes/RecipesPage';
+import { ExplorePage } from './pages/Recipes/ExplorePage';
 import { ReviewOverviewPage } from './pages/Review/ReviewOverviewPage';
 import { ReviewPage } from './pages/Review/ReviewPage';
 import { ScanPage } from './pages/Scan/ScanPage';
@@ -82,6 +83,7 @@ export function App() {
               <Route path="scan/review" element={<ReviewOverviewPage />} />
               <Route path="scan/review/:scanId" element={<ReviewPage />} />
               <Route path="recipes" element={<RecipesPage />} />
+              <Route path="recipes/explore" element={<ExplorePage />} />
               <Route path="recipes/new" element={<NewRecipePage />} />
               <Route path="recipes/drafts" element={<RecipeDraftsPage />} />
               <Route

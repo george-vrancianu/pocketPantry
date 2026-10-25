@@ -90,6 +90,8 @@ type LayoutProps = {
   onClick?: () => void;
   dimmed?: boolean;
   'aria-label'?: string;
+  /** A control beside the row (not inside its link or button), e.g. Explore's add button. */
+  trailing?: ReactNode;
 };
 
 /** The row's look, for a Recipe in a list and for a Recipe in a Meal plan's slot. */
@@ -103,6 +105,7 @@ export function RecipeRowLayout({
   onClick,
   dimmed,
   'aria-label': ariaLabel,
+  trailing,
 }: LayoutProps) {
   const { t } = useTranslation('recipes');
   const inner = {
@@ -116,6 +119,7 @@ export function RecipeRowLayout({
     textDecoration: 'none',
     opacity: dimmed ? 0.55 : 1,
     ...(to === undefined && onClick === undefined ? {} : { cursor: 'pointer' }),
+    ...(trailing ? { flex: 1, minWidth: 0 } : {}),
   } as const;
   const content = (
     <>
@@ -171,7 +175,12 @@ export function RecipeRowLayout({
   return (
     <Box
       component="li"
-      sx={{ '& + &': { borderTop: `1px solid ${tokens.color.line}` } }}
+      sx={{
+        '& + &': { borderTop: `1px solid ${tokens.color.line}` },
+        ...(trailing
+          ? { display: 'flex', alignItems: 'center', gap: '8px' }
+          : {}),
+      }}
     >
       {to !== undefined ? (
         <Box component={Link} to={to} sx={inner}>
@@ -197,11 +206,12 @@ export function RecipeRowLayout({
       ) : (
         <Box sx={inner}>{content}</Box>
       )}
+      {trailing}
     </Box>
   );
 }
 
-function StatusPills({
+export function StatusPills({
   recipeId,
   card,
   warning,
