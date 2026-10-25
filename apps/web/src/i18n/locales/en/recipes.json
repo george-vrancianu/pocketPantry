@@ -220,7 +220,6 @@
   },
   "recipeDraft": {
     "saving": "Saving…",
-    "saved": "Draft saved",
-    "originPlateScan": "Plate scan"
+    "saved": "Draft saved"
   }
 }

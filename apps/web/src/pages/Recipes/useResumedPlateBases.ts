@@ -19,7 +19,7 @@ export function plateMatchInput(
 }
 
 /** Whether a resumed Recipe Draft had the base picker (a Plate Scan, or a base was picked). */
-export const offersBases = (form: RecipeDraftForm | null) =>
+const offersBases = (form: RecipeDraftForm | null) =>
   form !== null && (form.plateScan === true || Boolean(form.pickedBaseId));
 
 /**
@@ -33,7 +33,7 @@ export function useResumedPlateBases(form: RecipeDraftForm | null): {
   hiddenByAllergiesCount: number;
   /** The base picked before leaving, once named; null when there was none or it is gone. */
   picked: BaseRecipeOption | null;
-  /** The picker may be shown: the base's name is known, or will never be. */
+  /** The picker may be shown: the picked base (if any) is named. If its name cannot be looked up, the picker stays away and the pick is kept as it is. */
   ready: boolean;
 } {
   const asks = offersBases(form);
@@ -49,6 +49,6 @@ export function useResumedPlateBases(form: RecipeDraftForm | null): {
     picked: base.data
       ? { id: base.data.id, title: base.data.title, allergyWarning: null }
       : null,
-    ready: pickedId === '' || !base.isPending,
+    ready: pickedId === '' || base.data !== undefined,
   };
 }

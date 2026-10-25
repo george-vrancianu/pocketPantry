@@ -197,11 +197,15 @@ function NewRecipeContent({
     ? revealed.data.hiddenByAllergiesCount
     : suppliedHidden;
   // Nothing close and nothing hidden (or not matched yet): no picker, a Base Recipe.
-  const hasBases = suppliedBases.length > 0 || suppliedHidden > 0;
+  // A resumed pick counts too: matches may be slow, empty or failed, and the pick must still be saved (ADR 0028).
+  const hasBases =
+    suppliedBases.length > 0 ||
+    suppliedHidden > 0 ||
+    Boolean(resumedForm?.pickedBaseId);
   // What the Member picked before leaving stays picked (named once looked up).
   const pick = {
     ...basePick,
-    chosen: basePick.chosen ?? again.picked?.id ?? null,
+    chosen: basePick.chosen ?? resumedForm?.pickedBaseId ?? null,
     another: basePick.another ?? again.picked,
   };
   const [initial] = useState(() =>

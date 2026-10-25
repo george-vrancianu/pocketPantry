@@ -1,4 +1,5 @@
 import { act, screen } from '@testing-library/react';
+import { StrictMode } from 'react';
 import userEvent from '@testing-library/user-event';
 import type { InitialEntry } from 'react-router-dom';
 import { Route, Routes } from 'react-router-dom';
@@ -267,6 +268,33 @@ describe('Recipe Drafts for supplied fills', () => {
     expect(
       sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`)[0].body,
     ).toMatchObject({ content: { guidance } });
+    // Exactly as typed: no React keys, and no marker on what was not suggested.
+    expect(
+      (
+        sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`)[0].body as {
+          content: RecipeDraftContent;
+        }
+      ).content.guidance,
+    ).toEqual(guidance);
+  });
+
+  it('creates exactly one Recipe Draft for a supplied fill in StrictMode', async () => {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/recipes/filters': () => Response.json(filters),
+      ...draftRoutes,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <StrictMode>
+        <Routes>
+          <Route path="/recipes/new" element={<NewRecipePage />} />
+        </Routes>
+      </StrictMode>,
+      { route: { pathname: '/recipes/new', state: fill } },
+    );
+    await screen.findByLabelText(/^Title/);
+    await elapse(3000);
+    expect(sent(calls, 'POST /api/recipe-drafts')).toHaveLength(1);
   });
 
   describe('resuming a Plate Scan Recipe Draft', () => {
@@ -279,9 +307,8 @@ describe('Recipe Drafts for supplied fills', () => {
       ...draftRoutes,
       [`GET /api/recipe-drafts/${DRAFT_ID}`]: () =>
         Response.json(stored(plate)),
-      'POST /api/recipes/plate-matches': (url: URL) => {
-        void url;
-        return Response.json({
+      'POST /api/recipes/plate-matches': () =>
+        Response.json({
           matches: [
             {
               id: 'base-crepes',
@@ -291,8 +318,7 @@ describe('Recipe Drafts for supplied fills', () => {
             },
           ],
           hiddenByAllergiesCount: hidden,
-        });
-      },
+        }),
       // The base picked through search is not among the closest: its name is fetched.
       'GET /api/recipes/base-waffles': () =>
         Response.json({
@@ -336,6 +362,77 @@ describe('Recipe Drafts for supplied fills', () => {
         sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`).at(-1)?.body,
       ).toMatchObject({
         content: { plateScan: true, pickedBaseId: 'base-crepes' },
+      });
+    });
+
+    const saveRoutes = {
+      'POST /api/recipes': () => Response.json(savedRecipe, { status: 201 }),
+    };
+
+    it('saves the picked base when Save comes before the plate matches answer', async () => {
+      const user = typer();
+      const calls = setup(`/recipes/new?draft=${DRAFT_ID}`, {
+        ...resumeRoutes(),
+        ...saveRoutes,
+        'POST /api/recipes/plate-matches': () =>
+          new Promise<Response>(() => {}),
+      });
+      await screen.findByRole('radio', { name: 'Waffles' });
+      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      // The create goes out at once, without waiting for the matches.
+      await vi.waitFor(() =>
+        expect(sent(calls, 'POST /api/recipes')).toHaveLength(1),
+      );
+      expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
+        parentId: 'base-waffles',
+      });
+    });
+
+    it.each([
+      [
+        'matches nothing now',
+        () => Response.json({ matches: [], hiddenByAllergiesCount: 0 }),
+      ],
+      ['fails', () => Response.json({ error: 'boom' }, { status: 500 })],
+    ])(
+      'keeps the picked base on Save when the plate match %s',
+      async (_n, answer) => {
+        const user = typer();
+        const calls = setup(`/recipes/new?draft=${DRAFT_ID}`, {
+          ...resumeRoutes(),
+          ...saveRoutes,
+          'POST /api/recipes/plate-matches': answer,
+        });
+        expect(
+          await screen.findByRole('radio', { name: 'Waffles' }),
+        ).toBeChecked();
+        await elapse(500);
+        await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+        expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+        expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
+          parentId: 'base-waffles',
+        });
+        expect(sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`)).toHaveLength(
+          0,
+        );
+      },
+    );
+
+    it('keeps the pick, without overwriting it, when the picked base cannot be looked up', async () => {
+      const user = typer();
+      const calls = setup(`/recipes/new?draft=${DRAFT_ID}`, {
+        ...resumeRoutes(),
+        ...saveRoutes,
+        'GET /api/recipes/base-waffles': () =>
+          Response.json({ error: 'boom' }, { status: 500 }),
+      });
+      await screen.findByLabelText(/^Title/);
+      await elapse(5000);
+      expect(sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`)).toHaveLength(0);
+      await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+      expect(sent(calls, 'POST /api/recipes')[0].body).toMatchObject({
+        parentId: 'base-waffles',
       });
     });
 
