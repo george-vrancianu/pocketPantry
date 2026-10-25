@@ -14,7 +14,7 @@ import { RecipesPage } from './RecipesPage';
  * - The Cook Tonight card is Gator's bubble panel as one `link` whose accessible name is its
  *   visible lines joined with ", ", starting "Cook tonight", in every state (Can Make, one
  *   ingredient short, nothing). Its Gator is an `img` inside it, named by the Gator's alt text
- *   and marked with `data-mood`. Pressing it plays Gator's Tap and navigates 500ms later, or at
+ *   and marked with `data-mood`. Pressing it plays Gator's Tap (`data-motion="tap"` on that img) and navigates 500ms later, or at
  *   once with reduced motion (tests that only follow the link stub reduced motion).
  * - The list is a `list` named by its heading, so its name starts with "All Recipes" or
  *   "Matches"; the count is part of that heading's text. Each row is a `listitem` whose
@@ -932,7 +932,12 @@ describe('RecipesPage', () => {
         vi.useFakeTimers({ shouldAdvanceTime: true });
         setup(() => [omelette], [plain('o', 'Omelette')]);
         const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-        await user.click(await findCookTonight());
+        const link = await findCookTonight();
+        await user.click(link);
+        expect(within(link).getByRole('img')).toHaveAttribute(
+          'data-motion',
+          'tap',
+        );
         await act(() => vi.advanceTimersByTimeAsync(400));
         expect(screen.queryByText('cook tonight page')).toBeNull();
         expect(await findCookTonight()).toBeVisible();

@@ -68,9 +68,9 @@ export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
     >
       <Box sx={{ ...displayType, fontSize: 18 }}>{title}</Box>
       <Box sx={{ fontWeight: 700, mt: '4px' }}>{line}</Box>
-      {rest.map((text) => (
+      {rest.map((text, i) => (
         <Box
-          key={text}
+          key={i}
           sx={{ fontSize: 13, mt: '2px', color: tokens.color.accentOnTint }}
         >
           {text}
