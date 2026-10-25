@@ -70,6 +70,19 @@ export type RecipeList = {
   hiddenByAllergiesCount: number;
 };
 
+/**
+ * The Family has no Recipes to list: the (unfiltered) list is empty and nothing is hidden by
+ * Allergies. Archived Recipes aren't listed so they don't count; Recipes hidden by Allergies do.
+ * False until the list has loaded.
+ */
+export function hasNoFamilyRecipes(list: RecipeList | undefined): boolean {
+  return (
+    list !== undefined &&
+    list.recipes.length === 0 &&
+    list.hiddenByAllergiesCount === 0
+  );
+}
+
 /** A Variant as listed on its base's detail. */
 export type RecipeVariantItem = {
   id: string;

@@ -3,14 +3,13 @@ import {
   Button,
   CompassIcon,
   displayType,
-  Gator,
   radius,
-  shadow,
   Stack,
   tokens,
 } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
+import { EmptyPotPanel } from '../../../components/EmptyPotPanel';
 import { ExploreRow } from '../../../components/ExploreRow';
 import { QuickViewSheet } from '../../../components/QuickViewSheet';
 import type { useAddToFamily } from '../../../lib/addToFamily';
@@ -27,98 +26,6 @@ type AddApi = ReturnType<typeof useAddToFamily>;
 
 const STARTERS = 3;
 const NO_BROWSE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
-
-/** Gator's panel: the chef on the accent tint, with a speech bubble that fades in after the entrance. */
-function GatorPanel() {
-  const { t } = useTranslation('gator');
-  const [taps, setTaps] = useState(0);
-  return (
-    <Box
-      sx={{
-        position: 'relative',
-        height: 206,
-        borderRadius: radius.card,
-        bgcolor: tokens.color.accentTint,
-        overflow: 'hidden',
-      }}
-    >
-      <Box sx={{ position: 'absolute', left: -24, bottom: -8 }}>
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('chef.alt')}
-          onClick={() => setTaps((n) => n + 1)}
-          sx={{
-            display: 'block',
-            p: 0,
-            border: 0,
-            background: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <Gator
-            mood="chef"
-            size={206}
-            loop="signature"
-            tapSignal={taps}
-            decorative
-          />
-        </Box>
-      </Box>
-      <Box
-        sx={{
-          position: 'absolute',
-          right: 12,
-          top: 16,
-          width: 150,
-          boxSizing: 'border-box',
-          p: '11px 13px',
-          borderRadius: radius.card,
-          bgcolor: tokens.color.surface,
-          boxShadow: shadow.card,
-          color: tokens.color.ink,
-          fontSize: 13.5,
-          fontWeight: 600,
-          lineHeight: 1.35,
-          '@keyframes pp-gator-bubble-in': {
-            from: { opacity: 0, transform: 'translateY(6px) scale(.94)' },
-            to: { opacity: 1, transform: 'none' },
-          },
-          '@media (prefers-reduced-motion: no-preference)': {
-            animation: 'pp-gator-bubble-in 400ms ease-out 700ms backwards',
-          },
-        }}
-      >
-        <Box
-          aria-hidden
-          sx={{
-            position: 'absolute',
-            left: -8,
-            top: 58,
-            width: 16,
-            height: 16,
-            bgcolor: tokens.color.surface,
-            transform: 'rotate(45deg)',
-          }}
-        />
-        <Box sx={{ position: 'relative' }}>
-          <Trans
-            t={t}
-            i18nKey="chef.emptyFamily"
-            components={{
-              b: (
-                <Box
-                  component="b"
-                  sx={{ fontWeight: 700, color: tokens.color.accentOnTint }}
-                />
-              ),
-            }}
-          />
-        </Box>
-      </Box>
-    </Box>
-  );
-}
 
 /** Up to three Catalog Bases the Family can make now, each one tap from being added. Hidden when there are none. */
 function Starters({ add, stateOf }: AddApi) {
@@ -179,7 +86,7 @@ function Starters({ add, stateOf }: AddApi) {
   );
 }
 
-/** `/recipes` for a Family with no live Recipes: chef Gator, the two ways forward and a few starters (ADR 0029). */
+/** `/recipes` for a Family with no live Recipes: chef Gator, the three ways forward and a few starters (ADR 0029). */
 export function EmptyFamilyRecipes({
   onNewRecipe,
   add,
@@ -191,7 +98,7 @@ export function EmptyFamilyRecipes({
   const { t } = useTranslation('recipes');
   return (
     <Stack spacing={0} useFlexGap sx={{ pt: '4px' }}>
-      <GatorPanel />
+      <EmptyPotPanel />
       <Box
         component="h2"
         sx={{
@@ -225,6 +132,9 @@ export function EmptyFamilyRecipes({
           sx={{ minHeight: 48, borderRadius: radius.pill }}
         >
           {t('emptyFamily.explore')}
+        </Button>
+        <Button variant="secondary" fullWidth href="/recipes/from-link">
+          {t('emptyFamily.fromLink')}
         </Button>
         <Button variant="secondary" fullWidth onClick={onNewRecipe}>
           {t('emptyFamily.newRecipe')}

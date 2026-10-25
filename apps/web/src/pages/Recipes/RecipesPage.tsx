@@ -19,6 +19,7 @@ import { cardFor, indexCards, useCookTonight } from '../../lib/cookTonight';
 import { useAddToFamily } from '../../lib/addToFamily';
 import { localIso } from '../../lib/pantry';
 import {
+  hasNoFamilyRecipes,
   isFiltering,
   useRecipeFilters,
   useRecipes,
@@ -28,7 +29,7 @@ import {
 import { useRecipeDrafts } from '../../lib/recipeDrafts';
 import { useRecipeDraftDiscard } from './useRecipeDraftDiscard';
 import { EmptyFamilyRecipes } from './components/EmptyFamilyRecipes';
-import { CookTonightCardLink } from './components/CookTonightCardLink';
+import { CookTonightPanel } from '../../components/CookTonightPanel';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
 import { SectionLabel } from './components/SectionLabel';
@@ -133,10 +134,7 @@ export function RecipesPage() {
   // No live Recipes (archived ones aren't listed): chef Gator replaces the search, chips and list.
   const noneListed = recipes.data !== undefined && items.length === 0;
   // Recipes hidden by Allergies are still Recipes: that Family isn't empty.
-  const empty =
-    !filtering &&
-    noneListed &&
-    (recipes.data?.hiddenByAllergiesCount ?? 0) === 0;
+  const empty = !filtering && hasNoFamilyRecipes(recipes.data);
   const addToFamily = useAddToFamily();
   const addButton = useRef<HTMLButtonElement>(null);
   const cards = cookTonight.data?.cards ?? [];
@@ -169,9 +167,14 @@ export function RecipesPage() {
       />
       {/* Flex gap leaves the children's margins alone, so the filters can bleed to the screen edges. */}
       <Stack spacing={1.5} useFlexGap>
-        {/* Hidden until the answer arrives, so an error or a slow load never reads as "nothing to cook". */}
-        {!filtering && !empty && cookTonight.data && !cookTonight.error ? (
-          <CookTonightCardLink cards={cards} />
+        {/* Hidden until both answers arrive, so an error or a slow load never reads as "nothing to cook". */}
+        {!filtering &&
+        !empty &&
+        recipes.data &&
+        !recipes.error &&
+        cookTonight.data &&
+        !cookTonight.error ? (
+          <CookTonightPanel cards={cards} />
         ) : null}
         {draftCount > 0 ? (
           <Box

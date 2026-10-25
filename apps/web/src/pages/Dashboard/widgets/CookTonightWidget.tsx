@@ -6,6 +6,7 @@ import {
   AllergenIndicator,
   allergenIndicatorLabel,
 } from '../../../components/AllergenIndicator';
+import { CookTonightPanel } from '../../../components/CookTonightPanel';
 import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { recipeHref } from '../../../lib/recipeHref';
@@ -13,8 +14,15 @@ import { useCookTonight, type CookTonightCard } from '../../../lib/cookTonight';
 import type { WidgetSize } from '../../../lib/dashboard';
 import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
 import { localIso } from '../../../lib/pantry';
+import {
+  hasNoFamilyRecipes,
+  useRecipes,
+  type RecipeBrowse,
+} from '../../../lib/recipes';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
+
+const NO_BROWSE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
 
 /**
  * How many cards a Widget has room for; the API ranks them, the Widget only cuts.
@@ -27,7 +35,10 @@ function cardsFor(size: WidgetSize, columns: GridColumns): number {
   return rows === 2 && span === 2 ? 3 : 2;
 }
 
-/** Cards for the Recipes the Family can make tonight (or nearly), one per Base Recipe. */
+/**
+ * Small: header, See all and one card. Wide/tall: Gator's Cook Tonight panel, the Hidden by
+ * Allergies note, then 2–3 cards.
+ */
 export function CookTonightWidget({ size, columns }: WidgetProps) {
   const { t } = useTranslation('dashboard');
   const [showHidden, setShowHidden] = useState(false);
@@ -37,9 +48,20 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
     showHidden,
     'family',
   );
-  const cards = (cookTonight.data?.cards ?? []).slice(
-    0,
-    cardsFor(size, columns),
+  // The wide/tall panel needs to know if the Family has any Recipes; the small Widget doesn't.
+  const wide = size !== 'small';
+  const recipes = useRecipes(NO_BROWSE, { scope: 'family', enabled: wide });
+  const allCards = cookTonight.data?.cards ?? [];
+  const cards = allCards.slice(0, cardsFor(size, columns));
+
+  const pending = cookTonight.isPending || (wide && recipes.isPending);
+  const failure = cookTonight.error ?? (wide ? recipes.error : null);
+
+  const note = (
+    <HiddenByAllergiesNote
+      count={cookTonight.data?.hiddenByAllergiesCount ?? 0}
+      onShow={() => setShowHidden(true)}
+    />
   );
 
   return (
@@ -47,72 +69,91 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
       label={t('widgets.cookTonight.title')}
       size={size}
       columns={columns}
-      isLoading={cookTonight.isPending}
-      error={cookTonight.error ? translateApiError(t, cookTonight.error) : null}
+      // Either answer missing or failed is never read as Nothing or an empty Family (Story 27).
+      isLoading={pending}
+      error={failure ? translateApiError(t, failure) : null}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          mb: '6px',
-        }}
-      >
-        <WidgetTitle icon={<RecipesIcon size={16} />}>
-          {t('widgets.cookTonight.title')}
-        </WidgetTitle>
-        <Box
-          component={Link}
-          to="/recipes"
-          sx={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: tokens.color.accent,
-            textDecoration: 'none',
-          }}
-        >
-          {t('widgets.cookTonight.seeAll')}
-        </Box>
-      </Box>
-      <HiddenByAllergiesNote
-        count={cookTonight.data?.hiddenByAllergiesCount ?? 0}
-        onShow={() => setShowHidden(true)}
-      />
-      {cards.length === 0 ? (
-        <Box sx={{ fontSize: 14, color: tokens.color.muted, py: '10px' }}>
-          {t('widgets.cookTonight.empty')}{' '}
+      {size === 'small' ? (
+        <>
           <Box
-            component={Link}
-            to="/recipes/explore"
             sx={{
-              fontWeight: 700,
-              color: tokens.color.accent,
-              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: '6px',
             }}
           >
-            {t('widgets.cookTonight.explore')}
+            <WidgetTitle icon={<RecipesIcon size={16} />}>
+              {t('widgets.cookTonight.title')}
+            </WidgetTitle>
+            <Box
+              component={Link}
+              to="/recipes"
+              sx={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: tokens.color.accent,
+                textDecoration: 'none',
+              }}
+            >
+              {t('widgets.cookTonight.seeAll')}
+            </Box>
           </Box>
-        </Box>
+          {note}
+          {cards.length === 0 ? (
+            <Box sx={{ fontSize: 14, color: tokens.color.muted, py: '10px' }}>
+              {t('widgets.cookTonight.empty')}{' '}
+              <Box
+                component={Link}
+                to="/recipes/explore"
+                sx={{
+                  fontWeight: 700,
+                  color: tokens.color.accent,
+                  textDecoration: 'none',
+                }}
+              >
+                {t('widgets.cookTonight.explore')}
+              </Box>
+            </Box>
+          ) : (
+            <CardList cards={cards} />
+          )}
+        </>
       ) : (
-        <Box
-          component="ul"
-          sx={{
-            listStyle: 'none',
-            m: 0,
-            p: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          {cards.map((card) => (
-            <li key={card.base.id}>
-              <CookCard card={card} />
-            </li>
-          ))}
+        // Wide and tall: no header row; the panel names the Widget and leads to Cook Tonight.
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <CookTonightPanel
+            cards={allCards}
+            noRecipes={hasNoFamilyRecipes(recipes.data)}
+          />
+          {note}
+          <CardList cards={cards} />
         </Box>
       )}
     </WidgetCard>
+  );
+}
+
+function CardList({ cards }: { cards: CookTonightCard[] }) {
+  if (cards.length === 0) return null;
+  return (
+    <Box
+      component="ul"
+      sx={{
+        listStyle: 'none',
+        m: 0,
+        p: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}
+    >
+      {cards.map((card) => (
+        <li key={card.base.id}>
+          <CookCard card={card} />
+        </li>
+      ))}
+    </Box>
   );
 }
 
