@@ -78,7 +78,6 @@ function groupVariants(found: RecipeListItem[]): RecipeListItem[] {
   const baseFor = new Map<string, string>();
   for (const item of found) {
     if (item.parentId !== null) continue;
-    baseFor.set(item.id, item.id);
     if (item.copiedFromId) baseFor.set(item.copiedFromId, item.id);
   }
   const counts = new Map<string, number>();
@@ -93,7 +92,7 @@ function groupVariants(found: RecipeListItem[]): RecipeListItem[] {
     item.parentId === null
       ? {
           ...item,
-          variantCount: Math.max(item.variantCount, counts.get(item.id) ?? 0),
+          variantCount: counts.get(item.id) ?? 0,
         }
       : item,
   );

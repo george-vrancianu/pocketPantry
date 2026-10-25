@@ -68,8 +68,10 @@ export class CookTonightService {
     );
     const groups = new Map<string, RecipeRow[]>();
     for (const row of qualifying) {
+      // On the Family list a Variant without a copy of its Base is its own row, so its own card.
       const key = row.parentId
-        ? (copyOf.get(row.parentId) ?? row.parentId)
+        ? (copyOf.get(row.parentId) ??
+          (query.scope === 'family' ? row.id : row.parentId))
         : row.id;
       groups.set(key, [...(groups.get(key) ?? []), row]);
     }

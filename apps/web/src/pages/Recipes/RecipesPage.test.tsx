@@ -17,6 +17,9 @@ import { RecipesPage } from './RecipesPage';
  *   "Matches"; the count is part of that heading's text. Each row is a `listitem` whose
  *   text holds the title, family pill, "Variant of", meta, pills and time; the row also
  *   contains the one link to `/recipes/{id}`.
+ * - Not filtering, a Variant sits under its Base (a Family Recipe, or the Family's copy of its
+ *   Catalog Base, matched by `copiedFromId`) and shows only in the Base's "n Variants" count;
+ *   a Variant with no Base in the list is its own row, labelled "Variant of {base}".
  * - Meta parts are joined with " · " in the row's text ("Italian · Baking · Easy · 3 Variants").
  * - Chips are `button`s with `aria-pressed`, named by the Cuisine or Method name; "Clear" is
  *   a `button` shown only while filtering.
@@ -263,9 +266,18 @@ describe('RecipesPage', () => {
           cuisine: { id: 'c-gr', name: 'Greek' },
           method: { id: 'm-bake', name: 'Baking' },
           difficulty: 'medium',
-          variantCount: 3,
+          copiedFromId: 'cm',
         }),
-        item({ id: 'b', title: 'Toast', difficulty: 'hard', variantCount: 1 }),
+        ...[1, 2, 3].map((n) =>
+          item({ id: `mv${n}`, title: `Mv${n}`, parentId: 'cm' }),
+        ),
+        item({
+          id: 'b',
+          title: 'Toast',
+          difficulty: 'hard',
+          copiedFromId: 'ct',
+        }),
+        item({ id: 'tv', title: 'Tv', parentId: 'ct' }),
         item({ id: 'c', title: 'Water', difficulty: null }),
       ]);
       expect(await findRow('Moussaka')).toHaveTextContent(
@@ -354,18 +366,17 @@ describe('RecipesPage', () => {
         owner: 'family',
         copiedFromId: 'o',
       });
-      const ownVariant = (parentId: string, over: Partial<RecipeListItem>) =>
+      const ownVariant = (parentId: string) =>
         item({
           id: 'v',
           title: 'Frittata',
           owner: 'family',
           parentId,
           base: { id: parentId, title: 'Omelette' },
-          ...over,
         });
 
       it("groups a Family Variant under the Family's copy of its Catalog Base", async () => {
-        setup(() => [copy, ownVariant('o', {})]);
+        setup(() => [copy, ownVariant('o')]);
         const row = await findRow('Omelette');
         expect(row).toHaveTextContent('1 Variant');
         const list = screen.getByRole('list', { name: ALL });
@@ -373,19 +384,8 @@ describe('RecipesPage', () => {
         expect(within(list).queryByText('Frittata')).not.toBeInTheDocument();
       });
 
-      it('groups a Variant under a Family Base it was made from', async () => {
-        const base = item({ id: 'fb', title: 'Omelette', owner: 'family' });
-        setup(() => [base, ownVariant('fb', {})]);
-        expect(await findRow('Omelette')).toHaveTextContent('1 Variant');
-        expect(
-          within(screen.getByRole('list', { name: ALL })).getAllByRole(
-            'listitem',
-          ),
-        ).toHaveLength(1);
-      });
-
       it('lists a Variant without a copy of its Base as its own row, "Variant of {base}"', async () => {
-        setup(() => [ownVariant('o', {})]);
+        setup(() => [ownVariant('o')]);
         expect(await findRow('Frittata')).toHaveTextContent(
           'Variant of Omelette',
         );
