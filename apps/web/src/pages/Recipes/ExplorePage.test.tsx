@@ -358,6 +358,23 @@ describe('ExplorePage groups', () => {
     setupGroups({ list: () => [base('a')], hidden: 2 });
     expect(await screen.findByRole('button', { name: /show/i })).toBeVisible();
   });
+
+  it('never lists a hidden Recipe under "You can make this", even after Show', async () => {
+    setupGroups({
+      list: (url) =>
+        url.searchParams.get('showHidden') === 'true'
+          ? [base('safe'), base('nuts')]
+          : [base('safe')],
+      cards: [cardOf('safe'), cardOf('nuts')],
+      hidden: 1,
+    });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /show/i }));
+    await screen.findByRole('button', { name: 'Add nuts to your Recipes' });
+    const canMake = screen.getByRole('list', { name: /^You can make this/ });
+    expect(within(canMake).getByText('safe')).toBeVisible();
+    expect(within(canMake).queryByText('nuts')).toBeNull();
+  });
 });
 
 describe('ExplorePage Back badge', () => {

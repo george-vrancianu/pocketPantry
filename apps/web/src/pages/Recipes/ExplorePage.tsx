@@ -116,6 +116,15 @@ export function ExplorePage() {
     showHidden,
     'catalog',
   );
+  // "You can make this" never shows Recipes "Hide Recipes with my Allergies" leaves out, even
+  // after "Show": it is built from the unrevealed queries (the same cache entries until then).
+  const safeRecipes = useRecipes(browse, { scope: 'catalog' });
+  const safeCookTonight = useCookTonight(
+    // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight
+    localIso(new Date()),
+    false,
+    'catalog',
+  );
   const filters = useRecipeFilters();
   const { add, stateOf } = useAddToFamily({
     onNet: exploreAdds.bump,
@@ -132,7 +141,12 @@ export function ExplorePage() {
 
   // The Bases the Pantry can make, most expiring first. A card's best match can be a Catalog
   // Variant; the group lists its Base (the Variant is reached through the Base).
-  const canMake = filtering ? [] : canMakeBases(cards, items);
+  const canMake = filtering
+    ? []
+    : canMakeBases(
+        safeCookTonight.data?.cards ?? [],
+        safeRecipes.data?.recipes ?? [],
+      );
   const canMakeIds = new Set(canMake.map((item) => item.id));
   const rest = filtering
     ? items
