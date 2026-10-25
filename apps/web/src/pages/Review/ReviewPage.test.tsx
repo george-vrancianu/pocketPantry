@@ -361,6 +361,43 @@ describe('ReviewPage', () => {
     ).toHaveAttribute('aria-haspopup', 'dialog');
   });
 
+  it('keeps the number when the unit changes, since a Review line is corrected, not converted', async () => {
+    renderReview([sure()]);
+    await userEvent.click(row('Parmesan'));
+    const panel = screen.getByRole('group', { name: 'Parmesan' });
+    await userEvent.click(
+      within(panel).getByRole('button', { name: 'Unit: g' }),
+    );
+    await userEvent.click(
+      within(screen.getByRole('menu', { name: 'Units' })).getByRole(
+        'menuitemradio',
+        { name: 'kg' },
+      ),
+    );
+    expect(within(panel).getByLabelText(/^Amount of Parmesan/)).toHaveValue(
+      '200',
+    );
+    expect(
+      within(panel).getByRole('button', { name: 'Unit: kg' }),
+    ).toBeInTheDocument();
+  });
+
+  it('blocks Save on a leftover invalid date, focusing the Expires button and describing why', async () => {
+    const calls = renderReview([sure({ expiryDate: '31.02.20' })]);
+    await userEvent.click(row('Parmesan'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    const expires = within(
+      screen.getByRole('group', { name: 'Parmesan' }),
+    ).getByRole('button', { name: /^Expires, / });
+    await waitFor(() => expect(expires).toHaveFocus());
+    expect(expires).toHaveAccessibleDescription(
+      /Enter a real date as dd\.mm\.yyyy\./,
+    );
+    expect(calls.map((c) => c.key)).not.toContain(
+      'POST /api/pantry/batches/bulk',
+    );
+  });
+
   it('pre-fills a matched line from the proposal and the Catalog defaults', async () => {
     renderReview([sure()]);
     await userEvent.click(row('Parmesan'));

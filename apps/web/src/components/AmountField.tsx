@@ -89,6 +89,11 @@ export type AmountFieldProps = {
   height?: number;
   /** The Ingredient's Amount Scale, which decides its Usual Amounts. Null or left out (an Unmatched name, the amount sheet) offers them from the unit alone. */
   amountScale?: AmountScale | null;
+  /**
+   * Whether switching the unit within a family converts the number (1.5 kg becomes 1500 g). On by default;
+   * turn it off where the amount is being corrected, not converted (Scan and Voice review), so only the unit changes.
+   */
+  rescaleOnUnitChange?: boolean;
 };
 
 /**
@@ -113,6 +118,7 @@ export function AmountField({
   label,
   height = 44,
   amountScale,
+  rescaleOnUnitChange = true,
 }: AmountFieldProps) {
   const { t } = useTranslation('common');
   const errorId = useId();
@@ -187,6 +193,7 @@ export function AmountField({
     // across families it is kept as typed.
     const value = parseTypedNumber(quantity);
     if (
+      rescaleOnUnitChange &&
       unit &&
       next &&
       next !== unit &&

@@ -29,6 +29,7 @@ type HarnessProps = {
   unit?: Unit | '';
   scale?: AmountScale | null;
   allowNoUnit?: boolean;
+  rescaleOnUnitChange?: boolean;
   error?: string | null;
   onQuantity?: (quantity: string, typedUnit?: Unit | '') => void;
   onUnit?: (unit: Unit | '') => void;
@@ -41,6 +42,7 @@ function Harness({
   unit: startUnit = 'g',
   scale = 'medium',
   allowNoUnit,
+  rescaleOnUnitChange,
   error = null,
   onQuantity = () => {},
   onUnit = () => {},
@@ -55,6 +57,7 @@ function Harness({
       unit={unit}
       amountScale={scale}
       allowNoUnit={allowNoUnit}
+      rescaleOnUnitChange={rescaleOnUnitChange}
       onQuantityChange={(next, typedUnit) => {
         onQuantity(next, typedUnit);
         setQuantity(next);
@@ -216,6 +219,28 @@ describe('AmountField unit dropdown', () => {
     expect(field()).toHaveValue('1500');
     expect(dropdown('g')).toBeInTheDocument();
     expect(field()).toHaveFocus();
+  });
+
+  it('keeps the number within a family when rescaleOnUnitChange is off', async () => {
+    const onQuantity = vi.fn();
+    const onUnit = vi.fn();
+    renderWithProviders(
+      <Harness
+        unit="kg"
+        start="500"
+        rescaleOnUnitChange={false}
+        onQuantity={onQuantity}
+        onUnit={onUnit}
+      />,
+    );
+    const user = setupUser();
+
+    await user.click(dropdown('kg'));
+    await user.click(entry('g'));
+
+    expect(onQuantity).not.toHaveBeenCalled();
+    expect(onUnit).toHaveBeenLastCalledWith('g');
+    expect(field()).toHaveValue('500');
   });
 
   it('writes a tiny converted amount as plain decimals, never with an exponent', async () => {
