@@ -118,7 +118,13 @@ describe('Recipe Drafts autosave on New Recipe', () => {
       .click(screen.getByRole('link', { name: 'leave' }));
     await elapse(10_000);
     expect(await screen.findByText('Recipes page')).toBeVisible();
-    expect(calls.filter((c) => c.key.includes('recipe-drafts'))).toEqual([]);
+    // Only the list is read (for the Continue prompt); nothing is written.
+    expect(
+      calls.filter(
+        (c) =>
+          c.key.includes('recipe-drafts') && c.key !== 'GET /api/recipe-drafts',
+      ),
+    ).toEqual([]);
   });
 
   it('creates a Recipe Draft about 1.5 s after the title is typed, sending the content as typed with no React keys', async () => {
@@ -393,9 +399,12 @@ describe('Recipe Drafts autosave on New Recipe', () => {
       recipeDraftId: DRAFT_ID,
     });
     await elapse(5000);
-    expect(calls.filter((c) => c.key.includes('recipe-drafts'))).toHaveLength(
-      1,
-    );
+    expect(
+      calls.filter(
+        (c) =>
+          c.key.includes('recipe-drafts') && c.key !== 'GET /api/recipe-drafts',
+      ),
+    ).toHaveLength(1);
   });
 
   it('stops saying Saving… when the form goes back to blank before anything was sent', async () => {
@@ -407,7 +416,13 @@ describe('Recipe Drafts autosave on New Recipe', () => {
     await user.clear(title);
     expect(screen.queryByText('Saving…')).toBeNull();
     await elapse(5000);
-    expect(calls.filter((c) => c.key.includes('recipe-drafts'))).toEqual([]);
+    // Only the list is read (for the Continue prompt); nothing is written.
+    expect(
+      calls.filter(
+        (c) =>
+          c.key.includes('recipe-drafts') && c.key !== 'GET /api/recipe-drafts',
+      ),
+    ).toEqual([]);
   });
 
   it('goes back to Draft saved when an edit is undone before it is sent', async () => {
