@@ -16,7 +16,7 @@
     "chef-flop": "Gator, skuffet, med køkkenredskaberne tabt på gulvet"
   },
   "chef": {
-    "emptyFamily": "Min gryde er tom! Hent et par opskrifter fra <b>Udforsk</b>, eller skriv en af dine egne ned.",
+    "emptyFamily": "Min gryde er tom! Hent et par opskrifter fra <b>Udforsk</b>, indsæt et <b>link</b> til en, du elsker, eller skriv din egen ned.",
     "alt": "Gator kokken, med en dampende gryde. Tryk for at sige hej"
   }
 }
