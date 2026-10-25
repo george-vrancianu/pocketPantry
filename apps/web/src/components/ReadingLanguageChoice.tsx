@@ -30,7 +30,7 @@ export function ReadingLanguageChoice({
   return (
     <ChoiceRadioGroup<ReadingLanguage>
       label={t('readingLanguage.label')}
-      layout="chips"
+      layout="rows"
       value={value}
       onChange={onChange}
       choices={[
