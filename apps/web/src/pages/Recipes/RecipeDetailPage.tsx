@@ -22,7 +22,7 @@ import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { useAddToFamily } from '../../lib/addToFamily';
 import { exploreAdds } from '../../lib/exploreAdds';
 import { isPlainClick } from '../../lib/isPlainClick';
-import { recipeHref } from '../../lib/recipeHref';
+import { familyRecipeHref, recipeHref } from '../../lib/recipeHref';
 import { SourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
@@ -150,7 +150,7 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
 
   // The Family's own Recipes have no preview; they open as themselves.
   if (preview && recipe && recipe.owner === 'family') {
-    return <Navigate replace to={`/recipes/${recipe.id}`} />;
+    return <Navigate replace to={familyRecipeHref(recipe.id)} />;
   }
   // A Catalog Recipe opens as the Family's copy, else as its preview.
   if (!preview && recipe && recipe.owner === 'catalog') {

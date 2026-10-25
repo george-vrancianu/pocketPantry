@@ -13,6 +13,7 @@ import { AppScreenHeader } from '../../../components/AppScreenHeader';
 import { ConfirmPrompt } from '../../../components/ConfirmAction';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useArchiveFamilyRecipe } from '../../../lib/familyRecipes';
+import { familyRecipeHref } from '../../../lib/recipeHref';
 import type { RecipeDetail } from '../../../lib/recipes';
 
 /**
@@ -55,7 +56,7 @@ export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
       onSuccess: () =>
         navigate(
           recipe.base?.familyCopyId
-            ? `/recipes/${recipe.base.familyCopyId}`
+            ? familyRecipeHref(recipe.base.familyCopyId)
             : '/recipes',
         ),
     });

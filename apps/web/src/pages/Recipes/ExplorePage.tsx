@@ -141,6 +141,7 @@ export function ExplorePage() {
     : null;
   const cards = cookTonight.data?.cards ?? [];
   const index = indexCards(cards);
+  const safeIndex = indexCards(safeCookTonight.data?.cards ?? []);
 
   // The Bases the Pantry can make, most expiring first. A card's best match can be a Catalog
   // Variant; the group lists its Base (the Variant is reached through the Base).
@@ -165,7 +166,7 @@ export function ExplorePage() {
   const group = (
     label: string,
     rows: RecipeListItem[],
-    options: { hideCanMake?: boolean } = {},
+    options: { hideCanMake?: boolean; safe?: boolean } = {},
   ) => (
     <Group
       key={`${label}|${browse.search}|${browse.cuisineId}|${browse.methodId}`}
@@ -177,7 +178,7 @@ export function ExplorePage() {
           recipe={recipe}
           state={stateOf(recipe)}
           onAdd={() => void add(recipe)}
-          card={cardFor(index, recipe)}
+          card={cardFor(options.safe ? safeIndex : index, recipe)}
           filtering={filtering}
           hideCanMake={options.hideCanMake ?? false}
           onOpen={() => {
@@ -245,7 +246,10 @@ export function ExplorePage() {
           </Box>
         ) : null}
         {canMake.length > 0
-          ? group(t('recipes:explore.canMake'), canMake, { hideCanMake: true })
+          ? group(t('recipes:explore.canMake'), canMake, {
+              hideCanMake: true,
+              safe: true,
+            })
           : null}
         {rest.length > 0
           ? group(

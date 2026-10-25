@@ -236,7 +236,8 @@ const cardOf = (
 
 function setupGroups({
   list = (_url: URL): RecipeListItem[] => [],
-  cards = [] as ReturnType<typeof cardOf>[],
+  cards = [] as
+    ReturnType<typeof cardOf>[] | ((url: URL) => ReturnType<typeof cardOf>[]),
   hidden = 0,
 } = {}) {
   const { fetchMock, calls } = stubApi({
@@ -244,8 +245,11 @@ function setupGroups({
       Response.json({ recipes: list(url), hiddenByAllergiesCount: hidden }),
     'GET /api/recipes/filters': () =>
       Response.json({ cuisines: [], methods: [] }),
-    'GET /api/recipes/cook-tonight': () =>
-      Response.json({ cards, hiddenByAllergiesCount: 0 }),
+    'GET /api/recipes/cook-tonight': (url) =>
+      Response.json({
+        cards: typeof cards === 'function' ? cards(url) : cards,
+        hiddenByAllergiesCount: 0,
+      }),
     'POST /api/recipes/b/copy': () =>
       Response.json({ id: 'copy-b', created: true }),
     'POST /api/recipes/copy-b/archive': () => Response.json({ id: 'copy-b' }),
@@ -374,6 +378,41 @@ describe('ExplorePage groups', () => {
     const canMake = screen.getByRole('list', { name: /^You can make this/ });
     expect(within(canMake).getByText('safe')).toBeVisible();
     expect(within(canMake).queryByText('nuts')).toBeNull();
+  });
+});
+
+describe('ExplorePage Cook Tonight cards after Show', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('keeps a "You can make this" row on its safe card, never a hidden Variant', async () => {
+    setupGroups({
+      list: () => [base('omelette', { variantCount: 1 })],
+      cards: (url) =>
+        url.searchParams.get('showHidden') === 'true'
+          ? [
+              cardOf(
+                'omelette',
+                { expiringCount: 7 },
+                { id: 'nuts', title: 'Nut omelette', parentId: 'omelette' },
+              ),
+            ]
+          : [cardOf('omelette', { expiringCount: 2 })],
+      hidden: 1,
+    });
+    const user = userEvent.setup();
+    const make = await screen.findByRole('list', {
+      name: /^You can make this/,
+    });
+    expect(within(make).getByText('2 expiring')).toBeVisible();
+    await user.click(await screen.findByRole('button', { name: /show/i }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('list', { name: /^You can make this/ }),
+      ).toBeVisible(),
+    );
+    const after = screen.getByRole('list', { name: /^You can make this/ });
+    expect(within(after).getByText('2 expiring')).toBeVisible();
+    expect(within(after).queryByText('7 expiring')).toBeNull();
   });
 });
 
