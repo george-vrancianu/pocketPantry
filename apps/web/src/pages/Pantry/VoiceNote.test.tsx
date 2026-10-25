@@ -293,6 +293,22 @@ describe('Voice Notes on the Pantry page', () => {
     });
   });
 
+  /** Opens the open row's expiry sheet, taps `name` in it and closes it with Done. */
+  async function pickInExpirySheet(
+    dialog: ReturnType<typeof within>,
+    name: string | RegExp,
+  ) {
+    await userEvent.click(dialog.getByRole('button', { name: /^Expires,/ }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Expires' }),
+    );
+    await userEvent.click(sheet.getByRole('button', { name }));
+    await userEvent.click(sheet.getByRole('button', { name: 'Done' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Expires' })).toBeNull(),
+    );
+  }
+
   it('sends a picked Location, a quick-pick expiry and No expiry', async () => {
     setup([
       action({ defaults: { location: 'fridge', expiresOn: '2099-05-20' } }),
@@ -315,11 +331,11 @@ describe('Voice Notes on the Pantry page', () => {
     expect(dialog.queryByText(/^Not said, so the usual place/)).toBeNull();
     expect(rowOf(dialog, 'Yogurt').textContent).toContain('Freezer · expires');
     expect(rowOf(dialog, 'Yogurt').textContent).not.toContain('usual');
-    await userEvent.click(dialog.getByRole('button', { name: /^3 days/ }));
+    await pickInExpirySheet(dialog, /^3 days/);
     expect(dialog.queryByText(/Default Expiry for this/)).toBeNull();
 
     await userEvent.click(header(dialog, 'Rice'));
-    await userEvent.click(dialog.getByRole('button', { name: 'No expiry' }));
+    await pickInExpirySheet(dialog, 'No expiry');
     expect(rowOf(dialog, 'Rice').textContent).toContain('no expiry');
 
     await userEvent.click(
@@ -349,7 +365,7 @@ describe('Voice Notes on the Pantry page', () => {
       dialog.getByText(/Default Expiry for this Ingredient/),
     ).toBeVisible();
 
-    await userEvent.click(dialog.getByRole('button', { name: 'Pick a date' }));
+    await userEvent.click(dialog.getByRole('button', { name: /^Expires,/ }));
     const sheet = within(
       await screen.findByRole('dialog', { name: 'Expires' }),
     );

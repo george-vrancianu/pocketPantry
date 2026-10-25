@@ -5,56 +5,43 @@ export type Box = readonly [x: number, y: number, w: number, h: number];
  * Per Gator: the `drawing` box (the viewBox of the original static art, the
  * space the layout has always given that Gator) and the `view` box (the
  * padded viewBox shared by its four motion files). The padding is the
- * difference, so `Gator` hangs it outside the layout box. A test compares
- * every `view` with the viewBox in the art files, so a new export can't drift.
+ * difference, so `Gator` hangs it outside the layout box: 8 units each side,
+ * 36 on top for the hop and the hat flip, and 20 at the bottom for the Soft
+ * clay drop shadow. A test compares every `view` with the viewBox in the art
+ * files, so a new export can't drift.
  */
 export const GATOR_GEOMETRY = {
-  'shopping-buddy': { drawing: [0, -12, 280, 242], view: [-8, -48, 296, 282] },
-  'app-icon': { drawing: [0, 0, 200, 200], view: [-8, -36, 216, 240] },
-  talking: { drawing: [0, -30, 260, 196], view: [-8, -66, 276, 236] },
-  happy: { drawing: [0, -30, 248, 200], view: [-8, -66, 264, 240] },
-  proud: { drawing: [0, -36, 280, 196], view: [-8, -72, 296, 236] },
-  listening: { drawing: [-16, -30, 264, 200], view: [-24, -66, 280, 240] },
-  thinking: { drawing: [0, -30, 248, 200], view: [-8, -66, 264, 240] },
-  'list-keeper': { drawing: [0, -4, 280, 244], view: [-8, -40, 296, 284] },
-  worried: { drawing: [0, -30, 248, 200], view: [-8, -66, 264, 240] },
-  'health-curious': { drawing: [0, -34, 248, 204], view: [-8, -70, 264, 244] },
+  'shopping-buddy': { drawing: [0, -12, 280, 242], view: [-8, -48, 296, 298] },
+  'app-icon': { drawing: [0, 0, 200, 200], view: [-8, -36, 216, 256] },
+  talking: { drawing: [0, -30, 260, 196], view: [-8, -66, 276, 252] },
+  happy: { drawing: [0, -30, 248, 200], view: [-8, -66, 264, 256] },
+  proud: { drawing: [0, -36, 280, 196], view: [-8, -72, 296, 252] },
+  listening: { drawing: [-16, -30, 264, 200], view: [-24, -66, 280, 256] },
+  thinking: { drawing: [0, -30, 248, 200], view: [-8, -66, 264, 256] },
+  'list-keeper': { drawing: [0, -4, 280, 244], view: [-8, -40, 296, 300] },
+  worried: { drawing: [0, -30, 248, 200], view: [-8, -66, 264, 256] },
+  'health-curious': { drawing: [0, -34, 248, 204], view: [-8, -70, 264, 260] },
   'health-dapper': {
     drawing: [-26, -30, 274, 204],
-    view: [-34, -66, 290, 244],
+    view: [-34, -66, 290, 260],
   },
-  'health-hmm': { drawing: [0, -30, 248, 200], view: [-8, -66, 264, 240] },
-  chef: { drawing: [0, -6, 280, 246], view: [-8, -42, 296, 286] },
+  'health-hmm': { drawing: [0, -30, 248, 200], view: [-8, -66, 264, 256] },
+  chef: { drawing: [0, -6, 280, 246], view: [-8, -42, 296, 302] },
+  'chef-flop': { drawing: [0, -6, 280, 252], view: [-8, -42, 296, 308] },
 } as const satisfies Record<string, { drawing: Box; view: Box }>;
 
-export type AnimatedGatorMood = keyof typeof GATOR_GEOMETRY;
-
-/**
- * The disappointed chef has one still drawing and no motion art, so it has no
- * padding: `drawing` and `view` are the same box.
- */
-export const STILL_GEOMETRY = {
-  'chef-flop': { drawing: [0, -6, 280, 252], view: [0, -6, 280, 252] },
-} as const satisfies Record<string, { drawing: Box; view: Box }>;
-
-/** Every Gator mood: the 13 with motion art and the still `chef-flop`. */
-export type GatorMood = AnimatedGatorMood | keyof typeof STILL_GEOMETRY;
-export const GATOR_MOODS = [
-  ...(Object.keys(GATOR_GEOMETRY) as AnimatedGatorMood[]),
-  ...(Object.keys(STILL_GEOMETRY) as (keyof typeof STILL_GEOMETRY)[]),
-] as const satisfies readonly GatorMood[];
-
-const GEOMETRY: Record<GatorMood, { drawing: Box; view: Box }> = {
-  ...GATOR_GEOMETRY,
-  ...STILL_GEOMETRY,
-};
+/** Every Gator mood. All 14 have the four motion files. */
+export type GatorMood = keyof typeof GATOR_GEOMETRY;
+/** Kept for callers that named the animated subset while chef-flop was a still. */
+export type AnimatedGatorMood = GatorMood;
+export const GATOR_MOODS = Object.keys(GATOR_GEOMETRY) as GatorMood[];
 
 /**
  * How to size the image so the drawing renders `size` wide and keeps the
  * layout box it always had; the padding hangs out through negative margins.
  */
 export function gatorLayout(mood: GatorMood, size: number) {
-  const { drawing, view } = GEOMETRY[mood];
+  const { drawing, view } = GATOR_GEOMETRY[mood];
   const scale = size / drawing[2];
   return {
     /** The layout box: what the old static art took up. */

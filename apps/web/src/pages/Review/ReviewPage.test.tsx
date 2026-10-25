@@ -211,7 +211,7 @@ describe('ReviewPage', () => {
   it('keeps an edited confident row confident, and calls its button Done', async () => {
     renderReview([sure()]);
     await userEvent.click(row('Parmesan'));
-    await userEvent.clear(screen.getByLabelText('Quantity'));
+    await userEvent.clear(screen.getByLabelText(/^Amount of/));
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(
@@ -314,22 +314,22 @@ describe('ReviewPage', () => {
     ]);
     // Beer is to check (shown first); make both invalid.
     await userEvent.click(row('Parmesan'));
-    const quantities = screen.getAllByLabelText('Quantity');
+    const quantities = screen.getAllByLabelText(/^Amount of/);
     fireEvent.change(quantities[0], { target: { value: '0' } });
     fireEvent.change(quantities[1], { target: { value: '0' } });
     await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
-    expect(screen.getAllByLabelText('Quantity')[0]).toHaveFocus();
+    expect(screen.getAllByLabelText(/^Amount of/)[0]).toHaveFocus();
     expect(screen.getAllByText(/Enter an amount from 0.001/)).toHaveLength(2);
   });
 
   it('Confirm with an invalid field focuses it instead of shutting the row', async () => {
     renderReview([line({ lowConfidence: true, quantity: 1 })]);
-    fireEvent.change(screen.getByLabelText('Quantity'), {
+    fireEvent.change(screen.getByLabelText(/^Amount of/), {
       target: { value: '0' },
     });
     await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
     expect(row('Parmesan')).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByLabelText('Quantity')).toHaveFocus();
+    expect(screen.getByLabelText(/^Amount of/)).toHaveFocus();
   });
 
   it('picks a Location in the phone panel with the full-width toggle', async () => {
@@ -343,12 +343,69 @@ describe('ReviewPage', () => {
     expect(pressedLocation(panel)).toBe('Freezer');
   });
 
+  it('edits a line with the same amount, Location and expiry fields as adding a Batch', async () => {
+    renderReview([sure()]);
+    await userEvent.click(row('Parmesan'));
+    const panel = screen.getByRole('group', { name: 'Parmesan' });
+    expect(within(panel).getByLabelText(/^Amount of Parmesan/)).toHaveValue(
+      '200',
+    );
+    expect(
+      within(panel).getByRole('group', { name: 'Usual amounts for Parmesan' }),
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByRole('group', { name: 'Location' }),
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByRole('button', { name: /^Expires, / }),
+    ).toHaveAttribute('aria-haspopup', 'dialog');
+  });
+
+  it('keeps the number when the unit changes, since a Review line is corrected, not converted', async () => {
+    renderReview([sure()]);
+    await userEvent.click(row('Parmesan'));
+    const panel = screen.getByRole('group', { name: 'Parmesan' });
+    await userEvent.click(
+      within(panel).getByRole('button', { name: 'Unit: g' }),
+    );
+    await userEvent.click(
+      within(screen.getByRole('menu', { name: 'Units' })).getByRole(
+        'menuitemradio',
+        { name: 'kg' },
+      ),
+    );
+    expect(within(panel).getByLabelText(/^Amount of Parmesan/)).toHaveValue(
+      '200',
+    );
+    expect(
+      within(panel).getByRole('button', { name: 'Unit: kg' }),
+    ).toBeInTheDocument();
+  });
+
+  it('blocks Save on a leftover invalid date, focusing the Expires button and describing why', async () => {
+    const calls = renderReview([sure({ expiryDate: '31.02.20' })]);
+    await userEvent.click(row('Parmesan'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    const expires = within(
+      screen.getByRole('group', { name: 'Parmesan' }),
+    ).getByRole('button', { name: /^Expires, / });
+    await waitFor(() => expect(expires).toHaveFocus());
+    expect(expires).toHaveAccessibleDescription(
+      /Enter a real date as dd\.mm\.yyyy\./,
+    );
+    expect(calls.map((c) => c.key)).not.toContain(
+      'POST /api/pantry/batches/bulk',
+    );
+  });
+
   it('pre-fills a matched line from the proposal and the Catalog defaults', async () => {
     renderReview([sure()]);
     await userEvent.click(row('Parmesan'));
     const panel = screen.getByRole('group', { name: 'Parmesan' });
     expect(pressedLocation(panel)).toBe('Fridge');
-    expect(within(panel).getByLabelText('Unit')).toHaveValue('g');
+    expect(
+      within(panel).getByRole('button', { name: 'Unit: g' }),
+    ).toBeInTheDocument();
     expect(within(panel).getByLabelText('Product description')).toHaveValue(
       'Grana Padano 200g',
     );
@@ -381,7 +438,9 @@ describe('ReviewPage', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
     const panel = screen.getByRole('group', { name: 'Milk' });
-    expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
+    expect(
+      within(panel).getByRole('button', { name: 'Unit: ml' }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
     // The row's Match button keeps focus after the swap.
     expect(
@@ -506,7 +565,9 @@ describe('ReviewPage', () => {
     await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
     const panel = await screen.findByRole('group', { name: 'Milk' });
     expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
-    expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
+    expect(
+      within(panel).getByRole('button', { name: 'Unit: ml' }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
   });
 
@@ -543,11 +604,10 @@ describe('ReviewPage', () => {
     async (_how, close) => {
       renderReview([sure({ quantity: 2 })]);
       await userEvent.click(row('Parmesan'));
-      // The phone's expiry cell is a button that shows the date.
       const values = () => [
-        (screen.getByLabelText('Unit') as HTMLSelectElement).value,
+        screen.getByRole('button', { name: /^Unit: / }).textContent,
         pressedLocation(),
-        screen.getByLabelText(/^Expiry date/).textContent,
+        screen.getByRole('button', { name: /^Expires,/ }).textContent,
       ];
       const before = values();
       const opener = screen.getByRole('button', { name: /Parmesan.*Change/ });
@@ -582,7 +642,7 @@ describe('ReviewPage', () => {
       line({ match: null, name: 'Mystery jar' }),
     ]);
     await userEvent.click(row('Parmesan'));
-    await userEvent.type(screen.getAllByLabelText('Quantity')[1], '200');
+    await userEvent.type(screen.getAllByLabelText(/^Amount of/)[1], '200');
     await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
 
     expect(await screen.findByText('pantry screen')).toBeInTheDocument();
@@ -653,14 +713,14 @@ describe('ReviewPage', () => {
     'will not save a quantity the server rejects (%s)',
     async (bad) => {
       const calls = renderReview([line({ lowConfidence: true })]);
-      fireEvent.change(screen.getByLabelText('Quantity'), {
+      fireEvent.change(screen.getByLabelText(/^Amount of/), {
         target: { value: bad },
       });
       await userEvent.click(
         screen.getByRole('button', { name: 'Save 1 item' }),
       );
-      expect(screen.getByLabelText('Quantity')).toHaveFocus();
-      expect(screen.getByLabelText('Quantity')).toHaveAttribute(
+      expect(screen.getByLabelText(/^Amount of/)).toHaveFocus();
+      expect(screen.getByLabelText(/^Amount of/)).toHaveAttribute(
         'aria-invalid',
         'true',
       );
@@ -724,7 +784,7 @@ describe('ReviewPage', () => {
       const calls = renderReview([sure()]);
       await user.click(row('Parmesan'));
       const cell = screen.getByRole('button', {
-        name: 'Expiry date 24.12.2026',
+        name: /^Expires, Thursday, December 24,/,
       });
       expect(cell).toHaveAttribute('aria-haspopup', 'dialog');
 
@@ -734,7 +794,7 @@ describe('ReviewPage', () => {
       await user.click(calendarDay(sheet, 'Friday, February 5, 2027'));
       await done(user);
       expect(cell).toHaveFocus();
-      expect(cell).toHaveAccessibleName('Expiry date 05.02.2027');
+      expect(cell).toHaveAccessibleName(/^Expires, Friday, February 5, 2027/);
       expect(await saved(user, calls)).toMatchObject({
         expiryDate: '2027-02-05',
       });
@@ -744,7 +804,7 @@ describe('ReviewPage', () => {
       const user = userEvent.setup();
       renderReview([sure()]);
       await user.click(row('Parmesan'));
-      const cell = screen.getByRole('button', { name: /^Expiry date/ });
+      const cell = screen.getByRole('button', { name: /^Expires,/ });
       // Safari doesn't focus a button on tap, so a synthetic click leaves focus elsewhere.
       fireEvent.click(cell);
       await screen.findByRole('dialog', { name: 'Expires' });
@@ -756,7 +816,7 @@ describe('ReviewPage', () => {
       const user = userEvent.setup();
       const calls = renderReview([sure()]);
       await user.click(row('Parmesan'));
-      await user.click(screen.getByRole('button', { name: /^Expiry date/ }));
+      await user.click(screen.getByRole('button', { name: /^Expires,/ }));
       await user.click(
         within(
           await screen.findByRole('dialog', { name: 'Expires' }),
@@ -764,7 +824,7 @@ describe('ReviewPage', () => {
       );
       await done(user);
       expect(
-        screen.getByRole('button', { name: 'Expiry date dd.mm.yyyy' }),
+        screen.getByRole('button', { name: 'Expires, no expiry date' }),
       ).toBeInTheDocument();
       expect(await saved(user, calls)).toMatchObject({ expiryDate: null });
     });
@@ -776,7 +836,9 @@ describe('ReviewPage', () => {
       ]);
       // No date was read, so the cell holds Parmesan's Default Expiry (60 days).
       await user.click(
-        screen.getByRole('button', { name: 'Expiry date 13.12.2026' }),
+        screen.getByRole('button', {
+          name: /^Expires, Sunday, December 13,/,
+        }),
       );
       await user.click(
         within(
@@ -799,7 +861,9 @@ describe('ReviewPage', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
       expect(
-        screen.getByRole('button', { name: 'Expiry date 28.12.2026' }),
+        screen.getByRole('button', {
+          name: /^Expires, Monday, December 28,/,
+        }),
       ).toBeInTheDocument();
     });
   });
@@ -812,11 +876,13 @@ describe('ReviewPage', () => {
         'plate',
       );
       await userEvent.click(row('Parmesan'));
-      expect(screen.getByLabelText('Quantity')).toBeInTheDocument();
+      expect(screen.getByLabelText(/^Amount of/)).toBeInTheDocument();
       expect(
         screen.queryByRole('group', { name: 'Location' }),
       ).not.toBeInTheDocument();
-      expect(screen.queryByLabelText('Expiry date')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /^Expires/ }),
+      ).not.toBeInTheDocument();
       expect(
         screen.queryByLabelText('Product description'),
       ).not.toBeInTheDocument();
@@ -940,7 +1006,9 @@ describe('ReviewPage: Add to your catalog (#270)', () => {
 
     const panel = await screen.findByRole('group', { name: 'Kombucha' });
     expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
-    expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
+    expect(
+      within(panel).getByRole('button', { name: 'Unit: ml' }),
+    ).toBeInTheDocument();
     expect(
       calls?.some((c) => c.key === 'POST /api/catalog/family-ingredients'),
     ).toBe(true);

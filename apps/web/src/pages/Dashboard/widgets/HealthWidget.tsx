@@ -1,14 +1,13 @@
 import {
   Box,
-  ChevronRightIcon,
   displayType,
-  InfoIcon,
   nestedRadius,
   PulseIcon,
   radius,
   tokens,
+  usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScoreRing } from '../../../components/HealthSheet/HealthRing';
 import { HealthSheet } from '../../../components/HealthSheet/HealthSheet';
@@ -34,12 +33,25 @@ import {
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
-/** The Pantry Health score in a ring with its verdict and to-do count; tapping it opens the sheet. */
+/** How long Gator's Tap shows on the card before the sheet covers it. */
+export const TAP_BEFORE_SHEET_MS = 500;
+
+/** The Pantry Health score in a ring with its verdict and to-do count; tapping it plays Gator's Tap, then opens the sheet. */
 export function HealthWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const today = useToday();
   const [open, setOpen] = useState(false);
   const [tapSignal, setTapSignal] = useState(0);
+  const [opening, setOpening] = useState(false);
+  const reduceMotion = usePrefersReducedMotion();
+  useEffect(() => {
+    if (!opening) return;
+    const timer = setTimeout(() => {
+      setOpening(false);
+      setOpen(true);
+    }, TAP_BEFORE_SHEET_MS);
+    return () => clearTimeout(timer);
+  }, [opening]);
   const state = usePantryHealth();
   const { isPending, error, batchCount, health, todos } = state;
   const wide = size !== 'small';
@@ -97,7 +109,9 @@ export function HealthWidget({ size, columns }: WidgetProps) {
         error={error ? translateApiError(t, error) : null}
         onPress={() => {
           setTapSignal((n) => n + 1);
-          setOpen(true);
+          // With reduced motion there is no Tap to show, so the sheet opens at once.
+          if (reduceMotion) setOpen(true);
+          else setOpening(true);
         }}
         pressLabel={wide && gatorLine ? `${cardName}. ${gatorLine}` : cardName}
         padding="12px 14px 14px"
@@ -109,55 +123,61 @@ export function HealthWidget({ size, columns }: WidgetProps) {
           >
             <Box
               component="span"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                color: tokens.color.muted,
-              }}
+              sx={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}
             >
-              <WidgetTitle component="span" icon={<PulseIcon size={16} />}>
-                {t('health.title')}
-              </WidgetTitle>
-              <InfoIcon size={15} />
-            </Box>
-            <Box
-              component="span"
-              sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}
-            >
-              <ScoreRing health={health} batchCount={batchCount} size={56} />
-              <Box component="span" sx={{ flex: 1, minWidth: 0 }}>
-                <Box
-                  component="span"
-                  sx={{ display: 'block', ...displayType, fontSize: 16 }}
-                >
-                  {headline}
-                </Box>
-                <Box
-                  component="span"
-                  sx={{
-                    display: 'block',
-                    fontSize: 12.5,
-                    color: tokens.color.muted,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {wideSubline}
-                </Box>
-              </Box>
-              <HealthGator
-                health={health}
-                size={64}
-                entrance
-                tapSignal={tapSignal}
-              />
               <Box
                 component="span"
-                sx={{ color: tokens.color.muted, display: 'flex' }}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  flex: 1,
+                  minWidth: 0,
+                }}
               >
-                <ChevronRightIcon size={18} />
+                <WidgetTitle component="span" icon={<PulseIcon size={16} />}>
+                  {t('health.title')}
+                </WidgetTitle>
+                <Box
+                  component="span"
+                  sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+                >
+                  <ScoreRing
+                    health={health}
+                    batchCount={batchCount}
+                    size={56}
+                  />
+                  <Box component="span" sx={{ flex: 1, minWidth: 0 }}>
+                    <Box
+                      component="span"
+                      sx={{ display: 'block', ...displayType, fontSize: 16 }}
+                    >
+                      {headline}
+                    </Box>
+                    <Box
+                      component="span"
+                      sx={{
+                        display: 'block',
+                        fontSize: 12.5,
+                        color: tokens.color.muted,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {wideSubline}
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+              {/* Spans the title and ring rows, sitting a touch below the title. */}
+              <Box component="span" sx={{ mt: '8px' }}>
+                <HealthGator
+                  health={health}
+                  size={112}
+                  entrance
+                  tapSignal={tapSignal}
+                />
               </Box>
             </Box>
             {gatorLine ? (

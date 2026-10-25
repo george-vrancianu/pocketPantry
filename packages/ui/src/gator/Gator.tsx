@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
-import CHEF_FLOP from './art/gator-chef-flop.svg?url';
 import { type GatorMood, gatorLayout } from './gatorGeometry';
 
 export type GatorLoop = 'idle' | 'signature';
@@ -23,14 +22,6 @@ for (const [path, url] of Object.entries(FILES)) {
   const [, mood, variant] = VARIANT_FILE.exec(path)!;
   (ART[mood!] ??= {})[variant as GatorMotion] = url;
 }
-// chef-flop has no motion art: its one still drawing stands in for every variant.
-ART['chef-flop'] = {
-  idle: CHEF_FLOP,
-  signature: CHEF_FLOP,
-  entrance: CHEF_FLOP,
-  tap: CHEF_FLOP,
-};
-
 /** Warms the cache with these moods' loops, so a face that mounts later doesn't show an empty box. */
 export function warmGatorLoops(moods: GatorMood[], loop: GatorLoop) {
   for (const mood of moods) {

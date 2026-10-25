@@ -61,7 +61,7 @@ export type DockCapsuleProps = {
 };
 
 /**
- * The Camera/Mic capsule over the Dock's middle slot: the camera on top, the mic below, a
+ * The Mic/Camera capsule over the Dock's middle slot: the mic on top, the camera below, a
  * hairline between, overhanging the bar by 18 px at the top and bottom. Without a mic it shrinks
  * to a camera button inside the bar.
  */
@@ -88,10 +88,10 @@ export function DockCapsule({
           color: 'inherit',
           borderRadius: radius.pill,
         },
-        // With a mic below, only the top corners are round.
+        // With a mic above, only the bottom corners are round.
         micSlot
           ? {
-              borderRadius: `${radius.pill} ${radius.pill} 0 0`,
+              borderRadius: `0 0 ${radius.pill} ${radius.pill}`,
             }
           : {},
         teach === 'camera' ? lit(pulse) : {},
@@ -123,18 +123,8 @@ export function DockCapsule({
           : `4px solid ${palette('background-default')}`,
       }}
     >
-      {camera}
       {micSlot ? (
         <>
-          <Box
-            aria-hidden
-            sx={{
-              height: '1px',
-              mx: '12px',
-              bgcolor: 'currentColor',
-              opacity: 0.35,
-            }}
-          />
           {teach === 'camera' ? (
             <ButtonBase
               aria-label={micLabel}
@@ -143,7 +133,7 @@ export function DockCapsule({
               tabIndex={-1}
               onClick={(event) => event.preventDefault()}
               sx={[
-                { flex: 1, borderRadius: `0 0 ${radius.pill} ${radius.pill}` },
+                { flex: 1, borderRadius: `${radius.pill} ${radius.pill} 0 0` },
                 dimmed,
               ]}
             >
@@ -157,14 +147,24 @@ export function DockCapsule({
                   flex: 1,
                   display: 'flex',
                   position: 'relative',
-                  borderRadius: `0 0 ${radius.pill} ${radius.pill}`,
+                  borderRadius: `${radius.pill} ${radius.pill} 0 0`,
                 },
                 teach === 'mic' ? lit(pulse) : {},
               ]}
             />
           )}
+          <Box
+            aria-hidden
+            sx={{
+              height: '1px',
+              mx: '12px',
+              bgcolor: 'currentColor',
+              opacity: 0.35,
+            }}
+          />
         </>
       ) : null}
+      {camera}
     </Box>
   );
 }
