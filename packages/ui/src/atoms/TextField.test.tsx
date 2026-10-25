@@ -31,6 +31,53 @@ describe('TextField', () => {
       '0 0 0 3px var(--mui-palette-pp-accenttint)',
     );
   });
+
+  it('floats a native select label above an empty "None" option', () => {
+    render(
+      <TextField
+        select
+        label="Cuisine"
+        value=""
+        slotProps={{ select: { native: true } }}
+      >
+        <option value="">None</option>
+        <option value="it">Italian</option>
+      </TextField>,
+    );
+    expect(
+      screen
+        .getByText('Cuisine', { selector: 'label' })
+        .getAttribute('data-shrink'),
+    ).toBe('true');
+  });
+
+  it('keeps a caller inputLabel prop on a native select', () => {
+    render(
+      <TextField
+        select
+        label="Cuisine"
+        value=""
+        slotProps={{
+          select: { native: true },
+          inputLabel: { className: 'mine' },
+        }}
+      >
+        <option value="">None</option>
+      </TextField>,
+    );
+    const label = screen.getByText('Cuisine', { selector: 'label' });
+    expect(label.getAttribute('data-shrink')).toBe('true');
+    expect(label.classList).toContain('mine');
+  });
+
+  it('leaves an empty text field label inside the field', () => {
+    render(<TextField label="Name" value="" />);
+    expect(
+      screen
+        .getByText('Name', { selector: 'label' })
+        .getAttribute('data-shrink'),
+    ).toBe('false');
+  });
 });
 
 describe('FieldUnit', () => {

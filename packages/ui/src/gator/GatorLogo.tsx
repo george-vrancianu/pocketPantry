@@ -16,7 +16,7 @@ export type GatorLogoProps = {
   /** Accessible name of the button, e.g. "Refresh". */
   label: string;
   onClick?: MouseEventHandler<HTMLButtonElement>;
-  /** The mark's size in px (the button is 6 px larger): 38 in a header, 42 on the Dashboard. */
+  /** The mark's size in px (the button is 6 px larger): 42 in every app header; 38 is the default elsewhere. */
   size?: 38 | 42;
   /** A counter that rises on each successful refresh; each rise plays the head-only re-entrance. */
   successCount?: number;

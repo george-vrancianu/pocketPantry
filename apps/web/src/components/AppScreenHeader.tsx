@@ -39,7 +39,7 @@ export function AppScreenHeader({
   return (
     <ScreenHeader
       title={title}
-      leading={tabRoot ? <RefreshMark /> : undefined}
+      leading={tabRoot ? <RefreshMark size={42} /> : undefined}
       subtitle={subtitle}
       // A tab root keeps a one-line title, level with the mark: no subline there.
       subline={tabRoot ? undefined : subline}
