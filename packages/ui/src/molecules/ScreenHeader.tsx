@@ -37,6 +37,8 @@ export type ScreenHeaderProps = {
   subline?: ReactNode;
   /** Keep the title to one line with an ellipsis, so a long title never pushes the action off. */
   truncateTitle?: boolean;
+  /** A mark before the title, on a tab root (e.g. the Gator logo). Not counted toward the one-button rule. */
+  leading?: ReactNode;
   /** Content right-aligned in the header, e.g. counter chips on wide screens. */
   trailing?: ReactNode;
   /** A Back link to `href`, in place of the Home button. */
@@ -58,6 +60,7 @@ export function ScreenHeader({
   subtitle,
   subline,
   truncateTitle,
+  leading,
   home,
   action,
   trailing,
@@ -91,6 +94,7 @@ export function ScreenHeader({
           <HomeIcon size={20} />
         </IconButton>
       ) : null}
+      {leading}
       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
         {title ? (
           <Typography
