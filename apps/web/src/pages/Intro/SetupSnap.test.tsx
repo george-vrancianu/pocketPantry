@@ -91,14 +91,14 @@ describe('Setup 1, Snap', () => {
     const user = await openSnap();
     expect(screen.getByRole('link', { name: 'Camera' })).toHaveAttribute(
       'href',
-      '/scan?mode=ingredients',
+      '/intro/camera?mode=ingredients',
     );
     await user.click(screen.getByRole('radio', { name: 'Receipt' }));
     const camera = screen.getByRole('link', { name: 'Camera' });
-    expect(camera).toHaveAttribute('href', '/scan?mode=receipt');
+    expect(camera).toHaveAttribute('href', '/intro/camera?mode=receipt');
 
     await user.click(camera);
-    expect(where()).toBe('/scan?mode=receipt');
+    expect(where()).toBe('/intro/camera?mode=receipt');
   });
 
   it('skips to Say it', async () => {

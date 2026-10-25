@@ -6,13 +6,12 @@ import {
   Typography,
   useBreakpointUp,
 } from '@pocket-pantry/ui';
-import { useCallback } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { MatchDialog } from '../../components/MatchDialog';
 import { ReviewActionBar } from '../../components/ReviewActionBar';
-import { SetupReviewView } from '../../components/Setup/SetupReviewView';
 import { PlateRecipeSave } from './components/PlateRecipeSave';
 import { ReviewCounters } from './components/ReviewCounters';
 import { ReviewTable } from './components/ReviewTable';
@@ -23,14 +22,36 @@ import {
 import { TabletReviewTable } from './components/TabletReviewTable';
 import { useReviewScreen } from './hooks/useReviewScreen';
 
+/** What a host's frame wraps around the line editor. */
+export type ReviewFrameProps = {
+  subtitle: string;
+  /** How many lines the Scan read: said once, when the Review opens. */
+  spotted: number;
+  /** Lines still to check, live. */
+  check: number;
+  /** Lines the save will write. */
+  saveCount: number;
+  saving: boolean;
+  canSave: boolean;
+  onSave: () => void;
+  children: ReactNode;
+};
+
 /**
- * What the Setup Review adds to the line editor (the Intro's Snap step): where Retake and Skip go and what
- * happens once the Batches are saved. With it the page is the phone layout in the Intro's frame.
+ * What the host (the Intro's Setup Review) decides for the line editor: what happens once the card is
+ * saved, where Retake goes, and the frame and banner wrapping it. Without settings the editor is the app's:
+ * it lands on the Pantry or Shopping List and uses the app header.
+ *
+ * Unlike `ReviewOverviewSettings` (all optional, with app defaults), every part is required: passing
+ * settings at all switches the editor to the host's layout, and a half-hosted editor has no sensible default.
  */
-export type SetupReview = {
+export type ReviewEditorSettings = {
+  /** The card was saved with this many lines; replaces the app's landing. */
   onSaved: (saved: number) => void;
+  /** Retake: also the action offered when the Scan read nothing. */
   onRetake: () => void;
-  onSkip: () => void;
+  /** The phone layout wrapped in the host's frame, top row, banner and footer. */
+  renderFrame: (props: ReviewFrameProps) => ReactNode;
 };
 
 /**
@@ -40,10 +61,11 @@ export type SetupReview = {
  * confident ones are single rows. Below 900 px it is the phone layout; from
  * 900 px a wide table with the same state, handlers and groups.
  */
-export function ReviewPage({ setup }: { setup?: SetupReview } = {}) {
+export function ReviewPage({
+  settings,
+}: { settings?: ReviewEditorSettings } = {}) {
   const { t } = useTranslation('review');
-  const { t: tOnboarding } = useTranslation('onboarding');
-  const screen = useReviewScreen(setup);
+  const screen = useReviewScreen(settings);
   const wide = useBreakpointUp('md');
   // Callback ref: the result heading mounts with the tick-failure screen, so focus it then.
   const focusHeading = useCallback(
@@ -140,32 +162,25 @@ export function ReviewPage({ setup }: { setup?: SetupReview } = {}) {
     </>
   );
 
-  if (setup) {
-    return (
-      <SetupReviewView
-        subtitle={subtitle}
-        spotted={screen.included.length}
-        check={counts.check}
-        saveLabel={
-          screen.saving
-            ? t('pantry:form.saving')
-            : tOnboarding('review.add', { count: counts.save })
-        }
-        canSave={screen.canSave}
-        onSave={screen.save}
-        onRetake={setup.onRetake}
-        onSkip={setup.onSkip}
-      >
-        {read === 0 ? (
+  if (settings) {
+    return settings.renderFrame({
+      subtitle,
+      spotted: screen.included.length,
+      check: counts.check,
+      saveCount: counts.save,
+      saving: screen.saving,
+      canSave: screen.canSave,
+      onSave: screen.save,
+      children:
+        read === 0 ? (
           <Stack spacing={2}>
             <Typography color="text.secondary">{t('empty')}</Typography>
-            <Button onClick={setup.onRetake}>{t('overview.retake')}</Button>
+            <Button onClick={settings.onRetake}>{t('overview.retake')}</Button>
           </Stack>
         ) : (
           editor
-        )}
-      </SetupReviewView>
-    );
+        ),
+    });
   }
 
   if (wide) {
