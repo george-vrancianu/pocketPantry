@@ -8,6 +8,7 @@ import { ApplyMemberLocale } from './ApplyMemberLocale';
 import { ApplyMemberTheme } from './ApplyMemberTheme';
 import { AppDock } from './AppDock';
 import { RefreshProvider, useRefreshScreen } from '../lib/refresh';
+import { PrototypeRefreshLoader } from './prototype-refresh-loader/PrototypeRefreshLoader';
 import { useShowsDockMic, VoiceNote } from './VoiceNote';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
 
@@ -52,6 +53,8 @@ export function AppLayout() {
               <Outlet />
             </RefreshDimmed>
           </PageLayout>
+          {/* PROTOTYPE (refresh loader) */}
+          <PrototypeRefreshLoader />
           <VoiceHostSlot />
           <VoiceNote />
           {dock.visible ? <AppDock activeKey={dock.activeKey} /> : null}

@@ -23,6 +23,11 @@ type Refresh = {
 
 const DONE_MS = 2500;
 const FAILED_MS = 4000;
+// PROTOTYPE (refresh loader): the loader stays down at least this long, and the logo's re-entrance waits for it to retract.
+export const PROTO_MIN_BUSY_MS = 700;
+export const PROTO_RETRACT_MS = 380;
+const protoKnob = (name: string) =>
+  new URLSearchParams(window.location.search).get(name) === '1';
 
 const RefreshContext = createContext<Refresh | undefined>(undefined);
 
@@ -71,12 +76,20 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
     const id = ++runId.current;
     setState('busy');
     let failed = false;
+    const started = Date.now();
     try {
       // Without `throwOnError` this waits for every query and swallows their errors.
       await queryClient.refetchQueries({ type: 'active' });
     } catch {
       failed = true;
     }
+    // PROTOTYPE knobs: `?protoSlow=1` holds the loader 2.5 s longer, `?protoFail=1` forces a failure.
+    const hold =
+      PROTO_MIN_BUSY_MS +
+      (protoKnob('protoSlow') ? 2500 : 0) -
+      (Date.now() - started);
+    if (hold > 0) await new Promise((r) => setTimeout(r, hold));
+    if (protoKnob('protoFail')) failed = true;
     if (id !== runId.current) return;
     // A paused query (offline) resolves at once and keeps its old data: that is not an update.
     if (
@@ -94,7 +107,11 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
     }
     busy.current = false;
     setState(failed ? 'failed' : 'done');
-    if (!failed) setSuccessCount((n) => n + 1);
+    // PROTOTYPE: the logo's re-entrance plays once the loader has gone back up.
+    if (!failed)
+      setTimeout(() => {
+        if (id === runId.current) setSuccessCount((n) => n + 1);
+      }, PROTO_RETRACT_MS);
   }, [queryClient, setState]);
 
   const value = useMemo(

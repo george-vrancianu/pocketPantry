@@ -4,7 +4,6 @@ import { useLocation } from 'react-router-dom';
 import { dockStateFor } from '../lib/dockState';
 import { useOptionalRefreshScreen } from '../lib/refresh';
 import { RefreshMark } from './RefreshMark';
-import { RefreshStatus } from './RefreshStatus';
 
 /** Dock tabs whose root screen carries the refresh mark (the Dashboard's header is its own). */
 const REFRESH_ROOTS = ['/pantry', '/shopping', '/recipes'];
@@ -32,7 +31,7 @@ export function AppScreenHeader({
     <ScreenHeader
       title={title}
       leading={tabRoot ? <RefreshMark /> : undefined}
-      subline={tabRoot ? <RefreshStatus /> : undefined}
+      // PROTOTYPE (refresh loader): no status line; the top loader carries the refresh.
       // With the mark, the Explore pill and the action in one row, a long title would break mid-word at 360 px.
       truncateTitle={tabRoot}
       subtitle={subtitle}
