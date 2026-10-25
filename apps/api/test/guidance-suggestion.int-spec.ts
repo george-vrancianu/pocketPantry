@@ -660,7 +660,16 @@ describe('Suggest Guidance (integration)', () => {
     });
 
     it('does not count the refusal when no field is empty', async () => {
-      await suggest(request({ nutritionNote: 'Already written.' })).expect(400);
+      const res = await suggest(
+        request({
+          nutritionNote: 'Already written.',
+          pairings: [{ kind: 'food', label: 'Mine', reason: 'Because.' }],
+          eatingMoments: [],
+        }),
+      ).expect(400);
+      expect((res.body as { code: string }).code).toBe(
+        'guidance.nothing_to_suggest',
+      );
       await suggest(request()).expect(200);
       expect(await usage('guidance')).toBe(1);
     });

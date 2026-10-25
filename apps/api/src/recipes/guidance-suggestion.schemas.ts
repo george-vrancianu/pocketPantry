@@ -39,10 +39,6 @@ const suggestionRecipe = recipeDocument.extend({
 });
 
 /**
- * Suggest Guidance for a Family Recipe (ADR 0026): what the page holds now, and the Guidance
- * already on the form (all of it, so the empty fields can be told).
- */
-/**
  * A Pairing row as the form holds it: a started one may lack its label or reason, because a
  * request is never saved (the save schema stays strict). A blank row is one with no label,
  * no reason and no link.
@@ -56,6 +52,10 @@ const formGuidance = guidanceBody.extend({
 });
 type FormGuidance = z.infer<typeof formGuidance>;
 
+/**
+ * Suggest Guidance for a Family Recipe (ADR 0026): what the page holds now, and the Guidance
+ * already on the form (all of it, so the empty fields can be told).
+ */
 export const suggestGuidanceBody = z
   .object({
     recipe: suggestionRecipe,
