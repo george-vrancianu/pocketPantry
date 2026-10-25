@@ -24,6 +24,8 @@ export type SetupLeave = {
   onNext: () => void;
   /** Skip's click: asks first when `unsaved`, otherwise skips straight away. */
   onSkip: () => void;
+  /** Attach to the Skip control: Cancel returns focus to it. */
+  skipTarget: (el: HTMLButtonElement | null) => void;
   /** The confirm, to render under the top row while it is asking (else null). */
   prompt: ReactNode;
 };
@@ -36,7 +38,11 @@ export function useSetupLeave({
   onSkip,
 }: SetupLeaveInput): SetupLeave {
   const [asking, setAsking] = useState(false);
+  const [skipEl, setSkipEl] = useState<HTMLButtonElement | null>(null);
+  // Nothing left to lose (e.g. the last note discarded): the question is moot, and must not return later.
+  if (!unsaved && asking) setAsking(false);
   return {
+    skipTarget: setSkipEl,
     unsaved,
     onNext,
     onSkip: () => (unsaved ? setAsking(true) : onSkip()),
@@ -48,7 +54,10 @@ export function useSetupLeave({
             setAsking(false);
             onSkip();
           }}
-          onCancel={() => setAsking(false)}
+          onCancel={() => {
+            setAsking(false);
+            skipEl?.focus();
+          }}
         />
       ) : null,
   };
@@ -56,7 +65,8 @@ export function useSetupLeave({
 
 type Tone = 'olive' | 'cream';
 
-const nextStyle = {
+/** The Setup top rows' text-link button: Next, Skip and Back share it (colour set by the caller). */
+export const linkButtonStyle = {
   p: 0,
   border: 0,
   background: 'none',
@@ -83,7 +93,7 @@ export function SetupNextButton({
       type="button"
       onClick={leave.onNext}
       sx={{
-        ...nextStyle,
+        ...linkButtonStyle,
         color: tone === 'olive' ? color.cardBg : tokens.color.accent,
       }}
     >

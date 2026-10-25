@@ -1,6 +1,10 @@
 import { color, Box, Link } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { SetupNextButton, type SetupLeave } from './SetupLeave';
+import {
+  linkButtonStyle,
+  SetupNextButton,
+  type SetupLeave,
+} from './SetupLeave';
 import { SetupProgress } from './SetupProgress';
 
 const skipStyle = {
@@ -27,6 +31,8 @@ export function SetupOliveTopRow({
   leave,
 }: Props) {
   const { t } = useTranslation('onboarding');
+  const skipTarget = leave?.skipTarget;
+  const onSkip = leave?.onSkip;
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -44,18 +50,9 @@ export function SetupOliveTopRow({
           <Box
             component="button"
             type="button"
-            onClick={leave.onSkip}
-            sx={{
-              ...skipStyle,
-              p: 0,
-              border: 0,
-              background: 'none',
-              font: 'inherit',
-              fontSize: 15,
-              fontWeight: 600,
-              textDecoration: 'underline',
-              cursor: 'pointer',
-            }}
+            ref={skipTarget}
+            onClick={onSkip}
+            sx={{ ...linkButtonStyle, color: color.cardBg }}
           >
             {t('setupStep.skip')}
           </Box>

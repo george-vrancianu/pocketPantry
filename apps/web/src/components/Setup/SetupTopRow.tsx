@@ -1,19 +1,13 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { SetupNextButton, type SetupLeave } from './SetupLeave';
+import {
+  linkButtonStyle,
+  SetupNextButton,
+  type SetupLeave,
+} from './SetupLeave';
 import { SetupProgress } from './SetupProgress';
 
-const linkButton = {
-  p: 0,
-  border: 0,
-  background: 'none',
-  color: tokens.color.accent,
-  font: 'inherit',
-  fontSize: 15,
-  fontWeight: 600,
-  textDecoration: 'underline',
-  cursor: 'pointer',
-} as const;
+const linkSx = { ...linkButtonStyle, color: tokens.color.accent } as const;
 
 type Props = {
   /** The "‹ label" link back, when the screen has one. */
@@ -25,6 +19,7 @@ type Props = {
 /** The Setup Review's top row on the cream ground: an optional "‹ Back" link, the step's progress ("1 of 2"), Skip. */
 export function SetupTopRow({ back, leave }: Props) {
   const { t } = useTranslation('onboarding');
+  const { skipTarget, onSkip } = leave;
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -33,7 +28,7 @@ export function SetupTopRow({ back, leave }: Props) {
             component="button"
             type="button"
             onClick={back.onClick}
-            sx={linkButton}
+            sx={linkSx}
           >
             <span aria-hidden>‹ </span>
             {back.label}
@@ -44,8 +39,9 @@ export function SetupTopRow({ back, leave }: Props) {
         <Box
           component="button"
           type="button"
-          onClick={leave.onSkip}
-          sx={linkButton}
+          ref={skipTarget}
+          onClick={onSkip}
+          sx={linkSx}
         >
           {t('setupStep.skip')}
         </Box>

@@ -609,7 +609,7 @@ describe('Setup 1: Snap, Setup overview, All set', () => {
       return opened;
     }
 
-    it('shows no Next on Snap or the overview while nothing is unsaved, and Skip moves on with no confirm', async () => {
+    it('shows no Next on Snap while nothing is unsaved, and Skip moves on with no confirm', async () => {
       const { user } = await openSnap();
       expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
       await user.click(screen.getByRole('link', { name: 'Skip' }));
@@ -669,6 +669,7 @@ describe('Setup 1: Snap, Setup overview, All set', () => {
       ).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Cancel' }));
       expect(screen.queryByText(/saved yet/)).toBeNull();
+      expect(screen.getByRole('button', { name: 'Skip' })).toHaveFocus();
       expect(where()).toBe('/intro/review');
       expect(await cards()).toHaveLength(2);
 

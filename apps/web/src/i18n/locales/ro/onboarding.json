@@ -41,9 +41,9 @@
     "progress": "{{step}} din 2",
     "skip": "Sari peste",
     "next": "Înainte",
-    "lostPhotos_one": "Treci peste și pierzi această poză? Nu a fost salvată încă.",
-    "lostPhotos_few": "Treci peste și pierzi aceste {{count}} poze? Nu au fost salvate încă.",
-    "lostPhotos_other": "Treci peste și pierzi aceste {{count}} de poze? Nu au fost salvate încă."
+    "lostPhotos_one": "Sari peste și pierzi această poză? Nu a fost salvată încă.",
+    "lostPhotos_few": "Sari peste și pierzi aceste {{count}} poze? Nu au fost salvate încă.",
+    "lostPhotos_other": "Sari peste și pierzi aceste {{count}} de poze? Nu au fost salvate încă."
   },
   "snap": {
     "bubble": {
