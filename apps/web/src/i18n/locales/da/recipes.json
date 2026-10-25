@@ -286,5 +286,15 @@
     "inFamily": "I dine opskrifter",
     "openCopy": "{{title}} er i dine opskrifter. Åbn den",
     "actions": "Handlinger for denne opskrift"
+  },
+  "quickView": {
+    "eyebrow": "Katalogopskrift",
+    "close": "Luk",
+    "missing": "mangler",
+    "seeWhole": "Se hele opskriften",
+    "add": "Føj til dine opskrifter",
+    "openCopy": "I dine opskrifter · Åbn",
+    "explain": "Når du tilføjer, laver du en kopi, som din familie kan ændre. Lav en variant åbner editoren først.",
+    "explainAdded": "Din kopi kan du ændre. Denne katalogopskrift forbliver, som den er."
   }
 }

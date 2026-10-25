@@ -286,5 +286,15 @@
     "inFamily": "In your Recipes",
     "openCopy": "{{title}} is in your Recipes. Open it",
     "actions": "Actions for this Recipe"
+  },
+  "quickView": {
+    "eyebrow": "Catalog Recipe",
+    "close": "Close",
+    "missing": "missing",
+    "seeWhole": "See the whole Recipe",
+    "add": "Add to your Recipes",
+    "openCopy": "In your Recipes · Open",
+    "explain": "Adding makes a copy your family can change. Make a Variant opens the editor first.",
+    "explainAdded": "Your copy is yours to change. This Catalog Recipe stays as it is."
   }
 }

@@ -1,6 +1,7 @@
 import {
   BranchIcon,
   Box,
+  CompassIcon,
   Link,
   Stack,
   Typography,
@@ -12,7 +13,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { totalMinutes, type RecipeDetail } from '../../../lib/recipes';
 import { catalogRecipeHref } from '../../../lib/catalogRecipeHref';
-import { InFamilyPill } from './InFamilyPill';
+import { InFamilyPill } from '../../../components/InFamilyPill';
 import { OwnerBadge } from './OwnerBadge';
 
 /** The Recipe's eyebrow (Base Recipe link), title with Family pill, fact cells and archived notice. */
@@ -78,6 +79,7 @@ export function RecipeHero({
               color: tokens.color.muted,
             }}
           >
+            <CompassIcon size={13} />
             {t('preview.eyebrow')}
           </Box>
         ) : null}

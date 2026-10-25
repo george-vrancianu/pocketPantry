@@ -11,6 +11,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RecipeListItem } from '../../lib/recipes';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ExplorePage } from './ExplorePage';
+import { exploreAdds } from '../../lib/exploreAdds';
+
+beforeEach(() => exploreAdds.reset());
 
 /*
  * DOM contract these tests assume:

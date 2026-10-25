@@ -304,5 +304,15 @@
     "inFamily": "În Rețetele tale",
     "openCopy": "{{title}} este în Rețetele tale. Deschide-o",
     "actions": "Acțiuni pentru această rețetă"
+  },
+  "quickView": {
+    "eyebrow": "Rețetă din Catalog",
+    "close": "Închide",
+    "missing": "lipsește",
+    "seeWhole": "Vezi toată Rețeta",
+    "add": "Adaugă la Rețetele tale",
+    "openCopy": "În Rețetele tale · Deschide",
+    "explain": "Adăugarea face o copie pe care familia ta o poate schimba. Fă o variantă deschide mai întâi editorul.",
+    "explainAdded": "Copia ta e a ta, o poți schimba. Această Rețetă din Catalog rămâne așa cum e."
   }
 }

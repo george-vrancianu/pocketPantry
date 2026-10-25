@@ -9,6 +9,7 @@ export function useSheetToast(): ToastApi {
   const toast = useToast();
   return useMemo(
     () => ({
+      dismiss: toast.dismiss,
       show: (message, options) =>
         toast.show(message, { bottom: TOAST_ABOVE_SHEET, ...options }),
     }),

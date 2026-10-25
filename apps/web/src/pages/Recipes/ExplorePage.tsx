@@ -7,22 +7,17 @@ import {
   displayType,
   tokens,
 } from '@pocket-pantry/ui';
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ExploreRow } from '../../components/ExploreRow';
+import { QuickViewSheet } from '../../components/QuickViewSheet';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../i18n/translateApiError';
 import { localIso } from '../../lib/pantry';
 import { useAddToFamily } from '../../lib/addToFamily';
+import { exploreAdds, useExploreAdds } from '../../lib/exploreAdds';
 import {
   canMakeCards,
   cardFor,
@@ -45,7 +40,7 @@ const LIMIT = 4;
 const SLIDE = '320ms cubic-bezier(.2,.8,.2,1)';
 
 /** Slides in from the right and, on Back, out to it; no motion under reduced motion. */
-const slideSx = (leaving: boolean) =>
+const slideSx = (leaving: boolean, enter: boolean) =>
   ({
     '@keyframes pp-explore-slide-in': {
       from: { transform: 'translateX(100%)' },
@@ -56,7 +51,11 @@ const slideSx = (leaving: boolean) =>
       to: { transform: 'translateX(100%)' },
     },
     '@media (prefers-reduced-motion: no-preference)': {
-      animation: `${leaving ? 'pp-explore-slide-out' : 'pp-explore-slide-in'} ${SLIDE}${leaving ? ' forwards' : ''}`,
+      animation: leaving
+        ? `pp-explore-slide-out ${SLIDE} forwards`
+        : enter
+          ? `pp-explore-slide-in ${SLIDE}`
+          : 'none',
     },
   }) as const;
 
@@ -91,12 +90,19 @@ export function ExplorePage() {
       window.clearTimeout(fallback);
     };
   }, [leaving, navigate]);
-  // Net adds this visit: the Back badge. It resets when the page unmounts.
-  const [added, setAdded] = useState(0);
-  const onNet = useCallback(
-    (delta: 1 | -1) => setAdded((n) => Math.max(0, n + delta)),
-    [],
-  );
+  // Net adds this visit: the Back badge. It outlives the page so that a round trip through a
+  // preview keeps it; a fresh visit (not Back from a preview) starts again at 0.
+  const added = useExploreAdds();
+  const location = useLocation();
+  const returning =
+    useNavigationType() === 'POP' ||
+    (location.state as { fromPreview?: boolean } | null)?.fromPreview === true;
+  const [enter] = useState(!returning);
+  useEffect(() => {
+    if (!returning) exploreAdds.reset();
+  }, [returning]);
+  const [quick, setQuick] = useState<RecipeListItem | null>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
   const recipes = useRecipes(browse, { showHidden, scope: 'catalog' });
   const cookTonight = useCookTonight(
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight
@@ -105,7 +111,7 @@ export function ExplorePage() {
     'catalog',
   );
   const filters = useRecipeFilters();
-  const { add, stateOf } = useAddToFamily({ onNet });
+  const { add, stateOf } = useAddToFamily({ onNet: exploreAdds.bump });
   const filtering = isFiltering(browse);
   const items = recipes.data?.recipes ?? [];
   const cards = cookTonight.data?.cards ?? [];
@@ -157,13 +163,17 @@ export function ExplorePage() {
           card={cardFor(index, recipe)}
           filtering={filtering}
           hideCanMake={options.hideCanMake ?? false}
+          onOpen={() => {
+            setQuick(recipe);
+            setQuickOpen(true);
+          }}
         />
       )}
     />
   );
 
   return (
-    <Box sx={slideSx(leaving)} ref={pageRef} data-testid="explore-page">
+    <Box sx={slideSx(leaving, enter)} ref={pageRef} data-testid="explore-page">
       <AppScreenHeader
         title={t('recipes:explore.title')}
         back={{
@@ -180,6 +190,7 @@ export function ExplorePage() {
               !event.ctrlKey &&
               !event.shiftKey &&
               !event.altKey;
+            exploreAdds.reset();
             const still = window.matchMedia(
               '(prefers-reduced-motion: reduce)',
             ).matches;
@@ -229,6 +240,17 @@ export function ExplorePage() {
             )
           : null}
       </Stack>
+      {quick ? (
+        <QuickViewSheet
+          recipe={items.find((item) => item.id === quick.id) ?? quick}
+          open={quickOpen}
+          onClose={() => setQuickOpen(false)}
+          card={cardFor(index, quick)}
+          state={stateOf(items.find((item) => item.id === quick.id) ?? quick)}
+          onAdd={(recipe) => void add(recipe)}
+          stateOf={stateOf}
+        />
+      ) : null}
     </Box>
   );
 }

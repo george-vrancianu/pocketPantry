@@ -10,11 +10,17 @@ import {
   tokens,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useId, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useParams } from 'react-router-dom';
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { useAddToFamily } from '../../lib/addToFamily';
+import { exploreAdds } from '../../lib/exploreAdds';
 import { catalogRecipeHref } from '../../lib/catalogRecipeHref';
 import { SourceLink } from '../../components/SourceLink';
 import { translateApiError } from '../../i18n/translateApiError';
@@ -33,7 +39,7 @@ import {
   PREVIEW_BAR_CLEARANCE,
   PREVIEW_BAR_HEIGHT,
   PreviewBar,
-} from './components/PreviewBar';
+} from '../../components/PreviewBar';
 import { PreviewNote } from './components/PreviewNote';
 import { linesToAdd } from './components/PantryStatus';
 import { DETAIL_SECTIONS, type DetailTab } from './components/sections';
@@ -104,8 +110,26 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
   };
   // The toasts of an add sit above the bar that replaces the Dock.
   const addToFamily = useAddToFamily(
-    preview ? { toastBottom: PREVIEW_BAR_CLEARANCE } : {},
+    preview
+      ? { toastBottom: PREVIEW_BAR_CLEARANCE, onNet: exploreAdds.bump }
+      : {},
   );
+  const navigate = useNavigate();
+  // `default` is the first entry of the session: no in-app history to go back to.
+  const hasHistory = useLocation().key !== 'default';
+  const leavePreview = (event: MouseEvent<HTMLElement>) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
+    event.preventDefault();
+    if (hasHistory) navigate(-1);
+    else navigate('/recipes/explore', { state: { fromPreview: true } });
+  };
   const addState = recipe
     ? addToFamily.stateOf({
         id: recipe.id,
@@ -127,7 +151,11 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
     <>
       {preview ? (
         <AppScreenHeader
-          back={{ label: t('recipes:back'), href: '/recipes/explore' }}
+          back={{
+            label: t('recipes:back'),
+            href: '/recipes/explore',
+            onClick: leavePreview,
+          }}
           {...(recipe ? {} : { title: t('recipes:explore.title') })}
         />
       ) : (
