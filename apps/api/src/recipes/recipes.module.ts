@@ -51,6 +51,7 @@ import { RecipesService } from './recipes.service';
     RecipeTranslationsService,
     PantryMatchingService,
     RecipeGuidanceService,
+    GuidanceSuggestionService,
   ],
 })
 export class RecipesModule {}
