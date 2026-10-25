@@ -9,7 +9,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ExploreRow } from '../../components/ExploreRow';
 import { QuickViewSheet } from '../../components/QuickViewSheet';
@@ -36,8 +36,10 @@ import { SectionLabel } from './components/SectionLabel';
 
 /** Rows a group shows before "Show n more". */
 const LIMIT = 4;
-/** Lifts a toast above the quick view's action buttons, px. */
-const QUICK_VIEW_TOAST_BOTTOM = 170;
+/** Lifts a toast above the quick view's action buttons. */
+const QUICK_VIEW_TOAST_BOTTOM =
+  // Sheet bottom padding 28 + explanation line(s) ~36 + gap 10 + Make a Variant 48 + gap 8 + Add 48 + 8 slack
+  'calc(186px + env(safe-area-inset-bottom, 0px))';
 
 const SLIDE = '320ms cubic-bezier(.2,.8,.2,1)';
 
@@ -98,12 +100,13 @@ export function ExplorePage() {
   // Returning means coming back from a preview this page opened (not merely a POP: a reload or a
   // Back from elsewhere is a fresh visit and slides in). The reset is synchronous so no stale
   // count paints; it is idempotent, so a double render is harmless.
+  const noSlide =
+    (useLocation().state as { noSlide?: boolean } | null)?.noSlide === true;
   const [enter] = useState(() => {
     if (exploreAdds.parked()) return false;
     exploreAdds.reset();
-    return true;
+    return !noSlide;
   });
-  useEffect(() => exploreAdds.unpark(), []);
   const [quick, setQuick] = useState<RecipeListItem | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
   const recipes = useRecipes(browse, { showHidden, scope: 'catalog' });

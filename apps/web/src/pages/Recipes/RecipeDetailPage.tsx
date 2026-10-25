@@ -121,8 +121,12 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
         }
       : {},
   );
+  // Parked while a preview opened from Explore shows, so Explore knows it is being returned to.
+  // Unparked on leaving, so a later fresh visit starts at 0.
   useEffect(() => {
-    if (preview && fromExplore) exploreAdds.park();
+    if (!(preview && fromExplore)) return;
+    exploreAdds.park();
+    return () => exploreAdds.unpark();
   }, [preview, fromExplore]);
   const navigate = useNavigate();
   // React Router's history index: a replace (a redirect at load) does not raise it.
@@ -139,7 +143,7 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
       return;
     event.preventDefault();
     if (hasHistory) navigate(-1);
-    else navigate('/recipes/explore');
+    else navigate('/recipes/explore', { state: { noSlide: true } });
   };
   const addState = recipe
     ? addToFamily.stateOf({
@@ -252,6 +256,7 @@ function RecipeDetail({ id, preview }: { id: string; preview: boolean }) {
                                 familyCopyId: variant.familyCopyId,
                               }),
                             onAdd: (variant) => void addToFamily.add(variant),
+                            fromExplore,
                           }
                         : undefined
                     }

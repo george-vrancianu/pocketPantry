@@ -159,15 +159,18 @@ function setup(route = '/recipes/explore') {
   });
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
-    <Routes>
-      <Route path="/recipes/explore" element={<ExplorePage />} />
-      <Route path="/recipes/explore/:id" element={<RecipePreviewPage />} />
-      <Route path="/recipes/:id" element={<RecipeDetailPage />} />
-      <Route
-        path="/recipes"
-        element={<Link to="/recipes/explore">to explore</Link>}
-      />
-    </Routes>,
+    <>
+      <Link to="/recipes">home</Link>
+      <Routes>
+        <Route path="/recipes/explore" element={<ExplorePage />} />
+        <Route path="/recipes/explore/:id" element={<RecipePreviewPage />} />
+        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+        <Route
+          path="/recipes"
+          element={<Link to="/recipes/explore">to explore</Link>}
+        />
+      </Routes>
+    </>,
     { route },
   );
   return calls;
@@ -379,7 +382,12 @@ describe('Explore and the preview round trip', () => {
       await screen.findByRole('button', { name: /See the whole Recipe/ }),
     );
     await screen.findByRole('heading', { level: 1, name: /Soup/ });
+    // Under MemoryRouter there is no browser history index: pretend there is one.
+    const state = vi
+      .spyOn(window.history, 'state', 'get')
+      .mockReturnValue({ idx: 1 });
     await u.click(screen.getByRole('link', { name: /Back/ }));
+    state.mockRestore();
     const page = await screen.findByTestId('explore-page');
     expect(screen.getByTestId('back-badge')).toHaveTextContent('+1');
     expect(getComputedStyle(page).animationName).not.toContain('slide-in');
@@ -401,6 +409,38 @@ describe('Explore and the preview round trip', () => {
     await screen.findByRole('heading', { level: 1, name: /Soup/ });
     await user().click(screen.getByRole('link', { name: /Back/ }));
     expect(await screen.findByTestId('explore-page')).toBeVisible();
+  });
+
+  it('leaving a preview for elsewhere and coming back to Explore is a fresh visit', async () => {
+    setup();
+    const u = user();
+    await u.click(
+      await screen.findByRole('button', { name: 'Add Soup to your Recipes' }),
+    );
+    await waitFor(() => expect(exploreAdds.get()).toBe(1));
+    await u.click(await rowButton());
+    await u.click(
+      await screen.findByRole('button', { name: /See the whole Recipe/ }),
+    );
+    await screen.findByRole('heading', { level: 1, name: /Soup/ });
+    await u.click(screen.getByRole('link', { name: 'home' }));
+    await u.click(await screen.findByRole('link', { name: 'to explore' }));
+    await screen.findByTestId('explore-page');
+    expect(screen.queryByTestId('back-badge')).toBeNull();
+  });
+
+  it('adds in a Variant preview opened from a preview opened from Explore raise the badge', async () => {
+    setup();
+    const u = user();
+    await u.click(await rowButton());
+    await u.click(
+      await screen.findByRole('button', { name: /See the whole Recipe/ }),
+    );
+    await u.click(await screen.findByRole('tab', { name: 'About' }));
+    await u.click(await screen.findByRole('link', { name: 'Spicy soup' }));
+    await screen.findByRole('heading', { level: 1, name: /Spicy soup/ });
+    await u.click(await screen.findByRole('button', { name: 'Add to family' }));
+    await waitFor(() => expect(exploreAdds.get()).toBe(1));
   });
 
   it('a fresh visit to Explore starts the badge at 0', async () => {
