@@ -24,7 +24,7 @@ import { translateApiError } from '../../i18n/translateApiError';
 import { localIso } from '../../lib/pantry';
 import { useAddToFamily } from '../../lib/addToFamily';
 import {
-  canMakeCards,
+  canMakeBases,
   cardFor,
   indexCards,
   useCookTonight,
@@ -113,20 +113,7 @@ export function ExplorePage() {
 
   // The Bases the Pantry can make, most expiring first. A card's best match can be a Catalog
   // Variant; the group lists its Base (the Variant is reached through the Base).
-  const canMake = (() => {
-    if (filtering) return [];
-    const byId = new Map(items.map((item) => [item.id, item]));
-    const seen = new Set<string>();
-    const rows: RecipeListItem[] = [];
-    for (const card of canMakeCards(cards)) {
-      const base = byId.get(card.base.id);
-      if (base && !seen.has(base.id)) {
-        seen.add(base.id);
-        rows.push(base);
-      }
-    }
-    return rows;
-  })();
+  const canMake = filtering ? [] : canMakeBases(cards, items);
   const canMakeIds = new Set(canMake.map((item) => item.id));
   const rest = filtering
     ? items

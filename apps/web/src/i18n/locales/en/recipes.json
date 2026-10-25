@@ -51,7 +51,6 @@
   "search": "Search Recipes",
   "cuisine": "Cuisine",
   "method": "Method",
-  "empty": "No Recipes yet.",
   "noMatches": "No Recipes match.",
   "allRecipes": "All Recipes",
   "matches": "Matches",
@@ -63,7 +62,6 @@
   "missingOneVia": "Missing {{name}} for {{title}}",
   "expiring_one": "{{count}} expiring",
   "expiring_other": "{{count}} expiring",
-  "emptyHint": "Scan a plate or make one from a photo.",
   "noMatchesHint": "Try another word or clear a filter.",
   "variantsHint": "Search or pick a filter to see Variants on their own.",
   "minutesShort": "min",
@@ -286,5 +284,14 @@
     "inFamily": "In your Recipes",
     "openCopy": "{{title}} is in your Recipes. Open it",
     "actions": "Actions for this Recipe"
-  }
+  },
+  "emptyFamily": {
+    "title": "No family Recipes yet",
+    "body": "Recipes you add can be changed however you like. Everyone in your family sees them.",
+    "explore": "Explore Recipes",
+    "newRecipe": "+ New Recipe",
+    "starters": "Start with these · you can make them"
+  },
+  "allHidden": "No Recipes to show.",
+  "allHiddenHint": "Recipes hidden by your Allergies are left out."
 }

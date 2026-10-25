@@ -93,3 +93,25 @@ export function canMakeCards(cards: CookTonightCard[]): CookTonightCard[] {
     .filter((card) => card.canMake)
     .sort((a, b) => Number(b.expiringCount > 0) - Number(a.expiringCount > 0));
 }
+
+/**
+ * The Base Recipes the Family Can Make, most expiring first, each once. A card's best match can
+ * be a Variant; its group lists the Base (the Variant is reached through the Base). Cards whose
+ * Base is not in `bases` are skipped.
+ */
+export function canMakeBases<T extends { id: string }>(
+  cards: CookTonightCard[],
+  bases: T[],
+): T[] {
+  const byId = new Map(bases.map((base) => [base.id, base]));
+  const seen = new Set<string>();
+  const rows: T[] = [];
+  for (const card of canMakeCards(cards)) {
+    const base = byId.get(card.base.id);
+    if (base && !seen.has(base.id)) {
+      seen.add(base.id);
+      rows.push(base);
+    }
+  }
+  return rows;
+}

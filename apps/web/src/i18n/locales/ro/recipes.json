@@ -56,7 +56,6 @@
   "search": "Caută rețete",
   "cuisine": "Bucătărie",
   "method": "Metodă",
-  "empty": "Nicio rețetă încă.",
   "noMatches": "Nicio rețetă nu se potrivește.",
   "allRecipes": "Toate rețetele",
   "matches": "Rezultate",
@@ -69,7 +68,6 @@
   "expiring_one": "{{count}} expiră curând",
   "expiring_few": "{{count}} expiră curând",
   "expiring_other": "{{count}} expiră curând",
-  "emptyHint": "Scanează o farfurie sau fă una dintr-o fotografie.",
   "noMatchesHint": "Încearcă alt cuvânt sau șterge un filtru.",
   "variantsHint": "Caută sau alege un filtru ca să vezi variantele separat.",
   "minutesShort": "min",
@@ -304,5 +302,14 @@
     "inFamily": "În Rețetele tale",
     "openCopy": "{{title}} este în Rețetele tale. Deschide-o",
     "actions": "Acțiuni pentru această rețetă"
-  }
+  },
+  "emptyFamily": {
+    "title": "Încă nu ai Rețete în familie",
+    "body": "Rețetele pe care le adaugi pot fi schimbate cum vrei. Toată familia le vede.",
+    "explore": "Explorează Rețetele",
+    "newRecipe": "+ Rețetă nouă",
+    "starters": "Începe cu acestea · le poți găti"
+  },
+  "allHidden": "Nicio Rețetă de arătat.",
+  "allHiddenHint": "Rețetele ascunse din cauza Alergiilor tale nu apar."
 }
