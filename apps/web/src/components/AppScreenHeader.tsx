@@ -40,9 +40,10 @@ export function AppScreenHeader({
     <ScreenHeader
       title={title}
       leading={tabRoot ? <RefreshMark /> : undefined}
-      // With the mark, the Explore pill and the action in one row, a long title would break mid-word at 360 px.
       subtitle={subtitle}
-      subline={tabRoot ? <RefreshStatus /> : subline}
+      // A tab root's refresh shows in the layout's loader, never under its title.
+      subline={tabRoot ? undefined : subline}
+      // With the mark, the Explore pill and the action in one row, a long title would break mid-word at 360 px.
       truncateTitle={tabRoot || truncateTitle}
       home={dockStateFor(pathname).visible ? undefined : { label: t('home') }}
       action={action}
