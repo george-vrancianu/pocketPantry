@@ -7,6 +7,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import type { AddBatchStart } from '../hooks/useAddBatchForm';
 import { useShowsDockMic } from '../../../components/VoiceNote';
 import { useMicTeach } from '../../../components/voice/VoiceHost';
@@ -32,6 +33,7 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
   const [cameraOpen, setCameraOpen] = useState(false);
   const showsMic = useShowsDockMic();
   const micTeach = useMicTeach();
+  const navigate = useNavigate();
   const close = () => {
     if (!cameraOpen) onClose();
   };
@@ -78,6 +80,10 @@ export function AddToPantrySheet({ open, onClose, onExited, start }: Props) {
                 }
               : undefined
           }
+          onScanSeveral={(mode) => {
+            onClose();
+            navigate(`/scan?mode=${mode}`);
+          }}
         />
       </Box>
     </Sheet>

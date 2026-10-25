@@ -81,12 +81,18 @@
     "unmatchedNotice": "\"{{name}}\" va fi salvat ca Nepotrivit și marcat pentru verificare.",
     "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale și fără exponent.",
     "prefill": {
-      "reading": "Citesc poza produsului…",
-      "cap": "Ai folosit toate scanările de azi. Scanează un cod de bare sau completează formularul manual.",
       "mark": "Completat din produs",
       "credit": "Date despre produs: Open Food Facts",
-      "lookingUp": "Caut codul de bare…",
       "listsAllergens": "Acest produs menționează {{names}}"
+    },
+    "tag": {
+      "photo": "Din poză",
+      "scanned": "Scanat"
+    },
+    "toast": {
+      "photo": "Citit din poza ta · verifică și adaugă",
+      "noMatch": "Nu am găsit {{name}} · alege cel mai apropiat",
+      "barcode": "Găsit după cod de bare · {{name}}"
     },
     "quick": {
       "label": "Adaugă rapid",

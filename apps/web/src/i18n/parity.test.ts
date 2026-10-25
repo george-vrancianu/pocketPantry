@@ -220,6 +220,16 @@ const PLAIN_WORDS: Record<string, string> = {
 /** Exceptions found when the broad whitelist was narrowed: term, reason, keys. */
 const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   [
+    'label',
+    'the printed label of a product the camera reads, not a Product Description',
+    ['scan:readingLabel', 'scan:labelFailed'],
+  ],
+  [
+    'type',
+    'the verb "type it" (enter by hand) in the Add to Pantry camera, not a Category',
+    ['scan:typeIt', 'scan:labelFailed', 'scan:labelCap'],
+  ],
+  [
     'token',
     'the Assistant Token (GLOSSARY), shortened to "token" in the Siri section; not the Invite Code',
     [
