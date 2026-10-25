@@ -1403,7 +1403,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     expect(dialog.getAllByText(/Heard:/)).toHaveLength(1);
 
     await userEvent.click(header('Eggs'));
-    await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
+    await userEvent.type(dialog.getByLabelText(/^Amount of Eggs,/), '12');
     await userEvent.click(dialog.getByRole('button', { name: 'pcs' }));
     expect(rowOf(dialog, 'Eggs').textContent).toContain('12 pcs');
     await userEvent.click(dialog.getByRole('button', { name: 'Done' }));
@@ -1416,7 +1416,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     const before = listFetches;
 
     await userEvent.click(headerOf(rowOf(dialog, 'Eggs')));
-    await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
+    await userEvent.type(dialog.getByLabelText(/^Amount of Eggs,/), '12');
     await userEvent.click(dialog.getByRole('button', { name: 'pcs' }));
     await userEvent.click(
       dialog.getByRole('button', { name: 'Apply 3 changes' }),
@@ -1439,7 +1439,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     setupReview(threeAdds);
     const dialog = within(await openReview());
     await userEvent.click(headerOf(rowOf(dialog, 'Milk')));
-    const amount = dialog.getByLabelText('Amount of Milk');
+    const amount = dialog.getByLabelText(/^Amount of Milk,/);
     const apply = dialog.getByRole('button', { name: 'Apply 3 changes' });
 
     await userEvent.clear(amount);
@@ -1616,7 +1616,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     );
     const dialog = within(await openReview());
     await userEvent.click(headerOf(rowOf(dialog, 'Eggs')));
-    await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
+    await userEvent.type(dialog.getByLabelText(/^Amount of Eggs,/), '12');
     await userEvent.click(
       dialog.getByRole('button', { name: 'Apply 3 changes' }),
     );
@@ -1626,7 +1626,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     expect(
       dialog.getByRole('button', { name: 'Apply 3 changes' }),
     ).toBeEnabled();
-    expect(dialog.getByLabelText('Amount of Eggs')).toHaveValue('12');
+    expect(dialog.getByLabelText(/^Amount of Eggs,/)).toHaveValue('12');
     expect(voiceNote.getState().phase).toBe('review');
   });
 
