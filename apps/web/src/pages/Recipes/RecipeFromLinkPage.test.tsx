@@ -153,6 +153,20 @@ describe('RecipeFromLinkPage', () => {
     await screen.findByLabelText(/^Title/);
   });
 
+  it('has Back and the title, no Settings gear, and a visible label on the field', () => {
+    setup({});
+    expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
+      'href',
+      '/recipes',
+    );
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'From a link' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('link', { name: /settings/i })).toBeNull();
+    expect(screen.getByText('Link to the recipe')).toBeVisible();
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+  });
+
   it('cannot be submitted without a link', async () => {
     setup({});
     expect(
