@@ -420,7 +420,9 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
 
     await user.click(screen.getByRole('button', { name: 'Skip' }));
     expect(
-      screen.getByText("Skip and lose this note? It hasn't been applied yet."),
+      screen.getByText(
+        "Skip and lose this Voice Note? It hasn't been applied yet.",
+      ),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.getByRole('button', { name: 'Skip' })).toHaveFocus();
@@ -437,9 +439,22 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     expect(where()).toBe('/intro/all-set');
 
     // The read finishes after the drop: the note must not land in the Voice Inbox.
+    const late = Response.json(HEARD, { status: 201 });
+    const bodyRead = new Promise<void>((resolve) => {
+      const read = late.json.bind(late);
+      late.json = async () => {
+        try {
+          return await read();
+        } finally {
+          resolve();
+        }
+      };
+    });
     await act(async () => {
-      answer(Response.json(HEARD, { status: 201 }));
-      await Promise.resolve();
+      answer(late);
+      await bodyRead;
+      // Let the client's continuation after the body settle, so a wrongly landing note would show.
+      for (let i = 0; i < 20; i += 1) await Promise.resolve();
     });
     await user.click(screen.getByRole('button', { name: 'Go to my kitchen' }));
     await screen.findByRole('link', { name: 'Customise dashboard' });
@@ -926,7 +941,9 @@ describe('Setup 2: Next and the Skip that asks first', () => {
 
     await user.click(screen.getByRole('button', { name: 'Skip' }));
     expect(
-      screen.getByText("Skip and lose this note? It hasn't been applied yet."),
+      screen.getByText(
+        "Skip and lose this Voice Note? It hasn't been applied yet.",
+      ),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByText(/applied yet/)).toBeNull();
@@ -959,7 +976,7 @@ describe('Setup 2: Next and the Skip that asks first', () => {
     await user.click(screen.getByRole('button', { name: 'Skip' }));
     expect(
       screen.getByText(
-        "Skip and lose these 2 notes? They haven't been applied yet.",
+        "Skip and lose these 2 Voice Notes? They haven't been applied yet.",
       ),
     ).toBeInTheDocument();
   });

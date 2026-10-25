@@ -112,7 +112,7 @@ function SayItScreen() {
   const leave = useSetupLeave({
     unsaved: inbox.total > 0,
     lostMessage: t('setupStep.lostNotes', { count: inbox.total }),
-    onNext: () => navigate(introPath(nextStep('say-it')), { replace: true }),
+    onNext: () => navigate(CONTINUE_TO, { replace: true }),
     onSkip: () => {
       voiceNote.clear();
       navigate(SKIP_TO, { replace: true });

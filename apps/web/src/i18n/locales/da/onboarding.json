@@ -43,8 +43,8 @@
     "next": "Næste",
     "lostPhotos_one": "Spring over og mist dette billede? Det er ikke gemt endnu.",
     "lostPhotos_other": "Spring over og mist disse {{count}} billeder? De er ikke gemt endnu.",
-    "lostNotes_one": "Spring over og mist denne note? Den er ikke anvendt endnu.",
-    "lostNotes_other": "Spring over og mist disse {{count}} noter? De er ikke anvendt endnu."
+    "lostNotes_one": "Spring over og mist denne stemmenote? Den er ikke anvendt endnu.",
+    "lostNotes_other": "Spring over og mist disse {{count}} stemmenoter? De er ikke anvendt endnu."
   },
   "snap": {
     "bubble": {
