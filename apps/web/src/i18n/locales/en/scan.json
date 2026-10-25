@@ -83,8 +83,7 @@
   "overlay": {
     "noCamera": "The camera is not available. Check the camera permission, or fill the form by hand.",
     "photoFailed": "That photo could not be used. Try again.",
-    "pointAtBarcode": "Point the camera at the barcode.",
-    "barcodeNotFound": "No product found for that barcode. Take a photo of the product instead."
+    "pointAtBarcode": "Point the camera at the barcode."
   },
   "torch": "Torch",
   "stack": {
@@ -108,5 +107,19 @@
     "label": "Import from photos",
     "added_one": "{{count}} photo added · {{mode}}",
     "added_other": "{{count}} photos added · {{mode}}"
-  }
+  },
+  "addsToPantry": "Adds to your Pantry",
+  "scanSeveral": "Scan several",
+  "readingLabel": "Gator's reading the label…",
+  "labelFailed": "Couldn't read that label. Try again or type it.",
+  "typeIt": "Type it",
+  "barcode": {
+    "scanAgain": "Scan again",
+    "use": "Use this",
+    "unknown": "We don't know this barcode yet",
+    "takePhoto": "Take a photo",
+    "lookingUp": "Looking up the barcode…",
+    "ingredientAisle": "{{ingredient}} · {{aisle}}"
+  },
+  "labelCap": "You have used all of today's scans. Scan a barcode or type it."
 }

@@ -42,6 +42,8 @@ export type CatalogSearchProps = {
   onQueryChange?: (query: string) => void;
   /** Accessible name of the input and its listbox; defaults to the generic search label. */
   label?: string;
+  /** Placeholder of the empty field; defaults to the generic one. */
+  placeholder?: string;
   /** Id of an element that describes the input. */
   describedBy?: string;
   /** Show the default unit as a chip on each row (default true). */
@@ -53,6 +55,10 @@ export type CatalogSearchProps = {
    * `onQueryChange` reports an empty query (and may also drop it for any change).
    */
   selected?: CatalogSearchResult | null;
+  /** A pill shown in the token after the name. */
+  selectedTag?: ReactNode;
+  /** Shown in the token in place of "{leaf} · {aisle}". */
+  selectedMeta?: string;
   /**
    * Host blocks shown while the field is focused and empty. Blocks reach the
    * search through `useEmptyStateSearch` (pick, open an Aisle), not props.
@@ -83,8 +89,6 @@ export type CatalogSearchProps = {
    * under the field instead of pushing the page down. Default off.
    */
   inline?: boolean;
-  /** Placeholder of the input; defaults to the generic search hint. */
-  placeholder?: string;
 };
 
 /**
@@ -97,9 +101,12 @@ export function CatalogSearch({
   autoFocus,
   onQueryChange,
   label,
+  placeholder,
   describedBy,
   showUnit = true,
   selected = null,
+  selectedTag,
+  selectedMeta,
   emptyState,
   onUseTyped,
   scope = 'family',
@@ -109,7 +116,6 @@ export function CatalogSearch({
   inputRef: hostInputRef,
   newIngredientAllergenIds,
   inline = false,
-  placeholder,
 }: CatalogSearchProps) {
   const { t } = useTranslation('catalog');
   const id = useId();
@@ -365,17 +371,19 @@ export function CatalogSearch({
       <SearchField
         inputRef={inputRef}
         label={name}
+        placeholder={placeholder}
         value={query}
         onChange={change}
         onKeyDown={keyDown}
         onFocus={() => setOpen(true)}
         autoFocus={autoFocus}
         describedBy={describedBy}
-        placeholder={placeholder}
         listboxId={listId}
         expanded={expanded}
         activeOptionId={expanded && active >= 0 ? optionId(active) : undefined}
         selected={selected}
+        selectedTag={selectedTag}
+        selectedMeta={selectedMeta}
         onClear={clear}
         canClear={aisle !== null}
         addToCatalog={

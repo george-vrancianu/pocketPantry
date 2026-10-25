@@ -87,8 +87,7 @@
   "overlay": {
     "noCamera": "Camera nu este disponibilă. Verifică permisiunea camerei sau completează formularul manual.",
     "photoFailed": "Fotografia nu a putut fi folosită. Încearcă din nou.",
-    "pointAtBarcode": "Îndreaptă camera spre codul de bare.",
-    "barcodeNotFound": "Nu am găsit niciun produs pentru acest cod de bare. Fă în schimb o poză produsului."
+    "pointAtBarcode": "Îndreaptă camera spre codul de bare."
   },
   "torch": "Lanterna",
   "stack": {
@@ -118,5 +117,19 @@
     "added_one": "{{count}} fotografie adăugată · {{mode}}",
     "added_few": "{{count}} fotografii adăugate · {{mode}}",
     "added_other": "{{count}} de fotografii adăugate · {{mode}}"
-  }
+  },
+  "addsToPantry": "Se adaugă în cămara ta",
+  "scanSeveral": "Scanează mai multe",
+  "readingLabel": "Gator citește eticheta…",
+  "labelFailed": "Nu am putut citi eticheta. Încearcă din nou sau scrie-l.",
+  "typeIt": "Scrie-l",
+  "barcode": {
+    "scanAgain": "Scanează din nou",
+    "use": "Folosește",
+    "unknown": "Nu cunoaștem încă acest cod de bare",
+    "takePhoto": "Fă o poză",
+    "lookingUp": "Caut codul de bare…",
+    "ingredientAisle": "{{ingredient}} · {{aisle}}"
+  },
+  "labelCap": "Ai folosit toate scanările de azi. Scanează un cod de bare sau scrie-l."
 }

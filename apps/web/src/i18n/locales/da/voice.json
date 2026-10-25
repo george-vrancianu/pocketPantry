@@ -68,6 +68,10 @@
     "still": "Stadig blokeret. Tillad mikrofonen i din browser, og prøv igen."
   },
   "unavailable": "Denne browser kan ikke optage lyd, så stemmenoter er ikke tilgængelige her.",
+  "teach": {
+    "title": "Hold mikrofonen, tal, slip",
+    "line": "Prøv „to liter mælk og et dusin æg, i køleskabet”."
+  },
   "voiceButton": {
     "label": "Hold for at optage en stemmenote",
     "blocked": "Mikrofon blokeret"

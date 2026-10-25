@@ -1,7 +1,31 @@
 {
   "title": "Cămară",
   "add": "Adaugă lot",
-  "empty": "Cămara este goală. Adaugă primul lot cu butonul +.",
+  "empty": {
+    "subtitle": "Încă nu e nimic aici",
+    "gatorAlt": "Gator citind o listă. Atinge să-l saluți",
+    "gatorLine": "Spune-mi ce ai și pun eu totul pe raftul potrivit.",
+    "scan": "Scanează",
+    "sayIt": "Spune",
+    "type": "Scrie",
+    "ticked_one": "{{count}} produs bifat în Lista de cumpărături",
+    "ticked_few": "{{count}} produse bifate în Lista de cumpărături",
+    "ticked_other": "{{count}} de produse bifate în Lista de cumpărături",
+    "moveThem": "Mută-le",
+    "shelf": {
+      "fridge": "Frigiderul e gol",
+      "freezer": "Congelatorul e gol",
+      "cupboard": "Dulapul e gol",
+      "spices": "Niciun condiment încă"
+    },
+    "hint": {
+      "fridge": "Lapte, ouă, brânză, resturi",
+      "freezer": "Mazăre, înghețată, o pâine de rezervă",
+      "cupboard": "Paste, orez, conserve, ulei",
+      "spices": "Boia, chimen, oregano"
+    },
+    "addTo": "Adaugă în {{location}}"
+  },
   "expiry": {
     "today": "Astăzi",
     "expired": "Expirat",
@@ -70,24 +94,49 @@
     "chip": "Pe sfârșite"
   },
   "form": {
+    "close": "Închide",
     "title": "Adaugă în cămară",
     "cancel": "Anulează",
-    "save": "Adaugă în cămară",
     "saving": "Se salvează",
     "location": "Locație",
-    "description": "Descrierea produsului",
-    "descriptionPlaceholder": "de ex. Grana Padano 200g",
+    "description": "Notă · opțional",
+    "descriptionPlaceholder": "Marcă sau mărime, de ex. Zuzu 3,5%",
     "unmatchedNotice": "\"{{name}}\" va fi salvat ca Nepotrivit și marcat pentru verificare.",
     "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale și fără exponent.",
     "prefill": {
-      "open": "Completează cu camera",
-      "reading": "Citesc poza produsului…",
-      "cap": "Ai folosit toate scanările de azi. Scanează un cod de bare sau completează formularul manual.",
       "mark": "Completat din produs",
       "credit": "Date despre produs: Open Food Facts",
-      "lookingUp": "Caut codul de bare…",
       "listsAllergens": "Acest produs menționează {{names}}"
-    }
+    },
+    "tag": {
+      "photo": "Din poză",
+      "scanned": "Scanat"
+    },
+    "toast": {
+      "photo": "Citit din poza ta · verifică și adaugă",
+      "noMatch": "Nu am găsit {{name}} · alege cel mai apropiat",
+      "barcode": "Găsit după cod de bare · {{name}}"
+    },
+    "quick": {
+      "label": "Adaugă rapid",
+      "photo": "Fă o poză",
+      "barcode": "Scanează codul",
+      "sayIt": "Spune"
+    },
+    "added": "Adăugate",
+    "done": "Gata",
+    "addedToast": "Adăugat {{details}}",
+    "addedList_one": "{{count}} lot adăugat",
+    "addedList_few": "{{count}} loturi adăugate",
+    "addedList_other": "{{count}} de loturi adăugate",
+    "amount": "Cantitate",
+    "where": "Unde se pune",
+    "usualDot": "obișnuit",
+    "usualFor": "obișnuit pentru {{name}}",
+    "usualChip": "Obișnuit · {{value}}",
+    "noDate": "Fără dată",
+    "addNote": "+ Adaugă o notă (marcă, mărime)",
+    "saveName": "Adaugă {{name}}"
   },
   "picker": {
     "label": "Expiră",

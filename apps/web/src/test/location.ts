@@ -15,7 +15,11 @@ export function pressedLocation(scope?: HTMLElement, name = 'Location') {
     .filter((button) => button.getAttribute('aria-pressed') === 'true');
   if (pressed.length !== 1)
     throw new Error(`expected one pressed Location, got ${pressed.length}`);
-  return pressed[0].textContent;
+  // The Location is the button's own text; the Catalog default's dot adds a hidden word in a child.
+  return [...pressed[0].childNodes]
+    .filter((node) => node.nodeType === Node.TEXT_NODE)
+    .map((node) => node.textContent)
+    .join('');
 }
 
 /** Press a Location (by its full name, e.g. "Freezer") in the toggle. */
@@ -27,7 +31,7 @@ export async function pickLocation(
 ) {
   await user.click(
     within(locationToggle(scope, name)).getByRole('button', {
-      name: location,
+      name: new RegExp(`^${location}( .+)?$`),
     }),
   );
 }

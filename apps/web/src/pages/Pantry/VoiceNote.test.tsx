@@ -166,14 +166,15 @@ describe('Voice Notes on the Pantry page', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Add batch' }));
 
-    // The form took the list's place (the header's Add button is gone).
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: 'Add batch' })).toBeNull(),
-    );
+    // The sheet sits over the page: the voice button and the strip stay rendered behind its scrim.
+    await screen.findByRole('dialog', { name: 'Add to Pantry' });
     expect(
-      screen.getByRole('button', { name: /hold to record a voice note/i }),
-    ).toBeVisible();
-    expect(screen.getByText('Reading 1')).toBeVisible();
+      screen.getByRole('button', {
+        name: /hold to record a voice note/i,
+        hidden: true,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Reading 1')).toBeInTheDocument();
   });
 
   it('puts the voice button on the Pantry page and records for the Pantry', async () => {

@@ -190,8 +190,6 @@ export function RollUpRow({
             component="button"
             type="button"
             ref={toggle}
-            // The page puts focus back here when Add batch, opened from this row, closes.
-            data-open-key={rollUp.openKey}
             aria-expanded={expanded}
             aria-controls={expanded && !rollUp.gone ? panelId : undefined}
             aria-describedby={
