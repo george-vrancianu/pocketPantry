@@ -37,7 +37,8 @@ type Props = {
   spotted: number;
   /** Lines still to check, live. */
   check: number;
-  saveLabel: string;
+  saveCount: number;
+  saving: boolean;
   canSave: boolean;
   onSave: () => void;
   onRetake: () => void;
@@ -54,7 +55,8 @@ export function SetupReviewView({
   subtitle,
   spotted,
   check,
-  saveLabel,
+  saveCount,
+  saving,
   canSave,
   onSave,
   onRetake,
@@ -63,6 +65,7 @@ export function SetupReviewView({
 }: Props) {
   const { t } = useTranslation('onboarding');
   const { t: tReview } = useTranslation('review');
+  const { t: tPantry } = useTranslation('pantry');
   // Read once: removing a line later must not rewrite what Gator said it spotted.
   const [count] = useState(spotted);
   return (
@@ -90,7 +93,11 @@ export function SetupReviewView({
       {children}
       {count > 0 ? (
         <ReviewActionBar
-          saveLabel={saveLabel}
+          saveLabel={
+            saving
+              ? tPantry('form.saving')
+              : t('review.add', { count: saveCount })
+          }
           canSave={canSave}
           onSave={onSave}
           onDiscard={onRetake}

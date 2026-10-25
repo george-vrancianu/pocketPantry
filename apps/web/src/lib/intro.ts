@@ -40,6 +40,9 @@ export const INTRO_PATHS = {
   dashboard: '/',
 } as const;
 
+/** The Intro's own camera: the shared Scan screen with the Intro's settings, opened from Snap's Dock. */
+export const INTRO_CAMERA_PATH = '/intro/camera';
+
 /** The Setup Review: the line editor of one Setup Scan. It has no step path of its own because it depends on the Scan. */
 export const setupReviewPath = (scanId: string) => `/intro/review/${scanId}`;
 
@@ -109,11 +112,9 @@ export function savedByVoice(
 type RedirectInput = {
   pathname: string;
   introDone: boolean;
-  /** The Member chose "Show me how" in this visit, so Setup's own use of the Scan screen is allowed. */
+  /** The Member chose "Show me how" in this visit, so the Intro screens after Set up or skip are allowed. */
   setupStarted: boolean;
 };
-
-const SCAN_PATHS = /^\/scan(\/|$)/;
 
 /**
  * Where a signed-in Member has to be sent, or `null` to stay put. One who is not done with the Intro
@@ -131,7 +132,6 @@ export function introRedirect({
   // Not started Setup in this visit (a reload, a reopened step): every Intro screen but Set up or skip
   // sends the Member back to it, so Setup resumes there with its counts from zero.
   if (onIntro) return setupStarted || pathname === setupPath ? null : setupPath;
-  if (setupStarted && SCAN_PATHS.test(pathname)) return null;
   return setupPath;
 }
 

@@ -13,7 +13,13 @@ import {
   radius,
   useToast,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from 'react';
 import { useGatorAlt } from '../../lib/useGatorAlt';
 import { readScans } from '../../lib/scanReads';
 import { useTranslation } from 'react-i18next';
@@ -81,10 +87,31 @@ const dashedButton = {
 };
 
 /**
+ * What the host decides for the overview. Every part is optional: without it the overview is the app's,
+ * with the camera at `/scan`, a card opening at `/scan/review/:scanId` and the camera as the landing.
+ */
+export type ReviewOverviewSettings = {
+  /** The camera: "Camera", "Take more" and Retake lead here. */
+  cameraPath?: string;
+  /** Where a card opens. */
+  cardPath?: (scanId: string) => string;
+  /** Every card was saved (or dropped) by Add all; `added` cards were saved. Replaces landing on the camera. */
+  afterAddAll?: (added: number, notTicked: number) => void;
+  /** Discard all emptied the Scan Session. Replaces landing on the camera. */
+  afterDiscardAll?: () => void;
+  /** The frame (and banner) wrapping the overview's content. */
+  renderFrame?: (content: ReactNode) => ReactNode;
+};
+
+/**
  * The overview a Member reaches from the photo stack: one card per Scan of the Scan Session, in the order
  * the Scans were taken. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
  */
-export function ReviewOverviewPage() {
+export function ReviewOverviewPage({
+  settings = {},
+}: { settings?: ReviewOverviewSettings } = {}) {
+  const cameraPath = settings.cameraPath ?? '/scan';
+  const cardPath = settings.cardPath ?? ((id: string) => `/scan/review/${id}`);
   const { t } = useTranslation('review');
   const { t: tScan } = useTranslation('scan');
   const { t: tAll } = useTranslation();
@@ -185,7 +212,8 @@ export function ReviewOverviewPage() {
     // Failed reads are dropped with the rest; only a card whose save failed keeps the Member here.
     if (getScanSession().scans.some((scan) => scan.status === 'read')) return;
     resetScanSession();
-    navigate('/scan', { state: { added: added.current, notTicked } });
+    if (settings.afterAddAll) settings.afterAddAll(added.current, notTicked);
+    else navigate('/scan', { state: { added: added.current, notTicked } });
   };
   /** Files picked with Add from photos join the end of the Scan Session, read in the last-used Scan Mode. */
   const addFromPhotos = (event: ChangeEvent<HTMLInputElement>) => {
@@ -205,7 +233,8 @@ export function ReviewOverviewPage() {
   };
   const discardAll = () => {
     resetScanSession();
-    navigate('/scan', { state: { discarded: true } });
+    if (settings.afterDiscardAll) settings.afterDiscardAll();
+    else navigate('/scan', { state: { discarded: true } });
   };
 
   const card = (scan: SessionScan) => {
@@ -335,7 +364,7 @@ export function ReviewOverviewPage() {
                     dispatchScanSession({ type: 'remove', id: scan.id });
                     // Scans held back by the Scan Cap can go on now.
                     readScans();
-                    if (!barcode) navigate('/scan');
+                    if (!barcode) navigate(cameraPath);
                   }}
                   sx={linkButton}
                 >
@@ -374,7 +403,7 @@ export function ReviewOverviewPage() {
                 type="button"
                 data-testid="card-result"
                 disabled={saving}
-                onClick={() => navigate(`/scan/review/${scan.id}`)}
+                onClick={() => navigate(cardPath(scan.id))}
                 sx={{
                   display: 'block',
                   p: 0,
@@ -512,7 +541,7 @@ export function ReviewOverviewPage() {
     );
   };
 
-  return (
+  const content = (
     <div data-testid="review-overview">
       <AppScreenHeader
         title={t('title')}
@@ -522,7 +551,7 @@ export function ReviewOverviewPage() {
             ? t('overview.stillReading', { count: reading + uncropped })
             : t('overview.allRead'),
         ].join(' · ')}
-        trailing={<Link href="/scan">{t('overview.camera')}</Link>}
+        trailing={<Link href={cameraPath}>{t('overview.camera')}</Link>}
       />
       {allRead ? (
         <GatorBanner
@@ -565,7 +594,7 @@ export function ReviewOverviewPage() {
             variant="ghost"
             startIcon={<CameraIcon size={20} />}
             disabled={saving}
-            onClick={() => navigate('/scan')}
+            onClick={() => navigate(cameraPath)}
             sx={dashedButton}
           >
             {tScan('review.takeMore')}
@@ -617,4 +646,5 @@ export function ReviewOverviewPage() {
       ) : null}
     </div>
   );
+  return settings.renderFrame ? settings.renderFrame(content) : content;
 }

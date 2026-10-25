@@ -97,14 +97,6 @@ export function IntroProvider({ children }: { children: ReactNode }) {
   return <IntroContext.Provider value={api}>{children}</IntroContext.Provider>;
 }
 
-/**
- * Whether the Member is in Setup (chose "Show me how" in this visit). Unlike `useIntro` it works
- * outside an `IntroProvider` (as `false`), so the Scan screen and the Review can ask it in their own tests.
- */
-export function useSetupStarted(): boolean {
-  return useContext(IntroContext)?.setupStarted ?? false;
-}
-
 export function useIntro(): IntroApi {
   const api = useContext(IntroContext);
   if (!api) throw new Error('useIntro needs an IntroProvider');
