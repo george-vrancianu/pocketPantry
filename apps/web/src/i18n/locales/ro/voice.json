@@ -156,12 +156,7 @@
     "edit": {
       "heard": "Auzit:",
       "amount": "Cantitate",
-      "amountOf": "Cantitate de {{name}}",
-      "unitOf": "Unitate pentru {{name}}",
       "expires": "Expiră",
-      "noExpiry": "Fără expirare",
-      "pickDate": "Alege o dată",
-      "expiryTitle": "Expiră",
       "fromSpeech": "din ce ai spus",
       "defaultExpiry": "Expirarea implicită a acestui Ingredient",
       "location": "Locație",

@@ -1,28 +1,21 @@
 import {
   Box,
   Button,
-  Chip,
   SearchIcon,
   Typography,
   radius,
-  focusRing,
   palette,
 } from '@pocket-pantry/ui';
 import { soonBorder } from './soonBorder';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AmountField } from '../AmountField';
 import { ExpiryTag } from '../ExpiryTag';
 import { LocationToggle } from '../LocationToggle';
 import { CatalogSearch } from '../catalogSearch/CatalogSearch';
-import { ExpirySheet } from '../ExpiryPicker';
-import { QuickPicks } from '../ExpiryPicker/QuickPicks';
-import { UNITS, type CatalogSearchResult } from '../../lib/catalog';
-import {
-  dateAndRelativeDay,
-  defaultExpiryDate,
-  fullDate,
-  useExpiryTags,
-} from '../../lib/pantry';
+import { ExpiryField, expiryContext } from '../ExpiryPicker';
+import type { CatalogSearchResult, Unit } from '../../lib/catalog';
+import { defaultExpiryDate, fullDate, useExpiryTags } from '../../lib/pantry';
 import { useToday } from '../../lib/useToday';
 import type { VoiceBatchRow, VoiceReviewAction } from '../../lib/voice';
 import { voiceNote } from '../../lib/voiceNote';
@@ -66,23 +59,6 @@ function defaultsOf(ingredient: CatalogSearchResult, today: Date) {
   };
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Box role="group" aria-label={label}>
-      <Typography component="div" sx={eyebrow}>
-        {label}
-      </Typography>
-      {children}
-    </Box>
-  );
-}
-
 function AmountEditor({
   action,
   typed,
@@ -95,143 +71,92 @@ function AmountEditor({
   onTyped: (text: string) => void;
 }) {
   const { t } = useTranslation(['voice', 'common']);
-  const name = displayName(action);
-  const errorId = useId();
+  const setUnit = (unit: Unit | '') =>
+    voiceNote.edit(action.id, { unit: unit === '' ? null : unit });
   return (
-    <Field label={t('voice:review.edit.amount')}>
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: '8px',
+    // Pulled out of the editor's 57 px indent like the Location toggle, so the three fields share a left edge.
+    <Box sx={{ ml: '-45px' }}>
+      <AmountField
+        name={displayName(action)}
+        quantity={typed}
+        unit={action.unit ?? ''}
+        onQuantityChange={(quantity, unit) => {
+          onTyped(quantity);
+          if (unit !== undefined) setUnit(unit);
         }}
-      >
-        <Box
-          component="input"
-          type="text"
-          inputMode="decimal"
-          value={typed}
-          placeholder="–"
-          aria-label={t('voice:review.edit.amountOf', { name })}
-          aria-invalid={invalid}
-          aria-describedby={invalid ? errorId : undefined}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            onTyped(event.target.value)
-          }
-          sx={{
-            width: 80,
-            height: 40,
-            boxSizing: 'border-box',
-            px: '10px',
-            font: 'inherit',
-            fontSize: 16,
-            fontWeight: 700,
-            fontVariantNumeric: 'tabular-nums',
-            color: palette('text-primary'),
-            backgroundColor: palette('background-paper'),
-            border: `1.5px solid ${invalid ? palette('error-main') : palette('pp-line')}`,
-            borderRadius: radius.control,
-            ...focusRing,
-          }}
-        />
-        <Box
-          role="group"
-          aria-label={t('voice:review.edit.unitOf', { name })}
-          sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}
-        >
-          {UNITS.map((unit) => (
-            <Chip
-              key={unit}
-              label={t(`common:units.${unit}`)}
-              selected={action.unit === unit}
-              onClick={() => voiceNote.edit(action.id, { unit })}
-            />
-          ))}
-        </Box>
-      </Box>
-      {invalid ? (
-        <Typography id={errorId} sx={{ ...note, color: palette('error-main') }}>
-          {t('common:amount.invalid')}
-        </Typography>
-      ) : null}
-    </Field>
+        onUnitChange={setUnit}
+        error={invalid ? t('common:amount.invalid') : null}
+        // Enter has no save here; Done below closes the row.
+        onSubmit={() => {}}
+        amountScale={action.ingredient?.amountScale}
+        label={t('voice:review.edit.amount')}
+        // A misheard amount is corrected here, not converted: a new unit keeps the number.
+        rescaleOnUnitChange={false}
+      />
+    </Box>
   );
 }
 
 function ExpiresEditor({
   action,
+  typed,
   spokenExpiry,
 }: {
   action: VoiceReviewAction;
+  /** The amount as typed, for the sheet's context line. */
+  typed: string;
   /** The expiry the server heard, to tell it from one picked here. */
   spokenExpiry: string | null;
 }) {
   const { t, i18n } = useTranslation(['voice', 'common']);
-  const today = useToday();
-  const { tagFor } = useExpiryTags(today);
-  const [picking, setPicking] = useState(false);
   const expiry = effectiveExpiry(action);
-  const usualDays = action.ingredient?.defaults.expiryDays ?? null;
+  const location = effectiveLocation(action);
   const name = displayName(action);
 
-  const set = (iso: string | null) =>
-    voiceNote.edit(
-      action.id,
-      iso === null
-        ? { noExpiry: true, expiresOn: null }
-        : { noExpiry: false, expiresOn: iso },
-    );
-
+  // Only where the date came from; the ExpiryField above already shows the date itself.
   let source: string | null = null;
   if (expiry !== null) {
-    const when = dateAndRelativeDay(expiry, today, i18n.language).date;
     if (action.expiresOn === null) {
-      source = `${when} · ${t('voice:review.edit.defaultExpiry')}`;
+      source = t('voice:review.edit.defaultExpiry');
     } else if (action.expiresOn === spokenExpiry) {
-      source = `${when} · ${t('voice:review.edit.fromSpeech')}`;
-    } else {
-      source = when;
+      source = t('voice:review.edit.fromSpeech');
     }
   }
 
   return (
-    <Field label={t('voice:review.edit.expires')}>
-      <QuickPicks
+    // Pulled out of the editor's 57 px indent like the Location toggle, so the three fields share a left edge.
+    <Box sx={{ ml: '-45px' }}>
+      <ExpiryField
+        label={t('voice:review.edit.expires')}
         value={expiry}
-        usualDays={usualDays}
-        today={today}
-        onPick={(iso) => set(iso)}
+        onChange={(iso) =>
+          voiceNote.edit(
+            action.id,
+            iso === null
+              ? { noExpiry: true, expiresOn: null }
+              : { noExpiry: false, expiresOn: iso },
+          )
+        }
+        usualDays={action.ingredient?.defaults.expiryDays ?? null}
+        context={
+          location === null
+            ? name
+            : expiryContext(
+                { name, quantity: typed, unit: action.unit, location },
+                i18n.language,
+                t,
+              )
+        }
       />
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
-        <Chip
-          label={t('voice:review.edit.noExpiry')}
-          selected={action.noExpiry}
-          onClick={() => set(null)}
-        />
-        <Button variant="ghost" size="sm" onClick={() => setPicking(true)}>
-          {t('voice:review.edit.pickDate')}
-        </Button>
-        {expiry !== null ? <ExpiryTag tag={tagFor(expiry)} /> : null}
-      </Box>
-      {source ? <Typography sx={note}>{source}</Typography> : null}
-      <ExpirySheet
-        open={picking}
-        onClose={() => setPicking(false)}
-        value={expiry}
-        onChange={set}
-        usualDays={usualDays}
-        context={name}
-        title={t('voice:review.edit.expiryTitle')}
-      />
-    </Field>
+      {source ? (
+        // The copy is lowercase ("from what you said"), so capitalize it as a standalone line.
+        <Typography
+          sx={{ ...note, '&::first-letter': { textTransform: 'uppercase' } }}
+        >
+          {source}
+        </Typography>
+      ) : null}
+    </Box>
   );
 }
 
@@ -239,13 +164,12 @@ function LocationEditor({ action }: { action: VoiceReviewAction }) {
   const { t } = useTranslation(['voice', 'common']);
   return (
     <Box>
-      {/* Pulled out of the editor's 57 px indent (to 12 px from the row edge) so the Romanian labels fit whole at 320 px. */}
+      {/* Pulled out of the editor's 57 px indent (to 12 px from the row edge) so the Romanian labels fit whole at 320 px; the amount and expiry fields do the same. */}
       <Box sx={{ ml: '-45px' }}>
         <LocationToggle
           label={t('voice:review.edit.location')}
           value={effectiveLocation(action)}
           onChange={(location) => voiceNote.edit(action.id, { location })}
-          captionSx={eyebrow}
           voicePicker={action.id}
         />
         {action.location === null && action.defaults.location ? (
@@ -499,7 +423,11 @@ export function ActionEditor({
         />
       ) : null}
       {pantryAdd ? (
-        <ExpiresEditor action={action} spokenExpiry={spokenExpiry} />
+        <ExpiresEditor
+          action={action}
+          typed={typed}
+          spokenExpiry={spokenExpiry}
+        />
       ) : null}
       {pantryAdd ? <LocationEditor action={action} /> : null}
       {batches ? <BatchEditor action={action} /> : null}

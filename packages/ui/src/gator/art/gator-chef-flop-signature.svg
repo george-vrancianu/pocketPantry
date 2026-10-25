@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -42 296 308" width="296" height="308" class="gator g-chef-flop" data-v="sig" role="img" aria-label="Gator, disappointed, with the cooking tools dropped"><style>svg{--amp:1;--t:1}
+/* ---------- motion rig ---------- */
+.gator g[class]:not([transform]),.gator .arc{transform-box:fill-box}
+.rig{transform-origin:50% 100%}
+.eye{transform-origin:50% 55%}
+.hat{transform-origin:50% 100%}
+.tail{transform-origin:95% 80%}
+.sparkle,.dot,.bubble,.arc{transform-origin:50% 50%}
+.jaw{transform-origin:13% 8%}
+.head{transform-origin:45% 95%}
+.qmark{transform-origin:40% 100%}
+.basket{transform-origin:50% 12%}
+.whisk{transform-origin:100% 100%}
+.spoon{transform-origin:0% 100%}
+.rack{transform-origin:50% 0%}
+.tick path{stroke-dasharray:1; stroke-dashoffset:0}
+/* Idle: breathe, blink, hat sway, tail */
+[data-v="idle"] .eye,[data-v="sig"] .eye{animation:blink calc(4.4s*var(--t)) infinite}
+[data-v="idle"] .eye-far,[data-v="sig"] .eye-far{animation-delay:calc(.04s*var(--t))}
+.drop{transform-origin:50% 0%}
+/* Signature defaults */
+[data-v="sig"] .rig{animation:breathe calc(3.2s*var(--t)) ease-in-out infinite}
+[data-v="sig"] .tail{animation:wag calc(1.6s*var(--t)) ease-in-out infinite}
+/* Entrance (looped so you can watch it) */
+/* Tap (looped) */
+/* Real tap on any stage */
+/* ---- Signatures ---- */
+/* ---- Keyframes (amplitudes scale with --amp) ---- */
+.g-chef-flop .pot{transform-origin:50% 100%}
+.g-chef-flop .brow{transform-origin:50% 50%}
+.g-chef-flop[data-v="sig"] .rig{animation:sigh calc(4.4s*var(--t)) ease-in-out infinite}
+.g-chef-flop[data-v="sig"] .head{animation:sighHead calc(4.4s*var(--t)) ease-in-out infinite}
+.g-chef-flop[data-v="sig"] .pupil{animation:glanceUp calc(4.4s*var(--t)) ease-in-out infinite}
+.g-chef-flop[data-v="sig"] .brow{animation:browSag calc(4.4s*var(--t)) ease-in-out infinite}
+.g-chef-flop[data-v="sig"] .drop{animation:drip calc(2.2s*var(--t)) ease-in infinite}
+.g-chef-flop[data-v="sig"] .hat{animation:hatDroop calc(4.4s*var(--t)) ease-in-out infinite}
+.g-chef-flop[data-v="sig"] .tail{animation:none}
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(calc(1 + .006*var(--amp)),calc(1 + .022*var(--amp)))}}
+@keyframes blink{0%,90%,97%,100%{transform:scaleY(1)}93.5%{transform:scaleY(.08)}}
+@keyframes wag{0%,100%{transform:rotate(calc(-5deg*var(--amp)))}50%{transform:rotate(calc(7deg*var(--amp)))}}
+@keyframes drip{0%{transform:translateY(-4px);opacity:0}15%{opacity:1}70%{transform:translateY(calc(16px*var(--amp)));opacity:1}85%,100%{transform:translateY(calc(22px*var(--amp)));opacity:0}}
+@keyframes hatDroop{0%,100%{transform:rotate(0)}50%{transform:rotate(calc(-2.5deg*var(--amp)))}}
+@keyframes sigh{0%,100%{transform:none}24%{transform:translateY(calc(-3px*var(--amp))) scale(calc(1 - .01*var(--amp)),calc(1 + .03*var(--amp)))}42%{transform:translateY(0) scale(calc(1 + .02*var(--amp)),calc(1 - .03*var(--amp)))}62%{transform:scale(1,calc(1 - .012*var(--amp)))}}
+@keyframes sighHead{0%,100%{transform:rotate(0)}24%{transform:rotate(calc(-4deg*var(--amp)))}46%{transform:rotate(calc(3deg*var(--amp)))}70%{transform:rotate(calc(1deg*var(--amp)))}}
+@keyframes glanceUp{0%,10%,40%,100%{transform:translate(0,0)}18%,32%{transform:translate(calc(1px*var(--amp)),calc(-6px*var(--amp)))}}
+@keyframes browSag{0%,100%{transform:none}24%{transform:translateY(calc(-2px*var(--amp))) rotate(calc(-2deg*var(--amp)))}46%{transform:translateY(calc(1.5px*var(--amp))) rotate(calc(2deg*var(--amp)))}}
+@media (prefers-reduced-motion: reduce){svg *{animation:none !important}}</style><defs>
+<radialGradient id="clayBody-chef-flop" cx="32%" cy="28%" r="82%"><stop offset="0" stop-color="#8CC65F"/><stop offset=".55" stop-color="#6FAE48"/><stop offset="1" stop-color="#56923A"/></radialGradient>
+<radialGradient id="clayBelly-chef-flop" cx="40%" cy="20%" r="90%"><stop offset="0" stop-color="#F4EFCB"/><stop offset=".7" stop-color="#E8E2B0"/><stop offset="1" stop-color="#D3CB93"/></radialGradient>
+<radialGradient id="claySocket-chef-flop" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#78B64F"/><stop offset="1" stop-color="#528B37"/></radialGradient>
+<radialGradient id="clayHat-chef-flop" cx="35%" cy="25%" r="85%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".7" stop-color="#F6F1E6"/><stop offset="1" stop-color="#E4DCCB"/></radialGradient>
+<linearGradient id="clayBand-chef-flop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F8F3E8"/><stop offset="1" stop-color="#E6DECD"/></linearGradient>
+<radialGradient id="clayEye-chef-flop" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E5E6DA"/></radialGradient>
+<radialGradient id="clayPupil-chef-flop" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="#4A5A33"/><stop offset="1" stop-color="#1F2914"/></radialGradient>
+<linearGradient id="tileClay-chef-flop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6C7D37"/><stop offset="1" stop-color="#4F5D25"/></linearGradient>
+<filter id="claySoft-chef-flop" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#2B2418" flood-opacity=".22"/></filter>
+<filter id="blur6-chef-flop" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+<filter id="blur3-chef-flop" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3"/></filter>
+</defs><defs><clipPath id="clipBody-chef-flop"><path d="M28 100 C26 62 56 40 92 42 C118 44 134 56 150 62 L198 68 C218 70 228 84 226 98 C224 112 214 122 198 124 L112 136 C78 142 30 138 28 100 Z"/></clipPath><clipPath id="clipHat-chef-flop"><g transform="rotate(-4 64 40)"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g></clipPath><clipPath id="clipTorso-chef-flop"><ellipse cx="108" cy="194" rx="62" ry="36"/></clipPath></defs><g class="rig" filter="url(#claySoft-chef-flop)">
+<ellipse cx="140" cy="236" rx="132" ry="6" fill="#9AA3A8" opacity=".25"/>
+<g class="tail"><path d="M62 196 C22 204 0 196 2 172 C4 154 22 146 32 154 C18 158 16 174 28 182 C40 190 58 186 72 180 Z" fill="url(#claySocket-chef-flop)"/><path d="M10 162 l-6 -6 l1 9 Z M6 178 l-8 -2 l6 7 Z" fill="#4E8A30"/></g>
+<ellipse cx="108" cy="194" rx="62" ry="36" fill="url(#clayBody-chef-flop)"/><g clip-path="url(#clipTorso-chef-flop)"><ellipse cx="118" cy="164" rx="52" ry="14" fill="#2F5A22" opacity=".3" filter="url(#blur6-chef-flop)"/></g>
+<ellipse cx="116" cy="204" rx="34" ry="22" fill="url(#clayBelly-chef-flop)"/>
+<path d="M62 168 l-2 -12 l10 8 Z M80 160 l2 -12 l8 10 Z" fill="#4E8A30"/>
+<ellipse cx="78" cy="228" rx="19" ry="8" fill="url(#claySocket-chef-flop)"/><ellipse cx="140" cy="230" rx="19" ry="8" fill="url(#claySocket-chef-flop)"/>
+<path d="M66 180 C56 194 56 206 62 216" fill="none" stroke="#6FAE48" stroke-width="12" stroke-linecap="round"/>
+<path d="M150 186 C160 198 162 208 158 218" fill="none" stroke="#6FAE48" stroke-width="12" stroke-linecap="round"/>
+<g class="whiskdown"><g transform="translate(-6 0)"><rect x="8" y="225" width="24" height="7" rx="3" fill="#A9783F"/><path d="M32 228.5 C44 216 62 216 68 228.5 C62 241 44 241 32 228.5 M32 228.5 C44 222 60 222 68 228.5 C60 235 44 235 32 228.5 M32 228.5 H68" fill="none" stroke="#9AA3A8" stroke-width="2.5"/></g></g>
+<g class="pot"><g transform="translate(222 209) rotate(-104) scale(.68) translate(-212 -190)"><rect x="168" y="168" width="88" height="52" rx="12" fill="#C7533C"/><rect x="162" y="160" width="100" height="14" rx="7" fill="#A8432F"/><rect x="152" y="176" width="18" height="9" rx="4.5" fill="#A8432F"/><rect x="254" y="176" width="18" height="9" rx="4.5" fill="#A8432F"/><path d="M180 194 H244" stroke="#D97A63" stroke-width="3" stroke-linecap="round" opacity=".6"/></g></g>
+<path d="M164 238 C168 226 186 224 198 230 C204 222 214 226 212 238 Z" fill="#E8C468"/>
+<g class="head"><g transform="translate(40 42) scale(.8) rotate(10 80 130)"><g class="headcopy">
+<circle cx="124" cy="46" r="17" fill="url(#claySocket-chef-flop)"/>
+<g class="eye eye-far"><circle cx="126" cy="44" r="10" fill="url(#clayEye-chef-flop)"/><g class="pupil"><circle cx="128" cy="50" r="5" fill="url(#clayPupil-chef-flop)"/></g></g>
+<path d="M28 100 C26 62 56 40 92 42 C118 44 134 56 150 62 L198 68 C218 70 228 84 226 98 C224 112 214 122 198 124 L112 136 C78 142 30 138 28 100 Z" fill="url(#clayBody-chef-flop)"/><g clip-path="url(#clipBody-chef-flop)"><ellipse cx="140" cy="140" rx="92" ry="16" fill="#2F5A22" opacity=".42" filter="url(#blur6-chef-flop)"/><ellipse cx="200" cy="100" rx="30" ry="34" fill="#2F5A22" opacity=".18" filter="url(#blur6-chef-flop)"/><ellipse cx="78" cy="58" rx="42" ry="22" fill="#FFFFFF" opacity=".16" filter="url(#blur6-chef-flop)"/></g>
+<path d="M78 114 L218 100 C214 114 208 121 198 124 L112 136 C92 138 80 130 78 114 Z" fill="url(#clayBelly-chef-flop)"/>
+<path d="M40 70 l-8 -6 l2 10 Z M50 58 l-6 -8 l0 11 Z M62 50 l-3 -9 l-3 10 Z" fill="url(#claySocket-chef-flop)"/>
+<path d="M150 78 q6 4 12 0 M170 80 q6 4 12 0 M160 90 q6 4 12 0" fill="none" stroke="#5E9A3C" stroke-width="3" stroke-linecap="round"/>
+<circle cx="206" cy="74" r="9" fill="url(#clayBody-chef-flop)"/><ellipse cx="209" cy="72" rx="3.5" ry="2.5" fill="#3E6B2E"/>
+<g class="hat"><g transform="rotate(-4 64 40)"><g fill="url(#clayHat-chef-flop)" stroke="#D9D0BE" stroke-width="5"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><g fill="url(#clayHat-chef-flop)"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><path d="M54 22 v12 M64 20 v14 M74 22 v12" stroke="#E2DACB" stroke-width="2.5" stroke-linecap="round"/><g clip-path="url(#clipHat-chef-flop)"><ellipse cx="66" cy="38" rx="30" ry="7" fill="#B9AE98" opacity=".45" filter="url(#blur3-chef-flop)"/></g><rect x="36" y="34" width="56" height="14" rx="5" fill="url(#clayBand-chef-flop)" stroke="#D9D0BE" stroke-width="2.5"/></g></g>
+<circle cx="92" cy="46" r="24" fill="url(#claySocket-chef-flop)"/>
+<g class="eye eye-near"><circle cx="94" cy="44" r="16" fill="url(#clayEye-chef-flop)"/><g class="pupil"><circle cx="98" cy="52" r="8" fill="url(#clayPupil-chef-flop)"/><circle cx="101" cy="49" r="3" fill="#fff"/></g></g>
+<path d="M58 122 Q62 110 80 114 L218 100" fill="none" stroke="#3E6B2E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M100 112 l4 7 l4 -8 Z M122 110 l4 7 l4 -8 Z M144 108 l4 7 l4 -8 Z M166 106 l4 7 l4 -8 Z M188 103 l4 7 l4 -8 Z" fill="#fff"/>
+<path d="M112 114 l4 -7 l4 6 Z M156 109 l4 -7 l4 6 Z M200 104 l3 -6 l3 5 Z" fill="#fff"/>
+<g class="blush"><circle cx="66" cy="96" r="8" fill="#F2A08B" opacity=".5"/></g>
+<g class="brow"><path d="M78 34 L104 25" fill="none" stroke="#2E3A1F" stroke-width="4" stroke-linecap="round"/><path d="M115 37 L132 31" fill="none" stroke="#2E3A1F" stroke-width="3.5" stroke-linecap="round"/></g>
+<g class="drop"><path d="M30 52 C24 62 22 68 28 72 C34 74 38 68 34 60 Z" fill="#8CCBEA"/></g>
+</g></g></g>
+</g></svg>

@@ -27,3 +27,9 @@ The Pantry, the Shopping List and Recipes each put their add button somewhere di
 - **Recipes' header gets a second button, the Explore pill, before the `+`.** Once Catalog Recipes leave the Recipes list (ADR 0029), Explore is the only way to find them, so it can't sit only inside the `+` menu. The `+` menu also gains From Explore, and the empty Recipes page links to it.
 - **Explore and its Recipe preview have no gear.** The Explore header holds Back and the title only. On the preview, the actions are in a bottom bar that replaces the Dock.
 - This is the one exception so far; the other sub-screens keep one button.
+
+## Amendment (2026-10-25): the Gator mark on tab roots
+
+- **The Dashboard, the Pantry, the Shopping List and Recipes (the Dock's tabs) show the Gator app mark in the header's leading slot**, empty there since Home left (above). Tapping it refreshes the screen; it adds nothing and navigates nowhere, so it does not count toward the one-button rule.
+- **Sub-screens, Meal Plans and Settings do not show it.** Back and Home are unchanged where they appear.
+- Design and decisions: `docs/handoffs/gator-header-logo/HANDOFF.md`.
