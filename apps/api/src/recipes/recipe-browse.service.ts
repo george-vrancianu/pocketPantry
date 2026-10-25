@@ -54,6 +54,7 @@ export class RecipeBrowseService {
    * With one: matching live Recipes, bases and Variants, each Variant labelled
    * with its base. A base matches on its own fields only. Variants of an
    * archived base stay listed (the archived base itself does not).
+   * `scope=family` always lists Variants, since the Family's Variants are its Recipes.
    */
   async list(
     memberId: string,
@@ -62,7 +63,8 @@ export class RecipeBrowseService {
   ): Promise<RecipeList> {
     const familyId = await this.settings.familyIdOf(memberId);
     const needle = normalizeName(query.search ?? '');
-    // Search and filters list Variants beside bases; so does asking for them outright.
+    // Search and filters list Variants beside bases; so does asking for them outright, and
+    // `scope=family` always does.
     const listsVariants =
       query.scope === 'family' ||
       needle !== '' ||

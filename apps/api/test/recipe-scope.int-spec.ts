@@ -6,6 +6,7 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   batches,
+  cuisines,
   ingredients,
   recipeIngredientLines,
   recipes,
@@ -42,6 +43,7 @@ describe('Recipe list scope (integration)', () => {
       archived?: boolean;
       ingredient?: string;
       title?: string;
+      cuisineId?: string;
     } = {},
   ) => {
     const id = crypto.randomUUID();
@@ -49,6 +51,7 @@ describe('Recipe list scope (integration)', () => {
       id,
       familyId: opts.familyId ?? null,
       parentId: opts.parentId ?? null,
+      cuisineId: opts.cuisineId ?? null,
       title: opts.title ?? `Scope ${stamp}-${++n}`,
       servings: 2,
       archivedAt: opts.archived ? new Date() : null,
@@ -156,6 +159,23 @@ describe('Recipe list scope (integration)', () => {
 
       const search = await list(`&scope=catalog&search=Catbase ${stamp}-`);
       expect(ids(search).sort()).toEqual([base, catalogVariant].sort());
+    });
+
+    it('catalog: lists Catalog Variants while filtering by Cuisine, and not Family Variants', async () => {
+      const [{ id: cuisineId }] = await database
+        .select({ id: cuisines.id })
+        .from(cuisines)
+        .limit(1);
+      const base = await make({ cuisineId });
+      const catalogVariant = await make({ parentId: base, cuisineId });
+      const familyVariant = await make({
+        parentId: base,
+        familyId: anaFamily,
+        cuisineId,
+      });
+      const body = await list(`&scope=catalog&cuisineId=${cuisineId}`);
+      expect(ids(body)).toEqual(expect.arrayContaining([base, catalogVariant]));
+      expect(ids(body)).not.toContain(familyVariant);
     });
 
     it('with no scope keeps the mixed result of today', async () => {

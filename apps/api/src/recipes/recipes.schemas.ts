@@ -271,7 +271,7 @@ const showHiddenQuery = z
 
 /** Whose Recipes a Member read lists: the Family's own or the Catalog's. Absent means both. */
 export const recipeScopeQuery = z.enum(['family', 'catalog']).optional();
-export type RecipeScope = 'family' | 'catalog';
+export type RecipeScope = NonNullable<z.infer<typeof recipeScopeQuery>>;
 
 /** Member browsing: no search or filter lists Base Recipes only. */
 export const browseQuery = z.object({
