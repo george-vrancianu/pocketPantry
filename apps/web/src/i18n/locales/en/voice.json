@@ -241,9 +241,6 @@
     "other": "could not be applied"
   },
   "send": {
-    "reading": "Gator's reading your note…",
-    "readingMeta": "{{duration}} of speech · {{language}}",
-    "cancel": "Cancel",
     "cancelled": "Cancelled. Nothing was saved.",
     "failed": "Couldn't send",
     "failedHint": "No connection. Your recording is kept.",
@@ -254,7 +251,6 @@
     "nothingHint": "Hold the button and speak close to the phone. This one doesn't count.",
     "cap": "That's today's {{cap}} Voice Notes",
     "capHint": "Voice is back tomorrow. Scans still work.",
-    "ok": "OK",
     "tooLongTitle": "Recording too long",
     "tooLong": "That recording was too long. Try a shorter one.",
     "unsupportedTitle": "Can't read this recording",

@@ -22,12 +22,7 @@ import { useDockMicSlot, useReportRecording, useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
 import { useElapsedMs } from './useElapsed';
 import { abovePill, aboveMic, VOICE_LAYER } from '../../lib/voicePlacement';
-import {
-  isPillUp,
-  isStripUp,
-  useVoiceNoteState,
-  voiceNote,
-} from '../../lib/voiceNote';
+import { isStripUp, useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 
 type Voice = ReturnType<typeof useVoiceNote>;
@@ -44,10 +39,10 @@ export function VoiceButton({
 }) {
   const { t } = useTranslation('voice');
   const active = voice.recording || voice.pressing;
-  // While the status pill is up (reading, a failure) the tip must not cover its buttons.
+  // While the Voice Inbox strip is up the tip must not cover its buttons.
   const state = useVoiceNoteState();
-  const { phase, startedAt } = state;
-  const pillUp = isPillUp(phase) || isStripUp(state);
+  const { startedAt } = state;
+  const pillUp = isStripUp(state);
 
   const host = useVoiceHost();
   const micSlot = useDockMicSlot();

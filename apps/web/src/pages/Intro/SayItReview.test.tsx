@@ -716,7 +716,7 @@ describe('Setup 2: several Voice Notes', () => {
           entry('a1', 'pantry'),
           { ...entry('b1', 'pantry'), alreadyDone: true },
         ],
-        skipped: [],
+        skipped: [{ id: 'c1', reason: 'other' }],
       },
     ]);
     const user = userEvent.setup();
@@ -769,6 +769,43 @@ describe('Setup 2: several Voice Notes', () => {
     expect(screen.getAllByRole('listitem')[0]).toHaveTextContent(
       '1in your Pantry',
     );
+  });
+
+  it('stays on Say it when the only apply saved nothing new', async () => {
+    const { calls } = await twoReady([
+      {
+        applied: [{ ...entry('a1', 'pantry'), alreadyDone: true }],
+        skipped: [],
+      },
+    ]);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open (2)' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    await user.click(sheet.getAllByRole('button', { name: /^Review:/ })[0]);
+    const first = await screen.findByRole('dialog', {
+      name: "Here's what I heard",
+    });
+    await user.click(
+      within(first).getByRole('button', { name: 'Do this one' }),
+    );
+    await waitFor(() =>
+      expect(
+        calls.filter((c) => c.key === 'POST /api/voice/apply'),
+      ).toHaveLength(1),
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Review' }));
+    const second = await screen.findByRole('dialog', {
+      name: "Here's what I heard",
+    });
+    await user.click(within(second).getByRole('button', { name: 'Discard' }));
+    await user.click(await screen.findByRole('button', { name: 'Discard' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    expect(where()).toBe('/intro/say-it');
+    expect(screen.getByText('Hold the mic, talk, let go')).toBeVisible();
   });
 
   it('stays on Say it when every note is discarded', async () => {

@@ -8,7 +8,6 @@ import {
 import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { voiceToast } from './voicePlacement';
-import { focusVoiceButton, isInPill, returnFocusFromPill } from './voiceFocus';
 import { haptic } from './haptic';
 import { QUICK_TAP_MS, type VoiceDefaultTarget } from './voice';
 import { voiceNote, useVoiceNoteState } from './voiceNote';
@@ -150,7 +149,6 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
     tipOnArrival.current = false;
     clearTimeout(tipTimer.current);
     setTip(null);
-    voiceNote.dismiss();
     asking.current = true;
     // The microphone sheets stand in for the hold until it is allowed; nothing records and the press resets.
     const permission = await refresh();
@@ -209,30 +207,6 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
     void finish();
   }, [finish, discardRecording, showTip]);
 
-  /** Sends the kept recording again: the same audio, in the language it was recorded in. */
-  const retry = useCallback(() => {
-    // The strip has no button while reading, so the focus goes back to the voice button.
-    if (isInPill()) focusVoiceButton();
-    void voiceNote.retry();
-  }, []);
-
-  const dismiss = useCallback(() => {
-    returnFocusFromPill();
-    voiceNote.dismiss();
-  }, []);
-
-  /** Drops the kept recording (the pill's Discard). */
-  const discardFailed = useCallback(() => {
-    returnFocusFromPill();
-    voiceNote.discardFailed();
-  }, []);
-
-  /** Gives up waiting for the read. */
-  const cancelReading = useCallback(() => {
-    returnFocusFromPill();
-    voiceNote.cancelReading();
-  }, []);
-
   // Leaving the page drops a recording in progress; a read in flight carries on.
   useEffect(() => {
     unmounted.current = false;
@@ -257,10 +231,6 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
     press,
     release,
     cancel,
-    retry,
-    dismiss,
-    discardFailed,
-    cancelReading,
   };
 }
 

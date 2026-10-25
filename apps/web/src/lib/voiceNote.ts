@@ -1089,10 +1089,6 @@ export type VoiceNote = ReturnType<typeof createVoiceNote>;
 /** The app's one Voice Note. */
 export const voiceNote = createVoiceNote();
 
-/** Whether the status pill is up (reading or failed) for this phase. */
-export const isPillUp = (phase: VoicePhase) =>
-  phase === 'reading' || phase === 'failed';
-
 /** Whether the Voice Inbox strip is up: notes being read, ready or failed, with nothing else on screen. */
 export const isStripUp = (state: VoiceNoteState) =>
   state.phase === 'idle' &&

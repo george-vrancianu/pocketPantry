@@ -109,7 +109,12 @@ function SayItScreen() {
   const settings: VoiceNoteSettings = {
     ...SAY_IT_VOICE_SETTINGS,
     afterApply: (result: VoiceApplyResult, actions: VoiceReviewAction[]) => {
-      recordSaved(savedByVoice(result.applied, actions), 'say-it');
+      // An apply of only already-done entries saved nothing new: it must not unlock moving on.
+      const savedSomething = result.applied.some((e) => !e.alreadyDone);
+      recordSaved(
+        savedByVoice(result.applied, actions),
+        savedSomething ? 'say-it' : undefined,
+      );
     },
   };
 

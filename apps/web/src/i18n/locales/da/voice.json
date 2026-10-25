@@ -241,9 +241,6 @@
     "other": "kunne ikke anvendes"
   },
   "send": {
-    "reading": "Gator læser din note…",
-    "readingMeta": "{{duration}} tale · {{language}}",
-    "cancel": "Annuller",
     "cancelled": "Annulleret. Intet blev gemt.",
     "failed": "Kunne ikke sende",
     "failedHint": "Ingen forbindelse. Din optagelse er gemt.",
@@ -254,7 +251,6 @@
     "nothingHint": "Hold knappen nede og tal tæt på telefonen. Denne tæller ikke med.",
     "cap": "Det er dagens {{cap}} stemmenoter",
     "capHint": "Stemmen er tilbage i morgen. Scanninger virker stadig.",
-    "ok": "OK",
     "tooLongTitle": "Optagelsen er for lang",
     "tooLong": "Optagelsen var for lang. Prøv en kortere.",
     "unsupportedTitle": "Kan ikke læse optagelsen",
