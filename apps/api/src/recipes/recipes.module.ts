@@ -4,6 +4,7 @@ import { PageFetchModule } from '../page-fetch/page-fetch.module';
 import { ScanModule } from '../scan/scan.module';
 import { MemberLanguageModule } from '../member-language/member-language.module';
 import { SettingsModule } from '../settings/settings.module';
+import { GuidanceSuggestionService } from './guidance-suggestion.service';
 import { FamilyRecipesService } from './family-recipes.service';
 import { ShoppingModule } from '../shopping/shopping.module';
 import { PantryMatchingService } from './matching/pantry-matching.service';
@@ -39,6 +40,7 @@ import { RecipesService } from './recipes.service';
     CookTonightService,
     PlateRecipesService,
     LinkRecipesService,
+    GuidanceSuggestionService,
     PantryMatchingService,
     RecipePantryService,
   ],
