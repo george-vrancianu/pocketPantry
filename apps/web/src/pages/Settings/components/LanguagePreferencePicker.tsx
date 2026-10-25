@@ -1,4 +1,5 @@
 import { Alert, SegmentedControl, Stack, Typography } from '@pocket-pantry/ui';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const SAME_AS_UI = 'same-as-ui';
@@ -19,7 +20,7 @@ type Props<Language extends string> = {
   failedLabel: string;
 };
 
-/** A Member language Preference: "Same as UI Language" first, then the languages, with the effective value under it. */
+/** A Member language Preference: its caption, "Same as UI Language" first, then the languages, with the effective value under it. */
 export function LanguagePreferencePicker<Language extends string>({
   label,
   sameAsUiLabel,
@@ -31,10 +32,18 @@ export function LanguagePreferencePicker<Language extends string>({
   failedLabel,
 }: Props<Language>) {
   const { t } = useTranslation('settings');
+  const captionId = useId();
   return (
     <Stack spacing={0.5}>
+      <Typography
+        id={captionId}
+        component="div"
+        sx={{ fontSize: 12, fontWeight: 600, color: 'text.secondary' }}
+      >
+        {label}
+      </Typography>
       <SegmentedControl
-        label={label}
+        labelledBy={captionId}
         fullWidth
         value={value ?? SAME_AS_UI}
         options={[

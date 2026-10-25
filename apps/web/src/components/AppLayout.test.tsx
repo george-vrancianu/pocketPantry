@@ -202,7 +202,7 @@ describe('AppLayout Voice Note host', () => {
   );
 
   it.each(['/shopping', '/pantry', '/recipes'])(
-    'puts the mic in the Dock, under the camera, on %s',
+    'puts the mic in the Dock, above the camera, on %s',
     async (route) => {
       renderAt(route);
       const mic = await talkButton();
@@ -210,7 +210,7 @@ describe('AppLayout Voice Note host', () => {
       expect(dock).toContainElement(mic);
       const camera = within(dock).getByRole('link', { name: 'Camera' });
       expect(
-        camera.compareDocumentPosition(mic) & Node.DOCUMENT_POSITION_FOLLOWING,
+        mic.compareDocumentPosition(camera) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     },
   );
@@ -593,7 +593,7 @@ describe('AppLayout Review for actions that need a list', () => {
     await userEvent.click(
       sectionOf(dialog, 'Pantry').getByRole('button', { expanded: false }),
     );
-    const amount = dialog.getByRole('textbox', { name: 'Amount of Milk' });
+    const amount = dialog.getByRole('textbox', { name: /^Amount of Milk,/ });
     await userEvent.clear(amount);
     await userEvent.type(amount, '9');
 
@@ -602,9 +602,9 @@ describe('AppLayout Review for actions that need a list', () => {
     );
     await userEvent.click(picker().getByRole('button', { name: 'Pantry' }));
     // The row stays open across the swap, now showing the server's amount.
-    expect(dialog.getByRole('textbox', { name: 'Amount of Milk' })).toHaveValue(
-      '2',
-    );
+    expect(
+      dialog.getByRole('textbox', { name: /^Amount of Milk,/ }),
+    ).toHaveValue('2');
   });
 
   it('hides "Put all on" with only one action needing a list', async () => {
@@ -681,14 +681,14 @@ describe('AppLayout Review for actions that need a list', () => {
         expanded: false,
       })[0],
     );
-    const amount = dialog.getByRole('textbox', { name: 'Amount of Bread' });
+    const amount = dialog.getByRole('textbox', { name: /^Amount of Bread,/ });
     await userEvent.clear(amount);
     await userEvent.type(amount, '9');
 
     const all = within(dialog.getByRole('group', { name: 'Put all on' }));
     await userEvent.click(all.getByRole('button', { name: 'Pantry' }));
     expect(
-      dialog.getByRole('textbox', { name: 'Amount of Bread' }),
+      dialog.getByRole('textbox', { name: /^Amount of Bread,/ }),
     ).toHaveValue('9');
   });
 });

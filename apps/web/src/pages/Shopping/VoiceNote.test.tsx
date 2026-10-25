@@ -1403,7 +1403,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     expect(dialog.getAllByText(/Heard:/)).toHaveLength(1);
 
     await userEvent.click(header('Eggs'));
-    await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
+    await userEvent.type(dialog.getByLabelText(/^Amount of Eggs,/), '12');
     await userEvent.click(dialog.getByRole('button', { name: 'pcs' }));
     expect(rowOf(dialog, 'Eggs').textContent).toContain('12 pcs');
     await userEvent.click(dialog.getByRole('button', { name: 'Done' }));
@@ -1416,7 +1416,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     const before = listFetches;
 
     await userEvent.click(headerOf(rowOf(dialog, 'Eggs')));
-    await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
+    await userEvent.type(dialog.getByLabelText(/^Amount of Eggs,/), '12');
     await userEvent.click(dialog.getByRole('button', { name: 'pcs' }));
     await userEvent.click(
       dialog.getByRole('button', { name: 'Apply 3 changes' }),
@@ -1439,7 +1439,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     setupReview(threeAdds);
     const dialog = within(await openReview());
     await userEvent.click(headerOf(rowOf(dialog, 'Milk')));
-    const amount = dialog.getByLabelText('Amount of Milk');
+    const amount = dialog.getByLabelText(/^Amount of Milk,/);
     const apply = dialog.getByRole('button', { name: 'Apply 3 changes' });
 
     await userEvent.clear(amount);
@@ -1455,6 +1455,52 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     await waitFor(() => expect(applied).toHaveLength(1));
     expect(applied[0]).toMatchObject({
       actions: [{}, { id: 'a2', quantity: null, unit: null }, {}],
+    });
+  });
+
+  /** Opens Milk's unit menu in its open row and picks `unit`. */
+  async function pickMilkUnit(dialog: ReturnType<typeof within>, unit: string) {
+    await userEvent.click(headerOf(rowOf(dialog, 'Milk')));
+    await userEvent.click(dialog.getByRole('button', { name: 'Unit: L' }));
+    await userEvent.click(
+      within(dialog.getByRole('menu', { name: 'Units' })).getByRole(
+        'menuitemradio',
+        { name: unit },
+      ),
+    );
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 3 changes' }),
+    );
+    await waitFor(() => expect(applied).toHaveLength(1));
+  }
+
+  it('sends a unit picked from the menu, keeping the number as it was', async () => {
+    setupReview(threeAdds);
+    await pickMilkUnit(within(await openReview()), 'ml');
+    expect(applied[0]).toMatchObject({
+      actions: [{}, { id: 'a2', quantity: 2, unit: 'ml' }, {}],
+    });
+  });
+
+  it('sends No unit as a null unit', async () => {
+    setupReview(threeAdds);
+    await pickMilkUnit(within(await openReview()), 'No unit');
+    expect(applied[0]).toMatchObject({
+      actions: [{}, { id: 'a2', quantity: 2, unit: null }, {}],
+    });
+  });
+
+  it('reads a typed "2 kg" as a quantity and a unit', async () => {
+    setupReview(threeAdds);
+    const dialog = within(await openReview());
+    await userEvent.click(headerOf(rowOf(dialog, 'Eggs')));
+    await userEvent.type(dialog.getByLabelText(/^Amount of Eggs,/), '2 kg');
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 3 changes' }),
+    );
+    await waitFor(() => expect(applied).toHaveLength(1));
+    expect(applied[0]).toMatchObject({
+      actions: [{ id: 'a1', quantity: 2, unit: 'kg' }, {}, {}],
     });
   });
 
@@ -1616,7 +1662,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     );
     const dialog = within(await openReview());
     await userEvent.click(headerOf(rowOf(dialog, 'Eggs')));
-    await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
+    await userEvent.type(dialog.getByLabelText(/^Amount of Eggs,/), '12');
     await userEvent.click(
       dialog.getByRole('button', { name: 'Apply 3 changes' }),
     );
@@ -1626,7 +1672,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     expect(
       dialog.getByRole('button', { name: 'Apply 3 changes' }),
     ).toBeEnabled();
-    expect(dialog.getByLabelText('Amount of Eggs')).toHaveValue('12');
+    expect(dialog.getByLabelText(/^Amount of Eggs,/)).toHaveValue('12');
     expect(voiceNote.getState().phase).toBe('review');
   });
 

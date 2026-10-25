@@ -160,6 +160,27 @@ describe('Settings You tab', () => {
     });
   });
 
+  it('shows each language Preference caption above its picker, naming it', async () => {
+    stubSystemScheme(false);
+    stubYou();
+    renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+    for (const name of [
+      'Catalog Language',
+      'Scan Language',
+      'Spoken Language',
+    ]) {
+      const control = await screen.findByRole('group', { name });
+      const caption = screen.getByText(name);
+      expect(caption).toBeVisible();
+      expect(control).toHaveAttribute('aria-labelledby', caption.id);
+      expect(
+        caption.compareDocumentPosition(control) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+  });
+
   describe('Catalog Language', () => {
     it('offers "Same as UI Language" first, selected until one is chosen', async () => {
       stubSystemScheme(false);

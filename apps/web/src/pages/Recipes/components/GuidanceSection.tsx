@@ -5,7 +5,7 @@ import {
   Typography,
   tokens,
   Card,
-  radius,
+  Tag,
 } from '@pocket-pantry/ui';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -135,27 +135,28 @@ function WhenToEatSection({ moments }: { moments: DetailEatingMoment[] }) {
             <Box
               component="li"
               key={moment.eatingMomentId}
-              sx={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: '4px',
+              }}
             >
-              <Box
-                component="span"
+              <Tag
+                tone={avoid ? 'soon' : 'ok'}
                 sx={{
-                  flexShrink: 0,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  px: '10px',
-                  py: '4px',
-                  borderRadius: radius.pill,
-                  bgcolor: avoid ? tokens.color.soonBg : tokens.color.okBg,
-                  color: avoid ? tokens.color.soonFg : tokens.color.okFg,
+                  whiteSpace: 'normal',
+                  maxWidth: '100%',
+                  overflowWrap: 'anywhere',
                 }}
               >
                 {t(`eatingPolarity.${moment.polarity}`)} · {moment.name}
-              </Box>
+              </Tag>
               {moment.reason ? (
                 <Typography
-                  component="span"
+                  component="p"
                   sx={{
+                    m: 0,
                     fontSize: 13.5,
                     lineHeight: 1.4,
                     color: tokens.color.muted,

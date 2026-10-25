@@ -156,12 +156,7 @@
     "edit": {
       "heard": "Hørt:",
       "amount": "Mængde",
-      "amountOf": "Mængde af {{name}}",
-      "unitOf": "Enhed for {{name}}",
       "expires": "Udløber",
-      "noExpiry": "Ingen udløbsdato",
-      "pickDate": "Vælg en dato",
-      "expiryTitle": "Udløber",
       "fromSpeech": "fra det du sagde",
       "defaultExpiry": "Standardudløb for denne Ingrediens",
       "location": "Placering",

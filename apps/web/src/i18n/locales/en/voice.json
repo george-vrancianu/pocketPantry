@@ -156,12 +156,7 @@
     "edit": {
       "heard": "Heard:",
       "amount": "Amount",
-      "amountOf": "Amount of {{name}}",
-      "unitOf": "Unit of {{name}}",
       "expires": "Expires",
-      "noExpiry": "No expiry",
-      "pickDate": "Pick a date",
-      "expiryTitle": "Expires",
       "fromSpeech": "from what you said",
       "defaultExpiry": "Default Expiry for this Ingredient",
       "location": "Location",

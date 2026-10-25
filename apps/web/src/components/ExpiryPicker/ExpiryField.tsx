@@ -34,6 +34,8 @@ export type ExpiryFieldProps = {
   context: string;
   /** Limits the days to choose from; the field then has no tag and no No expiry (a start date, say). */
   range?: DateRange;
+  /** Why the date is invalid, or null/left out when it is fine; shown under the row and read as its description. */
+  error?: string | null;
 };
 
 /**
@@ -48,9 +50,11 @@ export function ExpiryField({
   usualDays,
   context,
   range,
+  error,
 }: ExpiryFieldProps) {
   const { t, i18n } = useTranslation('pantry');
   const fallbackId = useId();
+  const errorId = useId();
   const rowId = id ?? fallbackId;
   const [open, setOpen] = useState(false);
   const row = useRef<HTMLButtonElement>(null);
@@ -86,6 +90,8 @@ export function ExpiryField({
         id={rowId}
         aria-haspopup="dialog"
         aria-label={name}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
         onClick={() => setOpen(true)}
         sx={{
           width: '100%',
@@ -95,7 +101,7 @@ export function ExpiryField({
           gap: '12px',
           p: '8px 10px 8px 14px',
           borderRadius: radius.control,
-          border: `1.5px solid ${color.line}`,
+          border: `1.5px solid ${error ? color.urgentFg : color.line}`,
           backgroundColor: color.surface,
           color: color.ink,
           font: 'inherit',
@@ -103,7 +109,7 @@ export function ExpiryField({
           cursor: 'pointer',
           '&:focus-visible': {
             outline: 'none',
-            borderColor: color.accent,
+            borderColor: error ? color.urgentFg : color.accent,
             boxShadow: `0 0 0 3px ${color.accentTint}`,
           },
         }}
@@ -156,6 +162,15 @@ export function ExpiryField({
           style={{ flex: 'none' }}
         />
       </Box>
+      {error ? (
+        <Typography
+          id={errorId}
+          variant="meta"
+          sx={{ display: 'block', mt: 0.75, color: color.urgentFg }}
+        >
+          {error}
+        </Typography>
+      ) : null}
       <ExpirySheet
         open={open}
         onClose={() => setOpen(false)}
