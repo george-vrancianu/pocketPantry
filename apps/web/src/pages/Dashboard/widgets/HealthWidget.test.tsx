@@ -373,7 +373,7 @@ describe('HealthWidget', () => {
     ['wide', 2],
     ['small', 2],
   ] as const)('Gator on the %s card', (size, columns) => {
-    it('taps and opens the sheet at once, which plays its Entrance', async () => {
+    it('taps, then opens the sheet, which has no Gator', async () => {
       stub(tenBatchPantry());
       stubMotion(false);
       const user = userEvent.setup();
@@ -386,14 +386,12 @@ describe('HealthWidget', () => {
       await user.click(card);
 
       expect(gator().getAttribute('data-motion')).toBe('tap');
+      expect(screen.queryByRole('dialog')).toBeNull();
       const sheet = await screen.findByRole('dialog', {
         name: 'Pantry health',
       });
-      expect(sheet.querySelector('img')!.getAttribute('data-motion')).toBe(
-        'entrance',
-      );
+      expect(sheet.querySelector('img')).toBeNull();
       expect(within(card).queryByRole('button')).toBeNull();
-      expect(within(sheet).queryByRole('button', { name: /Gator/ })).toBeNull();
     });
   });
 
@@ -1775,17 +1773,16 @@ describe('HealthWidget Gator', () => {
     ['hmm', () => [...inDate(3), ...forgotten(4), ...expired(3)], HMM],
     ['worried', () => expired(10), WORRIED],
   ])(
-    'shows the same %s Gator on the sheet as on the widget',
+    'shows the %s Gator on the widget and none on the sheet',
     async (_n, make, alt) => {
       const card = await renderBand(make());
       await userEvent.setup().click(card);
       const sheet = await screen.findByRole('dialog', {
         name: 'Pantry health',
       });
-      expect(within(sheet).getByAltText(alt)).toBeInTheDocument();
       expect(within(card).getByAltText(alt)).toBeInTheDocument();
-      for (const other of ALL_ALTS.filter((a) => a !== alt)) {
-        expect(within(sheet).queryByAltText(other)).toBeNull();
+      for (const any of ALL_ALTS) {
+        expect(within(sheet).queryByAltText(any)).toBeNull();
       }
     },
   );
