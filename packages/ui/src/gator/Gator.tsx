@@ -76,7 +76,7 @@ export function Gator({
   loop = 'idle',
   entrance = true,
   onClick,
-  tapSignal = 0,
+  tapSignal,
   alt,
   decorative,
 }: GatorProps) {

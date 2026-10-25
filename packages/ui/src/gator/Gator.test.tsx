@@ -63,6 +63,32 @@ afterEach(() => {
 
 describe('Gator', () => {
   describe('Tap', () => {
+    function spyOnImages() {
+      const srcs: string[] = [];
+      vi.stubGlobal(
+        'Image',
+        class {
+          set src(value: string) {
+            srcs.push(value);
+          }
+        },
+      );
+      return srcs;
+    }
+    const tapUrl = (mood: string) => new RegExp(`gator-${mood}-tap\\.svg`);
+
+    it('fetches no Tap file for a Gator that cannot tap', () => {
+      const srcs = spyOnImages();
+      render(<Gator mood="happy" alt="a" />);
+      expect(srcs.some((src) => tapUrl('happy').test(src))).toBe(false);
+    });
+
+    it('warms the Tap file when a parent can start one', () => {
+      const srcs = spyOnImages();
+      render(<Gator mood="happy" alt="a" tapSignal={0} />);
+      expect(srcs.some((src) => tapUrl('happy').test(src))).toBe(true);
+    });
+
     it('is a button named by its alt, and taps then returns to the loop', () => {
       const onClick = vi.fn();
       const { container } = render(

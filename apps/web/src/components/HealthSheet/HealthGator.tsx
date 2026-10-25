@@ -15,21 +15,22 @@ import { useGatorAlt } from '../../lib/useGatorAlt';
 import { expiringSoonDay, todoTitle } from './todoText';
 
 const FADE_MS = 300;
-const HEALTH_MOODS: AnimatedGatorMood[] = [
-  'health-curious',
-  'health-dapper',
-  'health-hmm',
-  'worried',
-];
+const BAND_MOOD = {
+  curious: 'health-curious',
+  good: 'health-dapper',
+  some: 'health-hmm',
+  attention: 'worried',
+} as const satisfies Record<string, AnimatedGatorMood>;
+const HEALTH_MOODS: AnimatedGatorMood[] = Object.values(BAND_MOOD);
 
 /** Gator's face for a Pantry Health band: curious below ten Batches, then dapper, hmm or worried by verdict. */
 export function healthMood(health: PantryHealth): AnimatedGatorMood {
-  if (!health.scored) return 'health-curious';
+  if (!health.scored) return BAND_MOOD.curious;
   return health.verdict === 'good'
-    ? 'health-dapper'
+    ? BAND_MOOD.good
     : health.verdict === 'some'
-      ? 'health-hmm'
-      : 'worried';
+      ? BAND_MOOD.some
+      : BAND_MOOD.attention;
 }
 
 /**

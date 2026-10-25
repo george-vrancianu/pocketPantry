@@ -23,11 +23,11 @@ const ALT = {
 } as const;
 
 /** Shows a 90, and a 50 once "Change" is pressed. */
-function Harness() {
+function Harness({ entrance }: { entrance?: boolean }) {
   const [score, setScore] = useState(90);
   return (
     <>
-      <HealthGator health={scored(score)} size={64} />
+      <HealthGator health={scored(score)} size={64} entrance={entrance} />
       <button type="button" onClick={() => setScore(50)}>
         Change
       </button>
@@ -79,7 +79,10 @@ describe('HealthGator', () => {
 
   it('never plays an Entrance after a band change, even when the band comes back', async () => {
     stubMotion(false);
-    renderWithProviders(<Harness />);
+    renderWithProviders(<Harness entrance />);
+    expect(screen.getByAltText(ALT.dapper).getAttribute('data-motion')).toBe(
+      'entrance',
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Change' }));
     await userEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(screen.getByAltText(ALT.dapper).getAttribute('data-motion')).toBe(
