@@ -10,7 +10,7 @@ import {
   radius,
   tokens,
 } from '@pocket-pantry/ui';
-import { useId, type ChangeEvent } from 'react';
+import { useId, type ChangeEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { DraftProblems, RecipeDraft } from '../../../lib/recipeDraft';
 import { DIFFICULTIES, type Difficulty } from '../../../lib/recipeVocabulary';
@@ -22,6 +22,8 @@ type Props = {
   problems: DraftProblems;
   /** The line under the title until it is wrong: what the draft is. */
   hint?: string;
+  /** Right under the title and its hint: Base Recipe card or the Variant row. */
+  belowTitle?: ReactNode;
   cuisines: Option[];
   methods: Option[];
   showTitleError: boolean;
@@ -78,6 +80,7 @@ export function FamilyDetailsBasics({
   draft,
   problems,
   hint,
+  belowTitle,
   cuisines,
   methods,
   showTitleError,
@@ -205,6 +208,7 @@ export function FamilyDetailsBasics({
           </Typography>
         ) : null}
       </Box>
+      {belowTitle}
       <Box>
         <Box
           sx={{

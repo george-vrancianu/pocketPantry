@@ -172,7 +172,14 @@
       "levelCycle": "Niveau: {{value}}. Tryk for at skifte",
       "prep": "Forberedelse",
       "cook": "Tilberedning"
-    }
+    },
+    "baseCard": {
+      "closest": "nærmeste",
+      "subline": "Vælg den Katalogopskrift, denne er en variant af, eller lad den stå selvstændig.",
+      "savesVariant": "Gemmes som en variant af <b>{{title}}</b>.",
+      "savesBase": "Gemmes som sin egen grundopskrift."
+    },
+    "variantOf": "Variant af <b>{{title}}</b>"
   },
   "fewerServings": "Færre portioner",
   "moreServings": "Flere portioner",
@@ -258,7 +265,8 @@
   "sourceLink": {
     "from": "Fra {{host}} ↗",
     "remove": "Fjern link",
-    "translatedFrom": "Oversat fra {{language}}"
+    "translatedFrom": "Oversat fra {{language}}",
+    "removed": "Link fjernet. Det forsvinder, når du gemmer."
   },
   "recipeDraft": {
     "saving": "Gemmer…",

@@ -60,6 +60,8 @@ type Props = {
   hint?: string;
   /** Top of Details, above the fields: Base Recipe picker, Source Link, notes. */
   detailsTop?: ReactNode;
+  /** Under the title on Details: the Base Recipe card, or the Variant row. */
+  belowTitle?: ReactNode;
   /** End of Details, after the "Ingredients ›" link: Discard draft. */
   detailsEnd?: ReactNode;
   /** End of Steps (Edit's Tips). */
@@ -109,6 +111,7 @@ export function FamilyRecipeForm({
   openTab,
   hint,
   detailsTop,
+  belowTitle,
   detailsEnd,
   stepsEnd,
   notices,
@@ -278,6 +281,7 @@ export function FamilyRecipeForm({
               draft={draft}
               problems={problems}
               hint={hint}
+              belowTitle={belowTitle}
               cuisines={filters.data?.cuisines ?? []}
               methods={filters.data?.methods ?? []}
               showTitleError={showTitleError}

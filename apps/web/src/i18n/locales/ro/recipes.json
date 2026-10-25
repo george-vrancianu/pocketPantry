@@ -181,7 +181,14 @@
       "levelCycle": "Nivel: {{value}}. Atinge pentru a schimba",
       "prep": "Pregătire",
       "cook": "Gătire"
-    }
+    },
+    "baseCard": {
+      "closest": "cea mai apropiată",
+      "subline": "Alege Rețeta din Catalog din care provine această Variantă sau las-o de sine stătătoare.",
+      "savesVariant": "Se salvează ca Variantă a rețetei <b>{{title}}</b>.",
+      "savesBase": "Se salvează ca propria Rețetă de bază."
+    },
+    "variantOf": "Variantă a rețetei <b>{{title}}</b>"
   },
   "fewerServings": "Mai puține porții",
   "moreServings": "Mai multe porții",
@@ -274,7 +281,8 @@
   "sourceLink": {
     "from": "De pe {{host}} ↗",
     "remove": "Elimină linkul",
-    "translatedFrom": "Tradusă din {{language}}"
+    "translatedFrom": "Tradusă din {{language}}",
+    "removed": "Link eliminat. Dispare când salvezi."
   },
   "recipeDraft": {
     "saving": "Se salvează…",
