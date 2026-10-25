@@ -76,7 +76,7 @@ export function LanguagesPage() {
         sx={{ p: '24px', maxWidth: 420, mx: 'auto' }}
       >
         <Link href="/">{t('onboarding:languages.back')}</Link>
-        <BrandLockup />
+        <BrandLockup entrance={false} />
         <Typography variant="h1">{t('onboarding:languages.title')}</Typography>
 
         <Stack spacing={0.5}>

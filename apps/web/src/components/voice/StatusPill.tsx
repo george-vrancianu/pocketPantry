@@ -3,21 +3,21 @@ import {
   Button,
   ClockIcon,
   EarIcon,
-  GatorImage,
+  Gator,
   radius,
   shadow,
   MicOffIcon,
   WifiOffIcon,
   palette,
 } from '@pocket-pantry/ui';
-import { useEffect, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { translateErrorCode } from '../../i18n/translateApiError';
-import { formatClock, NOTHING_HEARD_MS } from '../../lib/voice';
+import { failureReason } from './failureReason';
+import { formatClock } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { useVoiceNoteState } from '../../lib/voiceNote';
-import { usePreferredSpokenLanguage } from '../../lib/useSpokenLanguage';
+import { usePreferredSpokenLanguage } from '../../lib/usePreferredSpokenLanguage';
 import { useVoiceHost } from './VoiceHost';
 import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
 import { enter } from './enter';
@@ -54,19 +54,20 @@ export function StatusPill({ voice }: { voice: Voice }) {
   const { spokenLanguage } = usePreferredSpokenLanguage();
   const { phase, error, rawError, recording, voiceCap } = useVoiceNoteState();
   const host = useVoiceHost();
-  const nothing = phase === 'failed' && error === 'nothingHeard';
-
-  useEffect(() => {
-    if (!nothing) return;
-    const id = setTimeout(voice.dismiss, NOTHING_HEARD_MS);
-    return () => clearTimeout(id);
-  }, [nothing, voice.dismiss]);
 
   const look = ((): Look | null => {
     if (phase === 'reading') {
       return {
         // The title beside Gator says "Gator's reading your note…", so the image is decorative.
-        icon: <GatorImage mood="thinking" size={52} decorative />,
+        icon: (
+          <Gator
+            mood="thinking"
+            size={52}
+            loop="signature"
+            entrance={false}
+            decorative
+          />
+        ),
         bg: palette('pp-accentTint'),
         fg: palette('pp-accentOnTint'),
         title: t('send.reading'),
@@ -112,11 +113,14 @@ export function StatusPill({ voice }: { voice: Voice }) {
         {t('send.discard')}
       </Button>
     );
-    const failed = (hint: string, canRetry: boolean): Look => ({
+    const reason = failureReason(t, error, rawError, voiceCap?.cap ?? 0);
+    if (!reason) return null;
+    const { title, hint } = reason;
+    const failed = (canRetry: boolean): Look => ({
       icon: <WifiOffIcon size={17} />,
       bg: palette('warning-light'),
       fg: palette('warning-main'),
-      title: t('send.failed'),
+      title,
       hint,
       urgent: true,
       actions: (
@@ -137,39 +141,24 @@ export function StatusPill({ voice }: { voice: Voice }) {
     });
     switch (error) {
       case 'failed':
-        return failed(
-          rawError
-            ? translateErrorCode(t, rawError.code, rawError.params)
-            : t('send.failedHint'),
-          voice.kept,
-        );
+        return failed(recording !== undefined);
       case 'unavailable':
         // This browser cannot record at all: nothing to retry, only to close.
         return {
-          ...failed(t('unavailable'), false),
+          ...failed(false),
           icon: <MicOffIcon size={17} />,
-          title: t('send.noRecording'),
           actions: ok,
         };
       case 'tooLong':
-        return {
-          ...failed(t('send.tooLong'), false),
-          title: t('send.tooLongTitle'),
-          actions: close,
-        };
       case 'unsupported':
-        return {
-          ...failed(t('send.unsupported'), false),
-          title: t('send.unsupportedTitle'),
-          actions: close,
-        };
+        return { ...failed(false), actions: close };
       case 'nothingHeard':
         return {
           icon: <EarIcon size={17} />,
           bg: palette('pp-accentTint'),
           fg: palette('pp-accentOnTint'),
-          title: t('send.nothing'),
-          hint: t('send.nothingHint'),
+          title,
+          hint,
           urgent: false,
           actions: null,
         };
@@ -178,8 +167,8 @@ export function StatusPill({ voice }: { voice: Voice }) {
           icon: <ClockIcon size={17} />,
           bg: palette('error-light'),
           fg: palette('error-main'),
-          title: t('send.cap', { cap: voiceCap?.cap ?? 0 }),
-          hint: t('send.capHint'),
+          title,
+          hint,
           urgent: true,
           actions: ok,
         };

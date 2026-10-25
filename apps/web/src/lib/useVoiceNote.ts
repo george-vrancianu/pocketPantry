@@ -8,13 +8,18 @@ import {
 import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { voiceToast } from './voicePlacement';
-import { focusPillAction, isInPill, returnFocusFromPill } from './voiceFocus';
+import {
+  focusPillAction,
+  focusVoiceButton,
+  isInPill,
+  returnFocusFromPill,
+} from './voiceFocus';
 import { haptic } from './haptic';
 import { QUICK_TAP_MS, type VoiceDefaultTarget } from './voice';
 import { voiceNote, useVoiceNoteState } from './voiceNote';
 import { useMicPermission } from './useMicPermission';
 import { micExplained } from './micExplained';
-import { useSpokenLanguage } from './useSpokenLanguage';
+import { usePreferredSpokenLanguage } from './usePreferredSpokenLanguage';
 
 /**
  * Hold-to-talk Voice Note: `press` starts recording, `release` stops and sends,
@@ -22,30 +27,31 @@ import { useSpokenLanguage } from './useSpokenLanguage';
  * sends by itself. A recording that fails to send stays in memory for `retry`
  * until the page reloads.
  */
-export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
+export function useVoiceNote(
+  defaultTarget: VoiceDefaultTarget,
+  mode: { openWhenReady?: boolean } = {},
+) {
   const { t } = useTranslation(['errors', 'voice']);
   const toast = useToast();
-  const { spokenLanguage, spokenLanguageToSend, setSpokenLanguage, reset } =
-    useSpokenLanguage();
+  const { spokenLanguage, spokenLanguageToSend } = usePreferredSpokenLanguage();
   // The Voice Note itself lives in the Voice Note module, so Review and the button on any page see it.
-  const { phase, recording: keptRecording } = useVoiceNoteState();
+  const { phase, inbox } = useVoiceNoteState();
+  const failedCount = inbox.failed;
   const recording = phase === 'recording';
   const sending = phase === 'reading';
   // The module renders again when the Voice Cap lifts.
   const capped = voiceNote.isCapReached();
-  // A failed note is waiting for Retry or Discard.
-  const kept = phase === 'failed' && keptRecording !== undefined;
   // The pointer is down and the stream is not live yet ("Starting…").
   const [pressing, setPressing] = useState(false);
   // A tip above the button: how a press works, or why this one did nothing.
-  const [tip, setTip] = useState<'hold' | 'busy' | 'failed' | null>(null);
+  const [tip, setTip] = useState<'hold' | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pressedAt = useRef(0);
   // Let go after 0.3 s but before the stream was live: say how it works once it is known to be dropped.
   const tipOnArrival = useRef(false);
 
-  const showTip = useCallback((which: 'hold' | 'busy' | 'failed' = 'hold') => {
-    setTip(which);
+  const showTip = useCallback(() => {
+    setTip('hold');
     clearTimeout(tipTimer.current);
     tipTimer.current = setTimeout(() => setTip(null), TIP_MS);
   }, []);
@@ -57,9 +63,21 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   // The press was cancelled (not merely let go) while the permission was being read.
   const cancelled = useRef(false);
   const unmounted = useRef(false);
-  const options = useRef({ spokenLanguageToSend, defaultTarget, t, toast });
+  const options = useRef({
+    spokenLanguageToSend,
+    defaultTarget,
+    openWhenReady: mode.openWhenReady,
+    t,
+    toast,
+  });
   useLayoutEffect(() => {
-    options.current = { spokenLanguageToSend, defaultTarget, t, toast };
+    options.current = {
+      spokenLanguageToSend,
+      defaultTarget,
+      openWhenReady: mode.openWhenReady,
+      t,
+      toast,
+    };
   });
   const say = (message: string) =>
     options.current.toast.show(message, voiceToast());
@@ -69,16 +87,21 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
       const { t } = options.current;
       say(`${t('voice:mic.on')} · ${t('voice:mic.onHint')}`);
     },
-    onUnavailable: () => voiceNote.fail('unavailable'),
+    onUnavailable: () =>
+      voiceNote.fail('unavailable', {
+        openWhenReady: options.current.openWhenReady,
+      }),
   });
 
   const { refresh, showBlocked, showIntro } = mic;
 
   const begin = () => {
-    const { defaultTarget, spokenLanguageToSend } = options.current;
+    const { defaultTarget, spokenLanguageToSend, openWhenReady } =
+      options.current;
     return voiceNote.start({
       defaultTarget,
       spokenLanguage: spokenLanguageToSend,
+      openWhenReady,
     });
   };
 
@@ -86,21 +109,17 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
   // The recording ends and the audio is finalised (idle) while the pointer is still down: that is the limit, so it buzzes once and
   // ends the press. A failure mid-recording goes to `failed` instead and does not buzz.
   const wasRecording = useRef(false);
+  const failedBefore = useRef(failedCount);
   useEffect(() => {
+    // A failure joins the Voice Inbox in the same step that ends the recording; the limit does not.
+    const failedNow = failedCount > failedBefore.current;
+    failedBefore.current = failedCount;
     if (wasRecording.current && phase === 'idle' && held.current) {
       held.current = false;
-      haptic(14);
+      if (!failedNow) haptic(14);
     }
     wasRecording.current = recording;
-  }, [recording, phase]);
-
-  // A pick is for one Voice Note: once that note is sent (its language is kept for the upload and Retry) the chip is back at the
-  // preference. A cancelled or too-short recording sends nothing, so it keeps the pick.
-  const wasSending = useRef(false);
-  useEffect(() => {
-    if (sending && !wasSending.current) reset();
-    wasSending.current = sending;
-  }, [sending, reset]);
+  }, [recording, phase, failedCount]);
 
   /** Ends the recording and sends it; a recording too short to read gets the tip. */
   const finish = useCallback(async () => {
@@ -129,14 +148,14 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
 
   const press = useCallback(async () => {
     if (asking.current || held.current) return;
-    // Nothing starts while the last note is being read or waits for Retry.
+    // Nothing starts while a Review is open or the Voice Inbox is full; a failed note never blocks.
     const blocker = voiceNote.startBlocker();
     // A note is already under way (still starting, recording or being finalised): the press changes nothing.
     if (blocker === 'active') return;
-    if (blocker === 'busy') return showTip('busy');
-    if (blocker === 'kept') return showTip('failed');
-    // The Voice Cap is used up: the module shows why.
-    if (blocker === 'capped') {
+    // A Review or answer sheet is open: the mic is not offered.
+    if (blocker === 'review') return;
+    // The Voice Cap is used up, or the Voice Inbox is full: the module shows why.
+    if (blocker === 'capped' || blocker === 'full') {
       void begin();
       return;
     }
@@ -207,8 +226,12 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
 
   /** Sends the kept recording again: the same audio, in the language it was recorded in. */
   const retry = useCallback(() => {
-    // The Reading pill replaces this one: its Cancel takes the focus (the voice button is disabled).
-    if (isInPill()) focusPillAction();
+    // Setup's Reading pill replaces this one and its Cancel takes the focus; elsewhere the strip has no
+    // button while reading, so the focus goes back to the voice button.
+    if (isInPill()) {
+      if (options.current.openWhenReady) focusPillAction();
+      else focusVoiceButton();
+    }
     void voiceNote.retry();
   }, []);
 
@@ -244,12 +267,10 @@ export function useVoiceNote(defaultTarget: VoiceDefaultTarget) {
 
   return {
     spokenLanguage,
-    setSpokenLanguage,
     recording,
     pressing,
     tip,
     sending,
-    kept,
     capped,
     mic,
     press,

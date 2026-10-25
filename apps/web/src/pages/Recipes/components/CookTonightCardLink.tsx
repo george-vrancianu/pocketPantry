@@ -1,7 +1,7 @@
 import {
   Box,
   displayType,
-  GatorImage,
+  Gator,
   radius,
   tokens,
   type GatorMood,
@@ -76,7 +76,6 @@ export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
         bgcolor: tokens.color.accentTint,
         color: tokens.color.accentOnTint,
         textDecoration: 'none',
-        overflow: 'hidden',
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -86,7 +85,7 @@ export function CookTonightCardLink({ cards }: { cards: CookTonightCard[] }) {
           <Box sx={{ fontSize: 14, mt: '2px' }}>{secondLine}</Box>
         ) : null}
       </Box>
-      <GatorImage mood={mood} size={104} alt={gatorAlt(mood)} />
+      <Gator mood={mood} size={104} alt={gatorAlt(mood)} />
     </Box>
   );
 }

@@ -90,12 +90,6 @@
     "stopped": "Stopped at 1 minute",
     "stoppedHint": "Sending what you said."
   },
-  "languageMenu": {
-    "chipLabel": "Spoken Language: {{language}}. Change",
-    "title": "Spoken Language",
-    "saved": "Spoken Language: {{language}}",
-    "savedHint": "For this Voice Note only."
-  },
   "review": {
     "title": "Review",
     "subline_one": "{{count}} change · nothing is saved until you Apply",
@@ -189,7 +183,10 @@
       "keep": "Keep reviewing",
       "discarded": "Voice Note discarded",
       "discardedHint": "Nothing was changed.",
-      "pickList": "Pick a list first"
+      "pickList": "Pick a list first",
+      "confirmAll": "Discard all these Voice Notes?",
+      "confirmAllHint": "Nothing changes, and you'll have to say them again.",
+      "discardedAll": "Voice Notes discarded"
     },
     "pickList": {
       "label": "List for {{name}}",
@@ -199,7 +196,8 @@
     "putAll": {
       "label": "Put all on:",
       "name": "Put all on"
-    }
+    },
+    "titleAll": "Review all"
   },
   "toast": {
     "applied_one": "{{count}} applied",
@@ -262,8 +260,6 @@
     "tooLong": "That recording was too long. Try a shorter one.",
     "unsupportedTitle": "Can't read this recording",
     "unsupported": "This browser's recording format isn't supported",
-    "tipBusy": "Still reading your last note",
-    "tipFailed": "Retry or discard the last note first",
     "noRecording": "Can't record here"
   },
   "answers": {
@@ -281,5 +277,40 @@
     "expiringSoon": "Expiring soon",
     "addToList_one": "Add {{count}} to the Shopping List",
     "addToList_other": "Add {{count}} to the Shopping List"
+  },
+  "inbox": {
+    "title_one": "{{count}} Voice Note",
+    "title_other": "{{count}} Voice Notes",
+    "reading": "Reading {{count}}",
+    "ready": "{{count}} ready",
+    "failed_one": "{{count}} failed",
+    "failed_other": "{{count}} failed",
+    "failedAlert_one": "{{count}} Voice Note failed",
+    "failedAlert_other": "{{count}} Voice Notes failed",
+    "retryNote": "Retry: {{preview}}",
+    "retryOtherNote": "Retry in another language: {{preview}}",
+    "currentLanguage": "{{language}} (current)",
+    "discardNote": "Discard: {{preview}}",
+    "review": "Review",
+    "full": "Review your notes first",
+    "sheetTitle": "Voice Inbox",
+    "preview": "Voice Note · {{duration}}",
+    "noList": "No list",
+    "open": "Open",
+    "openCount": "Open ({{count}})",
+    "see": "See",
+    "cancel": "Cancel",
+    "reviewNote": "Review: {{preview}}",
+    "seeNote": "See: {{preview}}",
+    "cancelNote": "Cancel reading: {{preview}}",
+    "state": {
+      "reading": "Being read",
+      "review": "Ready to review",
+      "answers": "Answers ready",
+      "applying": "Applying",
+      "failed": "Could not be read"
+    },
+    "reviewAll": "Review all ({{count}})",
+    "reviewAllTooMany": "That is more than {{max}} changes for one Apply. Review some of the Voice Notes on their own."
   }
 }

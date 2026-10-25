@@ -1,4 +1,4 @@
-import { Box, Button, GatorImage, tokens, Typography } from '@pocket-pantry/ui';
+import { Box, Button, Gator, tokens, Typography } from '@pocket-pantry/ui';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
@@ -38,7 +38,12 @@ function Waiting({
     body = (
       <>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <GatorImage mood="worried" size={64} alt={gatorAlt('worried')} />
+          <Gator
+            mood="worried"
+            size={64}
+            loop="idle"
+            alt={gatorAlt('worried')}
+          />
           <Typography sx={{ fontWeight: 700 }}>
             {t('overview.failed')}
           </Typography>
@@ -73,7 +78,7 @@ function Waiting({
     body = (
       <Box role="status" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {/* The line beside Gator says what it is doing, so the image is decorative. */}
-        <GatorImage mood="list-keeper" size={96} decorative />
+        <Gator mood="list-keeper" size={96} loop="signature" decorative />
         <Typography>{t('overview.reading')}</Typography>
       </Box>
     );

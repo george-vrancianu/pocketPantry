@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -66 276 236" width="276" height="236" class="gator g-talking" data-v="tap" role="img" aria-label="Gator talking"><style>.gator g[class]:not([transform]), .gator .arc{transform-box:fill-box}
+.rig{transform-origin:50% 100%}
+.eye{transform-origin:50% 55%}
+.hat{transform-origin:50% 100%}
+.tail{transform-origin:95% 80%}
+.sparkle, .dot, .bubble, .arc{transform-origin:50% 50%}
+.jaw{transform-origin:13% 8%}
+.head{transform-origin:45% 95%}
+.qmark{transform-origin:40% 100%}
+.basket{transform-origin:50% 12%}
+.whisk{transform-origin:100% 100%}
+.spoon{transform-origin:0% 100%}
+.rack{transform-origin:50% 0%}
+.tick path{stroke-dasharray:1; stroke-dashoffset:0}
+.drop{transform-origin:50% 0%}
+@keyframes boingOnce{0%,100%{transform:none}15%{transform:scale(calc(1 + .1*1),calc(1 - .12*1))}40%{transform:translateY(calc(-22px*1)) scale(calc(1 - .06*1),calc(1 + .1*1))}62%{transform:translateY(0) scale(calc(1 + .08*1),calc(1 - .1*1))}80%{transform:scale(calc(1 - .02*1),calc(1 + .02*1))}}
+@keyframes hatHopOnce{0%,20%,100%{transform:none}44%{transform:translateY(calc(-10px*1)) rotate(calc(-14deg*1))}66%{transform:translateY(calc(-2px*1)) rotate(calc(5deg*1))}84%{transform:none}}
+@keyframes squintOnce{0%,80%,100%{transform:scaleY(1)}12%,60%{transform:scaleY(.15)}}
+[data-v="tap"] .rig{animation:boingOnce .9s linear 1 both}
+[data-v="tap"] .hat{animation:hatHopOnce .9s linear 1 both}
+[data-v="tap"] .eye{animation:squintOnce .9s linear 1 both}
+[data-v="tap"] .tail{animation:wagOnce .9s linear 1 both}
+.g-icon[data-v="tap"] .rig{transform-origin:50% 50%}
+@keyframes wagOnce{0%,100%{transform:none}28%{transform:rotate(12deg)}50%{transform:rotate(-8deg)}72%{transform:rotate(8deg)}}
+@media (prefers-reduced-motion: reduce){svg *{animation:none !important}}</style><g class="rig"><g transform="translate(14 4) rotate(-6 128 90)"><circle cx="124" cy="46" r="17" fill="#5E9A3C"/><g class="eye eye-far"><circle cx="126" cy="44" r="10" fill="#fff"/><g class="pupil"><circle cx="128" cy="46" r="5" fill="#2E3A1F"/></g></g><g class="jaw"><g transform="rotate(5 64 106)"><path d="M40 104 C52 104 66 108 80 112 L204 104 C216 104 222 112 216 120 C210 130 200 134 188 135 L112 142 C78 146 44 136 40 104 Z" fill="#6FAE48"/><path d="M78 122 L210 112 C206 124 198 130 188 131 L112 138 C94 140 82 134 78 122 Z" fill="#E8E2B0"/><path d="M100 116 l4 -7 l4 6 Z M134 113 l4 -7 l4 6 Z M168 110 l4 -7 l4 6 Z" fill="#fff"/></g></g><path d="M64 106 L218 98 C216 104 214 108 210 110 L80 117 C72 116 66 112 64 106 Z" fill="#3E6B2E"/><ellipse cx="128" cy="112" rx="18" ry="4" fill="#E87A6A"/><path d="M28 100 C26 62 56 40 92 42 C118 44 134 56 150 62 L198 68 C218 70 228 84 226 96 L80 106 C66 107 60 104 56 108 C46 116 30 118 28 100 Z" fill="#6FAE48"/><path d="M60 104 Q64 108 80 106 L224 96" fill="none" stroke="#3E6B2E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M96 106 l4 7 l4 -7 Z M120 104 l4 7 l4 -7 Z M146 103 l4 7 l4 -7 Z M172 101 l4 7 l4 -7 Z M196 99 l4 6 l4 -6 Z" fill="#fff"/><path d="M40 70 l-8 -6 l2 10 Z M50 58 l-6 -8 l0 11 Z M62 50 l-3 -9 l-3 10 Z" fill="#5E9A3C"/><path d="M150 78 q6 4 12 0 M170 80 q6 4 12 0" fill="none" stroke="#5E9A3C" stroke-width="3" stroke-linecap="round"/><circle cx="206" cy="74" r="9" fill="#6FAE48"/><ellipse cx="209" cy="72" rx="3.5" ry="2.5" fill="#3E6B2E"/><g class="hat"><g transform="rotate(-14 64 40)"><g fill="#fff" stroke="#CFC6B4" stroke-width="5"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><g fill="#fff"><circle cx="46" cy="14" r="14"/><circle cx="64" cy="4" r="17"/><circle cx="82" cy="14" r="14"/><rect x="38" y="12" width="52" height="26"/></g><path d="M54 22 v12 M64 20 v14 M74 22 v12" stroke="#E2DACB" stroke-width="2.5" stroke-linecap="round"/><rect x="36" y="34" width="56" height="14" rx="5" fill="#F4EFE4" stroke="#CFC6B4" stroke-width="2.5"/></g></g><circle cx="92" cy="46" r="24" fill="#5E9A3C"/><g class="eye eye-near"><circle cx="94" cy="44" r="16" fill="#fff"/><g class="pupil"><circle cx="99" cy="46" r="8" fill="#2E3A1F"/><circle cx="102" cy="43" r="3" fill="#fff"/></g></g><path d="M78 58 Q94 66 110 58" fill="none" stroke="#5E9A3C" stroke-width="5" stroke-linecap="round"/><g class="blush"><circle cx="62" cy="96" r="9" fill="#F2A08B" opacity=".55"/></g></g></g></svg>

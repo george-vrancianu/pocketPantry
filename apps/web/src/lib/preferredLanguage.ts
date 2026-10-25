@@ -8,7 +8,7 @@ import { useMemberPreferences } from './settings';
 
 /**
  * The Member's effective Scan or Spoken Language (ADR 0022), as the API works it out (the Preference, else the
- * UI Language). `shown` is for a chip: until the Preferences have loaded (or if they cannot) it is the UI
+ * UI Language). `shown` is for display: until the Preferences have loaded (or if they cannot) it is the UI
  * Language. `sent` is for a request: it is `undefined` until then, so nothing is sent and the API resolves
  * the language itself instead of the UI Language beating the stored Preference.
  */

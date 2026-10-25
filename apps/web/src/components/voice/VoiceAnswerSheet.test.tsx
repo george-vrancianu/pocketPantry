@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  openReady,
   resetVoiceEnvironment,
   stubVoiceFetch,
   talkButton,
@@ -140,7 +141,7 @@ describe('the answer sheet for Pantry Questions', () => {
     await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
-    return screen.findByRole('dialog');
+    return openReady();
   }
 
   beforeEach(() => {
