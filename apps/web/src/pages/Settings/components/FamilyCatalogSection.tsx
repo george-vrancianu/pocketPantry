@@ -422,7 +422,7 @@ function IngredientEditor({
         label={t('settings:familyCatalog.category')}
         value={leafId}
         onChange={(event) => setLeafId(event.target.value)}
-        slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
+        slotProps={{ select: { native: true } }}
       >
         {/* The current Leaf shows even before the options load. */}
         {categories.data ? null : (

@@ -95,10 +95,7 @@ export function AddItemForm({ adding, onAdd }: AddItemFormProps) {
             label={t('add.unit')}
             value={unit}
             onChange={(event) => setUnit(event.target.value as Unit | '')}
-            slotProps={{
-              select: { native: true },
-              inputLabel: { shrink: true },
-            }}
+            slotProps={{ select: { native: true } }}
           >
             <option value="">{t('add.noUnit')}</option>
             {UNITS.map((value) => (
