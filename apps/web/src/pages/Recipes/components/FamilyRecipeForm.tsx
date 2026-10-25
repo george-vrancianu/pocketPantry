@@ -319,8 +319,9 @@ export function FamilyRecipeForm({
               onMatched={(line, ingredient) => {
                 if (ingredient.owner === 'family')
                   setPickedFamily((ids) => new Set(ids).add(ingredient.id));
-                change({
-                  lines: draft.lines.map((item) =>
+                setDraft((current) => ({
+                  ...current,
+                  lines: current.lines.map((item) =>
                     item.key === line.key
                       ? {
                           ...item,
@@ -329,7 +330,7 @@ export function FamilyRecipeForm({
                         }
                       : item,
                   ),
-                });
+                }));
               }}
               onChange={(lines) => change({ lines })}
               isFamily={(line) =>

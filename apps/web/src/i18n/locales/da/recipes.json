@@ -126,7 +126,6 @@
       "toIngredients": "Ingredienser ›",
       "toSteps": "Trin ›"
     },
-    "addToCatalog": "Føj “{{name}}” til dit katalog",
     "freeTextNote": "Ikke i kataloget",
     "unavailable": "Denne opskrift kan ikke redigeres.",
     "guidanceHint": "Parringer, en Ernæringsnote og Spisetidspunkter. De gemmes sammen med opskriften.",

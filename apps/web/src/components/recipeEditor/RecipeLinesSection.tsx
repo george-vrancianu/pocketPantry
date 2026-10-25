@@ -19,7 +19,10 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNITS, type CatalogSearchResult, type Unit } from '../../lib/catalog';
-import { AddToCatalog } from '../catalogSearch/AddToCatalog';
+import {
+  AddToCatalog,
+  ADD_TO_CATALOG_TRIGGER,
+} from '../catalogSearch/AddToCatalog';
 import {
   moved,
   type DraftProblems,
@@ -54,10 +57,14 @@ export function RecipeLinesSection({
   focusKey,
   children,
 }: Props) {
-  const { t } = useTranslation(['admin', 'common', 'recipes']);
+  const { t } = useTranslation(['admin', 'common', 'recipes', 'catalog']);
   const toast = useToast();
   const [openKey, setOpenKey] = useState<number | null>(null);
   const [addingKey, setAddingKey] = useState<number | null>(null);
+  const addTriggers = useRef(new Map<number, HTMLButtonElement>());
+  // Pointer, touch and key events in the add-to-catalog UI must not reach the row's drag sensors.
+  const keepOutOfRow = (event: { stopPropagation: () => void }) =>
+    event.stopPropagation();
 
   // Undo builds on the newest lines, not on what rendered when the toast appeared.
   const latest = useRef({ lines, onChange });
@@ -130,7 +137,10 @@ export function RecipeLinesSection({
               t('admin:recipe.lines.unknown')
             }
             onReorder={(from, to) => onChange(reordered(lines, from, to))}
-            onLift={() => setOpenKey(null)}
+            onLift={() => {
+              setOpenKey(null);
+              setAddingKey(null);
+            }}
           >
             {lines.map((line, index) => {
               const name = line.name || t('admin:recipe.lines.unknown');
@@ -157,6 +167,8 @@ export function RecipeLinesSection({
                       {...row}
                       sx={{
                         ...row.sx,
+                        // Keep the open popover above the rows after this one.
+                        zIndex: addingKey === line.key ? 2 : row.sx.zIndex,
                         p: 1,
                         borderTop: index === 0 ? 0 : 1,
                         borderColor: 'divider',
@@ -255,7 +267,10 @@ export function RecipeLinesSection({
                           label={t('admin:recipe.lines.more', { name })}
                           aria-expanded={open}
                           aria-controls={open ? stripId : undefined}
-                          onClick={() => setOpenKey(open ? null : line.key)}
+                          onClick={() => {
+                            setOpenKey(open ? null : line.key);
+                            if (open) setAddingKey(null);
+                          }}
                         >
                           <ChevronDownIcon size={18} />
                         </IconButton>
@@ -298,13 +313,30 @@ export function RecipeLinesSection({
                             </Typography>
                           </Stack>
                           {onMatched && line.ingredientId === '' ? (
-                            <Box sx={{ position: 'relative' }}>
+                            <Box
+                              sx={{ position: 'relative' }}
+                              onPointerDown={keepOutOfRow}
+                              onTouchStart={keepOutOfRow}
+                              onKeyDown={keepOutOfRow}
+                            >
                               <Button
                                 variant="ghost"
+                                {...{ [ADD_TO_CATALOG_TRIGGER]: '' }}
+                                ref={(el: HTMLButtonElement | null) => {
+                                  if (el) addTriggers.current.set(line.key, el);
+                                  else addTriggers.current.delete(line.key);
+                                }}
+                                aria-haspopup="dialog"
                                 aria-expanded={addingKey === line.key}
-                                onClick={() => setAddingKey(line.key)}
+                                onClick={() =>
+                                  setAddingKey(
+                                    addingKey === line.key ? null : line.key,
+                                  )
+                                }
                               >
-                                {t('recipes:family.addToCatalog', { name })}
+                                {t('catalog:search.addToCatalog', {
+                                  query: line.name,
+                                })}
                               </Button>
                               <AddToCatalog
                                 open={addingKey === line.key}
@@ -312,8 +344,23 @@ export function RecipeLinesSection({
                                 onPicked={(ingredient) => {
                                   setAddingKey(null);
                                   onMatched(line, ingredient);
+                                  // The trigger unmounts with the Unmatched state: the quantity takes focus.
+                                  setTimeout(
+                                    () =>
+                                      qtyInputs.current.get(line.key)?.focus(),
+                                    0,
+                                  );
                                 }}
-                                onDismiss={() => setAddingKey(null)}
+                                onDismiss={() => {
+                                  setAddingKey(null);
+                                  setTimeout(
+                                    () =>
+                                      addTriggers.current
+                                        .get(line.key)
+                                        ?.focus(),
+                                    0,
+                                  );
+                                }}
                               />
                             </Box>
                           ) : null}
