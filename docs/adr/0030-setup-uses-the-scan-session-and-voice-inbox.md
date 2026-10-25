@@ -11,9 +11,11 @@ Setup allowed one Scan and one Voice Note, each reviewed at once, so the Intro s
 - **Skip drops what the step holds,** after a confirm when something would be lost.
 - **Snap no longer clears the Scan Session when it opens,** so going back to the camera keeps the stack.
 - **There is no Setup-only limit.** The Scan Cap, the Voice Cap and the Voice Inbox's limit of 5 apply as usual.
+- **The Intro hosts the camera and the Voice Note itself, with settings.** The Intro has its own camera route, which renders the shared camera with the Intro's settings: the Scan Modes offered, no Import, and where the shutter, the photo stack and Close go. The Review and the Voice Note host take their Setup behaviour as settings too. The shared Scan and Voice code never asks whether the Member is in Setup, and the app's Scan routes are no longer allowed mid-Intro.
 
 ## Considered options
 
 - **Keep one of each.** Rejected: it teaches a flow the app no longer has.
 - **Drop leftovers when the Member moves on.** Rejected: photos and recordings that were already read, and counted against the caps, would be thrown away.
 - **Open each Setup Voice Note as soon as it is read.** Rejected: that is a separate flow to keep alive next to the Voice Inbox's.
+- **Keep the app's camera route and tell it about Setup through a flag or React context.** Rejected: Setup checks would stay spread through the shared code, and the Intro would still need an exception to use an app route.
