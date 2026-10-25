@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import { draftWritesSettled } from './recipeDraftWrites';
 import type { Difficulty } from './recipeVocabulary';
 import type { PairingKind, PairingPrinciple } from './recipeVocabulary';
 import type { EatingMomentPolarity } from './adminRecipes';
@@ -92,13 +93,16 @@ export type RecipeDraftView = {
 };
 
 export const recipeDraftsQueryKey = ['recipe-drafts'] as const;
-const listKey = [...recipeDraftsQueryKey, 'list'] as const;
+export const recipeDraftsListKey = [...recipeDraftsQueryKey, 'list'] as const;
 
 /** The Member's Recipe Drafts, newest edit first. */
 export function useRecipeDrafts(enabled = true) {
   return useQuery({
-    queryKey: listKey,
-    queryFn: () => apiRequest<RecipeDraftSummary[]>('/recipe-drafts'),
+    queryKey: recipeDraftsListKey,
+    queryFn: async () => {
+      await draftWritesSettled();
+      return apiRequest<RecipeDraftSummary[]>('/recipe-drafts');
+    },
     enabled,
   });
 }
@@ -108,7 +112,11 @@ export function useRecipeDraft(id: string | null, instance = '') {
   return useQuery({
     // `instance` (one per visit to the form) keeps a re-entered Recipe Draft from reusing an older snapshot and version.
     queryKey: [...recipeDraftsQueryKey, 'detail', id, instance],
-    queryFn: () => apiRequest<RecipeDraftView>(`/recipe-drafts/${id}`),
+    queryFn: async () => {
+      // The form just left may still be sending its last edit.
+      await draftWritesSettled();
+      return apiRequest<RecipeDraftView>(`/recipe-drafts/${id}`);
+    },
     enabled: id !== null,
     staleTime: Infinity,
     gcTime: 0,
@@ -120,7 +128,8 @@ function useDraftWrite<Input, Result>(send: (input: Input) => Promise<Result>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: send,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: listKey }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: recipeDraftsListKey }),
   });
 }
 

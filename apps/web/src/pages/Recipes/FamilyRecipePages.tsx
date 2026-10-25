@@ -1,4 +1,11 @@
-import { Alert, Link, Spinner, Stack, Typography } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Button,
+  Link,
+  Spinner,
+  Stack,
+  Typography,
+} from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -9,6 +16,8 @@ import {
   type RecipeDraftForm,
 } from '../../lib/recipeDraftContent';
 import { useRecipeDraftRoute } from './useRecipeDraftRoute';
+import { RecipeDraftLimitNotice } from './components/RecipeDraftLimitNotice';
+import type { DiscardedDraftState } from './useRecipeDraftDiscard';
 import { useRecipeDraftAutosave } from '../../lib/recipeDraftAutosave';
 import { type RecipeDraftView } from '../../lib/recipeDrafts';
 import {
@@ -218,6 +227,7 @@ function NewRecipeContent({
     enabled: supplied === null,
   });
   const { draftId } = autosave;
+  const [discarding, setDiscarding] = useState(false);
   useEffect(() => {
     // Only a new id goes to the URL, and not while the Recipe is being saved: the page is about to leave.
     if (draftId && !finishing) onDraftId(draftId);
@@ -268,6 +278,7 @@ function NewRecipeContent({
             }}
           />
         ) : null}
+        <RecipeDraftLimitNotice error={autosave.error} />
         <FamilyRecipeForm
           heading={t('recipes:family.newRecipeHeading')}
           description={t('recipes:family.newRecipeHint')}
@@ -310,6 +321,25 @@ function NewRecipeContent({
           }}
           onCancel={() => navigate('/recipes')}
         />
+        {draftId ? (
+          <Button
+            variant="secondary"
+            disabled={discarding || finishing}
+            onClick={async () => {
+              setDiscarding(true);
+              // Let a write in flight land (it may be the create that gives the id), then keep autosave from writing again.
+              const id = await autosave.flush();
+              autosave.stop();
+              // The Recipes page owns the Undo: this form is about to be gone.
+              const state: DiscardedDraftState | null = id
+                ? { discardRecipeDraft: { id } }
+                : null;
+              navigate('/recipes', { state });
+            }}
+          >
+            {t('recipes:drafts.discard')}
+          </Button>
+        ) : null}
       </Stack>
     </>
   );

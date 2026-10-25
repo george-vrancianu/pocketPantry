@@ -1,0 +1,54 @@
+import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+  recipeDraftsListKey,
+  useDeleteRecipeDraft,
+} from '../../lib/recipeDrafts';
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval';
+
+/** What the form hands to the Recipes page (router state) when its "Discard draft" is tapped. */
+export type DiscardedDraftState = { discardRecipeDraft: { id: string } };
+
+function discardedOf(state: unknown): string | null {
+  if (typeof state !== 'object' || state === null) return null;
+  const handed = (state as Partial<DiscardedDraftState>).discardRecipeDraft;
+  return typeof handed?.id === 'string' ? handed.id : null;
+}
+
+/**
+ * Discarding a Recipe Draft with Undo (ADR 0009, ADR 0028): `discard` hides it
+ * at once and shows the Undo toast; the DELETE goes out only when the toast is
+ * gone, and Undo sends nothing. Filter `hiddenIds` out of the list you show.
+ *
+ * With `takeFromForm`, also discards the Recipe Draft the form just handed over
+ * through router state: the form is gone by then, so the page it left to owns
+ * the Undo.
+ */
+export function useRecipeDraftDiscard({
+  takeFromForm = false,
+}: { takeFromForm?: boolean } = {}) {
+  const { t } = useTranslation('recipes');
+  const remove = useDeleteRecipeDraft();
+  const removal = useDeferredRemoval<string>(
+    recipeDraftsListKey,
+    remove.mutateAsync,
+  );
+  const discard = (id: string) => removal.remove(id, '', t('drafts.discarded'));
+  const location = useLocation();
+  const navigate = useNavigate();
+  const taken = useRef<string | null>(null);
+  const handedId = takeFromForm ? discardedOf(location.state) : null;
+  useEffect(() => {
+    if (handedId === null || taken.current === location.key) return;
+    taken.current = location.key;
+    removal.remove(handedId, '', t('drafts.discarded'));
+    // A reload or Back must not discard it again.
+    navigate(
+      { pathname: location.pathname, search: location.search },
+      { replace: true, state: null },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handedId, location.key]);
+  return { hiddenIds: removal.hiddenIds, discard };
+}

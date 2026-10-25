@@ -179,5 +179,9 @@
     "cap_reached_no_time_one": "Du har brugt din {{count}} opskriftslæsning fra links i dag. Prøv igen i morgen.",
     "cap_reached_no_time_other": "Du har brugt alle {{count}} opskriftslæsninger fra links i dag. Prøv igen i morgen.",
     "cap_reached_unknown": "Du har brugt alle dagens opskriftslæsninger fra links. Prøv igen i morgen."
+  },
+  "recipe_drafts": {
+    "not_found": "Den kladde findes ikke mere. Den kan være kasseret eller gemt for længe.",
+    "limit_reached": "Du har allerede {{max}} opskriftkladder. Gør en færdig eller kassér en for at starte en ny."
   }
 }

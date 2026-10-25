@@ -181,5 +181,9 @@
     "cap_reached_no_time_few": "Ai folosit toate cele {{count}} citiri de rețete din linkuri de azi. Încearcă mâine.",
     "cap_reached_no_time_other": "Ai folosit toate cele {{count}} de citiri de rețete din linkuri de azi. Încearcă mâine.",
     "cap_reached_unknown": "Ai folosit toate citirile de rețete din linkuri de azi. Încearcă mâine."
+  },
+  "recipe_drafts": {
+    "not_found": "Ciorna aceea nu mai există. Poate a fost eliminată sau păstrată prea mult.",
+    "limit_reached": "Ai deja {{max}} ciorne de rețete. Termină sau elimină una ca să începi alta."
   }
 }

@@ -8,6 +8,7 @@ import {
   displayType,
 } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
@@ -20,6 +21,8 @@ import {
   useRecipes,
   type RecipeBrowse,
 } from '../../lib/recipes';
+import { useRecipeDrafts } from '../../lib/recipeDrafts';
+import { useRecipeDraftDiscard } from './useRecipeDraftDiscard';
 import { CookTonightCardLink } from './components/CookTonightCardLink';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
@@ -42,6 +45,12 @@ export function RecipesPage() {
     localIso(new Date()),
     showHidden,
   );
+  // Recipe Drafts are not Recipes: just an entry to the list, hidden when there are none (ADR 0028).
+  const drafts = useRecipeDrafts();
+  const discarding = useRecipeDraftDiscard({ takeFromForm: true });
+  const draftCount =
+    drafts.data?.filter((draft) => !discarding.hiddenIds.has(draft.id))
+      .length ?? 0;
   const headingId = useId();
   const items = recipes.data?.recipes ?? [];
   const filtering = isFiltering(browse);
@@ -69,6 +78,20 @@ export function RecipesPage() {
         {/* Hidden until the answer arrives, so an error or a slow load never reads as "nothing to cook". */}
         {!filtering && cookTonight.data && !cookTonight.error ? (
           <CookTonightCardLink cards={cards} />
+        ) : null}
+        {draftCount > 0 ? (
+          <Box
+            component={Link}
+            to="/recipes/drafts"
+            sx={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: tokens.color.accent,
+              textDecoration: 'none',
+            }}
+          >
+            {t('recipes:drafts.entry', { count: draftCount })}
+          </Box>
         ) : null}
         <RecipeFilters
           value={browse}
