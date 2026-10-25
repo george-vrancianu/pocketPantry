@@ -225,7 +225,11 @@ describe('Voice Notes on the Pantry page', () => {
       }),
     );
     expect(await screen.findByText("Gator's listening")).toBeVisible();
-    expect(screen.getByRole('status')).toHaveTextContent(
+    // The header's refresh status line is also a status, empty at rest.
+    const note = screen
+      .getAllByRole('status')
+      .find((status) => status.textContent !== '');
+    expect(note).toHaveTextContent(
       'Goes to your Pantry. Say “on the list” for the Shopping List.',
     );
   });
