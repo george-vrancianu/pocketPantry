@@ -22,6 +22,7 @@ import { FamilyRecipesService } from './family-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
 import { LinkRecipesService } from './link-recipes.service';
 import { PlateRecipesService } from './plate-recipes.service';
+import { RecipeCopyService } from './recipe-copy.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import {
   browseQuery,
@@ -68,6 +69,7 @@ export class RecipesController {
   constructor(
     private readonly browse: RecipeBrowseService,
     private readonly family: FamilyRecipesService,
+    private readonly copyService: RecipeCopyService,
     private readonly cookTonight: CookTonightService,
     private readonly plate: PlateRecipesService,
     private readonly link: LinkRecipesService,
@@ -202,6 +204,20 @@ export class RecipesController {
   ): Promise<FamilyRecipeEdit> {
     const locale = await this.languages.catalogLanguageOf(member.id);
     return this.family.update(member.id, id, { ...body, locale });
+  }
+
+  @Post(':id/copy')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      "Add a Catalog Recipe to the Family: a frozen copy it owns; returns the Family's live copy if there is one",
+  })
+  async copy(
+    @CurrentUser() member: CurrentUserValue,
+    @Id() { id }: { id: string },
+  ): Promise<{ id: string }> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    return this.copyService.copy(member.id, id, locale);
   }
 
   @Post(':id/archive')

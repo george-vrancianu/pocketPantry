@@ -130,6 +130,10 @@ export class RecipeBrowseService {
     ]);
     const { warnings, hidden } = allergy;
     const shown = hides ? matching.filter((r) => !hidden.has(r.id)) : matching;
+    const copies = await this.liveCopies(
+      familyId,
+      shown.filter((r) => r.familyId === null).map((r) => r.id),
+    );
 
     const items = shown
       .map((row): RecipeListItem => {
@@ -149,6 +153,8 @@ export class RecipeBrowseService {
           cookMinutes: row.cookMinutes,
           difficulty: row.difficulty,
           owner: ownerOf(row),
+          familyCopyId: copies.get(row.id) ?? null,
+          copiedFromId: row.copiedFromId,
           allergyWarning: warnings.get(row.id) ?? null,
         };
       })
@@ -297,6 +303,25 @@ export class RecipeBrowseService {
         owner: ownerOf(row),
       }))
       .sort((a, b) => byTitle(locale)(a, b) || a.id.localeCompare(b.id));
+  }
+
+  /** The Family's live copy of each Catalog Recipe it has added, by source id. */
+  private async liveCopies(
+    familyId: string,
+    sourceIds: string[],
+  ): Promise<Map<string, string>> {
+    if (sourceIds.length === 0) return new Map();
+    const rows = await this.database
+      .select({ id: recipes.id, copiedFromId: recipes.copiedFromId })
+      .from(recipes)
+      .where(
+        and(
+          eq(recipes.familyId, familyId),
+          inArray(recipes.copiedFromId, sourceIds),
+          isNull(recipes.archivedAt),
+        ),
+      );
+    return new Map(rows.map((r) => [r.copiedFromId!, r.id]));
   }
 
   private async variantCounts(
