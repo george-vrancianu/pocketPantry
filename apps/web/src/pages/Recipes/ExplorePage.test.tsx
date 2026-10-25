@@ -414,8 +414,27 @@ describe('ExplorePage Back', () => {
     });
     await userEvent.click(back);
     expect(screen.queryByText('recipes page')).toBeNull();
-    const el = screen.getByRole('banner').parentElement!;
+    const el = screen.getByTestId('explore-page');
     el.dispatchEvent(new Event('animationend', { bubbles: true }));
     expect(await screen.findByText('recipes page')).toBeVisible();
+  });
+
+  it('goes back anyway when the slide-out never ends', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      reduceMotion(false);
+      setupGroups({ list: () => [base('a')] });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await user.click(
+        await screen.findByRole('link', { name: 'Back to your Recipes' }),
+      );
+      expect(screen.queryByText('recipes page')).toBeNull();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(450);
+      });
+      expect(await screen.findByText('recipes page')).toBeVisible();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

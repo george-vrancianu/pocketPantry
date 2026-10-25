@@ -42,13 +42,11 @@ import { SectionLabel } from './components/SectionLabel';
 /** Rows a group shows before "Show n more". */
 const LIMIT = 4;
 
-const SLIDE = '320ms cubic-bezier(.2,.8,.2,1) forwards';
+const SLIDE = '320ms cubic-bezier(.2,.8,.2,1)';
 
 /** Slides in from the right and, on Back, out to it; no motion under reduced motion. */
 const slideSx = (leaving: boolean) =>
   ({
-    // The off-screen start must not widen the page (sideways pan on iOS).
-    overflowX: 'clip',
     '@keyframes pp-explore-slide-in': {
       from: { transform: 'translateX(100%)' },
       to: { transform: 'translateX(0)' },
@@ -58,7 +56,7 @@ const slideSx = (leaving: boolean) =>
       to: { transform: 'translateX(100%)' },
     },
     '@media (prefers-reduced-motion: no-preference)': {
-      animation: `${leaving ? 'pp-explore-slide-out' : 'pp-explore-slide-in'} ${SLIDE}`,
+      animation: `${leaving ? 'pp-explore-slide-out' : 'pp-explore-slide-in'} ${SLIDE}${leaving ? ' forwards' : ''}`,
     },
   }) as const;
 
@@ -86,7 +84,12 @@ export function ExplorePage() {
       if (event.target === page) navigate('/recipes');
     };
     page.addEventListener('animationend', done);
-    return () => page.removeEventListener('animationend', done);
+    // If the animation never ends (interrupted, or no CSS animations), leave anyway.
+    const fallback = window.setTimeout(() => navigate('/recipes'), 400);
+    return () => {
+      page.removeEventListener('animationend', done);
+      window.clearTimeout(fallback);
+    };
   }, [leaving, navigate]);
   // Net adds this visit: the Back badge. It resets when the page unmounts.
   const [added, setAdded] = useState(0);
