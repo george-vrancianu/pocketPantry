@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const HostContext = createContext<HTMLElement | null>(null);
 const MicSlotContext = createContext<{
@@ -50,6 +51,14 @@ export function VoiceHostProvider({ children }: { children: ReactNode }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [recording, setRecording] = useState(false);
   const [micTeach, setMicTeach] = useState(false);
+  // The teach is for the page it started on: leaving it (the camera, another tab) ends it, so it
+  // cannot relight the mic when the Member comes back to a Dock page.
+  const { pathname } = useLocation();
+  const [teachPath, setTeachPath] = useState(pathname);
+  if (teachPath !== pathname) {
+    setTeachPath(pathname);
+    setMicTeach(false);
+  }
   const mic = useMemo(
     () => ({ slot, setSlot, recording, setRecording, micTeach, setMicTeach }),
     [slot, recording, micTeach],

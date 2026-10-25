@@ -1,10 +1,16 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import userEvent from '@testing-library/user-event';
+import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetVoiceEnvironment, stubVoiceFetch } from '../../test/voice';
-import { useVoiceTimers } from '../../test/voiceHold';
-import { renderInAppLayout, stubApi } from '../../test/render';
+import { holdLongEnough, useVoiceTimers } from '../../test/voiceHold';
+import {
+  renderInAppLayout,
+  renderWithProviders,
+  stubApi,
+} from '../../test/render';
+import { AppLayout } from '../../components/AppLayout';
 import { PantryPage } from './PantryPage';
 
 function setup(voiceConfigured = true) {
@@ -92,7 +98,48 @@ describe('Say it in the Add to Pantry sheet', () => {
     fireEvent.pointerDown(mic, { isPrimary: true });
     expect(callout()).not.toBeInTheDocument();
     await screen.findByText("Gator's listening");
-    expect(sent).toBeDefined();
+    await holdLongEnough();
+    fireEvent.pointerUp(mic, { isPrimary: true });
+    await waitFor(() => expect(sent.length).toBeGreaterThan(0));
+    expect(sent[0]!.get('defaultTarget')).toBe('pantry');
+  });
+
+  it('clears when a Voice Note is started from the keyboard', async () => {
+    setup();
+    await sayIt();
+    const mic = await screen.findByRole('button', {
+      name: /hold to record a voice note/i,
+    });
+    fireEvent.keyDown(mic, { key: ' ' });
+    await screen.findByText("Gator's listening");
+    await waitFor(() => expect(callout()).not.toBeInTheDocument());
+  });
+
+  it('does not come back after leaving through the camera and returning', async () => {
+    setup();
+    renderWithProviders(
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/pantry" element={<PantryPage />} />
+          <Route path="/scan" element={<Link to="/pantry">Back</Link>} />
+        </Route>
+      </Routes>,
+      { route: '/pantry' },
+    );
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add batch' }),
+    );
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Say it' }),
+    );
+    await screen.findByText('Hold the mic, talk, let go');
+    await userEvent.click(await screen.findByRole('link', { name: 'Camera' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'Back' }));
+    await screen.findByRole('link', { name: 'Camera' });
+    expect(callout()).not.toBeInTheDocument();
+    expect(paintedColour(litMic()!, 'background-color').toUpperCase()).not.toBe(
+      '#F0C96B',
+    );
   });
 
   it('shows no Say it tile where there is no mic', async () => {

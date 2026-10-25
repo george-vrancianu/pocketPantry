@@ -22,7 +22,7 @@ type Props = {
   onSayIt?: () => void;
 };
 
-/** The Add to Pantry sheet's fastest ways in: the camera on Product, or on Barcode. */
+/** The Add to Pantry sheet's fastest ways in: the camera on Product, or on Barcode, or Say it, which lights the Dock mic. */
 export function QuickRow({ disabled, openerRef, onOpen, onSayIt }: Props) {
   const { t } = useTranslation('pantry');
   return (

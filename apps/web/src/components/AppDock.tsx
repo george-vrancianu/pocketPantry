@@ -8,6 +8,7 @@ import {
   type DockEntry,
   type DockTeach,
 } from '@pocket-pantry/ui';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { DockState } from '../lib/dockState';
 import { VOICE_LAYER } from '../lib/voicePlacement';
@@ -36,6 +37,11 @@ export function AppDock({ activeKey, teach, cameraHref = '/scan' }: Props) {
   const raised = useDockRaised();
   const micTeach = useMicTeach();
   const hint = micTeach.teaching && showMic && teach === undefined;
+  const stopTeach = micTeach.stop;
+  // A Voice Note started by keyboard (or any way) ends the teach, like a press does.
+  useEffect(() => {
+    if (raised && micTeach.teaching) stopTeach();
+  }, [raised, micTeach.teaching, stopTeach]);
   const items: DockEntry[] = [
     { key: 'home', label: t('home'), href: '/', icon: <HomeIcon /> },
     {
