@@ -116,6 +116,7 @@ export function RecipeLinesSection({
             listStyle: 'none',
             display: 'flex',
             flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
           <SortableList

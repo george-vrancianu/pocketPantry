@@ -1550,6 +1550,20 @@ describe('EditFamilyRecipePage Source Link', () => {
     ).toBeVisible();
   });
 
+  it('drops "Recipe saved." when the link is removed after a Save', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(linked),
+      'PUT /api/recipes/g': () => Response.json(linked),
+    });
+    await openTab(user, 'Details');
+    await screen.findByRole('link', { name: 'From example.com ↗' });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Remove link' }));
+    expect(screen.queryByText('Recipe saved.')).toBeNull();
+  });
+
   it('sends the removal once: a second Save leaves the link out', async () => {
     const user = userEvent.setup({ delay: null });
     let current = linked;

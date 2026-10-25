@@ -700,7 +700,9 @@ export function EditFamilyRecipePage() {
       notices={
         <>
           <Typography role="status" variant="body2">
-            {saved && !saving && !dirty ? t('recipes:family.saved') : null}
+            {saved && !saving && !dirty && !linkRemoved
+              ? t('recipes:family.saved')
+              : null}
           </Typography>
           {failure ? (
             <Alert>
