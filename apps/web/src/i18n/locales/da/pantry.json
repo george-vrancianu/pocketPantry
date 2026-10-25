@@ -85,7 +85,8 @@
     "quick": {
       "label": "Tilføj hurtigt",
       "photo": "Tag et billede",
-      "barcode": "Scan stregkode"
+      "barcode": "Scan stregkode",
+      "sayIt": "Sig det"
     }
   },
   "picker": {

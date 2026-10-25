@@ -58,6 +58,12 @@ export type DockCapsuleProps = {
    * dimmed stand-in instead of the `micSlot` element). Without a `micSlot` there is no mic half.
    */
   micLabel?: string;
+  /**
+   * Non-blocking teach: light one half (butter fill, pulse ring) and leave everything else as it is.
+   * Nothing is dimmed or disabled, the capsule's ring keeps the page colour, and the Dock's tabs stay
+   * usable (do not set the Dock's `teaching`). `teach` wins if both are set.
+   */
+  highlight?: DockTeach;
 };
 
 /**
@@ -71,9 +77,11 @@ export function DockCapsule({
   micSlot,
   teach,
   micLabel,
+  highlight,
 }: DockCapsuleProps) {
   const pulse = !usePrefersReducedMotion();
   const cameraDimmed = teach === 'mic';
+  const litHalf = teach ?? highlight;
   const camera = (
     <ButtonBase
       {...(cameraDimmed ? {} : { href: cameraHref })}
@@ -94,7 +102,7 @@ export function DockCapsule({
               borderRadius: `${radius.pill} ${radius.pill} 0 0`,
             }
           : {},
-        teach === 'camera' ? lit(pulse) : {},
+        litHalf === 'camera' ? lit(pulse) : {},
         cameraDimmed ? dimmed : {},
         focusRing,
       ]}
@@ -104,6 +112,7 @@ export function DockCapsule({
   );
   return (
     <Box
+      data-dock-capsule=""
       sx={{
         position: 'absolute',
         left: '50%',
@@ -159,7 +168,7 @@ export function DockCapsule({
                   position: 'relative',
                   borderRadius: `0 0 ${radius.pill} ${radius.pill}`,
                 },
-                teach === 'mic' ? lit(pulse) : {},
+                litHalf === 'mic' ? lit(pulse) : {},
               ]}
             />
           )}

@@ -104,6 +104,45 @@ describe('Dock teaching the mic', () => {
   });
 });
 
+describe('Dock with a non-blocking teach', () => {
+  afterEach(cleanup);
+
+  function renderHint(half: 'camera' | 'mic') {
+    return render(
+      <Dock
+        label="Main"
+        items={items}
+        activeKey="Pantry"
+        centre={
+          <DockCapsule
+            cameraLabel="Camera"
+            cameraHref="/scan"
+            micSlot={() => undefined}
+            highlight={half}
+          />
+        }
+      />,
+    );
+  }
+
+  it('leaves the tabs and the camera usable while the mic half is lit', () => {
+    renderHint('mic');
+    for (const name of ['Camera', 'Home', 'Shopping', 'Pantry', 'Recipes']) {
+      const control = screen.getByRole('link', { name });
+      expect(control.hasAttribute('aria-disabled')).toBe(false);
+      expect(control.getAttribute('tabindex')).not.toBe('-1');
+    }
+    expect(
+      screen.getByRole('link', { name: 'Pantry' }).getAttribute('aria-current'),
+    ).toBe('page');
+  });
+
+  it('lights the chosen half with the pulse ring', () => {
+    renderHint('camera');
+    expect(pulses()).toBe(true);
+  });
+});
+
 describe('Dock not teaching', () => {
   afterEach(cleanup);
 

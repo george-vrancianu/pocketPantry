@@ -91,7 +91,8 @@
     "quick": {
       "label": "Adaugă rapid",
       "photo": "Fă o poză",
-      "barcode": "Scanează codul"
+      "barcode": "Scanează codul",
+      "sayIt": "Spune"
     }
   },
   "picker": {

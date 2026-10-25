@@ -12,7 +12,12 @@ import { useTranslation } from 'react-i18next';
 import type { DockState } from '../lib/dockState';
 import { VOICE_LAYER } from '../lib/voicePlacement';
 import { useShowsDockMic } from './VoiceNote';
-import { useDockRaised, useRegisterDockMicSlot } from './voice/VoiceHost';
+import { MicTeachCallout } from './voice/MicTeachCallout';
+import {
+  useDockRaised,
+  useMicTeach,
+  useRegisterDockMicSlot,
+} from './voice/VoiceHost';
 
 type Props = Partial<Pick<DockState, 'activeKey'>> & {
   /**
@@ -29,6 +34,8 @@ export function AppDock({ activeKey, teach, cameraHref = '/scan' }: Props) {
   const registerMicSlot = useRegisterDockMicSlot();
   const showMic = useShowsDockMic();
   const raised = useDockRaised();
+  const micTeach = useMicTeach();
+  const hint = micTeach.teaching && showMic && teach === undefined;
   const items: DockEntry[] = [
     { key: 'home', label: t('home'), href: '/', icon: <HomeIcon /> },
     {
@@ -51,21 +58,25 @@ export function AppDock({ activeKey, teach, cameraHref = '/scan' }: Props) {
     },
   ];
   return (
-    <Dock
-      label={t('label')}
-      items={items}
-      activeKey={activeKey}
-      teaching={teach !== undefined}
-      zIndex={raised ? VOICE_LAYER.dock : undefined}
-      centre={
-        <DockCapsule
-          cameraLabel={t('camera')}
-          cameraHref={cameraHref}
-          micSlot={showMic ? registerMicSlot : undefined}
-          micLabel={t('voice:voiceButton.label')}
-          teach={teach}
-        />
-      }
-    />
+    <>
+      {hint ? <MicTeachCallout onDone={micTeach.stop} /> : null}
+      <Dock
+        label={t('label')}
+        items={items}
+        activeKey={activeKey}
+        teaching={teach !== undefined}
+        zIndex={raised ? VOICE_LAYER.dock : undefined}
+        centre={
+          <DockCapsule
+            cameraLabel={t('camera')}
+            cameraHref={cameraHref}
+            micSlot={showMic ? registerMicSlot : undefined}
+            micLabel={t('voice:voiceButton.label')}
+            teach={teach}
+            highlight={hint ? 'mic' : undefined}
+          />
+        }
+      />
+    </>
   );
 }

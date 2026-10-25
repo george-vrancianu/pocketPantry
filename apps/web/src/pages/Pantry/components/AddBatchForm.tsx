@@ -27,6 +27,8 @@ type Props = {
   start?: AddBatchStart;
   /** Told when the camera overlay opens or closes, so a host can leave Escape to the overlay. */
   onCameraOpenChange?: (open: boolean) => void;
+  /** The Say it tile; leave out where the Dock has no mic. */
+  onSayIt?: () => void;
 };
 
 /** The camera the form opens: a Product photo or a barcode, never the Scan page's other modes. */
@@ -37,6 +39,7 @@ export function AddBatchForm({
   onCancel,
   start,
   onCameraOpenChange,
+  onSayIt,
 }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const form = useAddBatchForm({ onSaved, start });
@@ -83,6 +86,7 @@ export function AddBatchForm({
         disabled={busy}
         openerRef={opener}
         onOpen={(mode) => camera.openCamera(mode)}
+        onSayIt={onSayIt}
       />
       {busy ? (
         <Typography role="status" color="text.secondary">

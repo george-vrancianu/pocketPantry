@@ -85,7 +85,8 @@
     "quick": {
       "label": "Add quickly",
       "photo": "Take a photo",
-      "barcode": "Scan barcode"
+      "barcode": "Scan barcode",
+      "sayIt": "Say it"
     }
   },
   "picker": {
