@@ -179,11 +179,12 @@
       "cook": "Gătire"
     },
     "baseCard": {
-      "subline": "Alege de la ce Rețetă de bază pornește această Rețetă.",
-      "savesVariant": "Se salvează ca Variantă a {{title}}.",
+      "closest": "cea mai apropiată",
+      "subline": "Alege Rețeta din Catalog din care provine această Variantă sau las-o de sine stătătoare.",
+      "savesVariant": "Se salvează ca Variantă a rețetei <b>{{title}}</b>.",
       "savesBase": "Se salvează ca propria Rețetă de bază."
     },
-    "variantOf": "Variantă a {{title}}"
+    "variantOf": "Variantă a rețetei <b>{{title}}</b>"
   },
   "fewerServings": "Mai puține porții",
   "moreServings": "Mai multe porții",

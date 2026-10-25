@@ -38,6 +38,7 @@ import {
   Snowflake,
   SquareSplitHorizontal,
   LeafyGreen,
+  Link2,
   type LucideProps,
 } from 'lucide-react';
 
@@ -312,6 +313,8 @@ export const ArrowLeftIcon = lucide(ArrowLeft);
 export const SwapIcon = lucide(ArrowLeftRight);
 export const PeopleIcon = lucide(Users);
 export const BranchIcon = lucide(GitBranch);
+/** A Recipe's Source Link row. */
+export const LinkIcon = lucide(Link2);
 export const EyeIcon = lucide(Eye);
 export const RunningLowIcon = lucide(BatteryLow);
 

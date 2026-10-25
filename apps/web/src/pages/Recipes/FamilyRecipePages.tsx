@@ -48,7 +48,8 @@ import {
   type FamilyDraft,
   type NewRecipeDraft,
 } from './familyDraft';
-import { BaseRecipeCard, VariantOfRow } from './components/BaseRecipeCard';
+import { BaseRecipeCard } from './components/BaseRecipeCard';
+import { VariantOfRow } from './components/VariantOfRow';
 import { FamilyRecipeForm } from './components/FamilyRecipeForm';
 
 /** The draft's guidance with its Pairing links named from the source Recipe (same order). */
@@ -459,14 +460,15 @@ function NewVariantContent({
   const source = useRecipe(id);
   // ADR 0029: on a Family's copy the Variant still branches from the Catalog Base, which the copy's own view does not name.
   const baseId = draft.data?.parentId;
-  const catalogBase = useRecipe(
-    baseId ?? '',
-    baseId !== undefined && baseId !== id,
-  );
+  const fetchesBase = baseId !== undefined && baseId !== id;
+  const catalogBase = useRecipe(baseId ?? '', fetchesBase, false);
+  // A disabled query is "pending" for ever: wait only for a Base that is being fetched.
   const ready =
-    draft.data !== undefined && !source.isPending && !catalogBase.isPending;
-  const baseTitle =
-    baseId === id ? source.data?.title : catalogBase.data?.title;
+    draft.data !== undefined &&
+    !source.isPending &&
+    !(fetchesBase && catalogBase.isPending);
+  // When the Base cannot be fetched, name nothing rather than the Family's copy.
+  const baseTitle = fetchesBase ? catalogBase.data?.title : source.data?.title;
 
   return (
     <>
@@ -553,9 +555,7 @@ function VariantForm({
       hint={t('recipes:family.copyHint', {
         source: source?.title ?? prefill.title,
       })}
-      belowTitle={
-        <VariantOfRow title={baseTitle ?? source?.title ?? prefill.title} />
-      }
+      belowTitle={baseTitle ? <VariantOfRow title={baseTitle} /> : null}
       notices={session.notices}
       detailsEnd={session.discardButton}
       initial={initial.draft}

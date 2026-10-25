@@ -170,11 +170,12 @@
       "cook": "Cook"
     },
     "baseCard": {
-      "subline": "Pick what this Recipe branches from.",
-      "savesVariant": "Saves as a Variant of {{title}}.",
+      "closest": "closest match",
+      "subline": "Pick the Catalog Recipe this one is a Variant of, or keep it standalone.",
+      "savesVariant": "Saves as a Variant of <b>{{title}}</b>.",
       "savesBase": "Saves as its own Base Recipe."
     },
-    "variantOf": "Variant of {{title}}"
+    "variantOf": "Variant of <b>{{title}}</b>"
   },
   "fewerServings": "Fewer Servings",
   "moreServings": "More Servings",

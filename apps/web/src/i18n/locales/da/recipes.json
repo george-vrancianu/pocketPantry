@@ -170,11 +170,12 @@
       "cook": "Tilberedning"
     },
     "baseCard": {
-      "subline": "Vælg, hvilken grundopskrift denne opskrift bygger på.",
-      "savesVariant": "Gemmes som en variant af {{title}}.",
+      "closest": "nærmeste",
+      "subline": "Vælg den Katalogopskrift, denne er en variant af, eller lad den stå selvstændig.",
+      "savesVariant": "Gemmes som en variant af <b>{{title}}</b>.",
       "savesBase": "Gemmes som sin egen grundopskrift."
     },
-    "variantOf": "Variant af {{title}}"
+    "variantOf": "Variant af <b>{{title}}</b>"
   },
   "fewerServings": "Færre portioner",
   "moreServings": "Flere portioner",

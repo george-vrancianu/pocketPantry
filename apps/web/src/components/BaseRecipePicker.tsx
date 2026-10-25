@@ -1,4 +1,14 @@
-import { Box, Link, Stack, TextField, Typography } from '@pocket-pantry/ui';
+import {
+  Box,
+  InputAdornment,
+  Link,
+  SearchIcon,
+  Stack,
+  Tag,
+  TextField,
+  Typography,
+  tokens,
+} from '@pocket-pantry/ui';
 import { useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { recipeHref } from '../lib/recipeHref';
@@ -41,6 +51,8 @@ type Props = {
   onChange: (parentId: string | null) => void;
   /** A line under the heading saying what the pick is for. */
   subline?: string;
+  /** Rows as the Base Recipe card draws them (dividers, a "closest match" pill, a search icon); off for the sheet. */
+  card?: boolean;
 };
 
 function BaseOption({
@@ -51,6 +63,9 @@ function BaseOption({
   allergyWarning,
   openHref,
   openLabel,
+  card = false,
+  pill,
+  muted = false,
 }: {
   checked: boolean;
   label: string;
@@ -60,12 +75,38 @@ function BaseOption({
   /** Where "Preview" goes, with its accessible name; both or neither. */
   openHref?: string;
   openLabel?: { text: string; name: string };
+  card?: boolean;
+  /** A small label after the title ("closest match"), card rows only. */
+  pill?: string;
+  /** The "no base" row, quieter than the Bases. */
+  muted?: boolean;
 }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+        ...(card && {
+          minHeight: 46,
+          '& + &': { borderTop: `1px solid ${tokens.color.line}` },
+        }),
+      }}
+    >
       <Box
         component="label"
-        sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 44 }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          minHeight: 44,
+          flexWrap: 'wrap',
+          ...(card && {
+            flex: 1,
+            fontWeight: muted ? 500 : 600,
+            color: muted ? tokens.color.muted : undefined,
+          }),
+        }}
       >
         <input
           type="radio"
@@ -75,6 +116,7 @@ function BaseOption({
           style={{ width: 20, height: 20 }}
         />
         {label}
+        {pill ? <Tag tone="accent">{pill}</Tag> : null}
         <AllergenIndicator warning={allergyWarning} />
       </Box>
       {openHref && openLabel ? (
@@ -99,8 +141,9 @@ export function BaseRecipePicker({
   onShowHidden,
   onChange,
   subline,
+  card = false,
 }: Props) {
-  const { t } = useTranslation('review');
+  const { t } = useTranslation(['review', 'recipes']);
   const groupName = useId();
   const { chosen, another, search } = state;
   const setChosen = (id: string) => onPick({ ...state, chosen: id });
@@ -171,10 +214,16 @@ export function BaseRecipePicker({
             key={match.id}
             name={groupName}
             checked={selected === match.id}
+            card={card}
             label={
-              index === 0
+              index === 0 && !card
                 ? t('plateRecipe.closest', { title: match.title })
                 : match.title
+            }
+            pill={
+              index === 0 && card
+                ? t('recipes:family.baseCard.closest')
+                : undefined
             }
             onSelect={() => setChosen(match.id)}
             allergyWarning={match.allergyWarning}
@@ -193,6 +242,7 @@ export function BaseRecipePicker({
           <BaseOption
             name={groupName}
             checked={selected === extra.id}
+            card={card}
             label={extra.title}
             onSelect={() => setChosen(extra.id)}
             allergyWarning={extra.allergyWarning}
@@ -203,6 +253,7 @@ export function BaseRecipePicker({
             key={recipe.id}
             name={groupName}
             checked={selected === recipe.id}
+            card={card}
             label={recipe.title}
             onSelect={() => pickAnother(recipe)}
             allergyWarning={recipe.allergyWarning}
@@ -211,6 +262,8 @@ export function BaseRecipePicker({
         <BaseOption
           name={groupName}
           checked={selected === STANDALONE}
+          card={card}
+          muted={card}
           label={t('plateRecipe.standalone')}
           onSelect={() => setChosen(STANDALONE)}
         />
@@ -219,7 +272,18 @@ export function BaseRecipePicker({
         type="search"
         label={t('plateRecipe.search')}
         value={search}
-        slotProps={{ htmlInput: { maxLength: 100 } }}
+        slotProps={{
+          htmlInput: { maxLength: 100 },
+          ...(card && {
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon size={18} />
+                </InputAdornment>
+              ),
+            },
+          }),
+        }}
         onChange={(event) => setSearch(event.target.value)}
       />
     </Stack>

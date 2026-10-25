@@ -1,4 +1,12 @@
-import { Box, Button, Link, Stack, Typography } from '@pocket-pantry/ui';
+import {
+  Box,
+  Button,
+  Link,
+  LinkIcon,
+  Stack,
+  Typography,
+  tokens,
+} from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { languageName } from '../lib/languageName';
@@ -51,7 +59,7 @@ export function SourceLink({
 
 /**
  * A Source Link the Member may drop but never change: the link row with a "Remove link" button.
- * Removing swaps the row for a status line with Undo (focus moves to Undo); the caller holds
+ * Removing swaps the row for a status line with Undo (focus moves to Undo, and back to "Remove link" after Undo); the caller holds
  * `removed` and applies it when the Member saves.
  */
 export function RemovableSourceLink({
@@ -69,30 +77,53 @@ export function RemovableSourceLink({
 }) {
   const { t } = useTranslation(['recipes', 'common']);
   const undoRef = useRef<HTMLButtonElement>(null);
-  const [asked, setAsked] = useState(false);
-  // The remove button unmounts with the row: focus goes to Undo, the next thing to do.
+  const removeRef = useRef<HTMLButtonElement>(null);
+  // Undo / Remove link: the button Member pressed unmounts with its row, so focus goes to its twin.
+  const [moved, setMoved] = useState(false);
   useEffect(() => {
-    if (removed && asked) undoRef.current?.focus();
-  }, [removed, asked]);
+    if (!moved) return;
+    (removed ? undoRef : removeRef).current?.focus();
+  }, [removed, moved]);
   if (removed) {
     return (
       <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
         <Typography role="status" variant="body2">
           {t('recipes:sourceLink.removed')}
         </Typography>
-        <Button ref={undoRef} variant="ghost" onClick={onUndo}>
+        <Button
+          ref={undoRef}
+          variant="ghost"
+          onClick={() => {
+            setMoved(true);
+            onUndo();
+          }}
+        >
           {t('common:row.undo')}
         </Button>
       </Stack>
     );
   }
   return (
-    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-      <SourceLink href={href} translatedFrom={translatedFrom} />
+    <Stack
+      direction="row"
+      spacing={1}
+      sx={{ alignItems: 'center', fontSize: 13.5 }}
+    >
+      <Box
+        component="span"
+        aria-hidden
+        sx={{ display: 'inline-flex', color: tokens.color.muted }}
+      >
+        <LinkIcon size={16} />
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <SourceLink href={href} translatedFrom={translatedFrom} />
+      </Box>
       <Button
+        ref={removeRef}
         variant="ghost"
         onClick={() => {
-          setAsked(true);
+          setMoved(true);
           onRemove();
         }}
       >
