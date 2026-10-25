@@ -1,9 +1,11 @@
 import {
   Box,
   CameraIcon,
+  color as themeColor,
   focusRing,
   radius,
   ScanBarcodeIcon,
+  shadow,
   tokens,
 } from '@pocket-pantry/ui';
 import type { MouseEvent, ReactNode } from 'react';
@@ -84,9 +86,10 @@ function Tile({
         fontSize: 13,
         fontWeight: 700,
         color: color.ink,
-        backgroundColor: color.surface,
-        border: `1px solid ${color.line}`,
-        borderRadius: radius.chip,
+        backgroundColor: themeColor.cardBg,
+        border: `1px solid ${themeColor.cardLine}`,
+        borderRadius: radius.card,
+        boxShadow: shadow.card,
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.6 : 1,
         '&:hover': { backgroundColor: color.subtle },

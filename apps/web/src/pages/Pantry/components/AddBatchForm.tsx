@@ -11,7 +11,6 @@ import {
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
 import { StatusIcon } from '../../../components/StatusIcon';
-import { saveOverlayMode } from '../../../lib/cameraMode';
 import { CameraOverlay } from '../../Scan/CameraOverlay';
 import {
   useAddBatchForm,
@@ -99,7 +98,6 @@ export function AddBatchForm({
         <CameraOverlay
           modes={FORM_CAMERA_MODES}
           defaultMode={camera.openMode}
-          onModeChange={saveOverlayMode}
           notice={
             camera.barcodeMissed ? tScan('overlay.barcodeNotFound') : undefined
           }

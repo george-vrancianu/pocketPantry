@@ -8,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
+  FALLBACK_LOCATION,
   useCatalogSearch,
   type CatalogAllergen,
   type CatalogSearchResult,
@@ -17,7 +18,7 @@ import {
 import { ApiError } from '../../../lib/api';
 import { barcodeLine, useBarcodeLookup } from '../../../lib/barcode';
 import { isValidBarcode } from '../../../lib/gtin';
-import { loadOverlayMode, type CameraMode } from '../../../lib/cameraMode';
+import type { CameraMode } from '../../../lib/cameraMode';
 import { useProductRead, type ProposedLine } from '../../../lib/scan';
 import type { CameraResult } from '../../Scan/CameraOverlay';
 import {
@@ -37,8 +38,6 @@ export type AddBatchStart =
 
 /** The fields Prefill fills, and that are marked until the Member edits them. */
 export type PrefillField = 'ingredient' | 'amount' | 'expiry' | 'description';
-
-const FALLBACK_LOCATION: StorageLocation = 'cupboard';
 
 /** The picked Ingredient: a Catalog search result, or a starting one whose defaults are still loading. */
 type PickedIngredient = Pick<CatalogSearchResult, 'id' | 'name'> &
@@ -313,8 +312,8 @@ export function useAddBatchForm({
     : null;
   const camera = {
     open: cameraOpen,
-    /** Opens the overlay in `mode`, or the one the Member used last. */
-    openCamera: (mode: CameraMode = loadOverlayMode()) => open(mode, false),
+    /** Opens the overlay in `mode`. */
+    openCamera: (mode: CameraMode) => open(mode, false),
     cancel: () => setCameraOpen(false),
     onResult: onCameraResult,
     /** The mode the overlay opens in. */

@@ -133,22 +133,6 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     expect(fakeCamera.watching).toBe(0);
   });
 
-  it("remembers the last mode apart from the Scan page's", async () => {
-    const user = userEvent.setup();
-    localStorage.setItem('pocket-pantry.scan-mode', 'plate');
-    stubLookup(() => Response.json(found()));
-    renderWithProviders(<PantryPage />);
-    await openForm(user);
-    await user.click(cameraButton());
-    await user.click(screen.getByRole('radio', { name: 'Product' }));
-    await user.click(screen.getByRole('button', { name: 'Close scanner' }));
-
-    expect(localStorage.getItem('pocket-pantry.camera-overlay-mode')).toBe(
-      'product',
-    );
-    expect(localStorage.getItem('pocket-pantry.scan-mode')).toBe('plate');
-  });
-
   it('closes on a decoded barcode, prefills the form and credits Open Food Facts, without a Scan', async () => {
     const user = userEvent.setup();
     const calls = stubLookup(() => Response.json(found()));
@@ -275,10 +259,6 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     ).toBeVisible();
     expect(screen.getByRole('radio', { name: 'Product' })).toBeChecked();
     expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
-    // The Member's choice of mode is not overwritten by the switch.
-    expect(
-      localStorage.getItem('pocket-pantry.camera-overlay-mode'),
-    ).toBeNull();
   });
 
   it('keeps the form and shows a short error when the lookup fails', async () => {

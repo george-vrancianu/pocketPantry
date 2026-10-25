@@ -150,18 +150,13 @@ export class CatalogController {
     @Query(new ZodValidationPipe(popularToStartQuery))
     query: PopularToStartQuery,
   ): Promise<{ ingredients: CatalogSearchResult[] }> {
-    const ids = popularToStartIds(query.locale);
-    const found = await this.searchService.mapByIds(
-      await this.settings.catalogScopeForMember(member.id),
-      ids,
-      await this.languages.catalogLanguageOf(member.id),
-      await this.settings.expiryOverridesForMember(member.id),
-    );
     return {
-      ingredients: ids.flatMap((id) => {
-        const ingredient = found.get(id);
-        return ingredient ? [ingredient] : [];
-      }),
+      ingredients: await this.searchService.findByIds(
+        await this.settings.catalogScopeForMember(member.id),
+        popularToStartIds(query.locale),
+        await this.languages.catalogLanguageOf(member.id),
+        await this.settings.expiryOverridesForMember(member.id),
+      ),
     };
   }
 

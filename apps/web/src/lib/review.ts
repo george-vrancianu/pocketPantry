@@ -1,8 +1,9 @@
-import type {
-  CatalogAllergen,
-  CatalogSearchResult,
-  StorageLocation,
-  Unit,
+import {
+  FALLBACK_LOCATION,
+  type CatalogAllergen,
+  type CatalogSearchResult,
+  type StorageLocation,
+  type Unit,
 } from './catalog';
 import { defaultExpiryDate, parseQuantity, type NewBatch } from './pantry';
 import { isIsoDate } from './dateFormat';
@@ -11,7 +12,6 @@ import type { CameraMode } from './cameraMode';
 import type { ExclusionReason, ProposedLine } from './scan';
 import type { SessionScan } from './scanSession';
 
-const FALLBACK_LOCATION: StorageLocation = 'cupboard';
 const FALLBACK_UNIT: Unit = 'pcs';
 
 /** A proposed line while the Member edits it. Form fields are strings so half-typed input survives. */

@@ -1,20 +1,18 @@
 import { tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
+import { FALLBACK_LOCATION } from '../../../lib/catalog';
 import { usualAmountsInPriority } from '../../../lib/usualAmounts';
 import { usePopularToStart } from '../../../lib/popularToStart';
 import { useEmptyStateSearch } from './context';
 import { IngredientTile } from './IngredientTile';
 import { TileSection } from './TileSection';
 
-/** Where an Ingredient with no default Location goes. */
-const FALLBACK_LOCATION = 'cupboard';
-
 /** The empty state of a Family with nothing Recently Stocked: a fixed starter list, each with its usual amount and Location. */
 export function PopularToStart() {
   const { t, i18n } = useTranslation('catalog');
   const search = useEmptyStateSearch();
-  const popular = usePopularToStart(i18n.language, true);
+  const popular = usePopularToStart(i18n.language);
   if (!search || !popular.data || popular.data.length === 0) return null;
   return (
     <TileSection heading={t('search.popularToStart')}>
@@ -42,7 +40,6 @@ export function PopularToStart() {
             aisleId={ingredient.parentCategory.aisle.id}
             name={ingredient.name}
             why={{
-              glyph: '',
               text: `${amount} · ${location}`,
               color: tokens.color.muted,
             }}

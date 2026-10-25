@@ -6,6 +6,9 @@ import type { AmountScale } from './usualAmounts';
 
 export const LOCATIONS = ['fridge', 'freezer', 'cupboard', 'spices'] as const;
 export type StorageLocation = (typeof LOCATIONS)[number];
+
+/** Where an Ingredient with no default Location goes. */
+export const FALLBACK_LOCATION: StorageLocation = 'cupboard';
 export const UNITS = ['g', 'kg', 'ml', 'l', 'pcs'] as const;
 export type Unit = (typeof UNITS)[number];
 

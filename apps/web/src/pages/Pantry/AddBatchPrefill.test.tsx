@@ -131,8 +131,6 @@ async function shoot(user: ReturnType<typeof userEvent.setup>) {
 describe('Prefill the add-Batch form from a Product Scan', () => {
   beforeEach(() => {
     localStorage.clear();
-    // These tests are about the Product mode; Barcode is covered in AddBatchBarcode.test.tsx.
-    localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
     image.prepare = null;
   });
   afterEach(() => {
@@ -539,7 +537,6 @@ describe('Learn barcodes from Product photos', () => {
   const CODE = '5941234567899';
   beforeEach(() => {
     localStorage.clear();
-    localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
     image.prepare = null;
   });
   afterEach(() => {
