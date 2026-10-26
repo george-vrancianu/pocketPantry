@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 import { type GatorMood, gatorLayout } from './gatorGeometry';
 
@@ -41,6 +41,8 @@ function warmTap(mood: string, url: string) {
     // The file's own URL still plays a first Tap; let a later Gator retry.
     .catch(() => tapFetches.delete(mood));
 }
+/** Counts every Tap started by any Gator, so no two Taps of a mood ever share a data URL. */
+let tapRuns = 0;
 /** The source for one Tap run: its own data URL once the text is in, else the file. */
 function tapRunSrc(mood: string, run: number) {
   const text = TAP_TEXT[mood];
@@ -119,8 +121,12 @@ export function Gator({
 
   // Each Tap gets a new run, which remounts the image so it plays from its first frame.
   const [taps, setTaps] = useState(0);
+  // The run's tag comes from a module-wide counter: a remounted or second Gator
+  // must not reuse a data URL an earlier Tap already played out in WebKit.
+  const [tapRun, setTapRun] = useState(0);
   const startTap = () => {
     setTaps((n) => n + 1);
+    setTapRun(++tapRuns);
     setShot({ kind: 'tap' });
   };
   const [seenSignal, setSeenSignal] = useState(tapSignal);
@@ -153,7 +159,14 @@ export function Gator({
   useEffect(() => {
     if (tapSrc) warmTap(mood, tapSrc);
   }, [mood, tapSrc]);
-  const src = motion === 'tap' ? tapRunSrc(mood, taps) : files[motion];
+  // Re-resolves when the Tap text arrives (a re-render), but is not re-encoded on every render.
+  const tapText = TAP_TEXT[mood];
+  const tapDataSrc = useMemo(
+    () => (motion === 'tap' ? tapRunSrc(mood, tapRun) : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [motion === 'tap', mood, tapRun, tapText],
+  );
+  const src = tapDataSrc ?? files[motion];
 
   const Wrapper = onClick ? 'button' : 'span';
   return (

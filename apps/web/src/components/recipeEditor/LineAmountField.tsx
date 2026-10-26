@@ -115,7 +115,8 @@ export function LineAmountField({
         },
       }}
       sx={{
-        width: 120,
+        // 14 + number + 8 gap + chip (~58 for the widest unit, "buc.") + 6 leaves ~42 px: "1500" fits.
+        width: 128,
         '& .MuiOutlinedInput-root': { minHeight: HEIGHT, height: HEIGHT },
         '& .MuiOutlinedInput-input': { py: 0 },
       }}

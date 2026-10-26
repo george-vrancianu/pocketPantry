@@ -115,6 +115,27 @@ describe('Gator', () => {
       expect(second).not.toBe(first);
     });
 
+    it('gives a remounted or second same-mood Gator its own Tap source', async () => {
+      stubTapFetch();
+      const tapped = async () => {
+        const { container, rerender, unmount } = render(
+          <Gator mood="worried" alt="a" entrance={false} tapSignal={0} />,
+        );
+        await flushFetch();
+        rerender(
+          <Gator mood="worried" alt="a" entrance={false} tapSignal={1} />,
+        );
+        const src = image(container).getAttribute('src')!;
+        return { src, unmount };
+      };
+      const first = await tapped();
+      first.unmount();
+      const second = await tapped();
+      const third = await tapped();
+      expect(second.src).not.toBe(first.src);
+      expect(third.src).not.toBe(second.src);
+    });
+
     it('plays the Tap from the file while its text is not in yet', () => {
       vi.stubGlobal('fetch', () => new Promise(() => {}));
       const { container, rerender } = render(
