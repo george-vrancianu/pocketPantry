@@ -77,22 +77,22 @@ export const voiceReadModelSchema = z.object({
   /** The language the text was spoken in, or null when it can't be told. Only Assistant Requests use it. */
   spokenLanguage: z.enum(SCAN_LANGUAGES).nullable(),
 });
-/** What the model returned: Ingredients named by their index in the Catalog text. */
-export type VoiceReadModelResult = z.infer<typeof voiceReadModelSchema>;
+/** What the model answered (before `toVoiceRead`): Ingredients named by their index in the Catalog text. */
+export type VoiceReadAnswer = z.infer<typeof voiceReadModelSchema>;
 type WithIngredientId<T> = Omit<T, 'matchedIngredientIndex'> & {
   /** The proposed Ingredient's id, or null. */
   matchedIngredientId: string | null;
 };
-/** One Voice Action as read, its proposed Ingredient as an id. */
-export type ModelVoiceAction = WithIngredientId<z.infer<typeof modelAction>>;
-/** One Pantry Question as read, its proposed Ingredient as an id. */
-export type ModelPantryQuestion = WithIngredientId<
+/** One Voice Action of a `VoiceRead`: its proposed Ingredient as an id. */
+export type ReadVoiceAction = WithIngredientId<z.infer<typeof modelAction>>;
+/** One Pantry Question of a `VoiceRead`: its proposed Ingredient as an id. */
+export type ReadPantryQuestion = WithIngredientId<
   z.infer<typeof modelQuestion>
 >;
-/** A read with every proposed Ingredient as an id (`toVoiceRead`). */
-export type VoiceRead = Omit<VoiceReadModelResult, 'actions' | 'questions'> & {
-  actions: ModelVoiceAction[];
-  questions: ModelPantryQuestion[];
+/** The answer after `toVoiceRead`: every proposed Ingredient as an id. */
+export type VoiceRead = Omit<VoiceReadAnswer, 'actions' | 'questions'> & {
+  actions: ReadVoiceAction[];
+  questions: ReadPantryQuestion[];
 };
 
 /**
@@ -100,7 +100,7 @@ export type VoiceRead = Omit<VoiceReadModelResult, 'actions' | 'questions'> & {
  * one whose text the request sent; an index it does not hold is no proposal.
  */
 export function toVoiceRead(
-  read: VoiceReadModelResult,
+  read: VoiceReadAnswer,
   catalog: IngredientCatalog,
 ): VoiceRead {
   return {

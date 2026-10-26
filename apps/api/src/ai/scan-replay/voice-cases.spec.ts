@@ -1,4 +1,4 @@
-import type { ModelVoiceAction } from '../../voice/voice-actions';
+import type { ReadVoiceAction } from '../../voice/voice-actions';
 import type { VoiceCatalog } from './voice-catalog';
 import {
   compareActions,
@@ -44,8 +44,8 @@ const catalog: VoiceCatalog = {
 const MILK = '00000000-0000-4000-8000-000000000001';
 
 const modelAction = (
-  overrides: Partial<ModelVoiceAction> = {},
-): ModelVoiceAction => ({
+  overrides: Partial<ReadVoiceAction> = {},
+): ReadVoiceAction => ({
   target: 'shopping',
   op: 'add',
   spokenText: 'milk',
