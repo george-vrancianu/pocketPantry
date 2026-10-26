@@ -217,7 +217,7 @@ export const produce: SeedSection = {
         'Pearl onions',
         'Ceapă perlată',
         'g',
-        ['baby onions', 'silverskin onions'],
+        ['baby onions'],
         ['ceapă mică'],
       ],
       [
@@ -416,7 +416,7 @@ export const produce: SeedSection = {
       [
         'cooking-apples',
         'Cooking apples',
-        'Mere pentru gătit (Bramley)',
+        'Mere pentru gătit',
         'pcs',
         ['Bramley apples', 'Bramley'],
         ['mere bramley', 'mere acre'],
