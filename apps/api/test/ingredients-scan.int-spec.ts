@@ -237,9 +237,9 @@ describe('Ingredients Scan (integration)', () => {
     );
   });
 
-  it('never trusts the model: an invented identifier, an index outside the Catalog or a low Match becomes Unmatched', async () => {
+  it('never trusts the model: a UUID in place of an index, an index outside the Catalog or a low Match becomes Unmatched', async () => {
     respondWith([
-      item({ matchedIngredientId: '4b3f1f0a-0000-4000-8000-000000000000' }),
+      item({ matchedIngredientIndex: '4b3f1f0a-0000-4000-8000-000000000000' }),
       item({ matchConfidence: 0.2 }),
       item({ matchedIngredientIndex: 100_000 }),
       item({ matchedIngredientIndex: -1 }),

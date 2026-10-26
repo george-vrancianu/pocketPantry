@@ -330,11 +330,11 @@ describe('Receipt Scan (integration)', () => {
     }
   });
 
-  it('never trusts a model id: one outside the Catalog leaves the line Unmatched', async () => {
+  it('never trusts a UUID the model gives in place of an index: the line stays Unmatched', async () => {
     respondWith(
       receipt(
         product({
-          matchedIngredientId: '4b3f1f0a-0000-4000-8000-000000000000',
+          matchedIngredientIndex: '4b3f1f0a-0000-4000-8000-000000000000',
           fallbackIngredientName: 'Zzyzx mystery',
         }),
       ),

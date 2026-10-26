@@ -426,14 +426,14 @@ describe('Recipe from Link (integration)', () => {
     );
   });
 
-  it('leaves ids outside the Family scope, and low-confidence matches, Unmatched', async () => {
+  it('leaves a UUID in place of an index, and low-confidence matches, Unmatched', async () => {
     const ingredients = reading().ingredients;
     respondWith(
       reading({
         ingredients: [
           {
             ...ingredients[0],
-            ingredientId: crypto.randomUUID(),
+            ingredientIndex: crypto.randomUUID(),
             nameAsWritten: 'mystery',
           },
           {

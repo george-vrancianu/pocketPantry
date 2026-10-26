@@ -347,13 +347,13 @@ describe('Suggest Guidance (integration)', () => {
       expect(prompts[0].prompt).toContain(cat.id);
     });
 
-    it('keeps a link the model was not offered as an unlinked label', async () => {
+    it('keeps a link the model was not offered, or gave as a UUID in place of an index, as an unlinked label', async () => {
       const archived = await familyRecipe(member, 'Archived');
       await member.post(`/${archived.id}/archive`).expect(200);
       propose(
         idea({
           label: 'A',
-          ingredientId: '3f0c8a5e-6b1d-4c53-9a53-0d4f6f5e9a11',
+          ingredientIndex: '3f0c8a5e-6b1d-4c53-9a53-0d4f6f5e9a11',
         }),
         idea({ label: 'B', recipeId: '3f0c8a5e-6b1d-4c53-9a53-0d4f6f5e9a12' }),
         idea({ label: 'C', recipeId: archived.id }),

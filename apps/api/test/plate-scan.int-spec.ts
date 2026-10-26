@@ -256,11 +256,11 @@ describe('Plate Scan (integration)', () => {
       expect(prompts[0].prompt).toContain('"Pancakes"');
     });
 
-    it('never trusts the model: an id or index outside the Catalog, or a weak Match, is Unmatched', async () => {
+    it('never trusts the model: an index outside the Catalog, a UUID or other value that is not an index, or a weak Match, is Unmatched', async () => {
       respondWith({
         items: [
           item({
-            matchedIngredientId: '4b3f1f0a-0000-4000-8000-000000000000',
+            matchedIngredientIndex: '4b3f1f0a-0000-4000-8000-000000000000',
             fallbackIngredientName: 'Pixie dust',
           }),
           item({ matchConfidence: 0.2 }),
