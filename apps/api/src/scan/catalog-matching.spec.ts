@@ -203,6 +203,16 @@ describe('Catalog text and id validation', () => {
     expect(instruction).toContain('[index, name, category]');
     expect(instruction).toContain('Set ingredientIndex to the index');
     expect(instruction).toContain('never invent an index');
+    expect(instruction).toContain('a reasonable semantic match');
+  });
+
+  it('states the match rule a caller gives in place of a reasonable semantic match', () => {
+    const instruction = catalogIndexInstruction(
+      'ingredientIndex',
+      'the pairing is exactly that ingredient',
+    );
+    expect(instruction).toContain('the pairing is exactly that ingredient');
+    expect(instruction).not.toContain('semantic');
   });
 
   it('maps an index the model returns back to the id of that Ingredient in the same Catalog', () => {

@@ -106,11 +106,16 @@ export function catalogPrompt(catalog: IngredientCatalog): string {
 
 /**
  * What every prompt with `catalogPrompt` text tells the model about it: the
- * tuple layout, and that `field` takes an index from it, never an invented one.
- * Kept out of the Catalog text itself, which stays byte-identical for all callers.
+ * tuple layout, and that `field` takes an index from it, never an invented one,
+ * only when `match` holds (by default a reasonable semantic match; Guidance
+ * Pairings ask for exactly that Ingredient). Kept out of the Catalog text
+ * itself, which stays byte-identical for all callers.
  */
-export function catalogIndexInstruction(field: string): string {
-  return `Catalog ingredient tuples are [index, name, category]. Set ${field} to the index (the first tuple element) of a catalog ingredient only when that exact index is in the catalog and the ingredient is a reasonable semantic match; never invent an index. Otherwise use null.`;
+export function catalogIndexInstruction(
+  field: string,
+  match = 'the ingredient is a reasonable semantic match',
+): string {
+  return `Catalog ingredient tuples are [index, name, category]. Set ${field} to the index (the first tuple element) of a catalog ingredient only when that exact index is in the catalog and ${match}; never invent an index. Otherwise use null.`;
 }
 
 /**

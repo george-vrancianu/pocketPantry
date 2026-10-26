@@ -335,6 +335,8 @@ describe('Suggest Guidance (integration)', () => {
       );
       expect(prompts[0].prompt).not.toContain(butter);
       expect(prompts[0].prompt).toContain(dish.id);
+      // A Pairing links only to exactly that Ingredient, never a looser match.
+      expect(prompts[0].prompt).not.toContain('semantic match');
     });
 
     it('offers a Catalog Recipe and links to it', async () => {
