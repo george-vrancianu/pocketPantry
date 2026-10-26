@@ -18,7 +18,7 @@ import {
 import { ApiException } from '../common/api-exception';
 import {
   catalogPrompt,
-  ingredientIdAt,
+  withIngredientId,
 } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { ScanCapService } from '../scan/scan-cap.service';
@@ -361,13 +361,10 @@ function pairingsOf(
     context.linkableRecipes.map((r) => [r.id, r.title]),
   );
   const result: SuggestedPairing[] = [];
-  for (const { ingredientIndex, ...answered } of proposed) {
+  for (const answered of proposed) {
     if (result.length >= MAX_PAIRINGS) break;
     // The model names an Ingredient by index into the very Catalog `linkOffer` sent.
-    const idea = {
-      ...answered,
-      ingredientId: ingredientIdAt(context.catalog, ingredientIndex),
-    };
+    const idea = withIngredientId(context.catalog, answered, 'ingredientIndex');
     const ids = [idea.ingredientId, idea.recipeId].filter(
       (id): id is string => id !== null,
     );

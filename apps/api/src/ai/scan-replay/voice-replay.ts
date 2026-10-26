@@ -5,10 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { z } from 'zod';
 import type { ScanLanguage } from '../../catalog/catalog.schemas';
-import {
-  voiceReadModelSchema,
-  withIngredientIds,
-} from '../../voice/voice-actions';
+import { voiceReadModelSchema, toVoiceRead } from '../../voice/voice-actions';
 import { buildVoiceReadRequest } from '../../voice/voice-read-request';
 import type { StructuredOutputRequest } from '../structured-output-ai.service';
 import type { AiTokenUsage } from '../structured-output-ai.service';
@@ -153,7 +150,7 @@ export function evaluateReadRun(
     comparison: compareActions(c.expected, {
       // The answer names Ingredients by index into the Catalog text the read sent.
       actions: normalizeActions(
-        withIngredientIds(answer.data, catalogIn(catalog, c.locale)),
+        toVoiceRead(answer.data, catalogIn(catalog, c.locale)),
         catalog,
         c.locale,
         threshold,

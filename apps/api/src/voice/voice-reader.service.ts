@@ -8,7 +8,7 @@ import { PantryService } from '../pantry/pantry.service';
 import { SettingsService } from '../settings/settings.service';
 import {
   voiceReadModelSchema,
-  withIngredientIds,
+  toVoiceRead,
   type VoiceRead,
 } from './voice-actions';
 import type { VoiceDefaultTarget } from './voice-actions';
@@ -89,6 +89,6 @@ export class VoiceReaderService {
       throw new ApiException(502, 'voice.provider_unavailable');
     }
     // The model names Ingredients by index into this very `catalog`.
-    return withIngredientIds(read, catalog);
+    return toVoiceRead(read, catalog);
   }
 }

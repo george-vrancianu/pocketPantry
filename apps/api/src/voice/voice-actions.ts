@@ -6,8 +6,8 @@ import {
 import { normalizeName } from '../catalog/normalize';
 import {
   catalogIndexSchema,
-  ingredientIdAt,
   type IngredientCatalog,
+  withIngredientId,
 } from '../ingredients/ingredient-catalog';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, storageLocation } from '../database/schema';
@@ -37,7 +37,7 @@ const modelAction = z.object({
   op: z.enum(VOICE_OPS),
   /** The words that made this Voice Action, in the language spoken. */
   spokenText: z.string().trim().min(1).max(200),
-  /** The Catalog index the model chose; `withIngredientIds` turns it into an Ingredient id. */
+  /** The Catalog index the model chose; `toVoiceRead` turns it into an Ingredient id. */
   matchedIngredientIndex: catalogIndexSchema,
   matchConfidence: z.number().min(0).max(1),
   /** A short generic Ingredient name in the Catalog Language. */
@@ -60,7 +60,7 @@ const modelAction = z.object({
 const modelQuestion = z.object({
   /** The words that made this question, in the language spoken. */
   spokenText: z.string().trim().min(1).max(200),
-  /** The Catalog index the model chose; `withIngredientIds` turns it into an Ingredient id. */
+  /** The Catalog index the model chose; `toVoiceRead` turns it into an Ingredient id. */
   matchedIngredientIndex: catalogIndexSchema,
   matchConfidence: z.number().min(0).max(1),
   /** A short generic Ingredient name in the Catalog Language. */
@@ -89,7 +89,7 @@ export type ModelVoiceAction = WithIngredientId<z.infer<typeof modelAction>>;
 export type ModelPantryQuestion = WithIngredientId<
   z.infer<typeof modelQuestion>
 >;
-/** A read with every proposed Ingredient as an id (`withIngredientIds`). */
+/** A read with every proposed Ingredient as an id (`toVoiceRead`). */
 export type VoiceRead = Omit<VoiceReadModelResult, 'actions' | 'questions'> & {
   actions: ModelVoiceAction[];
   questions: ModelPantryQuestion[];
@@ -99,21 +99,18 @@ export type VoiceRead = Omit<VoiceReadModelResult, 'actions' | 'questions'> & {
  * The read with each Ingredient index turned into its id. `catalog` must be the
  * one whose text the request sent; an index it does not hold is no proposal.
  */
-export function withIngredientIds(
+export function toVoiceRead(
   read: VoiceReadModelResult,
   catalog: IngredientCatalog,
 ): VoiceRead {
-  const withId = <T extends { matchedIngredientIndex: number | null }>({
-    matchedIngredientIndex,
-    ...item
-  }: T) => ({
-    ...item,
-    matchedIngredientId: ingredientIdAt(catalog, matchedIngredientIndex),
-  });
   return {
     ...read,
-    actions: read.actions.map(withId),
-    questions: read.questions.map(withId),
+    actions: read.actions.map((action) =>
+      withIngredientId(catalog, action, 'matchedIngredientIndex'),
+    ),
+    questions: read.questions.map((question) =>
+      withIngredientId(catalog, question, 'matchedIngredientIndex'),
+    ),
   };
 }
 

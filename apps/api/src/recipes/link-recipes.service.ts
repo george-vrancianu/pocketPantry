@@ -8,7 +8,10 @@ import type { Database } from '../database/database.types';
 import { recipes } from '../database/schema';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
-import { catalogPrompt } from '../ingredients/ingredient-catalog';
+import {
+  catalogPrompt,
+  withIngredientId,
+} from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import {
   InjectPageFetcher,
@@ -27,8 +30,8 @@ import {
   detectedLanguage,
   linkReadingJsonSchema,
   linkReadingSchema,
+  type LinkReading,
   type LinkReadingAnswer,
-  withIngredientIds,
 } from './link-reading.schemas';
 import { PlateRecipesService } from './plate-recipes.service';
 import { RecipeBrowseService } from './recipe-browse.service';
@@ -125,7 +128,12 @@ export class LinkRecipesService {
       model: 'text',
     });
     // The model names Ingredients by index into this very `catalog`.
-    const reading = withIngredientIds(answer, catalog);
+    const reading: LinkReading = {
+      ...answer,
+      ingredients: answer.ingredients.map((line) =>
+        withIngredientId(catalog, line, 'ingredientIndex'),
+      ),
+    };
 
     const draft = draftOfReading(reading, {
       ingredientNames: new Map(catalog.ingredients.map((i) => [i.id, i.name])),
