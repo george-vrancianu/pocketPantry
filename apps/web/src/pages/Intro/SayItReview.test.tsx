@@ -1,4 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -20,7 +26,7 @@ import {
   Where,
 } from '../../test/intro';
 import { renderWithProviders } from '../../test/render';
-import { takeScan, shutter } from '../../test/scan';
+import { photoStack, shutter, stackCount, takeScan } from '../../test/scan';
 import {
   pressDown,
   holdLongEnough,
@@ -119,7 +125,8 @@ async function openSayIt(
     ...options,
     routes: { ...VOICE_ROUTES(heard, applied), ...options?.routes },
   });
-  const { sent } = stubVoiceFetch(globalThis.fetch as never);
+  const voice = stubVoiceFetch(globalThis.fetch as never);
+  const { sent } = voice;
   renderWithProviders(
     <>
       <App />
@@ -129,17 +136,23 @@ async function openSayIt(
     { route: route ?? '/intro/setup' },
   );
   if (!route) await goToSayIt();
-  return { calls, sent };
+  return { calls, sent, voice };
 }
 
-/** Holds the mic, speaks (the fake read is canned) and lets go; the Review opens. */
-async function speak() {
+/** Holds the mic and lets go: one Voice Note goes to the Voice Inbox. */
+async function record() {
   const button = await talkButton();
   pressDown(button);
   await screen.findByText("Gator's listening");
   await holdLongEnough();
   fireEvent.pointerUp(button);
-  return await screen.findByRole('dialog', { name: "Here's what I heard" });
+}
+
+/** Holds the mic, speaks (the fake read is canned) and lets go; Review is pressed in the strip. */
+async function speak() {
+  await record();
+  // Nothing opens by itself: the note waits in the Voice Inbox strip until Review is pressed.
+  return await openReady({ name: "Here's what I heard" });
 }
 
 const writes = (calls: ReturnType<typeof stubSetupMember>) =>
@@ -170,9 +183,9 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     expect(mic.request).not.toHaveBeenCalled();
     fireEvent.pointerUp(button);
 
-    const review = await screen.findByRole('dialog', {
-      name: "Here's what I heard",
-    });
+    expect(await screen.findByText('1 ready')).toBeVisible();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const review = await openReady({ name: "Here's what I heard" });
     expect(sent[0].get('defaultTarget')).toBe('pantry');
     expect(
       within(review).getByRole('img', { name: 'Gator, happy' }),
@@ -380,52 +393,105 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     expect(where()).toBe('/intro/say-it');
   });
 
-  it('shows only the reading pill, not the callout, while Gator reads the note', async () => {
+  it('shows the Voice Inbox strip, not the callout, while Gator reads the note', async () => {
     await openSayIt(undefined, undefined, {
       routes: { 'POST /api/voice': () => new Promise<Response>(() => {}) },
     });
-    const button = await talkButton();
-    pressDown(button);
-    await screen.findByText("Gator's listening");
-    await holdLongEnough();
-    fireEvent.pointerUp(button);
-    expect(await screen.findByText(/Gator's reading your note/)).toBeVisible();
+    await record();
+    expect(await screen.findByText('Reading 1')).toBeVisible();
     expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
   });
 
-  it('cannot be skipped while Gator is still reading the note, so that note is not lost', async () => {
+  it('asks before Skip drops a note Gator is still reading, and a late answer does not bring it back', async () => {
+    let answer: (response: Response) => void = () => {};
     await openSayIt(undefined, undefined, {
-      routes: { 'POST /api/voice': () => new Promise<Response>(() => {}) },
+      routes: {
+        'POST /api/voice': () =>
+          new Promise<Response>((resolve) => {
+            answer = resolve;
+          }),
+      },
     });
-    const button = await talkButton();
+    const user = userEvent.setup();
     expect(screen.getByRole('link', { name: 'Skip' })).toBeVisible();
-    pressDown(button);
-    await screen.findByText("Gator's listening");
-    await holdLongEnough();
-    fireEvent.pointerUp(button);
-    await screen.findByText(/Gator's reading your note/);
+    await record();
+    await screen.findByText('Reading 1');
     expect(screen.queryByRole('link', { name: 'Skip' })).toBeNull();
-    expect(screen.getByText('Skip')).toHaveAttribute('aria-disabled', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(
+      screen.getByText(
+        "Skip and lose this Voice Note? It hasn't been applied yet.",
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('button', { name: 'Skip' })).toHaveFocus();
+    expect(where()).toBe('/intro/say-it');
+    expect(screen.getByText('Reading 1')).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(
+      await screen.findByText(
+        "You're all set! I'll keep an eye on your kitchen.",
+      ),
+    ).toBeInTheDocument();
+    expect(where()).toBe('/intro/all-set');
+
+    // The read finishes after the drop: the note must not land in the Voice Inbox.
+    const late = Response.json(HEARD, { status: 201 });
+    const bodyRead = new Promise<void>((resolve) => {
+      const read = late.json.bind(late);
+      late.json = async () => {
+        try {
+          return await read();
+        } finally {
+          resolve();
+        }
+      };
+    });
+    await act(async () => {
+      answer(late);
+      await bodyRead;
+      // Let the client's continuation after the body settle, so a wrongly landing note would show.
+      for (let i = 0; i < 20; i += 1) await Promise.resolve();
+    });
+    await user.click(screen.getByRole('button', { name: 'Go to my kitchen' }));
+    await screen.findByRole('link', { name: 'Customise dashboard' });
+    expect(screen.queryByText('1 ready')).toBeNull();
+    expect(screen.queryByText('Reading 1')).toBeNull();
   });
 
-  it('lands back on Say it when the Voice Note cannot be read', async () => {
+  it('keeps a note that cannot be read in the Voice Inbox with Retry and Discard', async () => {
     await openSayIt(undefined, undefined, {
       routes: {
         'POST /api/voice': () =>
           Response.json({ code: 'unknown', params: {} }, { status: 500 }),
       },
     });
-    const button = await talkButton();
-    pressDown(button);
-    await screen.findByText("Gator's listening");
-    await holdLongEnough();
-    fireEvent.pointerUp(button);
-    expect(await screen.findByText("Couldn't send")).toBeVisible();
-    // The pill owns the space above the mic: the resting callout stays out of its way.
-    expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
+    const user = userEvent.setup();
+    await record();
+    expect(await screen.findByText('1 failed')).toBeVisible();
     expect(
       screen.queryByRole('dialog', { name: "Here's what I heard" }),
     ).toBeNull();
+    expect(where()).toBe('/intro/say-it');
+
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    expect(sheet.getByRole('button', { name: /^Retry:/ })).toBeVisible();
+    expect(sheet.getByRole('button', { name: /^Discard/ })).toBeVisible();
+  });
+
+  it('keeps a note that heard nothing until it is retried or discarded', async () => {
+    await openSayIt({ transcript: '', actions: [] });
+    await record();
+    expect(await screen.findByText('1 failed')).toBeVisible();
+    // It no longer leaves on its own.
+    await act(() => vi.advanceTimersByTimeAsync(60_000));
+    expect(screen.getByText('1 failed')).toBeVisible();
     expect(where()).toBe('/intro/say-it');
   });
 });
@@ -450,16 +516,24 @@ describe('Setup 2: the Voice Cap', () => {
           ),
       },
     });
+    await record();
+    expect(await screen.findByText('1 failed')).toBeVisible();
+
+    // The next press is refused up front, as in the app: no Listening card, the cap in the Voice Inbox.
     const button = await talkButton();
     pressDown(button);
-    await screen.findByText("Gator's listening");
     await holdLongEnough();
     fireEvent.pointerUp(button);
-
-    expect(
-      await screen.findByText("That's today's 30 Voice Notes"),
-    ).toBeVisible();
-    expect(screen.queryByText('Hold the mic, talk, let go')).toBeNull();
+    await screen.findByText('2 failed');
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /^Open/ }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    expect(sheet.getAllByText(/today's 30 Voice Notes/).length).toBeGreaterThan(
+      0,
+    );
     expect(
       screen.queryByRole('dialog', { name: "Here's what I heard" }),
     ).toBeNull();
@@ -520,6 +594,9 @@ describe('Setup: counts across both steps', () => {
     await user.click(screen.getByRole('link', { name: 'Camera' }));
     await waitFor(() => expect(shutter()).toBeInTheDocument());
     takeScan();
+    await waitFor(() => expect(stackCount()).toBe(1));
+    await user.click(photoStack());
+    await user.click((await screen.findAllByTestId('card-result'))[0]);
     await user.click(
       await screen.findByRole('button', { name: 'Add 2 to Pantry' }),
     );
@@ -554,5 +631,353 @@ describe('Setup: counts across both steps', () => {
     );
     expect(screen.queryByText('in your Pantry')).toBeNull();
     expect(screen.queryByText('on your Shopping List')).toBeNull();
+  });
+});
+
+describe('Setup 2: several Voice Notes', () => {
+  beforeEach(() => {
+    useVoiceTimers();
+    resetVoiceEnvironment();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const riceNote = {
+    transcript: 'We have rice.',
+    actions: [HEARD.actions[0]],
+  };
+  const eggs = voiceIngredient('eggs', 'Eggs');
+  const eggsNote = {
+    transcript: 'We have eggs.',
+    actions: [
+      voiceAction({
+        id: 'b1',
+        target: 'pantry',
+        op: 'add',
+        text: 'eggs',
+        ingredient: eggs,
+        defaults: { location: 'fridge' },
+      }),
+    ],
+  };
+
+  /** Two notes read in turn: the first answer, then the second. */
+  const twoNotes = (applies: unknown[]) => {
+    const heard = [riceNote, eggsNote];
+    let read = 0;
+    let applied = 0;
+    return {
+      routes: {
+        'POST /api/voice': () =>
+          Response.json(heard[read++ % heard.length], { status: 201 }),
+        'POST /api/voice/apply': () =>
+          Response.json(applies[applied++], { status: 201 }),
+      },
+    };
+  };
+  const RICE_APPLIED = { applied: [entry('a1', 'pantry')], skipped: [] };
+  const EGGS_APPLIED = { applied: [entry('b1', 'pantry')], skipped: [] };
+
+  async function twoReady(applies: unknown[]) {
+    const setup = await openSayIt(undefined, undefined, twoNotes(applies));
+    await record();
+    await screen.findByText('1 ready');
+    await record();
+    await screen.findByText('2 ready');
+    return setup;
+  }
+
+  it('adds the counts of every apply, moving on only once the Voice Inbox is empty', async () => {
+    await twoReady([RICE_APPLIED, EGGS_APPLIED]);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Open (2)' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    await user.click(sheet.getAllByRole('button', { name: /^Review:/ })[0]);
+    const first = await screen.findByRole('dialog', {
+      name: "Here's what I heard",
+    });
+    await user.click(
+      within(first).getByRole('button', { name: 'Do this one' }),
+    );
+
+    // One note is still waiting: stay on Say it, with the first apply counted.
+    expect(await screen.findByText('1 thing in your Pantry')).toBeVisible();
+    expect(where()).toBe('/intro/say-it');
+
+    await user.click(await screen.findByRole('button', { name: 'Review' }));
+    const second = await screen.findByRole('dialog', {
+      name: "Here's what I heard",
+    });
+    await user.click(
+      within(second).getByRole('button', { name: 'Do this one' }),
+    );
+
+    await screen.findByText(
+      "You're all set! I'll keep an eye on your kitchen.",
+    );
+    expect(where()).toBe('/intro/all-set');
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent(
+      '2in your Pantry',
+    );
+  });
+
+  it('counts Review all as one apply of every note', async () => {
+    const { calls } = await twoReady([
+      {
+        applied: [entry('a1', 'pantry'), entry('b1', 'pantry')],
+        skipped: [],
+      },
+    ]);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Open (2)' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    await user.click(sheet.getByRole('button', { name: 'Review all (2)' }));
+    const review = await screen.findByRole('dialog', {
+      name: "Here's what I heard",
+    });
+    await user.click(
+      within(review).getByRole('button', { name: 'Do these 2' }),
+    );
+
+    await screen.findByText(
+      "You're all set! I'll keep an eye on your kitchen.",
+    );
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent(
+      '2in your Pantry',
+    );
+    expect(calls.filter((c) => c.key === 'POST /api/voice/apply')).toHaveLength(
+      1,
+    );
+  });
+
+  it('does not count skipped or already-done entries', async () => {
+    await twoReady([
+      {
+        applied: [
+          entry('a1', 'pantry'),
+          { ...entry('b1', 'pantry'), alreadyDone: true },
+        ],
+        skipped: [{ id: 'c1', reason: 'other' }],
+      },
+    ]);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open (2)' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    await user.click(sheet.getByRole('button', { name: 'Review all (2)' }));
+    const review = await screen.findByRole('dialog', {
+      name: "Here's what I heard",
+    });
+    await user.click(
+      within(review).getByRole('button', { name: 'Do these 2' }),
+    );
+
+    await screen.findByText(
+      "You're all set! I'll keep an eye on your kitchen.",
+    );
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent(
+      '1in your Pantry',
+    );
+  });
+
+  it('moves on when the rest is discarded after something was applied', async () => {
+    await twoReady([RICE_APPLIED]);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open (2)' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    await user.click(sheet.getAllByRole('button', { name: /^Review:/ })[0]);
+    const first = await screen.findByRole('dialog', {
+      name: "Here's what I heard",
+    });
+    await user.click(
+      within(first).getByRole('button', { name: 'Do this one' }),
+    );
+    await screen.findByText('1 thing in your Pantry');
+
+    await user.click(await screen.findByRole('button', { name: 'Review' }));
+    const second = await screen.findByRole('dialog', {
+      name: "Here's what I heard",
+    });
+    await user.click(within(second).getByRole('button', { name: 'Discard' }));
+    await user.click(await screen.findByRole('button', { name: 'Discard' }));
+
+    await screen.findByText(
+      "You're all set! I'll keep an eye on your kitchen.",
+    );
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent(
+      '1in your Pantry',
+    );
+  });
+
+  it('stays on Say it when the only apply saved nothing new', async () => {
+    const { calls } = await twoReady([
+      {
+        applied: [{ ...entry('a1', 'pantry'), alreadyDone: true }],
+        skipped: [],
+      },
+    ]);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open (2)' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+    );
+    await user.click(sheet.getAllByRole('button', { name: /^Review:/ })[0]);
+    const first = await screen.findByRole('dialog', {
+      name: "Here's what I heard",
+    });
+    await user.click(
+      within(first).getByRole('button', { name: 'Do this one' }),
+    );
+    await waitFor(() =>
+      expect(
+        calls.filter((c) => c.key === 'POST /api/voice/apply'),
+      ).toHaveLength(1),
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Review' }));
+    const second = await screen.findByRole('dialog', {
+      name: "Here's what I heard",
+    });
+    await user.click(within(second).getByRole('button', { name: 'Discard' }));
+    await user.click(await screen.findByRole('button', { name: 'Discard' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    expect(where()).toBe('/intro/say-it');
+    expect(screen.getByText('Hold the mic, talk, let go')).toBeVisible();
+  });
+
+  it('stays on Say it when every note is discarded', async () => {
+    const { calls } = await twoReady([]);
+    const user = userEvent.setup();
+    for (const remaining of [2, 1]) {
+      const strip = screen.getByRole('button', {
+        name: remaining === 2 ? 'Open (2)' : 'Review',
+      });
+      await user.click(strip);
+      const review = await screen.findByRole('dialog', {
+        name: remaining === 2 ? 'Voice Inbox' : "Here's what I heard",
+      });
+      if (remaining === 2) {
+        await user.click(
+          within(review).getAllByRole('button', { name: /^Review:/ })[0],
+        );
+        const note = await screen.findByRole('dialog', {
+          name: "Here's what I heard",
+        });
+        await user.click(within(note).getByRole('button', { name: 'Discard' }));
+      } else {
+        await user.click(
+          within(review).getByRole('button', { name: 'Discard' }),
+        );
+      }
+      await user.click(await screen.findByRole('button', { name: 'Discard' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    }
+
+    expect(where()).toBe('/intro/say-it');
+    expect(screen.getByText('Hold the mic, talk, let go')).toBeVisible();
+    expect(writes(calls)).toEqual(['POST /api/voice', 'POST /api/voice']);
+  });
+});
+
+describe('Setup 2: Next and the Skip that asks first', () => {
+  beforeEach(() => {
+    useVoiceTimers();
+    resetVoiceEnvironment();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows no Next while the Voice Inbox is empty, and Skip moves on with no confirm', async () => {
+    await openSayIt();
+    const user = userEvent.setup();
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+    await user.click(screen.getByRole('link', { name: 'Skip' }));
+    expect(
+      await screen.findByText(
+        "You're all set! I'll keep an eye on your kitchen.",
+      ),
+    ).toBeInTheDocument();
+    expect(where()).toBe('/intro/all-set');
+    expect(screen.queryByText(/applied yet/)).toBeNull();
+  });
+
+  it('Next moves on to All set, and the note waits in the Voice Inbox on the Dashboard', async () => {
+    await openSayIt();
+    const user = userEvent.setup();
+    await record();
+    await screen.findByText('1 ready');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(
+      await screen.findByText(
+        "You're all set! I'll keep an eye on your kitchen.",
+      ),
+    ).toBeInTheDocument();
+    expect(where()).toBe('/intro/all-set');
+    await user.click(screen.getByRole('button', { name: 'Go to my kitchen' }));
+    await screen.findByRole('link', { name: 'Customise dashboard' });
+    expect(await screen.findByText('1 ready')).toBeVisible();
+  });
+
+  it('Skip with a ready note asks first: Cancel keeps it, Confirm drops it and moves on', async () => {
+    await openSayIt();
+    const user = userEvent.setup();
+    await record();
+    await screen.findByText('1 ready');
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(
+      screen.getByText(
+        "Skip and lose this Voice Note? It hasn't been applied yet.",
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByText(/applied yet/)).toBeNull();
+    expect(screen.getByText('1 ready')).toBeVisible();
+    expect(where()).toBe('/intro/say-it');
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(
+      await screen.findByText(
+        "You're all set! I'll keep an eye on your kitchen.",
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Go to my kitchen' }));
+    await screen.findByRole('link', { name: 'Customise dashboard' });
+    expect(screen.queryByText('1 ready')).toBeNull();
+  });
+
+  it('names the number of notes that would be lost', async () => {
+    const riceNote = {
+      transcript: 'We have rice.',
+      actions: [HEARD.actions[0]],
+    };
+    await openSayIt(riceNote);
+    const user = userEvent.setup();
+    await record();
+    await screen.findByText('1 ready');
+    await record();
+    await screen.findByText('2 ready');
+    await user.click(screen.getByRole('button', { name: 'Skip' }));
+    expect(
+      screen.getByText(
+        "Skip and lose these 2 Voice Notes? They haven't been applied yet.",
+      ),
+    ).toBeInTheDocument();
   });
 });

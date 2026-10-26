@@ -17,7 +17,6 @@ export const INTRO_STEPS = [
   'sign-up',
   'setup-or-skip',
   'snap',
-  'setup-review',
   'say-it',
   'all-set',
   'dashboard',
@@ -40,33 +39,50 @@ export const INTRO_PATHS = {
   dashboard: '/',
 } as const;
 
-/** The Setup Review: the line editor of one Setup Scan. It has no step path of its own because it depends on the Scan. */
+/** The Intro's own camera: the shared Scan screen with the Intro's settings, opened from Snap's Dock. */
+export const INTRO_CAMERA_PATH = '/intro/camera';
+
+/** The Setup overview: the real Review overview in the Intro's frame. It is part of the Snap step. */
+export const INTRO_REVIEW_PATH = '/intro/review';
+
+/** The Setup line editor of one card of the Scan Session, reached from the Setup overview. Part of the Snap step. */
 export const setupReviewPath = (scanId: string) => `/intro/review/${scanId}`;
 
 /** The Setup screens a signed-in Member who has not finished the Intro may be on. */
 export const INTRO_SETUP_PREFIX = '/intro/';
 
-/** The screen that follows when the Member carries on: the next one in order, except that Say it is followed by All set. */
+/** The screen that follows when the Member carries on: the next one in order. */
 export function nextStep(step: IntroStep): IntroStep {
   return INTRO_STEPS[INTRO_STEPS.indexOf(step) + 1] ?? 'dashboard';
 }
 
-/** The path of a step that has one; throws for the Setup Review, whose path depends on the Scan. */
+/** The path of a step. */
 export function introPath(step: IntroStep): string {
-  const path = (INTRO_PATHS as Partial<Record<IntroStep, string>>)[step];
-  if (!path) throw new Error(`The Intro step "${step}" has no path of its own`);
-  return path;
+  return INTRO_PATHS[step];
 }
 
 /** The Setup screens that have a Skip next to the progress. */
-export type SkippableStep = 'snap' | 'setup-review' | 'say-it';
+export type SkippableStep = 'snap' | 'say-it';
 
 /**
- * Where Skip goes. Skip moves on one step only: Snap or its Review go to Say it and Say it goes to All set.
+ * Where Skip goes. Skip moves on one step only: Snap (with its overview) goes to Say it and Say it goes to All set.
  * ("Skip, take me to the app" on Set up or skip leaves the Intro altogether, through `finishIntro`.)
  */
 export function skipStep(step: SkippableStep): IntroStep {
   return step === 'say-it' ? 'all-set' : 'say-it';
+}
+
+/**
+ * The auto-advance rule, shared by the steps that hold a collection (Snap's Scan Session, Say it's Voice
+ * Inbox): when the step's collection becomes empty and at least one save happened in this step, the Member
+ * moves on to the next step by themselves. Empty with nothing saved (everything discarded) stays.
+ * Returns the step to go to, or `null` to stay.
+ */
+export function advanceFrom(
+  step: IntroStep,
+  { empty, savedHere }: { empty: boolean; savedHere: boolean },
+): IntroStep | null {
+  return empty && savedHere ? nextStep(step) : null;
 }
 
 /** What Setup really saved so far. */
@@ -109,11 +125,9 @@ export function savedByVoice(
 type RedirectInput = {
   pathname: string;
   introDone: boolean;
-  /** The Member chose "Show me how" in this visit, so Setup's own use of the Scan screen is allowed. */
+  /** The Member chose "Show me how" in this visit, so the Intro screens after Set up or skip are allowed. */
   setupStarted: boolean;
 };
-
-const SCAN_PATHS = /^\/scan(\/|$)/;
 
 /**
  * Where a signed-in Member has to be sent, or `null` to stay put. One who is not done with the Intro
@@ -131,7 +145,6 @@ export function introRedirect({
   // Not started Setup in this visit (a reload, a reopened step): every Intro screen but Set up or skip
   // sends the Member back to it, so Setup resumes there with its counts from zero.
   if (onIntro) return setupStarted || pathname === setupPath ? null : setupPath;
-  if (setupStarted && SCAN_PATHS.test(pathname)) return null;
   return setupPath;
 }
 

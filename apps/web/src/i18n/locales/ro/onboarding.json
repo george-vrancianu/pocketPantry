@@ -31,7 +31,7 @@
     "title": "Umpli Cămara cu Gator?",
     "body": "Două încercări rapide și bucătăria ta e deja în aplicație. Durează cam două minute.",
     "showMe": "Arată-mi cum",
-    "showMeSnap": "1 · Fă o poză",
+    "showMeSnap": "1 · Fă câteva poze",
     "showMeSay": "2 · Spune-o",
     "skip": "Sari peste, du-mă în aplicație",
     "skipHint": "Începe cu o Cămară goală",
@@ -39,12 +39,19 @@
   },
   "setupStep": {
     "progress": "{{step}} din 2",
-    "skip": "Sari peste"
+    "skip": "Sari peste",
+    "next": "Înainte",
+    "lostPhotos_one": "Sari peste și pierzi această poză? Nu a fost salvată încă.",
+    "lostPhotos_few": "Sari peste și pierzi aceste {{count}} poze? Nu au fost salvate încă.",
+    "lostPhotos_other": "Sari peste și pierzi aceste {{count}} de poze? Nu au fost salvate încă.",
+    "lostNotes_one": "Sari peste și pierzi această notă vocală? Nu a fost aplicată încă.",
+    "lostNotes_few": "Sari peste și pierzi aceste {{count}} note vocale? Nu au fost aplicate încă.",
+    "lostNotes_other": "Sari peste și pierzi aceste {{count}} de note vocale? Nu au fost aplicate încă."
   },
   "snap": {
     "bubble": {
-      "ingredients": "Pune niște mâncare pe blat și fă-i o poză. Îmi dau eu seama ce este.",
-      "receipt": "Fotografiază bonul de la ultima ta cumpărătură. Pun eu toate produsele la locul lor."
+      "ingredients": "Pune niște mâncare pe blat și fă-i poze. Fă câte poze vrei, iar eu îmi dau seama ce este.",
+      "receipt": "Fotografiază bonul de la ultima ta cumpărătură. E lung? Fă-i mai multe poze, iar eu pun toate produsele la locul lor."
     },
     "question": "Ce ai în fața ta?",
     "choices": {
@@ -58,15 +65,25 @@
       }
     },
     "callout": {
-      "title": "Atinge camera ca să începi",
-      "body": "E mereu aici, în mijlocul meniului"
+      "title": "Atinge camera și fă poze",
+      "body": "Fă câte poze ai nevoie. Camera e mereu aici, în mijlocul meniului"
+    },
+    "session": {
+      "open": "Vezi pozele",
+      "allRead": "toate citite",
+      "photos_one": "{{count}} poză făcută",
+      "photos_few": "{{count}} poze făcute",
+      "photos_other": "{{count}} de poze făcute",
+      "stillReading_one": "{{count}} se citește încă",
+      "stillReading_few": "{{count}} se citesc încă",
+      "stillReading_other": "{{count}} se citesc încă"
     }
   },
   "sayIt": {
     "pill_one": "{{count}} lucru în Cămara ta",
     "pill_few": "{{count}} lucruri în Cămara ta",
     "pill_other": "{{count}} de lucruri în Cămara ta",
-    "bubble": "Acum spune-mi ce e în dulap sau ce trebuie cumpărat.",
+    "bubble": "Acum spune-mi ce e în dulap sau ce trebuie cumpărat. Poți lăsa câte note vrei.",
     "examplesLabel": "Ce poți spune",
     "examples": {
       "pantry": {
@@ -80,7 +97,7 @@
     },
     "callout": {
       "title": "Ține apăsat pe microfon, vorbește, dă drumul",
-      "body": "Telefonul îți va cere accesul la microfon. Înregistrarea se șterge după ce o citesc."
+      "body": "Telefonul îți va cere accesul la microfon. Poți lăsa mai multe note, apoi le verifici împreună. Fiecare înregistrare se șterge după ce o citesc."
     },
     "coach": {
       "keepHolding": "Ține apăsat cât timp vorbești.",

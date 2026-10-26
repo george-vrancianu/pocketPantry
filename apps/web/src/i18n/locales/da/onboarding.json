@@ -31,7 +31,7 @@
     "title": "Fyld dit spisekammer med Gator?",
     "body": "To hurtige forsøg, og dit køkken er allerede i appen. Det tager omkring to minutter.",
     "showMe": "Vis mig hvordan",
-    "showMeSnap": "1 · Tag et billede",
+    "showMeSnap": "1 · Tag nogle billeder",
     "showMeSay": "2 · Sig det",
     "skip": "Spring over, tag mig til appen",
     "skipHint": "Start med et tomt spisekammer",
@@ -39,12 +39,17 @@
   },
   "setupStep": {
     "progress": "{{step}} af 2",
-    "skip": "Spring over"
+    "skip": "Spring over",
+    "next": "Næste",
+    "lostPhotos_one": "Spring over og mist dette billede? Det er ikke gemt endnu.",
+    "lostPhotos_other": "Spring over og mist disse {{count}} billeder? De er ikke gemt endnu.",
+    "lostNotes_one": "Spring over og mist denne stemmenote? Den er ikke anvendt endnu.",
+    "lostNotes_other": "Spring over og mist disse {{count}} stemmenoter? De er ikke anvendt endnu."
   },
   "snap": {
     "bubble": {
-      "ingredients": "Stil noget mad på bordet og tag et billede af det. Jeg finder ud af, hvad det hele er.",
-      "receipt": "Tag et billede af kvitteringen fra din sidste indkøbstur. Jeg lægger hele indkøbet på plads."
+      "ingredients": "Stil noget mad på bordet og tag billeder af det. Tag så mange, du vil, så finder jeg ud af, hvad det hele er.",
+      "receipt": "Tag et billede af kvitteringen fra din sidste indkøbstur. Er den lang? Tag flere billeder af den, så lægger jeg hele indkøbet på plads."
     },
     "question": "Hvad har du foran dig?",
     "choices": {
@@ -58,14 +63,22 @@
       }
     },
     "callout": {
-      "title": "Tryk på kameraet for at starte",
-      "body": "Det er altid her, midt i menuen"
+      "title": "Tryk på kameraet og tag løs",
+      "body": "Tag så mange billeder, du har brug for. Kameraet er altid her, midt i menuen"
+    },
+    "session": {
+      "open": "Se dine billeder",
+      "allRead": "alle læst",
+      "photos_one": "{{count}} billede taget",
+      "photos_other": "{{count}} billeder taget",
+      "stillReading_one": "{{count}} læses stadig",
+      "stillReading_other": "{{count}} læses stadig"
     }
   },
   "sayIt": {
     "pill_one": "{{count}} ting i dit spisekammer",
     "pill_other": "{{count}} ting i dit spisekammer",
-    "bubble": "Fortæl mig nu, hvad der er i skabet, eller hvad der skal købes.",
+    "bubble": "Fortæl mig nu, hvad der er i skabet, eller hvad der skal købes. Du kan lægge så mange noter, du vil.",
     "examplesLabel": "Det kan du sige",
     "examples": {
       "pantry": {
@@ -79,7 +92,7 @@
     },
     "callout": {
       "title": "Hold mikrofonen nede, tal, slip",
-      "body": "Din telefon spørger om adgang til mikrofonen. Optagelsen bliver slettet, når jeg har læst den."
+      "body": "Din telefon spørger om adgang til mikrofonen. Læg gerne flere noter, og gennemgå dem så samlet. Hver optagelse bliver slettet, når jeg har læst den."
     },
     "coach": {
       "keepHolding": "Bliv ved med at holde, mens du taler.",

@@ -13,7 +13,13 @@ import {
   radius,
   useToast,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from 'react';
 import { useGatorAlt } from '../../lib/useGatorAlt';
 import { readScans } from '../../lib/scanReads';
 import { useTranslation } from 'react-i18next';
@@ -81,10 +87,38 @@ const dashedButton = {
 };
 
 /**
+ * What the host decides for the overview. Every part is optional: without it the overview is the app's,
+ * with the camera at `/scan`, a card opening at `/scan/review/:scanId` and the camera as the landing.
+ */
+export type ReviewOverviewSettings = {
+  /** The camera: "Camera", "Take more" and Retake lead here. */
+  cameraPath?: string;
+  /** Where a card opens. */
+  cardPath?: (scanId: string) => string;
+  /** Whether Add from photos is offered. Defaults to true. */
+  importOffered?: boolean;
+  /** Add all just saved one card, with this many lines (Batches), before moving to the next card. */
+  onCardSaved?: (lines: number) => void;
+  /** Every card was saved (or dropped) by Add all; `added` cards were saved. Replaces landing on the camera. */
+  afterAddAll?: (added: number, notTicked: number) => void;
+  /** Discard all emptied the Scan Session. Replaces landing on the camera. */
+  afterDiscardAll?: () => void;
+  /** The X on a card removed it, leaving this many cards. */
+  afterRemove?: (remaining: number) => void;
+  /** The frame (and banner) wrapping the overview's content. */
+  renderFrame?: (content: ReactNode) => ReactNode;
+};
+
+/**
  * The overview a Member reaches from the photo stack: one card per Scan of the Scan Session, in the order
  * the Scans were taken. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
  */
-export function ReviewOverviewPage() {
+export function ReviewOverviewPage({
+  settings = {},
+}: { settings?: ReviewOverviewSettings } = {}) {
+  const cameraPath = settings.cameraPath ?? '/scan';
+  const importOffered = settings.importOffered ?? true;
+  const cardPath = settings.cardPath ?? ((id: string) => `/scan/review/${id}`);
   const { t } = useTranslation('review');
   const { t: tScan } = useTranslation('scan');
   const { t: tAll } = useTranslation();
@@ -179,13 +213,16 @@ export function ReviewOverviewPage() {
         added.current += 1;
       } catch (error) {
         fail(scan.id, translateApiError(tAll, error));
+        continue;
       }
+      settings.onCardSaved?.(lines.length);
     }
     setSaving(false);
     // Failed reads are dropped with the rest; only a card whose save failed keeps the Member here.
     if (getScanSession().scans.some((scan) => scan.status === 'read')) return;
     resetScanSession();
-    navigate('/scan', { state: { added: added.current, notTicked } });
+    if (settings.afterAddAll) settings.afterAddAll(added.current, notTicked);
+    else navigate('/scan', { state: { added: added.current, notTicked } });
   };
   /** Files picked with Add from photos join the end of the Scan Session, read in the last-used Scan Mode. */
   const addFromPhotos = (event: ChangeEvent<HTMLInputElement>) => {
@@ -205,7 +242,8 @@ export function ReviewOverviewPage() {
   };
   const discardAll = () => {
     resetScanSession();
-    navigate('/scan', { state: { discarded: true } });
+    if (settings.afterDiscardAll) settings.afterDiscardAll();
+    else navigate('/scan', { state: { discarded: true } });
   };
 
   const card = (scan: SessionScan) => {
@@ -335,7 +373,7 @@ export function ReviewOverviewPage() {
                     dispatchScanSession({ type: 'remove', id: scan.id });
                     // Scans held back by the Scan Cap can go on now.
                     readScans();
-                    if (!barcode) navigate('/scan');
+                    if (!barcode) navigate(cameraPath);
                   }}
                   sx={linkButton}
                 >
@@ -374,7 +412,7 @@ export function ReviewOverviewPage() {
                 type="button"
                 data-testid="card-result"
                 disabled={saving}
-                onClick={() => navigate(`/scan/review/${scan.id}`)}
+                onClick={() => navigate(cardPath(scan.id))}
                 sx={{
                   display: 'block',
                   p: 0,
@@ -489,6 +527,7 @@ export function ReviewOverviewPage() {
               const index = session.scans.indexOf(scan);
               const next = session.scans[index + 1] ?? session.scans[index - 1];
               dispatchScanSession({ type: 'remove', id: scan.id });
+              settings.afterRemove?.(session.scans.length - 1);
               setFocusId(next?.id ?? null);
               // Scans held back by the Scan Cap can go on now.
               readScans();
@@ -512,7 +551,7 @@ export function ReviewOverviewPage() {
     );
   };
 
-  return (
+  const content = (
     <div data-testid="review-overview">
       <AppScreenHeader
         title={t('title')}
@@ -522,7 +561,7 @@ export function ReviewOverviewPage() {
             ? t('overview.stillReading', { count: reading + uncropped })
             : t('overview.allRead'),
         ].join(' · ')}
-        trailing={<Link href="/scan">{t('overview.camera')}</Link>}
+        trailing={<Link href={cameraPath}>{t('overview.camera')}</Link>}
       />
       {allRead ? (
         <GatorBanner
@@ -556,7 +595,7 @@ export function ReviewOverviewPage() {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            gridTemplateColumns: importOffered ? '1fr 1fr' : '1fr',
             gap: '10px',
             mt: 1.5,
           }}
@@ -565,30 +604,34 @@ export function ReviewOverviewPage() {
             variant="ghost"
             startIcon={<CameraIcon size={20} />}
             disabled={saving}
-            onClick={() => navigate('/scan')}
+            onClick={() => navigate(cameraPath)}
             sx={dashedButton}
           >
             {tScan('review.takeMore')}
           </Button>
-          <Button
-            variant="ghost"
-            startIcon={<ImagePlusIcon size={20} />}
-            disabled={saving}
-            onClick={() => photosInput.current?.click()}
-            sx={dashedButton}
-          >
-            {tScan('review.addFromPhotos')}
-          </Button>
-          <Box
-            component="input"
-            ref={photosInput}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={addFromPhotos}
-            data-testid="review-photos-input"
-            sx={{ display: 'none' }}
-          />
+          {importOffered ? (
+            <>
+              <Button
+                variant="ghost"
+                startIcon={<ImagePlusIcon size={20} />}
+                disabled={saving}
+                onClick={() => photosInput.current?.click()}
+                sx={dashedButton}
+              >
+                {tScan('review.addFromPhotos')}
+              </Button>
+              <Box
+                component="input"
+                ref={photosInput}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={addFromPhotos}
+                data-testid="review-photos-input"
+                sx={{ display: 'none' }}
+              />
+            </>
+          ) : null}
         </Box>
       ) : null}
       {session.scans.length > 0 ? (
@@ -617,4 +660,5 @@ export function ReviewOverviewPage() {
       ) : null}
     </div>
   );
+  return settings.renderFrame ? settings.renderFrame(content) : content;
 }

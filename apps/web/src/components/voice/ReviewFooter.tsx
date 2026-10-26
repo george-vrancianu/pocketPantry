@@ -52,7 +52,7 @@ export function ReviewFooter({
   onDiscard: () => void;
   onApply: () => void;
   onBlockedApply: () => void;
-  /** Words for the Apply button when it is ready, in place of "Apply N changes" (Setup says "Do these N"). */
+  /** Words for the Apply button when it is ready, in place of "Apply N changes" (Say it says "Do these N"). */
   applyLabel?: string;
   /** Review all: the Discard question is about all the merged Voice Notes. */
   merged?: boolean;

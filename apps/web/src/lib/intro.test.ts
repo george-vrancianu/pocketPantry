@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   addSetupCounts,
+  advanceFrom,
   savedByVoice,
   initialLanguagePicks,
+  INTRO_REVIEW_PATH,
   introPath,
   introRedirect,
   languagePicksBody,
@@ -19,14 +21,13 @@ describe('Intro steps', () => {
     expect(nextStep('languages')).toBe('sign-up');
     expect(nextStep('sign-up')).toBe('setup-or-skip');
     expect(nextStep('setup-or-skip')).toBe('snap');
-    expect(nextStep('setup-review')).toBe('say-it');
+    expect(nextStep('snap')).toBe('say-it');
     expect(nextStep('say-it')).toBe('all-set');
     expect(nextStep('all-set')).toBe('dashboard');
   });
 
   it('skips one step only', () => {
     expect(skipStep('snap')).toBe('say-it');
-    expect(skipStep('setup-review')).toBe('say-it');
     expect(skipStep('say-it')).toBe('all-set');
   });
 });
@@ -67,15 +68,17 @@ describe('Intro redirect', () => {
       introRedirect({ ...base, setupStarted: true, pathname: '/intro/say-it' }),
     ).toBeNull();
   });
-  it('lets Setup use the Scan screen only after "Show me how"', () => {
-    expect(introRedirect({ ...base, pathname: '/scan' })).toBe('/intro/setup');
-    expect(
-      introRedirect({
-        ...base,
-        setupStarted: true,
-        pathname: '/scan/review/1',
-      }),
-    ).toBeNull();
+  it('no longer lets the app Scan routes through mid-Intro, even once Setup started', () => {
+    for (const pathname of ['/scan', '/scan/review', '/scan/review/1']) {
+      expect(introRedirect({ ...base, setupStarted: true, pathname })).toBe(
+        '/intro/setup',
+      );
+    }
+  });
+  it('lets the Intro camera through once Setup started, and sends a resumed visit to Set up or skip', () => {
+    const pathname = '/intro/camera';
+    expect(introRedirect({ ...base, setupStarted: true, pathname })).toBeNull();
+    expect(introRedirect({ ...base, pathname })).toBe('/intro/setup');
   });
   it('keeps a done Member off the Intro', () => {
     expect(
@@ -143,9 +146,9 @@ describe('the phone language', () => {
 });
 
 describe('introPath', () => {
-  it('gives the path of a step and throws for one with none', () => {
+  it('gives the path of a step', () => {
     expect(introPath('sign-up')).toBe('/sign-up');
-    expect(() => introPath('setup-review')).toThrow();
+    expect(introPath('say-it')).toBe('/intro/say-it');
   });
 });
 
@@ -206,5 +209,30 @@ describe('savedByVoice', () => {
       batches: 0,
       shoppingItems: 0,
     });
+  });
+});
+
+describe('advanceFrom', () => {
+  it('moves on only when the collection is empty and something was saved in the step', () => {
+    expect(advanceFrom('snap', { empty: true, savedHere: true })).toBe(
+      'say-it',
+    );
+    expect(advanceFrom('say-it', { empty: true, savedHere: true })).toBe(
+      'all-set',
+    );
+    expect(advanceFrom('snap', { empty: true, savedHere: false })).toBeNull();
+    expect(advanceFrom('snap', { empty: false, savedHere: true })).toBeNull();
+  });
+});
+
+describe('INTRO_REVIEW_PATH', () => {
+  it('is an Intro screen', () => {
+    expect(
+      introRedirect({
+        pathname: INTRO_REVIEW_PATH,
+        introDone: false,
+        setupStarted: true,
+      }),
+    ).toBeNull();
   });
 });

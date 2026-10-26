@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GatorBanner } from '../GatorBanner';
 import { ReviewActionBar } from '../ReviewActionBar';
+import type { SetupLeave } from './SetupLeave';
 import { SetupTopRow } from './SetupTopRow';
 
 /** The cream page frame of every Setup Review state (reading, failed, read): a phone-width column. */
@@ -37,11 +38,15 @@ type Props = {
   spotted: number;
   /** Lines still to check, live. */
   check: number;
-  saveLabel: string;
+  saveCount: number;
+  saving: boolean;
   canSave: boolean;
   onSave: () => void;
+  /** Back to the Setup overview, keeping the card. */
+  onBack: () => void;
+  /** Drop this card and take its photo again. */
   onRetake: () => void;
-  onSkip: () => void;
+  leave: SetupLeave;
   children: ReactNode;
 };
 
@@ -54,20 +59,26 @@ export function SetupReviewView({
   subtitle,
   spotted,
   check,
-  saveLabel,
+  saveCount,
+  saving,
   canSave,
   onSave,
+  onBack,
   onRetake,
-  onSkip,
+  leave,
   children,
 }: Props) {
   const { t } = useTranslation('onboarding');
   const { t: tReview } = useTranslation('review');
+  const { t: tPantry } = useTranslation('pantry');
   // Read once: removing a line later must not rewrite what Gator said it spotted.
   const [count] = useState(spotted);
   return (
     <SetupReviewFrame bottomRoom>
-      <SetupTopRow onCamera={onRetake} onSkip={onSkip} />
+      <SetupTopRow
+        back={{ label: tReview('title'), onClick: onBack }}
+        leave={leave}
+      />
       <Box component="header" sx={{ pt: '20px', pb: '14px' }}>
         <Typography variant="h2" component="h1">
           {tReview('title')}
@@ -90,7 +101,11 @@ export function SetupReviewView({
       {children}
       {count > 0 ? (
         <ReviewActionBar
-          saveLabel={saveLabel}
+          saveLabel={
+            saving
+              ? tPantry('form.saving')
+              : t('review.add', { count: saveCount })
+          }
           canSave={canSave}
           onSave={onSave}
           onDiscard={onRetake}

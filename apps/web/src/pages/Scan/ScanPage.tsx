@@ -37,16 +37,14 @@ export type ScanPageProps = ScanScreenModes;
  * The dark camera screen (handoff section 7). It is always in Dark-first,
  * whatever the Member's Theme, so the chrome never washes out the camera view.
  */
-export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
+export function ScanPage(props: ScanPageProps) {
   const { t } = useTranslation('scan');
   useForcedThemeColor('dark');
   // Where the guide is when a card joins the Scan Session: the photo flies from there to the stack.
   const guideNow = useRef<Rect | null>(null);
   const { fly, stackRef, layer: flights } = useFlyToStack();
   const screen = useScanScreen({
-    modes,
-    defaultMode,
-    rememberMode,
+    ...props,
     onCardAdded: (thumbnail) => {
       if (guideNow.current) fly(thumbnail, guideNow.current);
     },
@@ -200,7 +198,7 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
         }
         right={
           <ImportButton
-            hidden={screen.mode === 'barcode' || screen.setup}
+            hidden={screen.mode === 'barcode' || !screen.importOffered}
             disabled={screen.controlsDisabled}
             onFiles={screen.importFiles}
           />

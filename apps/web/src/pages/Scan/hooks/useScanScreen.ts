@@ -2,8 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { readBarcode, useCamera } from '../../../lib/camera';
-import { INTRO_PATHS, setupReviewPath } from '../../../lib/intro';
-import { useSetupStarted } from '../../../lib/useIntro';
 import { normalizeBarcode } from '../../../lib/gtin';
 import { decodePhotoBarcode, readScans } from '../../../lib/scanReads';
 import {
@@ -41,10 +39,10 @@ import {
 const BARCODE_COOLDOWN_MS = 1500;
 const BARCODE_HAPTIC_MS = 12;
 
-/** Setup's photo is of ingredients or a receipt: the only modes the Scan screen offers while the Member is in Setup. */
-const SETUP_MODES: readonly CameraMode[] = ['ingredients', 'receipt'];
-
-/** What opens the camera decides which modes it offers and which one it starts in. */
+/**
+ * What opens the camera decides how it behaves: which modes it offers and starts in, whether Import is
+ * offered, and where the shutter, the photo stack and Close go. The screen never asks who opened it.
+ */
 export type ScanScreenModes = {
   /** In mode-slider order. Defaults to all five camera modes. */
   modes?: readonly CameraMode[];
@@ -57,15 +55,29 @@ export type ScanScreenModes = {
    * it into the photo stack. Decoration only, called after the card is already in the Session.
    */
   onCardAdded?: (thumbnail: string, mode: CameraMode) => void;
+  /** Whether Import (Add from photos) is offered. Defaults to true. */
+  importOffered?: boolean;
+  /** The photo stack was pressed: where it goes. Defaults to the app's Review overview. */
+  openStack?: (firstScanId: string | undefined) => void;
+  /**
+   * Where Close goes (replacing the camera in the history), keeping the Scan Session: the host owns what
+   * happens to the photos. Without it Close goes back to wherever the Member came from, or home when the
+   * camera was the first page, and asks before discarding photos.
+   */
+  closeTo?: string;
+};
+
+/** The camera as the app opens it at `/scan`: every mode, Import, shutter stays, the stack opens the Review overview. */
+export const IN_APP_SCAN_SETTINGS: ScanScreenModes = {
+  modes: CAMERA_MODES,
+  rememberMode: true,
+  importOffered: true,
 };
 
 /** Scan screen state: mode, camera, flash, and the photo-to-Review flow. */
 export function useScanScreen(config: ScanScreenModes = {}) {
-  // A Setup Scan: taken while the Member is in Setup (see `useSetupStarted`). It is the Intro's photo,
-  // so only the Snap modes are offered, the mode is not remembered and the Setup Review follows the shutter.
-  const setup = useSetupStarted();
-  const modes = setup ? SETUP_MODES : (config.modes ?? CAMERA_MODES);
-  const remembersMode = setup ? false : (config.rememberMode ?? true);
+  const modes = config.modes ?? CAMERA_MODES;
+  const remembersMode = config.rememberMode ?? true;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -224,8 +236,6 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     });
     cardAdded.current?.(image, mode);
     readScans();
-    // Setup shows the one photo's line editor at once (it waits there while the photo is read).
-    if (setup) navigate(setupReviewPath(id), { replace: true });
     // The full frame, before it was resized for the read: barcodes need the resolution.
     if (mode === 'product')
       decodePhotoBarcode(id, frame, (photo) => readBarcode(photo));
@@ -374,11 +384,12 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     pending: pendingCount(session),
     /** The photo stack: Review opens even while reads run. */
     openReview: () => {
-      const first = session.scans[0];
-      navigate(setup && first ? setupReviewPath(first.id) : '/scan/review');
+      const first = session.scans[0]?.id;
+      if (config.openStack) config.openStack(first);
+      else navigate('/scan/review');
     },
-    /** The Member is in Setup: no Import, and Close goes back to Snap. */
-    setup,
+    /** Whether Import is offered. */
+    importOffered: config.importOffered ?? true,
     flash,
     reading,
     modesDisabled: resizing,
@@ -406,20 +417,21 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     toggleFlash,
     // Back to wherever the Member came from, or home when this was the first page.
     close: () => {
+      const { closeTo } = config;
+      if (closeTo !== undefined) {
+        clearScanLanguageOverride();
+        navigate(closeTo, { replace: true });
+        return;
+      }
       const taken = session.scans.length;
       if (taken > 0) {
         if (!window.confirm(t('scan:discardScans', { count: taken }))) return;
         resetScanSession();
         // Nothing is left to go back to: the overview and the camera of this Session are empty.
-        navigate(setup ? INTRO_PATHS.snap : '/', { replace: setup });
+        navigate('/');
         return;
       }
       clearScanLanguageOverride();
-      // Setup opened the camera from Snap, so Close goes back there (home would send it to Set up or skip).
-      if (setup) {
-        navigate(INTRO_PATHS.snap, { replace: true });
-        return;
-      }
       if (location.key === 'default') navigate('/');
       else navigate(-1);
     },

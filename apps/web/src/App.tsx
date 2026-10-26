@@ -8,8 +8,10 @@ import { IntroProvider } from './lib/useIntro';
 import { AllSetPage } from './pages/Intro/AllSetPage';
 import { LanguagesPage } from './pages/Intro/LanguagesPage';
 import { SetupOrSkipPage } from './pages/Intro/SetupOrSkipPage';
+import { SetupOverviewPage } from './pages/Intro/SetupOverviewPage';
 import { SetupReviewPage } from './pages/Intro/SetupReviewPage';
 import { SayItPage } from './pages/Intro/SayItPage';
+import { IntroCameraPage } from './pages/Intro/IntroCameraPage';
 import { SnapPage } from './pages/Intro/SnapPage';
 import { AdminPage } from './pages/Admin/AdminPage';
 import { CustomisePage } from './pages/Customise/CustomisePage';
@@ -39,6 +41,7 @@ import { ExplorePage } from './pages/Recipes/ExplorePage';
 import { ReviewOverviewPage } from './pages/Review/ReviewOverviewPage';
 import { ReviewPage } from './pages/Review/ReviewPage';
 import { ScanPage } from './pages/Scan/ScanPage';
+import { IN_APP_SCAN_SETTINGS } from './pages/Scan/hooks/useScanScreen';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 import { ShoppingPage } from './pages/Shopping/ShoppingPage';
 import { StaplesPage } from './pages/Shopping/StaplesPage';
@@ -61,6 +64,8 @@ export function App() {
           <Route element={<IntroGate />}>
             <Route path="/intro/setup" element={<SetupOrSkipPage />} />
             <Route path="/intro/snap" element={<SnapPage />} />
+            <Route path="/intro/camera" element={<IntroCameraPage />} />
+            <Route path="/intro/review" element={<SetupOverviewPage />} />
             <Route path="/intro/review/:scanId" element={<SetupReviewPage />} />
             <Route path="/intro/say-it" element={<SayItPage />} />
             <Route path="/intro/all-set" element={<AllSetPage />} />
@@ -82,7 +87,10 @@ export function App() {
                 path="meal-plans/:id/edit"
                 element={<EditMealPlanPage />}
               />
-              <Route path="scan" element={<ScanPage />} />
+              <Route
+                path="scan"
+                element={<ScanPage {...IN_APP_SCAN_SETTINGS} />}
+              />
               <Route path="scan/review" element={<ReviewOverviewPage />} />
               <Route path="scan/review/:scanId" element={<ReviewPage />} />
               <Route path="recipes" element={<RecipesPage />} />

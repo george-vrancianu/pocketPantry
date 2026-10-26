@@ -14,30 +14,35 @@ import { IntroLook } from '../../components/IntroLook';
 import { creamFocus } from '../../components/Setup/creamFocus';
 import { GatorBubble } from '../../components/Setup/GatorBubble';
 import { SetupCallout } from '../../components/Setup/SetupCallout';
+import { useSetupLeave } from '../../components/Setup/SetupLeave';
 import { SetupOliveTopRow } from '../../components/Setup/SetupOliveTopRow';
-import { VoiceNote } from '../../components/VoiceNote';
+import { VoiceNote, type VoiceNoteSettings } from '../../components/VoiceNote';
 import {
   useDockRaised,
   VoiceHostProvider,
   VoiceHostSlot,
 } from '../../components/voice/VoiceHost';
 import { introPath, nextStep, savedByVoice, skipStep } from '../../lib/intro';
-import { useIntro } from '../../lib/useIntro';
+import { useAutoAdvance, useIntro } from '../../lib/useIntro';
 import {
   useVoiceConfig,
   type VoiceApplyResult,
   type VoiceReviewAction,
 } from '../../lib/voice';
-import { useVoiceNoteState } from '../../lib/voiceNote';
+import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { aboveMic, PILL_OFFSET, VOICE_LAYER } from '../../lib/voicePlacement';
 
-/** Where Skip goes: the Intro module's rule, never a path written here. */
+/** Where Skip goes without a confirm: the Intro module's rule, never a path written here. */
 const SKIP_TO = introPath(skipStep('say-it'));
 /** Where the step after Say it is: "Continue" when there is no mic, and "Do these N" once saved. */
 const CONTINUE_TO = introPath(nextStep('say-it'));
 
-/** The Setup Voice Note's Default List: the Pantry, whatever the route says (ADR 0021, Setup only). */
-const SETUP_DEFAULT_TARGET = 'pantry';
+/** Say it's Voice Note settings: the app's Voice Inbox, with the Pantry as Default List (ADR 0021), the Setup look and no toast. */
+const SAY_IT_VOICE_SETTINGS: VoiceNoteSettings = {
+  defaultTarget: 'pantry',
+  reviewLook: 'setup',
+  toastOnApply: false,
+};
 
 function ExampleCard({ phrase, result }: { phrase: string; result: string }) {
   return (
@@ -100,15 +105,35 @@ function SayItScreen() {
   const { counts, recordSaved } = useIntro();
   const voice = useVoiceConfig();
   const holding = useDockRaised();
-  const { phase } = useVoiceNoteState();
+  const { phase, inbox } = useVoiceNoteState();
   const navigate = useNavigate();
-  // "Do these N" ran: count only what was really saved, then on to All set.
-  const setup = {
-    onApplied: (result: VoiceApplyResult, actions: VoiceReviewAction[]) => {
-      recordSaved(savedByVoice(result.applied, actions));
-      void navigate(CONTINUE_TO, { replace: true });
+  // Any Voice Note in the Voice Inbox, one still being read included, is unapplied. Next leaves them for
+  // the Dashboard's strip; a confirmed Skip clears the Voice Inbox, which also ignores a read still in flight.
+  const leave = useSetupLeave({
+    unsaved: inbox.total > 0,
+    lostMessage: t('setupStep.lostNotes', { count: inbox.total }),
+    onNext: () => navigate(CONTINUE_TO, { replace: true }),
+    onSkip: () => {
+      voiceNote.clear();
+      navigate(SKIP_TO, { replace: true });
+    },
+  });
+  // Every apply (one note or Review all) adds what the server really saved. Moving on to All set is
+  // useAutoAdvance's: once the Voice Inbox is empty and something was saved here.
+  const settings: VoiceNoteSettings = {
+    ...SAY_IT_VOICE_SETTINGS,
+    afterApply: (result: VoiceApplyResult, actions: VoiceReviewAction[]) => {
+      // An apply of only already-done entries saved nothing new: it must not unlock moving on.
+      const savedSomething = result.applied.some((e) => !e.alreadyDone);
+      recordSaved(
+        savedByVoice(result.applied, actions),
+        savedSomething ? 'say-it' : undefined,
+      );
     },
   };
+
+  const movingOn = useAutoAdvance('say-it', inbox.total === 0);
+  if (movingOn) return null;
 
   return (
     <>
@@ -127,11 +152,7 @@ function SayItScreen() {
           creamFocus,
         ]}
       >
-        <SetupOliveTopRow
-          step={2}
-          skipTo={SKIP_TO}
-          skipDisabled={phase === 'reading'}
-        />
+        <SetupOliveTopRow step={2} skipTo={SKIP_TO} leave={leave} />
 
         {counts.batches > 0 ? (
           <Box
@@ -206,8 +227,8 @@ function SayItScreen() {
       {voice === 'on' ? (
         <>
           <CoachLine held={holding} />
-          {/* Only at rest: after release the status pill owns the space above the mic. */}
-          {!holding && phase === 'idle' ? (
+          {/* Only at rest with an empty Voice Inbox: after release the strip owns the space above the mic. */}
+          {!holding && phase === 'idle' && inbox.total === 0 ? (
             <SetupCallout
               title={t('sayIt.callout.title')}
               body={t('sayIt.callout.body')}
@@ -215,7 +236,7 @@ function SayItScreen() {
             />
           ) : null}
           <VoiceHostSlot />
-          <VoiceNote defaultTarget={SETUP_DEFAULT_TARGET} setup={setup} />
+          <VoiceNote settings={settings} />
           <AppDock teach="mic" />
         </>
       ) : null}
@@ -225,7 +246,7 @@ function SayItScreen() {
 
 /**
  * Setup 2, Say it: the olive screen that teaches where the mic lives. The real Dock is shown with only the
- * mic lit, and holding it runs the real Voice Note flow (recording, permission, Voice Cap, Review) in the
+ * mic lit, and holding it runs the real Voice Note flow (recording, permission, Voice Cap, the Voice Inbox, Review) in the
  * Member's Spoken Language, with the Pantry as its Default List. This screen is outside the app layout, so
  * it hosts the Voice Note itself.
  */

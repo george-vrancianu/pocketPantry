@@ -13,7 +13,6 @@ import { keepScreenAwake } from './wakeLock';
 import {
   MAX_VOICE_NOTE_MS,
   MIN_VOICE_NOTE_MS,
-  NOTHING_HEARD_MS,
   sendVoiceNote,
   type VoiceDefaultTarget,
   type VoiceAnswer,
@@ -202,8 +201,6 @@ type VoiceNoteEntry = {
   /** The note's own Spoken Language and length, kept on the note when its recording is dropped. */
   spokenLanguage?: ScanLanguage;
   durationMs?: number;
-  /** Setup's Say it: the note is open from the start and stays open when it is read, with no strip. */
-  openWhenReady?: boolean;
 };
 
 /**
@@ -330,7 +327,6 @@ export function createVoiceNote(
     }
     const {
       id: _id,
-      openWhenReady: _open,
       spokenLanguage: _language,
       durationMs: _duration,
       ...fields
@@ -461,8 +457,7 @@ export function createVoiceNote(
   let starting: { cancelled: boolean } | undefined;
   let session: MicrophoneSession | undefined;
   let limitTimer: ReturnType<typeof setTimeout> | undefined;
-  let recordingFor:
-    { spokenLanguage?: ScanLanguage; openWhenReady?: boolean } | undefined;
+  let recordingFor: { spokenLanguage?: ScanLanguage } | undefined;
   /** The audio of a stopped recording is being finalised. */
   let finishing = false;
   /** Bumped by `clear`, so a recording finalised after it is thrown away. */
@@ -524,9 +519,6 @@ export function createVoiceNote(
     if (starting) starting.cancelled = true;
   }
 
-  /** Setup's nothing-heard note leaves on its own; in the Voice Inbox it stays until retried or discarded. */
-  const nothingHeardTimers = new Map<number, ReturnType<typeof setTimeout>>();
-
   /** A read note did not reach Review; `keepRecording` holds the audio for Retry. */
   function failNote(
     id: number,
@@ -543,22 +535,6 @@ export function createVoiceNote(
       rawError: options.rawError,
       recording: options.keepRecording ? n.recording : undefined,
     }));
-    if (
-      error === 'nothingHeard' &&
-      store.notes.find((n) => n.id === id)?.openWhenReady
-    ) {
-      clearTimeout(nothingHeardTimers.get(id));
-      nothingHeardTimers.set(
-        id,
-        setTimeout(() => {
-          nothingHeardTimers.delete(id);
-          const note = store.notes.find((n) => n.id === id);
-          if (note?.phase === 'failed' && note.error === 'nothingHeard') {
-            removeNote(id);
-          }
-        }, NOTHING_HEARD_MS),
-      );
-    }
     emit();
   }
 
@@ -580,10 +556,7 @@ export function createVoiceNote(
   }
 
   /** The recording failed before a read (no microphone, the Voice Cap): a failed note with no audio. */
-  function failBeforeRead(
-    error: 'unavailable' | 'capReached',
-    openWhenReady?: boolean,
-  ) {
+  function failBeforeRead(error: 'unavailable' | 'capReached') {
     // The audio being finalised is not wanted any more.
     if (finishing) epoch++;
     dropMicrophone();
@@ -600,23 +573,17 @@ export function createVoiceNote(
           ? undefined
           : store.openId,
     };
-    const id = append({
+    append({
       phase: 'failed',
       defaultTarget: store.live?.defaultTarget ?? store.lastTarget,
       error,
-      openWhenReady,
     });
     store = { ...store, live: undefined };
-    // Setup's single note shows its failure on the pill; elsewhere it is a row in the Voice Inbox.
-    if (openWhenReady) store = { ...store, openId: id };
     emit();
   }
 
   /** The Voice Note cannot be recorded: no microphone, or this browser cannot record. */
-  const fail = (
-    error: 'unavailable',
-    options: { openWhenReady?: boolean } = {},
-  ) => failBeforeRead(error, options.openWhenReady);
+  const fail = (error: 'unavailable') => failBeforeRead(error);
 
   /** Whether the Voice Cap is still in force. It lifts at the server's reset time. */
   function isCapReached() {
@@ -628,12 +595,12 @@ export function createVoiceNote(
     // A note is already under way (the microphone starting, recording, audio being finalised): ignore silently.
     if (starting || session || finishing) return 'active';
     const open = openNote();
-    // The mic is not offered while the open note is a Review or answer sheet, or still being read (Setup's single note).
-    if (store.merged || (open && open.phase !== 'failed')) return 'review';
+    // The mic is not offered while a Review or answer sheet is open.
+    if (store.merged || open) return 'review';
     // Failures with no recording kept (Voice Cap on the press, no microphone, too long, unsupported) cannot
-    // be retried and do not count toward the limit; Setup's open failure is dropped by this press.
+    // be retried and do not count toward the limit.
     const counted = store.notes.filter(
-      (n) => !(n.phase === 'failed' && (!n.recording || n.id === open?.id)),
+      (n) => !(n.phase === 'failed' && !n.recording),
     ).length;
     if (counted >= MAX_NOTES) return 'full';
     return isCapReached() ? 'capped' : 'none';
@@ -754,8 +721,7 @@ export function createVoiceNote(
         },
       }));
       emit();
-      // Setup opens its own note when it is read; no "ready" nudge for it.
-      if (!note.openWhenReady) notify('noteReady');
+      notify('noteReady');
     }
     pump();
   }
@@ -765,9 +731,8 @@ export function createVoiceNote(
     audio: Recording,
     spokenLanguage: ScanLanguage | undefined,
     defaultTarget: VoiceDefaultTarget,
-    openWhenReady?: boolean,
   ) {
-    const id = append({
+    append({
       phase: 'reading',
       defaultTarget,
       spokenLanguage,
@@ -778,9 +743,7 @@ export function createVoiceNote(
         durationMs: audio.durationMs,
         spokenLanguage,
       },
-      openWhenReady,
     });
-    if (openWhenReady) store = { ...store, openId: id };
     emit();
     pump();
   }
@@ -793,13 +756,11 @@ export function createVoiceNote(
   async function start(options: {
     defaultTarget: VoiceDefaultTarget;
     spokenLanguage?: ScanLanguage;
-    /** Setup's Say it: the note opens straight away and is reviewed as soon as it is read. */
-    openWhenReady?: boolean;
   }): Promise<StartOutcome> {
     const blocker = startBlocker();
     if (blocker === 'active') return 'refused';
     if (blocker === 'capped') {
-      failBeforeRead('capReached', options.openWhenReady);
+      failBeforeRead('capReached');
       return 'refused';
     }
     if (blocker === 'full') {
@@ -807,9 +768,6 @@ export function createVoiceNote(
       return 'refused';
     }
     if (blocker !== 'none') return 'refused';
-    // A failure without a kept recording is dropped by the next press.
-    const open = openNote();
-    if (open?.phase === 'failed') removeNote(open.id);
     const attempt = { cancelled: false };
     starting = attempt;
     keepAwake('mic');
@@ -822,7 +780,7 @@ export function createVoiceNote(
       if (error instanceof MicrophoneError && error.reason === 'denied') {
         return 'denied';
       }
-      fail('unavailable', { openWhenReady: options.openWhenReady });
+      fail('unavailable');
       return 'unavailable';
     }
     starting = undefined;
@@ -833,10 +791,7 @@ export function createVoiceNote(
       return 'cancelled';
     }
     session = live;
-    recordingFor = {
-      spokenLanguage: options.spokenLanguage,
-      openWhenReady: options.openWhenReady,
-    };
+    recordingFor = { spokenLanguage: options.spokenLanguage };
     limitTimer = setTimeout(() => {
       notify('stoppedAtLimit');
       void stopRecording();
@@ -881,8 +836,7 @@ export function createVoiceNote(
       audio = await active.stop();
     } catch {
       finishing = false;
-      if (mark === epoch)
-        fail('unavailable', { openWhenReady: mine.openWhenReady });
+      if (mark === epoch) fail('unavailable');
       return 'notStarted';
     }
     finishing = false;
@@ -895,7 +849,7 @@ export function createVoiceNote(
       letSleep('mic');
       return 'notStarted';
     }
-    send(audio, mine.spokenLanguage, target, mine.openWhenReady);
+    send(audio, mine.spokenLanguage, target);
     // The read holds the lock itself once it starts.
     letSleep('mic');
     return 'sent';
@@ -946,8 +900,6 @@ export function createVoiceNote(
     release?.();
     release = undefined;
     clearTimeout(capTimer);
-    for (const timer of nothingHeardTimers.values()) clearTimeout(timer);
-    nothingHeardTimers.clear();
     store = { ...initial };
     emit();
   }
@@ -1028,10 +980,7 @@ export function createVoiceNote(
               }
             : n,
         ),
-        openId:
-          store.openId === note.id && !note.openWhenReady
-            ? undefined
-            : store.openId,
+        openId: store.openId === note.id ? undefined : store.openId,
       };
       // The server decides whether the Voice Cap still holds; the next refusal sets it again.
       if (capped) {
@@ -1058,12 +1007,12 @@ export function createVoiceNote(
     },
     open: openOne,
     /** Drops a failure and its kept recording. */
-    dismiss(id?: number) {
+    dismiss(id: number) {
       const note = failedNote(id);
       if (note) removeNote(note.id);
     },
     /** Drops a failure and its kept recording, and says so. */
-    discardFailed(id?: number) {
+    discardFailed(id: number) {
       const note = failedNote(id);
       if (!note) return;
       removeNote(note.id);
@@ -1139,10 +1088,6 @@ export type VoiceNote = ReturnType<typeof createVoiceNote>;
 
 /** The app's one Voice Note. */
 export const voiceNote = createVoiceNote();
-
-/** Whether the status pill is up (reading or failed) for this phase. */
-export const isPillUp = (phase: VoicePhase) =>
-  phase === 'reading' || phase === 'failed';
 
 /** Whether the Voice Inbox strip is up: notes being read, ready or failed, with nothing else on screen. */
 export const isStripUp = (state: VoiceNoteState) =>
