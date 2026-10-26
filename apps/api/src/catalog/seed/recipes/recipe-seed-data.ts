@@ -9,6 +9,7 @@ import { lentilSoup } from './data/lentil-soup';
 import { omelette } from './data/omelette';
 import { potatoPuree } from './data/potato-puree';
 import { roastChicken } from './data/roast-chicken';
+import { sarmale } from './data/sarmale';
 import { tomatoPasta } from './data/tomato-pasta';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
@@ -20,4 +21,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   tomatoPasta,
   roastChicken,
   lentilSoup,
+  sarmale,
 ];
