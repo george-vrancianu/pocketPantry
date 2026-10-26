@@ -355,6 +355,14 @@ export const grains: SeedSection = {
     ]),
     ...ingredientsOf('flour-and-sugar', [
       [
+        'palm-sugar',
+        'Palm sugar',
+        'Zahăr de palmier',
+        'g',
+        ['coconut palm sugar'],
+        ['zahar de cocos'],
+      ],
+      [
         'flour',
         'Flour',
         'Făină',
