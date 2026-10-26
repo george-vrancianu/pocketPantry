@@ -72,30 +72,79 @@ afterEach(() => {
 
 describe('Gator', () => {
   describe('Tap', () => {
-    function spyOnImages() {
-      const srcs: string[] = [];
-      vi.stubGlobal(
-        'Image',
-        class {
-          set src(value: string) {
-            srcs.push(value);
-          }
-        },
-      );
-      return srcs;
+    function stubTapFetch() {
+      const urls: string[] = [];
+      vi.stubGlobal('fetch', (url: string) => {
+        urls.push(url);
+        return Promise.resolve(
+          new Response(`<svg data-art="${url}"></svg>`, { status: 200 }),
+        );
+      });
+      return urls;
     }
     const tapUrl = (mood: string) => new RegExp(`gator-${mood}-tap\\.svg`);
+    const flushFetch = () => act(async () => {});
 
     it('fetches no Tap file for a Gator that cannot tap', () => {
-      const srcs = spyOnImages();
+      const urls = stubTapFetch();
       render(<Gator mood="happy" alt="a" />);
-      expect(srcs.some((src) => tapUrl('happy').test(src))).toBe(false);
+      expect(urls.some((url) => tapUrl('happy').test(url))).toBe(false);
     });
 
     it('warms the Tap file when a parent can start one', () => {
-      const srcs = spyOnImages();
-      render(<Gator mood="happy" alt="a" tapSignal={0} />);
-      expect(srcs.some((src) => tapUrl('happy').test(src))).toBe(true);
+      const urls = stubTapFetch();
+      render(<Gator mood="talking" alt="a" tapSignal={0} />);
+      expect(urls.some((url) => tapUrl('talking').test(url))).toBe(true);
+    });
+
+    // WebKit shares one animation clock between images of a URL, so a reused URL shows a Tap
+    // that has already played out.
+    it('gives each Tap its own source, so every Tap plays from its first frame', async () => {
+      stubTapFetch();
+      const { container, rerender } = render(
+        <Gator mood="worried" alt="a" entrance={false} tapSignal={0} />,
+      );
+      await flushFetch();
+      rerender(<Gator mood="worried" alt="a" entrance={false} tapSignal={1} />);
+      const first = image(container).getAttribute('src')!;
+      expect(first).toMatch(/^data:image\/svg\+xml,/);
+      expect(decodeURIComponent(first)).toMatch(tapUrl('worried'));
+      rerender(<Gator mood="worried" alt="a" entrance={false} tapSignal={2} />);
+      const second = image(container).getAttribute('src')!;
+      expect(second).toMatch(/^data:image\/svg\+xml,/);
+      expect(second).not.toBe(first);
+    });
+
+    it('gives a remounted or second same-mood Gator its own Tap source', async () => {
+      stubTapFetch();
+      const tapped = async () => {
+        const { container, rerender, unmount } = render(
+          <Gator mood="worried" alt="a" entrance={false} tapSignal={0} />,
+        );
+        await flushFetch();
+        rerender(
+          <Gator mood="worried" alt="a" entrance={false} tapSignal={1} />,
+        );
+        const src = image(container).getAttribute('src')!;
+        return { src, unmount };
+      };
+      const first = await tapped();
+      first.unmount();
+      const second = await tapped();
+      const third = await tapped();
+      expect(second.src).not.toBe(first.src);
+      expect(third.src).not.toBe(second.src);
+    });
+
+    it('plays the Tap from the file while its text is not in yet', () => {
+      vi.stubGlobal('fetch', () => new Promise(() => {}));
+      const { container, rerender } = render(
+        <Gator mood="thinking" alt="a" entrance={false} tapSignal={0} />,
+      );
+      rerender(
+        <Gator mood="thinking" alt="a" entrance={false} tapSignal={1} />,
+      );
+      expect(image(container).getAttribute('src')).toMatch(tapUrl('thinking'));
     });
 
     it('is a button named by its alt, and taps then returns to the loop', () => {

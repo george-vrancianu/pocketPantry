@@ -11,7 +11,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { UNITS, type CatalogSearchResult, type Unit } from '../../lib/catalog';
+import type { CatalogSearchResult } from '../../lib/catalog';
 import {
   AddToCatalog,
   ADD_TO_CATALOG_TRIGGER,
@@ -24,6 +24,7 @@ import {
 import { FamilyTag } from '../catalogSearch/FamilyTag';
 import { RowControls } from '../RowControls';
 import { GripGlyph, SortableItem, SortableList } from './sortable';
+import { LineAmountField } from './LineAmountField';
 import { useUndoRemoval } from './useUndoRemoval';
 
 type Props = {
@@ -199,57 +200,23 @@ export function RecipeLinesSection({
                             </Typography>
                           ) : null}
                         </Box>
-                        <TextField
-                          hiddenLabel
-                          placeholder="–"
-                          value={line.quantity}
-                          onChange={(event) =>
-                            changeLine(line.key, {
-                              quantity: event.target.value,
-                            })
+                        <LineAmountField
+                          name={name}
+                          quantity={line.quantity}
+                          unit={line.unit}
+                          onQuantityChange={(quantity) =>
+                            changeLine(line.key, { quantity })
+                          }
+                          onUnitChange={(unit) =>
+                            changeLine(line.key, { unit })
                           }
                           error={bad}
-                          slotProps={{
-                            htmlInput: {
-                              ref: (node: HTMLInputElement | null) => {
-                                if (node) qtyInputs.current.set(line.key, node);
-                                else qtyInputs.current.delete(line.key);
-                              },
-                              inputMode: 'decimal',
-                              'aria-label': t('admin:recipe.lines.quantity', {
-                                name,
-                              }),
-                              'aria-describedby': bad ? errorId : undefined,
-                              style: { textAlign: 'right' },
-                            },
+                          errorId={errorId}
+                          inputRef={(node: HTMLInputElement | null) => {
+                            if (node) qtyInputs.current.set(line.key, node);
+                            else qtyInputs.current.delete(line.key);
                           }}
-                          sx={{ width: 72 }}
                         />
-                        <TextField
-                          select
-                          hiddenLabel
-                          value={line.unit}
-                          onChange={(event) =>
-                            changeLine(line.key, {
-                              unit: event.target.value as Unit,
-                            })
-                          }
-                          slotProps={{
-                            select: { native: true },
-                            htmlInput: {
-                              'aria-label': t('admin:recipe.lines.unit', {
-                                name,
-                              }),
-                            },
-                          }}
-                          sx={{ width: 88 }}
-                        >
-                          {UNITS.map((unit) => (
-                            <option key={unit} value={unit}>
-                              {t(`common:units.${unit}`)}
-                            </option>
-                          ))}
-                        </TextField>
                         <IconButton
                           tone="plain"
                           size={40}
