@@ -336,13 +336,30 @@ export const BASE_MINIMUMS: Record<
   'appetizer-platter': { cuisine: 5, method: 0 },
 };
 
+/** Every base not listed in `BASE_MINIMUMS` needs this many Variants, of any kind. */
+export const DEFAULT_MIN_VARIANTS = 2;
+
 export const MIN_CROSS_RECIPE_PAIRINGS = 3;
+
+function tipGaps(base: BaseRecipeSeed): string[] {
+  const gaps: string[] = [];
+  if ((base.tips ?? []).length === 0) {
+    gaps.push(`${base.slug}: needs at least one Recipe-level Tip`);
+  }
+  if ((base.stepTips ?? []).length === 0) {
+    gaps.push(`${base.slug}: needs at least one step Tip`);
+  }
+  return gaps;
+}
 
 /**
  * What the seed still lacks against the acceptance criteria of #136. By
  * default it checks only the bases present (the others arrive in later
  * passes); `requireBases` also reports a missing base, `requireCrossLinks`
- * the count of Pairings that link another seeded Recipe.
+ * the count of Pairings that link another seeded Recipe. Every base needs a
+ * Recipe-level Tip and a step Tip; a base listed in `BASE_MINIMUMS` also needs
+ * its Cuisine and Method Variant counts, any other base needs at least
+ * `DEFAULT_MIN_VARIANTS` Variants of either kind.
  */
 export function findAcceptanceGaps(
   bases: BaseRecipeSeed[],
@@ -355,12 +372,7 @@ export function findAcceptanceGaps(
       if (options.requireBases) gaps.push(`${slug}: base Recipe is missing`);
       continue;
     }
-    if ((base.tips ?? []).length === 0) {
-      gaps.push(`${slug}: needs at least one Recipe-level Tip`);
-    }
-    if ((base.stepTips ?? []).length === 0) {
-      gaps.push(`${slug}: needs at least one step Tip`);
-    }
+    gaps.push(...tipGaps(base));
     const count = (kind: 'cuisine' | 'method') =>
       base.variants.filter((v: VariantSeed) => v[kind] !== undefined).length;
     if (count('cuisine') < min.cuisine) {
@@ -371,6 +383,15 @@ export function findAcceptanceGaps(
     if (count('method') < min.method) {
       gaps.push(
         `${slug}: needs at least ${min.method} Method Variants, has ${count('method')}`,
+      );
+    }
+  }
+  for (const base of bases) {
+    if (base.slug in BASE_MINIMUMS) continue;
+    gaps.push(...tipGaps(base));
+    if (base.variants.length < DEFAULT_MIN_VARIANTS) {
+      gaps.push(
+        `${base.slug}: needs at least ${DEFAULT_MIN_VARIANTS} Variants, has ${base.variants.length}`,
       );
     }
   }

@@ -223,6 +223,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'minced-beef': [],
   'minced-pork': [],
   'minced-mixed-meat': [],
+  'minced-veal-and-pork': [],
   'minced-chicken': [],
   'minced-turkey': [],
   'mici-mix': [],
@@ -697,7 +698,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'pickled-mushrooms': [],
   'horseradish-beetroot': [],
   'mango-chutney': [],
-  dolmades: [],
+  dolmades: ['sulphites'],
+  'vine-leaves': ['sulphites'],
   kimchi: ['crustaceans', 'fish'],
 
   // condiments/table-sauces
@@ -841,6 +843,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'dried-lovage': [],
   'italian-herbs': [],
   'dried-tarragon': [],
+  'dried-mint': [],
 
   // spices/spice-blends
   'curry-powder': ['mustard'],

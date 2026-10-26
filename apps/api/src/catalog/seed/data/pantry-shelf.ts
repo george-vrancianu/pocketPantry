@@ -497,6 +497,14 @@ export const cannedGoods: SeedSection = {
         ['dolmas'],
         ['foi de vita cu orez'],
       ],
+      [
+        'vine-leaves',
+        'Vine leaves',
+        'Foi de viță',
+        'g',
+        ['grape leaves'],
+        ['foi de vita borcan', 'foi de vita in saramura'],
+      ],
       ['kimchi', 'Kimchi', 'Kimchi', 'g', undefined, ['varza kimchi']],
     ]),
   ],
@@ -1489,6 +1497,7 @@ export const spices: SeedSection = {
         ['ierburi de provence', 'ierburi mix', 'condiment italian'],
       ],
       ['dried-tarragon', 'Dried tarragon', 'Tarhon uscat', 'g'],
+      ['dried-mint', 'Dried mint', 'Mentă uscată', 'g'],
     ]),
     ...ingredientsOf('spice-blends', [
       [
