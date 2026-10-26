@@ -910,6 +910,14 @@ export const condiments: SeedSection = {
     ]),
     ...ingredientsOf('sweet-spreads', [
       [
+        'redcurrant-jelly',
+        'Redcurrant jelly',
+        'Jeleu de coacăze roșii',
+        'g',
+        ['red currant jelly'],
+        ['jeleu de coacaze', 'jeleu coacaze'],
+      ],
+      [
         'jam',
         'Jam',
         'Dulceață',
@@ -1399,6 +1407,14 @@ export const spices: SeedSection = {
         ['dafin', 'frunze de dafin', 'foi dafin'],
       ],
       ['cloves', 'Cloves', 'Cuișoare', 'g'],
+      [
+        'allspice-berries',
+        'Allspice berries',
+        'Ienibahar boabe',
+        'g',
+        ['whole allspice'],
+        ['ienibahar intreg'],
+      ],
       ['star-anise', 'Star anise', 'Anason stelat', 'g', undefined, ['anason']],
       [
         'cinnamon-sticks',
