@@ -14,6 +14,7 @@ import { potatoPuree } from './data/potato-puree';
 import { ricePilaf } from './data/rice-pilaf';
 import { roastChicken } from './data/roast-chicken';
 import { sarmale } from './data/sarmale';
+import { smorrebrod } from './data/smorrebrod';
 import { stirFry } from './data/stir-fry';
 import { tomatoPasta } from './data/tomato-pasta';
 
@@ -32,4 +33,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ricePilaf,
   stirFry,
   mamaliga,
+  smorrebrod,
 ];
