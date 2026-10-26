@@ -139,7 +139,7 @@ describe('ReceiptScanService', () => {
       ]),
     );
     expect(body).toHaveProperty(`${fieldsPath}.matchedIngredientIndex.type`, [
-      'number',
+      'integer',
       'null',
     ]);
     expect(body).toHaveProperty(

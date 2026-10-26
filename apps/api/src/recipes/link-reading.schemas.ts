@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
 import { ingredientUnit } from '../database/schema';
 import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 
@@ -53,9 +54,7 @@ export type LinkReading = Omit<LinkReadingAnswer, 'ingredients'> & {
   })[];
 };
 
-export const linkReadingJsonSchema = z.toJSONSchema(linkReadingSchema, {
-  target: 'draft-7',
-});
+export const linkReadingJsonSchema = modelJsonSchema(linkReadingSchema);
 
 /** The detected language as a lower-case base code ("pt-BR" -> "pt"), or null when empty or not a code. */
 export function detectedLanguage(

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
 import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import { imageDataUrlSchema } from './product-scan.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
@@ -54,9 +55,8 @@ const plateItemSchema = z.object({
 export const plateIngredientsModelResultSchema = z.object({
   items: z.array(plateItemSchema).max(100),
 });
-export const plateIngredientsJsonSchema = z.toJSONSchema(
+export const plateIngredientsJsonSchema = modelJsonSchema(
   plateIngredientsModelResultSchema,
-  { target: 'draft-7' },
 );
 
 export type DishGuess = { title: string; confidence: number };

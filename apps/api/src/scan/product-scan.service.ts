@@ -3,14 +3,12 @@ import type { CatalogReader } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
-import {
-  catalogIndexInstruction,
-  catalogIndexSchema,
-} from '../ingredients/ingredient-catalog';
+import { catalogIndexInstruction } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { fallbackNamePrompt, scanLanguagePrompt } from './scan-language';
 import {
   PRODUCT_SCAN_SCHEMA_NAME,
+  productScanModelJsonSchema,
   productScanModelResultSchema,
   type ProductScanInput,
   type ProductScanResult,
@@ -61,43 +59,7 @@ export class ProductScanService {
           .filter((item) => item.type === 'input_image')
           .map((item) => String(item.image_url)),
         schemaName: PRODUCT_SCAN_SCHEMA_NAME,
-        schema: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            productName: { type: 'string' },
-            productType: { type: 'string' },
-            matchedIngredientIndex: {
-              type: ['integer', 'null'],
-              description: catalogIndexSchema.description,
-            },
-            matchedCategory: { type: ['string', 'null'] },
-            matchConfidence: {
-              type: 'number',
-              minimum: 0,
-              maximum: 1,
-            },
-            fallbackIngredientName: { type: 'string' },
-            expiryDate: { type: ['string', 'null'] },
-            expiryText: { type: ['string', 'null'] },
-            netQuantity: { type: ['number', 'null'] },
-            netUnit: { type: ['string', 'null'] },
-            confidence: { type: 'number', minimum: 0, maximum: 1 },
-          },
-          required: [
-            'productName',
-            'productType',
-            'matchedIngredientIndex',
-            'matchedCategory',
-            'matchConfidence',
-            'fallbackIngredientName',
-            'expiryDate',
-            'expiryText',
-            'netQuantity',
-            'netUnit',
-            'confidence',
-          ],
-        },
+        schema: productScanModelJsonSchema,
         maxOutputTokens: 450,
       });
       const result = productScanModelResultSchema.parse(response.data);

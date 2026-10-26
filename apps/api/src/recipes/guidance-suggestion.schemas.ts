@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
 import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import {
   MAX_PAIRING_LABEL,
@@ -108,9 +109,8 @@ export const guidanceSuggestionSchema = z.object({
 });
 export type GuidanceSuggestionAnswer = z.infer<typeof guidanceSuggestionSchema>;
 
-export const guidanceSuggestionJsonSchema = z.toJSONSchema(
+export const guidanceSuggestionJsonSchema = modelJsonSchema(
   guidanceSuggestionSchema,
-  { target: 'draft-7' },
 );
 
 /** A proposed Pairing: the Guidance body's Pairing, plus the name of what it links to, so the form can show it. */

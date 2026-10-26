@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
 import { MAX_QUANTITY } from '../common/quantity';
 import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import { imageDataUrlSchema } from './product-scan.schemas';
@@ -89,11 +90,9 @@ export const receiptScanModelResultSchema = z.object({
 // Generate the upstream contract from the same rules used to parse its result.
 // A hand-written, looser schema lets invalid dates, blank names, and invalid
 // quantities through Structured Outputs only to fail validation locally.
-export const receiptScanModelJsonSchema = z.toJSONSchema(
+export const receiptScanModelJsonSchema = modelJsonSchema(
   receiptScanModelResultSchema,
-  { target: 'draft-7' },
 );
-delete receiptScanModelJsonSchema.$schema;
 
 export const receiptScanResultSchema = z.object({
   merchantName: z.string().trim().max(120).nullable(),

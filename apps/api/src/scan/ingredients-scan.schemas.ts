@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
 import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import { imageDataUrlSchema } from './product-scan.schemas';
 
@@ -49,8 +50,6 @@ export const ingredientsScanResultSchema = z.object({
 });
 export type IngredientsScanInput = z.infer<typeof ingredientsScanSchema>;
 export type IngredientsScanResult = z.infer<typeof ingredientsScanResultSchema>;
-export const ingredientsScanModelJsonSchema = z.toJSONSchema(
+export const ingredientsScanModelJsonSchema = modelJsonSchema(
   ingredientsScanModelResultSchema,
-  { target: 'draft-7' },
 );
-delete ingredientsScanModelJsonSchema.$schema;

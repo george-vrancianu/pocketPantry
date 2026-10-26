@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
 import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 
 /** Structured-output schema name of a Product Scan request. */
@@ -39,6 +40,10 @@ export const productScanResultSchema = productScanModelResultSchema
     matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
     matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
   });
+
+export const productScanModelJsonSchema = modelJsonSchema(
+  productScanModelResultSchema,
+);
 
 export type ProductScanInput = z.infer<typeof productScanSchema>;
 export type ProductScanModelResult = z.infer<

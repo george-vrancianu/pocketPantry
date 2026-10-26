@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
 import {
   SCAN_LANGUAGES,
   type CatalogSearchResult,
@@ -114,10 +115,7 @@ export function toVoiceRead(
   };
 }
 
-export const voiceReadJsonSchema = z.toJSONSchema(voiceReadModelSchema, {
-  target: 'draft-7',
-});
-delete voiceReadJsonSchema.$schema;
+export const voiceReadJsonSchema = modelJsonSchema(voiceReadModelSchema);
 // The provider's schema keeps `questions` required; the `default` only serves parsing a reply that omits it.
 delete (voiceReadJsonSchema.properties as Record<string, { default?: unknown }>)
   .questions.default;

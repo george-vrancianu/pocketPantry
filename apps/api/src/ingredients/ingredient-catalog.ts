@@ -189,7 +189,8 @@ const NOT_AN_INDEX = -1;
  * An Ingredient reference as the model writes it: an index from
  * `catalogPrompt`, or null. Loose on purpose: any number passes and anything
  * else becomes an index no Catalog holds, so `ingredientIdAt` makes the item
- * Unmatched rather than the whole reply invalid.
+ * Unmatched rather than the whole reply invalid. `modelJsonSchema` still
+ * advertises it to the model as an integer or null.
  */
 export const catalogIndexSchema = z
   .preprocess(
