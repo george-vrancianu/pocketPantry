@@ -3,6 +3,7 @@ import type { CatalogReader } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { fallbackNamePrompt, scanLanguagePrompt } from './scan-language';
 import {
@@ -35,8 +36,8 @@ export class ProductScanService {
           'Analyze this grocery package photo.',
           `${scanLanguagePrompt('The text on this package is', scanLanguage, 'product names, abbreviations, and date formats')} Prioritize visible package text. Match catalog ingredients across languages.`,
           'Identify its display name and broad product type.',
-          'Match it against the application catalog below. Ingredient tuples are [id, name, category].',
-          'Return matchedIngredientId only when that exact ID is present in the catalog and is a reasonable semantic match. Never invent an ID.',
+          'Match it against the application catalog below. Ingredient tuples are [index, name, category].',
+          'Return matchedIngredientId as the index of the matched ingredient tuple, only when that exact index is present in the catalog and is a reasonable semantic match. Never invent an index.',
           'Return matchedCategory only from the catalog category list. When an ingredient is matched, use its catalog category.',
           'matchConfidence measures confidence in the catalog ingredient match, not image-reading confidence. Use null for matchedIngredientId when no catalog ingredient is a good match.',
           `${fallbackNamePrompt(locale)} (for example, "Greek yogurt" becomes "Yogurt").`,
@@ -63,7 +64,10 @@ export class ProductScanService {
           properties: {
             productName: { type: 'string' },
             productType: { type: 'string' },
-            matchedIngredientId: { type: ['string', 'null'] },
+            matchedIngredientId: {
+              type: ['integer', 'null'],
+              description: catalogIndexSchema.description,
+            },
             matchedCategory: { type: ['string', 'null'] },
             matchConfidence: {
               type: 'number',

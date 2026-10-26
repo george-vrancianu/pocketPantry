@@ -64,7 +64,7 @@ export function buildVoiceReadRequest(
     model: 'text',
     prompt: [
       `Application catalog: ${input.catalogText}`,
-      'You turn a spoken grocery note into a list of actions on the Shopping List and the Pantry, and of questions about whether the Pantry has an ingredient. Ingredient tuples in the catalog are [id, name, category].',
+      'You turn a spoken grocery note into a list of actions on the Shopping List and the Pantry, and of questions about whether the Pantry has an ingredient. Ingredient tuples in the catalog are [index, name, category].',
       input.spokenLanguage
         ? `The note was spoken in ${LANGUAGE_NAMES[input.spokenLanguage]}; the app is shown in ${uiLanguage}. Words from the other supported languages (English, Romanian, Danish) may appear; match catalog ingredients across languages.`
         : `The note may be in any supported language (English, Romanian or Danish); the app is shown in ${uiLanguage}. Match catalog ingredients across languages.`,
@@ -72,7 +72,7 @@ export function buildVoiceReadRequest(
       `Names currently on the Shopping List (spelling hints only): ${JSON.stringify(names(input.shoppingNames))}.`,
       `Names currently in the Pantry (spelling hints only): ${JSON.stringify(names(input.pantryNames))}.`,
       'Return one actions entry for every thing the Member asked for, in the order spoken. op is add, remove, check (bought or ticked off), uncheck, setQuantity (change an amount) or runningLow (the Pantry item is running low).',
-      'Return matchedIngredientId only when that exact ID is in the catalog and is a reasonable semantic match; never invent an ID. Otherwise use null. matchConfidence is your confidence in that match from 0 to 1 (0 when null).',
+      'Return matchedIngredientId as the index of the matched ingredient tuple, only when that exact index is in the catalog and is a reasonable semantic match; never invent an index. Otherwise use null. matchConfidence is your confidence in that match from 0 to 1 (0 when null).',
       `fallbackIngredientName is a short generic ingredient name in ${LANGUAGE_NAMES[input.locale]} (for example "quinoa crackers" stays "Quinoa crackers"). spokenName is the same short generic name in the language the note was spoken in. spokenText is the words that made this action, as spoken.`,
       'Spoken amounts map to quantity and unit, where unit is one of g, kg, ml, l, pcs. "two litres" is quantity 2, unit l. "half a kilo" is 500 g. "a dozen eggs" is 12 pcs. "three apples" is 3 pcs. Use null for both when no amount was spoken. Never put a number in the ingredient name.',
       'scope is "all" for removals of everything ("remove all the milk") and "one" otherwise; null for other ops. expiresOn is an ISO date (YYYY-MM-DD) only when an expiry date is spoken, resolved relative to today; noExpiry is true only when the Member says it does not expire. location is fridge, freezer, cupboard or spices only when spoken, otherwise null.',

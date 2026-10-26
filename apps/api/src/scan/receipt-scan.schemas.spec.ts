@@ -103,7 +103,7 @@ describe('receipt scan schemas', () => {
           exclusionReason: null,
           productName: 'Chicken breast',
           productType: 'Meat',
-          matchedIngredientId: 'be0ef2e7-75ea-47d8-b9bf-fc890d64db8e',
+          matchedIngredientId: 7,
           matchedCategory: 'Meat',
           matchConfidence: 0.96,
           fallbackIngredientName: 'Chicken Breast',

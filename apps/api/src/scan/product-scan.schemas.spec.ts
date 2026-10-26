@@ -24,7 +24,7 @@ describe('product scan schemas', () => {
     const result = {
       productName: 'Plain Greek yogurt',
       productType: 'Dairy product',
-      matchedIngredientId: 'be0ef2e7-75ea-47d8-b9bf-fc890d64db8e',
+      matchedIngredientId: 7,
       matchedCategory: 'Dairy',
       matchConfidence: 0.91,
       fallbackIngredientName: 'Yogurt',

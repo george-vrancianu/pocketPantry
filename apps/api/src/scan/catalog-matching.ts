@@ -14,7 +14,9 @@ import type { ExpiryOverride } from '../catalog/catalog-defaults';
  * id the model proposed, and a confidence.
  *
  * 1. Give the model the Catalog text (`catalogPrompt`, byte-identical for all
- *    callers so provider prompt caching is shared).
+ *    callers so provider prompt caching is shared). It names each Ingredient
+ *    by a short index; map the index the model returns back to an id with
+ *    `ingredientIdAt` on the same Catalog snapshot, before anything else.
  * 2. Check a proposed id against the Catalog the Family sees
  *    (`validateCatalogMatch`).
  * 3. `CatalogMatchService.resolve`: the validated proposed Ingredient, else an
@@ -24,8 +26,11 @@ import type { ExpiryOverride } from '../catalog/catalog-defaults';
  *    the item is Unmatched.
  */
 export {
+  catalogIndexSchema,
   catalogPrompt,
+  ingredientIdAt,
   validateCatalogMatch,
+  validateIndexedMatch,
 } from '../ingredients/ingredient-catalog';
 
 /** One thing read from the input. */

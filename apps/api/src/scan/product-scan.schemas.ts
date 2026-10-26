@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 
 /** Structured-output schema name of a Product Scan request. */
 export const PRODUCT_SCAN_SCHEMA_NAME = 'grocery_product_scan';
@@ -18,7 +19,8 @@ export const productScanSchema = z.object({
 export const productScanModelResultSchema = z.object({
   productName: z.string().trim().min(1).max(120),
   productType: z.string().trim().min(1).max(80),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; the service turns it into an Ingredient id. */
+  matchedIngredientId: catalogIndexSchema,
   matchedCategory: z.string().trim().min(1).max(80).nullable(),
   matchConfidence: z.number().min(0).max(1),
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -31,6 +33,7 @@ export const productScanModelResultSchema = z.object({
 });
 
 export const productScanResultSchema = productScanModelResultSchema.extend({
+  matchedIngredientId: z.uuid().nullable(),
   matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
   matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
 });

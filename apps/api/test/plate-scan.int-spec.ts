@@ -9,6 +9,7 @@ import type { Database } from '../src/database/database.types';
 import { unmatchedEntries } from '../src/database/schema';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { PLATE_TOKEN_TTL_MS } from '../src/scan/plate-token';
+import { UUID_PATTERN } from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { signUpWithUiLanguage } from './support/stored-language';
 
@@ -255,7 +256,7 @@ describe('Plate Scan (integration)', () => {
       expect(prompts[0].prompt).toContain('"Pancakes"');
     });
 
-    it('never trusts the model: an id outside the Catalog, or a weak Match, is Unmatched', async () => {
+    it('never trusts the model: an id or index outside the Catalog, or a weak Match, is Unmatched', async () => {
       respondWith({
         items: [
           item({
@@ -264,11 +265,25 @@ describe('Plate Scan (integration)', () => {
           }),
           item({ matchConfidence: 0.2 }),
           item({ matchedIngredientId: null, matchConfidence: 0 }),
+          item({ matchedIngredientId: 100_000 }),
+          item({ matchedIngredientId: -1 }),
+          item({ matchedIngredientId: 2.5 }),
+          item({ matchedIngredientId: 'milk' }),
         ],
       });
+      prompts.length = 0;
       const { lines } = (await ingredients(await signUp()).expect(201))
         .body as { lines: Line[] };
-      expect(lines.map((l) => l.match)).toEqual([null, null, null]);
+      expect(lines.map((l) => l.match)).toEqual([
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]);
+      expect(prompts[0].prompt).not.toMatch(UUID_PATTERN);
       expect(lines[0].name).toBe('Pixie dust');
     });
 
@@ -281,7 +296,7 @@ describe('Plate Scan (integration)', () => {
     });
 
     it('rejects a result the model got wrong with a stable code', async () => {
-      respondWith({ items: [item({ matchedIngredientId: 'milk' })] });
+      respondWith({ items: [item({ confidence: 2 })] });
       const failed = await ingredients(await signUp()).expect(502);
       expect(failed.body).toEqual({ code: 'scan.result_invalid', params: {} });
     });
@@ -414,7 +429,7 @@ describe('Plate Scan (integration)', () => {
       it('gives the use back when the provider fails, so the Member can retry', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item({ matchedIngredientId: 'milk' })] });
+        respondWith({ items: [item({ confidence: 2 })] });
         await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
         respondWith({ items: [item()] });
         await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
@@ -424,7 +439,7 @@ describe('Plate Scan (integration)', () => {
       it('refuses after 3 attempts in total, even when each failed', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item({ matchedIngredientId: 'milk' })] });
+        respondWith({ items: [item({ confidence: 2 })] });
         await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
         await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
         await ingredients(cookie, 'Pancakes', 'en', token).expect(502);

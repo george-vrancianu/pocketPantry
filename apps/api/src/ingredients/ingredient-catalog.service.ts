@@ -17,7 +17,7 @@ import {
   type CatalogMatch,
   catalogPrompt,
   type IngredientCatalog,
-  validateCatalogMatch,
+  validateIndexedMatch,
 } from './ingredient-catalog';
 
 const CACHE_TTL_MS = 5 * 60 * 1_000;
@@ -99,19 +99,21 @@ export class IngredientCatalogService {
   }
 
   // toPrompt and validateMatch delegate to the shared pipeline; new callers should use scan/catalog-matching.
+  /** The Catalog text for the model, naming each Ingredient by an index (`catalogPrompt`). */
   toPrompt(catalog: IngredientCatalog): string {
     return catalogPrompt(catalog);
   }
 
+  /** Checks a Match the model gave by index into `toPrompt(catalog)` of this same `catalog`. */
   validateMatch(
     catalog: IngredientCatalog,
     candidate: {
-      matchedIngredientId: string | null;
+      matchedIngredientId: number | null;
       matchedCategory: string | null;
       matchConfidence: number;
     },
   ): CatalogMatch {
-    return validateCatalogMatch(catalog, candidate);
+    return validateIndexedMatch(catalog, candidate);
   }
 
   private async loadCatalog(

@@ -1,7 +1,10 @@
 import type { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { ApiException } from '../common/api-exception';
 import { MAX_QUANTITY } from '../common/quantity';
-import { validateCatalogMatch } from '../ingredients/ingredient-catalog';
+import {
+  catalogPrompt,
+  validateIndexedMatch,
+} from '../ingredients/ingredient-catalog';
 import type { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { addShoppingItemBody } from '../shopping/shopping.schemas';
 import { PlateScanService } from './plate-scan.service';
@@ -20,7 +23,8 @@ const catalog = {
 const item = (overrides: Record<string, unknown> = {}) => ({
   productName: 'Milk',
   productType: 'Dairy',
-  matchedIngredientId: milkId,
+  // Milk, by its index in the Catalog text.
+  matchedIngredientId: 0,
   matchedCategory: 'Dairy',
   matchConfidence: 0.9,
   fallbackIngredientName: 'Milk',
@@ -41,8 +45,8 @@ describe('PlateScanService', () => {
       { generate } as unknown as StructuredOutputAiService,
       {
         getCatalogIn: jest.fn().mockResolvedValue(catalog),
-        toPrompt: jest.fn().mockReturnValue(JSON.stringify(catalog)),
-        validateMatch: validateCatalogMatch,
+        toPrompt: catalogPrompt,
+        validateMatch: validateIndexedMatch,
       } as unknown as IngredientCatalogService,
     );
   });
@@ -127,32 +131,29 @@ describe('PlateScanService', () => {
       const request = sent();
       expect(request.images ?? []).toEqual([]);
       expect(request.prompt).toContain('"Pizza"');
-      expect(request.prompt).toContain(milkId);
+      expect(request.prompt).toContain('[0,"Milk","Dairy"]');
+      expect(request.prompt).not.toContain(milkId);
     });
 
-    it('never trusts an id the Catalog does not hold', async () => {
-      provider({
-        items: [
-          item({ matchedIngredientId: strangerId, matchConfidence: 0.95 }),
-        ],
-      });
-      const { items } = await service.findIngredients(
-        'Pizza',
-        'en',
-        'family-1',
-      );
-      expect(items[0]).toMatchObject({
-        matchedIngredientId: null,
-        matchedIngredientName: null,
-        matchConfidence: 0,
-      });
+    it('never trusts an index the Catalog does not hold, or a value that is not an index', async () => {
+      for (const index of [1, -1, 0.5, strangerId, 'milk']) {
+        provider({
+          items: [item({ matchedIngredientId: index, matchConfidence: 0.95 })],
+        });
+        const { items } = await service.findIngredients(
+          'Pizza',
+          'en',
+          'family-1',
+        );
+        expect(items[0]).toMatchObject({
+          matchedIngredientId: null,
+          matchedIngredientName: null,
+          matchConfidence: 0,
+        });
+      }
     });
 
-    it('rejects an id that is not a UUID, and a negative quantity', async () => {
-      provider({ items: [item({ matchedIngredientId: 'milk' })] });
-      await expect(
-        service.findIngredients('Pizza', 'en', 'family-1'),
-      ).rejects.toMatchObject({ code: 'scan.result_invalid' });
+    it('rejects a negative quantity', async () => {
       provider({ items: [item({ quantity: -1 })] });
       await expect(
         service.findIngredients('Pizza', 'en', 'family-1'),

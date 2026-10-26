@@ -18,6 +18,7 @@ import {
 import type { GuidanceSuggestion } from '../src/recipes/guidance-suggestion.schemas';
 import { ScanCapService } from '../src/scan/scan-cap.service';
 import { client, signUp } from './support/admin-session';
+import { catalogIndexIn } from './support/catalog-indices';
 import { createTestApp } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
 
@@ -328,8 +329,11 @@ describe('Suggest Guidance (integration)', () => {
         },
         noSuggestions: ['nutritionNote', 'eatingMoments'],
       });
-      // The offered Ingredients and Recipes reach the model.
-      expect(prompts[0].prompt).toContain(butter);
+      // The offered Ingredients (by index, never by id) and Recipes reach the model.
+      expect(catalogIndexIn(prompts[0].prompt, 'Butter')).toEqual(
+        expect.any(Number),
+      );
+      expect(prompts[0].prompt).not.toContain(butter);
       expect(prompts[0].prompt).toContain(dish.id);
     });
 
@@ -351,9 +355,19 @@ describe('Suggest Guidance (integration)', () => {
         }),
         idea({ label: 'B', recipeId: '3f0c8a5e-6b1d-4c53-9a53-0d4f6f5e9a12' }),
         idea({ label: 'C', recipeId: archived.id }),
+        idea({ label: 'D', ingredientId: 100_000 }),
+        idea({ label: 'E', ingredientId: -1 }),
+        idea({ label: 'F', ingredientId: 2.5 }),
       );
       const pairings = await pairingsOf();
-      expect(pairings?.map((p) => p.label)).toEqual(['A', 'B', 'C']);
+      expect(pairings?.map((p) => p.label)).toEqual([
+        'A',
+        'B',
+        'C',
+        'D',
+        'E',
+        'F',
+      ]);
       for (const p of pairings ?? []) {
         expect(p.linkedIngredientId).toBeNull();
         expect(p.linkedRecipeId).toBeNull();
@@ -414,7 +428,6 @@ describe('Suggest Guidance (integration)', () => {
       const safeRecipe = await catalogRecipe(flour, 'Plain');
       await settings.put('/allergies', { allergenIds: [MILK] }).expect(200);
       propose(
-        idea({ label: 'Cheese', ingredientId: parmesan }),
         idea({ label: 'Cheesy dish', recipeId: unsafeRecipe.id }),
         idea({ label: 'Plain dish', recipeId: safeRecipe.id }),
         idea({ label: 'Berries' }),
@@ -422,6 +435,8 @@ describe('Suggest Guidance (integration)', () => {
       const pairings = await pairingsOf();
       expect(pairings?.map((p) => p.label)).toEqual(['Plain dish', 'Berries']);
       expect(prompts[0].prompt).toContain('Milk');
+      // An Ingredient with the Allergen is never offered, so the model cannot link to it.
+      expect(() => catalogIndexIn(prompts[0].prompt, 'Parmesan')).toThrow();
     });
 
     it('avoids the Allergies of the other Members of the Family', async () => {
@@ -439,9 +454,11 @@ describe('Suggest Guidance (integration)', () => {
       await client(app, benCookie, '/api/settings')
         .put('/allergies', { allergenIds: [PEANUT] })
         .expect(200);
-      propose(idea({ label: 'Nuts', ingredientId: peanuts }));
+      const unsafe = await catalogRecipe(peanuts, 'Nutty');
+      propose(idea({ label: 'Nutty dish', recipeId: unsafe.id }));
       expect(await pairingsOf()).toBeUndefined();
       expect(prompts[0].prompt).toContain('Peanuts');
+      expect(() => catalogIndexIn(prompts[0].prompt, 'Peanuts')).toThrow();
     });
 
     it('avoids a Family Allergy', async () => {
@@ -449,16 +466,14 @@ describe('Suggest Guidance (integration)', () => {
         .post('/family-allergies', { allergenId: MILK })
         .expect(201);
       const unsafe = await catalogRecipe(parmesan, 'Cheesy');
-      propose(
-        idea({ label: 'Cheese', ingredientId: parmesan }),
-        idea({ label: 'Cheesy dish', recipeId: unsafe.id }),
-      );
+      propose(idea({ label: 'Cheesy dish', recipeId: unsafe.id }));
       const res = await suggest(request()).expect(200);
       expect(res.body as GuidanceSuggestion).toEqual({
         guidance: {},
         noSuggestions: ['pairings', 'nutritionNote', 'eatingMoments'],
       });
       expect(prompts[0].prompt).toContain('Milk');
+      expect(() => catalogIndexIn(prompts[0].prompt, 'Parmesan')).toThrow();
     });
 
     it('ignores an optional Ingredient Line when judging a Recipe', async () => {

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MAX_QUANTITY } from '../common/quantity';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import { imageDataUrlSchema } from './product-scan.schemas';
 
 /** Structured-output schema name of a Receipt Scan request. */
@@ -35,7 +36,8 @@ export const receiptScanModelLineSchema = z.object({
   exclusionReason: z.string().trim().min(1).max(300).nullable(),
   productName: z.string().trim().min(1).max(120).nullable(),
   productType: z.string().trim().min(1).max(80).nullable(),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; the service turns it into an Ingredient id. */
+  matchedIngredientId: catalogIndexSchema,
   matchedCategory: z.string().trim().min(1).max(80).nullable(),
   matchConfidence: z.number().min(0).max(1),
   fallbackIngredientName: z.string().trim().min(1).max(80).nullable(),
@@ -48,6 +50,7 @@ export const receiptScanModelLineSchema = z.object({
 });
 
 export const receiptScanResultLineSchema = receiptScanModelLineSchema.extend({
+  matchedIngredientId: z.uuid().nullable(),
   matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
   matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
   quantity: z.number().positive().max(MAX_QUANTITY).nullable(),

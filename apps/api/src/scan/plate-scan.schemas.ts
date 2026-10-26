@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import { imageDataUrlSchema } from './product-scan.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 
@@ -39,7 +40,8 @@ export const plateDishesJsonSchema = z.toJSONSchema(
 const plateItemSchema = z.object({
   productName: z.string().trim().min(1).max(120),
   productType: z.string().trim().min(1).max(80),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; the service turns it into an Ingredient id. */
+  matchedIngredientId: catalogIndexSchema,
   matchedCategory: z.string().trim().min(1).max(80).nullable(),
   matchConfidence: z.number().min(0).max(1),
   fallbackIngredientName: z.string().trim().min(1).max(80),

@@ -8,6 +8,7 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { scanUsage } from '../src/database/schema';
 import { ScanCapService } from '../src/scan/scan-cap.service';
+import { catalogIndexIn, UUID_PATTERN } from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { signUpWithUiLanguage } from './support/stored-language';
 
@@ -408,6 +409,34 @@ describe('Product Scan (integration)', () => {
     expect(invented.body).toMatchObject({
       lines: [{ match: null }],
     });
+  });
+
+  it('names Catalog Ingredients by index, never by UUID, and answers with the UUID of the index the model chose', async () => {
+    prompts.length = 0;
+    next = () =>
+      Promise.resolve({
+        data: parmesan({
+          matchedIngredientId: catalogIndexIn(prompts[0].prompt, 'Parmesan'),
+        }),
+        requestId: 'fake-request',
+      });
+    const body = (
+      await scan(await signUp(), { productImage: IMAGE }).expect(201)
+    ).body as unknown;
+    expect(prompts[0].prompt).not.toMatch(UUID_PATTERN);
+    expect(body).toMatchObject({
+      lines: [{ match: { id: seedId.ingredient('parmesan') } }],
+    });
+  });
+
+  it('marks a line Unmatched when the model gives an index outside the Catalog, or not an index at all', async () => {
+    for (const index of [100_000, -1, 2.5]) {
+      respondWith(parmesan({ matchedIngredientId: index }));
+      const body = (
+        await scan(await signUp(), { productImage: IMAGE }).expect(201)
+      ).body as unknown;
+      expect(body).toMatchObject({ lines: [{ match: null }] });
+    }
   });
 
   it('flags a shaky image read as low-confidence', async () => {

@@ -1,0 +1,103 @@
+import type {
+  StructuredOutputAiService,
+  StructuredOutputRequest,
+} from '../../src/ai/structured-output-ai.service';
+import type { IngredientCatalog } from '../../src/ingredients/ingredient-catalog';
+import type { IngredientCatalogService } from '../../src/ingredients/ingredient-catalog.service';
+
+type Generate = StructuredOutputAiService['generate'];
+
+/** The fields in which a model answer names a Catalog Ingredient. */
+const REFERENCE_KEYS = new Set(['matchedIngredientId', 'ingredientId']);
+
+/** The `[index, name, category]` tuples of the Catalog text inside `prompt`, if it has one. */
+function promptTuples(prompt: string): [unknown, string, string][] | null {
+  const start = prompt.indexOf('{"categories":');
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  for (let i = start; i < prompt.length; i++) {
+    const char = prompt[i];
+    if (inString) {
+      if (char === '\\') i++;
+      else if (char === '"') inString = false;
+    } else if (char === '"') inString = true;
+    else if (char === '{' || char === '[') depth++;
+    else if (char === '}' || char === ']') {
+      depth--;
+      if (depth === 0) {
+        const parsed = JSON.parse(prompt.slice(start, i + 1)) as {
+          ingredients: [unknown, string, string][];
+        };
+        return parsed.ingredients;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Lets a test write a fake model answer with Ingredient ids (`seedId.ingredient('milk')`)
+ * while the app receives what the real model sends: the index the request's Catalog text
+ * gave that Ingredient. An id is found through the Catalog snapshots the app loaded (by
+ * name and category, so a filtered Catalog works too). Anything else (an index, an id the
+ * prompt does not offer, any other field) reaches the app unchanged.
+ */
+export function answerWithCatalogIndices(
+  generate: Generate,
+  catalogs: IngredientCatalogService,
+): Generate {
+  const seen: IngredientCatalog[] = [];
+  const load = catalogs.getCatalogIn.bind(catalogs);
+  catalogs.getCatalogIn = async (...args) => {
+    const catalog = await load(...args);
+    seen.unshift(catalog);
+    seen.length = Math.min(seen.length, 20);
+    return catalog;
+  };
+
+  return async (request: StructuredOutputRequest) => {
+    const response = await generate(request);
+    const tuples = promptTuples(request.prompt);
+    if (!tuples) return response;
+    const indexOf = (id: string): unknown => {
+      for (const catalog of seen) {
+        const ingredient = catalog.ingredients.find((i) => i.id === id);
+        if (!ingredient) continue;
+        const tuple = tuples.find(
+          ([, name, category]) =>
+            name === ingredient.name && category === ingredient.category,
+        );
+        if (tuple) return tuple[0];
+      }
+      return id;
+    };
+    const translate = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(translate);
+      if (value === null || typeof value !== 'object') return value;
+      return Object.fromEntries(
+        Object.entries(value).map(([key, field]) => [
+          key,
+          REFERENCE_KEYS.has(key) && typeof field === 'string'
+            ? indexOf(field)
+            : translate(field),
+        ]),
+      );
+    };
+    return { ...response, data: translate(response.data) };
+  };
+}
+
+/** The index the Catalog text in `prompt` gives the Ingredient called `name`. */
+export function catalogIndexIn(prompt: string, name: string): unknown {
+  const tuple = promptTuples(prompt)?.find(
+    ([, tupleName]) => tupleName === name,
+  );
+  if (!tuple)
+    throw new Error(`No Ingredient "${name}" in the prompt's Catalog`);
+  return tuple[0];
+}
+
+/** Matches a UUID anywhere in a prompt. */
+export const UUID_PATTERN =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;

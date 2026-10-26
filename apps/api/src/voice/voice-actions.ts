@@ -4,6 +4,11 @@ import {
   type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
+import {
+  catalogIndexSchema,
+  ingredientIdAt,
+  type IngredientCatalog,
+} from '../ingredients/ingredient-catalog';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { VOICE_LISTS, VOICE_DEFAULT_TARGETS } from './voice.schemas';
@@ -32,7 +37,8 @@ const modelAction = z.object({
   op: z.enum(VOICE_OPS),
   /** The words that made this Voice Action, in the language spoken. */
   spokenText: z.string().trim().min(1).max(200),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; `withIngredientIds` turns it into an Ingredient id. */
+  matchedIngredientId: catalogIndexSchema,
   matchConfidence: z.number().min(0).max(1),
   /** A short generic Ingredient name in the Catalog Language. */
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -54,7 +60,8 @@ const modelAction = z.object({
 const modelQuestion = z.object({
   /** The words that made this question, in the language spoken. */
   spokenText: z.string().trim().min(1).max(200),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; `withIngredientIds` turns it into an Ingredient id. */
+  matchedIngredientId: catalogIndexSchema,
   matchConfidence: z.number().min(0).max(1),
   /** A short generic Ingredient name in the Catalog Language. */
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -70,9 +77,44 @@ export const voiceReadModelSchema = z.object({
   /** The language the text was spoken in, or null when it can't be told. Only Assistant Requests use it. */
   spokenLanguage: z.enum(SCAN_LANGUAGES).nullable(),
 });
+/** What the model returned: Ingredients named by their index in the Catalog text. */
 export type VoiceReadModelResult = z.infer<typeof voiceReadModelSchema>;
-export type ModelVoiceAction = z.infer<typeof modelAction>;
-export type ModelPantryQuestion = z.infer<typeof modelQuestion>;
+type WithIngredientId<T> = Omit<T, 'matchedIngredientId'> & {
+  /** The proposed Ingredient's id, or null. */
+  matchedIngredientId: string | null;
+};
+/** One Voice Action as read, its proposed Ingredient as an id. */
+export type ModelVoiceAction = WithIngredientId<z.infer<typeof modelAction>>;
+/** One Pantry Question as read, its proposed Ingredient as an id. */
+export type ModelPantryQuestion = WithIngredientId<
+  z.infer<typeof modelQuestion>
+>;
+/** A read with every proposed Ingredient as an id (`withIngredientIds`). */
+export type VoiceRead = Omit<VoiceReadModelResult, 'actions' | 'questions'> & {
+  actions: ModelVoiceAction[];
+  questions: ModelPantryQuestion[];
+};
+
+/**
+ * The read with each Ingredient index turned into its id. `catalog` must be the
+ * one whose text the request sent; an index it does not hold is no proposal.
+ */
+export function withIngredientIds(
+  read: VoiceReadModelResult,
+  catalog: IngredientCatalog,
+): VoiceRead {
+  const withId = <T extends { matchedIngredientId: number | null }>(
+    item: T,
+  ) => ({
+    ...item,
+    matchedIngredientId: ingredientIdAt(catalog, item.matchedIngredientId),
+  });
+  return {
+    ...read,
+    actions: read.actions.map(withId),
+    questions: read.questions.map(withId),
+  };
+}
 
 export const voiceReadJsonSchema = z.toJSONSchema(voiceReadModelSchema, {
   target: 'draft-7',

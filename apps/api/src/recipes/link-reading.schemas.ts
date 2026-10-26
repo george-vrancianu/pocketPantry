@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { ingredientUnit } from '../database/schema';
+import {
+  catalogIndexSchema,
+  ingredientIdAt,
+  type IngredientCatalog,
+} from '../ingredients/ingredient-catalog';
 
 /** Structured-output schema name of a Recipe from Link reading. */
 export const LINK_READING_SCHEMA_NAME = 'recipe_from_link_reading';
@@ -31,7 +36,8 @@ export const linkReadingSchema = z.object({
     z.object({
       /** The ingredient's name as written in the output language chosen in the prompt. */
       nameAsWritten: z.string(),
-      ingredientId: z.string().nullable(),
+      /** The Catalog index the model chose; `withIngredientIds` turns it into an Ingredient id. */
+      ingredientId: catalogIndexSchema,
       matchConfidence: z.number(),
       quantity: z.number().nullable(),
       unit: z.enum(ingredientUnit.enumValues).nullable(),
@@ -41,7 +47,32 @@ export const linkReadingSchema = z.object({
     }),
   ),
 });
-export type LinkReading = z.infer<typeof linkReadingSchema>;
+/** What the model returned: Ingredients named by their index in the Catalog text. */
+export type LinkReadingAnswer = z.infer<typeof linkReadingSchema>;
+type AnswerLine = LinkReadingAnswer['ingredients'][number];
+/** The reading with each proposed Ingredient as an id (`withIngredientIds`). */
+export type LinkReading = Omit<LinkReadingAnswer, 'ingredients'> & {
+  ingredients: (Omit<AnswerLine, 'ingredientId'> & {
+    ingredientId: string | null;
+  })[];
+};
+
+/**
+ * The reading with each Ingredient index turned into its id. `catalog` must be
+ * the one whose text the prompt sent; an index it does not hold is no proposal.
+ */
+export function withIngredientIds(
+  reading: LinkReadingAnswer,
+  catalog: IngredientCatalog,
+): LinkReading {
+  return {
+    ...reading,
+    ingredients: reading.ingredients.map((line) => ({
+      ...line,
+      ingredientId: ingredientIdAt(catalog, line.ingredientId),
+    })),
+  };
+}
 
 export const linkReadingJsonSchema = z.toJSONSchema(linkReadingSchema, {
   target: 'draft-7',

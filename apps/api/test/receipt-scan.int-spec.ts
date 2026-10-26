@@ -7,6 +7,7 @@ import { ApiException } from '../src/common/api-exception';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { unmatchedEntries } from '../src/database/schema';
+import { catalogIndexIn, UUID_PATTERN } from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { signUpWithUiLanguage } from './support/stored-language';
 
@@ -288,6 +289,42 @@ describe('Receipt Scan (integration)', () => {
 
   it('rejects a Scan Language outside the supported list', async () => {
     await scan(await signUp(), 'en', 'fr').expect(400);
+  });
+
+  it('names Catalog Ingredients by index, never by UUID, and answers with the UUID of the index the model chose', async () => {
+    prompts.length = 0;
+    next = () =>
+      Promise.resolve({
+        data: receipt(
+          product({
+            matchedIngredientId: catalogIndexIn(prompts[0].prompt, 'Milk'),
+          }),
+        ),
+        requestId: 'fake-request',
+      });
+    const body = (await scan(await signUp()).expect(201)).body as unknown;
+    expect(prompts[0].prompt).toContain('"ingredients":[[0,');
+    expect(prompts[0].prompt).not.toMatch(UUID_PATTERN);
+    expect(body).toMatchObject({
+      lines: [{ match: { id: seedId.ingredient('milk'), name: 'Milk' } }],
+    });
+  });
+
+  it('never trusts a model index: one outside the Catalog, or not an index at all, leaves the line Unmatched', async () => {
+    for (const index of [100_000, -1, 2.5]) {
+      respondWith(
+        receipt(
+          product({
+            matchedIngredientId: index,
+            fallbackIngredientName: 'Zzyzx mystery',
+          }),
+        ),
+      );
+      const body = (await scan(await signUp()).expect(201)).body as unknown;
+      expect(body).toMatchObject({
+        lines: [{ match: null, name: 'Zzyzx mystery' }],
+      });
+    }
   });
 
   it('never trusts a model id: one outside the Catalog leaves the line Unmatched', async () => {

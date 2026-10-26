@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import { imageDataUrlSchema } from './product-scan.schemas';
 
 /** Structured-output schema name of an Ingredients Scan request. */
@@ -18,7 +19,8 @@ export const INGREDIENTS_SCAN_MAX_ITEMS = 50;
 const item = z.object({
   productName: z.string().trim().min(1).max(120),
   productType: z.string().trim().min(1).max(80),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; the service turns it into an Ingredient id. */
+  matchedIngredientId: catalogIndexSchema,
   matchedCategory: z.string().trim().min(1).max(80).nullable(),
   matchConfidence: z.number().min(0).max(1),
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -33,6 +35,7 @@ export const ingredientsScanResultSchema = z.object({
   items: z
     .array(
       item.extend({
+        matchedIngredientId: z.uuid().nullable(),
         matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
         matchedIngredientDefaultUnit: z
           .string()

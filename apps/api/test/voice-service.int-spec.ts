@@ -11,6 +11,7 @@ import { PantryService } from '../src/pantry/pantry.service';
 import { ShoppingService } from '../src/shopping/shopping.service';
 import type { VoiceActionDraft } from '../src/voice/voice-actions';
 import { VoiceService } from '../src/voice/voice.service';
+import { catalogIndexIn, UUID_PATTERN } from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 describe('VoiceService without audio or Review (integration)', () => {
@@ -23,11 +24,15 @@ describe('VoiceService without audio or Review (integration)', () => {
   const aiCalls: StructuredOutputRequest[] = [];
   let counter = 0;
 
+  /** Builds the reading from the request, for a test that needs the prompt's Catalog. */
+  let readingFor: ((input: StructuredOutputRequest) => void) | null = null;
+
   beforeAll(async () => {
     const ai = {
       generate: (input: StructuredOutputRequest) => {
         aiCalls.push(input);
         if (aiFailure) return Promise.reject(aiFailure);
+        readingFor?.(input);
         return Promise.resolve({
           data: { spokenLanguage: null, ...reading },
           requestId: 'req-1',
@@ -46,6 +51,7 @@ describe('VoiceService without audio or Review (integration)', () => {
 
   beforeEach(() => {
     reading = { actions: [], unsupported: [] };
+    readingFor = null;
     aiFailure = null;
     aiCalls.length = 0;
   });
@@ -158,6 +164,50 @@ describe('VoiceService without audio or Review (integration)', () => {
       } = await voice.readText(memberId, textInput);
 
       expect(action.rows.shoppingItem).toMatchObject({ name: 'Eggs' });
+    });
+
+    it('names Catalog Ingredients by index, never by UUID, and resolves the index the model chose', async () => {
+      const memberId = await signUpMember();
+      readingFor = (input) => {
+        reading = {
+          actions: [
+            model({
+              matchedIngredientId: catalogIndexIn(input.prompt, 'Eggs'),
+            }),
+          ],
+          unsupported: [],
+        };
+      };
+
+      const { actions } = await voice.readText(memberId, textInput);
+
+      expect(actions[0]).toMatchObject({
+        ingredient: { id: seedId.ingredient('eggs') },
+      });
+      expect(aiCalls[0].prompt).not.toMatch(UUID_PATTERN);
+    });
+
+    it('leaves an action Unmatched when the model gives an index outside the Catalog, or not an index', async () => {
+      const memberId = await signUpMember();
+      reading = {
+        actions: [100_000, -1, 2.5, 'eggs'].map((index) =>
+          model({
+            matchedIngredientId: index,
+            spokenText: 'zzyzx',
+            fallbackIngredientName: 'Zzyzx mystery',
+          }),
+        ),
+        unsupported: [],
+      };
+
+      const { actions } = await voice.readText(memberId, textInput);
+
+      expect(actions.map((a) => a.ingredient)).toEqual([
+        null,
+        null,
+        null,
+        null,
+      ]);
     });
 
     it('maps a provider failure to voice.provider_unavailable', async () => {

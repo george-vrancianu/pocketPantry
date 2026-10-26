@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import {
   MAX_PAIRING_LABEL,
   MAX_PAIRING_REASON,
@@ -83,8 +84,8 @@ export const guidanceSuggestionSchema = z.object({
         reason: z.string(),
         /** One of the fixed Pairing Principles, null when none fits. */
         principle: z.string().nullable(),
-        /** An offered Catalog Ingredient id, or null. */
-        ingredientId: z.string().nullable(),
+        /** An offered Catalog Ingredient, by its index in the Catalog text, or null. */
+        ingredientId: catalogIndexSchema,
         /** An offered Recipe id, or null. */
         recipeId: z.string().nullable(),
       }),
