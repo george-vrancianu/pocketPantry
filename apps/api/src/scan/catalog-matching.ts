@@ -27,6 +27,7 @@ import type { ExpiryOverride } from '../catalog/catalog-defaults';
  *    the item is Unmatched.
  */
 export {
+  catalogIndexInstruction,
   catalogIndexSchema,
   catalogPrompt,
   ingredientIdAt,

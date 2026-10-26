@@ -9,6 +9,7 @@ import { recipes } from '../database/schema';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import {
+  catalogIndexInstruction,
   catalogPrompt,
   withIngredientId,
 } from '../ingredients/ingredient-catalog';
@@ -272,7 +273,7 @@ function readingPrompt(
     'Do not invent values the recipe does not state: use null for servings, prepMinutes, cookMinutes, quantity and unit when missing. For a pinch, to taste or similar, keep quantity and unit null.',
     'Quantity and unit must be one of g, kg, ml, l, pcs. Convert cups, tablespoons, teaspoons, ounces and pounds to g or ml; use pcs for countable items. Put the amount exactly as written (for example "2 cups") in originalAmount, and any preparation (chopped, sifted) in preparation, in ' +
       `${writeIn}. Set optional only when the recipe marks the ingredient optional.`,
-    `Give nameAsWritten as a short ingredient name in ${writeIn}. Set ingredientIndex only to the exact index of an application catalog ingredient tuple (tuples are [index, name, category]) that is a reasonable match, and matchConfidence to how sure you are; never invent an index.${keep ? ' The recipe and the catalog may be in different languages: match ingredients across languages.' : ''} Use null when no catalog ingredient fits.`,
+    `Give nameAsWritten as a short ingredient name in ${writeIn}. ${catalogIndexInstruction('ingredientIndex')} Set matchConfidence to how sure you are of that match.${keep ? ' The recipe and the catalog may be in different languages: match ingredients across languages.' : ''}`,
     `Set cuisineId or methodId only to an id from these lists, otherwise null. Cuisines [id, name]: ${pairs(lists.cuisines)}. Methods: ${pairs(lists.methods)}.`,
     `Application catalog: ${catalog}`,
     readingContent(input),

@@ -4,6 +4,7 @@ import type { AppConfig } from '../config/env';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import {
+  catalogIndexInstruction,
   catalogPrompt,
   validateIndexedMatch,
 } from '../ingredients/ingredient-catalog';
@@ -144,6 +145,12 @@ describe('ReceiptScanService', () => {
     expect(body).toHaveProperty(
       'input.0.content.0.text',
       expect.not.stringContaining(ingredientId),
+    );
+    expect(body).toHaveProperty(
+      'input.0.content.0.text',
+      expect.stringContaining(
+        catalogIndexInstruction('matchedIngredientIndex'),
+      ),
     );
     expect(body).toHaveProperty(
       `${fieldsPath}.purchasedCount.anyOf`,

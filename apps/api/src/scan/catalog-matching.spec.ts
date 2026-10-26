@@ -2,6 +2,7 @@ import type { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogScope } from '../catalog/catalog-scope';
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import {
+  catalogIndexInstruction,
   catalogPrompt,
   ingredientIdAt,
   CatalogMatchService,
@@ -195,6 +196,13 @@ describe('Catalog text and id validation', () => {
     expect(catalogPrompt(twoItems)).toBe(
       '{"categories":["Dairy"],"ingredients":[[0,"Milk","Dairy"],[1,"Cream","Dairy"]]}',
     );
+  });
+
+  it('tells the model the tuple layout and to answer in the named field with an index, never an invented one', () => {
+    const instruction = catalogIndexInstruction('ingredientIndex');
+    expect(instruction).toContain('[index, name, category]');
+    expect(instruction).toContain('Set ingredientIndex to the index');
+    expect(instruction).toContain('never invent an index');
   });
 
   it('maps an index the model returns back to the id of that Ingredient in the same Catalog', () => {

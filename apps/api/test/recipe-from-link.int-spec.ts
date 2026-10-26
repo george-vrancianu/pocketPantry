@@ -19,6 +19,7 @@ import { ScanCapService } from '../src/scan/scan-cap.service';
 import { client, signUp } from './support/admin-session';
 import { promoteToAdmin } from './support/promote-to-admin';
 import { catalogIndexIn } from './support/catalog-indices';
+import { catalogIndexInstruction } from '../src/ingredients/ingredient-catalog';
 import { createTestApp } from './support/create-test-app';
 
 jest.setTimeout(30_000);
@@ -381,7 +382,7 @@ describe('Recipe from Link (integration)', () => {
       expect(prompt).not.toContain('Romanian');
       expect(prompt).not.toContain('Write the title and the steps in English');
       // Matching against the Catalog is unchanged.
-      expect(prompt).toContain('Set ingredientIndex only to the exact index');
+      expect(prompt).toContain(catalogIndexInstruction('ingredientIndex'));
     });
 
     it('refuses an unknown language choice and extra fields', async () => {

@@ -2,6 +2,7 @@ import type { StructuredOutputAiService } from '../ai/structured-output-ai.servi
 import { ApiException } from '../common/api-exception';
 import { MAX_QUANTITY } from '../common/quantity';
 import {
+  catalogIndexInstruction,
   catalogPrompt,
   validateIndexedMatch,
 } from '../ingredients/ingredient-catalog';
@@ -133,6 +134,9 @@ describe('PlateScanService', () => {
       expect(request.images ?? []).toEqual([]);
       expect(request.prompt).toContain('"Pizza"');
       expect(request.prompt).toContain('[0,"Milk","Dairy"]');
+      expect(request.prompt).toContain(
+        catalogIndexInstruction('matchedIngredientIndex'),
+      );
       expect(request.prompt).not.toContain(milkId);
     });
 

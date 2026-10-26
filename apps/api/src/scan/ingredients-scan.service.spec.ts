@@ -1,6 +1,7 @@
 import type { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { ApiException } from '../common/api-exception';
 import {
+  catalogIndexInstruction,
   catalogPrompt,
   validateIndexedMatch,
 } from '../ingredients/ingredient-catalog';
@@ -65,6 +66,9 @@ describe('IngredientsScanService', () => {
     expect(request.images).toEqual([IMAGE]);
     expect(request.prompt).toContain('[0,"Milk","Dairy"]');
     expect(request.prompt).not.toContain(milkId);
+    expect(request.prompt).toContain(
+      catalogIndexInstruction('matchedIngredientIndex'),
+    );
   });
 
   it('returns no items for an empty result', async () => {

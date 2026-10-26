@@ -105,6 +105,15 @@ export function catalogPrompt(catalog: IngredientCatalog): string {
 }
 
 /**
+ * What every prompt with `catalogPrompt` text tells the model about it: the
+ * tuple layout, and that `field` takes an index from it, never an invented one.
+ * Kept out of the Catalog text itself, which stays byte-identical for all callers.
+ */
+export function catalogIndexInstruction(field: string): string {
+  return `Catalog ingredient tuples are [index, name, category]. Set ${field} to the index (the first tuple element) of a catalog ingredient only when that exact index is in the catalog and the ingredient is a reasonable semantic match; never invent an index. Otherwise use null.`;
+}
+
+/**
  * The id of the Ingredient the model named by `index` in `catalogPrompt(catalog)`.
  * Pass the very `catalog` the prompt was built from, so a Catalog refresh in
  * between cannot remap an index. Anything that is not an index of that

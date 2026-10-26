@@ -8,6 +8,7 @@ import {
   type StructuredOutputResult,
 } from '../ai/structured-output-ai.service';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
+import { catalogIndexInstruction } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { deriveReceiptQuantity } from './receipt-quantity';
 import { fallbackNamePrompt, scanLanguagePrompt } from './scan-language';
@@ -51,8 +52,8 @@ export class ReceiptScanService {
           'For sourceText preserve the item wording printed on the receipt as closely as possible, including useful abbreviations.',
           'For included pantry lines, expand abbreviated labels into a concise consumer-facing productName when the text supports it; do not invent products. Keep package sizes out of productName because they belong in the quantity fields. For non-product lines, productName and productType must be null.',
           'For productType use a broad food category.',
-          'Match each item against the application catalog below. Ingredient tuples are [index, name, category].',
-          'Return matchedIngredientIndex as the index of the matched ingredient tuple, only when that exact index is present in the catalog and is a reasonable semantic match. Never invent an index.',
+          'Match each item against the application catalog below.',
+          catalogIndexInstruction('matchedIngredientIndex'),
           'Return matchedCategory only from the catalog category list. When an ingredient is matched, use its catalog category.',
           'matchConfidence measures confidence in the catalog ingredient match. Use null for matchedIngredientIndex when no catalog ingredient is a good match.',
           `${fallbackNamePrompt(locale)} (for example, Greek yogurt becomes Yogurt).`,
