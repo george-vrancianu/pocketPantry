@@ -530,6 +530,14 @@ export const meat: SeedSection = {
         ],
       ],
       [
+        'minced-veal-and-pork',
+        'Minced veal and pork',
+        'Carne tocată de vițel și porc',
+        'g',
+        ['ground veal and pork'],
+        ['carne tocata vitel porc', 'vitel si porc tocat', 'toc vitel porc'],
+      ],
+      [
         'minced-chicken',
         'Minced chicken',
         'Carne tocată de pui',
