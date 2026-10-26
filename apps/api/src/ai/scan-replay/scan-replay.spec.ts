@@ -290,6 +290,45 @@ describe('compareDebugCapture', () => {
     ]);
   });
 
+  it('names Ingredients the capture matched by Catalog index, as the Catalog text now sends them', () => {
+    const capture: DebugCapture = {
+      ...receiptCapture([
+        receiptLine('MILK 1L', { matchedIngredientId: 0 }),
+        receiptLine('BREAD'),
+      ]),
+    };
+    capture.request.prompt =
+      'Catalog: {"ingredients":[[0,"Milk","Dairy"],[1,"Bread","Bakery"]]}';
+
+    const comparison = compareDebugCapture(capture, 'gpt-6-luna', [
+      {
+        ok: true,
+        durationMs: 1,
+        data: receipt([
+          receiptLine('MILK 1L', { matchedIngredientId: 1 }),
+          receiptLine('BREAD', { matchedIngredientId: 1 }),
+        ]),
+      },
+    ]);
+
+    expect(comparison.recorded).toMatchObject({ matched: 1 });
+    expect(comparison.runs[0]).toMatchObject({ matched: 2 });
+    expect(comparison.runs[0].changes).toEqual([
+      {
+        item: 'MILK 1L',
+        field: 'ingredient',
+        recorded: 'Milk',
+        replayed: 'Bread',
+      },
+      {
+        item: 'BREAD',
+        field: 'ingredient',
+        recorded: 'unmatched (-)',
+        replayed: 'Bread',
+      },
+    ]);
+  });
+
   it('shows where repeated runs disagree, leaving failed runs out', () => {
     const capture = receiptCapture([receiptLine('MILK 1L')]);
     const ok = (lines: unknown[]) => ({

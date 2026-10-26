@@ -386,16 +386,26 @@ function diffFields(
     }));
 }
 
-/** Ingredient names by id, read from the Catalog the prompt lists as `["id","name",...]`. */
+/**
+ * Ingredient names by the reference the model answers with, read from the Catalog the
+ * prompt lists: `[index,"name",...]` today, `["id","name",...]` in older debug captures.
+ */
 function catalogNames(prompt: string): Map<string, string> {
   const names = new Map<string, string>();
   for (const match of prompt.matchAll(
-    /\["([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})","((?:[^"\\]|\\.)*)"/gi,
+    /\[("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"|\d+),"((?:[^"\\]|\\.)*)"/gi,
   )) {
-    names.set(match[1].toLowerCase(), match[2]);
+    names.set(referenceKey(JSON.parse(match[1])), match[2]);
   }
   return names;
 }
+
+/** An Ingredient reference (a Catalog index, or an id in older debug captures) as a lookup key. */
+const referenceKey = (reference: unknown) => String(reference).toLowerCase();
+
+/** Whether the model named an Ingredient at all (an index, or an id in older debug captures). */
+const isReference = (value: unknown): value is string | number =>
+  typeof value === 'string' || typeof value === 'number';
 
 type RawLine = Record<string, unknown>;
 
@@ -472,12 +482,13 @@ function readAnswer(
 ): Answer {
   const answer = (data ?? {}) as RawLine;
   const ingredient = (line: RawLine): string => {
-    const id = line.matchedIngredientId;
-    if (typeof id === 'string') return catalog.get(id.toLowerCase()) ?? id;
+    const reference = line.matchedIngredientId;
+    if (isReference(reference)) {
+      return catalog.get(referenceKey(reference)) ?? String(reference);
+    }
     return `unmatched (${displayValue(line.fallbackIngredientName)})`;
   };
-  const isMatched = (line: RawLine) =>
-    typeof line.matchedIngredientId === 'string';
+  const isMatched = (line: RawLine) => isReference(line.matchedIngredientId);
   const linesOf = (value: unknown): RawLine[] =>
     Array.isArray(value) ? (value as RawLine[]) : [];
 
