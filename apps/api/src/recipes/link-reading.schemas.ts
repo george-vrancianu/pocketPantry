@@ -37,7 +37,7 @@ export const linkReadingSchema = z.object({
       /** The ingredient's name as written in the output language chosen in the prompt. */
       nameAsWritten: z.string(),
       /** The Catalog index the model chose; `withIngredientIds` turns it into an Ingredient id. */
-      ingredientId: catalogIndexSchema,
+      ingredientIndex: catalogIndexSchema,
       matchConfidence: z.number(),
       quantity: z.number().nullable(),
       unit: z.enum(ingredientUnit.enumValues).nullable(),
@@ -52,7 +52,7 @@ export type LinkReadingAnswer = z.infer<typeof linkReadingSchema>;
 type AnswerLine = LinkReadingAnswer['ingredients'][number];
 /** The reading with each proposed Ingredient as an id (`withIngredientIds`). */
 export type LinkReading = Omit<LinkReadingAnswer, 'ingredients'> & {
-  ingredients: (Omit<AnswerLine, 'ingredientId'> & {
+  ingredients: (Omit<AnswerLine, 'ingredientIndex'> & {
     ingredientId: string | null;
   })[];
 };
@@ -67,9 +67,9 @@ export function withIngredientIds(
 ): LinkReading {
   return {
     ...reading,
-    ingredients: reading.ingredients.map((line) => ({
+    ingredients: reading.ingredients.map(({ ingredientIndex, ...line }) => ({
       ...line,
-      ingredientId: ingredientIdAt(catalog, line.ingredientId),
+      ingredientId: ingredientIdAt(catalog, ingredientIndex),
     })),
   };
 }

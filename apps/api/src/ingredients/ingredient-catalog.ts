@@ -119,24 +119,31 @@ export function ingredientIdAt(
   return catalog.ingredients[index]?.id ?? null;
 }
 
+/** A Match as the model writes it: the Ingredient by its index in `catalogPrompt`. */
+export type IndexedCandidate = {
+  matchedIngredientIndex: number | null;
+  matchedCategory: string | null;
+  matchConfidence: number;
+};
+
 /**
- * `validateCatalogMatch` for a Match the model gave by index into
- * `catalogPrompt(catalog)`: the index becomes its Ingredient id first, so the
- * check is the same as for an id. An index the Catalog does not hold is
- * rejected like an invented id.
+ * `item` with the Match the model gave by index into `catalogPrompt(catalog)`
+ * checked like `validateCatalogMatch`: the index gives way to the Match, its
+ * Ingredient as an id. An index the Catalog does not hold is rejected like an
+ * invented id.
  */
-export function validateIndexedMatch(
+export function validateIndexedMatch<T extends IndexedCandidate>(
   catalog: IngredientCatalog,
-  candidate: {
-    matchedIngredientId: number | null;
-    matchedCategory: string | null;
-    matchConfidence: number;
-  },
-): CatalogMatch {
-  const id = ingredientIdAt(catalog, candidate.matchedIngredientId);
-  return candidate.matchedIngredientId !== null && id === null
-    ? rejectedMatch(catalog, candidate)
-    : validateCatalogMatch(catalog, { ...candidate, matchedIngredientId: id });
+  item: T,
+): Omit<T, 'matchedIngredientIndex'> & CatalogMatch {
+  const { matchedIngredientIndex: index, ...rest } = item;
+  const id = ingredientIdAt(catalog, index);
+  return {
+    ...rest,
+    ...(index !== null && id === null
+      ? rejectedMatch(catalog, item)
+      : validateCatalogMatch(catalog, { ...item, matchedIngredientId: id })),
+  };
 }
 
 /** Stands in for a model value that is not a number: an index no Catalog holds. */

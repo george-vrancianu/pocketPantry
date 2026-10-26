@@ -38,7 +38,7 @@ const modelAction = z.object({
   /** The words that made this Voice Action, in the language spoken. */
   spokenText: z.string().trim().min(1).max(200),
   /** The Catalog index the model chose; `withIngredientIds` turns it into an Ingredient id. */
-  matchedIngredientId: catalogIndexSchema,
+  matchedIngredientIndex: catalogIndexSchema,
   matchConfidence: z.number().min(0).max(1),
   /** A short generic Ingredient name in the Catalog Language. */
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -61,7 +61,7 @@ const modelQuestion = z.object({
   /** The words that made this question, in the language spoken. */
   spokenText: z.string().trim().min(1).max(200),
   /** The Catalog index the model chose; `withIngredientIds` turns it into an Ingredient id. */
-  matchedIngredientId: catalogIndexSchema,
+  matchedIngredientIndex: catalogIndexSchema,
   matchConfidence: z.number().min(0).max(1),
   /** A short generic Ingredient name in the Catalog Language. */
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -79,7 +79,7 @@ export const voiceReadModelSchema = z.object({
 });
 /** What the model returned: Ingredients named by their index in the Catalog text. */
 export type VoiceReadModelResult = z.infer<typeof voiceReadModelSchema>;
-type WithIngredientId<T> = Omit<T, 'matchedIngredientId'> & {
+type WithIngredientId<T> = Omit<T, 'matchedIngredientIndex'> & {
   /** The proposed Ingredient's id, or null. */
   matchedIngredientId: string | null;
 };
@@ -103,11 +103,12 @@ export function withIngredientIds(
   read: VoiceReadModelResult,
   catalog: IngredientCatalog,
 ): VoiceRead {
-  const withId = <T extends { matchedIngredientId: number | null }>(
-    item: T,
-  ) => ({
+  const withId = <T extends { matchedIngredientIndex: number | null }>({
+    matchedIngredientIndex,
+    ...item
+  }: T) => ({
     ...item,
-    matchedIngredientId: ingredientIdAt(catalog, item.matchedIngredientId),
+    matchedIngredientId: ingredientIdAt(catalog, matchedIngredientIndex),
   });
   return {
     ...read,

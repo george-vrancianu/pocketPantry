@@ -40,7 +40,7 @@ export class IngredientsScanService {
             INGREDIENTS_SCAN_MAX_ITEMS +
             ' items.',
           'Use a concise consumer-facing productName (for loose produce with no printed label, name it in the language above) and broad food productType. Do not invent a brand, quantity, expiry date, or details not visible.',
-          'Match each item against the application catalog. Ingredient tuples are [index, name, category]. Return matchedIngredientId as the index of the matched ingredient tuple, only when that exact index is present and is a reasonable match. Never invent indices. Return matchedCategory only from catalog categories. matchConfidence measures catalog match confidence, not image-reading confidence. Use null when no catalog ingredient is a good match.',
+          'Match each item against the application catalog. Ingredient tuples are [index, name, category]. Return matchedIngredientIndex as the index of the matched ingredient tuple, only when that exact index is present and is a reasonable match. Never invent indices. Return matchedCategory only from catalog categories. matchConfidence measures catalog match confidence, not image-reading confidence. Use null when no catalog ingredient is a good match.',
           fallbackNamePrompt(locale) +
             '. confidence is per-item recognition confidence from 0 to 1.',
           'Application catalog: ' + this.ingredientCatalog.toPrompt(catalog),
@@ -57,10 +57,9 @@ export class IngredientsScanService {
         });
       }
       return {
-        items: result.items.map((value) => ({
-          ...value,
-          ...this.ingredientCatalog.validateMatch(catalog, value),
-        })),
+        items: result.items.map((value) =>
+          this.ingredientCatalog.validateMatch(catalog, value),
+        ),
       };
     } catch (error) {
       if (error instanceof ApiException) throw error;

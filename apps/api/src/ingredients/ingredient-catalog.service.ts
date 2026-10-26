@@ -16,6 +16,7 @@ import { leafCategories } from '../database/schema';
 import {
   type CatalogMatch,
   catalogPrompt,
+  type IndexedCandidate,
   type IngredientCatalog,
   validateIndexedMatch,
 } from './ingredient-catalog';
@@ -104,16 +105,12 @@ export class IngredientCatalogService {
     return catalogPrompt(catalog);
   }
 
-  /** Checks a Match the model gave by index into `toPrompt(catalog)` of this same `catalog`. */
-  validateMatch(
+  /** `item` with its Match, given by index into `toPrompt(catalog)` of this same `catalog`, checked (`validateIndexedMatch`). */
+  validateMatch<T extends IndexedCandidate>(
     catalog: IngredientCatalog,
-    candidate: {
-      matchedIngredientId: number | null;
-      matchedCategory: string | null;
-      matchConfidence: number;
-    },
-  ): CatalogMatch {
-    return validateIndexedMatch(catalog, candidate);
+    item: T,
+  ): Omit<T, 'matchedIngredientIndex'> & CatalogMatch {
+    return validateIndexedMatch(catalog, item);
   }
 
   private async loadCatalog(

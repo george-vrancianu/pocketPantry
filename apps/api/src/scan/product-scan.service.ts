@@ -37,9 +37,9 @@ export class ProductScanService {
           `${scanLanguagePrompt('The text on this package is', scanLanguage, 'product names, abbreviations, and date formats')} Prioritize visible package text. Match catalog ingredients across languages.`,
           'Identify its display name and broad product type.',
           'Match it against the application catalog below. Ingredient tuples are [index, name, category].',
-          'Return matchedIngredientId as the index of the matched ingredient tuple, only when that exact index is present in the catalog and is a reasonable semantic match. Never invent an index.',
+          'Return matchedIngredientIndex as the index of the matched ingredient tuple, only when that exact index is present in the catalog and is a reasonable semantic match. Never invent an index.',
           'Return matchedCategory only from the catalog category list. When an ingredient is matched, use its catalog category.',
-          'matchConfidence measures confidence in the catalog ingredient match, not image-reading confidence. Use null for matchedIngredientId when no catalog ingredient is a good match.',
+          'matchConfidence measures confidence in the catalog ingredient match, not image-reading confidence. Use null for matchedIngredientIndex when no catalog ingredient is a good match.',
           `${fallbackNamePrompt(locale)} (for example, "Greek yogurt" becomes "Yogurt").`,
           'Read an expiry/best-before/use-by date only when it is clearly visible in the photo.',
           'Return expiryDate as YYYY-MM-DD only when the date is unambiguous. Otherwise return null. Do not mistake batch/lot codes or production dates for expiry dates.',
@@ -64,7 +64,7 @@ export class ProductScanService {
           properties: {
             productName: { type: 'string' },
             productType: { type: 'string' },
-            matchedIngredientId: {
+            matchedIngredientIndex: {
               type: ['integer', 'null'],
               description: catalogIndexSchema.description,
             },
@@ -84,7 +84,7 @@ export class ProductScanService {
           required: [
             'productName',
             'productType',
-            'matchedIngredientId',
+            'matchedIngredientIndex',
             'matchedCategory',
             'matchConfidence',
             'fallbackIngredientName',
@@ -98,10 +98,7 @@ export class ProductScanService {
         maxOutputTokens: 450,
       });
       const result = productScanModelResultSchema.parse(response.data);
-      return {
-        ...result,
-        ...this.ingredientCatalog.validateMatch(catalog, result),
-      };
+      return this.ingredientCatalog.validateMatch(catalog, result);
     } catch (error) {
       if (error instanceof ApiException) throw error;
       throw new ApiException(502, 'scan.result_invalid');

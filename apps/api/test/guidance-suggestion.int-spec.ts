@@ -355,9 +355,9 @@ describe('Suggest Guidance (integration)', () => {
         }),
         idea({ label: 'B', recipeId: '3f0c8a5e-6b1d-4c53-9a53-0d4f6f5e9a12' }),
         idea({ label: 'C', recipeId: archived.id }),
-        idea({ label: 'D', ingredientId: 100_000 }),
-        idea({ label: 'E', ingredientId: -1 }),
-        idea({ label: 'F', ingredientId: 2.5 }),
+        idea({ label: 'D', ingredientIndex: 100_000 }),
+        idea({ label: 'E', ingredientIndex: -1 }),
+        idea({ label: 'F', ingredientIndex: 2.5 }),
       );
       const pairings = await pairingsOf();
       expect(pairings?.map((p) => p.label)).toEqual([

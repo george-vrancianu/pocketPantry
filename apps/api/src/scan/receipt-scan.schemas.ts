@@ -37,7 +37,7 @@ export const receiptScanModelLineSchema = z.object({
   productName: z.string().trim().min(1).max(120).nullable(),
   productType: z.string().trim().min(1).max(80).nullable(),
   /** The Catalog index the model chose; the service turns it into an Ingredient id. */
-  matchedIngredientId: catalogIndexSchema,
+  matchedIngredientIndex: catalogIndexSchema,
   matchedCategory: z.string().trim().min(1).max(80).nullable(),
   matchConfidence: z.number().min(0).max(1),
   fallbackIngredientName: z.string().trim().min(1).max(80).nullable(),
@@ -49,13 +49,15 @@ export const receiptScanModelLineSchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 
-export const receiptScanResultLineSchema = receiptScanModelLineSchema.extend({
-  matchedIngredientId: z.uuid().nullable(),
-  matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
-  matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
-  quantity: z.number().positive().max(MAX_QUANTITY).nullable(),
-  unit: z.string().trim().min(1).max(30).nullable(),
-});
+export const receiptScanResultLineSchema = receiptScanModelLineSchema
+  .omit({ matchedIngredientIndex: true })
+  .extend({
+    matchedIngredientId: z.uuid().nullable(),
+    matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
+    matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
+    quantity: z.number().positive().max(MAX_QUANTITY).nullable(),
+    unit: z.string().trim().min(1).max(30).nullable(),
+  });
 
 export const receiptScanResultItemSchema = z.object({
   lineNumber: z.number().int().positive().max(500),

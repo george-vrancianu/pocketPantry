@@ -293,7 +293,7 @@ describe('compareDebugCapture', () => {
   it('names Ingredients the capture matched by Catalog index, as the Catalog text now sends them', () => {
     const capture: DebugCapture = {
       ...receiptCapture([
-        receiptLine('MILK 1L', { matchedIngredientId: 0 }),
+        receiptLine('MILK 1L', { matchedIngredientIndex: 0 }),
         receiptLine('BREAD'),
       ]),
     };
@@ -305,8 +305,8 @@ describe('compareDebugCapture', () => {
         ok: true,
         durationMs: 1,
         data: receipt([
-          receiptLine('MILK 1L', { matchedIngredientId: 1 }),
-          receiptLine('BREAD', { matchedIngredientId: 1 }),
+          receiptLine('MILK 1L', { matchedIngredientIndex: 1 }),
+          receiptLine('BREAD', { matchedIngredientIndex: 1 }),
         ]),
       },
     ]);

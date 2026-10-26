@@ -24,7 +24,7 @@ const item = (overrides: Record<string, unknown> = {}) => ({
   productName: 'Milk',
   productType: 'Dairy',
   // Milk, by its index in the Catalog text.
-  matchedIngredientId: 0,
+  matchedIngredientIndex: 0,
   matchedCategory: 'Dairy',
   matchConfidence: 0.9,
   fallbackIngredientName: 'Milk',
@@ -128,6 +128,7 @@ describe('PlateScanService', () => {
         quantity: 200,
         unit: 'ml',
       });
+      expect(items[0]).not.toHaveProperty('matchedIngredientIndex');
       const request = sent();
       expect(request.images ?? []).toEqual([]);
       expect(request.prompt).toContain('"Pizza"');
@@ -138,7 +139,9 @@ describe('PlateScanService', () => {
     it('never trusts an index the Catalog does not hold, or a value that is not an index', async () => {
       for (const index of [1, -1, 0.5, strangerId, 'milk']) {
         provider({
-          items: [item({ matchedIngredientId: index, matchConfidence: 0.95 })],
+          items: [
+            item({ matchedIngredientIndex: index, matchConfidence: 0.95 }),
+          ],
         });
         const { items } = await service.findIngredients(
           'Pizza',

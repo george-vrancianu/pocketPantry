@@ -7,8 +7,14 @@ import type { IngredientCatalogService } from '../../src/ingredients/ingredient-
 
 type Generate = StructuredOutputAiService['generate'];
 
-/** The fields in which a model answer names a Catalog Ingredient. */
-const REFERENCE_KEYS = new Set(['matchedIngredientId', 'ingredientId']);
+/**
+ * The id field a test may write in a fake answer, and the index field the model
+ * really fills in its place.
+ */
+const INDEX_KEY_OF: Record<string, string> = {
+  matchedIngredientId: 'matchedIngredientIndex',
+  ingredientId: 'ingredientIndex',
+};
 
 /** The `[index, name, category]` tuples of the Catalog text inside `prompt`, if it has one. */
 function promptTuples(prompt: string): [unknown, string, string][] | null {
@@ -37,11 +43,13 @@ function promptTuples(prompt: string): [unknown, string, string][] | null {
 }
 
 /**
- * Lets a test write a fake model answer with Ingredient ids (`seedId.ingredient('milk')`)
- * while the app receives what the real model sends: the index the request's Catalog text
- * gave that Ingredient. An id is found through the Catalog snapshots the app loaded (by
- * name and category, so a filtered Catalog works too). Anything else (an index, an id the
- * prompt does not offer, any other field) reaches the app unchanged.
+ * Lets a test write a fake model answer with Ingredient ids
+ * (`matchedIngredientId: seedId.ingredient('milk')`) while the app receives what the real
+ * model sends: the index the request's Catalog text gave that Ingredient, under the index
+ * field (`matchedIngredientIndex`). An id is found through the Catalog snapshots the app
+ * loaded (by name and category, so a filtered Catalog works too); any other value (null,
+ * an index, an id the prompt does not offer) moves to the index field as is. A field the
+ * test already wrote as the index field wins, and any other field reaches the app unchanged.
  */
 export function answerWithCatalogIndices(
   generate: Generate,
@@ -75,14 +83,13 @@ export function answerWithCatalogIndices(
     const translate = (value: unknown): unknown => {
       if (Array.isArray(value)) return value.map(translate);
       if (value === null || typeof value !== 'object') return value;
-      return Object.fromEntries(
-        Object.entries(value).map(([key, field]) => [
-          key,
-          REFERENCE_KEYS.has(key) && typeof field === 'string'
-            ? indexOf(field)
-            : translate(field),
-        ]),
-      );
+      const entries = Object.entries(value).flatMap(([key, field]) => {
+        const indexKey = INDEX_KEY_OF[key];
+        if (indexKey === undefined) return [[key, translate(field)]];
+        if (indexKey in value) return [];
+        return [[indexKey, typeof field === 'string' ? indexOf(field) : field]];
+      });
+      return Object.fromEntries(entries);
     };
     return { ...response, data: translate(response.data) };
   };

@@ -85,7 +85,7 @@ export const guidanceSuggestionSchema = z.object({
         /** One of the fixed Pairing Principles, null when none fits. */
         principle: z.string().nullable(),
         /** An offered Catalog Ingredient, by its index in the Catalog text, or null. */
-        ingredientId: catalogIndexSchema,
+        ingredientIndex: catalogIndexSchema,
         /** An offered Recipe id, or null. */
         recipeId: z.string().nullable(),
       }),

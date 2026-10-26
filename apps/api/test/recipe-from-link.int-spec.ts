@@ -381,7 +381,7 @@ describe('Recipe from Link (integration)', () => {
       expect(prompt).not.toContain('Romanian');
       expect(prompt).not.toContain('Write the title and the steps in English');
       // Matching against the Catalog is unchanged.
-      expect(prompt).toContain('Set ingredientId only to the exact index');
+      expect(prompt).toContain('Set ingredientIndex only to the exact index');
     });
 
     it('refuses an unknown language choice and extra fields', async () => {
@@ -467,12 +467,12 @@ describe('Recipe from Link (integration)', () => {
           ingredients: [
             {
               ...line,
-              ingredientId: catalogIndexIn(prompts[0].prompt, 'Milk'),
+              ingredientIndex: catalogIndexIn(prompts[0].prompt, 'Milk'),
               nameAsWritten: 'milk',
             },
             ...[100_000, -1, 2.5, 'flour'].map((index) => ({
               ...line,
-              ingredientId: index,
+              ingredientIndex: index,
               nameAsWritten: `mystery ${index}`,
             })),
           ],

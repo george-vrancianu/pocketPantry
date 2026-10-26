@@ -300,7 +300,7 @@ describe('Receipt Scan (integration)', () => {
       Promise.resolve({
         data: receipt(
           product({
-            matchedIngredientId: catalogIndexIn(prompts[0].prompt, 'Milk'),
+            matchedIngredientIndex: catalogIndexIn(prompts[0].prompt, 'Milk'),
           }),
         ),
         requestId: 'fake-request',
@@ -318,7 +318,7 @@ describe('Receipt Scan (integration)', () => {
       respondWith(
         receipt(
           product({
-            matchedIngredientId: index,
+            matchedIngredientIndex: index,
             fallbackIngredientName: 'Zzyzx mystery',
           }),
         ),

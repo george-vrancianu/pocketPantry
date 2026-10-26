@@ -409,6 +409,10 @@ const isReference = (value: unknown): value is string | number =>
 
 type RawLine = Record<string, unknown>;
 
+/** The Ingredient a line names: `matchedIngredientIndex` today, `matchedIngredientId` in older debug captures. */
+const referenceOf = (line: RawLine): unknown =>
+  line.matchedIngredientIndex ?? line.matchedIngredientId;
+
 /** A raw answer value as report text: strings as is, anything else as JSON, null as `-`. */
 const displayValue = (value: unknown): string =>
   typeof value === 'string'
@@ -482,13 +486,13 @@ function readAnswer(
 ): Answer {
   const answer = (data ?? {}) as RawLine;
   const ingredient = (line: RawLine): string => {
-    const reference = line.matchedIngredientId;
+    const reference = referenceOf(line);
     if (isReference(reference)) {
       return catalog.get(referenceKey(reference)) ?? String(reference);
     }
     return `unmatched (${displayValue(line.fallbackIngredientName)})`;
   };
-  const isMatched = (line: RawLine) => isReference(line.matchedIngredientId);
+  const isMatched = (line: RawLine) => isReference(referenceOf(line));
   const linesOf = (value: unknown): RawLine[] =>
     Array.isArray(value) ? (value as RawLine[]) : [];
 

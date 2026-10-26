@@ -15,7 +15,7 @@ const item = (overrides: Record<string, unknown> = {}) => ({
   productName: 'Whole milk',
   productType: 'Dairy',
   // Milk, by its index in the Catalog text.
-  matchedIngredientId: 0,
+  matchedIngredientIndex: 0,
   matchedCategory: 'Dairy',
   matchConfidence: 0.9,
   fallbackIngredientName: 'Milk',
@@ -58,6 +58,7 @@ describe('IngredientsScanService', () => {
       matchedIngredientId: milkId,
       matchedIngredientName: 'Milk',
     });
+    expect(result.items[0]).not.toHaveProperty('matchedIngredientIndex');
     const [[request]] = generate.mock.calls as [
       [{ images: string[]; prompt: string }],
     ];
@@ -73,7 +74,7 @@ describe('IngredientsScanService', () => {
 
   it('drops an index the model invented, or one that is not an index, keeping the item', async () => {
     for (const index of [1, -1, 0.5, 'be0ef2e7-75ea-47d8-b9bf-fc890d64db8e']) {
-      respond({ items: [item({ matchedIngredientId: index })] });
+      respond({ items: [item({ matchedIngredientIndex: index })] });
       const [first] = (await analyze()).items;
       expect(first).toMatchObject({
         matchedIngredientId: null,

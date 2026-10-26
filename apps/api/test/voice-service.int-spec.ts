@@ -175,7 +175,7 @@ describe('VoiceService without audio or Review (integration)', () => {
         reading = {
           actions: [
             model({
-              matchedIngredientId: catalogIndexIn(input.prompt, 'Eggs'),
+              matchedIngredientIndex: catalogIndexIn(input.prompt, 'Eggs'),
             }),
           ],
           unsupported: [],
@@ -195,7 +195,7 @@ describe('VoiceService without audio or Review (integration)', () => {
       reading = {
         actions: [100_000, -1, 2.5, 'eggs'].map((index) =>
           model({
-            matchedIngredientId: index,
+            matchedIngredientIndex: index,
             spokenText: 'zzyzx',
             fallbackIngredientName: 'Zzyzx mystery',
           }),

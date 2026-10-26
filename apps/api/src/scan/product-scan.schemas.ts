@@ -20,7 +20,7 @@ export const productScanModelResultSchema = z.object({
   productName: z.string().trim().min(1).max(120),
   productType: z.string().trim().min(1).max(80),
   /** The Catalog index the model chose; the service turns it into an Ingredient id. */
-  matchedIngredientId: catalogIndexSchema,
+  matchedIngredientIndex: catalogIndexSchema,
   matchedCategory: z.string().trim().min(1).max(80).nullable(),
   matchConfidence: z.number().min(0).max(1),
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -32,11 +32,13 @@ export const productScanModelResultSchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 
-export const productScanResultSchema = productScanModelResultSchema.extend({
-  matchedIngredientId: z.uuid().nullable(),
-  matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
-  matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
-});
+export const productScanResultSchema = productScanModelResultSchema
+  .omit({ matchedIngredientIndex: true })
+  .extend({
+    matchedIngredientId: z.uuid().nullable(),
+    matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
+    matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
+  });
 
 export type ProductScanInput = z.infer<typeof productScanSchema>;
 export type ProductScanModelResult = z.infer<

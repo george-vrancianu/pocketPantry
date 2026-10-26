@@ -221,7 +221,7 @@ describe('Catalog text and id validation', () => {
   it('validates the Match the model gave by index as the Match of that Ingredient', () => {
     expect(
       validateIndexedMatch(twoItems, {
-        matchedIngredientId: 1,
+        matchedIngredientIndex: 1,
         matchedCategory: null,
         matchConfidence: 0.9,
       }),
@@ -238,7 +238,7 @@ describe('Catalog text and id validation', () => {
     for (const index of [2, -1, 0.5]) {
       expect(
         validateIndexedMatch(twoItems, {
-          matchedIngredientId: index,
+          matchedIngredientIndex: index,
           matchedCategory: 'dairy',
           matchConfidence: 0.9,
         }),

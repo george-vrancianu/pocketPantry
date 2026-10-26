@@ -241,9 +241,9 @@ describe('Ingredients Scan (integration)', () => {
     respondWith([
       item({ matchedIngredientId: '4b3f1f0a-0000-4000-8000-000000000000' }),
       item({ matchConfidence: 0.2 }),
-      item({ matchedIngredientId: 100_000 }),
-      item({ matchedIngredientId: -1 }),
-      item({ matchedIngredientId: 2.5 }),
+      item({ matchedIngredientIndex: 100_000 }),
+      item({ matchedIngredientIndex: -1 }),
+      item({ matchedIngredientIndex: 2.5 }),
     ]);
     prompts.length = 0;
     const body = (

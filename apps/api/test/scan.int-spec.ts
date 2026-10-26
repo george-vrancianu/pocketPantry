@@ -419,7 +419,7 @@ describe('Product Scan (integration)', () => {
     next = () =>
       Promise.resolve({
         data: parmesan({
-          matchedIngredientId: catalogIndexIn(prompts[0].prompt, 'Parmesan'),
+          matchedIngredientIndex: catalogIndexIn(prompts[0].prompt, 'Parmesan'),
         }),
         requestId: 'fake-request',
       });
@@ -434,7 +434,7 @@ describe('Product Scan (integration)', () => {
 
   it('marks a line Unmatched when the model gives an index outside the Catalog, or not an index at all', async () => {
     for (const index of [100_000, -1, 2.5]) {
-      respondWith(parmesan({ matchedIngredientId: index }));
+      respondWith(parmesan({ matchedIngredientIndex: index }));
       const body = (
         await scan(await signUp(), { productImage: IMAGE }).expect(201)
       ).body as unknown;

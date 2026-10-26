@@ -24,7 +24,7 @@ const receipt = {
       productName: 'Milk',
       productType: 'Dairy',
       // The model names Milk by its index in the Catalog text.
-      matchedIngredientId: 0,
+      matchedIngredientIndex: 0,
       matchedCategory: 'Dairy',
       matchConfidence: 0.95,
       fallbackIngredientName: 'Milk',
@@ -113,6 +113,7 @@ describe('ReceiptScanService', () => {
       unit: 'l',
       matchConfidence: 0.95,
     });
+    expect(result.lines[0]).not.toHaveProperty('matchedIngredientIndex');
     const request = fetchMock.mock.calls[0][1] as RequestInit;
     const body: unknown = JSON.parse(request.body as string);
     expect(body).toHaveProperty('max_output_tokens', 16000);
@@ -136,7 +137,7 @@ describe('ReceiptScanService', () => {
         expect.objectContaining({ minLength: 1, maxLength: 120 }),
       ]),
     );
-    expect(body).toHaveProperty(`${fieldsPath}.matchedIngredientId.type`, [
+    expect(body).toHaveProperty(`${fieldsPath}.matchedIngredientIndex.type`, [
       'number',
       'null',
     ]);

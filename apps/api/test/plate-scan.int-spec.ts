@@ -265,10 +265,10 @@ describe('Plate Scan (integration)', () => {
           }),
           item({ matchConfidence: 0.2 }),
           item({ matchedIngredientId: null, matchConfidence: 0 }),
-          item({ matchedIngredientId: 100_000 }),
-          item({ matchedIngredientId: -1 }),
-          item({ matchedIngredientId: 2.5 }),
-          item({ matchedIngredientId: 'milk' }),
+          item({ matchedIngredientIndex: 100_000 }),
+          item({ matchedIngredientIndex: -1 }),
+          item({ matchedIngredientIndex: 2.5 }),
+          item({ matchedIngredientIndex: 'milk' }),
         ],
       });
       prompts.length = 0;

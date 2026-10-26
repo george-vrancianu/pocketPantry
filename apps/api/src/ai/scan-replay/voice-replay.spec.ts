@@ -132,10 +132,10 @@ const goodAnswer = {
     {
       target: 'shopping',
       op: 'add',
-      spokenText: 'milk',
-      matchedIngredientId: MILK,
+      // Neither is a Catalog name: the match comes from the index alone.
+      spokenText: 'the white stuff',
+      matchedIngredientIndex: MILK,
       matchConfidence: 0.9,
-      // Not a Catalog name: the match comes from the index alone.
       fallbackIngredientName: 'Moo juice',
       spokenName: 'Milk',
       quantity: null,
