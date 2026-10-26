@@ -299,7 +299,24 @@ describe('findAcceptanceGaps', () => {
   });
 
   it('counts only the bases that exist in the seed (the others arrive later)', () => {
-    expect(findAcceptanceGaps([withVariants('other', 0, 0)])).toEqual([]);
+    expect(findAcceptanceGaps([withVariants('omelette', 3, 2)])).toEqual([]);
+  });
+
+  it('gives a base not listed in the minimums a default: a Tip, a step Tip and 2 Variants of any kind', () => {
+    expect(findAcceptanceGaps([withVariants('other', 1, 1)])).toEqual([]);
+    expect(findAcceptanceGaps([withVariants('other', 2, 0)])).toEqual([]);
+    expect(findAcceptanceGaps([withVariants('other', 0, 2)])).toEqual([]);
+
+    expect(findAcceptanceGaps([withVariants('other', 1, 0)])).toEqual([
+      'other: needs at least 2 Variants, has 1',
+    ]);
+    const noTips = withVariants('other', 1, 1);
+    noTips.tips = [];
+    delete noTips.stepTips;
+    expect(findAcceptanceGaps([noTips])).toEqual([
+      'other: needs at least one Recipe-level Tip',
+      'other: needs at least one step Tip',
+    ]);
   });
 
   it('wants at least five Cuisine Variants on the Appetizer platter', () => {
