@@ -427,6 +427,31 @@ export const snacks: SeedSection = {
           'mix alune',
         ],
       ],
+      [
+        'poppy-seeds',
+        'Poppy seeds',
+        'Semințe de mac',
+        'g',
+        ['poppy seed'],
+        ['mac'],
+      ],
+      ['pecans', 'Pecans', 'Nuci pecan', 'g', ['pecan nuts'], ['pecan']],
+      [
+        'macadamia',
+        'Macadamia nuts',
+        'Nuci macadamia',
+        'g',
+        ['macadamias'],
+        ['macadamia'],
+      ],
+      [
+        'brazil-nuts',
+        'Brazil nuts',
+        'Nuci braziliene',
+        'g',
+        undefined,
+        ['nuca braziliana'],
+      ],
     ]),
     ...ingredientsOf('dried-fruit', [
       [

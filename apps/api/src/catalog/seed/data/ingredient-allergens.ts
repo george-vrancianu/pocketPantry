@@ -48,6 +48,9 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   kale: [],
   chard: [],
   sorrel: [],
+  watercress: [],
+  radicchio: [],
+  'belgian-endive': [],
 
   // produce/brassicas
   cabbage: [],
@@ -71,6 +74,9 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   shiitake: [],
   chanterelles: [],
   porcini: [],
+  portobello: [],
+  'chestnut-mushrooms': [],
+  enoki: [],
 
   // produce/fruit
   apple: [],
@@ -82,6 +88,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   cherry: [],
   'sour-cherry': [],
   quince: [],
+  'fresh-figs': [],
 
   // produce/citrus
   lemon: [],
@@ -99,6 +106,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   pomegranate: [],
   papaya: [],
   coconut: [],
+  'passion-fruit': [],
 
   // produce/berries-and-grapes
   strawberry: [],
@@ -107,6 +115,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   blackberry: [],
   grapes: [],
   currants: [],
+  'fresh-cranberries': [],
 
   // produce/melons
   watermelon: [],
@@ -115,6 +124,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   // produce/potatoes-and-tubers
   potato: [],
   'sweet-potato': [],
+  'jerusalem-artichoke': [],
 
   // herbs/fresh-herbs
   parsley: [],
@@ -126,12 +136,14 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   lovage: [],
   tarragon: [],
   'wild-garlic': [],
+  lemongrass: [],
 
   // herbs/woody-herbs
   rosemary: [],
   thyme: [],
   sage: [],
   'fresh-oregano': [],
+  'fresh-bay-leaves': [],
 
   // bakery/bread
   bread: ['gluten'],
@@ -178,6 +190,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   breadcrumbs: ['gluten'],
   croutons: ['gluten'],
   rusks: ['gluten'],
+  panko: ['gluten'],
 
   // bakery/filled-pastries
   placinta: ['eggs', 'gluten', 'milk'],
@@ -214,6 +227,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'minced-turkey': [],
   'mici-mix': [],
   'fresh-sausages': ['gluten'],
+  'minced-lamb': [],
 
   // meat/red-meat
   'beef-steak': [],
@@ -223,6 +237,9 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'beef-soup-bones': [],
   veal: [],
   'beef-round': [],
+  'beef-tenderloin': [],
+  'beef-brisket': [],
+  oxtail: [],
 
   // meat/pork
   'pork-chops': [],
@@ -240,6 +257,9 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   lamb: [],
   rabbit: [],
   venison: [],
+  'lamb-chops': [],
+  'leg-of-lamb': [],
+  'wild-boar': [],
 
   // meat/offal
   'chicken-liver': [],
@@ -282,6 +302,19 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'pike-perch': ['fish'],
   pike: ['fish'],
   'crucian-carp': ['fish'],
+  sprats: ['fish'],
+  'horse-mackerel': ['fish'],
+  'red-mullet': ['fish'],
+  turbot: ['fish'],
+  plaice: ['fish'],
+  flounder: ['fish'],
+  sole: ['fish'],
+  halibut: ['fish'],
+  monkfish: ['fish'],
+  perch: ['fish'],
+  whiting: ['fish'],
+  'fresh-sardines': ['fish'],
+  'fresh-anchovies': ['fish'],
 
   // seafood/fish-fillets
   salmon: ['fish'],
@@ -291,6 +324,14 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   tilapia: ['fish'],
   'tuna-steak': ['fish'],
   'sea-bass-fillet': ['fish'],
+  pollock: ['fish'],
+  haddock: ['fish'],
+  'trout-fillet': ['fish'],
+  'mackerel-fillet': ['fish'],
+  'plaice-fillet': ['fish'],
+  'halibut-fillet': ['fish'],
+  swordfish: ['fish'],
+  'cod-loin': ['fish'],
 
   // seafood/smoked-fish
   'smoked-salmon': ['fish'],
@@ -299,6 +340,13 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'smoked-trout': ['fish'],
   'dried-fish': ['fish'],
   'salt-cured-carp': ['fish'],
+  gravlax: ['fish'],
+  'hot-smoked-salmon': ['fish'],
+  'smoked-eel': ['fish'],
+  'smoked-halibut': ['fish'],
+  kippers: ['fish'],
+  'pickled-herring': ['fish'],
+  'salt-cod': ['fish'],
 
   // seafood/shellfish
   shrimp: ['crustaceans'],
@@ -307,12 +355,25 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   octopus: ['molluscs'],
   scallops: ['molluscs'],
   crab: ['crustaceans'],
+  prawns: ['crustaceans'],
+  'cooked-shrimp': ['crustaceans'],
+  lobster: ['crustaceans'],
+  langoustines: ['crustaceans'],
+  crayfish: ['crustaceans'],
+  clams: ['molluscs'],
+  oysters: ['molluscs'],
+  cuttlefish: ['molluscs'],
+  cockles: ['molluscs'],
 
   // seafood/fish-products
   surimi: ['eggs', 'fish', 'gluten'],
   'carp-roe': ['fish'],
   caviar: ['fish'],
   'fish-spread': ['fish'],
+  'salmon-roe': ['fish'],
+  'lumpfish-roe': ['fish'],
+  'cod-roe': ['fish'],
+  taramasalata: ['fish', 'gluten'],
 
   // dairy/hard-cheese
   parmesan: ['milk'],
@@ -336,6 +397,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   camembert: ['milk'],
   gorgonzola: ['milk'],
   roquefort: ['milk'],
+  'goat-cheese': ['milk'],
 
   // dairy/brined-cheese
   feta: ['milk'],
@@ -354,6 +416,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'fresh-curd': ['milk'],
   quark: ['milk'],
   'grated-mozzarella': ['milk'],
+  paneer: ['milk'],
 
   // dairy/processed-cheese
   'processed-cheese-slices': ['milk'],
@@ -381,6 +444,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'drinking-yogurt': ['milk'],
   'fruit-yogurt': ['milk'],
   skyr: ['milk'],
+  labneh: ['milk'],
 
   // dairy/butter
   butter: ['milk'],
@@ -449,6 +513,13 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'frozen-shrimp': ['crustaceans'],
   'frozen-seafood-mix': ['crustaceans', 'molluscs'],
   'frozen-calamari-rings': ['molluscs'],
+  'frozen-salmon-fillet': ['fish'],
+  'frozen-cod-fillet': ['fish'],
+  'breaded-fish-fillet': ['fish', 'gluten'],
+  'frozen-king-prawns': ['crustaceans'],
+  'frozen-mussels': ['molluscs'],
+  'frozen-octopus': ['molluscs'],
+  'fish-burgers': ['eggs', 'fish', 'gluten'],
 
   // frozen/frozen-dough-and-meals
   'frozen-puff-pastry': ['gluten', 'milk'],
@@ -483,6 +554,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'rice-noodles': [],
   'instant-noodles': ['gluten', 'soy'],
   'soba-noodles': ['gluten'],
+  'rice-paper': [],
 
   // pasta/fresh-pasta
   tortellini: ['eggs', 'gluten', 'milk'],
@@ -592,6 +664,13 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'canned-mackerel': ['fish'],
   anchovies: ['fish'],
   'tuna-salad': ['eggs', 'fish'],
+  'canned-sprats': ['fish'],
+  'herring-in-tomato': ['fish'],
+  'canned-cod-liver': ['fish'],
+  'canned-salmon': ['fish'],
+  'canned-crab': ['crustaceans'],
+  'smoked-mussels': ['molluscs'],
+  'canned-clams': ['molluscs'],
 
   // canned-goods/canned-meat
   'canned-pate': ['gluten', 'milk'],
@@ -619,6 +698,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'horseradish-beetroot': [],
   'mango-chutney': [],
   dolmades: [],
+  kimchi: ['crustaceans', 'fish'],
 
   // condiments/table-sauces
   ketchup: [],
@@ -642,6 +722,12 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   tahini: ['sesame'],
   gochujang: ['gluten', 'soy'],
   nori: [],
+  'anchovy-paste': ['fish'],
+  'shrimp-paste': ['crustaceans'],
+  'bonito-flakes': ['fish'],
+  miso: ['soy'],
+  mirin: [],
+  harissa: [],
 
   // condiments/pasta-sauces-and-pesto
   'tomato-pasta-sauce': [],
@@ -657,6 +743,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'beef-stock': ['celery'],
   'soup-mix': ['celery', 'gluten'],
   'ciorba-sour-base': ['gluten'],
+  'fish-stock': ['celery', 'fish'],
 
   // condiments/dressings
   'salad-dressing': ['mustard'],
@@ -723,6 +810,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   saffron: [],
   sumac: [],
   'mustard-powder': ['mustard'],
+  'chilli-flakes': [],
+  cayenne: [],
 
   // spices/whole-spices
   peppercorns: [],
@@ -736,6 +825,9 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'juniper-berries': [],
   'vanilla-pods': [],
   'fennel-seeds': [],
+  'caraway-seeds': [],
+  fenugreek: [],
+  'nigella-seeds': [],
 
   // spices/dried-herbs
   oregano: [],
@@ -821,6 +913,10 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'pine-nuts': ['tree-nuts'],
   'desiccated-coconut': [],
   'mixed-nuts': ['peanuts', 'tree-nuts'],
+  'poppy-seeds': [],
+  pecans: ['tree-nuts'],
+  macadamia: ['tree-nuts'],
+  'brazil-nuts': ['tree-nuts'],
 
   // snacks/dried-fruit
   raisins: [],

@@ -91,6 +91,34 @@ const RETIRED_SEED_TRANSLATIONS: string[] = [
   stableId(
     `translation:ingredient:${seedId.ingredient('carrot')}:da:synonym:guleroedder`,
   ),
+  // These Synonyms moved to Ingredients of their own: Prawns, Pickled herring,
+  // Salt cod, Salmon roe, Leg of lamb, Lamb chops, Wild boar, Caraway seeds,
+  // Chilli flakes and Cayenne pepper. Romanian "chimen" is caraway, not cumin.
+  ...(
+    [
+      ['shrimp', 'en', 'prawns'],
+      ['salted-herring', 'en', 'pickled herring'],
+      ['salted-herring', 'ro', 'hering marinat'],
+      ['dried-fish', 'ro', 'bacalau'],
+      ['dried-fish', 'ro', 'bacalau uscat'],
+      ['caviar', 'ro', 'caviar rosu'],
+      ['lamb', 'ro', 'pulpa de miel'],
+      ['lamb', 'ro', 'cotlet miel'],
+      ['venison', 'ro', 'mistret'],
+      ['cumin', 'ro', 'chimen'],
+      ['cumin-seeds', 'en', 'caraway seeds'],
+      ['cumin-seeds', 'ro', 'chimen boabe'],
+      ['cumin-seeds', 'ro', 'seminte chimen'],
+      ['chili-powder', 'en', 'cayenne pepper'],
+      ['chili-powder', 'en', 'chili flakes'],
+      ['chili-powder', 'ro', 'fulgi de ardei iute'],
+      ['chili-powder', 'ro', 'cayenne'],
+    ] as const
+  ).map(([slug, locale, key]) =>
+    stableId(
+      `translation:ingredient:${seedId.ingredient(slug)}:${locale}:synonym:${key}`,
+    ),
+  ),
 ];
 
 const PARENT_OF_LEAF = new Map(
