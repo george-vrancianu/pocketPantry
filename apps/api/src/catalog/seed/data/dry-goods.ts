@@ -123,6 +123,14 @@ export const pasta: SeedSection = {
         ['supa instant', 'noodles'],
       ],
       ['soba-noodles', 'Soba noodles', 'Tăiței soba', 'g'],
+      [
+        'rice-paper',
+        'Rice paper',
+        'Foi de orez',
+        'pcs',
+        ['rice paper wrappers', 'spring roll wrappers'],
+        ['foi de orez pentru rulouri'],
+      ],
     ]),
     ...ingredientsOf('fresh-pasta', [
       [

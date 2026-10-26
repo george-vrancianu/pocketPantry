@@ -259,6 +259,30 @@ export const produce: SeedSection = {
       ['kale', 'Kale', 'Kale', 'g', undefined, ['varza kale']],
       ['chard', 'Swiss chard', 'Mangold', 'g', ['chard']],
       ['sorrel', 'Sorrel', 'Măcriș', 'g'],
+      [
+        'watercress',
+        'Watercress',
+        'Năsturel',
+        'g',
+        ['cress'],
+        ['nasturel de apa'],
+      ],
+      [
+        'radicchio',
+        'Radicchio',
+        'Radicchio',
+        'g',
+        undefined,
+        ['cicoare rosie'],
+      ],
+      [
+        'belgian-endive',
+        'Belgian endive',
+        'Andive',
+        'g',
+        ['endive'],
+        ['cicoare de bruxelles'],
+      ],
     ]),
     ...ingredientsOf('brassicas', [
       [
@@ -353,6 +377,23 @@ export const produce: SeedSection = {
         ['cep', 'boletus'],
         ['ciuperci hribi'],
       ],
+      [
+        'portobello',
+        'Portobello mushrooms',
+        'Ciuperci portobello',
+        'g',
+        ['portobello', 'field mushrooms'],
+        ['champignon portobello'],
+      ],
+      [
+        'chestnut-mushrooms',
+        'Chestnut mushrooms',
+        'Ciuperci brune',
+        'g',
+        ['brown mushrooms', 'cremini'],
+        ['champignon brun'],
+      ],
+      ['enoki', 'Enoki mushrooms', 'Ciuperci enoki', 'g', ['enoki']],
     ]),
     ...ingredientsOf('fruit', [
       [
@@ -378,6 +419,7 @@ export const produce: SeedSection = {
         ['visina'],
       ],
       ['quince', 'Quince', 'Gutui', 'g', undefined, ['gutuie']],
+      ['fresh-figs', 'Fresh figs', 'Smochine proaspete', 'g'],
     ]),
     ...ingredientsOf('citrus', [
       ['lemon', 'Lemon', 'Lămâie', 'pcs', ['lemons'], ['lamai']],
@@ -402,6 +444,14 @@ export const produce: SeedSection = {
       ['pomegranate', 'Pomegranate', 'Rodie', 'pcs', undefined, ['rodii']],
       ['papaya', 'Papaya', 'Papaya', 'pcs'],
       ['coconut', 'Coconut', 'Nucă de cocos', 'pcs', undefined, ['cocos']],
+      [
+        'passion-fruit',
+        'Passion fruit',
+        'Fructul pasiunii',
+        'pcs',
+        ['maracuja'],
+        ['fruct de pasiune'],
+      ],
     ]),
     ...ingredientsOf('berries-and-grapes', [
       [
@@ -431,6 +481,7 @@ export const produce: SeedSection = {
         ['strugure', 'struguri albi', 'struguri negri'],
       ],
       ['currants', 'Currants', 'Coacăze', 'g', ['redcurrants']],
+      ['fresh-cranberries', 'Fresh cranberries', 'Merișoare proaspete', 'g'],
     ]),
     ...ingredientsOf('melons', [
       [
@@ -466,6 +517,14 @@ export const produce: SeedSection = {
         'g',
         undefined,
         ['batata', 'batate'],
+      ],
+      [
+        'jerusalem-artichoke',
+        'Jerusalem artichoke',
+        'Topinambur',
+        'g',
+        ['sunchoke'],
+        ['nap porcesc'],
       ],
     ]),
   ],
@@ -522,6 +581,14 @@ export const herbs: SeedSection = {
         ['ramsons'],
         ['legatura leurda'],
       ],
+      [
+        'lemongrass',
+        'Lemongrass',
+        'Lemongrass',
+        'g',
+        ['lemon grass'],
+        ['iarba de lamaie'],
+      ],
     ]),
     ...ingredientsOf('woody-herbs', [
       [
@@ -535,6 +602,14 @@ export const herbs: SeedSection = {
       ['thyme', 'Thyme', 'Cimbru', 'g', ['fresh thyme'], ['cimbrisor']],
       ['sage', 'Sage', 'Salvie', 'g'],
       ['fresh-oregano', 'Fresh oregano', 'Oregano proaspăt', 'g'],
+      [
+        'fresh-bay-leaves',
+        'Fresh bay leaves',
+        'Frunze proaspete de dafin',
+        'g',
+        undefined,
+        ['dafin proaspat'],
+      ],
     ]),
   ],
 };
