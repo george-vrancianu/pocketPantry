@@ -265,6 +265,14 @@ export const grains: SeedSection = {
         ['orez bob rotund', 'orez pentru sarmale', 'orez sarmale'],
       ],
       [
+        'medium-grain-rice',
+        'Medium-grain rice',
+        'Orez cu bob mediu',
+        'g',
+        undefined,
+        ['orez carolina', 'orez bob mediu'],
+      ],
+      [
         'oats',
         'Oats',
         'Fulgi de ovăz',
@@ -317,6 +325,13 @@ export const grains: SeedSection = {
         'g',
         ['polenta', 'maize flour'],
         ['faina de porumb', 'mamaliga', 'malai extra'],
+      ],
+      [
+        'grits',
+        'Grits',
+        'Grits (porumb măcinat grosier)',
+        'g',
+        ['hominy grits', 'stone-ground grits'],
       ],
       ['semolina', 'Semolina', 'Griș', 'g', undefined, ['gris de grau']],
       [

@@ -135,6 +135,14 @@ export const produce: SeedSection = {
         ['chilli', 'chili pepper'],
         ['ardei iute rosu'],
       ],
+      [
+        'birds-eye-chilli',
+        "Bird's-eye chilli",
+        "Ardei iute thailandez (bird's eye)",
+        'pcs',
+        ["bird's eye chili", 'thai chilli', 'prik kee noo'],
+        ['ardei thailandez'],
+      ],
       ['zucchini', 'Zucchini', 'Dovlecei', 'pcs', ['courgette'], ['dovlecel']],
       [
         'aubergine',
@@ -573,6 +581,13 @@ export const herbs: SeedSection = {
       ['chives', 'Chives', 'Arpagic', 'g', undefined, ['arpagic verde']],
       ['lovage', 'Lovage', 'Leuștean', 'g', undefined, ['legatura leustean']],
       ['tarragon', 'Tarragon', 'Tarhon', 'g'],
+      [
+        'holy-basil',
+        'Holy basil',
+        'Busuioc sfânt',
+        'g',
+        ['tulsi', 'thai holy basil', 'kaprao'],
+      ],
       [
         'wild-garlic',
         'Wild garlic',

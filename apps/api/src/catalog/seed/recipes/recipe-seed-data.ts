@@ -7,10 +7,15 @@ import { chickenSalad } from './data/chicken-salad';
 import { friedChicken } from './data/fried-chicken';
 import { frikadeller } from './data/frikadeller';
 import { lentilSoup } from './data/lentil-soup';
+import { mamaliga } from './data/mamaliga';
 import { omelette } from './data/omelette';
+import { pancakes } from './data/pancakes';
 import { potatoPuree } from './data/potato-puree';
+import { ricePilaf } from './data/rice-pilaf';
 import { roastChicken } from './data/roast-chicken';
 import { sarmale } from './data/sarmale';
+import { smorrebrod } from './data/smorrebrod';
+import { stirFry } from './data/stir-fry';
 import { tomatoPasta } from './data/tomato-pasta';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
@@ -24,4 +29,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   lentilSoup,
   sarmale,
   frikadeller,
+  pancakes,
+  ricePilaf,
+  stirFry,
+  mamaliga,
+  smorrebrod,
 ];

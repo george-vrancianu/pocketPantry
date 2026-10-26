@@ -245,6 +245,13 @@ export const bakery: SeedSection = {
       ['croutons', 'Croutons', 'Crutoane', 'g'],
       ['rusks', 'Rusks', 'Pesmeți', 'g', ['zwieback']],
       [
+        'barley-rusks',
+        'Barley rusks',
+        'Pesmeți de orz',
+        'g',
+        ['paximadia', 'dakos rusks'],
+      ],
+      [
         'panko',
         'Panko',
         'Pesmet panko',
