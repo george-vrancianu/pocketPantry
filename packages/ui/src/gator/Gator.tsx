@@ -22,6 +22,33 @@ for (const [path, url] of Object.entries(FILES)) {
   const [, mood, variant] = VARIANT_FILE.exec(path)!;
   (ART[mood!] ??= {})[variant as GatorMotion] = url;
 }
+/**
+ * Each mood's Tap art as text, fetched once a pressable Gator mounts. WebKit shares one SVG
+ * document, and so one animation clock, between every image of a URL: a Tap shown from the
+ * file's own URL has already played out after the first. Each Tap instead gets its own data
+ * URL built from this text, so it starts from its first frame.
+ */
+const TAP_TEXT: Record<string, string | undefined> = {};
+const tapFetches = new Set<string>();
+function warmTap(mood: string, url: string) {
+  if (tapFetches.has(mood)) return;
+  tapFetches.add(mood);
+  fetch(url)
+    .then((res) => (res.ok ? res.text() : Promise.reject(new Error())))
+    .then((text) => {
+      TAP_TEXT[mood] = text;
+    })
+    // The file's own URL still plays a first Tap; let a later Gator retry.
+    .catch(() => tapFetches.delete(mood));
+}
+/** The source for one Tap run: its own data URL once the text is in, else the file. */
+function tapRunSrc(mood: string, run: number) {
+  const text = TAP_TEXT[mood];
+  if (!text) return ART[mood]!.tap!;
+  // A trailing comment makes the URL unique without touching the drawing.
+  return `data:image/svg+xml,${encodeURIComponent(`${text}<!--${run}-->`)}`;
+}
+
 /** Warms the cache with these moods' loops, so a face that mounts later doesn't show an empty box. */
 export function warmGatorLoops(moods: GatorMood[], loop: GatorLoop) {
   for (const mood of moods) {
@@ -124,8 +151,9 @@ export function Gator({
   // A pressable Gator will want its Tap at once, too.
   const tapSrc = onClick || tapSignal !== undefined ? files.tap : undefined;
   useEffect(() => {
-    if (tapSrc) new Image().src = tapSrc;
-  }, [tapSrc]);
+    if (tapSrc) warmTap(mood, tapSrc);
+  }, [mood, tapSrc]);
+  const src = motion === 'tap' ? tapRunSrc(mood, taps) : files[motion];
 
   const Wrapper = onClick ? 'button' : 'span';
   return (
@@ -160,7 +188,7 @@ export function Gator({
     >
       <img
         key={taps}
-        src={files[motion]}
+        src={src}
         data-mood={mood}
         data-motion={motion}
         alt={decorative ? '' : alt}
