@@ -192,6 +192,7 @@ export const produce: SeedSection = {
         ['radacina patrunjel'],
       ],
       ['turnip', 'Turnip', 'Nap', 'g'],
+      ['galangal', 'Galangal', 'Galangal', 'g', ['thai ginger']],
       [
         'ginger',
         'Fresh ginger',
@@ -603,6 +604,27 @@ export const herbs: SeedSection = {
         'g',
         ['lemon grass'],
         ['iarba de lamaie'],
+      ],
+      [
+        'makrut-lime-leaves',
+        'Makrut lime leaves',
+        'Frunze de lămâi kaffir',
+        'g',
+        [
+          'kaffir lime leaves',
+          'makrut lime leaf',
+          'kaffir lime leaf',
+          'lime leaves',
+        ],
+        ['frunze kaffir', 'frunze de lime kaffir'],
+      ],
+      [
+        'curly-parsley',
+        'Curly parsley',
+        'Pătrunjel creț',
+        'g',
+        ['curly leaf parsley'],
+        ['patrunjel cu frunze crete'],
       ],
     ]),
     ...ingredientsOf('woody-herbs', [

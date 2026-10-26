@@ -731,6 +731,14 @@ export const condiments: SeedSection = {
       ],
       ['miso', 'Miso paste', 'Pastă miso', 'g', ['miso'], ['pasta de miso']],
       [
+        'white-miso',
+        'White miso',
+        'Miso alb',
+        'g',
+        ['shiro miso', 'saikyo miso'],
+        ['pasta miso alba'],
+      ],
+      [
         'mirin',
         'Mirin',
         'Mirin',

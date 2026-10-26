@@ -440,6 +440,14 @@ export const meat: SeedSection = {
     ]),
     ...ingredientsOf('chicken-whole-and-wings', [
       [
+        'boiling-hen',
+        'Boiling hen',
+        'Găină',
+        'g',
+        ['stewing hen', 'boiling fowl', 'soup hen'],
+        ['gaina pentru supa', 'gaina intreaga'],
+      ],
+      [
         'whole-chicken',
         'Whole chicken',
         'Pui întreg',

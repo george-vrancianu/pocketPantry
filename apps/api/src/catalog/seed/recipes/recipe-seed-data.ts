@@ -3,7 +3,11 @@
 // permanent. `npm run test:unit` validates the lot (validate-recipe-seed.ts).
 import type { BaseRecipeSeed } from './recipe-seed-types';
 import { appetizerPlatter } from './data/appetizer-platter';
+import { bakedSalmon } from './data/baked-salmon';
+import { bolognese } from './data/bolognese';
 import { chickenSalad } from './data/chicken-salad';
+import { chickenSoup } from './data/chicken-soup';
+import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { friedChicken } from './data/fried-chicken';
 import { frikadeller } from './data/frikadeller';
 import { lentilSoup } from './data/lentil-soup';
@@ -15,6 +19,7 @@ import { ricePilaf } from './data/rice-pilaf';
 import { roastChicken } from './data/roast-chicken';
 import { sarmale } from './data/sarmale';
 import { smorrebrod } from './data/smorrebrod';
+import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
 import { tomatoPasta } from './data/tomato-pasta';
 
@@ -34,4 +39,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   stirFry,
   mamaliga,
   smorrebrod,
+  chickenSoup,
+  bolognese,
+  bakedSalmon,
+  ciorbaDePerisoare,
+  stegtFlaesk,
 ];

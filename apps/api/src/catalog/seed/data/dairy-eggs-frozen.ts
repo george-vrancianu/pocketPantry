@@ -112,6 +112,7 @@ export const dairy: SeedSection = {
       ['grana-padano', 'Grana Padano', 'Grana Padano', 'g', ['grana']],
       ['pecorino', 'Pecorino', 'Pecorino', 'g', ['pecorino romano']],
       ['manchego', 'Manchego', 'Manchego', 'g'],
+      ['kefalotyri', 'Kefalotyri', 'Kefalotyri', 'g', ['kefalotiri']],
     ]),
     ...ingredientsOf('semi-hard-cheese', [
       [

@@ -29,6 +29,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'parsley-root': [],
   turnip: [],
   ginger: [],
+  galangal: [],
 
   // produce/alliums
   onion: [],
@@ -139,6 +140,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'holy-basil': [],
   'wild-garlic': [],
   lemongrass: [],
+  'makrut-lime-leaves': [],
+  'curly-parsley': [],
 
   // herbs/woody-herbs
   rosemary: [],
@@ -212,6 +215,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // meat/chicken-whole-and-wings
   'whole-chicken': [],
+  'boiling-hen': [],
   'chicken-wings': [],
   'chicken-back': [],
 
@@ -384,6 +388,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'grana-padano': ['milk'],
   pecorino: ['milk'],
   manchego: ['milk'],
+  kefalotyri: ['milk'],
 
   // dairy/semi-hard-cheese
   cheddar: ['milk'],
@@ -606,6 +611,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   sugar: [],
   'icing-sugar': [],
   'brown-sugar': [],
+  'palm-sugar': [],
   'vanilla-sugar': [],
   sweetener: [],
   'corn-starch': [],
@@ -737,6 +743,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'bonito-flakes': ['fish'],
   miso: ['soy'],
   mirin: [],
+  'white-miso': ['soy'],
   harissa: [],
 
   // condiments/pasta-sauces-and-pesto
@@ -1003,6 +1010,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'red-wine': ['sulphites'],
   'white-wine': ['sulphites'],
   'rose-wine': ['sulphites'],
+  sake: [],
   'sparkling-wine': ['sulphites'],
   'cooking-wine': ['sulphites'],
   'mulled-wine-base': ['sulphites'],

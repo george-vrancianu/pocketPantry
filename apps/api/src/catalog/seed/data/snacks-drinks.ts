@@ -980,6 +980,14 @@ export const beverage: SeedSection = {
       ],
       ['rose-wine', 'Rosé wine', 'Vin rosé', 'ml', ['rose']],
       [
+        'sake',
+        'Sake',
+        'Sake',
+        'ml',
+        ['japanese rice wine'],
+        ['vin de orez japonez'],
+      ],
+      [
         'sparkling-wine',
         'Sparkling wine',
         'Vin spumant',
