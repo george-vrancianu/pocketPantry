@@ -133,14 +133,8 @@ export function validateIndexedMatch(
     matchConfidence: number;
   },
 ): CatalogMatch {
-  if (candidate.matchedIngredientId === null) {
-    return validateCatalogMatch(catalog, {
-      ...candidate,
-      matchedIngredientId: null,
-    });
-  }
   const id = ingredientIdAt(catalog, candidate.matchedIngredientId);
-  return id === null
+  return candidate.matchedIngredientId !== null && id === null
     ? rejectedMatch(catalog, candidate)
     : validateCatalogMatch(catalog, { ...candidate, matchedIngredientId: id });
 }
