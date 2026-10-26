@@ -6,7 +6,7 @@ import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { INGREDIENTS_SCAN_MAX_ITEMS } from '../src/scan/ingredients-scan.schemas';
-import { UUID_PATTERN } from './support/catalog-indices';
+import { expectCatalogByIndex } from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { signUpWithUiLanguage } from './support/stored-language';
 
@@ -258,7 +258,7 @@ describe('Ingredients Scan (integration)', () => {
         { match: null },
       ],
     });
-    expect(prompts[0].prompt).not.toMatch(UUID_PATTERN);
+    expectCatalogByIndex(prompts[0].prompt);
   });
 
   it('rejects malformed model output with a stable code and refunds the Scan', async () => {

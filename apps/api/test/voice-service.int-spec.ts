@@ -11,7 +11,10 @@ import { PantryService } from '../src/pantry/pantry.service';
 import { ShoppingService } from '../src/shopping/shopping.service';
 import type { VoiceActionDraft } from '../src/voice/voice-actions';
 import { VoiceService } from '../src/voice/voice.service';
-import { catalogIndexIn, UUID_PATTERN } from './support/catalog-indices';
+import {
+  catalogIndexIn,
+  expectCatalogByIndex,
+} from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 describe('VoiceService without audio or Review (integration)', () => {
@@ -184,7 +187,7 @@ describe('VoiceService without audio or Review (integration)', () => {
       expect(actions[0]).toMatchObject({
         ingredient: { id: seedId.ingredient('eggs') },
       });
-      expect(aiCalls[0].prompt).not.toMatch(UUID_PATTERN);
+      expectCatalogByIndex(aiCalls[0].prompt);
     });
 
     it('leaves an action Unmatched when the model gives an index outside the Catalog, or not an index', async () => {

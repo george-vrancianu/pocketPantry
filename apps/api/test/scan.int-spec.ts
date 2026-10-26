@@ -8,7 +8,10 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { scanUsage } from '../src/database/schema';
 import { ScanCapService } from '../src/scan/scan-cap.service';
-import { catalogIndexIn, UUID_PATTERN } from './support/catalog-indices';
+import {
+  catalogIndexIn,
+  expectCatalogByIndex,
+} from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { signUpWithUiLanguage } from './support/stored-language';
 
@@ -423,7 +426,7 @@ describe('Product Scan (integration)', () => {
     const body = (
       await scan(await signUp(), { productImage: IMAGE }).expect(201)
     ).body as unknown;
-    expect(prompts[0].prompt).not.toMatch(UUID_PATTERN);
+    expectCatalogByIndex(prompts[0].prompt);
     expect(body).toMatchObject({
       lines: [{ match: { id: seedId.ingredient('parmesan') } }],
     });

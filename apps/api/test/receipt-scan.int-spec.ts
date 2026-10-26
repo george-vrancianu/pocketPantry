@@ -7,7 +7,10 @@ import { ApiException } from '../src/common/api-exception';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { unmatchedEntries } from '../src/database/schema';
-import { catalogIndexIn, UUID_PATTERN } from './support/catalog-indices';
+import {
+  catalogIndexIn,
+  expectCatalogByIndex,
+} from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { signUpWithUiLanguage } from './support/stored-language';
 
@@ -304,7 +307,7 @@ describe('Receipt Scan (integration)', () => {
       });
     const body = (await scan(await signUp()).expect(201)).body as unknown;
     expect(prompts[0].prompt).toContain('"ingredients":[[0,');
-    expect(prompts[0].prompt).not.toMatch(UUID_PATTERN);
+    expectCatalogByIndex(prompts[0].prompt);
     expect(body).toMatchObject({
       lines: [{ match: { id: seedId.ingredient('milk'), name: 'Milk' } }],
     });

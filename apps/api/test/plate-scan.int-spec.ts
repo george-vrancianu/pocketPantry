@@ -9,7 +9,7 @@ import type { Database } from '../src/database/database.types';
 import { unmatchedEntries } from '../src/database/schema';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { PLATE_TOKEN_TTL_MS } from '../src/scan/plate-token';
-import { UUID_PATTERN } from './support/catalog-indices';
+import { expectCatalogByIndex } from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { signUpWithUiLanguage } from './support/stored-language';
 
@@ -283,7 +283,7 @@ describe('Plate Scan (integration)', () => {
         null,
         null,
       ]);
-      expect(prompts[0].prompt).not.toMatch(UUID_PATTERN);
+      expectCatalogByIndex(prompts[0].prompt);
       expect(lines[0].name).toBe('Pixie dust');
     });
 

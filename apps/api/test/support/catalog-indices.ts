@@ -98,6 +98,15 @@ export function catalogIndexIn(prompt: string, name: string): unknown {
   return tuple[0];
 }
 
-/** Matches a UUID anywhere in a prompt. */
-export const UUID_PATTERN =
-  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+/**
+ * Asserts the prompt's Catalog text names every Ingredient by its index (0, 1, 2, ...)
+ * and none by its id. (Checked per tuple: other tests may leave Ingredients whose names
+ * hold a UUID in the shared Catalog.)
+ */
+export function expectCatalogByIndex(prompt: string): void {
+  const references = (promptTuples(prompt) ?? []).map(
+    ([reference]) => reference,
+  );
+  expect(references.length).toBeGreaterThan(0);
+  expect(references).toEqual(references.map((_, index) => index));
+}
