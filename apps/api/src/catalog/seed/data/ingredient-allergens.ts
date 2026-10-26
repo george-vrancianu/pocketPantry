@@ -14,6 +14,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   cucumber: [],
   'bell-pepper': [],
   'hot-pepper': [],
+  'birds-eye-chilli': [],
   zucchini: [],
   aubergine: [],
   pumpkin: [],
@@ -135,6 +136,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   chives: [],
   lovage: [],
   tarragon: [],
+  'holy-basil': [],
   'wild-garlic': [],
   lemongrass: [],
 
@@ -190,6 +192,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   breadcrumbs: ['gluten'],
   croutons: ['gluten'],
   rusks: ['gluten'],
+  'barley-rusks': ['gluten'],
   panko: ['gluten'],
 
   // bakery/filled-pastries
@@ -388,6 +391,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   edam: ['milk'],
   emmental: ['milk'],
   gruyere: ['milk'],
+  fontina: ['milk'],
   cascaval: ['milk'],
   maasdam: ['milk'],
   halloumi: ['milk'],
@@ -410,6 +414,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   mozzarella: ['milk'],
   'cottage-cheese': ['milk'],
   ricotta: ['milk'],
+  mizithra: ['milk'],
   urda: ['milk'],
   mascarpone: ['milk'],
   'cream-cheese': ['milk'],
@@ -571,6 +576,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'arborio-rice': [],
   'brown-rice': [],
   'round-rice': [],
+  'medium-grain-rice': [],
   oats: ['gluten'],
 
   // grains/breakfast-cereals
@@ -584,6 +590,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   bulgur: ['gluten'],
   quinoa: [],
   cornmeal: [],
+  grits: [],
   semolina: ['gluten'],
   'pearl-barley': ['gluten'],
   buckwheat: [],
@@ -714,6 +721,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // condiments/asian-sauces
   'soy-sauce': ['gluten', 'soy'],
+  'dark-soy-sauce': ['gluten', 'soy'],
   'worcestershire-sauce': ['fish', 'gluten'],
   'fish-sauce': ['fish'],
   'teriyaki-sauce': ['gluten', 'soy'],
@@ -813,6 +821,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   sumac: [],
   'mustard-powder': ['mustard'],
   'chilli-flakes': [],
+  gochugaru: [],
   cayenne: [],
 
   // spices/whole-spices

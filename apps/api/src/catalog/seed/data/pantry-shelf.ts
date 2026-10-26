@@ -639,6 +639,14 @@ export const condiments: SeedSection = {
         ['sos soia'],
       ],
       [
+        'dark-soy-sauce',
+        'Dark soy sauce',
+        'Sos de soia închis',
+        'ml',
+        ['dark soya sauce'],
+        ['sos soia inchis', 'sos de soia dark'],
+      ],
+      [
         'worcestershire-sauce',
         'Worcestershire sauce',
         'Sos Worcestershire',
@@ -1347,6 +1355,14 @@ export const spices: SeedSection = {
         'g',
         ['chili flakes', 'red pepper flakes', 'crushed chillies'],
         ['fulgi de ardei iute', 'chili fulgi', 'boia iute fulgi'],
+      ],
+      [
+        'gochugaru',
+        'Gochugaru (Korean chilli flakes)',
+        'Fulgi de ardei iute coreean (gochugaru)',
+        'g',
+        ['korean chili flakes', 'korean red pepper powder'],
+        ['fulgi de ardei coreean'],
       ],
       [
         'cayenne',

@@ -127,6 +127,7 @@ export const dairy: SeedSection = {
       // 'emmentaler' is left out: it is the Danish name (data/danish.ts).
       ['emmental', 'Emmental', 'Emmental', 'g', ['swiss cheese']],
       ['gruyere', 'Gruyère', 'Gruyère', 'g'],
+      ['fontina', 'Fontina', 'Fontina', 'g'],
       [
         'cascaval',
         'Cașcaval',
@@ -234,6 +235,7 @@ export const dairy: SeedSection = {
         ],
       ],
       ['ricotta', 'Ricotta', 'Ricotta', 'g'],
+      ['mizithra', 'Mizithra', 'Mizithra', 'g', ['myzithra']],
       ['urda', 'Urdă', 'Urdă', 'g', ['whey cheese']],
       ['mascarpone', 'Mascarpone', 'Mascarpone', 'g'],
       [
