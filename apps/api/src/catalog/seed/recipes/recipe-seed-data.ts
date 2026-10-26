@@ -7,6 +7,7 @@ import { chickenSalad } from './data/chicken-salad';
 import { friedChicken } from './data/fried-chicken';
 import { omelette } from './data/omelette';
 import { potatoPuree } from './data/potato-puree';
+import { tomatoPasta } from './data/tomato-pasta';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   omelette,
@@ -14,4 +15,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   friedChicken,
   chickenSalad,
   appetizerPlatter,
+  tomatoPasta,
 ];
