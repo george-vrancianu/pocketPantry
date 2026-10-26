@@ -133,33 +133,6 @@ export function ingredientIdAt(
   return catalog.ingredients[index]?.id ?? null;
 }
 
-/** The id field that stands for the index field `K`: `ingredientIndex` → `ingredientId`. */
-type IdKeyOf<K extends string> = K extends `${infer Stem}Index`
-  ? `${Stem}Id`
-  : never;
-
-/**
- * `item` from the model with the Catalog index in its `key` field (such as
- * `matchedIngredientIndex`) turned into that Ingredient's id under the
- * matching id field (`matchedIngredientId`), by `ingredientIdAt`. Pass the
- * very `catalog` the prompt was built from; an index it does not hold becomes
- * null, no proposal.
- */
-export function withIngredientId<
-  T extends { [P in K]: unknown },
-  K extends `${string}Index`,
->(
-  catalog: IngredientCatalog,
-  item: T,
-  key: K,
-): Omit<T, K> & { [P in IdKeyOf<K>]: string | null } {
-  const { [key]: index, ...rest } = item;
-  return {
-    ...rest,
-    [key.replace(/Index$/, 'Id')]: ingredientIdAt(catalog, index),
-  } as Omit<T, K> & { [P in IdKeyOf<K>]: string | null };
-}
-
 /** A Match as the model writes it: the Ingredient by its index in `catalogPrompt`. */
 export type IndexedCandidate = {
   matchedIngredientIndex: number | null;
@@ -177,10 +150,14 @@ export function validateIndexedMatch<T extends IndexedCandidate>(
   catalog: IngredientCatalog,
   item: T,
 ): Omit<T, 'matchedIngredientIndex'> & CatalogMatch {
-  const candidate = withIngredientId(catalog, item, 'matchedIngredientIndex');
+  const { matchedIngredientIndex, ...rest } = item;
+  const candidate = {
+    ...rest,
+    matchedIngredientId: ingredientIdAt(catalog, matchedIngredientIndex),
+  };
   return {
     ...candidate,
-    ...(item.matchedIngredientIndex !== null &&
+    ...(matchedIngredientIndex !== null &&
     candidate.matchedIngredientId === null
       ? rejectedMatch(catalog, item)
       : validateCatalogMatch(catalog, candidate)),

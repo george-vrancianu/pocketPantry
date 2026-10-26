@@ -7,8 +7,8 @@ import {
 import { normalizeName } from '../catalog/normalize';
 import {
   catalogIndexSchema,
+  ingredientIdAt,
   type IngredientCatalog,
-  withIngredientId,
 } from '../ingredients/ingredient-catalog';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, storageLocation } from '../database/schema';
@@ -106,11 +106,15 @@ export function toVoiceRead(
 ): VoiceRead {
   return {
     ...read,
-    actions: read.actions.map((action) =>
-      withIngredientId(catalog, action, 'matchedIngredientIndex'),
-    ),
-    questions: read.questions.map((question) =>
-      withIngredientId(catalog, question, 'matchedIngredientIndex'),
+    actions: read.actions.map(({ matchedIngredientIndex, ...action }) => ({
+      ...action,
+      matchedIngredientId: ingredientIdAt(catalog, matchedIngredientIndex),
+    })),
+    questions: read.questions.map(
+      ({ matchedIngredientIndex, ...question }) => ({
+        ...question,
+        matchedIngredientId: ingredientIdAt(catalog, matchedIngredientIndex),
+      }),
     ),
   };
 }

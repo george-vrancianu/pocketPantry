@@ -10,7 +10,6 @@ import {
   keepConfident,
   validateCatalogMatch,
   validateIndexedMatch,
-  withIngredientId,
 } from './catalog-matching';
 
 const ingredient = (id: string, name: string) =>
@@ -235,23 +234,6 @@ describe('Catalog text and id validation', () => {
     ]) {
       expect(ingredientIdAt(twoItems, index)).toBeNull();
     }
-  });
-
-  it('turns the index in an item from the model into the id of that Ingredient, under the id field', () => {
-    expect(
-      withIngredientId(
-        twoItems,
-        { label: 'Cream', ingredientIndex: 1 },
-        'ingredientIndex',
-      ),
-    ).toEqual({ label: 'Cream', ingredientId: 'cream-id' });
-    expect(
-      withIngredientId(
-        twoItems,
-        { matchedIngredientIndex: 2 },
-        'matchedIngredientIndex',
-      ),
-    ).toEqual({ matchedIngredientId: null });
   });
 
   it('validates the Match the model gave by index as the Match of that Ingredient', () => {

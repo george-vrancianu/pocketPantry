@@ -11,7 +11,7 @@ import type { AppConfig } from '../config/env';
 import {
   catalogIndexInstruction,
   catalogPrompt,
-  withIngredientId,
+  ingredientIdAt,
 } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import {
@@ -131,9 +131,10 @@ export class LinkRecipesService {
     // The model names Ingredients by index into this very `catalog`.
     const reading: LinkReading = {
       ...answer,
-      ingredients: answer.ingredients.map((line) =>
-        withIngredientId(catalog, line, 'ingredientIndex'),
-      ),
+      ingredients: answer.ingredients.map(({ ingredientIndex, ...line }) => ({
+        ...line,
+        ingredientId: ingredientIdAt(catalog, ingredientIndex),
+      })),
     };
 
     const draft = draftOfReading(reading, {

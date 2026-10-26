@@ -19,7 +19,7 @@ import { ApiException } from '../common/api-exception';
 import {
   catalogIndexInstruction,
   catalogPrompt,
-  withIngredientId,
+  ingredientIdAt,
 } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { ScanCapService } from '../scan/scan-cap.service';
@@ -365,7 +365,11 @@ function pairingsOf(
   for (const answered of proposed) {
     if (result.length >= MAX_PAIRINGS) break;
     // The model names an Ingredient by index into the very Catalog `linkOffer` sent.
-    const idea = withIngredientId(context.catalog, answered, 'ingredientIndex');
+    const { ingredientIndex, ...rest } = answered;
+    const idea = {
+      ...rest,
+      ingredientId: ingredientIdAt(context.catalog, ingredientIndex),
+    };
     const ids = [idea.ingredientId, idea.recipeId].filter(
       (id): id is string => id !== null,
     );
