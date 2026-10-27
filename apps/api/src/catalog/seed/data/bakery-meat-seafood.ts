@@ -913,12 +913,13 @@ export const meat: SeedSection = {
         'Beef tripe',
         'Burtă de vită',
         'g',
-        ['tripe', 'honeycomb tripe', 'cleaned tripe'],
+        ['tripe', 'honeycomb tripe', 'cleaned tripe', 'dressed tripe'],
         [
           'burta vita',
           'burta de vaca',
           'burta curatata',
           'burta pentru ciorba',
+          'burta fiarta',
         ],
       ],
       [
@@ -926,7 +927,7 @@ export const meat: SeedSection = {
         'Beef feet',
         'Picioare de vită',
         'g',
-        ['ox feet', 'cow feet'],
+        ['ox feet', 'cow feet', 'cow heel'],
         ['picioare vita', 'picioare de vaca'],
       ],
     ]),
