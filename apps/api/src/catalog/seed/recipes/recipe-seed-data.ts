@@ -6,6 +6,7 @@ import { appetizerPlatter } from './data/appetizer-platter';
 import { bakedSalmon } from './data/baked-salmon';
 import { beefStew } from './data/beef-stew';
 import { bolognese } from './data/bolognese';
+import { braisedRedCabbage } from './data/braised-red-cabbage';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
@@ -52,4 +53,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   beefStew,
   roastedVegetables,
   mici,
+  braisedRedCabbage,
 ];
