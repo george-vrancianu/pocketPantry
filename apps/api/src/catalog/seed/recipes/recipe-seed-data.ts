@@ -8,6 +8,7 @@ import { bakedSalmon } from './data/baked-salmon';
 import { beefStew } from './data/beef-stew';
 import { bolognese } from './data/bolognese';
 import { braisedRedCabbage } from './data/braised-red-cabbage';
+import { chickenCurry } from './data/chicken-curry';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { chiliConCarne } from './data/chili-con-carne';
@@ -64,4 +65,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   garlicShrimp,
   ardeiUmpluti,
   flaeskesteg,
+  chickenCurry,
 ];
