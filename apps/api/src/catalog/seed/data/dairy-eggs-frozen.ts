@@ -211,6 +211,14 @@ export const dairy: SeedSection = {
         undefined,
         ['branza oaie', 'branza de oi'],
       ],
+      [
+        'beyaz-peynir',
+        'Turkish white cheese (beyaz peynir)',
+        'Brânză albă turcească (beyaz peynir)',
+        'g',
+        ['turkish white cheese', 'beyaz peynir'],
+        ['branza turceasca'],
+      ],
     ]),
     ...ingredientsOf('fresh-cheese', [
       [

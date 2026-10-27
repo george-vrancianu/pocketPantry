@@ -190,6 +190,13 @@ export const pasta: SeedSection = {
         ['galuste', 'nokedli'],
       ],
       ['ravioli', 'Ravioli', 'Ravioli', 'g'],
+      [
+        'ho-fun',
+        'Fresh wide rice noodles (ho fun)',
+        'Tăiței lați proaspeți de orez (ho fun)',
+        'g',
+        ['hor fun', 'shahe fen', 'kway teow', 'fresh rice noodles'],
+      ],
     ]),
   ],
 };

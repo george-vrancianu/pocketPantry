@@ -818,6 +818,21 @@ describe('Catalog (integration)', () => {
               })),
             );
 
+            // The English Synonym "tarama" the old seed gave Taramasalata, now
+            // an Ingredient of its own.
+            const oldTarama = stableId(
+              `translation:ingredient:${entity('taramasalata')}:en:synonym:tarama`,
+            );
+            await tx.insert(catalogTranslations).values({
+              id: oldTarama,
+              entityType: 'ingredient',
+              entityId: entity('taramasalata'),
+              locale: 'en',
+              kind: 'synonym',
+              value: 'tarama',
+              normalizedValue: 'tarama',
+            });
+
             // The ASCII Synonym the old seed gave carrot, from before Danish
             // letters were folded.
             const oldGuleroedder = stableId(
@@ -864,6 +879,12 @@ describe('Catalog (integration)', () => {
                 .from(catalogTranslations)
                 .where(inArray(catalogTranslations.id, oldMoved)),
             ).toEqual([]);
+            expect(
+              await tx
+                .select()
+                .from(catalogTranslations)
+                .where(inArray(catalogTranslations.id, [oldTarama])),
+            ).toEqual([]);
 
             const value = async (
               slug: string,
@@ -877,6 +898,10 @@ describe('Catalog (integration)', () => {
                   .where(rows(slug, locale, kind))
               ).map((row) => row.value);
             expect(await value('milk', 'da', 'name')).toEqual(['Mælk']);
+            expect(await value('tarama', 'en', 'name')).toEqual(['Tarama']);
+            expect(await value('taramasalata', 'en', 'synonym')).not.toContain(
+              'tarama',
+            );
             expect(await value('kapia-pepper', 'ro', 'name')).toEqual([
               'Ardei kapia',
             ]);

@@ -389,6 +389,14 @@ export const produce: SeedSection = {
       ],
       ['fennel', 'Fennel', 'Fenicul', 'g', ['fennel bulb']],
       ['okra', 'Okra', 'Bame', 'g', ['ladies fingers'], ['bamia']],
+      [
+        'bean-sprouts',
+        'Bean sprouts',
+        'Germeni de fasole mung',
+        'g',
+        ['mung bean sprouts', 'beansprouts'],
+        ['germeni fasole', 'germeni de soia', 'muguri de fasole mung'],
+      ],
     ]),
     ...ingredientsOf('mushrooms', [
       [
@@ -680,6 +688,13 @@ export const herbs: SeedSection = {
         'g',
         ['horapha', 'sweet thai basil'],
         ['busuioc thai'],
+      ],
+      [
+        'garlic-chives',
+        'Garlic chives',
+        'Arpagic chinezesc',
+        'g',
+        ['chinese chives', 'nira', 'gui chai'],
       ],
     ]),
     ...ingredientsOf('woody-herbs', [

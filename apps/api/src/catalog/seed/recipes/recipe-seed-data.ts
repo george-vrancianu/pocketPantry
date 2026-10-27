@@ -22,6 +22,7 @@ import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { coleslaw } from './data/coleslaw';
 import { cottagePie } from './data/cottage-pie';
+import { fishAndChips } from './data/fish-and-chips';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
 import { frenchToast } from './data/french-toast';
@@ -43,9 +44,11 @@ import { musaca } from './data/musaca';
 import { oatmeal } from './data/oatmeal';
 import { omelette } from './data/omelette';
 import { ostropel } from './data/ostropel';
+import { padThai } from './data/pad-thai';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
+import { placintaCuBranza } from './data/placinta-cu-branza';
 import { porkChops } from './data/pork-chops';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
@@ -57,7 +60,9 @@ import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
 import { salataDeBoeuf } from './data/salata-de-boeuf';
+import { salataDeIcre } from './data/salata-de-icre';
 import { salataDeVinete } from './data/salata-de-vinete';
+import { saramuraDePeste } from './data/saramura-de-peste';
 import { sarmale } from './data/sarmale';
 import { shakshuka } from './data/shakshuka';
 import { smorrebrod } from './data/smorrebrod';
@@ -144,4 +149,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   hummus,
   ghiveci,
   ciorbaDePeste,
+  padThai,
+  fishAndChips,
+  saramuraDePeste,
+  salataDeIcre,
+  placintaCuBranza,
 ];

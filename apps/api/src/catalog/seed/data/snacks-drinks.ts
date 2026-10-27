@@ -1011,6 +1011,14 @@ export const beverage: SeedSection = {
         undefined,
         ['vin fiert', 'condimente vin fiert'],
       ],
+      [
+        'shaoxing-wine',
+        'Shaoxing rice wine',
+        'Vin de orez Shaoxing',
+        'ml',
+        ['shaoxing', 'chinese cooking wine', 'huangjiu'],
+        ['vin chinezesc de gatit'],
+      ],
     ]),
     ...ingredientsOf('spirits', [
       ['vodka', 'Vodka', 'Vodcă', 'ml', undefined, ['votca']],
