@@ -14,6 +14,7 @@ import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
+import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
 import { friedChicken } from './data/fried-chicken';
 import { friedRice } from './data/fried-rice';
@@ -78,4 +79,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   biksemad,
   tomatoSoup,
   potatoSalad,
+  fishCakes,
 ];
