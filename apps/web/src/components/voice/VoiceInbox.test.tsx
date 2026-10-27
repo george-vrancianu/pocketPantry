@@ -420,6 +420,17 @@ describe('the Voice Inbox strip', () => {
     expect(sheet.getByRole('button', { name: 'Review all (2)' })).toBeVisible();
   });
 
+  it('offers no Review all in the sheet while only one note can be reviewed', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    await userEvent.click(await screen.findByRole('button', { name: 'Open' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'In the background' }),
+    );
+    expect(sheet.queryByRole('button', { name: /^Review all/ })).toBeNull();
+  });
+
   it('reads the strip politely, and raises an alert only when a note fails', async () => {
     renderAt();
     await speak(1);

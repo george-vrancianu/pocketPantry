@@ -490,7 +490,9 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     await openSayIt({ transcript: '', actions: [] });
     await record();
     expect(await screen.findByText(/^Voice Note · 0:\d\d$/)).toBeVisible();
-    await waitFor(() => expect(screen.queryByText(/Being read$/)).toBeNull());
+    expect(
+      await screen.findByText(/Didn't catch anything, try again/),
+    ).toBeVisible();
     // It no longer leaves on its own.
     await act(() => vi.advanceTimersByTimeAsync(60_000));
     expect(screen.getByText(/^Voice Note · 0:\d\d$/)).toBeVisible();

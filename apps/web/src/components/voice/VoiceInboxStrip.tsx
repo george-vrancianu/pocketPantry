@@ -58,7 +58,11 @@ export function VoiceInboxStrip() {
       {mounted ? (
         <BackgroundSheet
           items={items}
-          footer={<VoiceReviewAllFooter onClose={() => setWantSheet(false)} />}
+          footer={
+            state.inbox.notes.filter((n) => n.hasActions).length > 1 ? (
+              <VoiceReviewAllFooter onClose={() => setWantSheet(false)} />
+            ) : undefined
+          }
           open={wantSheet && state.inbox.total > 0 && state.phase === 'idle'}
           onClose={() => setWantSheet(false)}
           onExited={() => {
