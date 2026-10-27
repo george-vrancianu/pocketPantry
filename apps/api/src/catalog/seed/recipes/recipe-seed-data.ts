@@ -22,6 +22,7 @@ import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { coleslaw } from './data/coleslaw';
 import { cottagePie } from './data/cottage-pie';
+import { fishAndChips } from './data/fish-and-chips';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
 import { frenchToast } from './data/french-toast';
@@ -146,4 +147,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ghiveci,
   ciorbaDePeste,
   padThai,
+  fishAndChips,
 ];
