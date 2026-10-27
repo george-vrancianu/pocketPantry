@@ -356,6 +356,14 @@ export const produce: SeedSection = {
       ['chard', 'Swiss chard', 'Mangold', 'g', ['chard']],
       ['sorrel', 'Sorrel', 'Măcriș', 'g'],
       [
+        'nettles',
+        'Stinging nettles',
+        'Urzici',
+        'g',
+        ['nettle', 'nettle tops', 'stinging nettle'],
+        ['urzica', 'urzici proaspete', 'varfuri de urzica'],
+      ],
+      [
         'watercress',
         'Watercress',
         'Năsturel',

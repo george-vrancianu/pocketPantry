@@ -34,7 +34,9 @@ import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaDePraz } from './data/ciorba-de-praz';
 import { ciorbaDePui } from './data/ciorba-de-pui';
+import { ciorbaDeSalata } from './data/ciorba-de-salata';
 import { ciorbaDeStevie } from './data/ciorba-de-stevie';
+import { ciorbaDeUrzici } from './data/ciorba-de-urzici';
 import { ciorbaDeVacuta } from './data/ciorba-de-vacuta';
 import { ciorbaDeVarza } from './data/ciorba-de-varza';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
@@ -42,6 +44,7 @@ import { coleslaw } from './data/coleslaw';
 import { cornulete } from './data/cornulete';
 import { cottagePie } from './data/cottage-pie';
 import { cozonac } from './data/cozonac';
+import { cremaDeZaharArs } from './data/crema-de-zahar-ars';
 import { dovleceiPane } from './data/dovlecei-pane';
 import { drobDeMiel } from './data/drob-de-miel';
 import { falafel } from './data/falafel';
@@ -57,6 +60,7 @@ import { garlicShrimp } from './data/garlic-shrimp';
 import { ghiveci } from './data/ghiveci';
 import { gogosi } from './data/gogosi';
 import { grilledCheese } from './data/grilled-cheese';
+import { grisCuLapte } from './data/gris-cu-lapte';
 import { homemadePizza } from './data/homemade-pizza';
 import { hummus } from './data/hummus';
 import { iahnieDeFasole } from './data/iahnie-de-fasole';
@@ -109,6 +113,7 @@ import { spaghettiAglioOlio } from './data/spaghetti-aglio-olio';
 import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
+import { stufatDeMiel } from './data/stufat-de-miel';
 import { tacos } from './data/tacos';
 import { tocanaDeCiuperci } from './data/tocana-de-ciuperci';
 import { tochitura } from './data/tochitura';
@@ -234,4 +239,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   muraturi,
   rasol,
   chec,
+  ciorbaDeUrzici,
+  ciorbaDeSalata,
+  stufatDeMiel,
+  grisCuLapte,
+  cremaDeZaharArs,
 ];
