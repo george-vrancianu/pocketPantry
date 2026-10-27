@@ -27,6 +27,7 @@ import { ciorbaDeCiuperci } from './data/ciorba-de-ciuperci';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDeFasoleVerde } from './data/ciorba-de-fasole-verde';
 import { ciorbaDeLegume } from './data/ciorba-de-legume';
+import { ciorbaDeMiel } from './data/ciorba-de-miel';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaDePui } from './data/ciorba-de-pui';
@@ -216,4 +217,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   salataDeSfecla,
   pulledPork,
   drobDeMiel,
+  ciorbaDeMiel,
 ];
