@@ -31,6 +31,7 @@ import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
 import { sarmale } from './data/sarmale';
 import { smorrebrod } from './data/smorrebrod';
+import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
 import { tomatoPasta } from './data/tomato-pasta';
@@ -68,4 +69,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   flaeskesteg,
   chickenCurry,
   macAndCheese,
+  steamedMussels,
 ];
