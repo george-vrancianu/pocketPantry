@@ -438,7 +438,7 @@ describe('Plate Scan (integration)', () => {
       it('lets the Member pick another signed title after a provider failure', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item({ matchedIngredientId: 'milk' })] });
+        respondWith({ items: [item({ confidence: 2 })] });
         await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
         respondWith({ items: [item()] });
         await ingredients(cookie, 'Crepes', 'en', token).expect(201);
