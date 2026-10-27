@@ -304,6 +304,14 @@ export const grains: SeedSection = {
         ['porridge oats', 'rolled oats'],
         ['fulgi ovaz', 'ovaz'],
       ],
+      [
+        'pinhead-oats',
+        'Pinhead oats',
+        'Ovăz tăiat (steel cut)',
+        'g',
+        ['steel-cut oats', 'irish oats', 'coarse oatmeal'],
+        ['ovaz taiat', 'steel cut'],
+      ],
     ]),
     ...ingredientsOf('breakfast-cereals', [
       ['muesli', 'Muesli', 'Musli', 'g', ['granola'], ['musli cu fructe']],

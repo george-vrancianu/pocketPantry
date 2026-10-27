@@ -39,6 +39,9 @@ export const SEED_CUISINES: SeedNamed[] = [
   named('indian', 'Indian', 'Indiană', 'Indisk'),
   named('ukrainian', 'Ukrainian', 'Ucraineană', 'Ukrainsk'),
   named('finnish', 'Finnish', 'Finlandeză', 'Finsk'),
+  named('turkish', 'Turkish', 'Turcească', 'Tyrkisk'),
+  named('swiss', 'Swiss', 'Elvețiană', 'Schweizisk'),
+  named('georgian', 'Georgian', 'Georgiană', 'Georgisk'),
 ];
 
 export const SEED_METHODS: SeedNamed[] = [

@@ -290,6 +290,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   guanciale: [],
   ham: [],
   prosciutto: [],
+  'serrano-ham': [],
   'smoked-pork': [],
   pastrami: [],
 
@@ -598,6 +599,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'medium-grain-rice': [],
   'sushi-rice': [],
   oats: ['gluten'],
+  'pinhead-oats': ['gluten'],
 
   // grains/breakfast-cereals
   muesli: ['gluten', 'tree-nuts'],
@@ -722,6 +724,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // canned-goods/pickles-and-preserves
   'pickled-cucumbers': [],
+  'pickled-green-tomatoes': ['mustard'],
   sauerkraut: [],
   'pickled-peppers': [],
   olives: [],
@@ -857,6 +860,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   sumac: [],
   'mustard-powder': ['mustard'],
   'chilli-flakes': [],
+  'pul-biber': [],
   gochugaru: [],
   cayenne: [],
 
