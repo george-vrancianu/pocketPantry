@@ -111,6 +111,7 @@ import { spaghettiAglioOlio } from './data/spaghetti-aglio-olio';
 import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
+import { stufatDeMiel } from './data/stufat-de-miel';
 import { tacos } from './data/tacos';
 import { tocanaDeCiuperci } from './data/tocana-de-ciuperci';
 import { tochitura } from './data/tochitura';
@@ -238,4 +239,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   chec,
   ciorbaDeUrzici,
   ciorbaDeSalata,
+  stufatDeMiel,
 ];
