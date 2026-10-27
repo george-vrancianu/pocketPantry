@@ -48,6 +48,7 @@ import { padThai } from './data/pad-thai';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
+import { placintaCuBranza } from './data/placinta-cu-branza';
 import { porkChops } from './data/pork-chops';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
@@ -152,4 +153,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   fishAndChips,
   saramuraDePeste,
   salataDeIcre,
+  placintaCuBranza,
 ];
