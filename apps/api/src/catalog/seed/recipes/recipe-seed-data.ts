@@ -21,6 +21,7 @@ import { omelette } from './data/omelette';
 import { pancakes } from './data/pancakes';
 import { potatoPuree } from './data/potato-puree';
 import { ricePilaf } from './data/rice-pilaf';
+import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
 import { sarmale } from './data/sarmale';
@@ -56,4 +57,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   mici,
   braisedRedCabbage,
   chiliConCarne,
+  risotto,
 ];
