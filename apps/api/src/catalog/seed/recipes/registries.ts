@@ -36,6 +36,8 @@ export const SEED_CUISINES: SeedNamed[] = [
   named('german', 'German', 'Germană', 'Tysk'),
   named('balkan', 'Balkan', 'Balcanică', 'Balkansk'),
   named('portuguese', 'Portuguese', 'Portugheză', 'Portugisisk'),
+  named('indian', 'Indian', 'Indiană', 'Indisk'),
+  named('ukrainian', 'Ukrainian', 'Ucraineană', 'Ukrainsk'),
 ];
 
 export const SEED_METHODS: SeedNamed[] = [
@@ -62,6 +64,7 @@ export const SEED_METHODS: SeedNamed[] = [
   named('slow-cooker', 'Slow-cooker', 'La slow cooker', 'I slowcooker'),
   named('one-pot', 'One-pot', 'Într-o singură oală', 'Alt i én gryde'),
   named('spatchcocked', 'Spatchcocked', 'Desfăcut în fluture', 'Flækket'),
+  named('boiled', 'Boiled', 'Fiert', 'Kogt'),
 ];
 
 /** In display order. Exactly the list from the ticket. */

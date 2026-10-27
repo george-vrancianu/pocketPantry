@@ -62,6 +62,14 @@ export const pasta: SeedSection = {
         ['elbow pasta'],
         ['paste macaroane', 'macaroane pipe', 'macar'],
       ],
+      [
+        'ditalini',
+        'Ditalini',
+        'Ditalini (paste scurte tubulare)',
+        'g',
+        ['ditali', 'tubetti'],
+        ['paste ditalini'],
+      ],
       ['rigatoni', 'Rigatoni', 'Rigatoni', 'g'],
       [
         'tagliatelle',
@@ -379,6 +387,14 @@ export const grains: SeedSection = {
         ['faina alba', 'faina 000', 'faina 650', 'faina de grau'],
       ],
       [
+        'tipo-00-flour',
+        'Tipo 00 flour',
+        'Făină tip 00',
+        'g',
+        ['00 flour', 'pizza flour'],
+        ['faina 00', 'faina pentru pizza'],
+      ],
+      [
         'wholemeal-flour',
         'Wholemeal flour',
         'Făină integrală',
@@ -631,6 +647,14 @@ export const legumes: SeedSection = {
         'g',
         ['haricot beans', 'navy beans', 'cannellini beans'],
         ['fasole boabe', 'fasole uscata', 'fasole', 'fasole alb'],
+      ],
+      [
+        'borlotti-beans',
+        'Borlotti beans',
+        'Fasole borlotti',
+        'g',
+        ['cranberry beans', 'roman beans'],
+        ['fasole pestrita'],
       ],
       ['black-beans', 'Black beans', 'Fasole neagră', 'g'],
       [
