@@ -143,6 +143,14 @@ export const produce: SeedSection = {
         ['ardei sivri', 'ardei verde lung turcesc'],
       ],
       [
+        'baklouti-pepper',
+        'Baklouti pepper (Tunisian long green pepper)',
+        'Ardei baklouti (ardei verde lung tunisian)',
+        'pcs',
+        ['baklouti', 'tunisian pepper'],
+        ['ardei baklouti', 'ardei tunisian'],
+      ],
+      [
         'hungarian-pepper',
         'Hungarian sweet pepper',
         'Ardei unguresc alb (TV paprika)',
@@ -362,6 +370,14 @@ export const produce: SeedSection = {
         'g',
         ['string beans'],
         ['fasole pastai'],
+      ],
+      [
+        'flat-green-beans',
+        'Flat green beans (romano)',
+        'Fasole verde lată',
+        'g',
+        ['romano beans', 'italian flat beans'],
+        ['fasole lata', 'fasole pastai lata'],
       ],
       [
         'fresh-peas',

@@ -1066,6 +1066,14 @@ export const meat: SeedSection = {
         ['carnati de ficat'],
       ],
       ['lebar', 'Liver sausage', 'Lebăr', 'g', ['liverwurst'], ['lebar felii']],
+      [
+        'morcilla',
+        'Morcilla (Spanish blood sausage)',
+        'Morcilla (sângerete spaniol)',
+        'g',
+        ['morcilla de burgos'],
+        ['morcilla burgos'],
+      ],
     ]),
   ],
 };
