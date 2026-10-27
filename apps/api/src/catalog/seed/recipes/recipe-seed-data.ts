@@ -17,6 +17,7 @@ import { chickenSoup } from './data/chicken-soup';
 import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
+import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
 import { frenchToast } from './data/french-toast';
@@ -30,6 +31,7 @@ import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
 import { mancareDeMazare } from './data/mancare-de-mazare';
 import { mici } from './data/mici';
+import { oatmeal } from './data/oatmeal';
 import { omelette } from './data/omelette';
 import { ostropel } from './data/ostropel';
 import { pancakes } from './data/pancakes';
@@ -42,8 +44,10 @@ import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
+import { salataDeBoeuf } from './data/salata-de-boeuf';
 import { salataDeVinete } from './data/salata-de-vinete';
 import { sarmale } from './data/sarmale';
+import { shakshuka } from './data/shakshuka';
 import { smorrebrod } from './data/smorrebrod';
 import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
@@ -51,6 +55,7 @@ import { stirFry } from './data/stir-fry';
 import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
 import { tomatoSoup } from './data/tomato-soup';
+import { varzaCalita } from './data/varza-calita';
 import { vegetableSoup } from './data/vegetable-soup';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
@@ -104,4 +109,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   pastaCarbonara,
   ostropel,
   mancareDeMazare,
+  shakshuka,
+  oatmeal,
+  ciorbaRadauteana,
+  varzaCalita,
+  salataDeBoeuf,
 ];

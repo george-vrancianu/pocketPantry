@@ -427,6 +427,14 @@ export const cannedGoods: SeedSection = {
         ],
       ],
       [
+        'pickled-green-tomatoes',
+        'Pickled green tomatoes',
+        'Gogonele murate',
+        'g',
+        ['green tomato pickles'],
+        ['gogonele', 'gogonele in otet', 'gogonele murate borcan'],
+      ],
+      [
         'sauerkraut',
         'Sauerkraut',
         'Varză murată',
@@ -1443,6 +1451,14 @@ export const spices: SeedSection = {
         'g',
         ['chili flakes', 'red pepper flakes', 'crushed chillies'],
         ['fulgi de ardei iute', 'chili fulgi', 'boia iute fulgi'],
+      ],
+      [
+        'pul-biber',
+        'Pul biber (Turkish red pepper flakes)',
+        'Pul biber (fulgi turcești de ardei iute)',
+        'g',
+        ['aleppo pepper', 'turkish chilli flakes', 'kirmizi pul biber'],
+        ['pul biber', 'boia turceasca fulgi'],
       ],
       [
         'gochugaru',

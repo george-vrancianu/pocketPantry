@@ -938,8 +938,16 @@ export const meat: SeedSection = {
         'Prosciutto',
         'Prosciutto',
         'g',
-        ['parma ham', 'jamon'],
+        ['parma ham'],
         ['sunca parma', 'prosciutto crudo'],
+      ],
+      [
+        'serrano-ham',
+        'Serrano ham',
+        'Jamón serrano',
+        'g',
+        ['spanish ham', 'jamon'],
+        ['sunca serrano'],
       ],
       [
         'smoked-pork',
