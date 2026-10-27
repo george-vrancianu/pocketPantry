@@ -80,6 +80,7 @@ import { saramuraDePeste } from './data/saramura-de-peste';
 import { sarmale } from './data/sarmale';
 import { shakshuka } from './data/shakshuka';
 import { smorrebrod } from './data/smorrebrod';
+import { spaghettiAglioOlio } from './data/spaghetti-aglio-olio';
 import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
@@ -182,4 +183,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDeLegume,
   chiftele,
   cartofiTaranesti,
+  spaghettiAglioOlio,
 ];
