@@ -911,6 +911,14 @@ export const meat: SeedSection = {
       ],
       ['pancetta', 'Pancetta', 'Pancetta', 'g'],
       [
+        'guanciale',
+        'Guanciale',
+        'Guanciale (gușă de porc maturată)',
+        'g',
+        ['cured pork jowl'],
+        ['obraz de porc maturat'],
+      ],
+      [
         'ham',
         'Ham',
         'Șuncă',

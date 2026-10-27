@@ -28,6 +28,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   parsnip: [],
   'parsley-root': [],
   turnip: [],
+  swede: [],
   ginger: [],
   galangal: [],
 
@@ -286,6 +287,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   // meat/cured-meat
   bacon: [],
   pancetta: [],
+  guanciale: [],
   ham: [],
   prosciutto: [],
   'smoked-pork': [],
@@ -576,6 +578,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'rice-noodles': [],
   'instant-noodles': ['gluten', 'soy'],
   'soba-noodles': ['gluten'],
+  udon: ['gluten'],
   'rice-paper': [],
 
   // pasta/fresh-pasta
@@ -903,6 +906,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'sarmale-seasoning': [],
   'five-spice': [],
   'garam-masala': [],
+  'seven-spice': [],
   'lemon-pepper': [],
 
   // spices/salt

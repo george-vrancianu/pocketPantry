@@ -1711,6 +1711,14 @@ export const spices: SeedSection = {
       ],
       ['garam-masala', 'Garam masala', 'Garam masala', 'g'],
       [
+        'seven-spice',
+        'Lebanese seven spice',
+        'Amestec libanez de șapte condimente',
+        'g',
+        ['seven spices', '7 spice'],
+        ['7 condimente', 'baharat libanez'],
+      ],
+      [
         'lemon-pepper',
         'Lemon pepper',
         'Piper cu lămâie',
