@@ -23,6 +23,7 @@ import { chiftele } from './data/chiftele';
 import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeCartofi } from './data/ciorba-de-cartofi';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
+import { ciorbaDeFasoleVerde } from './data/ciorba-de-fasole-verde';
 import { ciorbaDeLegume } from './data/ciorba-de-legume';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
@@ -196,4 +197,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   plachieDePeste,
   falafel,
   ciorbaDeVarza,
+  ciorbaDeFasoleVerde,
 ];
