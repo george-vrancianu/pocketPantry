@@ -32,6 +32,7 @@ import { ciorbaDeLegume } from './data/ciorba-de-legume';
 import { ciorbaDeMiel } from './data/ciorba-de-miel';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
+import { ciorbaDePotroace } from './data/ciorba-de-potroace';
 import { ciorbaDePraz } from './data/ciorba-de-praz';
 import { ciorbaDePui } from './data/ciorba-de-pui';
 import { ciorbaDeSalata } from './data/ciorba-de-salata';
@@ -244,4 +245,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   stufatDeMiel,
   grisCuLapte,
   cremaDeZaharArs,
+  ciorbaDePotroace,
 ];
