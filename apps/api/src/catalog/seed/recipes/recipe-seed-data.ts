@@ -31,6 +31,7 @@ import { pancakes } from './data/pancakes';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
 import { ricePilaf } from './data/rice-pilaf';
+import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
@@ -86,4 +87,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   salataDeVinete,
   brunedeKartofler,
   frenchToast,
+  ricePudding,
 ];
