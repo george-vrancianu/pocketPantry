@@ -3,7 +3,12 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
 // Env comes from ./env.ts via jest setupFiles.
-import { StructuredOutputAiService } from '../../src/ai/structured-output-ai.service';
+import {
+  StructuredOutputAiService,
+  type StructuredOutputRequest,
+} from '../../src/ai/structured-output-ai.service';
+import { IngredientCatalogService } from '../../src/ingredients/ingredient-catalog.service';
+import { answerWithCatalogIndices } from './catalog-indices';
 import { TranscriptionService } from '../../src/voice/transcription.service';
 import { AppModule } from '../../src/app.module';
 import {
@@ -37,7 +42,16 @@ export async function createTestApp(
     imports: [AppModule],
     controllers,
   });
-  if (ai) builder.overrideProvider(StructuredOutputAiService).useValue(ai);
+  // The fake answers with Ingredient ids; the app gets Catalog indices, as from the real model.
+  let generate: StructuredOutputAiService['generate'] | undefined;
+  if (ai) {
+    builder.overrideProvider(StructuredOutputAiService).useValue({
+      generate: (
+        request: StructuredOutputRequest,
+        options?: Parameters<StructuredOutputAiService['generate']>[1],
+      ) => generate!(request, options),
+    });
+  }
   if (transcription) {
     builder.overrideProvider(TranscriptionService).useValue(transcription);
   }
@@ -56,6 +70,12 @@ export async function createTestApp(
     },
   );
   const moduleRef = await builder.compile();
+  if (ai) {
+    generate = answerWithCatalogIndices(
+      (request, options) => ai.generate(request, options),
+      moduleRef.get(IngredientCatalogService),
+    );
+  }
   const app = moduleRef.createNestApplication<NestFastifyApplication>(
     new FastifyAdapter({ bodyLimit: MAX_REQUEST_BODY_BYTES }),
   );

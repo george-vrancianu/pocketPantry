@@ -16,8 +16,9 @@ import { leafCategories } from '../database/schema';
 import {
   type CatalogMatch,
   catalogPrompt,
+  type IndexedCandidate,
   type IngredientCatalog,
-  validateCatalogMatch,
+  validateIndexedMatch,
 } from './ingredient-catalog';
 
 const CACHE_TTL_MS = 5 * 60 * 1_000;
@@ -99,19 +100,17 @@ export class IngredientCatalogService {
   }
 
   // toPrompt and validateMatch delegate to the shared pipeline; new callers should use scan/catalog-matching.
+  /** The Catalog text for the model, naming each Ingredient by an index (`catalogPrompt`). */
   toPrompt(catalog: IngredientCatalog): string {
     return catalogPrompt(catalog);
   }
 
-  validateMatch(
+  /** `item` with its Match, given by index into `toPrompt(catalog)` of this same `catalog`, checked (`validateIndexedMatch`). */
+  validateMatch<T extends IndexedCandidate>(
     catalog: IngredientCatalog,
-    candidate: {
-      matchedIngredientId: string | null;
-      matchedCategory: string | null;
-      matchConfidence: number;
-    },
-  ): CatalogMatch {
-    return validateCatalogMatch(catalog, candidate);
+    item: T,
+  ): Omit<T, 'matchedIngredientIndex'> & CatalogMatch {
+    return validateIndexedMatch(catalog, item);
   }
 
   private async loadCatalog(

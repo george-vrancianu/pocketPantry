@@ -18,6 +18,8 @@ import type {
 import { ScanCapService } from '../src/scan/scan-cap.service';
 import { client, signUp } from './support/admin-session';
 import { promoteToAdmin } from './support/promote-to-admin';
+import { catalogIndexIn } from './support/catalog-indices';
+import { catalogIndexInstruction } from '../src/ingredients/ingredient-catalog';
 import { createTestApp } from './support/create-test-app';
 
 jest.setTimeout(30_000);
@@ -210,7 +212,9 @@ describe('Recipe from Link (integration)', () => {
     expect(prompts).toHaveLength(1);
     expect(prompts[0].prompt).toContain('Graph Pancakes 7731');
     expect(prompts[0].prompt).toContain('2 cups flour');
-    expect(prompts[0].prompt).toContain(flour);
+    expect(catalogIndexIn(prompts[0].prompt, 'Flour')).toEqual(
+      expect.any(Number),
+    );
     expect(prompts[0].prompt).not.toContain('Blog chatter 5521');
   });
 
@@ -384,7 +388,7 @@ describe('Recipe from Link (integration)', () => {
       expect(prompt).not.toContain('Romanian');
       expect(prompt).not.toContain('Write the title and the steps in English');
       // Matching against the Catalog is unchanged.
-      expect(prompt).toContain('Set ingredientId only to an exact id');
+      expect(prompt).toContain(catalogIndexInstruction('ingredientIndex'));
     });
 
     it('refuses an unknown language choice and extra fields', async () => {
@@ -428,14 +432,14 @@ describe('Recipe from Link (integration)', () => {
     );
   });
 
-  it('leaves ids outside the Family scope, and low-confidence matches, Unmatched', async () => {
+  it('leaves a UUID in place of an index, and low-confidence matches, Unmatched', async () => {
     const ingredients = reading().ingredients;
     respondWith(
       reading({
         ingredients: [
           {
             ...ingredients[0],
-            ingredientId: crypto.randomUUID(),
+            ingredientIndex: crypto.randomUUID(),
             nameAsWritten: 'mystery',
           },
           {
@@ -459,6 +463,40 @@ describe('Recipe from Link (integration)', () => {
       [null, 'mystery'],
       [null, 'maybe milk'],
       [milk, null],
+    ]);
+  });
+
+  it('names Catalog Ingredients by index, never by UUID, and leaves an index outside the Catalog, or not an index, Unmatched', async () => {
+    const line = reading().ingredients[0];
+    answer = () =>
+      Promise.resolve({
+        data: reading({
+          ingredients: [
+            {
+              ...line,
+              ingredientIndex: catalogIndexIn(prompts[0].prompt, 'Milk'),
+              nameAsWritten: 'milk',
+            },
+            ...[100_000, -1, 2.5, 'flour'].map((index) => ({
+              ...line,
+              ingredientIndex: index,
+              nameAsWritten: `mystery ${index}`,
+            })),
+          ],
+        }),
+        requestId: 'fake-request',
+      });
+    const { draft } = (await read('https://example.com/indices').expect(200))
+      .body as RecipeFromLink;
+    // The Cuisines and Methods still go by id; the Catalog goes by index.
+    expect(prompts[0].prompt).not.toContain(milk);
+    expect(prompts[0].prompt).not.toContain(flour);
+    expect(draft.lines.map((l) => [l.ingredientId, l.rawName])).toEqual([
+      [milk, null],
+      [null, 'mystery 100000'],
+      [null, 'mystery -1'],
+      [null, 'mystery 2.5'],
+      [null, 'mystery flour'],
     ]);
   });
 
@@ -488,8 +526,9 @@ describe('Recipe from Link (integration)', () => {
     const theirs = (await read('https://example.com/own').expect(200))
       .body as RecipeFromLink;
     expect(theirs.draft.lines[0]).toMatchObject({ ingredientId: null });
-    expect(prompts[1].prompt).not.toContain(own.id);
-    expect(prompts[0].prompt).toContain(own.id);
+    const name = `Zq secret sauce ${stamp}`;
+    expect(() => catalogIndexIn(prompts[1].prompt, name)).toThrow();
+    expect(catalogIndexIn(prompts[0].prompt, name)).toEqual(expect.any(Number));
   });
 
   it('drops unknown Cuisine and Method ids and zero quantities', async () => {

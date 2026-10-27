@@ -1,5 +1,6 @@
 import {
   parseProductScanOutput,
+  productScanModelJsonSchema,
   productScanSchema,
 } from './product-scan.schemas';
 
@@ -24,7 +25,7 @@ describe('product scan schemas', () => {
     const result = {
       productName: 'Plain Greek yogurt',
       productType: 'Dairy product',
-      matchedIngredientId: 'be0ef2e7-75ea-47d8-b9bf-fc890d64db8e',
+      matchedIngredientIndex: 7,
       matchedCategory: 'Dairy',
       matchConfidence: 0.91,
       fallbackIngredientName: 'Yogurt',
@@ -65,5 +66,23 @@ describe('product scan schemas', () => {
         ],
       }),
     ).toThrow();
+  });
+
+  it('asks the model for the same rules the answer is parsed with, a Catalog index as an integer or null', () => {
+    const properties = productScanModelJsonSchema.properties as Record<
+      string,
+      Record<string, unknown>
+    >;
+    expect(properties.matchedIngredientIndex).toMatchObject({
+      type: ['integer', 'null'],
+    });
+    expect(properties.productName).toMatchObject({
+      minLength: 1,
+      maxLength: 120,
+    });
+    expect(productScanModelJsonSchema.required).toContain(
+      'matchedIngredientIndex',
+    );
+    expect(productScanModelJsonSchema.additionalProperties).toBe(false);
   });
 });

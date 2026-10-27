@@ -3,7 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/env';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
-import { validateCatalogMatch } from '../ingredients/ingredient-catalog';
+import {
+  catalogIndexInstruction,
+  catalogPrompt,
+  validateIndexedMatch,
+} from '../ingredients/ingredient-catalog';
 import { ReceiptScanService } from './receipt-scan.service';
 import { receiptScanResultSchema } from './receipt-scan.schemas';
 
@@ -20,7 +24,8 @@ const receipt = {
       exclusionReason: null,
       productName: 'Milk',
       productType: 'Dairy',
-      matchedIngredientId: ingredientId,
+      // The model names Milk by its index in the Catalog text.
+      matchedIngredientIndex: 0,
       matchedCategory: 'Dairy',
       matchConfidence: 0.95,
       fallbackIngredientName: 'Milk',
@@ -65,8 +70,8 @@ describe('ReceiptScanService', () => {
       } as ConfigService<AppConfig, true>),
       {
         getCatalogIn: jest.fn().mockResolvedValue(catalog),
-        toPrompt: jest.fn().mockReturnValue(JSON.stringify(catalog)),
-        validateMatch: validateCatalogMatch,
+        toPrompt: catalogPrompt,
+        validateMatch: validateIndexedMatch,
       } as unknown as IngredientCatalogService,
     );
     fetchMock = jest.spyOn(globalThis, 'fetch');
@@ -109,6 +114,7 @@ describe('ReceiptScanService', () => {
       unit: 'l',
       matchConfidence: 0.95,
     });
+    expect(result.lines[0]).not.toHaveProperty('matchedIngredientIndex');
     const request = fetchMock.mock.calls[0][1] as RequestInit;
     const body: unknown = JSON.parse(request.body as string);
     expect(body).toHaveProperty('max_output_tokens', 16000);
@@ -132,9 +138,19 @@ describe('ReceiptScanService', () => {
         expect.objectContaining({ minLength: 1, maxLength: 120 }),
       ]),
     );
+    expect(body).toHaveProperty(`${fieldsPath}.matchedIngredientIndex.type`, [
+      'integer',
+      'null',
+    ]);
     expect(body).toHaveProperty(
-      `${fieldsPath}.matchedIngredientId.anyOf`,
-      expect.arrayContaining([expect.objectContaining({ format: 'uuid' })]),
+      'input.0.content.0.text',
+      expect.not.stringContaining(ingredientId),
+    );
+    expect(body).toHaveProperty(
+      'input.0.content.0.text',
+      expect.stringContaining(
+        catalogIndexInstruction('matchedIngredientIndex'),
+      ),
     );
     expect(body).toHaveProperty(
       `${fieldsPath}.purchasedCount.anyOf`,

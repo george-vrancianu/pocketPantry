@@ -1,18 +1,22 @@
 import type { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { ApiException } from '../common/api-exception';
-import { validateCatalogMatch } from '../ingredients/ingredient-catalog';
+import {
+  catalogIndexInstruction,
+  catalogPrompt,
+  validateIndexedMatch,
+} from '../ingredients/ingredient-catalog';
 import type { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { INGREDIENTS_SCAN_MAX_ITEMS } from './ingredients-scan.schemas';
 import { IngredientsScanService } from './ingredients-scan.service';
 
 const milkId = 'be0ef2e7-75ea-47d8-b9bf-fc890d64db8e';
-const inventedId = '4b3f1f0a-0000-4000-8000-000000000000';
 const IMAGE = 'data:image/jpeg;base64,YQ==';
 
 const item = (overrides: Record<string, unknown> = {}) => ({
   productName: 'Whole milk',
   productType: 'Dairy',
-  matchedIngredientId: milkId,
+  // Milk, by its index in the Catalog text.
+  matchedIngredientIndex: 0,
   matchedCategory: 'Dairy',
   matchConfidence: 0.9,
   fallbackIngredientName: 'Milk',
@@ -36,8 +40,8 @@ describe('IngredientsScanService', () => {
       { generate } as unknown as StructuredOutputAiService,
       {
         getCatalogIn: jest.fn().mockResolvedValue(catalog),
-        toPrompt: jest.fn().mockReturnValue(JSON.stringify(catalog)),
-        validateMatch: validateCatalogMatch,
+        toPrompt: catalogPrompt,
+        validateMatch: validateIndexedMatch,
       } as unknown as IngredientCatalogService,
     );
   });
@@ -55,11 +59,16 @@ describe('IngredientsScanService', () => {
       matchedIngredientId: milkId,
       matchedIngredientName: 'Milk',
     });
+    expect(result.items[0]).not.toHaveProperty('matchedIngredientIndex');
     const [[request]] = generate.mock.calls as [
       [{ images: string[]; prompt: string }],
     ];
     expect(request.images).toEqual([IMAGE]);
-    expect(request.prompt).toContain(milkId);
+    expect(request.prompt).toContain('[0,"Milk","Dairy"]');
+    expect(request.prompt).not.toContain(milkId);
+    expect(request.prompt).toContain(
+      catalogIndexInstruction('matchedIngredientIndex'),
+    );
   });
 
   it('returns no items for an empty result', async () => {
@@ -67,21 +76,22 @@ describe('IngredientsScanService', () => {
     expect(await analyze()).toEqual({ items: [] });
   });
 
-  it('drops an identifier the model invented, keeping the item', async () => {
-    respond({ items: [item({ matchedIngredientId: inventedId })] });
-    const [first] = (await analyze()).items;
-    expect(first).toMatchObject({
-      matchedIngredientId: null,
-      matchedIngredientName: null,
-      matchConfidence: 0,
-      fallbackIngredientName: 'Milk',
-    });
+  it('drops an index the model invented, or one that is not an index, keeping the item', async () => {
+    for (const index of [1, -1, 0.5, 'be0ef2e7-75ea-47d8-b9bf-fc890d64db8e']) {
+      respond({ items: [item({ matchedIngredientIndex: index })] });
+      const [first] = (await analyze()).items;
+      expect(first).toMatchObject({
+        matchedIngredientId: null,
+        matchedIngredientName: null,
+        matchConfidence: 0,
+        fallbackIngredientName: 'Milk',
+      });
+    }
   });
 
   it('rejects output that breaks the schema with scan.result_invalid', async () => {
     for (const data of [
       { items: [item({ confidence: 2 })] },
-      { items: [item({ matchedIngredientId: 'not-a-uuid' })] },
       { items: [{ productName: 'Milk' }] },
       { nothing: true },
       'text',

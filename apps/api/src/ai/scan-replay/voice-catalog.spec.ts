@@ -33,17 +33,16 @@ describe('seedVoiceCatalog', () => {
     );
   });
 
-  it('sends the production Catalog text, with names in the locale', () => {
+  it('sends the production Catalog text, with names in the locale and indices for ids', () => {
     const text = JSON.parse(catalogTextFor(catalog, 'da')) as {
       categories: string[];
-      ingredients: [string, string, string][];
+      ingredients: [number, string, string][];
     };
     expect(text.ingredients).toHaveLength(SEED_INGREDIENTS.length);
-    expect(text.ingredients).toContainEqual([
-      seedId.ingredient('milk'),
-      'Mælk',
-      expect.any(String),
-    ]);
+    const milk = catalog.ingredients.findIndex(
+      (i) => i.id === seedId.ingredient('milk'),
+    );
+    expect(text.ingredients[milk]).toEqual([milk, 'Mælk', expect.any(String)]);
     expect(text.categories).toContain('Onions and garlic');
   });
 });

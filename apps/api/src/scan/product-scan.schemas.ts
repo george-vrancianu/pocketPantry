@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 
 /** Structured-output schema name of a Product Scan request. */
 export const PRODUCT_SCAN_SCHEMA_NAME = 'grocery_product_scan';
@@ -18,7 +20,8 @@ export const productScanSchema = z.object({
 export const productScanModelResultSchema = z.object({
   productName: z.string().trim().min(1).max(120),
   productType: z.string().trim().min(1).max(80),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; the service turns it into an Ingredient id. */
+  matchedIngredientIndex: catalogIndexSchema,
   matchedCategory: z.string().trim().min(1).max(80).nullable(),
   matchConfidence: z.number().min(0).max(1),
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -30,10 +33,17 @@ export const productScanModelResultSchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 
-export const productScanResultSchema = productScanModelResultSchema.extend({
-  matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
-  matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
-});
+export const productScanResultSchema = productScanModelResultSchema
+  .omit({ matchedIngredientIndex: true })
+  .extend({
+    matchedIngredientId: z.uuid().nullable(),
+    matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
+    matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
+  });
+
+export const productScanModelJsonSchema = modelJsonSchema(
+  productScanModelResultSchema,
+);
 
 export type ProductScanInput = z.infer<typeof productScanSchema>;
 export type ProductScanModelResult = z.infer<

@@ -13,7 +13,8 @@ import {
 import { seedVoiceCatalog } from './voice-catalog';
 
 const catalog = seedVoiceCatalog();
-const MILK = catalog.ingredients.find((i) => i.names.en === 'Milk')!.id;
+/** Milk's index in the Catalog text the read sends. */
+const MILK = catalog.ingredients.findIndex((i) => i.names.en === 'Milk');
 
 const caseJson = (id: string, overrides: Record<string, unknown> = {}) => ({
   id,
@@ -131,10 +132,11 @@ const goodAnswer = {
     {
       target: 'shopping',
       op: 'add',
-      spokenText: 'milk',
-      matchedIngredientId: MILK,
+      // Neither is a Catalog name: the match comes from the index alone.
+      spokenText: 'the white stuff',
+      matchedIngredientIndex: MILK,
       matchConfidence: 0.9,
-      fallbackIngredientName: 'Milk',
+      fallbackIngredientName: 'Moo juice',
       spokenName: 'Milk',
       quantity: null,
       unit: null,

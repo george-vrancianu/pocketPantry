@@ -1,5 +1,7 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
 import { MAX_QUANTITY } from '../common/quantity';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import { imageDataUrlSchema } from './product-scan.schemas';
 
 /** Structured-output schema name of a Receipt Scan request. */
@@ -35,7 +37,8 @@ export const receiptScanModelLineSchema = z.object({
   exclusionReason: z.string().trim().min(1).max(300).nullable(),
   productName: z.string().trim().min(1).max(120).nullable(),
   productType: z.string().trim().min(1).max(80).nullable(),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; the service turns it into an Ingredient id. */
+  matchedIngredientIndex: catalogIndexSchema,
   matchedCategory: z.string().trim().min(1).max(80).nullable(),
   matchConfidence: z.number().min(0).max(1),
   fallbackIngredientName: z.string().trim().min(1).max(80).nullable(),
@@ -47,12 +50,15 @@ export const receiptScanModelLineSchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 
-export const receiptScanResultLineSchema = receiptScanModelLineSchema.extend({
-  matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
-  matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
-  quantity: z.number().positive().max(MAX_QUANTITY).nullable(),
-  unit: z.string().trim().min(1).max(30).nullable(),
-});
+export const receiptScanResultLineSchema = receiptScanModelLineSchema
+  .omit({ matchedIngredientIndex: true })
+  .extend({
+    matchedIngredientId: z.uuid().nullable(),
+    matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
+    matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
+    quantity: z.number().positive().max(MAX_QUANTITY).nullable(),
+    unit: z.string().trim().min(1).max(30).nullable(),
+  });
 
 export const receiptScanResultItemSchema = z.object({
   lineNumber: z.number().int().positive().max(500),
@@ -84,11 +90,9 @@ export const receiptScanModelResultSchema = z.object({
 // Generate the upstream contract from the same rules used to parse its result.
 // A hand-written, looser schema lets invalid dates, blank names, and invalid
 // quantities through Structured Outputs only to fail validation locally.
-export const receiptScanModelJsonSchema = z.toJSONSchema(
+export const receiptScanModelJsonSchema = modelJsonSchema(
   receiptScanModelResultSchema,
-  { target: 'draft-7' },
 );
-delete receiptScanModelJsonSchema.$schema;
 
 export const receiptScanResultSchema = z.object({
   merchantName: z.string().trim().max(120).nullable(),

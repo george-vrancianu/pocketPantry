@@ -5,6 +5,7 @@
 - No `db:*` commands, no dev servers, no GitHub writes, no commits unless your brief says to commit.
 - Slugs are permanent once shipped. Never rename or remove an existing slug, Ingredient, Recipe or registry entry.
 - Seed data stays within the facts a careful home cook would stand behind. When you are unsure of something (a temperature, an origin, a Romanian or Danish word), say so in your hand-back rather than guessing in the data.
+- No substitutes. Every Recipe uses the Ingredient the dish really calls for (guanciale, not pancetta, in carbonara). If the catalog lacks it, it is planned as Catalog work, added, and then used. Planners mark it `MISSING`, never a near match; reviewers flag a stand-in as `must-fix`.
 - Romanian uses comma-below ș and ț (U+0219, U+021B), never cedilla ş and ţ.
 - Helper scripts, run from anywhere (`<api>` is the worktree's `apps/api`, `<skill>` the skill directory):
   - `npx tsx <skill>/scripts/dump-catalog.ts <api> [ingredients|leaves|recipes]`: the catalog as TSV, for grep.

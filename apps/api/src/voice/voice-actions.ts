@@ -1,9 +1,15 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
 import {
   SCAN_LANGUAGES,
   type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
+import {
+  catalogIndexSchema,
+  ingredientIdAt,
+  type IngredientCatalog,
+} from '../ingredients/ingredient-catalog';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { VOICE_LISTS, VOICE_DEFAULT_TARGETS } from './voice.schemas';
@@ -32,7 +38,8 @@ const modelAction = z.object({
   op: z.enum(VOICE_OPS),
   /** The words that made this Voice Action, in the language spoken. */
   spokenText: z.string().trim().min(1).max(200),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; `toVoiceRead` turns it into an Ingredient id. */
+  matchedIngredientIndex: catalogIndexSchema,
   matchConfidence: z.number().min(0).max(1),
   /** A short generic Ingredient name in the Catalog Language. */
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -54,7 +61,8 @@ const modelAction = z.object({
 const modelQuestion = z.object({
   /** The words that made this question, in the language spoken. */
   spokenText: z.string().trim().min(1).max(200),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; `toVoiceRead` turns it into an Ingredient id. */
+  matchedIngredientIndex: catalogIndexSchema,
   matchConfidence: z.number().min(0).max(1),
   /** A short generic Ingredient name in the Catalog Language. */
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -70,14 +78,48 @@ export const voiceReadModelSchema = z.object({
   /** The language the text was spoken in, or null when it can't be told. Only Assistant Requests use it. */
   spokenLanguage: z.enum(SCAN_LANGUAGES).nullable(),
 });
-export type VoiceReadModelResult = z.infer<typeof voiceReadModelSchema>;
-export type ModelVoiceAction = z.infer<typeof modelAction>;
-export type ModelPantryQuestion = z.infer<typeof modelQuestion>;
+/** What the model answered (before `toVoiceRead`): Ingredients named by their index in the Catalog text. */
+export type VoiceReadAnswer = z.infer<typeof voiceReadModelSchema>;
+type WithIngredientId<T> = Omit<T, 'matchedIngredientIndex'> & {
+  /** The proposed Ingredient's id, or null. */
+  matchedIngredientId: string | null;
+};
+/** One Voice Action of a `VoiceRead`: its proposed Ingredient as an id. */
+export type ReadVoiceAction = WithIngredientId<z.infer<typeof modelAction>>;
+/** One Pantry Question of a `VoiceRead`: its proposed Ingredient as an id. */
+export type ReadPantryQuestion = WithIngredientId<
+  z.infer<typeof modelQuestion>
+>;
+/** The answer after `toVoiceRead`: every proposed Ingredient as an id. */
+export type VoiceRead = Omit<VoiceReadAnswer, 'actions' | 'questions'> & {
+  actions: ReadVoiceAction[];
+  questions: ReadPantryQuestion[];
+};
 
-export const voiceReadJsonSchema = z.toJSONSchema(voiceReadModelSchema, {
-  target: 'draft-7',
-});
-delete voiceReadJsonSchema.$schema;
+/**
+ * The read with each Ingredient index turned into its id. `catalog` must be the
+ * one whose text the request sent; an index it does not hold is no proposal.
+ */
+export function toVoiceRead(
+  read: VoiceReadAnswer,
+  catalog: IngredientCatalog,
+): VoiceRead {
+  return {
+    ...read,
+    actions: read.actions.map(({ matchedIngredientIndex, ...action }) => ({
+      ...action,
+      matchedIngredientId: ingredientIdAt(catalog, matchedIngredientIndex),
+    })),
+    questions: read.questions.map(
+      ({ matchedIngredientIndex, ...question }) => ({
+        ...question,
+        matchedIngredientId: ingredientIdAt(catalog, matchedIngredientIndex),
+      }),
+    ),
+  };
+}
+
+export const voiceReadJsonSchema = modelJsonSchema(voiceReadModelSchema);
 // The provider's schema keeps `questions` required; the `default` only serves parsing a reply that omits it.
 delete (voiceReadJsonSchema.properties as Record<string, { default?: unknown }>)
   .questions.default;
