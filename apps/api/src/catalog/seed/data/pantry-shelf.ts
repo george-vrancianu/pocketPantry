@@ -767,6 +767,22 @@ export const condiments: SeedSection = {
         ['alge nori', 'foi nori'],
       ],
       [
+        'dried-shiitake',
+        'Dried shiitake mushrooms',
+        'Ciuperci shiitake uscate',
+        'g',
+        ['dried chinese mushrooms', 'dong gu'],
+        ['ciuperci chinezesti uscate'],
+      ],
+      [
+        'wood-ear-mushrooms',
+        'Dried wood ear mushrooms',
+        'Ciuperci urechi de lemn uscate',
+        'g',
+        ['wood ear', 'black fungus', 'cloud ear', 'mu er', 'mu err'],
+        ['urechea lemnului', 'urechi de lemn', 'urechea lui iuda'],
+      ],
+      [
         'anchovy-paste',
         'Anchovy paste',
         'Pastă de anșoa',
@@ -1293,6 +1309,14 @@ export const oils: SeedSection = {
         ['brown malt vinegar', 'chip shop vinegar'],
         ['otet malt'],
       ],
+      [
+        'chinkiang-vinegar',
+        'Chinkiang black vinegar',
+        'Oțet negru chinezesc (Chinkiang)',
+        'ml',
+        ['black vinegar', 'zhenjiang vinegar', 'chinese black vinegar'],
+        ['otet negru', 'otet chinezesc'],
+      ],
     ]),
     ...ingredientsOf('cold-pressed-oils', [
       [
@@ -1555,6 +1579,14 @@ export const spices: SeedSection = {
         'g',
         ['whole allspice'],
         ['ienibahar intreg'],
+      ],
+      [
+        'green-cardamom-pods',
+        'Green cardamom pods',
+        'Cardamom boabe (păstăi verzi)',
+        'g',
+        ['cardamom pods', 'whole cardamom', 'green cardamom'],
+        ['cardamom boabe', 'pastai cardamom'],
       ],
       ['star-anise', 'Star anise', 'Anason stelat', 'g', undefined, ['anason']],
       [
