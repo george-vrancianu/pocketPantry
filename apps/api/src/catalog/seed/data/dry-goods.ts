@@ -550,6 +550,14 @@ export const grains: SeedSection = {
         ['nixtamalized corn flour'],
         ['maseca', 'faina masa harina', 'faina de porumb pentru tortilla'],
       ],
+      [
+        'rock-sugar',
+        'Rock sugar',
+        'Zahăr candel',
+        'g',
+        ['rock candy sugar', 'yellow rock sugar', 'chinese rock sugar'],
+        [],
+      ],
     ]),
     ...ingredientsOf('baking-essentials', [
       [
@@ -785,6 +793,14 @@ export const legumes: SeedSection = {
         'g',
         ['fava beans'],
         ['bob uscat', 'fasole bob'],
+      ],
+      [
+        'split-fava-beans',
+        'Split fava beans (skinless)',
+        'Bob decorticat (despicat)',
+        'g',
+        ['split broad beans', 'peeled fava beans', 'skinless broad beans'],
+        ['bob decojit', 'bob despicat'],
       ],
     ]),
     ...ingredientsOf('tofu-and-tempeh', [

@@ -543,6 +543,14 @@ export const cannedGoods: SeedSection = {
         'g',
         ['chai po', 'hua chai po', 'sweet preserved turnip'],
       ],
+      [
+        'preserved-lemons',
+        'Preserved lemons',
+        'Lămâi conservate în sare',
+        'g',
+        ['preserved lemon', 'salt-preserved lemons', 'lemon confit'],
+        ['lamai murate', 'lamai in sare'],
+      ],
     ]),
   ],
 };
@@ -680,6 +688,14 @@ export const condiments: SeedSection = {
         'ml',
         ['sweet chili sauce'],
         ['sos dulce picant'],
+      ],
+      [
+        'tkemali',
+        'Tkemali (Georgian sour plum sauce)',
+        'Sos tkemali (sos georgian de corcodușe)',
+        'ml',
+        ['tkemali sauce', 'sour plum sauce'],
+        ['tkemali', 'sos de prune acre'],
       ],
     ]),
     ...ingredientsOf('asian-sauces', [
@@ -855,6 +871,7 @@ export const condiments: SeedSection = {
         ['tamarind', 'tamarind pulp', 'tamarind concentrate'],
         ['pasta tamarind'],
       ],
+      ['hoisin-sauce', 'Hoisin sauce', 'Sos hoisin', 'ml', ['hoisin'], []],
     ]),
     ...ingredientsOf('pasta-sauces-and-pesto', [
       [
@@ -1842,6 +1859,14 @@ export const spices: SeedSection = {
         'g',
         undefined,
         ['lamaie piper'],
+      ],
+      [
+        'khmeli-suneli',
+        'Khmeli suneli (Georgian spice blend)',
+        'Khmeli suneli (amestec georgian de condimente)',
+        'g',
+        ['khmeli-suneli'],
+        ['hmeli suneli'],
       ],
     ]),
     ...ingredientsOf('salt', [

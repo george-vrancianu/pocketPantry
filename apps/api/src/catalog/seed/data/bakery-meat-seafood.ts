@@ -1046,6 +1046,14 @@ export const meat: SeedSection = {
         ['sibiu salami'],
         ['salam iarna', 'salam sibiu'],
       ],
+      [
+        'chourico',
+        'Chouriço (Portuguese smoked sausage)',
+        'Chouriço (cârnat afumat portughez)',
+        'g',
+        ['chourico', 'portuguese chorizo'],
+        ['carnat portughez'],
+      ],
     ]),
     ...ingredientsOf('chilled-meat-specialties', [
       [

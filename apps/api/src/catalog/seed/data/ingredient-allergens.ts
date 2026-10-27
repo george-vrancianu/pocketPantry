@@ -59,6 +59,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   watercress: [],
   radicchio: [],
   'belgian-endive': [],
+  'couve-galega': [],
 
   // produce/brassicas
   cabbage: [],
@@ -153,6 +154,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'makrut-lime-leaves': [],
   'curly-parsley': [],
   'garlic-chives': [],
+  'curry-leaves': [],
 
   // herbs/woody-herbs
   rosemary: [],
@@ -312,6 +314,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'smoked-sausages': [],
   chorizo: [],
   'sausage-sibiu': [],
+  chourico: ['sulphites'],
 
   // meat/chilled-meat-specialties
   'liver-pate': ['gluten', 'milk'],
@@ -654,6 +657,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'corn-starch': [],
   'masa-harina': [],
   'glucose-syrup': [],
+  'rock-sugar': [],
 
   // grains/baking-essentials
   'baking-powder': [],
@@ -687,6 +691,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'chana-dal': [],
   soybeans: ['soy'],
   'broad-beans': [],
+  'split-fava-beans': [],
 
   // legumes/tofu-and-tempeh
   tofu: ['soy'],
@@ -764,6 +769,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'vine-leaves': ['sulphites'],
   kimchi: ['crustaceans', 'fish'],
   'preserved-radish': [],
+  'preserved-lemons': ['sulphites'],
 
   // condiments/table-sauces
   ketchup: [],
@@ -776,6 +782,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   remoulade: ['eggs', 'mustard'],
   horseradish: [],
   'sweet-chili-sauce': [],
+  tkemali: [],
 
   // condiments/asian-sauces
   'soy-sauce': ['gluten', 'soy'],
@@ -803,6 +810,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   mirin: [],
   'white-miso': ['soy'],
   harissa: [],
+  'hoisin-sauce': ['gluten', 'sesame', 'soy'],
 
   // condiments/pasta-sauces-and-pesto
   'tomato-pasta-sauce': [],
@@ -949,6 +957,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'garam-masala': [],
   'seven-spice': [],
   'lemon-pepper': [],
+  'khmeli-suneli': ['celery'],
 
   // spices/salt
   salt: [],
