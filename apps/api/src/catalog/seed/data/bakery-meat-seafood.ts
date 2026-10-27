@@ -961,6 +961,22 @@ export const meat: SeedSection = {
         ['ox feet', 'cow feet', 'cow heel'],
         ['picioare vita', 'picioare de vaca'],
       ],
+      [
+        'chicken-feet',
+        'Chicken feet',
+        'Labe de pui',
+        'g',
+        ['chicken paws'],
+        ['gheare de pui', 'labe pui'],
+      ],
+      [
+        'pork-ears',
+        'Pork ears',
+        'Urechi de porc',
+        'g',
+        ['pig ears', 'pigs ears'],
+        ['urechi porc'],
+      ],
     ]),
     ...ingredientsOf('cured-meat', [
       [
