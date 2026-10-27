@@ -201,20 +201,30 @@ export const linkReads = createLinkReads();
  * Mounted once, by the app layout.
  */
 export function useUnloadPromptWhileReading() {
-  const { reads } = useLinkReads();
-  const reading = reads.some(
-    (r) => r.status === 'waiting' || r.status === 'reading',
-  );
+  // Subscribes to the holder directly, so the layout never re-renders on a status change.
   useEffect(() => {
-    if (!reading) return;
     const ask = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       // Older browsers need a return value to show the prompt.
       event.returnValue = '';
     };
-    window.addEventListener('beforeunload', ask);
-    return () => window.removeEventListener('beforeunload', ask);
-  }, [reading]);
+    let asking = false;
+    const sync = () => {
+      const want = linkReads
+        .getState()
+        .reads.some((r) => r.status === 'waiting' || r.status === 'reading');
+      if (want === asking) return;
+      asking = want;
+      if (want) window.addEventListener('beforeunload', ask);
+      else window.removeEventListener('beforeunload', ask);
+    };
+    sync();
+    const unsubscribe = linkReads.subscribe(sync);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('beforeunload', ask);
+    };
+  }, []);
 }
 
 export const useLinkReads = (): LinkReadsState =>

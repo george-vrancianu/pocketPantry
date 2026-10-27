@@ -40,7 +40,8 @@ const fieldSx = {
  *
  * A link is checked first (a plain request that fetches nothing and costs nothing): if it is already
  * one of the Family's Recipes the sheet answers "Already in your Recipes" in place, with Open or Read
- * again. Pasted text is never checked. A check that fails is not a reason to stop: the read goes ahead.
+ * again. Pasted text is never checked. When the check fails the read goes ahead anyway; a duplicate it
+ * missed is read as asked (the holder re-reads it with force).
  */
 export function FromLinkSheet({
   open,
@@ -114,14 +115,21 @@ function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
       language,
       force ? { force } : {},
     );
-    if (outcome === 'full') setFull(true);
-    else onSubmitted();
+    if (outcome === 'full') {
+      // Back to the form, where the alert lives (the duplicate panel has none).
+      setDuplicate(null);
+      setFull(true);
+    } else onSubmitted();
   };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (input === '' || checking) return;
     if (mode === 'text') return start(false);
+    // A full holder refuses the read anyway: say so before asking the server anything.
+    if (linkReads.getState().reads.length >= MAX_HELD_LINK_READS) {
+      return setFull(true);
+    }
     const attempt = new AbortController();
     checkAbort.current = attempt;
     setChecking(true);
@@ -129,7 +137,7 @@ function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
     try {
       recipeId = (await checkRecipeLink(input, attempt.signal)).recipeId;
     } catch {
-      // The check is a courtesy: when it fails, read anyway (the read answers a duplicate itself).
+      // The check is a courtesy: when it fails, read anyway (a duplicate it missed is forced through by the holder).
     }
     if (attempt.signal.aborted) return;
     setChecking(false);

@@ -644,6 +644,41 @@ describe('"From a link" sheet and the link-read holder', () => {
       ).toEqual({ url: link, language: 'source', force: true });
     });
 
+    it('says the holder is full instead of checking, and Read again on a late duplicate brings the alert back', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        ...duplicateRoute,
+        'POST /api/recipes/from-link': () => new Promise<Response>(() => {}),
+      });
+      for (const n of [1, 2, 3, 4]) {
+        linkReads.submit(
+          { kind: 'link', url: `https://site${n}.example.com/r` },
+          'catalog',
+        );
+      }
+      // Four held: the check runs and the duplicate panel opens.
+      await submit(user, link);
+      await screen.findByText('Already in your Recipes');
+      // A fifth read arrives while the panel is open, so the holder is now full.
+      linkReads.submit(
+        { kind: 'link', url: 'https://site5.example.com/r' },
+        'catalog',
+      );
+      await user.click(screen.getByRole('button', { name: 'Read again' }));
+      expect(
+        await screen.findByText(/5 link reads are waiting for you/),
+      ).toBeVisible();
+      expect(screen.queryByText('Already in your Recipes')).toBeNull();
+      expect(sheet()).not.toBeNull();
+      // A full holder is answered before any check is made.
+      const checks = checked(calls).length;
+      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      expect(
+        await screen.findByText(/5 link reads are waiting for you/),
+      ).toBeVisible();
+      expect(checked(calls)).toHaveLength(checks);
+    });
+
     it('closes and reads when the link is not one of the Recipes', async () => {
       const user = userEvent.setup({ delay: null });
       const { calls } = setup({
@@ -711,7 +746,7 @@ describe('"From a link" sheet and the link-read holder', () => {
       expect(asksToStay()).toBe(false);
     });
 
-    it('asks for a read that is only waiting, and not for a failed one', async () => {
+    it('asks while the last read is reading after the others failed, and not once all have failed', async () => {
       const releases: Array<() => void> = [];
       setup({
         'POST /api/recipes/from-link': () =>
