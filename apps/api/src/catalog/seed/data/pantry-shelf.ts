@@ -536,6 +536,13 @@ export const cannedGoods: SeedSection = {
         ['foi de vita borcan', 'foi de vita in saramura'],
       ],
       ['kimchi', 'Kimchi', 'Kimchi', 'g', undefined, ['varza kimchi']],
+      [
+        'preserved-radish',
+        'Preserved sweet radish (chai po)',
+        'Ridiche albă conservată (chai po)',
+        'g',
+        ['chai po', 'hua chai po', 'sweet preserved turnip'],
+      ],
     ]),
   ],
 };
@@ -815,6 +822,14 @@ export const condiments: SeedSection = {
         'g',
         ['golden curry', 'curry roux blocks', 'japanese curry sauce mix'],
         ['curry japonez cuburi'],
+      ],
+      [
+        'tamarind-paste',
+        'Tamarind paste',
+        'Pastă de tamarind',
+        'g',
+        ['tamarind', 'tamarind pulp', 'tamarind concentrate'],
+        ['pasta tamarind'],
       ],
     ]),
     ...ingredientsOf('pasta-sauces-and-pesto', [
@@ -1261,6 +1276,14 @@ export const oils: SeedSection = {
         'ml',
         ['jerez vinegar', 'vinagre de jerez'],
         ['otet de sherry'],
+      ],
+      [
+        'malt-vinegar',
+        'Malt vinegar',
+        'Oțet de malț',
+        'ml',
+        ['brown malt vinegar', 'chip shop vinegar'],
+        ['otet malt'],
       ],
     ]),
     ...ingredientsOf('cold-pressed-oils', [

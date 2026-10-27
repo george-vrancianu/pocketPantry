@@ -155,6 +155,13 @@ export const pasta: SeedSection = {
         ['rice paper wrappers', 'spring roll wrappers'],
         ['foi de orez pentru rulouri'],
       ],
+      [
+        'ho-fun',
+        'Fresh wide rice noodles (ho fun)',
+        'Tăiței lați proaspeți de orez (ho fun)',
+        'g',
+        ['hor fun', 'shahe fen', 'kway teow', 'fresh rice noodles'],
+      ],
     ]),
     ...ingredientsOf('fresh-pasta', [
       [

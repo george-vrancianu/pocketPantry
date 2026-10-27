@@ -1402,6 +1402,14 @@ export const seafood: SeedSection = {
         ['bacalao', 'klipfish'],
         ['bacalau uscat'],
       ],
+      [
+        'dried-shrimp',
+        'Dried shrimp',
+        'Creveți uscați',
+        'g',
+        ['dried prawns', 'kung haeng'],
+        ['creveti deshidratati'],
+      ],
     ]),
     ...ingredientsOf('shellfish', [
       ['shrimp', 'Shrimp', 'Creveți', 'g', undefined, ['creveti decorticati']],

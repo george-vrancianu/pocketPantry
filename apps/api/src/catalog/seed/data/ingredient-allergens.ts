@@ -74,6 +74,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   celery: ['celery'],
   fennel: [],
   okra: [],
+  'bean-sprouts': [],
 
   // produce/mushrooms
   'button-mushrooms': [],
@@ -149,6 +150,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   lemongrass: [],
   'makrut-lime-leaves': [],
   'curly-parsley': [],
+  'garlic-chives': [],
 
   // herbs/woody-herbs
   rosemary: [],
@@ -372,6 +374,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   kippers: ['fish'],
   'pickled-herring': ['fish'],
   'salt-cod': ['fish'],
+  'dried-shrimp': ['crustaceans'],
 
   // seafood/shellfish
   shrimp: ['crustaceans'],
@@ -431,6 +434,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   telemea: ['milk'],
   'burduf-cheese': ['milk'],
   'sheep-cheese': ['milk'],
+  'beyaz-peynir': ['milk'],
 
   // dairy/fresh-cheese
   mozzarella: ['milk'],
@@ -588,6 +592,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'soba-noodles': ['gluten'],
   udon: ['gluten'],
   'rice-paper': [],
+  'ho-fun': [],
 
   // pasta/fresh-pasta
   tortellini: ['eggs', 'gluten', 'milk'],
@@ -747,6 +752,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   dolmades: ['sulphites'],
   'vine-leaves': ['sulphites'],
   kimchi: ['crustaceans', 'fish'],
+  'preserved-radish': [],
 
   // condiments/table-sauces
   ketchup: [],
@@ -763,6 +769,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   // condiments/asian-sauces
   'soy-sauce': ['gluten', 'soy'],
   'dark-soy-sauce': ['gluten', 'soy'],
+  'tamarind-paste': [],
   'worcestershire-sauce': ['fish', 'gluten'],
   'fish-sauce': ['fish'],
   'teriyaki-sauce': ['gluten', 'soy'],
@@ -845,6 +852,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'balsamic-vinegar': ['sulphites'],
   'apple-cider-vinegar': [],
   'rice-vinegar': [],
+  'malt-vinegar': ['gluten'],
 
   // oils/cold-pressed-oils
   'pumpkin-seed-oil': [],
@@ -1065,6 +1073,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'sparkling-wine': ['sulphites'],
   'cooking-wine': ['sulphites'],
   'mulled-wine-base': ['sulphites'],
+  'shaoxing-wine': ['gluten', 'sulphites'],
 
   // beverage/spirits
   vodka: [],

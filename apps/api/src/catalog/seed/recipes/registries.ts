@@ -71,6 +71,7 @@ export const SEED_METHODS: SeedNamed[] = [
   named('one-pot', 'One-pot', 'Într-o singură oală', 'Alt i én gryde'),
   named('spatchcocked', 'Spatchcocked', 'Desfăcut în fluture', 'Flækket'),
   named('boiled', 'Boiled', 'Fiert', 'Kogt'),
+  named('pan-fried', 'Pan-fried', 'La tigaie', 'Pandestegt'),
 ];
 
 /** In display order. Exactly the list from the ticket. */

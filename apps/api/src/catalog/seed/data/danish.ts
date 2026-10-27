@@ -1018,6 +1018,15 @@ export const DA_INGREDIENTS: Record<string, string> = {
   vermouth: 'Vermouth',
   smoothie: 'Smoothie',
   'fresh-orange-juice': 'Friskpresset appelsinjuice',
+  'bean-sprouts': 'Bønnespirer',
+  'garlic-chives': 'Kinesisk purløg',
+  'tamarind-paste': 'Tamarindpasta',
+  'preserved-radish': 'Syltet sød ræddike (chai po)',
+  'malt-vinegar': 'Malteddike',
+  'ho-fun': 'Friske brede risnudler (ho fun)',
+  'beyaz-peynir': 'Tyrkisk hvid ost (beyaz peynir)',
+  'shaoxing-wine': 'Shaoxing-risvin',
+  'dried-shrimp': 'Tørrede rejer',
 };
 
 /** Receipt and label words that differ from the display name. */
@@ -1116,4 +1125,13 @@ export const DA_SYNONYMS: Record<string, string[]> = {
   'rind-on-pork-loin': ['flæskesteg af kam'],
   'rind-on-pork-shoulder': ['flæskesteg af bov'],
   'dried-red-chillies': ['tørret chili', 'hel tørret chili'],
+  'bean-sprouts': ['mungbønnespirer'],
+  'garlic-chives': ['hvidløgspurløg'],
+  'tamarind-paste': ['tamarindpulp'],
+  'preserved-radish': ['syltet radise'],
+  'malt-vinegar': ['maltseddike'],
+  'ho-fun': ['friske risnudler'],
+  'beyaz-peynir': ['tyrkisk ost'],
+  'shaoxing-wine': ['shaoxing vin', 'kinesisk madlavningsvin'],
+  'dried-shrimp': ['tørret rejer'],
 };
