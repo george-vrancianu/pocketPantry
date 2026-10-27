@@ -23,6 +23,7 @@ import { chiftele } from './data/chiftele';
 import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeBurta } from './data/ciorba-de-burta';
 import { ciorbaDeCartofi } from './data/ciorba-de-cartofi';
+import { ciorbaDeCiuperci } from './data/ciorba-de-ciuperci';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDeFasoleVerde } from './data/ciorba-de-fasole-verde';
 import { ciorbaDeLegume } from './data/ciorba-de-legume';
@@ -206,4 +207,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   dovleceiPane,
   meatloaf,
   ciorbaDeBurta,
+  ciorbaDeCiuperci,
 ];
