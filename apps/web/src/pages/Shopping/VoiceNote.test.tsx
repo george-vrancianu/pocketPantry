@@ -438,6 +438,7 @@ describe('Voice Note on the Shopping List', () => {
       );
       const strip = statusNote();
       expect(strip).toHaveTextContent(/Voice Note · 0:\d\d/);
+      expect(strip).toHaveTextContent('No connection. Your recording is kept.');
       const dialog = await openSheet();
       const row = rowOf(dialog, 'No connection. Your recording is kept.');
       expect(
@@ -599,6 +600,7 @@ describe('Voice Note on the Shopping List', () => {
       await screen.findByText('Pantry page');
 
       expect(await screen.findByText(/^Voice Note · 0:\d\d$/)).toBeVisible();
+      await waitFor(() => expect(screen.queryByText(/Being read$/)).toBeNull());
       expect(screen.queryByRole('alert')).toBeNull();
     });
 
@@ -607,6 +609,7 @@ describe('Voice Note on the Shopping List', () => {
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
       await screen.findByText(/^Voice Note · 0:\d\d$/);
+      await waitFor(() => expect(screen.queryByText(/Being read$/)).toBeNull());
       fireEvent.pointerUp(await hold());
       expect(await screen.findByRole('alert')).toHaveTextContent(
         '2 Voice Notes failed',

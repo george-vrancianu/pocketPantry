@@ -6,7 +6,7 @@
   "ready": "{{count}} gata",
   "failed_one": "{{count}} eșuat",
   "failed_few": "{{count}} eșuate",
-  "failed_other": "{{count}} eșuate",
+  "failed_other": "{{count}} de eșuate",
   "review": "Verificare",
   "open": "Deschide",
   "openCount": "Deschide {{count}}",

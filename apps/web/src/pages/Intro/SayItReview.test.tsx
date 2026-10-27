@@ -472,6 +472,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     const user = userEvent.setup();
     await record();
     expect(await screen.findByText(/^Voice Note · 0:\d\d$/)).toBeVisible();
+    await waitFor(() => expect(screen.queryByText(/Being read$/)).toBeNull());
     expect(
       screen.queryByRole('dialog', { name: "Here's what I heard" }),
     ).toBeNull();
@@ -489,6 +490,7 @@ describe('Setup 2: What Gator heard, Do these, All set', () => {
     await openSayIt({ transcript: '', actions: [] });
     await record();
     expect(await screen.findByText(/^Voice Note · 0:\d\d$/)).toBeVisible();
+    await waitFor(() => expect(screen.queryByText(/Being read$/)).toBeNull());
     // It no longer leaves on its own.
     await act(() => vi.advanceTimersByTimeAsync(60_000));
     expect(screen.getByText(/^Voice Note · 0:\d\d$/)).toBeVisible();
@@ -518,6 +520,7 @@ describe('Setup 2: the Voice Cap', () => {
     });
     await record();
     expect(await screen.findByText(/^Voice Note · 0:\d\d$/)).toBeVisible();
+    await waitFor(() => expect(screen.queryByText(/Being read$/)).toBeNull());
 
     // The next press is refused up front, as in the app: no Listening card, the cap in the Voice Inbox.
     const button = await talkButton();
