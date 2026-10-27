@@ -34,6 +34,7 @@ import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
 import { mancareDeMazare } from './data/mancare-de-mazare';
 import { mici } from './data/mici';
+import { musaca } from './data/musaca';
 import { oatmeal } from './data/oatmeal';
 import { omelette } from './data/omelette';
 import { ostropel } from './data/ostropel';
@@ -128,4 +129,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   puiLaCeaun,
   quiche,
   porkChops,
+  musaca,
 ];
