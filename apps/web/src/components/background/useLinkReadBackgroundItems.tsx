@@ -26,7 +26,7 @@ const statusOf = (read: LinkRead): BackgroundStatus =>
  * Discard, Read again) bound to the holder. A view: the holder keeps the rules (what runs, what waits).
  * Also tells the Recipe Drafts list when a read kept a draft, so "Drafts (N)" counts it without a refresh.
  */
-export function useLinkReadBackgroundItems(): BackgroundItem[] {
+export function useLinkReadBackgroundItems(enabled = true): BackgroundItem[] {
   const { t } = useTranslation(['background', 'recipes', 'errors']);
   const navigate = useNavigate();
   const toast = useToast();
@@ -37,10 +37,14 @@ export function useLinkReadBackgroundItems(): BackgroundItem[] {
 
   useEffect(
     () =>
-      linkReads.onDraftKept(() => {
-        void queryClient.invalidateQueries({ queryKey: recipeDraftsListKey });
-      }),
-    [queryClient],
+      enabled
+        ? linkReads.onDraftKept(() => {
+            void queryClient.invalidateQueries({
+              queryKey: recipeDraftsListKey,
+            });
+          })
+        : undefined,
+    [queryClient, enabled],
   );
 
   const review = async (read: LinkRead) => {
@@ -48,6 +52,7 @@ export function useLinkReadBackgroundItems(): BackgroundItem[] {
     if (draftId === undefined || opening.current.has(read.id)) return;
     opening.current.add(read.id);
     try {
+      // The editor fetches the draft again; this one only learns whether it is still kept.
       await apiRequest(`/recipe-drafts/${draftId}`);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
@@ -64,7 +69,8 @@ export function useLinkReadBackgroundItems(): BackgroundItem[] {
     navigate(`/recipes/new?${DRAFT_PARAM}=${draftId}`);
   };
 
-  return reads.map((read): BackgroundItem => {
+  // A host that is not the app's shows no link reads.
+  return (enabled ? reads : []).map((read): BackgroundItem => {
     const isText = read.source.kind === 'text';
     const what = read.site ?? t('background:link.pastedText');
     const duplicate = read.status === 'ready' && read.duplicateOf !== undefined;
@@ -138,8 +144,7 @@ export function useLinkReadBackgroundItems(): BackgroundItem[] {
       detail:
         read.status === 'failed' ? translateApiError(t, read.error) : what,
       status: statusOf(read),
-      // Reads are numbered in the order they were started.
-      createdAt: read.id,
+      createdAt: read.order,
       art: <LinkReadingArt size={28} />,
       open:
         ready && !duplicate

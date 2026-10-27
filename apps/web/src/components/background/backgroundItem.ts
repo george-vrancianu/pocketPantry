@@ -62,3 +62,14 @@ export const newestFirst = (items: BackgroundItem[]): BackgroundItem[] =>
   [...items].sort(
     (a, b) => b.createdAt - a.createdAt || b.id.localeCompare(a.id),
   );
+
+let lastOrder = 0;
+/**
+ * One clock for every kind of background item: later calls always return larger numbers (the time
+ * in ms, bumped past the last one when two come in the same millisecond), so rows from different
+ * holders sort newest first against each other.
+ */
+export function nextBackgroundOrder(): number {
+  lastOrder = Math.max(Date.now(), lastOrder + 1);
+  return lastOrder;
+}

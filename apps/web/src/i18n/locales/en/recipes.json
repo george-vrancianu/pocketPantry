@@ -256,8 +256,8 @@
       "open": "Open",
       "readAgain": "Read again"
     },
-    "full_one": "{{count}} link read is waiting for you. Review it first.",
-    "full_other": "{{count}} link reads are waiting for you. Review one first."
+    "full_one": "{{count}} link read is waiting for you. Review or cancel it first.",
+    "full_other": "{{count}} link reads are waiting for you. Review or cancel one first."
   },
   "readingLanguage": {
     "label": "Language of the recipe",

@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import type { ScanLanguage } from '../i18n/resources';
 import { ApiError } from './api';
+import { nextBackgroundOrder } from '../components/background/backgroundItem';
 import {
   MicrophoneError,
   startRecording as startMicrophone,
@@ -97,6 +98,8 @@ export type VoiceNoteState = {
     /** Every Voice Note in recording order: its id (for `cancelReading` and the like) and phase. */
     notes: Array<
       MergedNote & {
+        /** `nextBackgroundOrder` when the note was recorded: the strip orders its rows by it. */
+        order: number;
         phase: Exclude<VoicePhase, 'idle' | 'recording'>;
         /** Why a failed note failed, and the server's own error behind a `failed`. */
         error?: VoiceErrorCode;
@@ -192,6 +195,8 @@ export type MergeOutcome = 'opened' | 'tooMany' | 'refused';
 /** One Voice Note in the list: its own phase, audio, Default List, Spoken Language, proposal and error. */
 type VoiceNoteEntry = {
   id: number;
+  /** Where it stands in time against every other background item (`nextBackgroundOrder`). */
+  order: number;
   phase: Exclude<VoicePhase, 'idle' | 'recording'>;
   defaultTarget: VoiceDefaultTarget;
   recording?: VoiceNoteState['recording'];
@@ -268,6 +273,7 @@ export function createVoiceNote(
     total: store.notes.length,
     notes: store.notes.map((n) => ({
       id: n.id,
+      order: n.order,
       phase: n.phase,
       defaultTarget: n.defaultTarget,
       spokenLanguage: n.spokenLanguage,
@@ -327,6 +333,7 @@ export function createVoiceNote(
     }
     const {
       id: _id,
+      order: _order,
       spokenLanguage: _language,
       durationMs: _duration,
       ...fields
@@ -355,11 +362,11 @@ export function createVoiceNote(
   const phase = (): VoicePhase => view.phase;
 
   /** Adds a Voice Note to the end of the list (recording order) and returns its id. */
-  function append(next: Omit<VoiceNoteEntry, 'id'>) {
+  function append(next: Omit<VoiceNoteEntry, 'id' | 'order'>) {
     const id = nextId++;
     store = {
       ...store,
-      notes: [...store.notes, { id, ...next }],
+      notes: [...store.notes, { id, order: nextBackgroundOrder(), ...next }],
       lastTarget: next.defaultTarget,
     };
     return id;

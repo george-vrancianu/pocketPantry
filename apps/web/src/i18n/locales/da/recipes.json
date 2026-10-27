@@ -256,8 +256,8 @@
       "open": "Åbn",
       "readAgain": "Læs igen"
     },
-    "full_one": "{{count}} linklæsning venter på dig. Gennemse den først.",
-    "full_other": "{{count}} linklæsninger venter på dig. Gennemse en først."
+    "full_one": "{{count}} linklæsning venter på dig. Gennemse eller annullér den først.",
+    "full_other": "{{count}} linklæsninger venter på dig. Gennemse eller annullér en først."
   },
   "readingLanguage": {
     "label": "Opskriftens sprog",

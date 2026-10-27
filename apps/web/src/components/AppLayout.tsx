@@ -68,7 +68,7 @@ export function AppLayout() {
           <RefreshLoaderSlot />
           <VoiceHostSlot />
           <VoiceNote settings={LAYOUT_VOICE_SETTINGS} />
-          {dock.visible ? <BackgroundHost scanSession /> : null}
+          {dock.visible ? <BackgroundHost scanSession linkReads /> : null}
           {dock.visible ? <AppDock activeKey={dock.activeKey} /> : null}
         </VoiceHostProvider>
       </RefreshProvider>

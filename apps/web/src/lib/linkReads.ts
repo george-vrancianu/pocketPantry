@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { ApiError } from './api';
+import { nextBackgroundOrder } from '../components/background/backgroundItem';
 import {
   readRecipeLink,
   type ReadingLanguage,
@@ -25,6 +25,8 @@ export type LinkReadSource =
 export type LinkRead = {
   /** Ascends with the order the reads were started. */
   id: number;
+  /** `nextBackgroundOrder` when started: orders its row against other kinds of background item. */
+  order: number;
   source: LinkReadSource;
   language: ReadingLanguage;
   status: LinkReadStatus;
@@ -51,10 +53,6 @@ export function siteOf(url: string): string | null {
     return null;
   }
 }
-
-/** The error code of a failed read, if the API gave one. */
-export const errorCodeOf = (read: LinkRead): string | null =>
-  read.error instanceof ApiError ? read.error.code : null;
 
 /**
  * The link-read holder: the Member's link reads, kept in memory outside any page, like the Voice Inbox.
@@ -85,7 +83,10 @@ export function createLinkReads() {
     for (;;) {
       const running = state.reads.filter((r) => r.status === 'reading').length;
       if (running >= MAX_LINK_READS) return;
-      const next = state.reads.find((r) => r.status === 'waiting');
+      // Oldest first by order: a read started again goes behind the ones already waiting.
+      const next = state.reads
+        .filter((r) => r.status === 'waiting')
+        .sort((a, b) => a.order - b.order)[0];
       if (!next) return;
       run(next);
     }
@@ -152,6 +153,7 @@ export function createLinkReads() {
         ...state.reads,
         {
           id,
+          order: nextBackgroundOrder(),
           source,
           language,
           status: 'waiting',
@@ -171,7 +173,11 @@ export function createLinkReads() {
       )
         return;
       forced.add(id);
-      patch(id, { status: 'waiting', duplicateOf: undefined });
+      patch(id, {
+        status: 'waiting',
+        duplicateOf: undefined,
+        order: nextBackgroundOrder(),
+      });
       pump();
     },
     /** Lets a read go: aborts its request if it is running, and only that one. Frees its slot. */

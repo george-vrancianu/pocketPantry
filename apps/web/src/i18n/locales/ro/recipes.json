@@ -272,9 +272,9 @@
       "open": "Deschide",
       "readAgain": "Citește din nou"
     },
-    "full_one": "{{count}} citire de link te așteaptă. Verific-o mai întâi.",
-    "full_few": "{{count}} citiri de linkuri te așteaptă. Verifică una mai întâi.",
-    "full_other": "{{count}} de citiri de linkuri te așteaptă. Verifică una mai întâi."
+    "full_one": "{{count}} citire de link te așteaptă. Verific-o sau anuleaz-o mai întâi.",
+    "full_few": "{{count}} citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi.",
+    "full_other": "{{count}} de citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi."
   },
   "readingLanguage": {
     "label": "Limba rețetei",
