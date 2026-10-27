@@ -71,6 +71,7 @@ import { paella } from './data/paella';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
+import { pastravLaGratar } from './data/pastrav-la-gratar';
 import { plachieDePeste } from './data/plachie-de-peste';
 import { placintaCuBranza } from './data/placinta-cu-branza';
 import { porkChops } from './data/pork-chops';
@@ -208,4 +209,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   meatloaf,
   ciorbaDeBurta,
   ciorbaDeCiuperci,
+  pastravLaGratar,
 ];
