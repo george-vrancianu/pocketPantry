@@ -34,7 +34,6 @@
     "cancelRead": "Annuller læsning af {{what}}",
     "discardRead": "Kassér {{what}}",
     "gone": "Den opskriftkladde gemmes ikke længere.",
-    "openRecipe": "Åbn opskriften fra {{what}}",
     "capped": "Dagens linklæsninger er brugt",
     "retry": "Prøv igen",
     "retryRead": "Prøv at læse {{what}} igen",

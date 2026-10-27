@@ -21,9 +21,8 @@ import {
 } from '../../../lib/linkRecipe';
 import { AlreadyInRecipes } from '../AlreadyInRecipes';
 
-/** The state "Paste text instead" hands the Recipes page: open the sheet in text mode, the link kept. */
+/** What "Paste text instead" hands the Recipes page (under `FROM_LINK_PREFILL_STATE`): open the sheet in text mode, the link kept. */
 export type FromLinkPrefill = { url: string; replaces: number };
-export const FROM_LINK_PREFILL_STATE = 'fromLinkPrefill';
 
 /** The editor's 44 pt field. */
 const fieldSx = {

@@ -35,7 +35,8 @@ import {
   RecipePreviewPage,
 } from './pages/Recipes/RecipeDetailPage';
 import { RecipeDraftsPage } from './pages/Recipes/RecipeDraftsPage';
-import { FROM_LINK_PARAM, RecipesPage } from './pages/Recipes/RecipesPage';
+import { FROM_LINK_PARAM } from './lib/recipeRoutes';
+import { RecipesPage } from './pages/Recipes/RecipesPage';
 import { ExplorePage } from './pages/Recipes/ExplorePage';
 import { ReviewOverviewPage } from './pages/Review/ReviewOverviewPage';
 import { ReviewPage } from './pages/Review/ReviewPage';

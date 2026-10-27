@@ -14,7 +14,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { dispatchScanSession } from '../../lib/scanSession';
+import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import type { CameraMode } from '../../lib/cameraMode';
 import { renderWithProviders, stubApi } from '../../test/render';
 import {
@@ -23,7 +23,6 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { AppLayout } from '../AppLayout';
-import { resetScanFailureAlert } from './BackgroundHost';
 import ro from '../../i18n/locales/ro/background.json';
 import da from '../../i18n/locales/da/background.json';
 
@@ -57,9 +56,18 @@ function renderAt(route = '/shopping') {
       <Route element={<AppLayout />}>
         <Route
           path="/shopping"
-          element={<Link to="/scan">to the camera</Link>}
+          element={
+            <>
+              <Link to="/scan">to the camera</Link>
+              <Link to="/pantry">to the pantry</Link>
+            </>
+          }
         />
         <Route path="/scan" element={<Link to="/shopping">back</Link>} />
+        <Route
+          path="/pantry"
+          element={<Link to="/shopping">to shopping</Link>}
+        />
         <Route path="/scan/review" element={<p>review overview</p>} />
         <Route path="/scan/review/:scanId" element={<p>line editor</p>} />
       </Route>
@@ -91,7 +99,6 @@ const outline = () => {
 
 describe('the Scan Session in the background strip', () => {
   beforeEach(() => {
-    resetScanFailureAlert();
     const { fetchMock } = stubApi({
       'GET /api/voice/config': () => Response.json({ configured: false }),
     });
@@ -201,6 +208,34 @@ describe('the Scan Session in the background strip', () => {
     await userEvent.click(screen.getByRole('link', { name: 'back' }));
     expect(strip()).toHaveTextContent('2 failed');
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('takes the alert down when the Member changes page, and does not announce it again', async () => {
+    seed('a', 'receipt');
+    renderAt();
+    seed('b', 'receipt', 'error');
+    expect(await screen.findByRole('alert')).toHaveTextContent('1 Scan failed');
+
+    await userEvent.click(screen.getByRole('link', { name: 'to the pantry' }));
+    expect(strip()).toHaveTextContent('1 failed');
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    await userEvent.click(screen.getByRole('link', { name: 'to shopping' }));
+    expect(strip()).toHaveTextContent('1 failed');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('announces the first failures of a new Session after the previous Session alert', async () => {
+    seed('a', 'receipt', 'error');
+    seed('b', 'receipt', 'error');
+    renderAt();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '2 Scans failed',
+    );
+    // The Session ends (Review saved it, or the Member signed out) and a new one fails once.
+    act(() => resetScanSession());
+    seed('c', 'receipt', 'error');
+    expect(await screen.findByRole('alert')).toHaveTextContent('1 Scan failed');
   });
 
   it('buzzes once when the last reading Scan is read while the Member is on a Dock page', async () => {

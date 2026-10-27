@@ -2,6 +2,7 @@ import { PhotoReadingArt, ReceiptReadingArt } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
+  getScanSessionOrder,
   isBarcodeCard,
   useScanSession,
   type SessionScan,
@@ -68,8 +69,8 @@ export function useScanSessionBackgroundItems(): BackgroundItem[] {
         .filter(Boolean)
         .join(' · '),
       status,
-      // The Scan Session has no clock: it is what the Member just left, so it sorts first.
-      createdAt: Number.MAX_SAFE_INTEGER,
+      // Stamped when the first Scan joined, so a newer read of another kind sorts above it.
+      createdAt: getScanSessionOrder(),
       art:
         kind === 'receipt' ? (
           <ReceiptReadingArt size={28} />

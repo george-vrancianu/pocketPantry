@@ -27,11 +27,14 @@ import {
   type RecipeListItem,
 } from '../../lib/recipes';
 import { useRecipeDrafts } from '../../lib/recipeDrafts';
+import {
+  FROM_LINK_PARAM,
+  FROM_LINK_PREFILL_STATE,
+} from '../../lib/recipeRoutes';
 import { useRecipeDraftDiscard } from './useRecipeDraftDiscard';
 import { EmptyFamilyRecipes } from './components/EmptyFamilyRecipes';
 import { CookTonightPanel } from '../../components/CookTonightPanel';
 import {
-  FROM_LINK_PREFILL_STATE,
   FromLinkSheet,
   type FromLinkPrefill,
 } from './components/FromLinkSheet';
@@ -105,9 +108,6 @@ function groupVariants(found: RecipeListItem[]): RecipeListItem[] {
       : item,
   );
 }
-
-/** The search parameter that holds the "From a link" sheet open: the old "From a link" route redirects to it. */
-export const FROM_LINK_PARAM = 'fromLink';
 
 /** The Family's Recipes (Catalog Recipes are reached through Explore): Bases by default, Variants too once a search or filter is active. */
 export function RecipesPage() {

@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { haptic } from '../../lib/haptic';
 import { linkReads as linkReadsHolder } from '../../lib/linkReads';
-import { useScanSession } from '../../lib/scanSession';
+import {
+  announcedScanFailed,
+  announceScanFailed,
+  useScanSession,
+} from '../../lib/scanSession';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { focusVoiceButton } from '../../lib/voiceFocus';
 import { useVoiceBackgroundItems } from '../voice/useVoiceBackgroundItems';
@@ -15,15 +19,6 @@ import {
   summarizeScanSession,
   useScanSessionBackgroundItems,
 } from './useScanSessionBackgroundItems';
-
-/** How many failed Scans the strip has announced as an alert. Outlives the host, which remounts on every page change. */
-let announcedScanFailed = 0;
-const announceScanFailed = (failed: number) => {
-  announcedScanFailed = failed;
-};
-export const resetScanFailureAlert = () => {
-  announcedScanFailed = 0;
-};
 
 /**
  * Announced assertively once, when something fails, even if it fails while the strip is hidden. The
@@ -61,9 +56,11 @@ function useFailureAlert({
     // The alert goes with the strip, which comes back without it.
     if (!up && !isNew) setAlertedAt(0);
   }
+  // A rise counts as announced only once the strip is up to show it: a failure that lands while the
+  // strip is hidden stays unannounced, and is shown when the strip comes back. A drop counts at once.
   useEffect(() => {
-    announce(failed);
-  }, [announce, failed]);
+    if (up || failed < announced()) announce(failed);
+  }, [announce, announced, failed, up]);
   return alertedAt > 0 && failed >= alertedAt;
 }
 
@@ -93,8 +90,8 @@ export function BackgroundHost({
   const { pathname } = useLocation();
   const state = useVoiceNoteState();
   const voiceItems = useVoiceBackgroundItems();
-  const adapted = useScanSessionBackgroundItems();
-  const scanItems = scanSession ? adapted : [];
+  const sessionItems = useScanSessionBackgroundItems();
+  const scanItems = scanSession ? sessionItems : [];
   const scans = useScanSession().scans;
   const summary = summarizeScanSession(scanSession ? scans : []);
   const linkItems = useLinkReadBackgroundItems(linkReads);
@@ -115,7 +112,7 @@ export function BackgroundHost({
     failed: summary.failed,
     up,
     page: pathname,
-    announced: () => announcedScanFailed,
+    announced: announcedScanFailed,
     announce: announceScanFailed,
   });
   const linkFailed = linkItems.filter(

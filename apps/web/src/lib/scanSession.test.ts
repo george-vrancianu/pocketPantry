@@ -1,10 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { nextBackgroundOrder } from '../components/background/backgroundItem';
 import { MAX_RECEIPT_SECTIONS } from './receiptSections';
 import type { ProposedLine } from './scan';
 import {
   MAX_CONCURRENT_READS,
   MAX_SESSION_SCANS,
+  announcedScanFailed,
+  announceScanFailed,
   dispatchScanSession,
+  getScanSessionOrder,
   resetScanSession,
   capReached,
   canMerge,
@@ -1042,5 +1046,33 @@ describe('canRetry, the one rule for the retry buttons', () => {
     'scan.nothing_found',
   ])('does not let a failure with %s be retried', (code) => {
     expect(canRetry(failed(code))).toBe(false);
+  });
+});
+
+describe('the Scan Session as a background item', () => {
+  afterEach(() => resetScanSession());
+  const scan = (id: string) => ({
+    id,
+    mode: 'receipt' as const,
+    scanLanguage: 'en' as const,
+    image: 'data:image/jpeg;base64,YQ==',
+    thumbnail: 'data:image/jpeg;base64,YQ==',
+  });
+
+  it('is stamped on the shared clock when its first Scan joins, not again by later Scans', () => {
+    const before = nextBackgroundOrder();
+    dispatchScanSession({ type: 'enqueue', scan: scan('a') });
+    const stamped = getScanSessionOrder();
+    expect(stamped).toBeGreaterThan(before);
+    dispatchScanSession({ type: 'enqueue', scan: scan('b') });
+    expect(getScanSessionOrder()).toBe(stamped);
+    expect(nextBackgroundOrder()).toBeGreaterThan(stamped);
+  });
+
+  it('forgets the failures it announced when it ends', () => {
+    announceScanFailed(2);
+    expect(announcedScanFailed()).toBe(2);
+    resetScanSession();
+    expect(announcedScanFailed()).toBe(0);
   });
 });

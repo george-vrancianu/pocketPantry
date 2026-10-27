@@ -17,6 +17,7 @@ import {
   type VoiceNoteSettings,
 } from './VoiceNote';
 import { BackgroundHost } from './background/BackgroundHost';
+import { useLinkReadsSideEffects } from './background/useLinkReadsSideEffects';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
 
 /** The layout hosts the background strip itself, so it shows on Dock pages without voice configured. */
@@ -52,6 +53,7 @@ export function AppLayout() {
   const dock = dockStateFor(pathname);
   const showsMic = useShowsDockMic();
   useUnloadPromptWhileReading();
+  useLinkReadsSideEffects();
   return (
     <>
       <ApplyMemberLocale />

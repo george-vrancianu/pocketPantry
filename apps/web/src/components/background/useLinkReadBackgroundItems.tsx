@@ -1,14 +1,15 @@
 import { LinkReadingArt, useToast } from '@pocket-pantry/ui';
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ApiError, apiRequest } from '../../lib/api';
 import { linkReads, useLinkReads, type LinkRead } from '../../lib/linkReads';
 import { linkFailureReason, offersPasteText } from '../../lib/linkReadFailure';
-import { recipeDraftsListKey } from '../../lib/recipeDrafts';
-import { FROM_LINK_PREFILL_STATE } from '../../pages/Recipes/components/FromLinkSheet';
-import { DRAFT_PARAM } from '../../pages/Recipes/useRecipeDraftRoute';
+import {
+  DRAFT_PARAM,
+  FROM_LINK_PARAM,
+  FROM_LINK_PREFILL_STATE,
+} from '../../lib/recipeRoutes';
 import type {
   BackgroundAction,
   BackgroundItem,
@@ -25,28 +26,14 @@ const statusOf = (read: LinkRead): BackgroundStatus =>
 /**
  * The link-read holder seen as background items: one per link read, its row buttons (Review, Cancel,
  * Discard) bound to the holder. A view: the holder keeps the rules (what runs, what waits).
- * Also tells the Recipe Drafts list when a read kept a draft, so "Drafts (N)" counts it without a refresh.
  */
 export function useLinkReadBackgroundItems(enabled = true): BackgroundItem[] {
   const { t, i18n } = useTranslation(['background', 'recipes', 'errors']);
   const navigate = useNavigate();
   const toast = useToast();
-  const queryClient = useQueryClient();
   const { reads } = useLinkReads();
   // Review checks the draft first; a second press meanwhile must not open it twice.
   const opening = useRef(new Set<number>());
-
-  useEffect(
-    () =>
-      enabled
-        ? linkReads.onDraftKept(() => {
-            void queryClient.invalidateQueries({
-              queryKey: recipeDraftsListKey,
-            });
-          })
-        : undefined,
-    [queryClient, enabled],
-  );
 
   const review = async (read: LinkRead) => {
     const draftId = read.recipeDraftId;
@@ -118,7 +105,7 @@ export function useLinkReadBackgroundItems(enabled = true): BackgroundItem[] {
           closesSheet: true,
           // The failed row stays until the pasted text is submitted, so closing the sheet loses nothing.
           onClick: () =>
-            navigate('/recipes?fromLink=1', {
+            navigate(`/recipes?${FROM_LINK_PARAM}=1`, {
               state: {
                 [FROM_LINK_PREFILL_STATE]: { url, replaces: read.id },
               },

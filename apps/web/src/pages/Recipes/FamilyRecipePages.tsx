@@ -12,7 +12,8 @@ import {
   formOfContent,
   type RecipeDraftForm,
 } from '../../lib/recipeDraftContent';
-import { DRAFT_PARAM, useRecipeDraftRoute } from './useRecipeDraftRoute';
+import { DRAFT_PARAM } from '../../lib/recipeRoutes';
+import { useRecipeDraftRoute } from './useRecipeDraftRoute';
 import { RecipeDraftContinue } from './RecipeDraftContinue';
 import { plateMatchInput, useResumedPlateBases } from './useResumedPlateBases';
 import { useRecipeDraftAutosave } from '../../lib/recipeDraftAutosave';

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import { clearPendingTheme } from './appearance';
+import { resetScanSession } from './scanSession';
 import { voiceNote } from './voiceNote';
 import { linkReads } from './linkReads';
 import { sessionQueryKey, type Session } from './session';
@@ -58,6 +59,7 @@ export function useSignOut() {
       clearPendingTheme();
       voiceNote.clear();
       linkReads.clear();
+      resetScanSession();
       queryClient.clear();
       queryClient.setQueryData(sessionQueryKey, null);
     },

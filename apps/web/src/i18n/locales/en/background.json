@@ -34,7 +34,6 @@
     "cancelRead": "Cancel reading {{what}}",
     "discardRead": "Discard {{what}}",
     "gone": "That Recipe Draft is no longer kept.",
-    "openRecipe": "Open the Recipe from {{what}}",
     "capped": "Today's link reads are used up",
     "retry": "Retry",
     "retryRead": "Retry reading {{what}}",

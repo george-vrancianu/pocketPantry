@@ -40,7 +40,6 @@
     "cancelRead": "Anulează citirea {{what}}",
     "discardRead": "Renunță la {{what}}",
     "gone": "Ciorna de rețetă nu mai este păstrată.",
-    "openRecipe": "Deschide rețeta de la {{what}}",
     "capped": "Citirile de azi din linkuri s-au terminat",
     "retry": "Reîncearcă",
     "retryRead": "Reîncearcă citirea {{what}}",
