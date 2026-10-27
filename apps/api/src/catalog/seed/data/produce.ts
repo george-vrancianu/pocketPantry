@@ -192,6 +192,14 @@ export const produce: SeedSection = {
         ['radacina patrunjel'],
       ],
       ['turnip', 'Turnip', 'Nap', 'g'],
+      [
+        'swede',
+        'Swede',
+        'Nap suedez',
+        'g',
+        ['rutabaga', 'neeps', 'yellow turnip'],
+        ['napi suedezi'],
+      ],
       ['galangal', 'Galangal', 'Galangal', 'g', ['thai ginger']],
       [
         'ginger',

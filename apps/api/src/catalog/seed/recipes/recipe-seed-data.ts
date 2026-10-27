@@ -10,6 +10,7 @@ import { biksemad } from './data/biksemad';
 import { bolognese } from './data/bolognese';
 import { braisedRedCabbage } from './data/braised-red-cabbage';
 import { brunedeKartofler } from './data/brunede-kartofler';
+import { burgers } from './data/burgers';
 import { chickenCurry } from './data/chicken-curry';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
@@ -27,10 +28,13 @@ import { homemadePizza } from './data/homemade-pizza';
 import { lentilSoup } from './data/lentil-soup';
 import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
+import { mancareDeMazare } from './data/mancare-de-mazare';
 import { mici } from './data/mici';
 import { omelette } from './data/omelette';
+import { ostropel } from './data/ostropel';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
+import { pastaCarbonara } from './data/pasta-carbonara';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
 import { ricePilaf } from './data/rice-pilaf';
@@ -47,6 +51,7 @@ import { stirFry } from './data/stir-fry';
 import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
 import { tomatoSoup } from './data/tomato-soup';
+import { vegetableSoup } from './data/vegetable-soup';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   omelette,
@@ -94,4 +99,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   homemadePizza,
   papanasi,
   ciorbaDeFasole,
+  vegetableSoup,
+  burgers,
+  pastaCarbonara,
+  ostropel,
+  mancareDeMazare,
 ];

@@ -132,6 +132,14 @@ export const pasta: SeedSection = {
       ],
       ['soba-noodles', 'Soba noodles', 'Tăiței soba', 'g'],
       [
+        'udon',
+        'Udon noodles',
+        'Tăiței udon',
+        'g',
+        ['sanuki udon', 'frozen udon'],
+        ['udon'],
+      ],
+      [
         'rice-paper',
         'Rice paper',
         'Foi de orez',
