@@ -626,6 +626,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   sweetener: [],
   'corn-starch': [],
   'masa-harina': [],
+  'glucose-syrup': [],
 
   // grains/baking-essentials
   'baking-powder': [],
@@ -735,6 +736,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'hot-sauce': [],
   'bbq-sauce': ['mustard'],
   'tartar-sauce': ['eggs', 'mustard'],
+  'japanese-mayonnaise': ['eggs', 'gluten', 'mustard', 'soy'],
+  remoulade: ['eggs', 'mustard'],
   horseradish: [],
   'sweet-chili-sauce': [],
 
@@ -772,6 +775,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'stock-cubes': ['celery', 'gluten'],
   'vegetable-seasoning': ['celery'],
   'chicken-stock': ['celery'],
+  'vegetable-stock': ['celery'],
   'beef-stock': ['celery'],
   'soup-mix': ['celery', 'gluten'],
   'ciorba-sour-base': ['gluten'],
@@ -815,6 +819,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   // oils/vinegar
   vinegar: [],
   'wine-vinegar': ['sulphites'],
+  'sherry-vinegar': ['sulphites'],
   'balsamic-vinegar': ['sulphites'],
   'apple-cider-vinegar': [],
   'rice-vinegar': [],

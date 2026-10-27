@@ -9,11 +9,13 @@ import { beefStew } from './data/beef-stew';
 import { biksemad } from './data/biksemad';
 import { bolognese } from './data/bolognese';
 import { braisedRedCabbage } from './data/braised-red-cabbage';
+import { brunedeKartofler } from './data/brunede-kartofler';
 import { chickenCurry } from './data/chicken-curry';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
+import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
 import { friedChicken } from './data/fried-chicken';
 import { friedRice } from './data/fried-rice';
@@ -26,10 +28,12 @@ import { mici } from './data/mici';
 import { omelette } from './data/omelette';
 import { pancakes } from './data/pancakes';
 import { potatoPuree } from './data/potato-puree';
+import { potatoSalad } from './data/potato-salad';
 import { ricePilaf } from './data/rice-pilaf';
 import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
+import { salataDeVinete } from './data/salata-de-vinete';
 import { sarmale } from './data/sarmale';
 import { smorrebrod } from './data/smorrebrod';
 import { steamedMussels } from './data/steamed-mussels';
@@ -37,6 +41,7 @@ import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
 import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
+import { tomatoSoup } from './data/tomato-soup';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   omelette,
@@ -74,4 +79,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   steamedMussels,
   tochitura,
   biksemad,
+  tomatoSoup,
+  potatoSalad,
+  fishCakes,
+  salataDeVinete,
+  brunedeKartofler,
 ];
