@@ -1057,7 +1057,6 @@ export const DA_SYNONYMS: Record<string, string[]> = {
   'tipo-00-flour': ['pizzamel', 'hvedemel tipo 00'],
   'borlotti-beans': ['borlotti'],
   oats: ['havregryn grove', 'letkogte havregryn'],
-  'pinhead-oats': ['havrekerner'],
   'serrano-ham': ['serrano'],
   'pul-biber': ['aleppo peber'],
   'pickled-green-tomatoes': ['grønne tomater syltet'],
