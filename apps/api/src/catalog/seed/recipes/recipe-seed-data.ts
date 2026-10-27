@@ -88,6 +88,7 @@ import { salamDeBiscuiti } from './data/salam-de-biscuiti';
 import { salataDeArdeiCopti } from './data/salata-de-ardei-copti';
 import { salataDeBoeuf } from './data/salata-de-boeuf';
 import { salataDeIcre } from './data/salata-de-icre';
+import { salataDeSfecla } from './data/salata-de-sfecla';
 import { salataDeVinete } from './data/salata-de-vinete';
 import { saramuraDePeste } from './data/saramura-de-peste';
 import { sarmale } from './data/sarmale';
@@ -210,4 +211,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDeBurta,
   ciorbaDeCiuperci,
   pastravLaGratar,
+  salataDeSfecla,
 ];
