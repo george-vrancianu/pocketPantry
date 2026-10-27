@@ -44,6 +44,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   leek: [],
   shallot: [],
   'pearl-onions': [],
+  'green-garlic': [],
 
   // produce/leafy-greens
   lettuce: [],
@@ -151,7 +152,6 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'holy-basil': [],
   'thai-basil': [],
   'wild-garlic': [],
-  'green-garlic': [],
   lemongrass: [],
   'makrut-lime-leaves': [],
   'curly-parsley': [],

@@ -928,7 +928,7 @@ export const meat: SeedSection = {
         'Caul fat',
         'Prapur',
         'g',
-        ['caul', 'lace fat'],
+        ['lace fat'],
         ['prapur de miel', 'prapur de porc', 'prapur miel'],
       ],
       [

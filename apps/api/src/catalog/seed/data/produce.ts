@@ -308,7 +308,7 @@ export const produce: SeedSection = {
         'Patience dock',
         'Ștevie',
         'g',
-        ['herb patience', 'garden dock'],
+        ['herb patience', 'garden patience'],
         ['stevie de gradina'],
       ],
       ['rocket', 'Rocket', 'Rucola', 'g', ['arugula']],
