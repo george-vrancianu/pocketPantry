@@ -35,6 +35,7 @@ import { coleslaw } from './data/coleslaw';
 import { cornulete } from './data/cornulete';
 import { cottagePie } from './data/cottage-pie';
 import { cozonac } from './data/cozonac';
+import { dovleceiPane } from './data/dovlecei-pane';
 import { falafel } from './data/falafel';
 import { fasoleBatuta } from './data/fasole-batuta';
 import { fishAndChips } from './data/fish-and-chips';
@@ -200,4 +201,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDeVarza,
   ciorbaDeFasoleVerde,
   mancareDeCartofi,
+  dovleceiPane,
 ];
