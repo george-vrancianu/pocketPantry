@@ -55,6 +55,7 @@ import { lasagne } from './data/lasagne';
 import { lentilSoup } from './data/lentil-soup';
 import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
+import { mancareDeCartofi } from './data/mancare-de-cartofi';
 import { mancareDeMazare } from './data/mancare-de-mazare';
 import { mici } from './data/mici';
 import { musaca } from './data/musaca';
@@ -198,4 +199,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   falafel,
   ciorbaDeVarza,
   ciorbaDeFasoleVerde,
+  mancareDeCartofi,
 ];
