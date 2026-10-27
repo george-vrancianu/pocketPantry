@@ -19,9 +19,16 @@ export function plateMatchInput(
   };
 }
 
-/** Whether a resumed Recipe Draft had the base picker (a Plate Scan, or a base was picked). */
+/**
+ * Whether a resumed Recipe Draft had the base picker: a Plate Scan, a base was picked, or it was
+ * read from a link (the server stores a link read as a Recipe Draft, ADR 0031, and the closest
+ * Base Recipes are asked again from its title and lines).
+ */
 const offersBases = (form: RecipeDraftForm | null) =>
-  form !== null && (form.plateScan === true || Boolean(form.pickedBaseId));
+  form !== null &&
+  (form.plateScan === true ||
+    Boolean(form.pickedBaseId) ||
+    Boolean(form.sourceLink));
 
 /**
  * Resuming a Recipe Draft that offered a base (ADR 0028): the Plate matches are

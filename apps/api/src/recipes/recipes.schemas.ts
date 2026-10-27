@@ -577,6 +577,11 @@ export type RecipeFromLinkDuplicate = { kind: 'duplicate'; recipeId: string };
 
 export type RecipeFromLinkDraft = {
   kind: 'draft';
+  /**
+   * The Member's Recipe Draft the server stored for this read (ADR 0031): open the New Recipe
+   * editor on it. The read is already in Drafts, so a reload loses nothing.
+   */
+  recipeDraftId: string;
   draft: LinkRecipeDraft;
   /** The normalised link, to send back on the create request; null for pasted text. */
   sourceLink: string | null;

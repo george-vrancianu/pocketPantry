@@ -128,13 +128,15 @@ describe('Recipe from Link (integration)', () => {
     await app.close();
   });
   let memberCount = 0;
+  let memberCookie: string;
   beforeEach(async () => {
     // A fresh Member per test: the Link Cap (2 in the test env) counts every read that reaches the AI.
-    member = client(
+    memberCookie = await signUp(
       app,
-      await signUp(app, `link-a-${stamp}-${++memberCount}@example.com`, 'A'),
-      '/api/recipes',
+      `link-a-${stamp}-${++memberCount}@example.com`,
+      'A',
     );
+    member = client(app, memberCookie, '/api/recipes');
     prompts.length = 0;
     fetched.length = 0;
     serve(jsonLdPage(PANCAKES));
@@ -1301,6 +1303,180 @@ describe('Recipe from Link (integration)', () => {
         .from(recipes)
         .where(eq(recipes.title, 'Pancakes')),
     ).toHaveLength(before.length);
+  });
+
+  describe('the Recipe Draft of a read (ADR 0031)', () => {
+    const drafts = () => client(app, memberCookie, '/api/recipe-drafts');
+    const blank = (title: string) => ({
+      kind: 'new_recipe',
+      content: {
+        title,
+        servings: '4',
+        prepMinutes: '',
+        cookMinutes: '',
+        difficulty: '',
+        cuisineId: '',
+        methodId: '',
+        lines: [],
+        steps: [],
+      },
+    });
+    const fillDrafts = async (count: number) => {
+      for (let i = 0; i < count; i++) {
+        await drafts()
+          .post('', blank(`Held ${i}`))
+          .expect(201);
+      }
+    };
+    const usedToday = async () => {
+      const id = (
+        (await client(app, memberCookie, '/api/auth').get('/get-session'))
+          .body as { user: { id: string } }
+      ).user.id;
+      const rows = await database
+        .select()
+        .from(scanUsage)
+        .where(eq(scanUsage.memberId, id));
+      return rows
+        .filter((r) => r.kind === 'link')
+        .reduce((n, r) => n + r.count, 0);
+    };
+
+    it("stores the read as the Member's Recipe Draft and returns its id, so a reload still finds it in Drafts", async () => {
+      const res = await read('https://example.com/pancakes').expect(200);
+      const body = res.body as RecipeFromLink;
+      expect(body.recipeDraftId).toEqual(expect.any(String));
+
+      const got = await drafts().get(`/${body.recipeDraftId}`).expect(200);
+      expect(got.body).toMatchObject({
+        id: body.recipeDraftId,
+        kind: 'new_recipe',
+        baseRecipeId: null,
+        content: {
+          title: 'Pancakes',
+          servings: '',
+          prepMinutes: '10',
+          cookMinutes: '15',
+          cuisineId: mediterranean,
+          sourceLink: 'https://example.com/pancakes',
+          sourceLanguage: null,
+          plateScan: false,
+          steps: [
+            { text: 'Whisk everything.', timer: '' },
+            { text: 'Fry each side.', timer: '2' },
+          ],
+          lines: [
+            { ingredientId: flour, name: 'Flour', quantity: '250', unit: 'g' },
+            {
+              ingredientId: '',
+              name: 'grandma spice',
+              quantity: '',
+              optional: true,
+              note: 'a pinch, ground',
+            },
+          ],
+        },
+      });
+
+      const listed = await drafts().get('').expect(200);
+      expect(listed.body).toEqual([
+        expect.objectContaining({
+          id: body.recipeDraftId,
+          title: 'Pancakes',
+          origin: { type: 'link', domain: 'example.com' },
+        }),
+      ]);
+    });
+
+    it('keeps the language of a translation, and the top closest Base Recipe as the pick', async () => {
+      respondWith(reading({ sourceLanguage: 'fr' }));
+      const res = await read('https://example.com/crepes').expect(200);
+      const body = res.body as RecipeFromLink;
+      const got = await drafts().get(`/${body.recipeDraftId}`).expect(200);
+      expect(got.body).toMatchObject({
+        content: {
+          sourceLanguage: 'fr',
+          pickedBaseId: body.closestBases[0]?.id ?? null,
+        },
+      });
+    });
+
+    it('stores pasted text as a Recipe Draft with no Source Link', async () => {
+      const res = await member.post('/from-link', { text: 'Soup' }).expect(200);
+      const body = res.body as RecipeFromLink;
+      const got = await drafts().get(`/${body.recipeDraftId}`).expect(200);
+      expect(got.body).toMatchObject({
+        content: { sourceLink: null, title: 'Pancakes' },
+      });
+    });
+
+    it('stores no Recipe Draft when the read fails', async () => {
+      respondWith(reading({ recipeFound: false }));
+      await read('https://example.com/none').expect(422);
+      expect((await drafts().get('').expect(200)).body).toEqual([]);
+    });
+
+    it('refuses at 20 Recipe Drafts before any fetch or AI call, and leaves the Link Cap untouched', async () => {
+      await fillDrafts(20);
+      const res = await read('https://example.com/full').expect(409);
+      expect(code(res)).toBe('recipe_drafts.limit_reached');
+      expect(res.body).toMatchObject({ params: { max: 20 } });
+      await member.post('/from-link', { text: 'Soup' }).expect(409);
+      expect(fetched).toEqual([]);
+      expect(prompts).toEqual([]);
+      expect(await usedToday()).toBe(0);
+      expect((await drafts().get('').expect(200)).body).toHaveLength(20);
+    });
+
+    it('still reads at 19 and then refuses the next', async () => {
+      await fillDrafts(19);
+      await read('https://example.com/last').expect(200);
+      expect((await drafts().get('').expect(200)).body).toHaveLength(20);
+      await read('https://example.com/over').expect(409);
+      expect(prompts).toHaveLength(1);
+    });
+
+    it('answers a duplicate link as a duplicate and creates no Recipe Draft', async () => {
+      const saved = await member
+        .post('', {
+          title: `Dup draft ${stamp}`,
+          servings: 2,
+          locale: 'en',
+          parentId: null,
+          lines: [{ ingredientId: flour, quantity: 50, unit: 'g' }],
+          steps: [{ text: 'Whisk' }],
+          sourceLink: 'https://example.com/dup-draft',
+        })
+        .expect(201);
+      const res = await read('https://example.com/dup-draft').expect(200);
+      expect(res.body).toEqual({
+        kind: 'duplicate',
+        recipeId: (saved.body as { id: string }).id,
+      });
+      expect(fetched).toEqual([]);
+      expect(prompts).toEqual([]);
+      expect((await drafts().get('').expect(200)).body).toEqual([]);
+    });
+
+    it('answers a duplicate even at 20 Recipe Drafts', async () => {
+      const saved = await member
+        .post('', {
+          title: `Dup full ${stamp}`,
+          servings: 2,
+          locale: 'en',
+          parentId: null,
+          lines: [{ ingredientId: flour, quantity: 50, unit: 'g' }],
+          steps: [{ text: 'Whisk' }],
+          sourceLink: 'https://example.com/dup-full',
+        })
+        .expect(201);
+      await fillDrafts(20);
+      const res = await read('https://example.com/dup-full').expect(200);
+      expect(res.body).toEqual({
+        kind: 'duplicate',
+        recipeId: (saved.body as { id: string }).id,
+      });
+    });
   });
 });
 
