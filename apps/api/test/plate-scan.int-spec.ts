@@ -317,10 +317,9 @@ describe('Plate Scan (integration)', () => {
 
       it('works for any dish the Scan guessed', async () => {
         const cookie = await signUp();
-        const token = await tokenFor(cookie);
         respondWith({ items: [item()] });
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
-        await ingredients(cookie, 'Crepes', 'en', token).expect(201);
+        await ingredients(cookie, 'Pancakes').expect(201);
+        await ingredients(cookie, 'Crepes').expect(201);
       });
 
       it('refuses a missing token, a made-up one and a title the Scan did not guess', async () => {
@@ -369,7 +368,7 @@ describe('Plate Scan (integration)', () => {
         await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
       });
 
-      it('lets each signed title be used once per token: a replay is refused without a provider call', async () => {
+      it('loads one dish per token: a replay is refused without a provider call', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
         respondWith({ items: [item()] });
@@ -378,15 +377,15 @@ describe('Plate Scan (integration)', () => {
         await refuse(cookie, ' Pancakes ', token);
       });
 
-      it('still serves another signed title on the same token after one was used', async () => {
+      it('refuses another signed title on the same token once one was loaded', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
         respondWith({ items: [item()] });
         await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
-        await ingredients(cookie, 'Crepes', 'en', token).expect(201);
+        await refuse(cookie, 'Crepes', token);
       });
 
-      it('lets exactly one of two concurrent requests for the same title through', async () => {
+      it('lets exactly one of two concurrent requests on one token through', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
         next = () =>
@@ -418,6 +417,16 @@ describe('Plate Scan (integration)', () => {
         await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
         respondWith({ items: [item()] });
         await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        await refuse(cookie, 'Pancakes', token);
+      });
+
+      it('lets the Member pick another signed title after a provider failure', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        respondWith({ items: [item({ matchedIngredientId: 'milk' })] });
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
+        respondWith({ items: [item()] });
+        await ingredients(cookie, 'Crepes', 'en', token).expect(201);
         await refuse(cookie, 'Pancakes', token);
       });
 
