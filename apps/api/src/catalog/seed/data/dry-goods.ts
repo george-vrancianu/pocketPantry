@@ -418,6 +418,14 @@ export const grains: SeedSection = {
     ]),
     ...ingredientsOf('flour-and-sugar', [
       [
+        'self-raising-flour',
+        'Self-raising flour',
+        'Făină cu praf de copt (self-raising)',
+        'g',
+        ['self rising flour'],
+        ['faina cu praf de copt', 'faina self raising'],
+      ],
+      [
         'palm-sugar',
         'Palm sugar',
         'Zahăr de palmier',
