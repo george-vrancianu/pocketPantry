@@ -334,7 +334,7 @@ A Recipe owned by one Family, which its Members can edit and delete. Either a Ba
 _Avoid_: Custom recipe, my recipe, user recipe
 
 **Recipe from Link**:
-Reading a recipe from a web page a Member links to, or from recipe text they paste in, into a new Family Recipe in our own format. It fills the New Family Recipe page and nothing is saved until the Member saves it. Only what the source states is filled in; Guidance is never made up while reading, though the Member can Suggest Guidance on the filled page afterwards. Not a Scan and not a Shopping Template being applied.
+Reading a recipe from a web page a Member links to, or from recipe text they paste in, into a new Family Recipe in our own format. It is read in the background while the Member carries on, and a finished read is kept as a Recipe Draft; nothing becomes a Recipe until the Member saves it. Only what the source states is filled in; Guidance is never made up while reading, though the Member can Suggest Guidance on the filled page afterwards. Not a Scan and not a Shopping Template being applied.
 _Avoid_: Recipe import, clip, scrape
 
 **Recipe Draft**:
