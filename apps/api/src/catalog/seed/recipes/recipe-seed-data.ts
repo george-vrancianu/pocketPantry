@@ -21,6 +21,7 @@ import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { chiftele } from './data/chiftele';
 import { chiliConCarne } from './data/chili-con-carne';
+import { ciorbaDeCartofi } from './data/ciorba-de-cartofi';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDeLegume } from './data/ciorba-de-legume';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
@@ -186,4 +187,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   cartofiTaranesti,
   spaghettiAglioOlio,
   ciorbaDeVacuta,
+  ciorbaDeCartofi,
 ];
