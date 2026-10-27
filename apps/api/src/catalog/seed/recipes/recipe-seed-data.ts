@@ -69,6 +69,7 @@ import { musaca } from './data/musaca';
 import { oatmeal } from './data/oatmeal';
 import { omelette } from './data/omelette';
 import { ostropel } from './data/ostropel';
+import { ouaUmplute } from './data/oua-umplute';
 import { padThai } from './data/pad-thai';
 import { paella } from './data/paella';
 import { pancakes } from './data/pancakes';
@@ -222,4 +223,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDeMiel,
   ciorbaDeStevie,
   pasca,
+  ouaUmplute,
 ];
