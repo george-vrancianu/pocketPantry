@@ -37,6 +37,7 @@ import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
 import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
+import { tomatoSoup } from './data/tomato-soup';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   omelette,
@@ -74,4 +75,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   steamedMussels,
   tochitura,
   biksemad,
+  tomatoSoup,
 ];
