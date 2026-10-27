@@ -8,5 +8,13 @@
   "review": "Review",
   "open": "Open",
   "openCount": "Open {{count}}",
-  "sheetTitle": "In the background"
+  "sheetTitle": "In the background",
+  "scan": {
+    "read_one": "{{count}} read",
+    "read_other": "{{count}} read",
+    "receipt_one": "{{count}} receipt",
+    "receipt_other": "{{count}} receipts",
+    "photo_one": "{{count}} photo",
+    "photo_other": "{{count}} photos"
+  }
 }

@@ -1,27 +1,32 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isStripUp, useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
+import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { focusVoiceButton } from '../../lib/voiceFocus';
-import { BackgroundSheet } from '../background/BackgroundSheet';
-import { BackgroundStrip } from '../background/BackgroundStrip';
-import { useVoiceBackgroundItems } from './useVoiceBackgroundItems';
-import { VoiceReviewAllFooter } from './VoiceReviewAllFooter';
+import { useVoiceBackgroundItems } from '../voice/useVoiceBackgroundItems';
+import { VoiceReviewAllFooter } from '../voice/VoiceReviewAllFooter';
+import { BackgroundSheet } from './BackgroundSheet';
+import { BackgroundStrip } from './BackgroundStrip';
+import { useScanSessionBackgroundItems } from './useScanSessionBackgroundItems';
 
 /**
- * The Voice Inbox on the background strip: the Voice Notes adapted into background items. A failed
- * note is announced once as an alert (the rest of the strip is a polite status).
- * Hidden while recording or while a sheet is up, and when the Voice Inbox is empty.
+ * The background strip and its sheet, hosted once by the app layout on pages with the Dock (so they
+ * show whether or not voice is configured): the Voice Notes and the Scan Session adapted into
+ * background items. A failed note is announced once as an alert (the rest of the strip is a polite
+ * status). Hidden while recording or while a Voice Note sheet is up, and when nothing is in the
+ * background.
  *
  * The sheet is hosted here, outside the strip: when the last note leaves while it is open, the sheet
  * closes with its animation and focus goes to the voice button, not to the page behind.
  */
-export function VoiceInboxStrip() {
+export function BackgroundHost() {
   const { t } = useTranslation('voice');
   const state = useVoiceNoteState();
-  const items = useVoiceBackgroundItems();
+  const voiceItems = useVoiceBackgroundItems();
+  const scanItems = useScanSessionBackgroundItems();
+  const items = [...voiceItems, ...scanItems];
   const [wantSheet, setWantSheet] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const up = isStripUp(state);
+  const up = state.phase === 'idle' && items.length > 0;
 
   // Announced assertively once, when a note fails, even if it fails while the strip is hidden. The
   // announced count lives in the Voice Note store: this component remounts when the Dock hides or the
@@ -63,7 +68,7 @@ export function VoiceInboxStrip() {
               <VoiceReviewAllFooter onClose={() => setWantSheet(false)} />
             ) : undefined
           }
-          open={wantSheet && state.inbox.total > 0 && state.phase === 'idle'}
+          open={wantSheet && items.length > 0 && state.phase === 'idle'}
           onClose={() => setWantSheet(false)}
           onExited={() => {
             setMounted(false);

@@ -9,8 +9,20 @@ import { ApplyMemberTheme } from './ApplyMemberTheme';
 import { AppDock } from './AppDock';
 import { RefreshProvider, useRefreshScreen } from '../lib/refresh';
 import { RefreshLoaderSlot } from './RefreshLoaderSlot';
-import { useShowsDockMic, VoiceNote } from './VoiceNote';
+import {
+  APP_VOICE_SETTINGS,
+  useShowsDockMic,
+  VoiceNote,
+  type VoiceNoteSettings,
+} from './VoiceNote';
+import { BackgroundHost } from './background/BackgroundHost';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
+
+/** The layout hosts the background strip itself, so it shows on Dock pages without voice configured. */
+const LAYOUT_VOICE_SETTINGS: VoiceNoteSettings = {
+  ...APP_VOICE_SETTINGS,
+  hostsStrip: false,
+};
 
 /** The line editor, whose tablet layout is a wide table (the overview of cards is not). */
 const isWide = (pathname: string) => pathname.startsWith('/scan/review/');
@@ -55,7 +67,8 @@ export function AppLayout() {
           </PageLayout>
           <RefreshLoaderSlot />
           <VoiceHostSlot />
-          <VoiceNote />
+          <VoiceNote settings={LAYOUT_VOICE_SETTINGS} />
+          {dock.visible ? <BackgroundHost /> : null}
           {dock.visible ? <AppDock activeKey={dock.activeKey} /> : null}
         </VoiceHostProvider>
       </RefreshProvider>

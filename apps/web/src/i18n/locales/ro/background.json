@@ -10,5 +10,16 @@
   "review": "Verificare",
   "open": "Deschide",
   "openCount": "Deschide {{count}}",
-  "sheetTitle": "În fundal"
+  "sheetTitle": "În fundal",
+  "scan": {
+    "read_one": "{{count}} citită",
+    "read_few": "{{count}} citite",
+    "read_other": "{{count}} de citite",
+    "receipt_one": "{{count}} bon",
+    "receipt_few": "{{count}} bonuri",
+    "receipt_other": "{{count}} de bonuri",
+    "photo_one": "{{count}} fotografie",
+    "photo_few": "{{count}} fotografii",
+    "photo_other": "{{count}} de fotografii"
+  }
 }

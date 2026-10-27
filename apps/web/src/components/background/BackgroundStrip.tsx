@@ -60,8 +60,10 @@ export function BackgroundStrip({
         .join(' · ');
   const art = single?.art ?? null;
 
+  // A lone item that can be opened (the Scan Session, whatever its status) or the one ready item opens itself.
+  const lead = single?.open ? single : onlyReady;
   const open = () => {
-    if (onlyReady?.open) onlyReady.open.onClick();
+    if (lead?.open) lead.open.onClick();
     else openSheet();
   };
 
@@ -134,7 +136,7 @@ export function BackgroundStrip({
           open();
         }}
       >
-        {onlyReady?.open
+        {lead?.open
           ? t('review')
           : ready > 1
             ? t('openCount', { count: ready })
