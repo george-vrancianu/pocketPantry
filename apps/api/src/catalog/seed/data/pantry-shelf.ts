@@ -417,14 +417,20 @@ export const cannedGoods: SeedSection = {
         'g',
         ['gherkins', 'dill pickles'],
         [
-          'corniosi',
-          'cornichons',
           'castraveti in otet',
           'castraveti borcan',
           'castraveti murati borcan',
           'murati',
           'castr murati',
         ],
+      ],
+      [
+        'cornichons',
+        'Cornichons',
+        'Castraveți cornișon',
+        'g',
+        ['gherkins in vinegar', 'french gherkins'],
+        ['cornichon', 'cornison', 'corniosi', 'castraveti cornichon'],
       ],
       [
         'pickled-green-tomatoes',
@@ -912,6 +918,14 @@ export const condiments: SeedSection = {
         'ml',
         ['beef broth'],
         ['bulion de vita'],
+      ],
+      [
+        'veal-stock',
+        'Veal stock',
+        'Fond de vițel',
+        'ml',
+        ['veal broth', 'veal fond'],
+        ['bulion de vitel', 'supa de vitel'],
       ],
       [
         'soup-mix',

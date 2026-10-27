@@ -93,7 +93,8 @@ const RETIRED_SEED_TRANSLATIONS: string[] = [
   ),
   // These Synonyms moved to Ingredients of their own: Prawns, Pickled herring,
   // Salt cod, Salmon roe, Leg of lamb, Lamb chops, Wild boar, Caraway seeds,
-  // Chilli flakes, Cayenne pepper and Jamón (Serrano ham). Romanian "chimen"
+  // Chilli flakes, Cayenne pepper, Jamón (Serrano ham), Kapia pepper and
+  // Cornichons. Romanian "chimen"
   // is caraway, not cumin.
   ...(
     [
@@ -115,6 +116,10 @@ const RETIRED_SEED_TRANSLATIONS: string[] = [
       ['chili-powder', 'ro', 'fulgi de ardei iute'],
       ['chili-powder', 'ro', 'cayenne'],
       ['prosciutto', 'en', 'jamon'],
+      ['bell-pepper', 'ro', 'ardei capia'],
+      ['bell-pepper', 'ro', 'ardei kapia'],
+      ['pickled-cucumbers', 'ro', 'cornichons'],
+      ['pickled-cucumbers', 'ro', 'corniosi'],
     ] as const
   ).map(([slug, locale, key]) =>
     stableId(

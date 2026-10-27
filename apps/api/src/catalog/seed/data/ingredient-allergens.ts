@@ -13,6 +13,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'cherry-tomato': [],
   cucumber: [],
   'bell-pepper': [],
+  'kapia-pepper': [],
+  'sivri-pepper': [],
   'hot-pepper': [],
   'birds-eye-chilli': [],
   zucchini: [],
@@ -729,6 +731,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // canned-goods/pickles-and-preserves
   'pickled-cucumbers': [],
+  cornichons: ['mustard'],
   'pickled-green-tomatoes': ['mustard'],
   sauerkraut: [],
   'pickled-peppers': [],
@@ -792,6 +795,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'chicken-stock': ['celery'],
   'vegetable-stock': ['celery'],
   'beef-stock': ['celery'],
+  'veal-stock': ['celery'],
   'soup-mix': ['celery', 'gluten'],
   'ciorba-sour-base': ['gluten'],
   'fish-stock': ['celery', 'fish'],

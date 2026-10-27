@@ -34,15 +34,18 @@ import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
 import { mancareDeMazare } from './data/mancare-de-mazare';
 import { mici } from './data/mici';
+import { musaca } from './data/musaca';
 import { oatmeal } from './data/oatmeal';
 import { omelette } from './data/omelette';
 import { ostropel } from './data/ostropel';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
+import { porkChops } from './data/pork-chops';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
 import { puiLaCeaun } from './data/pui-la-ceaun';
+import { quiche } from './data/quiche';
 import { ricePilaf } from './data/rice-pilaf';
 import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
@@ -57,11 +60,13 @@ import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
 import { tacos } from './data/tacos';
+import { tocanaDeCiuperci } from './data/tocana-de-ciuperci';
 import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
 import { tomatoSoup } from './data/tomato-soup';
 import { varzaCalita } from './data/varza-calita';
 import { vegetableSoup } from './data/vegetable-soup';
+import { zacusca } from './data/zacusca';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   omelette,
@@ -124,4 +129,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   cottagePie,
   iahnieDeFasole,
   puiLaCeaun,
+  quiche,
+  porkChops,
+  musaca,
+  tocanaDeCiuperci,
+  zacusca,
 ];

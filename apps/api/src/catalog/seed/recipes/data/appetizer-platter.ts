@@ -1025,7 +1025,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           t('Comté if you can find it', 'sau Comté, dacă găsești'),
         ),
         line('baguette', 1, 'pcs', t('sliced', 'tăiată felii')),
-        line('pickled-cucumbers', 80, 'g', t('cornichons', 'cornichoni')),
+        line('cornichons', 80, 'g'),
         line('olives', 80, 'g'),
         line(
           'radish',
@@ -1057,7 +1057,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           key: 'slice',
           text: t(
             'Slice the baguette on the diagonal and cut the gruyère into small slabs. Put the cornichons, olives and mustard in small bowls.',
-            'Taie bagheta pieziș și brânza gruyère în bucăți mici. Pune cornichonii, măslinele și muștarul în boluri mici.',
+            'Taie bagheta pieziș și brânza gruyère în bucăți mici. Pune cornișonii, măslinele și muștarul în boluri mici.',
           ),
         },
         {
@@ -1079,7 +1079,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
       ],
       nutritionNote: t(
         'Radishes, cornichons and grapes add freshness, and bread, cheese and pâté are satisfying in small amounts; pâté, saucisson, butter and the cheeses are rich in saturated fat and salt, so this is a platter for nibbling, not a meal.',
-        'Ridichile, cornichonii și strugurii aduc prospețime, iar pâinea, brânza și pateul sunt sățioase în cantități mici; pateul, saucisson, untul și brânzeturile sunt bogate în grăsimi saturate și sare, deci e un platou pentru ciugulit, nu o masă.',
+        'Ridichile, cornișonii și strugurii aduc prospețime, iar pâinea, brânza și pateul sunt sățioase în cantități mici; pateul, saucisson, untul și brânzeturile sunt bogate în grăsimi saturate și sare, deci e un platou pentru ciugulit, nu o masă.',
       ),
       pairings: [
         {
