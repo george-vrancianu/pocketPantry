@@ -1496,6 +1496,22 @@ export const spices: SeedSection = {
         ['black cumin', 'kalonji'],
         ['negrilica'],
       ],
+      [
+        'ancho-chillies',
+        'Dried ancho chillies',
+        'Ardei ancho uscați',
+        'g',
+        ['ancho', 'dried poblano'],
+        ['ardei ancho', 'ancho uscat'],
+      ],
+      [
+        'dried-red-chillies',
+        'Dried red chillies',
+        'Ardei iute uscați',
+        'g',
+        ['guindilla seca', 'cayenne chillies', 'whole dried chillies'],
+        ['ardei iute uscat intreg'],
+      ],
     ]),
     ...ingredientsOf('dried-herbs', [
       [

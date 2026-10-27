@@ -246,6 +246,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'beef-shank': [],
   'beef-ribs': [],
   'beef-soup-bones': [],
+  'beef-marrow-bones': [],
   veal: [],
   'beef-round': [],
   'beef-tenderloin': [],
@@ -263,6 +264,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'pork-fat': [],
   'pork-trotters': [],
   'pork-leg': [],
+  'rind-on-pork-loin': [],
+  'rind-on-pork-shoulder': [],
 
   // meat/lamb-and-game
   lamb: [],
@@ -620,6 +623,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'vanilla-sugar': [],
   sweetener: [],
   'corn-starch': [],
+  'masa-harina': [],
 
   // grains/baking-essentials
   'baking-powder': [],
@@ -850,6 +854,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'juniper-berries': [],
   'vanilla-pods': [],
   'fennel-seeds': [],
+  'ancho-chillies': [],
+  'dried-red-chillies': [],
   'caraway-seeds': [],
   fenugreek: [],
   'nigella-seeds': [],

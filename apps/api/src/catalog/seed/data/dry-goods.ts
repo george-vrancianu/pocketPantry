@@ -458,6 +458,14 @@ export const grains: SeedSection = {
         ['cornflour', 'cornstarch'],
         ['amidon porumb', 'faina de porumb fina'],
       ],
+      [
+        'masa-harina',
+        'Masa harina',
+        'Făină de porumb nixtamalizată (masa harina)',
+        'g',
+        ['nixtamalized corn flour'],
+        ['maseca', 'faina masa harina', 'faina de porumb pentru tortilla'],
+      ],
     ]),
     ...ingredientsOf('baking-essentials', [
       [
