@@ -26,6 +26,7 @@ import { ciorbaDeLegume } from './data/ciorba-de-legume';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaDePui } from './data/ciorba-de-pui';
+import { ciorbaDeVacuta } from './data/ciorba-de-vacuta';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { coleslaw } from './data/coleslaw';
 import { cornulete } from './data/cornulete';
@@ -184,4 +185,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   chiftele,
   cartofiTaranesti,
   spaghettiAglioOlio,
+  ciorbaDeVacuta,
 ];
