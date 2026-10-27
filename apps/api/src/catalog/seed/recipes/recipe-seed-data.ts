@@ -40,6 +40,7 @@ import { ostropel } from './data/ostropel';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
+import { porkChops } from './data/pork-chops';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
 import { puiLaCeaun } from './data/pui-la-ceaun';
@@ -126,4 +127,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   iahnieDeFasole,
   puiLaCeaun,
   quiche,
+  porkChops,
 ];
