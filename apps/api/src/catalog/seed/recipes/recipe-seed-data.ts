@@ -4,6 +4,7 @@
 import type { BaseRecipeSeed } from './recipe-seed-types';
 import { appetizerPlatter } from './data/appetizer-platter';
 import { bakedSalmon } from './data/baked-salmon';
+import { beefStew } from './data/beef-stew';
 import { bolognese } from './data/bolognese';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
@@ -46,4 +47,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDePerisoare,
   stegtFlaesk,
   friedRice,
+  beefStew,
 ];
