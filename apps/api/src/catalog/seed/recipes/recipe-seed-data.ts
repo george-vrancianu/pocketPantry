@@ -21,6 +21,7 @@ import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { chiftele } from './data/chiftele';
 import { chiliConCarne } from './data/chili-con-carne';
+import { ciorbaArdeleneasca } from './data/ciorba-ardeleneasca';
 import { ciorbaDeBurta } from './data/ciorba-de-burta';
 import { ciorbaDeCartofi } from './data/ciorba-de-cartofi';
 import { ciorbaDeCiuperci } from './data/ciorba-de-ciuperci';
@@ -224,4 +225,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDeStevie,
   pasca,
   ouaUmplute,
+  ciorbaArdeleneasca,
 ];
