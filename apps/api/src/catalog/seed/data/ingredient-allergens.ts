@@ -15,6 +15,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'bell-pepper': [],
   'kapia-pepper': [],
   'sivri-pepper': [],
+  'hungarian-pepper': [],
   'hot-pepper': [],
   'birds-eye-chilli': [],
   zucchini: [],

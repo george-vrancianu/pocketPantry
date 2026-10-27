@@ -137,6 +137,14 @@ export const produce: SeedSection = {
         ['ardei sivri', 'ardei verde lung turcesc'],
       ],
       [
+        'hungarian-pepper',
+        'Hungarian sweet pepper',
+        'Ardei unguresc galben',
+        'pcs',
+        ['tv paprika', 'lecso pepper', 'pale yellow pepper'],
+        ['ardei unguresc', 'ardei pentru lecso', 'ardei galben unguresc'],
+      ],
+      [
         'hot-pepper',
         'Hot pepper',
         'Ardei iute',
