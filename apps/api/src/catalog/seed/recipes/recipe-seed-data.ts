@@ -44,6 +44,7 @@ import { coleslaw } from './data/coleslaw';
 import { cornulete } from './data/cornulete';
 import { cottagePie } from './data/cottage-pie';
 import { cozonac } from './data/cozonac';
+import { cremaDeZaharArs } from './data/crema-de-zahar-ars';
 import { dovleceiPane } from './data/dovlecei-pane';
 import { drobDeMiel } from './data/drob-de-miel';
 import { falafel } from './data/falafel';
@@ -242,4 +243,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDeSalata,
   stufatDeMiel,
   grisCuLapte,
+  cremaDeZaharArs,
 ];
