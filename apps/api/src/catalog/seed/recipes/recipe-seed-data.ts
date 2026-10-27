@@ -9,6 +9,7 @@ import { beefStew } from './data/beef-stew';
 import { biksemad } from './data/biksemad';
 import { bolognese } from './data/bolognese';
 import { braisedRedCabbage } from './data/braised-red-cabbage';
+import { brunedeKartofler } from './data/brunede-kartofler';
 import { chickenCurry } from './data/chicken-curry';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
@@ -82,4 +83,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   potatoSalad,
   fishCakes,
   salataDeVinete,
+  brunedeKartofler,
 ];
