@@ -56,6 +56,9 @@ declare module '@mui/material/styles' {
     toastAction: string;
     dockBg: string;
     bezel: string;
+    tomato: string;
+    carrot: string;
+    leaf: string;
   }
   interface Palette {
     pp: PpPalette;
@@ -116,6 +119,9 @@ function schemePalette(id: ThemeId): PaletteOptions {
       toastAction: t['toast-action'],
       dockBg: t['dock-bg'],
       bezel: t.bezel,
+      tomato: t['pg-tomato'],
+      carrot: t['pg-carrot'],
+      leaf: t['pg-leaf'],
     },
   };
 }

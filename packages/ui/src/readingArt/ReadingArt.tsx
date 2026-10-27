@@ -1,6 +1,5 @@
 import Box from '@mui/material/Box';
 import { palette } from '../theme/themeVars';
-import { themeSelector } from '../theme/theme';
 import linkSvg from './svg/pg-read-link.svg?raw';
 import photoSvg from './svg/pg-read-photo.svg?raw';
 import receiptSvg from './svg/pg-read-receipt.svg?raw';
@@ -17,11 +16,10 @@ const DEFAULT_SIZE = 44;
  * `role="img"` and label so nothing announces the drawing; the wrapper is `aria-hidden`.
  */
 const decorative = (svg: string) =>
-  svg.replace(/\s+role="img"\s+aria-label="[^"]*"/, '');
+  svg.replace(/\s+role="img"/, '').replace(/\s+aria-label="[^"]*"/, '');
 
 /**
  * The files read these names with Warm fallbacks; map them onto the active Theme.
- * Only the three ingredient hues are not Theme tokens, so Dark brightens them here.
  */
 const artVars = {
   '--accent': palette('pp-accent'),
@@ -31,11 +29,9 @@ const artVars = {
   '--muted': palette('text-secondary'),
   '--line-strong': palette('pp-lineStrong'),
   '--butter': palette('secondary-main'),
-  [`${themeSelector('dark')} &`]: {
-    '--pg-tomato': '#E07A5C',
-    '--pg-carrot': '#EBAA4C',
-    '--pg-leaf': '#86B562',
-  },
+  '--pg-tomato': palette('pp-tomato'),
+  '--pg-carrot': palette('pp-carrot'),
+  '--pg-leaf': palette('pp-leaf'),
 } as const;
 
 function reading(svg: string) {

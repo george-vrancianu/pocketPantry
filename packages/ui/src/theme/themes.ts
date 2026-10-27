@@ -28,6 +28,10 @@ export interface ThemeTokens {
   'primary-ink': string;
   butter: string;
   'butter-ink': string;
+  /** Ingredient hues for the reading art. */
+  'pg-tomato': string;
+  'pg-carrot': string;
+  'pg-leaf': string;
   'urgent-bg': string;
   'urgent-fg': string;
   'soon-bg': string;
@@ -89,6 +93,9 @@ export const THEMES: Record<ThemeId, ThemeTokens> = {
     'primary-ink': '#FFFFFF',
     butter: '#F0C96B',
     'butter-ink': '#4A3608',
+    'pg-tomato': '#D5684A',
+    'pg-carrot': '#E09A3B',
+    'pg-leaf': '#6F9B4C',
     'urgent-bg': '#F8DED1',
     'urgent-fg': '#A8431C',
     'soon-bg': '#F6E5BE',
@@ -143,6 +150,9 @@ export const THEMES: Record<ThemeId, ThemeTokens> = {
     'primary-ink': '#FFFFFF',
     butter: '#F5E1A4',
     'butter-ink': '#5A4200',
+    'pg-tomato': '#D5684A',
+    'pg-carrot': '#E09A3B',
+    'pg-leaf': '#6F9B4C',
     'urgent-bg': '#FDE8E2',
     'urgent-fg': '#B33A1E',
     'soon-bg': '#FBF0CC',
@@ -196,6 +206,9 @@ export const THEMES: Record<ThemeId, ThemeTokens> = {
     'primary-ink': '#0B1A10',
     butter: '#3D3418',
     'butter-ink': '#F2CF72',
+    'pg-tomato': '#E07A5C',
+    'pg-carrot': '#EBAA4C',
+    'pg-leaf': '#86B562',
     'urgent-bg': '#3F241B',
     'urgent-fg': '#FFA27E',
     'soon-bg': '#3A3118',
