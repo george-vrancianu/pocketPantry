@@ -78,6 +78,7 @@ import { porkChops } from './data/pork-chops';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
 import { puiLaCeaun } from './data/pui-la-ceaun';
+import { pulledPork } from './data/pulled-pork';
 import { quiche } from './data/quiche';
 import { ricePilaf } from './data/rice-pilaf';
 import { ricePudding } from './data/rice-pudding';
@@ -212,4 +213,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDeCiuperci,
   pastravLaGratar,
   salataDeSfecla,
+  pulledPork,
 ];
