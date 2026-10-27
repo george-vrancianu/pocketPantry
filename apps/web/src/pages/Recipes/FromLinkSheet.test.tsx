@@ -1,14 +1,18 @@
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes, useLocation } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { App } from '../../App';
+import { AppLayout } from '../../components/AppLayout';
+import { useSignOut } from '../../lib/auth';
+import { linkReads } from '../../lib/linkReads';
 import type { FamilyRecipeEdit } from '../../lib/familyRecipes';
 import type { RecipeDraftView } from '../../lib/recipeDrafts';
 import type { RecipeFromLink, RecipeFromLinkDraft } from '../../lib/linkRecipe';
 import type { Locale } from '../../i18n';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { NewRecipePage } from './FamilyRecipePages';
-import { RecipeFromLinkPage } from './RecipeFromLinkPage';
+import { RecipesPage } from './RecipesPage';
 
 const filters = {
   cuisines: [{ id: 'c-fr', name: 'French' }],
@@ -146,11 +150,24 @@ function withStoredRead(routes: Routes): Routes {
   };
 }
 
+type SetupOptions = { locale?: Locale; route?: string };
+
+function SignOutButton() {
+  const signOut = useSignOut();
+  return <button onClick={() => signOut.mutate()}>Sign out now</button>;
+}
+
 /** Records the AbortSignal of every request, as the browser would receive it. */
-function setup(routes: Routes) {
+function setup(
+  routes: Routes,
+  { locale, route = '/recipes?fromLink=1' }: SetupOptions = {},
+) {
   const signals: Array<AbortSignal | null | undefined> = [];
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes/filters': () => Response.json(filters),
+    'GET /api/recipes': () =>
+      Response.json({ recipes: [], hiddenByAllergiesCount: 0 }),
+    'POST /api/auth/sign-out': () => Response.json({}),
     ...withStoredRead(routes),
   });
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
@@ -175,13 +192,24 @@ function setup(routes: Routes) {
     <>
       <Where />
       <Routes>
-        <Route path="/recipes" element={<p>recipes list</p>} />
-        <Route path="/recipes/from-link" element={<RecipeFromLinkPage />} />
-        <Route path="/recipes/new" element={<NewRecipePage />} />
-        <Route path="/recipes/:id" element={<p>Detail of the recipe</p>} />
+        <Route element={<AppLayout />}>
+          <Route path="/recipes" element={<RecipesPage />} />
+          <Route path="/recipes/new" element={<NewRecipePage />} />
+          <Route path="/recipes/:id" element={<p>Detail of the recipe</p>} />
+          <Route
+            path="/pantry"
+            element={
+              <>
+                <p>pantry page</p>
+                <Link to="/recipes">to recipes</Link>
+                <SignOutButton />
+              </>
+            }
+          />
+        </Route>
       </Routes>
     </>,
-    { route: '/recipes/from-link' },
+    { route, locale },
   );
   return { calls, signals, ...view };
 }
@@ -199,168 +227,418 @@ function hold(result: RecipeFromLink) {
   };
 }
 
+type User = ReturnType<typeof userEvent.setup>;
+
+const sheet = () => screen.queryByRole('dialog', { name: 'From a link' });
 const linkField = () => screen.getByLabelText(/^Link to the recipe/);
 
-async function submit(user: ReturnType<typeof userEvent.setup>, url: string) {
+/** Types a link into the open sheet and presses "Read the recipe": the sheet closes and the read carries on. */
+async function submit(user: User, url: string) {
   await user.type(linkField(), url);
   await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
 }
 
-describe('RecipeFromLinkPage', () => {
-  afterEach(() => vi.unstubAllGlobals());
+/** The strip's Review button (shown when exactly one item is ready). */
+const stripReview = () => screen.findByRole('button', { name: 'Review' });
 
-  it('sends the link and shows a progress state while reading', async () => {
+/** Reads a link, then opens the editor from the strip once the read is ready. */
+async function readAndOpen(user: User, url: string) {
+  await submit(user, url);
+  await user.click(await stripReview());
+}
+
+/** Opens the sheet from the Recipes header plus. */
+async function openSheet(user: User) {
+  await user.click(await screen.findByRole('button', { name: 'Add a Recipe' }));
+  await user.click(screen.getByRole('menuitem', { name: 'From a link' }));
+  await screen.findByRole('dialog', { name: 'From a link' });
+}
+
+beforeEach(() => linkReads.clear());
+
+describe('"From a link" sheet and the link-read holder', () => {
+  afterEach(() => {
+    linkReads.clear();
+    vi.unstubAllGlobals();
+  });
+
+  const link = 'https://www.example.com/pancakes';
+  const sentLinks = (calls: ReturnType<typeof setup>['calls']) =>
+    calls
+      .filter((c) => c.key === 'POST /api/recipes/from-link')
+      .map((c) => (c.body as { url: string }).url);
+
+  it('opens from the header plus on Recipes, with its label, hint and language choice', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup({}, { route: '/recipes' });
+    expect(sheet()).toBeNull();
+    await openSheet(user);
+    expect(screen.getByRole('heading', { name: 'From a link' })).toBeVisible();
+    expect(screen.getByText('Link to the recipe')).toBeVisible();
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    expect(
+      screen.getByRole('button', { name: 'Read the recipe' }),
+    ).toBeDisabled();
+  });
+
+  it('opens when the address carries the sheet parameter, and the old route lands there', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/auth/get-session': () =>
+        Response.json({
+          user: { id: '1', name: 'Ana', email: 'ana@example.com' },
+        }),
+      'GET /api/settings/preferences': () =>
+        Response.json({ introDone: true, theme: null, locale: null }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<App />, { route: '/recipes/from-link' });
+    expect(
+      await screen.findByRole('dialog', { name: 'From a link' }),
+    ).toBeVisible();
+  });
+
+  it('shows the read in the strip on another Dock page after submitting, and the sheet closes', async () => {
+    const user = userEvent.setup({ delay: null });
+    const pending = hold(read());
+    const { calls } = setup({ 'POST /api/recipes/from-link': pending.handler });
+    await submit(user, link);
+    await waitFor(() => expect(sheet()).toBeNull());
+    expect(await screen.findByText('Reading a recipe link…')).toBeVisible();
+    expect(screen.getByText('example.com')).toBeVisible();
+    expect(
+      calls.find((c) => c.key === 'POST /api/recipes/from-link')?.body,
+    ).toEqual({ url: link, language: 'catalog' });
+    // Another Dock page: the read follows the Member.
+    await user.click(screen.getByRole('link', { name: 'Pantry' }));
+    expect(await screen.findByText('pantry page')).toBeVisible();
+    expect(screen.getByText('Reading a recipe link…')).toBeVisible();
+    pending.release();
+    expect(await screen.findByText('Recipe ready to review')).toBeVisible();
+  });
+
+  it('Review opens the editor on the Recipe Draft and the row leaves', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { calls } = setup({
+      'POST /api/recipes/from-link': () => Response.json(read()),
+    });
+    await submit(user, link);
+    await screen.findByText('Recipe ready to review');
+    await user.click(await stripReview());
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('Blog pancakes');
+    expect(screen.getByText('at /recipes/new')).toBeVisible();
+    expect(calls.map((c) => c.key)).toContain('GET /api/recipe-drafts/rd-1');
+    expect(screen.queryByText('Recipe ready to review')).toBeNull();
+    expect(linkReads.getState().reads).toEqual([]);
+  });
+
+  it('says the Recipe Draft is no longer kept and the row leaves when it is gone', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup({
+      'POST /api/recipes/from-link': () =>
+        Response.json({ ...read(), recipeDraftId: 'rd-gone' }),
+      'GET /api/recipe-drafts/rd-gone': () =>
+        Response.json({ code: 'recipe_drafts.not_found' }, { status: 404 }),
+    });
+    await submit(user, link);
+    await screen.findByText('Recipe ready to review');
+    await user.click(await stripReview());
+    expect(
+      await screen.findByText('That Recipe Draft is no longer kept.'),
+    ).toBeVisible();
+    expect(screen.queryByText('Recipe ready to review')).toBeNull();
+    expect(screen.getByText('at /recipes')).toBeVisible();
+  });
+
+  it('updates "Drafts (N)" when a read finishes, without a refresh', async () => {
+    const user = userEvent.setup({ delay: null });
+    const pending = hold(read());
+    let kept = false;
+    setup(
+      {
+        'POST /api/recipes/from-link': async () => {
+          const response = await pending.handler();
+          kept = true;
+          return response;
+        },
+        'GET /api/recipe-drafts': () =>
+          Response.json(
+            kept
+              ? [
+                  {
+                    id: 'rd-1',
+                    kind: 'new_recipe',
+                    title: 'Blog pancakes',
+                    baseRecipeName: null,
+                    updatedAt: '2026-01-01T00:00:00.000Z',
+                    expiresAt: '2026-01-31T00:00:00.000Z',
+                  },
+                ]
+              : [],
+          ),
+      },
+      { route: '/recipes' },
+    );
+    await openSheet(user);
+    await submit(user, link);
+    await screen.findByText('Reading a recipe link…');
+    expect(screen.queryByRole('link', { name: /^Drafts/ })).toBeNull();
+    pending.release();
+    expect(
+      await screen.findByRole('link', { name: 'Drafts (1)' }),
+    ).toBeVisible();
+  });
+
+  describe('reading several', () => {
+    /** Five reads asked from the sheet; each stays pending until its release runs. */
+    async function startFive(user: User) {
+      const releases: Array<() => void> = [];
+      const { calls, signals } = setup(
+        {
+          'POST /api/recipes/from-link': () =>
+            new Promise<Response>((resolve) => {
+              releases.push(() => resolve(Response.json(read())));
+            }),
+        },
+        { route: '/recipes' },
+      );
+      for (const n of [1, 2, 3, 4, 5]) {
+        await openSheet(user);
+        await submit(user, `https://site${n}.example.com/r`);
+        await waitFor(() => expect(sheet()).toBeNull());
+      }
+      return { releases, calls, signals };
+    }
+
+    it('reads two at a time, holds five, and the rest wait in the order started', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { releases, calls } = await startFive(user);
+      expect(await screen.findByText('5 in the background')).toBeVisible();
+      expect(sentLinks(calls)).toEqual([
+        'https://site1.example.com/r',
+        'https://site2.example.com/r',
+      ]);
+      expect(
+        linkReads.getState().reads.map((r) => `${r.site}:${r.status}`),
+      ).toEqual([
+        'site1.example.com:reading',
+        'site2.example.com:reading',
+        'site3.example.com:waiting',
+        'site4.example.com:waiting',
+        'site5.example.com:waiting',
+      ]);
+      // A finished read frees a slot for the one waiting longest.
+      releases[0]();
+      await waitFor(() => expect(sentLinks(calls)).toHaveLength(3));
+      expect(sentLinks(calls)[2]).toBe('https://site3.example.com/r');
+      releases[1]();
+      await waitFor(() => expect(sentLinks(calls)).toHaveLength(4));
+      expect(sentLinks(calls)[3]).toBe('https://site4.example.com/r');
+    });
+
+    it('refuses a sixth in the sheet, asking to review first, until one is let go', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = await startFive(user);
+      await openSheet(user);
+      await submit(user, 'https://site6.example.com/r');
+      expect(
+        await screen.findByText(/5 link reads are waiting for you/),
+      ).toBeVisible();
+      expect(sheet()).not.toBeNull();
+      expect(linkReads.getState().reads).toHaveLength(5);
+      // Let one go from the background sheet, then the sixth is taken.
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(sheet()).toBeNull());
+      await user.click(await screen.findByRole('button', { name: 'Open' }));
+      await user.click(
+        await screen.findByRole('button', {
+          name: 'Cancel reading site5.example.com',
+        }),
+      );
+      await user.keyboard('{Escape}');
+      await openSheet(user);
+      await submit(user, 'https://site6.example.com/r');
+      await waitFor(() => expect(sheet()).toBeNull());
+      expect(linkReads.getState().reads).toHaveLength(5);
+      expect(sentLinks(calls)).toHaveLength(2);
+    });
+
+    it('discarding a reading row aborts its request and only its own, then the next starts', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { signals } = await startFive(user);
+      const requests = signals.filter((s) => s);
+      expect(requests).toHaveLength(2);
+      await user.click(await screen.findByRole('button', { name: 'Open' }));
+      await user.click(
+        await screen.findByRole('button', {
+          name: 'Cancel reading site1.example.com',
+        }),
+      );
+      expect(requests[0]?.aborted).toBe(true);
+      expect(requests[1]?.aborted).toBe(false);
+      await waitFor(() =>
+        expect(linkReads.getState().reads.map((r) => r.status)).toEqual([
+          'reading',
+          'reading',
+          'waiting',
+          'waiting',
+        ]),
+      );
+    });
+  });
+
+  it('keeps reading when the Member refreshes from the logo', async () => {
+    const user = userEvent.setup({ delay: null });
+    const pending = hold(read());
+    const { signals } = setup(
+      { 'POST /api/recipes/from-link': pending.handler },
+      { route: '/recipes' },
+    );
+    await openSheet(user);
+    await submit(user, link);
+    await screen.findByText('Reading a recipe link…');
+    await user.click(await screen.findByRole('button', { name: /Refresh/ }));
+    await screen.findByText('Reading a recipe link…');
+    expect(signals.find((s) => s)?.aborted).toBe(false);
+    pending.release();
+    expect(await screen.findByText('Recipe ready to review')).toBeVisible();
+  });
+
+  it('keeps reading when the sheet is closed with the form untouched by the read, and across pages', async () => {
+    const user = userEvent.setup({ delay: null });
+    const pending = hold(read());
+    const { signals } = setup(
+      { 'POST /api/recipes/from-link': pending.handler },
+      { route: '/recipes' },
+    );
+    await openSheet(user);
+    await submit(user, link);
+    await waitFor(() => expect(sheet()).toBeNull());
+    await user.click(screen.getByRole('link', { name: 'Pantry' }));
+    await screen.findByText('pantry page');
+    await user.click(screen.getByRole('link', { name: 'to recipes' }));
+    await screen.findByText('Reading a recipe link…');
+    expect(signals.find((s) => s)?.aborted).toBe(false);
+    pending.release();
+    expect(await screen.findByText('Recipe ready to review')).toBeVisible();
+  });
+
+  it('drops the holder silently on sign-out, aborting what is reading', async () => {
+    const user = userEvent.setup({ delay: null });
+    const pending = hold(read());
+    const { signals } = setup(
+      { 'POST /api/recipes/from-link': pending.handler },
+      { route: '/pantry' },
+    );
+    linkReads.submit({ kind: 'link', url: link }, 'catalog');
+    await screen.findByText('Reading a recipe link…');
+    await user.click(screen.getByRole('button', { name: 'Sign out now' }));
+    await waitFor(() => expect(linkReads.getState().reads).toEqual([]));
+    expect(screen.queryByText('Reading a recipe link…')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(signals.find((s) => s && s !== undefined)?.aborted).toBe(true);
+    pending.release();
+  });
+
+  it('says a read that failed, and Discard lets it go', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup({
+      'POST /api/recipes/from-link': () =>
+        Response.json({ code: 'link.unreadable', params: {} }, { status: 422 }),
+    });
+    await submit(user, link);
+    expect(await screen.findByText("Couldn't read the recipe")).toBeVisible();
+    expect(screen.getByText(/could not open that page/)).toBeVisible();
+    await user.click(await screen.findByRole('button', { name: 'Open' }));
+    await user.click(
+      await screen.findByRole('button', { name: 'Discard example.com' }),
+    );
+    expect(linkReads.getState().reads).toEqual([]);
+  });
+
+  it('reads pasted text the same way, as "Pasted text"', async () => {
     const user = userEvent.setup({ delay: null });
     const pending = hold(read());
     const { calls } = setup({
       'POST /api/recipes/from-link': pending.handler,
     });
-    await submit(user, 'https://www.example.com/pancakes');
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Reading the recipe',
+    await user.click(
+      screen.getByRole('button', { name: 'Paste text instead' }),
     );
-    expect(linkField()).toBeDisabled();
+    await user.type(screen.getByLabelText(/^Recipe text/), 'two eggs');
+    await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+    expect(await screen.findByText('Reading recipe text…')).toBeVisible();
+    expect(screen.getByText('Pasted text')).toBeVisible();
     expect(
       calls.find((c) => c.key === 'POST /api/recipes/from-link')?.body,
-    ).toEqual({ url: 'https://www.example.com/pancakes', language: 'catalog' });
+    ).toEqual({ text: 'two eggs', language: 'catalog' });
     pending.release();
-    await screen.findByLabelText(/^Title/);
+    expect(await screen.findByText('Recipe ready to review')).toBeVisible();
   });
 
-  it('has Back and the title, no Settings gear, and a visible label on the field', () => {
-    setup({});
-    expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute(
-      'href',
-      '/recipes',
-    );
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'From a link' }),
-    ).toBeVisible();
-    expect(screen.queryByRole('link', { name: /settings/i })).toBeNull();
-    expect(screen.getByText('Link to the recipe')).toBeVisible();
-    expect(screen.getAllByRole('radio')).toHaveLength(2);
-  });
+  describe('a link that is already one of the Recipes', () => {
+    const duplicate = { kind: 'duplicate', recipeId: 'r-1' };
 
-  it('cannot be submitted without a link', async () => {
-    setup({});
-    expect(
-      screen.getByRole('button', { name: 'Read the recipe' }),
-    ).toBeDisabled();
-    expect(linkField()).not.toHaveFocus();
-  });
-
-  it('aborts the read when the Member leaves the step', async () => {
-    const user = userEvent.setup({ delay: null });
-    const pending = hold(read());
-    const { signals, unmount } = setup({
-      'POST /api/recipes/from-link': pending.handler,
-    });
-    await submit(user, 'https://example.com/a');
-    await screen.findByRole('status');
-    const signal = signals.at(-1);
-    expect(signal?.aborted).toBe(false);
-    unmount();
-    expect(signal?.aborted).toBe(true);
-    pending.release();
-  });
-
-  it('moves focus to Cancel while reading, then back to the field after Cancel', async () => {
-    const user = userEvent.setup({ delay: null });
-    const pending = hold(read());
-    setup({ 'POST /api/recipes/from-link': pending.handler });
-    await submit(user, 'https://example.com/a');
-    expect(await screen.findByRole('button', { name: 'Cancel' })).toHaveFocus();
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(linkField()).toHaveFocus();
-    pending.release();
-  });
-
-  it('moves focus back to the field after an error', async () => {
-    const user = userEvent.setup({ delay: null });
-    setup({
-      'POST /api/recipes/from-link': () =>
-        Response.json({ code: 'link.invalid', params: {} }, { status: 400 }),
-    });
-    await submit(user, 'https://example.com/a');
-    await screen.findByRole('alert');
-    expect(linkField()).toHaveFocus();
-  });
-
-  it('aborts the read, shows no error and stays on the step when cancelled', async () => {
-    const user = userEvent.setup({ delay: null });
-    const pending = hold(read());
-    const { signals } = setup({
-      'POST /api/recipes/from-link': pending.handler,
-    });
-    await submit(user, 'https://example.com/a');
-    await user.click(await screen.findByRole('button', { name: 'Cancel' }));
-    expect(signals.at(-1)?.aborted).toBe(true);
-    expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.getByRole('status')).toBeEmptyDOMElement();
-    expect(linkField()).toHaveValue('https://example.com/a');
-    expect(screen.getByText('at /recipes/from-link')).toBeVisible();
-    pending.release();
-    // The late answer is ignored: still on the step.
-    await waitFor(() =>
-      expect(screen.getByText('at /recipes/from-link')).toBeVisible(),
-    );
-  });
-
-  it.each([
-    ['link.invalid', 400, /not a web address we can open/],
-    ['link.unreadable', 422, /could not open that page/],
-    ['link.no_recipe', 422, /could not find a recipe on that page/],
-    [
-      'scan.provider_unavailable',
-      502,
-      /cannot read recipes from links right now/,
-    ],
-    ['scan.provider_refused', 502, /could not read a recipe from that page/],
-    ['scan.provider_incomplete', 502, /could not read a recipe from that page/],
-    ['scan.result_invalid', 502, /could not read a recipe from that page/],
-    ['link.read_in_progress', 429, /recipe is already being read/],
-  ])(
-    'says what went wrong for %s and keeps the link',
-    async (code, status, copy) => {
+    it('ends as "Already in your Recipes" with Open, which goes to that Recipe', async () => {
       const user = userEvent.setup({ delay: null });
-      setup({
-        'POST /api/recipes/from-link': () =>
-          Response.json({ code, params: {} }, { status }),
-      });
-      await submit(user, 'https://example.com/a');
-      expect(await screen.findByRole('alert')).toHaveTextContent(copy);
-      expect(linkField()).toHaveValue('https://example.com/a');
-      expect(linkField()).toBeEnabled();
-      expect(screen.getByText('at /recipes/from-link')).toBeVisible();
-    },
-  );
-
-  it.each([
-    ['ro', 'link.no_recipe', /Nu am găsit nicio rețetă/],
-    ['da', 'link.unreadable', /Vi kunne ikke åbne den side/],
-  ] as [Locale, string, RegExp][])(
-    'words %s errors in that language',
-    async (locale, code, copy) => {
-      const submitName = { ro: 'Citește rețeta', da: 'Læs opskriften' }[
-        locale as 'ro' | 'da'
-      ];
-      const user = userEvent.setup({ delay: null });
-      vi.stubGlobal(
-        'fetch',
-        stubApi({
-          'POST /api/recipes/from-link': () =>
-            Response.json({ code, params: {} }, { status: 422 }),
-        }).fetchMock,
+      setup({ 'POST /api/recipes/from-link': () => Response.json(duplicate) });
+      await submit(user, link);
+      expect(await screen.findByText('Already in your Recipes')).toBeVisible();
+      await user.click(await screen.findByRole('button', { name: 'Open' }));
+      await user.click(
+        await screen.findByRole('button', {
+          name: 'Open the Recipe from example.com',
+        }),
       );
-      renderWithProviders(<RecipeFromLinkPage />, {
-        locale,
-        route: '/recipes/from-link',
+      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+      expect(screen.getByText('at /recipes/r-1')).toBeVisible();
+      expect(linkReads.getState().reads).toEqual([]);
+    });
+
+    it('Read again sends the same request with force and ends ready', async () => {
+      const user = userEvent.setup({ delay: null });
+      let first = true;
+      const { calls } = setup({
+        'POST /api/recipes/from-link': () => {
+          const answer = first ? duplicate : read({ servings: 4 });
+          first = false;
+          return Response.json(answer);
+        },
       });
-      await user.type(screen.getByRole('textbox'), 'https://example.com/a');
-      await user.click(screen.getByRole('button', { name: submitName }));
-      expect(await screen.findByRole('alert')).toHaveTextContent(copy);
-    },
-  );
+      await user.click(
+        screen.getByRole('radio', { name: "Keep the page's language" }),
+      );
+      await submit(user, link);
+      await screen.findByText('Already in your Recipes');
+      await user.click(await screen.findByRole('button', { name: 'Open' }));
+      await user.click(
+        await screen.findByRole('button', {
+          name: 'Read example.com again',
+        }),
+      );
+      await waitFor(() =>
+        expect(linkReads.getState().reads[0]).toMatchObject({
+          status: 'ready',
+          recipeDraftId: 'rd-1',
+        }),
+      );
+      const bodies = calls
+        .filter((c) => c.key === 'POST /api/recipes/from-link')
+        .map((c) => c.body);
+      expect(bodies[0]).toEqual({ url: link, language: 'source' });
+      expect(bodies[1]).toEqual({
+        url: link,
+        language: 'source',
+        force: true,
+      });
+    });
+  });
+});
+
+describe('after a read, the editor', () => {
+  afterEach(() => {
+    linkReads.clear();
+    vi.unstubAllGlobals();
+  });
 
   it('opens the editor on the Recipe Draft the server stored, without creating one itself', async () => {
     const user = userEvent.setup({ delay: null });
@@ -368,7 +646,7 @@ describe('RecipeFromLinkPage', () => {
       'POST /api/recipes/from-link': () =>
         Response.json({ ...read(), recipeDraftId: 'rd-1' }),
     });
-    await submit(user, 'https://www.example.com/pancakes');
+    await readAndOpen(user, 'https://www.example.com/pancakes');
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('Blog pancakes');
     const keys = calls.map((c) => c.key);
     expect(keys).toContain('GET /api/recipe-drafts/rd-1');
@@ -398,27 +676,11 @@ describe('RecipeFromLinkPage', () => {
           ],
         }),
     });
-    await submit(user, 'https://www.example.com/pancakes');
+    await readAndOpen(user, 'https://www.example.com/pancakes');
     expect(
       await screen.findByRole('radio', { name: /Omelette/ }),
     ).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Crepes' })).toBeVisible();
-  });
-
-  it('says the Recipe Draft limit is reached, stays on the page and opens no editor', async () => {
-    const user = userEvent.setup({ delay: null });
-    setup({
-      'POST /api/recipes/from-link': () =>
-        Response.json(
-          { code: 'recipe_drafts.limit_reached', params: { max: 20 } },
-          { status: 409 },
-        ),
-    });
-    await submit(user, 'https://www.example.com/pancakes');
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'You already keep 20 Recipe Drafts. Finish or discard one to start another.',
-    );
-    expect(screen.getByText('at /recipes/from-link')).toBeVisible();
   });
 
   it('opens the New Recipe page filled in from the read', async () => {
@@ -426,7 +688,7 @@ describe('RecipeFromLinkPage', () => {
     setup({
       'POST /api/recipes/from-link': () => Response.json(read()),
     });
-    await submit(user, 'https://www.example.com/pancakes#top');
+    await readAndOpen(user, 'https://www.example.com/pancakes#top');
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('Blog pancakes');
     expect(screen.getByText('at /recipes/new')).toBeVisible();
     // Matched line with the original amount in its note, and an Unmatched name.
@@ -465,7 +727,7 @@ describe('RecipeFromLinkPage', () => {
           noSuggestions: [],
         }),
     });
-    await submit(user, 'https://www.example.com/pancakes');
+    await readAndOpen(user, 'https://www.example.com/pancakes');
     await screen.findByLabelText(/^Title/);
 
     // The row says Guidance is never read from the page, and offers Suggest.
@@ -504,7 +766,7 @@ describe('RecipeFromLinkPage', () => {
       'POST /api/recipes/from-link': () => Response.json(read()),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await submit(user, 'https://www.example.com/pancakes');
+    await readAndOpen(user, 'https://www.example.com/pancakes');
     const servings = await screen.findByLabelText(/^Serves/);
     expect(servings).toHaveValue('');
     const save = screen.getByRole('button', { name: 'Save' });
@@ -540,7 +802,7 @@ describe('RecipeFromLinkPage', () => {
           Response.json({ ...read({ servings: 4 }), closestBases: bases }),
         'POST /api/recipes': () => Response.json(saved, { status: 201 }),
       });
-      await submit(user, 'https://www.example.com/pancakes');
+      await readAndOpen(user, 'https://www.example.com/pancakes');
       expect(
         await screen.findByRole('radio', { name: /Omelette/ }),
       ).toBeChecked();
@@ -562,7 +824,7 @@ describe('RecipeFromLinkPage', () => {
           Response.json({ ...read({ servings: 4 }), closestBases: bases }),
         'POST /api/recipes': () => Response.json(saved, { status: 201 }),
       });
-      await submit(user, 'https://www.example.com/pancakes');
+      await readAndOpen(user, 'https://www.example.com/pancakes');
       await user.click(
         await screen.findByRole('radio', { name: /standalone/i }),
       );
@@ -586,7 +848,7 @@ describe('RecipeFromLinkPage', () => {
             hiddenByAllergiesCount: 1,
           }),
       });
-      await submit(user, 'https://www.example.com/pancakes');
+      await readAndOpen(user, 'https://www.example.com/pancakes');
       expect(
         await screen.findByText('1 Recipe hidden by your Allergies'),
       ).toBeVisible();
@@ -600,7 +862,7 @@ describe('RecipeFromLinkPage', () => {
       'POST /api/recipes/from-link': () => Response.json(read({ servings: 4 })),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await submit(user, 'https://www.example.com/pancakes');
+    await readAndOpen(user, 'https://www.example.com/pancakes');
     await user.click(
       await screen.findByRole('button', { name: 'Remove link' }),
     );
@@ -629,70 +891,11 @@ describe('RecipeFromLinkPage', () => {
           ],
         }),
     });
-    await submit(user, 'https://www.example.com/pancakes');
+    await readAndOpen(user, 'https://www.example.com/pancakes');
     await user.click(
       await screen.findByRole('button', { name: 'Remove link' }),
     );
     expect(screen.getByRole('radio', { name: /Omelette/ })).toBeChecked();
-  });
-
-  describe('the Link Cap', () => {
-    afterEach(() => vi.useRealTimers());
-
-    it("says when the reads start again, in the Member's own time", async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      vi.setSystemTime(new Date('2026-05-01T10:00:00Z'));
-      const user = userEvent.setup({ delay: null });
-      const resetsAt = '2026-05-02T00:00:00.000Z';
-      setup({
-        'POST /api/recipes/from-link': () =>
-          Response.json(
-            { code: 'link.cap_reached', params: { cap: 20, resetsAt } },
-            { status: 429 },
-          ),
-      });
-      await submit(user, 'https://example.com/a');
-      const when = new Intl.DateTimeFormat('en-GB', {
-        weekday: 'long',
-        hour: 'numeric',
-        minute: '2-digit',
-      }).format(Date.parse(resetsAt));
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent(
-        `You have used all 20 recipe reads from links for today. Your reads reset on ${when}.`,
-      );
-      expect(linkField()).toHaveFocus();
-    });
-
-    it('leaves the number out when the cap is missing', async () => {
-      const user = userEvent.setup({ delay: null });
-      setup({
-        'POST /api/recipes/from-link': () =>
-          Response.json(
-            { code: 'link.cap_reached', params: {} },
-            { status: 429 },
-          ),
-      });
-      await submit(user, 'https://example.com/a');
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        "You have used all of today's recipe reads from links. Try again tomorrow.",
-      );
-    });
-
-    it('says to try tomorrow when the reset time is missing', async () => {
-      const user = userEvent.setup({ delay: null });
-      setup({
-        'POST /api/recipes/from-link': () =>
-          Response.json(
-            { code: 'link.cap_reached', params: { cap: 20 } },
-            { status: 429 },
-          ),
-      });
-      await submit(user, 'https://example.com/a');
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        'You have used all 20 recipe reads from links for today. Try again tomorrow.',
-      );
-    });
   });
 
   describe('language choice', () => {
@@ -718,7 +921,7 @@ describe('RecipeFromLinkPage', () => {
       expect(screen.getByRole('radiogroup')).toHaveAccessibleName(
         'Language of the recipe',
       );
-      await submit(user, 'https://www.example.com/pancakes');
+      await readAndOpen(user, 'https://www.example.com/pancakes');
       await screen.findByLabelText(/^Title/);
       expect(sent(calls)).toMatchObject({ language: 'catalog' });
     });
@@ -732,32 +935,30 @@ describe('RecipeFromLinkPage', () => {
       await user.click(
         await screen.findByRole('radio', { name: "Keep the page's language" }),
       );
-      await submit(user, 'https://www.example.com/pancakes');
+      await readAndOpen(user, 'https://www.example.com/pancakes');
       await screen.findByLabelText(/^Title/);
       expect(sent(calls)).toMatchObject({ language: 'source' });
     });
 
     it('says "På dansk" and "În engleză" in lower case in the Member\'s UI Language', async () => {
-      vi.stubGlobal(
-        'fetch',
-        stubApi({
+      setup(
+        {
           'GET /api/settings/preferences': () =>
             Response.json({ effectiveCatalogLanguage: 'da' }),
-        }).fetchMock,
+        },
+        { locale: 'da', route: '/recipes?fromLink=1' },
       );
-      renderWithProviders(<RecipeFromLinkPage />, { locale: 'da' });
       expect(
         await screen.findByRole('radio', { name: 'På dansk' }),
       ).toBeChecked();
       cleanup();
-      vi.stubGlobal(
-        'fetch',
-        stubApi({
+      setup(
+        {
           'GET /api/settings/preferences': () =>
             Response.json({ effectiveCatalogLanguage: 'en' }),
-        }).fetchMock,
+        },
+        { locale: 'ro', route: '/recipes?fromLink=1' },
       );
-      renderWithProviders(<RecipeFromLinkPage />, { locale: 'ro' });
       expect(
         await screen.findByRole('radio', { name: 'În engleză' }),
       ).toBeChecked();
@@ -780,7 +981,7 @@ describe('RecipeFromLinkPage', () => {
         Response.json({ ...read({ servings: 4 }), sourceLanguage: 'fr' }),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await submit(user, 'https://www.example.com/pancakes');
+    await readAndOpen(user, 'https://www.example.com/pancakes');
     expect(await screen.findByText(/Translated from French/)).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await screen.findByText('Detail of the recipe');
@@ -798,7 +999,7 @@ describe('RecipeFromLinkPage', () => {
       'POST /api/recipes/from-link': () => Response.json(read({ servings: 4 })),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await submit(user, 'https://www.example.com/pancakes');
+    await readAndOpen(user, 'https://www.example.com/pancakes');
     await user.click(await screen.findByRole('button', { name: 'Save' }));
     await screen.findByText('Detail of the recipe');
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
@@ -813,7 +1014,7 @@ describe('RecipeFromLinkPage', () => {
         Response.json({ ...read({ servings: 4 }), sourceLanguage: 'fr' }),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    await submit(user, 'https://www.example.com/pancakes');
+    await readAndOpen(user, 'https://www.example.com/pancakes');
     await user.click(
       await screen.findByRole('button', { name: 'Remove link' }),
     );
@@ -829,10 +1030,6 @@ describe('RecipeFromLinkPage', () => {
     const textField = () => screen.getByLabelText(/^Recipe text/);
     const fromLink = (calls: ReturnType<typeof setup>['calls']) =>
       calls.find((c) => c.key === 'POST /api/recipes/from-link')?.body;
-    const failing = (code: string, status = 422) => ({
-      'POST /api/recipes/from-link': () =>
-        Response.json({ code, params: {} }, { status }),
-    });
 
     it('swaps the link field for a text field and sends the text with the language, no url', async () => {
       const user = userEvent.setup({ delay: null });
@@ -855,6 +1052,7 @@ describe('RecipeFromLinkPage', () => {
       );
       await user.type(textField(), '  2 eggs, whisk and fry  ');
       await user.click(submitButton);
+      await user.click(await stripReview());
       expect(await screen.findByLabelText(/^Title/)).toHaveValue(
         'Blog pancakes',
       );
@@ -878,6 +1076,7 @@ describe('RecipeFromLinkPage', () => {
       );
       await user.type(textField(), 'eggs');
       await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      await user.click(await stripReview());
       await user.click(await screen.findByRole('button', { name: 'Save' }));
       await screen.findByText('Detail of the recipe');
       const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
@@ -901,6 +1100,7 @@ describe('RecipeFromLinkPage', () => {
       );
       await user.type(textField(), 'eggs');
       await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      await user.click(await stripReview());
       expect(
         await screen.findByText('2 Recipes hidden by your Allergies'),
       ).toBeVisible();
@@ -927,74 +1127,9 @@ describe('RecipeFromLinkPage', () => {
       expect(textField()).toHaveFocus();
     });
 
-    it('shows progress and aborts on Cancel just like a link', async () => {
+    it('words the hint and the language choice for text, not for a page', async () => {
       const user = userEvent.setup({ delay: null });
-      const pending = hold(read());
-      const { signals } = setup({
-        'POST /api/recipes/from-link': pending.handler,
-      });
-      await user.click(
-        screen.getByRole('button', { name: 'Paste text instead' }),
-      );
-      await user.type(textField(), 'eggs');
-      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
-      expect(await screen.findByRole('status')).toHaveTextContent(
-        'Reading the recipe',
-      );
-      expect(textField()).toBeDisabled();
-      await user.click(screen.getByRole('button', { name: 'Cancel' }));
-      expect(signals.at(-1)?.aborted).toBe(true);
-      expect(textField()).toHaveValue('eggs');
-      expect(textField()).toHaveFocus();
-      pending.release();
-    });
-
-    it.each([
-      ['link.unreadable', /could not open that page/],
-      ['link.no_recipe', /could not find a recipe on that page/],
-    ])(
-      'offers to paste the text after %s, keeping the link',
-      async (code, copy) => {
-        const user = userEvent.setup({ delay: null });
-        setup(failing(code));
-        await submit(user, 'https://example.com/a');
-        const alert = await screen.findByRole('alert');
-        expect(alert).toHaveTextContent(copy);
-        expect(alert).not.toHaveTextContent('Paste the recipe text instead');
-        await user.click(
-          screen.getByRole('button', {
-            name: 'Paste the recipe text instead',
-          }),
-        );
-        expect(textField()).toHaveFocus();
-        expect(screen.queryByRole('alert')).toBeNull();
-        await user.click(
-          screen.getByRole('button', { name: 'Use a link instead' }),
-        );
-        expect(linkField()).toHaveValue('https://example.com/a');
-      },
-    );
-
-    it('says no recipe in the text, with no paste offer, in paste mode', async () => {
-      const user = userEvent.setup({ delay: null });
-      setup(failing('link.no_recipe'));
-      await user.click(
-        screen.getByRole('button', { name: 'Paste text instead' }),
-      );
-      await user.type(textField(), 'hello');
-      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent(/could not find a recipe in that text/);
-      expect(alert).not.toHaveTextContent(/page/);
-      expect(
-        screen.queryByRole('button', { name: 'Paste the recipe text instead' }),
-      ).toBeNull();
-      expect(textField()).toHaveValue('hello');
-    });
-
-    it('words the hint, the language choice and AI failures for text, not for a page', async () => {
-      const user = userEvent.setup({ delay: null });
-      setup(failing('scan.provider_refused', 502));
+      setup({});
       expect(screen.getByText(/Paste the link to a page/)).toBeVisible();
       await user.click(
         screen.getByRole('button', { name: 'Paste text instead' }),
@@ -1005,159 +1140,6 @@ describe('RecipeFromLinkPage', () => {
         screen.getByRole('radio', { name: "Keep the text's language" }),
       ).toBeVisible();
       expect(screen.queryByRole('radio', { name: /page/ })).toBeNull();
-      await user.type(textField(), 'eggs');
-      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent(/could not read a recipe from that text/);
-      expect(alert).not.toHaveTextContent(/page|link/);
     });
-
-    it('aborts a pending paste read when the Member leaves', async () => {
-      const user = userEvent.setup({ delay: null });
-      const pending = hold(read());
-      const { signals, unmount } = setup({
-        'POST /api/recipes/from-link': pending.handler,
-      });
-      await user.click(
-        screen.getByRole('button', { name: 'Paste text instead' }),
-      );
-      await user.type(textField(), 'eggs');
-      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
-      await screen.findByRole('status');
-      const signal = signals.at(-1);
-      expect(signal?.aborted).toBe(false);
-      unmount();
-      expect(signal?.aborted).toBe(true);
-      pending.release();
-    });
-
-    it.each([
-      ['link.invalid', 400],
-      ['link.cap_reached', 429],
-      ['scan.provider_unavailable', 502],
-    ])('does not offer to paste after %s', async (code, status) => {
-      const user = userEvent.setup({ delay: null });
-      setup(failing(code, status));
-      await submit(user, 'https://example.com/a');
-      await screen.findByRole('alert');
-      expect(
-        screen.queryByRole('button', { name: 'Paste the recipe text instead' }),
-      ).toBeNull();
-    });
-  });
-});
-
-describe('Already in your Recipes', () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  const duplicate = { kind: 'duplicate', recipeId: 'r-1' };
-  const link = 'https://www.example.com/pancakes';
-
-  it('offers Open and Read again instead of the form, with focus on the heading', async () => {
-    const user = userEvent.setup({ delay: null });
-    setup({ 'POST /api/recipes/from-link': () => Response.json(duplicate) });
-    await submit(user, link);
-    const heading = await screen.findByRole('heading', {
-      name: 'Already in your Recipes',
-    });
-    expect(heading).toHaveFocus();
-    expect(screen.getByRole('link', { name: 'Open' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Read again' })).toBeVisible();
-    expect(
-      screen.queryByRole('button', { name: 'Read the recipe' }),
-    ).toBeNull();
-    expect(screen.getByText('at /recipes/from-link')).toBeVisible();
-  });
-
-  it('Open goes to that Recipe', async () => {
-    const user = userEvent.setup({ delay: null });
-    const { calls } = setup({
-      'POST /api/recipes/from-link': () => Response.json(duplicate),
-    });
-    await submit(user, link);
-    await user.click(await screen.findByRole('link', { name: 'Open' }));
-    expect(await screen.findByText('Detail of the recipe')).toBeVisible();
-    expect(screen.getByText('at /recipes/r-1')).toBeVisible();
-    expect(
-      calls.filter((c) => c.key === 'POST /api/recipes/from-link'),
-    ).toHaveLength(1);
-  });
-
-  it('Read again sends the same request with force and opens the draft', async () => {
-    const user = userEvent.setup({ delay: null });
-    let first = true;
-    const { calls } = setup({
-      'POST /api/recipes/from-link': () => {
-        const answer = first ? duplicate : read({ servings: 4 });
-        first = false;
-        return Response.json(answer);
-      },
-    });
-    await user.click(
-      screen.getByRole('radio', { name: "Keep the page's language" }),
-    );
-    await submit(user, link);
-    await user.click(await screen.findByRole('button', { name: 'Read again' }));
-    expect(await screen.findByDisplayValue('Blog pancakes')).toBeVisible();
-    const bodies = calls
-      .filter((c) => c.key === 'POST /api/recipes/from-link')
-      .map((c) => c.body);
-    expect(bodies[0]).toEqual({ url: link, language: 'source' });
-    expect(bodies[1]).toEqual({ url: link, language: 'source', force: true });
-  });
-
-  it('Read again that fails shows the error and clears the panel', async () => {
-    const user = userEvent.setup({ delay: null });
-    let first = true;
-    setup({
-      'POST /api/recipes/from-link': () => {
-        if (first) {
-          first = false;
-          return Response.json(duplicate);
-        }
-        return Response.json(
-          { code: 'link.unreadable', message: 'x' },
-          { status: 422 },
-        );
-      },
-    });
-    await submit(user, link);
-    await user.click(await screen.findByRole('button', { name: 'Read again' }));
-    expect(await screen.findByRole('alert')).toBeVisible();
-    expect(screen.queryByText('Already in your Recipes')).toBeNull();
-    expect(linkField()).toHaveFocus();
-  });
-
-  it('editing the link or the language clears the panel', async () => {
-    const user = userEvent.setup({ delay: null });
-    setup({ 'POST /api/recipes/from-link': () => Response.json(duplicate) });
-    await submit(user, link);
-    await screen.findByText('Already in your Recipes');
-    await user.type(linkField(), '2');
-    expect(screen.queryByText('Already in your Recipes')).toBeNull();
-    expect(
-      screen.getByRole('button', { name: 'Read the recipe' }),
-    ).toBeEnabled();
-
-    await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
-    await screen.findByText('Already in your Recipes');
-    await user.click(
-      screen.getByRole('radio', { name: "Keep the page's language" }),
-    );
-    expect(screen.queryByText('Already in your Recipes')).toBeNull();
-  });
-
-  it('switching to pasted text clears the panel and shows the paste form', async () => {
-    const user = userEvent.setup({ delay: null });
-    setup({ 'POST /api/recipes/from-link': () => Response.json(duplicate) });
-    await submit(user, link);
-    await screen.findByText('Already in your Recipes');
-    await user.click(
-      screen.getByRole('button', { name: 'Paste text instead' }),
-    );
-    expect(screen.queryByText('Already in your Recipes')).toBeNull();
-    expect(
-      screen.getByRole('button', { name: 'Read the recipe' }),
-    ).toBeVisible();
   });
 });

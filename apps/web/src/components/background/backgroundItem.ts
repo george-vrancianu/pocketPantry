@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 
 /**
  * What the background strip and sheet show: one thing a Member started and carried on past, read in
- * the background. Voice Notes are the first kind; the Scan Session (receipt or photo) is the second; links join by extending `kind`.
+ * the background. Voice Notes are the first kind; the Scan Session (receipt or photo) is the second; a link read (the link-read holder) is the third; links join by extending `kind`.
  */
-export type BackgroundKind = 'voice' | 'receipt' | 'photo';
+export type BackgroundKind = 'voice' | 'receipt' | 'photo' | 'link';
 
 export type BackgroundStatus = 'reading' | 'ready' | 'failed';
 

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import { clearPendingTheme } from './appearance';
 import { voiceNote } from './voiceNote';
+import { linkReads } from './linkReads';
 import { sessionQueryKey, type Session } from './session';
 
 export type SignInInput = { email: string; password: string };
@@ -56,6 +57,7 @@ export function useSignOut() {
     onSuccess: () => {
       clearPendingTheme();
       voiceNote.clear();
+      linkReads.clear();
       queryClient.clear();
       queryClient.setQueryData(sessionQueryKey, null);
     },

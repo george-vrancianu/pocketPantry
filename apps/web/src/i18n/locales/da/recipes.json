@@ -255,7 +255,9 @@
       "body": "Dette link er allerede en af dine opskrifter. Åbn den, eller læs siden igen for at lave en ekstra kopi.",
       "open": "Åbn",
       "readAgain": "Læs igen"
-    }
+    },
+    "full_one": "{{count}} linklæsning venter på dig. Gennemse den først.",
+    "full_other": "{{count}} linklæsninger venter på dig. Gennemse en først."
   },
   "readingLanguage": {
     "label": "Opskriftens sprog",

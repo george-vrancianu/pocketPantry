@@ -10,7 +10,7 @@ import {
   displayType,
 } from '@pocket-pantry/ui';
 import { useId, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
@@ -30,6 +30,7 @@ import { useRecipeDrafts } from '../../lib/recipeDrafts';
 import { useRecipeDraftDiscard } from './useRecipeDraftDiscard';
 import { EmptyFamilyRecipes } from './components/EmptyFamilyRecipes';
 import { CookTonightPanel } from '../../components/CookTonightPanel';
+import { FromLinkSheet } from './components/FromLinkSheet';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
 import { SectionLabel } from './components/SectionLabel';
@@ -101,6 +102,9 @@ function groupVariants(found: RecipeListItem[]): RecipeListItem[] {
   );
 }
 
+/** The search parameter that holds the "From a link" sheet open: the old "From a link" route redirects to it. */
+export const FROM_LINK_PARAM = 'fromLink';
+
 /** The Family's Recipes (Catalog Recipes are reached through Explore): Bases by default, Variants too once a search or filter is active. */
 export function RecipesPage() {
   const { t } = useTranslation(['recipes', 'common']);
@@ -125,6 +129,17 @@ export function RecipesPage() {
   const draftCount =
     drafts.data?.filter((draft) => !discarding.hiddenIds.has(draft.id))
       .length ?? 0;
+  const [params, setParams] = useSearchParams();
+  const fromLinkOpen = params.get(FROM_LINK_PARAM) === '1';
+  const closeFromLink = () =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete(FROM_LINK_PARAM);
+        return next;
+      },
+      { replace: true },
+    );
   const headingId = useId();
   const filtering = isFiltering(browse);
   const found = recipes.data?.recipes ?? [];
@@ -153,7 +168,7 @@ export function RecipesPage() {
             { label: t('recipes:family.newRecipe'), href: '/recipes/new' },
             {
               label: t('recipes:fromLink.menuItem'),
-              href: '/recipes/from-link',
+              href: `/recipes?${FROM_LINK_PARAM}=1`,
             },
             {
               label: t('recipes:explore.menuItem'),
@@ -257,6 +272,11 @@ export function RecipesPage() {
           </section>
         ) : null}
       </Stack>
+      <FromLinkSheet
+        open={fromLinkOpen}
+        onClose={closeFromLink}
+        onExited={() => addButton.current?.focus()}
+      />
     </>
   );
 }

@@ -8,6 +8,7 @@ import { useVoiceBackgroundItems } from '../voice/useVoiceBackgroundItems';
 import { VoiceReviewAllFooter } from '../voice/VoiceReviewAllFooter';
 import { BackgroundSheet } from './BackgroundSheet';
 import { BackgroundStrip } from './BackgroundStrip';
+import { useLinkReadBackgroundItems } from './useLinkReadBackgroundItems';
 import {
   summarizeScanSession,
   useScanSessionBackgroundItems,
@@ -80,7 +81,8 @@ export function BackgroundHost({
   const scanItems = scanSession ? adapted : [];
   const scans = useScanSession().scans;
   const summary = summarizeScanSession(scanSession ? scans : []);
-  const items = [...voiceItems, ...scanItems];
+  const linkItems = useLinkReadBackgroundItems();
+  const items = [...voiceItems, ...scanItems, ...linkItems];
   const [wantSheet, setWantSheet] = useState(false);
   const [mounted, setMounted] = useState(false);
   const up = state.phase === 'idle' && items.length > 0;

@@ -19,5 +19,22 @@
     "receipt_other": "{{count}} kvitteringer",
     "photo_one": "{{count}} foto",
     "photo_other": "{{count}} fotos"
+  },
+  "link": {
+    "reading": "Læser et opskriftslink…",
+    "readingText": "Læser opskriftsteksten…",
+    "waiting": "Venter på at læse et opskriftslink",
+    "waitingText": "Venter på at læse opskriftsteksten",
+    "ready": "Opskriften er klar til gennemsyn",
+    "pastedText": "Indsat tekst",
+    "failed": "Opskriften kunne ikke læses",
+    "cancel": "Annuller",
+    "discard": "Kassér",
+    "review": "Gennemse opskriften fra {{what}}",
+    "cancelRead": "Annuller læsning af {{what}}",
+    "discardRead": "Kassér {{what}}",
+    "gone": "Det Opskriftsudkast gemmes ikke længere.",
+    "openRecipe": "Åbn opskriften fra {{what}}",
+    "readAgain": "Læs {{what}} igen"
   }
 }

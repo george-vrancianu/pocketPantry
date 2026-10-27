@@ -255,7 +255,9 @@
       "body": "This link is already one of your Recipes. Open it, or read the page again to make another copy.",
       "open": "Open",
       "readAgain": "Read again"
-    }
+    },
+    "full_one": "{{count}} link read is waiting for you. Review it first.",
+    "full_other": "{{count}} link reads are waiting for you. Review one first."
   },
   "readingLanguage": {
     "label": "Language of the recipe",
