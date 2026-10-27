@@ -908,6 +908,27 @@ export const meat: SeedSection = {
         ['chicken gizzards'],
         ['pipote pui', 'inimioare pui', 'pipote'],
       ],
+      [
+        'beef-tripe',
+        'Beef tripe',
+        'Burtă de vită',
+        'g',
+        ['tripe', 'honeycomb tripe', 'cleaned tripe'],
+        [
+          'burta vita',
+          'burta de vaca',
+          'burta curatata',
+          'burta pentru ciorba',
+        ],
+      ],
+      [
+        'beef-feet',
+        'Beef feet',
+        'Picioare de vită',
+        'g',
+        ['ox feet', 'cow feet'],
+        ['picioare vita', 'picioare de vaca'],
+      ],
     ]),
     ...ingredientsOf('cured-meat', [
       [

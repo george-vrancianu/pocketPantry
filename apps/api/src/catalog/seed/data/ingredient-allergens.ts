@@ -294,6 +294,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'beef-liver': [],
   'pork-liver': [],
   'chicken-hearts': [],
+  'beef-tripe': [],
+  'beef-feet': [],
 
   // meat/cured-meat
   'salt-pork': [],
@@ -1006,6 +1008,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   // snacks/nuts-and-seeds
   peanuts: ['peanuts'],
   almonds: ['tree-nuts'],
+  'flaked-almonds': ['tree-nuts'],
   walnuts: ['tree-nuts'],
   hazelnuts: ['tree-nuts'],
   cashews: ['tree-nuts'],
