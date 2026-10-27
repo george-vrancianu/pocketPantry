@@ -426,6 +426,19 @@ export const grains: SeedSection = {
         ['faina alba', 'faina 000', 'faina 650', 'faina de grau'],
       ],
       [
+        'strong-flour',
+        'Strong bread flour',
+        'Făină tip Manitoba',
+        'g',
+        [
+          'bread flour',
+          'strong white bread flour',
+          'strong white flour',
+          'manitoba flour',
+        ],
+        ['faina manitoba', 'faina tare'],
+      ],
+      [
         'tipo-00-flour',
         'Tipo 00 flour',
         'Făină tip 00',
@@ -575,6 +588,14 @@ export const grains: SeedSection = {
         'ml',
         ['vanilla essence'],
         ['extract vanilie', 'esenta de vanilie', 'esenta vanilie', 'vanilie'],
+      ],
+      [
+        'orange-blossom-water',
+        'Orange blossom water',
+        'Apă de flori de portocal',
+        'ml',
+        ['orange flower water'],
+        [],
       ],
       [
         'vanillin',
