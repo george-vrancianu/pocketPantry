@@ -9,6 +9,7 @@ import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { friedChicken } from './data/fried-chicken';
+import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { lentilSoup } from './data/lentil-soup';
 import { mamaliga } from './data/mamaliga';
@@ -44,4 +45,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   bakedSalmon,
   ciorbaDePerisoare,
   stegtFlaesk,
+  friedRice,
 ];
