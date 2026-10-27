@@ -14,6 +14,7 @@ import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { lentilSoup } from './data/lentil-soup';
 import { mamaliga } from './data/mamaliga';
+import { mici } from './data/mici';
 import { omelette } from './data/omelette';
 import { pancakes } from './data/pancakes';
 import { potatoPuree } from './data/potato-puree';
@@ -50,4 +51,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   friedRice,
   beefStew,
   roastedVegetables,
+  mici,
 ];
