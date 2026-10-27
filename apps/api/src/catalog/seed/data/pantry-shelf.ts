@@ -629,6 +629,22 @@ export const condiments: SeedSection = {
       ],
       ['tartar-sauce', 'Tartar sauce', 'Sos tartar', 'g'],
       [
+        'japanese-mayonnaise',
+        'Japanese mayonnaise',
+        'Maioneză japoneză',
+        'g',
+        ['kewpie', 'kewpie mayo'],
+        ['maioneza kewpie'],
+      ],
+      [
+        'remoulade',
+        'Danish remoulade',
+        'Sos remuladă danez',
+        'g',
+        undefined,
+        ['sos remoulade', 'remulada'],
+      ],
+      [
         'horseradish',
         'Horseradish',
         'Hrean',
@@ -846,6 +862,14 @@ export const condiments: SeedSection = {
           'cuburi sup',
           'cub sup',
         ],
+      ],
+      [
+        'vegetable-stock',
+        'Vegetable stock',
+        'Supă concentrată de legume',
+        'ml',
+        ['vegetable broth'],
+        ['supa de legume', 'bulion de legume'],
       ],
       [
         'vegetable-seasoning',
@@ -1191,6 +1215,14 @@ export const oils: SeedSection = {
         'ml',
         undefined,
         ['otet orez'],
+      ],
+      [
+        'sherry-vinegar',
+        'Sherry vinegar',
+        'Oțet de Xeres',
+        'ml',
+        ['jerez vinegar', 'vinagre de jerez'],
+        ['otet de sherry'],
       ],
     ]),
     ...ingredientsOf('cold-pressed-oils', [

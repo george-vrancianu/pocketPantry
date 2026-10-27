@@ -121,6 +121,23 @@ const RETIRED_SEED_TRANSLATIONS: string[] = [
   ),
 ];
 
+/**
+ * Display-name rows that held old wording. A name row is never dropped from the
+ * data, so it is deleted only while it still holds the old text (normalised);
+ * once rewritten, or renamed by an Admin, it is left alone.
+ */
+const RETIRED_SEED_NAMES: [id: string, normalizedValue: string][] = [
+  // Danish "Remoulade" was Tartar sauce's name; it now belongs to the new
+  // Danish remoulade Ingredient and Tartar sauce is "Tartarsauce". The old row
+  // is deleted, then the seed writes the new one in the same run.
+  [
+    stableId(
+      `translation:ingredient:${seedId.ingredient('tartar-sauce')}:da:name`,
+    ),
+    'remoulade',
+  ],
+];
+
 const PARENT_OF_LEAF = new Map(
   SEED_LEAVES.map((leaf) => [leaf.slug, leaf.parent]),
 );
@@ -168,7 +185,8 @@ async function seedAisleRows(tx: Pick<Database, 'select'>) {
  * Ingredient (e.g. an Admin-made Ingredient with the same normalised name)
  * fails loudly. Danish rows that clash with an Admin's are skipped and
  * counted instead, and names owned by two Ingredients are logged. Rows listed
- * in RETIRED_SEED_TRANSLATIONS are deleted. A seed Ingredient's Allergen tags
+ * in RETIRED_SEED_TRANSLATIONS are deleted; rows in RETIRED_SEED_NAMES are
+ * deleted only while they still hold their old text. A seed Ingredient's Allergen tags
  * are applied once, the first run that sees it untagged; after that they
  * belong to the Admins.
  */
@@ -310,6 +328,16 @@ export async function seedCatalog(
     await tx
       .delete(catalogTranslations)
       .where(inArray(catalogTranslations.id, RETIRED_SEED_TRANSLATIONS));
+    for (const [id, normalizedValue] of RETIRED_SEED_NAMES) {
+      await tx
+        .delete(catalogTranslations)
+        .where(
+          and(
+            eq(catalogTranslations.id, id),
+            eq(catalogTranslations.normalizedValue, normalizedValue),
+          ),
+        );
+    }
 
     const isDanish = (row: TranslationRow) => row.locale === 'da';
     await tx

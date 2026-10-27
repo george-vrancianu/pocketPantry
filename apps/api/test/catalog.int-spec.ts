@@ -808,6 +808,19 @@ describe('Catalog (integration)', () => {
               normalizedValue: 'guleroedder',
             });
 
+            // Tartar sauce's Danish name as the old seed wrote it.
+            await tx.insert(catalogTranslations).values({
+              id: stableId(
+                `translation:ingredient:${entity('tartar-sauce')}:da:name`,
+              ),
+              entityType: 'ingredient',
+              entityId: entity('tartar-sauce'),
+              locale: 'da',
+              kind: 'name',
+              value: 'Remoulade',
+              normalizedValue: 'remoulade',
+            });
+
             await expect(seedCatalog(tx)).resolves.toBeUndefined();
 
             // The retired rows are gone, so "squash" has one owner: Zucchini.
@@ -838,6 +851,25 @@ describe('Catalog (integration)', () => {
             ]);
             expect(await value('butter', 'da', 'name')).toEqual([
               'Smør af Admin',
+            ]);
+            // The old name moved to the new Ingredient.
+            expect(await value('tartar-sauce', 'da', 'name')).toEqual([
+              'Tartarsauce',
+            ]);
+            expect(await value('remoulade', 'da', 'name')).toEqual([
+              'Remoulade',
+            ]);
+            // A second run leaves an Admin's rename of that name alone.
+            await tx
+              .update(catalogTranslations)
+              .set({
+                value: 'Tartar fra Admin',
+                normalizedValue: 'tartar fra admin',
+              })
+              .where(rows('tartar-sauce', 'da', 'name'));
+            await expect(seedCatalog(tx)).resolves.toBeUndefined();
+            expect(await value('tartar-sauce', 'da', 'name')).toEqual([
+              'Tartar fra Admin',
             ]);
             // The Admin's Synonym is the only "minimælk"; the seeded copy was skipped.
             expect(await value('milk', 'da', 'synonym')).toEqual(

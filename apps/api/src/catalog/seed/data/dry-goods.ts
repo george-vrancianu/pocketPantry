@@ -459,6 +459,14 @@ export const grains: SeedSection = {
         ['amidon porumb', 'faina de porumb fina'],
       ],
       [
+        'glucose-syrup',
+        'Glucose syrup',
+        'Sirop de glucoză',
+        'g',
+        ['corn syrup', 'starch syrup', 'mulyeot'],
+        ['sirop de porumb', 'glucoza lichida'],
+      ],
+      [
         'masa-harina',
         'Masa harina',
         'Făină de porumb nixtamalizată (masa harina)',
