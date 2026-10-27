@@ -9,6 +9,7 @@ import { bolognese } from './data/bolognese';
 import { braisedRedCabbage } from './data/braised-red-cabbage';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
+import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { friedChicken } from './data/fried-chicken';
 import { friedRice } from './data/fried-rice';
@@ -54,4 +55,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   roastedVegetables,
   mici,
   braisedRedCabbage,
+  chiliConCarne,
 ];
