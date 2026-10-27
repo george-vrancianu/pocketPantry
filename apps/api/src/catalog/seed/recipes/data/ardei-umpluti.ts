@@ -287,8 +287,8 @@ export const ardeiUmpluti: BaseRecipeSeed = {
           quantity: 12,
           unit: 'pcs',
           note: t(
-            'pale yellow, medium, firm, able to stand upright',
-            'galben-pal, mijlocii, tari, care stau drepți',
+            'pale yellowish-white, medium, firm, able to stand upright',
+            'albi-gălbui, mijlocii, tari, care stau drepți',
           ),
         },
         { ingredient: 'minced-pork', quantity: 700, unit: 'g' },

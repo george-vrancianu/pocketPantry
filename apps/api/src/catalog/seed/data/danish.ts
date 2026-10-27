@@ -162,7 +162,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'bell-pepper': 'Peberfrugt',
   'kapia-pepper': 'Kapia-peber',
   'sivri-pepper': 'Sivri-peber (lang grøn peber)',
-  'hungarian-pepper': 'Ungarsk lysegul peber (TV-paprika)',
+  'hungarian-pepper': 'Ungarsk peberfrugt, hvid (TV-paprika)',
   'hot-pepper': 'Chilipeber',
   'birds-eye-chilli': "Thai-chili (bird's eye)",
   zucchini: 'Squash',
