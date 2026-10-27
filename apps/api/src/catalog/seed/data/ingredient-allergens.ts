@@ -60,6 +60,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   kale: [],
   chard: [],
   sorrel: [],
+  orache: [],
   nettles: [],
   'patience-dock': [],
   watercress: [],
@@ -306,6 +307,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'chicken-hearts': [],
   'beef-tripe': [],
   'beef-feet': [],
+  'chicken-feet': [],
+  'pork-ears': [],
 
   // meat/cured-meat
   'salt-pork': [],

@@ -29,9 +29,11 @@ import { ciorbaDeCiuperci } from './data/ciorba-de-ciuperci';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDeFasoleVerde } from './data/ciorba-de-fasole-verde';
 import { ciorbaDeLegume } from './data/ciorba-de-legume';
+import { ciorbaDeLoboda } from './data/ciorba-de-loboda';
 import { ciorbaDeMiel } from './data/ciorba-de-miel';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
+import { ciorbaDePotroace } from './data/ciorba-de-potroace';
 import { ciorbaDePraz } from './data/ciorba-de-praz';
 import { ciorbaDePui } from './data/ciorba-de-pui';
 import { ciorbaDeSalata } from './data/ciorba-de-salata';
@@ -64,6 +66,7 @@ import { grisCuLapte } from './data/gris-cu-lapte';
 import { homemadePizza } from './data/homemade-pizza';
 import { hummus } from './data/hummus';
 import { iahnieDeFasole } from './data/iahnie-de-fasole';
+import { lapteDePasare } from './data/lapte-de-pasare';
 import { lasagne } from './data/lasagne';
 import { lentilSoup } from './data/lentil-soup';
 import { macAndCheese } from './data/mac-and-cheese';
@@ -85,6 +88,7 @@ import { papanasi } from './data/papanasi';
 import { pasca } from './data/pasca';
 import { pastaCarbonara } from './data/pasta-carbonara';
 import { pastravLaGratar } from './data/pastrav-la-gratar';
+import { piftie } from './data/piftie';
 import { plachieDePeste } from './data/plachie-de-peste';
 import { placintaCuBranza } from './data/placinta-cu-branza';
 import { porkChops } from './data/pork-chops';
@@ -107,6 +111,7 @@ import { salataDeSfecla } from './data/salata-de-sfecla';
 import { salataDeVinete } from './data/salata-de-vinete';
 import { saramuraDePeste } from './data/saramura-de-peste';
 import { sarmale } from './data/sarmale';
+import { savarina } from './data/savarina';
 import { shakshuka } from './data/shakshuka';
 import { smorrebrod } from './data/smorrebrod';
 import { spaghettiAglioOlio } from './data/spaghetti-aglio-olio';
@@ -244,4 +249,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   stufatDeMiel,
   grisCuLapte,
   cremaDeZaharArs,
+  ciorbaDePotroace,
+  ciorbaDeLoboda,
+  piftie,
+  lapteDePasare,
+  savarina,
 ];
