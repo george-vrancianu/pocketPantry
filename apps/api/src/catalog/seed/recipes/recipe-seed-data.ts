@@ -53,6 +53,7 @@ import { smorrebrod } from './data/smorrebrod';
 import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
+import { tacos } from './data/tacos';
 import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
 import { tomatoSoup } from './data/tomato-soup';
@@ -116,4 +117,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   varzaCalita,
   salataDeBoeuf,
   lasagne,
+  tacos,
 ];
