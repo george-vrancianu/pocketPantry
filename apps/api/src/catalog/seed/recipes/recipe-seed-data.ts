@@ -18,6 +18,7 @@ import { burgers } from './data/burgers';
 import { chickenCurry } from './data/chicken-curry';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
+import { chiftele } from './data/chiftele';
 import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDeLegume } from './data/ciorba-de-legume';
@@ -178,4 +179,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   cornulete,
   ciorbaDePui,
   ciorbaDeLegume,
+  chiftele,
 ];
