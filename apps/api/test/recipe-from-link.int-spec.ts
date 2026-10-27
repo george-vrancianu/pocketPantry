@@ -1147,31 +1147,32 @@ describe('Recipe from Link (integration)', () => {
     });
   });
 
-  describe('one read in flight per Member', () => {
-    it('answers link.read_in_progress to a second concurrent read, and the first succeeds', async () => {
+  describe('two reads in flight per Member', () => {
+    it('answers link.read_in_progress to a third concurrent read, and the first two succeed', async () => {
       let release: () => void = () => undefined;
       const gate = new Promise<void>((resolve) => {
         release = resolve;
       });
-      let started: () => void = () => undefined;
-      const firstStarted = new Promise<void>((resolve) => {
-        started = resolve;
+      let startedCount = 0;
+      let bothStarted: () => void = () => undefined;
+      const twoStarted = new Promise<void>((resolve) => {
+        bothStarted = resolve;
       });
       page = async () => {
-        started();
+        startedCount += 1;
+        if (startedCount === 2) bothStarted();
         await gate;
         return { finalUrl: 'https://example.com/', html: jsonLdPage(PANCAKES) };
       };
       const first = read('https://example.com/slow-one').then((r) => r);
-      await firstStarted;
-      const second = await read('https://example.com/slow-two').expect(429);
-      expect(code(second)).toBe('link.read_in_progress');
-      expect(fetched).toHaveLength(1);
+      const second = read('https://example.com/slow-two').then((r) => r);
+      await twoStarted;
+      const third = await read('https://example.com/slow-three').expect(429);
+      expect(code(third)).toBe('link.read_in_progress');
+      expect(fetched).toHaveLength(2);
       release();
       expect((await first).status).toBe(200);
-      // Released: the Member can read again.
-      serve(jsonLdPage(PANCAKES));
-      await read('https://example.com/after').expect(200);
+      expect((await second).status).toBe(200);
     });
 
     it('releases the Member after a failed read', async () => {

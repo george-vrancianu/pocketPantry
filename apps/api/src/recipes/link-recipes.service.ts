@@ -48,6 +48,9 @@ export type ReadingInput =
   | { kind: 'pasted-text'; text: string };
 
 /** Recipe from Link: a page becomes a Family Recipe draft (ADR 0024), stored as the Member's Recipe Draft (ADR 0031). No Recipe is saved or queued here. */
+/** Matches the web app's MAX_LINK_READS: a Member reads at most this many links at once. */
+const MAX_CONCURRENT_READS = 2;
+
 @Injectable()
 export class LinkRecipesService {
   constructor(
@@ -64,10 +67,10 @@ export class LinkRecipesService {
   ) {}
 
   /**
-   * Members with a read in flight: one at a time each, so fetches are not a free flood.
+   * Reads in flight per Member: two at a time each (the web app's MAX_LINK_READS), so fetches are not a free flood.
    * In memory, so this holds per API process (a second process would not see it).
    */
-  private readonly reading = new Set<string>();
+  private readonly reading = new Map<string, number>();
 
   async read(
     memberId: string,
@@ -75,14 +78,17 @@ export class LinkRecipesService {
     locale: CatalogLocale,
     signal?: AbortSignal,
   ): Promise<RecipeFromLink> {
-    if (this.reading.has(memberId)) {
+    const running = this.reading.get(memberId) ?? 0;
+    if (running >= MAX_CONCURRENT_READS) {
       throw new ApiException(429, 'link.read_in_progress');
     }
-    this.reading.add(memberId);
+    this.reading.set(memberId, running + 1);
     try {
       return await this.readOne(memberId, body, locale, signal);
     } finally {
-      this.reading.delete(memberId);
+      const left = (this.reading.get(memberId) ?? 1) - 1;
+      if (left > 0) this.reading.set(memberId, left);
+      else this.reading.delete(memberId);
     }
   }
 
