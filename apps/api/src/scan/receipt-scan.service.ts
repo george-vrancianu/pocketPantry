@@ -8,6 +8,7 @@ import {
   type StructuredOutputResult,
 } from '../ai/structured-output-ai.service';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
+import { catalogIndexInstruction } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { deriveReceiptQuantity } from './receipt-quantity';
 import { fallbackNamePrompt, scanLanguagePrompt } from './scan-language';
@@ -51,17 +52,17 @@ export class ReceiptScanService {
           'For sourceText preserve the item wording printed on the receipt as closely as possible, including useful abbreviations.',
           'For included pantry lines, expand abbreviated labels into a concise consumer-facing productName when the text supports it; do not invent products. Keep package sizes out of productName because they belong in the quantity fields. For non-product lines, productName and productType must be null.',
           'For productType use a broad food category.',
-          'Match each item against the application catalog below. Ingredient tuples are [id, name, category].',
-          'Return matchedIngredientId only when that exact ID is present in the catalog and is a reasonable semantic match. Never invent an ID.',
+          'Match each item against the application catalog below.',
+          catalogIndexInstruction('matchedIngredientIndex'),
           'Return matchedCategory only from the catalog category list. When an ingredient is matched, use its catalog category.',
-          'matchConfidence measures confidence in the catalog ingredient match. Use null for matchedIngredientId when no catalog ingredient is a good match.',
+          'matchConfidence measures confidence in the catalog ingredient match. Use null for matchedIngredientIndex when no catalog ingredient is a good match.',
           `${fallbackNamePrompt(locale)} (for example, Greek yogurt becomes Yogurt).`,
-          'For matchExplanation return one concise, user-facing sentence explaining how the line was classified and, for pantry items, how its text was interpreted and why the catalog ingredient was or was not selected. Do not claim that an ingredient was matched when matchedIngredientId is null.',
+          'For matchExplanation return one concise, user-facing sentence explaining how the line was classified and, for pantry items, how its text was interpreted and why the catalog ingredient was or was not selected. Do not claim that an ingredient was matched when matchedIngredientIndex is null.',
           'Read quantity information separately from the product identity. quantityType must be package_size when a package weight or volume is printed in the product line or name, measured when the line shows an actual weighed amount sold, and count when neither applies.',
           'purchasedCount is the number of packages or items purchased and defaults to 1. For package_size, quantityPerItem and quantityUnit are the printed size of one purchased package. Example: "PIEPT PUI DEZ 650G" means package_size, purchasedCount 1, quantityPerItem 650, quantityUnit g. "2 X PIEPT PUI DEZ 650G" means purchasedCount 2 with the same 650 g package size.',
           'For measured goods such as "BANANE 1,240 KG" sold by weight, use measured, purchasedCount 1, quantityPerItem 1.24, and quantityUnit kg. For count, set quantityPerItem and quantityUnit to null. Respect the receipt language when interpreting decimal comma or decimal point.',
           'Only infer a package size or measured amount when the number and unit are printed in the receipt line. Do not treat prices, percentages, product codes, or digits in brand names as quantities.',
-          'For excluded lines set matchedIngredientId, matchedCategory, fallbackIngredientName, quantityType, purchasedCount, quantityPerItem, and quantityUnit to null, and set matchConfidence to 0.',
+          'For excluded lines set matchedIngredientIndex, matchedCategory, fallbackIngredientName, quantityType, purchasedCount, quantityPerItem, and quantityUnit to null, and set matchConfidence to 0.',
           'Return the purchase date as YYYY-MM-DD only when unambiguous. confidence is the per-item recognition confidence from 0 to 1.',
           `Application catalog: ${catalogPrompt}`,
         ].join(' '),
@@ -84,7 +85,9 @@ export class ReceiptScanService {
       const result = receiptScanModelResultSchema.parse(response.data);
       const lines: ReceiptScanResult['lines'] = result.lines.map(
         (recognizedLine, index) => {
-          const line = { ...recognizedLine, lineNumber: index + 1 };
+          const recognized = { ...recognizedLine, lineNumber: index + 1 };
+          // The index is the model's; the result names the Ingredient by id.
+          const { matchedIngredientIndex, ...line } = recognized;
 
           if (!line.includeInPantry) {
             return {
@@ -128,13 +131,15 @@ export class ReceiptScanService {
 
           const derivedQuantity = deriveReceiptQuantity(line, line.sourceText);
 
-          const match = this.ingredientCatalog.validateMatch(catalog, line);
+          const match = this.ingredientCatalog.validateMatch(
+            catalog,
+            recognized,
+          );
           const rejectedMatch =
-            line.matchedIngredientId !== null &&
+            matchedIngredientIndex !== null &&
             match.matchedIngredientId === null;
 
           return {
-            ...line,
             ...match,
             // Quantity uncertainty must not discard an otherwise valid grocery.
             // Keep known quantity metadata and let the user complete the amount.

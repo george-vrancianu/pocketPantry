@@ -16,7 +16,11 @@ import {
   pairingPrinciple,
 } from '../database/schema';
 import { ApiException } from '../common/api-exception';
-import { catalogPrompt } from '../ingredients/ingredient-catalog';
+import {
+  catalogIndexInstruction,
+  catalogPrompt,
+  ingredientIdAt,
+} from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { ScanCapService } from '../scan/scan-cap.service';
 import { LANGUAGE_NAMES } from '../scan/scan-language';
@@ -358,8 +362,14 @@ function pairingsOf(
     context.linkableRecipes.map((r) => [r.id, r.title]),
   );
   const result: SuggestedPairing[] = [];
-  for (const idea of proposed) {
+  for (const answered of proposed) {
     if (result.length >= MAX_PAIRINGS) break;
+    // The model names an Ingredient by index into the very Catalog `linkOffer` sent.
+    const { ingredientIndex, ...rest } = answered;
+    const idea = {
+      ...rest,
+      ingredientId: ingredientIdAt(context.catalog, ingredientIndex),
+    };
     const ids = [idea.ingredientId, idea.recipeId].filter(
       (id): id is string => id !== null,
     );
@@ -445,7 +455,7 @@ function suggestionPrompt(
   };
   const asks: Record<GuidanceField, string> = {
     nutritionNote: `nutritionNote: a short, balanced note on the dish's nutrition in at most ${MAX_NUTRITION_NOTE} characters. Say what is good about it and what is less good, in plain words. Give no numbers or nutrition values (no calories, grams, percentages) and no medical advice. Use null if you cannot say anything sound.`,
-    pairings: `pairings: up to ${MAX_PAIRINGS} foods or drinks that go well with the dish. Each has kind ("food" or "drink"), a short label (at most ${MAX_PAIRING_LABEL} characters), a reason in one or two plain sentences (at most ${MAX_PAIRING_REASON} characters), and principle: one of ${pairingPrinciple.enumValues.join(', ')} where one fits, else null. Set ingredientId to the id of a listed Catalog Ingredient, or recipeId to the id of a listed Recipe, only when the pairing is exactly that thing; otherwise leave both null. Never invent ids. Use null for the whole list if you have no sound idea.`,
+    pairings: `pairings: up to ${MAX_PAIRINGS} foods or drinks that go well with the dish. Each has kind ("food" or "drink"), a short label (at most ${MAX_PAIRING_LABEL} characters), a reason in one or two plain sentences (at most ${MAX_PAIRING_REASON} characters), and principle: one of ${pairingPrinciple.enumValues.join(', ')} where one fits, else null. ${catalogIndexInstruction('ingredientIndex', 'the pairing is exactly that ingredient')} Set ingredientIndex, or recipeId to the id of a listed Recipe, only when the pairing is exactly that thing; otherwise leave both null. Never invent ids. Use null for the whole list if you have no sound idea.`,
     eatingMoments: `eatingMoments: for which of the listed Eating Moments the dish is a good choice ("good_for") or best avoided ("avoid"), at most ${MAX_EATING_MOMENTS}. Each has eatingMomentId (an id from this list only: ${JSON.stringify(
       moments.map((m) => [m.id, m.name]),
     )}), polarity, and a reason in one or two plain sentences (at most ${MAX_EATING_MOMENT_REASON} characters). Use each Eating Moment at most once, never both good_for and avoid. Never invent ids. Use null for the whole list if you have no sound idea.`,

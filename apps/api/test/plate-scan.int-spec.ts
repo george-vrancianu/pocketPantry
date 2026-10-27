@@ -9,6 +9,7 @@ import type { Database } from '../src/database/database.types';
 import { unmatchedEntries } from '../src/database/schema';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { PLATE_TOKEN_TTL_MS } from '../src/scan/plate-token';
+import { expectCatalogByIndex } from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { signUpWithUiLanguage } from './support/stored-language';
 
@@ -255,20 +256,34 @@ describe('Plate Scan (integration)', () => {
       expect(prompts[0].prompt).toContain('"Pancakes"');
     });
 
-    it('never trusts the model: an id outside the Catalog, or a weak Match, is Unmatched', async () => {
+    it('never trusts the model: an index outside the Catalog, a UUID or other value that is not an index, or a weak Match, is Unmatched', async () => {
       respondWith({
         items: [
           item({
-            matchedIngredientId: '4b3f1f0a-0000-4000-8000-000000000000',
+            matchedIngredientIndex: '4b3f1f0a-0000-4000-8000-000000000000',
             fallbackIngredientName: 'Pixie dust',
           }),
           item({ matchConfidence: 0.2 }),
           item({ matchedIngredientId: null, matchConfidence: 0 }),
+          item({ matchedIngredientIndex: 100_000 }),
+          item({ matchedIngredientIndex: -1 }),
+          item({ matchedIngredientIndex: 2.5 }),
+          item({ matchedIngredientIndex: 'milk' }),
         ],
       });
+      prompts.length = 0;
       const { lines } = (await ingredients(await signUp()).expect(201))
         .body as { lines: Line[] };
-      expect(lines.map((l) => l.match)).toEqual([null, null, null]);
+      expect(lines.map((l) => l.match)).toEqual([
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]);
+      expectCatalogByIndex(prompts[0].prompt);
       expect(lines[0].name).toBe('Pixie dust');
     });
 
@@ -281,7 +296,7 @@ describe('Plate Scan (integration)', () => {
     });
 
     it('rejects a result the model got wrong with a stable code', async () => {
-      respondWith({ items: [item({ matchedIngredientId: 'milk' })] });
+      respondWith({ items: [item({ confidence: 2 })] });
       const failed = await ingredients(await signUp()).expect(502);
       expect(failed.body).toEqual({ code: 'scan.result_invalid', params: {} });
     });
@@ -413,7 +428,7 @@ describe('Plate Scan (integration)', () => {
       it('gives the use back when the provider fails, so the Member can retry', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item({ matchedIngredientId: 'milk' })] });
+        respondWith({ items: [item({ confidence: 2 })] });
         await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
         respondWith({ items: [item()] });
         await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
@@ -433,7 +448,7 @@ describe('Plate Scan (integration)', () => {
       it('refuses after 3 attempts in total, even when each failed', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item({ matchedIngredientId: 'milk' })] });
+        respondWith({ items: [item({ confidence: 2 })] });
         await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
         await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
         await ingredients(cookie, 'Pancakes', 'en', token).expect(502);

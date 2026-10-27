@@ -20,7 +20,7 @@ import { ShoppingService } from '../shopping/shopping.service';
 import { TranscriptionService } from './transcription.service';
 import {
   amountOf,
-  type ModelVoiceAction,
+  type ReadVoiceAction,
   type VoiceDefaultTarget,
   type VoiceOp,
   type VoiceTarget,
@@ -423,7 +423,7 @@ export class VoiceService {
   }
 
   private draftOf(
-    action: ModelVoiceAction,
+    action: ReadVoiceAction,
     ingredientId: string | null,
     today: string,
   ): Omit<VoiceActionDraft, 'target'> {

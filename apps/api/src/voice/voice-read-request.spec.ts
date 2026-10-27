@@ -1,3 +1,4 @@
+import { catalogIndexInstruction } from '../ingredients/ingredient-catalog';
 import { buildVoiceReadRequest } from './voice-read-request';
 import { VOICE_READ_SCHEMA_NAME } from './voice-actions';
 
@@ -29,6 +30,12 @@ describe('buildVoiceReadRequest', () => {
     expect(
       prompt.endsWith(`Transcript: ${JSON.stringify(input.transcript)}`),
     ).toBe(true);
+  });
+
+  it('tells the model to answer with a Catalog index, as every Catalog prompt does', () => {
+    expect(buildVoiceReadRequest(input).prompt).toContain(
+      catalogIndexInstruction('matchedIngredientIndex'),
+    );
   });
 
   it('asks for the fallback name in the Catalog Language, naming the UI Language only as what the app shows', () => {

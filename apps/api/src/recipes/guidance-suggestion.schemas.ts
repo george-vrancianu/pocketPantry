@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import {
   MAX_PAIRING_LABEL,
   MAX_PAIRING_REASON,
@@ -83,8 +85,8 @@ export const guidanceSuggestionSchema = z.object({
         reason: z.string(),
         /** One of the fixed Pairing Principles, null when none fits. */
         principle: z.string().nullable(),
-        /** An offered Catalog Ingredient id, or null. */
-        ingredientId: z.string().nullable(),
+        /** An offered Catalog Ingredient, by its index in the Catalog text, or null. */
+        ingredientIndex: catalogIndexSchema,
         /** An offered Recipe id, or null. */
         recipeId: z.string().nullable(),
       }),
@@ -107,9 +109,8 @@ export const guidanceSuggestionSchema = z.object({
 });
 export type GuidanceSuggestionAnswer = z.infer<typeof guidanceSuggestionSchema>;
 
-export const guidanceSuggestionJsonSchema = z.toJSONSchema(
+export const guidanceSuggestionJsonSchema = modelJsonSchema(
   guidanceSuggestionSchema,
-  { target: 'draft-7' },
 );
 
 /** A proposed Pairing: the Guidance body's Pairing, plus the name of what it links to, so the form can show it. */

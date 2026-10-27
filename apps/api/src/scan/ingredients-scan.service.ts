@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { CatalogReader } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import { catalogIndexInstruction } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { fallbackNamePrompt, scanLanguagePrompt } from './scan-language';
@@ -40,7 +41,9 @@ export class IngredientsScanService {
             INGREDIENTS_SCAN_MAX_ITEMS +
             ' items.',
           'Use a concise consumer-facing productName (for loose produce with no printed label, name it in the language above) and broad food productType. Do not invent a brand, quantity, expiry date, or details not visible.',
-          'Match each item against the application catalog. Ingredient tuples are [id, name, category]. Return matchedIngredientId only when that exact ID is present and is a reasonable match. Never invent IDs. Return matchedCategory only from catalog categories. matchConfidence measures catalog match confidence, not image-reading confidence. Use null when no catalog ingredient is a good match.',
+          'Match each item against the application catalog.',
+          catalogIndexInstruction('matchedIngredientIndex'),
+          'Return matchedCategory only from catalog categories. matchConfidence measures catalog match confidence, not image-reading confidence.',
           fallbackNamePrompt(locale) +
             '. confidence is per-item recognition confidence from 0 to 1.',
           'Application catalog: ' + this.ingredientCatalog.toPrompt(catalog),
@@ -57,10 +60,9 @@ export class IngredientsScanService {
         });
       }
       return {
-        items: result.items.map((value) => ({
-          ...value,
-          ...this.ingredientCatalog.validateMatch(catalog, value),
-        })),
+        items: result.items.map((value) =>
+          this.ingredientCatalog.validateMatch(catalog, value),
+        ),
       };
     } catch (error) {
       if (error instanceof ApiException) throw error;

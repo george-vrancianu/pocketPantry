@@ -428,12 +428,13 @@ describe('Voice Note (integration)', () => {
       });
     });
 
-    it("does not match another Family's Family Ingredient the model proposed by id", async () => {
+    it("never offers the model another Family's Family Ingredient, so its id cannot match", async () => {
       const a = await signUp();
       const b = await signUp();
+      const name = `Aonly ${Date.now()}`;
       const created = (
         await post(a.cookie, '/catalog/family-ingredients?locale=en', {
-          name: `Aonly ${Date.now()}`,
+          name,
           leafCategoryId: seedId.leaf('hard-cheese'),
           defaultUnit: 'g',
         }).expect(201)
@@ -455,6 +456,7 @@ describe('Voice Note (integration)', () => {
         }
       ).actions;
       expect(actions[0]).toMatchObject({ ingredient: null, name: 'Secret' });
+      expect(aiCalls.at(-1)?.prompt).not.toContain(name);
     });
 
     it('refunds the Voice Cap and reports voice.provider_unavailable when reading fails after transcription', async () => {

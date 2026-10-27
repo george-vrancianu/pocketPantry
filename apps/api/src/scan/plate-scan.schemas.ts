@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 import { imageDataUrlSchema } from './product-scan.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 
@@ -39,7 +41,8 @@ export const plateDishesJsonSchema = z.toJSONSchema(
 const plateItemSchema = z.object({
   productName: z.string().trim().min(1).max(120),
   productType: z.string().trim().min(1).max(80),
-  matchedIngredientId: z.uuid().nullable(),
+  /** The Catalog index the model chose; the service turns it into an Ingredient id. */
+  matchedIngredientIndex: catalogIndexSchema,
   matchedCategory: z.string().trim().min(1).max(80).nullable(),
   matchConfidence: z.number().min(0).max(1),
   fallbackIngredientName: z.string().trim().min(1).max(80),
@@ -52,9 +55,8 @@ const plateItemSchema = z.object({
 export const plateIngredientsModelResultSchema = z.object({
   items: z.array(plateItemSchema).max(100),
 });
-export const plateIngredientsJsonSchema = z.toJSONSchema(
+export const plateIngredientsJsonSchema = modelJsonSchema(
   plateIngredientsModelResultSchema,
-  { target: 'draft-7' },
 );
 
 export type DishGuess = { title: string; confidence: number };

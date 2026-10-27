@@ -2,11 +2,14 @@ import type { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogScope } from '../catalog/catalog-scope';
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import {
+  catalogIndexInstruction,
   catalogPrompt,
+  ingredientIdAt,
   CatalogMatchService,
   confidentMatch,
   keepConfident,
   validateCatalogMatch,
+  validateIndexedMatch,
 } from './catalog-matching';
 
 const ingredient = (id: string, name: string) =>
@@ -180,10 +183,91 @@ describe('Catalog text and id validation', () => {
     ],
   };
 
-  it('renders the Catalog as compact tuples', () => {
-    expect(catalogPrompt(catalog)).toBe(
-      '{"categories":["Dairy"],"ingredients":[["milk-id","Milk","Dairy"]]}',
+  const twoItems = {
+    categories: ['Dairy'],
+    ingredients: [
+      ...catalog.ingredients,
+      { id: 'cream-id', name: 'Cream', defaultUnit: 'ml', category: 'Dairy' },
+    ],
+  };
+
+  it('renders the Catalog as compact tuples, each Ingredient under its index instead of its id', () => {
+    expect(catalogPrompt(twoItems)).toBe(
+      '{"categories":["Dairy"],"ingredients":[[0,"Milk","Dairy"],[1,"Cream","Dairy"]]}',
     );
+  });
+
+  it('tells the model the tuple layout and to answer in the named field with an index, never an invented one', () => {
+    const instruction = catalogIndexInstruction('ingredientIndex');
+    expect(instruction).toContain('[index, name, category]');
+    expect(instruction).toContain('Set ingredientIndex to the index');
+    expect(instruction).toContain('never invent an index');
+    expect(instruction).toContain('a reasonable semantic match');
+  });
+
+  it('states the match rule a caller gives in place of a reasonable semantic match', () => {
+    const instruction = catalogIndexInstruction(
+      'ingredientIndex',
+      'the pairing is exactly that ingredient',
+    );
+    expect(instruction).toContain('the pairing is exactly that ingredient');
+    expect(instruction).not.toContain('semantic');
+  });
+
+  it('maps an index the model returns back to the id of that Ingredient in the same Catalog', () => {
+    expect(ingredientIdAt(twoItems, 0)).toBe('milk-id');
+    expect(ingredientIdAt(twoItems, 1)).toBe('cream-id');
+    expect(ingredientIdAt(twoItems, null)).toBeNull();
+  });
+
+  it('maps an index outside the Catalog, or one that is not an index, to no Ingredient', () => {
+    for (const index of [
+      2,
+      -1,
+      0.5,
+      Number.NaN,
+      Infinity,
+      '0',
+      '4b3f1f0a-0000-4000-8000-000000000000',
+      undefined,
+      {},
+    ]) {
+      expect(ingredientIdAt(twoItems, index)).toBeNull();
+    }
+  });
+
+  it('validates the Match the model gave by index as the Match of that Ingredient', () => {
+    expect(
+      validateIndexedMatch(twoItems, {
+        matchedIngredientIndex: 1,
+        matchedCategory: null,
+        matchConfidence: 0.9,
+      }),
+    ).toEqual({
+      matchedIngredientId: 'cream-id',
+      matchedIngredientName: 'Cream',
+      matchedIngredientDefaultUnit: 'ml',
+      matchedCategory: 'Dairy',
+      matchConfidence: 0.9,
+    });
+  });
+
+  it('rejects an index outside the Catalog like an invented id', () => {
+    for (const index of [2, -1, 0.5]) {
+      expect(
+        validateIndexedMatch(twoItems, {
+          matchedIngredientIndex: index,
+          matchedCategory: 'dairy',
+          matchConfidence: 0.9,
+        }),
+      ).toEqual({
+        matchedIngredientId: null,
+        matchedIngredientName: null,
+        matchedIngredientDefaultUnit: null,
+        matchedCategory: 'Dairy',
+        matchConfidence: 0,
+      });
+    }
   });
 
   it('rejects a proposed id that is not in the Catalog', () => {

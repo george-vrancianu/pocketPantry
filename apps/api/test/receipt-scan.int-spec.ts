@@ -7,6 +7,10 @@ import { ApiException } from '../src/common/api-exception';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { unmatchedEntries } from '../src/database/schema';
+import {
+  catalogIndexIn,
+  expectCatalogByIndex,
+} from './support/catalog-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { signUpWithUiLanguage } from './support/stored-language';
 
@@ -290,11 +294,47 @@ describe('Receipt Scan (integration)', () => {
     await scan(await signUp(), 'en', 'fr').expect(400);
   });
 
-  it('never trusts a model id: one outside the Catalog leaves the line Unmatched', async () => {
+  it('names Catalog Ingredients by index, never by UUID, and answers with the UUID of the index the model chose', async () => {
+    prompts.length = 0;
+    next = () =>
+      Promise.resolve({
+        data: receipt(
+          product({
+            matchedIngredientIndex: catalogIndexIn(prompts[0].prompt, 'Milk'),
+          }),
+        ),
+        requestId: 'fake-request',
+      });
+    const body = (await scan(await signUp()).expect(201)).body as unknown;
+    expect(prompts[0].prompt).toContain('"ingredients":[[0,');
+    expectCatalogByIndex(prompts[0].prompt);
+    expect(body).toMatchObject({
+      lines: [{ match: { id: seedId.ingredient('milk'), name: 'Milk' } }],
+    });
+  });
+
+  it('never trusts a model index: one outside the Catalog, or not an index at all, leaves the line Unmatched', async () => {
+    for (const index of [100_000, -1, 2.5]) {
+      respondWith(
+        receipt(
+          product({
+            matchedIngredientIndex: index,
+            fallbackIngredientName: 'Zzyzx mystery',
+          }),
+        ),
+      );
+      const body = (await scan(await signUp()).expect(201)).body as unknown;
+      expect(body).toMatchObject({
+        lines: [{ match: null, name: 'Zzyzx mystery' }],
+      });
+    }
+  });
+
+  it('never trusts a UUID the model gives in place of an index: the line stays Unmatched', async () => {
     respondWith(
       receipt(
         product({
-          matchedIngredientId: '4b3f1f0a-0000-4000-8000-000000000000',
+          matchedIngredientIndex: '4b3f1f0a-0000-4000-8000-000000000000',
           fallbackIngredientName: 'Zzyzx mystery',
         }),
       ),

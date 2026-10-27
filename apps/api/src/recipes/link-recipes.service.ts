@@ -8,7 +8,11 @@ import type { Database } from '../database/database.types';
 import { recipes } from '../database/schema';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
-import { catalogPrompt } from '../ingredients/ingredient-catalog';
+import {
+  catalogIndexInstruction,
+  catalogPrompt,
+  ingredientIdAt,
+} from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import {
   InjectPageFetcher,
@@ -28,6 +32,7 @@ import {
   linkReadingJsonSchema,
   linkReadingSchema,
   type LinkReading,
+  type LinkReadingAnswer,
 } from './link-reading.schemas';
 import { PlateRecipesService } from './plate-recipes.service';
 import { RecipeBrowseService } from './recipe-browse.service';
@@ -110,7 +115,7 @@ export class LinkRecipesService {
     const catalog = await this.ingredientCatalog.getCatalogIn(familyId, locale);
     const lists = await this.browse.filters(memberId, locale);
 
-    const reading = await this.ask(memberId, {
+    const answer = await this.ask(memberId, {
       prompt: readingPrompt(
         input,
         locale,
@@ -123,6 +128,14 @@ export class LinkRecipesService {
       maxOutputTokens: 8000,
       model: 'text',
     });
+    // The model names Ingredients by index into this very `catalog`.
+    const reading: LinkReading = {
+      ...answer,
+      ingredients: answer.ingredients.map(({ ingredientIndex, ...line }) => ({
+        ...line,
+        ingredientId: ingredientIdAt(catalog, ingredientIndex),
+      })),
+    };
 
     const draft = draftOfReading(reading, {
       ingredientNames: new Map(catalog.ingredients.map((i) => [i.id, i.name])),
@@ -215,7 +228,7 @@ export class LinkRecipesService {
   private async ask(
     memberId: string,
     request: Parameters<StructuredOutputAiService['generate']>[0],
-  ): Promise<LinkReading> {
+  ): Promise<LinkReadingAnswer> {
     return this.caps.withinCap(
       memberId,
       async () => {
@@ -261,7 +274,7 @@ function readingPrompt(
     'Do not invent values the recipe does not state: use null for servings, prepMinutes, cookMinutes, quantity and unit when missing. For a pinch, to taste or similar, keep quantity and unit null.',
     'Quantity and unit must be one of g, kg, ml, l, pcs. Convert cups, tablespoons, teaspoons, ounces and pounds to g or ml; use pcs for countable items. Put the amount exactly as written (for example "2 cups") in originalAmount, and any preparation (chopped, sifted) in preparation, in ' +
       `${writeIn}. Set optional only when the recipe marks the ingredient optional.`,
-    `Give nameAsWritten as a short ingredient name in ${writeIn}. Set ingredientId only to an exact id from the application catalog (tuples are [id, name, category]) that is a reasonable match, and matchConfidence to how sure you are; never invent an id.${keep ? ' The recipe and the catalog may be in different languages: match ingredients across languages.' : ''} Use null when no catalog ingredient fits.`,
+    `Give nameAsWritten as a short ingredient name in ${writeIn}. ${catalogIndexInstruction('ingredientIndex')} Set matchConfidence to how sure you are of that match.${keep ? ' The recipe and the catalog may be in different languages: match ingredients across languages.' : ''}`,
     `Set cuisineId or methodId only to an id from these lists, otherwise null. Cuisines [id, name]: ${pairs(lists.cuisines)}. Methods: ${pairs(lists.methods)}.`,
     `Application catalog: ${catalog}`,
     readingContent(input),

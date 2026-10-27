@@ -1,5 +1,7 @@
 import { z } from 'zod';
+import { modelJsonSchema } from '../ai/model-json-schema';
 import { ingredientUnit } from '../database/schema';
+import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
 
 /** Structured-output schema name of a Recipe from Link reading. */
 export const LINK_READING_SCHEMA_NAME = 'recipe_from_link_reading';
@@ -31,7 +33,8 @@ export const linkReadingSchema = z.object({
     z.object({
       /** The ingredient's name as written in the output language chosen in the prompt. */
       nameAsWritten: z.string(),
-      ingredientId: z.string().nullable(),
+      /** The Catalog index the model chose; `ingredientIdAt` turns it into an Ingredient id. */
+      ingredientIndex: catalogIndexSchema,
       matchConfidence: z.number(),
       quantity: z.number().nullable(),
       unit: z.enum(ingredientUnit.enumValues).nullable(),
@@ -41,11 +44,17 @@ export const linkReadingSchema = z.object({
     }),
   ),
 });
-export type LinkReading = z.infer<typeof linkReadingSchema>;
+/** What the model returned: Ingredients named by their index in the Catalog text. */
+export type LinkReadingAnswer = z.infer<typeof linkReadingSchema>;
+type AnswerLine = LinkReadingAnswer['ingredients'][number];
+/** The reading with each proposed Ingredient as an id (`ingredientIdAt`). */
+export type LinkReading = Omit<LinkReadingAnswer, 'ingredients'> & {
+  ingredients: (Omit<AnswerLine, 'ingredientIndex'> & {
+    ingredientId: string | null;
+  })[];
+};
 
-export const linkReadingJsonSchema = z.toJSONSchema(linkReadingSchema, {
-  target: 'draft-7',
-});
+export const linkReadingJsonSchema = modelJsonSchema(linkReadingSchema);
 
 /** The detected language as a lower-case base code ("pt-BR" -> "pt"), or null when empty or not a code. */
 export function detectedLanguage(

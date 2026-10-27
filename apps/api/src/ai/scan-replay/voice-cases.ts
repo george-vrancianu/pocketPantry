@@ -6,11 +6,7 @@ import {
   SCAN_LANGUAGES,
   type CatalogLocale,
 } from '../../catalog/catalog.schemas';
-import {
-  amountOf,
-  VOICE_OPS,
-  type VoiceReadModelResult,
-} from '../../voice/voice-actions';
+import { amountOf, VOICE_OPS, type VoiceRead } from '../../voice/voice-actions';
 import { VOICE_DEFAULT_TARGETS, VOICE_LISTS } from '../../voice/voice.schemas';
 import {
   exactIngredient,
@@ -117,7 +113,7 @@ export type ActionView = {
  * Catalog, and an unknown id never borrows a name another action in the batch looked up.
  */
 export function normalizeActions(
-  read: VoiceReadModelResult,
+  read: VoiceRead,
   catalog: VoiceCatalog,
   locale: CatalogLocale,
   threshold: number,

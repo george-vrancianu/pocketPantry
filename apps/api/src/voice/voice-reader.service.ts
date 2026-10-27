@@ -8,7 +8,8 @@ import { PantryService } from '../pantry/pantry.service';
 import { SettingsService } from '../settings/settings.service';
 import {
   voiceReadModelSchema,
-  type VoiceReadModelResult,
+  toVoiceRead,
+  type VoiceRead,
 } from './voice-actions';
 import type { VoiceDefaultTarget } from './voice-actions';
 import { buildVoiceReadRequest } from './voice-read-request';
@@ -46,7 +47,7 @@ export class VoiceReaderService {
     private readonly pantry: PantryService,
   ) {}
 
-  async read(input: VoiceReadInput): Promise<VoiceReadModelResult> {
+  async read(input: VoiceReadInput): Promise<VoiceRead> {
     const familyId = await this.settings.familyIdOf(input.memberId);
     const catalog = await this.ingredientCatalog.getCatalogIn(
       familyId,
@@ -68,8 +69,9 @@ export class VoiceReaderService {
         captureId: input.captureId,
       }),
     );
+    let read;
     try {
-      return voiceReadModelSchema.parse(response.data);
+      read = voiceReadModelSchema.parse(response.data);
     } catch (error) {
       // Field paths only, never the transcript.
       this.logger.warn({
@@ -86,5 +88,7 @@ export class VoiceReaderService {
       });
       throw new ApiException(502, 'voice.provider_unavailable');
     }
+    // The model names Ingredients by index into this very `catalog`.
+    return toVoiceRead(read, catalog);
   }
 }
