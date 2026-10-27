@@ -176,6 +176,14 @@ export const bakery: SeedSection = {
       ['pita', 'Pita bread', 'Lipie', 'pcs', ['pitta'], ['pita', 'lipii']],
       ['naan', 'Naan', 'Naan', 'pcs', ['naan bread']],
       ['lavash', 'Lavash', 'Lavaș', 'pcs'],
+      [
+        'somun',
+        'Somun',
+        'Lipie bosniacă (somun)',
+        'pcs',
+        ['lepinja', 'Bosnian flatbread'],
+        ['lipie bosniaca'],
+      ],
     ]),
     ...ingredientsOf('pastries', [
       [

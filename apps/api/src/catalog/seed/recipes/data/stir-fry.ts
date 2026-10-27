@@ -699,7 +699,7 @@ export const stirFry: BaseRecipeSeed = {
         { ingredient: 'sunflower-oil', quantity: 15, unit: 'ml' },
         { ingredient: 'sesame-oil', quantity: 10, unit: 'ml' },
         { ingredient: 'sesame-seeds', quantity: 5, unit: 'g' },
-        { ingredient: 'round-rice', quantity: 300, unit: 'g' },
+        { ingredient: 'sushi-rice', quantity: 300, unit: 'g' },
         {
           ingredient: 'still-water',
           key: 'rice-water',
@@ -737,8 +737,8 @@ export const stirFry: BaseRecipeSeed = {
         {
           key: 'rice',
           text: t(
-            'Rinse the short-grain rice until the water runs nearly clear. Put it in a pot with the 360 ml of water, bring to a boil, then cover and cook on the lowest heat for 12 minutes. Take it off the heat and leave it covered.',
-            'Spală orezul rotund până când apa se limpezește aproape complet. Pune-l într-o oală cu cei 360 ml de apă, adu la fierbere, apoi acoperă și gătește la foc foarte mic 12 minute. Ia oala de pe foc și las-o acoperită.',
+            'Rinse the sushi rice until the water runs nearly clear. Put it in a pot with the 360 ml of water, bring to a boil, then cover and cook on the lowest heat for 12 minutes. Take it off the heat and leave it covered.',
+            'Spală orezul pentru sushi până când apa se limpezește aproape complet. Pune-l într-o oală cu cei 360 ml de apă, adu la fierbere, apoi acoperă și gătește la foc foarte mic 12 minute. Ia oala de pe foc și las-o acoperită.',
           ),
           timerSeconds: 720,
         },

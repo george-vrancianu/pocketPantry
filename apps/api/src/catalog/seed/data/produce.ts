@@ -213,6 +213,14 @@ export const produce: SeedSection = {
       ],
       ['red-onion', 'Red onion', 'Ceapă roșie', 'pcs'],
       [
+        'pearl-onions',
+        'Pearl onions',
+        'Ceapă perlată',
+        'g',
+        ['baby onions'],
+        ['ceapă mică'],
+      ],
+      [
         'spring-onion',
         'Spring onion',
         'Ceapă verde',
@@ -405,6 +413,14 @@ export const produce: SeedSection = {
       ['enoki', 'Enoki mushrooms', 'Ciuperci enoki', 'g', ['enoki']],
     ]),
     ...ingredientsOf('fruit', [
+      [
+        'cooking-apples',
+        'Cooking apples',
+        'Mere pentru gătit',
+        'pcs',
+        ['Bramley apples', 'Bramley'],
+        ['mere bramley', 'mere acre'],
+      ],
       [
         'apple',
         'Apple',

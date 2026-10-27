@@ -298,6 +298,7 @@ export const dairy: SeedSection = {
       ],
     ]),
     ...ingredientsOf('milk-and-cream', [
+      ['kajmak', 'Kajmak', 'Caimac (kajmak)', 'g', ['kaymak']],
       [
         'milk',
         'Milk',

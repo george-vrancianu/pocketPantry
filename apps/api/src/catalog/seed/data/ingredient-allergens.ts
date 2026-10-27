@@ -38,6 +38,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   garlic: [],
   leek: [],
   shallot: [],
+  'pearl-onions': [],
 
   // produce/leafy-greens
   lettuce: [],
@@ -82,6 +83,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // produce/fruit
   apple: [],
+  'cooking-apples': [],
   pear: [],
   plum: [],
   peach: [],
@@ -177,6 +179,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   pita: ['gluten'],
   naan: ['gluten', 'milk'],
   lavash: ['gluten'],
+  somun: ['gluten'],
 
   // bakery/pastries
   croissant: ['gluten', 'milk'],
@@ -437,6 +440,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   milk: ['milk'],
   'lactose-free-milk': ['milk'],
   'sour-cream': ['milk'],
+  kajmak: ['milk'],
   'whipping-cream': ['milk'],
   'cooking-cream': ['milk'],
   buttermilk: ['milk'],
@@ -582,6 +586,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'brown-rice': [],
   'round-rice': [],
   'medium-grain-rice': [],
+  'sushi-rice': [],
   oats: ['gluten'],
 
   // grains/breakfast-cereals
@@ -770,6 +775,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // condiments/sweet-spreads
   jam: [],
+  'redcurrant-jelly': [],
   honey: [],
   'peanut-butter': ['peanuts'],
   'chocolate-spread': ['milk', 'soy', 'tree-nuts'],
@@ -835,6 +841,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   peppercorns: [],
   'bay-leaves': [],
   cloves: [],
+  'allspice-berries': [],
   'star-anise': [],
   'cinnamon-sticks': [],
   'cumin-seeds': [],

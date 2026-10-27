@@ -273,6 +273,14 @@ export const grains: SeedSection = {
         ['orez carolina', 'orez bob mediu'],
       ],
       [
+        'sushi-rice',
+        'Sushi rice',
+        'Orez pentru sushi',
+        'g',
+        ['japonica rice'],
+        ['orez sushi', 'orez japonez'],
+      ],
+      [
         'oats',
         'Oats',
         'Fulgi de ovăz',
