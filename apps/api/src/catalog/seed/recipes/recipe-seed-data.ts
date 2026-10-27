@@ -44,6 +44,7 @@ import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
 import { salataDeVinete } from './data/salata-de-vinete';
 import { sarmale } from './data/sarmale';
+import { shakshuka } from './data/shakshuka';
 import { smorrebrod } from './data/smorrebrod';
 import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
@@ -104,4 +105,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   pastaCarbonara,
   ostropel,
   mancareDeMazare,
+  shakshuka,
 ];
