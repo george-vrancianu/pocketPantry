@@ -21,16 +21,20 @@ import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { chiftele } from './data/chiftele';
 import { chiliConCarne } from './data/chili-con-carne';
+import { ciorbaDeCartofi } from './data/ciorba-de-cartofi';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDeLegume } from './data/ciorba-de-legume';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaDePui } from './data/ciorba-de-pui';
+import { ciorbaDeVacuta } from './data/ciorba-de-vacuta';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { coleslaw } from './data/coleslaw';
 import { cornulete } from './data/cornulete';
 import { cottagePie } from './data/cottage-pie';
 import { cozonac } from './data/cozonac';
+import { falafel } from './data/falafel';
+import { fasoleBatuta } from './data/fasole-batuta';
 import { fishAndChips } from './data/fish-and-chips';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
@@ -60,6 +64,7 @@ import { paella } from './data/paella';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
+import { plachieDePeste } from './data/plachie-de-peste';
 import { placintaCuBranza } from './data/placinta-cu-branza';
 import { porkChops } from './data/pork-chops';
 import { potatoPuree } from './data/potato-puree';
@@ -184,4 +189,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   chiftele,
   cartofiTaranesti,
   spaghettiAglioOlio,
+  ciorbaDeVacuta,
+  ciorbaDeCartofi,
+  fasoleBatuta,
+  plachieDePeste,
+  falafel,
 ];

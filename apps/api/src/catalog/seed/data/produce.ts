@@ -339,6 +339,14 @@ export const produce: SeedSection = {
         ['endive'],
         ['cicoare de bruxelles'],
       ],
+      [
+        'couve-galega',
+        'Portuguese kale (couve galega)',
+        'Varză portugheză cu frunze (couve galega)',
+        'g',
+        ['couve galega', 'portuguese cabbage'],
+        [],
+      ],
     ]),
     ...ingredientsOf('brassicas', [
       [
@@ -711,6 +719,14 @@ export const herbs: SeedSection = {
         'Arpagic chinezesc',
         'g',
         ['chinese chives', 'nira', 'gui chai'],
+      ],
+      [
+        'curry-leaves',
+        'Curry leaves',
+        'Frunze de curry',
+        'g',
+        ['kari patta', 'kadi patta', 'curry leaf'],
+        ['frunze curry'],
       ],
     ]),
     ...ingredientsOf('woody-herbs', [

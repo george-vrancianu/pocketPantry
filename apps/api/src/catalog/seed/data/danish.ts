@@ -1045,6 +1045,15 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'beyaz-peynir': 'Tyrkisk hvid ost (beyaz peynir)',
   'shaoxing-wine': 'Shaoxing-risvin',
   'dried-shrimp': 'Tørrede rejer',
+  tkemali: 'Tkemali (georgisk sur blommesauce)',
+  'khmeli-suneli': 'Khmeli suneli (georgisk krydderiblanding)',
+  'rock-sugar': 'Kandis',
+  'hoisin-sauce': 'Hoisinsauce',
+  chourico: 'Chouriço (portugisisk røget pølse)',
+  'split-fava-beans': 'Flækkede favabønner (uden skal)',
+  'curry-leaves': 'Karryblade',
+  'preserved-lemons': 'Saltede citroner',
+  'couve-galega': 'Portugisisk grønkål (couve galega)',
 };
 
 /** Receipt and label words that differ from the display name. */
@@ -1163,4 +1172,8 @@ export const DA_SYNONYMS: Record<string, string[]> = {
   'ho-fun': ['friske risnudler'],
   'beyaz-peynir': ['tyrkisk ost'],
   'shaoxing-wine': ['shaoxing vin', 'kinesisk madlavningsvin'],
+  'rock-sugar': ['kandissukker', 'kandis sukker'],
+  'split-fava-beans': ['favabønner flækkede', 'hestebønner flækkede'],
+  'curry-leaves': ['karry blade', 'curryblade'],
+  'preserved-lemons': ['syltede citroner', 'citron i salt', 'saltcitroner'],
 };
