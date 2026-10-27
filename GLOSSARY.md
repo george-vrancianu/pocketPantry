@@ -437,6 +437,32 @@ _Avoid_: Grace period, trash
 The one-time pill and peek that teach a list's swipe and hold gestures, shown once per list and remembered on the device. Not a Tip, which is cooking advice on a Recipe.
 _Avoid_: Tutorial, onboarding
 
+### Credits
+
+**Credit**:
+The unit a Family spends to use the app's AI reads: Scans, Voice Notes, Assistant Requests, Recipe from Link reads and Suggest Guidance. Belongs to the Family, so every Member spends from the same Credits. A read is charged only when it succeeds, whether or not its result is saved; a read that fails or finds nothing costs none. Admin work on Catalog Recipes never costs Credits. Not a Cap: a read must be within its Cap and paid for in Credits.
+_Avoid_: Token (an Assistant Token is a secret), coin, point, quota
+
+**Credit Balance**:
+The Credits a Family has left, seen by every Member with the recent reads that spent it and by whom. It never goes below zero: a read is paid for when it starts and given back if it fails, so a read whose Credit Price is more than what is left is refused at once, and a read already started always finishes.
+_Avoid_: Wallet, allowance
+
+**Credit Price**:
+What one successful read costs in Credits: 1 for a Scan (each Receipt Section counts, and a Plate Scan includes its picked dish), a Voice Note, an Assistant Request, Suggest Guidance or pasted recipe text, and 2 for reading a recipe from a web page. Barcode Lookups are free. Set by the app and changed as Usage Records show what reads really cost.
+_Avoid_: Fee, rate
+
+**Credit Grant**:
+Credits added to a Family by the app rather than spent, always with a reason. The Welcome Grant is one; others are given by hand.
+_Avoid_: Top-up, purchase, refund
+
+**Welcome Grant**:
+The 100 Credits a Member brings once in their life, paid into the Family they belong to when they sign up. A Household of One made later, when a Member leaves, is removed, or their Family is deleted, starts with none. A Member who joins a Family brings their Household of One's Credits with them; one who leaves leaves theirs behind. Every Family that existed when Credits began got one too.
+_Avoid_: Starting balance, free credits, bonus
+
+**Usage Record**:
+What the app keeps about one call to an AI provider: which read it served, for which Member and Family, and what it cost in money. One read can make several, such as a Voice Note's transcription and reading. Kept for the app's own accounting, even after a Family is deleted; never shown to Members and never a Credit.
+_Avoid_: Credit (what the Family pays), log, expense
+
 ### Intro
 
 **Gator**:

@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 
-/** Total attempts per title per token, failures included. */
+/** Total attempts per token, failures included. */
 export const MAX_ATTEMPTS = 3;
 
 /**
- * Remembers which signed dish titles have been spent, so one Plate token
- * loads each title's Ingredients at most once (each load sends the whole
- * Catalog to the model, so replaying a token would defeat the Scan Cap).
+ * Remembers which Plate tokens have been spent, so one token loads the
+ * Ingredients of one picked dish, once (each load sends the whole Catalog to
+ * the model, so loading every signed title, or replaying a token, would
+ * defeat the Scan Cap).
  *
  * Per-process and in memory: it assumes a single API instance. Running several
  * instances needs a durable shared store (a follow-up); until then a replay
@@ -21,21 +22,16 @@ export class PlateTokenUses {
   >();
 
   /**
-   * Marks the title spent. False if it already is, or if it was already
-   * attempted MAX_ATTEMPTS times (a released use may be retried, but not
-   * without limit). Synchronous, so concurrent requests cannot both win.
+   * Marks the token spent. False if it already is, or if it was already
+   * attempted MAX_ATTEMPTS times (a released use may be retried, for any
+   * signed title, but not without limit). Synchronous, so concurrent requests
+   * cannot both win.
    */
-  claim(
-    signature: string,
-    title: string,
-    expiresAt: number,
-    now = Date.now(),
-  ): boolean {
+  claim(signature: string, expiresAt: number, now = Date.now()): boolean {
     this.prune(now);
-    const key = this.key(signature, title);
-    const entry = this.spent.get(key);
+    const entry = this.spent.get(signature);
     if (entry && (entry.held || entry.attempts >= MAX_ATTEMPTS)) return false;
-    this.spent.set(key, {
+    this.spent.set(signature, {
       expiresAt,
       attempts: (entry?.attempts ?? 0) + 1,
       held: true,
@@ -44,17 +40,13 @@ export class PlateTokenUses {
   }
 
   /** Gives the use back, e.g. after the provider failed. The attempt still counts. */
-  release(signature: string, title: string): void {
-    const entry = this.spent.get(this.key(signature, title));
+  release(signature: string): void {
+    const entry = this.spent.get(signature);
     if (entry) entry.held = false;
   }
 
   get size(): number {
     return this.spent.size;
-  }
-
-  private key(signature: string, title: string) {
-    return `${signature}\n${title.trim()}`;
   }
 
   private prune(now: number) {

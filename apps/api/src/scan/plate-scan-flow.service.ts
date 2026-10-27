@@ -23,7 +23,7 @@ import { ScanCapService } from './scan-cap.service';
  * back if the provider fails); loading the picked dish's Ingredients is the
  * second half of the same Scan and is not counted again, but needs the token
  * the photo step signed, so it cannot be called for an arbitrary title, and
- * each signed title can be loaded once per token (handed back if the provider fails).
+ * each token loads one picked dish, once (handed back if the provider fails).
  */
 @Injectable()
 export class PlateScanFlowService {
@@ -64,8 +64,8 @@ export class PlateScanFlowService {
       dishTitle: input.dishTitle,
       token: input.plateToken,
     });
-    // Claimed synchronously before any await, so concurrent calls for one title cannot both pass.
-    if (!this.uses.claim(signature, input.dishTitle, expiresAt)) {
+    // Claimed synchronously before any await, so concurrent calls on one token cannot both pass.
+    if (!this.uses.claim(signature, expiresAt)) {
       throw new ApiException(400, 'scan.plate_token_invalid');
     }
     const familyId = await this.settings.familyIdOf(memberId);
@@ -79,7 +79,7 @@ export class PlateScanFlowService {
         familyId,
       ));
     } catch (error) {
-      this.uses.release(signature, input.dishTitle);
+      this.uses.release(signature);
       throw error;
     }
     const ids = [
