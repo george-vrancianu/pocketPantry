@@ -34,6 +34,7 @@ import { smorrebrod } from './data/smorrebrod';
 import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
+import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
@@ -70,4 +71,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   chickenCurry,
   macAndCheese,
   steamedMussels,
+  tochitura,
 ];
