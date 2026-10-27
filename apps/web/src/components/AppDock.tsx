@@ -1,9 +1,9 @@
 import {
   Dock,
   DockCapsule,
+  CookbookIcon,
   HomeIcon,
   PantryIcon,
-  RecipesIcon,
   ShoppingIcon,
   type DockEntry,
   type DockTeach,
@@ -60,7 +60,7 @@ export function AppDock({ activeKey, teach, cameraHref = '/scan' }: Props) {
       key: 'recipes',
       label: t('recipes'),
       href: '/recipes',
-      icon: <RecipesIcon />,
+      icon: <CookbookIcon />,
     },
   ];
   return (

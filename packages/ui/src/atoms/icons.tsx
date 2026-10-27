@@ -122,6 +122,17 @@ const ICON_NODES = {
     ['path', { d: 'M5 4h14v16H5z' }],
     ['path', { d: 'M8 9h8M8 13h8M8 17h5' }],
   ],
+  /** The open book with a ribbon on the right page: the Recipes tab. */
+  cookbook: [
+    [
+      'path',
+      {
+        d: 'M12 7c-1.7-1.6-4.2-2.3-8-2.3V18c3.8 0 6.3.7 8 2.3 1.7-1.6 4.2-2.3 8-2.3V4.7c-3.8 0-6.3.7-8 2.3z',
+      },
+    ],
+    ['path', { d: 'M12 7v13.3' }],
+    ['path', { d: 'M15.2 5v4.6l-1.3-1-1.3 1V5.3' }],
+  ],
   scan: [
     ['path', { d: 'M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3' }],
     ['path', { d: 'M8 12h8' }],
@@ -280,6 +291,7 @@ export const BookmarkIcon = handoff('bookmark');
 export const ShoppingIcon = handoff('basket');
 export const PantryIcon = handoff('pantry');
 export const RecipesIcon = handoff('recipes');
+export const CookbookIcon = handoff('cookbook');
 export const ScanIcon = handoff('scan');
 export const InfoIcon = handoff('info');
 export const DeleteIcon = handoff('trash');

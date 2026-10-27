@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Reading a recipe link into your CookBook" class="pg-anim pg-read-link">
+<style>
+.pg-read-link{--d:2.6s}
+.pg-read-link .ink{stroke:var(--ink,#2B2418)}
+.pg-read-link .mut{stroke:var(--muted,#766A58)}
+.pg-read-link .cover{fill:var(--accent,#5F6F2E)}
+.pg-read-link .spine{fill:var(--ink,#2B2418);opacity:.28}
+.pg-read-link .pages{fill:var(--surface,#FBF8F1)}
+.pg-read-link .mark{fill:var(--butter,#F0C96B)}
+.pg-read-link .card{fill:var(--surface,#FBF8F1);stroke:var(--line-strong,#D6C9B2)}
+.pg-read-link .card-l{stroke:var(--accent,#5F6F2E)}
+.pg-read-link .ring{stroke:var(--accent,#5F6F2E)}
+.pg-read-link .written{stroke:var(--accent,#5F6F2E);opacity:0;animation:pg-link-written var(--d) linear infinite}
+.pg-read-link .doc{animation:pg-link-doc var(--d) cubic-bezier(.45,0,.55,1) infinite}
+.pg-read-link .book{transform-origin:36px 34px;animation:pg-link-thump var(--d) ease-out infinite}
+.pg-read-link .mark{transform-origin:36px 33.6px;animation:pg-link-mark var(--d) ease-out infinite}
+.pg-read-link .ring{transform-origin:11px 25px;animation:pg-link-ring var(--d) ease-out infinite}
+.pg-read-link .globe{transform-origin:11px 25px;animation:pg-link-globe var(--d) ease-in-out infinite}
+@keyframes pg-link-doc{
+  0%{transform:translate(11px,25px) scale(0);opacity:0}
+  10%{transform:translate(11px,25px) scale(1);opacity:1}
+  16%{transform:translate(11px,25px) scale(1);opacity:1}
+  32%{transform:translate(18px,16px) rotate(-10deg) scale(1)}
+  48%{transform:translate(27px,11px) rotate(0deg) scale(1)}
+  58%{transform:translate(38px,15px) rotate(10deg) scale(.85);opacity:1}
+  68%{transform:translate(41px,25px) rotate(0deg) scale(.45);opacity:0}
+  100%{transform:translate(41px,25px) scale(.45);opacity:0}
+}
+@keyframes pg-link-written{0%,66%{opacity:0}74%{opacity:1}94%{opacity:1}100%{opacity:0}}
+@keyframes pg-link-thump{
+  0%,64%{transform:scale(1,1)}
+  70%{transform:scale(1.06,.9)}
+  78%{transform:scale(.98,1.03)}
+  86%,100%{transform:scale(1,1)}
+}
+@keyframes pg-link-mark{
+  0%,66%{transform:rotate(0)}
+  72%{transform:rotate(-14deg)}
+  80%{transform:rotate(9deg)}
+  88%,100%{transform:rotate(0)}
+}
+@keyframes pg-link-ring{
+  0%,12%{transform:scale(.9);opacity:0}
+  14%{opacity:.7}
+  34%{transform:scale(1.8);opacity:0}
+  100%{transform:scale(1.8);opacity:0}
+}
+@keyframes pg-link-globe{
+  0%,8%{transform:scale(1)}
+  12%{transform:scale(.92)}
+  18%{transform:scale(1.04)}
+  24%,100%{transform:scale(1)}
+}
+@media (prefers-reduced-motion:reduce){.pg-read-link *{animation:none!important}.pg-read-link .doc{transform:translate(27px,11px);opacity:1}.pg-read-link .written{opacity:0}.pg-read-link .ring{opacity:0}}
+</style>
+<g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle class="ring" cx="11" cy="25" r="7.5" stroke-width="1.5"/>
+  <g class="globe mut">
+    <circle cx="11" cy="25" r="7.5"/>
+    <ellipse cx="11" cy="25" rx="3.2" ry="7.5"/>
+    <path d="M3.5 25h15M5 21.2h12M5 28.8h12"/>
+  </g>
+  <g class="book">
+    <path class="cover" d="M25.5 16Q31 14.2 36 17.6Q41 14.2 46.5 16V33.2Q41 31.4 36 34.8Q31 31.4 25.5 33.2Z"/>
+    <path class="pages" d="M27 17.6Q31.5 16.2 36 18.9Q40.5 16.2 45 17.6V31.9Q40.5 30.5 36 33.2Q31.5 30.5 27 31.9Z"/>
+    <path d="M36 18.9V33.2" stroke="var(--line-strong,#D6C9B2)" stroke-width="1"/>
+    <path d="M29.5 22h4.3M29.5 25h3.8M29.5 28h3.2" stroke="var(--line-strong,#D6C9B2)" stroke-width="1.2"/>
+    <path class="written" d="M38.2 22h4.3M38.2 25h3.8M38.2 28h3.2" stroke-width="1.2"/>
+    <path class="mark" d="M35.2 33.6h1.6v5.4l-.8-.8-.8.8z"/>
+  </g>
+  <g class="doc">
+    <rect class="card" x="-3.4" y="-4.4" width="6.8" height="8.8" rx="1" stroke-width="1.2"/>
+    <path class="card-l" d="M-1.6-1.6h3.2M-1.6 .8h3.2M-1.6 3h2" stroke-width="1.1"/>
+  </g>
+</g>
+</svg>

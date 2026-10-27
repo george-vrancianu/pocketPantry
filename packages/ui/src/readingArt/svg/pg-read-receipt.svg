@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Reading your receipt" class="pg-anim pg-read-receipt">
+<style>
+.pg-read-receipt{--d:2.6s}
+.pg-read-receipt .paper{fill:var(--surface,#FBF8F1);stroke:var(--line-strong,#D6C9B2)}
+.pg-read-receipt .head{stroke:var(--ink,#2B2418)}
+.pg-read-receipt .l{stroke:var(--line-strong,#D6C9B2);animation:var(--d) linear infinite}
+.pg-read-receipt .beam{animation:pg-rcpt-beam var(--d) linear infinite}
+.pg-read-receipt .bar{fill:var(--accent,#5F6F2E)}
+.pg-read-receipt .glow{fill:var(--accent,#5F6F2E);opacity:.16}
+.pg-read-receipt .tick{stroke:var(--accent,#5F6F2E);opacity:0;animation:var(--d) ease-out infinite}
+@keyframes pg-rcpt-beam{
+  0%{transform:translateY(9px);opacity:0}
+  4%{opacity:1}
+  70%{transform:translateY(36px);opacity:1}
+  78%{transform:translateY(38px);opacity:0}
+  100%{transform:translateY(38px);opacity:0}
+}
+/* lines turn accent as the beam passes; everything resets together at 80–88% */
+.pg-read-receipt .l.n1{animation-name:pg-rcpt-line1}
+.pg-read-receipt .tick.n1{animation-name:pg-rcpt-tick1}
+@keyframes pg-rcpt-line1{0%,19.2%{stroke:var(--line-strong,#D6C9B2)}21.2%,78%{stroke:var(--accent,#5F6F2E)}88%,100%{stroke:var(--line-strong,#D6C9B2)}}
+@keyframes pg-rcpt-tick1{0%,19.2%{opacity:0;transform:scale(.4)}21.2%{opacity:1;transform:scale(1.25)}24.7%{transform:scale(1)}78%{opacity:1;transform:scale(1)}88%,100%{opacity:0;transform:scale(1)}}
+.pg-read-receipt .l.n2{animation-name:pg-rcpt-line2}
+.pg-read-receipt .tick.n2{animation-name:pg-rcpt-tick2}
+@keyframes pg-rcpt-line2{0%,30.9%{stroke:var(--line-strong,#D6C9B2)}32.9%,78%{stroke:var(--accent,#5F6F2E)}88%,100%{stroke:var(--line-strong,#D6C9B2)}}
+@keyframes pg-rcpt-tick2{0%,30.9%{opacity:0;transform:scale(.4)}32.9%{opacity:1;transform:scale(1.25)}36.4%{transform:scale(1)}78%{opacity:1;transform:scale(1)}88%,100%{opacity:0;transform:scale(1)}}
+.pg-read-receipt .l.n3{animation-name:pg-rcpt-line3}
+.pg-read-receipt .tick.n3{animation-name:pg-rcpt-tick3}
+@keyframes pg-rcpt-line3{0%,42.6%{stroke:var(--line-strong,#D6C9B2)}44.6%,78%{stroke:var(--accent,#5F6F2E)}88%,100%{stroke:var(--line-strong,#D6C9B2)}}
+@keyframes pg-rcpt-tick3{0%,42.6%{opacity:0;transform:scale(.4)}44.6%{opacity:1;transform:scale(1.25)}48.1%{transform:scale(1)}78%{opacity:1;transform:scale(1)}88%,100%{opacity:0;transform:scale(1)}}
+.pg-read-receipt .l.n4{animation-name:pg-rcpt-line4}
+.pg-read-receipt .tick.n4{animation-name:pg-rcpt-tick4}
+@keyframes pg-rcpt-line4{0%,54.2%{stroke:var(--line-strong,#D6C9B2)}56.2%,78%{stroke:var(--accent,#5F6F2E)}88%,100%{stroke:var(--line-strong,#D6C9B2)}}
+@keyframes pg-rcpt-tick4{0%,54.2%{opacity:0;transform:scale(.4)}56.2%{opacity:1;transform:scale(1.25)}59.7%{transform:scale(1)}78%{opacity:1;transform:scale(1)}88%,100%{opacity:0;transform:scale(1)}}
+.pg-read-receipt .l.n5{animation-name:pg-rcpt-line5}
+.pg-read-receipt .tick.n5{animation-name:pg-rcpt-tick5}
+@keyframes pg-rcpt-line5{0%,65.9%{stroke:var(--line-strong,#D6C9B2)}67.9%,78%{stroke:var(--accent,#5F6F2E)}88%,100%{stroke:var(--line-strong,#D6C9B2)}}
+@keyframes pg-rcpt-tick5{0%,65.9%{opacity:0;transform:scale(.4)}67.9%{opacity:1;transform:scale(1.25)}71.4%{transform:scale(1)}78%{opacity:1;transform:scale(1)}88%,100%{opacity:0;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.pg-read-receipt *{animation:none!important}.pg-read-receipt .beam{opacity:0}.pg-read-receipt .l{stroke:var(--accent,#5F6F2E)}.pg-read-receipt .tick{opacity:1}}
+</style>
+<g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path class="paper" d="M14 6h20v31.5l-2.5 2.5-2.5-2.5-2.5 2.5-2.5-2.5-2.5 2.5-2.5-2.5-2.5 2.5L14 37.5z" stroke-width="1.5"/>
+  <path class="head" d="M20 11.5h8" stroke-width="2.2"/>
+  <g class="tick n1" style="transform-origin:19px 17px"><path d="M17.3 17l1.2 1.2 2.2-2.4" stroke-width="1.6"/></g>
+  <g class="tick n2" style="transform-origin:19px 21.5px"><path d="M17.3 21.5l1.2 1.2 2.2-2.4" stroke-width="1.6"/></g>
+  <g class="tick n3" style="transform-origin:19px 26px"><path d="M17.3 26l1.2 1.2 2.2-2.4" stroke-width="1.6"/></g>
+  <g class="tick n4" style="transform-origin:19px 30.5px"><path d="M17.3 30.5l1.2 1.2 2.2-2.4" stroke-width="1.6"/></g>
+  <g class="tick n5" style="transform-origin:19px 35px"><path d="M17.3 35l1.2 1.2 2.2-2.4" stroke-width="1.6"/></g>
+  <path class="l n1" d="M22.5 17h5.5M30 17h1"/>
+  <path class="l n2" d="M22.5 21.5h4M30 21.5h1"/>
+  <path class="l n3" d="M22.5 26h5M30 26h1"/>
+  <path class="l n4" d="M22.5 30.5h3.5M30 30.5h1"/>
+  <path class="l n5" d="M22.5 35h4.5M30 35h1"/>
+  <g class="beam">
+    <rect class="glow" x="11" y="-4.5" width="26" height="9" rx="4.5"/>
+    <rect class="bar" x="11" y="-1.2" width="26" height="2.4" rx="1.2"/>
+  </g>
+</g>
+</svg>

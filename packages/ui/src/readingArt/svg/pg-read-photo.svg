@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Reading the ingredients in your photo" class="pg-anim pg-read-photo">
+<style>
+.pg-read-photo{--d:3s}
+.pg-read-photo .photo{fill:var(--surface,#FBF8F1);stroke:var(--line-strong,#D6C9B2)}
+.pg-read-photo .corner{stroke:var(--accent,#5F6F2E);animation:pg-photo-breathe calc(var(--d)/2) ease-in-out infinite}
+.pg-read-photo .corner.c2{transform-origin:39px 10px}
+.pg-read-photo .corner.c3{transform-origin:9px 38px}
+.pg-read-photo .corner.c4{transform-origin:39px 38px}
+.pg-read-photo .corner.c1{transform-origin:9px 10px}
+.pg-read-photo .tomato{fill:var(--pg-tomato,#D5684A)}
+.pg-read-photo .tomato-leaf,.pg-read-photo .leaf{fill:var(--pg-leaf,#6F9B4C)}
+.pg-read-photo .leaf-rib{stroke:var(--surface,#FBF8F1);opacity:.8}
+.pg-read-photo .carrot{fill:var(--pg-carrot,#E09A3B)}
+.pg-read-photo .carrot-top{stroke:var(--pg-leaf,#6F9B4C)}
+.pg-read-photo .fq{stroke:var(--accent,#5F6F2E);stroke-dasharray:1.6 1.6;opacity:0;animation:var(--d) linear infinite}
+.pg-read-photo .bd{opacity:0;animation:var(--d) ease-out infinite}
+.pg-read-photo .bd circle{fill:var(--accent,#5F6F2E)}
+.pg-read-photo .bd path{stroke:var(--accent-ink,#FFFFFF)}
+.pg-read-photo .fq.i1{animation-name:pg-photo-fq1}.pg-read-photo .bd.i1{animation-name:pg-photo-bd1;transform-origin:22px 15.5px}
+.pg-read-photo .fq.i2{animation-name:pg-photo-fq2}.pg-read-photo .bd.i2{animation-name:pg-photo-bd2;transform-origin:35px 17.5px}
+.pg-read-photo .fq.i3{animation-name:pg-photo-fq3}.pg-read-photo .bd.i3{animation-name:pg-photo-bd3;transform-origin:25.5px 23.5px}
+@keyframes pg-photo-breathe{0%,100%{transform:translate(0,0)}50%{transform:translate(var(--dx,0px),var(--dy,0px))}}
+/* item 1 (leaf): frame 4–18%, badge from 20%; item 2 (carrot): 26–40 / 42; item 3 (tomato): 48–62 / 64; all out at 86–94% */
+@keyframes pg-photo-fq1{0%,4%{opacity:0}6%,18%{opacity:1}22%,100%{opacity:0}}
+@keyframes pg-photo-bd1{0%,18%{opacity:0;transform:scale(.3)}22%{opacity:1;transform:scale(1.25)}26%{transform:scale(1)}86%{opacity:1;transform:scale(1)}94%,100%{opacity:0;transform:scale(1)}}
+@keyframes pg-photo-fq2{0%,26%{opacity:0}28%,40%{opacity:1}44%,100%{opacity:0}}
+@keyframes pg-photo-bd2{0%,40%{opacity:0;transform:scale(.3)}44%{opacity:1;transform:scale(1.25)}48%{transform:scale(1)}86%{opacity:1;transform:scale(1)}94%,100%{opacity:0;transform:scale(1)}}
+@keyframes pg-photo-fq3{0%,48%{opacity:0}50%,62%{opacity:1}66%,100%{opacity:0}}
+@keyframes pg-photo-bd3{0%,62%{opacity:0;transform:scale(.3)}66%{opacity:1;transform:scale(1.25)}70%{transform:scale(1)}86%{opacity:1;transform:scale(1)}94%,100%{opacity:0;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.pg-read-photo *{animation:none!important}.pg-read-photo .bd{opacity:1}.pg-read-photo .fq{opacity:0}}
+</style>
+<g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <rect class="photo" x="9" y="10" width="30" height="28" rx="3" stroke-width="1.5"/>
+  <!-- ingredients -->
+  <g class="leaf" transform="rotate(-28 16.5 18)"><ellipse cx="16.5" cy="18" rx="4.6" ry="2.6"/></g>
+  <path class="leaf-rib" d="M13 20.2l7-4.2" stroke-width="1"/>
+  <path class="carrot" d="M29.5 17.5l5.5 3L26 32.5z"/>
+  <path class="carrot-top" d="M30.5 16.5l-1.5-3M32.5 17.8l1.6-2.8M34.2 19.4l2.6-1.2" stroke-width="1.4"/>
+  <circle class="tomato" cx="19.5" cy="29" r="5"/>
+  <path class="tomato-leaf" d="M19.5 24.4c-1.2-1.6-2.8-1.6-3.6-1 1 .2 1.8.8 2.2 1.6zM19.5 24.4c1.2-1.6 2.8-1.6 3.6-1-1 .2-1.8.8-2.2 1.6z"/>
+  <!-- viewfinder corners -->
+  <path class="corner c1" style="--dx:1px;--dy:1px" d="M6 14v-3a3 3 0 0 1 3-3h3"/>
+  <path class="corner c2" style="--dx:-1px;--dy:1px" d="M36 8h3a3 3 0 0 1 3 3v3"/>
+  <path class="corner c3" style="--dx:1px;--dy:-1px" d="M6 34v3a3 3 0 0 0 3 3h3"/>
+  <path class="corner c4" style="--dx:-1px;--dy:-1px" d="M36 40h3a3 3 0 0 0 3-3v-3"/>
+  <!-- focus frames -->
+  <rect class="fq i1" x="10.5" y="13" width="12" height="10" rx="1.5" stroke-width="1.2"/>
+  <rect class="fq i2" x="24.5" y="13" width="12.5" height="20.5" rx="1.5" stroke-width="1.2"/>
+  <rect class="fq i3" x="13.5" y="22.5" width="12" height="12" rx="1.5" stroke-width="1.2"/>
+  <!-- found badges -->
+  <g class="bd i1"><circle cx="22" cy="15.5" r="3.4"/><path d="M20.4 15.6l1.1 1.1 2.1-2.3" stroke-width="1.3"/></g>
+  <g class="bd i2"><circle cx="35" cy="17.5" r="3.4"/><path d="M33.4 17.6l1.1 1.1 2.1-2.3" stroke-width="1.3"/></g>
+  <g class="bd i3"><circle cx="25.5" cy="23.5" r="3.4"/><path d="M23.9 23.6l1.1 1.1 2.1-2.3" stroke-width="1.3"/></g>
+</g>
+</svg>
