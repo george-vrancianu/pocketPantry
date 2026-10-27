@@ -12,6 +12,7 @@ import { beefStew } from './data/beef-stew';
 import { biksemad } from './data/biksemad';
 import { bolognese } from './data/bolognese';
 import { braisedRedCabbage } from './data/braised-red-cabbage';
+import { brownies } from './data/brownies';
 import { brunedeKartofler } from './data/brunede-kartofler';
 import { burgers } from './data/burgers';
 import { chickenCurry } from './data/chicken-curry';
@@ -166,4 +167,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   salataDeArdeiCopti,
   gogosi,
   appleCrumble,
+  brownies,
 ];
