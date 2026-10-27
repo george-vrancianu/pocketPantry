@@ -17,6 +17,7 @@ import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
+import { frenchToast } from './data/french-toast';
 import { friedChicken } from './data/fried-chicken';
 import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
@@ -84,4 +85,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   fishCakes,
   salataDeVinete,
   brunedeKartofler,
+  frenchToast,
 ];
