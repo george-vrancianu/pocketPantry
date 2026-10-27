@@ -22,6 +22,7 @@ import { friedChicken } from './data/fried-chicken';
 import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { garlicShrimp } from './data/garlic-shrimp';
+import { homemadePizza } from './data/homemade-pizza';
 import { lentilSoup } from './data/lentil-soup';
 import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
@@ -88,4 +89,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   brunedeKartofler,
   frenchToast,
   ricePudding,
+  homemadePizza,
 ];
