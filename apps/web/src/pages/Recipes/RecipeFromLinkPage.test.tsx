@@ -112,6 +112,7 @@ function draftViewOf(result: RecipeFromLinkDraft): RecipeDraftView {
       sourceLink: result.sourceLink,
       sourceLanguage: result.sourceLanguage,
       plateScan: false,
+      offersBases: true,
     },
   };
 }
@@ -612,6 +613,29 @@ describe('RecipeFromLinkPage', () => {
     expect(body).not.toHaveProperty('sourceLink');
   });
 
+  it('keeps the Base Recipe picker after the Member removes the link', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup({
+      'POST /api/recipes/from-link': () =>
+        Response.json({
+          ...read({ servings: 4 }),
+          closestBases: [
+            {
+              id: 'base-omelette',
+              title: 'Omelette',
+              score: 0.8,
+              allergyWarning: null,
+            },
+          ],
+        }),
+    });
+    await submit(user, 'https://www.example.com/pancakes');
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove link' }),
+    );
+    expect(screen.getByRole('radio', { name: /Omelette/ })).toBeChecked();
+  });
+
   describe('the Link Cap', () => {
     afterEach(() => vi.useRealTimers());
 
@@ -859,6 +883,28 @@ describe('RecipeFromLinkPage', () => {
       const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
       expect(body).toMatchObject({ servings: 4 });
       expect(body).not.toHaveProperty('sourceLink');
+    });
+
+    it('keeps the hidden-by-Allergies note and Show on a pasted read whose matches are all hidden', async () => {
+      const user = userEvent.setup({ delay: null });
+      setup({
+        'POST /api/recipes/from-link': () =>
+          Response.json({
+            ...read({ servings: 4 }),
+            sourceLink: null,
+            closestBases: [],
+            hiddenByAllergiesCount: 2,
+          }),
+      });
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      await user.type(textField(), 'eggs');
+      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      expect(
+        await screen.findByText('2 Recipes hidden by your Allergies'),
+      ).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Show' })).toBeVisible();
     });
 
     it('keeps the link and the text when switching back and forth', async () => {

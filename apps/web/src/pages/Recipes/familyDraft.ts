@@ -70,7 +70,7 @@ export type NewRecipeDraft = Omit<
   servings: number | null;
 };
 
-/** A "Make a variant" or sourced draft: lines and Steps have no ids yet. */
+/** A "Make a variant" or sourced draft: lines and Steps have no ids yet. The API's `draftContentOfLink` (apps/api/src/recipes/link-draft-content.ts) repeats this conversion for link reads: change both together. */
 export function draftOfVariantDraft(draft: NewRecipeDraft): FamilyDraft {
   return {
     ...metaOf(draft),

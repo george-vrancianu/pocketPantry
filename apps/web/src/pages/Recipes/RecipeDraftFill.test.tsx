@@ -93,6 +93,7 @@ const content = (
   sourceLink: null,
   sourceLanguage: null,
   plateScan: false,
+  offersBases: false,
   ...over,
 });
 

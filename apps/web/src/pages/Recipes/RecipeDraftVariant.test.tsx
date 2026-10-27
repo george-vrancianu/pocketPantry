@@ -64,6 +64,7 @@ const content = (title: string): RecipeDraftContent => ({
   sourceLink: null,
   sourceLanguage: null,
   plateScan: false,
+  offersBases: false,
 });
 
 const summary = (

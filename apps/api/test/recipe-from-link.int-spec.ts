@@ -1361,6 +1361,7 @@ describe('Recipe from Link (integration)', () => {
           sourceLink: 'https://example.com/pancakes',
           sourceLanguage: null,
           plateScan: false,
+          offersBases: true,
           steps: [
             { text: 'Whisk everything.', timer: '' },
             { text: 'Fry each side.', timer: '2' },

@@ -20,6 +20,7 @@ export type RecipeDraftForm = {
   sourceLanguage?: string | null;
   pickedBaseId?: string | null;
   plateScan?: boolean;
+  offersBases?: boolean;
 };
 
 export function contentOfForm(form: RecipeDraftForm): RecipeDraftContent {
@@ -79,6 +80,7 @@ export function contentOfForm(form: RecipeDraftForm): RecipeDraftContent {
     sourceLink: form.sourceLink ?? null,
     sourceLanguage: form.sourceLanguage ?? null,
     plateScan: form.plateScan ?? false,
+    offersBases: form.offersBases ?? false,
   };
 }
 
@@ -145,5 +147,6 @@ export function formOfContent(content: RecipeDraftContent): RecipeDraftForm {
     sourceLanguage: content.sourceLanguage,
     pickedBaseId: content.pickedBaseId,
     plateScan: content.plateScan,
+    offersBases: content.offersBases,
   };
 }

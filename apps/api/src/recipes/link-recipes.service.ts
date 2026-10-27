@@ -47,7 +47,7 @@ export type ReadingInput =
   | { kind: 'page-text'; text: string }
   | { kind: 'pasted-text'; text: string };
 
-/** Recipe from Link: a page becomes an Family Recipe draft (ADR 0024), stored as the Member's Recipe Draft (ADR 0031). No Recipe is saved or queued here. */
+/** Recipe from Link: a page becomes a Family Recipe draft (ADR 0024), stored as the Member's Recipe Draft (ADR 0031). No Recipe is saved or queued here. */
 @Injectable()
 export class LinkRecipesService {
   constructor(

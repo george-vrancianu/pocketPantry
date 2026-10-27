@@ -54,5 +54,6 @@ export function draftContentOfLink(
     sourceLink: origin.sourceLink,
     sourceLanguage: origin.sourceLanguage,
     plateScan: false,
+    offersBases: true,
   };
 }

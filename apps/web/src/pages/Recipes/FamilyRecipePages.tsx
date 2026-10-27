@@ -257,7 +257,7 @@ function NewRecipeContent({
     chosen:
       basePick.chosen ??
       resumedForm?.pickedBaseId ??
-      (resumedForm?.plateScan || resumedForm?.sourceLink ? STANDALONE : null),
+      (resumedForm?.plateScan || resumedForm?.offersBases ? STANDALONE : null),
     another: basePick.another ?? resumedBases.picked,
   };
   const [initial] = useState(() =>
@@ -288,6 +288,7 @@ function NewRecipeContent({
       sourceLanguage,
       pickedBaseId: hasBases ? parentId : null,
       plateScan,
+      offersBases: resumedForm?.offersBases,
     }),
     // A supplied fill is kept at once, so nothing counts as blank.
     blank: supplied

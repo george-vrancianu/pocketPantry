@@ -102,6 +102,8 @@ export const recipeDraftContent = z
     sourceLanguage: text(40).nullable().default(null),
     /** The fill came from a Plate Scan (the list shows "Plate scan"). */
     plateScan: z.boolean().default(false),
+    /** The editor offers the closest Base Recipes on resume (a link read, ADR 0031): they are asked again from the title and lines. */
+    offersBases: z.boolean().default(false),
   })
   .strict()
   .superRefine((content, ctx) => {
