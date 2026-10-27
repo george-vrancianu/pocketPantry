@@ -43,6 +43,7 @@ import { pastaCarbonara } from './data/pasta-carbonara';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
 import { puiLaCeaun } from './data/pui-la-ceaun';
+import { quiche } from './data/quiche';
 import { ricePilaf } from './data/rice-pilaf';
 import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
@@ -124,4 +125,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   cottagePie,
   iahnieDeFasole,
   puiLaCeaun,
+  quiche,
 ];
