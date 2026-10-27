@@ -655,6 +655,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // grains/baking-essentials
   'baking-powder': [],
+  'bakers-ammonia': [],
   'baking-soda': [],
   'dry-yeast': [],
   'vanilla-extract': [],

@@ -540,11 +540,24 @@ export const grains: SeedSection = {
         ['praf copt', 'praf de copt plic'],
       ],
       [
+        'bakers-ammonia',
+        "Baker's ammonia (ammonium bicarbonate)",
+        'Amoniac alimentar',
+        'g',
+        [
+          'hartshorn',
+          'ammonium bicarbonate',
+          'ammonium carbonate',
+          'bakers ammonia',
+        ],
+        ['carbonat de amoniu'],
+      ],
+      [
         'baking-soda',
         'Baking soda',
         'Bicarbonat de sodiu',
         'g',
-        ['bicarbonate of soda'],
+        ['bicarbonate of soda', 'bicarbonate'],
         ['bicarbonat', 'bicarbonat sodiu'],
       ],
       [
