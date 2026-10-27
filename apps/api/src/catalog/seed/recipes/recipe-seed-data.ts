@@ -60,6 +60,7 @@ import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
 import { tacos } from './data/tacos';
+import { tocanaDeCiuperci } from './data/tocana-de-ciuperci';
 import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
 import { tomatoSoup } from './data/tomato-soup';
@@ -130,4 +131,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   quiche,
   porkChops,
   musaca,
+  tocanaDeCiuperci,
 ];
