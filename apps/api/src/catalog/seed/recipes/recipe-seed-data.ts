@@ -30,6 +30,7 @@ import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
 import { mici } from './data/mici';
 import { omelette } from './data/omelette';
+import { ostropel } from './data/ostropel';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
@@ -100,4 +101,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   vegetableSoup,
   burgers,
   pastaCarbonara,
+  ostropel,
 ];
