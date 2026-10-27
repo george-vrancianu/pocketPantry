@@ -32,6 +32,7 @@ import { ricePilaf } from './data/rice-pilaf';
 import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
+import { salataDeVinete } from './data/salata-de-vinete';
 import { sarmale } from './data/sarmale';
 import { smorrebrod } from './data/smorrebrod';
 import { steamedMussels } from './data/steamed-mussels';
@@ -80,4 +81,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   tomatoSoup,
   potatoSalad,
   fishCakes,
+  salataDeVinete,
 ];
