@@ -31,6 +31,7 @@ import { ciorbaDeLegume } from './data/ciorba-de-legume';
 import { ciorbaDeMiel } from './data/ciorba-de-miel';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
+import { ciorbaDePraz } from './data/ciorba-de-praz';
 import { ciorbaDePui } from './data/ciorba-de-pui';
 import { ciorbaDeStevie } from './data/ciorba-de-stevie';
 import { ciorbaDeVacuta } from './data/ciorba-de-vacuta';
@@ -226,4 +227,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   pasca,
   ouaUmplute,
   ciorbaArdeleneasca,
+  ciorbaDePraz,
 ];
