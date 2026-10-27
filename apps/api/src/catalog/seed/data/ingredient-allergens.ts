@@ -829,6 +829,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'soup-mix': ['celery', 'gluten'],
   'ciorba-sour-base': ['gluten'],
   'fish-stock': ['celery', 'fish'],
+  dashi: ['fish', 'milk'],
 
   // condiments/dressings
   'salad-dressing': ['mustard'],
@@ -941,6 +942,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'dried-tarragon': [],
   'dried-mint': [],
   'dried-fenugreek-leaves': [],
+  'dried-porcini': [],
 
   // spices/spice-blends
   'curry-powder': ['mustard'],

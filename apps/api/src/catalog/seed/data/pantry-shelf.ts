@@ -1007,6 +1007,14 @@ export const condiments: SeedSection = {
         ['fish broth', 'fish fumet'],
         ['fond de peste'],
       ],
+      [
+        'dashi',
+        'Dashi granules (instant Japanese soup stock)',
+        'Dashi (bază instant japoneză pentru supă)',
+        'g',
+        ['hondashi', 'dashi powder', 'instant dashi', 'bonito stock granules'],
+        ['dashi praf', 'supa dashi'],
+      ],
     ]),
     ...ingredientsOf('dressings', [
       [
@@ -1749,6 +1757,14 @@ export const spices: SeedSection = {
         'g',
         ['mixed herbs', 'herbes de provence'],
         ['ierburi de provence', 'ierburi mix', 'condiment italian'],
+      ],
+      [
+        'dried-porcini',
+        'Dried porcini mushrooms',
+        'Hribi uscați',
+        'g',
+        ['dried ceps', 'dried boletus', 'dried porcini'],
+        ['hribi deshidratati', 'ciuperci de padure uscate'],
       ],
       ['dried-tarragon', 'Dried tarragon', 'Tarhon uscat', 'g'],
       ['dried-mint', 'Dried mint', 'Mentă uscată', 'g'],

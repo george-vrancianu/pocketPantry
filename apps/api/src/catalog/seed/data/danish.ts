@@ -808,6 +808,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'soup-mix': 'Suppebase i pose',
   'ciorba-sour-base': 'Surt suppekrydderi',
   'fish-stock': 'Fiskefond',
+  dashi: 'Dashi (japansk suppebase, granulat)',
   'salad-dressing': 'Salatdressing',
   'caesar-dressing': 'Caesardressing',
   'balsamic-glaze': 'Balsamicocreme',
@@ -890,6 +891,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'dried-red-chillies': 'Tørrede chilier',
   oregano: 'Oregano',
   'dried-thyme': 'Tørret timian',
+  'dried-porcini': 'Tørrede karl johan-svampe',
   'dried-basil': 'Tørret basilikum',
   'dried-parsley': 'Tørret persille',
   'dried-dill': 'Tørret dild',
@@ -1059,6 +1061,8 @@ export const DA_INGREDIENTS: Record<string, string> = {
 /** Receipt and label words that differ from the display name. */
 export const DA_SYNONYMS: Record<string, string[]> = {
   'dried-shiitake': ['shiitake tørret'],
+  'dried-porcini': ['tørret karl johan'],
+  dashi: ['dashi pulver'],
   'wood-ear-mushrooms': ['judasøre'],
   'chinkiang-vinegar': ['sort eddike'],
   'green-cardamom-pods': ['kardemomme hel', 'hele kardemommer'],
