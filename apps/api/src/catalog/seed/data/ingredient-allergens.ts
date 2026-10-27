@@ -401,6 +401,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'salmon-roe': ['fish'],
   'lumpfish-roe': ['fish'],
   'cod-roe': ['fish'],
+  tarama: ['fish'],
   taramasalata: ['fish', 'gluten'],
 
   // dairy/hard-cheese

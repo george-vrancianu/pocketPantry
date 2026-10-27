@@ -471,6 +471,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'salmon-roe': 'Lakserogn',
   'lumpfish-roe': 'Stenbiderrogn',
   'cod-roe': 'Torskerogn',
+  tarama: 'Tarama',
   taramasalata: 'Taramasalata',
   // Dairy
   parmesan: 'Parmesan',
