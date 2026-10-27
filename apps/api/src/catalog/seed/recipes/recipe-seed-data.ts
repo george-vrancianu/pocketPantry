@@ -60,6 +60,7 @@ import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
 import { salataDeBoeuf } from './data/salata-de-boeuf';
 import { salataDeVinete } from './data/salata-de-vinete';
+import { saramuraDePeste } from './data/saramura-de-peste';
 import { sarmale } from './data/sarmale';
 import { shakshuka } from './data/shakshuka';
 import { smorrebrod } from './data/smorrebrod';
@@ -148,4 +149,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDePeste,
   padThai,
   fishAndChips,
+  saramuraDePeste,
 ];
