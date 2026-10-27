@@ -22,6 +22,7 @@ import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
+import { ciorbaDePui } from './data/ciorba-de-pui';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { coleslaw } from './data/coleslaw';
 import { cornulete } from './data/cornulete';
@@ -174,4 +175,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   cozonac,
   salamDeBiscuiti,
   cornulete,
+  ciorbaDePui,
 ];
