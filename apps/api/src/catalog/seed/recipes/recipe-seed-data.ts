@@ -87,6 +87,7 @@ import { papanasi } from './data/papanasi';
 import { pasca } from './data/pasca';
 import { pastaCarbonara } from './data/pasta-carbonara';
 import { pastravLaGratar } from './data/pastrav-la-gratar';
+import { piftie } from './data/piftie';
 import { plachieDePeste } from './data/plachie-de-peste';
 import { placintaCuBranza } from './data/placinta-cu-branza';
 import { porkChops } from './data/pork-chops';
@@ -248,4 +249,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   cremaDeZaharArs,
   ciorbaDePotroace,
   ciorbaDeLoboda,
+  piftie,
 ];
