@@ -503,6 +503,14 @@ export const dairy: SeedSection = {
         ['long-life milk'],
         ['lapte durabil'],
       ],
+      [
+        'evaporated-milk',
+        'Evaporated milk',
+        'Lapte concentrat neîndulcit',
+        'g',
+        ['unsweetened condensed milk'],
+        ['lapte evaporat', 'lapte condensat neindulcit'],
+      ],
     ]),
   ],
 };

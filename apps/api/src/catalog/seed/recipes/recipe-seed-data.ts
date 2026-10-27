@@ -6,8 +6,10 @@ import { appetizerPlatter } from './data/appetizer-platter';
 import { ardeiUmpluti } from './data/ardei-umpluti';
 import { bakedSalmon } from './data/baked-salmon';
 import { beefStew } from './data/beef-stew';
+import { biksemad } from './data/biksemad';
 import { bolognese } from './data/bolognese';
 import { braisedRedCabbage } from './data/braised-red-cabbage';
+import { chickenCurry } from './data/chicken-curry';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { chiliConCarne } from './data/chili-con-carne';
@@ -18,6 +20,7 @@ import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { garlicShrimp } from './data/garlic-shrimp';
 import { lentilSoup } from './data/lentil-soup';
+import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
 import { mici } from './data/mici';
 import { omelette } from './data/omelette';
@@ -29,8 +32,10 @@ import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
 import { sarmale } from './data/sarmale';
 import { smorrebrod } from './data/smorrebrod';
+import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
+import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
@@ -64,4 +69,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   garlicShrimp,
   ardeiUmpluti,
   flaeskesteg,
+  chickenCurry,
+  macAndCheese,
+  steamedMussels,
+  tochitura,
+  biksemad,
 ];
