@@ -73,6 +73,7 @@ import { padThai } from './data/pad-thai';
 import { paella } from './data/paella';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
+import { pasca } from './data/pasca';
 import { pastaCarbonara } from './data/pasta-carbonara';
 import { pastravLaGratar } from './data/pastrav-la-gratar';
 import { plachieDePeste } from './data/plachie-de-peste';
@@ -220,4 +221,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   drobDeMiel,
   ciorbaDeMiel,
   ciorbaDeStevie,
+  pasca,
 ];
