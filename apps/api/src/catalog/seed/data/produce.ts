@@ -395,7 +395,7 @@ export const produce: SeedSection = {
         'Germeni de fasole mung',
         'g',
         ['mung bean sprouts', 'beansprouts'],
-        ['germeni fasole', 'soia germinata'],
+        ['germeni fasole', 'germeni de soia', 'muguri de fasole mung'],
       ],
     ]),
     ...ingredientsOf('mushrooms', [

@@ -1505,6 +1505,7 @@ export const seafood: SeedSection = {
         'Tarama (icre sărate)',
         'g',
         ['salt-cured fish roe'],
+        ['icre sarate tarama'],
       ],
       [
         'taramasalata',

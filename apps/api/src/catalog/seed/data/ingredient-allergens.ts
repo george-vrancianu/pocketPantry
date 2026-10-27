@@ -593,7 +593,6 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'soba-noodles': ['gluten'],
   udon: ['gluten'],
   'rice-paper': [],
-  'ho-fun': [],
 
   // pasta/fresh-pasta
   tortellini: ['eggs', 'gluten', 'milk'],
@@ -601,6 +600,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'fresh-tagliatelle': ['eggs', 'gluten'],
   galuste: ['eggs', 'gluten'],
   ravioli: ['eggs', 'gluten', 'milk'],
+  'ho-fun': [],
 
   // grains/rice-and-oats
   rice: [],
