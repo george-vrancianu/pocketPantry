@@ -1045,6 +1045,14 @@ export const condiments: SeedSection = {
         ['sirop auriu'],
       ],
       [
+        'molasses',
+        'Molasses',
+        'Melasă',
+        'g',
+        ['black treacle', 'blackstrap molasses'],
+        ['melasă de trestie', 'melasă neagră'],
+      ],
+      [
         'marmalade-orange',
         'Orange marmalade',
         'Marmeladă de portocale',
@@ -1593,6 +1601,14 @@ export const spices: SeedSection = {
         ['ardei ancho', 'ancho uscat'],
       ],
       [
+        'guajillo-chillies',
+        'Dried guajillo chillies',
+        'Ardei guajillo uscați',
+        'g',
+        ['guajillo', 'chile guajillo'],
+        ['ardei guajillo'],
+      ],
+      [
         'dried-red-chillies',
         'Dried red chillies',
         'Ardei iute uscați',
@@ -1700,6 +1716,14 @@ export const spices: SeedSection = {
         'g',
         ['fajita seasoning'],
         ['condiment mexican'],
+      ],
+      [
+        'achiote-paste',
+        'Achiote paste',
+        'Pastă de achiote',
+        'g',
+        ['annatto paste', 'recado rojo'],
+        ['achiote', 'pasta de annatto'],
       ],
       [
         'pizza-seasoning',

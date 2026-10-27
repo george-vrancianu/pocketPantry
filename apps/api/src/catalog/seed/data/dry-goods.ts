@@ -39,6 +39,14 @@ export const pasta: SeedSection = {
       ],
       ['penne', 'Penne', 'Penne', 'g', undefined, ['paste penne']],
       [
+        'pastitsio-pasta',
+        'Pastitsio pasta',
+        'Paste pentru pastitsio',
+        'g',
+        ['pastitsio macaroni', 'misko no 2'],
+        ['paste pastitsio', 'macaroane lungi'],
+      ],
+      [
         'fusilli',
         'Fusilli',
         'Fusilli',
@@ -671,6 +679,14 @@ export const legumes: SeedSection = {
         'g',
         ['cranberry beans', 'roman beans'],
         ['fasole pestrita'],
+      ],
+      [
+        'gigantes-beans',
+        'Giant white beans (gigantes)',
+        'Fasole albă uriașă (gigantes)',
+        'g',
+        ['gigantes', 'giant beans', 'elephant beans', 'greek butter beans'],
+        ['fasole gigantes'],
       ],
       ['black-beans', 'Black beans', 'Fasole neagră', 'g'],
       [
