@@ -6,6 +6,7 @@ import { appetizerPlatter } from './data/appetizer-platter';
 import { ardeiUmpluti } from './data/ardei-umpluti';
 import { bakedPotatoes } from './data/baked-potatoes';
 import { bakedSalmon } from './data/baked-salmon';
+import { bananaBread } from './data/banana-bread';
 import { beefStew } from './data/beef-stew';
 import { biksemad } from './data/biksemad';
 import { bolognese } from './data/bolognese';
@@ -158,4 +159,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   placintaCuBranza,
   paella,
   grilledCheese,
+  bananaBread,
 ];
