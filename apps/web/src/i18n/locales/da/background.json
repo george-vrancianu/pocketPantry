@@ -35,6 +35,12 @@
     "discardRead": "Kassér {{what}}",
     "gone": "Den opskriftkladde gemmes ikke længere.",
     "openRecipe": "Åbn opskriften fra {{what}}",
-    "readAgain": "Læs {{what}} igen"
+    "readAgain": "Læs {{what}} igen",
+    "capped": "Dagens linklæsninger er brugt",
+    "retry": "Prøv igen",
+    "retryRead": "Prøv at læse {{what}} igen",
+    "pasteInstead": "Indsæt teksten fra {{what}} i stedet",
+    "failedAlert_one": "{{count}} opskriftslink mislykkedes",
+    "failedAlert_other": "{{count}} opskriftslinks mislykkedes"
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { haptic } from '../../lib/haptic';
+import { linkReads as linkReadsHolder } from '../../lib/linkReads';
 import { useScanSession } from '../../lib/scanSession';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { focusVoiceButton } from '../../lib/voiceFocus';
@@ -103,10 +104,22 @@ export function BackgroundHost({
     announced: () => announcedScanFailed,
     announce: announceScanFailed,
   });
+  const linkFailed = linkItems.filter(
+    (item) => item.status === 'failed',
+  ).length;
+  const linkAlerting = useFailureAlert({
+    failed: linkFailed,
+    up,
+    announced: linkReadsHolder.announcedFailed,
+    announce: linkReadsHolder.announceFailed,
+  });
   const alert = [
     voiceAlerting ? t('inbox.failedAlert', { count: failed }) : null,
     scanAlerting
       ? tBackground('scan.failedAlert', { count: summary.failed })
+      : null,
+    linkAlerting
+      ? tBackground('link.failedAlert', { count: linkFailed })
       : null,
   ]
     .filter(Boolean)

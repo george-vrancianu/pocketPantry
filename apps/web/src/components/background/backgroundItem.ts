@@ -15,6 +15,8 @@ export type BackgroundAction =
       label: string;
       ariaLabel?: string;
       tone: 'primary' | 'secondary';
+      /** Closes the sheet first: the action takes the Member somewhere else. */
+      closesSheet?: boolean;
       onClick: () => void;
     }
   | {

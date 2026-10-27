@@ -10,7 +10,11 @@ import {
   displayType,
 } from '@pocket-pantry/ui';
 import { useId, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import {
+  FROM_LINK_PREFILL_STATE,
+  type FromLinkPrefill,
+} from '../../components/background/useLinkReadBackgroundItems';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
@@ -131,6 +135,12 @@ export function RecipesPage() {
       .length ?? 0;
   const [params, setParams] = useSearchParams();
   const fromLinkOpen = params.get(FROM_LINK_PARAM) === '1';
+  // "Paste text instead" on a failed link read arrives here with the link to keep.
+  const prefill = (
+    useLocation().state as {
+      [FROM_LINK_PREFILL_STATE]?: FromLinkPrefill;
+    } | null
+  )?.[FROM_LINK_PREFILL_STATE];
   const closeFromLink = () =>
     setParams(
       (prev) => {
@@ -274,6 +284,7 @@ export function RecipesPage() {
       </Stack>
       <FromLinkSheet
         open={fromLinkOpen}
+        prefill={fromLinkOpen ? prefill : undefined}
         onClose={closeFromLink}
         onExited={() => addButton.current?.focus()}
       />

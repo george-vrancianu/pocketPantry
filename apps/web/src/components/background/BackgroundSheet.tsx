@@ -67,7 +67,8 @@ export function BackgroundSheet({
         variant={action.tone === 'secondary' ? 'secondary' : undefined}
         aria-label={action.ariaLabel}
         onClick={() => {
-          focusTitle();
+          if (action.closesSheet) onClose();
+          else focusTitle();
           action.onClick();
         }}
       >
