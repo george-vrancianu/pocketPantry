@@ -16,11 +16,13 @@ import {
   type FetchedPage,
   type PageFetcher,
 } from '../page-fetch/page-fetcher';
+import { RecipeDraftsService } from '../recipe-drafts/recipe-drafts.service';
 import { ScanCapService } from '../scan/scan-cap.service';
 import { LANGUAGE_NAMES } from '../scan/scan-language';
 import { SettingsService } from '../settings/settings.service';
 import { extractJsonLdRecipe } from './json-ld-recipe';
 import { visibleText } from './visible-text';
+import { draftContentOfLink } from './link-draft-content';
 import { draftOfReading } from './link-reading-mapping';
 import {
   LINK_READING_SCHEMA_NAME,
@@ -45,7 +47,7 @@ export type ReadingInput =
   | { kind: 'page-text'; text: string }
   | { kind: 'pasted-text'; text: string };
 
-/** Recipe from Link: a page becomes an unsaved Family Recipe draft (ADR 0024). Nothing is saved or queued here. */
+/** Recipe from Link: a page becomes a Family Recipe draft (ADR 0024), stored as the Member's Recipe Draft (ADR 0031). No Recipe is saved or queued here. */
 @Injectable()
 export class LinkRecipesService {
   constructor(
@@ -53,6 +55,7 @@ export class LinkRecipesService {
     @InjectPageFetcher() private readonly pages: PageFetcher,
     private readonly ai: StructuredOutputAiService,
     private readonly caps: ScanCapService,
+    private readonly drafts: RecipeDraftsService,
     private readonly ingredientCatalog: IngredientCatalogService,
     private readonly browse: RecipeBrowseService,
     private readonly plates: PlateRecipesService,
@@ -99,10 +102,13 @@ export class LinkRecipesService {
         const existing = await this.liveRecipeOfLink(familyId, sourceLink);
         if (existing !== null) return { kind: 'duplicate', recipeId: existing };
       }
+      // Also before the fetch and the AI call: a read with nowhere to land is refused for free.
+      await this.drafts.assertRoom(memberId);
       // Already at the cap: refuse before the fetch. The use itself is still counted only in `ask`.
       await this.caps.assertBelowCap(memberId, new Date(), 'link');
       input = await this.readingInput(sourceLink);
     } else if (body.text !== undefined) {
+      await this.drafts.assertRoom(memberId);
       input = { kind: 'pasted-text', text: body.text };
     } else {
       throw linkInvalid(); // the request schema makes this unreachable
@@ -148,8 +154,19 @@ export class LinkRecipesService {
         ),
       ].slice(0, 100),
     });
+    // Last, after the read has completed: a read that stops before here leaves no Recipe Draft (ADR 0031).
+    const { id: recipeDraftId } = await this.drafts.create(memberId, {
+      kind: 'new_recipe',
+      baseRecipeId: null,
+      content: draftContentOfLink(draft, {
+        sourceLink,
+        sourceLanguage,
+        pickedBaseId: closest.matches[0]?.id ?? null,
+      }),
+    });
     return {
       kind: 'draft',
+      recipeDraftId,
       draft,
       sourceLink,
       sourceLanguage,

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FamilyRecipeEdit } from '../../lib/familyRecipes';
+import type { RecipeDraftView } from '../../lib/recipeDrafts';
 import type { RecipeFromLink, RecipeFromLinkDraft } from '../../lib/linkRecipe';
 import type { Locale } from '../../i18n';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -19,6 +20,7 @@ const read = (
   over: Partial<RecipeFromLinkDraft['draft']> = {},
 ): RecipeFromLinkDraft => ({
   kind: 'draft',
+  recipeDraftId: 'rd-1',
   draft: {
     title: 'Blog pancakes',
     servings: null,
@@ -72,12 +74,84 @@ const saved = {
 
 type Routes = Parameters<typeof stubApi>[0];
 
+/** The Recipe Draft the server stores for a read (mirror of the API's `draftContentOfLink`). */
+function draftViewOf(result: RecipeFromLinkDraft): RecipeDraftView {
+  const { draft } = result;
+  return {
+    id: result.recipeDraftId,
+    kind: 'new_recipe',
+    baseRecipeId: null,
+    baseRecipeName: null,
+    baseAvailable: true,
+    version: 1,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    expiresAt: '2026-01-31T00:00:00.000Z',
+    content: {
+      title: draft.title,
+      servings: draft.servings === null ? '' : String(draft.servings),
+      prepMinutes: draft.prepMinutes === null ? '' : String(draft.prepMinutes),
+      cookMinutes: draft.cookMinutes === null ? '' : String(draft.cookMinutes),
+      difficulty: draft.difficulty ?? '',
+      cuisineId: draft.cuisineId ?? '',
+      methodId: draft.methodId ?? '',
+      lines: draft.lines.map((line) => ({
+        ingredientId: line.ingredientId ?? '',
+        name: line.ingredientName || line.rawName || '',
+        quantity: line.quantity === null ? '' : String(line.quantity),
+        unit: line.unit ?? 'g',
+        optional: line.optional,
+        note: line.note ?? '',
+      })),
+      steps: draft.steps.map((step) => ({
+        text: step.text,
+        timer: step.timerSeconds === null ? '' : String(step.timerSeconds / 60),
+      })),
+      guidance: { nutritionNote: '', pairings: [], eatingMoments: [] },
+      pickedBaseId: result.closestBases[0]?.id ?? null,
+      sourceLink: result.sourceLink,
+      sourceLanguage: result.sourceLanguage,
+      plateScan: false,
+      offersBases: true,
+    },
+  };
+}
+
+/**
+ * Plays the server's side of a read: the from-link answer is kept as the Member's Recipe Draft
+ * (served by id) and the closest Base Recipes are asked again from it, as the editor does on resume.
+ */
+function withStoredRead(routes: Routes): Routes {
+  let stored: RecipeFromLinkDraft | null = null;
+  const fromLink = routes['POST /api/recipes/from-link'];
+  if (!fromLink) return routes;
+  return {
+    'GET /api/recipe-drafts/rd-1': () =>
+      stored
+        ? Response.json(draftViewOf(stored))
+        : Response.json({ code: 'recipe_drafts.not_found' }, { status: 404 }),
+    'POST /api/recipes/plate-matches': () =>
+      Response.json({
+        matches: stored?.closestBases ?? [],
+        hiddenByAllergiesCount: stored?.hiddenByAllergiesCount ?? 0,
+      }),
+    ...routes,
+    'POST /api/recipes/from-link': async (url) => {
+      const response = await fromLink(url);
+      if (!response.ok) return response;
+      const result = (await response.clone().json()) as RecipeFromLink;
+      if (result.kind === 'draft') stored = result;
+      return response;
+    },
+  };
+}
+
 /** Records the AbortSignal of every request, as the browser would receive it. */
 function setup(routes: Routes) {
   const signals: Array<AbortSignal | null | undefined> = [];
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes/filters': () => Response.json(filters),
-    ...routes,
+    ...withStoredRead(routes),
   });
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
     signals.push(init?.signal);
@@ -288,6 +362,65 @@ describe('RecipeFromLinkPage', () => {
     },
   );
 
+  it('opens the editor on the Recipe Draft the server stored, without creating one itself', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { calls } = setup({
+      'POST /api/recipes/from-link': () =>
+        Response.json({ ...read(), recipeDraftId: 'rd-1' }),
+    });
+    await submit(user, 'https://www.example.com/pancakes');
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('Blog pancakes');
+    const keys = calls.map((c) => c.key);
+    expect(keys).toContain('GET /api/recipe-drafts/rd-1');
+    expect(keys).not.toContain('POST /api/recipe-drafts');
+    expect(keys).not.toContain('PUT /api/recipe-drafts/rd-1');
+  });
+
+  it("offers the read's closest Base Recipes when the editor resumes that Recipe Draft", async () => {
+    const user = userEvent.setup({ delay: null });
+    setup({
+      'POST /api/recipes/from-link': () =>
+        Response.json({
+          ...read({ servings: 4 }),
+          closestBases: [
+            {
+              id: 'base-omelette',
+              title: 'Omelette',
+              score: 0.8,
+              allergyWarning: null,
+            },
+            {
+              id: 'base-crepes',
+              title: 'Crepes',
+              score: 0.4,
+              allergyWarning: null,
+            },
+          ],
+        }),
+    });
+    await submit(user, 'https://www.example.com/pancakes');
+    expect(
+      await screen.findByRole('radio', { name: /Omelette/ }),
+    ).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Crepes' })).toBeVisible();
+  });
+
+  it('says the Recipe Draft limit is reached, stays on the page and opens no editor', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup({
+      'POST /api/recipes/from-link': () =>
+        Response.json(
+          { code: 'recipe_drafts.limit_reached', params: { max: 20 } },
+          { status: 409 },
+        ),
+    });
+    await submit(user, 'https://www.example.com/pancakes');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'You already keep 20 Recipe Drafts. Finish or discard one to start another.',
+    );
+    expect(screen.getByText('at /recipes/from-link')).toBeVisible();
+  });
+
   it('opens the New Recipe page filled in from the read', async () => {
     const user = userEvent.setup({ delay: null });
     setup({
@@ -478,6 +611,29 @@ describe('RecipeFromLinkPage', () => {
     const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
     expect(body).toMatchObject({ servings: 4 });
     expect(body).not.toHaveProperty('sourceLink');
+  });
+
+  it('keeps the Base Recipe picker after the Member removes the link', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup({
+      'POST /api/recipes/from-link': () =>
+        Response.json({
+          ...read({ servings: 4 }),
+          closestBases: [
+            {
+              id: 'base-omelette',
+              title: 'Omelette',
+              score: 0.8,
+              allergyWarning: null,
+            },
+          ],
+        }),
+    });
+    await submit(user, 'https://www.example.com/pancakes');
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove link' }),
+    );
+    expect(screen.getByRole('radio', { name: /Omelette/ })).toBeChecked();
   });
 
   describe('the Link Cap', () => {
@@ -727,6 +883,28 @@ describe('RecipeFromLinkPage', () => {
       const body = calls.find((c) => c.key === 'POST /api/recipes')?.body;
       expect(body).toMatchObject({ servings: 4 });
       expect(body).not.toHaveProperty('sourceLink');
+    });
+
+    it('keeps the hidden-by-Allergies note and Show on a pasted read whose matches are all hidden', async () => {
+      const user = userEvent.setup({ delay: null });
+      setup({
+        'POST /api/recipes/from-link': () =>
+          Response.json({
+            ...read({ servings: 4 }),
+            sourceLink: null,
+            closestBases: [],
+            hiddenByAllergiesCount: 2,
+          }),
+      });
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      await user.type(textField(), 'eggs');
+      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      expect(
+        await screen.findByText('2 Recipes hidden by your Allergies'),
+      ).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Show' })).toBeVisible();
     });
 
     it('keeps the link and the text when switching back and forth', async () => {

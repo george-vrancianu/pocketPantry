@@ -1,7 +1,8 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { BaseRecipeOption } from '../components/BaseRecipePicker';
 import { apiRequest } from './api';
 import type { FamilyRecipeDraft } from './familyRecipes';
+import { recipeDraftsListKey } from './recipeDrafts';
 
 /** What a link was read into (mirror of the API's `RecipeFromLink`): an unsaved draft and where it came from. */
 export type RecipeFromLink = RecipeFromLinkDraft | RecipeFromLinkDuplicate;
@@ -11,6 +12,8 @@ export type RecipeFromLinkDuplicate = { kind: 'duplicate'; recipeId: string };
 
 export type RecipeFromLinkDraft = {
   kind: 'draft';
+  /** The Member's Recipe Draft the server stored for this read; open the New Recipe editor on it. */
+  recipeDraftId: string;
   /** Like a "Make a variant" draft, but with no base yet and Servings possibly unknown. */
   draft: Omit<FamilyRecipeDraft, 'parentId' | 'servings'> & {
     servings: number | null;
@@ -48,8 +51,9 @@ export type ReadLinkInput = (
   signal?: AbortSignal;
 };
 
-/** Read the recipe on a web page into a draft; nothing is saved. */
+/** Read the recipe on a web page; the server keeps it as the Member's Recipe Draft (no Recipe is saved). */
 export function useReadRecipeLink() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ url, text, language, force, signal }: ReadLinkInput) =>
       apiRequest<RecipeFromLink>('/recipes/from-link', {
@@ -61,5 +65,11 @@ export function useReadRecipeLink() {
         },
         ...(signal ? { signal } : {}),
       }),
+    // A read leaves a Recipe Draft on the server: "Drafts (N)" must count it.
+    onSuccess: (result) => {
+      if (result.kind === 'draft') {
+        void queryClient.invalidateQueries({ queryKey: recipeDraftsListKey });
+      }
+    },
   });
 }

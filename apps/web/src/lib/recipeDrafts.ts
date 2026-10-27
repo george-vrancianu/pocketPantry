@@ -64,6 +64,8 @@ export type RecipeDraftContent = {
   sourceLanguage: string | null;
   /** True for a Recipe Draft that came from a Plate Scan. */
   plateScan: boolean;
+  /** The editor offers the closest Base Recipes on resume (a link read). */
+  offersBases?: boolean;
 };
 
 export type RecipeDraftSummary = {

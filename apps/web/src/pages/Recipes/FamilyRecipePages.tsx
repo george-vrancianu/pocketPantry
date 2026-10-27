@@ -253,11 +253,11 @@ function NewRecipeContent({
   // What the Member picked before leaving stays picked (named once looked up).
   const pick = {
     ...basePick,
-    // A Plate Scan draft stores Standalone as no pick: it must not fall back to the top match.
+    // A Plate Scan or link draft stores Standalone as no pick: it must not fall back to the top match.
     chosen:
       basePick.chosen ??
       resumedForm?.pickedBaseId ??
-      (resumedForm?.plateScan ? STANDALONE : null),
+      (resumedForm?.plateScan || resumedForm?.offersBases ? STANDALONE : null),
     another: basePick.another ?? resumedBases.picked,
   };
   const [initial] = useState(() =>
@@ -288,6 +288,7 @@ function NewRecipeContent({
       sourceLanguage,
       pickedBaseId: hasBases ? parentId : null,
       plateScan,
+      offersBases: resumedForm?.offersBases,
     }),
     // A supplied fill is kept at once, so nothing counts as blank.
     blank: supplied

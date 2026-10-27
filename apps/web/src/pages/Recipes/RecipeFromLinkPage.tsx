@@ -23,7 +23,7 @@ import {
   type ReadingLanguage,
 } from '../../lib/linkRecipe';
 import { capMessage } from '../../lib/capMessage';
-import type { NewRecipeState } from './FamilyRecipePages';
+import { DRAFT_PARAM } from './useRecipeDraftRoute';
 
 /** The reading's AI failures arrive as Scan codes; their own copy talks about photos, so this step words them for links. */
 const READING_ERRORS: Record<string, string> = {
@@ -131,22 +131,8 @@ export function RecipeFromLinkPage() {
             setDuplicate(result.recipeId);
             return;
           }
-          const {
-            draft,
-            closestBases,
-            hiddenByAllergiesCount,
-            sourceLink,
-            sourceLanguage,
-          } = result;
-          navigate('/recipes/new', {
-            state: {
-              draft,
-              closestBases,
-              hiddenByAllergiesCount,
-              sourceLink,
-              sourceLanguage,
-            } satisfies NewRecipeState,
-          });
+          // The server stored the read as a Recipe Draft: the editor resumes it (a reload keeps it).
+          navigate(`/recipes/new?${DRAFT_PARAM}=${result.recipeDraftId}`);
         },
       },
     );

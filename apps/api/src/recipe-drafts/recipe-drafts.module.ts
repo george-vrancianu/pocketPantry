@@ -7,5 +7,6 @@ import { RecipeDraftsService } from './recipe-drafts.service';
   imports: [MemberLanguageModule],
   controllers: [RecipeDraftsController],
   providers: [RecipeDraftsService],
+  exports: [RecipeDraftsService],
 })
 export class RecipeDraftsModule {}
