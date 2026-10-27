@@ -687,6 +687,14 @@ export const meat: SeedSection = {
         ['piept vita'],
       ],
       ['oxtail', 'Oxtail', 'Coadă de vită', 'g', undefined, ['coada vita']],
+      [
+        'beef-marrow-bones',
+        'Beef marrow bones',
+        'Oase de vită cu măduvă',
+        'g',
+        ['marrow bones'],
+        ['maduva vita', 'oase cu maduva'],
+      ],
     ]),
     ...ingredientsOf('pork', [
       [
@@ -775,6 +783,22 @@ export const meat: SeedSection = {
         'g',
         ['ham joint'],
         ['pulpa porc', 'pulpa porc dezosata'],
+      ],
+      [
+        'rind-on-pork-loin',
+        'Rind-on pork loin',
+        'Cotlet de porc cu șorici',
+        'g',
+        ['pork loin with crackling'],
+        ['cotlet cu sorici', 'cotlet porc cu sorici'],
+      ],
+      [
+        'rind-on-pork-shoulder',
+        'Rind-on pork shoulder',
+        'Spată de porc cu șorici',
+        'g',
+        ['pork shoulder with skin'],
+        ['spata cu sorici', 'spata porc cu sorici'],
       ],
     ]),
     ...ingredientsOf('lamb-and-game', [

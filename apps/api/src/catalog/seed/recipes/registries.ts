@@ -58,6 +58,7 @@ export const SEED_METHODS: SeedNamed[] = [
   named('oven-fried', 'Oven-fried', 'Prăjit la cuptor', 'Ovnstegt'),
   named('air-fried', 'Air-fried', 'La air fryer', 'Airfryer-stegt'),
   named('oven-baked', 'Oven-baked', 'La cuptor', 'Ovnbagt'),
+  named('slow-cooker', 'Slow-cooker', 'La slow cooker', 'I slowcooker'),
   named('one-pot', 'One-pot', 'Într-o singură oală', 'Alt i én gryde'),
   named('spatchcocked', 'Spatchcocked', 'Desfăcut în fluture', 'Flækket'),
 ];
