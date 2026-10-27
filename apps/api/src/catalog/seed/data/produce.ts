@@ -225,7 +225,7 @@ export const produce: SeedSection = {
         'Ridiche albă (daikon)',
         'g',
         ['mooli', 'white radish'],
-        ['ridiche daikon'],
+        ['ridiche daikon', 'ridiche japoneza'],
       ],
       ['carrot', 'Carrot', 'Morcovi', 'g', ['carrots'], ['morcov', 'morc']],
       ['beetroot', 'Beetroot', 'Sfeclă roșie', 'g', ['beet'], ['sfecla']],
