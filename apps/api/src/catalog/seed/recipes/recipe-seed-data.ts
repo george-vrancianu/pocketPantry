@@ -14,6 +14,7 @@ import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { friedChicken } from './data/fried-chicken';
 import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
+import { garlicShrimp } from './data/garlic-shrimp';
 import { lentilSoup } from './data/lentil-soup';
 import { mamaliga } from './data/mamaliga';
 import { mici } from './data/mici';
@@ -58,4 +59,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   braisedRedCabbage,
   chiliConCarne,
   risotto,
+  garlicShrimp,
 ];
