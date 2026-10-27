@@ -54,6 +54,7 @@ import { stirFry } from './data/stir-fry';
 import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
 import { tomatoSoup } from './data/tomato-soup';
+import { varzaCalita } from './data/varza-calita';
 import { vegetableSoup } from './data/vegetable-soup';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
@@ -110,4 +111,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   shakshuka,
   oatmeal,
   ciorbaRadauteana,
+  varzaCalita,
 ];
