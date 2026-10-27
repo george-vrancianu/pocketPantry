@@ -28,6 +28,7 @@ import { friedChicken } from './data/fried-chicken';
 import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { garlicShrimp } from './data/garlic-shrimp';
+import { ghiveci } from './data/ghiveci';
 import { homemadePizza } from './data/homemade-pizza';
 import { hummus } from './data/hummus';
 import { iahnieDeFasole } from './data/iahnie-de-fasole';
@@ -140,4 +141,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   coleslaw,
   bakedPotatoes,
   hummus,
+  ghiveci,
 ];
