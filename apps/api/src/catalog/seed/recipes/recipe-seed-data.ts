@@ -26,6 +26,7 @@ import { mici } from './data/mici';
 import { omelette } from './data/omelette';
 import { pancakes } from './data/pancakes';
 import { potatoPuree } from './data/potato-puree';
+import { potatoSalad } from './data/potato-salad';
 import { ricePilaf } from './data/rice-pilaf';
 import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
@@ -76,4 +77,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   tochitura,
   biksemad,
   tomatoSoup,
+  potatoSalad,
 ];
