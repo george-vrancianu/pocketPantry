@@ -88,6 +88,7 @@ import { potatoSalad } from './data/potato-salad';
 import { puiLaCeaun } from './data/pui-la-ceaun';
 import { pulledPork } from './data/pulled-pork';
 import { quiche } from './data/quiche';
+import { rasol } from './data/rasol';
 import { ricePilaf } from './data/rice-pilaf';
 import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
@@ -230,4 +231,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaArdeleneasca,
   ciorbaDePraz,
   muraturi,
+  rasol,
 ];
