@@ -66,6 +66,7 @@ import { tomatoPasta } from './data/tomato-pasta';
 import { tomatoSoup } from './data/tomato-soup';
 import { varzaCalita } from './data/varza-calita';
 import { vegetableSoup } from './data/vegetable-soup';
+import { zacusca } from './data/zacusca';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   omelette,
@@ -132,4 +133,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   porkChops,
   musaca,
   tocanaDeCiuperci,
+  zacusca,
 ];
