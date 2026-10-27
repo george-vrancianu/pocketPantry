@@ -43,6 +43,7 @@ import { musaca } from './data/musaca';
 import { oatmeal } from './data/oatmeal';
 import { omelette } from './data/omelette';
 import { ostropel } from './data/ostropel';
+import { padThai } from './data/pad-thai';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
@@ -144,4 +145,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   hummus,
   ghiveci,
   ciorbaDePeste,
+  padThai,
 ];
