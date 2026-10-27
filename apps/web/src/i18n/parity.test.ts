@@ -428,6 +428,26 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
       'shopping:summary.moveToPantry_other',
     ],
   ],
+  [
+    'point',
+    'the verb "point" (aim the camera, a Tip pointing at a Step) or "a starting point", not a Credit',
+    [
+      'admin:recipe.variant.hint',
+      'errors:recipes.bad_step_anchor',
+      'scan:info.barcode',
+      'scan:overlay.pointAtBarcode',
+    ],
+  ],
+  [
+    'fee',
+    'a fee printed on a receipt, left out in Review, not a Credit Price',
+    ['review:excluded.reason.fee'],
+  ],
+  [
+    'log',
+    'the sign-in action "Log in", not a Usage Record',
+    ['signIn:submit', 'signUp:signIn'],
+  ],
 ];
 
 /**
