@@ -21,7 +21,9 @@ import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { chiftele } from './data/chiftele';
 import { chiliConCarne } from './data/chili-con-carne';
+import { ciorbaDeBurta } from './data/ciorba-de-burta';
 import { ciorbaDeCartofi } from './data/ciorba-de-cartofi';
+import { ciorbaDeCiuperci } from './data/ciorba-de-ciuperci';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDeFasoleVerde } from './data/ciorba-de-fasole-verde';
 import { ciorbaDeLegume } from './data/ciorba-de-legume';
@@ -69,12 +71,14 @@ import { paella } from './data/paella';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
+import { pastravLaGratar } from './data/pastrav-la-gratar';
 import { plachieDePeste } from './data/plachie-de-peste';
 import { placintaCuBranza } from './data/placinta-cu-branza';
 import { porkChops } from './data/pork-chops';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
 import { puiLaCeaun } from './data/pui-la-ceaun';
+import { pulledPork } from './data/pulled-pork';
 import { quiche } from './data/quiche';
 import { ricePilaf } from './data/rice-pilaf';
 import { ricePudding } from './data/rice-pudding';
@@ -85,6 +89,7 @@ import { salamDeBiscuiti } from './data/salam-de-biscuiti';
 import { salataDeArdeiCopti } from './data/salata-de-ardei-copti';
 import { salataDeBoeuf } from './data/salata-de-boeuf';
 import { salataDeIcre } from './data/salata-de-icre';
+import { salataDeSfecla } from './data/salata-de-sfecla';
 import { salataDeVinete } from './data/salata-de-vinete';
 import { saramuraDePeste } from './data/saramura-de-peste';
 import { sarmale } from './data/sarmale';
@@ -204,4 +209,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   mancareDeCartofi,
   dovleceiPane,
   meatloaf,
+  ciorbaDeBurta,
+  ciorbaDeCiuperci,
+  pastravLaGratar,
+  salataDeSfecla,
+  pulledPork,
 ];

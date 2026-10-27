@@ -52,6 +52,7 @@ export const SEED_CUISINES: SeedNamed[] = [
   named('austrian', 'Austrian', 'Austriacă', 'Østrigsk'),
   named('moroccan', 'Moroccan', 'Marocană', 'Marokkansk'),
   named('slovak', 'Slovak', 'Slovacă', 'Slovakisk'),
+  named('polish', 'Polish', 'Poloneză', 'Polsk'),
 ];
 
 export const SEED_METHODS: SeedNamed[] = [

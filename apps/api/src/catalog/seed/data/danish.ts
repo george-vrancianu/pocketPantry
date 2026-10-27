@@ -380,6 +380,8 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'beef-liver': 'Okselever',
   'pork-liver': 'Svinelever',
   'chicken-hearts': 'Kyllingehjerter og -kråser',
+  'beef-tripe': 'Kallun',
+  'beef-feet': 'Oksefødder',
   bacon: 'Bacon',
   'salt-pork': 'Saltet flæsk',
   pancetta: 'Pancetta',
@@ -950,6 +952,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'dried-bread-chips': 'Brødchips',
   peanuts: 'Jordnødder',
   almonds: 'Mandler',
+  'flaked-almonds': 'Mandelflager',
   walnuts: 'Valnødder',
   hazelnuts: 'Hasselnødder',
   cashews: 'Cashewnødder',
@@ -1060,6 +1063,9 @@ export const DA_INGREDIENTS: Record<string, string> = {
 
 /** Receipt and label words that differ from the display name. */
 export const DA_SYNONYMS: Record<string, string[]> = {
+  'beef-tripe': ['oksekallun'],
+  'beef-feet': ['kalvefødder'],
+  'flaked-almonds': ['mandler i flager', 'skivede mandler'],
   'dried-shiitake': ['shiitake tørret'],
   'dried-porcini': ['tørret karl johan', 'karl johan svampe tørrede'],
   dashi: ['dashi pulver'],

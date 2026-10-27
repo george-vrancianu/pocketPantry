@@ -327,6 +327,14 @@ export const snacks: SeedSection = {
         ['migdale decojite', 'migdale crude', 'migdale prajite'],
       ],
       [
+        'flaked-almonds',
+        'Flaked almonds',
+        'Fulgi de migdale',
+        'g',
+        ['sliced almonds', 'almond flakes'],
+        ['migdale feliate', 'migdale fulgi', 'migdale lamelate'],
+      ],
+      [
         'walnuts',
         'Walnuts',
         'Nuci',
