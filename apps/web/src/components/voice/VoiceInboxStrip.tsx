@@ -1,45 +1,24 @@
-import {
-  Box,
-  Button,
-  Gator,
-  palette,
-  radius,
-  shadow,
-  visuallyHidden,
-} from '@pocket-pantry/ui';
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  isStripUp,
-  useVoiceNoteState,
-  voiceNote,
-  type VoiceNoteState,
-} from '../../lib/voiceNote';
-import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
-import { focusVoiceButton, VOICE_PILL_ATTRIBUTE } from '../../lib/voiceFocus';
-import { enter } from './enter';
-import { VoiceInboxSheet } from './VoiceInboxSheet';
-import { useVoiceHost } from './VoiceHost';
-
-const oneLine = {
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-} as const;
+import { isStripUp, useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
+import { focusVoiceButton } from '../../lib/voiceFocus';
+import { BackgroundSheet } from '../background/BackgroundSheet';
+import { BackgroundStrip } from '../background/BackgroundStrip';
+import { useVoiceBackgroundItems } from './useVoiceBackgroundItems';
+import { VoiceReviewAllFooter } from './VoiceReviewAllFooter';
 
 /**
- * The Voice Inbox strip, where the status pill was: Gator, how many Voice Notes there are, what
- * state they are in, and a button: Review when exactly one is ready (it opens that note), else Open,
- * which opens the Voice Inbox sheet. A failed note outlines it in the warning colour and announces it as an alert
- * (the rest of the strip is a polite status).
+ * The Voice Inbox on the background strip: the Voice Notes adapted into background items. A failed
+ * note is announced once as an alert (the rest of the strip is a polite status).
  * Hidden while recording or while a sheet is up, and when the Voice Inbox is empty.
  *
  * The sheet is hosted here, outside the strip: when the last note leaves while it is open, the sheet
  * closes with its animation and focus goes to the voice button, not to the page behind.
  */
 export function VoiceInboxStrip() {
+  const { t } = useTranslation('voice');
   const state = useVoiceNoteState();
+  const items = useVoiceBackgroundItems();
   const [wantSheet, setWantSheet] = useState(false);
   const [mounted, setMounted] = useState(false);
   const up = isStripUp(state);
@@ -65,9 +44,11 @@ export function VoiceInboxStrip() {
   return (
     <>
       {up ? (
-        <Strip
-          state={state}
-          alerting={alerting}
+        <BackgroundStrip
+          items={items}
+          alert={
+            alerting ? t('inbox.failedAlert', { count: failed }) : undefined
+          }
           openSheet={() => {
             setMounted(true);
             setWantSheet(true);
@@ -75,7 +56,13 @@ export function VoiceInboxStrip() {
         />
       ) : null}
       {mounted ? (
-        <VoiceInboxSheet
+        <BackgroundSheet
+          items={items}
+          footer={
+            state.inbox.notes.filter((n) => n.hasActions).length > 1 ? (
+              <VoiceReviewAllFooter onClose={() => setWantSheet(false)} />
+            ) : undefined
+          }
           open={wantSheet && state.inbox.total > 0 && state.phase === 'idle'}
           onClose={() => setWantSheet(false)}
           onExited={() => {
@@ -87,104 +74,5 @@ export function VoiceInboxStrip() {
         />
       ) : null}
     </>
-  );
-}
-
-function Strip({
-  state,
-  alerting,
-  openSheet,
-}: {
-  state: VoiceNoteState;
-  alerting: boolean;
-  openSheet: () => void;
-}) {
-  const { t } = useTranslation('voice');
-  const host = useVoiceHost();
-  const { reading, ready, failed } = state.inbox;
-  const total = reading + ready + failed;
-  const busy = reading > 0;
-  const summary = [
-    busy ? t('inbox.reading', { count: reading }) : null,
-    ready > 0 ? t('inbox.ready', { count: ready }) : null,
-    failed > 0 ? t('inbox.failed', { count: failed }) : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-
-  const open = () => {
-    if (ready === 1) voiceNote.openReady();
-    else openSheet();
-  };
-
-  return createPortal(
-    <>
-      <Box
-        {...{ [VOICE_PILL_ATTRIBUTE]: '' }}
-        onClick={open}
-        sx={{
-          position: 'fixed',
-          left: 16,
-          right: 16,
-          bottom: pillBottom,
-          mx: 'auto',
-          maxWidth: 420,
-          zIndex: VOICE_LAYER.card,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '11px',
-          p: '11px 12px 11px 14px',
-          backgroundColor: 'pp.cardBg',
-          color: 'text.primary',
-          borderRadius: radius.control,
-          boxShadow: shadow.float,
-          cursor: 'pointer',
-          border: failed > 0 ? `2px solid ${palette('warning-main')}` : 'none',
-          ...enter,
-        }}
-      >
-        <Box
-          aria-hidden
-          sx={{ flex: 'none', display: 'flex', alignItems: 'center' }}
-        >
-          <Gator
-            mood={busy ? 'thinking' : 'happy'}
-            size={44}
-            loop={busy ? 'signature' : 'idle'}
-            entrance={false}
-            decorative
-          />
-        </Box>
-        <Box role="status" sx={{ flex: 1, minWidth: 0 }}>
-          <Box sx={{ fontSize: 14, fontWeight: 600, ...oneLine }}>
-            {t('inbox.title', { count: total })}
-          </Box>
-          <Box sx={{ fontSize: 12, color: 'text.secondary', ...oneLine }}>
-            {summary}
-          </Box>
-        </Box>
-        {alerting ? (
-          <Box role="alert" sx={visuallyHidden}>
-            {t('inbox.failedAlert', { count: failed })}
-          </Box>
-        ) : null}
-        <Button
-          variant="primary"
-          size="sm"
-          shape="pill"
-          onClick={(event) => {
-            event.stopPropagation();
-            open();
-          }}
-        >
-          {ready === 1
-            ? t('inbox.review')
-            : ready > 1
-              ? t('inbox.openCount', { count: ready })
-              : t('inbox.open')}
-        </Button>
-      </Box>
-    </>,
-    host,
   );
 }

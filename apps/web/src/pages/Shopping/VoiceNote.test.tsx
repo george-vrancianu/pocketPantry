@@ -133,7 +133,7 @@ describe('Voice Note on the Shopping List', () => {
 
     // Let go: the thinking Gator replaces it in the Voice Inbox strip.
     fireEvent.pointerUp(button);
-    await screen.findByText('1 Voice Note');
+    await screen.findByText(/^Voice Note · 0:\d\d$/);
     expect(gator('listening')).toBeNull();
     expect(gator('thinking')).not.toBeNull();
     expect(gator('thinking')).toHaveAttribute('alt', '');
@@ -333,8 +333,8 @@ describe('Voice Note on the Shopping List', () => {
       fireEvent.pointerUp(await hold());
 
       const strip = await findStatusNote();
-      expect(strip).toHaveTextContent('1 Voice Note');
-      expect(strip).toHaveTextContent('Reading 1');
+      expect(strip).toHaveTextContent(/Voice Note · 0:\d\d/);
+      expect(strip).toHaveTextContent('Being read');
       expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
       expect(screen.queryByRole('alert')).toBeNull();
       expect(screen.getByText('Your list is empty')).toBeVisible();
@@ -353,7 +353,7 @@ describe('Voice Note on the Shopping List', () => {
       setup({ note: never });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
-      await screen.findByText('1 Voice Note');
+      await screen.findByText(/^Voice Note · 0:\d\d$/);
 
       // A tap too quick to be a note.
       const button = await talkButton();
@@ -376,7 +376,7 @@ describe('Voice Note on the Shopping List', () => {
       await hold();
       await act(() => vi.advanceTimersByTimeAsync(60_000));
 
-      await screen.findByText('1 Voice Note');
+      await screen.findByText(/^Voice Note · 0:\d\d$/);
       const toast = await screen.findByText(/Stopped at 1 minute/);
       expect(toast).toBeVisible();
       const rule = cssText()
@@ -390,7 +390,7 @@ describe('Voice Note on the Shopping List', () => {
       const { sent } = setup({ note: never });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
-      await screen.findByText('Reading 1');
+      await screen.findByText(/Being read$/);
       mic.start.mockClear();
 
       const button = await hold();
@@ -398,8 +398,8 @@ describe('Voice Note on the Shopping List', () => {
       expect(statusNote()).toHaveTextContent("Gator's listening");
       fireEvent.pointerUp(button);
 
-      expect(await screen.findByText('2 Voice Notes')).toBeVisible();
-      expect(screen.getByText('Reading 2')).toBeVisible();
+      expect(await screen.findByText('2 in the background')).toBeVisible();
+      expect(screen.getByText('2 reading')).toBeVisible();
       expect(sent).toHaveLength(2);
     });
 
@@ -409,21 +409,23 @@ describe('Voice Note on the Shopping List', () => {
       fireEvent.pointerUp(await hold());
       const strip = await findStatusNote();
       await screen.findByRole('button', { name: 'Review' });
-      expect(strip).toHaveTextContent('1 ready');
+      expect(strip).toHaveTextContent('Ready to review');
       expect(await openReady()).toBeVisible();
       // The strip steps aside while the sheet is up.
-      expect(screen.queryByText('1 ready')).toBeNull();
+      expect(screen.queryByText(/Ready to review$/)).toBeNull();
     });
 
     /** Opens the Voice Inbox sheet from the strip. */
     const openSheet = async () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Open' }));
-      return screen.findByRole('dialog', { name: 'Voice Inbox' });
+      return screen.findByRole('dialog', { name: 'In the background' });
     };
     const rowOf = (dialog: HTMLElement, text: RegExp | string) =>
       within(dialog)
         .getAllByRole('listitem')
-        .find((li) => within(li).queryByText(text) !== null) as HTMLElement;
+        .find(
+          (li) => within(li).queryByText(text, { exact: false }) !== null,
+        ) as HTMLElement;
 
     it('keeps a failed note in the Voice Inbox: the strip counts it politely and announces the failure as an alert', async () => {
       setup({ note: () => error('voice.provider_unavailable', 502) });
@@ -435,8 +437,7 @@ describe('Voice Note on the Shopping List', () => {
         '1 Voice Note failed',
       );
       const strip = statusNote();
-      expect(strip).toHaveTextContent('1 Voice Note');
-      expect(strip).toHaveTextContent('1 failed');
+      expect(strip).toHaveTextContent(/Voice Note · 0:\d\d/);
       const dialog = await openSheet();
       const row = rowOf(dialog, 'No connection. Your recording is kept.');
       expect(
@@ -459,7 +460,7 @@ describe('Voice Note on the Shopping List', () => {
       fireEvent.pointerUp(await hold());
       await screen.findByRole('alert');
       fireEvent.pointerUp(await hold());
-      await screen.findByText('2 Voice Notes');
+      await screen.findByText('2 in the background');
       await waitFor(() =>
         expect(screen.getByRole('alert')).toHaveTextContent(
           '2 Voice Notes failed',
@@ -498,7 +499,9 @@ describe('Voice Note on the Shopping List', () => {
         ),
       );
       fireEvent.click(screen.getByRole('button', { name: /^Open/ }));
-      const sheet = await screen.findByRole('dialog', { name: 'Voice Inbox' });
+      const sheet = await screen.findByRole('dialog', {
+        name: 'In the background',
+      });
 
       const focus = vi.spyOn(HTMLElement.prototype, 'focus');
       await userEvent.click(
@@ -595,7 +598,7 @@ describe('Voice Note on the Shopping List', () => {
       fireEvent.click(screen.getByRole('link', { name: 'Pantry' }));
       await screen.findByText('Pantry page');
 
-      expect(await screen.findByText('1 failed')).toBeVisible();
+      expect(await screen.findByText(/^Voice Note · 0:\d\d$/)).toBeVisible();
       expect(screen.queryByRole('alert')).toBeNull();
     });
 
@@ -603,7 +606,7 @@ describe('Voice Note on the Shopping List', () => {
       setup({ note: () => error('voice.provider_unavailable', 502) });
       renderInAppLayout(<ShoppingPage />, '/shopping');
       fireEvent.pointerUp(await hold());
-      await screen.findByText('1 failed');
+      await screen.findByText(/^Voice Note · 0:\d\d$/);
       fireEvent.pointerUp(await hold());
       expect(await screen.findByRole('alert')).toHaveTextContent(
         '2 Voice Notes failed',
@@ -611,7 +614,7 @@ describe('Voice Note on the Shopping List', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Open' }));
       const dialog = await screen.findByRole('dialog', {
-        name: 'Voice Inbox',
+        name: 'In the background',
       });
       await userEvent.click(
         within(dialog).getAllByRole('button', { name: /^Discard/ })[0],
@@ -664,7 +667,7 @@ describe('Voice Note on the Shopping List', () => {
       // The sheet closes with its animation rather than vanishing, and focus returns to the voice button.
       await waitFor(() =>
         expect(
-          screen.queryByRole('dialog', { name: 'Voice Inbox' }),
+          screen.queryByRole('dialog', { name: 'In the background' }),
         ).toBeNull(),
       );
       expect(screen.queryByRole('alert')).toBeNull();
@@ -686,7 +689,9 @@ describe('Voice Note on the Shopping List', () => {
       expect(
         await within(dialog).findByRole('button', { name: /^Retry:/ }),
       ).toBeVisible();
-      expect(screen.getByRole('dialog', { name: 'Voice Inbox' })).toBeVisible();
+      expect(
+        screen.getByRole('dialog', { name: 'In the background' }),
+      ).toBeVisible();
     });
 
     it('retries a network error once by itself before it fails the note', async () => {
@@ -699,7 +704,7 @@ describe('Voice Note on the Shopping List', () => {
       act(() => reads[0].reject(new TypeError('offline')));
 
       await waitFor(() => expect(reads).toHaveLength(2));
-      expect(statusNote()).toHaveTextContent('Reading 1');
+      expect(statusNote()).toHaveTextContent('Being read');
       act(() =>
         reads[1].resolve(Response.json({ transcript: 'bread', actions: [] })),
       );
@@ -725,7 +730,7 @@ describe('Voice Note on the Shopping List', () => {
       ).toBeVisible();
       await holdFor(10_000);
       expect(
-        screen.getByRole('dialog', { name: 'Voice Inbox' }),
+        screen.getByRole('dialog', { name: 'In the background' }),
       ).toHaveTextContent("Didn't catch anything, try again");
     });
 
@@ -778,7 +783,7 @@ describe('Voice Note on the Shopping List', () => {
 
         act(() => reads[1].resolve(error('voice.nothing_heard', 422)));
         const again = await screen.findByRole('dialog', {
-          name: 'Voice Inbox',
+          name: 'In the background',
         });
         expect(again).toHaveTextContent('Dansk');
         fireEvent.click(
@@ -810,7 +815,7 @@ describe('Voice Note on the Shopping List', () => {
         );
         await waitFor(() =>
           expect(
-            within(dialog).getByRole('heading', { name: 'Voice Inbox' }),
+            within(dialog).getByRole('heading', { name: 'In the background' }),
           ).toHaveFocus(),
         );
       });
@@ -840,7 +845,7 @@ describe('Voice Note on the Shopping List', () => {
         fireEvent.click(
           within(dialog).getAllByRole('button', {
             name: /^Retry in another language/,
-          })[0],
+          })[1],
         );
         fireEvent.click(await screen.findByRole('menuitem', { name: 'Dansk' }));
         await waitFor(() => expect(reads.length).toBeGreaterThan(before));
