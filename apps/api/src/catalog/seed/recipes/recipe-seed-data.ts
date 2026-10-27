@@ -62,6 +62,7 @@ import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
+import { salataDeArdeiCopti } from './data/salata-de-ardei-copti';
 import { salataDeBoeuf } from './data/salata-de-boeuf';
 import { salataDeIcre } from './data/salata-de-icre';
 import { salataDeVinete } from './data/salata-de-vinete';
@@ -160,4 +161,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   paella,
   grilledCheese,
   bananaBread,
+  salataDeArdeiCopti,
 ];
