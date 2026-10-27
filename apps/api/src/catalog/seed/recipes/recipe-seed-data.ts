@@ -19,6 +19,7 @@ import { pancakes } from './data/pancakes';
 import { potatoPuree } from './data/potato-puree';
 import { ricePilaf } from './data/rice-pilaf';
 import { roastChicken } from './data/roast-chicken';
+import { roastedVegetables } from './data/roasted-vegetables';
 import { sarmale } from './data/sarmale';
 import { smorrebrod } from './data/smorrebrod';
 import { stegtFlaesk } from './data/stegt-flaesk';
@@ -48,4 +49,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   stegtFlaesk,
   friedRice,
   beefStew,
+  roastedVegetables,
 ];
