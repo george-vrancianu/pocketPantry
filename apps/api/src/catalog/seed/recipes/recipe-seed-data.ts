@@ -31,6 +31,7 @@ import { ciorbaDeMiel } from './data/ciorba-de-miel';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaDePui } from './data/ciorba-de-pui';
+import { ciorbaDeStevie } from './data/ciorba-de-stevie';
 import { ciorbaDeVacuta } from './data/ciorba-de-vacuta';
 import { ciorbaDeVarza } from './data/ciorba-de-varza';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
@@ -218,4 +219,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   pulledPork,
   drobDeMiel,
   ciorbaDeMiel,
+  ciorbaDeStevie,
 ];
