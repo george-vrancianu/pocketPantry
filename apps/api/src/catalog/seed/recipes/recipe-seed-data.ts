@@ -66,6 +66,7 @@ import { grisCuLapte } from './data/gris-cu-lapte';
 import { homemadePizza } from './data/homemade-pizza';
 import { hummus } from './data/hummus';
 import { iahnieDeFasole } from './data/iahnie-de-fasole';
+import { lapteDePasare } from './data/lapte-de-pasare';
 import { lasagne } from './data/lasagne';
 import { lentilSoup } from './data/lentil-soup';
 import { macAndCheese } from './data/mac-and-cheese';
@@ -250,4 +251,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDePotroace,
   ciorbaDeLoboda,
   piftie,
+  lapteDePasare,
 ];
