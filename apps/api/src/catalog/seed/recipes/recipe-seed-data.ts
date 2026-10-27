@@ -67,6 +67,7 @@ import { mancareDeCartofi } from './data/mancare-de-cartofi';
 import { mancareDeMazare } from './data/mancare-de-mazare';
 import { meatloaf } from './data/meatloaf';
 import { mici } from './data/mici';
+import { muraturi } from './data/muraturi';
 import { musaca } from './data/musaca';
 import { oatmeal } from './data/oatmeal';
 import { omelette } from './data/omelette';
@@ -228,4 +229,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ouaUmplute,
   ciorbaArdeleneasca,
   ciorbaDePraz,
+  muraturi,
 ];
