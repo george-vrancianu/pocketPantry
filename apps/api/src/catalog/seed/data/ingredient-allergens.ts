@@ -44,6 +44,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   leek: [],
   shallot: [],
   'pearl-onions': [],
+  'green-garlic': [],
 
   // produce/leafy-greens
   lettuce: [],
@@ -56,6 +57,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   kale: [],
   chard: [],
   sorrel: [],
+  'patience-dock': [],
   watercress: [],
   radicchio: [],
   'belgian-endive': [],
@@ -293,6 +295,9 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'chicken-liver': [],
   'beef-liver': [],
   'pork-liver': [],
+  'lamb-offal': [],
+  'lamb-liver': [],
+  'caul-fat': [],
   'chicken-hearts': [],
   'beef-tripe': [],
   'beef-feet': [],

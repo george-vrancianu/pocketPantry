@@ -27,9 +27,11 @@ import { ciorbaDeCiuperci } from './data/ciorba-de-ciuperci';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDeFasoleVerde } from './data/ciorba-de-fasole-verde';
 import { ciorbaDeLegume } from './data/ciorba-de-legume';
+import { ciorbaDeMiel } from './data/ciorba-de-miel';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaDePui } from './data/ciorba-de-pui';
+import { ciorbaDeStevie } from './data/ciorba-de-stevie';
 import { ciorbaDeVacuta } from './data/ciorba-de-vacuta';
 import { ciorbaDeVarza } from './data/ciorba-de-varza';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
@@ -38,6 +40,7 @@ import { cornulete } from './data/cornulete';
 import { cottagePie } from './data/cottage-pie';
 import { cozonac } from './data/cozonac';
 import { dovleceiPane } from './data/dovlecei-pane';
+import { drobDeMiel } from './data/drob-de-miel';
 import { falafel } from './data/falafel';
 import { fasoleBatuta } from './data/fasole-batuta';
 import { fishAndChips } from './data/fish-and-chips';
@@ -66,10 +69,12 @@ import { musaca } from './data/musaca';
 import { oatmeal } from './data/oatmeal';
 import { omelette } from './data/omelette';
 import { ostropel } from './data/ostropel';
+import { ouaUmplute } from './data/oua-umplute';
 import { padThai } from './data/pad-thai';
 import { paella } from './data/paella';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
+import { pasca } from './data/pasca';
 import { pastaCarbonara } from './data/pasta-carbonara';
 import { pastravLaGratar } from './data/pastrav-la-gratar';
 import { plachieDePeste } from './data/plachie-de-peste';
@@ -214,4 +219,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   pastravLaGratar,
   salataDeSfecla,
   pulledPork,
+  drobDeMiel,
+  ciorbaDeMiel,
+  ciorbaDeStevie,
+  pasca,
+  ouaUmplute,
 ];

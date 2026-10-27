@@ -276,6 +276,14 @@ export const produce: SeedSection = {
         ['usturoi alb', 'cap usturoi', 'usturoi cap'],
       ],
       ['leek', 'Leek', 'Praz', 'g', undefined, ['prazul']],
+      [
+        'green-garlic',
+        'Green garlic',
+        'Usturoi verde',
+        'g',
+        ['spring garlic', 'young garlic'],
+        ['usturoi tanar', 'usturoi verde legatura'],
+      ],
       ['shallot', 'Shallot', 'Șalotă', 'g'],
     ]),
     ...ingredientsOf('leafy-greens', [
@@ -295,6 +303,14 @@ export const produce: SeedSection = {
         ['iceberg'],
       ],
       ['spinach', 'Spinach', 'Spanac', 'g', undefined, ['spanac proaspat']],
+      [
+        'patience-dock',
+        'Patience dock',
+        'Ștevie',
+        'g',
+        ['herb patience', 'garden patience'],
+        ['stevie de gradina'],
+      ],
       ['rocket', 'Rocket', 'Rucola', 'g', ['arugula']],
       [
         'lambs-lettuce',
