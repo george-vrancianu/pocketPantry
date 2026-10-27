@@ -25,6 +25,7 @@ import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { coleslaw } from './data/coleslaw';
 import { cottagePie } from './data/cottage-pie';
+import { cozonac } from './data/cozonac';
 import { fishAndChips } from './data/fish-and-chips';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
@@ -168,4 +169,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   gogosi,
   appleCrumble,
   brownies,
+  cozonac,
 ];
