@@ -132,9 +132,11 @@ describe('Review all in the Voice Inbox', () => {
     reply(1, 'second note', second);
     reply(0, 'first note', first);
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Open (2)' }),
+      await screen.findByRole('button', { name: 'Open 2' }),
     );
-    return within(await screen.findByRole('dialog', { name: 'Voice Inbox' }));
+    return within(
+      await screen.findByRole('dialog', { name: 'In the background' }),
+    );
   }
   function render() {
     renderWithProviders(
@@ -177,10 +179,10 @@ describe('Review all in the Voice Inbox', () => {
       ],
     );
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Open (2)' }),
+      await screen.findByRole('button', { name: 'Open 2' }),
     );
     const sheet = within(
-      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+      await screen.findByRole('dialog', { name: 'In the background' }),
     );
     expect(sheet.queryByRole('button', { name: /Review all/ })).toBeNull();
   });
@@ -192,10 +194,10 @@ describe('Review all in the Voice Inbox', () => {
     reply(0, 'first note', [shop('a1', bread)]);
     reply(1, 'just chatting', []);
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Open (2)' }),
+      await screen.findByRole('button', { name: 'Open 2' }),
     );
     const sheet = within(
-      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+      await screen.findByRole('dialog', { name: 'In the background' }),
     );
     expect(sheet.queryByRole('button', { name: /Review all/ })).toBeNull();
   });
@@ -209,10 +211,10 @@ describe('Review all in the Voice Inbox', () => {
     await speak(3);
     reply(2, 'third note', [shop('a3', milk)]);
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Open (3)' }),
+      await screen.findByRole('button', { name: 'Open 3' }),
     );
     const sheet = within(
-      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+      await screen.findByRole('dialog', { name: 'In the background' }),
     );
     const dialog = await reviewAll(sheet);
     expect(dialog.getByText(/first note/)).toBeVisible();
@@ -260,10 +262,10 @@ describe('Review all in the Voice Inbox', () => {
     reply(0, 'first note', [shop('a1', bread)], [answer('q1', milk)]);
     reply(1, 'second note', [shop('b1', eggs)], [answer('q2', eggs)]);
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Open (2)' }),
+      await screen.findByRole('button', { name: 'Open 2' }),
     );
     const dialog = await reviewAll(
-      within(await screen.findByRole('dialog', { name: 'Voice Inbox' })),
+      within(await screen.findByRole('dialog', { name: 'In the background' })),
     );
     const cards = dialog.getAllByRole('region', { name: 'Your Pantry' });
     expect(cards).toHaveLength(1);
@@ -286,7 +288,7 @@ describe('Review all in the Voice Inbox', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     // Nothing is left in the Voice Inbox.
     expect(screen.queryByRole('button', { name: /^Open/ })).toBeNull();
-    expect(screen.queryByText('2 Voice Notes')).toBeNull();
+    expect(screen.queryByText('2 in the background')).toBeNull();
   });
 
   it('keeps every note with its edits when Apply fails, and sends the edits on the next try', async () => {
@@ -361,7 +363,7 @@ describe('Review all in the Voice Inbox', () => {
     expect(await screen.findByText('Voice Notes discarded')).toBeVisible();
     expect(applied).toHaveLength(0);
     expect(screen.queryByRole('button', { name: /^Open/ })).toBeNull();
-    expect(screen.queryByText('2 Voice Notes')).toBeNull();
+    expect(screen.queryByText('2 in the background')).toBeNull();
   });
 
   it('refuses a merge over 50 Voice Actions with a message, and lets the notes be reviewed on their own', async () => {
@@ -376,7 +378,9 @@ describe('Review all in the Voice Inbox', () => {
       await sheet.findByText(/more than 50 changes for one Apply/),
     ).toBeVisible();
     expect(screen.queryByRole('dialog', { name: 'Review all' })).toBeNull();
-    expect(screen.getByRole('dialog', { name: 'Voice Inbox' })).toBeVisible();
+    expect(
+      screen.getByRole('dialog', { name: 'In the background' }),
+    ).toBeVisible();
 
     // The notes can still be reviewed one by one.
     await userEvent.click(
@@ -401,7 +405,7 @@ describe('Review all in the Voice Inbox', () => {
     reply(1, 'second note', many('b', 25));
     await userEvent.click(await screen.findByRole('button', { name: /^Open/ }));
     const sheet = within(
-      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+      await screen.findByRole('dialog', { name: 'In the background' }),
     );
     await userEvent.click(
       await sheet.findByRole('button', { name: 'Review all (2)' }),

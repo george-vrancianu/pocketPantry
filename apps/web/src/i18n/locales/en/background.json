@@ -1,0 +1,12 @@
+{
+  "title": "{{count}} in the background",
+  "reading_one": "{{count}} reading",
+  "reading_other": "{{count}} reading",
+  "ready": "{{count}} ready",
+  "failed_one": "{{count}} failed",
+  "failed_other": "{{count}} failed",
+  "review": "Review",
+  "open": "Open",
+  "openCount": "Open {{count}}",
+  "sheetTitle": "In the background"
+}

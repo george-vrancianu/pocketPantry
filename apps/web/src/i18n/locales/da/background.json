@@ -1,0 +1,12 @@
+{
+  "title": "{{count}} i baggrunden",
+  "reading_one": "{{count}} læses",
+  "reading_other": "{{count}} læses",
+  "ready": "{{count}} klar",
+  "failed_one": "{{count}} mislykkedes",
+  "failed_other": "{{count}} mislykkedes",
+  "review": "Gennemse",
+  "open": "Åbn",
+  "openCount": "Åbn {{count}}",
+  "sheetTitle": "I baggrunden"
+}

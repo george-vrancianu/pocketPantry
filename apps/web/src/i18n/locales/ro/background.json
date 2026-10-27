@@ -1,0 +1,14 @@
+{
+  "title": "{{count}} în fundal",
+  "reading_one": "{{count}} se citește",
+  "reading_few": "{{count}} se citesc",
+  "reading_other": "{{count}} se citesc",
+  "ready": "{{count}} gata",
+  "failed_one": "{{count}} eșuat",
+  "failed_few": "{{count}} eșuate",
+  "failed_other": "{{count}} de eșuate",
+  "review": "Verificare",
+  "open": "Deschide",
+  "openCount": "Deschide {{count}}",
+  "sheetTitle": "În fundal"
+}

@@ -143,7 +143,9 @@ describe('Voice Notes on the Pantry page', () => {
       '1 Voice Note failed',
     );
     fireEvent.click(screen.getByRole('button', { name: 'Open' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Voice Inbox' });
+    const dialog = await screen.findByRole('dialog', {
+      name: 'In the background',
+    });
 
     await userEvent.click(
       within(dialog).getByRole('button', { name: /^Retry:/ }),
@@ -162,7 +164,7 @@ describe('Voice Notes on the Pantry page', () => {
       defaultTarget: 'pantry',
     });
     renderInAppLayout(<PantryPage />, '/pantry');
-    await screen.findByText('Reading 1');
+    await screen.findByText(/Being read$/);
 
     await userEvent.click(screen.getByRole('button', { name: 'Add batch' }));
 
@@ -174,7 +176,7 @@ describe('Voice Notes on the Pantry page', () => {
         hidden: true,
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Reading 1')).toBeInTheDocument();
+    expect(screen.getByText(/Being read$/)).toBeInTheDocument();
   });
 
   it('puts the voice button on the Pantry page and records for the Pantry', async () => {
