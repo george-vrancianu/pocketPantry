@@ -43,6 +43,12 @@ export {
   type IngredientIconProps,
 } from './ingredientIcon/IngredientIcon';
 export {
+  LinkReadingArt,
+  PhotoReadingArt,
+  ReceiptReadingArt,
+  type ReadingArtProps,
+} from './readingArt/ReadingArt';
+export {
   Gator,
   warmGatorLoops,
   type GatorLoop,
@@ -137,6 +143,7 @@ export {
   HomeIcon,
   PantryIcon,
   RecipesIcon,
+  CookbookIcon,
   ScanIcon,
   SettingsIcon,
   ShoppingIcon,
