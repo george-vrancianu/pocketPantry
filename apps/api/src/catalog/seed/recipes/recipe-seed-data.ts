@@ -33,6 +33,7 @@ import { coleslaw } from './data/coleslaw';
 import { cornulete } from './data/cornulete';
 import { cottagePie } from './data/cottage-pie';
 import { cozonac } from './data/cozonac';
+import { fasoleBatuta } from './data/fasole-batuta';
 import { fishAndChips } from './data/fish-and-chips';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
@@ -188,4 +189,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   spaghettiAglioOlio,
   ciorbaDeVacuta,
   ciorbaDeCartofi,
+  fasoleBatuta,
 ];
