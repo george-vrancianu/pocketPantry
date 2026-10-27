@@ -793,6 +793,31 @@ describe('Catalog (integration)', () => {
               normalizedValue: 'squash',
             });
 
+            // The Romanian Synonyms the old seed gave Bell pepper (kapia) and
+            // Pickled cucumbers (cornichons), now Ingredients of their own.
+            const movedSynonyms = [
+              ['bell-pepper', 'ardei kapia'],
+              ['bell-pepper', 'ardei capia'],
+              ['pickled-cucumbers', 'cornichons'],
+              ['pickled-cucumbers', 'corniosi'],
+            ] as const;
+            const oldMoved = movedSynonyms.map(([slug, key]) =>
+              stableId(
+                `translation:ingredient:${entity(slug)}:ro:synonym:${key}`,
+              ),
+            );
+            await tx.insert(catalogTranslations).values(
+              movedSynonyms.map(([slug, key], i) => ({
+                id: oldMoved[i],
+                entityType: 'ingredient' as const,
+                entityId: entity(slug),
+                locale: 'ro',
+                kind: 'synonym' as const,
+                value: key,
+                normalizedValue: key,
+              })),
+            );
+
             // The ASCII Synonym the old seed gave carrot, from before Danish
             // letters were folded.
             const oldGuleroedder = stableId(
@@ -833,6 +858,13 @@ describe('Catalog (integration)', () => {
                 ),
             ).toEqual([]);
 
+            expect(
+              await tx
+                .select()
+                .from(catalogTranslations)
+                .where(inArray(catalogTranslations.id, oldMoved)),
+            ).toEqual([]);
+
             const value = async (
               slug: string,
               locale: string,
@@ -845,6 +877,27 @@ describe('Catalog (integration)', () => {
                   .where(rows(slug, locale, kind))
               ).map((row) => row.value);
             expect(await value('milk', 'da', 'name')).toEqual(['Mælk']);
+            expect(await value('kapia-pepper', 'ro', 'name')).toEqual([
+              'Ardei kapia',
+            ]);
+            expect(await value('bell-pepper', 'ro', 'synonym')).not.toContain(
+              'ardei kapia',
+            );
+            expect(await value('kapia-pepper', 'ro', 'synonym')).toContain(
+              'ardei capia',
+            );
+            expect(await value('bell-pepper', 'ro', 'synonym')).not.toContain(
+              'ardei capia',
+            );
+            expect(await value('cornichons', 'ro', 'synonym')).toEqual(
+              expect.arrayContaining(['cornichon', 'corniosi']),
+            );
+            expect(
+              await value('pickled-cucumbers', 'ro', 'synonym'),
+            ).not.toContain('corniosi');
+            expect(
+              await value('pickled-cucumbers', 'ro', 'synonym'),
+            ).not.toContain('cornichons');
             expect(await value('zucchini', 'da', 'name')).toEqual(['Squash']);
             expect(await value('parmesan', 'ro', 'name')).toEqual([
               'Parmezan curat',
