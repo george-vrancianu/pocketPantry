@@ -173,6 +173,22 @@ export const bakery: SeedSection = {
         ['wraps', 'flour tortillas'],
         ['tortilla wrap', 'tortilla grau'],
       ],
+      [
+        'taco-shells',
+        'Taco shells',
+        'Coji crocante pentru tacos',
+        'pcs',
+        ['hard taco shells', 'crunchy taco shells'],
+        ['tacos crocante'],
+      ],
+      [
+        'corn-tortillas',
+        'Corn tortillas',
+        'Tortilla de porumb',
+        'pcs',
+        ['tortillas de maíz', 'soft corn tortillas'],
+        ['tortilla porumb', 'tortilla de malai'],
+      ],
       ['pita', 'Pita bread', 'Lipie', 'pcs', ['pitta'], ['pita', 'lipii']],
       ['naan', 'Naan', 'Naan', 'pcs', ['naan bread']],
       ['lavash', 'Lavash', 'Lavaș', 'pcs'],
@@ -894,6 +910,14 @@ export const meat: SeedSection = {
       ],
     ]),
     ...ingredientsOf('cured-meat', [
+      [
+        'salt-pork',
+        'Salt pork',
+        'Slănină sărată',
+        'g',
+        ['salted pork belly', 'salt-cured pork'],
+        ['slanina de porc sarata'],
+      ],
       [
         'bacon',
         'Bacon',

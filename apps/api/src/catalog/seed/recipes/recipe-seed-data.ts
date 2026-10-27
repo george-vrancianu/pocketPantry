@@ -18,6 +18,7 @@ import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
+import { cottagePie } from './data/cottage-pie';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
 import { frenchToast } from './data/french-toast';
@@ -26,6 +27,8 @@ import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { garlicShrimp } from './data/garlic-shrimp';
 import { homemadePizza } from './data/homemade-pizza';
+import { iahnieDeFasole } from './data/iahnie-de-fasole';
+import { lasagne } from './data/lasagne';
 import { lentilSoup } from './data/lentil-soup';
 import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
@@ -39,6 +42,7 @@ import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
+import { puiLaCeaun } from './data/pui-la-ceaun';
 import { ricePilaf } from './data/rice-pilaf';
 import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
@@ -52,6 +56,7 @@ import { smorrebrod } from './data/smorrebrod';
 import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
+import { tacos } from './data/tacos';
 import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
 import { tomatoSoup } from './data/tomato-soup';
@@ -114,4 +119,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaRadauteana,
   varzaCalita,
   salataDeBoeuf,
+  lasagne,
+  tacos,
+  cottagePie,
+  iahnieDeFasole,
+  puiLaCeaun,
 ];

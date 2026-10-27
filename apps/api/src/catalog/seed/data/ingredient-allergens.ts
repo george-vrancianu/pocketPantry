@@ -178,6 +178,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // bakery/flatbreads-and-wraps
   'tortilla-wraps': ['gluten'],
+  'taco-shells': [],
+  'corn-tortillas': [],
   pita: ['gluten'],
   naan: ['gluten', 'milk'],
   lavash: ['gluten'],
@@ -285,6 +287,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'chicken-hearts': [],
 
   // meat/cured-meat
+  'salt-pork': [],
   bacon: [],
   pancetta: [],
   guanciale: [],
@@ -563,6 +566,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   // pasta/dried-pasta
   spaghetti: ['gluten'],
   penne: ['gluten'],
+  'pastitsio-pasta': ['gluten'],
   fusilli: ['gluten'],
   farfalle: ['gluten'],
   macaroni: ['gluten'],
@@ -659,6 +663,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'kidney-beans': [],
   'white-beans': [],
   'borlotti-beans': [],
+  'gigantes-beans': [],
   'black-beans': [],
   'split-peas': [],
   soybeans: ['soy'],
@@ -805,6 +810,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'chocolate-spread': ['milk', 'soy', 'tree-nuts'],
   'maple-syrup': [],
   'golden-syrup': [],
+  molasses: [],
   'marmalade-orange': [],
   'fruit-syrup': [],
   'agave-syrup': [],
@@ -878,6 +884,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'vanilla-pods': [],
   'fennel-seeds': [],
   'ancho-chillies': [],
+  'guajillo-chillies': [],
   'dried-red-chillies': [],
   'caraway-seeds': [],
   fenugreek: [],
@@ -906,6 +913,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'grill-seasoning': ['celery'],
   'pork-seasoning': ['celery'],
   'taco-seasoning': [],
+  'achiote-paste': [],
   'pizza-seasoning': [],
   'sarmale-seasoning': [],
   'five-spice': [],
