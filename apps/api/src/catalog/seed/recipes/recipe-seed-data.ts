@@ -34,6 +34,7 @@ import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaDePraz } from './data/ciorba-de-praz';
 import { ciorbaDePui } from './data/ciorba-de-pui';
+import { ciorbaDeSalata } from './data/ciorba-de-salata';
 import { ciorbaDeStevie } from './data/ciorba-de-stevie';
 import { ciorbaDeUrzici } from './data/ciorba-de-urzici';
 import { ciorbaDeVacuta } from './data/ciorba-de-vacuta';
@@ -236,4 +237,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   rasol,
   chec,
   ciorbaDeUrzici,
+  ciorbaDeSalata,
 ];
