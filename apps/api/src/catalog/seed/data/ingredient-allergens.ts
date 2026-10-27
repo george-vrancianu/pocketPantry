@@ -472,7 +472,6 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   milk: ['milk'],
   'lactose-free-milk': ['milk'],
   'sour-cream': ['milk'],
-  'creme-fraiche': ['milk'],
   kajmak: ['milk'],
   'whipping-cream': ['milk'],
   'cooking-cream': ['milk'],

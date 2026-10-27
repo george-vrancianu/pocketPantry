@@ -527,7 +527,6 @@ export const DA_INGREDIENTS: Record<string, string> = {
   milk: 'Mælk',
   'lactose-free-milk': 'Laktosefri mælk',
   'sour-cream': 'Creme fraiche',
-  'creme-fraiche': 'Fransk crème fraîche',
   kajmak: 'Kajmak',
   'whipping-cream': 'Piskefløde',
   'cooking-cream': 'Madlavningsfløde',

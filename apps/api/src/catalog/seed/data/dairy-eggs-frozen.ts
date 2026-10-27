@@ -325,12 +325,6 @@ export const dairy: SeedSection = {
         ['smantana fermentata', 'smant'],
       ],
       [
-        'creme-fraiche',
-        'French crème fraîche',
-        'Crème fraîche (smântână franceză)',
-        'g',
-      ],
-      [
         'whipping-cream',
         'Whipping cream',
         'Frișcă lichidă',
