@@ -60,6 +60,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   kale: [],
   chard: [],
   sorrel: [],
+  nettles: [],
   'patience-dock': [],
   watercress: [],
   radicchio: [],

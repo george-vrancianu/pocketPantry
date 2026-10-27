@@ -201,6 +201,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
   kale: 'Grønkål',
   chard: 'Mangold',
   sorrel: 'Syre',
+  nettles: 'Brændenælder',
   'patience-dock': 'Engelsk spinat',
   watercress: 'Brøndkarse',
   radicchio: 'Radicchio',
@@ -1074,6 +1075,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
 /** Receipt and label words that differ from the display name. */
 export const DA_SYNONYMS: Record<string, string[]> = {
   'beef-tripe': ['oksekallun'],
+  nettles: ['nælder', 'brændenælde'],
   'beef-feet': ['kalvefødder'],
   'flaked-almonds': ['mandler i flager', 'skivede mandler'],
   'dried-shiitake': ['shiitake tørret'],
