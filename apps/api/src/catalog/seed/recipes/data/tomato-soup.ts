@@ -366,16 +366,13 @@ export const tomatoSoup: BaseRecipeSeed = {
         },
         {
           kind: 'food',
-          label: t(
-            'Diced cured ham (jamón)',
-            'Jamón (șuncă crudă uscată) tăiat cubulețe',
-          ),
+          label: t('Diced jamón serrano', 'Jamón serrano tăiat cubulețe'),
           reason: t(
-            'Its saltiness balances the sweetness of the ripe tomatoes.',
-            'Sărătura ei echilibrează dulceața roșiilor coapte.',
+            'The saltiness of the cured ham balances the sweetness of the ripe tomatoes.',
+            'Sărătura șuncii crude uscate echilibrează dulceața roșiilor coapte.',
           ),
           principle: 'salt_balances_sweet',
-          ingredient: 'prosciutto',
+          ingredient: 'serrano-ham',
         },
         {
           kind: 'drink',
