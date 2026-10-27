@@ -20,6 +20,7 @@ import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
+import { ciorbaDeLegume } from './data/ciorba-de-legume';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaDePui } from './data/ciorba-de-pui';
@@ -176,4 +177,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   salamDeBiscuiti,
   cornulete,
   ciorbaDePui,
+  ciorbaDeLegume,
 ];
