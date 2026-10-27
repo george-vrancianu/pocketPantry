@@ -6,6 +6,7 @@ import { appetizerPlatter } from './data/appetizer-platter';
 import { ardeiUmpluti } from './data/ardei-umpluti';
 import { bakedSalmon } from './data/baked-salmon';
 import { beefStew } from './data/beef-stew';
+import { biksemad } from './data/biksemad';
 import { bolognese } from './data/bolognese';
 import { braisedRedCabbage } from './data/braised-red-cabbage';
 import { chickenCurry } from './data/chicken-curry';
@@ -72,4 +73,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   macAndCheese,
   steamedMussels,
   tochitura,
+  biksemad,
 ];
