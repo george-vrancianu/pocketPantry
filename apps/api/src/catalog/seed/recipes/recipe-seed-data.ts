@@ -32,6 +32,7 @@ import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { garlicShrimp } from './data/garlic-shrimp';
 import { ghiveci } from './data/ghiveci';
+import { gogosi } from './data/gogosi';
 import { grilledCheese } from './data/grilled-cheese';
 import { homemadePizza } from './data/homemade-pizza';
 import { hummus } from './data/hummus';
@@ -162,4 +163,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   grilledCheese,
   bananaBread,
   salataDeArdeiCopti,
+  gogosi,
 ];
