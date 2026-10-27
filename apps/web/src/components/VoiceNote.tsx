@@ -84,7 +84,11 @@ function VoiceNoteControls({
 
   return (
     <>
-      <VoiceButton voice={voice} target={defaultTarget} />
+      <VoiceButton
+        voice={voice}
+        target={defaultTarget}
+        scanStripHosted={settings.hostsStrip === false}
+      />
 
       {settings.hostsStrip === false ? null : <BackgroundHost />}
 

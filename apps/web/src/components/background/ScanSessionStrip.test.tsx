@@ -4,7 +4,13 @@ import {
   stubVoiceFetch,
   talkButton,
 } from '../../test/voice';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -17,6 +23,7 @@ import {
   useVoiceTimers,
 } from '../../test/voiceHold';
 import { AppLayout } from '../AppLayout';
+import { resetScanFailureAlert } from './BackgroundHost';
 import ro from '../../i18n/locales/ro/background.json';
 import da from '../../i18n/locales/da/background.json';
 
@@ -54,6 +61,7 @@ function renderAt(route = '/shopping') {
         />
         <Route path="/scan" element={<Link to="/shopping">back</Link>} />
         <Route path="/scan/review" element={<p>review overview</p>} />
+        <Route path="/scan/review/:scanId" element={<p>line editor</p>} />
       </Route>
     </Routes>,
     { route },
@@ -83,6 +91,7 @@ const outline = () => {
 
 describe('the Scan Session in the background strip', () => {
   beforeEach(() => {
+    resetScanFailureAlert();
     const { fetchMock } = stubApi({
       'GET /api/voice/config': () => Response.json({ configured: false }),
     });
@@ -109,6 +118,13 @@ describe('the Scan Session in the background strip', () => {
     seed('a', 'receipt');
     renderAt('/scan/review');
     expect(screen.getByText('review overview')).toBeVisible();
+    expect(strip()).toBeUndefined();
+  });
+
+  it("is hidden on a Scan's line editor", () => {
+    seed('a', 'receipt');
+    renderAt('/scan/review/a');
+    expect(screen.getByText('line editor')).toBeVisible();
     expect(strip()).toBeUndefined();
   });
 
@@ -169,6 +185,43 @@ describe('the Scan Session in the background strip', () => {
       expect(outline()).toMatch(/border: 2px solid/);
     },
   );
+
+  it('announces a failure once as an alert, and not again when the host remounts', async () => {
+    seed('a', 'receipt');
+    seed('b', 'receipt', 'error');
+    seed('c', 'receipt', 'error');
+    renderAt('/scan');
+    await userEvent.click(screen.getByRole('link', { name: 'back' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '2 Scans failed',
+    );
+
+    // Off to the camera and back: the host remounts, the same failures are not announced again.
+    await userEvent.click(screen.getByRole('link', { name: 'to the camera' }));
+    await userEvent.click(screen.getByRole('link', { name: 'back' }));
+    expect(strip()).toHaveTextContent('2 failed');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('buzzes once when the last reading Scan is read while the Member is on a Dock page', async () => {
+    const vibrate = vi.fn();
+    vi.stubGlobal('navigator', { ...navigator, vibrate });
+    seed('a', 'receipt', 'reading');
+    renderAt();
+    expect(vibrate).not.toHaveBeenCalled();
+    act(() => dispatchScanSession({ type: 'read', id: 'a', lines: [] }));
+    expect(vibrate).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not buzz for a Session that was already read when the Member arrived', async () => {
+    const vibrate = vi.fn();
+    vi.stubGlobal('navigator', { ...navigator, vibrate });
+    seed('a', 'receipt');
+    renderAt('/scan');
+    await userEvent.click(screen.getByRole('link', { name: 'back' }));
+    expect(strip()).toHaveTextContent('1 read');
+    expect(vibrate).not.toHaveBeenCalled();
+  });
 
   it('has no failure outline while every Scan reads or is read', () => {
     seed('a', 'receipt');
@@ -244,8 +297,29 @@ describe('the Scan Session and Voice Notes in the strip', () => {
     const row = Array.from(sheet.querySelectorAll('li')).find((li) =>
       li.textContent?.includes('1 receipt'),
     )!;
+    expect(
+      within(row).getByRole('button', { name: 'Review 1 receipt' }),
+    ).toBeVisible();
     await userEvent.click(row.querySelector('button')!);
     expect(await screen.findByText('review overview')).toBeVisible();
+  });
+
+  // Pins today's choice (inherited from the Voice Inbox strip, still waiting for a human decision):
+  // with exactly one ready item among several, the strip button opens that item rather than the sheet.
+  it('with one ready item among several, the button is Review and opens that item', async () => {
+    seed('a', 'receipt');
+    renderAt();
+    await speak();
+    expect(await screen.findByText('2 in the background')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Review' }));
+    expect(await screen.findByText('review overview')).toBeVisible();
+  });
+});
+
+describe('the failure alert copy', () => {
+  it('has plural forms in Romanian and Danish', () => {
+    expect(ro.scan.failedAlert_few).toContain('{{count}}');
+    expect(da.scan.failedAlert_other).toContain('{{count}}');
   });
 });
 

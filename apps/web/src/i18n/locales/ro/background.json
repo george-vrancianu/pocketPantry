@@ -12,6 +12,10 @@
   "openCount": "Deschide {{count}}",
   "sheetTitle": "În fundal",
   "scan": {
+    "reviewSession": "Verificare {{title}}",
+    "failedAlert_one": "{{count}} scanare a eșuat",
+    "failedAlert_few": "{{count}} scanări au eșuat",
+    "failedAlert_other": "{{count}} de scanări au eșuat",
     "read_one": "{{count}} citită",
     "read_few": "{{count}} citite",
     "read_other": "{{count}} de citite",

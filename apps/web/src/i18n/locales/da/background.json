@@ -10,6 +10,9 @@
   "openCount": "Åbn {{count}}",
   "sheetTitle": "I baggrunden",
   "scan": {
+    "reviewSession": "Gennemse {{title}}",
+    "failedAlert_one": "{{count}} scanning mislykkedes",
+    "failedAlert_other": "{{count}} scanninger mislykkedes",
     "read_one": "{{count}} læst",
     "read_other": "{{count}} læst",
     "receipt_one": "{{count}} kvittering",

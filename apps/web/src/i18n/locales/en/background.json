@@ -10,6 +10,9 @@
   "openCount": "Open {{count}}",
   "sheetTitle": "In the background",
   "scan": {
+    "reviewSession": "Review {{title}}",
+    "failedAlert_one": "{{count}} Scan failed",
+    "failedAlert_other": "{{count}} Scans failed",
     "read_one": "{{count}} read",
     "read_other": "{{count}} read",
     "receipt_one": "{{count}} receipt",

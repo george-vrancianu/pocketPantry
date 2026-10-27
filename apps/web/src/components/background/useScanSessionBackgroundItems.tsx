@@ -1,11 +1,36 @@
 import { PhotoReadingArt, ReceiptReadingArt } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { isBarcodeCard, useScanSession } from '../../lib/scanSession';
+import {
+  isBarcodeCard,
+  useScanSession,
+  type SessionScan,
+} from '../../lib/scanSession';
 import type { BackgroundItem, BackgroundStatus } from './backgroundItem';
 
 /** The Review overview, which already shows the Scan Session's cards, those still reading too. */
 const REVIEW_OVERVIEW = '/scan/review';
+
+/** What the strip counts of the Scan Session: barcode lookups and uncropped receipts are not Scans being read. */
+export function summarizeScanSession(scans: SessionScan[]) {
+  const counted = scans.filter(
+    (scan) => !isBarcodeCard(scan) && scan.status !== 'uncropped',
+  );
+  const read = counted.filter((scan) => scan.status === 'read').length;
+  const failed = counted.filter((scan) => scan.status === 'failed').length;
+  return {
+    counted,
+    read,
+    failed,
+    reading: counted.length - read - failed,
+    /** Every counted Scan is read (and there is at least one). */
+    allRead: counted.length > 0 && read === counted.length,
+  };
+}
+
+/** Whether the Scan Session has anything to show in the strip. */
+export const useScanSessionInStrip = () =>
+  summarizeScanSession(useScanSession().scans).counted.length > 0;
 
 /**
  * The Scan Session seen as background items: ONE item however many Scans it holds, or none while it
@@ -21,14 +46,9 @@ export function useScanSessionBackgroundItems(): BackgroundItem[] {
   const navigate = useNavigate();
   const { scans } = useScanSession();
 
-  const counted = scans.filter(
-    (scan) => !isBarcodeCard(scan) && scan.status !== 'uncropped',
-  );
+  const { counted, read, failed, reading } = summarizeScanSession(scans);
   if (counted.length === 0) return [];
 
-  const read = counted.filter((scan) => scan.status === 'read').length;
-  const failed = counted.filter((scan) => scan.status === 'failed').length;
-  const reading = counted.length - read - failed;
   const kind = counted.every((scan) => scan.mode === 'receipt')
     ? 'receipt'
     : 'photo';
@@ -58,6 +78,9 @@ export function useScanSessionBackgroundItems(): BackgroundItem[] {
         ),
       open: {
         label: t('review'),
+        ariaLabel: t('scan.reviewSession', {
+          title: t(`scan.${kind}`, { count: counted.length }),
+        }),
         onClick: () => navigate(REVIEW_OVERVIEW),
       },
       actions: [],

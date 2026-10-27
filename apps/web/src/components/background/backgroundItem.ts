@@ -37,7 +37,7 @@ export type BackgroundItem = {
   createdAt: number;
   /** Optional art for the strip (when it leads) and the row; a kind without art leaves it empty. */
   art?: ReactNode;
-  /** Opens the item's own Review (or See) when it is ready. */
+  /** Opens the item's own Review (or See). A Voice Note offers it once ready; the Scan Session always. */
   open?: { label: string; ariaLabel?: string; onClick: () => void };
   /** The other row buttons, left to right: Cancel, Discard, Retry. */
   actions: BackgroundAction[];

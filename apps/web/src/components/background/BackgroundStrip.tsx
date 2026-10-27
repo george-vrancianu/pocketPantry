@@ -24,8 +24,8 @@ const oneLine = {
 /**
  * The background strip, where the status pill was: what is being read in the background. One item
  * shows its own title and detail; several show "N in the background" with how many are reading,
- * ready and failed. The button is Review when exactly one item is ready (it opens that item), else
- * Open ("Open N" when several are ready), which opens the sheet. Once everything is ready it turns
+ * ready and failed. The button is Review when the strip holds one item that can be opened, or exactly
+ * one item is ready (it opens that item), else Open ("Open N" when several are ready), which opens the sheet. Once everything is ready it turns
  * into the dark pill with a happy Gator. A failure outlines it in the warning colour; `alert` is
  * announced assertively (the rest of the strip is a polite status).
  */
