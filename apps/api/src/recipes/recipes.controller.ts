@@ -9,9 +9,11 @@ import {
   Post,
   Put,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { FastifyReply } from 'fastify';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -39,6 +41,7 @@ import {
   fromPlateBody,
   plateMatchesBody,
   hiddenTipsBody,
+  linkCheckQuery,
   recipeParam,
   recipeTipParam,
   tipCreate,
@@ -49,6 +52,8 @@ import {
   type FamilyRecipeEdit,
   type FamilyRecipeUpdate,
   type FromLinkBody,
+  type LinkCheck,
+  type LinkCheckQuery,
   type FromPlateBody,
   type RecipeFromLink,
   type PlateMatchesBody,
@@ -174,9 +179,34 @@ export class RecipesController {
   async readLink(
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(fromLinkBody)) body: FromLinkBody,
+    @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<RecipeFromLink> {
     const locale = await this.languages.catalogLanguageOf(member.id);
-    return this.link.read(member.id, body, locale);
+    // A read lasts as long as its connection (ADR 0031): if the client goes before the answer is sent,
+    // the page fetch and the AI call are aborted and no Recipe Draft is kept.
+    const closed = new AbortController();
+    const abandon = () => {
+      if (!reply.raw.writableFinished) closed.abort();
+    };
+    reply.raw.once('close', abandon);
+    try {
+      return await this.link.read(member.id, body, locale, closed.signal);
+    } finally {
+      reply.raw.off('close', abandon);
+    }
+  }
+
+  // Declared before `:id` so it is not read as a Recipe id.
+  @Get('link-check')
+  @ApiOperation({
+    summary:
+      'The live Family Recipe a link already is, or none. Read-only: never fetches the page, calls the AI or counts against the Link Cap',
+  })
+  linkCheck(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(linkCheckQuery)) query: LinkCheckQuery,
+  ): Promise<LinkCheck> {
+    return this.link.check(member.id, query.url);
   }
 
   @Post('suggest-guidance')

@@ -39,8 +39,6 @@
     "review": "Verifică rețeta de la {{what}}",
     "cancelRead": "Anulează citirea {{what}}",
     "discardRead": "Renunță la {{what}}",
-    "gone": "Ciorna de rețetă nu mai este păstrată.",
-    "openRecipe": "Deschide rețeta de la {{what}}",
-    "readAgain": "Citește din nou {{what}}"
+    "gone": "Ciorna de rețetă nu mai este păstrată."
   }
 }

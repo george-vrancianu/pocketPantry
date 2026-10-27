@@ -248,6 +248,7 @@
     "useLink": "Use a link instead",
     "pasteInstead": "Paste the recipe text instead",
     "textLabel": "Recipe text",
+    "checking": "Checking the link…",
     "submit": "Read the recipe",
     "reading": "Reading the recipe…",
     "duplicate": {

@@ -3,6 +3,7 @@ import { PageLayout } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { dockStateFor } from '../lib/dockState';
+import { useUnloadPromptWhileReading } from '../lib/linkReads';
 import { micClearance } from '../lib/voicePlacement';
 import { ApplyMemberLocale } from './ApplyMemberLocale';
 import { ApplyMemberTheme } from './ApplyMemberTheme';
@@ -50,6 +51,7 @@ export function AppLayout() {
   const { pathname } = useLocation();
   const dock = dockStateFor(pathname);
   const showsMic = useShowsDockMic();
+  useUnloadPromptWhileReading();
   return (
     <>
       <ApplyMemberLocale />
