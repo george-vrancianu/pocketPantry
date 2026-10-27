@@ -44,6 +44,7 @@ import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
+import { salataDeBoeuf } from './data/salata-de-boeuf';
 import { salataDeVinete } from './data/salata-de-vinete';
 import { sarmale } from './data/sarmale';
 import { shakshuka } from './data/shakshuka';
@@ -112,4 +113,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   oatmeal,
   ciorbaRadauteana,
   varzaCalita,
+  salataDeBoeuf,
 ];
