@@ -29,6 +29,7 @@ import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { garlicShrimp } from './data/garlic-shrimp';
 import { homemadePizza } from './data/homemade-pizza';
+import { hummus } from './data/hummus';
 import { iahnieDeFasole } from './data/iahnie-de-fasole';
 import { lasagne } from './data/lasagne';
 import { lentilSoup } from './data/lentil-soup';
@@ -138,4 +139,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   zacusca,
   coleslaw,
   bakedPotatoes,
+  hummus,
 ];
