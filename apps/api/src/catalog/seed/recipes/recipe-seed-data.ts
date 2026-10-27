@@ -15,6 +15,7 @@ import { braisedRedCabbage } from './data/braised-red-cabbage';
 import { brownies } from './data/brownies';
 import { brunedeKartofler } from './data/brunede-kartofler';
 import { burgers } from './data/burgers';
+import { cartofiTaranesti } from './data/cartofi-taranesti';
 import { chickenCurry } from './data/chicken-curry';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
@@ -180,4 +181,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDePui,
   ciorbaDeLegume,
   chiftele,
+  cartofiTaranesti,
 ];
