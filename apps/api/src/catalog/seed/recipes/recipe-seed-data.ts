@@ -18,6 +18,7 @@ import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
+import { cottagePie } from './data/cottage-pie';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
 import { frenchToast } from './data/french-toast';
@@ -118,4 +119,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   salataDeBoeuf,
   lasagne,
   tacos,
+  cottagePie,
 ];
