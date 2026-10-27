@@ -28,6 +28,7 @@ import { homemadePizza } from './data/homemade-pizza';
 import { lentilSoup } from './data/lentil-soup';
 import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
+import { mancareDeMazare } from './data/mancare-de-mazare';
 import { mici } from './data/mici';
 import { omelette } from './data/omelette';
 import { ostropel } from './data/ostropel';
@@ -102,4 +103,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   burgers,
   pastaCarbonara,
   ostropel,
+  mancareDeMazare,
 ];
