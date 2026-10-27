@@ -19,6 +19,7 @@ import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { garlicShrimp } from './data/garlic-shrimp';
 import { lentilSoup } from './data/lentil-soup';
+import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
 import { mici } from './data/mici';
 import { omelette } from './data/omelette';
@@ -66,4 +67,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ardeiUmpluti,
   flaeskesteg,
   chickenCurry,
+  macAndCheese,
 ];
