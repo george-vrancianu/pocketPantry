@@ -21,6 +21,10 @@ import {
 } from '../../../lib/linkRecipe';
 import { AlreadyInRecipes } from '../AlreadyInRecipes';
 
+/** The state "Paste text instead" hands the Recipes page: open the sheet in text mode, the link kept. */
+export type FromLinkPrefill = { url: string; replaces: number };
+export const FROM_LINK_PREFILL_STATE = 'fromLinkPrefill';
+
 /** The editor's 44 pt field. */
 const fieldSx = {
   '& .MuiOutlinedInput-root': { minHeight: 44, borderRadius: radius.control },
@@ -47,10 +51,13 @@ export function FromLinkSheet({
   open,
   onClose,
   onExited,
+  prefill,
 }: {
   open: boolean;
   onClose: () => void;
   onExited?: () => void;
+  /** Opens in text mode with this link kept (from a failed row's "Paste text instead"); that read is replaced by the text's. */
+  prefill?: FromLinkPrefill;
 }) {
   const { t } = useTranslation('recipes');
   return (
@@ -61,17 +68,23 @@ export function FromLinkSheet({
       size="content"
       label={t('fromLink.heading')}
     >
-      <FromLinkForm onSubmitted={onClose} />
+      <FromLinkForm onSubmitted={onClose} prefill={prefill} />
     </Sheet>
   );
 }
 
 /** Mounted afresh each time the sheet opens, so an earlier read's link is never left in the field. */
-function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
+function FromLinkForm({
+  onSubmitted,
+  prefill,
+}: {
+  onSubmitted: () => void;
+  prefill?: FromLinkPrefill;
+}) {
   const { t } = useTranslation('recipes');
-  const [mode, setMode] = useState<'link' | 'text'>('link');
+  const [mode, setMode] = useState<'link' | 'text'>(prefill ? 'text' : 'link');
   // Both are kept, so switching modes never loses what the Member typed.
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(prefill?.url ?? '');
   const [pasted, setPasted] = useState('');
   const [language, setLanguage] = useState<ReadingLanguage>('catalog');
   const [full, setFull] = useState(false);
@@ -92,6 +105,10 @@ function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
   useEffect(() => {
     if (modeChanged.current) field.current?.focus();
   }, [mode]);
+  // Opened in text mode from a failed row: the text field is the one to fill.
+  useEffect(() => {
+    if (prefill) field.current?.focus();
+  }, [prefill]);
 
   const switchTo = (next: 'link' | 'text') => {
     modeChanged.current = true;
@@ -113,7 +130,11 @@ function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
         ? { kind: 'text', text: input }
         : { kind: 'link', url: input },
       language,
-      force ? { force } : {},
+      {
+        ...(force ? { force } : {}),
+        // Only the pasted text stands in for the read the Member left; a link typed over it does not.
+        ...(mode === 'text' && prefill ? { replaces: prefill.replaces } : {}),
+      },
     );
     if (outcome === 'full') {
       // Back to the form, where the alert lives (the duplicate panel has none).

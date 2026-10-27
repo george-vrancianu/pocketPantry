@@ -33,6 +33,13 @@
     "review": "Review the recipe from {{what}}",
     "cancelRead": "Cancel reading {{what}}",
     "discardRead": "Discard {{what}}",
-    "gone": "That Recipe Draft is no longer kept."
+    "gone": "That Recipe Draft is no longer kept.",
+    "openRecipe": "Open the Recipe from {{what}}",
+    "capped": "Today's link reads are used up",
+    "retry": "Retry",
+    "retryRead": "Retry reading {{what}}",
+    "pasteInstead": "Paste the text of {{what}} instead",
+    "failedAlert_one": "{{count}} recipe link failed",
+    "failedAlert_other": "{{count}} recipe links failed"
   }
 }

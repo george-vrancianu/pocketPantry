@@ -3,10 +3,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError, apiRequest } from '../../lib/api';
 import { linkReads, useLinkReads, type LinkRead } from '../../lib/linkReads';
+import { linkFailureReason, offersPasteText } from '../../lib/linkReadFailure';
 import { recipeDraftsListKey } from '../../lib/recipeDrafts';
+import { FROM_LINK_PREFILL_STATE } from '../../pages/Recipes/components/FromLinkSheet';
 import { DRAFT_PARAM } from '../../pages/Recipes/useRecipeDraftRoute';
 import type {
   BackgroundAction,
@@ -27,7 +28,7 @@ const statusOf = (read: LinkRead): BackgroundStatus =>
  * Also tells the Recipe Drafts list when a read kept a draft, so "Drafts (N)" counts it without a refresh.
  */
 export function useLinkReadBackgroundItems(enabled = true): BackgroundItem[] {
-  const { t } = useTranslation(['background', 'recipes', 'errors']);
+  const { t, i18n } = useTranslation(['background', 'recipes', 'errors']);
   const navigate = useNavigate();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -86,7 +87,9 @@ export function useLinkReadBackgroundItems(enabled = true): BackgroundItem[] {
             )
           : ready
             ? t('background:link.ready')
-            : t('background:link.failed');
+            : read.status === 'capped'
+              ? t('background:link.capped')
+              : t('background:link.failed');
 
     const actions: BackgroundAction[] = [];
     if (read.status === 'waiting' || read.status === 'reading') {
@@ -105,6 +108,30 @@ export function useLinkReadBackgroundItems(enabled = true): BackgroundItem[] {
         ariaLabel: t('background:link.discardRead', { what }),
         onClick: () => linkReads.discard(read.id),
       });
+      if (offersPasteText(read) && read.source.kind === 'link') {
+        const { url } = read.source;
+        actions.push({
+          type: 'button',
+          tone: 'secondary',
+          label: t('recipes:fromLink.pasteSwitch'),
+          ariaLabel: t('background:link.pasteInstead', { what }),
+          closesSheet: true,
+          // The failed row stays until the pasted text is submitted, so closing the sheet loses nothing.
+          onClick: () =>
+            navigate('/recipes?fromLink=1', {
+              state: {
+                [FROM_LINK_PREFILL_STATE]: { url, replaces: read.id },
+              },
+            }),
+        });
+      }
+      actions.push({
+        type: 'button',
+        tone: 'primary',
+        label: t('background:link.retry'),
+        ariaLabel: t('background:link.retryRead', { what }),
+        onClick: () => linkReads.retry(read.id),
+      });
     }
 
     return {
@@ -112,7 +139,9 @@ export function useLinkReadBackgroundItems(enabled = true): BackgroundItem[] {
       id: String(read.id),
       title,
       detail:
-        read.status === 'failed' ? translateApiError(t, read.error) : what,
+        read.status === 'failed' || read.status === 'capped'
+          ? linkFailureReason(t, i18n.language, read)
+          : what,
       status: statusOf(read),
       createdAt: read.order,
       art: <LinkReadingArt size={28} />,

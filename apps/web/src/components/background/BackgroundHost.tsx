@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { haptic } from '../../lib/haptic';
+import { linkReads as linkReadsHolder } from '../../lib/linkReads';
 import { useScanSession } from '../../lib/scanSession';
 import { useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { focusVoiceButton } from '../../lib/voiceFocus';
@@ -59,8 +60,8 @@ function useFailureAlert({
  * The background strip and its sheet, hosted once by the app layout on pages with the Dock (so they
  * show whether or not voice is configured): the Voice Notes and, when the host asks for them
  * (`scanSession`, `linkReads`), the Scan Session and the link reads adapted into background items. A host chooses its kinds: the
- * Intro's Say it hosts Voice Notes only, the Scan Session waits for the app's Review. A failed note or
- * Scan is announced once as an alert (the rest of the strip is a polite status); the Scan Session
+ * Intro's Say it hosts Voice Notes only, the Scan Session waits for the app's Review. A failed note,
+ * Scan or link read is announced once as an alert (the rest of the strip is a polite status); the Scan Session
  * buzzes once when it becomes all read. Hidden while recording or while a Voice Note sheet is up, and when nothing is in the
  * background.
  *
@@ -103,10 +104,22 @@ export function BackgroundHost({
     announced: () => announcedScanFailed,
     announce: announceScanFailed,
   });
+  const linkFailed = linkItems.filter(
+    (item) => item.status === 'failed',
+  ).length;
+  const linkAlerting = useFailureAlert({
+    failed: linkFailed,
+    up,
+    announced: linkReadsHolder.announcedFailed,
+    announce: linkReadsHolder.announceFailed,
+  });
   const alert = [
     voiceAlerting ? t('inbox.failedAlert', { count: failed }) : null,
     scanAlerting
       ? tBackground('scan.failedAlert', { count: summary.failed })
+      : null,
+    linkAlerting
+      ? tBackground('link.failedAlert', { count: linkFailed })
       : null,
   ]
     .filter(Boolean)
