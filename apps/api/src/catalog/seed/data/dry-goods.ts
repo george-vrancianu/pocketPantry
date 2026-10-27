@@ -296,6 +296,14 @@ export const grains: SeedSection = {
         ['orez bob rotund', 'orez pentru sarmale', 'orez sarmale'],
       ],
       [
+        'paella-rice',
+        'Paella rice',
+        'Orez pentru paella',
+        'g',
+        ['bomba rice', 'spanish paella rice'],
+        ['orez paella', 'orez bomba'],
+      ],
+      [
         'medium-grain-rice',
         'Medium-grain rice',
         'Orez cu bob mediu',
@@ -532,11 +540,24 @@ export const grains: SeedSection = {
         ['praf copt', 'praf de copt plic'],
       ],
       [
+        'bakers-ammonia',
+        "Baker's ammonia (ammonium bicarbonate)",
+        'Amoniac alimentar',
+        'g',
+        [
+          'hartshorn',
+          'ammonium bicarbonate',
+          'ammonium carbonate',
+          'bakers ammonia',
+        ],
+        ['carbonat de amoniu'],
+      ],
+      [
         'baking-soda',
         'Baking soda',
         'Bicarbonat de sodiu',
         'g',
-        ['bicarbonate of soda'],
+        ['bicarbonate of soda', 'bicarbonate'],
         ['bicarbonat', 'bicarbonat sodiu'],
       ],
       [
@@ -694,6 +715,14 @@ export const legumes: SeedSection = {
         'g',
         ['gigantes', 'giant beans', 'elephant beans', 'greek butter beans'],
         ['fasole gigantes'],
+      ],
+      [
+        'garrofo-beans',
+        'Garrofó beans (large lima beans)',
+        'Fasole garrofó (fasole lima mare)',
+        'g',
+        ['garrofo', 'garrofón', 'lima beans', 'dried lima beans'],
+        ['fasole garrofo', 'fasole lima'],
       ],
       ['black-beans', 'Black beans', 'Fasole neagră', 'g'],
       [

@@ -6,6 +6,7 @@ import { appetizerPlatter } from './data/appetizer-platter';
 import { ardeiUmpluti } from './data/ardei-umpluti';
 import { bakedPotatoes } from './data/baked-potatoes';
 import { bakedSalmon } from './data/baked-salmon';
+import { bananaBread } from './data/banana-bread';
 import { beefStew } from './data/beef-stew';
 import { biksemad } from './data/biksemad';
 import { bolognese } from './data/bolognese';
@@ -31,6 +32,8 @@ import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { garlicShrimp } from './data/garlic-shrimp';
 import { ghiveci } from './data/ghiveci';
+import { gogosi } from './data/gogosi';
+import { grilledCheese } from './data/grilled-cheese';
 import { homemadePizza } from './data/homemade-pizza';
 import { hummus } from './data/hummus';
 import { iahnieDeFasole } from './data/iahnie-de-fasole';
@@ -45,6 +48,7 @@ import { oatmeal } from './data/oatmeal';
 import { omelette } from './data/omelette';
 import { ostropel } from './data/ostropel';
 import { padThai } from './data/pad-thai';
+import { paella } from './data/paella';
 import { pancakes } from './data/pancakes';
 import { papanasi } from './data/papanasi';
 import { pastaCarbonara } from './data/pasta-carbonara';
@@ -59,6 +63,7 @@ import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
+import { salataDeArdeiCopti } from './data/salata-de-ardei-copti';
 import { salataDeBoeuf } from './data/salata-de-boeuf';
 import { salataDeIcre } from './data/salata-de-icre';
 import { salataDeVinete } from './data/salata-de-vinete';
@@ -154,4 +159,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   saramuraDePeste,
   salataDeIcre,
   placintaCuBranza,
+  paella,
+  grilledCheese,
+  bananaBread,
+  salataDeArdeiCopti,
+  gogosi,
 ];

@@ -684,6 +684,14 @@ export const condiments: SeedSection = {
     ]),
     ...ingredientsOf('asian-sauces', [
       [
+        'pomegranate-molasses',
+        'Pomegranate molasses',
+        'Melasă de rodie',
+        'ml',
+        ['pomegranate syrup', 'nar ekşisi', 'dibs rumman'],
+        ['sos de rodie'],
+      ],
+      [
         'soy-sauce',
         'Soy sauce',
         'Sos de soia',

@@ -15,6 +15,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'bell-pepper': [],
   'kapia-pepper': [],
   'sivri-pepper': [],
+  'baklouti-pepper': [],
   'hungarian-pepper': [],
   'hot-pepper': [],
   'birds-eye-chilli': [],
@@ -69,6 +70,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // produce/stalks-and-pods
   'green-beans': [],
+  'flat-green-beans': [],
   'fresh-peas': [],
   asparagus: [],
   celery: ['celery'],
@@ -315,6 +317,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'liver-pate': ['gluten', 'milk'],
   toba: [],
   caltabos: [],
+  morcilla: [],
   lebar: ['gluten'],
 
   // seafood/fish
@@ -609,6 +612,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'arborio-rice': [],
   'brown-rice': [],
   'round-rice': [],
+  'paella-rice': [],
   'medium-grain-rice': [],
   'sushi-rice': [],
   oats: ['gluten'],
@@ -651,6 +655,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // grains/baking-essentials
   'baking-powder': [],
+  'bakers-ammonia': [],
   'baking-soda': [],
   'dry-yeast': [],
   'vanilla-extract': [],
@@ -673,6 +678,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'white-beans': [],
   'borlotti-beans': [],
   'gigantes-beans': [],
+  'garrofo-beans': [],
   'black-beans': [],
   'split-peas': [],
   soybeans: ['soy'],
@@ -769,6 +775,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // condiments/asian-sauces
   'soy-sauce': ['gluten', 'soy'],
+  'pomegranate-molasses': [],
   'dark-soy-sauce': ['gluten', 'soy'],
   'tamarind-paste': [],
   'worcestershire-sauce': ['fish', 'gluten'],
