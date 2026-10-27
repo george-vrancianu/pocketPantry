@@ -4,6 +4,7 @@
 import type { BaseRecipeSeed } from './recipe-seed-types';
 import { appetizerPlatter } from './data/appetizer-platter';
 import { ardeiUmpluti } from './data/ardei-umpluti';
+import { bakedPotatoes } from './data/baked-potatoes';
 import { bakedSalmon } from './data/baked-salmon';
 import { beefStew } from './data/beef-stew';
 import { biksemad } from './data/biksemad';
@@ -17,7 +18,9 @@ import { chickenSoup } from './data/chicken-soup';
 import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
+import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
+import { coleslaw } from './data/coleslaw';
 import { cottagePie } from './data/cottage-pie';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
@@ -26,7 +29,9 @@ import { friedChicken } from './data/fried-chicken';
 import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { garlicShrimp } from './data/garlic-shrimp';
+import { ghiveci } from './data/ghiveci';
 import { homemadePizza } from './data/homemade-pizza';
+import { hummus } from './data/hummus';
 import { iahnieDeFasole } from './data/iahnie-de-fasole';
 import { lasagne } from './data/lasagne';
 import { lentilSoup } from './data/lentil-soup';
@@ -134,4 +139,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   musaca,
   tocanaDeCiuperci,
   zacusca,
+  coleslaw,
+  bakedPotatoes,
+  hummus,
+  ghiveci,
+  ciorbaDePeste,
 ];

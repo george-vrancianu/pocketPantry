@@ -283,12 +283,12 @@ export const ardeiUmpluti: BaseRecipeSeed = {
       difficulty: 'medium',
       lines: [
         {
-          ingredient: 'bell-pepper',
+          ingredient: 'hungarian-pepper',
           quantity: 12,
           unit: 'pcs',
           note: t(
-            'medium, firm, able to stand upright',
-            'mijlocii, tari, care stau drepți',
+            'pale yellowish-white, medium, firm, able to stand upright',
+            'albi-gălbui, mijlocii, tari, care stau drepți',
           ),
         },
         { ingredient: 'minced-pork', quantity: 700, unit: 'g' },
