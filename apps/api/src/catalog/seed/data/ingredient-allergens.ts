@@ -638,6 +638,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // grains/flour-and-sugar
   flour: ['gluten'],
+  'strong-flour': ['gluten'],
   'tipo-00-flour': ['gluten'],
   'wholemeal-flour': ['gluten'],
   'rye-flour': ['gluten'],
@@ -659,6 +660,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'baking-soda': [],
   'dry-yeast': [],
   'vanilla-extract': [],
+  'orange-blossom-water': [],
   vanillin: [],
   'cocoa-powder': [],
   gelatin: [],
@@ -1007,6 +1009,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   // snacks/dried-fruit
   raisins: [],
   'dried-apricots': ['sulphites'],
+  'candied-orange-peel': [],
+  'candied-citron': [],
   prunes: [],
   dates: [],
   'dried-figs': [],

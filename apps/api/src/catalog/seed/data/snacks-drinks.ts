@@ -471,6 +471,22 @@ export const snacks: SeedSection = {
         ['caise deshidratate'],
       ],
       [
+        'candied-orange-peel',
+        'Candied orange peel',
+        'Coajă de portocală confiată',
+        'g',
+        ['candied orange', 'orangeat'],
+        ['portocale confiate', 'coaja de portocale confiata'],
+      ],
+      [
+        'candied-citron',
+        'Candied citron peel',
+        'Coajă de chitră confiată',
+        'g',
+        ['citron peel', 'succade', 'cedro candito'],
+        ['chitra confiata', 'citron confiat'],
+      ],
+      [
         'prunes',
         'Prunes',
         'Prune uscate',

@@ -3,6 +3,7 @@
 // permanent. `npm run test:unit` validates the lot (validate-recipe-seed.ts).
 import type { BaseRecipeSeed } from './recipe-seed-types';
 import { appetizerPlatter } from './data/appetizer-platter';
+import { appleCrumble } from './data/apple-crumble';
 import { ardeiUmpluti } from './data/ardei-umpluti';
 import { bakedPotatoes } from './data/baked-potatoes';
 import { bakedSalmon } from './data/baked-salmon';
@@ -11,6 +12,7 @@ import { beefStew } from './data/beef-stew';
 import { biksemad } from './data/biksemad';
 import { bolognese } from './data/bolognese';
 import { braisedRedCabbage } from './data/braised-red-cabbage';
+import { brownies } from './data/brownies';
 import { brunedeKartofler } from './data/brunede-kartofler';
 import { burgers } from './data/burgers';
 import { chickenCurry } from './data/chicken-curry';
@@ -22,7 +24,9 @@ import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { coleslaw } from './data/coleslaw';
+import { cornulete } from './data/cornulete';
 import { cottagePie } from './data/cottage-pie';
+import { cozonac } from './data/cozonac';
 import { fishAndChips } from './data/fish-and-chips';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
@@ -63,6 +67,7 @@ import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
+import { salamDeBiscuiti } from './data/salam-de-biscuiti';
 import { salataDeArdeiCopti } from './data/salata-de-ardei-copti';
 import { salataDeBoeuf } from './data/salata-de-boeuf';
 import { salataDeIcre } from './data/salata-de-icre';
@@ -164,4 +169,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   bananaBread,
   salataDeArdeiCopti,
   gogosi,
+  appleCrumble,
+  brownies,
+  cozonac,
+  salamDeBiscuiti,
+  cornulete,
 ];
