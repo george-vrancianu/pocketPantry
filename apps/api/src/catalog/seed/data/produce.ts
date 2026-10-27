@@ -201,8 +201,32 @@ export const produce: SeedSection = {
         ['radishes'],
         ['ridiche', 'ridichi de luna'],
       ],
+      [
+        'green-tomatoes',
+        'Green tomatoes',
+        'Roșii verzi (gogonele)',
+        'g',
+        ['unripe tomatoes'],
+        ['rosii verzi', 'gogonele crude', 'gogonele proaspete'],
+      ],
     ]),
     ...ingredientsOf('root-vegetables', [
+      [
+        'horseradish-root',
+        'Fresh horseradish root',
+        'Rădăcină de hrean',
+        'g',
+        ['horseradish root'],
+        ['hrean radacina', 'radacina hrean', 'hrean proaspat'],
+      ],
+      [
+        'daikon',
+        'Daikon (white radish)',
+        'Ridiche albă (daikon)',
+        'g',
+        ['mooli', 'white radish'],
+        ['ridiche daikon', 'ridiche japoneza'],
+      ],
       ['carrot', 'Carrot', 'Morcovi', 'g', ['carrots'], ['morcov', 'morc']],
       ['beetroot', 'Beetroot', 'Sfeclă roșie', 'g', ['beet'], ['sfecla']],
       [
@@ -664,6 +688,14 @@ export const herbs: SeedSection = {
         ['patrunjel verde', 'legatura patrunjel'],
       ],
       ['dill', 'Dill', 'Mărar', 'g', undefined, ['legatura marar']],
+      [
+        'dill-heads',
+        'Dill heads (pickling dill)',
+        'Mărar pentru murături',
+        'g',
+        ['dill crowns', 'dill umbels', 'pickling dill'],
+        ['marar cu umbrele', 'marar batran'],
+      ],
       [
         'coriander',
         'Coriander',

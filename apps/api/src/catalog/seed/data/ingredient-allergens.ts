@@ -24,8 +24,11 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   pumpkin: [],
   'sweetcorn-cob': [],
   radish: [],
+  'green-tomatoes': [],
 
   // produce/root-vegetables
+  'horseradish-root': [],
+  daikon: [],
   carrot: [],
   beetroot: [],
   celeriac: ['celery'],
@@ -141,6 +144,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'jerusalem-artichoke': [],
 
   // herbs/fresh-herbs
+  'dill-heads': [],
   parsley: [],
   dill: [],
   coriander: [],
@@ -649,6 +653,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // grains/flour-and-sugar
   flour: ['gluten'],
+  'self-raising-flour': ['gluten'],
   'strong-flour': ['gluten'],
   'tipo-00-flour': ['gluten'],
   'wholemeal-flour': ['gluten'],
