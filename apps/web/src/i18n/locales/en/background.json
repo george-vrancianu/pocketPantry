@@ -8,5 +8,16 @@
   "review": "Review",
   "open": "Open",
   "openCount": "Open {{count}}",
-  "sheetTitle": "In the background"
+  "sheetTitle": "In the background",
+  "scan": {
+    "reviewSession": "Review {{title}}",
+    "failedAlert_one": "{{count}} Scan failed",
+    "failedAlert_other": "{{count}} Scans failed",
+    "read_one": "{{count}} read",
+    "read_other": "{{count}} read",
+    "receipt_one": "{{count}} receipt",
+    "receipt_other": "{{count}} receipts",
+    "photo_one": "{{count}} photo",
+    "photo_other": "{{count}} photos"
+  }
 }

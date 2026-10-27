@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 
 /**
  * What the background strip and sheet show: one thing a Member started and carried on past, read in
- * the background. Voice Notes are the first kind; links, receipts and photos join by extending `kind`.
+ * the background. Voice Notes are the first kind; the Scan Session (receipt or photo) is the second; links join by extending `kind`.
  */
-export type BackgroundKind = 'voice';
+export type BackgroundKind = 'voice' | 'receipt' | 'photo';
 
 export type BackgroundStatus = 'reading' | 'ready' | 'failed';
 
@@ -37,7 +37,7 @@ export type BackgroundItem = {
   createdAt: number;
   /** Optional art for the strip (when it leads) and the row; a kind without art leaves it empty. */
   art?: ReactNode;
-  /** Opens the item's own Review (or See) when it is ready. */
+  /** Opens the item's own Review (or See). A Voice Note offers it once ready; the Scan Session always. */
   open?: { label: string; ariaLabel?: string; onClick: () => void };
   /** The other row buttons, left to right: Cancel, Discard, Retry. */
   actions: BackgroundAction[];

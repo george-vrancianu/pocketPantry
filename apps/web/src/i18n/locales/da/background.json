@@ -8,5 +8,16 @@
   "review": "Gennemse",
   "open": "Åbn",
   "openCount": "Åbn {{count}}",
-  "sheetTitle": "I baggrunden"
+  "sheetTitle": "I baggrunden",
+  "scan": {
+    "reviewSession": "Gennemse {{title}}",
+    "failedAlert_one": "{{count}} scanning mislykkedes",
+    "failedAlert_other": "{{count}} scanninger mislykkedes",
+    "read_one": "{{count}} læst",
+    "read_other": "{{count}} læst",
+    "receipt_one": "{{count}} kvittering",
+    "receipt_other": "{{count}} kvitteringer",
+    "photo_one": "{{count}} foto",
+    "photo_other": "{{count}} fotos"
+  }
 }

@@ -10,5 +10,20 @@
   "review": "Verificare",
   "open": "Deschide",
   "openCount": "Deschide {{count}}",
-  "sheetTitle": "În fundal"
+  "sheetTitle": "În fundal",
+  "scan": {
+    "reviewSession": "Verificare {{title}}",
+    "failedAlert_one": "{{count}} scanare a eșuat",
+    "failedAlert_few": "{{count}} scanări au eșuat",
+    "failedAlert_other": "{{count}} de scanări au eșuat",
+    "read_one": "{{count}} citită",
+    "read_few": "{{count}} citite",
+    "read_other": "{{count}} de citite",
+    "receipt_one": "{{count}} bon",
+    "receipt_few": "{{count}} bonuri",
+    "receipt_other": "{{count}} de bonuri",
+    "photo_one": "{{count}} fotografie",
+    "photo_few": "{{count}} fotografii",
+    "photo_other": "{{count}} de fotografii"
+  }
 }
