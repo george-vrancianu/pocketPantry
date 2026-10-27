@@ -23,16 +23,19 @@ import { chiftele } from './data/chiftele';
 import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeCartofi } from './data/ciorba-de-cartofi';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
+import { ciorbaDeFasoleVerde } from './data/ciorba-de-fasole-verde';
 import { ciorbaDeLegume } from './data/ciorba-de-legume';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaDePui } from './data/ciorba-de-pui';
 import { ciorbaDeVacuta } from './data/ciorba-de-vacuta';
+import { ciorbaDeVarza } from './data/ciorba-de-varza';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { coleslaw } from './data/coleslaw';
 import { cornulete } from './data/cornulete';
 import { cottagePie } from './data/cottage-pie';
 import { cozonac } from './data/cozonac';
+import { dovleceiPane } from './data/dovlecei-pane';
 import { falafel } from './data/falafel';
 import { fasoleBatuta } from './data/fasole-batuta';
 import { fishAndChips } from './data/fish-and-chips';
@@ -53,7 +56,9 @@ import { lasagne } from './data/lasagne';
 import { lentilSoup } from './data/lentil-soup';
 import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
+import { mancareDeCartofi } from './data/mancare-de-cartofi';
 import { mancareDeMazare } from './data/mancare-de-mazare';
+import { meatloaf } from './data/meatloaf';
 import { mici } from './data/mici';
 import { musaca } from './data/musaca';
 import { oatmeal } from './data/oatmeal';
@@ -194,4 +199,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   fasoleBatuta,
   plachieDePeste,
   falafel,
+  ciorbaDeVarza,
+  ciorbaDeFasoleVerde,
+  mancareDeCartofi,
+  dovleceiPane,
+  meatloaf,
 ];
