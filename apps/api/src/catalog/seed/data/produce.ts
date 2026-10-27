@@ -642,6 +642,14 @@ export const herbs: SeedSection = {
         ['curly leaf parsley'],
         ['patrunjel cu frunze crete'],
       ],
+      [
+        'thai-basil',
+        'Thai basil',
+        'Busuioc thailandez',
+        'g',
+        ['horapha', 'sweet thai basil'],
+        ['busuioc thai'],
+      ],
     ]),
     ...ingredientsOf('woody-herbs', [
       [

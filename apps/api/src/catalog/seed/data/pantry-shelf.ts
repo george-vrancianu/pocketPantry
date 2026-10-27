@@ -115,6 +115,14 @@ export const cannedGoods: SeedSection = {
         ['canned beetroot'],
         ['sfecla rosie conserva', 'sfecla conserva'],
       ],
+      [
+        'canned-bamboo-shoots',
+        'Bamboo shoots',
+        'Lăstari de bambus',
+        'g',
+        ['bamboo shoots in water', 'sliced bamboo shoots'],
+        ['bambus conserva', 'muguri de bambus'],
+      ],
     ]),
     ...ingredientsOf('tomato-products', [
       [
@@ -349,6 +357,14 @@ export const cannedGoods: SeedSection = {
         'g',
         undefined,
         ['pui conserva', 'carne de pui conserva'],
+      ],
+      [
+        'corned-beef',
+        'Corned beef',
+        'Corned beef (vită conservată)',
+        'g',
+        ['canned corned beef', 'bully beef'],
+        ['corned beef conserva'],
       ],
     ]),
     ...ingredientsOf('canned-fruit', [
@@ -753,6 +769,22 @@ export const condiments: SeedSection = {
         'g',
         ['harissa paste'],
         ['pasta harissa'],
+      ],
+      [
+        'red-curry-paste',
+        'Red curry paste',
+        'Pastă de curry roșu',
+        'g',
+        ['thai red curry paste', 'prik gaeng phed'],
+        ['pasta curry rosu', 'pasta curry rosu thai'],
+      ],
+      [
+        'japanese-curry-roux',
+        'Japanese curry roux',
+        'Tablete de curry japonez (roux)',
+        'g',
+        ['golden curry', 'curry roux blocks', 'japanese curry sauce mix'],
+        ['curry japonez cuburi'],
       ],
     ]),
     ...ingredientsOf('pasta-sauces-and-pesto', [
@@ -1554,6 +1586,14 @@ export const spices: SeedSection = {
       ],
       ['dried-tarragon', 'Dried tarragon', 'Tarhon uscat', 'g'],
       ['dried-mint', 'Dried mint', 'Mentă uscată', 'g'],
+      [
+        'dried-fenugreek-leaves',
+        'Dried fenugreek leaves (kasuri methi)',
+        'Frunze uscate de schinduf (kasuri methi)',
+        'g',
+        ['kasuri methi', 'methi leaves'],
+        ['frunze de schinduf'],
+      ],
     ]),
     ...ingredientsOf('spice-blends', [
       [

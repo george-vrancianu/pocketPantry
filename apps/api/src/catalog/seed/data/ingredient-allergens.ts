@@ -140,6 +140,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   lovage: [],
   tarragon: [],
   'holy-basil': [],
+  'thai-basil': [],
   'wild-garlic': [],
   lemongrass: [],
   'makrut-lime-leaves': [],
@@ -479,6 +480,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'condensed-milk': ['milk'],
   'milk-powder': ['milk'],
   'uht-milk': ['milk'],
+  'evaporated-milk': ['milk'],
 
   // eggs/hen-eggs
   eggs: ['eggs'],
@@ -663,6 +665,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'canned-peas': [],
   'canned-green-beans': [],
   'canned-mushrooms': [],
+  'canned-bamboo-shoots': [],
   'canned-carrots': [],
   'artichoke-hearts': [],
   'canned-beetroot': [],
@@ -700,6 +703,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'luncheon-meat': ['gluten', 'milk', 'soy'],
   'canned-sausages': ['gluten', 'milk', 'soy'],
   'canned-chicken': [],
+  'corned-beef': [],
 
   // canned-goods/canned-fruit
   'canned-peaches': [],
@@ -743,6 +747,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'oyster-sauce': ['gluten', 'molluscs', 'soy'],
   sriracha: [],
   'curry-paste': ['crustaceans', 'fish'],
+  'red-curry-paste': ['crustaceans'],
+  'japanese-curry-roux': ['celery', 'gluten', 'milk', 'mustard', 'soy'],
   wasabi: [],
   tahini: ['sesame'],
   gochujang: ['gluten', 'soy'],
@@ -873,6 +879,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'italian-herbs': [],
   'dried-tarragon': [],
   'dried-mint': [],
+  'dried-fenugreek-leaves': [],
 
   // spices/spice-blends
   'curry-powder': ['mustard'],
