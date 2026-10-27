@@ -47,6 +47,7 @@ import { stirFry } from './data/stir-fry';
 import { tochitura } from './data/tochitura';
 import { tomatoPasta } from './data/tomato-pasta';
 import { tomatoSoup } from './data/tomato-soup';
+import { vegetableSoup } from './data/vegetable-soup';
 
 export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   omelette,
@@ -94,4 +95,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   homemadePizza,
   papanasi,
   ciorbaDeFasole,
+  vegetableSoup,
 ];
