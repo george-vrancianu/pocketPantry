@@ -4,6 +4,7 @@
 import type { BaseRecipeSeed } from './recipe-seed-types';
 import { appetizerPlatter } from './data/appetizer-platter';
 import { ardeiUmpluti } from './data/ardei-umpluti';
+import { bakedPotatoes } from './data/baked-potatoes';
 import { bakedSalmon } from './data/baked-salmon';
 import { beefStew } from './data/beef-stew';
 import { biksemad } from './data/biksemad';
@@ -136,4 +137,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   tocanaDeCiuperci,
   zacusca,
   coleslaw,
+  bakedPotatoes,
 ];
