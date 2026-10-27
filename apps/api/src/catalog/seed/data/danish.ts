@@ -891,7 +891,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'dried-red-chillies': 'Tørrede chilier',
   oregano: 'Oregano',
   'dried-thyme': 'Tørret timian',
-  'dried-porcini': 'Tørrede karl johan-svampe',
+  'dried-porcini': 'Tørrede Karl Johan-svampe',
   'dried-basil': 'Tørret basilikum',
   'dried-parsley': 'Tørret persille',
   'dried-dill': 'Tørret dild',
@@ -1061,7 +1061,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
 /** Receipt and label words that differ from the display name. */
 export const DA_SYNONYMS: Record<string, string[]> = {
   'dried-shiitake': ['shiitake tørret'],
-  'dried-porcini': ['tørret karl johan'],
+  'dried-porcini': ['tørret karl johan', 'karl johan svampe tørrede'],
   dashi: ['dashi pulver'],
   'wood-ear-mushrooms': ['judasøre'],
   'chinkiang-vinegar': ['sort eddike'],

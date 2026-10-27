@@ -1764,7 +1764,7 @@ export const spices: SeedSection = {
         'Hribi uscați',
         'g',
         ['dried ceps', 'dried boletus', 'dried porcini'],
-        ['hribi deshidratati', 'ciuperci de padure uscate'],
+        ['hribi deshidratati', 'hribi uscate'],
       ],
       ['dried-tarragon', 'Dried tarragon', 'Tarhon uscat', 'g'],
       ['dried-mint', 'Dried mint', 'Mentă uscată', 'g'],
