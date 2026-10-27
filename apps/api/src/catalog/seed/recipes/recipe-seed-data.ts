@@ -3,6 +3,7 @@
 // permanent. `npm run test:unit` validates the lot (validate-recipe-seed.ts).
 import type { BaseRecipeSeed } from './recipe-seed-types';
 import { appetizerPlatter } from './data/appetizer-platter';
+import { ardeiUmpluti } from './data/ardei-umpluti';
 import { bakedSalmon } from './data/baked-salmon';
 import { beefStew } from './data/beef-stew';
 import { bolognese } from './data/bolognese';
@@ -60,4 +61,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   chiliConCarne,
   risotto,
   garlicShrimp,
+  ardeiUmpluti,
 ];
