@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { haptic } from '../../lib/haptic';
 import { linkReads as linkReadsHolder } from '../../lib/linkReads';
 import { useScanSession } from '../../lib/scanSession';
@@ -26,23 +27,33 @@ export const resetScanFailureAlert = () => {
 
 /**
  * Announced assertively once, when something fails, even if it fails while the strip is hidden. The
- * announced count lives outside the component, which remounts when the Dock hides or the Member
- * changes page, and would announce the same failure again. A drop (a failed item retried or
- * discarded) takes the alert down rather than announcing the smaller count; it goes with the strip too.
+ * announced count lives outside the component, which remounts when the Dock hides, so a
+ * remount does not announce the same failure again. The host lives in the app layout and stays
+ * mounted across pages, so the alert is also taken down when the Member changes page. A drop (a
+ * failed item retried or discarded) takes the alert down rather than announcing the smaller count;
+ * it goes with the strip too.
  */
 function useFailureAlert({
   failed,
   up,
+  page,
   announced,
   announce,
 }: {
   failed: number;
   up: boolean;
+  /** The current page; the alert goes down when the Member moves to another. */
+  page: string;
   announced: () => number;
   announce: (failed: number) => void;
 }): boolean {
   const [alertedAt, setAlertedAt] = useState(0);
   const [wasUp, setWasUp] = useState(up);
+  const [wasPage, setWasPage] = useState(page);
+  if (page !== wasPage) {
+    setWasPage(page);
+    setAlertedAt(0);
+  }
   const isNew = failed > announced();
   if (isNew && alertedAt !== failed) setAlertedAt(failed);
   if (up !== wasUp) {
@@ -79,6 +90,7 @@ export function BackgroundHost({
 }) {
   const { t } = useTranslation('voice');
   const { t: tBackground } = useTranslation('background');
+  const { pathname } = useLocation();
   const state = useVoiceNoteState();
   const voiceItems = useVoiceBackgroundItems();
   const adapted = useScanSessionBackgroundItems();
@@ -95,12 +107,14 @@ export function BackgroundHost({
   const voiceAlerting = useFailureAlert({
     failed,
     up,
+    page: pathname,
     announced: voiceNote.announcedFailed,
     announce: voiceNote.announceFailed,
   });
   const scanAlerting = useFailureAlert({
     failed: summary.failed,
     up,
+    page: pathname,
     announced: () => announcedScanFailed,
     announce: announceScanFailed,
   });
@@ -110,6 +124,7 @@ export function BackgroundHost({
   const linkAlerting = useFailureAlert({
     failed: linkFailed,
     up,
+    page: pathname,
     announced: linkReadsHolder.announcedFailed,
     announce: linkReadsHolder.announceFailed,
   });
