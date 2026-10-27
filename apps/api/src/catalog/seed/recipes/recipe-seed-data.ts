@@ -59,6 +59,7 @@ import { garlicShrimp } from './data/garlic-shrimp';
 import { ghiveci } from './data/ghiveci';
 import { gogosi } from './data/gogosi';
 import { grilledCheese } from './data/grilled-cheese';
+import { grisCuLapte } from './data/gris-cu-lapte';
 import { homemadePizza } from './data/homemade-pizza';
 import { hummus } from './data/hummus';
 import { iahnieDeFasole } from './data/iahnie-de-fasole';
@@ -240,4 +241,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDeUrzici,
   ciorbaDeSalata,
   stufatDeMiel,
+  grisCuLapte,
 ];
