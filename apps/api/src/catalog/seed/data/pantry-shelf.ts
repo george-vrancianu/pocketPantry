@@ -1029,6 +1029,14 @@ export const condiments: SeedSection = {
         ['sirop artar'],
       ],
       [
+        'golden-syrup',
+        'Golden syrup',
+        'Golden syrup (sirop de zahăr)',
+        'g',
+        ['light treacle', "lyle's golden syrup"],
+        ['sirop auriu'],
+      ],
+      [
         'marmalade-orange',
         'Orange marmalade',
         'Marmeladă de portocale',

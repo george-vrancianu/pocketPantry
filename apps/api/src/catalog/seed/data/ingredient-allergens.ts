@@ -240,6 +240,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'mici-mix': [],
   'fresh-sausages': ['gluten'],
   'minced-lamb': [],
+  'italian-sausage': [],
 
   // meat/red-meat
   'beef-steak': [],
@@ -562,6 +563,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   fusilli: ['gluten'],
   farfalle: ['gluten'],
   macaroni: ['gluten'],
+  ditalini: ['gluten'],
   rigatoni: ['gluten'],
   tagliatelle: ['eggs', 'gluten'],
   'lasagne-sheets': ['gluten'],
@@ -614,6 +616,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // grains/flour-and-sugar
   flour: ['gluten'],
+  'tipo-00-flour': ['gluten'],
   'wholemeal-flour': ['gluten'],
   'rye-flour': ['gluten'],
   'almond-flour': ['tree-nuts'],
@@ -650,6 +653,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   chickpeas: [],
   'kidney-beans': [],
   'white-beans': [],
+  'borlotti-beans': [],
   'black-beans': [],
   'split-peas': [],
   soybeans: ['soy'],
@@ -794,6 +798,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'peanut-butter': ['peanuts'],
   'chocolate-spread': ['milk', 'soy', 'tree-nuts'],
   'maple-syrup': [],
+  'golden-syrup': [],
   'marmalade-orange': [],
   'fruit-syrup': [],
   'agave-syrup': [],

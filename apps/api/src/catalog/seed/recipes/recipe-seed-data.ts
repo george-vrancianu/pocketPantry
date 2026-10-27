@@ -14,22 +14,27 @@ import { chickenCurry } from './data/chicken-curry';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
 import { chiliConCarne } from './data/chili-con-carne';
+import { ciorbaDeFasole } from './data/ciorba-de-fasole';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { fishCakes } from './data/fish-cakes';
 import { flaeskesteg } from './data/flaeskesteg';
+import { frenchToast } from './data/french-toast';
 import { friedChicken } from './data/fried-chicken';
 import { friedRice } from './data/fried-rice';
 import { frikadeller } from './data/frikadeller';
 import { garlicShrimp } from './data/garlic-shrimp';
+import { homemadePizza } from './data/homemade-pizza';
 import { lentilSoup } from './data/lentil-soup';
 import { macAndCheese } from './data/mac-and-cheese';
 import { mamaliga } from './data/mamaliga';
 import { mici } from './data/mici';
 import { omelette } from './data/omelette';
 import { pancakes } from './data/pancakes';
+import { papanasi } from './data/papanasi';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
 import { ricePilaf } from './data/rice-pilaf';
+import { ricePudding } from './data/rice-pudding';
 import { risotto } from './data/risotto';
 import { roastChicken } from './data/roast-chicken';
 import { roastedVegetables } from './data/roasted-vegetables';
@@ -84,4 +89,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   fishCakes,
   salataDeVinete,
   brunedeKartofler,
+  frenchToast,
+  ricePudding,
+  homemadePizza,
+  papanasi,
+  ciorbaDeFasole,
 ];

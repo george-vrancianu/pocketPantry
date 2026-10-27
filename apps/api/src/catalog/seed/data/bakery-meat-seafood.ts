@@ -607,6 +607,14 @@ export const meat: SeedSection = {
         ['lamb mince', 'ground lamb'],
         ['tocatura miel'],
       ],
+      [
+        'italian-sausage',
+        'Italian sausage',
+        'Cârnați italienești (salsiccia)',
+        'g',
+        ['salsiccia', 'sweet italian sausage'],
+        ['carnati italienesti'],
+      ],
     ]),
     ...ingredientsOf('red-meat', [
       [
