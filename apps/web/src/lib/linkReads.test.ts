@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextBackgroundOrder } from '../components/background/backgroundItem';
 import { createLinkReads } from './linkReads';
 
-const requests: Array<{ url: string; resolve: () => void }> = [];
+const requests: Array<{ url: string; force: unknown; resolve: () => void }> =
+  [];
 
 beforeEach(() => {
   requests.length = 0;
@@ -11,9 +12,13 @@ beforeEach(() => {
     'fetch',
     (_input: RequestInfo | URL, init?: RequestInit) =>
       new Promise<Response>((resolve) => {
-        const { url } = JSON.parse(String(init?.body)) as { url: string };
+        const { url, force } = JSON.parse(String(init?.body)) as {
+          url: string;
+          force?: boolean;
+        };
         requests.push({
           url,
+          force,
           resolve: () =>
             resolve(Response.json({ kind: 'duplicate', recipeId: 'r1' })),
         });
@@ -38,7 +43,7 @@ describe('link reads', () => {
     holder.clear();
   });
 
-  it('starts a read that was read again after the ones already waiting', async () => {
+  it('reads a link again with force when the server answers a duplicate after all, behind the ones already waiting', async () => {
     const holder = createLinkReads();
     const link = (n: number) => ({
       kind: 'link' as const,
@@ -47,20 +52,30 @@ describe('link reads', () => {
     holder.submit(link(1), 'source');
     holder.submit(link(2), 'source');
     holder.submit(link(3), 'source');
-    // 1 and 2 run, 3 waits. 1 answers as a duplicate and frees a slot for 3.
+    // 1 and 2 run, 3 waits. 1 answers as a duplicate (saved since the sheet asked): it is read again, after 3.
     requests[0].resolve();
     await vi.waitFor(() =>
       expect(holder.getState().reads[2].status).toBe('reading'),
     );
     const [one, two] = holder.getState().reads;
     holder.submit(link(4), 'source');
-    holder.readAgain(one.id);
-    // 2 and 3 run; 4 was waiting before the re-read. Freeing a slot starts 4, not 1.
+    expect(holder.getState().reads.find((r) => r.id === one.id)?.status).toBe(
+      'waiting',
+    );
+    // Freeing a slot starts the read-again, not 4 (it was waiting longer).
     holder.discard(two.id);
-    const status = (id: number) =>
-      holder.getState().reads.find((r) => r.id === id)?.status;
-    expect(status(4)).toBe('reading');
-    expect(status(one.id)).toBe('waiting');
+    await vi.waitFor(() => expect(requests).toHaveLength(4));
+    expect(requests[3].url).toBe('https://site1.example/x');
+    expect(requests[3].force).toBe(true);
+    holder.clear();
+  });
+
+  it('sends force from the start when asked to', () => {
+    const holder = createLinkReads();
+    holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source', {
+      force: true,
+    });
+    expect(requests[0].force).toBe(true);
     holder.clear();
   });
 });

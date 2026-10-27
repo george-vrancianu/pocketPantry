@@ -33,8 +33,6 @@
     "review": "Gennemse opskriften fra {{what}}",
     "cancelRead": "Annuller læsning af {{what}}",
     "discardRead": "Kassér {{what}}",
-    "gone": "Den opskriftkladde gemmes ikke længere.",
-    "openRecipe": "Åbn opskriften fra {{what}}",
-    "readAgain": "Læs {{what}} igen"
+    "gone": "Den opskriftkladde gemmes ikke længere."
   }
 }

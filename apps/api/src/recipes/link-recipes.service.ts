@@ -73,13 +73,14 @@ export class LinkRecipesService {
     memberId: string,
     body: Pick<FromLinkBody, 'url' | 'text' | 'language' | 'force'>,
     locale: CatalogLocale,
+    signal?: AbortSignal,
   ): Promise<RecipeFromLink> {
     if (this.reading.has(memberId)) {
       throw new ApiException(429, 'link.read_in_progress');
     }
     this.reading.add(memberId);
     try {
-      return await this.readOne(memberId, body, locale);
+      return await this.readOne(memberId, body, locale, signal);
     } finally {
       this.reading.delete(memberId);
     }
@@ -89,6 +90,7 @@ export class LinkRecipesService {
     memberId: string,
     body: Pick<FromLinkBody, 'url' | 'text' | 'language' | 'force'>,
     locale: CatalogLocale,
+    signal?: AbortSignal,
   ): Promise<RecipeFromLink> {
     const familyId = await this.settings.familyIdOf(memberId);
     // Pasted text has no Source Link, so it never reaches the duplicate check (and `force` means nothing to it).
@@ -106,7 +108,7 @@ export class LinkRecipesService {
       await this.drafts.assertRoom(memberId);
       // Already at the cap: refuse before the fetch. The use itself is still counted only in `ask`.
       await this.caps.assertBelowCap(memberId, new Date(), 'link');
-      input = await this.readingInput(sourceLink);
+      input = await this.readingInput(sourceLink, signal);
     } else if (body.text !== undefined) {
       await this.drafts.assertRoom(memberId);
       input = { kind: 'pasted-text', text: body.text };
@@ -116,19 +118,24 @@ export class LinkRecipesService {
     const catalog = await this.ingredientCatalog.getCatalogIn(familyId, locale);
     const lists = await this.browse.filters(memberId, locale);
 
-    const reading = await this.ask(memberId, {
-      prompt: readingPrompt(
-        input,
-        locale,
-        body.language,
-        catalogPrompt(catalog),
-        lists,
-      ),
-      schemaName: LINK_READING_SCHEMA_NAME,
-      schema: linkReadingJsonSchema,
-      maxOutputTokens: 8000,
-      model: 'text',
-    });
+    throwIfCancelled(signal);
+    const reading = await this.ask(
+      memberId,
+      {
+        prompt: readingPrompt(
+          input,
+          locale,
+          body.language,
+          catalogPrompt(catalog),
+          lists,
+        ),
+        schemaName: LINK_READING_SCHEMA_NAME,
+        schema: linkReadingJsonSchema,
+        maxOutputTokens: 8000,
+        model: 'text',
+      },
+      signal,
+    );
 
     const draft = draftOfReading(reading, {
       ingredientNames: new Map(catalog.ingredients.map((i) => [i.id, i.name])),
@@ -155,6 +162,8 @@ export class LinkRecipesService {
       ].slice(0, 100),
     });
     // Last, after the read has completed: a read that stops before here leaves no Recipe Draft (ADR 0031).
+    // A read whose request closed (the Member discarded it) stops here too, even if the AI had answered.
+    throwIfCancelled(signal);
     const { id: recipeDraftId } = await this.drafts.create(memberId, {
       kind: 'new_recipe',
       baseRecipeId: null,
@@ -173,6 +182,21 @@ export class LinkRecipesService {
       closestBases: closest.matches,
       hiddenByAllergiesCount: closest.hiddenByAllergiesCount,
     };
+  }
+
+  /**
+   * The live Family Recipe a link already is, for the sheet to ask before it reads (ADR 0031). The same
+   * normalisation as a read; never fetches, calls the AI or counts against the Link Cap. A link that
+   * is not a link, or is not a Recipe yet, answers null (the read itself says `link.invalid`).
+   */
+  async check(
+    memberId: string,
+    url: string,
+  ): Promise<{ recipeId: string | null }> {
+    const sourceLink = normaliseSourceLink(url);
+    if (sourceLink === null) return { recipeId: null };
+    const familyId = await this.settings.familyIdOf(memberId);
+    return { recipeId: await this.liveRecipeOfLink(familyId, sourceLink) };
   }
 
   /** The Family's newest live Recipe read from this (normalised) link, or null. */
@@ -196,11 +220,15 @@ export class LinkRecipesService {
   }
 
   /** Fetches the page and picks what the model reads: its JSON-LD, else its visible text; neither is `link.no_recipe`, before any AI call. */
-  private async readingInput(sourceLink: string): Promise<ReadingInput> {
+  private async readingInput(
+    sourceLink: string,
+    signal?: AbortSignal,
+  ): Promise<ReadingInput> {
     let page: FetchedPage;
     try {
-      page = await this.pages.fetchPage(sourceLink);
+      page = await this.pages.fetchPage(sourceLink, signal);
     } catch (error) {
+      throwIfCancelled(signal);
       if (error instanceof PageFetchError) {
         throw error.kind === 'invalid' ? linkInvalid() : linkUnreadable();
       }
@@ -232,13 +260,14 @@ export class LinkRecipesService {
   private async ask(
     memberId: string,
     request: Parameters<StructuredOutputAiService['generate']>[0],
+    signal?: AbortSignal,
   ): Promise<LinkReading> {
     return this.caps.withinCap(
       memberId,
       async () => {
         try {
           const reading = linkReadingSchema.parse(
-            (await this.ai.generate(request)).data,
+            (await this.ai.generate(request, { signal })).data,
           );
           // A page with no recipe is not a use: throwing hands the charge back.
           if (!reading.recipeFound) throw linkNoRecipe();
@@ -251,6 +280,11 @@ export class LinkRecipesService {
       'link',
     );
   }
+}
+
+/** The request closed before the read finished: stop, and keep nothing. Nobody is left to hear this error. */
+function throwIfCancelled(signal: AbortSignal | undefined) {
+  if (signal?.aborted) throw new ApiException(499, 'link.read_cancelled');
 }
 
 function readingPrompt(

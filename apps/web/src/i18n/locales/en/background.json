@@ -33,8 +33,6 @@
     "review": "Review the recipe from {{what}}",
     "cancelRead": "Cancel reading {{what}}",
     "discardRead": "Discard {{what}}",
-    "gone": "That Recipe Draft is no longer kept.",
-    "openRecipe": "Open the Recipe from {{what}}",
-    "readAgain": "Read {{what}} again"
+    "gone": "That Recipe Draft is no longer kept."
   }
 }

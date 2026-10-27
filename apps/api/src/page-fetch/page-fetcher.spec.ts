@@ -513,6 +513,17 @@ describe('page fetcher', () => {
     });
   });
 
+  describe('abort', () => {
+    it('is unreadable at once when the signal is already aborted', async () => {
+      routes['/r'] = (_req, res) => res.end('<html></html>');
+      expect(
+        await kindOf(
+          testFetcher().fetchPage(`${base()}/r`, AbortSignal.abort()),
+        ),
+      ).toBe('unreadable');
+    });
+  });
+
   describe('timeout', () => {
     it('times out a server that never sends headers', async () => {
       routes['/r'] = () => undefined;

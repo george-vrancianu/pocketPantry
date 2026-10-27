@@ -189,6 +189,15 @@ export const fromLinkBody = z
     message: 'give exactly one of url and text',
   });
 
+/** The link the sheet asks about before it reads (not normalised here: the server does that, as a read does). */
+export const linkCheckQuery = z.object({
+  url: z.string().trim().min(1).max(4096),
+});
+export type LinkCheckQuery = z.infer<typeof linkCheckQuery>;
+
+/** `GET /api/recipes/link-check`: the live Family Recipe the link already is, or null. */
+export type LinkCheck = { recipeId: string | null };
+
 /** The Plate Scan dish the Review wants the closest Catalog Base Recipe for. */
 export const plateMatchesBody = z
   .object({
