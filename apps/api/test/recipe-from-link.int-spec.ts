@@ -90,6 +90,8 @@ describe('Recipe from Link (integration)', () => {
   let answer: () => Promise<{ data: unknown; requestId: string | null }>;
   let page: () => Promise<{ finalUrl: string; html: string }>;
   const fetched: string[] = [];
+  const generateSignals: (AbortSignal | undefined)[] = [];
+  const fetchSignals: (AbortSignal | undefined)[] = [];
 
   const respondWith = (data: unknown) => {
     answer = () => Promise.resolve({ data, requestId: 'fake-request' });
@@ -102,16 +104,18 @@ describe('Recipe from Link (integration)', () => {
 
   beforeAll(async () => {
     const pageFetcher: PageFetcher = {
-      fetchPage: (url) => {
+      fetchPage: (url, signal) => {
         fetched.push(url);
+        fetchSignals.push(signal);
         return page();
       },
     };
     app = await createTestApp(
       [],
       {
-        generate: (input) => {
+        generate: (input, options) => {
           prompts.push(input);
+          generateSignals.push(options?.signal);
           return answer();
         },
       },
@@ -1177,6 +1181,79 @@ describe('Recipe from Link (integration)', () => {
     });
   });
 
+  describe('a read lasts as long as its connection (ADR 0031)', () => {
+    const drafts = async () =>
+      (
+        (await client(app, memberCookie, '/api/recipe-drafts')
+          .get('')
+          .expect(200)) as { body: unknown[] }
+      ).body;
+    const until = async (done: () => boolean) => {
+      for (let i = 0; i < 200 && !done(); i++) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(done()).toBe(true);
+    };
+
+    /** One read at a time per Member: an answer other than 429 means the server is done with the cancelled read. */
+    const serverLetGo = async () => {
+      for (let i = 0; i < 200; i++) {
+        const res = await read('ftp://example.com/x');
+        if (res.status !== 429) return;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      throw new Error('the cancelled read never let go');
+    };
+
+    it('aborts the AI call and keeps no Recipe Draft when the request closes mid-read', async () => {
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      answer = async () => {
+        await gate;
+        return { data: reading(), requestId: 'late' };
+      };
+      generateSignals.length = 0;
+      const request = read('https://example.com/cancelled');
+      void request.then(
+        () => undefined,
+        () => undefined,
+      );
+      await until(() => prompts.length === 1);
+      request.abort();
+      await until(() => generateSignals[0]?.aborted === true);
+      release();
+      // The Member is free again once the server has let the read go.
+      await serverLetGo();
+      expect(await drafts()).toEqual([]);
+    });
+
+    it('aborts the page fetch when the request closes before the page arrives', async () => {
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      page = async () => {
+        await gate;
+        return { finalUrl: 'https://example.com/', html: jsonLdPage(PANCAKES) };
+      };
+      fetchSignals.length = 0;
+      const request = read('https://example.com/cancelled-early');
+      void request.then(
+        () => undefined,
+        () => undefined,
+      );
+      await until(() => fetched.length === 1);
+      request.abort();
+      await until(() => fetchSignals[0]?.aborted === true);
+      release();
+      await serverLetGo();
+      expect(prompts).toHaveLength(0);
+      expect(await drafts()).toEqual([]);
+    });
+  });
+
   describe('pasted text', () => {
     const paste = (
       text: unknown,
@@ -1560,6 +1637,61 @@ describe('Already in your Recipes (integration)', () => {
     await read('https://example.com/other').expect(200);
     await read('https://example.com/another').expect(200);
     expect(prompts).toHaveLength(2);
+  });
+
+  describe('the duplicate check (GET /link-check)', () => {
+    const check = (url: string, who = member) =>
+      who.get(`/link-check?url=${encodeURIComponent(url)}`);
+
+    it('requires authentication', async () => {
+      await client(app, '', '/api/recipes')
+        .get('/link-check?url=https%3A%2F%2Fexample.com%2F')
+        .expect(401);
+    });
+
+    it('answers the Recipe a link normalises to, and none for other links', async () => {
+      const saved = await save(member, 'https://example.com/soup?id=1');
+      for (const same of [
+        'https://example.com/soup?id=1',
+        'https://EXAMPLE.com/soup?id=1#step-2',
+        'https://example.com/soup?id=1&utm_source=mail',
+      ]) {
+        const res = await check(same).expect(200);
+        expect(res.body).toEqual({ recipeId: saved.id });
+      }
+      for (const other of [
+        'https://example.com/soup?id=2',
+        'https://example.com/stew?id=1',
+        'not a link',
+      ]) {
+        const res = await check(other).expect(200);
+        expect(res.body).toEqual({ recipeId: null });
+      }
+    });
+
+    it("does not answer an archived Recipe or another Family's Recipe", async () => {
+      const archived = await save(member, 'https://example.com/old');
+      await member.post(`/${archived.id}/archive`).expect(200);
+      await save(await freshMember(), 'https://example.com/theirs');
+      expect((await check('https://example.com/old')).body).toEqual({
+        recipeId: null,
+      });
+      expect((await check('https://example.com/theirs')).body).toEqual({
+        recipeId: null,
+      });
+    });
+
+    it('never fetches, reads or counts against the Link Cap', async () => {
+      await save(member, 'https://example.com/soup');
+      for (let i = 0; i < 5; i++) {
+        await check('https://example.com/soup').expect(200);
+        await check('https://example.com/new').expect(200);
+      }
+      expectUntouched();
+      // The cap (2) is still whole: two real reads succeed afterwards.
+      await read('https://example.com/other').expect(200);
+      await read('https://example.com/another').expect(200);
+    });
   });
 
   it('refuses a sourceLanguage without a sourceLink', async () => {

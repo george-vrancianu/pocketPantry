@@ -168,10 +168,12 @@ function setup(
     'GET /api/recipes': () =>
       Response.json({ recipes: [], hiddenByAllergiesCount: 0 }),
     'POST /api/auth/sign-out': () => Response.json({}),
+    'GET /api/recipes/link-check': () => Response.json({ recipeId: null }),
     ...withStoredRead(routes),
   });
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
-    signals.push(init?.signal);
+    // Only the reads' own requests: the duplicate check has a signal of its own.
+    if (String(input).endsWith('/from-link')) signals.push(init?.signal);
     const response = fetchMock(input, init);
     const signal = init?.signal;
     if (!signal) return response;
@@ -464,7 +466,7 @@ describe('"From a link" sheet and the link-read holder', () => {
 
     it('discarding a reading row aborts its request and only its own, then the next starts', async () => {
       const user = userEvent.setup({ delay: null });
-      const { signals } = await startFive(user);
+      const { signals, releases } = await startFive(user);
       const requests = signals.filter((s) => s);
       expect(requests).toHaveLength(2);
       await user.click(await screen.findByRole('button', { name: 'Open' }));
@@ -482,6 +484,14 @@ describe('"From a link" sheet and the link-read holder', () => {
           'waiting',
           'waiting',
         ]),
+      );
+      // The other read carried on and ends ready.
+      releases[1]();
+      await waitFor(() =>
+        expect(
+          linkReads.getState().reads.find((r) => r.site === 'site2.example.com')
+            ?.status,
+        ).toBe('ready'),
       );
     });
   });
@@ -576,60 +586,214 @@ describe('"From a link" sheet and the link-read holder', () => {
   });
 
   describe('a link that is already one of the Recipes', () => {
-    const duplicate = { kind: 'duplicate', recipeId: 'r-1' };
+    const checked = (calls: ReturnType<typeof setup>['calls']) =>
+      calls.filter((c) => c.key === 'GET /api/recipes/link-check');
+    const duplicateRoute = {
+      'GET /api/recipes/link-check': () => Response.json({ recipeId: 'r-1' }),
+    };
 
-    it('ends as "Already in your Recipes" with Open, which goes to that Recipe', async () => {
+    it('asks first, then answers in the open sheet without reading', async () => {
       const user = userEvent.setup({ delay: null });
-      setup({ 'POST /api/recipes/from-link': () => Response.json(duplicate) });
+      const { calls } = setup({
+        ...duplicateRoute,
+        'POST /api/recipes/from-link': () => Response.json(read()),
+      });
       await submit(user, link);
       expect(await screen.findByText('Already in your Recipes')).toBeVisible();
-      await user.click(await screen.findByRole('button', { name: 'Open' }));
-      await user.click(
-        await screen.findByRole('button', {
-          name: 'Open the Recipe from example.com',
-        }),
-      );
-      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
-      expect(screen.getByText('at /recipes/r-1')).toBeVisible();
+      expect(sheet()).not.toBeNull();
+      expect(checked(calls)).toHaveLength(1);
+      expect(checked(calls)[0].search).toBe(`?url=${encodeURIComponent(link)}`);
+      expect(sentLinks(calls)).toEqual([]);
       expect(linkReads.getState().reads).toEqual([]);
     });
 
-    it('Read again sends the same request with force and ends ready', async () => {
+    it('Open goes to that Recipe and closes the sheet', async () => {
       const user = userEvent.setup({ delay: null });
-      let first = true;
+      setup(duplicateRoute);
+      await submit(user, link);
+      await screen.findByText('Already in your Recipes');
+      await user.click(screen.getByRole('link', { name: 'Open' }));
+      expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+      expect(screen.getByText('at /recipes/r-1')).toBeVisible();
+      await waitFor(() => expect(sheet()).toBeNull());
+      expect(linkReads.getState().reads).toEqual([]);
+    });
+
+    it('Read again closes the sheet and reads with force', async () => {
+      const user = userEvent.setup({ delay: null });
       const { calls } = setup({
-        'POST /api/recipes/from-link': () => {
-          const answer = first ? duplicate : read({ servings: 4 });
-          first = false;
-          return Response.json(answer);
-        },
+        ...duplicateRoute,
+        'POST /api/recipes/from-link': () =>
+          Response.json(read({ servings: 4 })),
       });
       await user.click(
         screen.getByRole('radio', { name: "Keep the page's language" }),
       );
       await submit(user, link);
       await screen.findByText('Already in your Recipes');
-      await user.click(await screen.findByRole('button', { name: 'Open' }));
-      await user.click(
-        await screen.findByRole('button', {
-          name: 'Read example.com again',
-        }),
-      );
+      await user.click(screen.getByRole('button', { name: 'Read again' }));
+      await waitFor(() => expect(sheet()).toBeNull());
       await waitFor(() =>
         expect(linkReads.getState().reads[0]).toMatchObject({
           status: 'ready',
           recipeDraftId: 'rd-1',
         }),
       );
-      const bodies = calls
-        .filter((c) => c.key === 'POST /api/recipes/from-link')
-        .map((c) => c.body);
-      expect(bodies[0]).toEqual({ url: link, language: 'source' });
-      expect(bodies[1]).toEqual({
-        url: link,
-        language: 'source',
-        force: true,
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes/from-link')?.body,
+      ).toEqual({ url: link, language: 'source', force: true });
+    });
+
+    it('says the holder is full instead of checking, and Read again on a late duplicate brings the alert back', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        ...duplicateRoute,
+        'POST /api/recipes/from-link': () => new Promise<Response>(() => {}),
       });
+      for (const n of [1, 2, 3, 4]) {
+        linkReads.submit(
+          { kind: 'link', url: `https://site${n}.example.com/r` },
+          'catalog',
+        );
+      }
+      // Four held: the check runs and the duplicate panel opens.
+      await submit(user, link);
+      await screen.findByText('Already in your Recipes');
+      // A fifth read arrives while the panel is open, so the holder is now full.
+      linkReads.submit(
+        { kind: 'link', url: 'https://site5.example.com/r' },
+        'catalog',
+      );
+      await user.click(screen.getByRole('button', { name: 'Read again' }));
+      expect(
+        await screen.findByText(/5 link reads are waiting for you/),
+      ).toBeVisible();
+      expect(screen.queryByText('Already in your Recipes')).toBeNull();
+      expect(sheet()).not.toBeNull();
+      // A full holder is answered before any check is made.
+      const checks = checked(calls).length;
+      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      expect(
+        await screen.findByText(/5 link reads are waiting for you/),
+      ).toBeVisible();
+      expect(checked(calls)).toHaveLength(checks);
+    });
+
+    it('closes and reads when the link is not one of the Recipes', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        'POST /api/recipes/from-link': () => Response.json(read()),
+      });
+      await submit(user, link);
+      await waitFor(() => expect(sheet()).toBeNull());
+      await waitFor(() => expect(sentLinks(calls)).toEqual([link]));
+      expect(checked(calls)).toHaveLength(1);
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes/from-link')?.body,
+      ).toEqual({ url: link, language: 'catalog' });
+    });
+
+    it('reads anyway when the check itself fails', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        'GET /api/recipes/link-check': () =>
+          Response.json({ code: 'unknown' }, { status: 500 }),
+        'POST /api/recipes/from-link': () => Response.json(read()),
+      });
+      await submit(user, link);
+      await waitFor(() => expect(sheet()).toBeNull());
+      await waitFor(() => expect(sentLinks(calls)).toEqual([link]));
+    });
+
+    it('never checks pasted text', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { calls } = setup({
+        ...duplicateRoute,
+        'POST /api/recipes/from-link': () => Response.json(read()),
+      });
+      await user.click(
+        screen.getByRole('button', { name: 'Paste text instead' }),
+      );
+      await user.type(screen.getByLabelText(/^Recipe text/), 'two eggs');
+      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+      await waitFor(() => expect(sheet()).toBeNull());
+      await waitFor(() =>
+        expect(
+          calls.filter((c) => c.key === 'POST /api/recipes/from-link'),
+        ).toHaveLength(1),
+      );
+      expect(checked(calls)).toEqual([]);
+    });
+  });
+
+  describe('the page asks before unloading while a link read is waiting or reading', () => {
+    /** Fires `beforeunload` as the browser would and says whether the page asked to stay. */
+    const asksToStay = () => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+
+    it('asks while reading and stops once the read is ready or failed', async () => {
+      const pending = hold(read());
+      setup({ 'POST /api/recipes/from-link': pending.handler });
+      expect(asksToStay()).toBe(false);
+      linkReads.submit({ kind: 'link', url: link }, 'catalog');
+      await screen.findByText('Reading a recipe link…');
+      expect(asksToStay()).toBe(true);
+      pending.release();
+      await screen.findByText('Recipe ready to review');
+      expect(asksToStay()).toBe(false);
+    });
+
+    it('asks while the last read is reading after the others failed, and not once all have failed', async () => {
+      const releases: Array<() => void> = [];
+      setup({
+        'POST /api/recipes/from-link': () =>
+          new Promise<Response>((resolve) => {
+            releases.push(() =>
+              resolve(
+                Response.json(
+                  { code: 'link.unreadable', params: {} },
+                  { status: 422 },
+                ),
+              ),
+            );
+          }),
+      });
+      for (const n of [1, 2, 3]) {
+        linkReads.submit(
+          { kind: 'link', url: `https://s${n}.example/r` },
+          'catalog',
+        );
+      }
+      await waitFor(() => expect(releases).toHaveLength(2));
+      releases[0]();
+      releases[1]();
+      // Both failed, the third now reads.
+      await waitFor(() => expect(releases).toHaveLength(3));
+      expect(asksToStay()).toBe(true);
+      releases[2]();
+      await waitFor(() =>
+        expect(linkReads.getState().reads.map((r) => r.status)).toEqual([
+          'failed',
+          'failed',
+          'failed',
+        ]),
+      );
+      expect(asksToStay()).toBe(false);
+    });
+
+    it('does not ask when a Member discards the only read', async () => {
+      const pending = hold(read());
+      setup({ 'POST /api/recipes/from-link': pending.handler });
+      const added = linkReads.submit({ kind: 'link', url: link }, 'catalog');
+      expect(added).toBe('started');
+      await screen.findByText('Reading a recipe link…');
+      expect(asksToStay()).toBe(true);
+      linkReads.discard(linkReads.getState().reads[0].id);
+      await waitFor(() => expect(asksToStay()).toBe(false));
+      pending.release();
     });
   });
 });

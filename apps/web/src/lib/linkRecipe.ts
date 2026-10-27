@@ -49,6 +49,20 @@ export type ReadLinkInput = (
   signal?: AbortSignal;
 };
 
+/** The answer of the duplicate check: the live Family Recipe a link already is, or null. */
+export type LinkCheck = { recipeId: string | null };
+
+/**
+ * Asks whether a link is already one of the Family's Recipes, before reading it. The server normalises
+ * the link as a read does; this never fetches the page, calls the AI or counts against the Link Cap.
+ */
+export function checkRecipeLink(url: string, signal?: AbortSignal) {
+  return apiRequest<LinkCheck>(
+    `/recipes/link-check?url=${encodeURIComponent(url)}`,
+    signal ? { signal } : {},
+  );
+}
+
 /** Read the recipe on a web page; the server keeps it as the Member's Recipe Draft (no Recipe is saved). */
 export function readRecipeLink({
   url,

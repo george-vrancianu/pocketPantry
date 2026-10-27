@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { nextBackgroundOrder } from '../components/background/backgroundItem';
 import { ApiError } from './api';
 import {
@@ -16,8 +16,7 @@ export const MAX_HELD_LINK_READS = 5;
 export const LINK_AUTO_RETRY_MS = 1500;
 
 /**
- * `waiting` for a free slot, `reading`, `ready` (a Recipe Draft is kept, or the link is already a
- * Recipe), `failed`, or `capped` (the Link Cap refused it, or it was waiting behind the read the cap
+ * `waiting` for a free slot, `reading`, `ready` (a Recipe Draft is kept), `failed`, or `capped` (the Link Cap refused it, or it was waiting behind the read the cap
  * refused; Retry tries again, like a capped Scan in ADR 0004).
  */
 export type LinkReadStatus =
@@ -39,8 +38,6 @@ export type LinkRead = {
   site: string | null;
   /** When ready: the Recipe Draft the server kept. */
   recipeDraftId?: string;
-  /** When ready without a draft: the Family Recipe this link already is. */
-  duplicateOf?: string;
   /** When failed or capped: why (an `ApiError` for the Link Cap carries its `cap` and `resetsAt`). */
   error?: unknown;
 };
@@ -128,15 +125,19 @@ export function createLinkReads() {
         if (attempt.signal.aborted || controllers.get(read.id) !== attempt)
           return;
         controllers.delete(read.id);
-        patch(
-          read.id,
-          result.kind === 'duplicate'
-            ? { status: 'ready', duplicateOf: result.recipeId }
-            : { status: 'ready', recipeDraftId: result.recipeDraftId },
-        );
-        if (result.kind === 'draft') {
-          finishedListeners.forEach((listener) => listener());
+        if (result.kind === 'duplicate') {
+          // The sheet asked first and the link was not a Recipe then; one was saved since. The Member asked
+          // for this read, so read it anyway rather than leave a row with nothing to review.
+          forced.add(read.id);
+          patch(read.id, { status: 'waiting', order: nextBackgroundOrder() });
+          pump();
+          return;
         }
+        patch(read.id, {
+          status: 'ready',
+          recipeDraftId: result.recipeDraftId,
+        });
+        finishedListeners.forEach((listener) => listener());
         pump();
       },
       (error: unknown) => {
@@ -204,19 +205,24 @@ export function createLinkReads() {
     },
     /**
      * Holds a read and starts it as soon as a slot is free. `full`: five are held already; nothing was
-     * added. `replaces`: a read this one stands in for ("Paste text instead" on a page that could not
+     * added. `force`: the link is already one of the Recipes and the Member chose "Read again".
+     * `replaces`: a failed read this one stands in for ("Paste text instead" on a page that could not
      * be read); it is let go first, so it never fills the last place.
      */
     submit(
       source: LinkReadSource,
       language: ReadingLanguage,
-      replaces?: number,
+      options: { force?: boolean; replaces?: number } = {},
     ): SubmitOutcome {
-      if (replaces !== undefined && find(replaces)?.status === 'failed') {
-        discard(replaces);
+      if (
+        options.replaces !== undefined &&
+        find(options.replaces)?.status === 'failed'
+      ) {
+        discard(options.replaces);
       }
       if (state.reads.length >= MAX_HELD_LINK_READS) return 'full';
       const id = nextId++;
+      if (options.force) forced.add(id);
       set([
         ...state.reads,
         {
@@ -230,23 +236,6 @@ export function createLinkReads() {
       ]);
       pump();
       return 'started';
-    },
-    /** A duplicate answer, read anyway: the same link again with `force`. */
-    readAgain(id: number) {
-      const read = find(id);
-      if (
-        !read ||
-        read.source.kind !== 'link' ||
-        read.duplicateOf === undefined
-      )
-        return;
-      forced.add(id);
-      patch(id, {
-        status: 'waiting',
-        duplicateOf: undefined,
-        order: nextBackgroundOrder(),
-      });
-      pump();
     },
     /**
      * Tries a failed or capped read again. Retrying a capped read releases every read the cap held
@@ -289,6 +278,38 @@ export type LinkReads = ReturnType<typeof createLinkReads>;
 
 /** The app's one link-read holder. */
 export const linkReads = createLinkReads();
+
+/**
+ * While a link read is waiting or reading, asks before the page unloads (closing the tab, reloading):
+ * the read lasts as long as its page and would be lost. Ready and failed reads need no prompt.
+ * Mounted once, by the app layout.
+ */
+export function useUnloadPromptWhileReading() {
+  // Subscribes to the holder directly, so the layout never re-renders on a status change.
+  useEffect(() => {
+    const ask = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Older browsers need a return value to show the prompt.
+      event.returnValue = '';
+    };
+    let asking = false;
+    const sync = () => {
+      const want = linkReads
+        .getState()
+        .reads.some((r) => r.status === 'waiting' || r.status === 'reading');
+      if (want === asking) return;
+      asking = want;
+      if (want) window.addEventListener('beforeunload', ask);
+      else window.removeEventListener('beforeunload', ask);
+    };
+    sync();
+    const unsubscribe = linkReads.subscribe(sync);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('beforeunload', ask);
+    };
+  }, []);
+}
 
 export const useLinkReads = (): LinkReadsState =>
   useSyncExternalStore(
