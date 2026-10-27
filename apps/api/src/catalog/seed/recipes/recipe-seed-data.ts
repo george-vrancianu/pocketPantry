@@ -24,6 +24,7 @@ import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { coleslaw } from './data/coleslaw';
+import { cornulete } from './data/cornulete';
 import { cottagePie } from './data/cottage-pie';
 import { cozonac } from './data/cozonac';
 import { fishAndChips } from './data/fish-and-chips';
@@ -172,4 +173,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   brownies,
   cozonac,
   salamDeBiscuiti,
+  cornulete,
 ];
