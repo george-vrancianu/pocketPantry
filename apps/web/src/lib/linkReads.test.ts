@@ -26,6 +26,17 @@ afterEach(() => {
 });
 
 describe('link reads', () => {
+  it('lets go of a replaced read only when it has failed', () => {
+    const holder = createLinkReads();
+    holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source');
+    const [running] = holder.getState().reads;
+    // A stale id (router state survives a reload): the read it names is not a failed one.
+    holder.submit({ kind: 'text', text: 'pasted' }, 'source', running.id);
+    expect(holder.getState().reads.map((r) => r.id)).toContain(running.id);
+    expect(holder.getState().reads).toHaveLength(2);
+    holder.clear();
+  });
+
   it('stamps each read on the clock every background item shares', () => {
     const holder = createLinkReads();
     const before = nextBackgroundOrder();

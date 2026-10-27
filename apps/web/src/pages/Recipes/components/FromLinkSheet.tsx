@@ -13,6 +13,10 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadingLanguageChoice } from '../../../components/ReadingLanguageChoice';
 import { MAX_HELD_LINK_READS, linkReads } from '../../../lib/linkReads';
+
+/** The state "Paste text instead" hands the Recipes page: open the sheet in text mode, the link kept. */
+export type FromLinkPrefill = { url: string; replaces: number };
+export const FROM_LINK_PREFILL_STATE = 'fromLinkPrefill';
 import {
   MAX_LINK_LENGTH,
   MAX_PASTED_TEXT_LENGTH,
@@ -46,7 +50,7 @@ export function FromLinkSheet({
   onClose: () => void;
   onExited?: () => void;
   /** Opens in text mode with this link kept (from a failed row's "Paste text instead"); that read is replaced by the text's. */
-  prefill?: { url: string; replaces: number };
+  prefill?: FromLinkPrefill;
 }) {
   const { t } = useTranslation('recipes');
   return (
@@ -68,7 +72,7 @@ function FromLinkForm({
   prefill,
 }: {
   onSubmitted: () => void;
-  prefill?: { url: string; replaces: number };
+  prefill?: FromLinkPrefill;
 }) {
   const { t } = useTranslation('recipes');
   const [mode, setMode] = useState<'link' | 'text'>(prefill ? 'text' : 'link');

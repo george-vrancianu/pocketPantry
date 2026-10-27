@@ -84,9 +84,9 @@ export function createLinkReads() {
   const forced = new Set<number>();
   /** Reads already tried again after a network error: one automatic retry each. */
   const retried = new Set<number>();
-  /** The pending automatic retry of a read: it keeps its slot meanwhile. */
   /** How many failed or capped reads the strip has announced as an alert. Outlives the strip, which remounts. */
   let announcedFailed = 0;
+  /** The pending automatic retry of a read: it keeps its slot meanwhile. */
   const retryTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
   const set = (reads: LinkRead[]) => {
@@ -212,7 +212,9 @@ export function createLinkReads() {
       language: ReadingLanguage,
       replaces?: number,
     ): SubmitOutcome {
-      if (replaces !== undefined) discard(replaces);
+      if (replaces !== undefined && find(replaces)?.status === 'failed') {
+        discard(replaces);
+      }
       if (state.reads.length >= MAX_HELD_LINK_READS) return 'full';
       const id = nextId++;
       set([

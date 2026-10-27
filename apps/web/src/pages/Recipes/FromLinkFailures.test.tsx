@@ -563,7 +563,7 @@ describe('the failure alert', () => {
     expect(strip()).toHaveTextContent("Couldn't read the recipe");
     expect(screen.queryByRole('alert')).toBeNull();
 
-    // Retrying (reading again) takes the outline away; a failure after it is a new one.
+    // Retrying (reading again) takes the outline away; the alert is not repeated while the sheet is open.
     answer = () => failing('link.unreadable');
     await openStrip(user);
     await user.click(

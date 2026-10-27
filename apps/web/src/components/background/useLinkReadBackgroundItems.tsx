@@ -7,6 +7,7 @@ import { ApiError, apiRequest } from '../../lib/api';
 import { linkReads, useLinkReads, type LinkRead } from '../../lib/linkReads';
 import { linkFailureReason, offersPasteText } from '../../lib/linkReadFailure';
 import { recipeDraftsListKey } from '../../lib/recipeDrafts';
+import { FROM_LINK_PREFILL_STATE } from '../../pages/Recipes/components/FromLinkSheet';
 import { DRAFT_PARAM } from '../../pages/Recipes/useRecipeDraftRoute';
 import type {
   BackgroundAction,
@@ -20,10 +21,6 @@ const statusOf = (read: LinkRead): BackgroundStatus =>
     : read.status === 'ready'
       ? 'ready'
       : 'failed';
-
-/** The state "Paste text instead" hands the Recipes page: open the sheet in text mode, the link kept. */
-export type FromLinkPrefill = { url: string; replaces: number };
-export const FROM_LINK_PREFILL_STATE = 'fromLinkPrefill';
 
 /**
  * The link-read holder seen as background items: one per link read, its row buttons (Review, Cancel,

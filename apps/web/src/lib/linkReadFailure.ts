@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next';
+import { translateApiError } from '../i18n/translateApiError';
 import { ApiError } from './api';
 import { capMessage } from './capMessage';
 import type { LinkRead } from './linkReads';
@@ -29,10 +30,7 @@ export function linkFailureReason(
   if (text && error.code === 'link.no_recipe') {
     return t('errors:link.no_recipe_text');
   }
-  return t(`errors:${error.code}`, {
-    ...error.params,
-    defaultValue: t('errors:unknown'),
-  });
+  return translateApiError(t, error);
 }
 
 /** The page could not be opened: pasting the recipe's text may still work. */

@@ -60,8 +60,8 @@ function useFailureAlert({
  * The background strip and its sheet, hosted once by the app layout on pages with the Dock (so they
  * show whether or not voice is configured): the Voice Notes and, when the host asks for them
  * (`scanSession`, `linkReads`), the Scan Session and the link reads adapted into background items. A host chooses its kinds: the
- * Intro's Say it hosts Voice Notes only, the Scan Session waits for the app's Review. A failed note or
- * Scan is announced once as an alert (the rest of the strip is a polite status); the Scan Session
+ * Intro's Say it hosts Voice Notes only, the Scan Session waits for the app's Review. A failed note,
+ * Scan or link read is announced once as an alert (the rest of the strip is a polite status); the Scan Session
  * buzzes once when it becomes all read. Hidden while recording or while a Voice Note sheet is up, and when nothing is in the
  * background.
  *
