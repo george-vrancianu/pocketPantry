@@ -29,6 +29,7 @@ import { mamaliga } from './data/mamaliga';
 import { mici } from './data/mici';
 import { omelette } from './data/omelette';
 import { pancakes } from './data/pancakes';
+import { papanasi } from './data/papanasi';
 import { potatoPuree } from './data/potato-puree';
 import { potatoSalad } from './data/potato-salad';
 import { ricePilaf } from './data/rice-pilaf';
@@ -90,4 +91,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   frenchToast,
   ricePudding,
   homemadePizza,
+  papanasi,
 ];
