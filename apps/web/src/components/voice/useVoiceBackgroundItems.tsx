@@ -111,7 +111,7 @@ export function useVoiceBackgroundItems(): BackgroundItem[] {
       title: preview,
       detail: `${meta} · ${state}`,
       status: statusOf(note),
-      createdAt: note.id,
+      createdAt: note.order,
       open: isReady
         ? {
             label: t(

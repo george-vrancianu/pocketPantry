@@ -19,5 +19,22 @@
     "receipt_other": "{{count}} receipts",
     "photo_one": "{{count}} photo",
     "photo_other": "{{count}} photos"
+  },
+  "link": {
+    "reading": "Reading a recipe link…",
+    "readingText": "Reading recipe text…",
+    "waiting": "Waiting to read a recipe link",
+    "waitingText": "Waiting to read recipe text",
+    "ready": "Recipe ready to review",
+    "pastedText": "Pasted text",
+    "failed": "Couldn't read the recipe",
+    "cancel": "Cancel",
+    "discard": "Discard",
+    "review": "Review the recipe from {{what}}",
+    "cancelRead": "Cancel reading {{what}}",
+    "discardRead": "Discard {{what}}",
+    "gone": "That Recipe Draft is no longer kept.",
+    "openRecipe": "Open the Recipe from {{what}}",
+    "readAgain": "Read {{what}} again"
   }
 }

@@ -243,7 +243,7 @@ describe('RecipesPage', () => {
       expect(screen.getByText('explore page')).toBeInTheDocument();
     });
 
-    it('opens the link step from the header plus', async () => {
+    it('opens the From a link sheet from the header plus', async () => {
       setup(() => [omelette]);
       await userEvent.click(
         await screen.findByRole('button', { name: 'Add a Recipe' }),
@@ -251,7 +251,9 @@ describe('RecipesPage', () => {
       await userEvent.click(
         screen.getByRole('menuitem', { name: 'From a link' }),
       );
-      expect(screen.getByText('link step')).toBeInTheDocument();
+      expect(
+        await screen.findByRole('dialog', { name: 'From a link' }),
+      ).toBeVisible();
     });
 
     it('opens a Recipe when its row is tapped', async () => {

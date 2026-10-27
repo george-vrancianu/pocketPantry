@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 
 /**
  * What the background strip and sheet show: one thing a Member started and carried on past, read in
- * the background. Voice Notes are the first kind; the Scan Session (receipt or photo) is the second; links join by extending `kind`.
+ * the background. Voice Notes are the first kind; the Scan Session (receipt or photo) is the second; a link read (the link-read holder) is the third; links join by extending `kind`.
  */
-export type BackgroundKind = 'voice' | 'receipt' | 'photo';
+export type BackgroundKind = 'voice' | 'receipt' | 'photo' | 'link';
 
 export type BackgroundStatus = 'reading' | 'ready' | 'failed';
 
@@ -62,3 +62,14 @@ export const newestFirst = (items: BackgroundItem[]): BackgroundItem[] =>
   [...items].sort(
     (a, b) => b.createdAt - a.createdAt || b.id.localeCompare(a.id),
   );
+
+let lastOrder = 0;
+/**
+ * One clock for every kind of background item: later calls always return larger numbers (the time
+ * in ms, bumped past the last one when two come in the same millisecond), so rows from different
+ * holders sort newest first against each other.
+ */
+export function nextBackgroundOrder(): number {
+  lastOrder = Math.max(Date.now(), lastOrder + 1);
+  return lastOrder;
+}

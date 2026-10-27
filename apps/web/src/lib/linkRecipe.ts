@@ -1,8 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { BaseRecipeOption } from '../components/BaseRecipePicker';
 import { apiRequest } from './api';
 import type { FamilyRecipeDraft } from './familyRecipes';
-import { recipeDraftsListKey } from './recipeDrafts';
 
 /** What a link was read into (mirror of the API's `RecipeFromLink`): an unsaved draft and where it came from. */
 export type RecipeFromLink = RecipeFromLinkDraft | RecipeFromLinkDuplicate;
@@ -52,24 +50,20 @@ export type ReadLinkInput = (
 };
 
 /** Read the recipe on a web page; the server keeps it as the Member's Recipe Draft (no Recipe is saved). */
-export function useReadRecipeLink() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ url, text, language, force, signal }: ReadLinkInput) =>
-      apiRequest<RecipeFromLink>('/recipes/from-link', {
-        method: 'POST',
-        body: {
-          ...(url !== undefined ? { url } : { text }),
-          language,
-          ...(force ? { force } : {}),
-        },
-        ...(signal ? { signal } : {}),
-      }),
-    // A read leaves a Recipe Draft on the server: "Drafts (N)" must count it.
-    onSuccess: (result) => {
-      if (result.kind === 'draft') {
-        void queryClient.invalidateQueries({ queryKey: recipeDraftsListKey });
-      }
+export function readRecipeLink({
+  url,
+  text,
+  language,
+  force,
+  signal,
+}: ReadLinkInput) {
+  return apiRequest<RecipeFromLink>('/recipes/from-link', {
+    method: 'POST',
+    body: {
+      ...(url !== undefined ? { url } : { text }),
+      language,
+      ...(force ? { force } : {}),
     },
+    ...(signal ? { signal } : {}),
   });
 }

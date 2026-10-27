@@ -25,5 +25,22 @@
     "photo_one": "{{count}} fotografie",
     "photo_few": "{{count}} fotografii",
     "photo_other": "{{count}} de fotografii"
+  },
+  "link": {
+    "reading": "Se citește un link de rețetă…",
+    "readingText": "Se citește textul rețetei…",
+    "waiting": "Așteaptă să se citească un link de rețetă",
+    "waitingText": "Așteaptă să se citească textul rețetei",
+    "ready": "Rețeta e gata de verificat",
+    "pastedText": "Text lipit",
+    "failed": "Rețeta nu a putut fi citită",
+    "cancel": "Anulează",
+    "discard": "Renunță",
+    "review": "Verifică rețeta de la {{what}}",
+    "cancelRead": "Anulează citirea {{what}}",
+    "discardRead": "Renunță la {{what}}",
+    "gone": "Ciorna de rețetă nu mai este păstrată.",
+    "openRecipe": "Deschide rețeta de la {{what}}",
+    "readAgain": "Citește din nou {{what}}"
   }
 }
