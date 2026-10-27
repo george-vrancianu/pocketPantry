@@ -111,6 +111,7 @@ import { salataDeSfecla } from './data/salata-de-sfecla';
 import { salataDeVinete } from './data/salata-de-vinete';
 import { saramuraDePeste } from './data/saramura-de-peste';
 import { sarmale } from './data/sarmale';
+import { savarina } from './data/savarina';
 import { shakshuka } from './data/shakshuka';
 import { smorrebrod } from './data/smorrebrod';
 import { spaghettiAglioOlio } from './data/spaghetti-aglio-olio';
@@ -252,4 +253,5 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   ciorbaDeLoboda,
   piftie,
   lapteDePasare,
+  savarina,
 ];
