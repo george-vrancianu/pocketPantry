@@ -15,13 +15,17 @@ import { braisedRedCabbage } from './data/braised-red-cabbage';
 import { brownies } from './data/brownies';
 import { brunedeKartofler } from './data/brunede-kartofler';
 import { burgers } from './data/burgers';
+import { cartofiTaranesti } from './data/cartofi-taranesti';
 import { chickenCurry } from './data/chicken-curry';
 import { chickenSalad } from './data/chicken-salad';
 import { chickenSoup } from './data/chicken-soup';
+import { chiftele } from './data/chiftele';
 import { chiliConCarne } from './data/chili-con-carne';
 import { ciorbaDeFasole } from './data/ciorba-de-fasole';
+import { ciorbaDeLegume } from './data/ciorba-de-legume';
 import { ciorbaDePerisoare } from './data/ciorba-de-perisoare';
 import { ciorbaDePeste } from './data/ciorba-de-peste';
+import { ciorbaDePui } from './data/ciorba-de-pui';
 import { ciorbaRadauteana } from './data/ciorba-radauteana';
 import { coleslaw } from './data/coleslaw';
 import { cornulete } from './data/cornulete';
@@ -76,6 +80,7 @@ import { saramuraDePeste } from './data/saramura-de-peste';
 import { sarmale } from './data/sarmale';
 import { shakshuka } from './data/shakshuka';
 import { smorrebrod } from './data/smorrebrod';
+import { spaghettiAglioOlio } from './data/spaghetti-aglio-olio';
 import { steamedMussels } from './data/steamed-mussels';
 import { stegtFlaesk } from './data/stegt-flaesk';
 import { stirFry } from './data/stir-fry';
@@ -174,4 +179,9 @@ export const SEED_BASE_RECIPES: BaseRecipeSeed[] = [
   cozonac,
   salamDeBiscuiti,
   cornulete,
+  ciorbaDePui,
+  ciorbaDeLegume,
+  chiftele,
+  cartofiTaranesti,
+  spaghettiAglioOlio,
 ];

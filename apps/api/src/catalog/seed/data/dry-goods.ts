@@ -148,6 +148,14 @@ export const pasta: SeedSection = {
         ['udon'],
       ],
       [
+        'chinese-wheat-noodles',
+        'Chinese wheat noodles (thin)',
+        'Tăiței chinezești de grâu (subțiri)',
+        'g',
+        ['wheat noodles', 'yangchun noodles', 'mian'],
+        ['taitei de grau', 'taitei chinezesti'],
+      ],
+      [
         'rice-paper',
         'Rice paper',
         'Foi de orez',
@@ -753,6 +761,14 @@ export const legumes: SeedSection = {
         'g',
         ['dried peas'],
         ['mazare despicata'],
+      ],
+      [
+        'chana-dal',
+        'Chana dal (split Bengal gram)',
+        'Chana dal (năut mic despicat)',
+        'g',
+        ['split bengal gram', 'split chickpeas', 'chana daal'],
+        ['naut despicat'],
       ],
       [
         'soybeans',

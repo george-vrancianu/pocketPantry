@@ -595,6 +595,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'instant-noodles': ['gluten', 'soy'],
   'soba-noodles': ['gluten'],
   udon: ['gluten'],
+  'chinese-wheat-noodles': ['gluten'],
   'rice-paper': [],
 
   // pasta/fresh-pasta
@@ -683,6 +684,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'garrofo-beans': [],
   'black-beans': [],
   'split-peas': [],
+  'chana-dal': [],
   soybeans: ['soy'],
   'broad-beans': [],
 
@@ -792,6 +794,8 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   tahini: ['sesame'],
   gochujang: ['gluten', 'soy'],
   nori: [],
+  'dried-shiitake': [],
+  'wood-ear-mushrooms': [],
   'anchovy-paste': ['fish'],
   'shrimp-paste': ['crustaceans'],
   'bonito-flakes': ['fish'],
@@ -863,6 +867,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'apple-cider-vinegar': [],
   'rice-vinegar': [],
   'malt-vinegar': ['gluten'],
+  'chinkiang-vinegar': ['gluten'],
 
   // oils/cold-pressed-oils
   'pumpkin-seed-oil': [],
@@ -898,6 +903,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'bay-leaves': [],
   cloves: [],
   'allspice-berries': [],
+  'green-cardamom-pods': [],
   'star-anise': [],
   'cinnamon-sticks': [],
   'cumin-seeds': [],
