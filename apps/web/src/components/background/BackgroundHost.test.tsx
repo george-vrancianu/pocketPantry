@@ -45,14 +45,50 @@ describe('BackgroundHost link reads', () => {
 
 describe('BackgroundHost toast floor', () => {
   it('registers the strip top edge while it is up and clears it when it goes', () => {
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
-      top: window.innerHeight - 66,
-    } as DOMRect);
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(66);
     holdARead();
     const { unmount } = renderWithProviders(<BackgroundHost linkReads />);
     expect(floor).toHaveBeenLastCalledWith(66);
     unmount();
     expect(floor).toHaveBeenLastCalledWith(null);
+  });
+
+  it('measures the strip from layout, not its transformed painted box', () => {
+    // The entrance transform shifts the painted top edge down; layout does not see it.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      top: window.innerHeight - 50,
+    } as DOMRect);
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(60);
+    const real = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) => {
+      const style = real(el, pseudo);
+      return new Proxy(style, {
+        get: (target, key) => {
+          if (key === 'bottom') return '24px';
+          const value = Reflect.get(target, key, target);
+          return typeof value === 'function' ? value.bind(target) : value;
+        },
+      });
+    });
+    holdARead();
+    renderWithProviders(<BackgroundHost linkReads />);
+    expect(floor).toHaveBeenLastCalledWith(84);
+  });
+
+  it('observes the border box, so a thicker border re-measures', () => {
+    const observe = vi.fn();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe = observe;
+        disconnect = vi.fn();
+      },
+    );
+    holdARead();
+    renderWithProviders(<BackgroundHost linkReads />);
+    expect(observe).toHaveBeenCalledWith(expect.any(HTMLElement), {
+      box: 'border-box',
+    });
   });
 
   it('registers no floor with nothing in the background', () => {

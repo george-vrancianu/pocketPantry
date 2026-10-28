@@ -30,15 +30,22 @@ function useTopEdge() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // From layout (height plus the `bottom` offset), not the painted box: the entrance transform
+    // would shift a bounding rect for the first 200 ms and nothing re-measures after it.
     const measure = () =>
-      setEdge(Math.round(window.innerHeight - el.getBoundingClientRect().top));
+      setEdge(
+        Math.round(
+          el.offsetHeight + (parseFloat(getComputedStyle(el).bottom) || 0),
+        ),
+      );
     measure();
     window.addEventListener('resize', measure);
     const observer =
       typeof ResizeObserver === 'undefined'
         ? null
         : new ResizeObserver(measure);
-    observer?.observe(el);
+    // Border box: a failed strip's thicker border grows it without changing the content box.
+    observer?.observe(el, { box: 'border-box' });
     return () => {
       window.removeEventListener('resize', measure);
       observer?.disconnect();

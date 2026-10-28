@@ -379,14 +379,18 @@ describe('Voice Note on the Shopping List', () => {
       await screen.findByText(/^Voice Note · 0:\d\d$/);
       const toast = await screen.findByText(/Stopped at 1 minute/);
       expect(toast).toBeVisible();
-      // The newest Snackbar rule, which is the one this toast wears.
+      // The rules on the toast's own emotion classes.
+      const own = [...toast.closest('.MuiSnackbar-root')!.classList].filter(
+        (c) => c.startsWith('css-'),
+      );
       const rule = cssText()
         .split('\n')
-        .filter((line) => line.includes('MuiSnackbar-root'))
-        .slice(-6)
+        .filter((line) => own.some((c) => line.includes(`.${c}`)))
         .join('\n');
-      // The strip's floor lifts it with a `max()`, which jsdom's CSS parser drops, bottom and all; a
-      // toast with no strip under it keeps its plain `calc()` bottom.
+      // The rule exists (its bottom transition is there)...
+      expect(rule).toMatch(/transition: bottom/);
+      // ...but the strip's floor lifts it with a `max()`, which jsdom's CSS parser drops, bottom and
+      // all; a toast with no strip under it keeps its plain `calc()` bottom.
       expect(rule).not.toMatch(/bottom: calc\(/);
     });
 

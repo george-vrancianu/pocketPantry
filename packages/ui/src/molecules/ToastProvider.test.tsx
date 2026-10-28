@@ -242,6 +242,16 @@ describe('Toast floors', () => {
     expect(snackbarCss()).toContain('bottom: calc(128px');
   });
 
+  it('keeps the lift while another floor is registered, and drops back once all are gone', () => {
+    const { rerender } = render(<Harness floors={[120, 200]} />);
+    expect(bottomOf()).not.toContain('bottom: calc(128px');
+    // Removing the higher floor leaves the lower one in force.
+    rerender(<Harness floors={[120, null]} />);
+    expect(snackbarCss()).not.toContain('bottom: calc(128px');
+    rerender(<Harness floors={[null, null]} />);
+    expect(snackbarCss()).toContain('bottom: calc(128px');
+  });
+
   it('does not animate the move under reduced motion', () => {
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query.includes('prefers-reduced-motion'),
