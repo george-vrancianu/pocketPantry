@@ -119,6 +119,9 @@ describe('Voice Note on the Shopping List', () => {
     await vi.waitFor(() =>
       expect(button).toHaveAccessibleDescription(/Costs 1 Credit/),
     );
+    // Sighted users see the price at the mic; the caption is not announced a second time.
+    expect(within(button).getByText('1 Credit')).toBeInTheDocument();
+    expect(button).toHaveAccessibleName('Hold to record a Voice Note');
   });
 
   it('is hidden when voice is not configured', async () => {

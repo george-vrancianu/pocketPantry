@@ -9,9 +9,6 @@ export type CreditPriceKind =
 /** One entry of the Family's Credit history, as `GET /api/credits` words it. */
 export type CreditHistoryEntry = {
   id: string;
-  kind: 'welcome_grant' | 'grant' | 'spend' | 'transfer_in' | 'transfer_out';
-  /** For a spend: the kind of read. */
-  readKind: CreditPriceKind | null;
   /** Only for a grant by hand: why, as the owner entered it. */
   reason: string | null;
   /** Signed: negative for a spend. */
@@ -20,7 +17,13 @@ export type CreditHistoryEntry = {
   memberName: string | null;
   formerMember: boolean;
   createdAt: string;
-};
+} & (
+  | { kind: 'spend'; readKind: CreditPriceKind }
+  | {
+      kind: 'welcome_grant' | 'grant' | 'transfer_in' | 'transfer_out';
+      readKind: null;
+    }
+);
 
 /**
  * `GET /api/credits`: the Family's Credit Balance, what each kind of read costs, the balance at or below

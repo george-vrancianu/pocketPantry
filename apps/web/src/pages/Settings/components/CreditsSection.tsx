@@ -22,7 +22,7 @@ function entryTitle(
 ): string {
   switch (entry.kind) {
     case 'spend':
-      return t(`credits.history.spend.${entry.readKind ?? 'scan'}`);
+      return t(`credits.history.spend.${entry.readKind}`);
     case 'grant':
       return entry.reason
         ? t('credits.history.grantWith', { reason: entry.reason })
@@ -49,7 +49,8 @@ function HistoryList({ history }: { history: CreditHistoryEntry[] }) {
   return (
     <Stack component="ul" spacing={1} sx={{ listStyle: 'none', m: 0, p: 0 }}>
       {history.map((entry) => {
-        const named = entry.kind === 'spend' || entry.kind === 'transfer_in';
+        // The API names a Member only for the kinds that have one.
+        const named = entry.formerMember || entry.memberName != null;
         const who = entry.formerMember
           ? t('credits.formerMember')
           : (entry.memberName ?? '');
@@ -65,7 +66,7 @@ function HistoryList({ history }: { history: CreditHistoryEntry[] }) {
             <Box sx={{ minWidth: 0 }}>
               <Typography>{entryTitle(t, entry, who)}</Typography>
               <Typography variant="meta" color="text.secondary">
-                {named && who
+                {named
                   ? t('credits.history.by', { who, when })
                   : t('credits.history.when', { when })}
               </Typography>

@@ -160,6 +160,7 @@ export function VoiceButton({
                 position: 'relative',
                 flex: 1,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 p: 0,
@@ -190,6 +191,16 @@ export function VoiceButton({
             ) : (
               <MicIcon size={26} />
             )}
+            {price && !active ? (
+              // Sighted users see the price at the mic; screen readers get it from the description above.
+              <Box
+                component="span"
+                aria-hidden
+                sx={{ fontSize: 10, fontWeight: 600, lineHeight: 1 }}
+              >
+                {price}
+              </Box>
+            ) : null}
           </Box>
         </>,
         micSlot,

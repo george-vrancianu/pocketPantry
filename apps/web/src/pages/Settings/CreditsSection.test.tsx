@@ -1,7 +1,15 @@
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { CreditsSection } from './components/CreditsSection';
+import { useRefreshCreditsOnReads } from '../../components/background/useRefreshCreditsOnReads';
+import { linkReads } from '../../lib/linkReads';
+
+/** The Credits panel with the app layout's refresh-on-read hook mounted beside it. */
+function CreditsWithRefresh() {
+  useRefreshCreditsOnReads();
+  return <CreditsSection />;
+}
 
 const PRICES = {
   scan: 1,
@@ -22,8 +30,9 @@ type Entry = {
   formerMember: boolean;
   createdAt: string;
 };
+let nextId = 0;
 const entry = (over: Partial<Entry>): Entry => ({
-  id: String(Math.random()),
+  id: `e${nextId++}`,
   kind: 'spend',
   readKind: 'scan',
   reason: null,
@@ -210,6 +219,37 @@ describe('CreditsSection', () => {
       expect(
         screen.queryByText(/Household of One joined/),
       ).not.toBeInTheDocument();
+    });
+
+    it('shows a new row and the new balance after a paid read settles', async () => {
+      let spent = false;
+      const { fetchMock } = stubApi({
+        'GET /api/credits': () =>
+          Response.json(
+            spent
+              ? credits({
+                  balance: 99,
+                  history: [entry({ readKind: 'link-text', amount: -1 })],
+                })
+              : credits({ balance: 100 }),
+          ),
+        'POST /api/recipes/from-link': () => {
+          spent = true;
+          return Response.json({ kind: 'created', recipeDraftId: 'd1' });
+        },
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<CreditsWithRefresh />);
+      expect(await screen.findByText('Nothing yet.')).toBeInTheDocument();
+
+      act(() => {
+        linkReads.submit({ kind: 'text', text: 'pasted' }, 'source');
+      });
+
+      expect(await screen.findByText('99')).toBeInTheDocument();
+      expect(screen.queryByText('Nothing yet.')).not.toBeInTheDocument();
+      expect(screen.getByText('Recipe from pasted text')).toBeInTheDocument();
+      linkReads.clear();
     });
   });
 });
