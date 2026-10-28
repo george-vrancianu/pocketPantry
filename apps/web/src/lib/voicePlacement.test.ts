@@ -18,12 +18,8 @@ describe('voice placement', () => {
     expect(PILL_HEIGHT).toBeGreaterThanOrEqual(56);
   });
 
-  it('puts a voice toast just above the mic, or above the pill when one is up', () => {
+  it('puts a voice toast just above the mic; the toast floor lifts it over the background strip', () => {
     expect(voiceToast()).toEqual({ polite: true, bottom: aboveMic(10) });
-    expect(voiceToast({ abovePill: true })).toEqual({
-      polite: true,
-      bottom: abovePill,
-    });
   });
 
   it('hangs the notices above the capsule that overhangs the Dock', () => {

@@ -5,8 +5,10 @@ import {
   palette,
   radius,
   shadow,
+  useToastFloor,
   visuallyHidden,
 } from '@pocket-pantry/ui';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
@@ -20,6 +22,37 @@ const oneLine = {
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 } as const;
+
+/** The strip's top edge as a distance from the bottom of the screen, px; `null` until measured. */
+function useTopEdge() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState<number | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // From layout (height plus the `bottom` offset), not the painted box: the entrance transform
+    // would shift a bounding rect for the first 200 ms and nothing re-measures after it.
+    const measure = () =>
+      setEdge(
+        Math.round(
+          el.offsetHeight + (parseFloat(getComputedStyle(el).bottom) || 0),
+        ),
+      );
+    measure();
+    window.addEventListener('resize', measure);
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(measure);
+    // Border box: a failed strip's thicker border grows it without changing the content box.
+    observer?.observe(el, { box: 'border-box' });
+    return () => {
+      window.removeEventListener('resize', measure);
+      observer?.disconnect();
+    };
+  }, []);
+  return { ref, edge };
+}
 
 /**
  * The background strip, where the status pill was: what is being read in the background. One item
@@ -41,6 +74,9 @@ export function BackgroundStrip({
 }) {
   const { t } = useTranslation('background');
   const host = useVoiceHost();
+  // Toasts sit above the strip while it is up.
+  const { ref, edge } = useTopEdge();
+  useToastFloor(edge);
   const { reading, ready, failed, total } = countBackground(items);
   const busy = reading > 0;
   const allReady = total > 0 && ready === total;
@@ -69,6 +105,7 @@ export function BackgroundStrip({
 
   return createPortal(
     <Box
+      ref={ref}
       {...{ [VOICE_PILL_ATTRIBUTE]: '' }}
       onClick={open}
       sx={{

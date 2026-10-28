@@ -34,12 +34,12 @@ export const pillBottom = aboveMic(PILL_OFFSET);
 export const abovePill = aboveMic(PILL_OFFSET + PILL_HEIGHT + PILL_GAP);
 
 /**
- * Options for a voice toast: polite, clear of the mic, and clear of the status pill when one is up
- * (the Reading pill and its Cancel, a failed send and its Retry must stay reachable).
+ * Options for a voice toast: polite and clear of the mic. A toast clears the background strip (and
+ * the status pill it replaced) on its own, through the toast floor the strip registers.
  */
-export const voiceToast = ({ abovePill: lifted = false } = {}) => ({
+export const voiceToast = () => ({
   polite: true as const,
-  bottom: lifted ? abovePill : toastBottom,
+  bottom: toastBottom,
 });
 
 /** Stacking of the voice layers; the app's toasts (1400) stay above all of them. */

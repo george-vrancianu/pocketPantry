@@ -81,6 +81,31 @@ export function useToastHost(element: HTMLElement | null): void {
   }, [register, element]);
 }
 
+/** Air kept between a toast and the floor it sits above, px. */
+const FLOOR_GAP = 8;
+
+/**
+ * How something fixed at the bottom of the screen (a strip, a bar) registers a floor: toasts then sit
+ * above it. Each floor is a CSS `bottom` value; when several are registered the highest wins.
+ */
+const ToastFloorContext = createContext<
+  ((bottom: string) => () => void) | null
+>(null);
+
+/**
+ * Called by something that occupies the bottom of the screen: while `bottom` is set (px, or a CSS
+ * length for its top edge, measured from the bottom of the screen), toasts sit `8px` above it. Pass
+ * `null` while there is nothing to clear. A toast hosted inside a modal ignores floors.
+ */
+export function useToastFloor(bottom: number | string | null): void {
+  const register = useContext(ToastFloorContext);
+  const value = typeof bottom === 'number' ? `${bottom}px` : bottom;
+  useEffect(() => {
+    if (!register || value === null) return;
+    return register(value);
+  }, [register, value]);
+}
+
 /** Mount once, near the root. Read it with `useToast()`. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [current, setCurrent] = useState<Current | null>(null);
@@ -92,6 +117,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setHosts((prev) => [...prev, element]);
     return () => setHosts((prev) => prev.filter((h) => h !== element));
   }, []);
+  // The registered floors, as CSS `bottom` values; the highest wins.
+  const [floors, setFloors] = useState<string[]>([]);
+  const registerFloor = useCallback((bottom: string) => {
+    setFloors((prev) => [...prev, bottom]);
+    return () =>
+      setFloors((prev) => {
+        const at = prev.indexOf(bottom);
+        return at < 0 ? prev : prev.toSpliced(at, 1);
+      });
+  }, []);
+  const floor = host ? null : highestFloor(floors);
   const reduceMotion = usePrefersReducedMotion();
   // The showing toast's `onClose`, until it has been called or its action used.
   const pendingClose = useRef<(() => void) | undefined>(undefined);
@@ -129,7 +165,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       <ToastHostContext.Provider value={registerHost}>
-        {children}
+        <ToastFloorContext.Provider value={registerFloor}>
+          {children}
+        </ToastFloorContext.Provider>
       </ToastHostContext.Provider>
       {current ? (
         <ToastPortal host={host}>
@@ -147,20 +185,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             transitionDuration={reduceMotion ? 0 : undefined}
             sx={{
               // MUI's own sm+ `bottom: 24` would win above sm, so set every breakpoint.
-              bottom:
-                current.bottom === undefined
-                  ? {
-                      xs: aboveDock(DOCK_HEIGHT.xs),
-                      sm: aboveDock(DOCK_HEIGHT.xs),
-                      md: aboveDock(DOCK_HEIGHT.md),
-                    }
-                  : typeof current.bottom === 'object'
-                    ? {
-                        xs: current.bottom.xs,
-                        sm: current.bottom.xs,
-                        md: current.bottom.md,
-                      }
-                    : { xs: current.bottom, sm: current.bottom },
+              bottom: toastBottom(current.bottom, floor),
+              // Follow a floor that comes or goes while the toast is up.
+              transition: reduceMotion ? 'none' : 'bottom 200ms ease',
               // 20 px side insets on phones (handoff section 7).
               left: { xs: 20 },
               right: { xs: 20 },
@@ -229,6 +256,40 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       ) : null}
     </ToastContext.Provider>
   );
+}
+
+/** The highest of the registered floors, as one CSS length; `null` when there are none. */
+export function highestFloor(floors: string[]): string | null {
+  if (floors.length === 0) return null;
+  return floors.length === 1 ? floors[0]! : `max(${floors.join(', ')})`;
+}
+
+type Bottom = NonNullable<ToastOptions['bottom']>;
+
+/** `bottom`, or the floor plus the gap when that is higher. */
+const atLeast = (bottom: number | string, floor: string | null) =>
+  floor === null
+    ? bottom
+    : `max(${typeof bottom === 'number' ? `${bottom}px` : bottom}, calc(${floor} + ${FLOOR_GAP}px))`;
+
+/** The toast's `bottom` per breakpoint: its own (or just above the Dock), raised to clear the floor (a CSS length) and the gap above it. */
+export function toastBottom(bottom: Bottom | undefined, floor: string | null) {
+  // MUI's own sm+ `bottom: 24` would win above sm, so set every breakpoint.
+  if (bottom === undefined) {
+    return {
+      xs: atLeast(aboveDock(DOCK_HEIGHT.xs), floor),
+      sm: atLeast(aboveDock(DOCK_HEIGHT.xs), floor),
+      md: atLeast(aboveDock(DOCK_HEIGHT.md), floor),
+    };
+  }
+  if (typeof bottom === 'object') {
+    return {
+      xs: atLeast(bottom.xs, floor),
+      sm: atLeast(bottom.xs, floor),
+      md: atLeast(bottom.md, floor),
+    };
+  }
+  return { xs: atLeast(bottom, floor), sm: atLeast(bottom, floor) };
 }
 
 /** Note: a change of `host` remounts the toast, replaying it and announcing it again. */
