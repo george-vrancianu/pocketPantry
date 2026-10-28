@@ -34,6 +34,20 @@ export async function lockFamilyCredits(
   }
 }
 
+/** The Credit Balance of a Family: the sum of its entries. The one definition of "balance". */
+async function familyBalance(
+  executor: Executor,
+  familyId: string,
+): Promise<number> {
+  const [row] = await executor
+    .select({
+      balance: sql<number>`coalesce(sum(${creditEntry.amount}), 0)::int`,
+    })
+    .from(creditEntry)
+    .where(eq(creditEntry.familyId, familyId));
+  return row.balance;
+}
+
 /**
  * Moves a Household of One's whole balance into the Family its Member joins, as a `transfer_in` entry
  * naming the Member. The caller holds both Families' credits locks. A balance of 0 writes nothing.
@@ -45,19 +59,14 @@ export async function transferHouseholdBalance(
   fromFamilyId: string,
   toFamilyId: string,
 ): Promise<void> {
-  const [row] = await tx
-    .select({
-      balance: sql<number>`coalesce(sum(${creditEntry.amount}), 0)::int`,
-    })
-    .from(creditEntry)
-    .where(eq(creditEntry.familyId, fromFamilyId));
-  if (row.balance <= 0) return;
+  const balance = await familyBalance(tx, fromFamilyId);
+  if (balance <= 0) return;
   await tx.insert(creditEntry).values({
     familyId: toFamilyId,
     memberId,
     kind: 'transfer_in',
     reason: 'Household of One joined the Family',
-    amount: row.balance,
+    amount: balance,
   });
 }
 
@@ -112,13 +121,7 @@ export class CreditsService {
     familyId: string,
     executor: Executor = this.database,
   ): Promise<number> {
-    const [row] = await executor
-      .select({
-        balance: sql<number>`coalesce(sum(${creditEntry.amount}), 0)::int`,
-      })
-      .from(creditEntry)
-      .where(eq(creditEntry.familyId, familyId));
-    return row.balance;
+    return familyBalance(executor, familyId);
   }
 
   /** Throws `credits.insufficient` when the Member's Family cannot pay `price`; holds nothing. */

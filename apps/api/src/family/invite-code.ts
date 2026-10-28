@@ -39,3 +39,7 @@ export async function withFreshInviteCode<T>(
 export function inviteCodeExpiry(from: Date = new Date()): Date {
   return new Date(from.getTime() + INVITE_CODE_TTL_DAYS * 24 * 60 * 60 * 1000);
 }
+
+/** The form an Invite Code is stored and compared in: typed codes may have spaces or lower case. */
+export const normalizeInviteCode = (raw: string): string =>
+  raw.trim().toUpperCase();

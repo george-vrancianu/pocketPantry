@@ -1,21 +1,26 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { eq } from 'drizzle-orm';
+import pg from 'pg';
 import request from 'supertest';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { family } from '../src/database/schema';
-import { eq } from 'drizzle-orm';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { CreditsService } from '../src/credits/credits.service';
 import { setBalance } from './support/credits';
+import { waitForBlockedBackend } from './support/wait-for-blocked-backend';
 
 describe('Credits follow Family moves (integration)', () => {
   let app: NestFastifyApplication;
   let counter = 0;
+  let pool: pg.Pool;
 
   beforeAll(async () => {
     app = await createTestApp();
+    pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   });
   afterAll(async () => {
+    await pool.end();
     await app.close();
   });
 
@@ -152,17 +157,93 @@ describe('Credits follow Family moves (integration)', () => {
     expect(await balanceOf(owner)).toBe(100);
   });
 
-  it('keeps a hold that races a join in the Family the Member ends up in', async () => {
+  /**
+   * Starts a hold for `memberId` while this client owns the credits lock of the Member's Family, runs
+   * `move` (the Member changes Family) in the same transaction, and commits: the hold wakes up after
+   * the move and must re-read where to charge.
+   */
+  async function holdRacingMove(
+    memberId: string,
+    familyId: string,
+    move: (client: pg.PoolClient) => Promise<void>,
+  ) {
+    const holder = await pool.connect();
+    try {
+      await holder.query('BEGIN');
+      const { rows } = await holder.query<{ pid: number }>(
+        'SELECT pg_backend_pid() AS pid',
+      );
+      await holder.query(
+        'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+        [`credits:${familyId}`],
+      );
+      const outcome = app
+        .get(CreditsService)
+        .hold(memberId, 'scan', 5)
+        .then(
+          () => 'held',
+          (error: { status?: number }) => `refused ${error.status}`,
+        );
+      await waitForBlockedBackend(pool, rows[0].pid);
+      await move(holder);
+      await holder.query('COMMIT');
+      return await outcome;
+    } finally {
+      await holder.query('ROLLBACK').catch(() => undefined);
+      holder.release();
+    }
+  }
+
+  it('charges the Family a Member joined while their hold waited', async () => {
     const owner = await signUp('Owner');
     const joiner = await signUp('Joiner');
-    const code = await codeOf(owner);
-    const credits = app.get(CreditsService);
-    const results = await Promise.all([
-      call(joiner, 'post', '/join', { code }),
-      credits.hold(joiner.id, 'scan', 5),
-    ]);
-    expect(results[0].status).toBe(201);
-    // Whichever came first, the 5 is spent once and nothing is lost in the deleted Household of One.
-    expect(await balanceOf(owner)).toBe(195);
+    const { rows } = await pool.query<{ family_id: string }>(
+      'SELECT family_id FROM "user" WHERE id = $1',
+      [joiner.id],
+    );
+    const target = (
+      await pool.query<{ family_id: string }>(
+        'SELECT family_id FROM "user" WHERE id = $1',
+        [owner.id],
+      )
+    ).rows[0].family_id;
+    const outcome = await holdRacingMove(
+      joiner.id,
+      rows[0].family_id,
+      async (client) => {
+        await client.query(
+          'UPDATE "user" SET family_id = $1, family_role = \'member\' WHERE id = $2',
+          [target, joiner.id],
+        );
+      },
+    );
+    expect(outcome).toBe('held');
+    expect(await balanceOf(owner)).toBe(95);
+    expect(await balanceOf(joiner)).toBe(95);
+  });
+
+  it('refuses a hold cleanly when the Member left for an empty Household of One', async () => {
+    const { owner, members } = await familyWith(1);
+    const leaver = members[0];
+    const old = (
+      await pool.query<{ family_id: string }>(
+        'SELECT family_id FROM "user" WHERE id = $1',
+        [leaver.id],
+      )
+    ).rows[0].family_id;
+    const outcome = await holdRacingMove(leaver.id, old, async (client) => {
+      const { rows } = await client.query<{ id: string }>(
+        `INSERT INTO family (id, invite_code, invite_code_expires_at)
+         VALUES (gen_random_uuid(), $1, now() + interval '1 day') RETURNING id`,
+        [`LV${Date.now() % 1000000}`],
+      );
+      await client.query(
+        'UPDATE "user" SET family_id = $1, family_role = \'owner\' WHERE id = $2',
+        [rows[0].id, leaver.id],
+      );
+    });
+    expect(outcome).toBe('refused 402');
+    expect(await balanceOf(owner)).toBe(200);
+    expect(await balanceOf(leaver)).toBe(0);
   });
 });
