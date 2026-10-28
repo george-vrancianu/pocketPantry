@@ -184,7 +184,9 @@ export class GuidanceSuggestionService {
     },
     locale: CatalogLocale,
     load: (empty: GuidanceField[]) => Promise<Lookups>,
-    paid: { memberId: string | null; kind: 'guidance' | 'guidance-admin' },
+    paid:
+      | { memberId: string; kind: 'guidance' }
+      | { memberId: null; kind: 'guidance-admin' },
   ): Promise<GuidanceSuggestion> {
     const empty = emptyGuidanceFields(body.guidance).filter((field) =>
       COVERED_GUIDANCE_FIELDS.includes(field),
@@ -211,25 +213,25 @@ export class GuidanceSuggestionService {
     // Paid Reads counts the use just before the AI call and hands it back when the call, or the
     // reading of its answer, fails or when no field got a proposal. All of it sits inside the read:
     // suggestionOf runs outside `ask`.
-    const suggestion = await this.paidReads.read(
-      paid.memberId,
-      paid.kind,
-      async () => {
-        const answer = await this.ask({
-          prompt: suggestionPrompt(wanted, locale, links, moments, {
-            recipe: body.recipe,
-            ingredientName: (id) => names.get(id) ?? null,
-            cuisine: nameOf(cuisines, body.recipe.cuisineId),
-            method: nameOf(methods, body.recipe.methodId),
-          }),
-        });
-        const made = suggestionOf(answer, wanted, links, moments);
-        // Nothing usable is still a normal answer, but it costs the Member nothing.
-        return Object.keys(made.guidance).length === 0
-          ? foundNothing(made)
-          : found(made);
-      },
-    );
+    const run = async () => {
+      const answer = await this.ask({
+        prompt: suggestionPrompt(wanted, locale, links, moments, {
+          recipe: body.recipe,
+          ingredientName: (id) => names.get(id) ?? null,
+          cuisine: nameOf(cuisines, body.recipe.cuisineId),
+          method: nameOf(methods, body.recipe.methodId),
+        }),
+      });
+      const made = suggestionOf(answer, wanted, links, moments);
+      // Nothing usable is still a normal answer, but it costs the Member nothing.
+      return Object.keys(made.guidance).length === 0
+        ? foundNothing(made)
+        : found(made);
+    };
+    const suggestion =
+      paid.memberId === null
+        ? await this.paidReads.read(null, paid.kind, run)
+        : await this.paidReads.read(paid.memberId, paid.kind, run);
     suggestion.noSuggestions = GUIDANCE_FIELDS.filter(
       (field) =>
         unasked.includes(field) || suggestion.noSuggestions.includes(field),

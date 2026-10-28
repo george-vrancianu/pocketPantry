@@ -14,6 +14,9 @@ export type PaidReadKind =
   | 'guidance'
   | 'guidance-admin';
 
+/** Every kind a Member pays for: all but the Admin one, which has no Member. */
+export type MemberPaidReadKind = Exclude<PaidReadKind, 'guidance-admin'>;
+
 /** What a read returns: its value, and whether it found nothing (which hands the use back). */
 export interface PaidReadOutcome<T> {
   value: T;
@@ -55,9 +58,12 @@ export class PaidReadsService {
   constructor(private readonly caps: ScanCapService) {}
 
   /**
-   * A cheap early refusal before slow work (the link read before it fetches the page). `memberId` is null only for the Admin path, which no Cap limits: throws what
-   * `read` would throw for a Member who cannot go ahead, and counts nothing.
+   * A cheap early refusal before slow work (the link read before it fetches the page): throws
+   * what `read` would throw for a Member who cannot go ahead, and counts nothing. `memberId` is
+   * null only for the Admin path, which no Cap limits.
    */
+  assertCanGoAhead(memberId: string, kind: MemberPaidReadKind): Promise<void>;
+  assertCanGoAhead(memberId: null, kind: 'guidance-admin'): Promise<void>;
   async assertCanGoAhead(
     memberId: string | null,
     kind: PaidReadKind,
@@ -69,6 +75,16 @@ export class PaidReadsService {
   }
 
   /** Runs `run` as a paid read of `kind` for the Member and returns its value. */
+  read<T>(
+    memberId: string,
+    kind: MemberPaidReadKind,
+    run: () => Promise<PaidReadOutcome<T>>,
+  ): Promise<T>;
+  read<T>(
+    memberId: null,
+    kind: 'guidance-admin',
+    run: () => Promise<PaidReadOutcome<T>>,
+  ): Promise<T>;
   async read<T>(
     memberId: string | null,
     kind: PaidReadKind,

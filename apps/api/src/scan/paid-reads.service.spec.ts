@@ -61,4 +61,15 @@ describe('PaidReadsService', () => {
     expect(caps.refund).not.toHaveBeenCalled();
     expect(caps.assertBelowCap).not.toHaveBeenCalled();
   });
+
+  it('ties a missing Member to the Admin kind in the types', () => {
+    const { paid } = setup();
+    const run = () => Promise.resolve(found(1));
+    // @ts-expect-error a Member kind needs a Member
+    void paid.read(null, 'scan', run);
+    // @ts-expect-error the Admin kind has no Member
+    void paid.read('m', 'guidance-admin', run);
+    // @ts-expect-error a Member kind needs a Member
+    void paid.assertCanGoAhead(null, 'link-page');
+  });
 });
