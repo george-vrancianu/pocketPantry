@@ -1,6 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
+import {
+  lockFamilyCredits,
+  transferHouseholdBalance,
+} from '../credits/credits.service';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import { family, user } from '../database/schema';
@@ -107,6 +111,7 @@ export class FamilyService {
    */
   async join(memberId: string, code: string): Promise<FamilyView> {
     await runLocked(this.database, async (tx) => {
+      await this.lockCreditsOfJoin(tx, memberId, code);
       const { abandoned, target } = await this.prepareJoin(
         tx,
         memberId,
@@ -117,10 +122,34 @@ export class FamilyService {
         .update(user)
         .set({ familyId: target, familyRole: 'member' })
         .where(eq(user.id, memberId));
+      await transferHouseholdBalance(tx, memberId, abandoned, target);
       // Its only Member just left, so nothing references it any more.
       await tx.delete(family).where(eq(family.id, abandoned));
     });
     return this.getForMember(memberId);
+  }
+
+  /**
+   * Takes the credits locks of the Member's Household of One and the Family behind `code`, before any
+   * row lock (a hold takes its credits lock first). Unknown codes or Members take none: `prepareJoin`
+   * refuses them. If the Member moves meanwhile, `prepareJoin` restarts the transaction.
+   */
+  private async lockCreditsOfJoin(
+    tx: Tx,
+    memberId: string,
+    rawCode: string,
+  ): Promise<void> {
+    const [target] = await tx
+      .select({ id: family.id })
+      .from(family)
+      .where(eq(family.inviteCode, rawCode.trim().toUpperCase()));
+    const [member] = await tx
+      .select({ familyId: user.familyId })
+      .from(user)
+      .where(eq(user.id, memberId));
+    if (target && member) {
+      await lockFamilyCredits(tx, member.familyId, target.id);
+    }
   }
 
   /** A non-Owner Member leaves for a fresh Household of One. */
