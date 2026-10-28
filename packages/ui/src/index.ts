@@ -159,6 +159,7 @@ export {
   MoreIcon,
   BranchIcon,
   LinkIcon,
+  PasteIcon,
   EyeIcon,
   RunningLowIcon,
   MicIcon,

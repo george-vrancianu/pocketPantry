@@ -41,6 +41,7 @@ import {
   LeafyGreen,
   CalendarDays,
   Link2,
+  ClipboardPaste,
   type LucideProps,
 } from 'lucide-react';
 
@@ -329,6 +330,8 @@ export const PeopleIcon = lucide(Users);
 export const BranchIcon = lucide(GitBranch);
 /** A Recipe's Source Link row. */
 export const LinkIcon = lucide(Link2);
+/** A text field's Paste button. */
+export const PasteIcon = lucide(ClipboardPaste);
 export const EyeIcon = lucide(Eye);
 export const RunningLowIcon = lucide(BatteryLow);
 
