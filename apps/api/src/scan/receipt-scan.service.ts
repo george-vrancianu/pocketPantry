@@ -4,9 +4,9 @@ import { ApiException } from '../common/api-exception';
 import { z } from 'zod';
 import {
   StructuredOutputAiError,
-  StructuredOutputAiService,
   type StructuredOutputResult,
 } from '../ai/structured-output-ai.service';
+import { MeteredAiService } from '../usage/metered-ai.service';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { catalogIndexInstruction } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
@@ -25,7 +25,7 @@ import {
 export class ReceiptScanService {
   private readonly logger = new Logger(ReceiptScanService.name);
   constructor(
-    private readonly ai: StructuredOutputAiService,
+    private readonly ai: MeteredAiService,
     private readonly ingredientCatalog: IngredientCatalogService,
   ) {}
 

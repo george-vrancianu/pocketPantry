@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { useRefreshCredits } from './credits';
 import { ApiError, apiRequest } from './api';
 import { scanQuery } from './scan';
 import type { Batch, NewBatch } from './pantry';
@@ -6,7 +7,9 @@ import type { ReceiptSectionResult } from './receiptSections';
 
 /** Receipt Scan: the photo goes up as a data URL and is never stored. */
 export function useReceiptScan(scanLanguage: string) {
+  const refreshCredits = useRefreshCredits();
   return useMutation({
+    onSettled: () => void refreshCredits(),
     mutationFn: (receiptImage: string) =>
       apiRequest<ReceiptSectionResult>(
         `/scan/receipt${scanQuery(scanLanguage)}`,

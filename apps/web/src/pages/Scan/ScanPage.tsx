@@ -163,7 +163,9 @@ export function ScanPage(props: ScanPageProps) {
             {/* Barcode Lookups are not Scans: the Scan Cap does not stop them. */}
             {screen.capped && screen.mode !== 'barcode' ? (
               <Box sx={{ mt: 1 }}>
-                <Alert severity="warning">{t('capReached')}</Alert>
+                <Alert severity="warning">
+                  {t(screen.outOfCredits ? 'outOfCredits' : 'capReached')}
+                </Alert>
               </Box>
             ) : null}
             {screen.error ? (

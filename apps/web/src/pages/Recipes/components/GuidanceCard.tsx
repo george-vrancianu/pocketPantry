@@ -14,6 +14,7 @@ import {
   tokens,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
+import { CreditPrice } from '../../../components/CreditPrice';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -40,6 +41,7 @@ import {
   type PairingDraft,
 } from '../../../lib/guidanceDraft';
 import type { GuidanceField } from '../../../lib/guidanceSuggestion';
+import { useCreditPrice, useRefreshCredits } from '../../../lib/credits';
 import { suggestFamilyGuidance } from '../../../lib/familyRecipes';
 import { suggestionRecipeOf, type FamilyDraft } from '../familyDraft';
 import { FamilyRecipePicker } from './FamilyGuidance';
@@ -90,17 +92,21 @@ export function GuidanceCard({
   const { t } = useTranslation(['recipes', 'admin']);
   const reduceMotion = usePrefersReducedMotion();
   const bodyId = useId();
+  const priceId = useId();
+  const price = useCreditPrice('guidance');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
+  const refreshCredits = useRefreshCredits();
   const suggestion = useGuidanceSuggestion({
     draft,
     onChange,
+    // A kept suggestion costs a Credit, a refused or empty one costs none: look at the balance again either way.
     send: (guidance) =>
       suggestFamilyGuidance({
         recipe: suggestionRecipeOf(page),
         guidance,
         ...(recipeId ? { recipeId } : {}),
-      }),
+      }).finally(() => void refreshCredits()),
   });
   const RecipePicker = useMemo(
     () =>
@@ -255,19 +261,27 @@ export function GuidanceCard({
           </Box>
         </Box>
         {suggestion.allFilled ? null : (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={suggestion.working}
-            onClick={() => {
-              setOpen(true);
-              suggestion.suggest();
-            }}
-          >
-            {suggestion.working
-              ? t('recipes:family.guidanceCard.suggesting')
-              : t('recipes:family.guidanceCard.suggest')}
-          </Button>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+            <CreditPrice
+              kind="guidance"
+              id={priceId}
+              sx={{ fontSize: 12, color: 'text.secondary' }}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={suggestion.working}
+              aria-describedby={price ? priceId : undefined}
+              onClick={() => {
+                setOpen(true);
+                suggestion.suggest();
+              }}
+            >
+              {suggestion.working
+                ? t('recipes:family.guidanceCard.suggesting')
+                : t('recipes:family.guidanceCard.suggest')}
+            </Button>
+          </Stack>
         )}
       </Stack>
       <Typography

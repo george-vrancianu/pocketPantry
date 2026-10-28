@@ -1,17 +1,22 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
+import {
+  lockFamilyCredits,
+  transferHouseholdBalance,
+} from '../credits/credits.service';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import { family, user } from '../database/schema';
 import {
+  ConcurrentMove,
   lockFamilyMember,
   lockFamilyMembers,
   lockMemberAndFamily,
   requireOwner,
   runLocked,
 } from './family-locks';
-import { withFreshInviteCode } from './invite-code';
+import { normalizeInviteCode, withFreshInviteCode } from './invite-code';
 import {
   countFamilyData,
   moveToNewHouseholdOfOne,
@@ -107,26 +112,75 @@ export class FamilyService {
    */
   async join(memberId: string, code: string): Promise<FamilyView> {
     await runLocked(this.database, async (tx) => {
+      const locked = await this.lockCreditsOfJoin(tx, memberId, code);
       const { abandoned, target } = await this.prepareJoin(
         tx,
         memberId,
         code,
         true,
       );
+      // The credits locks must be the ones of the Families actually used.
+      if (
+        locked &&
+        (locked.familyId !== abandoned || locked.targetId !== target)
+      ) {
+        throw new ConcurrentMove();
+      }
       await tx
         .update(user)
         .set({ familyId: target, familyRole: 'member' })
         .where(eq(user.id, memberId));
+      await transferHouseholdBalance(tx, memberId, abandoned, target);
       // Its only Member just left, so nothing references it any more.
       await tx.delete(family).where(eq(family.id, abandoned));
     });
     return this.getForMember(memberId);
   }
 
+  /**
+   * Takes the credits locks of the Member's Household of One and the Family behind `code`, before any
+   * row lock (a hold takes its credits lock first), and returns the ids it locked. Unknown codes or
+   * Members take none and return `undefined`: `prepareJoin` refuses them. The caller compares the
+   * returned ids with the ones `prepareJoin` settles on.
+   */
+  private async lockCreditsOfJoin(
+    tx: Tx,
+    memberId: string,
+    rawCode: string,
+  ): Promise<{ familyId: string; targetId: string } | undefined> {
+    const [target] = await tx
+      .select({ id: family.id })
+      .from(family)
+      .where(eq(family.inviteCode, normalizeInviteCode(rawCode)));
+    const [member] = await tx
+      .select({ familyId: user.familyId })
+      .from(user)
+      .where(eq(user.id, memberId));
+    if (!target || !member) return undefined;
+    await lockFamilyCredits(tx, member.familyId, target.id);
+    return { familyId: member.familyId, targetId: target.id };
+  }
+
+  /**
+   * Locks (credits, then rows) the Member's Family, for leave, remove and delete: the credits lock
+   * comes first so a racing hold re-reads and charges the Member's new Household of One.
+   */
+  private async lockMemberWithCredits(tx: Tx, memberId: string) {
+    const [peek] = await tx
+      .select({ familyId: user.familyId })
+      .from(user)
+      .where(eq(user.id, memberId));
+    if (!peek) throw new ApiException(401, 'auth.unauthenticated');
+    await lockFamilyCredits(tx, peek.familyId);
+    const member = await lockMemberAndFamily(tx, memberId);
+    if (member.familyId !== peek.familyId) throw new ConcurrentMove();
+    return member;
+  }
+
   /** A non-Owner Member leaves for a fresh Household of One. */
   async leave(memberId: string): Promise<FamilyView> {
     await runLocked(this.database, async (tx) => {
-      const member = await lockMemberAndFamily(tx, memberId);
+      const member = await this.lockMemberWithCredits(tx, memberId);
       if (member.familyRole === 'owner') {
         throw new ApiException(409, 'family.owner_cannot_leave');
       }
@@ -138,7 +192,7 @@ export class FamilyService {
   /** Owner only. The removed Member lands in a fresh Household of One. */
   async removeMember(ownerId: string, targetId: string): Promise<FamilyView> {
     await runLocked(this.database, async (tx) => {
-      const owner = await lockMemberAndFamily(tx, ownerId);
+      const owner = await this.lockMemberWithCredits(tx, ownerId);
       requireOwner(owner);
       if (targetId === ownerId) {
         throw new ApiException(400, 'family.cannot_remove_self');
@@ -180,7 +234,7 @@ export class FamilyService {
    */
   async deleteFamily(ownerId: string): Promise<FamilyView> {
     await runLocked(this.database, async (tx) => {
-      const owner = await lockMemberAndFamily(tx, ownerId);
+      const owner = await this.lockMemberWithCredits(tx, ownerId);
       requireOwner(owner);
       const members = await lockFamilyMembers(tx, owner.familyId);
       for (const member of members) {
@@ -202,7 +256,7 @@ export class FamilyService {
     rawCode: string,
     lock: boolean,
   ) {
-    const code = rawCode.trim().toUpperCase();
+    const code = normalizeInviteCode(rawCode);
     const invalid = () => new ApiException(404, 'family.invite_code_invalid');
 
     const [peek] = await db

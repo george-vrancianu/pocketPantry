@@ -270,6 +270,33 @@ describe('"From a link" sheet and the link-read holder', () => {
       .filter((c) => c.key === 'POST /api/recipes/from-link')
       .map((c) => (c.body as { url: string }).url);
 
+  it('shows the Credit Price of a web page, and of pasted text once switched', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup(
+      {
+        'GET /api/credits': () =>
+          Response.json({
+            balance: 100,
+            prices: { 'link-page': 2, 'link-text': 1 },
+            lowBalanceThreshold: 10,
+            history: [],
+          }),
+      },
+      { route: '/recipes' },
+    );
+    await openSheet(user);
+    expect(
+      await screen.findByText('Reading a web page costs 2 Credits.'),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole('button', { name: 'Paste text instead' }),
+    );
+    expect(
+      screen.getByText('Reading pasted text costs 1 Credit.'),
+    ).toBeVisible();
+    expect(screen.queryByText(/web page costs/)).toBeNull();
+  });
+
   it('opens from the header plus on Recipes, with its label, hint and language choice', async () => {
     const user = userEvent.setup({ delay: null });
     setup({}, { route: '/recipes' });

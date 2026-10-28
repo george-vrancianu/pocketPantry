@@ -258,7 +258,9 @@
       "readAgain": "Read again"
     },
     "full_one": "{{count}} link read is waiting for you. Review or cancel it first.",
-    "full_other": "{{count}} link reads are waiting for you. Review or cancel one first."
+    "full_other": "{{count}} link reads are waiting for you. Review or cancel one first.",
+    "priceLink": "Reading a web page costs {{price}}.",
+    "priceText": "Reading pasted text costs {{price}}."
   },
   "readingLanguage": {
     "label": "Language of the recipe",

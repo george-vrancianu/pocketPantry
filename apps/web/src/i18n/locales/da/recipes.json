@@ -258,7 +258,9 @@
       "readAgain": "Læs igen"
     },
     "full_one": "{{count}} linklæsning venter på dig. Gennemse eller annullér den først.",
-    "full_other": "{{count}} linklæsninger venter på dig. Gennemse eller annullér en først."
+    "full_other": "{{count}} linklæsninger venter på dig. Gennemse eller annullér en først.",
+    "priceLink": "At læse en webside koster {{price}}.",
+    "priceText": "At læse indsat tekst koster {{price}}."
   },
   "readingLanguage": {
     "label": "Opskriftens sprog",

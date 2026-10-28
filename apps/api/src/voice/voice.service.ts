@@ -14,10 +14,14 @@ import type { AppConfig } from '../config/env';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { CatalogMatchService, keepConfident } from '../scan/catalog-matching';
-import { ScanCapService } from '../scan/scan-cap.service';
+import {
+  found,
+  foundNothing,
+  PaidReadsService,
+} from '../scan/paid-reads.service';
 import { SettingsService } from '../settings/settings.service';
 import { ShoppingService } from '../shopping/shopping.service';
-import { TranscriptionService } from './transcription.service';
+import { MeteredAiService } from '../usage/metered-ai.service';
 import {
   amountOf,
   type ReadVoiceAction,
@@ -126,8 +130,8 @@ function impliedTarget(op: VoiceOp): VoiceTarget | null {
 @Injectable()
 export class VoiceService {
   constructor(
-    private readonly transcription: TranscriptionService,
-    private readonly cap: ScanCapService,
+    private readonly metered: MeteredAiService,
+    private readonly paidReads: PaidReadsService,
     private readonly reader: VoiceReaderService,
     private readonly catalogMatch: CatalogMatchService,
     private readonly settings: SettingsService,
@@ -140,7 +144,7 @@ export class VoiceService {
   ) {}
 
   isConfigured(): boolean {
-    return this.transcription.isConfigured();
+    return this.metered.isTranscriptionConfigured();
   }
 
   /** The text model can be called: a key, and for a compatible vendor a base URL. */
@@ -160,11 +164,10 @@ export class VoiceService {
     if (input.durationMs > MAX_VOICE_NOTE_MS) {
       throw new ApiException(413, 'voice.too_long');
     }
-    const day = await this.cap.consume(memberId, new Date(), 'voice');
     // Debug capture only: ties the recording's transcription to its transcript read.
     const captureId = randomUUID();
-    try {
-      const { text } = await this.transcription.transcribe({
+    const heard = await this.paidReads.read(memberId, 'voice', async () => {
+      const { text } = await this.metered.transcribe({
         audio: input.audio,
         mimeType: input.mimeType,
         language: input.spokenLanguage,
@@ -174,7 +177,7 @@ export class VoiceService {
         captureId,
       });
       const transcript = text.trim();
-      if (!transcript) throw new ApiException(422, 'voice.nothing_heard');
+      if (!transcript) return foundNothing(null);
       const { actions, answers } = await this.readText(memberId, {
         text: transcript,
         spokenLanguage: input.spokenLanguage,
@@ -188,13 +191,12 @@ export class VoiceService {
       // note of only "Didn't understand" rows still opens Review, and a note
       // of only Pantry Questions opens the answer sheet.
       if (actions.length === 0 && answers.length === 0) {
-        throw new ApiException(422, 'voice.nothing_heard');
+        return foundNothing(null);
       }
-      return { transcript, actions, answers };
-    } catch (error) {
-      await this.cap.refund(memberId, day, 'voice');
-      throw error;
-    }
+      return found({ transcript, actions, answers });
+    });
+    if (heard === null) throw new ApiException(422, 'voice.nothing_heard');
+    return heard;
   }
 
   /**

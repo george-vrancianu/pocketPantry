@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import { creditsQueryKey } from './credits';
 
 export type FamilyMember = { id: string; name: string; isOwner: boolean };
 
@@ -43,7 +44,11 @@ function useFamilyMutation<TVariables = void>(
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: request,
-    onSuccess: (family) => queryClient.setQueryData(familyQueryKey, family),
+    onSuccess: (family) => {
+      queryClient.setQueryData(familyQueryKey, family);
+      // Joining, leaving, removal and deletion change which Family's Credits the caller sees.
+      void queryClient.invalidateQueries({ queryKey: creditsQueryKey });
+    },
   });
 }
 

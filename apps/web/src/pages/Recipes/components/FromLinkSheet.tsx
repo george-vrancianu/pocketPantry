@@ -11,6 +11,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCreditPriceText } from '../../../components/CreditPrice';
 import { ReadingLanguageChoice } from '../../../components/ReadingLanguageChoice';
 import { MAX_HELD_LINK_READS, linkReads } from '../../../lib/linkReads';
 import {
@@ -82,6 +83,10 @@ function FromLinkForm({
 }) {
   const { t } = useTranslation('recipes');
   const [mode, setMode] = useState<'link' | 'text'>(prefill ? 'text' : 'link');
+  // A web page costs more than pasted text, so the price follows the mode.
+  const pagePrice = useCreditPriceText('link-page');
+  const textPrice = useCreditPriceText('link-text');
+  const linkPrice = mode === 'text' ? textPrice : pagePrice;
   // Both are kept, so switching modes never loses what the Member typed.
   const [url, setUrl] = useState(prefill?.url ?? '');
   const [pasted, setPasted] = useState('');
@@ -258,6 +263,13 @@ function FromLinkForm({
         onChange={setLanguage}
         input={mode}
       />
+      {linkPrice ? (
+        <Typography variant="meta" color="text.secondary">
+          {t(mode === 'text' ? 'fromLink.priceText' : 'fromLink.priceLink', {
+            price: linkPrice,
+          })}
+        </Typography>
+      ) : null}
       <Button type="submit" fullWidth disabled={input === '' || checking}>
         {checking ? t('fromLink.checking') : t('fromLink.submit')}
       </Button>

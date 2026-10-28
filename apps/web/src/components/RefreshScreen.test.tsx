@@ -32,6 +32,17 @@ const batch = {
   createdAt: '2026-10-01T00:00:00Z',
 };
 
+/** The voice mic's Credit Price reads the Credits, which the tab-root refresh refetches too. */
+const creditsRoute = {
+  'GET /api/credits': () =>
+    Response.json({
+      balance: 100,
+      prices: { voice: 1 },
+      lowBalanceThreshold: 10,
+      history: [],
+    }),
+};
+
 function stubPantry(
   pantry: () => Response | Promise<Response>,
   staples: () => Response | Promise<Response> = () =>
@@ -39,6 +50,7 @@ function stubPantry(
 ) {
   const { fetchMock, calls } = stubApi({
     'GET /api/pantry': pantry,
+    ...creditsRoute,
     'GET /api/voice/config': () => Response.json({ configured: true }),
     'GET /api/staples': staples,
     'GET /api/settings/preferences': () => Response.json({}),
@@ -374,6 +386,7 @@ describe('Refresh state follows the screen', () => {
     vi.stubGlobal(
       'fetch',
       stubApi({
+        ...creditsRoute,
         'GET /api/voice/config': () => Response.json({ configured: true }),
         'GET /api/staples': () => Response.json({ staples: [] }),
         'GET /api/settings/preferences': () => Response.json({}),
@@ -420,6 +433,7 @@ describe('Refresh state follows the screen', () => {
     vi.stubGlobal(
       'fetch',
       stubApi({
+        ...creditsRoute,
         'GET /api/voice/config': () => Response.json({ configured: true }),
         'GET /api/staples': () => Response.json({ staples: [] }),
         'GET /api/settings/preferences': () => Response.json({}),
@@ -445,6 +459,7 @@ describe('Refresh state follows the screen', () => {
     vi.stubGlobal(
       'fetch',
       stubApi({
+        ...creditsRoute,
         'GET /api/voice/config': () => Response.json({ configured: true }),
         'GET /api/staples': () => Response.json({ staples: [] }),
         'GET /api/settings/preferences': () => Response.json({}),
@@ -502,6 +517,7 @@ describe('Refresh state follows the screen', () => {
     vi.stubGlobal(
       'fetch',
       stubApi({
+        ...creditsRoute,
         'GET /api/voice/config': () => Response.json({ configured: true }),
         'GET /api/staples': () => Response.json({ staples: [] }),
         'GET /api/settings/preferences': () => Response.json({}),

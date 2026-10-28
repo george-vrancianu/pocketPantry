@@ -39,6 +39,14 @@ export const usageKind = pgEnum('usage_kind', [
   'guidance',
 ]);
 export const familyRole = pgEnum('family_role', ['owner', 'member']);
+// What a Credit entry is: the Welcome Grant, a Credit Grant by hand, a read's spend, or Credits moved between Families.
+export const creditEntryKind = pgEnum('credit_entry_kind', [
+  'welcome_grant',
+  'grant',
+  'spend',
+  'transfer_in',
+  'transfer_out',
+]);
 
 // A Family owns the Pantry, Shopping List and Family Settings.
 // The Invite Code is replaced in place on regeneration, which revokes the old one.
@@ -84,6 +92,9 @@ export const user = pgTable(
       .default(false),
     // When the Member was done with the Intro (reached the Dashboard from it); null = not yet. First time wins.
     introDoneAt: timestamp('intro_done_at', { withTimezone: true }),
+    // When the Member received their Welcome Grant (ADR 0032): once in their life, so it is kept on the Member
+    // and not as a ledger row, which goes with its Family. Null = not yet received.
+    welcomeGrantAt: timestamp('welcome_grant_at', { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
@@ -674,6 +685,74 @@ export const unmatchedEntries = pgTable(
       sql`num_nonnulls(${table.batchId}, ${table.shoppingItemId}, ${table.ingredientLineId}) = 1`,
     ),
   ],
+);
+
+// The Credit ledger: signed entries per Family. The Credit Balance is their sum, never stored.
+// Entries go with their Family; the Member is cleared when deleted (history shows a former Member).
+// A spend is negative and names the kind of read; a grant is positive and names its reason.
+export const creditEntry = pgTable(
+  'credit_entry',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    memberId: text('member_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    kind: creditEntryKind('kind').notNull(),
+    // For a spend: the kind of read (scan, voice, assistant, link-page, link-text, guidance).
+    readKind: text('read_kind'),
+    // For a grant: why it was given.
+    reason: text('reason'),
+    amount: integer('amount').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('credit_entry_family_id_idx').on(table.familyId, table.createdAt),
+    check('credit_entry_amount_not_zero', sql`${table.amount} <> 0`),
+    // A Family is given one Welcome Grant, ever: the rollout is safe to repeat.
+    uniqueIndex('credit_entry_welcome_grant_idx')
+      .on(table.familyId)
+      .where(sql`${table.kind} = 'welcome_grant'`),
+  ],
+);
+
+// One row per call to an AI provider (ADR 0032). Never shown to Members. The Member and the Family
+// are cleared, not cascaded, when deleted, so the accounting survives them. `kind` is the kind of
+// read (scan, voice, assistant, link-page, link-text, guidance, guidance-admin); a Voice Note leaves
+// two rows, told apart by `step`: `transcription` or `reading` (every other call is `reading`).
+// `kind` is null for a provider call made outside any read. A token or seconds column is null when the
+// provider did not report it; `cost_usd` is null when the cost is unknown (an unpriced model or no usage)
+// and is frozen at write time.
+export const usageRecord = pgTable(
+  'usage_record',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    kind: text('kind'),
+    step: text('step').notNull().default('reading'),
+    memberId: text('member_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    familyId: uuid('family_id').references(() => family.id, {
+      onDelete: 'set null',
+    }),
+    model: text('model').notNull(),
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
+    cachedTokens: integer('cached_tokens'),
+    reasoningTokens: integer('reasoning_tokens'),
+    audioSeconds: numeric('audio_seconds', { precision: 12, scale: 3 }),
+    success: boolean('success').notNull(),
+    providerRequestId: text('provider_request_id'),
+    costUsd: numeric('cost_usd', { precision: 14, scale: 8 }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index('usage_record_created_at_idx').on(table.createdAt)],
 );
 
 // Daily cap bookkeeping: one row per Member per UTC day per kind, counting Scans (`scan`)

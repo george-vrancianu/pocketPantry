@@ -4,7 +4,11 @@ import type { AssistantTokenMember } from '../assistant-tokens/assistant-token.s
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import { ApiException } from '../common/api-exception';
 import { MemberLanguageService } from '../member-language/member-language.service';
-import { ScanCapService } from '../scan/scan-cap.service';
+import {
+  found,
+  foundNothing,
+  PaidReadsService,
+} from '../scan/paid-reads.service';
 import { SettingsService } from '../settings/settings.service';
 import {
   voiceActionKind,
@@ -64,7 +68,7 @@ const displayName = (action: Named): string =>
 export class AssistantService {
   constructor(
     private readonly voice: VoiceService,
-    private readonly cap: ScanCapService,
+    private readonly paidReads: PaidReadsService,
     private readonly catalogSearch: CatalogSearchService,
     private readonly settings: SettingsService,
     private readonly languages: MemberLanguageService,
@@ -88,9 +92,101 @@ export class AssistantService {
     // Nothing dictated: no model call and no charge.
     if (body.text === '') return stateReply('nothingUnderstood');
 
-    let day: string;
+    let outcomes: AssistantOutcome[];
+    let replyLocale: CatalogLocale;
     try {
-      day = await this.cap.consume(member.id, new Date(), 'assistant');
+      ({ outcomes, replyLocale } = await this.paidReads.read(
+        member.id,
+        'assistant',
+        async () => {
+          const today = body.today ?? new Date().toISOString().slice(0, 10);
+          const read = await this.voice.readText(member.id, {
+            text: body.text,
+            // Siri dictation may be in any language, whatever the UI Language.
+            spokenLanguage: null,
+            locale: catalog,
+            uiLanguage: locale,
+            today,
+            defaultTarget: 'shopping',
+          });
+          const replyLocale = read.spokenLanguage ?? locale;
+          const resolved = read.actions.filter(
+            (action) => action.status !== 'notUnderstood',
+          );
+          const drafts = resolved.map(toDraft);
+          // Looked up before the writes: a failure here must not follow committed items.
+          const names = await this.namesIn(member.id, catalog, replyLocale, [
+            ...resolved,
+            ...read.answers,
+          ]);
+          // An add onto an existing line sets the spoken quantity (ADR 0017) and
+          // wants the line back on the list, rather than summing as in Review.
+          // A question-only request has nothing to apply and writes nothing.
+          const result: VoiceApplyResult =
+            drafts.length === 0
+              ? { applied: [], skipped: [], refused: [] }
+              : await this.voice.applyActions(member.id, {
+                  actions: drafts,
+                  locale: catalog,
+                  today,
+                  allowedKinds: ASSISTANT_ALLOWED_KINDS,
+                  addSetsQuantity: true,
+                  checkOnly: true,
+                });
+          // The list keeps Catalog Language names; the reply names things in the language spoken.
+          // An Unmatched item is named by what was said (spokenName) when the reply is not in the Catalog Language.
+          const nameOf = (action: Named): string =>
+            action.ingredient
+              ? (names.get(action.ingredient.id) ?? action.ingredient.name)
+              : ((replyLocale !== catalog
+                  ? read.spokenNames.get(action.id)
+                  : undefined) ?? displayName(action));
+          const tickedHere = new Set<string>();
+          // Answers to Pantry Questions come first, as they are spoken first.
+          const outcomes: AssistantOutcome[] = [
+            ...read.answers.map((answer): AssistantOutcome => {
+              const name = nameOf(answer);
+              switch (answer.kind) {
+                case 'yes':
+                  return {
+                    kind: 'yes',
+                    name,
+                    totals: answer.totals,
+                    locations: answer.locations,
+                    expiringSoon: answer.expiringSoon,
+                    runningLow: answer.runningLow,
+                  };
+                case 'notSure':
+                  return { kind: 'notSure', name };
+                case 'onlyExpired':
+                case 'no':
+                  return {
+                    kind: answer.kind,
+                    name,
+                    onShoppingList: answer.onShoppingList,
+                  };
+              }
+            }),
+            ...resolved.flatMap((action, index) => {
+              const outcome = outcomeOf(
+                action,
+                drafts[index],
+                result,
+                nameOf(action),
+              );
+              // "Got milk and milk": the second mention is the line the first just ticked, not a miss.
+              const key =
+                action.ingredient?.id ?? displayName(action).toLowerCase();
+              if (outcome.kind === 'checked') tickedHere.add(key);
+              else if (outcome.kind === 'notOnList' && tickedHere.has(key))
+                return [];
+              return [outcome];
+            }),
+          ];
+          const reply = { outcomes, replyLocale };
+          return outcomes.length === 0 ? foundNothing(reply) : found(reply);
+        },
+      ));
     } catch (error) {
       if (
         error instanceof ApiException &&
@@ -98,98 +194,12 @@ export class AssistantService {
       ) {
         return stateReply('capReached');
       }
-      throw error;
-    }
-
-    let outcomes: AssistantOutcome[];
-    let replyLocale = locale;
-    try {
-      const today = body.today ?? new Date().toISOString().slice(0, 10);
-      const read = await this.voice.readText(member.id, {
-        text: body.text,
-        // Siri dictation may be in any language, whatever the UI Language.
-        spokenLanguage: null,
-        locale: catalog,
-        uiLanguage: locale,
-        today,
-        defaultTarget: 'shopping',
-      });
-      replyLocale = read.spokenLanguage ?? locale;
-      const resolved = read.actions.filter(
-        (action) => action.status !== 'notUnderstood',
-      );
-      const drafts = resolved.map(toDraft);
-      // Looked up before the writes: a failure here must not follow committed items.
-      const names = await this.namesIn(member.id, catalog, replyLocale, [
-        ...resolved,
-        ...read.answers,
-      ]);
-      // An add onto an existing line sets the spoken quantity (ADR 0017) and
-      // wants the line back on the list, rather than summing as in Review.
-      // A question-only request has nothing to apply and writes nothing.
-      const result: VoiceApplyResult =
-        drafts.length === 0
-          ? { applied: [], skipped: [], refused: [] }
-          : await this.voice.applyActions(member.id, {
-              actions: drafts,
-              locale: catalog,
-              today,
-              allowedKinds: ASSISTANT_ALLOWED_KINDS,
-              addSetsQuantity: true,
-              checkOnly: true,
-            });
-      // The list keeps Catalog Language names; the reply names things in the language spoken.
-      // An Unmatched item is named by what was said (spokenName) when the reply is not in the Catalog Language.
-      const nameOf = (action: Named): string =>
-        action.ingredient
-          ? (names.get(action.ingredient.id) ?? action.ingredient.name)
-          : ((replyLocale !== catalog
-              ? read.spokenNames.get(action.id)
-              : undefined) ?? displayName(action));
-      const tickedHere = new Set<string>();
-      // Answers to Pantry Questions come first, as they are spoken first.
-      outcomes = [
-        ...read.answers.map((answer): AssistantOutcome => {
-          const name = nameOf(answer);
-          switch (answer.kind) {
-            case 'yes':
-              return {
-                kind: 'yes',
-                name,
-                totals: answer.totals,
-                locations: answer.locations,
-                expiringSoon: answer.expiringSoon,
-                runningLow: answer.runningLow,
-              };
-            case 'notSure':
-              return { kind: 'notSure', name };
-            case 'onlyExpired':
-            case 'no':
-              return {
-                kind: answer.kind,
-                name,
-                onShoppingList: answer.onShoppingList,
-              };
-          }
-        }),
-        ...resolved.flatMap((action, index) => {
-          const outcome = outcomeOf(
-            action,
-            drafts[index],
-            result,
-            nameOf(action),
-          );
-          // "Got milk and milk": the second mention is the line the first just ticked, not a miss.
-          const key =
-            action.ingredient?.id ?? displayName(action).toLowerCase();
-          if (outcome.kind === 'checked') tickedHere.add(key);
-          else if (outcome.kind === 'notOnList' && tickedHere.has(key))
-            return [];
-          return [outcome];
-        }),
-      ];
-    } catch (error) {
-      await this.cap.refund(member.id, day, 'assistant');
+      if (
+        error instanceof ApiException &&
+        error.code === 'credits.insufficient'
+      ) {
+        return stateReply('outOfCredits');
+      }
       if (
         error instanceof ApiException &&
         error.code === 'voice.provider_unavailable'
@@ -198,10 +208,7 @@ export class AssistantService {
       }
       throw error;
     }
-    if (outcomes.length === 0) {
-      await this.cap.refund(member.id, day, 'assistant');
-      return stateReply('nothingUnderstood');
-    }
+    if (outcomes.length === 0) return stateReply('nothingUnderstood');
     return {
       outcomes,
       speech: assistantSpeech({ locale: replyLocale, outcomes }),

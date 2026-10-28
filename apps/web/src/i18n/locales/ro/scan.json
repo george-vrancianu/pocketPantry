@@ -77,6 +77,7 @@
   "discardScans_other": "Renunți la {{count}} de fotografii?",
   "discarded": "Eliminate",
   "capReached": "Limita zilnică de scanări a fost atinsă",
+  "outOfCredits": "Ai rămas fără Credite",
   "notAdded": "Fotografia nu a putut fi adăugată. Încearcă din nou.",
   "review": {
     "readAgain": "Citește din nou",
@@ -131,5 +132,6 @@
     "lookingUp": "Caut codul de bare…",
     "ingredientAisle": "{{ingredient}} · {{aisle}}"
   },
-  "labelCap": "Ai folosit toate scanările de azi. Scanează un cod de bare sau scrie-l."
+  "labelCap": "Ai folosit toate scanările de azi. Scanează un cod de bare sau scrie-l.",
+  "labelOutOfCredits": "Ai rămas fără Credite. Scanează un cod de bare sau scrie-l."
 }

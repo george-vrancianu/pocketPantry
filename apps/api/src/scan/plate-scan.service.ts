@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { z } from 'zod';
-import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import { MeteredAiService } from '../usage/metered-ai.service';
 import type { CatalogReader } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
@@ -29,7 +29,7 @@ import { LANGUAGE_NAMES } from './scan-language';
 @Injectable()
 export class PlateScanService {
   constructor(
-    private readonly ai: StructuredOutputAiService,
+    private readonly ai: MeteredAiService,
     private readonly ingredientCatalog: IngredientCatalogService,
   ) {}
 

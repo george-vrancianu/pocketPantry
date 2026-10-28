@@ -52,6 +52,7 @@ import {
   dispatchScanSession,
   getScanSession,
   isBarcodeCard,
+  isHeld,
   failedCopyKey,
   pendingCount,
   resetScanSession,
@@ -339,9 +340,11 @@ export function ReviewOverviewPage({
                   {t(`overview.${failedCopyKey(scan)}`)}
                 </Typography>
               </Box>
-              {scan.failure === 'cap' ? (
+              {isHeld(scan) ? (
                 <Typography sx={{ fontSize: 13 }}>
-                  {tScan('capReached')}
+                  {tScan(
+                    scan.failure === 'credits' ? 'outOfCredits' : 'capReached',
+                  )}
                 </Typography>
               ) : showsErrorCopy(scan) ? (
                 <Typography sx={{ fontSize: 13 }}>

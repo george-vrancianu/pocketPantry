@@ -74,7 +74,8 @@
   },
   "voiceButton": {
     "label": "Hold to record a Voice Note",
-    "blocked": "Microphone blocked"
+    "blocked": "Microphone blocked",
+    "price": "Costs {{price}}"
   },
   "listening": {
     "title": "Gator's listening",
@@ -251,6 +252,8 @@
     "nothingHint": "Hold the button and speak close to the phone. This one doesn't count.",
     "cap": "That's today's {{cap}} Voice Notes",
     "capHint": "Voice is back tomorrow. Scans still work.",
+    "outOfCredits": "Out of Credits",
+    "outOfCreditsHint": "Your Family has no Credits left. Read it again when more Credits are added.",
     "tooLongTitle": "Recording too long",
     "tooLong": "That recording was too long. Try a shorter one.",
     "unsupportedTitle": "Can't read this recording",

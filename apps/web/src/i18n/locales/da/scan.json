@@ -73,6 +73,7 @@
   "discardScans_other": "Kasser {{count}} fotos?",
   "discarded": "Kasseret",
   "capReached": "Daglig scanningsgrænse nået",
+  "outOfCredits": "Ikke flere kreditter",
   "notAdded": "Fotoet kunne ikke tilføjes. Prøv igen.",
   "review": {
     "readAgain": "Læs igen",
@@ -121,5 +122,6 @@
     "lookingUp": "Slår stregkoden op…",
     "ingredientAisle": "{{ingredient}} · {{aisle}}"
   },
-  "labelCap": "Du har brugt alle dagens scanninger. Scan en stregkode eller skriv det."
+  "labelCap": "Du har brugt alle dagens scanninger. Scan en stregkode eller skriv det.",
+  "labelOutOfCredits": "Ikke flere kreditter. Scan en stregkode eller skriv det."
 }

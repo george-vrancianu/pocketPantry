@@ -38,6 +38,9 @@
     "not_configured": "Scanning is not set up on this server yet.",
     "product_not_found": "We could not read a product from that photo. Fill the form by hand, or try again."
   },
+  "credits": {
+    "insufficient": "Out of Credits. This needs {{price}}, and your Family has {{balance}}."
+  },
   "shopping": {
     "item_not_found": "We could not find that item on the list.",
     "ingredient_not_found": "We could not find that ingredient.",

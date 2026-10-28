@@ -25,6 +25,33 @@
     "newCode": "New code",
     "manage": "Members and invites"
   },
+  "credits": {
+    "title": "Credits",
+    "hint": "Shared by everyone in your family. A read of a photo, a Voice Note, a recipe from a link or a Suggest Guidance uses Credits.",
+    "left_one": "Credit left",
+    "left_other": "Credits left",
+    "low": "Your family is running low on Credits.",
+    "formerMember": "former Member",
+    "history": {
+      "title": "Activity",
+      "empty": "Nothing yet.",
+      "spend": {
+        "scan": "Scan",
+        "voice": "Voice Note",
+        "assistant": "Assistant Request",
+        "link-page": "Recipe from a web page",
+        "link-text": "Recipe from pasted text",
+        "guidance": "Suggest Guidance"
+      },
+      "welcome_grant": "Welcome Grant",
+      "grant": "Credit Grant",
+      "grantWith": "Credit Grant: {{reason}}",
+      "transfer_in": "Credits brought by {{who}}",
+      "transfer_out": "Credits moved out",
+      "by": "{{who}} · {{when}}",
+      "when": "{{when}}"
+    }
+  },
   "expiringSoon": {
     "title": "Expiring soon",
     "hint": "Batches turn amber this many days before they expire",

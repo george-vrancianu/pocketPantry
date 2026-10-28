@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { resetReads, readScans } from './scanReads';
+import { onScanReadSettled, resetReads, readScans } from './scanReads';
 import {
   dispatchScanSession,
   getScanSession,
@@ -63,6 +63,28 @@ const error = (code: string, status: number) =>
   Response.json({ code, params: {} }, { status });
 
 describe('readScans', () => {
+  it('tells listeners when a read settles, read or failed, until they stop listening', async () => {
+    const settled = vi.fn();
+    const stop = onScanReadSettled(settled);
+    enqueue('a');
+    readScans();
+    await settle();
+    expect(settled).toHaveBeenCalledTimes(1);
+
+    answer = () => error('credits.insufficient', 402);
+    enqueue('b');
+    readScans();
+    await settle();
+    expect(scan('b').status).toBe('failed');
+    expect(settled).toHaveBeenCalledTimes(2);
+
+    stop();
+    enqueue('c');
+    readScans();
+    await settle();
+    expect(settled).toHaveBeenCalledTimes(2);
+  });
+
   it('reads at most 2 Scans at once and starts the next as one finishes', async () => {
     const releases: Array<() => void> = [];
     answer = () =>
@@ -154,6 +176,37 @@ describe('readScans', () => {
     expect(calls).toHaveLength(2);
     expect(scan('a').failure).toBe('cap');
     expect(scan('c').status).not.toBe('reading');
+  });
+
+  it('stops starting reads once a Scan is Out of Credits, and holds the waiting Scans with it', async () => {
+    answer = () => error('credits.insufficient', 402);
+    ['a', 'b', 'c', 'd'].forEach((id) => enqueue(id));
+    readScans();
+    await settle();
+    expect(calls).toHaveLength(2);
+    expect(scan('a')).toMatchObject({
+      status: 'failed',
+      failure: 'credits',
+      errorCode: 'credits.insufficient',
+    });
+    expect(scan('c')).toMatchObject({ status: 'failed', failure: 'credits' });
+    expect(scan('d')).toMatchObject({ status: 'failed', failure: 'credits' });
+  });
+
+  it('Read again on an Out of Credits Scan releases the Scans it held', async () => {
+    answer = () => error('credits.insufficient', 402);
+    ['a', 'b', 'c'].forEach((id) => enqueue(id));
+    readScans();
+    await settle();
+    answer = () => Response.json({ lines });
+    dispatchScanSession({ type: 'retry', id: 'a' });
+    readScans();
+    await settle();
+    expect(getScanSession().scans.map((s) => s.status)).toEqual([
+      'read',
+      'read',
+      'read',
+    ]);
   });
 
   it('reads a Plate Scan into dish guesses with its token', async () => {
