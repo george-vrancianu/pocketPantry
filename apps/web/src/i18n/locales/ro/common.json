@@ -63,5 +63,10 @@
     "save": "Salvează",
     "saving": "Se salvează",
     "title": "Editează {{name}}"
+  },
+  "credits": {
+    "price_one": "{{count}} Credit",
+    "price_few": "{{count}} Credite",
+    "price_other": "{{count}} de Credite"
   }
 }

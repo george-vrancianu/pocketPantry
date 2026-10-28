@@ -6,10 +6,31 @@ import { ApiError, apiRequest } from './api';
 export type CreditPriceKind =
   'scan' | 'voice' | 'assistant' | 'link-page' | 'link-text' | 'guidance';
 
-/** `GET /api/credits`: the Family's Credit Balance and what each kind of read costs. */
+/** One entry of the Family's Credit history, as `GET /api/credits` words it. */
+export type CreditHistoryEntry = {
+  id: string;
+  kind: 'welcome_grant' | 'grant' | 'spend' | 'transfer_in' | 'transfer_out';
+  /** For a spend: the kind of read. */
+  readKind: CreditPriceKind | null;
+  /** Only for a grant by hand: why, as the owner entered it. */
+  reason: string | null;
+  /** Signed: negative for a spend. */
+  amount: number;
+  /** Who spent, or whose Household of One moved in; null for grants and for a former Member. */
+  memberName: string | null;
+  formerMember: boolean;
+  createdAt: string;
+};
+
+/**
+ * `GET /api/credits`: the Family's Credit Balance, what each kind of read costs, the balance at or below
+ * which the low-balance notice shows, and the latest entries (newest first).
+ */
 export type Credits = {
   balance: number;
   prices: Record<CreditPriceKind, number>;
+  lowBalanceThreshold: number;
+  history: CreditHistoryEntry[];
 };
 
 /** The stable API error code of a read refused because the Family cannot pay for it. */
@@ -35,4 +56,12 @@ export function useRefreshCredits() {
     () => queryClient.invalidateQueries({ queryKey: creditsQueryKey }),
     [queryClient],
   );
+}
+
+/**
+ * The Credit Price of a kind of read, from the same query as the balance (so a repricing shows up on
+ * refetch). `undefined` while loading or when the read could not be fetched: show no price then.
+ */
+export function useCreditPrice(kind: CreditPriceKind): number | undefined {
+  return useCredits().data?.prices[kind];
 }

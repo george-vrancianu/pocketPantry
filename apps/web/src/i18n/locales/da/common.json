@@ -62,5 +62,9 @@
     "save": "Gem",
     "saving": "Gemmer",
     "title": "Rediger {{name}}"
+  },
+  "credits": {
+    "price_one": "{{count}} kredit",
+    "price_other": "{{count}} kreditter"
   }
 }

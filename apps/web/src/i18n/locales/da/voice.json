@@ -74,7 +74,8 @@
   },
   "voiceButton": {
     "label": "Hold for at optage en stemmenote",
-    "blocked": "Mikrofon blokeret"
+    "blocked": "Mikrofon blokeret",
+    "price": "Koster {{price}}"
   },
   "listening": {
     "title": "Gator lytter",

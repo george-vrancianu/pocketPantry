@@ -24,7 +24,12 @@ function family(overrides: Partial<Family> = {}): Family {
   };
 }
 
-const CREDITS = { balance: 100, prices: {} };
+const CREDITS = {
+  balance: 100,
+  prices: {},
+  lowBalanceThreshold: 10,
+  history: [],
+};
 
 type StubOptions = {
   family?: Family;

@@ -74,7 +74,8 @@
   },
   "voiceButton": {
     "label": "Hold to record a Voice Note",
-    "blocked": "Microphone blocked"
+    "blocked": "Microphone blocked",
+    "price": "Costs {{price}}"
   },
   "listening": {
     "title": "Gator's listening",

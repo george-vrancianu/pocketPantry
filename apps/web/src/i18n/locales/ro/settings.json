@@ -29,10 +29,31 @@
   },
   "credits": {
     "title": "Credite",
-    "hint": "Comune pentru toată familia. O scanare consumă Credite când citește o fotografie.",
+    "hint": "Comune pentru toată familia. Citirea unei fotografii, o notă vocală, o rețetă dintr-un link sau Sugerează îndrumări consumă Credite.",
     "left_one": "Credit rămas",
     "left_few": "Credite rămase",
-    "left_other": "de Credite rămase"
+    "left_other": "de Credite rămase",
+    "low": "Familia ta are tot mai puține Credite.",
+    "formerMember": "fost membru",
+    "history": {
+      "title": "Activitate",
+      "empty": "Încă nimic.",
+      "spend": {
+        "scan": "Scanare",
+        "voice": "Notă vocală",
+        "assistant": "Cerere către Asistent",
+        "link-page": "Rețetă dintr-o pagină web",
+        "link-text": "Rețetă din text lipit",
+        "guidance": "Sugerează îndrumări"
+      },
+      "welcome_grant": "Credite de bun venit",
+      "grant": "Credite oferite",
+      "grantWith": "Credite oferite: {{reason}}",
+      "transfer_in": "Credite aduse de {{who}}",
+      "transfer_out": "Credite mutate în afară",
+      "by": "{{who}} · {{when}}",
+      "when": "{{when}}"
+    }
   },
   "expiringSoon": {
     "title": "Expiră curând",

@@ -27,9 +27,30 @@
   },
   "credits": {
     "title": "Kreditter",
-    "hint": "Fælles for hele familien. En scanning bruger kreditter, når den læser et foto.",
+    "hint": "Fælles for hele familien. At læse et foto, en stemmenote, en opskrift fra et link eller Foreslå vejledning bruger kreditter.",
     "left_one": "kredit tilbage",
-    "left_other": "kreditter tilbage"
+    "left_other": "kreditter tilbage",
+    "low": "Din familie er ved at løbe tør for kreditter.",
+    "formerMember": "tidligere medlem",
+    "history": {
+      "title": "Aktivitet",
+      "empty": "Intet endnu.",
+      "spend": {
+        "scan": "Scanning",
+        "voice": "Stemmenote",
+        "assistant": "Assistentanmodning",
+        "link-page": "Opskrift fra en webside",
+        "link-text": "Opskrift fra indsat tekst",
+        "guidance": "Foreslå vejledning"
+      },
+      "welcome_grant": "Velkomstgave",
+      "grant": "Kreditgave",
+      "grantWith": "Kreditgave: {{reason}}",
+      "transfer_in": "Kreditter medbragt af {{who}}",
+      "transfer_out": "Kreditter flyttet ud",
+      "by": "{{who}} · {{when}}",
+      "when": "{{when}}"
+    }
   },
   "expiringSoon": {
     "title": "Udløber snart",

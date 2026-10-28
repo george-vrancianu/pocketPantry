@@ -147,8 +147,9 @@ describe('Credits (integration)', () => {
   it('gives a new Household of One 100 Credits and shows the Credit Prices', async () => {
     const { cookie } = await signUp();
     const response = await credits(cookie).expect(200);
-    expect(response.body).toEqual({
+    expect(response.body).toMatchObject({
       balance: 100,
+      lowBalanceThreshold: 10,
       prices: {
         scan: 1,
         voice: 1,

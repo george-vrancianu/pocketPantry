@@ -1987,6 +1987,21 @@ describe('Suggest Guidance', () => {
   };
   const unfilled: FamilyRecipeEdit = { ...saved, nutritionNote: null };
 
+  it('shows the Credit Price of Suggest Guidance beside its button', async () => {
+    setup('/recipes/new', {
+      'GET /api/credits': () =>
+        Response.json({
+          balance: 100,
+          prices: { guidance: 1 },
+          lowBalanceThreshold: 10,
+          history: [],
+        }),
+    });
+    const button = await screen.findByRole('button', { name: 'Suggest' });
+    expect(await screen.findByText('1 Credit')).toBeVisible();
+    expect(button).toHaveAccessibleDescription('1 Credit');
+  });
+
   it('fills an empty Nutrition Note from the page as it is now, marked Suggested, and sends ordinary Guidance on save', async () => {
     const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/new', {
