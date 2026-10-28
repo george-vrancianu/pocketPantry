@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
@@ -7,6 +7,7 @@ import {
   catalogTranslations,
   cuisines,
   methods,
+  recipes,
   recipeTags,
   tagGroups,
   tags,
@@ -21,6 +22,71 @@ export type RecipeTag = {
   groupName: string | null;
   groupOrder: number | null;
 };
+
+type TagRow = {
+  id: string;
+  name: string;
+  familyId: string | null;
+  groupId: string | null;
+  groupName: string | null;
+  groupOrder: number | null;
+};
+
+type Names = Awaited<ReturnType<typeof loadDisplayNames>>;
+
+function toRecipeTag(row: TagRow, names: Names): RecipeTag {
+  const catalog = row.familyId === null;
+  return {
+    id: row.id,
+    name: catalog ? names.pick('tag', row.id, row.name) : row.name,
+    kind: catalog ? 'catalog' : 'family',
+    groupId: row.groupId,
+    groupName:
+      row.groupId && row.groupName
+        ? names.pick('tag_group', row.groupId, row.groupName)
+        : null,
+    groupOrder: row.groupOrder,
+  };
+}
+
+const compareTags = (locale: CatalogLocale) => (a: RecipeTag, b: RecipeTag) =>
+  (a.kind === b.kind ? 0 : a.kind === 'family' ? -1 : 1) ||
+  (a.groupOrder ?? 0) - (b.groupOrder ?? 0) ||
+  a.name.localeCompare(b.name, locale) ||
+  a.id.localeCompare(b.id);
+
+/**
+ * The Tags on at least one Recipe matching `recipeFilter` (a condition on `recipes`), named in
+ * the viewer's language and ordered like a Recipe's Tags: Family Tags first, then Catalog Tags by
+ * Tag Group position, then by name. Feeds the Tag filter's options.
+ */
+export async function loadTagsInUse(
+  executor: Executor,
+  scope: CatalogScope,
+  locale: CatalogLocale,
+  recipeFilter: SQL | undefined,
+): Promise<RecipeTag[]> {
+  const rows = await executor
+    .selectDistinct({
+      id: tags.id,
+      name: tags.name,
+      familyId: tags.familyId,
+      groupId: tagGroups.id,
+      groupName: tagGroups.name,
+      groupOrder: tagGroups.position,
+    })
+    .from(recipeTags)
+    .innerJoin(recipes, eq(recipes.id, recipeTags.recipeId))
+    .innerJoin(tags, eq(tags.id, recipeTags.tagId))
+    .leftJoin(tagGroups, eq(tagGroups.id, tags.groupId))
+    .where(recipeFilter);
+  if (rows.length === 0) return [];
+  const names = await loadDisplayNames(executor, scope, locale, [
+    ...rows.map((r) => r.id),
+    ...rows.flatMap((r) => (r.groupId ? [r.groupId] : [])),
+  ]);
+  return rows.map((r) => toRecipeTag(r, names)).sort(compareTags(locale));
+}
 
 /**
  * The Tags of each Recipe, in the viewer's language: Family Tags first (by name), then Catalog
@@ -54,27 +120,11 @@ export async function loadRecipeTags(
     ...rows.map((r) => r.id),
     ...rows.flatMap((r) => (r.groupId ? [r.groupId] : [])),
   ]);
-  const compare = (a: RecipeTag, b: RecipeTag) =>
-    (a.kind === b.kind ? 0 : a.kind === 'family' ? -1 : 1) ||
-    (a.groupOrder ?? 0) - (b.groupOrder ?? 0) ||
-    a.name.localeCompare(b.name, locale) ||
-    a.id.localeCompare(b.id);
   for (const row of rows) {
-    const catalog = row.familyId === null;
-    const tag: RecipeTag = {
-      id: row.id,
-      name: catalog ? names.pick('tag', row.id, row.name) : row.name,
-      kind: catalog ? 'catalog' : 'family',
-      groupId: row.groupId,
-      groupName:
-        row.groupId && row.groupName
-          ? names.pick('tag_group', row.groupId, row.groupName)
-          : null,
-      groupOrder: row.groupOrder,
-    };
+    const tag = toRecipeTag(row, names);
     byRecipe.set(row.recipeId, [...(byRecipe.get(row.recipeId) ?? []), tag]);
   }
-  for (const list of byRecipe.values()) list.sort(compare);
+  for (const list of byRecipe.values()) list.sort(compareTags(locale));
   return byRecipe;
 }
 
