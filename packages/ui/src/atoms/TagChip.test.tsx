@@ -1,5 +1,5 @@
-import { cleanup, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TagChip } from '../index';
 import { paintedColour } from '../test/colour';
 import { renderWithTheme as render } from '../test/render';
@@ -76,5 +76,28 @@ describe('TagChip', () => {
     expect(getComputedStyle(chip).boxShadow).toMatch(
       /inset 0(px)? 0(px)? 0(px)? 1px/,
     );
+  });
+
+  it('becomes a button that removes the Tag when given onRemove', () => {
+    const onRemove = vi.fn();
+    render(
+      <TagChip
+        kind="family"
+        size="medium"
+        onRemove={onRemove}
+        removeLabel="Remove Tag Meal prep"
+      >
+        Meal prep
+      </TagChip>,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove Tag Meal prep' }),
+    );
+    expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it('is not interactive without onRemove', () => {
+    render(<TagChip kind="catalog">Dinner</TagChip>);
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

@@ -1,7 +1,9 @@
 import Box, { type BoxProps } from '@mui/material/Box';
 import type { Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
+import { focusRing } from '../theme/focusRing';
 import { bodyFont, radius, themePalette } from '../theme/themeVars';
+import { CloseIcon } from './icons';
 
 export type TagChipKind = 'catalog' | 'family';
 export type TagChipSize = 'small' | 'medium';
@@ -13,6 +15,13 @@ export type TagChipProps = Omit<BoxProps, 'children'> & {
   size?: TagChipSize;
   /** A Tag that matches the active filter: accent tint, bold, with an inset accent ring. */
   matched?: boolean;
+  /**
+   * Makes the whole chip a button that removes the Tag, with a small × after the name. Needs
+   * `removeLabel`, e.g. "Remove Tag Vegan".
+   */
+  onRemove?: () => void;
+  /** Accessible name of the remove button. */
+  removeLabel?: string;
   children: ReactNode;
 };
 
@@ -48,14 +57,20 @@ export function TagChip({
   kind,
   size = 'small',
   matched = false,
+  onRemove,
+  removeLabel,
   children,
   sx,
   ...props
 }: TagChipProps) {
   const { height, px, fontSize } = SIZES[size];
+  const removable = onRemove !== undefined;
   return (
     <Box
-      component="span"
+      component={removable ? 'button' : 'span'}
+      {...(removable
+        ? { type: 'button', onClick: onRemove, 'aria-label': removeLabel }
+        : {})}
       sx={[
         {
           display: 'inline-flex',
@@ -75,6 +90,18 @@ export function TagChip({
           textOverflow: 'ellipsis',
         },
         paint(kind, matched),
+        removable && {
+          gap: '6px',
+          pr: '9px',
+          pl: '11px',
+          border: 0,
+          font: 'inherit',
+          fontFamily: bodyFont,
+          fontSize,
+          fontWeight: matched ? 700 : 600,
+          cursor: 'pointer',
+          ...focusRing,
+        },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
       {...props}
@@ -85,6 +112,15 @@ export function TagChip({
       >
         {children}
       </Box>
+      {removable ? (
+        <Box
+          component="span"
+          aria-hidden
+          sx={{ display: 'flex', flexShrink: 0, opacity: 0.75 }}
+        >
+          <CloseIcon size={10} />
+        </Box>
+      ) : null}
     </Box>
   );
 }
