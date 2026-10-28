@@ -259,7 +259,6 @@
     "heading": "Dintr-un link",
     "hint": "Lipește linkul unei pagini cu o rețetă. PantryGator o transformă într-o rețetă nouă, pe care o verifici înainte de a o salva.",
     "label": "Linkul rețetei",
-    "pasteInstead": "Lipește textul rețetei în schimb",
     "checking": "Se verifică linkul…",
     "submit": "Citește rețeta",
     "reading": "Se citește rețeta…",
@@ -286,7 +285,7 @@
     "note": {
       "empty": "Nu e nimic de lipit: copiază mai întâi rețeta.",
       "refused": "Nu am putut citi clipboardul: lipește în câmp.",
-      "tooLong": "Prea lung pentru a fi citit: lipește doar rețeta"
+      "tooLong": "Prea lung pentru a fi citit: lipește doar rețeta."
     },
     "characters_one": "{{current}} din {{max}} caracter",
     "characters_few": "{{current}} din {{max}} caractere",

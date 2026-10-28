@@ -30,11 +30,13 @@ const fieldSx = {
 };
 
 /**
- * "From a link", a sheet over Recipes: the Member gives the address of a recipe page and the read goes to the link-read holder. Submitting closes the sheet; the read
- * carries on in the background strip, whatever page the Member goes to. The sheet reads nothing itself,
- * so closing it never stops a read.
+ * "From a link", a sheet over Recipes: the Member gives the address of a recipe page and the read
+ * goes to the link-read holder. Submitting closes the sheet; the read carries on in the background
+ * strip, whatever page the Member goes to. The sheet reads nothing itself, so closing it never stops
+ * a read.
  *
- * Pasted text has its own sheet ("From text"). The holder keeps at most five reads: a sixth is refused here, asking the Member to review first.
+ * Pasted text has its own sheet ("From text"). The holder keeps at most five reads: a sixth is
+ * refused here, asking the Member to review first.
  *
  * A link is checked first (a plain request that fetches nothing and costs nothing): if it is already
  * one of the Family's Recipes the sheet answers "Already in your Recipes" in place, with Open or Read

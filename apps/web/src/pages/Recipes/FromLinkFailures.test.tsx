@@ -585,6 +585,17 @@ describe('Out of Credits', () => {
     );
   });
 
+  it('fails a read started from the From text sheet with Out of Credits', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup(outOfCredits, { route: '/recipes?fromText=1' });
+    await user.type(screen.getByLabelText(/^Recipe text/), 'two eggs');
+    await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+    expect(await screen.findByText('Out of Credits')).toBeVisible();
+    expect(
+      screen.getByText('Out of Credits. This needs 2, and your Family has 1.'),
+    ).toBeVisible();
+  });
+
   it.each<[Locale, RegExp]>([
     [
       'ro',

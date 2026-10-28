@@ -178,7 +178,8 @@ function FromTextForm({
             }}
           >
             {t('fromText.characters', {
-              count: text.length,
+              // Plural form follows the noun after {{max}}, which is always the limit.
+              count: MAX_PASTED_TEXT_LENGTH,
               current: text.length.toLocaleString(i18n.language),
               max: MAX_PASTED_TEXT_LENGTH.toLocaleString(i18n.language),
             })}
@@ -197,6 +198,7 @@ function FromTextForm({
             onClick={() => {
               setText('');
               setNote(null);
+              setFull(false);
               field.current?.focus();
             }}
           >

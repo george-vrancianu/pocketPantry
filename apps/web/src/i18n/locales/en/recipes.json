@@ -243,7 +243,6 @@
     "heading": "From a link",
     "hint": "Paste the link to a page with a recipe. PantryGator reads it into a new Recipe for you to check before saving.",
     "label": "Link to the recipe",
-    "pasteInstead": "Paste the recipe text instead",
     "checking": "Checking the link…",
     "submit": "Read the recipe",
     "reading": "Reading the recipe…",
@@ -269,7 +268,7 @@
     "note": {
       "empty": "Nothing to paste: copy the recipe first.",
       "refused": "Couldn't read the clipboard: paste into the field instead.",
-      "tooLong": "Too long to read: paste just the recipe"
+      "tooLong": "Too long to read: paste just the recipe."
     },
     "characters_one": "{{current}} of {{max}} characters",
     "characters_other": "{{current}} of {{max}} characters",
