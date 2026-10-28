@@ -262,6 +262,7 @@ describe('"From a link" sheet and the link-read holder', () => {
   afterEach(() => {
     linkReads.clear();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   const link = 'https://www.example.com/pancakes';
@@ -563,6 +564,27 @@ describe('"From a link" sheet and the link-read holder', () => {
       await screen.findByRole('button', { name: 'Discard example.com' }),
     );
     expect(linkReads.getState().reads).toEqual([]);
+  });
+
+  it('pastes a copied link into the empty field with the Paste button, without reading it', async () => {
+    const user = userEvent.setup({ delay: null });
+    // Spy after setup: userEvent installs its own clipboard on navigator.
+    vi.spyOn(navigator.clipboard, 'readText').mockResolvedValue(` ${link}\n`);
+    const { calls } = setup({});
+    await screen.findByRole('dialog', { name: 'From a link' });
+    expect(
+      screen.getByRole('button', { name: 'Read the recipe' }),
+    ).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Paste' }));
+
+    expect(linkField()).toHaveValue(link);
+    expect(linkField()).toHaveFocus();
+    expect(screen.queryByRole('button', { name: 'Paste' })).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Read the recipe' }),
+    ).toBeEnabled();
+    expect(sentLinks(calls)).toEqual([]);
   });
 
   it('reads pasted text the same way, as "Pasted text"', async () => {

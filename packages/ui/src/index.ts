@@ -98,6 +98,7 @@ export { Snackbar, type SnackbarProps } from './atoms/Snackbar';
 export { Spinner } from './atoms/Spinner';
 export { Tag, type TagProps, type TagTone } from './atoms/Tag';
 export { TextField, type TextFieldProps } from './atoms/TextField';
+export type { TextFieldPaste } from './atoms/TextFieldPaste';
 export { Toggle, type ToggleProps } from './atoms/Toggle';
 export { Typography, type TypographyProps } from './atoms/Typography';
 export {

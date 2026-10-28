@@ -1,8 +1,17 @@
 import MuiTextField, {
   type TextFieldProps as MuiTextFieldProps,
 } from '@mui/material/TextField';
+import { useTextFieldPaste, type TextFieldPaste } from './TextFieldPaste';
 
-export type TextFieldProps = Omit<MuiTextFieldProps, 'variant'>;
+export type TextFieldProps = Omit<MuiTextFieldProps, 'variant'> & {
+  /**
+   * Turns on a Paste button at the end of the field (see `TextFieldPaste`).
+   * The button shows only while the field is empty (its `value` when
+   * controlled, its own text when not) and the browser can read clipboard
+   * text; otherwise the field's own end adornment (if any) takes the slot.
+   */
+  paste?: TextFieldPaste;
+};
 
 /**
  * Outlined, full-width text input with a visible label.
@@ -11,18 +20,33 @@ export type TextFieldProps = Omit<MuiTextFieldProps, 'variant'>;
  * "None", so its label floats above the field from the start rather than
  * sitting on top of that option.
  */
-export function TextField(props: TextFieldProps) {
+export function TextField({ paste, inputRef, ...props }: TextFieldProps) {
   const { select, slotProps } = props;
   const native =
     select &&
     typeof slotProps?.select === 'object' &&
     slotProps.select.native === true;
   const inputLabel = slotProps?.inputLabel;
-  const merged =
+  const labelled =
     native && typeof inputLabel !== 'function'
       ? { ...slotProps, inputLabel: { shrink: true, ...inputLabel } }
       : slotProps;
+  const pasting = useTextFieldPaste({
+    paste,
+    inputRef,
+    value: props.value,
+    defaultValue: props.defaultValue,
+    onChange: props.onChange,
+    slotProps: labelled,
+  });
   return (
-    <MuiTextField variant="outlined" fullWidth {...props} slotProps={merged} />
+    <MuiTextField
+      variant="outlined"
+      fullWidth
+      {...props}
+      inputRef={pasting.mergedRef}
+      onChange={pasting.onChange}
+      slotProps={pasting.slotProps}
+    />
   );
 }
