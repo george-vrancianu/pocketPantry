@@ -10,7 +10,7 @@ import {
   dispatchScanSession,
   getScanSessionOrder,
   resetScanSession,
-  capReached,
+  sessionHeld,
   canMerge,
   canRetry,
   emptySession,
@@ -507,11 +507,11 @@ describe('Scan Session reducer', () => {
     });
   });
 
-  describe('capReached', () => {
+  describe('sessionHeld', () => {
     it('is false for an empty Scan Session and for ordinary failures', () => {
-      expect(capReached(emptySession)).toBe(false);
+      expect(sessionHeld(emptySession)).toBe(false);
       expect(
-        capReached(
+        sessionHeld(
           run(
             enqueue('a'),
             { type: 'start' },
@@ -535,7 +535,7 @@ describe('Scan Session reducer', () => {
           reason: 'cap',
         },
       );
-      expect(capReached(state)).toBe(true);
+      expect(sessionHeld(state)).toBe(true);
     });
 
     it('is lifted by removing that Scan or retrying it', () => {
@@ -549,10 +549,10 @@ describe('Scan Session reducer', () => {
         },
       );
       expect(
-        capReached(sessionReducer(state, { type: 'remove', id: 'a' })),
+        sessionHeld(sessionReducer(state, { type: 'remove', id: 'a' })),
       ).toBe(false);
       expect(
-        capReached(sessionReducer(state, { type: 'retry', id: 'a' })),
+        sessionHeld(sessionReducer(state, { type: 'retry', id: 'a' })),
       ).toBe(false);
     });
   });
@@ -978,7 +978,7 @@ describe('Barcode cards in the Scan Session reducer', () => {
       { type: 'start' },
       { type: 'fail', id: 'p', reason: 'cap' },
     );
-    expect(capReached(capped)).toBe(true);
+    expect(sessionHeld(capped)).toBe(true);
     expect(sessionReducer(capped, barcode('b')).scans[1].status).toBe(
       'reading',
     );
@@ -989,7 +989,7 @@ describe('Barcode cards in the Scan Session reducer', () => {
       reason: 'cap',
     });
     expect(failed.scans[0].failure).toBe('error');
-    expect(capReached(failed)).toBe(false);
+    expect(sessionHeld(failed)).toBe(false);
   });
 
   it('does not take a photo read slot', () => {

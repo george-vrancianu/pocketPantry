@@ -5,7 +5,7 @@ import type { PlateDishes } from './plate';
 import { scanQuery, type ScanMode, type ScanResponse } from './scan';
 import {
   MAX_CONCURRENT_READS,
-  capReached,
+  sessionHeld,
   dispatchScanSession,
   getScanSession,
   isBarcodeCard,
@@ -156,7 +156,7 @@ function startLookups() {
 export function readScans() {
   startLookups();
   // Past the Scan Cap (or out of Credits) every read would fail; the rest wait until the capped Scan is retried or removed.
-  if (inFlight.size >= MAX_CONCURRENT_READS || capReached(getScanSession()))
+  if (inFlight.size >= MAX_CONCURRENT_READS || sessionHeld(getScanSession()))
     return;
   dispatchScanSession({ type: 'start' });
   for (const scan of getScanSession().scans) {

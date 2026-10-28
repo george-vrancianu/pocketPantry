@@ -378,18 +378,20 @@ export const pendingCount = (state: SessionState) =>
 export const uncroppedCount = (state: SessionState) =>
   state.scans.filter((scan) => scan.status === 'uncropped').length;
 
-const isHeld = (scan: Pick<SessionScan, 'failure'> | undefined) =>
+export const isHeld = <T extends Pick<SessionScan, 'failure'>>(
+  scan: T | undefined,
+): scan is T & { failure: HeldFailure } =>
   scan?.failure === 'cap' || scan?.failure === 'credits';
 
 /** What holds the Session (the Scan Cap, or being out of Credits), or undefined; the first Scan to hit it names it. */
 export const heldBy = (state: SessionState): HeldFailure | undefined =>
-  state.scans.find(isHeld)?.failure as HeldFailure | undefined;
+  state.scans.find(isHeld)?.failure;
 
 /**
  * Whether a Scan hit the Scan Cap or the Family ran out of Credits; no more Scans can be taken until it
  * is retried or removed.
  */
-export const capReached = (state: SessionState) => heldBy(state) !== undefined;
+export const sessionHeld = (state: SessionState) => heldBy(state) !== undefined;
 
 let session = emptySession;
 /** `nextBackgroundOrder` when the first Scan joined the Session: orders its strip row against other background items. */

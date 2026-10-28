@@ -898,6 +898,22 @@ describe('Voice Note on the Shopping List', () => {
         ).toBeVisible();
       });
 
+      it('shows an Out of Credits row with Retry, not the Voice Cap copy', async () => {
+        setup({ note: () => error('credits.insufficient', 402) });
+        renderInAppLayout(<ShoppingPage />, '/shopping');
+
+        fireEvent.pointerUp(await hold());
+
+        await screen.findByRole('alert');
+        const dialog = await openSheet();
+        expect(dialog).toHaveTextContent('Out of Credits');
+        expect(dialog).toHaveTextContent('Your Family has no Credits left');
+        expect(dialog).not.toHaveTextContent("That's today's");
+        expect(
+          within(dialog).getByRole('button', { name: /^Retry:/ }),
+        ).toBeVisible();
+      });
+
       it('adds a cap row instead of recording until the reset, then records again', async () => {
         setup({
           note: capReached(new Date(Date.now() + 60_000).toISOString()),

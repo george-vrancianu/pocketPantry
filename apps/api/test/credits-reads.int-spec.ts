@@ -278,7 +278,7 @@ describe('Every AI read spends Credits (integration)', () => {
       ],
       [
         'da',
-        'Din familie har brugt alle sine kreditter. Bed om flere for at bruge assistenten.',
+        'Jeres familie har ingen kreditter tilbage. Bed om flere for at bruge assistenten.',
       ],
     ])(
       'speaks one sentence in %s when out of Credits, and applies nothing',

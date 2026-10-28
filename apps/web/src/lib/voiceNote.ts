@@ -557,7 +557,7 @@ export function createVoiceNote(
    * waiting behind it. Their recordings are kept, so Retry on any one releases them all. Notes
    * already read stay as they are. Running out of Credits does the same, with its own error.
    */
-  function failForCap(id: number, error: BudgetError = 'capReached') {
+  function failHeld(id: number, error: BudgetError = 'capReached') {
     store = {
       ...store,
       notes: store.notes.map((n) =>
@@ -634,9 +634,9 @@ export function createVoiceNote(
                 ? error.params.resetsAt
                 : undefined,
           });
-          return failForCap(id);
+          return failHeld(id);
         case 'credits.insufficient':
-          return failForCap(id, 'outOfCredits');
+          return failHeld(id, 'outOfCredits');
         case 'voice.too_long':
           return failNote(id, 'tooLong');
         case 'voice.unsupported_audio':

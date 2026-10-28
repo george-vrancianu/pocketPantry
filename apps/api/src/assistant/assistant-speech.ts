@@ -309,7 +309,7 @@ export const assistantMessages = {
       capReached:
         'Du har nået dagens grænse for assistenten. Prøv igen i morgen.',
       outOfCredits:
-        'Din familie har brugt alle sine kreditter. Bed om flere for at bruge assistenten.',
+        'Jeres familie har ingen kreditter tilbage. Bed om flere for at bruge assistenten.',
       providerFailed: 'Jeg kunne ikke læse det lige nu. Prøv igen.',
       nothingUnderstood: 'Jeg forstod ikke noget. Prøv igen.',
       notConfigured: 'Assistenten er ikke sat op.',
