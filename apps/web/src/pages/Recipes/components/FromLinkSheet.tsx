@@ -99,6 +99,10 @@ function FromLinkForm({
   const field = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const modeChanged = useRef(false);
   const fieldId = useId();
+  const paste = {
+    label: t('common:paste.label'),
+    emptyMessage: t('common:paste.empty'),
+  };
 
   // Switching modes swaps the field, so focus follows to the one now shown.
   useEffect(() => {
@@ -229,6 +233,7 @@ function FromLinkForm({
             type="url"
             value={url}
             inputRef={field}
+            paste={paste}
             onChange={(event) => {
               setFull(false);
               setUrl(event.target.value);

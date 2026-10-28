@@ -4,6 +4,10 @@
   "confirm": "Bekræft",
   "cancel": "Annuller",
   "retry": "Prøv igen",
+  "paste": {
+    "label": "Indsæt",
+    "empty": "Intet at indsætte"
+  },
   "units": {
     "g": "g",
     "kg": "kg",

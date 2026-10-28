@@ -4,6 +4,10 @@
   "confirm": "Confirm",
   "cancel": "Cancel",
   "retry": "Try again",
+  "paste": {
+    "label": "Paste",
+    "empty": "Nothing to paste"
+  },
   "units": {
     "g": "g",
     "kg": "kg",

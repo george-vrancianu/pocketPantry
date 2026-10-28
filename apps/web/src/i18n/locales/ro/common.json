@@ -4,6 +4,10 @@
   "confirm": "Confirmă",
   "cancel": "Anulează",
   "retry": "Încearcă din nou",
+  "paste": {
+    "label": "Lipește",
+    "empty": "Nimic de lipit"
+  },
   "units": {
     "g": "g",
     "kg": "kg",
