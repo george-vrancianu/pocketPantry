@@ -337,6 +337,13 @@
       "when": 1793193066543,
       "tag": "0047_credit_ledger_welcome_grant",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1793198756429,
+      "tag": "0048_usage_record",
+      "breakpoints": true
     }
   ]
 }

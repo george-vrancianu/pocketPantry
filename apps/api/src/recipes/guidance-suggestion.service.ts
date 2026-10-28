@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { SHARED_ONLY } from '../catalog/catalog-scope';
-import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import { MeteredAiService } from '../usage/metered-ai.service';
 import {
   FALLBACK_LOCALE,
   type CatalogLocale,
@@ -92,7 +92,7 @@ type Lookups = {
 export class GuidanceSuggestionService {
   constructor(
     @Inject(DATABASE) private readonly database: Database,
-    private readonly ai: StructuredOutputAiService,
+    private readonly ai: MeteredAiService,
     private readonly ingredientCatalog: IngredientCatalogService,
     private readonly browse: RecipeBrowseService,
     private readonly settings: SettingsService,

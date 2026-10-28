@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/env';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import type { MeteredAiService } from '../usage/metered-ai.service';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import {
   catalogIndexInstruction,
@@ -39,6 +40,13 @@ const receipt = {
   ],
 };
 
+/** The metering layer without its records: the real provider service behind the same `generate`. */
+const fakeMetered = (ai: StructuredOutputAiService) =>
+  ({
+    generate: (...args: Parameters<StructuredOutputAiService['generate']>) =>
+      ai.generate(...args),
+  }) as unknown as MeteredAiService;
+
 describe('ReceiptScanService', () => {
   let service: ReceiptScanService;
   let fetchMock: jest.SpyInstance<
@@ -60,14 +68,16 @@ describe('ReceiptScanService', () => {
       ],
     };
     service = new ReceiptScanService(
-      new StructuredOutputAiService({
-        get: (key: string) =>
-          ({
-            AI_PROVIDER: 'openai',
-            AI_API_KEY: 'test-key',
-            AI_VISION_MODEL: 'gpt-4o-mini',
-          })[key],
-      } as ConfigService<AppConfig, true>),
+      fakeMetered(
+        new StructuredOutputAiService({
+          get: (key: string) =>
+            ({
+              AI_PROVIDER: 'openai',
+              AI_API_KEY: 'test-key',
+              AI_VISION_MODEL: 'gpt-4o-mini',
+            })[key],
+        } as ConfigService<AppConfig, true>),
+      ),
       {
         getCatalogIn: jest.fn().mockResolvedValue(catalog),
         toPrompt: catalogPrompt,

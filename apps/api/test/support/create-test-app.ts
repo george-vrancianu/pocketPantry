@@ -22,6 +22,18 @@ import {
 import { configureApp, MAX_REQUEST_BODY_BYTES } from '../../src/app.setup';
 import { serveWebApp } from '../../src/web-app';
 
+/** What a fake provider call reports when the test does not say (an explicit `usage` key, even `undefined`, wins). */
+export const FAKE_MODEL = 'gpt-6-luna';
+export const FAKE_USAGE = { inputTokens: 100, outputTokens: 20 };
+
+const withFakeUsage = <T extends { model?: string; usage?: unknown }>(
+  result: T,
+): T => ({
+  ...result,
+  model: result.model ?? FAKE_MODEL,
+  ...('usage' in result ? {} : { usage: FAKE_USAGE }),
+});
+
 export const TEST_ORIGIN = 'http://localhost:5173';
 
 /** Boots the real app module against the test database, (migrations are applied once by global-setup.mjs). */
@@ -53,7 +65,12 @@ export async function createTestApp(
     });
   }
   if (transcription) {
-    builder.overrideProvider(TranscriptionService).useValue(transcription);
+    builder.overrideProvider(TranscriptionService).useValue({
+      isConfigured: () => transcription.isConfigured(),
+      transcribe: async (
+        request: Parameters<TranscriptionService['transcribe']>[0],
+      ) => withFakeUsage(await transcription.transcribe(request)),
+    });
   }
   builder.overrideProvider(OPEN_FOOD_FACTS_CLIENT).useValue(
     openFoodFacts ?? {
@@ -72,7 +89,8 @@ export async function createTestApp(
   const moduleRef = await builder.compile();
   if (ai) {
     generate = answerWithCatalogIndices(
-      (request, options) => ai.generate(request, options),
+      async (request, options) =>
+        withFakeUsage(await ai.generate(request, options)),
       moduleRef.get(IngredientCatalogService),
     );
   }

@@ -73,10 +73,9 @@ export class PlateScanFlowService {
       ReturnType<PlateScanService['findIngredients']>
     >['items'];
     try {
-      ({ items } = await this.plate.findIngredients(
-        input.dishTitle,
-        locale,
-        familyId,
+      // The picked dish is part of the Plate Scan the photo step already paid for: recorded, not charged.
+      ({ items } = await this.paidReads.unchargedContext(memberId, 'scan', () =>
+        this.plate.findIngredients(input.dishTitle, locale, familyId),
       ));
     } catch (error) {
       this.uses.release(signature);

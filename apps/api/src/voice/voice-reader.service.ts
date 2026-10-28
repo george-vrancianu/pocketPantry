@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
-import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import { MeteredAiService } from '../usage/metered-ai.service';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
@@ -41,7 +41,7 @@ export class VoiceReaderService {
   private readonly logger = new Logger(VoiceReaderService.name);
 
   constructor(
-    private readonly ai: StructuredOutputAiService,
+    private readonly ai: MeteredAiService,
     private readonly ingredientCatalog: IngredientCatalogService,
     private readonly settings: SettingsService,
     private readonly pantry: PantryService,

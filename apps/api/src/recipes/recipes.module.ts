@@ -3,6 +3,7 @@ import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.modul
 import { RecipeDraftsModule } from '../recipe-drafts/recipe-drafts.module';
 import { PageFetchModule } from '../page-fetch/page-fetch.module';
 import { ScanModule } from '../scan/scan.module';
+import { UsageModule } from '../usage/usage.module';
 import { MemberLanguageModule } from '../member-language/member-language.module';
 import { SettingsModule } from '../settings/settings.module';
 import { GuidanceSuggestionService } from './guidance-suggestion.service';
@@ -30,6 +31,7 @@ import { RecipesService } from './recipes.service';
     IngredientCatalogModule,
     PageFetchModule,
     ScanModule,
+    UsageModule,
     RecipeDraftsModule,
   ],
   controllers: [RecipesController, RecipePantryController],

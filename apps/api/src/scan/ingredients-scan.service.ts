@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { CatalogReader } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
-import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import { MeteredAiService } from '../usage/metered-ai.service';
 import { catalogIndexInstruction } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
@@ -18,7 +18,7 @@ import {
 @Injectable()
 export class IngredientsScanService {
   constructor(
-    private readonly ai: StructuredOutputAiService,
+    private readonly ai: MeteredAiService,
     private readonly ingredientCatalog: IngredientCatalogService,
   ) {}
   async analyze(

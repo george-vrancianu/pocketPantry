@@ -6,7 +6,7 @@ import { PantryModule } from '../pantry/pantry.module';
 import { ScanModule } from '../scan/scan.module';
 import { SettingsModule } from '../settings/settings.module';
 import { ShoppingModule } from '../shopping/shopping.module';
-import { TranscriptionService } from './transcription.service';
+import { UsageModule } from '../usage/usage.module';
 import { VoiceController } from './voice.controller';
 import { VoiceHandlers } from './voice-handlers.registry';
 import { VoiceReaderService } from './voice-reader.service';
@@ -15,6 +15,7 @@ import { VoiceService } from './voice.service';
 @Module({
   imports: [
     ScanModule,
+    UsageModule,
     CatalogModule,
     IngredientCatalogModule,
     SettingsModule,
@@ -23,12 +24,7 @@ import { VoiceService } from './voice.service';
     MemberLanguageModule,
   ],
   controllers: [VoiceController],
-  providers: [
-    TranscriptionService,
-    VoiceHandlers,
-    VoiceReaderService,
-    VoiceService,
-  ],
+  providers: [VoiceHandlers, VoiceReaderService, VoiceService],
   exports: [VoiceService],
 })
 export class VoiceModule {}

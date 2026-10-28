@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { and, desc, eq, isNull } from 'drizzle-orm';
-import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import { MeteredAiService } from '../usage/metered-ai.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
@@ -65,7 +65,7 @@ export class LinkRecipesService {
   constructor(
     @Inject(DATABASE) private readonly database: Database,
     @InjectPageFetcher() private readonly pages: PageFetcher,
-    private readonly ai: StructuredOutputAiService,
+    private readonly ai: MeteredAiService,
     private readonly paidReads: PaidReadsService,
     private readonly drafts: RecipeDraftsService,
     private readonly ingredientCatalog: IngredientCatalogService,
@@ -284,7 +284,7 @@ export class LinkRecipesService {
   private async ask(
     memberId: string,
     kind: 'link-page' | 'link-text',
-    request: Parameters<StructuredOutputAiService['generate']>[0],
+    request: Parameters<MeteredAiService['generate']>[0],
     signal?: AbortSignal,
   ): Promise<LinkReadingAnswer> {
     const reading = await this.paidReads.read(memberId, kind, async () => {

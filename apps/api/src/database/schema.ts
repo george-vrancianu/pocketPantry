@@ -720,6 +720,41 @@ export const creditEntry = pgTable(
   ],
 );
 
+// One row per call to an AI provider (ADR 0032). Never shown to Members. The Member and the Family
+// are cleared, not cascaded, when deleted, so the accounting survives them. `kind` is the kind of
+// read (scan, voice, assistant, link-page, link-text, guidance, guidance-admin); a Voice Note leaves
+// two rows, told apart by `step`: `transcription` or `reading` (every other call is `reading`).
+// `kind` is null for a provider call made outside any read. A token or seconds column is null when the
+// provider did not report it; `cost_usd` is null when the cost is unknown (an unpriced model or no usage)
+// and is frozen at write time.
+export const usageRecord = pgTable(
+  'usage_record',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    kind: text('kind'),
+    step: text('step').notNull().default('reading'),
+    memberId: text('member_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    familyId: uuid('family_id').references(() => family.id, {
+      onDelete: 'set null',
+    }),
+    model: text('model').notNull(),
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
+    cachedTokens: integer('cached_tokens'),
+    reasoningTokens: integer('reasoning_tokens'),
+    audioSeconds: numeric('audio_seconds', { precision: 12, scale: 3 }),
+    success: boolean('success').notNull(),
+    providerRequestId: text('provider_request_id'),
+    costUsd: numeric('cost_usd', { precision: 14, scale: 8 }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index('usage_record_created_at_idx').on(table.createdAt)],
+);
+
 // Daily cap bookkeeping: one row per Member per UTC day per kind, counting Scans (`scan`)
 // or Voice Notes (`voice`) that reached the provider.
 export const scanUsage = pgTable(

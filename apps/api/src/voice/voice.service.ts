@@ -21,7 +21,7 @@ import {
 } from '../scan/paid-reads.service';
 import { SettingsService } from '../settings/settings.service';
 import { ShoppingService } from '../shopping/shopping.service';
-import { TranscriptionService } from './transcription.service';
+import { MeteredAiService } from '../usage/metered-ai.service';
 import {
   amountOf,
   type ReadVoiceAction,
@@ -130,7 +130,7 @@ function impliedTarget(op: VoiceOp): VoiceTarget | null {
 @Injectable()
 export class VoiceService {
   constructor(
-    private readonly transcription: TranscriptionService,
+    private readonly metered: MeteredAiService,
     private readonly paidReads: PaidReadsService,
     private readonly reader: VoiceReaderService,
     private readonly catalogMatch: CatalogMatchService,
@@ -144,7 +144,7 @@ export class VoiceService {
   ) {}
 
   isConfigured(): boolean {
-    return this.transcription.isConfigured();
+    return this.metered.isTranscriptionConfigured();
   }
 
   /** The text model can be called: a key, and for a compatible vendor a base URL. */
@@ -167,7 +167,7 @@ export class VoiceService {
     // Debug capture only: ties the recording's transcription to its transcript read.
     const captureId = randomUUID();
     const heard = await this.paidReads.read(memberId, 'voice', async () => {
-      const { text } = await this.transcription.transcribe({
+      const { text } = await this.metered.transcribe({
         audio: input.audio,
         mimeType: input.mimeType,
         language: input.spokenLanguage,

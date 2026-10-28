@@ -1,5 +1,6 @@
 import { found, foundNothing, PaidReadsService } from './paid-reads.service';
 import type { CreditsService } from '../credits/credits.service';
+import type { UsageRecordsService } from '../usage/usage-records.service';
 import type { ScanCapService } from './scan-cap.service';
 
 describe('PaidReadsService', () => {
@@ -15,12 +16,17 @@ describe('PaidReadsService', () => {
       release: jest.fn().mockResolvedValue(undefined),
       assertCanAfford: jest.fn().mockResolvedValue(undefined),
     };
+    const usage = {
+      inContext: jest.fn((_m, _k, run: () => Promise<unknown>) => run()),
+    };
     return {
+      usage,
       caps,
       credits,
       paid: new PaidReadsService(
         caps as unknown as ScanCapService,
         credits as unknown as CreditsService,
+        usage as unknown as UsageRecordsService,
       ),
     };
   };

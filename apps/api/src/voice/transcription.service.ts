@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import type { ScanLanguage } from '../catalog/catalog.schemas';
+import type { CallUsage } from '../usage/prices';
 import { AUDIO_EXTENSIONS } from './voice.schemas';
 import {
   createScanDebugRecorder,
@@ -28,7 +29,18 @@ export type TranscriptionRequest = {
   captureId?: string;
 };
 
-export type TranscriptionResult = { text: string };
+export type TranscriptionResult = {
+  text: string;
+  /** The provider's request id (`x-request-id`), when it sent one. */
+  requestId?: string | null;
+  /** The model that transcribed; a Usage Record falls back to the configured one when absent. */
+  model?: string;
+  /**
+   * What the provider reported using: tokens (the gpt-4o transcription models) or audio seconds
+   * (whisper-style models). Absent when it reported nothing: the client's `durationMs` is never used.
+   */
+  usage?: CallUsage;
+};
 
 /** The prompt hint sent with a recording; undefined when no other language is allowed. */
 export function transcriptionPrompt(
@@ -40,7 +52,25 @@ export function transcriptionPrompt(
   return `A shopping and pantry note, mostly in ${LANGUAGE_NAMES[language]}; it may also contain ${others.join(' or ')} words.`;
 }
 
-const responseSchema = z.object({ text: z.string() });
+const count = z.number().nonnegative();
+
+/** `usage` is best-effort telemetry: a missing or malformed block is dropped, never an error. */
+const usageSchema = z.union([
+  z
+    .object({ input_tokens: count, output_tokens: count })
+    .transform((u): CallUsage => ({
+      inputTokens: u.input_tokens,
+      outputTokens: u.output_tokens,
+    })),
+  z
+    .object({ seconds: count })
+    .transform((u): CallUsage => ({ audioSeconds: u.seconds })),
+]);
+
+const responseSchema = z.object({
+  text: z.string(),
+  usage: usageSchema.optional().catch(undefined),
+});
 
 /**
  * The audio transcription provider (a seam separate from the structured-output
@@ -145,7 +175,13 @@ export class TranscriptionService {
       });
     }
     try {
-      return responseSchema.parse(await response.json());
+      const { text, usage } = responseSchema.parse(await response.json());
+      return {
+        text,
+        requestId: response.headers.get('x-request-id'),
+        model,
+        ...(usage ? { usage } : {}),
+      };
     } catch {
       throw new ApiException(502, 'voice.provider_unavailable');
     }

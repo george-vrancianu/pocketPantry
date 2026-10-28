@@ -1,5 +1,6 @@
 import { access, readdir, readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
+import { costAt, costUsd, type TokenPrice } from '../../usage/prices';
 import {
   readAiUsage,
   type AiTokenUsage,
@@ -665,28 +666,16 @@ function statsRow(run: string, model: string, stats: AnswerStats): string {
   return `| ${run} | ${model} | ${stats.lines} | ${stats.matched} | ${count(usage?.inputTokens)} | ${count(usage?.cachedInputTokens)} | ${count(usage?.outputTokens)} | ${count(usage?.reasoningTokens)} | ${usd(stats.costUsd)} | ${seconds(stats.durationMs)} |`;
 }
 
-export type Price = { input: number; cachedInput: number; output: number };
-
-/** USD per 1M tokens (OpenAI list prices, 2026-10). Reasoning tokens bill as output. */
-const PRICES: Record<string, Price> = {
-  'gpt-6-luna': { input: 0.1, cachedInput: 0.01, output: 0.5 },
-  'gpt-4o-mini': { input: 0.15, cachedInput: 0.075, output: 0.6 },
-};
+export type { TokenPrice as Price } from '../../usage/prices';
 
 /** Estimated cost of one call; `undefined` when the model's price or the usage is unknown. */
 export function estimateCostUsd(
   model: string,
   usage: AiTokenUsage | undefined,
   /** A price given by the developer; wins over the list for models not priced here. */
-  given?: Price,
+  given?: TokenPrice,
 ): number | undefined {
-  const price = given ?? PRICES[model.replace(/-\d{4}-\d{2}-\d{2}$/, '')];
-  if (!price || !usage) return undefined;
-  const cached = usage.cachedInputTokens ?? 0;
-  return (
-    ((usage.inputTokens - cached) * price.input +
-      cached * price.cachedInput +
-      usage.outputTokens * price.output) /
-    1_000_000
-  );
+  // The price table lives in the app (`usage/prices.ts`), where Usage Records use it.
+  const cost = given ? costAt(given, usage) : costUsd(model, usage);
+  return cost ?? undefined;
 }
