@@ -35,7 +35,7 @@ import {
   RecipePreviewPage,
 } from './pages/Recipes/RecipeDetailPage';
 import { RecipeDraftsPage } from './pages/Recipes/RecipeDraftsPage';
-import { FROM_LINK_PARAM } from './lib/recipeRoutes';
+import { FROM_LINK_PARAM, FROM_TEXT_PARAM } from './lib/recipeRoutes';
 import { RecipesPage } from './pages/Recipes/RecipesPage';
 import { ExplorePage } from './pages/Recipes/ExplorePage';
 import { ReviewOverviewPage } from './pages/Review/ReviewOverviewPage';
@@ -105,6 +105,12 @@ export function App() {
                 path="recipes/from-link"
                 element={
                   <Navigate to={`/recipes?${FROM_LINK_PARAM}=1`} replace />
+                }
+              />
+              <Route
+                path="recipes/from-text"
+                element={
+                  <Navigate to={`/recipes?${FROM_TEXT_PARAM}=1`} replace />
                 }
               />
               <Route

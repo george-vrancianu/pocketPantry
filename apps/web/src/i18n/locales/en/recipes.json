@@ -242,12 +242,8 @@
     "menuItem": "From a link",
     "heading": "From a link",
     "hint": "Paste the link to a page with a recipe. PantryGator reads it into a new Recipe for you to check before saving.",
-    "textHint": "Paste the text of a recipe. PantryGator reads it into a new Recipe for you to check before saving.",
     "label": "Link to the recipe",
-    "pasteSwitch": "Paste text instead",
-    "useLink": "Use a link instead",
     "pasteInstead": "Paste the recipe text instead",
-    "textLabel": "Recipe text",
     "checking": "Checking the link…",
     "submit": "Read the recipe",
     "reading": "Reading the recipe…",
@@ -259,8 +255,26 @@
     },
     "full_one": "{{count}} link read is waiting for you. Review or cancel it first.",
     "full_other": "{{count}} link reads are waiting for you. Review or cancel one first.",
-    "priceLink": "Reading a web page costs {{price}}.",
-    "priceText": "Reading pasted text costs {{price}}."
+    "priceLink": "Reading a web page costs {{price}}."
+  },
+  "fromText": {
+    "menuItem": "From text",
+    "heading": "From text",
+    "hint": "Paste the text of a recipe. PantryGator reads it into a new Recipe for you to check before saving.",
+    "siteHint": "Paste the recipe from {{site}}.",
+    "label": "Recipe text",
+    "paste": "Paste from clipboard",
+    "clear": "Clear",
+    "submit": "Read the recipe",
+    "note": {
+      "empty": "Nothing to paste: copy the recipe first.",
+      "refused": "Couldn't read the clipboard: paste into the field instead.",
+      "tooLong": "Too long to read: paste just the recipe"
+    },
+    "characters_one": "{{current}} of {{max}} characters",
+    "characters_other": "{{current}} of {{max}} characters",
+    "price": "Reading pasted text costs {{price}}.",
+    "pasteInstead": "Paste text instead"
   },
   "readingLanguage": {
     "label": "Language of the recipe",
@@ -357,7 +371,8 @@
     "explore": "Explore Recipes",
     "fromLink": "From a link",
     "newRecipe": "+ New Recipe",
-    "starters": "Start with these · you can make them"
+    "starters": "Start with these · you can make them",
+    "fromText": "From text"
   },
   "allHidden": "No Recipes to show.",
   "allHiddenHint": "Recipes hidden by your Allergies are left out."

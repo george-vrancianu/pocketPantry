@@ -29,15 +29,17 @@ import {
 import { useRecipeDrafts } from '../../lib/recipeDrafts';
 import {
   FROM_LINK_PARAM,
-  FROM_LINK_PREFILL_STATE,
+  FROM_TEXT_PARAM,
+  FROM_TEXT_PREFILL_STATE,
 } from '../../lib/recipeRoutes';
 import { useRecipeDraftDiscard } from './useRecipeDraftDiscard';
 import { EmptyFamilyRecipes } from './components/EmptyFamilyRecipes';
 import { CookTonightPanel } from '../../components/CookTonightPanel';
+import { FromLinkSheet } from './components/FromLinkSheet';
 import {
-  FromLinkSheet,
-  type FromLinkPrefill,
-} from './components/FromLinkSheet';
+  FromTextSheet,
+  type FromTextPrefill,
+} from './components/FromTextSheet';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
 import { SectionLabel } from './components/SectionLabel';
@@ -135,17 +137,27 @@ export function RecipesPage() {
       .length ?? 0;
   const [params, setParams] = useSearchParams();
   const fromLinkOpen = params.get(FROM_LINK_PARAM) === '1';
-  // "Paste text instead" on a failed link read arrives here with the link to keep.
+  const fromTextOpen = params.get(FROM_TEXT_PARAM) === '1';
+  // "Paste text instead" on a failed link read arrives here with the site to name and the read to replace.
   const prefill = (
     useLocation().state as {
-      [FROM_LINK_PREFILL_STATE]?: FromLinkPrefill;
+      [FROM_TEXT_PREFILL_STATE]?: FromTextPrefill;
     } | null
-  )?.[FROM_LINK_PREFILL_STATE];
+  )?.[FROM_TEXT_PREFILL_STATE];
   const closeFromLink = () =>
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev);
         next.delete(FROM_LINK_PARAM);
+        return next;
+      },
+      { replace: true },
+    );
+  const closeFromText = () =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete(FROM_TEXT_PARAM);
         return next;
       },
       { replace: true },
@@ -179,6 +191,10 @@ export function RecipesPage() {
             {
               label: t('recipes:fromLink.menuItem'),
               href: `/recipes?${FROM_LINK_PARAM}=1`,
+            },
+            {
+              label: t('recipes:fromText.menuItem'),
+              href: `/recipes?${FROM_TEXT_PARAM}=1`,
             },
             {
               label: t('recipes:explore.menuItem'),
@@ -284,8 +300,13 @@ export function RecipesPage() {
       </Stack>
       <FromLinkSheet
         open={fromLinkOpen}
-        prefill={fromLinkOpen ? prefill : undefined}
         onClose={closeFromLink}
+        onExited={() => addButton.current?.focus()}
+      />
+      <FromTextSheet
+        open={fromTextOpen}
+        prefill={fromTextOpen ? prefill : undefined}
+        onClose={closeFromText}
         onExited={() => addButton.current?.focus()}
       />
     </>

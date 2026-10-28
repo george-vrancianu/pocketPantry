@@ -206,13 +206,13 @@ describe('RecipesPage', () => {
       expect(rows[1]).toHaveTextContent('Omelette');
     });
 
-    it('offers New Recipe, From a link and From Explore (marked new) from the header plus, and opens New Recipe', async () => {
+    it('offers New Recipe, From a link, From text and From Explore (marked new) from the header plus, and opens New Recipe', async () => {
       setup(() => [omelette]);
       await userEvent.click(
         await screen.findByRole('button', { name: 'Add a Recipe' }),
       );
       expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(
-        ['New Recipe', 'From a link', 'From Explore new'],
+        ['New Recipe', 'From a link', 'From text', 'From Explore new'],
       );
       await userEvent.click(
         screen.getByRole('menuitem', { name: 'New Recipe' }),
@@ -254,6 +254,20 @@ describe('RecipesPage', () => {
       expect(
         await screen.findByRole('dialog', { name: 'From a link' }),
       ).toBeVisible();
+    });
+
+    it('opens the From text sheet from the header plus', async () => {
+      setup(() => [omelette]);
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Add a Recipe' }),
+      );
+      await userEvent.click(
+        screen.getByRole('menuitem', { name: 'From text' }),
+      );
+      expect(
+        await screen.findByRole('dialog', { name: 'From text' }),
+      ).toBeVisible();
+      expect(screen.queryByRole('dialog', { name: 'From a link' })).toBeNull();
     });
 
     it('opens a Recipe when its row is tapped', async () => {
