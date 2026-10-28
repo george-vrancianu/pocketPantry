@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { and, inArray, isNull } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
+import { loadRecipeTags } from '../tags/recipe-tags';
 import { loadDisplayNames } from '../catalog/display-names';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
@@ -157,6 +158,12 @@ export class CookTonightService {
         candidates[0].row.familyId === null ? [candidates[0].row.id] : [],
       ),
     );
+    const tagsOf = await loadRecipeTags(
+      this.database,
+      catalogScope(familyId),
+      locale,
+      groupsRanked.map(({ candidates }) => candidates[0].row.id),
+    );
     return {
       hiddenByAllergiesCount,
       cards: groupsRanked.map(({ base, candidates }): CookTonightCard => {
@@ -177,6 +184,7 @@ export class CookTonightService {
             servings: top.match.servings,
             prepMinutes: top.row.prepMinutes,
             cookMinutes: top.row.cookMinutes,
+            tags: tagsOf.get(top.row.id) ?? [],
             allergyWarning: warnings.get(top.row.id) ?? null,
           },
           canMake: top.match.canMake,

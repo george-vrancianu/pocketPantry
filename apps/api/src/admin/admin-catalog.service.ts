@@ -15,6 +15,7 @@ import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
 import { replaceIngredientAllergenTags } from '../catalog/ingredient-allergen-tags';
+import { mirrorListEntryAsTag } from '../tags/recipe-tags';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
@@ -25,6 +26,8 @@ import {
   allergens,
   catalogTranslations,
   cuisines,
+  tagGroups,
+  tags,
   eatingMoments,
   ingredientAllergens,
   ingredients,
@@ -506,6 +509,7 @@ export class AdminCatalogService {
         })
         .returning();
       await this.addCanonicalName(tx, type, id, input.name);
+      await mirrorListEntryAsTag(tx, type, id);
       return row;
     });
   }
@@ -520,6 +524,7 @@ export class AdminCatalogService {
         .returning();
       if (!row) throw notFound(type);
       await this.renameCanonicalName(tx, type, id, input.name);
+      await mirrorListEntryAsTag(tx, type, id);
       return row;
     });
   }
@@ -533,6 +538,7 @@ export class AdminCatalogService {
         await this.requireRow(tx, type, id);
         await this.deleteTranslationsOf(tx, type, id);
         await tx.delete(table).where(eq(table.id, id));
+        await mirrorListEntryAsTag(tx, type, id);
       },
       new ApiException(409, `catalog.${type}_in_use`),
     );
@@ -806,6 +812,7 @@ export class AdminCatalogService {
             normalizedValue: normalizeName(input.value),
           })
           .returning();
+        await this.mirrorTagOf(tx, input.entityType, input.entityId);
         return row;
       },
       undefined,
@@ -831,6 +838,7 @@ export class AdminCatalogService {
         })
         .where(eq(catalogTranslations.id, id))
         .returning();
+      await this.mirrorTagOf(tx, existing.entityType, existing.entityId);
       return row;
     });
   }
@@ -838,9 +846,19 @@ export class AdminCatalogService {
   async deleteTranslation(id: string): Promise<void> {
     const existing = await this.requireTranslation(this.database, id);
     this.assertEditable(existing.kind, existing.locale);
-    await this.database
-      .delete(catalogTranslations)
-      .where(eq(catalogTranslations.id, id));
+    await this.database.transaction(async (tx) => {
+      await tx
+        .delete(catalogTranslations)
+        .where(eq(catalogTranslations.id, id));
+      await this.mirrorTagOf(tx, existing.entityType, existing.entityId);
+    });
+  }
+
+  /** Expand step: a Cuisine's or Method's translations also live on its Catalog Tag. */
+  private async mirrorTagOf(tx: Tx, type: EntityType, id: string) {
+    if (type === 'cuisine' || type === 'method') {
+      await mirrorListEntryAsTag(tx, type, id);
+    }
   }
 
   // Helpers
@@ -1006,6 +1024,8 @@ export class AdminCatalogService {
       ingredient: adminScope.ingredients(executor),
       cuisine: cuisines,
       method: methods,
+      tag_group: tagGroups,
+      tag: tags,
       eating_moment: eatingMoments,
       allergen: allergens,
     }[type];

@@ -5,6 +5,7 @@ import { ingredientUnit, recipeDifficulty } from '../database/schema';
 import type { AllergyOwner, AllergyWarningOwner } from './matching/allergens';
 import type { PlateMatch } from './plate-matches';
 import { sourceLinkInput } from './source-link';
+import type { RecipeTag } from '../tags/recipe-tags';
 import type { RecipeDiff } from './recipe-diff';
 import {
   guidanceBody,
@@ -404,6 +405,8 @@ export type ResolvedRecipe = {
   difficulty: AdminRecipeDetail['difficulty'];
   cuisine: { id: string; name: string } | null;
   method: { id: string; name: string } | null;
+  /** Every Tag on the Recipe in the viewer's language: Family Tags first, then Catalog Tags by Tag Group. */
+  tags: RecipeTag[];
   archived: boolean;
   /** The normalised page a Recipe from Link was read from; null otherwise (and always on a Catalog Recipe). */
   sourceLink: string | null;
@@ -419,6 +422,8 @@ export type ResolvedRecipe = {
 
 type NamedRef = { id: string; name: string };
 
+export type { RecipeTag };
+
 /** One row of the Member's Recipe list. */
 export type RecipeListItem = {
   id: string;
@@ -428,6 +433,8 @@ export type RecipeListItem = {
   base: { id: string; title: string } | null;
   cuisine: NamedRef | null;
   method: NamedRef | null;
+  /** Every Tag on the Recipe in the viewer's language: Family Tags first, then Catalog Tags by Tag Group. */
+  tags: RecipeTag[];
   /** Live Variants of a Base Recipe; 0 on a Variant. */
   variantCount: number;
   servings: number;
@@ -456,6 +463,7 @@ export type RecipeVariantItem = {
   title: string;
   cuisine: NamedRef | null;
   method: NamedRef | null;
+  tags: RecipeTag[];
   owner: RecipeOwner;
   /** The Family's live copy of a Catalog Variant, else null. */
   familyCopyId: string | null;
@@ -679,6 +687,7 @@ export type CookTonightCard = {
     servings: number;
     prepMinutes: number | null;
     cookMinutes: number | null;
+    tags: RecipeTag[];
     allergyWarning: CompactAllergyWarning | null;
   };
   canMake: boolean;

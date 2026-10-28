@@ -1,3 +1,4 @@
+import { syncCuisineMethodTags, copyRecipeTags } from '../tags/recipe-tags';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm';
@@ -99,6 +100,12 @@ export class RecipesService {
         id,
         ...recipeColumns(document),
       });
+      await syncCuisineMethodTags(
+        tx,
+        id,
+        document.cuisineId,
+        document.methodId,
+      );
       await this.writeLines(tx, id, document, new Set());
       await this.writeSteps(tx, id, document, new Set());
     });
@@ -127,6 +134,12 @@ export class RecipesService {
         .update(recipes)
         .set(recipeColumns(document))
         .where(eq(recipes.id, id));
+      await syncCuisineMethodTags(
+        tx,
+        id,
+        document.cuisineId,
+        document.methodId,
+      );
       await this.writeLines(
         tx,
         id,
@@ -186,6 +199,8 @@ export class RecipesService {
         cuisineId: parent.cuisineId,
         methodId: parent.methodId,
       });
+      // The Variant starts with every Tag of its Base, then they are independent.
+      await copyRecipeTags(tx, parentId, id);
       await this.copyContent(tx, parentId, id);
     });
     return this.detail(id);

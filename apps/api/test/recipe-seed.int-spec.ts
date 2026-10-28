@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import {
   seedCatalog,
   seedId,
@@ -30,9 +30,12 @@ import {
   recipes,
   recipeSteps,
   recipeStepTranslations,
+  recipeTags,
   recipeTips,
   recipeTipTranslations,
   recipeTranslations,
+  tagGroups,
+  tags,
 } from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
@@ -131,12 +134,88 @@ describe('Recipe seed (integration)', () => {
             ...cuisineRows.map((r) => r.id),
             ...methodRows.map((r) => r.id),
           ]),
+          inArray(catalogTranslations.entityType, ['cuisine', 'method']),
           eq(catalogTranslations.kind, 'name'),
         ),
       );
     expect(translated[0].n).toBe(
       (SEED_CUISINES.length + SEED_METHODS.length) * 3,
     );
+  });
+
+  it('seeds Tag Groups in order, with the Cuisines and Methods and the starter Meal and Diet Tags as Catalog Tags, in en, ro and da', async () => {
+    const groups = await database
+      .select({ name: tagGroups.name, position: tagGroups.position })
+      .from(tagGroups)
+      .orderBy(tagGroups.position);
+    expect(groups).toEqual([
+      { name: 'Meal', position: 1 },
+      { name: 'Diet', position: 2 },
+      { name: 'Cuisine', position: 3 },
+      { name: 'Method', position: 4 },
+    ]);
+    const catalogTags = await database
+      .select({ id: tags.id, group: tagGroups.name, name: tags.name })
+      .from(tags)
+      .innerJoin(tagGroups, eq(tagGroups.id, tags.groupId))
+      .where(isNull(tags.familyId));
+    const inGroup = (group: string) =>
+      catalogTags
+        .filter((t) => t.group === group)
+        .map((t) => t.name)
+        .sort();
+    expect(inGroup('Meal')).toEqual(
+      ['Breakfast', 'Brunch', 'Lunch', 'Dinner', 'Snack', 'Dessert'].sort(),
+    );
+    expect(inGroup('Diet')).toEqual(
+      ['Vegetarian', 'Vegan', 'Keto', 'Low-carb', 'High-protein'].sort(),
+    );
+    // Each Cuisine and Method is a Catalog Tag under its own id.
+    for (const [list, id, group] of [
+      [SEED_CUISINES, seedId.cuisine, 'Cuisine'],
+      [SEED_METHODS, seedId.method, 'Method'],
+    ] as const) {
+      for (const entry of list) {
+        expect(catalogTags).toContainEqual({
+          id: id(entry.slug),
+          group,
+          name: entry.en,
+        });
+      }
+    }
+    const named = await database
+      .select({
+        locale: catalogTranslations.locale,
+        value: catalogTranslations.value,
+      })
+      .from(catalogTranslations)
+      .where(
+        and(
+          eq(catalogTranslations.entityType, 'tag'),
+          eq(catalogTranslations.entityId, seedId.tag('meal:breakfast')),
+          eq(catalogTranslations.kind, 'name'),
+        ),
+      )
+      .orderBy(catalogTranslations.locale);
+    expect(named).toEqual([
+      { locale: 'da', value: 'Morgenmad' },
+      { locale: 'en', value: 'Breakfast' },
+      { locale: 'ro', value: 'Mic dejun' },
+    ]);
+  });
+
+  it('tags a seeded Variant with its Cuisine or Method', async () => {
+    const variant = SEED_BASE_RECIPES.flatMap((b) => b.variants).find(
+      (v) => v.cuisine,
+    );
+    expect(variant).toBeDefined();
+    const linked = await database
+      .select({ tagId: recipeTags.tagId })
+      .from(recipeTags)
+      .where(eq(recipeTags.recipeId, seedId.recipe(variant!.slug)));
+    expect(linked.map((l) => l.tagId)).toEqual([
+      seedId.cuisine(variant!.cuisine!),
+    ]);
   });
 
   it('reads a seeded Variant through the Member API, in Romanian, with inherited Tips and guidance', async () => {

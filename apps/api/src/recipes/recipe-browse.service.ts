@@ -6,6 +6,7 @@ import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
+import { loadRecipeTags } from '../tags/recipe-tags';
 import { cuisines, eatingMoments, methods, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import {
@@ -105,12 +106,18 @@ export class RecipeBrowseService {
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
     const counts = await this.variantCounts(familyId, baseIds, query.scope);
-    const [ref, { hides, allergy }] = await Promise.all([
+    const [ref, tagsOf, { hides, allergy }] = await Promise.all([
       this.namedRefs(
         this.database,
         catalogScope(familyId),
         locale,
         matching.flatMap((r) => [r.cuisineId, r.methodId]),
+      ),
+      loadRecipeTags(
+        this.database,
+        catalogScope(familyId),
+        locale,
+        matching.map((r) => r.id),
       ),
       loadViewerAllergyContext(
         this.database,
@@ -149,6 +156,7 @@ export class RecipeBrowseService {
             : null,
           cuisine: ref.cuisine(row.cuisineId),
           method: ref.method(row.methodId),
+          tags: tagsOf.get(row.id) ?? [],
           variantCount: counts.get(row.id) ?? 0,
           servings: row.servings,
           prepMinutes: row.prepMinutes,
@@ -371,12 +379,19 @@ export class RecipeBrowseService {
       locale,
       rows.flatMap((r) => [r.cuisineId, r.methodId]),
     );
+    const tagsOf = await loadRecipeTags(
+      this.database,
+      catalogScope(familyId),
+      locale,
+      rows.map((r) => r.id),
+    );
     return rows
       .map((row) => ({
         id: row.id,
         title: titles.get(row.id)!,
         cuisine: ref.cuisine(row.cuisineId),
         method: ref.method(row.methodId),
+        tags: tagsOf.get(row.id) ?? [],
         owner: ownerOf(row),
         familyCopyId: copies.get(row.id) ?? null,
       }))

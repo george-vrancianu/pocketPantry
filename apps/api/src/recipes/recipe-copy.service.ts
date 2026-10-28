@@ -1,3 +1,4 @@
+import { copyRecipeTags } from '../tags/recipe-tags';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, isNull } from 'drizzle-orm';
@@ -109,6 +110,8 @@ export class RecipeCopyService {
         cuisineId: resolved.cuisine?.id ?? null,
         methodId: resolved.method?.id ?? null,
       });
+      // A Catalog Recipe carries only Catalog Tags; the copy starts with all of them.
+      await copyRecipeTags(tx, sourceId, copyId);
       if (resolved.lines.length > 0) {
         await tx.insert(recipeIngredientLines).values(
           resolved.lines.map((line, position) => ({

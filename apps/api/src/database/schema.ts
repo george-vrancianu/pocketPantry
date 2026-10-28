@@ -198,6 +198,8 @@ export const catalogEntityType = pgEnum('catalog_entity_type', [
   'method',
   'eating_moment',
   'allergen',
+  'tag_group',
+  'tag',
 ]);
 
 export const translationKind = pgEnum('translation_kind', ['name', 'synonym']);
@@ -923,6 +925,51 @@ export const methods = pgTable(
   ],
 );
 
+// Tags (ADR 0033). A Tag Group is an Admin-ordered heading Catalog Tags are listed under; its
+// display names live in catalog_translations (entity type `tag_group`).
+export const tagGroups = pgTable(
+  'tag_groups',
+  {
+    id: uuid('id').primaryKey(),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    position: integer('position').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('tag_groups_normalized_name_idx').on(table.normalizedName),
+  ],
+);
+
+// A Tag: a Catalog Tag (`familyId` null, always in a group; display names in catalog_translations
+// under entity type `tag`) or a Family Tag (`familyId` set, no group, never translated).
+export const tags = pgTable(
+  'tags',
+  {
+    id: uuid('id').primaryKey(),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    familyId: uuid('family_id').references(() => family.id, {
+      onDelete: 'cascade',
+    }),
+    groupId: uuid('group_id').references(() => tagGroups.id),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('tags_catalog_normalized_name_idx')
+      .on(table.normalizedName)
+      .where(sql`${table.familyId} IS NULL`),
+    uniqueIndex('tags_family_normalized_name_idx')
+      .on(table.familyId, table.normalizedName)
+      .where(sql`${table.familyId} IS NOT NULL`),
+    index('tags_group_idx').on(table.groupId),
+    check(
+      'tags_group_iff_catalog',
+      sql`(${table.familyId} IS NULL) = (${table.groupId} IS NOT NULL)`,
+    ),
+  ],
+);
+
 export const recipeDifficulty = pgEnum('recipe_difficulty', [
   'easy',
   'medium',
@@ -981,6 +1028,24 @@ export const recipes = pgTable(
       'recipes_minutes_non_negative',
       sql`(${table.prepMinutes} IS NULL OR ${table.prepMinutes} >= 0) AND (${table.cookMinutes} IS NULL OR ${table.cookMinutes} >= 0)`,
     ),
+  ],
+);
+
+// The Tags on a Recipe. Catalog Recipes carry only Catalog Tags.
+export const recipeTags = pgTable(
+  'recipe_tags',
+  {
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    tagId: uuid('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.recipeId, table.tagId] }),
+    index('recipe_tags_tag_idx').on(table.tagId),
   ],
 );
 

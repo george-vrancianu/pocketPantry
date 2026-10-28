@@ -21,6 +21,8 @@ export const seedId = {
   recipe: (slug: string) => stableId(`recipe:${slug}`),
   cuisine: (slug: string) => stableId(`cuisine:${slug}`),
   method: (slug: string) => stableId(`method:${slug}`),
+  tagGroup: (slug: string) => stableId(`tag-group:${slug}`),
+  tag: (slug: string) => stableId(`tag:${slug}`),
   allergen: (slug: string) => stableId(`allergen:${slug}`),
   eatingMoment: (slug: string) => stableId(`eating-moment:${slug}`),
 };

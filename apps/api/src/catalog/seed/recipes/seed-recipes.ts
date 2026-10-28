@@ -1,4 +1,4 @@
-import { and, inArray, isNotNull } from 'drizzle-orm';
+import { and, inArray, isNotNull, isNull } from 'drizzle-orm';
 import type { Database, Tx } from '../../../database/database.types';
 import {
   catalogTranslations,
@@ -6,6 +6,7 @@ import {
   eatingMoments,
   methods,
   recipeHiddenTips,
+  recipeTags,
   recipeIngredientLines,
   recipeIngredientLineTranslations,
   recipes,
@@ -14,6 +15,8 @@ import {
   recipeTips,
   recipeTipTranslations,
   recipeTranslations,
+  tagGroups,
+  tags,
 } from '../../../database/schema';
 import { writeGuidanceTranslations } from '../../../recipes/recipe-guidance-translations';
 import { writeGuidance } from '../../../recipes/recipe-guidance-write';
@@ -23,7 +26,14 @@ import { SEED_INGREDIENTS } from '../catalog-seed-data';
 import { seedId, stableId, translationRows } from '../seed-catalog';
 import { SEED_BASE_RECIPES } from './recipe-seed-data';
 import type { RecipeSeed, SeedNamed, VariantSeed } from './recipe-seed-types';
-import { SEED_CUISINES, SEED_EATING_MOMENTS, SEED_METHODS } from './registries';
+import {
+  SEED_CUISINES,
+  SEED_DIET_TAGS,
+  SEED_EATING_MOMENTS,
+  SEED_MEAL_TAGS,
+  SEED_METHODS,
+  SEED_TAG_GROUPS,
+} from './registries';
 import {
   assertAcceptance,
   assertRecipeSeedValid,
@@ -150,11 +160,83 @@ async function seedRegistries(tx: Tx) {
   }
   await insertNames(tx, 'eating_moment', momentPlan.fresh, momentPlan.ids);
 
+  await seedTags(tx, cuisinePlan.ids, methodPlan.ids);
+
   return {
     cuisine: cuisinePlan.ids,
     method: methodPlan.ids,
     moment: momentPlan.ids,
   };
+}
+
+/**
+ * Tag Groups and Catalog Tags (ADR 0033): the Cuisine and Method Tags mirror the Cuisines and
+ * Methods under the same ids (as migration 0049 does for a live database), plus the starter
+ * Meal and Diet Tags. Groups and Tags that exist (by id or normalised name) are left alone.
+ */
+async function seedTags(
+  tx: Tx,
+  cuisineIds: Map<string, string>,
+  methodIds: Map<string, string>,
+) {
+  const existingGroups = await tx
+    .select({ id: tagGroups.id, normalizedName: tagGroups.normalizedName })
+    .from(tagGroups);
+  const groupPlan = planRegistry(
+    existingGroups,
+    SEED_TAG_GROUPS,
+    seedId.tagGroup,
+  );
+  if (groupPlan.fresh.length > 0) {
+    await tx
+      .insert(tagGroups)
+      .values(
+        SEED_TAG_GROUPS.filter((g) => groupPlan.fresh.includes(g)).map((g) => ({
+          id: groupPlan.ids.get(g.slug) as string,
+          name: g.en,
+          normalizedName: normalizeName(g.en),
+          position: g.position,
+        })),
+      )
+      .onConflictDoNothing({ target: tagGroups.id });
+  }
+  await insertNames(tx, 'tag_group', groupPlan.fresh, groupPlan.ids);
+
+  const existingTags = (
+    await tx
+      .select({ id: tags.id, normalizedName: tags.normalizedName })
+      .from(tags)
+      .where(isNull(tags.familyId))
+  ).map((t) => ({ id: t.id, normalizedName: t.normalizedName }));
+  const groups: [string, SeedNamed[], (slug: string) => string][] = [
+    ['meal', SEED_MEAL_TAGS, (slug) => seedId.tag(`meal:${slug}`)],
+    ['diet', SEED_DIET_TAGS, (slug) => seedId.tag(`diet:${slug}`)],
+    ['cuisine', SEED_CUISINES, (slug) => cuisineIds.get(slug) as string],
+    ['method', SEED_METHODS, (slug) => methodIds.get(slug) as string],
+  ];
+  for (const [groupSlug, rows, idOf] of groups) {
+    const plan = planRegistry(existingTags, rows, idOf);
+    // A Tag planned for this group is "existing" for the next one (names are unique across groups).
+    for (const row of plan.fresh) {
+      existingTags.push({
+        id: plan.ids.get(row.slug) as string,
+        normalizedName: normalizeName(row.en),
+      });
+    }
+    if (plan.fresh.length === 0) continue;
+    await tx
+      .insert(tags)
+      .values(
+        plan.fresh.map((row) => ({
+          id: plan.ids.get(row.slug) as string,
+          name: row.en,
+          normalizedName: normalizeName(row.en),
+          groupId: groupPlan.ids.get(groupSlug) as string,
+        })),
+      )
+      .onConflictDoNothing({ target: tags.id });
+    await insertNames(tx, 'tag', plan.fresh, plan.ids);
+  }
 }
 
 type Registries = Awaited<ReturnType<typeof seedRegistries>>;
@@ -209,6 +291,17 @@ async function insertRecipes(
     .onConflictDoNothing({ target: recipes.id })
     .returning({ id: recipes.id });
   const ids = new Set(inserted.map((r) => r.id));
+  // A Variant's Cuisine or Method is also one of its Tags.
+  const links = rows.flatMap(({ row }) =>
+    ids.has(row.id)
+      ? [row.cuisineId, row.methodId].flatMap((tagId) =>
+          tagId ? [{ recipeId: row.id, tagId }] : [],
+        )
+      : [],
+  );
+  if (links.length > 0) {
+    await tx.insert(recipeTags).values(links).onConflictDoNothing();
+  }
   return new Set(rows.filter((r) => ids.has(r.row.id)).map((r) => r.slug));
 }
 
