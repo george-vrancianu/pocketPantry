@@ -4,5 +4,8 @@ export const DRAFT_PARAM = 'draft';
 /** The search parameter that holds the "From a link" sheet open: the old "From a link" route redirects to it. */
 export const FROM_LINK_PARAM = 'fromLink';
 
-/** The state "Paste text instead" hands the Recipes page: open the sheet in text mode, the link kept. */
-export const FROM_LINK_PREFILL_STATE = 'fromLinkPrefill';
+/** The search parameter that holds the "From text" sheet open. */
+export const FROM_TEXT_PARAM = 'fromText';
+
+/** The state "Paste text instead" hands the Recipes page: open "From text", naming the site and replacing the failed read. */
+export const FROM_TEXT_PREFILL_STATE = 'fromTextPrefill';

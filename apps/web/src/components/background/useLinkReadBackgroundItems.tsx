@@ -8,8 +8,8 @@ import { linkReads, useLinkReads, type LinkRead } from '../../lib/linkReads';
 import { linkFailureReason, offersPasteText } from '../../lib/linkReadFailure';
 import {
   DRAFT_PARAM,
-  FROM_LINK_PARAM,
-  FROM_LINK_PREFILL_STATE,
+  FROM_TEXT_PARAM,
+  FROM_TEXT_PREFILL_STATE,
 } from '../../lib/recipeRoutes';
 import type {
   BackgroundAction,
@@ -101,18 +101,20 @@ export function useLinkReadBackgroundItems(enabled = true): BackgroundItem[] {
         onClick: () => linkReads.discard(read.id),
       });
       if (offersPasteText(read) && read.source.kind === 'link') {
-        const { url } = read.source;
         actions.push({
           type: 'button',
           tone: 'secondary',
-          label: t('recipes:fromLink.pasteSwitch'),
+          label: t('recipes:fromText.pasteInstead'),
           ariaLabel: t('background:link.pasteInstead', { what }),
           closesSheet: true,
           // The failed row stays until the pasted text is submitted, so closing the sheet loses nothing.
           onClick: () =>
-            navigate(`/recipes?${FROM_LINK_PARAM}=1`, {
+            navigate(`/recipes?${FROM_TEXT_PARAM}=1`, {
               state: {
-                [FROM_LINK_PREFILL_STATE]: { url, replaces: read.id },
+                [FROM_TEXT_PREFILL_STATE]: {
+                  site: read.site,
+                  replaces: read.id,
+                },
               },
             }),
         });
