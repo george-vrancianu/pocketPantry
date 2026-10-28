@@ -18,6 +18,7 @@ import {
 import { consumeRecipeDraft } from '../recipe-drafts/recipe-drafts.service';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
+import { syncCuisineMethodTags } from '../tags/recipe-tags';
 import {
   itemNotFound,
   recipeNotFound,
@@ -202,6 +203,7 @@ export class FamilyRecipesService {
       sourceLink: document.sourceLink ?? null,
       sourceLanguage: document.sourceLanguage ?? null,
     });
+    await syncCuisineMethodTags(tx, id, document.cuisineId, document.methodId);
     await this.writeLines(tx, id, document, new Map(), locale);
     const stepIds = await this.recipes.writeSteps(tx, id, document, new Set());
     if (tips.length > 0) {
@@ -271,6 +273,12 @@ export class FamilyRecipesService {
               : {}),
         })
         .where(eq(recipes.id, id));
+      await syncCuisineMethodTags(
+        tx,
+        id,
+        document.cuisineId,
+        document.methodId,
+      );
       await this.writeLines(
         tx,
         id,

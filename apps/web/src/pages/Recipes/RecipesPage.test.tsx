@@ -5,6 +5,7 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CookTonightCard } from '../../lib/cookTonight';
 import type { RecipeListItem } from '../../lib/recipes';
+import type { RecipeTag } from '../../lib/tags';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubMotion } from '../../test/viewport';
 import { RecipesPage } from './RecipesPage';
@@ -24,8 +25,11 @@ import { RecipesPage } from './RecipesPage';
  * - Not filtering, a Variant sits under its Base (a Family Recipe, or the Family's copy of its
  *   Catalog Base, matched by `copiedFromId`) and shows only in the Base's "n Variants" count;
  *   a Variant with no Base in the list is its own row, labelled "Variant of {base}".
- * - Meta parts are joined with " · " in the row's text ("Italian · Baking · Easy · 3 Variants").
- * - Chips are `button`s with `aria-pressed`, named by the Cuisine or Method name; "Clear" is
+ * - A row's meta line is one labelled `group` named "Tags: {every Tag name}" holding up to two
+ *   Tag chips and "+N" (both hidden from the accessibility tree), then the text "· Easy · 3 Variants"
+ *   (Level, Variant count, joined with " · "). Family Tags come first, then Catalog Tags in
+ *   Tag Group order. A Recipe without Tags has no such group, only "Easy · 3 Variants".
+ * - Filter chips are `button`s with `aria-pressed`, named by the Cuisine or Method name; "Clear" is
  *   a `button` shown only while filtering.
  */
 
@@ -36,6 +40,7 @@ const item = (over: Partial<RecipeListItem>): RecipeListItem => ({
   base: null,
   cuisine: null,
   method: null,
+  tags: [],
   variantCount: 0,
   servings: 2,
   prepMinutes: 10,
@@ -69,6 +74,7 @@ const card = (
     servings: 2,
     prepMinutes: 10,
     cookMinutes: 15,
+    tags: [],
     allergyWarning: null,
     ...over.recipe,
   },
@@ -286,6 +292,16 @@ describe('RecipesPage', () => {
           title: 'Moussaka',
           cuisine: { id: 'c-gr', name: 'Greek' },
           method: { id: 'm-bake', name: 'Baking' },
+          tags: [
+            {
+              id: 'c-gr',
+              name: 'Greek',
+              kind: 'catalog',
+              groupId: 'g3',
+              groupName: 'Cuisine',
+              groupOrder: 3,
+            },
+          ],
           difficulty: 'medium',
           copiedFromId: 'cm',
         }),
@@ -301,13 +317,92 @@ describe('RecipesPage', () => {
         item({ id: 'tv', title: 'Tv', parentId: 'ct' }),
         item({ id: 'c', title: 'Water', difficulty: null }),
       ]);
-      expect(await findRow('Moussaka')).toHaveTextContent(
-        'Greek · Baking · Medium · 3 Variants',
+      const moussaka = await findRow('Moussaka');
+      expect(moussaka).toHaveTextContent('Greek· Medium · 3 Variants');
+      expect(within(moussaka).getByRole('group')).toHaveAccessibleName(
+        'Tags: Greek',
       );
       const toast = await findRow('Toast');
       expect(toast).toHaveTextContent('Hard · 1 Variant');
       expect(toast).not.toHaveTextContent('1 Variants');
       expect(await findRow('Water')).not.toHaveTextContent('·');
+    });
+
+    describe('Tags', () => {
+      const catalogTag = (
+        id: string,
+        name: string,
+        groupName: string,
+        groupOrder: number,
+      ): RecipeTag => ({
+        id,
+        name,
+        kind: 'catalog',
+        groupId: `g-${groupOrder}`,
+        groupName,
+        groupOrder,
+      });
+      const familyTag = (id: string, name: string): RecipeTag => ({
+        id,
+        name,
+        kind: 'family',
+        groupId: null,
+        groupName: null,
+        groupOrder: null,
+      });
+      const tagged = item({
+        id: 't',
+        title: 'Tagged',
+        tags: [
+          familyTag('f', 'Meal prep'),
+          catalogTag('t-din', 'Dinner', 'Meal', 1),
+          catalogTag('t-veg', 'Vegan', 'Diet', 2),
+          catalogTag('t-it', 'Italian', 'Cuisine', 3),
+        ],
+      });
+
+      it('shows two Tag chips, Family Tags first, then "+N" and the Level', async () => {
+        setup(() => [tagged]);
+        const row = await findRow('Tagged');
+        const line = within(row).getByRole('group');
+        expect(line).toHaveTextContent(/^Meal prepDinner\+2· Easy$/);
+        // The chips and "+N" are visual: the accessible tree has only the labelled line.
+        expect(within(row).queryByText('Vegan')).toBeNull();
+      });
+
+      it('names every Tag in the line label, including the ones behind "+N"', async () => {
+        setup(() => [tagged]);
+        const row = await findRow('Tagged');
+        expect(
+          within(row).getByRole('group', {
+            name: 'Tags: Meal prep, Dinner, Vegan, Italian',
+          }),
+        ).toBeInTheDocument();
+        for (const hidden of within(row).getAllByText(
+          /^(Meal prep|Dinner|\+2)$/,
+        )) {
+          expect(hidden.closest('[aria-hidden="true"]')).not.toBeNull();
+        }
+      });
+
+      it('has no "+N" for two Tags or fewer, and no Tags line for a Recipe without Tags', async () => {
+        setup(() => [
+          item({
+            id: 'two',
+            title: 'Two',
+            tags: [
+              catalogTag('a', 'Dinner', 'Meal', 1),
+              familyTag('b', 'Quick'),
+            ],
+          }),
+          item({ id: 'none', title: 'None' }),
+        ]);
+        const two = await findRow('Two');
+        expect(within(two).getByRole('group')).toHaveTextContent(
+          /^QuickDinner· Easy$/,
+        );
+        expect(within(await findRow('None')).queryByRole('group')).toBeNull();
+      });
     });
 
     it('shows the total time in minutes, or a dash when the Recipe has no times', async () => {

@@ -32,6 +32,32 @@ const soup: RecipeListItem = {
   base: null,
   cuisine: null,
   method: null,
+  tags: [
+    {
+      id: 't-din',
+      name: 'Dinner',
+      kind: 'catalog',
+      groupId: 'g1',
+      groupName: 'Meal',
+      groupOrder: 1,
+    },
+    {
+      id: 't-veg',
+      name: 'Vegan',
+      kind: 'catalog',
+      groupId: 'g2',
+      groupName: 'Diet',
+      groupOrder: 2,
+    },
+    {
+      id: 't-it',
+      name: 'Italian',
+      kind: 'catalog',
+      groupId: 'g3',
+      groupName: 'Cuisine',
+      groupOrder: 3,
+    },
+  ],
   variantCount: 0,
   servings: 2,
   prepMinutes: 10,
@@ -94,6 +120,17 @@ describe('ExplorePage add to Family', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it('shows two Tag chips and "+N" on a row, naming every Tag for screen readers', async () => {
+    setup();
+    await addButton();
+    const row = screen.getByText('Soup').closest('li')!;
+    const line = within(row).getByRole('group', {
+      name: 'Tags: Dinner, Vegan, Italian',
+    });
+    expect(line).toHaveTextContent('DinnerVegan+1· Easy');
+    expect(within(line).getByText('+1')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('lists Catalog Recipes from the catalog scope', async () => {
@@ -224,6 +261,7 @@ const cardOf = (
     servings: 2,
     prepMinutes: 10,
     cookMinutes: 20,
+    tags: [],
     allergyWarning: null,
     ...recipe,
   },

@@ -10,6 +10,7 @@ import {
   radius,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
+import { TagChips } from '../../../components/TagChips';
 import { useTranslation } from 'react-i18next';
 import { totalMinutes, type RecipeDetail } from '../../../lib/recipes';
 import { recipeHref } from '../../../lib/recipeHref';
@@ -29,7 +30,6 @@ export function RecipeHero({
 }) {
   const { t } = useTranslation('recipes');
   const minutes = totalMinutes(recipe);
-  const style = [recipe.cuisine?.name, recipe.method?.name].filter(Boolean);
   const facts: { label: string; value: ReactNode; wide?: boolean }[] = [
     ...(minutes === null
       ? []
@@ -45,20 +45,6 @@ export function RecipeHero({
           {
             label: t('facts.level'),
             value: t(`difficulty.${recipe.difficulty}`),
-          },
-        ]
-      : []),
-    ...(style.length > 0
-      ? [
-          {
-            label: t('facts.style'),
-            value: style.map((part, index) => (
-              <span key={index}>
-                {index > 0 ? <br /> : null}
-                {part}
-              </span>
-            )),
-            wide: true,
           },
         ]
       : []),
@@ -177,6 +163,7 @@ export function RecipeHero({
           </Box>
         ))}
       </Box>
+      <TagChips tags={recipe.tags} />
       {recipe.archived ? (
         <Typography color="text.secondary">{t('archived')}</Typography>
       ) : null}

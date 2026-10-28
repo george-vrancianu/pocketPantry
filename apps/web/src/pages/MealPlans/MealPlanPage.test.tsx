@@ -62,6 +62,7 @@ const recipe = (id: string, title: string): RecipeListItem => ({
   base: null,
   cuisine: null,
   method: null,
+  tags: [],
   variantCount: 0,
   servings: 2,
   prepMinutes: 10,

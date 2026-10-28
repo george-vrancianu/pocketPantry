@@ -219,8 +219,11 @@
   "facts": {
     "time": "Timp",
     "serves": "Porții",
-    "level": "Nivel",
-    "style": "Stil"
+    "level": "Nivel"
+  },
+  "tags": {
+    "rowLabel": "Taguri: {{names}}",
+    "groupLabel": "Taguri"
   },
   "tabs": {
     "ingredients": "Ingrediente",

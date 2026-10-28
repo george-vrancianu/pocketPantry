@@ -285,6 +285,7 @@ describe('CookTonightWidget', () => {
       servings: 2,
       prepMinutes: null,
       cookMinutes: null,
+      tags: [],
       allergyWarning: null,
     },
     canMake: true,
@@ -314,6 +315,27 @@ describe('CookTonightWidget', () => {
     );
   });
 
+  it('shows up to two Tag chips and "+N" on a card, with every Tag in the link name', async () => {
+    const tagged = card('r1');
+    tagged.recipe.tags = ['Dinner', 'Vegan', 'Italian'].map((name, i) => ({
+      id: `t${i}`,
+      name,
+      kind: 'catalog' as const,
+      groupId: `g${i}`,
+      groupName: 'Group',
+      groupOrder: i + 1,
+    }));
+    stub(cookTonight([tagged]));
+
+    renderWithProviders(<CookTonightWidget size="small" columns={2} />);
+
+    const link = await screen.findByRole('link', { name: /Recipe r1/ });
+    expect(link).toHaveAccessibleName(
+      expect.stringContaining('Tags: Dinner, Vegan, Italian'),
+    );
+    expect(within(link).getByText('+1')).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('shows one card linking to the Recipe, with the other Variants count and time', async () => {
     stub(
       cookTonight([
@@ -328,6 +350,7 @@ describe('CookTonightWidget', () => {
             servings: 2,
             prepMinutes: 10,
             cookMinutes: 20,
+            tags: [],
             allergyWarning: null,
           },
         }),
@@ -379,6 +402,7 @@ describe('CookTonightWidget', () => {
             servings: 2,
             prepMinutes: null,
             cookMinutes: null,
+            tags: [],
             allergyWarning: null,
           },
         }),
@@ -447,6 +471,7 @@ describe('CookTonightWidget', () => {
             servings: 2,
             prepMinutes: 5,
             cookMinutes: null,
+            tags: [],
             allergyWarning: null,
           },
         }),
@@ -629,6 +654,7 @@ describe("CookTonightWidget as Gator's bubble panel", () => {
         servings: 2,
         prepMinutes: null,
         cookMinutes: null,
+        tags: [],
         allergyWarning: null,
       },
       canMake: true,

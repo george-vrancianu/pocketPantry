@@ -20,6 +20,7 @@ import {
   recipeTips,
   recipeTranslations,
 } from '../database/schema';
+import { loadRecipeTags } from '../tags/recipe-tags';
 import {
   emptyGuidanceTranslations,
   loadAdminGuidance,
@@ -314,57 +315,60 @@ export async function resolveRecipe(
   const tipRows = [...(translated ? parts.tips : []), ...inherited];
   const tipIds = tipRows.map((t) => t.id);
 
-  const [titleRow, lineT, stepT, tipT, names] = await Promise.all([
-    translated
-      ? executor
-          .select()
-          .from(recipeTranslations)
-          .where(
-            and(
-              eq(recipeTranslations.recipeId, id),
-              eq(recipeTranslations.locale, locale),
+  const [titleRow, lineT, stepT, tipT, tagsByRecipe, names] = await Promise.all(
+    [
+      translated
+        ? executor
+            .select()
+            .from(recipeTranslations)
+            .where(
+              and(
+                eq(recipeTranslations.recipeId, id),
+                eq(recipeTranslations.locale, locale),
+              ),
+            )
+        : [],
+      lineIds.length === 0
+        ? []
+        : executor
+            .select()
+            .from(recipeIngredientLineTranslations)
+            .where(
+              and(
+                inArray(recipeIngredientLineTranslations.lineId, lineIds),
+                eq(recipeIngredientLineTranslations.locale, locale),
+              ),
             ),
-          )
-      : [],
-    lineIds.length === 0
-      ? []
-      : executor
-          .select()
-          .from(recipeIngredientLineTranslations)
-          .where(
-            and(
-              inArray(recipeIngredientLineTranslations.lineId, lineIds),
-              eq(recipeIngredientLineTranslations.locale, locale),
+      stepIds.length === 0
+        ? []
+        : executor
+            .select()
+            .from(recipeStepTranslations)
+            .where(
+              and(
+                inArray(recipeStepTranslations.stepId, stepIds),
+                eq(recipeStepTranslations.locale, locale),
+              ),
             ),
-          ),
-    stepIds.length === 0
-      ? []
-      : executor
-          .select()
-          .from(recipeStepTranslations)
-          .where(
-            and(
-              inArray(recipeStepTranslations.stepId, stepIds),
-              eq(recipeStepTranslations.locale, locale),
+      tipIds.length === 0
+        ? []
+        : executor
+            .select()
+            .from(recipeTipTranslations)
+            .where(
+              and(
+                inArray(recipeTipTranslations.tipId, tipIds),
+                eq(recipeTipTranslations.locale, locale),
+              ),
             ),
-          ),
-    tipIds.length === 0
-      ? []
-      : executor
-          .select()
-          .from(recipeTipTranslations)
-          .where(
-            and(
-              inArray(recipeTipTranslations.tipId, tipIds),
-              eq(recipeTipTranslations.locale, locale),
-            ),
-          ),
-    loadDisplayNames(executor, scope, locale, [
-      ...parts.lines.flatMap((l) => (l.ingredientId ? [l.ingredientId] : [])),
-      ...(row.cuisineId ? [row.cuisineId] : []),
-      ...(row.methodId ? [row.methodId] : []),
-    ]),
-  ]);
+      loadRecipeTags(executor, scope, locale, [id]),
+      loadDisplayNames(executor, scope, locale, [
+        ...parts.lines.flatMap((l) => (l.ingredientId ? [l.ingredientId] : [])),
+        ...(row.cuisineId ? [row.cuisineId] : []),
+        ...(row.methodId ? [row.methodId] : []),
+      ]),
+    ],
+  );
   const lineNote = new Map(lineT.map((t) => [t.lineId, t.note]));
   const stepText = new Map(stepT.map((t) => [t.stepId, t.text]));
   const tipText = new Map(tipT.map((t) => [t.tipId, t.text]));
@@ -406,6 +410,7 @@ export async function resolveRecipe(
       row.methodId && method
         ? { id: row.methodId, name: names.pick('method', row.methodId, method) }
         : null,
+    tags: tagsByRecipe.get(id) ?? [],
     archived: row.archivedAt !== null,
     sourceLink: row.sourceLink,
     sourceLanguage: row.sourceLanguage,

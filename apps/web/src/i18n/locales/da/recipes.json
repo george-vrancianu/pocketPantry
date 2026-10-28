@@ -207,8 +207,11 @@
   "facts": {
     "time": "Tid",
     "serves": "Antal",
-    "level": "Niveau",
-    "style": "Stil"
+    "level": "Niveau"
+  },
+  "tags": {
+    "rowLabel": "Tags: {{names}}",
+    "groupLabel": "Tags"
   },
   "tabs": {
     "ingredients": "Ingredienser",

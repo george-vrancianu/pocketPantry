@@ -55,6 +55,35 @@ export const SEED_METHODS: SeedNamed[] = [
   named('air-fried', 'Air-fried', 'La air fryer', 'Airfryer-stegt'),
 ];
 
+/**
+ * The Tag Groups in display order (ADR 0033). Cuisine and Method hold the Cuisines and Methods
+ * above (migration 0049 creates those two groups on a live database; the seed adopts them).
+ */
+export const SEED_TAG_GROUPS: (SeedNamed & { position: number })[] = [
+  { ...named('meal', 'Meal', 'Masă', 'Måltid'), position: 1 },
+  { ...named('diet', 'Diet', 'Dietă', 'Diæt'), position: 2 },
+  { ...named('cuisine', 'Cuisine', 'Bucătărie', 'Køkken'), position: 3 },
+  { ...named('method', 'Method', 'Metodă', 'Metode'), position: 4 },
+];
+
+/** The starter Catalog Tags of the Meal and Diet groups (Cuisine and Method come from the lists above). */
+export const SEED_MEAL_TAGS: SeedNamed[] = [
+  named('breakfast', 'Breakfast', 'Mic dejun', 'Morgenmad'),
+  named('brunch', 'Brunch', 'Brunch', 'Brunch'),
+  named('lunch', 'Lunch', 'Prânz', 'Frokost'),
+  named('dinner', 'Dinner', 'Cină', 'Aftensmad'),
+  named('snack', 'Snack', 'Gustare', 'Snack'),
+  named('dessert', 'Dessert', 'Desert', 'Dessert'),
+];
+
+export const SEED_DIET_TAGS: SeedNamed[] = [
+  named('vegetarian', 'Vegetarian', 'Vegetarian', 'Vegetarisk'),
+  named('vegan', 'Vegan', 'Vegan', 'Vegansk'),
+  named('keto', 'Keto', 'Keto', 'Keto'),
+  named('low-carb', 'Low-carb', 'Cu puțini carbohidrați', 'Lavkulhydrat'),
+  named('high-protein', 'High-protein', 'Bogat în proteine', 'Proteinrig'),
+];
+
 /** In display order. Exactly the list from the ticket. */
 export const SEED_EATING_MOMENTS: SeedNamed[] = [
   named('morning', 'Morning', 'Dimineața', 'Morgen'),

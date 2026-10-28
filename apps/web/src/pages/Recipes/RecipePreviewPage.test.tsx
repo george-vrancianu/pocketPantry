@@ -24,6 +24,7 @@ const soup: RecipeDetail = {
   difficulty: 'easy',
   cuisine: null,
   method: null,
+  tags: [],
   archived: false,
   lines: [
     {
@@ -45,6 +46,7 @@ const soup: RecipeDetail = {
       title: 'Spicy soup',
       cuisine: null,
       method: null,
+      tags: [],
       owner: 'catalog',
       familyCopyId: null,
     },
@@ -53,6 +55,7 @@ const soup: RecipeDetail = {
       title: 'My soup',
       cuisine: null,
       method: null,
+      tags: [],
       owner: 'family',
       familyCopyId: null,
     },

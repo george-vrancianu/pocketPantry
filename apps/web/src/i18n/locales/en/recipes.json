@@ -207,8 +207,11 @@
   "facts": {
     "time": "Time",
     "serves": "Serves",
-    "level": "Level",
-    "style": "Style"
+    "level": "Level"
+  },
+  "tags": {
+    "rowLabel": "Tags: {{names}}",
+    "groupLabel": "Tags"
   },
   "tabs": {
     "ingredients": "Ingredients",
