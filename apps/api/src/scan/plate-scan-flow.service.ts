@@ -16,7 +16,7 @@ import type {
   PlateScanInput,
 } from './plate-scan.schemas';
 import type { ScanResponse } from './proposed-line';
-import { ScanCapService } from './scan-cap.service';
+import { found, PaidReadsService } from './paid-reads.service';
 
 /**
  * Plate Scan for a Member. The photo is the Scan the Scan Cap counts (handed
@@ -28,7 +28,7 @@ import { ScanCapService } from './scan-cap.service';
 @Injectable()
 export class PlateScanFlowService {
   constructor(
-    private readonly cap: ScanCapService,
+    private readonly paidReads: PaidReadsService,
     private readonly plate: PlateScanService,
     private readonly catalogSearch: CatalogSearchService,
     private readonly settings: SettingsService,
@@ -41,14 +41,14 @@ export class PlateScanFlowService {
     input: PlateScanInput,
     locale: CatalogLocale,
   ): Promise<PlateDishesResponse> {
-    return this.cap.withinCap(memberId, async () => {
+    return this.paidReads.read(memberId, 'scan', async () => {
       const result = await this.plate.findDishes(input, locale);
       const token = signPlateToken({
         secret: this.config.get('SCAN_TOKEN_SECRET', { infer: true }),
         memberId,
         titles: result.dishes.map((dish) => dish.title),
       });
-      return { ...result, token };
+      return found({ ...result, token });
     });
   }
 

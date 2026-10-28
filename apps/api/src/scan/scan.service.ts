@@ -14,7 +14,7 @@ import { ReceiptProposalService } from './receipt-proposal.service';
 import type { ReceiptScanInput } from './receipt-scan.schemas';
 import { ReceiptScanService } from './receipt-scan.service';
 import { productLine, type ScanResponse } from './proposed-line';
-import { ScanCapService } from './scan-cap.service';
+import { found, PaidReadsService } from './paid-reads.service';
 
 /**
  * Runs a Scan for a Member: the Scan Cap first, then the provider, then the
@@ -24,7 +24,7 @@ import { ScanCapService } from './scan-cap.service';
 @Injectable()
 export class ScanService {
   constructor(
-    private readonly cap: ScanCapService,
+    private readonly paidReads: PaidReadsService,
     private readonly productScan: ProductScanService,
     private readonly receiptScan: ReceiptScanService,
     private readonly receiptProposal: ReceiptProposalService,
@@ -42,8 +42,10 @@ export class ScanService {
   ): Promise<ScanResponse> {
     const familyId = await this.settings.familyIdOf(memberId);
     const scope = catalogScope(familyId);
-    const result = await this.cap.withinCap(memberId, () =>
-      this.productScan.analyze(input, locale, scanLanguage, familyId),
+    const result = await this.paidReads.read(memberId, 'scan', async () =>
+      found(
+        await this.productScan.analyze(input, locale, scanLanguage, familyId),
+      ),
     );
     // The Family's Default Expiry overrides shape the proposed expiry, as in search.
     const overrides = await this.settings.expiryOverridesForMember(memberId);
@@ -85,8 +87,10 @@ export class ScanService {
     scanLanguage: ScanLanguage,
   ): Promise<ScanResponse> {
     const familyId = await this.settings.familyIdOf(memberId);
-    const result = await this.cap.withinCap(memberId, () =>
-      this.receiptScan.analyze(input, locale, scanLanguage, familyId),
+    const result = await this.paidReads.read(memberId, 'scan', async () =>
+      found(
+        await this.receiptScan.analyze(input, locale, scanLanguage, familyId),
+      ),
     );
     return {
       lines: await this.receiptProposal.propose(result, locale, memberId),
@@ -101,8 +105,15 @@ export class ScanService {
   ): Promise<ScanResponse> {
     const familyId = await this.settings.familyIdOf(memberId);
     const scope = catalogScope(familyId);
-    const result = await this.cap.withinCap(memberId, () =>
-      this.ingredientsScan.analyze(input, locale, scanLanguage, familyId),
+    const result = await this.paidReads.read(memberId, 'scan', async () =>
+      found(
+        await this.ingredientsScan.analyze(
+          input,
+          locale,
+          scanLanguage,
+          familyId,
+        ),
+      ),
     );
     const ids = [
       ...new Set(
