@@ -1,5 +1,6 @@
 import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { usePasteLabels } from '../../../lib/usePasteLabels';
 import type { JoinFlow } from '../hooks/useJoinFlow';
 
 /**
@@ -8,6 +9,7 @@ import type { JoinFlow } from '../hooks/useJoinFlow';
  */
 export function JoinFamilyPanel({ flow }: { flow: JoinFlow }) {
   const { t } = useTranslation('family');
+  const paste = usePasteLabels();
   return (
     <Stack spacing={1}>
       <Typography variant="sectionLabel" color="text.secondary">
@@ -45,10 +47,7 @@ export function JoinFamilyPanel({ flow }: { flow: JoinFlow }) {
             label={t('joinCodeLabel')}
             value={flow.code}
             onChange={(event) => flow.setCode(event.target.value)}
-            paste={{
-              label: t('common:paste.label'),
-              emptyMessage: t('common:paste.empty'),
-            }}
+            paste={paste}
             slotProps={{ htmlInput: { autoCapitalize: 'characters' } }}
           />
           <Button

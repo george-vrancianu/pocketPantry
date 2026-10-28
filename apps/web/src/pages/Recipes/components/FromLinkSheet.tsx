@@ -13,6 +13,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadingLanguageChoice } from '../../../components/ReadingLanguageChoice';
 import { MAX_HELD_LINK_READS, linkReads } from '../../../lib/linkReads';
+import { usePasteLabels } from '../../../lib/usePasteLabels';
 import {
   MAX_LINK_LENGTH,
   MAX_PASTED_TEXT_LENGTH,
@@ -99,10 +100,7 @@ function FromLinkForm({
   const field = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const modeChanged = useRef(false);
   const fieldId = useId();
-  const paste = {
-    label: t('common:paste.label'),
-    emptyMessage: t('common:paste.empty'),
-  };
+  const paste = usePasteLabels();
 
   // Switching modes swaps the field, so focus follows to the one now shown.
   useEffect(() => {
