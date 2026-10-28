@@ -17,7 +17,7 @@ import { RecipeDetailPage, RecipePreviewPage } from './RecipeDetailPage';
 
 /*
  * DOM contract: tapping a row's body opens a `dialog` named by the Recipe's title. It holds a
- * "Close" button, the fact terms Time / Serves / Level / Style, a list "Ingredients" (a missing
+ * "Close" button, the fact terms Time / Serves / Level, a list "Tags" (one chip per Tag; none when the Recipe has no Tags), a list "Ingredients" (a missing
  * chip carries the hidden text "missing"), a list "Variants" and the actions: a button
  * "Add to your Recipes" (then the link "In your Recipes · Open"), the link "Make a Variant" and
  * the button "See the whole Recipe".
@@ -30,6 +30,32 @@ const soup: RecipeListItem = {
   base: null,
   cuisine: { id: 'c1', name: 'Italian' },
   method: null,
+  tags: [
+    {
+      id: 't-din',
+      name: 'Dinner',
+      kind: 'catalog',
+      groupId: 'g1',
+      groupName: 'Meal',
+      groupOrder: 1,
+    },
+    {
+      id: 'c1',
+      name: 'Italian',
+      kind: 'catalog',
+      groupId: 'g3',
+      groupName: 'Cuisine',
+      groupOrder: 3,
+    },
+    {
+      id: 'm1',
+      name: 'Rolled',
+      kind: 'catalog',
+      groupId: 'g4',
+      groupName: 'Method',
+      groupOrder: 4,
+    },
+  ],
   variantCount: 1,
   servings: 2,
   prepMinutes: 10,
@@ -52,6 +78,7 @@ const detail: RecipeDetail = {
   difficulty: 'easy',
   cuisine: { id: 'c1', name: 'Italian' },
   method: null,
+  tags: [],
   archived: false,
   lines: [
     {
@@ -82,6 +109,7 @@ const detail: RecipeDetail = {
       title: 'Spicy soup',
       cuisine: null,
       method: null,
+      tags: [],
       owner: 'catalog',
       familyCopyId: null,
     },
@@ -90,6 +118,7 @@ const detail: RecipeDetail = {
       title: 'My soup',
       cuisine: null,
       method: null,
+      tags: [],
       owner: 'family',
       familyCopyId: null,
     },
@@ -212,12 +241,17 @@ describe('Explore quick view', () => {
       ['Time', '30 min'],
       ['Serves', '2'],
       ['Level', 'Easy'],
-      ['Style', 'Italian'],
     ]) {
       expect(
         within(dialog).getByText(term).nextElementSibling,
       ).toHaveTextContent(value);
     }
+    const tagList = within(dialog).getByRole('list', { name: 'Tags' });
+    expect(
+      within(tagList)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Dinner', 'Italian', 'Rolled']);
     expect(await within(dialog).findByText('Water')).toBeVisible();
     const leek = (await within(dialog).findByText('Leek')).closest('li')!;
     await waitFor(() => expect(leek).toHaveAttribute('data-missing'));

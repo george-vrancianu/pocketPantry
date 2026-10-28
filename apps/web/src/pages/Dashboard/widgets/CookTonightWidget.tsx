@@ -6,6 +6,7 @@ import {
   AllergenIndicator,
   allergenIndicatorLabel,
 } from '../../../components/AllergenIndicator';
+import { RowTags } from '../../../components/RowTags';
 import { CookTonightPanel } from '../../../components/CookTonightPanel';
 import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -189,7 +190,15 @@ function CookCard({ card }: { card: CookTonightCard }) {
   const allergy = recipe.allergyWarning
     ? allergenIndicatorLabel(t, recipe.allergyWarning)
     : null;
-  const name = [heading, secondary, missing, meta.join(' · '), allergy]
+  const tagNames = recipe.tags.map((tag) => tag.name).join(', ');
+  const name = [
+    heading,
+    secondary,
+    missing,
+    tagNames ? t('recipes:tags.rowLabel', { names: tagNames }) : null,
+    meta.join(' · '),
+    allergy,
+  ]
     .filter(Boolean)
     .join(', ');
 
@@ -231,6 +240,7 @@ function CookCard({ card }: { card: CookTonightCard }) {
           {missing}
         </Box>
       )}
+      {recipe.tags.length > 0 && <RowTags tags={recipe.tags} />}
       {meta.length > 0 && (
         <Box component="span" sx={line}>
           {meta.join(' · ')}

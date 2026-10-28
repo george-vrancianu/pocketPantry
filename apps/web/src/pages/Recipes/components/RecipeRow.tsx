@@ -22,8 +22,6 @@ type Props = {
 export function RecipeRow({ recipe, card, filtering, onSelect, to }: Props) {
   const { t } = useTranslation('recipes');
   const meta = [
-    recipe.cuisine?.name,
-    recipe.method?.name,
     recipe.difficulty ? t(`difficulty.${recipe.difficulty}`) : null,
     recipe.variantCount > 0
       ? t('variantCount', { count: recipe.variantCount })
@@ -46,6 +44,7 @@ export function RecipeRow({ recipe, card, filtering, onSelect, to }: Props) {
         ) : null
       }
       meta={meta}
+      tags={recipe.tags}
       minutes={totalMinutes(recipe)}
       pills={
         card || recipe.allergyWarning ? (

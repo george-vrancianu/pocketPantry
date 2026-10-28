@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import type { RecipeTag } from './tags';
 import type {
   Difficulty,
   PairingKind,
@@ -51,6 +52,7 @@ export type RecipeListItem = {
   base: { id: string; title: string } | null;
   cuisine: NamedRef | null;
   method: NamedRef | null;
+  tags: RecipeTag[];
   variantCount: number;
   servings: number;
   prepMinutes: number | null;
@@ -89,6 +91,7 @@ export type RecipeVariantItem = {
   title: string;
   cuisine: NamedRef | null;
   method: NamedRef | null;
+  tags: RecipeTag[];
   owner: RecipeOwner;
   /** The Family's live copy of a Catalog Variant, else null. */
   familyCopyId: string | null;
@@ -209,6 +212,7 @@ export type RecipeDetail = {
   difficulty: Difficulty | null;
   cuisine: NamedRef | null;
   method: NamedRef | null;
+  tags: RecipeTag[];
   archived: boolean;
   lines: RecipeDetailLine[];
   steps: RecipeDetailStep[];

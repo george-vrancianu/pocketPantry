@@ -100,6 +100,7 @@ function baseRow(card: CookTonightCard): RecipeListItem {
     base: null,
     cuisine: null,
     method: null,
+    tags: recipe.tags,
     variantCount: 0,
     servings: recipe.servings,
     prepMinutes: recipe.prepMinutes,

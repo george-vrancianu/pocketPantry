@@ -23,6 +23,7 @@ const detail: RecipeDetail = {
   difficulty: null,
   cuisine: null,
   method: null,
+  tags: [],
   archived: false,
   lines: [
     ['l-flour', 'Flour', 200, 'g', false],

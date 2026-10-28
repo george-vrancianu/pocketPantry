@@ -21,6 +21,7 @@ const item = (over: Partial<RecipeListItem>): RecipeListItem => ({
   base: null,
   cuisine: null,
   method: null,
+  tags: [],
   variantCount: 0,
   servings: 2,
   prepMinutes: 10,
@@ -51,6 +52,7 @@ const card = (
     servings: 2,
     prepMinutes: 10,
     cookMinutes: 15,
+    tags: [],
     allergyWarning: null,
   },
 });
