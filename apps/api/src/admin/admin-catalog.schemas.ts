@@ -103,10 +103,16 @@ export const ingredientUpdate = z
   .partial()
   .refine(atLeastOne, atLeastOneMessage);
 
+const adminTranslatableTypes = z
+  .enum(catalogEntityType.enumValues)
+  .exclude(['tag', 'tag_group']);
+
 /** A Synonym may be in any Scan Language; a display name only in a catalog locale. */
 export const translationCreate = z
   .object({
-    entityType: z.enum(catalogEntityType.enumValues),
+    // Tags and Tag Groups are managed by their own Admin surface (a later ticket of #706). Until
+    // then a translation added here would be wiped when a Cuisine or Method mirrors itself as a Tag.
+    entityType: adminTranslatableTypes,
     entityId: id,
     locale: z.enum(SCAN_LANGUAGES),
     kind: z.enum(translationKind.enumValues),

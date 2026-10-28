@@ -1,4 +1,3 @@
-import { syncCuisineMethodTags, copyRecipeTags } from '../tags/recipe-tags';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm';
@@ -15,6 +14,7 @@ import {
   recipeTipTranslations,
   recipeTips,
 } from '../database/schema';
+import { syncCuisineMethodTags, copyRecipeTags } from '../tags/recipe-tags';
 import { itemNotFound, recipeNotFound } from './recipe-errors';
 import {
   assertLiveCatalogBase,

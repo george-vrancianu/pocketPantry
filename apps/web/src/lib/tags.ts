@@ -47,3 +47,13 @@ export function splitRowTags(
     more: Math.max(0, ordered.length - limit),
   };
 }
+
+/** Every Tag name in row order, "Dinner, Vegan": what a row's accessible name lists. */
+export function rowTagNames(
+  tags: readonly RecipeTag[],
+  matchedIds: readonly string[] = [],
+): string {
+  return orderRowTags(tags, matchedIds)
+    .map((tag) => tag.name)
+    .join(', ');
+}

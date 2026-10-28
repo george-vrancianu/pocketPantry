@@ -1,4 +1,3 @@
-import { loadRecipeTags } from '../tags/recipe-tags';
 import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
 import {
   catalogScope,
@@ -21,6 +20,7 @@ import {
   recipeTips,
   recipeTranslations,
 } from '../database/schema';
+import { loadRecipeTags } from '../tags/recipe-tags';
 import {
   emptyGuidanceTranslations,
   loadAdminGuidance,

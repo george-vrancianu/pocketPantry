@@ -15,6 +15,7 @@ import { useCookTonight, type CookTonightCard } from '../../../lib/cookTonight';
 import type { WidgetSize } from '../../../lib/dashboard';
 import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
 import { localIso } from '../../../lib/pantry';
+import { rowTagNames } from '../../../lib/tags';
 import {
   hasNoFamilyRecipes,
   useRecipes,
@@ -190,7 +191,7 @@ function CookCard({ card }: { card: CookTonightCard }) {
   const allergy = recipe.allergyWarning
     ? allergenIndicatorLabel(t, recipe.allergyWarning)
     : null;
-  const tagNames = recipe.tags.map((tag) => tag.name).join(', ');
+  const tagNames = rowTagNames(recipe.tags);
   const name = [
     heading,
     secondary,

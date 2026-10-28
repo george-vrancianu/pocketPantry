@@ -6,7 +6,7 @@ import pg from 'pg';
 // with its translations and tags every Recipe with them. The schema half of the file has already run
 // on the test database, so each test clears the tag rows and replays only the data statements
 // (the INSERTs) inside a transaction that is rolled back.
-const statements = readFileSync(
+const allStatements = readFileSync(
   resolve(process.cwd(), 'drizzle/0049_tags.sql'),
   'utf8',
 )
@@ -17,8 +17,15 @@ const statements = readFileSync(
       .filter((line) => !line.trim().startsWith('--'))
       .join('\n')
       .trim(),
-  )
-  .filter((statement) => /^INSERT /i.test(statement));
+  );
+const statements = allStatements.filter((statement) =>
+  /^INSERT /i.test(statement),
+);
+// The hand-edited enum swap: every statement before the first CREATE TABLE.
+const enumSwap = allStatements.slice(
+  0,
+  allStatements.findIndex((statement) => /^CREATE TABLE /i.test(statement)),
+);
 
 const id = (n: number) =>
   `00000000-0000-4000-8000-0000000049${String(n).padStart(2, '0')}`;
@@ -197,5 +204,60 @@ describe('Migration 0049: Cuisines and Methods become Catalog Tags (integration)
     expect(
       await rows(`select cuisine_id from recipes where id = $1`, [ids.tagged]),
     ).toEqual([{ cuisine_id: ids.italian }]);
+  });
+
+  it('swaps the entity type enum with rows in place, keeping them and the expiry check', async () => {
+    const entityId = id(50);
+    await client.query(
+      `insert into catalog_translations (id, entity_type, entity_id, locale, kind, value, normalized_value)
+       values (gen_random_uuid(), 'aisle', $1, 'en', 'name', 'Aisle', 'aisle'),
+              (gen_random_uuid(), 'ingredient', $1, 'en', 'name', 'Ingredient', 'ingredient'),
+              (gen_random_uuid(), 'ingredient', $1, 'ro', 'name', 'Ingredient ro', 'ingredient ro'),
+              (gen_random_uuid(), 'cuisine', $1, 'en', 'name', 'Cuisine', 'cuisine')`,
+      [entityId],
+    );
+    const familyId = id(51);
+    await client.query(
+      `insert into family (id, invite_code, invite_code_expires_at) values ($1, 'swap-0049', now())`,
+      [familyId],
+    );
+    await client.query(
+      `insert into family_expiry_overrides (family_id, entity_type, entity_id, days)
+       values ($1, 'parent_category', $2, 5)`,
+      [familyId, entityId],
+    );
+    const counts = () =>
+      rows(
+        `select entity_type::text as entity_type, count(*)::int as n from catalog_translations
+         where entity_id = $1 group by 1 order by 1`,
+        [entityId],
+      );
+    const before = await counts();
+
+    for (const statement of enumSwap) await client.query(statement);
+
+    expect(await counts()).toEqual(before);
+    expect(
+      await rows(
+        `select entity_type::text as entity_type, days from family_expiry_overrides where family_id = $1`,
+        [familyId],
+      ),
+    ).toEqual([{ entity_type: 'parent_category', days: 5 }]);
+    // The check still refuses anything but a category.
+    await client.query('SAVEPOINT check_refuses');
+    await expect(
+      client.query(
+        `insert into family_expiry_overrides (family_id, entity_type, entity_id, days)
+         values ($1, 'ingredient', $2, 5)`,
+        [familyId, entityId],
+      ),
+    ).rejects.toThrow(/family_expiry_overrides_category/);
+    await client.query('ROLLBACK TO SAVEPOINT check_refuses');
+    // The new values are usable straight away.
+    await client.query(
+      `insert into catalog_translations (id, entity_type, entity_id, locale, kind, value, normalized_value)
+       values (gen_random_uuid(), 'tag', $1, 'en', 'name', 'A Tag', 'a tag')`,
+      [entityId],
+    );
   });
 });

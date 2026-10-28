@@ -1,6 +1,6 @@
 import { Box, TagChip, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { splitRowTags, type RecipeTag } from '../lib/tags';
+import { rowTagNames, splitRowTags, type RecipeTag } from '../lib/tags';
 
 type Props = {
   tags: RecipeTag[];
@@ -18,13 +18,12 @@ type Props = {
 export function RowTags({ tags, matchedIds = [], meta = [] }: Props) {
   const { t } = useTranslation('recipes');
   const { shown, more } = splitRowTags(tags, matchedIds);
-  const names = splitRowTags(tags, matchedIds, tags.length)
-    .shown.map((tag) => tag.name)
-    .join(', ');
+  // A line with nothing to say is no group at all, not an empty "Tags:" one.
+  if (tags.length === 0 && meta.length === 0) return null;
   return (
     <Box
       role="group"
-      aria-label={t('tags.rowLabel', { names })}
+      aria-label={t('tags.rowLabel', { names: rowTagNames(tags, matchedIds) })}
       sx={{
         display: 'flex',
         alignItems: 'center',

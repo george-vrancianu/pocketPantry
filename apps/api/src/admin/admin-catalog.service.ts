@@ -15,7 +15,6 @@ import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
 import { replaceIngredientAllergenTags } from '../catalog/ingredient-allergen-tags';
-import { mirrorListEntryAsTag } from '../tags/recipe-tags';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
@@ -35,6 +34,7 @@ import {
   methods,
   parentCategories,
 } from '../database/schema';
+import { mirrorListEntryAsTag } from '../tags/recipe-tags';
 import type {
   AisleCreate,
   ListEntryCreate,

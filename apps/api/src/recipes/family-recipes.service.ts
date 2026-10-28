@@ -1,4 +1,3 @@
-import { syncCuisineMethodTags } from '../tags/recipe-tags';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray, isNull, notInArray } from 'drizzle-orm';
@@ -19,6 +18,7 @@ import {
 import { consumeRecipeDraft } from '../recipe-drafts/recipe-drafts.service';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
+import { syncCuisineMethodTags } from '../tags/recipe-tags';
 import {
   itemNotFound,
   recipeNotFound,

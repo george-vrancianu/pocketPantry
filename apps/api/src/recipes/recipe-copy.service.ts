@@ -1,4 +1,3 @@
-import { copyRecipeTags } from '../tags/recipe-tags';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, isNull } from 'drizzle-orm';
@@ -15,6 +14,7 @@ import {
   recipeTips,
 } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
+import { copyRecipeTags } from '../tags/recipe-tags';
 import { recipeNotFound } from './recipe-errors';
 import { writeGuidanceChecked } from './recipe-guidance-write';
 import { lockFamilyRow } from './recipe-locks';

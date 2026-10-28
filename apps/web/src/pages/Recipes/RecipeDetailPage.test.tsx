@@ -354,6 +354,30 @@ describe('RecipeDetailPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('draws no Tags group for a Variant without Tags', async () => {
+    const user = userEvent.setup();
+    setup(
+      recipe({
+        variants: [
+          {
+            id: 'f',
+            title: 'Frittata',
+            cuisine: null,
+            method: null,
+            tags: [],
+            owner: 'catalog',
+            familyCopyId: null,
+          },
+        ],
+      }),
+    );
+    await openTab(user, 'About');
+    const section = (
+      await screen.findByRole('heading', { name: 'Variants' })
+    ).closest('section')!;
+    expect(within(section).queryByRole('group', { name: /^Tags/ })).toBeNull();
+  });
+
   it("marks the Family's own Variants under their base", async () => {
     const user = userEvent.setup();
     setup(
