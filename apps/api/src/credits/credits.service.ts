@@ -35,7 +35,7 @@ export async function lockFamilyCredits(
 }
 
 /** The Credit Balance of a Family: the sum of its entries. The one definition of "balance". */
-async function familyBalance(
+export async function familyBalance(
   executor: Executor,
   familyId: string,
 ): Promise<number> {

@@ -27,7 +27,15 @@ export function parseGrantArgs(argv: string[]): ParsedGrantArgs {
       allowPositionals: false,
     }));
   } catch (error) {
-    return { ok: false, message: (error as Error).message };
+    const message = (error as Error).message;
+    // `--amount -5`: node reads "-5" as a flag and calls the option ambiguous.
+    if (/--amount/.test(message) && /ambiguous/.test(message))
+      return {
+        ok: false,
+        message:
+          'The amount must be a positive whole number (write a negative one as --amount=-5 to see it refused).',
+      };
+    return { ok: false, message };
   }
 
   const familyId = values.family?.trim();

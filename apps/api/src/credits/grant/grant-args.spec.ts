@@ -47,7 +47,9 @@ describe('parseGrantArgs', () => {
     expect(
       message(['--family', FAMILY, '--reason', 'x', '--amount=-5']),
     ).toMatch(/amount must be/);
-    expect(message(args({ amount: '-5' }))).toBeTruthy();
+    expect(message(args({ amount: '-5' }))).toMatch(
+      /amount must be a positive whole number/,
+    );
   });
 
   it('refuses a Family id that is not a UUID', () => {

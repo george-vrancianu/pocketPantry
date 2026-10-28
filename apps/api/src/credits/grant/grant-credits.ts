@@ -1,7 +1,7 @@
-import { eq, sum } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { Database } from '../../database/database.types';
 import { creditEntry, family } from '../../database/schema';
-import { lockFamilyCredits } from '../credits.service';
+import { familyBalance, lockFamilyCredits } from '../credits.service';
 import type { GrantInput } from './grant-args';
 
 /** Raised when a grant is refused; nothing was written. */
@@ -35,10 +35,6 @@ export async function grantCredits(
       reason: reason.trim(),
       amount,
     });
-    const [row] = await tx
-      .select({ balance: sum(creditEntry.amount) })
-      .from(creditEntry)
-      .where(eq(creditEntry.familyId, familyId));
-    return Number(row.balance);
+    return familyBalance(tx, familyId);
   });
 }
