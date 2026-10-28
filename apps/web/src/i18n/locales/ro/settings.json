@@ -27,6 +27,13 @@
     "newCode": "Cod nou",
     "manage": "Membri și invitații"
   },
+  "credits": {
+    "title": "Credite",
+    "hint": "Comune pentru toată familia. O scanare consumă Credite când citește o fotografie.",
+    "left_one": "Credit rămas",
+    "left_few": "Credite rămase",
+    "left_other": "de Credite rămase"
+  },
   "expiringSoon": {
     "title": "Expiră curând",
     "hint": "Produsele devin galbene cu atâtea zile înainte să expire",

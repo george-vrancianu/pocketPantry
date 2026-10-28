@@ -25,6 +25,12 @@
     "newCode": "Ny kode",
     "manage": "Medlemmer og invitationer"
   },
+  "credits": {
+    "title": "Kreditter",
+    "hint": "Fælles for hele familien. En scanning bruger kreditter, når den læser et foto.",
+    "left_one": "kredit tilbage",
+    "left_other": "kreditter tilbage"
+  },
   "expiringSoon": {
     "title": "Udløber snart",
     "hint": "Varerne bliver gule så mange dage før de udløber",

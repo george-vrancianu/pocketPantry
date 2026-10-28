@@ -1,6 +1,7 @@
 import type { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import type { Database } from '../database/database.types';
 import type { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
+import type { CreditsService } from '../credits/credits.service';
 import { PaidReadsService } from '../scan/paid-reads.service';
 import type { ScanCapService } from '../scan/scan-cap.service';
 import type { SettingsService } from '../settings/settings.service';
@@ -46,7 +47,10 @@ describe('GuidanceSuggestionService with no Eating Moments to offer', () => {
       {
         familyIdOf: jest.fn().mockResolvedValue('family'),
       } as unknown as SettingsService,
-      new PaidReadsService({ consume, refund } as unknown as ScanCapService),
+      new PaidReadsService(
+        { consume, refund } as unknown as ScanCapService,
+        {} as unknown as CreditsService,
+      ),
     );
   });
 

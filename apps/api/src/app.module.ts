@@ -9,6 +9,7 @@ import { BarcodeModule } from './barcode/barcode.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { validateEnv } from './config/env';
+import { CreditsModule } from './credits/credits.module';
 import { DatabaseModule } from './database/database.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FamilyModule } from './family/family.module';
@@ -37,6 +38,7 @@ import { SettingsModule } from './settings/settings.module';
     CatalogModule,
     ShoppingModule,
     PantryModule,
+    CreditsModule,
     ScanModule,
     VoiceModule,
     BarcodeModule,

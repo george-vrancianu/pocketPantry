@@ -1,4 +1,5 @@
 import { found, foundNothing, PaidReadsService } from './paid-reads.service';
+import type { CreditsService } from '../credits/credits.service';
 import type { ScanCapService } from './scan-cap.service';
 
 describe('PaidReadsService', () => {
@@ -8,9 +9,19 @@ describe('PaidReadsService', () => {
       refund: jest.fn().mockResolvedValue(undefined),
       assertBelowCap: jest.fn().mockResolvedValue(undefined),
     };
+    const credits = {
+      priceOf: jest.fn().mockReturnValue(1),
+      hold: jest.fn().mockResolvedValue({ entryId: 'e1' }),
+      release: jest.fn().mockResolvedValue(undefined),
+      assertCanAfford: jest.fn().mockResolvedValue(undefined),
+    };
     return {
       caps,
-      paid: new PaidReadsService(caps as unknown as ScanCapService),
+      credits,
+      paid: new PaidReadsService(
+        caps as unknown as ScanCapService,
+        credits as unknown as CreditsService,
+      ),
     };
   };
 
@@ -71,5 +82,55 @@ describe('PaidReadsService', () => {
     void paid.read('m', 'guidance-admin', run);
     // @ts-expect-error a Member kind needs a Member
     void paid.assertCanGoAhead(null, 'link-page');
+  });
+
+  describe('Credits', () => {
+    it('holds the Credit Price after the Cap use and keeps it when something was found', async () => {
+      const { caps, credits, paid } = setup();
+      await paid.read('m', 'scan', () => Promise.resolve(found(1)));
+      expect(credits.hold).toHaveBeenCalledWith('m', 'scan', 1);
+      expect(caps.consume.mock.invocationCallOrder[0]).toBeLessThan(
+        credits.hold.mock.invocationCallOrder[0],
+      );
+      expect(credits.release).not.toHaveBeenCalled();
+    });
+
+    it('gives the Credits and the Cap use back when the read finds nothing or throws', async () => {
+      const { caps, credits, paid } = setup();
+      await paid.read('m', 'scan', () => Promise.resolve(foundNothing(0)));
+      await expect(
+        paid.read('m', 'scan', () => Promise.reject(new Error('boom'))),
+      ).rejects.toThrow('boom');
+      expect(credits.release).toHaveBeenCalledTimes(2);
+      expect(credits.release).toHaveBeenCalledWith({ entryId: 'e1' });
+      expect(caps.refund).toHaveBeenCalledTimes(2);
+    });
+
+    it('hands the Cap use back and never runs the read when the Credits refuse', async () => {
+      const { caps, credits, paid } = setup();
+      credits.hold.mockRejectedValue(new Error('credits.insufficient'));
+      const run = jest.fn();
+      await expect(paid.read('m', 'scan', run)).rejects.toThrow(
+        'credits.insufficient',
+      );
+      expect(run).not.toHaveBeenCalled();
+      expect(caps.refund).toHaveBeenCalledWith('m', '2026-01-01', 'scan');
+    });
+
+    it('does not touch Credits when the Cap refuses', async () => {
+      const { caps, credits, paid } = setup();
+      caps.consume.mockRejectedValue(new Error('scan.cap_reached'));
+      await expect(
+        paid.read('m', 'scan', () => Promise.resolve(found(1))),
+      ).rejects.toThrow('scan.cap_reached');
+      expect(credits.hold).not.toHaveBeenCalled();
+    });
+
+    it('charges only the kinds in the charged set, and never the Admin read', async () => {
+      const { credits, paid } = setup();
+      await paid.read('m', 'voice', () => Promise.resolve(found(1)));
+      await paid.read(null, 'guidance-admin', () => Promise.resolve(found(1)));
+      expect(credits.hold).not.toHaveBeenCalled();
+    });
   });
 });
