@@ -17,6 +17,7 @@ import { ReceiptConfirmService } from './receipt-confirm.service';
 import { ReceiptProposalService } from './receipt-proposal.service';
 import { ReceiptScanController } from './receipt-scan.controller';
 import { ReceiptScanService } from './receipt-scan.service';
+import { PaidReadsService } from './paid-reads.service';
 import { ScanCapService } from './scan-cap.service';
 import { ScanController } from './scan.controller';
 import { ScanService } from './scan.service';
@@ -31,7 +32,12 @@ import { ScanService } from './scan.service';
     MemberLanguageModule,
   ],
   controllers: [ScanController, PlateScanController, ReceiptScanController],
-  exports: [CatalogMatchService, ScanCapService, StructuredOutputAiService],
+  exports: [
+    CatalogMatchService,
+    PaidReadsService,
+    ScanCapService,
+    StructuredOutputAiService,
+  ],
   providers: [
     StructuredOutputAiService,
     ProductScanService,
@@ -44,6 +50,7 @@ import { ScanService } from './scan.service';
     ReceiptProposalService,
     ReceiptConfirmService,
     ScanCapService,
+    PaidReadsService,
     ScanService,
   ],
 })

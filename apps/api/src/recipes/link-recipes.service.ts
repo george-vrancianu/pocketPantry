@@ -21,7 +21,11 @@ import {
   type PageFetcher,
 } from '../page-fetch/page-fetcher';
 import { RecipeDraftsService } from '../recipe-drafts/recipe-drafts.service';
-import { ScanCapService } from '../scan/scan-cap.service';
+import {
+  found,
+  foundNothing,
+  PaidReadsService,
+} from '../scan/paid-reads.service';
 import { LANGUAGE_NAMES } from '../scan/scan-language';
 import { SettingsService } from '../settings/settings.service';
 import { extractJsonLdRecipe } from './json-ld-recipe';
@@ -62,7 +66,7 @@ export class LinkRecipesService {
     @Inject(DATABASE) private readonly database: Database,
     @InjectPageFetcher() private readonly pages: PageFetcher,
     private readonly ai: StructuredOutputAiService,
-    private readonly caps: ScanCapService,
+    private readonly paidReads: PaidReadsService,
     private readonly drafts: RecipeDraftsService,
     private readonly ingredientCatalog: IngredientCatalogService,
     private readonly browse: RecipeBrowseService,
@@ -118,7 +122,7 @@ export class LinkRecipesService {
       // Also before the fetch and the AI call: a read with nowhere to land is refused for free.
       await this.drafts.assertRoom(memberId);
       // Already at the cap: refuse before the fetch. The use itself is still counted only in `ask`.
-      await this.caps.assertBelowCap(memberId, new Date(), 'link');
+      await this.paidReads.assertCanGoAhead(memberId, 'link-page');
       input = await this.readingInput(sourceLink, signal);
     } else if (body.text !== undefined) {
       await this.drafts.assertRoom(memberId);
@@ -132,6 +136,7 @@ export class LinkRecipesService {
     throwIfCancelled(signal);
     const answer = await this.ask(
       memberId,
+      input.kind === 'pasted-text' ? 'link-text' : 'link-page',
       {
         prompt: readingPrompt(
           input,
@@ -278,26 +283,24 @@ export class LinkRecipesService {
    */
   private async ask(
     memberId: string,
+    kind: 'link-page' | 'link-text',
     request: Parameters<StructuredOutputAiService['generate']>[0],
     signal?: AbortSignal,
   ): Promise<LinkReadingAnswer> {
-    return this.caps.withinCap(
-      memberId,
-      async () => {
-        try {
-          const reading = linkReadingSchema.parse(
-            (await this.ai.generate(request, { signal })).data,
-          );
-          // A page with no recipe is not a use: throwing hands the charge back.
-          if (!reading.recipeFound) throw linkNoRecipe();
-          return reading;
-        } catch (error) {
-          if (error instanceof ApiException) throw error;
-          throw new ApiException(502, 'scan.result_invalid');
-        }
-      },
-      'link',
-    );
+    const reading = await this.paidReads.read(memberId, kind, async () => {
+      try {
+        const parsed = linkReadingSchema.parse(
+          (await this.ai.generate(request, { signal })).data,
+        );
+        // A page with no recipe is not a use: reporting it hands the charge back.
+        return parsed.recipeFound ? found(parsed) : foundNothing(parsed);
+      } catch (error) {
+        if (error instanceof ApiException) throw error;
+        throw new ApiException(502, 'scan.result_invalid');
+      }
+    });
+    if (!reading.recipeFound) throw linkNoRecipe();
+    return reading;
   }
 }
 

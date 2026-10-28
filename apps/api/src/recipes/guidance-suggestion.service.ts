@@ -22,7 +22,11 @@ import {
   ingredientIdAt,
 } from '../ingredients/ingredient-catalog';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
-import { ScanCapService } from '../scan/scan-cap.service';
+import {
+  found,
+  foundNothing,
+  PaidReadsService,
+} from '../scan/paid-reads.service';
 import { LANGUAGE_NAMES } from '../scan/scan-language';
 import { SettingsService } from '../settings/settings.service';
 import {
@@ -71,17 +75,13 @@ type PromptRecipe = {
   steps: { text: string }[];
 };
 
-/** What one request needs looked up, by who is asking. `cap` is null for an Admin (never counted). */
+/** What one request needs looked up, by who is asking. */
 type Lookups = {
   catalog: IngredientCatalog;
   cuisines: { id: string; name: string }[];
   methods: { id: string; name: string }[];
   moments: OfferedMoment[];
   context: () => Promise<SuggestionContext>;
-  cap: {
-    consume: () => Promise<string>;
-    refund: (day: string) => Promise<void>;
-  } | null;
 };
 
 /**
@@ -96,7 +96,7 @@ export class GuidanceSuggestionService {
     private readonly ingredientCatalog: IngredientCatalogService,
     private readonly browse: RecipeBrowseService,
     private readonly settings: SettingsService,
-    private readonly caps: ScanCapService,
+    private readonly paidReads: PaidReadsService,
   ) {}
 
   async suggest(
@@ -104,34 +104,35 @@ export class GuidanceSuggestionService {
     body: SuggestGuidanceBody,
     locale: CatalogLocale,
   ): Promise<GuidanceSuggestion> {
-    return this.run(body, locale, async (empty) => {
-      const familyId = await this.settings.familyIdOf(memberId);
-      const catalog = await this.ingredientCatalog.getCatalogIn(
-        familyId,
-        locale,
-      );
-      const lists = await this.browse.filters(memberId, locale);
-      return {
-        catalog,
-        cuisines: lists.cuisines,
-        methods: lists.methods,
-        // The unarchived, Admin-curated Eating Moments (named in `locale`), only when wanted.
-        moments: empty.includes('eatingMoments') ? lists.eatingMoments : [],
-        // Links and Allergens matter only for Pairings; they are looked up when asked.
-        context: () =>
-          memberSuggestionContext(this.database, {
-            memberId,
-            familyId,
-            locale,
-            catalog,
-            recipeId: body.recipeId,
-          }),
-        cap: {
-          consume: () => this.caps.consume(memberId, new Date(), 'guidance'),
-          refund: (day) => this.caps.refund(memberId, day, 'guidance'),
-        },
-      };
-    });
+    return this.run(
+      body,
+      locale,
+      async (empty) => {
+        const familyId = await this.settings.familyIdOf(memberId);
+        const catalog = await this.ingredientCatalog.getCatalogIn(
+          familyId,
+          locale,
+        );
+        const lists = await this.browse.filters(memberId, locale);
+        return {
+          catalog,
+          cuisines: lists.cuisines,
+          methods: lists.methods,
+          // The unarchived, Admin-curated Eating Moments (named in `locale`), only when wanted.
+          moments: empty.includes('eatingMoments') ? lists.eatingMoments : [],
+          // Links and Allergens matter only for Pairings; they are looked up when asked.
+          context: () =>
+            memberSuggestionContext(this.database, {
+              memberId,
+              familyId,
+              locale,
+              catalog,
+              recipeId: body.recipeId,
+            }),
+        };
+      },
+      { memberId, kind: 'guidance' },
+    );
   }
 
   /**
@@ -142,31 +143,35 @@ export class GuidanceSuggestionService {
     body: AdminSuggestGuidanceBody,
   ): Promise<GuidanceSuggestion> {
     const locale = FALLBACK_LOCALE;
-    return this.run(body, locale, async (empty) => {
-      const catalog = await this.ingredientCatalog.getCatalogIn(
-        SHARED_ONLY,
-        locale,
-      );
-      const [cuisineRows, methodRows, momentRows] = await Promise.all([
-        this.database.select().from(cuisines),
-        this.database.select().from(methods),
-        empty.includes('eatingMoments')
-          ? catalogEatingMoments(this.database)
-          : [],
-      ]);
-      return {
-        catalog,
-        cuisines: cuisineRows,
-        methods: methodRows,
-        moments: momentRows,
-        context: () =>
-          catalogSuggestionContext(this.database, {
-            catalog,
-            recipeId: body.recipeId,
-          }),
-        cap: null,
-      };
-    });
+    return this.run(
+      body,
+      locale,
+      async (empty) => {
+        const catalog = await this.ingredientCatalog.getCatalogIn(
+          SHARED_ONLY,
+          locale,
+        );
+        const [cuisineRows, methodRows, momentRows] = await Promise.all([
+          this.database.select().from(cuisines),
+          this.database.select().from(methods),
+          empty.includes('eatingMoments')
+            ? catalogEatingMoments(this.database)
+            : [],
+        ]);
+        return {
+          catalog,
+          cuisines: cuisineRows,
+          methods: methodRows,
+          moments: momentRows,
+          context: () =>
+            catalogSuggestionContext(this.database, {
+              catalog,
+              recipeId: body.recipeId,
+            }),
+        };
+      },
+      { memberId: null, kind: 'guidance-admin' },
+    );
   }
 
   private async run(
@@ -179,6 +184,9 @@ export class GuidanceSuggestionService {
     },
     locale: CatalogLocale,
     load: (empty: GuidanceField[]) => Promise<Lookups>,
+    paid:
+      | { memberId: string; kind: 'guidance' }
+      | { memberId: null; kind: 'guidance-admin' },
   ): Promise<GuidanceSuggestion> {
     const empty = emptyGuidanceFields(body.guidance).filter((field) =>
       COVERED_GUIDANCE_FIELDS.includes(field),
@@ -188,8 +196,7 @@ export class GuidanceSuggestionService {
       throw new ApiException(400, 'guidance.nothing_to_suggest');
     }
 
-    const { catalog, cuisines, methods, moments, cap, context } =
-      await load(empty);
+    const { catalog, cuisines, methods, moments, context } = await load(empty);
     const names = new Map(catalog.ingredients.map((i) => [i.id, i.name]));
     const nameOf = (list: { id: string; name: string }[], id: string | null) =>
       list.find((item) => item.id === id)?.name ?? null;
@@ -203,16 +210,10 @@ export class GuidanceSuggestionService {
 
     const links = wanted.includes('pairings') ? await context() : NO_CONTEXT;
 
-    // The Guidance Cap (Members only): a use is counted just before the AI call (throwing
-    // guidance.cap_reached at the cap) and handed back when the call, or the reading of its
-    // answer, fails or when no field got a proposal. All of it sits inside the try:
+    // Paid Reads counts the use just before the AI call and hands it back when the call, or the
+    // reading of its answer, fails or when no field got a proposal. All of it sits inside the read:
     // suggestionOf runs outside `ask`.
-    const day = cap ? await cap.consume() : null;
-    const refund = async () => {
-      if (cap && day !== null) await cap.refund(day);
-    };
-    let suggestion: GuidanceSuggestion;
-    try {
+    const run = async () => {
       const answer = await this.ask({
         prompt: suggestionPrompt(wanted, locale, links, moments, {
           recipe: body.recipe,
@@ -221,17 +222,20 @@ export class GuidanceSuggestionService {
           method: nameOf(methods, body.recipe.methodId),
         }),
       });
-      suggestion = suggestionOf(answer, wanted, links, moments);
-    } catch (error) {
-      await refund();
-      throw error;
-    }
+      const made = suggestionOf(answer, wanted, links, moments);
+      // Nothing usable is still a normal answer, but it costs the Member nothing.
+      return Object.keys(made.guidance).length === 0
+        ? foundNothing(made)
+        : found(made);
+    };
+    const suggestion =
+      paid.memberId === null
+        ? await this.paidReads.read(null, paid.kind, run)
+        : await this.paidReads.read(paid.memberId, paid.kind, run);
     suggestion.noSuggestions = GUIDANCE_FIELDS.filter(
       (field) =>
         unasked.includes(field) || suggestion.noSuggestions.includes(field),
     );
-    // Nothing usable is still a normal answer, but it costs the Member nothing.
-    if (Object.keys(suggestion.guidance).length === 0) await refund();
     return suggestion;
   }
 
