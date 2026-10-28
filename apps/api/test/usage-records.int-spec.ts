@@ -2,7 +2,10 @@ import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { asc, eq, inArray } from 'drizzle-orm';
 import request from 'supertest';
-import type { AiTokenUsage } from '../src/ai/structured-output-ai.service';
+import {
+  StructuredOutputAiError,
+  type AiTokenUsage,
+} from '../src/ai/structured-output-ai.service';
 import { AssistantTokenService } from '../src/assistant-tokens/assistant-token.service';
 import { ApiException } from '../src/common/api-exception';
 import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
@@ -161,7 +164,9 @@ describe('Usage Records (integration)', () => {
           const id = `req-${++calls}`;
           if (answer instanceof Error) {
             return Promise.reject(
-              Object.assign(answer, { requestId: `${id}-failed` }),
+              'requestId' in answer && answer.requestId
+                ? answer
+                : Object.assign(answer, { requestId: `${id}-failed` }),
             );
           }
           return Promise.resolve({ requestId: id, ...answer });
@@ -401,6 +406,25 @@ describe('Usage Records (integration)', () => {
         providerRequestId: expect.stringMatching(/-failed$/) as string,
       },
     ]);
+  });
+
+  it('keeps the tokens and cost of a billed call that ended incomplete', async () => {
+    const ana = await member();
+    const incomplete = new StructuredOutputAiError('incomplete', 'req-trunc');
+    incomplete.usage = { inputTokens: 1000, outputTokens: 16_000 };
+    incomplete.model = 'gpt-6-luna';
+    answers = [incomplete];
+    await post(ana.cookie, 'scan/product', { productImage: IMAGE }).expect(502);
+    const [row] = await rowsOf(ana.id);
+    expect(row).toMatchObject({
+      kind: 'scan',
+      success: false,
+      model: 'gpt-6-luna',
+      inputTokens: 1000,
+      outputTokens: 16_000,
+      providerRequestId: 'req-trunc',
+    });
+    expect(Number(row?.costUsd)).toBeGreaterThan(0);
   });
 
   it('writes one row for an Assistant Request, of kind assistant', async () => {

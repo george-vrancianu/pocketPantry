@@ -22,7 +22,6 @@ import {
 import { SettingsService } from '../settings/settings.service';
 import { ShoppingService } from '../shopping/shopping.service';
 import { MeteredAiService } from '../usage/metered-ai.service';
-import { TranscriptionService } from './transcription.service';
 import {
   amountOf,
   type ReadVoiceAction,
@@ -131,7 +130,6 @@ function impliedTarget(op: VoiceOp): VoiceTarget | null {
 @Injectable()
 export class VoiceService {
   constructor(
-    private readonly transcription: TranscriptionService,
     private readonly metered: MeteredAiService,
     private readonly paidReads: PaidReadsService,
     private readonly reader: VoiceReaderService,
@@ -146,7 +144,7 @@ export class VoiceService {
   ) {}
 
   isConfigured(): boolean {
-    return this.transcription.isConfigured();
+    return this.metered.isTranscriptionConfigured();
   }
 
   /** The text model can be called: a key, and for a compatible vendor a base URL. */

@@ -85,6 +85,25 @@ describe('MeteredAiService', () => {
     });
   });
 
+  it('keeps the usage and model of a billed call that gave no usable answer', async () => {
+    const usage = { inputTokens: 900, outputTokens: 16_000 };
+    const failure = Object.assign(
+      new ApiException(502, 'scan.provider_incomplete'),
+      { requestId: 'r7', usage, model: 'billed-m' },
+    );
+    const { metered, record } = setup({
+      generate: jest.fn().mockRejectedValue(failure),
+    });
+    await expect(metered.generate(request)).rejects.toBe(failure);
+    expect(record).toHaveBeenCalledWith({
+      step: 'reading',
+      model: 'billed-m',
+      success: false,
+      usage,
+      requestId: 'r7',
+    });
+  });
+
   it('records nothing for a provider that is not configured', async () => {
     const { metered, record } = setup({
       generate: jest

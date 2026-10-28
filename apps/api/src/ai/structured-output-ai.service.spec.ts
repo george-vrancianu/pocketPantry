@@ -253,6 +253,49 @@ describe('StructuredOutputAiService', () => {
       });
     });
 
+    it('carries the request id on a non-OK answer, and the usage on an incomplete one', async () => {
+      jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response('{}', {
+          status: 500,
+          headers: { 'x-request-id': 'req-5' },
+        }),
+      );
+      await expect(
+        serviceFor('openai').generate(request),
+      ).rejects.toMatchObject({
+        code: 'scan.provider_unavailable',
+        requestId: 'req-5',
+      });
+      respond({
+        status: 'incomplete',
+        output: [],
+        usage: { input_tokens: 900, output_tokens: 16000 },
+      });
+      await expect(
+        serviceFor('openai').generate(request),
+      ).rejects.toMatchObject({
+        code: 'scan.provider_incomplete',
+        requestId: 'req-1',
+        model: 'some-model',
+        usage: { inputTokens: 900, outputTokens: 16000 },
+      });
+      respond({
+        status: 'completed',
+        output: [
+          { type: 'message', content: [{ type: 'output_text', text: 'nope' }] },
+        ],
+        usage: { input_tokens: 5, output_tokens: 2 },
+      });
+      await expect(
+        serviceFor('openai').generate(request),
+      ).rejects.toMatchObject({
+        code: 'scan.result_invalid',
+        requestId: 'req-1',
+        usage: { inputTokens: 5, outputTokens: 2 },
+      });
+    });
+
     it('logs reasoning tokens from the Responses API', async () => {
       const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
       respond(

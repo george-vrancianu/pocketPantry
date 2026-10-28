@@ -4,6 +4,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { usageRecord, user } from '../database/schema';
 import { costUsd, type CallUsage } from './prices';
+import type { PaidReadKind } from '../scan/paid-reads.service';
 import { currentUsageContext, runInUsageContext } from './usage-context';
 
 /** One provider call, as reported by the metering layer. */
@@ -33,7 +34,7 @@ export class UsageRecordsService {
    */
   async inContext<T>(
     memberId: string | null,
-    kind: string,
+    kind: PaidReadKind,
     run: () => Promise<T>,
   ): Promise<T> {
     const familyId = memberId === null ? null : await this.familyOf(memberId);

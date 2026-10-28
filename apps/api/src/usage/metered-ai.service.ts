@@ -11,6 +11,7 @@ import {
   type TranscriptionRequest,
   type TranscriptionResult,
 } from '../voice/transcription.service';
+import { type CallUsage } from './prices';
 import { UsageRecordsService } from './usage-records.service';
 
 /**
@@ -27,6 +28,11 @@ export class MeteredAiService {
     private readonly records: UsageRecordsService,
     private readonly config: ConfigService<AppConfig, true>,
   ) {}
+
+  /** Whether transcription is set up; the only thing callers outside `usage/` may ask of the provider. */
+  isTranscriptionConfigured(): boolean {
+    return this.transcription.isConfigured();
+  }
 
   async generate(
     ...args: Parameters<StructuredOutputAiService['generate']>
@@ -46,8 +52,9 @@ export class MeteredAiService {
       if (!isNotConfigured(error)) {
         await this.records.record({
           step: 'reading',
-          model: this.configuredModel(request.model),
+          model: modelOf(error) ?? this.configuredModel(request.model),
           success: false,
+          usage: usageOf(error),
           requestId: requestIdOf(error),
         });
       }
@@ -97,6 +104,18 @@ export class MeteredAiService {
 function requestIdOf(error: unknown): string | null {
   const id = (error as { requestId?: unknown } | null)?.requestId;
   return typeof id === 'string' ? id : null;
+}
+
+/** The billed usage an error carries (a call that was billed but gave no usable answer). */
+function usageOf(error: unknown): CallUsage | undefined {
+  const usage = (error as { usage?: unknown } | null)?.usage;
+  return typeof usage === 'object' && usage !== null ? usage : undefined;
+}
+
+/** The model an error says was called, if it says. */
+function modelOf(error: unknown): string | undefined {
+  const model = (error as { model?: unknown } | null)?.model;
+  return typeof model === 'string' ? model : undefined;
 }
 
 /** A provider that is not set up was never called, so there is nothing to record. */
