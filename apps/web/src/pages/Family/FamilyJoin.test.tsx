@@ -45,6 +45,7 @@ function stub(routes: Record<string, () => Response> = {}) {
 describe('FamilyPage: joining another Family', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('warns what will be deleted, with counts, before joining', async () => {

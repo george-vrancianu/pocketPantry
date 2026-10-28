@@ -262,6 +262,7 @@ describe('"From a link" sheet and the link-read holder', () => {
   afterEach(() => {
     linkReads.clear();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   const link = 'https://www.example.com/pancakes';
