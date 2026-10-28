@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { CatalogModule } from '../catalog/catalog.module';
+import { CreditsModule } from '../credits/credits.module';
 import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
 import { MemberLanguageModule } from '../member-language/member-language.module';
 import { PantryModule } from '../pantry/pantry.module';
@@ -25,6 +26,7 @@ import { ScanService } from './scan.service';
 @Module({
   imports: [
     CatalogModule,
+    CreditsModule,
     IngredientCatalogModule,
     SettingsModule,
     PantryModule,

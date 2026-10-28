@@ -96,6 +96,12 @@ never reach a client.
   `GUIDANCE_DAILY_CAP` is the Guidance Cap (Suggest Guidance requests for
   Members, per Member per UTC day, default 20; `0` disables it, counted
   independently; Admin Catalog requests are never counted);
+  Credit Prices (Credits one successful read costs a Family; `0` makes a kind free)
+  are `CREDIT_PRICE_SCAN`, `CREDIT_PRICE_VOICE`, `CREDIT_PRICE_ASSISTANT`,
+  `CREDIT_PRICE_LINK_PAGE` (default 2), `CREDIT_PRICE_LINK_TEXT` and
+  `CREDIT_PRICE_GUIDANCE` (default 1 each); only Scans are charged so far, and
+  `GET /api/credits` returns the Family's balance and the prices. A read with too
+  few Credits is refused with 402 `credits.insufficient`.
   `SCAN_MATCH_CONFIDENCE_THRESHOLD` is the confidence below which a Match
   becomes Unmatched and an image read is flagged low-confidence.
   `POST /api/scan/plate` also returns a short-lived (one hour) HMAC-SHA256

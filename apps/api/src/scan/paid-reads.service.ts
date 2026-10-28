@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { CreditsService, type CreditHold } from '../credits/credits.service';
 import { ScanCapService, type UsageKind } from './scan-cap.service';
 
 /**
@@ -49,13 +50,29 @@ const capKindOf = (kind: PaidReadKind): UsageKind | null => {
 };
 
 /**
+ * The kinds of read that cost Credits so far. Adding a kind here is all it takes to charge it: the price
+ * comes from `CREDIT_PRICE_*` and the hold, the refusal and the give-back are the same for every kind.
+ */
+const CHARGED_KINDS: ReadonlySet<PaidReadKind> = new Set<PaidReadKind>([
+  'scan',
+]);
+
+/** The kind a Credit Price is set for, or null when `kind` is not charged Credits. */
+const chargedKindOf = (kind: PaidReadKind): MemberPaidReadKind | null =>
+  kind !== 'guidance-admin' && CHARGED_KINDS.has(kind) ? kind : null;
+
+/**
  * The one place an AI read is paid for. Every feature calls `read` with the Member, the kind of read
  * and the read itself; nothing else counts a use against a Cap. The use is counted before the read
- * and handed back when the read throws or reports that it found nothing.
+ * and handed back when the read throws or reports that it found nothing. A charged kind also holds its
+ * Credit Price (after the Cap, so a read at its Cap never touches Credits) and gives it back the same way.
  */
 @Injectable()
 export class PaidReadsService {
-  constructor(private readonly caps: ScanCapService) {}
+  constructor(
+    private readonly caps: ScanCapService,
+    private readonly credits: CreditsService,
+  ) {}
 
   /**
    * A cheap early refusal before slow work (the link read before it fetches the page): throws
@@ -71,6 +88,13 @@ export class PaidReadsService {
     const capKind = capKindOf(kind);
     if (capKind !== null && memberId !== null) {
       await this.caps.assertBelowCap(memberId, new Date(), capKind);
+    }
+    const chargedKind = chargedKindOf(kind);
+    if (chargedKind !== null && memberId !== null) {
+      await this.credits.assertCanAfford(
+        memberId,
+        this.credits.priceOf(chargedKind),
+      );
     }
   }
 
@@ -95,10 +119,30 @@ export class PaidReadsService {
       capKind === null || memberId === null
         ? null
         : await this.caps.consume(memberId, new Date(), capKind);
-    const refund = async () => {
+    const refundCap = async () => {
       if (capKind !== null && memberId !== null && day !== null) {
         await this.caps.refund(memberId, day, capKind);
       }
+    };
+    // After the Cap: a read at its Cap was refused above and never reaches Credits. A read the Credits
+    // refuse hands its Cap use back, so it burns neither.
+    const chargedKind = chargedKindOf(kind);
+    let hold: CreditHold = null;
+    if (chargedKind !== null && memberId !== null) {
+      try {
+        hold = await this.credits.hold(
+          memberId,
+          chargedKind,
+          this.credits.priceOf(chargedKind),
+        );
+      } catch (error) {
+        await refundCap();
+        throw error;
+      }
+    }
+    const refund = async () => {
+      if (hold !== null) await this.credits.release(hold);
+      await refundCap();
     };
     let outcome: PaidReadOutcome<T>;
     try {

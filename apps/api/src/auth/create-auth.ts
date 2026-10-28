@@ -40,6 +40,15 @@ export function createAuth(database: Database, options: CreateAuthOptions) {
               inviteCodeExpiresAt: { type: 'date', required: true },
             },
           },
+          // Same for the Credit ledger, which the Welcome Grant is written to.
+          creditEntry: {
+            fields: {
+              familyId: { type: 'string', required: true },
+              kind: { type: 'string', required: true },
+              reason: { type: 'string', required: false },
+              amount: { type: 'number', required: true },
+            },
+          },
         },
       },
     ],
@@ -55,19 +64,24 @@ export function createAuth(database: Database, options: CreateAuthOptions) {
           defaultValue: 'member',
           input: false,
         },
+        // Set by the signup hook below with the Welcome Grant, never by clients.
+        welcomeGrantAt: { type: 'date', required: false, input: false },
       },
     },
     databaseHooks: {
       user: {
         create: {
-          // Signing up creates a Household of One with the Member as Owner.
-          // Written through the sign-up transaction (and refused outside
-          // one), so it is atomic with the user insert.
+          // Signing up creates a Household of One with the Member as Owner,
+          // and pays the Member's Welcome Grant into it (marked on the Member,
+          // so it is never given twice). Written through the sign-up
+          // transaction (and refused outside one), so it is atomic with the
+          // user insert.
           before: async (newUser) => ({
             data: {
               ...newUser,
               familyId: await createHouseholdOfOne(),
               familyRole: 'owner',
+              welcomeGrantAt: new Date(),
             },
           }),
         },

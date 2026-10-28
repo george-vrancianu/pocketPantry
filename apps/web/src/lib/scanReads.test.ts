@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { resetReads, readScans } from './scanReads';
+import { onScanReadSettled, resetReads, readScans } from './scanReads';
 import {
   dispatchScanSession,
   getScanSession,
@@ -63,6 +63,28 @@ const error = (code: string, status: number) =>
   Response.json({ code, params: {} }, { status });
 
 describe('readScans', () => {
+  it('tells listeners when a read settles, read or failed, until they stop listening', async () => {
+    const settled = vi.fn();
+    const stop = onScanReadSettled(settled);
+    enqueue('a');
+    readScans();
+    await settle();
+    expect(settled).toHaveBeenCalledTimes(1);
+
+    answer = () => error('credits.insufficient', 402);
+    enqueue('b');
+    readScans();
+    await settle();
+    expect(scan('b').status).toBe('failed');
+    expect(settled).toHaveBeenCalledTimes(2);
+
+    stop();
+    enqueue('c');
+    readScans();
+    await settle();
+    expect(settled).toHaveBeenCalledTimes(2);
+  });
+
   it('reads at most 2 Scans at once and starts the next as one finishes', async () => {
     const releases: Array<() => void> = [];
     answer = () =>

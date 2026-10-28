@@ -23,6 +23,15 @@ const READ: Record<
 };
 
 const inFlight = new Set<string>();
+const settledListeners = new Set<() => void>();
+
+/** Calls `listener` whenever a Scan Session read settles, read or failed. Returns how to stop. */
+export function onScanReadSettled(listener: () => void) {
+  settledListeners.add(listener);
+  return () => {
+    settledListeners.delete(listener);
+  };
+}
 /** Barcode Lookups under way: free and instant, so they take no read slot. */
 const lookups = new Set<string>();
 
@@ -176,6 +185,7 @@ export function readScans() {
       })
       .finally(() => {
         inFlight.delete(scan.id);
+        settledListeners.forEach((listener) => listener());
         readScans();
       });
   }

@@ -24,6 +24,8 @@ function family(overrides: Partial<Family> = {}): Family {
   };
 }
 
+const CREDITS = { balance: 100, prices: {} };
+
 type StubOptions = {
   family?: Family;
   threshold?: number;
@@ -40,6 +42,7 @@ function stubFamilyTab({
 }: StubOptions = {}) {
   const { fetchMock, calls } = stubApi({
     'GET /api/family': () => Response.json(current),
+    'GET /api/credits': () => Response.json(CREDITS),
     'GET /api/catalog/family': () =>
       Response.json({ ingredients: [], synonyms: [] }),
     'GET /api/settings/family': () =>

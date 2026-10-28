@@ -25,6 +25,12 @@
     "newCode": "New code",
     "manage": "Members and invites"
   },
+  "credits": {
+    "title": "Credits",
+    "hint": "Shared by everyone in your family. A Scan uses Credits when it reads a photo.",
+    "left_one": "Credit left",
+    "left_other": "Credits left"
+  },
   "expiringSoon": {
     "title": "Expiring soon",
     "hint": "Batches turn amber this many days before they expire",
