@@ -242,12 +242,7 @@
     "menuItem": "Fra et link",
     "heading": "Fra et link",
     "hint": "Indsæt linket til en side med en opskrift. PantryGator læser den ind i en ny opskrift, som du kan tjekke, før du gemmer.",
-    "textHint": "Indsæt teksten fra en opskrift. PantryGator læser den ind i en ny opskrift, som du kan tjekke, før du gemmer.",
     "label": "Link til opskriften",
-    "pasteSwitch": "Indsæt tekst i stedet",
-    "useLink": "Brug et link i stedet",
-    "pasteInstead": "Indsæt opskriftens tekst i stedet",
-    "textLabel": "Opskriftens tekst",
     "checking": "Tjekker linket…",
     "submit": "Læs opskriften",
     "reading": "Læser opskriften…",
@@ -259,8 +254,26 @@
     },
     "full_one": "{{count}} linklæsning venter på dig. Gennemse eller annullér den først.",
     "full_other": "{{count}} linklæsninger venter på dig. Gennemse eller annullér en først.",
-    "priceLink": "At læse en webside koster {{price}}.",
-    "priceText": "At læse indsat tekst koster {{price}}."
+    "priceLink": "At læse en webside koster {{price}}."
+  },
+  "fromText": {
+    "menuItem": "Fra tekst",
+    "heading": "Fra tekst",
+    "hint": "Indsæt teksten fra en opskrift. PantryGator læser den ind i en ny opskrift, som du kan tjekke, før du gemmer.",
+    "siteHint": "Indsæt opskriften fra {{site}}.",
+    "label": "Opskriftens tekst",
+    "paste": "Indsæt fra udklipsholder",
+    "clear": "Ryd",
+    "submit": "Læs opskriften",
+    "note": {
+      "empty": "Der er intet at indsætte: kopiér opskriften først.",
+      "refused": "Kunne ikke læse udklipsholderen: indsæt i feltet i stedet.",
+      "tooLong": "For lang til at blive læst: indsæt kun opskriften."
+    },
+    "characters_one": "{{current}} af {{max}} tegn",
+    "characters_other": "{{current}} af {{max}} tegn",
+    "price": "At læse indsat tekst koster {{price}}.",
+    "pasteInstead": "Indsæt tekst i stedet"
   },
   "readingLanguage": {
     "label": "Opskriftens sprog",
@@ -357,7 +370,8 @@
     "explore": "Udforsk opskrifter",
     "fromLink": "Fra et link",
     "newRecipe": "+ Ny opskrift",
-    "starters": "Start med disse · du kan lave dem"
+    "starters": "Start med disse · du kan lave dem",
+    "fromText": "Fra tekst"
   },
   "allHidden": "Ingen opskrifter at vise.",
   "allHiddenHint": "Opskrifter skjult på grund af dine allergier er udeladt."

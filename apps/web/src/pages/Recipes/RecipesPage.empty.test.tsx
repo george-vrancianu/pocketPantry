@@ -112,6 +112,7 @@ function setup({
       <Route path="/recipes/new" element={<p>new recipe page</p>} />
       <Route path="/recipes/explore" element={<p>explore page</p>} />
       <Route path="/recipes/from-link" element={<p>from link page</p>} />
+      <Route path="/recipes/from-text" element={<p>from text page</p>} />
     </Routes>,
     { route: '/recipes' },
   );
@@ -179,6 +180,21 @@ describe('RecipesPage when the Family has no Recipes', () => {
     ).toBeTruthy();
     await user.click(fromLink);
     expect(await screen.findByText('from link page')).toBeVisible();
+  });
+
+  it('offers "From text" right after "From a link", leading to the From text sheet', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    setup({});
+    await findTitle();
+    const fromLink = screen.getByRole('link', { name: 'From a link' });
+    const fromText = screen.getByRole('link', { name: 'From text' });
+    expect(fromText).toHaveAttribute('href', '/recipes/from-text');
+    expect(
+      fromLink.compareDocumentPosition(fromText) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    await user.click(fromText);
+    expect(await screen.findByText('from text page')).toBeVisible();
   });
 
   it('hides the art from assistive tech', async () => {

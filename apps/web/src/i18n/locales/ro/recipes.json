@@ -258,12 +258,7 @@
     "menuItem": "Dintr-un link",
     "heading": "Dintr-un link",
     "hint": "Lipește linkul unei pagini cu o rețetă. PantryGator o transformă într-o rețetă nouă, pe care o verifici înainte de a o salva.",
-    "textHint": "Lipește textul unei rețete. PantryGator îl transformă într-o rețetă nouă, pe care o verifici înainte de a o salva.",
     "label": "Linkul rețetei",
-    "pasteSwitch": "Lipește textul în schimb",
-    "useLink": "Folosește un link în schimb",
-    "pasteInstead": "Lipește textul rețetei în schimb",
-    "textLabel": "Textul rețetei",
     "checking": "Se verifică linkul…",
     "submit": "Citește rețeta",
     "reading": "Se citește rețeta…",
@@ -276,8 +271,27 @@
     "full_one": "{{count}} citire de link te așteaptă. Verific-o sau anuleaz-o mai întâi.",
     "full_few": "{{count}} citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi.",
     "full_other": "{{count}} de citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi.",
-    "priceLink": "Citirea unei pagini web costă {{price}}.",
-    "priceText": "Citirea textului lipit costă {{price}}."
+    "priceLink": "Citirea unei pagini web costă {{price}}."
+  },
+  "fromText": {
+    "menuItem": "Din text",
+    "heading": "Din text",
+    "hint": "Lipește textul unei rețete. PantryGator îl transformă într-o rețetă nouă, pe care o verifici înainte de a o salva.",
+    "siteHint": "Lipește rețeta de pe {{site}}.",
+    "label": "Textul rețetei",
+    "paste": "Lipește din clipboard",
+    "clear": "Șterge",
+    "submit": "Citește rețeta",
+    "note": {
+      "empty": "Nu e nimic de lipit: copiază mai întâi rețeta.",
+      "refused": "Nu am putut citi clipboardul: lipește în câmp.",
+      "tooLong": "Prea lung pentru a fi citit: lipește doar rețeta."
+    },
+    "characters_one": "{{current}} din {{max}} caracter",
+    "characters_few": "{{current}} din {{max}} caractere",
+    "characters_other": "{{current}} din {{max}} de caractere",
+    "price": "Citirea textului lipit costă {{price}}.",
+    "pasteInstead": "Lipește textul în schimb"
   },
   "readingLanguage": {
     "label": "Limba rețetei",
@@ -377,7 +391,8 @@
     "explore": "Explorează Rețetele",
     "fromLink": "Dintr-un link",
     "newRecipe": "+ Rețetă nouă",
-    "starters": "Începe cu acestea · le poți găti"
+    "starters": "Începe cu acestea · le poți găti",
+    "fromText": "Din text"
   },
   "allHidden": "Nicio Rețetă de arătat.",
   "allHiddenHint": "Rețetele ascunse din cauza Alergiilor tale nu apar."

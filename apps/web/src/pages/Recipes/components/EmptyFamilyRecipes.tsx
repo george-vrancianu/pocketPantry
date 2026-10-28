@@ -136,6 +136,9 @@ export function EmptyFamilyRecipes({
         <Button variant="secondary" fullWidth href="/recipes/from-link">
           {t('emptyFamily.fromLink')}
         </Button>
+        <Button variant="secondary" fullWidth href="/recipes/from-text">
+          {t('emptyFamily.fromText')}
+        </Button>
         <Button variant="secondary" fullWidth onClick={onNewRecipe}>
           {t('emptyFamily.newRecipe')}
         </Button>
