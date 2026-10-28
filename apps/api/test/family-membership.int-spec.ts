@@ -597,7 +597,7 @@ describe('Family membership: join, leave, remove, transfer, delete (integration)
       return { batches: b.length, lists: lists.length, items: items.length };
     };
 
-    it('cascades every foreign key referencing family, except user.family_id', async () => {
+    it('cascades every foreign key referencing family, except user.family_id and the Usage Record link', async () => {
       const result = await database.execute(sql`
         select cl.relname as table_name, rc.delete_rule
         from information_schema.referential_constraints rc
@@ -613,11 +613,16 @@ describe('Family membership: join, leave, remove, transfer, delete (integration)
         rules.map((r) => [r.table_name, r.delete_rule]),
       );
       expect(byTable['user']).toBe('NO ACTION');
+      // Usage Records outlive their Family: the link is cleared, not cascaded (ADR 0032).
+      expect(byTable['usage_record']).toBe('SET NULL');
       expect(byTable['batches']).toBe('CASCADE');
       expect(byTable['shopping_lists']).toBe('CASCADE');
       expect(
         rules.filter(
-          (r) => r.table_name !== 'user' && r.delete_rule !== 'CASCADE',
+          (r) =>
+            r.table_name !== 'user' &&
+            r.table_name !== 'usage_record' &&
+            r.delete_rule !== 'CASCADE',
         ),
       ).toEqual([]);
     });

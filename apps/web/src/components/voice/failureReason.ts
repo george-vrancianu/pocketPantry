@@ -44,6 +44,11 @@ export function failureReason(
         title: t('voice:send.cap', { cap }),
         hint: t('voice:send.capHint'),
       };
+    case 'outOfCredits':
+      return {
+        title: t('voice:send.outOfCredits'),
+        hint: t('voice:send.outOfCreditsHint'),
+      };
     default:
       return undefined;
   }

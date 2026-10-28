@@ -42,7 +42,8 @@ Run from the repo root unless noted.
 - Lint all: `npm run lint`; one workspace: `npm run lint -w apps/api`.
 - Targeted web or ui test (`cd apps/web` or `cd packages/ui`): `npx vitest run --pool=forks --maxWorkers=2 <path-or-pattern>`. Vitest rejects `--poolOptions.forks.maxForks`. Run the full suite only when a ticket needs it.
 - API unit: `npm run test:unit -w apps/api`.
-- API integration (needs Postgres, `npm run db:up`): `cd apps/api && npm run test:integration -w apps/api -- <pattern>` (the script caps workers itself; `--runInBand` is only for debugging).
+- API integration (needs Postgres, `npm run db:up`): `npm run test:integration -w apps/api -- <pattern>` (the script caps workers itself; `--runInBand` is only for debugging).
+- Grant Credits to a Family by hand (needs `DATABASE_URL`; never point it at a database you do not mean to change): `npm run credits:grant -w apps/api -- --family <family-uuid> --amount <positive whole number> --reason "<why>"`. Writes one `grant` Credit entry and prints the new Credit Balance; refuses a missing reason, a non-whole or non-positive amount and an unknown Family (exit 1, nothing written). Code: `apps/api/src/credits/grant/`.
 - Storybook: `npm run storybook -w packages/ui`.
 - Worktree create/remove helper: `scripts/worktree.sh` (see `docs/agents/worktrees-and-migrations.md`).
 - Migration-number collision check: `npm run check:migrations` (`scripts/check-migrations.mjs`).

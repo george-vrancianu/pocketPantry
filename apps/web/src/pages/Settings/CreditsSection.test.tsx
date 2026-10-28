@@ -1,0 +1,255 @@
+import { act, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { renderWithProviders, stubApi } from '../../test/render';
+import { CreditsSection } from './components/CreditsSection';
+import { useRefreshCreditsOnReads } from '../../components/background/useRefreshCreditsOnReads';
+import { linkReads } from '../../lib/linkReads';
+
+/** The Credits panel with the app layout's refresh-on-read hook mounted beside it. */
+function CreditsWithRefresh() {
+  useRefreshCreditsOnReads();
+  return <CreditsSection />;
+}
+
+const PRICES = {
+  scan: 1,
+  voice: 1,
+  assistant: 1,
+  'link-page': 2,
+  'link-text': 1,
+  guidance: 1,
+};
+
+type Entry = {
+  id: string;
+  kind: string;
+  readKind: string | null;
+  reason: string | null;
+  amount: number;
+  memberName: string | null;
+  formerMember: boolean;
+  createdAt: string;
+};
+let nextId = 0;
+const entry = (over: Partial<Entry>): Entry => ({
+  id: `e${nextId++}`,
+  kind: 'spend',
+  readKind: 'scan',
+  reason: null,
+  amount: -1,
+  memberName: 'Ada',
+  formerMember: false,
+  createdAt: '2026-10-01T10:30:00.000Z',
+  ...over,
+});
+const credits = (over: { balance: number; history?: Entry[] }) => ({
+  prices: PRICES,
+  lowBalanceThreshold: 10,
+  history: [],
+  ...over,
+});
+
+async function show(body: ReturnType<typeof credits>) {
+  const { fetchMock } = stubApi({
+    'GET /api/credits': () => Response.json(body),
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  renderWithProviders(<CreditsSection />);
+  await screen.findByText(String(body.balance));
+}
+
+describe('CreditsSection', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows the Family Credit Balance', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/credits': () => Response.json(credits({ balance: 100 })),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<CreditsSection />);
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Credits' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('100')).toBeInTheDocument();
+    expect(screen.getByText('Credits left')).toBeInTheDocument();
+  });
+
+  it('says "Credit left" for a balance of one', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/credits': () => Response.json(credits({ balance: 1 })),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<CreditsSection />);
+
+    expect(await screen.findByText('Credit left')).toBeInTheDocument();
+  });
+
+  it('shows 0 when the Family has run out', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/credits': () => Response.json(credits({ balance: 0 })),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<CreditsSection />);
+
+    expect(await screen.findByText('0')).toBeInTheDocument();
+  });
+
+  it('shows the error when the balance cannot be loaded', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/credits': () =>
+        Response.json(
+          { code: 'internal_server_error', params: {} },
+          { status: 500 },
+        ),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<CreditsSection />);
+
+    expect(
+      await screen.findByText(
+        'Something went wrong on our side. Please try again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  describe('low-balance notice', () => {
+    const notice = 'Your family is running low on Credits.';
+
+    it('shows at 10', async () => {
+      await show(credits({ balance: 10 }));
+      expect(screen.getByText(notice)).toBeInTheDocument();
+    });
+
+    it('does not show at 11', async () => {
+      await show(credits({ balance: 11 }));
+      expect(screen.queryByText(notice)).not.toBeInTheDocument();
+    });
+
+    it('shows at 0', async () => {
+      await show(credits({ balance: 0 }));
+      expect(screen.getByText(notice)).toBeInTheDocument();
+    });
+  });
+
+  describe('history', () => {
+    it('says so when there is nothing yet', async () => {
+      await show(credits({ balance: 100 }));
+      expect(screen.getByText('Nothing yet.')).toBeInTheDocument();
+    });
+
+    it('lists a spend by who, what and how much', async () => {
+      await show(
+        credits({
+          balance: 98,
+          history: [
+            entry({ readKind: 'link-page', amount: -2, memberName: 'Ada' }),
+          ],
+        }),
+      );
+      const row = screen.getByText('Recipe from a web page').closest('li');
+      expect(row).toHaveTextContent('Ada');
+      expect(row).toHaveTextContent('\u22122');
+    });
+
+    it('shows a spend by a departed Member as a former Member', async () => {
+      await show(
+        credits({
+          balance: 99,
+          history: [entry({ memberName: null, formerMember: true })],
+        }),
+      );
+      const row = screen.getByText('Scan').closest('li');
+      expect(row).toHaveTextContent('former Member');
+    });
+
+    it('shows a Welcome Grant by its kind, never as a former Member', async () => {
+      await show(
+        credits({
+          balance: 100,
+          history: [
+            entry({
+              kind: 'welcome_grant',
+              readKind: null,
+              amount: 100,
+              memberName: null,
+            }),
+          ],
+        }),
+      );
+      const row = screen.getByText('Welcome Grant').closest('li');
+      expect(row).toHaveTextContent('+100');
+      expect(row).not.toHaveTextContent('former Member');
+    });
+
+    it('shows a hand grant with its reason as entered', async () => {
+      await show(
+        credits({
+          balance: 150,
+          history: [
+            entry({
+              kind: 'grant',
+              readKind: null,
+              reason: 'Beta tester',
+              amount: 50,
+              memberName: null,
+            }),
+          ],
+        }),
+      );
+      expect(screen.getByText('Credit Grant: Beta tester')).toBeInTheDocument();
+    });
+
+    it('words a transfer by its kind, not by the stored text', async () => {
+      await show(
+        credits({
+          balance: 173,
+          history: [
+            entry({
+              kind: 'transfer_in',
+              readKind: null,
+              reason: 'Household of One joined the Family',
+              amount: 73,
+              memberName: 'Joiner',
+            }),
+          ],
+        }),
+      );
+      expect(screen.getByText('Credits brought by Joiner')).toBeInTheDocument();
+      expect(
+        screen.queryByText(/Household of One joined/),
+      ).not.toBeInTheDocument();
+    });
+
+    it('shows a new row and the new balance after a paid read settles', async () => {
+      let spent = false;
+      const { fetchMock } = stubApi({
+        'GET /api/credits': () =>
+          Response.json(
+            spent
+              ? credits({
+                  balance: 99,
+                  history: [entry({ readKind: 'link-text', amount: -1 })],
+                })
+              : credits({ balance: 100 }),
+          ),
+        'POST /api/recipes/from-link': () => {
+          spent = true;
+          return Response.json({ kind: 'created', recipeDraftId: 'd1' });
+        },
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<CreditsWithRefresh />);
+      expect(await screen.findByText('Nothing yet.')).toBeInTheDocument();
+
+      act(() => {
+        linkReads.submit({ kind: 'text', text: 'pasted' }, 'source');
+      });
+
+      expect(await screen.findByText('99')).toBeInTheDocument();
+      expect(screen.queryByText('Nothing yet.')).not.toBeInTheDocument();
+      expect(screen.getByText('Recipe from pasted text')).toBeInTheDocument();
+      linkReads.clear();
+    });
+  });
+});

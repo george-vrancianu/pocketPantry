@@ -62,5 +62,9 @@
     "save": "Save",
     "saving": "Saving",
     "title": "Edit {{name}}"
+  },
+  "credits": {
+    "price_one": "{{count}} Credit",
+    "price_other": "{{count}} Credits"
   }
 }

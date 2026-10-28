@@ -57,6 +57,17 @@ const envSchema = z.object({
   LINK_DAILY_CAP: z.coerce.number().int().min(0).default(20),
   /** Guidance Cap: Suggest Guidance requests per Member per UTC day. 0 disables the cap (unlimited). */
   GUIDANCE_DAILY_CAP: z.coerce.number().int().min(0).default(20),
+  /**
+   * Credit Prices (ADR 0032): the Credits one successful read costs a Family, per kind of read.
+   * A link read has two: a web page and pasted text. 0 makes a kind free. Admin Catalog Suggest
+   * Guidance has none: it is never charged.
+   */
+  CREDIT_PRICE_SCAN: z.coerce.number().int().min(0).default(1),
+  CREDIT_PRICE_VOICE: z.coerce.number().int().min(0).default(1),
+  CREDIT_PRICE_ASSISTANT: z.coerce.number().int().min(0).default(1),
+  CREDIT_PRICE_LINK_PAGE: z.coerce.number().int().min(0).default(2),
+  CREDIT_PRICE_LINK_TEXT: z.coerce.number().int().min(0).default(1),
+  CREDIT_PRICE_GUIDANCE: z.coerce.number().int().min(0).default(1),
   /** Meal Plans per Family, past ones included. */
   MEAL_PLAN_CAP: z.coerce.number().int().positive().default(10),
   /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */

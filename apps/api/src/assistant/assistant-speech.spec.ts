@@ -24,6 +24,7 @@ const KINDS: AssistantActionKind[] = [
 ];
 const STATES: AssistantState[] = [
   'capReached',
+  'outOfCredits',
   'providerFailed',
   'nothingUnderstood',
   'notConfigured',

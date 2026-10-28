@@ -73,6 +73,7 @@
   "discardScans_other": "Discard {{count}} photos?",
   "discarded": "Discarded",
   "capReached": "Daily scan limit reached",
+  "outOfCredits": "Out of Credits",
   "notAdded": "That photo could not be added. Try again.",
   "review": {
     "readAgain": "Read again",
@@ -121,5 +122,6 @@
     "lookingUp": "Looking up the barcode…",
     "ingredientAisle": "{{ingredient}} · {{aisle}}"
   },
-  "labelCap": "You have used all of today's scans. Scan a barcode or type it."
+  "labelCap": "You have used all of today's scans. Scan a barcode or type it.",
+  "labelOutOfCredits": "Out of Credits. Scan a barcode or add it by hand."
 }

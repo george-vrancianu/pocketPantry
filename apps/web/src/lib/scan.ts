@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { useRefreshCredits } from './credits';
 import { ApiError, apiRequest } from './api';
 import type { CatalogAllergen, CatalogSearchResult, Unit } from './catalog';
 import type { Batch, NewBatch } from './pantry';
@@ -57,7 +58,9 @@ export function scanQuery(scanLanguage?: string) {
 
 /** Product Scan: the photo goes up as a data URL and is never stored. */
 export function useProductScan(scanLanguage: string) {
+  const refreshCredits = useRefreshCredits();
   return useMutation({
+    onSettled: () => void refreshCredits(),
     mutationFn: (productImage: string) =>
       apiRequest<ScanResponse>(`/scan/product${scanQuery(scanLanguage)}`, {
         method: 'POST',
@@ -71,7 +74,9 @@ export function useProductScan(scanLanguage: string) {
  * photo yields. The Scan Cap and every other failure reach the caller as an `ApiError`.
  */
 export function useProductRead() {
+  const refreshCredits = useRefreshCredits();
   return useMutation({
+    onSettled: () => void refreshCredits(),
     mutationFn: async (read: {
       image: string;
       scanLanguage: string | undefined;

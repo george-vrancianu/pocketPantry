@@ -1,4 +1,4 @@
-import type { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import type { MeteredAiService } from '../usage/metered-ai.service';
 import { ApiException } from '../common/api-exception';
 import { MAX_QUANTITY } from '../common/quantity';
 import {
@@ -43,7 +43,7 @@ describe('PlateScanService', () => {
   beforeEach(() => {
     generate = jest.fn();
     service = new PlateScanService(
-      { generate } as unknown as StructuredOutputAiService,
+      { generate } as unknown as MeteredAiService,
       {
         getCatalogIn: jest.fn().mockResolvedValue(catalog),
         toPrompt: catalogPrompt,

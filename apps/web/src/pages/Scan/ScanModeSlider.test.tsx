@@ -2,7 +2,7 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderWithProviders } from '../../test/render';
+import { renderWithProviders, stubApi } from '../../test/render';
 import { selected, slider } from '../../test/scan';
 import { ScanPage } from './ScanPage';
 
@@ -10,6 +10,20 @@ import { ScanPage } from './ScanPage';
 vi.mock('../../lib/camera', async () =>
   (await import('../../test/scan')).fakeCameraModule(),
 );
+
+const CREDITS = {
+  balance: 100,
+  prices: {
+    scan: 1,
+    voice: 1,
+    assistant: 1,
+    'link-page': 2,
+    'link-text': 1,
+    guidance: 1,
+  },
+  lowBalanceThreshold: 10,
+  history: [],
+};
 
 const ORDER = ['Receipt', 'Ingredients', 'Product', 'Barcode', 'Plate'];
 
@@ -22,7 +36,8 @@ function renderScan(route = '/scan') {
   );
 }
 
-const item = (name: string) => within(slider()).getByRole('radio', { name });
+const item = (name: string | RegExp) =>
+  within(slider()).getByRole('radio', { name });
 
 describe('Scan mode slider', () => {
   beforeEach(() => {
@@ -159,5 +174,21 @@ describe('Scan page opened with its own modes', () => {
     ).toEqual(['Product', 'Receipt']);
     expect(item('Receipt')).toBeChecked();
     expect(localStorage.getItem('pocket-pantry.scan-mode')).toBe('plate');
+  });
+
+  describe('Credit Price', () => {
+    it('names the price of a Scan on the chosen mode, and none on Barcode', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { fetchMock } = stubApi({
+        'GET /api/credits': () => Response.json(CREDITS),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderScan();
+      expect(await within(slider()).findByText('· 1 Credit')).toBeVisible();
+      expect(item(/^Receipt/)).toHaveTextContent('Receipt· 1 Credit');
+      await user.click(item('Barcode'));
+      expect(item('Barcode')).toBeChecked();
+      expect(within(slider()).queryByText('· 1 Credit')).toBeNull();
+    });
   });
 });

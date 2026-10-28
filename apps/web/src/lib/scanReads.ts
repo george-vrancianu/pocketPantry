@@ -1,10 +1,11 @@
 import { ApiError, apiRequest } from './api';
+import { OUT_OF_CREDITS } from './credits';
 import { barcodeCardLine, lookupBarcode } from './barcode';
 import type { PlateDishes } from './plate';
 import { scanQuery, type ScanMode, type ScanResponse } from './scan';
 import {
   MAX_CONCURRENT_READS,
-  capReached,
+  sessionHeld,
   dispatchScanSession,
   getScanSession,
   isBarcodeCard,
@@ -23,6 +24,15 @@ const READ: Record<
 };
 
 const inFlight = new Set<string>();
+const settledListeners = new Set<() => void>();
+
+/** Calls `listener` whenever a Scan Session read settles, read or failed. Returns how to stop. */
+export function onScanReadSettled(listener: () => void) {
+  settledListeners.add(listener);
+  return () => {
+    settledListeners.delete(listener);
+  };
+}
 /** Barcode Lookups under way: free and instant, so they take no read slot. */
 const lookups = new Set<string>();
 
@@ -145,8 +155,8 @@ function startLookups() {
  */
 export function readScans() {
   startLookups();
-  // Past the Scan Cap every read would fail; the rest wait until the capped Scan is retried or removed.
-  if (inFlight.size >= MAX_CONCURRENT_READS || capReached(getScanSession()))
+  // Past the Scan Cap (or out of Credits) every read would fail; the rest wait until the capped Scan is retried or removed.
+  if (inFlight.size >= MAX_CONCURRENT_READS || sessionHeld(getScanSession()))
     return;
   dispatchScanSession({ type: 'start' });
   for (const scan of getScanSession().scans) {
@@ -169,13 +179,19 @@ export function readScans() {
         dispatchScanSession({
           type: 'fail',
           id: scan.id,
-          reason: api?.code === 'scan.cap_reached' ? 'cap' : 'error',
+          reason:
+            api?.code === 'scan.cap_reached'
+              ? 'cap'
+              : api?.code === OUT_OF_CREDITS
+                ? 'credits'
+                : 'error',
           code: api?.code,
           params: api?.params,
         });
       })
       .finally(() => {
         inFlight.delete(scan.id);
+        settledListeners.forEach((listener) => listener());
         readScans();
       });
   }

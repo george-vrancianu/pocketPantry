@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { CatalogModule } from '../catalog/catalog.module';
+import { CreditsModule } from '../credits/credits.module';
 import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
 import { MemberLanguageModule } from '../member-language/member-language.module';
 import { PantryModule } from '../pantry/pantry.module';
+import { UsageModule } from '../usage/usage.module';
 import { SettingsModule } from '../settings/settings.module';
 import { ShoppingModule } from '../shopping/shopping.module';
 import { CatalogMatchService } from './catalog-matching';
@@ -17,6 +18,7 @@ import { ReceiptConfirmService } from './receipt-confirm.service';
 import { ReceiptProposalService } from './receipt-proposal.service';
 import { ReceiptScanController } from './receipt-scan.controller';
 import { ReceiptScanService } from './receipt-scan.service';
+import { PaidReadsService } from './paid-reads.service';
 import { ScanCapService } from './scan-cap.service';
 import { ScanController } from './scan.controller';
 import { ScanService } from './scan.service';
@@ -24,6 +26,8 @@ import { ScanService } from './scan.service';
 @Module({
   imports: [
     CatalogModule,
+    CreditsModule,
+    UsageModule,
     IngredientCatalogModule,
     SettingsModule,
     PantryModule,
@@ -31,9 +35,8 @@ import { ScanService } from './scan.service';
     MemberLanguageModule,
   ],
   controllers: [ScanController, PlateScanController, ReceiptScanController],
-  exports: [CatalogMatchService, ScanCapService, StructuredOutputAiService],
+  exports: [CatalogMatchService, PaidReadsService, ScanCapService],
   providers: [
-    StructuredOutputAiService,
     ProductScanService,
     PlateScanService,
     PlateScanFlowService,
@@ -44,6 +47,7 @@ import { ScanService } from './scan.service';
     ReceiptProposalService,
     ReceiptConfirmService,
     ScanCapService,
+    PaidReadsService,
     ScanService,
   ],
 })

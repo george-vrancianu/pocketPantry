@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { nextBackgroundOrder } from '../components/background/backgroundItem';
 import { ApiError } from './api';
+import { isOutOfCredits } from './credits';
 import {
   readRecipeLink,
   type ReadingLanguage,
@@ -16,7 +17,7 @@ export const MAX_HELD_LINK_READS = 5;
 export const LINK_AUTO_RETRY_MS = 1500;
 
 /**
- * `waiting` for a free slot, `reading`, `ready` (a Recipe Draft is kept), `failed`, or `capped` (the Link Cap refused it, or it was waiting behind the read the cap
+ * `waiting` for a free slot, `reading`, `ready` (a Recipe Draft is kept), `failed`, or `capped` (the Link Cap or Credits refused it, or it was waiting behind the read that was
  * refused; Retry tries again, like a capped Scan in ADR 0004).
  */
 export type LinkReadStatus =
@@ -64,6 +65,10 @@ const isNetworkError = (error: unknown) =>
 export const isCapReached = (error: unknown) =>
   error instanceof ApiError && error.code === 'link.cap_reached';
 
+/** A refusal that holds every read from here: the Link Cap, or the Family being out of Credits. */
+const isBudgetRefusal = (error: unknown) =>
+  isCapReached(error) || isOutOfCredits(error);
+
 /**
  * The link-read holder: the Member's link reads, kept in memory outside any page, like the Voice Inbox.
  * It reads with plain API requests, not a page's mutation or the query cache, so a read outlives the
@@ -75,6 +80,7 @@ export function createLinkReads() {
   let nextId = 1;
   const listeners = new Set<() => void>();
   const finishedListeners = new Set<() => void>();
+  const settledListeners = new Set<() => void>();
   /** One per running read: aborting it abandons that request, and only it. */
   const controllers = new Map<number, AbortController>();
   /** Reads to send with `force` (the Member chose "Read again"). */
@@ -138,6 +144,7 @@ export function createLinkReads() {
           recipeDraftId: result.recipeDraftId,
         });
         finishedListeners.forEach((listener) => listener());
+        settledListeners.forEach((listener) => listener());
         pump();
       },
       (error: unknown) => {
@@ -158,8 +165,8 @@ export function createLinkReads() {
           );
           return;
         }
-        if (isCapReached(error)) {
-          // The cap refuses every read from here: those waiting behind it are held with it.
+        if (isBudgetRefusal(error)) {
+          // The cap (or the Credits) refuses every read from here: those waiting behind it are held with it.
           set(
             state.reads.map((r) =>
               r.id === read.id || r.status === 'waiting'
@@ -170,6 +177,7 @@ export function createLinkReads() {
         } else {
           patch(read.id, { status: 'failed', error });
         }
+        settledListeners.forEach((listener) => listener());
         pump();
       },
     );
@@ -194,6 +202,13 @@ export function createLinkReads() {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
+      };
+    },
+    /** Told when a read settles, kept or failed (a kept read costs Credits). */
+    onReadSettled: (listener: () => void) => {
+      settledListeners.add(listener);
+      return () => {
+        settledListeners.delete(listener);
       };
     },
     /** Told when a read keeps a Recipe Draft (the Recipe Drafts list is out of date). */
@@ -239,7 +254,7 @@ export function createLinkReads() {
     },
     /**
      * Tries a failed or capped read again. Retrying a capped read releases every read the cap held
-     * (ADR 0004); each goes back to waiting in its place, and the Link Cap decides again.
+     * (ADR 0004); each goes back to waiting in its place, and the Link Cap and the Credits decide again.
      */
     retry(id: number) {
       const read = find(id);

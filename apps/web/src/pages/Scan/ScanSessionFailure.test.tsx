@@ -43,6 +43,7 @@ type Outcome =
   | 'network'
   | 'server'
   | 'cap'
+  | 'credits'
   | 'empty'
   | 'tooMany'
   | 'tooLarge'
@@ -72,6 +73,13 @@ function renderScan(route = '/scan?mode=product') {
           Response.json(
             { code: 'scan.cap_reached', params: { cap: 30 } },
             { status: 429 },
+          ),
+        );
+      case 'credits':
+        return Promise.resolve(
+          Response.json(
+            { code: 'credits.insufficient', params: { price: 1, balance: 0 } },
+            { status: 402 },
           ),
         );
       case 'tooMany':
@@ -227,6 +235,44 @@ describe('Scan Session reads that fail', () => {
       expect(
         screen.queryByText('Daily scan limit reached'),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Out of Credits', () => {
+    it('fails the Scan with its own message, not the daily limit, and stops scanning', async () => {
+      outcome = () => 'credits';
+      renderScan();
+      await scanOnce();
+      await waitFor(() => expectStack('failed'));
+      expect(screen.getByText('Out of Credits')).toBeInTheDocument();
+      expect(
+        screen.queryByText('Daily scan limit reached'),
+      ).not.toBeInTheDocument();
+      // Not retried by itself.
+      expect(bodies).toHaveLength(1);
+      await scanOnce();
+      await flush();
+      expect(stackCount()).toBe(1);
+      expect(bodies).toHaveLength(1);
+    });
+
+    it('shows Out of Credits on the Review card, which can be read again', async () => {
+      outcome = (n) => (n === 1 ? 'credits' : 'ok');
+      renderScan();
+      await scanOnce();
+      await waitFor(() => expectStack('failed'));
+      await userEvent.click(
+        screen.getByRole('button', { name: /^Review \d+ / }),
+      );
+      const card = await screen.findByTestId('review-card');
+      expect(within(card).getByText('Out of Credits')).toBeInTheDocument();
+      await userEvent.click(
+        within(card).getByRole('button', { name: 'Read again' }),
+      );
+      await waitFor(() => expect(bodies).toHaveLength(2));
+      await waitFor(() =>
+        expect(screen.queryByText('Out of Credits')).not.toBeInTheDocument(),
+      );
     });
   });
 

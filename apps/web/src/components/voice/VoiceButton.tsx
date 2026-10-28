@@ -18,6 +18,7 @@ import {
 } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { usePressGesture } from '../../lib/usePressGesture';
+import { useCreditPriceText } from '../CreditPrice';
 import { useDockMicSlot, useReportRecording, useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
 import { useElapsedMs } from './useElapsed';
@@ -60,6 +61,8 @@ export function VoiceButton({
   }, [active, reportRecording]);
   const destinationId = useId();
   const blockedId = useId();
+  const priceId = useId();
+  const price = useCreditPriceText('voice');
   const { armed, buttonProps } = usePressGesture({
     active,
     start: () => void voice.press(),
@@ -104,6 +107,11 @@ export function VoiceButton({
           }}
         >
           {t('listening.tip')}
+          {price ? (
+            <Box component="span" sx={{ display: 'block', fontWeight: 400 }}>
+              {price}
+            </Box>
+          ) : null}
         </Box>
       ) : null}
       {active ? (
@@ -125,6 +133,11 @@ export function VoiceButton({
           <Box component="span" id={destinationId} hidden sx={visuallyHidden}>
             {t(LISTENING_DESTINATION[target])}
           </Box>
+          {price ? (
+            <Box component="span" id={priceId} hidden sx={visuallyHidden}>
+              {t('voiceButton.price', { price })}
+            </Box>
+          ) : null}
           <Box component="span" id={blockedId} hidden sx={visuallyHidden}>
             {t('voiceButton.blocked')}
           </Box>
@@ -134,17 +147,20 @@ export function VoiceButton({
             aria-label={t('voiceButton.label')}
             {...{ [VOICE_BUTTON_ATTRIBUTE]: '' }}
             aria-pressed={voice.recording}
-            aria-describedby={
-              voice.mic.blocked
-                ? `${destinationId} ${blockedId}`
-                : destinationId
-            }
+            aria-describedby={[
+              destinationId,
+              price ? priceId : null,
+              voice.mic.blocked ? blockedId : null,
+            ]
+              .filter(Boolean)
+              .join(' ')}
             {...buttonProps}
             sx={[
               {
                 position: 'relative',
                 flex: 1,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 p: 0,
@@ -175,6 +191,16 @@ export function VoiceButton({
             ) : (
               <MicIcon size={26} />
             )}
+            {price && !active ? (
+              // Sighted users see the price at the mic; screen readers get it from the description above.
+              <Box
+                component="span"
+                aria-hidden
+                sx={{ fontSize: 10, fontWeight: 600, lineHeight: 1 }}
+              >
+                {price}
+              </Box>
+            ) : null}
           </Box>
         </>,
         micSlot,

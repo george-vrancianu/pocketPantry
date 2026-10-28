@@ -25,6 +25,8 @@ export type StructuredOutputRequest = {
 export type StructuredOutputResult = {
   data: unknown;
   requestId: string | null;
+  /** The model that answered; a Usage Record falls back to the configured one when absent. */
+  model?: string;
   /** Billed tokens, when the provider reported them. */
   usage?: AiTokenUsage;
 };
@@ -34,6 +36,11 @@ export type StructuredOutputErrorCode =
 
 /** Provider-side failure; `code` is the stable API code, `reason` says what the provider did. */
 export class StructuredOutputAiError extends ApiException {
+  /** Billed tokens of the failed call, attached once the response was read (a Usage Record keeps them). */
+  usage?: AiTokenUsage;
+  /** The model that was called. */
+  model?: string;
+
   constructor(
     readonly reason: StructuredOutputErrorCode,
     readonly requestId: string | null,
@@ -45,6 +52,20 @@ export class StructuredOutputAiError extends ApiException {
       failed: 'scan.provider_unavailable',
     };
     super(502, codes[reason]);
+  }
+}
+
+/** A provider failure other than a refusal or truncation, carrying the request id for the Usage Record. */
+export class ProviderCallError extends ApiException {
+  constructor(
+    status: number,
+    code: string,
+    params: Record<string, string | number>,
+    readonly requestId: string | null,
+    readonly usage?: AiTokenUsage,
+    readonly model?: string,
+  ) {
+    super(status, code, params);
   }
 }
 
@@ -314,30 +335,49 @@ export class StructuredOutputAiService {
       if (this.debug) {
         trace.body = await response.text().catch(() => undefined);
       }
-      throw new ApiException(502, 'scan.provider_unavailable', {
-        status: response.status,
-      });
+      throw new ProviderCallError(
+        502,
+        'scan.provider_unavailable',
+        { status: response.status },
+        requestId,
+        undefined,
+        model,
+      );
     }
 
+    let usage: AiTokenUsage | undefined;
     try {
       // Read as text first, so the debug capture keeps a body that is not JSON.
       const raw = await response.text();
       trace.body = raw;
       const body: unknown = JSON.parse(raw);
       trace.body = body;
-      const usage = readAiUsage(provider, body);
-      this.logUsage(usage, request.schemaName, requestId);
+      usage = readAiUsage(provider, body);
+      this.logUsage(usage, request.schemaName, requestId, model);
       const text = isResponsesApi
         ? this.readResponsesText(body, requestId)
         : this.readChatCompletionsText(body, requestId);
       return {
         data: JSON.parse(text) as unknown,
         requestId,
+        model,
         ...(usage ? { usage } : {}),
       };
     } catch (error) {
+      if (error instanceof StructuredOutputAiError) {
+        if (usage) error.usage = usage;
+        error.model = model;
+        throw error;
+      }
       if (error instanceof ApiException) throw error;
-      throw new ApiException(502, 'scan.result_invalid');
+      throw new ProviderCallError(
+        502,
+        'scan.result_invalid',
+        {},
+        requestId,
+        usage,
+        model,
+      );
     }
   }
 
@@ -346,11 +386,13 @@ export class StructuredOutputAiService {
     usage: AiTokenUsage | undefined,
     schemaName: string,
     requestId: string | null,
+    model: string,
   ) {
     if (!usage) return;
     const { cachedInputTokens, reasoningTokens, ...counts } = usage;
     this.logger.log({
       message: 'AI token usage',
+      model,
       requestId,
       schemaName,
       ...counts,
