@@ -2,6 +2,7 @@ import type { TextFieldProps as MuiTextFieldProps } from '@mui/material/TextFiel
 import {
   useCallback,
   useRef,
+  useState,
   type ReactNode,
   type Ref,
   type RefObject,
@@ -20,10 +21,12 @@ export type TextFieldPaste = { label: string; emptyMessage: string };
 
 type FieldElement = HTMLInputElement | HTMLTextAreaElement;
 type SlotProps = MuiTextFieldProps['slotProps'];
+type OnChange = MuiTextFieldProps['onChange'];
 
 /**
- * Wires a Paste button into a field: returns the `inputRef` and `slotProps`
- * to hand to MUI. The button shows only while the field is empty and the
+ * Wires a Paste button into a field: returns the `inputRef`, `onChange` and
+ * `slotProps` to hand to MUI. The button shows only while the field is empty
+ * (the `value` when controlled, the text typed so far when not) and the
  * browser can read clipboard text; otherwise the field's own end adornment
  * (if any) keeps the slot.
  */
@@ -31,14 +34,27 @@ export function useTextFieldPaste({
   paste,
   inputRef,
   value,
+  defaultValue,
+  onChange,
   slotProps,
 }: {
   paste: TextFieldPaste | undefined;
   inputRef: Ref<FieldElement> | undefined;
   value: unknown;
+  defaultValue: unknown;
+  onChange: OnChange;
   slotProps: SlotProps;
-}): { mergedRef: Ref<FieldElement>; slotProps: SlotProps } {
+}): {
+  mergedRef: Ref<FieldElement>;
+  onChange: OnChange;
+  slotProps: SlotProps;
+} {
   const ownInput = useRef<FieldElement | null>(null);
+  const [uncontrolledEmpty, setUncontrolledEmpty] = useState(
+    () => String(defaultValue ?? '') === '',
+  );
+  const empty =
+    value === undefined ? uncontrolledEmpty : String(value ?? '') === '';
   const mergedRef = useCallback(
     (element: FieldElement | null) => {
       ownInput.current = element;
@@ -46,10 +62,13 @@ export function useTextFieldPaste({
     },
     [inputRef],
   );
-  const showPaste =
-    paste !== undefined && String(value ?? '') === '' && canReadClipboard();
+  const showPaste = paste !== undefined && empty && canReadClipboard();
   return {
     mergedRef,
+    onChange: (event) => {
+      setUncontrolledEmpty(event.target.value === '');
+      onChange?.(event);
+    },
     slotProps: showPaste
       ? withEndAdornment(
           slotProps,

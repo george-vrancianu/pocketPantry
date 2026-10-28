@@ -190,6 +190,28 @@ describe('TextField paste', () => {
     expect(screen.queryByRole('button', { name: 'Paste' })).toBeNull();
   });
 
+  it('hides the Paste button once an uncontrolled field has text, and shows it again when emptied', async () => {
+    stubClipboard(() => Promise.resolve('K7M2PQ9X'));
+    render(<TextField label="Code" paste={paste} />);
+    const input = screen.getByRole('textbox', { name: 'Code' });
+
+    fireEvent.change(input, { target: { value: 'k' } });
+    expect(screen.queryByRole('button', { name: 'Paste' })).toBeNull();
+
+    fireEvent.change(input, { target: { value: '' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Paste' }));
+    });
+    expect((input as HTMLInputElement).value).toBe('K7M2PQ9X');
+    expect(screen.queryByRole('button', { name: 'Paste' })).toBeNull();
+  });
+
+  it('offers no Paste button on an uncontrolled field that starts with text', () => {
+    stubClipboard(() => Promise.resolve(''));
+    render(<TextField label="Code" paste={paste} defaultValue="K7M2" />);
+    expect(screen.queryByRole('button', { name: 'Paste' })).toBeNull();
+  });
+
   it('hands the end of a filled field back to its other end content', () => {
     stubClipboard(() => Promise.resolve(''));
     function Cleared() {

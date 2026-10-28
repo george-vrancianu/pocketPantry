@@ -6,9 +6,9 @@ import { useTextFieldPaste, type TextFieldPaste } from './TextFieldPaste';
 export type TextFieldProps = Omit<MuiTextFieldProps, 'variant'> & {
   /**
    * Turns on a Paste button at the end of the field (see `TextFieldPaste`).
-   * The button shows only while the controlled `value` is empty and the
-   * browser can read clipboard text; otherwise the field's own end adornment
-   * (if any) takes the slot.
+   * The button shows only while the field is empty (its `value` when
+   * controlled, its own text when not) and the browser can read clipboard
+   * text; otherwise the field's own end adornment (if any) takes the slot.
    */
   paste?: TextFieldPaste;
 };
@@ -35,6 +35,8 @@ export function TextField({ paste, inputRef, ...props }: TextFieldProps) {
     paste,
     inputRef,
     value: props.value,
+    defaultValue: props.defaultValue,
+    onChange: props.onChange,
     slotProps: labelled,
   });
   return (
@@ -43,6 +45,7 @@ export function TextField({ paste, inputRef, ...props }: TextFieldProps) {
       fullWidth
       {...props}
       inputRef={pasting.mergedRef}
+      onChange={pasting.onChange}
       slotProps={pasting.slotProps}
     />
   );
