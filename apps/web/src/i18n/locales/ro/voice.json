@@ -74,7 +74,8 @@
   },
   "voiceButton": {
     "label": "Ține apăsat pentru a înregistra o notă vocală",
-    "blocked": "Microfon blocat"
+    "blocked": "Microfon blocat",
+    "price": "Costă {{price}}"
   },
   "listening": {
     "title": "Gator ascultă",

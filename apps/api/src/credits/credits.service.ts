@@ -1,12 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { eq, sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import { creditEntry, user } from '../database/schema';
-import type { CreditPriceKind, CreditPrices } from './credits.schemas';
+import {
+  HISTORY_LIMIT,
+  type CreditHistoryEntry,
+  type CreditPriceKind,
+  type CreditPrices,
+} from './credits.schemas';
 
 /** The Credits a Member's Household of One starts with, once in their life (ADR 0032). */
 export const WELCOME_GRANT_CREDITS = 100;
@@ -122,6 +127,55 @@ export class CreditsService {
     executor: Executor = this.database,
   ): Promise<number> {
     return familyBalance(executor, familyId);
+  }
+
+  /**
+   * The latest entries of the Member's Family, newest first. Grants (`welcome_grant`, `grant`) have no
+   * Member to name: a signup grant is written before its Member exists. A spend or transfer whose Member
+   * is gone is a former Member.
+   */
+  async historyOfMember(
+    memberId: string,
+    limit = HISTORY_LIMIT,
+  ): Promise<CreditHistoryEntry[]> {
+    const [me] = await this.database
+      .select({ familyId: user.familyId })
+      .from(user)
+      .where(eq(user.id, memberId));
+    if (!me) return [];
+    const rows = await this.database
+      .select({
+        id: creditEntry.id,
+        kind: creditEntry.kind,
+        readKind: creditEntry.readKind,
+        reason: creditEntry.reason,
+        amount: creditEntry.amount,
+        memberId: creditEntry.memberId,
+        memberName: user.name,
+        memberFamilyId: user.familyId,
+        createdAt: creditEntry.createdAt,
+      })
+      .from(creditEntry)
+      .leftJoin(user, eq(user.id, creditEntry.memberId))
+      .where(eq(creditEntry.familyId, me.familyId))
+      .orderBy(desc(creditEntry.createdAt), desc(creditEntry.id))
+      .limit(limit);
+    return rows.map((row) => {
+      const byMember = row.kind === 'spend' || row.kind === 'transfer_in';
+      // Gone (deleted) or in another Family now (left or removed): not a Member of this one.
+      const former = byMember && row.memberFamilyId !== me.familyId;
+      return {
+        id: row.id,
+        kind: row.kind,
+        readKind:
+          row.kind === 'spend' ? (row.readKind as CreditPriceKind) : null,
+        reason: row.kind === 'grant' ? row.reason : null,
+        amount: row.amount,
+        memberName: byMember && !former ? row.memberName : null,
+        formerMember: former,
+        createdAt: row.createdAt.toISOString(),
+      };
+    });
   }
 
   /** Throws `credits.insufficient` when the Member's Family cannot pay `price`; holds nothing. */

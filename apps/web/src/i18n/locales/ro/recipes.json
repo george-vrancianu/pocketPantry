@@ -275,7 +275,9 @@
     },
     "full_one": "{{count}} citire de link te așteaptă. Verific-o sau anuleaz-o mai întâi.",
     "full_few": "{{count}} citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi.",
-    "full_other": "{{count}} de citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi."
+    "full_other": "{{count}} de citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi.",
+    "priceLink": "Citirea unei pagini web costă {{price}}.",
+    "priceText": "Citirea textului lipit costă {{price}}."
   },
   "readingLanguage": {
     "label": "Limba rețetei",

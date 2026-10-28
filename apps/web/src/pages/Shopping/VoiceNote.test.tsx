@@ -81,6 +81,13 @@ function setup({
       : {}),
     ...(preferences ? { 'GET /api/settings/preferences': preferences } : {}),
     'GET /api/shopping-list': () => Response.json(emptyList),
+    'GET /api/credits': () =>
+      Response.json({
+        balance: 100,
+        prices: { voice: 1 },
+        lowBalanceThreshold: 10,
+        history: [],
+      }),
     'GET /api/voice/config': () => Response.json({ configured }),
     'POST /api/voice': () =>
       note?.() ??
@@ -103,6 +110,18 @@ describe('Voice Note on the Shopping List', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it('describes the mic with the Credit Price of a Voice Note', async () => {
+    setup();
+    renderInAppLayout(<ShoppingPage />, '/shopping');
+    const button = await talkButton();
+    await vi.waitFor(() =>
+      expect(button).toHaveAccessibleDescription(/Costs 1 Credit/),
+    );
+    // Sighted users see the price at the mic; the caption is not announced a second time.
+    expect(within(button).getByText('1 Credit')).toBeInTheDocument();
+    expect(button).toHaveAccessibleName('Hold to record a Voice Note');
   });
 
   it('is hidden when voice is not configured', async () => {
