@@ -40,7 +40,9 @@ export function useVoiceBackgroundItems(): BackgroundItem[] {
       voiceCap?.cap ?? 0,
     );
     if (!reason) return undefined;
-    return note.error === 'nothingHeard' || note.error === 'capReached'
+    return note.error === 'nothingHeard' ||
+      note.error === 'capReached' ||
+      note.error === 'outOfCredits'
       ? `${reason.title}. ${reason.hint}`
       : reason.hint;
   };

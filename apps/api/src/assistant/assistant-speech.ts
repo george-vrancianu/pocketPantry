@@ -90,7 +90,11 @@ const isAnswer = (
 
 /** A whole-request state that replaces per-outcome wording. */
 export type AssistantState =
-  'capReached' | 'providerFailed' | 'nothingUnderstood' | 'notConfigured';
+  | 'capReached'
+  | 'outOfCredits'
+  | 'providerFailed'
+  | 'nothingUnderstood'
+  | 'notConfigured';
 
 /**
  * Either the outcomes of one request or a whole-request state. `locale` is
@@ -193,6 +197,8 @@ export const assistantMessages = {
     states: {
       capReached:
         'You have reached the daily limit for the assistant. Try again tomorrow.',
+      outOfCredits:
+        'Your Family has run out of Credits. Ask for more to use the assistant.',
       providerFailed: 'I could not read that just now. Try again.',
       nothingUnderstood: 'I did not understand anything. Try again.',
       notConfigured: 'The assistant is not set up.',
@@ -248,6 +254,8 @@ export const assistantMessages = {
     },
     states: {
       capReached: 'Ai atins limita zilnică pentru asistent. Încearcă mâine.',
+      outOfCredits:
+        'Familia ta a rămas fără Credite. Cere mai multe ca să folosești asistentul.',
       providerFailed: 'Nu am putut citi cererea acum. Încearcă din nou.',
       nothingUnderstood: 'Nu am înțeles nimic. Încearcă din nou.',
       notConfigured: 'Asistentul nu este configurat.',
@@ -300,6 +308,8 @@ export const assistantMessages = {
     states: {
       capReached:
         'Du har nået dagens grænse for assistenten. Prøv igen i morgen.',
+      outOfCredits:
+        'Din familie har brugt alle sine kreditter. Bed om flere for at bruge assistenten.',
       providerFailed: 'Jeg kunne ikke læse det lige nu. Prøv igen.',
       nothingUnderstood: 'Jeg forstod ikke noget. Prøv igen.',
       notConfigured: 'Assistenten er ikke sat op.',

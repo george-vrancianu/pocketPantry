@@ -390,7 +390,10 @@ describe('the Link Cap', () => {
    * The first read to reach the API is held, then refused by the cap when `refuse` is called; the second
    * is held, then answered when `finish` is called; later ones are answered at once.
    */
-  function capSetup() {
+  function capSetup(
+    refusal: () => Response = () =>
+      failing('link.cap_reached', 429, { cap: 20 }),
+  ) {
     let n = 0;
     let refuse = () => {};
     let finish = () => {};
@@ -400,7 +403,7 @@ describe('the Link Cap', () => {
       n += 1;
       if (n === 1) {
         await first;
-        return failing('link.cap_reached', 429, { cap: 20 });
+        return refusal();
       }
       if (n === 2) await second;
       return Response.json(draft);
@@ -508,6 +511,37 @@ describe('the Link Cap', () => {
     );
   });
 
+  it('fails an Out of Credits read and those waiting behind it, with Retry and Discard on each', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { sent, refuse, finish } = capSetup(() =>
+      failing('credits.insufficient', 402, { price: 2, balance: 1 }),
+    );
+    await submitMany(user, [
+      'https://a.example/1',
+      'https://b.example/2',
+      'https://c.example/3',
+    ]);
+    await waitFor(() => expect(sent()).toHaveLength(2));
+    refuse();
+    await waitFor(() =>
+      expect(statuses()).toEqual(['capped', 'reading', 'capped']),
+    );
+    // Only the first two were ever sent.
+    expect(sent()).toHaveLength(2);
+    await user.click(await screen.findByRole('button', { name: 'Open' }));
+    expect(screen.getAllByText('Out of Credits')).toHaveLength(2);
+    expect(
+      screen.getByRole('button', { name: 'Discard c.example' }),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole('button', { name: 'Retry reading a.example' }),
+    );
+    finish();
+    await waitFor(() =>
+      expect(statuses()).toEqual(['ready', 'ready', 'ready']),
+    );
+  });
+
   it('Retry on a capped read tries again, and releases those the cap held', async () => {
     const user = userEvent.setup({ delay: null });
     const { sent, refuse, finish } = capSetup();
@@ -539,6 +573,39 @@ describe('the Link Cap', () => {
       'https://b.example/2',
       'https://c.example/3',
     ]);
+  });
+});
+
+describe('Out of Credits', () => {
+  const outOfCredits = () =>
+    failing('credits.insufficient', 402, { price: 2, balance: 1 });
+
+  it('fails the read with Out of Credits, not the Link Cap message', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup(outOfCredits);
+    await submit(user);
+    expect(await screen.findByText('Out of Credits')).toBeVisible();
+    expect(
+      screen.getByText('Out of Credits. This needs 2, and your Family has 1.'),
+    ).toBeVisible();
+    expect(screen.queryByText(/link reads are used up/)).toBeNull();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '1 recipe link failed',
+    );
+  });
+
+  it.each<[Locale, RegExp]>([
+    [
+      'ro',
+      /Ai rămas fără Credite\. Aici sunt necesare 2, iar familia ta are 1\./,
+    ],
+    ['da', /Ikke flere kreditter\. Det kræver 2, og jeres familie har 1\./],
+  ])('words it in %s', async (locale, message) => {
+    const user = userEvent.setup({ delay: null });
+    setup(outOfCredits, { locale });
+    await user.type(screen.getByLabelText(/^Link/), link);
+    await user.click(screen.getByRole('button', { name: /^(Citește|Læs)/ }));
+    expect(await screen.findByText(message)).toBeVisible();
   });
 });
 

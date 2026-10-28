@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ApiError, apiRequest } from '../../lib/api';
+import { isOutOfCredits } from '../../lib/credits';
 import { linkReads, useLinkReads, type LinkRead } from '../../lib/linkReads';
 import { linkFailureReason, offersPasteText } from '../../lib/linkReadFailure';
 import {
@@ -75,7 +76,11 @@ export function useLinkReadBackgroundItems(enabled = true): BackgroundItem[] {
           : ready
             ? t('background:link.ready')
             : read.status === 'capped'
-              ? t('background:link.capped')
+              ? t(
+                  isOutOfCredits(read.error)
+                    ? 'background:link.outOfCredits'
+                    : 'background:link.capped',
+                )
               : t('background:link.failed');
 
     const actions: BackgroundAction[] = [];

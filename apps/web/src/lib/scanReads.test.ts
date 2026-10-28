@@ -178,6 +178,37 @@ describe('readScans', () => {
     expect(scan('c').status).not.toBe('reading');
   });
 
+  it('stops starting reads once a Scan is Out of Credits, and holds the waiting Scans with it', async () => {
+    answer = () => error('credits.insufficient', 402);
+    ['a', 'b', 'c', 'd'].forEach((id) => enqueue(id));
+    readScans();
+    await settle();
+    expect(calls).toHaveLength(2);
+    expect(scan('a')).toMatchObject({
+      status: 'failed',
+      failure: 'credits',
+      errorCode: 'credits.insufficient',
+    });
+    expect(scan('c')).toMatchObject({ status: 'failed', failure: 'credits' });
+    expect(scan('d')).toMatchObject({ status: 'failed', failure: 'credits' });
+  });
+
+  it('Read again on an Out of Credits Scan releases the Scans it held', async () => {
+    answer = () => error('credits.insufficient', 402);
+    ['a', 'b', 'c'].forEach((id) => enqueue(id));
+    readScans();
+    await settle();
+    answer = () => Response.json({ lines });
+    dispatchScanSession({ type: 'retry', id: 'a' });
+    readScans();
+    await settle();
+    expect(getScanSession().scans.map((s) => s.status)).toEqual([
+      'read',
+      'read',
+      'read',
+    ]);
+  });
+
   it('reads a Plate Scan into dish guesses with its token', async () => {
     answer = () =>
       Response.json({

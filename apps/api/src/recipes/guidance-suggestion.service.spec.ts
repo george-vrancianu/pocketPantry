@@ -49,7 +49,11 @@ describe('GuidanceSuggestionService with no Eating Moments to offer', () => {
       } as unknown as SettingsService,
       new PaidReadsService(
         { consume, refund } as unknown as ScanCapService,
-        {} as unknown as CreditsService,
+        {
+          priceOf: jest.fn().mockReturnValue(1),
+          hold: jest.fn().mockResolvedValue({ id: 'hold' }),
+          release: jest.fn(),
+        } as unknown as CreditsService,
       ),
     );
   });

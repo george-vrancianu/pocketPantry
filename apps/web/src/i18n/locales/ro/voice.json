@@ -259,6 +259,8 @@
     "nothingHint": "Ține apăsat butonul și vorbește aproape de telefon. Aceasta nu se numără.",
     "cap": "Ai folosit cele {{cap}} note vocale de azi",
     "capHint": "Vocea revine mâine. Scanările merg în continuare.",
+    "outOfCredits": "Ai rămas fără Credite",
+    "outOfCreditsHint": "Familia ta nu mai are Credite. Citește din nou când se adaugă altele.",
     "tooLongTitle": "Înregistrare prea lungă",
     "tooLong": "Înregistrarea a fost prea lungă. Încearcă una mai scurtă.",
     "unsupportedTitle": "Nu se poate citi înregistrarea",

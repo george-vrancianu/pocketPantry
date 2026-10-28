@@ -40,6 +40,7 @@ import {
   type PairingDraft,
 } from '../../../lib/guidanceDraft';
 import type { GuidanceField } from '../../../lib/guidanceSuggestion';
+import { useRefreshCredits } from '../../../lib/credits';
 import { suggestFamilyGuidance } from '../../../lib/familyRecipes';
 import { suggestionRecipeOf, type FamilyDraft } from '../familyDraft';
 import { FamilyRecipePicker } from './FamilyGuidance';
@@ -92,15 +93,17 @@ export function GuidanceCard({
   const bodyId = useId();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
+  const refreshCredits = useRefreshCredits();
   const suggestion = useGuidanceSuggestion({
     draft,
     onChange,
+    // A kept suggestion costs a Credit, a refused or empty one costs none: look at the balance again either way.
     send: (guidance) =>
       suggestFamilyGuidance({
         recipe: suggestionRecipeOf(page),
         guidance,
         ...(recipeId ? { recipeId } : {}),
-      }),
+      }).finally(() => void refreshCredits()),
   });
   const RecipePicker = useMemo(
     () =>

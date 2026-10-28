@@ -35,6 +35,7 @@ import { AssistantService } from './assistant.service';
 const STATE_STATUS: Record<AssistantState, number> = {
   nothingUnderstood: 200,
   capReached: 429,
+  outOfCredits: 402,
   providerFailed: 502,
   notConfigured: 503,
 };

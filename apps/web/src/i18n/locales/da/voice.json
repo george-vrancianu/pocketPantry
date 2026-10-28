@@ -251,6 +251,8 @@
     "nothingHint": "Hold knappen nede og tal tæt på telefonen. Denne tæller ikke med.",
     "cap": "Det er dagens {{cap}} stemmenoter",
     "capHint": "Stemmen er tilbage i morgen. Scanninger virker stadig.",
+    "outOfCredits": "Ikke flere kreditter",
+    "outOfCreditsHint": "Jeres familie har ingen kreditter tilbage. Læs den igen, når der er kommet flere til.",
     "tooLongTitle": "Optagelsen er for lang",
     "tooLong": "Optagelsen var for lang. Prøv en kortere.",
     "unsupportedTitle": "Kan ikke læse optagelsen",

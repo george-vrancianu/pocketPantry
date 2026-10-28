@@ -39,7 +39,7 @@
     "product_not_found": "Vi kunne ikke læse et produkt fra det foto. Udfyld formularen selv, eller prøv igen."
   },
   "credits": {
-    "insufficient": "Der er ikke nok kreditter. Det kræver {{price}}, og jeres familie har {{balance}}."
+    "insufficient": "Ikke flere kreditter. Det kræver {{price}}, og jeres familie har {{balance}}."
   },
   "shopping": {
     "item_not_found": "Vi kunne ikke finde den vare på listen.",

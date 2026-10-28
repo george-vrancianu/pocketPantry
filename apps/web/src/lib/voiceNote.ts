@@ -44,7 +44,12 @@ export type VoiceErrorCode =
   | 'tooLong'
   | 'unsupported'
   /** The Voice Cap is used up; the number is in `voiceCap`. */
-  | 'capReached';
+  | 'capReached'
+  /** The Family is out of Credits: the recording is kept, and Read again once Credits are added. */
+  | 'outOfCredits';
+
+/** The errors that hold every note waiting behind the read that hit them. */
+type BudgetError = Extract<VoiceErrorCode, 'capReached' | 'outOfCredits'>;
 
 /** One Voice Note in a merged Review: what "What I heard" shows of it. */
 export type MergedNote = {
@@ -458,6 +463,8 @@ export function createVoiceNote(
   const reads = new Map<number, AbortController>();
   const holds = new Set<number | 'mic'>();
   let release: (() => void) | undefined;
+  /** Told when a read settles, kept or failed (a kept read costs Credits). */
+  const settledListeners = new Set<() => void>();
   let notifier = adapters.notify;
   let capTimer: ReturnType<typeof setTimeout> | undefined;
   /** The microphone: being asked for, then live; and what the recording is for. */
@@ -548,14 +555,14 @@ export function createVoiceNote(
   /**
    * The Voice Cap was reached by this read: it fails with the cap, and so does every note still
    * waiting behind it. Their recordings are kept, so Retry on any one releases them all. Notes
-   * already read stay as they are.
+   * already read stay as they are. Running out of Credits does the same, with its own error.
    */
-  function failForCap(id: number) {
+  function failForCap(id: number, error: BudgetError = 'capReached') {
     store = {
       ...store,
       notes: store.notes.map((n) =>
         n.id === id || (n.phase === 'reading' && !reads.has(n.id))
-          ? { ...n, phase: 'failed', error: 'capReached', rawError: undefined }
+          ? { ...n, phase: 'failed', error, rawError: undefined }
           : n,
       ),
     };
@@ -628,6 +635,8 @@ export function createVoiceNote(
                 : undefined,
           });
           return failForCap(id);
+        case 'credits.insufficient':
+          return failForCap(id, 'outOfCredits');
         case 'voice.too_long':
           return failNote(id, 'tooLong');
         case 'voice.unsupported_audio':
@@ -681,6 +690,7 @@ export function createVoiceNote(
     const settled = () => {
       reads.delete(id);
       letSleep(id);
+      settledListeners.forEach((listener) => listener());
     };
     let result: VoiceNoteResult;
     // A network error is tried once more by itself before the note fails.
@@ -929,6 +939,11 @@ export function createVoiceNote(
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
+    /** Calls `listener` whenever a read settles, kept or failed. Returns the function that stops it. */
+    onReadSettled(listener: () => void) {
+      settledListeners.add(listener);
+      return () => void settledListeners.delete(listener);
+    },
     /**
      * Attaches the function that tells the Member (the app root's toasts). Returns the function
      * that detaches it.
@@ -958,11 +973,12 @@ export function createVoiceNote(
       const note = failedNote(id);
       if (!note?.recording) return Promise.resolve();
       const capped = note.error === 'capReached';
-      const ids = capped
+      const held = capped || note.error === 'outOfCredits';
+      const ids = held
         ? store.notes
             .filter(
               (n) =>
-                n.phase === 'failed' && n.error === 'capReached' && n.recording,
+                n.phase === 'failed' && n.error === note.error && n.recording,
             )
             .map((n) => n.id)
         : [note.id];

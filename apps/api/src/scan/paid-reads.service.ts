@@ -50,11 +50,16 @@ const capKindOf = (kind: PaidReadKind): UsageKind | null => {
 };
 
 /**
- * The kinds of read that cost Credits so far. Adding a kind here is all it takes to charge it: the price
+ * The kinds of read that cost Credits: every kind but the Admin one. Adding a kind here is all it takes to charge it: the price
  * comes from `CREDIT_PRICE_*` and the hold, the refusal and the give-back are the same for every kind.
  */
 const CHARGED_KINDS: ReadonlySet<PaidReadKind> = new Set<PaidReadKind>([
   'scan',
+  'voice',
+  'assistant',
+  'link-page',
+  'link-text',
+  'guidance',
 ]);
 
 /** The kind a Credit Price is set for, or null when `kind` is not charged Credits. */

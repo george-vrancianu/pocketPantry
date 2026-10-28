@@ -339,9 +339,11 @@ export function ReviewOverviewPage({
                   {t(`overview.${failedCopyKey(scan)}`)}
                 </Typography>
               </Box>
-              {scan.failure === 'cap' ? (
+              {scan.failure === 'cap' || scan.failure === 'credits' ? (
                 <Typography sx={{ fontSize: 13 }}>
-                  {tScan('capReached')}
+                  {tScan(
+                    scan.failure === 'credits' ? 'outOfCredits' : 'capReached',
+                  )}
                 </Typography>
               ) : showsErrorCopy(scan) ? (
                 <Typography sx={{ fontSize: 13 }}>

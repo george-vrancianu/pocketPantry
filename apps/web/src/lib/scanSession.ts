@@ -11,8 +11,11 @@ import { clearScanLanguageOverride } from './sessionScanLanguage';
 /** How many Scans of a Scan Session are read at once. */
 export const MAX_CONCURRENT_READS = 2;
 
-/** Why a read failed: the Scan Cap, or any other error. */
-export type ScanFailure = 'error' | 'cap';
+/** Why a read failed: the Scan Cap, the Family being out of Credits, or any other error. */
+export type ScanFailure = 'error' | 'cap' | 'credits';
+
+/** The failures that hold every Scan waiting behind the one that hit them. */
+export type HeldFailure = Extract<ScanFailure, 'cap' | 'credits'>;
 
 /** The most Scans one Scan Session holds. */
 export const MAX_SESSION_SCANS = 20;
@@ -115,11 +118,13 @@ const update = (
   ),
 });
 
-/** A Scan ready to be read, or failed with the Scan Cap when it is already reached. */
-const waiting = (state: SessionState) =>
-  capReached(state)
-    ? ({ status: 'failed', failure: 'cap' } as const)
+/** A Scan ready to be read, or failed with the Scan Cap (or the Credits) when one already holds the Session. */
+const waiting = (state: SessionState) => {
+  const failure = heldBy(state);
+  return failure
+    ? ({ status: 'failed', failure } as const)
     : ({ status: 'queued' } as const);
+};
 
 /** Barcode cards are looked up at once and never wait for, or count against, the Scan Cap. */
 export const isBarcodeMode = (mode: CameraMode): mode is 'barcode' =>
@@ -222,30 +227,29 @@ export function sessionReducer(
                 errorParams: action.params,
               }
             : // Past the Scan Cap every waiting read would fail too: hold them with the cap.
-              action.reason === 'cap' && scan.status === 'queued'
-              ? { ...scan, status: 'failed', failure: 'cap' }
+              action.reason !== 'error' && scan.status === 'queued'
+              ? { ...scan, status: 'failed', failure: action.reason }
               : scan,
         ),
       };
     case 'retry': {
       const target = state.scans.find((scan) => scan.id === action.id);
-      // Retrying a Scan held by the cap releases every Scan the cap held.
+      // Retrying a Scan held by the cap (or the Credits) releases every Scan it held.
       const retried = (scan: SessionScan) =>
         scan.status === 'failed' &&
         (scan.id === action.id ||
-          (target?.failure === 'cap' && scan.failure === 'cap'));
-      // A cap failure elsewhere keeps a retried Scan held too.
+          (isHeld(target) && scan.failure === target?.failure));
+      // A cap or Credits failure elsewhere keeps a retried Scan held too.
+      const heldFailure = isHeld(target) ? undefined : heldBy(state);
       const held =
-        target?.failure !== 'cap' &&
-        !(target && isBarcodeCard(target)) &&
-        capReached(state);
+        heldFailure !== undefined && !(target && isBarcodeCard(target));
       return {
         scans: state.scans.map((scan) =>
           retried(scan)
             ? {
                 ...scan,
                 ...(held
-                  ? { status: 'failed', failure: 'cap' }
+                  ? { status: 'failed', failure: heldFailure }
                   : {
                       // A Barcode card is looked up again at once, without queueing for a read slot.
                       status: isBarcodeCard(scan) ? 'reading' : 'queued',
@@ -374,9 +378,18 @@ export const pendingCount = (state: SessionState) =>
 export const uncroppedCount = (state: SessionState) =>
   state.scans.filter((scan) => scan.status === 'uncropped').length;
 
-/** Whether a Scan hit the Scan Cap; no more Scans can be taken until it is retried or removed. */
-export const capReached = (state: SessionState) =>
-  state.scans.some((scan) => scan.failure === 'cap');
+const isHeld = (scan: Pick<SessionScan, 'failure'> | undefined) =>
+  scan?.failure === 'cap' || scan?.failure === 'credits';
+
+/** What holds the Session (the Scan Cap, or being out of Credits), or undefined; the first Scan to hit it names it. */
+export const heldBy = (state: SessionState): HeldFailure | undefined =>
+  state.scans.find(isHeld)?.failure as HeldFailure | undefined;
+
+/**
+ * Whether a Scan hit the Scan Cap or the Family ran out of Credits; no more Scans can be taken until it
+ * is retried or removed.
+ */
+export const capReached = (state: SessionState) => heldBy(state) !== undefined;
 
 let session = emptySession;
 /** `nextBackgroundOrder` when the first Scan joined the Session: orders its strip row against other background items. */
