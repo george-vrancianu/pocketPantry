@@ -1,4 +1,5 @@
-import type { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import type { UsageRecordsService } from '../usage/usage-records.service';
+import type { MeteredAiService } from '../usage/metered-ai.service';
 import type { Database } from '../database/database.types';
 import type { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import type { CreditsService } from '../credits/credits.service';
@@ -21,6 +22,10 @@ const bodyOf = (guidance: object) =>
     },
   });
 
+const passthroughUsage = {
+  inContext: <T>(_m: unknown, _k: unknown, run: () => Promise<T>) => run(),
+} as unknown as UsageRecordsService;
+
 describe('GuidanceSuggestionService with no Eating Moments to offer', () => {
   let generate: jest.Mock;
   let consume: jest.Mock;
@@ -33,7 +38,7 @@ describe('GuidanceSuggestionService with no Eating Moments to offer', () => {
     refund = jest.fn().mockResolvedValue(undefined);
     service = new GuidanceSuggestionService(
       {} as unknown as Database,
-      { generate } as unknown as StructuredOutputAiService,
+      { generate } as unknown as MeteredAiService,
       {
         getCatalogIn: jest
           .fn()
@@ -54,6 +59,7 @@ describe('GuidanceSuggestionService with no Eating Moments to offer', () => {
           hold: jest.fn().mockResolvedValue({ id: 'hold' }),
           release: jest.fn(),
         } as unknown as CreditsService,
+        passthroughUsage,
       ),
     );
   });

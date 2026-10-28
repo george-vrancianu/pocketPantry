@@ -33,6 +33,60 @@ describe('TranscriptionService', () => {
     ).toBe(false);
   });
 
+  describe('reported usage', () => {
+    const transcribeWith = async (body: object) => {
+      jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify(body), {
+          headers: { 'x-request-id': 'req-7' },
+        }),
+      );
+      return service({
+        AI_PROVIDER: 'openai',
+        AI_API_KEY: 'k',
+        AI_TRANSCRIBE_MODEL: 'gpt-4o-transcribe',
+      }).transcribe({
+        audio: Buffer.from('audio'),
+        mimeType: 'audio/webm',
+        language: 'en',
+        otherLanguages: [],
+      });
+    };
+
+    it('returns the tokens a token-billed model reports, and the request id', async () => {
+      expect(
+        await transcribeWith({
+          text: 'hi',
+          usage: {
+            type: 'tokens',
+            input_tokens: 40,
+            output_tokens: 6,
+            total_tokens: 46,
+          },
+        }),
+      ).toEqual({
+        text: 'hi',
+        requestId: 'req-7',
+        model: 'gpt-4o-transcribe',
+        usage: { inputTokens: 40, outputTokens: 6 },
+      });
+    });
+
+    it('returns the audio seconds a duration-billed model reports', async () => {
+      const result = await transcribeWith({
+        text: 'hi',
+        usage: { type: 'duration', seconds: 3.5 },
+      });
+      expect(result.usage).toEqual({ audioSeconds: 3.5 });
+    });
+
+    it('returns no usage when the provider reports none, or a malformed block', async () => {
+      expect((await transcribeWith({ text: 'hi' })).usage).toBeUndefined();
+      expect(
+        (await transcribeWith({ text: 'hi', usage: { nonsense: true } })).usage,
+      ).toBeUndefined();
+    });
+  });
+
   it('posts the recording to the transcription endpoint with language hints', async () => {
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
@@ -50,7 +104,11 @@ describe('TranscriptionService', () => {
       captureId: 'note-9',
     });
 
-    expect(result).toEqual({ text: 'hello' });
+    expect(result).toEqual({
+      text: 'hello',
+      requestId: null,
+      model: 'vendor-stt',
+    });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('https://vendor.example/v1/audio/transcriptions');
     expect(init?.headers).toEqual({ authorization: 'Bearer vendor-key' });

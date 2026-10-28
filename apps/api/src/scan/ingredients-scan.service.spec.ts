@@ -1,4 +1,4 @@
-import type { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import type { MeteredAiService } from '../usage/metered-ai.service';
 import { ApiException } from '../common/api-exception';
 import {
   catalogIndexInstruction,
@@ -37,7 +37,7 @@ describe('IngredientsScanService', () => {
   beforeEach(() => {
     generate = jest.fn();
     service = new IngredientsScanService(
-      { generate } as unknown as StructuredOutputAiService,
+      { generate } as unknown as MeteredAiService,
       {
         getCatalogIn: jest.fn().mockResolvedValue(catalog),
         toPrompt: catalogPrompt,

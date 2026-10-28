@@ -25,6 +25,8 @@ export type StructuredOutputRequest = {
 export type StructuredOutputResult = {
   data: unknown;
   requestId: string | null;
+  /** The model that answered; a Usage Record falls back to the configured one when absent. */
+  model?: string;
   /** Billed tokens, when the provider reported them. */
   usage?: AiTokenUsage;
 };
@@ -326,13 +328,14 @@ export class StructuredOutputAiService {
       const body: unknown = JSON.parse(raw);
       trace.body = body;
       const usage = readAiUsage(provider, body);
-      this.logUsage(usage, request.schemaName, requestId);
+      this.logUsage(usage, request.schemaName, requestId, model);
       const text = isResponsesApi
         ? this.readResponsesText(body, requestId)
         : this.readChatCompletionsText(body, requestId);
       return {
         data: JSON.parse(text) as unknown,
         requestId,
+        model,
         ...(usage ? { usage } : {}),
       };
     } catch (error) {
@@ -346,11 +349,13 @@ export class StructuredOutputAiService {
     usage: AiTokenUsage | undefined,
     schemaName: string,
     requestId: string | null,
+    model: string,
   ) {
     if (!usage) return;
     const { cachedInputTokens, reasoningTokens, ...counts } = usage;
     this.logger.log({
       message: 'AI token usage',
+      model,
       requestId,
       schemaName,
       ...counts,

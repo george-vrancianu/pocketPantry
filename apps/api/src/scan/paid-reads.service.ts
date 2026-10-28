@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreditsService, type CreditHold } from '../credits/credits.service';
+import { UsageRecordsService } from '../usage/usage-records.service';
 import { ScanCapService, type UsageKind } from './scan-cap.service';
 
 /**
@@ -77,7 +78,21 @@ export class PaidReadsService {
   constructor(
     private readonly caps: ScanCapService,
     private readonly credits: CreditsService,
+    private readonly usage: UsageRecordsService,
   ) {}
+
+  /**
+   * Runs a provider call that is part of a paid read but charges nothing of its own (the Plate Scan
+   * dish step, which its photo step already paid for): no Cap, no Credits, but its Usage Record
+   * carries the kind, the Member and the Family.
+   */
+  unchargedContext<T>(
+    memberId: string,
+    kind: MemberPaidReadKind,
+    run: () => Promise<T>,
+  ): Promise<T> {
+    return this.inContext(memberId, kind, run);
+  }
 
   /**
    * A cheap early refusal before slow work (the link read before it fetches the page): throws
@@ -160,12 +175,12 @@ export class PaidReadsService {
     return outcome.value;
   }
 
-  /** The one place the read is wrapped in its context (later: the Usage Record context). */
+  /** The one place a read is wrapped in its Usage Record context (the kind, the Member and their Family). */
   private inContext<T>(
-    _memberId: string | null,
-    _kind: PaidReadKind,
+    memberId: string | null,
+    kind: PaidReadKind,
     run: () => Promise<T>,
   ): Promise<T> {
-    return run();
+    return this.usage.inContext(memberId, kind, run);
   }
 }

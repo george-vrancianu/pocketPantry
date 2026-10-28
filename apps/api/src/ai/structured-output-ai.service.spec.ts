@@ -50,6 +50,7 @@ describe('StructuredOutputAiService', () => {
     expect(result).toEqual({
       data: { productName: 'Milk' },
       requestId: 'vendor-request',
+      model: 'vendor-vision-model',
     });
     expect(fetchMock.mock.calls[0][0]).toBe(
       'https://vendor.example/v1/chat/completions',
@@ -73,6 +74,7 @@ describe('StructuredOutputAiService', () => {
               AI_PROVIDER: provider,
               AI_API_KEY: 'k',
               AI_BASE_URL: 'https://vendor.example/v1',
+              AI_VISION_MODEL: 'some-model',
             }) as Record<string, string>
           )[key],
       } as unknown as ConfigService<AppConfig, true>);
@@ -115,6 +117,7 @@ describe('StructuredOutputAiService', () => {
       expect(log).toHaveBeenCalledTimes(1);
       expect(log).toHaveBeenCalledWith({
         message: 'AI token usage',
+        model: 'some-model',
         requestId: 'req-1',
         schemaName: 'receipt',
         inputTokens: 1200,
@@ -135,6 +138,7 @@ describe('StructuredOutputAiService', () => {
       await serviceFor('openai-compatible').generate(request);
       expect(log).toHaveBeenCalledWith({
         message: 'AI token usage',
+        model: 'some-model',
         requestId: 'req-1',
         schemaName: 'receipt',
         inputTokens: 50,
@@ -193,6 +197,7 @@ describe('StructuredOutputAiService', () => {
       await expect(serviceFor(provider).generate(request)).resolves.toEqual({
         data: {},
         requestId: 'req-1',
+        model: 'some-model',
       });
       expect(log).not.toHaveBeenCalled();
     });
@@ -203,6 +208,7 @@ describe('StructuredOutputAiService', () => {
       await expect(serviceFor('openai').generate(request)).resolves.toEqual({
         data: {},
         requestId: 'req-1',
+        model: 'some-model',
       });
       expect(log).not.toHaveBeenCalled();
     });
@@ -219,6 +225,7 @@ describe('StructuredOutputAiService', () => {
       await serviceFor('openai-compatible').generate(request);
       expect(log).toHaveBeenCalledWith({
         message: 'AI token usage',
+        model: 'some-model',
         requestId: 'req-1',
         schemaName: 'receipt',
         inputTokens: 5,
@@ -238,6 +245,7 @@ describe('StructuredOutputAiService', () => {
       ).rejects.toMatchObject({ reason: 'incomplete' });
       expect(log).toHaveBeenCalledWith({
         message: 'AI token usage',
+        model: 'some-model',
         requestId: 'req-1',
         schemaName: 'receipt',
         inputTokens: 900,
@@ -257,6 +265,7 @@ describe('StructuredOutputAiService', () => {
       await serviceFor('openai').generate(request);
       expect(log).toHaveBeenCalledWith({
         message: 'AI token usage',
+        model: 'some-model',
         requestId: 'req-1',
         schemaName: 'receipt',
         inputTokens: 33,
@@ -277,6 +286,7 @@ describe('StructuredOutputAiService', () => {
       await serviceFor('openai-compatible').generate(request);
       expect(log).toHaveBeenCalledWith({
         message: 'AI token usage',
+        model: 'some-model',
         requestId: 'req-1',
         schemaName: 'receipt',
         inputTokens: 37,
