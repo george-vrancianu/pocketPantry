@@ -264,6 +264,7 @@
     "useLink": "Folosește un link în schimb",
     "pasteInstead": "Lipește textul rețetei în schimb",
     "textLabel": "Textul rețetei",
+    "checking": "Se verifică linkul…",
     "submit": "Citește rețeta",
     "reading": "Se citește rețeta…",
     "duplicate": {
@@ -271,7 +272,10 @@
       "body": "Acest link este deja una dintre rețetele tale. Deschide-o sau citește pagina din nou pentru a face încă o copie.",
       "open": "Deschide",
       "readAgain": "Citește din nou"
-    }
+    },
+    "full_one": "{{count}} citire de link te așteaptă. Verific-o sau anuleaz-o mai întâi.",
+    "full_few": "{{count}} citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi.",
+    "full_other": "{{count}} de citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi."
   },
   "readingLanguage": {
     "label": "Limba rețetei",

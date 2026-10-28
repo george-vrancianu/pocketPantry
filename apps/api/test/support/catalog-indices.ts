@@ -64,8 +64,11 @@ export function answerWithCatalogIndices(
     return catalog;
   };
 
-  return async (request: StructuredOutputRequest) => {
-    const response = await generate(request);
+  return async (
+    request: StructuredOutputRequest,
+    options?: Parameters<Generate>[1],
+  ) => {
+    const response = await generate(request, options);
     const tuples = promptTuples(request.prompt);
     if (!tuples) return response;
     const indexOf = (id: string): unknown => {

@@ -248,6 +248,7 @@
     "useLink": "Brug et link i stedet",
     "pasteInstead": "Indsæt opskriftens tekst i stedet",
     "textLabel": "Opskriftens tekst",
+    "checking": "Tjekker linket…",
     "submit": "Læs opskriften",
     "reading": "Læser opskriften…",
     "duplicate": {
@@ -255,7 +256,9 @@
       "body": "Dette link er allerede en af dine opskrifter. Åbn den, eller læs siden igen for at lave en ekstra kopi.",
       "open": "Åbn",
       "readAgain": "Læs igen"
-    }
+    },
+    "full_one": "{{count}} linklæsning venter på dig. Gennemse eller annullér den først.",
+    "full_other": "{{count}} linklæsninger venter på dig. Gennemse eller annullér en først."
   },
   "readingLanguage": {
     "label": "Opskriftens sprog",

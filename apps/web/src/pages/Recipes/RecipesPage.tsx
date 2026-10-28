@@ -10,7 +10,7 @@ import {
   displayType,
 } from '@pocket-pantry/ui';
 import { useId, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
@@ -27,9 +27,17 @@ import {
   type RecipeListItem,
 } from '../../lib/recipes';
 import { useRecipeDrafts } from '../../lib/recipeDrafts';
+import {
+  FROM_LINK_PARAM,
+  FROM_LINK_PREFILL_STATE,
+} from '../../lib/recipeRoutes';
 import { useRecipeDraftDiscard } from './useRecipeDraftDiscard';
 import { EmptyFamilyRecipes } from './components/EmptyFamilyRecipes';
 import { CookTonightPanel } from '../../components/CookTonightPanel';
+import {
+  FromLinkSheet,
+  type FromLinkPrefill,
+} from './components/FromLinkSheet';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
 import { SectionLabel } from './components/SectionLabel';
@@ -125,6 +133,23 @@ export function RecipesPage() {
   const draftCount =
     drafts.data?.filter((draft) => !discarding.hiddenIds.has(draft.id))
       .length ?? 0;
+  const [params, setParams] = useSearchParams();
+  const fromLinkOpen = params.get(FROM_LINK_PARAM) === '1';
+  // "Paste text instead" on a failed link read arrives here with the link to keep.
+  const prefill = (
+    useLocation().state as {
+      [FROM_LINK_PREFILL_STATE]?: FromLinkPrefill;
+    } | null
+  )?.[FROM_LINK_PREFILL_STATE];
+  const closeFromLink = () =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete(FROM_LINK_PARAM);
+        return next;
+      },
+      { replace: true },
+    );
   const headingId = useId();
   const filtering = isFiltering(browse);
   const found = recipes.data?.recipes ?? [];
@@ -153,7 +178,7 @@ export function RecipesPage() {
             { label: t('recipes:family.newRecipe'), href: '/recipes/new' },
             {
               label: t('recipes:fromLink.menuItem'),
-              href: '/recipes/from-link',
+              href: `/recipes?${FROM_LINK_PARAM}=1`,
             },
             {
               label: t('recipes:explore.menuItem'),
@@ -257,6 +282,12 @@ export function RecipesPage() {
           </section>
         ) : null}
       </Stack>
+      <FromLinkSheet
+        open={fromLinkOpen}
+        prefill={fromLinkOpen ? prefill : undefined}
+        onClose={closeFromLink}
+        onExited={() => addButton.current?.focus()}
+      />
     </>
   );
 }

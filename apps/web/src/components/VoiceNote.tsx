@@ -6,7 +6,7 @@ import {
 import { VoiceAnswers } from './voice/VoiceAnswerSheet';
 import { MicSheets } from './voice/MicSheets';
 import { VoiceButton } from './voice/VoiceButton';
-import { VoiceInboxStrip } from './voice/VoiceInboxStrip';
+import { BackgroundHost } from './background/BackgroundHost';
 import { useVoiceConfigured, type VoiceDefaultTarget } from '../lib/voice';
 import { useVoiceNote } from '../lib/useVoiceNote';
 import { dockStateFor } from '../lib/dockState';
@@ -33,9 +33,11 @@ export type VoiceNoteSettings = {
   toastOnApply: boolean;
   /** Told what was really applied, given the result. It changes neither the Review's look nor the toast. */
   afterApply?: AfterApply;
+  /** Whether this host mounts the background strip itself. Default: yes. The app's layout turns it off and hosts the strip apart from voice, so it shows without voice too. */
+  hostsStrip?: boolean;
 };
 
-/** Today's in-app settings: the Voice Inbox strip, the route's Default List, a toast. */
+/** Today's in-app settings: the background strip, the route's Default List, a toast. */
 export const APP_VOICE_SETTINGS: VoiceNoteSettings = {
   reviewLook: 'app',
   toastOnApply: true,
@@ -82,9 +84,13 @@ function VoiceNoteControls({
 
   return (
     <>
-      <VoiceButton voice={voice} target={defaultTarget} />
+      <VoiceButton
+        voice={voice}
+        target={defaultTarget}
+        scanStripHosted={settings.hostsStrip === false}
+      />
 
-      <VoiceInboxStrip />
+      {settings.hostsStrip === false ? null : <BackgroundHost />}
 
       <MicSheets mic={voice.mic} target={defaultTarget} />
 

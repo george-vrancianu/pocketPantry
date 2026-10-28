@@ -46,7 +46,10 @@ export async function createTestApp(
   let generate: StructuredOutputAiService['generate'] | undefined;
   if (ai) {
     builder.overrideProvider(StructuredOutputAiService).useValue({
-      generate: (request: StructuredOutputRequest) => generate!(request),
+      generate: (
+        request: StructuredOutputRequest,
+        options?: Parameters<StructuredOutputAiService['generate']>[1],
+      ) => generate!(request, options),
     });
   }
   if (transcription) {
@@ -69,7 +72,7 @@ export async function createTestApp(
   const moduleRef = await builder.compile();
   if (ai) {
     generate = answerWithCatalogIndices(
-      (request) => ai.generate(request),
+      (request, options) => ai.generate(request, options),
       moduleRef.get(IngredientCatalogService),
     );
   }

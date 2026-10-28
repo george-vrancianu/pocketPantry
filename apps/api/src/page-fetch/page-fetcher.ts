@@ -13,7 +13,8 @@ export type FetchedPage = { finalUrl: string; html: string };
  * Tests replace the `PAGE_FETCHER` provider, so none reaches the network.
  */
 export type PageFetcher = {
-  fetchPage(url: string): Promise<FetchedPage>;
+  /** Aborting `signal` abandons the fetch (the connection is closed); the call then throws `unreadable`. */
+  fetchPage(url: string, signal?: AbortSignal): Promise<FetchedPage>;
 };
 
 export const PAGE_FETCHER = Symbol('PAGE_FETCHER');
@@ -297,7 +298,7 @@ export function createPageFetcher(
   }
 
   return {
-    async fetchPage(input) {
+    async fetchPage(input, signal) {
       let url: URL;
       try {
         url = new URL(input);
@@ -314,6 +315,10 @@ export function createPageFetcher(
         );
       });
       expired.catch(() => undefined);
+      // The caller gave up (its request closed): stop through the same deadline, which closes the connection.
+      const giveUp = () => deadline.abort();
+      if (signal?.aborted) giveUp();
+      else signal?.addEventListener('abort', giveUp, { once: true });
       try {
         for (let redirects = 0; ; redirects += 1) {
           const target = await Promise.race([checkedAddress(url), expired]);
@@ -336,6 +341,7 @@ export function createPageFetcher(
         throw unreadable('The page could not be read');
       } finally {
         clearTimeout(timer);
+        signal?.removeEventListener('abort', giveUp);
         deadline.abort();
       }
     },

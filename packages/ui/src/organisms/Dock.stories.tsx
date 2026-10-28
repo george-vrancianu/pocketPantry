@@ -5,7 +5,7 @@ import {
   MicIcon,
   PantryIcon,
   HomeIcon,
-  RecipesIcon,
+  CookbookIcon,
   ShoppingIcon,
 } from '../atoms/icons';
 import { Box } from '../atoms/Layout';
@@ -29,7 +29,12 @@ const items: DockEntry[] = [
     icon: <ShoppingIcon />,
   },
   { key: 'pantry', label: 'Pantry', href: '/pantry', icon: <PantryIcon /> },
-  { key: 'recipes', label: 'Recipes', href: '/recipes', icon: <RecipesIcon /> },
+  {
+    key: 'recipes',
+    label: 'Recipes',
+    href: '/recipes',
+    icon: <CookbookIcon />,
+  },
 ];
 
 /** Stands in for the app's hold-to-talk button, which is portalled into the capsule's mic half. */

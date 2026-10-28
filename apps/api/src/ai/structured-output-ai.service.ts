@@ -216,14 +216,16 @@ export class StructuredOutputAiService {
     );
   }
 
+  /** Aborting `options.signal` abandons the provider call (it then fails as `scan.provider_unavailable`). */
   async generate(
     request: StructuredOutputRequest,
+    options: { signal?: AbortSignal } = {},
   ): Promise<StructuredOutputResult> {
-    if (!this.debug) return this.call(request, {});
+    if (!this.debug) return this.call(request, {}, options.signal);
     const trace: CallTrace = {};
     const startedAt = new Date();
     try {
-      const result = await this.call(request, trace);
+      const result = await this.call(request, trace, options.signal);
       trace.data = result.data;
       return result;
     } catch (error) {
@@ -249,6 +251,7 @@ export class StructuredOutputAiService {
   private async call(
     request: StructuredOutputRequest,
     trace: CallTrace,
+    signal?: AbortSignal,
   ): Promise<StructuredOutputResult> {
     const provider = this.config.get('AI_PROVIDER', { infer: true });
     const apiKey = this.config.get('AI_API_KEY', { infer: true });
@@ -288,6 +291,7 @@ export class StructuredOutputAiService {
         `${baseUrl}/${isResponsesApi ? 'responses' : 'chat/completions'}`,
         {
           method: 'POST',
+          ...(signal ? { signal } : {}),
           headers: {
             authorization: `Bearer ${apiKey}`,
             'content-type': 'application/json',

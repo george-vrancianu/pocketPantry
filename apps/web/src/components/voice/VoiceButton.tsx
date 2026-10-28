@@ -22,6 +22,7 @@ import { useDockMicSlot, useReportRecording, useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
 import { useElapsedMs } from './useElapsed';
 import { abovePill, aboveMic, VOICE_LAYER } from '../../lib/voicePlacement';
+import { useScanSessionInStrip } from '../background/useScanSessionBackgroundItems';
 import { isStripUp, useVoiceNoteState, voiceNote } from '../../lib/voiceNote';
 import { VOICE_BUTTON_ATTRIBUTE } from '../../lib/voiceFocus';
 
@@ -33,16 +34,22 @@ type Voice = ReturnType<typeof useVoiceNote>;
 export function VoiceButton({
   voice,
   target,
+  scanStripHosted = false,
 }: {
   voice: Voice;
   target: VoiceDefaultTarget;
+  /** The page hosts the Scan Session in the background strip (the app layout): it counts as the strip being up. */
+  scanStripHosted?: boolean;
 }) {
   const { t } = useTranslation('voice');
   const active = voice.recording || voice.pressing;
   // While the Voice Inbox strip is up the tip must not cover its buttons.
   const state = useVoiceNoteState();
   const { startedAt } = state;
-  const pillUp = isStripUp(state);
+  const scanInStrip = useScanSessionInStrip();
+  const pillUp =
+    state.phase === 'idle' &&
+    (isStripUp(state) || (scanStripHosted && scanInStrip));
 
   const host = useVoiceHost();
   const micSlot = useDockMicSlot();

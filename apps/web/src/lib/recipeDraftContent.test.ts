@@ -26,3 +26,17 @@ describe('Suggest Guidance marks in a Recipe Draft', () => {
     expect(JSON.stringify(toGuidanceInput(back))).not.toContain('suggested');
   });
 });
+
+describe('offersBases in a Recipe Draft', () => {
+  it('survives a save and resume, and is off by default', () => {
+    const on = contentOfForm({
+      draft: emptyDraft(),
+      guidance: null,
+      offersBases: true,
+    });
+    expect(formOfContent(on).offersBases).toBe(true);
+    expect(
+      contentOfForm({ draft: emptyDraft(), guidance: null }).offersBases,
+    ).toBe(false);
+  });
+});

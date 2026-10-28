@@ -34,8 +34,8 @@ import {
   RecipeDetailPage,
   RecipePreviewPage,
 } from './pages/Recipes/RecipeDetailPage';
-import { RecipeFromLinkPage } from './pages/Recipes/RecipeFromLinkPage';
 import { RecipeDraftsPage } from './pages/Recipes/RecipeDraftsPage';
+import { FROM_LINK_PARAM } from './lib/recipeRoutes';
 import { RecipesPage } from './pages/Recipes/RecipesPage';
 import { ExplorePage } from './pages/Recipes/ExplorePage';
 import { ReviewOverviewPage } from './pages/Review/ReviewOverviewPage';
@@ -103,7 +103,9 @@ export function App() {
               />
               <Route
                 path="recipes/from-link"
-                element={<RecipeFromLinkPage />}
+                element={
+                  <Navigate to={`/recipes?${FROM_LINK_PARAM}=1`} replace />
+                }
               />
               <Route
                 path="recipes/explore/:id"

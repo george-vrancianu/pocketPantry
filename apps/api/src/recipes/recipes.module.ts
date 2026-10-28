@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
+import { RecipeDraftsModule } from '../recipe-drafts/recipe-drafts.module';
 import { PageFetchModule } from '../page-fetch/page-fetch.module';
 import { ScanModule } from '../scan/scan.module';
 import { MemberLanguageModule } from '../member-language/member-language.module';
@@ -29,6 +30,7 @@ import { RecipesService } from './recipes.service';
     IngredientCatalogModule,
     PageFetchModule,
     ScanModule,
+    RecipeDraftsModule,
   ],
   controllers: [RecipesController, RecipePantryController],
   providers: [

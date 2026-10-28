@@ -9,8 +9,13 @@ import { useTranslation } from 'react-i18next';
  */
 export const AlreadyInRecipes = forwardRef<
   HTMLHeadingElement,
-  { recipeId: string; onReadAgain: () => void }
->(function AlreadyInRecipes({ recipeId, onReadAgain }, heading) {
+  {
+    recipeId: string;
+    onReadAgain: () => void;
+    /** Called when Open is pressed (the caller closes whatever shows this). */
+    onOpen?: () => void;
+  }
+>(function AlreadyInRecipes({ recipeId, onReadAgain, onOpen }, heading) {
   const { t } = useTranslation('recipes');
   const headingId = useId();
   const bodyId = useId();
@@ -34,7 +39,7 @@ export const AlreadyInRecipes = forwardRef<
           {t('fromLink.duplicate.body')}
         </Typography>
         <Stack direction="row" spacing={1.5}>
-          <Button fullWidth href={`/recipes/${recipeId}`}>
+          <Button fullWidth href={`/recipes/${recipeId}`} onClick={onOpen}>
             {t('fromLink.duplicate.open')}
           </Button>
           <Button variant="secondary" fullWidth onClick={onReadAgain}>

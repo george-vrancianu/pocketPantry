@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import { formatDate } from '../../../lib/dateFormat';
 import { localIso } from '../../../lib/pantry';
 import type { RecipeDraftSummary } from '../../../lib/recipeDrafts';
-import { DRAFT_PARAM } from '../useRecipeDraftRoute';
+import { DRAFT_PARAM } from '../../../lib/recipeRoutes';
 
 /** The form that resumes the Recipe Draft: New Variant of its base, or New Recipe (also when a Variant has no base left). */
 export function recipeDraftPath(draft: RecipeDraftSummary): string {

@@ -182,6 +182,20 @@ export class RecipeDraftsService {
     });
   }
 
+  /**
+   * Throws the limit error when the Member already holds the most Recipe Drafts, without
+   * creating one. A cheap early refusal before slow work (a link read); `create` stays the
+   * one place the limit is enforced for good.
+   */
+  async assertRoom(memberId: string): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      await deleteExpiredRecipeDrafts(tx, memberId);
+      if ((await heldBy(tx, memberId)) >= MAX_RECIPE_DRAFTS) {
+        throw recipeDraftLimitReached(MAX_RECIPE_DRAFTS);
+      }
+    });
+  }
+
   async create(
     memberId: string,
     body: RecipeDraftCreate,
@@ -195,11 +209,7 @@ export class RecipeDraftsService {
         .for('update');
       if (!member) throw new ApiException(401, 'auth.unauthenticated');
       await deleteExpiredRecipeDrafts(tx, memberId);
-      const [{ held }] = await tx
-        .select({ held: sql<number>`count(*)::int` })
-        .from(recipeDrafts)
-        .where(eq(recipeDrafts.memberId, memberId));
-      if (held >= MAX_RECIPE_DRAFTS) {
+      if ((await heldBy(tx, memberId)) >= MAX_RECIPE_DRAFTS) {
         throw recipeDraftLimitReached(MAX_RECIPE_DRAFTS);
       }
       if (body.baseRecipeId) {
@@ -259,6 +269,14 @@ export class RecipeDraftsService {
       .returning({ id: recipeDrafts.id });
     if (deleted.length === 0) throw recipeDraftNotFound();
   }
+}
+
+async function heldBy(executor: Executor, memberId: string): Promise<number> {
+  const [{ held }] = await executor
+    .select({ held: sql<number>`count(*)::int` })
+    .from(recipeDrafts)
+    .where(eq(recipeDrafts.memberId, memberId));
+  return held;
 }
 
 /** A base the Member's Family can see: a Catalog Recipe or one of its own. */

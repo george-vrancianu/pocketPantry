@@ -1,4 +1,3 @@
-import { useMutation } from '@tanstack/react-query';
 import type { BaseRecipeOption } from '../components/BaseRecipePicker';
 import { apiRequest } from './api';
 import type { FamilyRecipeDraft } from './familyRecipes';
@@ -11,6 +10,8 @@ export type RecipeFromLinkDuplicate = { kind: 'duplicate'; recipeId: string };
 
 export type RecipeFromLinkDraft = {
   kind: 'draft';
+  /** The Member's Recipe Draft the server stored for this read; open the New Recipe editor on it. */
+  recipeDraftId: string;
   /** Like a "Make a variant" draft, but with no base yet and Servings possibly unknown. */
   draft: Omit<FamilyRecipeDraft, 'parentId' | 'servings'> & {
     servings: number | null;
@@ -48,18 +49,35 @@ export type ReadLinkInput = (
   signal?: AbortSignal;
 };
 
-/** Read the recipe on a web page into a draft; nothing is saved. */
-export function useReadRecipeLink() {
-  return useMutation({
-    mutationFn: ({ url, text, language, force, signal }: ReadLinkInput) =>
-      apiRequest<RecipeFromLink>('/recipes/from-link', {
-        method: 'POST',
-        body: {
-          ...(url !== undefined ? { url } : { text }),
-          language,
-          ...(force ? { force } : {}),
-        },
-        ...(signal ? { signal } : {}),
-      }),
+/** The answer of the duplicate check: the live Family Recipe a link already is, or null. */
+export type LinkCheck = { recipeId: string | null };
+
+/**
+ * Asks whether a link is already one of the Family's Recipes, before reading it. The server normalises
+ * the link as a read does; this never fetches the page, calls the AI or counts against the Link Cap.
+ */
+export function checkRecipeLink(url: string, signal?: AbortSignal) {
+  return apiRequest<LinkCheck>(
+    `/recipes/link-check?url=${encodeURIComponent(url)}`,
+    signal ? { signal } : {},
+  );
+}
+
+/** Read the recipe on a web page; the server keeps it as the Member's Recipe Draft (no Recipe is saved). */
+export function readRecipeLink({
+  url,
+  text,
+  language,
+  force,
+  signal,
+}: ReadLinkInput) {
+  return apiRequest<RecipeFromLink>('/recipes/from-link', {
+    method: 'POST',
+    body: {
+      ...(url !== undefined ? { url } : { text }),
+      language,
+      ...(force ? { force } : {}),
+    },
+    ...(signal ? { signal } : {}),
   });
 }

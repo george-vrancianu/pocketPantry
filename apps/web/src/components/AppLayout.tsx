@@ -3,14 +3,28 @@ import { PageLayout } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { dockStateFor } from '../lib/dockState';
+import { useUnloadPromptWhileReading } from '../lib/linkReads';
 import { micClearance } from '../lib/voicePlacement';
 import { ApplyMemberLocale } from './ApplyMemberLocale';
 import { ApplyMemberTheme } from './ApplyMemberTheme';
 import { AppDock } from './AppDock';
 import { RefreshProvider, useRefreshScreen } from '../lib/refresh';
 import { RefreshLoaderSlot } from './RefreshLoaderSlot';
-import { useShowsDockMic, VoiceNote } from './VoiceNote';
+import {
+  APP_VOICE_SETTINGS,
+  useShowsDockMic,
+  VoiceNote,
+  type VoiceNoteSettings,
+} from './VoiceNote';
+import { BackgroundHost } from './background/BackgroundHost';
+import { useLinkReadsSideEffects } from './background/useLinkReadsSideEffects';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
+
+/** The layout hosts the background strip itself, so it shows on Dock pages without voice configured. */
+const LAYOUT_VOICE_SETTINGS: VoiceNoteSettings = {
+  ...APP_VOICE_SETTINGS,
+  hostsStrip: false,
+};
 
 /** The line editor, whose tablet layout is a wide table (the overview of cards is not). */
 const isWide = (pathname: string) => pathname.startsWith('/scan/review/');
@@ -38,6 +52,8 @@ export function AppLayout() {
   const { pathname } = useLocation();
   const dock = dockStateFor(pathname);
   const showsMic = useShowsDockMic();
+  useUnloadPromptWhileReading();
+  useLinkReadsSideEffects();
   return (
     <>
       <ApplyMemberLocale />
@@ -55,7 +71,8 @@ export function AppLayout() {
           </PageLayout>
           <RefreshLoaderSlot />
           <VoiceHostSlot />
-          <VoiceNote />
+          <VoiceNote settings={LAYOUT_VOICE_SETTINGS} />
+          {dock.visible ? <BackgroundHost scanSession linkReads /> : null}
           {dock.visible ? <AppDock activeKey={dock.activeKey} /> : null}
         </VoiceHostProvider>
       </RefreshProvider>

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { nextBackgroundOrder } from '../components/background/backgroundItem';
 import type { ScanLanguage } from '../i18n/resources';
 import type { DishGuess } from './plate';
 import { MAX_RECEIPT_SECTIONS } from './receiptSections';
@@ -378,6 +379,10 @@ export const capReached = (state: SessionState) =>
   state.scans.some((scan) => scan.failure === 'cap');
 
 let session = emptySession;
+/** `nextBackgroundOrder` when the first Scan joined the Session: orders its strip row against other background items. */
+let sessionOrder = 0;
+/** How many failed Scans the strip has announced as an alert; ends with the Session. */
+let announcedFailed = 0;
 const listeners = new Set<() => void>();
 
 function setSession(next: SessionState) {
@@ -394,6 +399,9 @@ function setSession(next: SessionState) {
     if (thumbnail.startsWith('blob:') && !kept.has(thumbnail))
       URL.revokeObjectURL(thumbnail);
   });
+  if (session.scans.length === 0 && next.scans.length > 0) {
+    sessionOrder = nextBackgroundOrder();
+  }
   session = next;
   listeners.forEach((listener) => listener());
 }
@@ -405,9 +413,16 @@ export const photoBarcodeOf = (state: SessionState, id: string) =>
 export const getScanSession = () => session;
 export const dispatchScanSession = (action: SessionAction) =>
   setSession(sessionReducer(session, action));
-/** Ends the Scan Session: its cards and its Scan Language pick go. */
+export const getScanSessionOrder = () => sessionOrder;
+/** The failed-Scan count the strip has announced, and the way to advance it. */
+export const announcedScanFailed = () => announcedFailed;
+export const announceScanFailed = (failed: number) => {
+  announcedFailed = failed;
+};
+/** Ends the Scan Session: its cards, its Scan Language pick and its announced failures go. */
 export const resetScanSession = () => {
   clearScanLanguageOverride();
+  announcedFailed = 0;
   setSession(emptySession);
 };
 

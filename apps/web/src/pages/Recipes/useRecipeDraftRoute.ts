@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { DRAFT_PARAM } from '../../lib/recipeRoutes';
 import { useRecipeDraft, type RecipeDraftView } from '../../lib/recipeDrafts';
-
-/** The query parameter that carries the Recipe Draft id once it exists, so a reload resumes it. */
-export const DRAFT_PARAM = 'draft';
 
 /**
  * A form page's relation to the `draft` URL parameter (ADR 0028): which form

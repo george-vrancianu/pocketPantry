@@ -200,8 +200,8 @@ describe('Setup 2, holding the mic', () => {
     const { sent, button } = await recordNote();
     fireEvent.pointerUp(button);
 
-    expect(await screen.findByText('1 ready')).toBeVisible();
-    expect(screen.getByText('1 Voice Note')).toBeVisible();
+    expect(await screen.findByText(/Ready to review$/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Review' })).toBeVisible();
     // Nothing opens by itself.
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(sent).toHaveLength(1);
@@ -222,8 +222,8 @@ describe('Setup 2, holding the mic', () => {
     }
 
     expect(mic.start).toHaveBeenCalledTimes(2);
-    expect(await screen.findByText('2 Voice Notes')).toBeVisible();
-    expect(screen.getByText('Reading 2')).toBeVisible();
+    expect(await screen.findByText('2 in the background')).toBeVisible();
+    expect(screen.getByText('2 reading')).toBeVisible();
     expect(sent.map((note) => note.get('defaultTarget'))).toEqual([
       'pantry',
       'pantry',
@@ -242,7 +242,7 @@ describe('Setup 2, holding the mic', () => {
       fireEvent.pointerUp(button);
       // Only two are read at once; the others wait their turn in the strip.
       await screen.findByText(
-        count === 1 ? '1 Voice Note' : `${count} Voice Notes`,
+        count === 1 ? /^Voice Note · 0:\d\d$/ : `${count} in the background`,
       );
     }
 

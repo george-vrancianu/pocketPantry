@@ -120,13 +120,13 @@ describe('the Voice Inbox strip', () => {
     expect(voiceStatuses()).toHaveLength(0);
 
     await speak(1);
-    expect(await screen.findByText('1 Voice Note')).toBeVisible();
+    expect(await screen.findByText(/^Voice Note · 0:\d\d$/)).toBeVisible();
 
     const button = await talkButton();
     pressDown(button);
     await screen.findByText("Gator's listening");
     await holdLongEnough();
-    expect(screen.queryByText('1 Voice Note')).toBeNull();
+    expect(screen.queryByText(/^Voice Note · 0:\d\d$/)).toBeNull();
     expect(strip()).toHaveTextContent("Gator's listening");
   });
 
@@ -134,23 +134,23 @@ describe('the Voice Inbox strip', () => {
     renderAt();
     await speak(1);
     await speak(2);
-    expect(await screen.findByText('2 Voice Notes')).toBeVisible();
-    expect(strip()).toHaveTextContent('Reading 2');
+    expect(await screen.findByText('2 in the background')).toBeVisible();
+    expect(strip()).toHaveTextContent('2 reading');
 
     await speak();
-    expect(await screen.findByText('3 Voice Notes')).toBeVisible();
+    expect(await screen.findByText('3 in the background')).toBeVisible();
     // The third waits: still two uploads.
     expect(fake.reads).toHaveLength(2);
 
     answer(0);
     await waitFor(() => expect(fake.reads).toHaveLength(3));
-    expect(strip()).toHaveTextContent('Reading 2 · 1 ready');
+    expect(strip()).toHaveTextContent('2 reading · 1 ready');
   });
 
   it('keeps the strip Gator on its Signature while a note is read, then rests on idle once it is ready', async () => {
     renderAt();
     await speak(1);
-    await screen.findByText('1 Voice Note');
+    await screen.findByText(/^Voice Note · 0:\d\d$/);
     const gator = () => strip().parentElement!.querySelector('img[data-mood]');
     expect(gator()).toHaveAttribute('data-mood', 'thinking');
     expect(gator()).toHaveAttribute('data-motion', 'signature');
@@ -168,12 +168,12 @@ describe('the Voice Inbox strip', () => {
 
     answer(1);
     expect(await screen.findByRole('button', { name: 'Review' })).toBeVisible();
-    expect(strip()).toHaveTextContent('Reading 1 · 1 ready');
+    expect(strip()).toHaveTextContent('1 reading · 1 ready');
 
     const dialog = await openReady();
     expect(dialog).toHaveTextContent('What I heard');
     // The strip steps aside while a sheet is up.
-    expect(screen.queryByText('2 Voice Notes')).toBeNull();
+    expect(screen.queryByText('2 in the background')).toBeNull();
   });
 
   it('opens the oldest ready note from the sheet when several are ready, and Apply removes only that note', async () => {
@@ -185,10 +185,10 @@ describe('the Voice Inbox strip', () => {
     await screen.findByText('2 ready');
     expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Open (2)' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Open 2' }));
     const sheet = within(await screen.findByRole('dialog'));
     await userEvent.click(
-      sheet.getAllByRole('button', { name: /^Review: / })[0],
+      sheet.getAllByRole('button', { name: /^Review: / })[1],
     );
     const dialog = within(
       await screen.findByRole('dialog', { name: 'Review' }),
@@ -203,11 +203,11 @@ describe('the Voice Inbox strip', () => {
     await waitFor(() => expect(applied).toHaveLength(1));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     // The other note is still there, ready.
-    expect(await screen.findByText('1 Voice Note')).toBeVisible();
-    expect(screen.getByText('1 ready')).toBeVisible();
+    expect(await screen.findByText('second note')).toBeVisible();
+    expect(screen.getByText(/Ready to review$/)).toBeVisible();
   });
 
-  it('opens the sheet for any mix but one ready note, with a row per note in recording order', async () => {
+  it('opens the sheet for any mix but one ready note, with a row per note, newest first', async () => {
     renderAt();
     await speak(1);
     await speak(2);
@@ -215,7 +215,7 @@ describe('the Voice Inbox strip', () => {
     // Nothing ready yet: the strip offers Open, and the sheet lists the notes being read.
     await userEvent.click(await screen.findByRole('button', { name: 'Open' }));
     let sheet = within(
-      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+      await screen.findByRole('dialog', { name: 'In the background' }),
     );
     let rows = sheet.getAllByRole('listitem');
     expect(rows).toHaveLength(3);
@@ -236,7 +236,9 @@ describe('the Voice Inbox strip', () => {
       await screen.findByRole('button', { name: 'Review' }),
     );
     expect(await screen.findByRole('dialog', { name: 'Review' })).toBeVisible();
-    expect(screen.queryByRole('dialog', { name: 'Voice Inbox' })).toBeNull();
+    expect(
+      screen.queryByRole('dialog', { name: 'In the background' }),
+    ).toBeNull();
   });
 
   it('shows ready rows with their transcript and Review, and opens that note and closes the sheet', async () => {
@@ -246,24 +248,27 @@ describe('the Voice Inbox strip', () => {
     answer(0);
     fake.reads[1].resolve(Response.json(heard('second note'), { status: 201 }));
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Open (2)' }),
+      await screen.findByRole('button', { name: 'Open 2' }),
     );
     const sheet = within(
-      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+      await screen.findByRole('dialog', { name: 'In the background' }),
     );
     const rows = sheet.getAllByRole('listitem');
-    expect(rows[0]).toHaveTextContent('got the bread');
-    expect(rows[1]).toHaveTextContent('second note');
-    expect(rows[1]).toHaveTextContent('Ready to review');
+    // Newest first.
+    expect(rows[1]).toHaveTextContent('got the bread');
+    expect(rows[0]).toHaveTextContent('second note');
+    expect(rows[0]).toHaveTextContent('Ready to review');
     expect(
-      within(rows[1]).queryByRole('button', { name: /^Cancel/ }),
+      within(rows[0]).queryByRole('button', { name: /^Cancel/ }),
     ).toBeNull();
 
     await userEvent.click(
-      within(rows[1]).getByRole('button', { name: /^Review/ }),
+      within(rows[0]).getByRole('button', { name: /^Review/ }),
     );
     const dialog = within(await screen.findByRole('dialog'));
-    expect(screen.queryByRole('dialog', { name: 'Voice Inbox' })).toBeNull();
+    expect(
+      screen.queryByRole('dialog', { name: 'In the background' }),
+    ).toBeNull();
     await userEvent.click(dialog.getByRole('button', { name: /What I heard/ }));
     expect(await dialog.findByText(/second note/)).toBeVisible();
   });
@@ -292,19 +297,21 @@ describe('the Voice Inbox strip', () => {
     );
     fake.reads[1].resolve(Response.json(heard(), { status: 201 }));
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Open (2)' }),
+      await screen.findByRole('button', { name: 'Open 2' }),
     );
     const sheet = within(
-      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+      await screen.findByRole('dialog', { name: 'In the background' }),
     );
-    const row = sheet.getAllByRole('listitem')[0];
+    const row = sheet.getAllByRole('listitem')[1];
     expect(row).toHaveTextContent('Answers ready');
     expect(row).toHaveTextContent('English');
     await userEvent.click(within(row).getByRole('button', { name: /^See: / }));
     expect(
       await screen.findByRole('dialog', { name: 'Your Pantry' }),
     ).toBeVisible();
-    expect(screen.queryByRole('dialog', { name: 'Voice Inbox' })).toBeNull();
+    expect(
+      screen.queryByRole('dialog', { name: 'In the background' }),
+    ).toBeNull();
   });
 
   it('cancels only the read of the row it is on', async () => {
@@ -313,10 +320,10 @@ describe('the Voice Inbox strip', () => {
     await speak(2);
     await userEvent.click(await screen.findByRole('button', { name: 'Open' }));
     const sheet = within(
-      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+      await screen.findByRole('dialog', { name: 'In the background' }),
     );
     await userEvent.click(
-      within(sheet.getAllByRole('listitem')[1]).getByRole('button', {
+      within(sheet.getAllByRole('listitem')[0]).getByRole('button', {
         name: /^Cancel/,
       }),
     );
@@ -331,7 +338,7 @@ describe('the Voice Inbox strip', () => {
     await speak(2);
     await userEvent.click(await screen.findByRole('button', { name: 'Open' }));
     const sheet = within(
-      await screen.findByRole('dialog', { name: 'Voice Inbox' }),
+      await screen.findByRole('dialog', { name: 'In the background' }),
     );
     await userEvent.click(
       within(sheet.getAllByRole('listitem')[1]).getByRole('button', {
@@ -339,7 +346,89 @@ describe('the Voice Inbox strip', () => {
       }),
     );
     await waitFor(() => expect(sheet.getAllByRole('listitem')).toHaveLength(1));
-    expect(sheet.getByRole('heading', { name: 'Voice Inbox' })).toHaveFocus();
+    expect(
+      sheet.getByRole('heading', { name: 'In the background' }),
+    ).toHaveFocus();
+  });
+
+  it('shows one note by its own title and detail, with Review once it is ready', async () => {
+    renderAt();
+    await speak(1);
+    expect(await screen.findByText(/^Voice Note · 0:\d\d$/)).toBeVisible();
+    expect(strip()).toHaveTextContent('Being read');
+    expect(screen.queryByText(/in the background/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
+
+    answer(0);
+    expect(await screen.findByText('got the bread')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Review' })).toBeVisible();
+  });
+
+  it('sums up several notes as what is in the background, with Open, then Open N once more are ready', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    await speak();
+    expect(await screen.findByText('3 in the background')).toBeVisible();
+    expect(screen.getByText('3 reading')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Open' })).toBeVisible();
+
+    answer(0);
+    answer(1);
+    expect(await screen.findByText('1 reading · 2 ready')).toBeVisible();
+    expect(screen.getByText('3 in the background')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Open 2' })).toBeVisible();
+  });
+
+  it('turns into the dark pill once everything in the background is ready', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    const pill = () =>
+      document.querySelector<HTMLElement>('[data-voice-pill]')!;
+    await screen.findByText('2 in the background');
+    const whileReading = getComputedStyle(pill()).backgroundColor;
+    answer(0);
+    await screen.findByText('1 reading · 1 ready');
+    expect(getComputedStyle(pill()).backgroundColor).toBe(whileReading);
+
+    answer(1);
+    await screen.findByText('2 ready');
+    expect(getComputedStyle(pill()).backgroundColor).not.toBe(whileReading);
+    expect(pill().querySelector('img[data-mood]')).toHaveAttribute(
+      'data-mood',
+      'happy',
+    );
+  });
+
+  it('titles the sheet "In the background" and lists the newest note first', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    answer(0);
+    fake.reads[1].resolve(Response.json(heard('second note'), { status: 201 }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open 2' }),
+    );
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'In the background' }),
+    );
+    expect(
+      sheet.getByRole('heading', { name: 'In the background' }),
+    ).toBeVisible();
+    expect(sheet.getAllByRole('listitem')[0]).toHaveTextContent('second note');
+    expect(sheet.getByRole('button', { name: 'Review all (2)' })).toBeVisible();
+  });
+
+  it('offers no Review all in the sheet while only one note can be reviewed', async () => {
+    renderAt();
+    await speak(1);
+    await speak(2);
+    await userEvent.click(await screen.findByRole('button', { name: 'Open' }));
+    const sheet = within(
+      await screen.findByRole('dialog', { name: 'In the background' }),
+    );
+    expect(sheet.queryByRole('button', { name: /^Review all/ })).toBeNull();
   });
 
   it('reads the strip politely, and raises an alert only when a note fails', async () => {
@@ -348,7 +437,7 @@ describe('the Voice Inbox strip', () => {
     await speak(2);
     expect(screen.queryByRole('alert')).toBeNull();
     answer(0);
-    await screen.findByText('Reading 1 · 1 ready');
+    await screen.findByText('1 reading · 1 ready');
     expect(screen.queryByRole('alert')).toBeNull();
 
     fake.reads[1].reject(new TypeError('Failed to fetch'));
@@ -403,7 +492,7 @@ describe('the Voice Inbox strip', () => {
   it('refuses a sixth note with "Review your notes first"', async () => {
     renderAt();
     for (let i = 0; i < 5; i++) await speak(Math.min(i + 1, 2));
-    expect(await screen.findByText('5 Voice Notes')).toBeVisible();
+    expect(await screen.findByText('5 in the background')).toBeVisible();
     mic.start.mockClear();
 
     const button = await talkButton();
@@ -424,7 +513,7 @@ describe('the Voice Inbox strip', () => {
     vibrate.mockClear();
 
     answer(0);
-    await screen.findByText('Reading 1 · 1 ready');
+    await screen.findByText('1 reading · 1 ready');
     expect(vibrate).toHaveBeenCalledTimes(1);
     answer(1);
     await screen.findByText('2 ready');

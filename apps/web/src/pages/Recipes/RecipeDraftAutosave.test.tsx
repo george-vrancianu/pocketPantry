@@ -34,6 +34,7 @@ const titled = (title: string): RecipeDraftContent => ({
   sourceLink: null,
   sourceLanguage: null,
   plateScan: false,
+  offersBases: false,
 });
 
 const savedRecipe = {
