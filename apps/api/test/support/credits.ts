@@ -3,7 +3,7 @@ import { CreditsService } from '../../src/credits/credits.service';
 
 /**
  * Leaves the Member's Family with exactly `balance` Credits by holding the rest through the ledger
- * service. Test-only: there is no production way to take Credits away, and grants by hand are #695.
+ * service. Test-only: there is no production way to take Credits away, and grants by hand are the `credits:grant` command.
  */
 export async function setBalance(
   app: INestApplication,
