@@ -81,6 +81,40 @@ describe('FamilyPage: joining another Family', () => {
     ).toBeInTheDocument();
   });
 
+  it('pastes a copied Invite Code into the empty field, without checking it', async () => {
+    const calls = stub();
+    const user = userEvent.setup();
+    // Spy after setup: userEvent installs its own clipboard on navigator.
+    vi.spyOn(navigator.clipboard, 'readText').mockResolvedValue('K7M2PQ9X\n');
+    renderWithProviders(<FamilyPage />);
+    const field = await screen.findByLabelText('Invite Code', {
+      selector: 'input',
+    });
+    expect(screen.getByRole('button', { name: 'Check code' })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Paste' }));
+
+    expect(field).toHaveValue('K7M2PQ9X');
+    expect(field).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Check code' })).toBeEnabled();
+    expect(calls.map((c) => c.key)).not.toContain(
+      'GET /api/family/join-preview',
+    );
+  });
+
+  it('says politely when there is nothing to paste', async () => {
+    stub();
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, 'readText').mockResolvedValue('');
+    renderWithProviders(<FamilyPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Paste' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Nothing to paste',
+    );
+  });
+
   it('lets the Member back out of the warning', async () => {
     const calls = stub();
     renderWithProviders(<FamilyPage />);

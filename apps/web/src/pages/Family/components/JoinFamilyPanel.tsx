@@ -45,6 +45,10 @@ export function JoinFamilyPanel({ flow }: { flow: JoinFlow }) {
             label={t('joinCodeLabel')}
             value={flow.code}
             onChange={(event) => flow.setCode(event.target.value)}
+            paste={{
+              label: t('common:paste.label'),
+              emptyMessage: t('common:paste.empty'),
+            }}
             slotProps={{ htmlInput: { autoCapitalize: 'characters' } }}
           />
           <Button
