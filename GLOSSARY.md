@@ -334,7 +334,7 @@ A Recipe owned by one Family, which its Members can edit and delete. Either a Ba
 _Avoid_: Custom recipe, my recipe, user recipe
 
 **Recipe from Link**:
-Reading a recipe from a web page a Member links to, or from recipe text they paste in, into a new Family Recipe in our own format. It is read in the background while the Member carries on, and a finished read is kept as a Recipe Draft; nothing becomes a Recipe until the Member saves it. Only what the source states is filled in; Guidance is never made up while reading, though the Member can Suggest Guidance on the filled page afterwards. Not a Scan and not a Shopping Template being applied.
+Reading a recipe from a web page a Member links to ("From a link"), or from recipe text they paste in ("From text"), into a new Family Recipe in our own format. Both are the same read; only how the Member starts it differs. It is read in the background while the Member carries on, and a finished read is kept as a Recipe Draft; nothing becomes a Recipe until the Member saves it. Only what the source states is filled in; Guidance is never made up while reading, though the Member can Suggest Guidance on the filled page afterwards. Not a Scan and not a Shopping Template being applied.
 _Avoid_: Recipe import, clip, scrape
 
 **Recipe Draft**:
@@ -349,13 +349,21 @@ _Avoid_: Source Recipe (a Recipe that added a Shopping Item), origin, URL
 The maximum number of Recipe from Link reads a Member may make per day, pasted text included. A link that could not be read, or held no recipe, does not count. Separate from the Scan Cap, Voice Cap and Assistant Cap.
 _Avoid_: Import quota, Scan Cap (a separate limit)
 
-**Cuisine**:
-An optional tag for the culinary region a Recipe comes from, such as Mediterranean. At most one per Recipe.
-_Avoid_: Region, style, origin
+**Tag**:
+A label on a Recipe that helps Members find it, such as breakfast, keto, or Mediterranean. A Recipe can have any number of Tags. Either a Catalog Tag or a Family Tag. A diet Tag such as keto is a claim, never checked against the Recipe's Ingredient Lines.
+_Avoid_: Label, category, Cuisine, Method, region
 
-**Method**:
-An optional tag for the cooking technique that sets a Recipe apart, such as rolled, folded, or frittata. At most one per Recipe.
-_Avoid_: Technique, style, pro tip
+**Catalog Tag**:
+A Tag Admins curate and translate, offered to every Family and the only kind a Catalog Recipe carries. Each belongs to a Tag Group. Never an allergen-free claim such as gluten-free; Allergens cover that.
+_Avoid_: Global tag, built-in tag, predefined tag
+
+**Family Tag**:
+A Tag a Member created for their Family, visible only to that Family and never translated. It belongs to no Tag Group.
+_Avoid_: Custom tag, user tag, my tag
+
+**Tag Group**:
+An Admin-curated heading Catalog Tags are listed under, such as Meal, Diet, Cuisine, or Method.
+_Avoid_: Tag category, tag type
 
 **Tip**:
 A short piece of cooking advice attached to a Recipe or to one of its steps. It doesn't change the dish.
@@ -394,7 +402,7 @@ A short, free-text recommendation on how nourishing a Recipe is, covering both t
 _Avoid_: Macros, nutrition facts, calories
 
 **Eating Moment**:
-A time or situation for eating, such as Morning, After a workout, or Before bed, from a list Admins curate and translate. A Recipe marks each Eating Moment it uses as Good for or Avoid, with an optional reason.
+A time or situation for eating, such as Morning, After a workout, or Before bed, from a list Admins curate and translate. A Recipe marks each Eating Moment it uses as Good for or Avoid, with an optional reason. Not a Tag such as breakfast, which only helps find a Recipe.
 _Avoid_: Occasion, timing, Mealtime (Breakfast, Lunch, or Dinner in a Meal Plan)
 
 **Guidance**:
@@ -416,7 +424,7 @@ A Family's saved schedule of Recipes over 1 to 7 consecutive days from a chosen 
 _Avoid_: Menu, schedule, weekly plan
 
 **Mealtime**:
-Breakfast, Lunch, or Dinner: the fixed parts of a day a Meal Plan is laid out in. Not an Eating Moment, which says when a Recipe suits rather than when it is planned.
+Breakfast, Lunch, or Dinner: the fixed parts of a day a Meal Plan is laid out in. Not an Eating Moment, which says when a Recipe suits rather than when it is planned, and not a breakfast or lunch Tag.
 _Avoid_: Meal, Eating Moment, course
 
 **Plan Slot**:
