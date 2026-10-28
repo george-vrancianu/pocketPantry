@@ -174,6 +174,14 @@ describe('DashboardPage header', () => {
           groups: [],
           summary: { remaining: 0, checked: 0 },
         }),
+      // The voice mic's Credit Price reads the Credits, which the tab-root refresh refetches too.
+      'GET /api/credits': () =>
+        Response.json({
+          balance: 100,
+          prices: { voice: 1 },
+          lowBalanceThreshold: 10,
+          history: [],
+        }),
       'GET /api/voice/config': () => Response.json({ configured: true }),
       'GET /api/staples': () => Response.json({ staples: [] }),
       'GET /api/settings/preferences': () => Response.json({}),
