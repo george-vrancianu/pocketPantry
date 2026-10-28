@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useToast, writeAppearance, type ThemeId } from '../index';
 import {
   highestFloor,
-  toastBottom,
+  composeToastBottom,
   useToastFloor,
   useToastHost,
 } from './ToastProvider';
@@ -215,7 +215,7 @@ describe('Toast floors', () => {
   };
 
   // jsdom's CSS parser drops `max()` declarations, so these check the floor by whether the Dock-relative
-  // `calc()` survives; `toastBottom` below checks the composed values.
+  // `calc()` survives; `composeToastBottom` below checks the composed values.
   it('sits just above the Dock with no floor', () => {
     render(<Harness floors={[null]} />);
     expect(bottomOf()).toContain('bottom: calc(128px');
@@ -274,13 +274,13 @@ describe('Toast floors', () => {
   });
 });
 
-describe('toastBottom', () => {
+describe('composeToastBottom', () => {
   it('is the Dock spot with no floor', () => {
-    expect(toastBottom(undefined, null).xs).toMatch(/^calc\(.*env\(/);
+    expect(composeToastBottom(undefined, null).xs).toMatch(/^calc\(.*env\(/);
   });
 
   it('keeps the Dock spot as a minimum under the floor plus the 8px gap', () => {
-    expect(toastBottom(undefined, '120px')).toMatchObject({
+    expect(composeToastBottom(undefined, '120px')).toMatchObject({
       xs: expect.stringMatching(
         /^max\(calc\(.*env\(.*\), calc\(120px \+ 8px\)\)$/,
       ),
@@ -288,11 +288,11 @@ describe('toastBottom', () => {
   });
 
   it('takes the higher of the caller bottom and the floor, per breakpoint', () => {
-    expect(toastBottom(200, '120px')).toEqual({
+    expect(composeToastBottom(200, '120px')).toEqual({
       xs: 'max(200px, calc(120px + 8px))',
       sm: 'max(200px, calc(120px + 8px))',
     });
-    expect(toastBottom({ xs: 10, md: '30px' }, '50px')).toEqual({
+    expect(composeToastBottom({ xs: 10, md: '30px' }, '50px')).toEqual({
       xs: 'max(10px, calc(50px + 8px))',
       sm: 'max(10px, calc(50px + 8px))',
       md: 'max(30px, calc(50px + 8px))',

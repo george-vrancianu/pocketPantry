@@ -8,7 +8,7 @@ import {
   useToastFloor,
   visuallyHidden,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { pillBottom, VOICE_LAYER } from '../../lib/voicePlacement';
@@ -25,19 +25,22 @@ const oneLine = {
 
 /** The strip's top edge as a distance from the bottom of the screen, px; `null` until measured. */
 function useTopEdge() {
-  const ref = useRef<HTMLDivElement>(null);
+  // Held in state: the portal's children remount when the host changes, so follow the live node.
+  const [el, setEl] = useState<HTMLDivElement | null>(null);
   const [edge, setEdge] = useState<number | null>(null);
   useEffect(() => {
-    const el = ref.current;
     if (!el) return;
     // From layout (height plus the `bottom` offset), not the painted box: the entrance transform
     // would shift a bounding rect for the first 200 ms and nothing re-measures after it.
-    const measure = () =>
+    const measure = () => {
+      // A node the portal has already replaced has no layout; wait for its successor.
+      if (!el.isConnected) return;
       setEdge(
         Math.round(
           el.offsetHeight + (parseFloat(getComputedStyle(el).bottom) || 0),
         ),
       );
+    };
     measure();
     window.addEventListener('resize', measure);
     const observer =
@@ -50,8 +53,8 @@ function useTopEdge() {
       window.removeEventListener('resize', measure);
       observer?.disconnect();
     };
-  }, []);
-  return { ref, edge };
+  }, [el]);
+  return { ref: setEl, edge };
 }
 
 /**

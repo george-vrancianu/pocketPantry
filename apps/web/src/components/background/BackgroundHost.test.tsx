@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -15,6 +15,7 @@ vi.mock('@pocket-pantry/ui', async (importOriginal) => ({
 }));
 import { linkReads } from '../../lib/linkReads';
 import { renderWithProviders } from '../../test/render';
+import { VoiceHostProvider, VoiceHostSlot } from '../voice/VoiceHost';
 import { BackgroundHost } from './BackgroundHost';
 
 afterEach(() => {
@@ -73,6 +74,28 @@ describe('BackgroundHost toast floor', () => {
     holdARead();
     renderWithProviders(<BackgroundHost linkReads />);
     expect(floor).toHaveBeenLastCalledWith(84);
+  });
+
+  it('keeps measuring when the portal host changes from body to the slot', () => {
+    // Only nodes still in the document have a layout height.
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.isConnected ? 66 : 0;
+      },
+    );
+    holdARead();
+    renderWithProviders(
+      <VoiceHostProvider>
+        <VoiceHostSlot />
+        <BackgroundHost linkReads />
+      </VoiceHostProvider>,
+    );
+    expect(floor).toHaveBeenLastCalledWith(66);
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    expect(floor).toHaveBeenLastCalledWith(66);
+    expect(floor).not.toHaveBeenCalledWith(0);
   });
 
   it('observes the border box, so a thicker border re-measures', () => {

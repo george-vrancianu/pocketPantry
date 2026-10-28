@@ -184,8 +184,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             transitionDuration={reduceMotion ? 0 : undefined}
             sx={{
-              // MUI's own sm+ `bottom: 24` would win above sm, so set every breakpoint.
-              bottom: toastBottom(current.bottom, floor),
+              bottom: composeToastBottom(current.bottom, floor),
               // Follow a floor that comes or goes while the toast is up.
               transition: reduceMotion ? 'none' : 'bottom 200ms ease',
               // 20 px side insets on phones (handoff section 7).
@@ -273,7 +272,10 @@ const atLeast = (bottom: number | string, floor: string | null) =>
     : `max(${typeof bottom === 'number' ? `${bottom}px` : bottom}, calc(${floor} + ${FLOOR_GAP}px))`;
 
 /** The toast's `bottom` per breakpoint: its own (or just above the Dock), raised to clear the floor (a CSS length) and the gap above it. */
-export function toastBottom(bottom: Bottom | undefined, floor: string | null) {
+export function composeToastBottom(
+  bottom: Bottom | undefined,
+  floor: string | null,
+) {
   // MUI's own sm+ `bottom: 24` would win above sm, so set every breakpoint.
   if (bottom === undefined) {
     return {
