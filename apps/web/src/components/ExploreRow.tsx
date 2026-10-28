@@ -19,7 +19,8 @@ type Props = {
   /** Where tapping the row body goes (the quick view, later); without it the body is not a control. */
   onOpen?: () => void;
   /** In "You can make this", which already says it: leaves out the Can make pill. */
-  hideCanMake?: boolean;
+  hideCanMake?: boolean; /** Tags the active filter matched: shown first, with the accent ring. */
+  matchedTagIds?: readonly string[];
 };
 
 /** A Catalog Recipe row with its one-tap add button; shared by Explore and the empty Recipes page. */
@@ -31,6 +32,7 @@ export function ExploreRow({
   filtering = false,
   onOpen,
   hideCanMake = false,
+  matchedTagIds,
 }: Props) {
   const { t } = useTranslation('recipes');
   const meta = [
@@ -63,6 +65,7 @@ export function ExploreRow({
       }
       meta={meta}
       tags={recipe.tags}
+      matchedTagIds={matchedTagIds}
       minutes={totalMinutes(recipe)}
       pills={
         card || recipe.allergyWarning ? (

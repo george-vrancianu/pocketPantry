@@ -236,6 +236,11 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   ],
   [
     'type',
+    'the verb "Type" (enter text) in the Tag field placeholder, not a Category',
+    ['recipes:tags.fieldPlaceholder'],
+  ],
+  [
+    'type',
     'the verb "Type" (enter by hand) on the Empty Pantry banner, not a Category',
     ['pantry:empty.type'],
   ],

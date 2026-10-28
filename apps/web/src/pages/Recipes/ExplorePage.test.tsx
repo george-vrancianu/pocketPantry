@@ -21,6 +21,10 @@ beforeEach(() => exploreAdds.reset());
  * - Each row has one add control: a `button` named "Add {title} to your Recipes", which once the
  *   Recipe is added becomes a `link` to `/recipes/{copyId}` named "{title} is in your Recipes. Open it".
  *   The row then also shows the text "In your Recipes".
+ * - The filter block is the search box beside a "Filter by Tags" `button`; picked Tags show below as
+ *   "Remove Tag {name}" buttons (no Cuisine or Method chips, no "Clear" chip). The button opens a
+ *   `dialog` named "Filter by Tags" with an always-open `listbox` of Catalog Tags only (no "Your
+ *   Tags"), each unpicked option with its count in an element named "{n} Recipes".
  * - The toast is a `status` ("Added {title} to your Recipes", with an Undo button); an error toast
  *   is an `alert`.
  */
@@ -533,5 +537,180 @@ describe('ExplorePage Back', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('ExplorePage Tag filter', () => {
+  const tag = (id: string, name: string, groupName: string, order: number) =>
+    ({
+      id,
+      name,
+      kind: 'catalog',
+      groupId: `g${order}`,
+      groupName,
+      groupOrder: order,
+    }) as const;
+  const DINNER = tag('t-din', 'Dinner', 'Meal', 1);
+  const VEGAN = tag('t-veg', 'Vegan', 'Diet', 2);
+  const ITALIAN = tag('t-it', 'Italian', 'Cuisine', 3);
+  const GRILL = tag('t-grill', 'Grill', 'Method', 4);
+  const pasta = base('Pasta', { tags: [DINNER, ITALIAN] });
+  const curry = base('Curry', { tags: [DINNER, VEGAN] });
+  const salad = base('Salad', { tags: [VEGAN] });
+  const kebab = base('Kebab', {
+    tags: [GRILL],
+    parentId: 'Skewer',
+    base: { id: 'Skewer', title: 'Skewer' },
+  });
+  const all = [pasta, curry, salad, kebab];
+
+  const answer = (url: URL) => {
+    const ids = (url.searchParams.get('tagIds') ?? '')
+      .split(',')
+      .filter(Boolean);
+    const q = (url.searchParams.get('search') ?? '').toLowerCase();
+    return all.filter(
+      (r) =>
+        ids.every((id) => r.tags.some((t) => t.id === id)) &&
+        r.title.toLowerCase().includes(q),
+    );
+  };
+
+  function setupTags() {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/recipes': (url) =>
+        Response.json({ recipes: answer(url), hiddenByAllergiesCount: 0 }),
+      'GET /api/recipes/filters': () =>
+        Response.json({
+          tags: [DINNER, VEGAN, ITALIAN, GRILL],
+          cuisines: [],
+          methods: [],
+          eatingMoments: [],
+        }),
+      'GET /api/recipes/cook-tonight': () =>
+        Response.json({ cards: [], hiddenByAllergiesCount: 0 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <Routes>
+        <Route path="/recipes/explore" element={<ExplorePage />} />
+      </Routes>,
+      { route: '/recipes/explore' },
+    );
+    return calls;
+  }
+  const lastQuery = (calls: ReturnType<typeof setupTags>) =>
+    new URLSearchParams(
+      calls.filter((c) => c.key === 'GET /api/recipes').at(-1)!.search,
+    );
+  const openTags = async () => {
+    await userEvent.click(
+      await screen.findByRole('button', { name: /^Filter by Tags/ }),
+    );
+    return screen.findByRole('dialog', { name: 'Filter by Tags' });
+  };
+  const closeTags = async () => {
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  };
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('starts with no Tag picked, and has no Cuisine, Method or Clear chips', async () => {
+    const calls = setupTags();
+    await screen.findByRole('list', { name: /^All Recipes/ });
+    expect(
+      await screen.findByRole('button', { name: 'Filter by Tags' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Clear' })).toBeNull();
+    expect(lastQuery(calls).has('tagIds')).toBe(false);
+  });
+
+  it('offers only the Catalog Tags it is given, with no Your Tags group, and a count on each', async () => {
+    setupTags();
+    await screen.findByRole('list', { name: /^All Recipes/ });
+    const dialog = await openTags();
+    const options = await within(dialog).findAllByRole('option');
+    expect(options.map((o) => o.textContent?.replace(/\d+$/, ''))).toEqual([
+      'Dinner',
+      'Vegan',
+      'Italian',
+      'Grill',
+    ]);
+    expect(within(dialog).queryByText('Your Tags')).toBeNull();
+    await waitFor(() =>
+      expect(
+        within(options[1]).getByLabelText('2 Recipes'),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it('filters by several Tags (AND) with the search, listing Variants as their own rows matched on their own Tags', async () => {
+    const calls = setupTags();
+    const user = userEvent.setup();
+    await screen.findByRole('list', { name: /^All Recipes/ });
+    const dialog = await openTags();
+    await user.click(
+      await within(dialog).findByRole('option', { name: /^Dinner/ }),
+    );
+    await user.click(within(dialog).getByRole('option', { name: /^Vegan/ }));
+    await waitFor(() =>
+      expect(lastQuery(calls).get('tagIds')).toBe('t-din,t-veg'),
+    );
+    expect(
+      await within(dialog).findByRole('button', { name: 'Show 1 Recipe' }),
+    ).toBeInTheDocument();
+    await closeTags();
+
+    const list = await screen.findByRole('list', { name: /^Matches/ });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(list).getByText('Curry')).toBeInTheDocument();
+    // The picked Tags lead the row's Tag line and carry the ring (matched).
+    expect(
+      within(list).getByRole('group', { name: 'Tags: Dinner, Vegan' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Dinner, Vegan selected. 1 Recipe matches.',
+    );
+
+    await user.type(screen.getByLabelText('Search all Recipes'), 'zzz');
+    expect(
+      await screen.findByText('No Recipes have all 2 Tags and match “zzz”'),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /^Without Dinner/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a Variant that has the Tag on its own, labelled with its Base', async () => {
+    setupTags();
+    const user = userEvent.setup();
+    await screen.findByRole('list', { name: /^All Recipes/ });
+    const dialog = await openTags();
+    await user.click(
+      await within(dialog).findByRole('option', { name: /^Grill/ }),
+    );
+    await closeTags();
+    const list = await screen.findByRole('list', { name: /^Matches/ });
+    expect(await within(list).findByText('Kebab')).toBeInTheDocument();
+    expect(within(list).getByText('Variant of Skewer')).toBeInTheDocument();
+  });
+
+  it('removes a Tag by tapping its chip', async () => {
+    const calls = setupTags();
+    const user = userEvent.setup();
+    await screen.findByRole('list', { name: /^All Recipes/ });
+    const dialog = await openTags();
+    await user.click(
+      await within(dialog).findByRole('option', { name: /^Vegan/ }),
+    );
+    await closeTags();
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove Tag Vegan' }),
+    );
+    await waitFor(() => expect(lastQuery(calls).has('tagIds')).toBe(false));
+    expect(
+      await screen.findByRole('list', { name: /^All Recipes/ }),
+    ).toBeInTheDocument();
   });
 });

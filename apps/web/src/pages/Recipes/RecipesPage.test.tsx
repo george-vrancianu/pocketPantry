@@ -29,8 +29,17 @@ import { RecipesPage } from './RecipesPage';
  *   Tag chips and "+N" (both hidden from the accessibility tree), then the text "· Easy · 3 Variants"
  *   (Level, Variant count, joined with " · "). Family Tags come first, then Catalog Tags in
  *   Tag Group order. A Recipe without Tags has no such group, only "Easy · 3 Variants".
- * - Filter chips are `button`s with `aria-pressed`, named by the Cuisine or Method name; "Clear" is
- *   a `button` shown only while filtering.
+ * - The filter block is the search box beside a `button` "Filter by Tags" ("Filter by Tags, 2 selected"
+ *   with a count; `aria-haspopup="dialog"`). Picked Tags show as a row of chips below it, each a
+ *   `button` named "Remove Tag {name}" that removes the Tag; there is no "Clear" chip and no
+ *   Cuisine or Method chip row.
+ * - The button opens a `dialog` named "Filter by Tags": a combobox of the same name, an always-open
+ *   `listbox` of `option`s grouped by Tag Group (Your Tags first) with each unpicked option's count
+ *   in an element named "{n} Recipes", a "Clear" button (disabled with no Tag picked), a "Show {n}
+ *   Recipes" button (or "No Recipes match") and a "Close" button. Picks apply to the list at once.
+ * - A visually hidden polite `status` reads "{names} selected. {n} Recipes match." while Tags are picked.
+ * - With Tags picked and no Recipe left, the page says "No Recipes have all {n} Tags" and offers
+ *   "Without {Tag}" buttons, each with the count it would show.
  */
 
 const item = (over: Partial<RecipeListItem>): RecipeListItem => ({
@@ -81,6 +90,35 @@ const card = (
 });
 
 const omelette = item({ id: 'o', title: 'Omelette', variantCount: 3 });
+const ctag = (
+  id: string,
+  name: string,
+  groupName: string,
+  groupOrder: number,
+): RecipeTag => ({
+  id,
+  name,
+  kind: 'catalog',
+  groupId: `g-${groupOrder}`,
+  groupName,
+  groupOrder,
+});
+const ftag = (id: string, name: string): RecipeTag => ({
+  id,
+  name,
+  kind: 'family',
+  groupId: null,
+  groupName: null,
+  groupOrder: null,
+});
+const MEAL_PREP = ftag('t-prep', 'Meal prep');
+const VEGAN = ctag('t-veg', 'Vegan', 'Diet', 2);
+const ITALIAN = ctag('c-it', 'Italian', 'Cuisine', 3);
+const GREEK = ctag('c-gr', 'Greek', 'Cuisine', 3);
+const BAKING = ctag('m-bake', 'Baking', 'Method', 4);
+const GRILLING = ctag('m-grill', 'Grilling', 'Method', 4);
+const ROMANA = ctag('c-ro', 'Română', 'Cuisine', 3);
+
 const soup = item({ id: 's', title: 'Soup', variantCount: 1 });
 const frittata = item({
   id: 'f',
@@ -88,6 +126,7 @@ const frittata = item({
   parentId: 'o',
   base: { id: 'o', title: 'Omelette' },
   cuisine: { id: 'c-it', name: 'Italian' },
+  tags: [ITALIAN],
 });
 const gratin = item({
   id: 'g',
@@ -96,6 +135,7 @@ const gratin = item({
   base: { id: 'o', title: 'Omelette' },
 });
 const filters = {
+  tags: [MEAL_PREP, VEGAN, ITALIAN, GREEK, ROMANA, BAKING, GRILLING],
   cuisines: [
     { id: 'c-it', name: 'Italian' },
     { id: 'c-gr', name: 'Greek' },
@@ -175,7 +215,9 @@ function setup(
 type Calls = ReturnType<typeof setup>;
 
 const filtered = (url: URL) =>
-  ['cuisineId', 'methodId', 'search'].some((key) => url.searchParams.has(key));
+  ['cuisineId', 'methodId', 'tagIds', 'search', 'includeVariants'].some((key) =>
+    url.searchParams.has(key),
+  );
 
 const lastQuery = (calls: Calls) =>
   new URLSearchParams(
@@ -196,7 +238,35 @@ const COOK_TONIGHT = /^Cook tonight/;
 const findCookTonight = () => screen.findByRole('link', { name: COOK_TONIGHT });
 const queryCookTonight = () =>
   screen.queryByRole('link', { name: COOK_TONIGHT });
-const chip = (name: string) => screen.findByRole('button', { name });
+const tagsButton = () =>
+  screen.findByRole('button', { name: /^Filter by Tags/ });
+const tagsButtonNow = () =>
+  screen.getByRole('button', { name: /^Filter by Tags/ });
+
+/** Opens the Tags sheet. */
+async function openTags() {
+  await userEvent.click(await tagsButton());
+  return screen.findByRole('dialog', { name: 'Filter by Tags' });
+}
+
+/** Closes the Tags sheet and waits for it to be gone. */
+async function closeTags() {
+  await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+}
+
+/** Picks Tags in the sheet by name, in order, then closes it. */
+async function pickTags(...names: string[]) {
+  const dialog = await openTags();
+  for (const name of names) {
+    await userEvent.click(
+      await within(dialog).findByRole('option', {
+        name: new RegExp(`^${name}`),
+      }),
+    );
+  }
+  await closeTags();
+}
 
 describe('RecipesPage', () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -444,7 +514,7 @@ describe('RecipesPage', () => {
       setup((url) => (filtered(url) ? [frittata, omelette] : [omelette]));
       await findRow('Omelette');
 
-      await userEvent.click(await chip('Italian'));
+      await pickTags('Italian');
       expect(await findRow('Frittata', MATCHES)).toHaveTextContent(
         'Variant of Omelette',
       );
@@ -453,17 +523,15 @@ describe('RecipesPage', () => {
     it('asks for the Family scope only, in the list and in Cook Tonight', async () => {
       const cookTonightUrls: string[] = [];
       const calls = setup(
-        () => [omelette],
+        (url) => (filtered(url) ? [frittata, omelette] : [omelette]),
         (url) => {
           cookTonightUrls.push(url.search);
           return [];
         },
       );
       await findRow('Omelette');
-      await userEvent.click(await chip('Italian'));
-      await waitFor(() =>
-        expect(lastQuery(calls).get('cuisineId')).toBe('c-it'),
-      );
+      await pickTags('Italian');
+      await waitFor(() => expect(lastQuery(calls).get('tagIds')).toBe('c-it'));
       const lists = calls.filter((c) => c.key === 'GET /api/recipes');
       expect(lists.length).toBeGreaterThan(1);
       for (const call of lists) {
@@ -524,7 +592,7 @@ describe('RecipesPage', () => {
     it('heads the list "Matches" with its count and drops the hint while filtering', async () => {
       setup((url) => (filtered(url) ? [frittata] : [omelette, soup]));
       await findRow('Omelette');
-      await userEvent.click(await chip('Italian'));
+      await pickTags('Italian');
       const heading = await screen.findByRole('heading', { name: MATCHES });
       expect(heading).toHaveTextContent(/^Matches · 1$/i);
       expect(
@@ -547,7 +615,10 @@ describe('RecipesPage', () => {
     it('shows a no-matches state with a hint while filtering', async () => {
       setup((url) => (filtered(url) ? [] : [omelette]));
       await findRow('Omelette');
-      await userEvent.click(await chip('Italian'));
+      await userEvent.type(
+        await screen.findByLabelText('Search Recipes'),
+        'zzz',
+      );
       expect(await screen.findByText('No Recipes match.')).toBeInTheDocument();
       expect(
         screen.getByText('Try another word or clear a filter.'),
@@ -564,80 +635,71 @@ describe('RecipesPage', () => {
     });
   });
 
-  describe('search and filter chips', () => {
-    it('offers Cuisines and Methods as toggle buttons, none pressed at first', async () => {
+  describe('search and Tag filter', () => {
+    it('has a Tags button beside the search and no Cuisine, Method or Clear chips', async () => {
       setup(() => [omelette]);
-      for (const name of ['Italian', 'Greek', 'Baking', 'Grilling']) {
-        expect(await chip(name)).toHaveAttribute('aria-pressed', 'false');
+      const button = await tagsButton();
+      expect(button).toHaveAccessibleName('Filter by Tags');
+      expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+      for (const name of ['Italian', 'Greek', 'Baking', 'Grilling', 'Clear']) {
+        expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
       }
-      expect(
-        screen.queryByRole('button', { name: 'Clear' }),
-      ).not.toBeInTheDocument();
       expect(screen.queryByLabelText('Cuisine')).not.toBeInTheDocument();
     });
 
-    it('filters by a tapped chip and clears it when the active chip is tapped again', async () => {
+    it('sends a picked Tag at once, shows it as a chip and a count on the button, and removes it when the chip is tapped', async () => {
       const calls = setup((url) => (filtered(url) ? [frittata] : [omelette]));
       const user = userEvent.setup();
-      const italian = await chip('Italian');
+      await findRow('Omelette');
 
-      await user.click(italian);
-      expect(italian).toHaveAttribute('aria-pressed', 'true');
-      await waitFor(() => {
-        const query = lastQuery(calls);
-        expect(query.get('cuisineId')).toBe('c-it');
-      });
-
-      await user.click(italian);
-      expect(italian).toHaveAttribute('aria-pressed', 'false');
-      await waitFor(() =>
-        expect(lastQuery(calls).has('cuisineId')).toBe(false),
+      await pickTags('Italian');
+      await waitFor(() => expect(lastQuery(calls).get('tagIds')).toBe('c-it'));
+      expect(await tagsButton()).toHaveAccessibleName(
+        'Filter by Tags, 1 selected',
       );
+      expect(await tagsButton()).toHaveTextContent('1');
+
+      await user.click(
+        screen.getByRole('button', { name: 'Remove Tag Italian' }),
+      );
+      await waitFor(() => expect(lastQuery(calls).has('tagIds')).toBe(false));
+      expect(
+        screen.queryByRole('button', { name: 'Remove Tag Italian' }),
+      ).not.toBeInTheDocument();
+      expect(await tagsButton()).toHaveAccessibleName('Filter by Tags');
       expect(
         await screen.findByRole('heading', { name: ALL }),
       ).toBeInTheDocument();
     });
 
-    it('keeps at most one Cuisine and one Method active', async () => {
-      const calls = setup(() => [omelette]);
+    it('asks for several Tags in the order they were picked, with the search text', async () => {
+      const calls = setup(() => [
+        item({ id: 'o', title: 'Omelette', tags: [GREEK, BAKING] }),
+      ]);
       const user = userEvent.setup();
-      const italian = await chip('Italian');
-      const greek = await chip('Greek');
-      const baking = await chip('Baking');
-      const grilling = await chip('Grilling');
-
-      await user.click(italian);
-      await user.click(greek);
-      expect(italian).toHaveAttribute('aria-pressed', 'false');
-      expect(greek).toHaveAttribute('aria-pressed', 'true');
-
-      await user.click(baking);
-      await user.click(grilling);
-      expect(baking).toHaveAttribute('aria-pressed', 'false');
-      expect(grilling).toHaveAttribute('aria-pressed', 'true');
-      // A Cuisine and a Method can be active together.
-      expect(greek).toHaveAttribute('aria-pressed', 'true');
+      await findRow('Omelette');
+      await user.type(screen.getByLabelText('Search Recipes'), 'fr');
+      await pickTags('Greek', 'Baking');
       await waitFor(() => {
         const query = lastQuery(calls);
-        expect(query.get('cuisineId')).toBe('c-gr');
-        expect(query.get('methodId')).toBe('m-grill');
+        expect(query.get('tagIds')).toBe('c-gr,m-bake');
+        expect(query.get('search')).toBe('fr');
       });
+      const chips = screen.getAllByRole('button', { name: /^Remove Tag / });
+      expect(chips.map((c) => c.getAttribute('aria-label'))).toEqual([
+        'Remove Tag Greek',
+        'Remove Tag Baking',
+      ]);
     });
 
-    it('keeps the previous rows on screen while the next search loads', async () => {
+    it('keeps the previous rows on screen while the next Tag loads', async () => {
       let release!: () => void;
       const gate = new Promise<void>((resolve) => (release = resolve));
       setup((url) => (filtered(url) ? [frittata] : [omelette]), [], gate);
-      const user = userEvent.setup();
       await findRow('Omelette');
 
-      await user.click(await chip('Italian'));
-      await waitFor(() =>
-        expect(screen.getByRole('button', { name: 'Italian' })).toHaveAttribute(
-          'aria-pressed',
-          'true',
-        ),
-      );
+      await pickTags('Italian');
+      await screen.findByRole('button', { name: 'Remove Tag Italian' });
       // The filtered response is still held: the old rows stay listed.
       expect(screen.getByText('Omelette')).toBeInTheDocument();
       expect(screen.queryByText('Frittata')).not.toBeInTheDocument();
@@ -660,49 +722,304 @@ describe('RecipesPage', () => {
         .filter(Boolean);
       expect(new Set(searched)).toEqual(new Set(['frit']));
     });
+  });
 
-    it('shows Clear only while filtering, and Clear resets the search and both filters', async () => {
-      const calls = setup((url) => (filtered(url) ? [frittata] : [omelette]));
-      const user = userEvent.setup();
-      const search = await screen.findByLabelText('Search Recipes');
-      const italian = await chip('Italian');
-      const baking = await chip('Baking');
-      expect(
-        screen.queryByRole('button', { name: 'Clear' }),
-      ).not.toBeInTheDocument();
+  describe('Tags sheet', () => {
+    const lasagne = item({
+      id: 'l',
+      title: 'Lasagne',
+      tags: [MEAL_PREP, ITALIAN, BAKING],
+    });
+    const risotto = item({
+      id: 'r',
+      title: 'Risotto',
+      tags: [VEGAN, ITALIAN],
+    });
+    const moussaka = item({
+      id: 'm',
+      title: 'Moussaka',
+      tags: [GREEK, BAKING],
+    });
+    const salad = item({ id: 'sa', title: 'Salad', tags: [VEGAN] });
+    const stew = item({ id: 'st', title: 'Romanian stew', tags: [ROMANA] });
+    const spicy = item({
+      id: 'sp',
+      title: 'Spicy risotto',
+      parentId: 'r',
+      base: { id: 'r', title: 'Risotto' },
+      tags: [VEGAN],
+    });
+    const all = [lasagne, risotto, moussaka, salad, stew, spicy];
 
-      await user.type(search, 'frit');
-      await user.click(italian);
-      await user.click(baking);
-      await waitFor(() => {
-        const query = lastQuery(calls);
-        expect(query.get('search')).toBe('frit');
-        expect(query.get('cuisineId')).toBe('c-it');
-        expect(query.get('methodId')).toBe('m-bake');
-      });
+    /** Answers like the API: every Tag, and the text in the title. */
+    const answer = (url: URL) => {
+      const ids = (url.searchParams.get('tagIds') ?? '')
+        .split(',')
+        .filter(Boolean);
+      const q = (url.searchParams.get('search') ?? '').toLowerCase();
+      return all.filter(
+        (r) =>
+          ids.every((id) => r.tags.some((t) => t.id === id)) &&
+          r.title.toLowerCase().includes(q),
+      );
+    };
+    const option = (dialog: HTMLElement, name: string) =>
+      within(dialog).getByRole('option', { name: new RegExp(`^${name}`) });
 
-      await user.click(screen.getByRole('button', { name: 'Clear' }));
-      expect(search).toHaveValue('');
-      expect(italian).toHaveAttribute('aria-pressed', 'false');
-      expect(baking).toHaveAttribute('aria-pressed', 'false');
+    it('opens a dialog with the AND hint, the Tag field, Clear disabled and "Show n Recipes"', async () => {
+      setup(answer);
+      await findRow('Lasagne');
+      const dialog = await openTags();
+      expect(dialog).toHaveAttribute('aria-modal', 'true');
+      expect(dialog).toHaveTextContent('Recipes must have every Tag you pick.');
+      expect(within(dialog).getByRole('combobox')).toHaveAccessibleName(
+        'Filter by Tags',
+      );
       expect(
-        screen.queryByRole('button', { name: 'Clear' }),
-      ).not.toBeInTheDocument();
-      await waitFor(() => {
-        const query = lastQuery(calls);
-        expect(query.has('search')).toBe(false);
-        expect(query.has('cuisineId')).toBe(false);
-        expect(query.has('methodId')).toBe(false);
-      });
+        within(dialog).getByPlaceholderText('Type to find a Tag'),
+      ).toBeInTheDocument();
       expect(
-        await screen.findByRole('heading', { name: ALL }),
+        within(dialog).getByRole('button', { name: 'Clear' }),
+      ).toBeDisabled();
+      expect(
+        within(dialog).getByRole('button', { name: 'Show 6 Recipes' }),
       ).toBeInTheDocument();
     });
 
-    it('shows Clear while only a search is active', async () => {
-      setup(() => [omelette]);
-      await userEvent.type(await screen.findByLabelText('Search Recipes'), 'o');
-      expect(await chip('Clear')).toBeInTheDocument();
+    it('lists Your Tags first, then the Tag Groups, with the count each Tag would leave', async () => {
+      setup(answer);
+      await findRow('Lasagne');
+      const dialog = await openTags();
+      const names = await within(dialog).findAllByRole('option');
+      expect(names.map((o) => o.textContent?.replace(/\d+$/, ''))).toEqual([
+        'Meal prep',
+        'Vegan',
+        'Italian',
+        'Greek',
+        'Română',
+        'Baking',
+        'Grilling',
+      ]);
+      expect(within(dialog).getByText('Your Tags')).toBeInTheDocument();
+      expect(
+        within(dialog).getByText('only your family sees these'),
+      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          within(option(dialog, 'Italian')).getByLabelText('2 Recipes'),
+        ).toBeInTheDocument(),
+      );
+      expect(
+        within(option(dialog, 'Meal prep')).getByLabelText('1 Recipe'),
+      ).toBeInTheDocument();
+    });
+
+    it('dims a Tag that would leave no Recipe, but keeps a picked one enabled', async () => {
+      setup(answer);
+      await findRow('Lasagne');
+      const dialog = await openTags();
+      await waitFor(() =>
+        expect(option(dialog, 'Grilling')).toHaveAttribute(
+          'aria-disabled',
+          'true',
+        ),
+      );
+      const user = userEvent.setup();
+      await user.click(option(dialog, 'Italian'));
+      // Greek shares no Recipe with Italian: dimmed. Italian is picked: enabled, no count.
+      await waitFor(() =>
+        expect(option(dialog, 'Greek')).toHaveAttribute(
+          'aria-disabled',
+          'true',
+        ),
+      );
+      expect(option(dialog, 'Italian')).not.toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+      expect(
+        within(option(dialog, 'Italian')).queryByLabelText(/Recipes?$/),
+      ).toBeNull();
+      expect(option(dialog, 'Baking')).not.toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+    });
+
+    it('applies each pick to the list behind it and to "Show n Recipes", and keeps them on close', async () => {
+      const calls = setup(answer);
+      const user = userEvent.setup();
+      await findRow('Lasagne');
+      const dialog = await openTags();
+      await user.click(
+        await within(dialog).findByRole('option', { name: /^Italian/ }),
+      );
+      await waitFor(() => expect(lastQuery(calls).get('tagIds')).toBe('c-it'));
+      expect(
+        await within(dialog).findByRole('button', { name: 'Show 2 Recipes' }),
+      ).toBeInTheDocument();
+      // The picked Tag shows in the field as a removable chip.
+      expect(
+        within(dialog).getByRole('button', { name: 'Remove Tag Italian' }),
+      ).toBeInTheDocument();
+
+      await user.click(option(dialog, 'Vegan'));
+      expect(
+        await within(dialog).findByRole('button', { name: 'Show 1 Recipe' }),
+      ).toBeInTheDocument();
+
+      await user.click(
+        within(dialog).getByRole('button', { name: 'Show 1 Recipe' }),
+      );
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(await tagsButton()).toHaveAccessibleName(
+        'Filter by Tags, 2 selected',
+      );
+      expect(await findRow('Risotto', MATCHES)).toBeInTheDocument();
+      expect(screen.queryByText('Lasagne')).not.toBeInTheDocument();
+    });
+
+    it('clears every Tag with Clear and keeps the sheet open', async () => {
+      const calls = setup(answer);
+      const user = userEvent.setup();
+      await findRow('Lasagne');
+      const dialog = await openTags();
+      await user.click(
+        await within(dialog).findByRole('option', { name: /^Italian/ }),
+      );
+      await user.click(within(dialog).getByRole('button', { name: 'Clear' }));
+      await waitFor(() => expect(lastQuery(calls).has('tagIds')).toBe(false));
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(
+        within(dialog).getByRole('button', { name: 'Clear' }),
+      ).toBeDisabled();
+    });
+
+    it('matches while typing ignoring case and accents', async () => {
+      setup(answer);
+      await findRow('Lasagne');
+      const dialog = await openTags();
+      await userEvent.type(within(dialog).getByRole('combobox'), 'ROMANA');
+      expect(
+        await within(dialog).findByRole('option', { name: /^Română/ }),
+      ).toBeInTheDocument();
+      expect(within(dialog).getAllByRole('option')).toHaveLength(1);
+    });
+
+    it('says so when no Tag has the typed name, and never offers to create one', async () => {
+      setup(answer);
+      await findRow('Lasagne');
+      const dialog = await openTags();
+      await userEvent.type(within(dialog).getByRole('combobox'), 'zzz');
+      expect(
+        await within(dialog).findByText('No Tag by that name on your Recipes'),
+      ).toBeInTheDocument();
+      expect(within(dialog).queryByText(/create/i)).toBeNull();
+    });
+
+    it('closes with the ×, with Escape from the field and with Escape on the sheet, and focus returns to the Tags button', async () => {
+      setup(answer);
+      const user = userEvent.setup();
+      await findRow('Lasagne');
+      await openTags();
+      await closeTags();
+      await waitFor(() => expect(tagsButtonNow()).toHaveFocus());
+
+      const dialog = await openTags();
+      await user.click(within(dialog).getByRole('combobox'));
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      await waitFor(() => expect(tagsButtonNow()).toHaveFocus());
+
+      await openTags();
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+
+    it('announces the picks and the result in a polite status line', async () => {
+      setup(answer);
+      await findRow('Lasagne');
+      await pickTags('Italian', 'Vegan');
+      const status = await screen.findByRole('status');
+      expect(status).toHaveAttribute('aria-live', 'polite');
+      await waitFor(() =>
+        expect(status).toHaveTextContent(
+          'Italian, Vegan selected. 1 Recipe matches.',
+        ),
+      );
+    });
+
+    it('lists Variants as their own rows matched on their own Tags, sorted A to Z', async () => {
+      setup(answer);
+      await findRow('Lasagne');
+      await pickTags('Vegan');
+      const list = await screen.findByRole('list', { name: MATCHES });
+      await within(list).findByText('Spicy risotto');
+      const titles = within(list)
+        .getAllByRole('listitem')
+        .map((row) => row.querySelector('a')?.textContent?.split('Your')[0]);
+      expect(titles).toHaveLength(3);
+      expect(titles[0]).toContain('Risotto');
+      expect(titles[1]).toContain('Salad');
+      expect(titles[2]).toContain('Spicy risotto');
+      expect(await findRow('Spicy risotto', MATCHES)).toHaveTextContent(
+        'Variant of Risotto',
+      );
+    });
+
+    it('puts the matched Tags first on a row', async () => {
+      setup(answer);
+      await findRow('Lasagne');
+      await pickTags('Baking');
+      const row = await findRow('Lasagne', MATCHES);
+      expect(within(row).getByRole('group')).toHaveAccessibleName(
+        'Tags: Baking, Meal prep, Italian',
+      );
+    });
+
+    it('offers "Without {Tag}" with the count each would show when no Recipe has every Tag', async () => {
+      const calls = setup(answer);
+      const user = userEvent.setup();
+      await findRow('Lasagne');
+      await pickTags('Italian', 'Vegan');
+      await user.type(screen.getByLabelText('Search Recipes'), 'las');
+      expect(
+        await screen.findByText('No Recipes have all 2 Tags and match “las”'),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Try without one of them:')).toBeInTheDocument();
+      // Lasagne is Italian but not Vegan; nothing "las" is Vegan.
+      const noItalian = await screen.findByRole('button', {
+        name: /^Without Italian/,
+      });
+      const noVegan = screen.getByRole('button', { name: /^Without Vegan/ });
+      const noText = screen.getByRole('button', { name: /^Without “las”/ });
+      await waitFor(() => expect(noVegan).toHaveTextContent('1'));
+      expect(noItalian).toBeDisabled();
+      expect(noItalian).toHaveTextContent('0');
+      expect(noText).toHaveTextContent('1');
+
+      await user.click(noVegan);
+      await waitFor(() => expect(lastQuery(calls).get('tagIds')).toBe('c-it'));
+      expect(await findRow('Lasagne', MATCHES)).toBeInTheDocument();
+      expect(screen.queryByText(/No Recipes have all/)).not.toBeInTheDocument();
+    });
+
+    it('says "that Tag" for one Tag with no Recipe, and the text button clears the search', async () => {
+      setup(answer);
+      const user = userEvent.setup();
+      await findRow('Lasagne');
+      await pickTags('Greek');
+      await user.type(screen.getByLabelText('Search Recipes'), 'lasagne');
+      expect(
+        await screen.findByText('No Recipes have that Tag and match “lasagne”'),
+      ).toBeInTheDocument();
+      const noText = await screen.findByRole('button', {
+        name: /^Without “lasagne”/,
+      });
+      await waitFor(() => expect(noText).toBeEnabled());
+      await user.click(noText);
+      expect(screen.getByLabelText('Search Recipes')).toHaveValue('');
+      expect(await findRow('Moussaka', MATCHES)).toBeInTheDocument();
     });
   });
 
@@ -752,10 +1069,8 @@ describe('RecipesPage', () => {
         [card({ recipe: { id: 'f', title: 'Frittata', parentId: 'o' } })],
       );
       await findRow('Omelette');
-      await userEvent.click(await chip('Italian'));
-      await waitFor(() =>
-        expect(lastQuery(calls).get('cuisineId')).toBe('c-it'),
-      );
+      await pickTags('Italian');
+      await waitFor(() => expect(lastQuery(calls).get('tagIds')).toBe('c-it'));
       const own = await findRow('Frittata', MATCHES);
       expect(within(own).getByText('Can Make')).toBeInTheDocument();
       expect(await findRow('Gratin', MATCHES)).not.toHaveTextContent(
@@ -1149,14 +1464,14 @@ describe('RecipesPage', () => {
         expect(await findCookTonight()).toHaveAttribute('href', '/pantry');
       });
 
-      it('is hidden while searching, and returns after Clear', async () => {
+      it('is hidden while searching, and returns once the search is cleared', async () => {
         setup((url) => (filtered(url) ? [frittata] : [omelette]), []);
         const user = userEvent.setup();
         await findCookTonight();
         await user.type(screen.getByLabelText('Search Recipes'), 'frit');
         await waitFor(() => expect(queryCookTonight()).toBeNull());
         expect(screen.queryByAltText(FLOP)).toBeNull();
-        await user.click(await chip('Clear'));
+        await user.clear(screen.getByLabelText('Search Recipes'));
         await findCookTonight();
       });
 
@@ -1264,7 +1579,7 @@ describe('RecipesPage', () => {
       });
     });
 
-    it('is hidden while searching and while a chip filters, and returns after Clear', async () => {
+    it('is hidden while searching and while a Tag filters, and returns once they are cleared', async () => {
       setup(
         (url) => (filtered(url) ? [frittata] : [omelette]),
         [plain('o', 'Omelette')],
@@ -1275,12 +1590,14 @@ describe('RecipesPage', () => {
       await user.type(screen.getByLabelText('Search Recipes'), 'frit');
       await waitFor(() => expect(queryCookTonight()).toBeNull());
 
-      await user.click(await chip('Clear'));
+      await user.clear(screen.getByLabelText('Search Recipes'));
       await findCookTonight();
 
-      await user.click(await chip('Italian'));
+      await pickTags('Italian');
       await waitFor(() => expect(queryCookTonight()).toBeNull());
-      await user.click(await chip('Italian'));
+      await user.click(
+        await screen.findByRole('button', { name: 'Remove Tag Italian' }),
+      );
       await findCookTonight();
     });
 
