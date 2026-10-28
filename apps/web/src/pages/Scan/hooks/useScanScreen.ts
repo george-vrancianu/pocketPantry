@@ -5,7 +5,8 @@ import { readBarcode, useCamera } from '../../../lib/camera';
 import { normalizeBarcode } from '../../../lib/gtin';
 import { decodePhotoBarcode, readScans } from '../../../lib/scanReads';
 import {
-  capReached,
+  sessionHeld,
+  heldBy,
   MAX_SESSION_SCANS,
   dispatchScanSession,
   getScanSession,
@@ -143,7 +144,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   /** A camera Scan that could not be prepared, so never joined the Scan Session. */
   const [notAdded, setNotAdded] = useState(false);
   const session = useScanSession();
-  const capped = capReached(session);
+  const capped = sessionHeld(session);
+  const outOfCredits = heldBy(session) === 'credits';
   // A short message at the bottom of the screen: the Scan Session is full, or a Scan Session was just saved.
   const [toast, setToast] = useState<{
     text: string;
@@ -395,6 +397,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     modesDisabled: resizing,
     controlsDisabled: reading || capped,
     capped,
+    /** What holds the Session is the Family being out of Credits, not the Scan Cap. */
+    outOfCredits,
     /** The Scan Session holds the most cards it can. */
     full: session.scans.length >= MAX_SESSION_SCANS,
     /** The shutter was pressed while it was disabled: the limit says why (the other reasons already show). */

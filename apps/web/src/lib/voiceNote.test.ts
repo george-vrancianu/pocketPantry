@@ -798,6 +798,41 @@ describe('Voice Note module', () => {
     });
   });
 
+  describe('Out of Credits across the Voice Inbox', () => {
+    const outOfCredits = () =>
+      new ApiError('credits.insufficient', 402, { price: 1, balance: 0 });
+
+    it('fails the note that was refused and those waiting behind it, keeping their recordings', async () => {
+      const ctx = setup();
+      for (let i = 0; i < 3; i++) await record(ctx.note, options);
+      ctx.refuse(outOfCredits(), 0);
+      await settle();
+      const { notes } = ctx.note.getState().inbox;
+      expect(notes.map((n) => n.error)).toEqual([
+        'outOfCredits',
+        undefined,
+        'outOfCredits',
+      ]);
+      expect(notes.filter((n) => n.error).every((n) => n.canRetry)).toBe(true);
+      // The third was never sent, and no Voice Cap was assumed.
+      expect(ctx.send).toHaveBeenCalledTimes(2);
+      expect(ctx.note.isCapReached()).toBe(false);
+    });
+
+    it('Read again releases the notes it held and sends them', async () => {
+      const ctx = setup();
+      for (let i = 0; i < 3; i++) await record(ctx.note, options);
+      ctx.refuse(outOfCredits(), 0);
+      await settle();
+      void ctx.note.retry(ctx.note.getState().inbox.notes[0].id);
+      expect(ctx.note.getState().inbox).toMatchObject({
+        failed: 0,
+        reading: 3,
+      });
+      expect(ctx.send.mock.calls.length).toBeGreaterThan(2);
+    });
+  });
+
   describe('nothing heard', () => {
     it('stays in the Voice Inbox until retried or discarded', async () => {
       vi.useFakeTimers();

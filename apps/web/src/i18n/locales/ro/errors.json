@@ -39,7 +39,7 @@
     "product_not_found": "Nu am putut citi un produs din poză. Completează formularul manual sau încearcă din nou."
   },
   "credits": {
-    "insufficient": "Nu sunt destule Credite. Aici sunt necesare {{price}}, iar familia ta are {{balance}}."
+    "insufficient": "Ai rămas fără Credite. Aici sunt necesare {{price}}, iar familia ta are {{balance}}."
   },
   "shopping": {
     "item_not_found": "Nu am găsit acel articol în listă.",

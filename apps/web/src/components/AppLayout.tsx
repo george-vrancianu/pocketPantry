@@ -18,7 +18,7 @@ import {
 } from './VoiceNote';
 import { BackgroundHost } from './background/BackgroundHost';
 import { useLinkReadsSideEffects } from './background/useLinkReadsSideEffects';
-import { useRefreshCreditsOnScanRead } from './background/useRefreshCreditsOnScanRead';
+import { useRefreshCreditsOnReads } from './background/useRefreshCreditsOnReads';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
 
 /** The layout hosts the background strip itself, so it shows on Dock pages without voice configured. */
@@ -55,7 +55,7 @@ export function AppLayout() {
   const showsMic = useShowsDockMic();
   useUnloadPromptWhileReading();
   useLinkReadsSideEffects();
-  useRefreshCreditsOnScanRead();
+  useRefreshCreditsOnReads();
   return (
     <>
       <ApplyMemberLocale />

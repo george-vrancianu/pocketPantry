@@ -19,6 +19,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
+import { isOutOfCredits } from '../../lib/credits';
 import { useBarcodeLookup, type BarcodeLookup } from '../../lib/barcode';
 import { readBarcode, useCamera } from '../../lib/camera';
 import type { CameraMode } from '../../lib/cameraMode';
@@ -253,7 +254,9 @@ export function CameraOverlay({
           setFailed(
             error instanceof ApiError && error.code === 'scan.cap_reached'
               ? t('labelCap')
-              : t('labelFailed'),
+              : isOutOfCredits(error)
+                ? t('labelOutOfCredits')
+                : t('labelFailed'),
           );
         return;
       }

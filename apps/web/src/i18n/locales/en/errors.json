@@ -39,7 +39,7 @@
     "product_not_found": "We could not read a product from that photo. Fill the form by hand, or try again."
   },
   "credits": {
-    "insufficient": "Not enough Credits. This needs {{price}}, and your family has {{balance}}."
+    "insufficient": "Out of Credits. This needs {{price}}, and your Family has {{balance}}."
   },
   "shopping": {
     "item_not_found": "We could not find that item on the list.",

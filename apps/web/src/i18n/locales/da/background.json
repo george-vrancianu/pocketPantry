@@ -35,6 +35,7 @@
     "discardRead": "Kassér {{what}}",
     "gone": "Den opskriftkladde gemmes ikke længere.",
     "capped": "Dagens linklæsninger er brugt",
+    "outOfCredits": "Ikke flere kreditter",
     "retry": "Prøv igen",
     "retryRead": "Prøv at læse {{what}} igen",
     "pasteInstead": "Indsæt teksten fra {{what}} i stedet",

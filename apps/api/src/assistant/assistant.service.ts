@@ -196,6 +196,12 @@ export class AssistantService {
       }
       if (
         error instanceof ApiException &&
+        error.code === 'credits.insufficient'
+      ) {
+        return stateReply('outOfCredits');
+      }
+      if (
+        error instanceof ApiException &&
         error.code === 'voice.provider_unavailable'
       ) {
         return stateReply('providerFailed');

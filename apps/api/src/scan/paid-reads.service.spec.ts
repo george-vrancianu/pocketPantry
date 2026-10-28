@@ -126,11 +126,19 @@ describe('PaidReadsService', () => {
       expect(credits.hold).not.toHaveBeenCalled();
     });
 
-    it('charges only the kinds in the charged set, and never the Admin read', async () => {
+    it.each([
+      'scan',
+      'voice',
+      'assistant',
+      'link-page',
+      'link-text',
+      'guidance',
+    ] as const)('charges a %s read, and never the Admin read', async (kind) => {
       const { credits, paid } = setup();
-      await paid.read('m', 'voice', () => Promise.resolve(found(1)));
+      await paid.read('m', kind, () => Promise.resolve(found(1)));
+      expect(credits.hold).toHaveBeenCalledTimes(1);
       await paid.read(null, 'guidance-admin', () => Promise.resolve(found(1)));
-      expect(credits.hold).not.toHaveBeenCalled();
+      expect(credits.hold).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { apiRequest } from './api';
+import { ApiError, apiRequest } from './api';
 
 /** The kinds of read a Credit Price is set for. */
 export type CreditPriceKind =
@@ -11,6 +11,13 @@ export type Credits = {
   balance: number;
   prices: Record<CreditPriceKind, number>;
 };
+
+/** The stable API error code of a read refused because the Family cannot pay for it. */
+export const OUT_OF_CREDITS = 'credits.insufficient';
+
+/** Whether an API error is the Credits refusal ("Out of Credits"), not a Cap. */
+export const isOutOfCredits = (error: unknown) =>
+  error instanceof ApiError && error.code === OUT_OF_CREDITS;
 
 export const creditsQueryKey = ['credits'] as const;
 
