@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { linkReads, MAX_HELD_LINK_READS } from '../../lib/linkReads';
@@ -71,9 +71,9 @@ describe('"From text" sheet', () => {
     expect(
       screen.getByRole('radio', { name: "Keep the text's language" }),
     ).toBeVisible();
-    expect(
-      await screen.findByText('Reading pasted text costs 1 Credit.'),
-    ).toBeVisible();
+    const line = await screen.findByText(/Reading pasted text costs/);
+    expect(line).toBeVisible();
+    expect(within(line).getByText('1 Credit')).toBeInTheDocument();
     expect(screen.queryByLabelText(/^Link to the recipe/)).toBeNull();
     expect(screen.queryByRole('button', { name: /instead/ })).toBeNull();
   });

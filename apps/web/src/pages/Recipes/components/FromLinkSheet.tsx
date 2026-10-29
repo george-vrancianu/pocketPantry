@@ -10,8 +10,9 @@ import {
   radius,
 } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useCreditPriceText } from '../../../components/CreditPrice';
+import { Trans, useTranslation } from 'react-i18next';
+import { CreditPrice } from '../../../components/CreditPrice';
+import { useCreditPrice } from '../../../lib/credits';
 import { ReadingLanguageChoice } from '../../../components/ReadingLanguageChoice';
 import { MAX_HELD_LINK_READS, linkReads } from '../../../lib/linkReads';
 import {
@@ -69,7 +70,7 @@ export function FromLinkSheet({
 /** Mounted afresh each time the sheet opens, so an earlier read's link is never left in the field. */
 function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
   const { t } = useTranslation('recipes');
-  const linkPrice = useCreditPriceText('link-page');
+  const linkPrice = useCreditPrice('link-page');
   const [url, setUrl] = useState('');
   const [language, setLanguage] = useState<ReadingLanguage>('catalog');
   const [full, setFull] = useState(false);
@@ -192,7 +193,11 @@ function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
       <ReadingLanguageChoice value={language} onChange={setLanguage} />
       {linkPrice ? (
         <Typography variant="meta" color="text.secondary">
-          {t('fromLink.priceLink', { price: linkPrice })}
+          <Trans
+            t={t}
+            i18nKey="fromLink.priceLink"
+            components={{ price: <CreditPrice kind="link-page" /> }}
+          />
         </Typography>
       ) : null}
       <Button type="submit" fullWidth disabled={input === '' || checking}>

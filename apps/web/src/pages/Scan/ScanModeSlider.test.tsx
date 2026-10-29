@@ -184,11 +184,11 @@ describe('Scan page opened with its own modes', () => {
       });
       vi.stubGlobal('fetch', fetchMock);
       renderScan();
-      expect(await within(slider()).findByText('· 1 Credit')).toBeVisible();
-      expect(item(/^Receipt/)).toHaveTextContent('Receipt· 1 Credit');
+      expect(await within(slider()).findByText('1 Credit')).toBeInTheDocument();
+      expect(item(/^Receipt/)).toHaveAccessibleName('Receipt· 1 Credit');
       await user.click(item('Barcode'));
       expect(item('Barcode')).toBeChecked();
-      expect(within(slider()).queryByText('· 1 Credit')).toBeNull();
+      expect(within(slider()).queryByText('1 Credit')).toBeNull();
     });
   });
 });

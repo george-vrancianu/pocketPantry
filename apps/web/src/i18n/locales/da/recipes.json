@@ -289,7 +289,7 @@
     },
     "full_one": "{{count}} linklæsning venter på dig. Gennemse eller annullér den først.",
     "full_other": "{{count}} linklæsninger venter på dig. Gennemse eller annullér en først.",
-    "priceLink": "At læse en webside koster {{price}}."
+    "priceLink": "At læse en webside koster <price/>."
   },
   "fromText": {
     "menuItem": "Fra tekst",
@@ -307,7 +307,7 @@
     },
     "characters_one": "{{current}} af {{max}} tegn",
     "characters_other": "{{current}} af {{max}} tegn",
-    "price": "At læse indsat tekst koster {{price}}.",
+    "price": "At læse indsat tekst koster <price/>.",
     "pasteInstead": "Indsæt tekst i stedet"
   },
   "readingLanguage": {

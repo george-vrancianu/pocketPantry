@@ -18,7 +18,7 @@ import {
 } from '../../lib/voice';
 import type { useVoiceNote } from '../../lib/useVoiceNote';
 import { usePressGesture } from '../../lib/usePressGesture';
-import { useCreditPriceText } from '../CreditPrice';
+import { CreditPrice, useCreditPriceText } from '../CreditPrice';
 import { useDockMicSlot, useReportRecording, useVoiceHost } from './VoiceHost';
 import { ListeningCard } from './ListeningCard';
 import { useElapsedMs } from './useElapsed';
@@ -107,11 +107,7 @@ export function VoiceButton({
           }}
         >
           {t('listening.tip')}
-          {price ? (
-            <Box component="span" sx={{ display: 'block', fontWeight: 400 }}>
-              {price}
-            </Box>
-          ) : null}
+          <CreditPrice kind="voice" sx={{ display: 'flex', fontWeight: 400 }} />
         </Box>
       ) : null}
       {active ? (
@@ -191,16 +187,6 @@ export function VoiceButton({
             ) : (
               <MicIcon size={26} />
             )}
-            {price && !active ? (
-              // Sighted users see the price at the mic; screen readers get it from the description above.
-              <Box
-                component="span"
-                aria-hidden
-                sx={{ fontSize: 10, fontWeight: 600, lineHeight: 1 }}
-              >
-                {price}
-              </Box>
-            ) : null}
           </Box>
         </>,
         micSlot,
