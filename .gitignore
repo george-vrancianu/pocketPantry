@@ -32,4 +32,3 @@ apps/api/src/ai/scan-replay/voice-cases/*
 apps/api/drizzle.config.js
 apps/api/drizzle.config.d.ts
 apps/api/drizzle.config.js.map
-.claude/skills/orchestrate-specs/SKILL.md
