@@ -20,9 +20,9 @@ export function CreditPrice({
   sx,
   ...rest
 }: { kind: CreditPriceKind } & Omit<ComponentProps<typeof Box>, 'children'>) {
+  const { t } = useTranslation('common');
   const price = useCreditPrice(kind);
-  const text = useCreditPriceText(kind);
-  return price && text ? (
+  return price ? (
     <Box
       component="span"
       sx={[
@@ -40,7 +40,7 @@ export function CreditPrice({
       <CreditIcon size="1.1em" />
       <span aria-hidden>{price}</span>
       <Box component="span" sx={visuallyHidden}>
-        {text}
+        {t('credits.price', { count: price })}
       </Box>
     </Box>
   ) : null;

@@ -11,10 +11,8 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import {
-  CreditPrice,
-  useCreditPriceText,
-} from '../../../components/CreditPrice';
+import { CreditPrice } from '../../../components/CreditPrice';
+import { useCreditPrice } from '../../../lib/credits';
 import { ReadingLanguageChoice } from '../../../components/ReadingLanguageChoice';
 import { MAX_HELD_LINK_READS, linkReads } from '../../../lib/linkReads';
 import {
@@ -72,7 +70,7 @@ export function FromLinkSheet({
 /** Mounted afresh each time the sheet opens, so an earlier read's link is never left in the field. */
 function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
   const { t } = useTranslation('recipes');
-  const linkPrice = useCreditPriceText('link-page');
+  const linkPrice = useCreditPrice('link-page');
   const [url, setUrl] = useState('');
   const [language, setLanguage] = useState<ReadingLanguage>('catalog');
   const [full, setFull] = useState(false);

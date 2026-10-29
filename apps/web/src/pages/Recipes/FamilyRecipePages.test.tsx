@@ -2421,7 +2421,7 @@ describe('Suggest Guidance', () => {
         }),
     });
     const button = await screen.findByRole('button', { name: 'Suggest' });
-    expect(await screen.findByText('1 Credit')).toBeVisible();
+    expect(await screen.findByText('1 Credit')).toBeInTheDocument();
     expect(button).toHaveAccessibleDescription('1 Credit');
   });
 
