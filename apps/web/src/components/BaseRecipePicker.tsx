@@ -152,8 +152,6 @@ export function BaseRecipePicker({
   const found = useRecipes(
     {
       search: searching ? search : '',
-      cuisineId: '',
-      methodId: '',
       tagIds: [],
     },
     // A title search is a deliberate look-up with no note to show, so it lists every Recipe

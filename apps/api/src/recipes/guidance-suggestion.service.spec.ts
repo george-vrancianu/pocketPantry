@@ -45,9 +45,7 @@ describe('GuidanceSuggestionService with no Eating Moments to offer', () => {
           .mockResolvedValue({ categories: [], ingredients: [] }),
       } as unknown as IngredientCatalogService,
       {
-        filters: jest
-          .fn()
-          .mockResolvedValue({ cuisines: [], methods: [], eatingMoments: [] }),
+        filters: jest.fn().mockResolvedValue({ tags: [], eatingMoments: [] }),
       } as unknown as RecipeBrowseService,
       {
         familyIdOf: jest.fn().mockResolvedValue('family'),

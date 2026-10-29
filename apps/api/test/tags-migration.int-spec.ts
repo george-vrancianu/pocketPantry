@@ -1,11 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import pg from 'pg';
+import { restorePre0051Shape } from './support/pre-0051-shape';
 
 // Migration 0049 (#708, expand step of ADR 0033) turns every Cuisine and Method into a Catalog Tag
 // with its translations and tags every Recipe with them. The schema half of the file has already run
 // on the test database, so each test clears the tag rows and replays only the data statements
-// (the INSERTs) inside a transaction that is rolled back.
+// (the INSERTs) inside a transaction that is rolled back. Migration 0051 has since dropped the
+// Cuisine and Method tables, so each test first puts that old shape back inside the transaction.
 const allStatements = readFileSync(
   resolve(process.cwd(), 'drizzle/0049_tags.sql'),
   'utf8',
@@ -50,6 +52,7 @@ describe('Migration 0049: Cuisines and Methods become Catalog Tags (integration)
   });
   beforeEach(async () => {
     await client.query('BEGIN');
+    await restorePre0051Shape(client);
     await client.query('delete from recipe_tags');
     await client.query('delete from tags');
     await client.query('delete from tag_groups');

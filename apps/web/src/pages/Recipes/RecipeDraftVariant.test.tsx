@@ -113,8 +113,6 @@ const saved = {
   prepMinutes: null,
   cookMinutes: null,
   difficulty: null,
-  cuisineId: null,
-  methodId: null,
   archived: false,
   sourceLink: null,
   sourceLanguage: null,
@@ -140,7 +138,7 @@ function setup(
 ) {
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [], eatingMoments: [] }),
+      Response.json({ tags: [], eatingMoments: [] }),
     [`GET /api/recipes/${BASE}/variant-draft`]: () => Response.json(base),
     ...routes,
   });

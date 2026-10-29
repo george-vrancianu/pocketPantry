@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { SHARED_ONLY } from '../catalog/catalog-scope';
+import { SHARED_ONLY, catalogScope } from '../catalog/catalog-scope';
+import { loadPickableTags, type RecipeTag } from '../tags/recipe-tags';
 import { MeteredAiService } from '../usage/metered-ai.service';
 import {
   FALLBACK_LOCALE,
@@ -9,9 +10,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import type { IngredientCatalog } from '../ingredients/ingredient-catalog';
 import {
-  cuisines,
   eatingMomentPolarity,
-  methods,
   pairingKind,
   pairingPrinciple,
 } from '../database/schema';
@@ -78,8 +77,8 @@ type PromptRecipe = {
 /** What one request needs looked up, by who is asking. */
 type Lookups = {
   catalog: IngredientCatalog;
-  cuisines: { id: string; name: string }[];
-  methods: { id: string; name: string }[];
+  /** The Tags the writer can pick, named in the prompt's language (looked up only when the writer picked some). */
+  pickable: () => Promise<RecipeTag[]>;
   moments: OfferedMoment[];
   context: () => Promise<SuggestionContext>;
 };
@@ -116,8 +115,7 @@ export class GuidanceSuggestionService {
         const lists = await this.browse.filters(memberId, locale);
         return {
           catalog,
-          cuisines: lists.cuisines,
-          methods: lists.methods,
+          pickable: () => this.browse.pickableTags(memberId, locale),
           // The unarchived, Admin-curated Eating Moments (named in `locale`), only when wanted.
           moments: empty.includes('eatingMoments') ? lists.eatingMoments : [],
           // Links and Allergens matter only for Pairings; they are looked up when asked.
@@ -151,17 +149,18 @@ export class GuidanceSuggestionService {
           SHARED_ONLY,
           locale,
         );
-        const [cuisineRows, methodRows, momentRows] = await Promise.all([
-          this.database.select().from(cuisines),
-          this.database.select().from(methods),
-          empty.includes('eatingMoments')
-            ? catalogEatingMoments(this.database)
-            : [],
-        ]);
+        const momentRows = empty.includes('eatingMoments')
+          ? await catalogEatingMoments(this.database)
+          : [];
         return {
           catalog,
-          cuisines: cuisineRows,
-          methods: methodRows,
+          pickable: () =>
+            loadPickableTags(
+              this.database,
+              catalogScope(SHARED_ONLY),
+              locale,
+              null,
+            ),
           moments: momentRows,
           context: () =>
             catalogSuggestionContext(this.database, {
@@ -193,12 +192,8 @@ export class GuidanceSuggestionService {
       throw new ApiException(400, 'guidance.nothing_to_suggest');
     }
 
-    const { catalog, cuisines, methods, moments, context } = await load(empty);
+    const { catalog, pickable, moments, context } = await load(empty);
     const names = new Map(catalog.ingredients.map((i) => [i.id, i.name]));
-    // A Cuisine or Method is a Catalog Tag with the same id: the prompt names the first of each.
-    const nameOf = (list: { id: string; name: string }[], ids: string[]) =>
-      ids.flatMap((id) => list.find((item) => item.id === id)?.name ?? [])[0] ??
-      null;
 
     // With no Eating Moment to choose from there is nothing to ask for: straight to "no suggestions".
     const unasked = empty.filter(
@@ -217,8 +212,10 @@ export class GuidanceSuggestionService {
         prompt: suggestionPrompt(wanted, locale, links, moments, {
           recipe: body.recipe,
           ingredientName: (id) => names.get(id) ?? null,
-          cuisine: nameOf(cuisines, body.recipe.tagIds),
-          method: nameOf(methods, body.recipe.tagIds),
+          tags:
+            body.recipe.tagIds.length === 0
+              ? []
+              : namesOf(await pickable(), body.recipe.tagIds),
         }),
       });
       const made = suggestionOf(answer, wanted, links, moments);
@@ -426,6 +423,13 @@ function linkOffer(context: SuggestionContext): string[] {
   ];
 }
 
+/** The names of `tagIds` among `pickable`, in the given order (an id that is not pickable is skipped). */
+function namesOf(pickable: RecipeTag[], tagIds: string[]): string[] {
+  return tagIds.flatMap(
+    (id) => pickable.find((tag) => tag.id === id)?.name ?? [],
+  );
+}
+
 function suggestionPrompt(
   wanted: GuidanceField[],
   locale: CatalogLocale,
@@ -434,8 +438,7 @@ function suggestionPrompt(
   page: {
     recipe: PromptRecipe;
     ingredientName: (id: string) => string | null;
-    cuisine: string | null;
-    method: string | null;
+    tags: string[];
   },
 ): string {
   const { recipe } = page;
@@ -451,8 +454,7 @@ function suggestionPrompt(
   const content = {
     title: recipe.title ?? null,
     servings: recipe.servings ?? null,
-    cuisine: page.cuisine,
-    method: page.method,
+    tags: page.tags,
     ingredients: lines,
     steps: recipe.steps.map((step) => step.text),
   };

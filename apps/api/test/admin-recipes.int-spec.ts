@@ -1,18 +1,17 @@
 import { jest } from '@jest/globals';
-import { dropTags, mirrorAsTags } from './support/legacy-tags';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike, isNull } from 'drizzle-orm';
+import { eq, ilike, inArray, isNull } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
-  cuisines,
   ingredients,
-  methods,
   recipeIngredientLines,
   recipes,
   shoppingItems,
   shoppingItemSourceRecipes,
   shoppingLists,
+  tagGroups,
+  tags,
   user,
 } from '../src/database/schema';
 import type {
@@ -36,8 +35,8 @@ describe('Admin Recipes (integration)', () => {
   let adminEmail: string;
   let salt: string;
   let flour: string;
-  let cuisineId: string;
-  let methodId: string;
+  let tagId: string;
+  let otherTagId: string;
   const stamp = Date.now();
   let n = 0;
   const title = (label: string) => `${label} ${stamp}-${++n}`;
@@ -81,21 +80,25 @@ describe('Admin Recipes (integration)', () => {
       .where(isNull(ingredients.ownerFamilyId))
       .limit(2);
     [flour, salt] = rows.map((r) => r.id);
-    cuisineId = crypto.randomUUID();
-    methodId = crypto.randomUUID();
-    await database.insert(cuisines).values({
-      id: cuisineId,
-      name: `Cuisine ${stamp}`,
-      normalizedName: `cuisine ${stamp}`,
-    });
-    await database.insert(methods).values({
-      id: methodId,
-      name: `Method ${stamp}`,
-      normalizedName: `method ${stamp}`,
-    });
-    await mirrorAsTags(database, [
-      { type: 'cuisine', id: cuisineId },
-      { type: 'method', id: methodId },
+    const [group] = await database
+      .select({ id: tagGroups.id })
+      .from(tagGroups)
+      .limit(1);
+    tagId = crypto.randomUUID();
+    otherTagId = crypto.randomUUID();
+    await database.insert(tags).values([
+      {
+        id: tagId,
+        name: `Tag ${stamp}`,
+        normalizedName: `tag ${stamp}`,
+        groupId: group.id,
+      },
+      {
+        id: otherTagId,
+        name: `Other tag ${stamp}`,
+        normalizedName: `other tag ${stamp}`,
+        groupId: group.id,
+      },
     ]);
   });
 
@@ -110,9 +113,7 @@ describe('Admin Recipes (integration)', () => {
       await database.delete(recipes).where(eq(recipes.id, row.id));
     }
     await database.delete(recipes).where(ilike(recipes.title, like));
-    await dropTags(database, [cuisineId, methodId]);
-    await database.delete(cuisines).where(eq(cuisines.id, cuisineId));
-    await database.delete(methods).where(eq(methods.id, methodId));
+    await database.delete(tags).where(inArray(tags.id, [tagId, otherTagId]));
     await app.close();
   });
 
@@ -127,7 +128,7 @@ describe('Admin Recipes (integration)', () => {
         prepMinutes: 15,
         cookMinutes: 30,
         difficulty: 'easy',
-        tagIds: [cuisineId, methodId],
+        tagIds: [tagId, otherTagId],
       });
       expect(created).toMatchObject({
         parentId: null,
@@ -135,8 +136,7 @@ describe('Admin Recipes (integration)', () => {
         prepMinutes: 15,
         cookMinutes: 30,
         difficulty: 'easy',
-        cuisineId,
-        methodId,
+        tagIds: [tagId, otherTagId].sort(),
         archived: false,
         parentTips: null,
       });

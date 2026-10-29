@@ -41,8 +41,6 @@ export function RecipePickerSheet({
   const { t } = useTranslation(['mealPlans', 'recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
     search: '',
-    cuisineId: '',
-    methodId: '',
     tagIds: [],
   });
   // Plan Slots never hide (ADR 0012): "Hide Recipes with my Allergies" must not narrow what

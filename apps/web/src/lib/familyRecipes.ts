@@ -54,8 +54,6 @@ export type FamilyRecipeEdit = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   difficulty: Difficulty | null;
-  cuisineId: string | null;
-  methodId: string | null;
   tagIds: string[];
   archived: boolean;
   /** The page the Recipe was read from; null otherwise. It can be removed, never changed. */

@@ -27,8 +27,6 @@ type AddApi = ReturnType<typeof useAddToFamily>;
 const STARTERS = 3;
 const NO_BROWSE: RecipeBrowse = {
   search: '',
-  cuisineId: '',
-  methodId: '',
   tagIds: [],
 };
 

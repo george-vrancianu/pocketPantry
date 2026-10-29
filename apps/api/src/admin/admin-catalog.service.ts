@@ -25,20 +25,17 @@ import {
   aisles,
   allergens,
   catalogTranslations,
-  cuisines,
   tagGroups,
   tags,
   eatingMoments,
   ingredientAllergens,
   ingredients,
   leafCategories,
-  methods,
   parentCategories,
   recipeTags,
 } from '../database/schema';
 import { foldTagsInto } from '../tags/merge-tags';
 import { isAllergenFreeName } from '../tags/allergen-free-names';
-import { mirrorListEntryAsTag } from '../tags/recipe-tags';
 import type {
   AisleCreate,
   ListEntryCreate,
@@ -79,9 +76,6 @@ export function otherLeafName(parentName: string): string {
 const otherLeafNameTaken = () =>
   new ApiException(409, 'catalog.other_leaf_name_taken');
 
-type ListType = 'cuisine' | 'method';
-const LIST_TABLES = { cuisine: cuisines, method: methods } as const;
-
 // Admin curation reads shared Catalog rows only (ADR 0011).
 const adminScope = catalogScope(SHARED_ONLY);
 
@@ -108,8 +102,6 @@ export class AdminCatalogService {
       leafRows,
       ingredientRows,
       translationRows,
-      cuisineRows,
-      methodRows,
       eatingMomentRows,
       allergenRows,
       tagRows,
@@ -130,8 +122,6 @@ export class AdminCatalogService {
         .from(sharedIngredients)
         .orderBy(sharedIngredients.normalizedName),
       this.database.select().from(adminScope.translations(this.database)),
-      this.database.select().from(cuisines).orderBy(cuisines.normalizedName),
-      this.database.select().from(methods).orderBy(methods.normalizedName),
       this.database
         .select()
         .from(eatingMoments)
@@ -202,16 +192,6 @@ export class AdminCatalogService {
         groupId: row.groupId,
         recipeCount: row.recipeCount,
         translations: translations('tag', row.id),
-      })),
-      cuisines: cuisineRows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        translations: translations('cuisine', row.id),
-      })),
-      methods: methodRows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        translations: translations('method', row.id),
       })),
       eatingMoments: eatingMomentRows.map((row) => ({
         id: row.id,
@@ -504,81 +484,6 @@ export class AdminCatalogService {
       await replaceIngredientAllergenTags(tx, id, allergenIds);
       return { id, allergenIds };
     });
-  }
-
-  // Cuisines and Methods: Admin-curated Recipe lists, translated like Aisles.
-  // Deleting one a Recipe uses is refused; Recipes keep a reference, never a copy.
-
-  createCuisine(input: ListEntryCreate) {
-    return this.createListEntry('cuisine', input);
-  }
-
-  updateCuisine(id: string, input: ListEntryUpdate) {
-    return this.updateListEntry('cuisine', id, input);
-  }
-
-  deleteCuisine(id: string) {
-    return this.deleteListEntry('cuisine', id);
-  }
-
-  createMethod(input: ListEntryCreate) {
-    return this.createListEntry('method', input);
-  }
-
-  updateMethod(id: string, input: ListEntryUpdate) {
-    return this.updateListEntry('method', id, input);
-  }
-
-  deleteMethod(id: string) {
-    return this.deleteListEntry('method', id);
-  }
-
-  private createListEntry(type: ListType, input: ListEntryCreate) {
-    const table = LIST_TABLES[type];
-    return this.write(async (tx) => {
-      const id = randomUUID();
-      const [row] = await tx
-        .insert(table)
-        .values({
-          id,
-          name: input.name,
-          normalizedName: normalizeName(input.name),
-        })
-        .returning();
-      await this.addCanonicalName(tx, type, id, input.name);
-      await mirrorListEntryAsTag(tx, type, id);
-      return row;
-    });
-  }
-
-  private updateListEntry(type: ListType, id: string, input: ListEntryUpdate) {
-    const table = LIST_TABLES[type];
-    return this.write(async (tx) => {
-      const [row] = await tx
-        .update(table)
-        .set({ name: input.name, normalizedName: normalizeName(input.name) })
-        .where(eq(table.id, id))
-        .returning();
-      if (!row) throw notFound(type);
-      await this.renameCanonicalName(tx, type, id, input.name);
-      await mirrorListEntryAsTag(tx, type, id);
-      return row;
-    });
-  }
-
-  private deleteListEntry(type: ListType, id: string) {
-    const table = LIST_TABLES[type];
-    // The Recipe foreign key is the guard, so a Recipe pointing at the entry
-    // concurrently fails the delete atomically.
-    return this.write(
-      async (tx) => {
-        await this.requireRow(tx, type, id);
-        await this.deleteTranslationsOf(tx, type, id);
-        await tx.delete(table).where(eq(table.id, id));
-        await mirrorListEntryAsTag(tx, type, id);
-      },
-      new ApiException(409, `catalog.${type}_in_use`),
-    );
   }
 
   // Tag Groups and Catalog Tags (ADR 0033). A Catalog Tag never claims an Allergen is absent, and
@@ -1030,7 +935,6 @@ export class AdminCatalogService {
             normalizedValue: normalizeName(input.value),
           })
           .returning();
-        await this.mirrorTagOf(tx, input.entityType, input.entityId);
         if (input.entityType === 'tag') {
           await this.mergeFamilyTagsInto(
             tx,
@@ -1067,7 +971,6 @@ export class AdminCatalogService {
         })
         .where(eq(catalogTranslations.id, id))
         .returning();
-      await this.mirrorTagOf(tx, existing.entityType, existing.entityId);
       if (existing.entityType === 'tag') {
         await this.mergeFamilyTagsInto(
           tx,
@@ -1082,19 +985,9 @@ export class AdminCatalogService {
   async deleteTranslation(id: string): Promise<void> {
     const existing = await this.requireTranslation(this.database, id);
     this.assertEditable(existing.kind, existing.locale);
-    await this.database.transaction(async (tx) => {
-      await tx
-        .delete(catalogTranslations)
-        .where(eq(catalogTranslations.id, id));
-      await this.mirrorTagOf(tx, existing.entityType, existing.entityId);
-    });
-  }
-
-  /** Expand step: a Cuisine's or Method's translations also live on its Catalog Tag. */
-  private async mirrorTagOf(tx: Tx, type: EntityType, id: string) {
-    if (type === 'cuisine' || type === 'method') {
-      await mirrorListEntryAsTag(tx, type, id);
-    }
+    await this.database
+      .delete(catalogTranslations)
+      .where(eq(catalogTranslations.id, id));
   }
 
   // Helpers
@@ -1258,8 +1151,6 @@ export class AdminCatalogService {
       parent_category: parentCategories,
       leaf_category: leafCategories,
       ingredient: adminScope.ingredients(executor),
-      cuisine: cuisines,
-      method: methods,
       tag_group: tagGroups,
       tag: tags,
       eating_moment: eatingMoments,

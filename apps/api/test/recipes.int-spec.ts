@@ -1,5 +1,4 @@
 import { jest } from '@jest/globals';
-import { dropTags, mirrorAsTags, withTagIds } from './support/legacy-tags';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike, isNull } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
@@ -8,11 +7,12 @@ import { seedId } from '../src/catalog/seed/seed-catalog';
 import {
   batches,
   catalogTranslations,
-  cuisines,
   eatingMoments,
   ingredients,
-  methods,
   recipes,
+  recipeTags,
+  tagGroups,
+  tags,
   unmatchedEntries,
   user,
 } from '../src/database/schema';
@@ -42,9 +42,10 @@ describe('Recipes browsing and detail (integration)', () => {
   let familyA: string;
   let familyB: string;
   let ing: string[];
-  let cuisineId: string;
-  let otherCuisineId: string;
-  let methodId: string;
+  // Three Catalog Tags made for this suite.
+  let tagA: string;
+  let tagB: string;
+  let tagC: string;
   const stamp = Date.now();
   let n = 0;
   const title = (label: string) => `${label} ${stamp}-${++n}`;
@@ -86,7 +87,7 @@ describe('Recipes browsing and detail (integration)', () => {
       servings: 4,
       lines: [line(0), line(1)],
       steps: [{ text: 'Mix' }, { text: 'Bake' }],
-      ...withTagIds(overrides),
+      ...overrides,
     };
     const res = await admin.post('', doc);
     expect(res.status).toBe(201);
@@ -109,7 +110,7 @@ describe('Recipes browsing and detail (integration)', () => {
       tagIds: created.tagIds,
       lines: created.lines.map((l) => ({ ...l })),
       steps: created.steps.map((s) => ({ ...s })),
-      ...withTagIds(overrides),
+      ...overrides,
     };
     return (await admin.put(`/${created.id}`, doc).expect(200))
       .body as AdminRecipeDetail;
@@ -150,31 +151,27 @@ describe('Recipes browsing and detail (integration)', () => {
         .where(isNull(ingredients.ownerFamilyId))
         .limit(5)
     ).map((r) => r.id);
-    cuisineId = crypto.randomUUID();
-    otherCuisineId = crypto.randomUUID();
-    methodId = crypto.randomUUID();
-    await database.insert(cuisines).values([
-      {
-        id: cuisineId,
-        name: `Cuisine ${stamp}`,
-        normalizedName: `cuisine ${stamp}`,
-      },
-      {
-        id: otherCuisineId,
-        name: `Other ${stamp}`,
-        normalizedName: `other ${stamp}`,
-      },
-    ]);
-    await database.insert(methods).values({
-      id: methodId,
-      name: `Method ${stamp}`,
-      normalizedName: `method ${stamp}`,
-    });
-    await mirrorAsTags(database, [
-      { type: 'cuisine', id: cuisineId },
-      { type: 'cuisine', id: otherCuisineId },
-      { type: 'method', id: methodId },
-    ]);
+    const [group] = await database
+      .select({ id: tagGroups.id })
+      .from(tagGroups)
+      .limit(1);
+    [tagA, tagB, tagC] = [
+      crypto.randomUUID(),
+      crypto.randomUUID(),
+      crypto.randomUUID(),
+    ];
+    await database.insert(tags).values(
+      [
+        [tagA, `Tag A ${stamp}`],
+        [tagB, `Tag B ${stamp}`],
+        [tagC, `Tag C ${stamp}`],
+      ].map(([id, name]) => ({
+        id,
+        name,
+        normalizedName: name.toLowerCase(),
+        groupId: group.id,
+      })),
+    );
   });
 
   afterAll(async () => {
@@ -187,9 +184,7 @@ describe('Recipes browsing and detail (integration)', () => {
       await database.delete(recipes).where(eq(recipes.id, row.id));
     }
     await database.delete(recipes).where(ilike(recipes.title, like));
-    await dropTags(database, [cuisineId, otherCuisineId, methodId]);
-    await database.delete(cuisines).where(ilike(cuisines.name, like));
-    await database.delete(methods).where(eq(methods.id, methodId));
+    await database.delete(tags).where(ilike(tags.name, like));
     await app.close();
   });
 
@@ -283,40 +278,38 @@ describe('Recipes browsing and detail (integration)', () => {
       ]);
     });
 
-    it('filters by Cuisine and Method, combined with AND, over bases and Variants', async () => {
-      const b = await base({ title: `FBase ${stamp}`, cuisineId });
+    it('filters by Tags, combined with AND, over bases and Variants', async () => {
+      const b = await base({ title: `FBase ${stamp}`, tagIds: [tagA] });
       const vBoth = await variant(b.id, {
         title: `FBoth ${stamp}`,
-        cuisineId,
-        methodId,
+        tagIds: [tagA, tagC],
       });
-      await variant(b.id, {
-        title: `FOther ${stamp}`,
-        cuisineId: otherCuisineId,
-      });
-      const byCuisine = await list(`cuisineId=${cuisineId}&search=${stamp}`);
-      expect(titles(byCuisine).sort()).toEqual(
+      await variant(b.id, { title: `FOther ${stamp}`, tagIds: [tagB] });
+      const byTag = await list(`tagIds=${tagA}&search=${stamp}`);
+      expect(titles(byTag).sort()).toEqual(
         [`FBase ${stamp}`, `FBoth ${stamp}`].sort(),
       );
-      const both = await list(
-        `cuisineId=${cuisineId}&methodId=${methodId}&search=${stamp}`,
-      );
+      const both = await list(`tagIds=${tagA},${tagC}&search=${stamp}`);
       expect(titles(both)).toEqual([`FBoth ${stamp}`]);
       expect(both[0]).toMatchObject({
         id: vBoth.id,
         base: { id: b.id, title: `FBase ${stamp}` },
-        cuisine: { id: cuisineId, name: `Cuisine ${stamp}` },
-        method: { id: methodId, name: `Method ${stamp}` },
       });
-      // a base is listed by its own cuisine only
-      const byMethod = await list(`methodId=${methodId}`);
-      expect(titles(byMethod)).toEqual([`FBoth ${stamp}`]);
+      expect(both[0].tags.map((t) => t.id).sort()).toEqual([tagA, tagC].sort());
+      // a base is listed by its own Tags only
+      expect(titles(await list(`tagIds=${tagC}`))).toEqual([`FBoth ${stamp}`]);
     });
 
     it('hides archived Variants but keeps Variants of an archived base, labelled with it', async () => {
-      const b = await base({ title: `HBase ${stamp}`, cuisineId });
-      const live = await variant(b.id, { title: `HLive ${stamp}`, cuisineId });
-      const gone = await variant(b.id, { title: `HGone ${stamp}`, cuisineId });
+      const b = await base({ title: `HBase ${stamp}`, tagIds: [tagA] });
+      const live = await variant(b.id, {
+        title: `HLive ${stamp}`,
+        tagIds: [tagA],
+      });
+      const gone = await variant(b.id, {
+        title: `HGone ${stamp}`,
+        tagIds: [tagA],
+      });
       const familyVariantId = crypto.randomUUID();
       const otherVariantId = crypto.randomUUID();
       await database.insert(recipes).values([
@@ -326,7 +319,6 @@ describe('Recipes browsing and detail (integration)', () => {
           parentId: b.id,
           title: `HMine ${stamp}`,
           servings: 2,
-          cuisineId,
         },
         {
           id: otherVariantId,
@@ -334,17 +326,21 @@ describe('Recipes browsing and detail (integration)', () => {
           parentId: b.id,
           title: `HTheirs ${stamp}`,
           servings: 2,
-          cuisineId,
         },
       ]);
+      const otherTagged = crypto.randomUUID();
       await database.insert(recipes).values({
-        id: crypto.randomUUID(),
+        id: otherTagged,
         familyId: familyA,
         parentId: b.id,
-        title: `HMethod ${stamp}`,
+        title: `HOtherTag ${stamp}`,
         servings: 2,
-        methodId,
       });
+      await database.insert(recipeTags).values([
+        { recipeId: familyVariantId, tagId: tagA },
+        { recipeId: otherVariantId, tagId: tagA },
+        { recipeId: otherTagged, tagId: tagC },
+      ]);
       await archive(gone.id);
       expect(titles(await list(`search=HLive ${stamp}`))).toEqual([live.title]);
       expect(await list('search=HGone')).toEqual([]);
@@ -357,26 +353,24 @@ describe('Recipes browsing and detail (integration)', () => {
       expect(found[0]).toMatchObject({ id: live.id, base: label });
       // filters show them too, Family Variants only to their own Family
       const onlyH = (t: string) => t.startsWith('H');
-      const byCuisine = await list(`cuisineId=${cuisineId}&search=${stamp}`);
-      expect(titles(byCuisine).filter(onlyH).sort()).toEqual(
+      const byTag = await list(`tagIds=${tagA}&search=${stamp}`);
+      expect(titles(byTag).filter(onlyH).sort()).toEqual(
         [live.title, `HMine ${stamp}`].sort(),
       );
-      expect(byCuisine.find((r) => r.id === familyVariantId)?.base).toEqual(
-        label,
-      );
+      expect(byTag.find((r) => r.id === familyVariantId)?.base).toEqual(label);
       expect(
-        titles(await list(`cuisineId=${cuisineId}&search=${stamp}`, memberB))
+        titles(await list(`tagIds=${tagA}&search=${stamp}`, memberB))
           .filter(onlyH)
           .sort(),
       ).toEqual([live.title, `HTheirs ${stamp}`].sort());
       // the filters alone, without a search, find them as well
       expect(
-        titles(await list(`cuisineId=${cuisineId}`))
+        titles(await list(`tagIds=${tagA}`))
           .filter(onlyH)
           .sort(),
       ).toEqual([live.title, `HMine ${stamp}`].sort());
-      expect(titles(await list(`methodId=${methodId}`)).filter(onlyH)).toEqual([
-        `HMethod ${stamp}`,
+      expect(titles(await list(`tagIds=${tagC}`)).filter(onlyH)).toEqual([
+        `HOtherTag ${stamp}`,
       ]);
       // still reachable by id
       await memberA.get(`/${live.id}`).expect(200);
@@ -475,11 +469,10 @@ describe('Recipes browsing and detail (integration)', () => {
 
   describe('detail', () => {
     it('returns a base with its live Variants, and no diff', async () => {
-      const b = await base({ cuisineId });
+      const b = await base({ tagIds: [tagA] });
       const v1 = await variant(b.id, {
         title: `VA ${stamp}`,
-        cuisineId,
-        methodId,
+        tagIds: [tagA, tagC],
       });
       const v2 = await variant(b.id, { title: `VB ${stamp}` });
       const gone = await variant(b.id);
@@ -491,8 +484,8 @@ describe('Recipes browsing and detail (integration)', () => {
         base: null,
         diff: null,
         archived: false,
-        cuisine: { id: cuisineId, name: `Cuisine ${stamp}` },
       });
+      expect(d.tags.map((t) => t.id)).toEqual([tagA]);
       expect(d.lines.map((l) => l.ingredientId)).toEqual([ing[0], ing[1]]);
       expect(typeof d.lines[0].ingredientName).toBe('string');
       expect(d.steps.map((s) => s.text)).toEqual(['Mix', 'Bake']);
@@ -500,9 +493,10 @@ describe('Recipes browsing and detail (integration)', () => {
       expect(d.variants[0]).toMatchObject({
         title: `VA ${stamp}`,
         owner: 'catalog',
-        method: { id: methodId, name: `Method ${stamp}` },
-        cuisine: { id: cuisineId },
       });
+      expect(d.variants[0].tags.map((t) => t.id).sort()).toEqual(
+        [tagA, tagC].sort(),
+      );
     });
 
     it('returns a Variant with its base and the ingredient diff', async () => {
@@ -597,19 +591,14 @@ describe('Recipes browsing and detail (integration)', () => {
   });
 
   describe('filters', () => {
-    it('lists Cuisines and Methods by name in the locale, sorted', async () => {
+    it('lists the Tags in use by name in the locale', async () => {
+      await base({ tagIds: [tagB] });
       const res = (await memberA.get('/filters').expect(200))
         .body as RecipeFilters;
-      const names = res.cuisines.map((c) => c.name);
-      expect(names).toEqual([...names].sort((p, q) => p.localeCompare(q)));
-      expect(res.cuisines.find((c) => c.id === cuisineId)?.name).toBe(
-        `Cuisine ${stamp}`,
-      );
-      expect(res.methods.find((m) => m.id === methodId)?.name).toBe(
-        `Method ${stamp}`,
-      );
+      expect(res.tags.find((t) => t.id === tagB)?.name).toBe(`Tag B ${stamp}`);
     });
   });
+
   describe('Catalog Language', () => {
     const milk = seedId.ingredient('milk');
 
@@ -631,20 +620,20 @@ describe('Recipes browsing and detail (integration)', () => {
       };
     }
 
-    /** A Catalog Recipe with a Romanian title, step, Tip and Cuisine, and one Romanian-named milk line. */
+    /** A Catalog Recipe with a Romanian title, step, Tip and Tag, and one Romanian-named milk line. */
     async function translatedRecipe(withTip = true) {
       await database.insert(catalogTranslations).values({
         id: crypto.randomUUID(),
-        entityType: 'cuisine',
-        entityId: cuisineId,
+        entityType: 'tag',
+        entityId: tagA,
         locale: 'ro',
         kind: 'name',
-        value: `Bucătărie ${stamp}`,
-        normalizedValue: `bucatarie ${stamp}`,
+        value: `Eticheta ${stamp}`,
+        normalizedValue: `eticheta ${stamp}`,
       });
       const b = await base({
         lines: [{ ingredientId: milk, quantity: 100, unit: 'ml' }],
-        cuisineId,
+        tagIds: [tagA],
       });
       if (withTip) {
         await admin.post(`/${b.id}/tips`, { text: 'Stir slowly' }).expect(201);
@@ -679,7 +668,7 @@ describe('Recipes browsing and detail (integration)', () => {
         }
       ).recipes.find((r) => r.id === b.id);
       expect(listed?.title).toBe(`Titlu ro ${stamp}`);
-      expect(listed?.cuisine?.name).toBe(`Bucătărie ${stamp}`);
+      expect(listed?.tags.map((t) => t.name)).toEqual([`Eticheta ${stamp}`]);
 
       const d = (await api.get(`/${b.id}?locale=en`).expect(200))
         .body as RecipeDetail;
@@ -687,16 +676,16 @@ describe('Recipes browsing and detail (integration)', () => {
       expect(d.steps.map((s) => s.text)).toEqual(['Amestecă', 'Bake']);
       expect(d.lines[0].ingredientName).toBe('Lapte');
       expect(d.tips.map((t) => t.text)).toEqual(['Amestecă încet']);
-      expect(d.cuisine?.name).toBe(`Bucătărie ${stamp}`);
+      expect(d.tags.map((t) => t.name)).toEqual([`Eticheta ${stamp}`]);
     });
 
-    it('names Cuisines and Methods in the Catalog Language in the filters', async () => {
+    it('names Tags in the Catalog Language in the filters', async () => {
       await translatedRecipe(false);
       const { api } = await member('ro', 'filters');
       const filters = (await api.get('/filters?locale=en').expect(200))
         .body as RecipeFilters;
-      expect(filters.cuisines.find((c) => c.id === cuisineId)?.name).toBe(
-        `Bucătărie ${stamp}`,
+      expect(filters.tags.find((t) => t.id === tagA)?.name).toBe(
+        `Eticheta ${stamp}`,
       );
     });
 

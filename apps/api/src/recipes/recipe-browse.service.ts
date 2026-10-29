@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
+import { catalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
@@ -12,14 +12,7 @@ import {
   loadTagsInUse,
   type RecipeTag,
 } from '../tags/recipe-tags';
-import {
-  cuisines,
-  eatingMoments,
-  methods,
-  recipes,
-  recipeTags,
-  tags,
-} from '../database/schema';
+import { eatingMoments, recipes, recipeTags, tags } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import {
   loadAllergyWarnings,
@@ -95,8 +88,6 @@ export class RecipeBrowseService {
     const listsVariants =
       query.scope === 'family' ||
       needle !== '' ||
-      query.cuisineId !== undefined ||
-      query.methodId !== undefined ||
       (query.tagIds?.length ?? 0) > 0 ||
       query.includeVariants === 'true';
 
@@ -108,8 +99,6 @@ export class RecipeBrowseService {
           inScope(familyId, query.scope),
           isNull(recipes.archivedAt),
           listsVariants ? undefined : isNull(recipes.parentId),
-          query.cuisineId ? eq(recipes.cuisineId, query.cuisineId) : undefined,
-          query.methodId ? eq(recipes.methodId, query.methodId) : undefined,
           hasEveryTag(query.tagIds),
         ),
       )
@@ -133,13 +122,7 @@ export class RecipeBrowseService {
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
     const counts = await this.variantCounts(familyId, baseIds, query.scope);
-    const [ref, tagsOf, { hides, allergy }] = await Promise.all([
-      this.namedRefs(
-        this.database,
-        catalogScope(familyId),
-        locale,
-        matching.flatMap((r) => [r.cuisineId, r.methodId]),
-      ),
+    const [tagsOf, { hides, allergy }] = await Promise.all([
       loadRecipeTags(
         this.database,
         catalogScope(familyId),
@@ -181,8 +164,6 @@ export class RecipeBrowseService {
           base: parent
             ? { id: parent.id, title: titles.get(parent.id)! }
             : null,
-          cuisine: ref.cuisine(row.cuisineId),
-          method: ref.method(row.methodId),
           tags: tagsOf.get(row.id) ?? [],
           variantCount: counts.get(row.id) ?? 0,
           servings: row.servings,
@@ -330,8 +311,7 @@ export class RecipeBrowseService {
   }
 
   /**
-   * Cuisines and Methods for the filter pickers, named in `locale`, sorted by name; and the Tags in
-   * use on live Recipes in `recipeScope` (absent: the Catalog's and the Family's).
+   * The Tags in use on live Recipes in `recipeScope` (absent: the Catalog's and the Family's).
    */
   async filters(
     memberId: string,
@@ -340,7 +320,7 @@ export class RecipeBrowseService {
   ): Promise<RecipeFilters> {
     const scope = await this.settings.catalogScopeForMember(memberId);
     const familyId = await this.settings.familyIdOf(memberId);
-    const [tagsInUse, cuisineRows, methodRows, momentRows] = await Promise.all([
+    const [tagsInUse, momentRows] = await Promise.all([
       loadTagsInUse(
         this.database,
         scope,
@@ -352,8 +332,6 @@ export class RecipeBrowseService {
           recipeScope === 'catalog' ? isNull(tags.familyId) : undefined,
         ),
       ),
-      this.database.select().from(cuisines),
-      this.database.select().from(methods),
       this.database
         .select()
         .from(eatingMoments)
@@ -361,24 +339,10 @@ export class RecipeBrowseService {
         .orderBy(asc(eatingMoments.sortOrder), asc(eatingMoments.id)),
     ]);
     const names = await loadDisplayNames(this.database, scope, locale, [
-      ...cuisineRows.map((r) => r.id),
-      ...methodRows.map((r) => r.id),
       ...momentRows.map((r) => r.id),
     ]);
-    const named = (
-      type: 'cuisine' | 'method',
-      rows: { id: string; name: string }[],
-    ) =>
-      rows
-        .map((r) => ({ id: r.id, name: names.pick(type, r.id, r.name) }))
-        .sort(
-          (a, b) =>
-            a.name.localeCompare(b.name, locale) || a.id.localeCompare(b.id),
-        );
     return {
       tags: tagsInUse,
-      cuisines: named('cuisine', cuisineRows),
-      methods: named('method', methodRows),
       eatingMoments: momentRows.map((r) => ({
         id: r.id,
         name: names.pick('eating_moment', r.id, r.name),
@@ -430,12 +394,6 @@ export class RecipeBrowseService {
       familyId,
       rows.filter((r) => r.familyId === null).map((r) => r.id),
     );
-    const ref = await this.namedRefs(
-      this.database,
-      catalogScope(familyId),
-      locale,
-      rows.flatMap((r) => [r.cuisineId, r.methodId]),
-    );
     const tagsOf = await loadRecipeTags(
       this.database,
       catalogScope(familyId),
@@ -446,8 +404,6 @@ export class RecipeBrowseService {
       .map((row) => ({
         id: row.id,
         title: titles.get(row.id)!,
-        cuisine: ref.cuisine(row.cuisineId),
-        method: ref.method(row.methodId),
         tags: tagsOf.get(row.id) ?? [],
         owner: ownerOf(row),
         familyCopyId: copies.get(row.id) ?? null,
@@ -502,36 +458,6 @@ export class RecipeBrowseService {
         normalizeName(titles.get(r.id)!).includes(needle) ||
         normalizeName(r.title).includes(needle),
     );
-  }
-
-  private async namedRefs(
-    executor: Executor,
-    scope: CatalogScope,
-    locale: CatalogLocale,
-    ids: (string | null)[],
-  ) {
-    const wanted = [...new Set(ids.flatMap((i) => (i ? [i] : [])))];
-    const [cuisineRows, methodRows, names] = await Promise.all([
-      wanted.length === 0
-        ? []
-        : executor.select().from(cuisines).where(inArray(cuisines.id, wanted)),
-      wanted.length === 0
-        ? []
-        : executor.select().from(methods).where(inArray(methods.id, wanted)),
-      loadDisplayNames(executor, scope, locale, wanted),
-    ]);
-    const cuisineName = new Map(cuisineRows.map((r) => [r.id, r.name]));
-    const methodName = new Map(methodRows.map((r) => [r.id, r.name]));
-    return {
-      cuisine: (id: string | null) =>
-        id && cuisineName.has(id)
-          ? { id, name: names.pick('cuisine', id, cuisineName.get(id)!) }
-          : null,
-      method: (id: string | null) =>
-        id && methodName.has(id)
-          ? { id, name: names.pick('method', id, methodName.get(id)!) }
-          : null,
-    };
   }
 }
 

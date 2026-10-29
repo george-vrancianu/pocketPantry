@@ -13,7 +13,7 @@ Apply every item to the base and to each Variant.
 - **Food safety**: poultry, pork and minced meat reach a cooked-through cue; raw-egg use is flagged; nothing sits warm for hours; times and temperatures are realistic.
 - **Cookability**: steps in a workable order, nothing used before it is prepared, every line used in a step and every step's ingredient in the lines, `timerSeconds` matching the text.
 - **Quantities** fit `servings`, and units fit the Ingredient.
-- **Variants** really are their Cuisine or Method, recognisably different from the base. `hideBaseTips` hides exactly the inherited Tips that no longer apply.
+- **Variants** really are their Tag (usually a Cuisine or Method), recognisably different from the base. `hideBaseTips` hides exactly the inherited Tips that no longer apply.
 - **Tips** add something a cook would value rather than repeating a step.
 - **Nutrition Note**: a direction, not numbers; gives both the good and the bad; makes no medical claims.
 - **Pairings**: a cook would agree with each one and its reason. Links point at the right Ingredient or Recipe.

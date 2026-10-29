@@ -111,7 +111,7 @@ export class RecipesController {
   @Get()
   @ApiOperation({
     summary:
-      'Browse Recipes: Base Recipes with Variant counts, or matching Recipes and Variants when searching or filtering by Cuisine or Method',
+      'Browse Recipes: Base Recipes with Variant counts, or matching Recipes and Variants when searching or filtering by Tags',
   })
   async list(
     @CurrentUser() member: CurrentUserValue,
@@ -124,7 +124,7 @@ export class RecipesController {
   @Get('filters')
   @ApiOperation({
     summary:
-      'Cuisines, Methods and the Tags in use (in `scope`) for the filter pickers, named in the Catalog Language',
+      'The Tags in use (in `scope`) for the filter pickers, named in the Catalog Language',
   })
   async filters(
     @CurrentUser() member: CurrentUserValue,

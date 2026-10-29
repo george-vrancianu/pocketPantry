@@ -74,8 +74,6 @@ export function ExplorePage() {
   const { t } = useTranslation(['recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
     search: '',
-    cuisineId: '',
-    methodId: '',
     tagIds: [],
   });
   const [showHidden, setShowHidden] = useState(false);
@@ -169,7 +167,7 @@ export function ExplorePage() {
     options: { hideCanMake?: boolean; safe?: boolean } = {},
   ) => (
     <Group
-      key={`${label}|${browse.search}|${browse.cuisineId}|${browse.methodId}|${browse.tagIds.join(',')}`}
+      key={`${label}|${browse.search}|${browse.tagIds.join(',')}`}
       label={label}
       rows={rows}
       render={(recipe) => (

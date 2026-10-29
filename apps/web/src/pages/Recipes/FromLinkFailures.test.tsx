@@ -28,7 +28,7 @@ function setup(
 ) {
   const routes: Routes = {
     'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [], eatingMoments: [] }),
+      Response.json({ tags: [], eatingMoments: [] }),
     'GET /api/recipes': () =>
       Response.json({ recipes: [], hiddenByAllergiesCount: 0 }),
     'POST /api/recipes/from-link': fromLink,

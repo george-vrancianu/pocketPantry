@@ -6,15 +6,7 @@ import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { Executor, Tx } from '../database/database.types';
-import {
-  catalogTranslations,
-  cuisines,
-  methods,
-  recipes,
-  recipeTags,
-  tagGroups,
-  tags,
-} from '../database/schema';
+import { recipes, recipeTags, tagGroups, tags } from '../database/schema';
 
 /** A Tag on a Recipe, named for the viewer (ADR 0033). Family Tags have no group. */
 export type RecipeTag = {
@@ -126,9 +118,10 @@ export async function loadUsableTag(
     .from(tags)
     .leftJoin(tagGroups, eq(tagGroups.id, tags.groupId))
     .where(and(eq(tags.id, tagId), usableBy(familyId)));
+  if (!row) throw new ApiException(404, 'recipes.tag_not_found');
   const names = await loadDisplayNames(executor, scope, locale, [
     tagId,
-    ...(row?.groupId ? [row.groupId] : []),
+    ...(row.groupId ? [row.groupId] : []),
   ]);
   return toRecipeTag(row, names);
 }
@@ -151,25 +144,20 @@ export async function loadRecipeTagIds(
  * and may only use Catalog Tags). Other Families' Tags read as missing, so ids never leak. The
  * Tags are key-share locked, so a concurrent delete waits until we commit.
  *
- * Returns the de-duplicated ids and the Cuisine and Method that the old columns mirror until the
- * contract ticket drops them (the first Cuisine and the first Method among the Tags).
+ * Returns the de-duplicated ids.
  */
 export async function resolveRecipeTags(
   tx: Tx,
   familyId: string | null,
   tagIds: readonly string[],
-): Promise<{
-  tagIds: string[];
-  cuisineId: string | null;
-  methodId: string | null;
-}> {
+): Promise<string[]> {
   const ids = [...new Set(tagIds)];
   if (ids.length > MAX_RECIPE_TAGS) {
     throw new ApiException(400, 'recipes.tags_too_many', {
       max: MAX_RECIPE_TAGS,
     });
   }
-  if (ids.length === 0) return { tagIds: ids, cuisineId: null, methodId: null };
+  if (ids.length === 0) return ids;
   const found = await tx
     .select({ id: tags.id })
     .from(tags)
@@ -179,22 +167,7 @@ export async function resolveRecipeTags(
   if (found.length !== ids.length) {
     throw new ApiException(404, 'recipes.tag_not_found');
   }
-  // One after the other: a transaction client runs one query at a time.
-  const cuisineRows = await tx
-    .select({ id: cuisines.id })
-    .from(cuisines)
-    .where(inArray(cuisines.id, ids));
-  const methodRows = await tx
-    .select({ id: methods.id })
-    .from(methods)
-    .where(inArray(methods.id, ids));
-  const cuisine = new Set(cuisineRows.map((r) => r.id));
-  const method = new Set(methodRows.map((r) => r.id));
-  return {
-    tagIds: ids,
-    cuisineId: ids.find((id) => cuisine.has(id)) ?? null,
-    methodId: ids.find((id) => method.has(id)) ?? null,
-  };
+  return ids;
 }
 
 /** The ids among `tagIds` that exist and are usable by the writer, in the given order and deduped. */
@@ -300,53 +273,6 @@ export async function loadRecipeTags(
   return byRecipe;
 }
 
-/**
- * Expand step of ADR 0033: a Recipe's Cuisine and Method stay, and their Catalog Tags (the
- * Tag with the same id as the Cuisine or Method, made by migration 0049) follow them. The old
- * Cuisine and Method Tags are removed and the new ones added; every other Tag is untouched.
- */
-export async function syncCuisineMethodTags(
-  tx: Tx,
-  recipeId: string,
-  cuisineId: string | null,
-  methodId: string | null,
-): Promise<void> {
-  const keep = [cuisineId, methodId].filter((id): id is string => id !== null);
-  await tx.delete(recipeTags).where(
-    and(
-      eq(recipeTags.recipeId, recipeId),
-      sql`(${recipeTags.tagId} IN (SELECT ${cuisines.id} FROM ${cuisines}) OR ${recipeTags.tagId} IN (SELECT ${methods.id} FROM ${methods}))`,
-      keep.length > 0
-        ? sql`${recipeTags.tagId} NOT IN (${sql.join(
-            keep.map((id) => sql`${id}`),
-            sql`, `,
-          )})`
-        : undefined,
-    ),
-  );
-  if (keep.length > 0) {
-    // A Cuisine or Method made without going through the Admin lists has no Tag yet.
-    const have = new Set(
-      (
-        await tx
-          .select({ id: tags.id })
-          .from(tags)
-          .where(inArray(tags.id, keep))
-      ).map((t) => t.id),
-    );
-    if (cuisineId && !have.has(cuisineId)) {
-      await mirrorListEntryAsTag(tx, 'cuisine', cuisineId);
-    }
-    if (methodId && !have.has(methodId)) {
-      await mirrorListEntryAsTag(tx, 'method', methodId);
-    }
-    await tx
-      .insert(recipeTags)
-      .values(keep.map((tagId) => ({ recipeId, tagId })))
-      .onConflictDoNothing();
-  }
-}
-
 /** Gives `toId` the Tags of `fromId` (Add to Family, Variants); the two are independent after. */
 export async function copyRecipeTags(
   tx: Tx,
@@ -358,57 +284,5 @@ export async function copyRecipeTags(
         SELECT ${toId}, ${recipeTags.tagId} FROM ${recipeTags}
         WHERE ${recipeTags.recipeId} = ${fromId}
         ON CONFLICT DO NOTHING`,
-  );
-}
-
-/**
- * Expand step only: an Admin still creates, renames, translates and deletes Cuisines and Methods
- * through the old lists, so their Catalog Tag (same id, in the Cuisine or Method Tag Group) and
- * the Tag's translations are rebuilt from the list entry after each such change. Gone with the
- * old lists in the contract ticket.
- */
-export async function mirrorListEntryAsTag(
-  tx: Tx,
-  type: 'cuisine' | 'method',
-  id: string,
-): Promise<void> {
-  const table = type === 'cuisine' ? cuisines : methods;
-  const [entry] = await tx.select().from(table).where(eq(table.id, id));
-  await tx
-    .delete(catalogTranslations)
-    .where(
-      and(
-        eq(catalogTranslations.entityType, 'tag'),
-        eq(catalogTranslations.entityId, id),
-      ),
-    );
-  if (!entry) {
-    await tx.delete(tags).where(eq(tags.id, id));
-    return;
-  }
-  const [group] = await tx
-    .select({ id: tagGroups.id })
-    .from(tagGroups)
-    .where(eq(tagGroups.normalizedName, type));
-  if (!group) return;
-  await tx
-    .insert(tags)
-    .values({
-      id,
-      name: entry.name,
-      normalizedName: entry.normalizedName,
-      groupId: group.id,
-    })
-    .onConflictDoUpdate({
-      target: tags.id,
-      set: { name: entry.name, normalizedName: entry.normalizedName },
-    });
-  await tx.execute(
-    sql`INSERT INTO ${catalogTranslations} (id, entity_type, entity_id, locale, kind, value, normalized_value)
-        SELECT gen_random_uuid(), 'tag', ${catalogTranslations.entityId}, ${catalogTranslations.locale}, ${catalogTranslations.kind}, ${catalogTranslations.value}, ${catalogTranslations.normalizedValue}
-        FROM ${catalogTranslations}
-        WHERE ${catalogTranslations.entityType} = ${type}
-          AND ${catalogTranslations.entityId} = ${id}
-          AND ${catalogTranslations.ownerFamilyId} IS NULL`,
   );
 }

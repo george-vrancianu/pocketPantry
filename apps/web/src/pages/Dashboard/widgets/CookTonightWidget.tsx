@@ -26,8 +26,6 @@ import type { WidgetProps } from './types';
 
 const NO_BROWSE: RecipeBrowse = {
   search: '',
-  cuisineId: '',
-  methodId: '',
   tagIds: [],
 };
 

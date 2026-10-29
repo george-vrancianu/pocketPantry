@@ -40,8 +40,6 @@ const recipe: AdminRecipe = {
   prepMinutes: null,
   cookMinutes: null,
   difficulty: null,
-  cuisineId: null,
-  methodId: null,
   tagIds: [],
   archived: false,
   lines: [],

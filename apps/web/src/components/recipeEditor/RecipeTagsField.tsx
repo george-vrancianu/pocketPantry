@@ -72,7 +72,11 @@ export function RecipeTagsField({ scope, value, onChange }: Props) {
                   resolve.mutate(name, {
                     onSuccess: (tag) => {
                       setResolved((all) => [...all, tag]);
-                      if (!latest.current.includes(tag.id))
+                      // Not past the cap: a pick made while this was pending may have filled it.
+                      if (
+                        !latest.current.includes(tag.id) &&
+                        latest.current.length < MAX_RECIPE_TAGS
+                      )
                         onChange([...latest.current, tag.id]);
                     },
                   });

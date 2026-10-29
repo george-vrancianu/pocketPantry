@@ -107,8 +107,6 @@ export class RecipeCopyService {
         prepMinutes: resolved.prepMinutes,
         cookMinutes: resolved.cookMinutes,
         difficulty: resolved.difficulty,
-        cuisineId: resolved.cuisine?.id ?? null,
-        methodId: resolved.method?.id ?? null,
       });
       // A Catalog Recipe carries only Catalog Tags; the copy starts with all of them.
       await copyRecipeTags(tx, sourceId, copyId);

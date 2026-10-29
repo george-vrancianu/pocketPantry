@@ -74,8 +74,6 @@
     "aisle_in_use": "Parent Categories still use this Aisle, so it cannot be deleted. Move them to another Aisle first.",
     "aisle_order_stale": "The Aisles changed while you were reordering. Check the order and try again.",
     "eating_moment_order_stale": "The Eating Moments changed while you were reordering. Check the order and try again.",
-    "cuisine_in_use": "Recipes still use this Cuisine, so it cannot be deleted. Change those Recipes first.",
-    "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first.",
     "family_ingredient_exists": "“{{existing.name}}” already has that name.",
     "allergen_retired": "That Allergen is retired. Bring it back before tagging with it.",
     "tag_in_use_one": "{{count}} Recipe has this Tag. Confirm the delete to remove it from that Recipe.",

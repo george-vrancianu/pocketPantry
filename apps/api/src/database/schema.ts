@@ -194,8 +194,6 @@ export const catalogEntityType = pgEnum('catalog_entity_type', [
   'parent_category',
   'leaf_category',
   'ingredient',
-  'cuisine',
-  'method',
   'eating_moment',
   'allergen',
   'tag_group',
@@ -897,34 +895,6 @@ export const ingredientStockHistory = pgTable(
   (table) => [primaryKey({ columns: [table.familyId, table.ingredientId] })],
 );
 
-// Recipes. Cuisine and Method are Admin-curated lists like Aisles; display names
-// live in catalog_translations (entity types `cuisine` and `method`).
-export const cuisines = pgTable(
-  'cuisines',
-  {
-    id: uuid('id').primaryKey(),
-    name: text('name').notNull(),
-    normalizedName: text('normalized_name').notNull(),
-    ...timestamps,
-  },
-  (table) => [
-    uniqueIndex('cuisines_normalized_name_idx').on(table.normalizedName),
-  ],
-);
-
-export const methods = pgTable(
-  'methods',
-  {
-    id: uuid('id').primaryKey(),
-    name: text('name').notNull(),
-    normalizedName: text('normalized_name').notNull(),
-    ...timestamps,
-  },
-  (table) => [
-    uniqueIndex('methods_normalized_name_idx').on(table.normalizedName),
-  ],
-);
-
 // Tags (ADR 0033). A Tag Group is an Admin-ordered heading Catalog Tags are listed under; its
 // display names live in catalog_translations (entity type `tag_group`).
 export const tagGroups = pgTable(
@@ -993,8 +963,6 @@ export const recipes = pgTable(
     prepMinutes: integer('prep_minutes'),
     cookMinutes: integer('cook_minutes'),
     difficulty: recipeDifficulty('difficulty'),
-    cuisineId: uuid('cuisine_id').references(() => cuisines.id),
-    methodId: uuid('method_id').references(() => methods.id),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     // Recipe guidance: one general-direction note, at most 500 characters (checked in the service).
     nutritionNote: text('nutrition_note'),
@@ -1021,8 +989,6 @@ export const recipes = pgTable(
       .where(
         sql`${table.copiedFromId} IS NOT NULL AND ${table.archivedAt} IS NULL`,
       ),
-    index('recipes_cuisine_idx').on(table.cuisineId),
-    index('recipes_method_idx').on(table.methodId),
     check('recipes_servings_positive', sql`${table.servings} > 0`),
     check(
       'recipes_minutes_non_negative',

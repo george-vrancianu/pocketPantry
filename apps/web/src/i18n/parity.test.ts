@@ -297,7 +297,7 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   ],
   [
     'direction',
-    'plain word ("a general direction") in a Nutrition Note hint, not a Method instruction',
+    'plain word ("a general direction") in a Nutrition Note hint, not a cooking instruction',
     ['admin:recipe.guidance.nutrition.helper'],
   ],
   [
@@ -428,18 +428,6 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
       'shopping:summary.moveToPantry_one',
       'shopping:summary.moveToPantry_other',
     ],
-  ],
-  // Temporary: Tags replace Cuisine and Method (ADR 0033). These strings are
-  // the old Cuisine and Method UI, which #715 removes along with this entry.
-  [
-    'cuisine',
-    'the error of the old Admin Cuisine endpoint, removed by #715',
-    ['errors:catalog.cuisine_in_use'],
-  ],
-  [
-    'method',
-    'the error of the old Admin Method endpoint, removed by #715',
-    ['errors:catalog.method_in_use'],
   ],
   [
     'point',

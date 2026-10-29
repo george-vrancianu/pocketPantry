@@ -98,9 +98,6 @@ export const recipeDraftContent = z
     difficulty: z.union([z.enum(recipeDifficulty.enumValues), z.literal('')]),
     /** The Tags picked so far (ADR 0033); the Recipe's own cap applies on save. */
     tagIds: z.array(short).max(MAX_RECIPE_TAGS).default([]),
-    // Legacy keys kept until the contract ticket (#715) strips them; the Tag field replaced both.
-    cuisineId: short.default(''),
-    methodId: short.default(''),
     lines: z.array(draftLine).max(MAX_LINES),
     steps: z.array(draftStep).max(MAX_STEPS),
     guidance: draftGuidance.nullable().default(null),

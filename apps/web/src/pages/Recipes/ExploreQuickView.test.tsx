@@ -29,8 +29,6 @@ const soup: RecipeListItem = {
   title: 'Soup',
   parentId: null,
   base: null,
-  cuisine: { id: 'c1', name: 'Italian' },
-  method: null,
   tags: [
     {
       id: 't-din',
@@ -77,8 +75,6 @@ const detail: RecipeDetail = {
   prepMinutes: 10,
   cookMinutes: 20,
   difficulty: 'easy',
-  cuisine: { id: 'c1', name: 'Italian' },
-  method: null,
   tags: [],
   archived: false,
   lines: [
@@ -108,8 +104,6 @@ const detail: RecipeDetail = {
     {
       id: 'spicy',
       title: 'Spicy soup',
-      cuisine: null,
-      method: null,
       tags: [],
       owner: 'catalog',
       familyCopyId: null,
@@ -117,8 +111,6 @@ const detail: RecipeDetail = {
     {
       id: 'mine',
       title: 'My soup',
-      cuisine: null,
-      method: null,
       tags: [],
       owner: 'family',
       familyCopyId: null,
@@ -150,8 +142,7 @@ function setup(route = '/recipes/explore') {
         recipes: [{ ...soup, familyCopyId: copies.soup ?? null }],
         hiddenByAllergiesCount: 0,
       }),
-    'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [] }),
+    'GET /api/recipes/filters': () => Response.json({ tags: [] }),
     'GET /api/recipes/soup': () =>
       Response.json({
         ...detail,

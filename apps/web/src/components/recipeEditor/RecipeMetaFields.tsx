@@ -13,7 +13,7 @@ type Props = {
   onTitleBlur: () => void;
 };
 
-/** Title, servings, times, difficulty, Cuisine and Method of a Recipe draft. */
+/** Title, servings, times, difficulty and Tags of a Recipe draft. */
 export function RecipeMetaFields({
   draft,
   problems,

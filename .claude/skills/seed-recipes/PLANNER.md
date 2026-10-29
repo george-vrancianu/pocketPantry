@@ -20,7 +20,7 @@ Propose about 40 bases in priority order. For each: slug, English title, and one
 Take the next ~5 unticked bases from the backlog issue (the orchestrator passes its body). For each base, write into `plan.md`:
 
 - **Base**: slug, export name (camelCase of the slug), title en/ro, servings, difficulty.
-- **Variants**: 2 or 3, each with slug (`<base>-<cuisine-or-method>`), title en/ro, and exactly one Cuisine or Method. A Variant has to really be that Cuisine or Method, recognisably different in ingredients or technique, not the base with a garnish. Prefer existing Cuisines and Methods in `apps/api/src/catalog/seed/recipes/registries.ts`; list each new one with slug and en/ro/da names.
+- **Variants**: 2 or 3, each with slug (`<base>-<cuisine-or-method>`), title en/ro, and exactly one `tag: 'group:slug'` from `SEED_TAGS`, usually from the Cuisine or Method Tag Group. A Variant has to really be that Tag, recognisably different in ingredients or technique, not the base with a garnish. Prefer existing Tags in `apps/api/src/catalog/seed/recipes/registries.ts`; list each new one with its Tag Group, slug and en/ro/da names.
 - **Key Ingredients** per recipe, each resolved against `dump-catalog.ts <api>` (search the names and Synonyms, not just slugs): the slug if present, `MISSING` if not.
 - **Cross-links**: at least 3 Pairings in the batch that link a Recipe of another base (seeded or in this batch), as `from-slug → to-slug: reason`.
 
@@ -28,7 +28,7 @@ Then a **Catalog work** section:
 
 - Every `MISSING` Ingredient with proposed slug, en/ro/da names, unit and Leaf (from `dump-catalog.ts <api> leaves`).
 - Any needed Ingredient that today exists only as a **Synonym** of another Ingredient, listed separately as a question for the user. Promoting a Synonym changes how existing Batches match, so it is the user's call.
-- Any new Cuisine, Method or Eating Moment. Eating Moments are a curated list, so propose one only when no existing moment fits, and flag it.
+- Any new Tag or Eating Moment. Eating Moments are a curated list, so propose one only when no existing moment fits, and flag it.
 
 Done when every key Ingredient is resolved to a slug or listed under Catalog work, every slug in the plan is unique across the seed, and every base has 2–3 Variants.
 

@@ -16,8 +16,8 @@ export const ROW_TAG_LIMIT = 2;
 
 /**
  * The order Tags are shown in on a row: Tags in `matchedIds` first (in the order given, which is the
- * order the Member picked them), then Family Tags, then Catalog Tags by Tag Group order (Meal, Diet,
- * Cuisine, Method). Ties keep the order they arrived in. Pure: the Tag filter passes the Tags it matched.
+ * order the Member picked them), then Family Tags, then Catalog Tags by Tag Group order
+ * (the Admin's order). Ties keep the order they arrived in. Pure: the Tag filter passes the Tags it matched.
  */
 export function orderRowTags(
   tags: readonly RecipeTag[],
