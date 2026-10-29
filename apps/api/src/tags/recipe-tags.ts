@@ -52,6 +52,9 @@ function toRecipeTag(row: TagRow, names: Names): RecipeTag {
 const compareTags = (locale: CatalogLocale) => (a: RecipeTag, b: RecipeTag) =>
   (a.kind === b.kind ? 0 : a.kind === 'family' ? -1 : 1) ||
   (a.groupOrder ?? 0) - (b.groupOrder ?? 0) ||
+  // Groups sharing a position stay apart, or a header would repeat in the picker.
+  (a.groupName ?? '').localeCompare(b.groupName ?? '', locale) ||
+  (a.groupId ?? '').localeCompare(b.groupId ?? '') ||
   a.name.localeCompare(b.name, locale) ||
   a.id.localeCompare(b.id);
 

@@ -11,17 +11,18 @@ import {
 } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRecipeFilters, type RecipeBrowse } from '../../../lib/recipes';
-import { pickedTags, useTagScope } from '../../../lib/tagFilter';
+import { type RecipeBrowse } from '../../../lib/recipes';
+import {
+  usePickedTags,
+  useTagScope,
+  type TagScope,
+} from '../../../lib/tagFilter';
+import { CountBadge } from './CountBadge';
 import { bleedSx } from './bleed';
 import { TagStatus, TagsSheet } from './TagsSheet';
 
 /** Wires the Tag filter into the block; leave it out for a search box alone (the Meal plan picker). */
-export type TagFilterConfig = {
-  /** Whose Tags are on offer: the Family's Recipes or the Catalog's. */
-  scope: 'family' | 'catalog';
-  /** Same Allergy rule as the page's own list, so counts agree with it. */
-  showHidden: boolean;
+export type TagFilterConfig = TagScope & {
   /** How many Recipes the page lists right now (the sheet's "Show n Recipes" and the status line). */
   resultCount: number | undefined;
 };
@@ -99,8 +100,7 @@ function TagFilter({
   const { t } = useTranslation('recipes');
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
-  const options = useRecipeFilters(true, scope).data?.tags ?? [];
-  const picked = pickedTags(options, value.tagIds);
+  const { options, picked } = usePickedTags(scope, value.tagIds);
   const inScope = useTagScope(value, { scope, showHidden, enabled: open });
   const count = value.tagIds.length;
   return (
@@ -143,29 +143,7 @@ function TagFilter({
           <TagIcon size={18} />
         </Box>
         <span aria-hidden>{t('tags.button')}</span>
-        {count > 0 ? (
-          <Box
-            component="span"
-            aria-hidden
-            sx={{
-              minWidth: 20,
-              height: 20,
-              px: '6px',
-              boxSizing: 'border-box',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '999px',
-              bgcolor: tokens.color.accent,
-              color: 'var(--mui-palette-pp-accentInk)',
-              fontSize: 11.5,
-              fontWeight: 700,
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            {count}
-          </Box>
-        ) : null}
+        {count > 0 ? <CountBadge tone="solid">{count}</CountBadge> : null}
       </Box>
       <TagsSheet
         open={open}
@@ -193,8 +171,7 @@ function TagFilterRows({
   onChange: (next: RecipeBrowse) => void;
 } & TagFilterConfig) {
   const { t } = useTranslation('recipes');
-  const options = useRecipeFilters(true, scope).data?.tags ?? [];
-  const picked = pickedTags(options, value.tagIds);
+  const { picked } = usePickedTags(scope, value.tagIds);
   return (
     <>
       {picked.length > 0 ? (

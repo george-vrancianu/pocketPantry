@@ -15,7 +15,8 @@ type Props = {
   /** Choose the Recipe instead of opening it, as the Meal plan's Recipe picker does. */
   onSelect?: () => void;
   /** Where the row opens, when not the Recipe itself (Cook Tonight opens the card's best match). */
-  to?: string; /** Tags the active filter matched: shown first, with the accent ring. */
+  to?: string;
+  /** Tags the active filter matched: shown first, with the accent ring. */
   matchedTagIds?: readonly string[];
 };
 

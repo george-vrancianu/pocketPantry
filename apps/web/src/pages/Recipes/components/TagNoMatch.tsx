@@ -1,18 +1,18 @@
 import { Box, displayType, radius, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import {
-  pickedTags,
+  usePickedTags,
   relaxSteps,
   useTagScope,
   useTagsOnly,
+  type TagScope,
 } from '../../../lib/tagFilter';
-import { useRecipeFilters, type RecipeBrowse } from '../../../lib/recipes';
+import { type RecipeBrowse } from '../../../lib/recipes';
+import { CountBadge } from './CountBadge';
 
-type Props = {
+type Props = TagScope & {
   browse: RecipeBrowse;
   onChange: (next: RecipeBrowse) => void;
-  scope: 'family' | 'catalog';
-  showHidden: boolean;
 };
 
 /**
@@ -22,7 +22,7 @@ type Props = {
  */
 export function TagNoMatch({ browse, onChange, scope, showHidden }: Props) {
   const { t } = useTranslation('recipes');
-  const options = useRecipeFilters(true, scope).data?.tags ?? [];
+  const { picked } = usePickedTags(scope, browse.tagIds);
   const searching = browse.search.trim() !== '';
   const inScope = useTagScope(browse, { scope, showHidden, enabled: true });
   const tagsOnly = useTagsOnly(browse, {
@@ -30,7 +30,6 @@ export function TagNoMatch({ browse, onChange, scope, showHidden }: Props) {
     showHidden,
     enabled: searching,
   });
-  const picked = pickedTags(options, browse.tagIds);
   const steps = relaxSteps(
     inScope.data?.recipes ?? [],
     browse.tagIds,
@@ -98,26 +97,7 @@ export function TagNoMatch({ browse, onChange, scope, showHidden }: Props) {
               {step.kind === 'tag'
                 ? t('tags.without', { name })
                 : t('tags.withoutQuery', { q: browse.search.trim() })}
-              <Box
-                component="span"
-                sx={{
-                  minWidth: 20,
-                  height: 20,
-                  px: '6px',
-                  boxSizing: 'border-box',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: '999px',
-                  bgcolor: tokens.color.accentTint,
-                  color: tokens.color.accentOnTint,
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {step.count}
-              </Box>
+              <CountBadge tone="tint">{step.count}</CountBadge>
             </Box>
           );
         })}

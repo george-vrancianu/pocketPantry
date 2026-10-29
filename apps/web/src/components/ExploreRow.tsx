@@ -19,7 +19,8 @@ type Props = {
   /** Where tapping the row body goes (the quick view, later); without it the body is not a control. */
   onOpen?: () => void;
   /** In "You can make this", which already says it: leaves out the Can make pill. */
-  hideCanMake?: boolean; /** Tags the active filter matched: shown first, with the accent ring. */
+  hideCanMake?: boolean;
+  /** Tags the active filter matched: shown first, with the accent ring. */
   matchedTagIds?: readonly string[];
 };
 

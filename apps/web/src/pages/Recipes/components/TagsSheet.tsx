@@ -18,8 +18,8 @@ const bold = { b: <Box component="b" sx={{ color: tokens.color.ink }} /> };
 
 /**
  * A visually hidden polite status line, "Dinner, Vegan selected. 2 Recipes match.", that updates on
- * every pick and search change. It exists only while Tags are picked, so a page without a Tag
- * filter has no empty live region. The sheet carries its own, since the page is hidden behind it.
+ * every pick and search change. The region stays mounted (empty while nothing is picked) so a
+ * screen reader hears the first pick and the last removal as changes. The sheet carries its own, since the page is hidden behind it.
  */
 export function TagStatus({
   picked,
@@ -29,10 +29,9 @@ export function TagStatus({
   resultCount: number | undefined;
 }) {
   const { t } = useTranslation('recipes');
-  if (picked.length === 0) return null;
   return (
     <Box role="status" aria-live="polite" sx={visuallyHidden}>
-      {resultCount === undefined
+      {picked.length === 0 || resultCount === undefined
         ? ''
         : t('tags.status', {
             names: picked.map((tag) => tag.name).join(', '),

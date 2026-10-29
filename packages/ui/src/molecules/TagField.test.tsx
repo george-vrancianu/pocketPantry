@@ -105,6 +105,46 @@ describe('TagField', () => {
     expect(screen.queryByText(/create/i)).toBeNull();
   });
 
+  it('inline, lets the sheet scroll: no capped listbox and no raised paper', () => {
+    render(<Harness />);
+    const listbox = screen.getByRole('listbox');
+    expect(getComputedStyle(listbox).maxHeight).toBe('none');
+    expect(getComputedStyle(listbox.parentElement!).boxShadow).toBe('none');
+  });
+
+  it('keeps two groups that share a position apart', () => {
+    const tie: TagFieldOption[] = [
+      {
+        id: 'a1',
+        name: 'Alpha',
+        kind: 'catalog',
+        groupName: 'Zeta',
+        groupOrder: 1,
+      },
+      {
+        id: 'b1',
+        name: 'Bravo',
+        kind: 'catalog',
+        groupName: 'Eta',
+        groupOrder: 1,
+      },
+      {
+        id: 'a2',
+        name: 'Charlie',
+        kind: 'catalog',
+        groupName: 'Zeta',
+        groupOrder: 1,
+      },
+    ];
+    render(<Harness options={tie} />);
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Bravo',
+      'Alpha',
+      'Charlie',
+    ]);
+    expect(screen.getAllByText(/^(Zeta|Eta)$/)).toHaveLength(2);
+  });
+
   it('shows no counts and disables nothing without countOf', () => {
     render(<Harness />);
     expect(
@@ -112,7 +152,7 @@ describe('TagField', () => {
         .getAllByRole('option')
         .some((o) => o.getAttribute('aria-disabled') === 'true'),
     ).toBe(false);
-    expect(screen.queryByLabelText(/Recipes$/)).toBeNull();
+    expect(screen.queryByText(/Recipes$/)).toBeNull();
   });
 
   describe('with counts', () => {
@@ -126,8 +166,13 @@ describe('TagField', () => {
 
     it('shows each unpicked option’s count and dims the ones at 0', () => {
       render(<Harness countOf={countOf} />);
-      expect(screen.getByLabelText('3 Recipes').textContent).toBe('3');
-      expect(screen.getByLabelText('1 Recipes').textContent).toBe('1');
+      // The number is hidden from assistive tech; the option's own name carries "3 Recipes".
+      expect(
+        screen.getByRole('option', { name: /Dinner.*3 Recipes/ }),
+      ).toBeTruthy();
+      expect(
+        screen.getByRole('option', { name: /Vegan.*1 Recipes/ }),
+      ).toBeTruthy();
       const meal = screen.getByRole('option', { name: /Meal prep/ });
       expect(meal.getAttribute('aria-disabled')).toBe('true');
       expect(meal.getAttribute('aria-disabled')).toBe('true');
@@ -143,7 +188,7 @@ describe('TagField', () => {
       const picked = screen.getByRole('option', { name: /Română/ });
       expect(picked.getAttribute('aria-disabled')).not.toBe('true');
       expect(picked.getAttribute('aria-selected')).toBe('true');
-      expect(within(picked).queryByLabelText(/Recipes$/)).toBeNull();
+      expect(within(picked).queryByText(/Recipes$/)).toBeNull();
     });
 
     it('does not pick a disabled option', () => {
@@ -187,7 +232,9 @@ describe('TagField', () => {
     expect(screen.getAllByRole('button', { name: /Remove Tag/ })).toHaveLength(
       1,
     );
-    expect(screen.getByLabelText('and 2 more Tags').textContent).toBe('+2');
+    // Named by text (a bare aria-label on a span is not exposed), the "+2" itself is hidden.
+    expect(screen.getByText('and 2 more Tags')).toBeTruthy();
+    expect(screen.getByText('+2').getAttribute('aria-hidden')).toBe('true');
   });
 
   it('floats the list only while focused in popup mode', () => {

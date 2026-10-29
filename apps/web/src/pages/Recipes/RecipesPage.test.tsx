@@ -791,7 +791,9 @@ describe('RecipesPage', () => {
       await findRow('Lasagne');
       const dialog = await openTags();
       const names = await within(dialog).findAllByRole('option');
-      expect(names.map((o) => o.textContent?.replace(/\d+$/, ''))).toEqual([
+      expect(
+        names.map((o) => o.textContent?.replace(/\d+ Recipes?$/, '')),
+      ).toEqual([
         'Meal prep',
         'Vegan',
         'Italian',
@@ -806,11 +808,11 @@ describe('RecipesPage', () => {
       ).toBeInTheDocument();
       await waitFor(() =>
         expect(
-          within(option(dialog, 'Italian')).getByLabelText('2 Recipes'),
+          within(option(dialog, 'Italian')).getByText('2 Recipes'),
         ).toBeInTheDocument(),
       );
       expect(
-        within(option(dialog, 'Meal prep')).getByLabelText('1 Recipe'),
+        within(option(dialog, 'Meal prep')).getByText('1 Recipe'),
       ).toBeInTheDocument();
     });
 
@@ -947,6 +949,25 @@ describe('RecipesPage', () => {
           'Italian, Vegan selected. 1 Recipe matches.',
         ),
       );
+    });
+
+    it('keeps the page status line mounted, empty, so the first pick and the last removal are announced', async () => {
+      setup(answer);
+      await findRow('Lasagne');
+      const live = document.querySelectorAll('[role="status"]');
+      expect(live).toHaveLength(1);
+      const region = live[0];
+      expect(region).toHaveAttribute('aria-live', 'polite');
+      expect(region).toHaveTextContent('');
+      await pickTags('Italian');
+      // The very same element, now holding the text.
+      expect(document.contains(region)).toBe(true);
+      expect(region).toHaveTextContent('Italian selected.');
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove Tag Italian' }),
+      );
+      expect(document.contains(region)).toBe(true);
+      expect(region).toHaveTextContent('');
     });
 
     it('lists Variants as their own rows matched on their own Tags, sorted A to Z', async () => {

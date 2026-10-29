@@ -13,6 +13,7 @@ import {
   methods,
   recipes,
   recipeTags,
+  tags,
 } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import {
@@ -326,7 +327,12 @@ export class RecipeBrowseService {
         this.database,
         scope,
         locale,
-        and(inScope(familyId, recipeScope), isNull(recipes.archivedAt)),
+        and(
+          inScope(familyId, recipeScope),
+          isNull(recipes.archivedAt),
+          // Explore offers Catalog Tags only, whatever a write path may have attached.
+          recipeScope === 'catalog' ? isNull(tags.familyId) : undefined,
+        ),
       ),
       this.database.select().from(cuisines),
       this.database.select().from(methods),

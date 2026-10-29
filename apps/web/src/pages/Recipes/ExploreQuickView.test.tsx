@@ -5,6 +5,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { findToast, queryToast } from '../../test/toast';
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -306,10 +307,10 @@ describe('Explore quick view', () => {
     await u.click(
       await screen.findByRole('button', { name: 'Add Soup to your Recipes' }),
     );
-    expect(await screen.findByRole('status')).toHaveTextContent('Added Soup');
+    expect(await findToast()).toHaveTextContent('Added Soup');
     await u.click(await rowButton());
     await screen.findByRole('dialog', { name: 'Soup' });
-    await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
+    await waitFor(() => expect(queryToast()).toBeNull());
   });
 
   it('adds: the primary turns into "In your Recipes · Open" and the explanation changes', async () => {

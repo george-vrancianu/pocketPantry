@@ -6,6 +6,7 @@ import { PeopleIcon, TagIcon } from '../atoms/icons';
 import { TagChip, type TagChipKind } from '../atoms/TagChip';
 import { TextField } from '../atoms/TextField';
 import { tokens } from '../theme/tokens';
+import { visuallyHidden } from '../theme/visuallyHidden';
 import { bodyFont, palette, radius } from '../theme/themeVars';
 
 /** What the field needs of a Tag; the web's `RecipeTag` fits. */
@@ -97,7 +98,7 @@ const optionSx = {
   '&.Mui-disabled, &[aria-disabled="true"]': { opacity: 0.42 },
 } as const;
 
-/** Family Tags first, then the groups by position (the order given breaks ties). */
+/** Family Tags first, then the groups by position and name (the order given breaks ties). */
 function grouped<T extends TagFieldOption>(options: readonly T[]): T[] {
   return options
     .map((tag, index) => ({ tag, index }))
@@ -105,6 +106,8 @@ function grouped<T extends TagFieldOption>(options: readonly T[]): T[] {
       (a, b) =>
         (a.tag.kind === b.tag.kind ? 0 : a.tag.kind === 'family' ? -1 : 1) ||
         (a.tag.groupOrder ?? 0) - (b.tag.groupOrder ?? 0) ||
+        // Two groups sharing a position must not interleave, or a header would repeat.
+        (a.tag.groupName ?? '').localeCompare(b.tag.groupName ?? '') ||
         a.index - b.index,
     )
     .map(({ tag }) => tag);
@@ -155,7 +158,12 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
         getOptionDisabled={blocked}
         limitTags={limitTags}
         getLimitTagsText={(count) => (
-          <span aria-label={labels.more(count)}>+{count}</span>
+          <>
+            <span aria-hidden>+{count}</span>
+            <Box component="span" sx={visuallyHidden}>
+              {labels.more(count)}
+            </Box>
+          </>
         )}
         disableCloseOnSelect
         autoHighlight
@@ -168,6 +176,26 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
           if (reason === 'escape') onEscape?.();
         }}
         slots={inline ? { popper: InlinePopper } : undefined}
+        slotProps={
+          inline
+            ? {
+                // The list lives in the sheet body, which owns the scroll: no nested 40vh
+                // scroller, and no raised Paper under it.
+                listbox: {
+                  sx: { maxHeight: 'none', overflow: 'visible', p: 0 },
+                },
+                paper: {
+                  elevation: 0,
+                  sx: {
+                    bgcolor: 'transparent',
+                    backgroundImage: 'none',
+                    boxShadow: 'none',
+                    borderRadius: 0,
+                  },
+                },
+              }
+            : undefined
+        }
         sx={{
           // A touch screen has no hover: keep the clear (x) in view whenever there is a pick.
           '& .MuiAutocomplete-clearIndicator': {
@@ -217,7 +245,7 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
           <li key={params.key}>
             <Box
               sx={{
-                position: inline ? 'static' : 'sticky',
+                position: 'sticky',
                 top: 0,
                 zIndex: 1,
                 display: 'flex',
@@ -226,7 +254,8 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
                 px: inline ? 2.5 : 2,
                 pt: '12px',
                 pb: '4px',
-                bgcolor: tokens.color.surface,
+                // Inline, the list sits on the sheet itself, so the header matches it.
+                bgcolor: inline ? tokens.color.bg : tokens.color.surface,
                 fontSize: 11.5,
                 fontWeight: 700,
                 letterSpacing: '.07em',
@@ -300,7 +329,6 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
               {count !== undefined && !selected ? (
                 <Box
                   component="span"
-                  aria-label={labels.optionCount(count)}
                   sx={{
                     fontSize: 13,
                     fontWeight: 600,
@@ -308,7 +336,10 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  {count}
+                  <span aria-hidden>{count}</span>
+                  <Box component="span" sx={visuallyHidden}>
+                    {labels.optionCount(count)}
+                  </Box>
                 </Box>
               ) : null}
             </Box>

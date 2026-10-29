@@ -5,6 +5,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { findToast, getToast } from '../../test/toast';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -155,9 +156,7 @@ describe('ExplorePage add to Family', () => {
     });
     expect(open).toHaveAttribute('href', '/recipes/copy-1');
     expect(within(await row()).getByText('In your Recipes')).toBeVisible();
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Added Soup to your Recipes',
-    );
+    expect(getToast()).toHaveTextContent('Added Soup to your Recipes');
     expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
     expect(calls.some((c) => c.key === 'POST /api/recipes/soup/copy')).toBe(
       true,
@@ -203,7 +202,7 @@ describe('ExplorePage add to Family', () => {
       .setup({ advanceTimers: vi.advanceTimersByTime })
       .click(await addButton());
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
+    expect(await findToast()).toHaveTextContent(
       'Soup is already in your Recipes',
     );
     expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
@@ -631,17 +630,12 @@ describe('ExplorePage Tag filter', () => {
     await screen.findByRole('list', { name: /^All Recipes/ });
     const dialog = await openTags();
     const options = await within(dialog).findAllByRole('option');
-    expect(options.map((o) => o.textContent?.replace(/\d+$/, ''))).toEqual([
-      'Dinner',
-      'Vegan',
-      'Italian',
-      'Grill',
-    ]);
+    expect(
+      options.map((o) => o.textContent?.replace(/\d+ Recipes?$/, '')),
+    ).toEqual(['Dinner', 'Vegan', 'Italian', 'Grill']);
     expect(within(dialog).queryByText('Your Tags')).toBeNull();
     await waitFor(() =>
-      expect(
-        within(options[1]).getByLabelText('2 Recipes'),
-      ).toBeInTheDocument(),
+      expect(within(options[1]).getByText('2 Recipes')).toBeInTheDocument(),
     );
   });
 
@@ -669,7 +663,7 @@ describe('ExplorePage Tag filter', () => {
     expect(
       within(list).getByRole('group', { name: 'Tags: Dinner, Vegan' }),
     ).toBeInTheDocument();
-    expect(await screen.findByRole('status')).toHaveTextContent(
+    expect(await findToast()).toHaveTextContent(
       'Dinner, Vegan selected. 1 Recipe matches.',
     );
 
