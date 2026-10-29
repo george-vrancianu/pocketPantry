@@ -137,7 +137,9 @@
   },
   "tags": {
     "name_required": "Scrie un nume pentru tag.",
-    "name_too_long": "Numele unui tag poate avea cel mult {{max}} caractere."
+    "name_too_long": "Numele unui tag poate avea cel mult {{max}} caractere.",
+    "not_found": "Tagul nu mai există. Poate că l-a șters sau l-a îmbinat altcineva.",
+    "name_taken": "Există deja un tag cu acest nume."
   },
   "family_ingredients": {
     "shared_name_exists": "Există deja un ingredient comun cu acest nume. Îmbină-l pe acesta în el.",

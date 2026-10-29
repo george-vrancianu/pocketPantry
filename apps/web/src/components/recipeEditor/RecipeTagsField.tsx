@@ -2,14 +2,12 @@ import { Alert, TagField, Typography } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../i18n/translateApiError';
+import { MAX_TAG_NAME_LENGTH } from '../../lib/familyTags';
 import { useResolveTag, usePickableTags } from '../../lib/recipes';
 import type { RecipeTag } from '../../lib/tags';
 
 /** Most Tags a Recipe can carry (ADR 0033); the API refuses the 11th too. */
 export const MAX_RECIPE_TAGS = 10;
-
-/** Longest Tag name (ADR 0033); the API refuses a longer one too. */
-export const MAX_TAG_NAME_LENGTH = 30;
 
 type Props = {
   /** `family`: Catalog Tags plus the Family's own, and a typed name can make a Family Tag. `admin`: Catalog Tags only. */
