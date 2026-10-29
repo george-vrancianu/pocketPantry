@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -282,9 +282,9 @@ describe('"From a link" sheet and the link-read holder', () => {
       { route: '/recipes' },
     );
     await openSheet(user);
-    expect(
-      await screen.findByText('Reading a web page costs 2 Credits.'),
-    ).toBeVisible();
+    const line = await screen.findByText(/Reading a web page costs/);
+    expect(line).toBeVisible();
+    expect(within(line).getByText('2 Credits')).toBeInTheDocument();
     expect(screen.queryByText(/pasted text costs/)).toBeNull();
   });
 

@@ -140,31 +140,33 @@ export function TagsSheet({
       }
     >
       <TagStatus picked={picked} resultCount={resultCount} />
-      <TagField
-        list="inline"
-        options={options}
-        value={picked}
-        onChange={(next) => onChange(next.map((tag) => tag.id))}
-        countOf={
-          scopeRecipes
-            ? (tag) => countWithTags(scopeRecipes, [...pickedIds, tag.id])
-            : undefined
-        }
-        onEscape={onClose}
-        labels={{
-          field: t('tags.fieldLabel'),
-          placeholder: t('tags.fieldPlaceholder'),
-          yourTags: t('tags.yourTags'),
-          yourTagsNote: t('tags.yourTagsNote'),
-          noOptions: t(
-            scope === 'catalog' ? 'tags.noOptionsExplore' : 'tags.noOptions',
-          ),
-          clear: t('tags.clearAll'),
-          remove: (name) => t('tags.remove', { name }),
-          more: (count) => t('tags.more', { count }),
-          optionCount: (count) => t('tags.optionCount', { count }),
-        }}
-      />
+      <Box sx={{ px: 2.5, py: 1 }}>
+        <TagField
+          list="inline"
+          options={options}
+          value={picked}
+          onChange={(next) => onChange(next.map((tag) => tag.id))}
+          countOf={
+            scopeRecipes
+              ? (tag) => countWithTags(scopeRecipes, [...pickedIds, tag.id])
+              : undefined
+          }
+          onEscape={onClose}
+          labels={{
+            field: t('tags.fieldLabel'),
+            placeholder: t('tags.fieldPlaceholder'),
+            yourTags: t('tags.yourTags'),
+            yourTagsNote: t('tags.yourTagsNote'),
+            noOptions: t(
+              scope === 'catalog' ? 'tags.noOptionsExplore' : 'tags.noOptions',
+            ),
+            clear: t('tags.clearAll'),
+            remove: (name) => t('tags.remove', { name }),
+            more: (count) => t('tags.more', { count }),
+            optionCount: (count) => t('tags.optionCount', { count }),
+          }}
+        />
+      </Box>
     </Sheet>
   );
 }
