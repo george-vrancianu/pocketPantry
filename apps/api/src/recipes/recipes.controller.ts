@@ -18,6 +18,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import type { RecipeTag } from '../tags/recipe-tags';
 import { MemberLanguageService } from '../member-language/member-language.service';
 import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
@@ -71,7 +72,6 @@ import {
   type RecipeFilters,
   type RecipeList,
 } from './recipes.schemas';
-import type { RecipeTag } from '../tags/recipe-tags';
 
 const Id = () => Param(new ZodValidationPipe(recipeParam));
 const TipParams = () => Param(new ZodValidationPipe(recipeTipParam));

@@ -60,6 +60,13 @@ const compareTags = (locale: CatalogLocale) => (a: RecipeTag, b: RecipeTag) =>
   a.name.localeCompare(b.name, locale) ||
   a.id.localeCompare(b.id);
 
+/** The Tags a writer may use: every Catalog Tag, plus the Family's own (none for a Catalog writer). */
+function usableBy(familyId: string | null): SQL | undefined {
+  return familyId === null
+    ? isNull(tags.familyId)
+    : or(isNull(tags.familyId), eq(tags.familyId, familyId));
+}
+
 /**
  * Every Tag a writer can put on a Recipe, named for the viewer and ordered like a Recipe's Tags:
  * all Catalog Tags, plus the Family's own when `familyId` is given. Feeds the editor's Tag field.
@@ -81,11 +88,7 @@ export async function loadPickableTags(
     })
     .from(tags)
     .leftJoin(tagGroups, eq(tagGroups.id, tags.groupId))
-    .where(
-      familyId === null
-        ? isNull(tags.familyId)
-        : or(isNull(tags.familyId), eq(tags.familyId, familyId)),
-    );
+    .where(usableBy(familyId));
   if (rows.length === 0) return [];
   const names = await loadDisplayNames(executor, scope, locale, [
     ...rows.map((r) => r.id),
@@ -134,26 +137,21 @@ export async function resolveRecipeTags(
   const found = await tx
     .select({ id: tags.id })
     .from(tags)
-    .where(
-      and(
-        inArray(tags.id, ids),
-        familyId === null
-          ? isNull(tags.familyId)
-          : or(isNull(tags.familyId), eq(tags.familyId, familyId)),
-      ),
-    )
+    .where(and(inArray(tags.id, ids), usableBy(familyId)))
     .orderBy(tags.id)
     .for('key share');
   if (found.length !== ids.length) {
     throw new ApiException(404, 'recipes.tag_not_found');
   }
-  const [cuisineRows, methodRows] = await Promise.all([
-    tx
-      .select({ id: cuisines.id })
-      .from(cuisines)
-      .where(inArray(cuisines.id, ids)),
-    tx.select({ id: methods.id }).from(methods).where(inArray(methods.id, ids)),
-  ]);
+  // One after the other: a transaction client runs one query at a time.
+  const cuisineRows = await tx
+    .select({ id: cuisines.id })
+    .from(cuisines)
+    .where(inArray(cuisines.id, ids));
+  const methodRows = await tx
+    .select({ id: methods.id })
+    .from(methods)
+    .where(inArray(methods.id, ids));
   const cuisine = new Set(cuisineRows.map((r) => r.id));
   const method = new Set(methodRows.map((r) => r.id));
   return {

@@ -31,6 +31,7 @@ describe('Recipe Tags (integration)', () => {
   let adminCatalog: ReturnType<typeof client>;
   let ana: ReturnType<typeof client>;
   let anaCookie: string;
+  let adminCookie: string;
   let anaFamily: string;
   let cuisineA: string;
   let cuisineB: string;
@@ -90,7 +91,7 @@ describe('Recipe Tags (integration)', () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
     const adminEmail = `tags-admin-${stamp}@example.com`;
-    const adminCookie = await signUp(app, adminEmail, 'Admin');
+    adminCookie = await signUp(app, adminEmail, 'Admin');
     await promoteToAdmin(database, adminEmail);
     admin = client(app, adminCookie, '/api/admin/recipes');
     adminCatalog = client(app, adminCookie, '/api/admin/catalog');
@@ -376,6 +377,22 @@ describe('Recipe Tags (integration)', () => {
         [`Bucătărie A ${stamp}`, 'Bucătărie'],
         [expect.any(String), 'Metodă'],
       ]);
+    });
+
+    it("lists the Admin's pickable Tags in the Admin's Catalog Language", async () => {
+      await storeLanguages(app, adminCookie, {
+        locale: 'ro',
+        catalogLanguage: 'ro',
+      });
+      try {
+        const got = (await admin.get('/tags').expect(200)).body as RecipeTag[];
+        expect(got.find((t) => t.id === dinner)?.name).toBe('Cină');
+      } finally {
+        await storeLanguages(app, adminCookie, {
+          locale: 'en',
+          catalogLanguage: null,
+        });
+      }
     });
 
     it('rows carry their Tags too: the Recipe list and a Base Recipe’s Variants', async () => {

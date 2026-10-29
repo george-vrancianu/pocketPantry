@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm';
 import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
@@ -74,12 +75,12 @@ export class RecipesService {
     }));
   }
 
-  /** The Catalog Tags an Admin can put on a Catalog Recipe, named in English. */
-  pickableTags(): Promise<RecipeTag[]> {
+  /** The Catalog Tags an Admin can put on a Catalog Recipe, named in `locale` (the Admin's Catalog Language). */
+  pickableTags(locale: CatalogLocale): Promise<RecipeTag[]> {
     return loadPickableTags(
       this.database,
       catalogScope(SHARED_ONLY),
-      'en',
+      locale,
       null,
     );
   }

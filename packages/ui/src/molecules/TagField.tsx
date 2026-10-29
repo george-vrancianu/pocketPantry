@@ -159,7 +159,25 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
         limitTags={limitTags}
         getLimitTagsText={(count) => (
           <>
-            <span aria-hidden>+{count}</span>
+            <Box
+              component="span"
+              aria-hidden
+              data-testid="tag-field-more"
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                height: 26,
+                px: '9px',
+                borderRadius: radius.pill,
+                bgcolor: tokens.color.subtle,
+                border: `1px solid ${tokens.color.line}`,
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: palette('pp-accentOnTint'),
+              }}
+            >
+              +{count}
+            </Box>
             <Box component="span" sx={visuallyHidden}>
               {labels.more(count)}
             </Box>
@@ -213,11 +231,7 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
             flexWrap: 'wrap',
           },
           '& .MuiAutocomplete-input': { minWidth: 80, p: '4px !important' },
-          '& .MuiAutocomplete-tag': {
-            fontSize: 12.5,
-            fontWeight: 700,
-            color: palette('pp-accentOnTint'),
-          },
+          '& .MuiAutocomplete-tag': { margin: 0 },
         }}
         renderValue={(tags, getItemProps) =>
           tags.map((tag, index) => {

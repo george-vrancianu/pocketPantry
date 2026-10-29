@@ -1,5 +1,5 @@
 import { TagField, Typography } from '@pocket-pantry/ui';
-import { useId } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePickableTags } from '../../lib/recipes';
 
@@ -22,10 +22,14 @@ type Props = {
 export function RecipeTagsField({ scope, value, onChange }: Props) {
   const { t } = useTranslation('recipes');
   const options = usePickableTags(scope).data ?? [];
-  const limitId = useId();
-  const picked = value.flatMap(
-    (id) => options.find((tag) => tag.id === id) ?? [],
-  );
+  // In option order (Your Tags first, then Tag Groups), like a row, not in id order.
+  const picked = options.filter((tag) => value.includes(tag.id));
+  // A Tag that is gone (e.g. a resumed Draft's) would make every Save fail: drop it once the
+  // options are in.
+  useEffect(() => {
+    if (options.length > 0 && picked.length !== value.length)
+      onChange(picked.map((tag) => tag.id));
+  });
   return (
     <>
       <TagField
@@ -49,11 +53,14 @@ export function RecipeTagsField({ scope, value, onChange }: Props) {
           optionCount: (count) => t('tags.optionCount', { count }),
         }}
       />
-      {picked.length >= MAX_RECIPE_TAGS ? (
-        <Typography id={limitId} variant="caption">
-          {t('tags.editorLimit', { max: MAX_RECIPE_TAGS })}
-        </Typography>
-      ) : null}
+      {/* Always mounted, so a screen reader hears the cap when it is reached. */}
+      <div role="status">
+        {picked.length >= MAX_RECIPE_TAGS ? (
+          <Typography variant="caption">
+            {t('tags.editorLimit', { max: MAX_RECIPE_TAGS })}
+          </Typography>
+        ) : null}
+      </div>
     </>
   );
 }

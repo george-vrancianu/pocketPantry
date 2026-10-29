@@ -1194,6 +1194,12 @@ describe('The Tag field in the Family Recipe editor', () => {
     expect(
       await screen.findByText('A Recipe can have at most 10 Tags.'),
     ).toBeInTheDocument();
+    // Said inside a live region, so a screen reader hears it.
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((el) => el.textContent === 'A Recipe can have at most 10 Tags.'),
+    ).toBe(true);
     await user.click(screen.getByRole('combobox', { name: 'Tags' }));
     await user.click(await screen.findByRole('option', { name: 'Extra 10' }));
     // The 11th is refused: the first 10 stay picked and the new one is not.
@@ -1208,6 +1214,19 @@ describe('The Tag field in the Family Recipe editor', () => {
     expect(
       screen.getByText('A Recipe can have at most 10 Tags.'),
     ).toBeInTheDocument();
+  });
+
+  it('drops a Tag that no longer exists, so a resumed Draft can still be saved', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = editWith(['c-fr', 'gone-tag']);
+    await openTab(user, 'Details');
+    expect(await screen.findByText('French')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'PUT /api/recipes/g')?.body,
+      ).toMatchObject({ tagIds: ['c-fr'] }),
+    );
   });
 
   it('shows a translated message when the API refuses the Tags', async () => {

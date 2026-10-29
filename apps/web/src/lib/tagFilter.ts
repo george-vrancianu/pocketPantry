@@ -16,7 +16,7 @@ export function hasEveryTag(
 
 /**
  * How many of the loaded Recipes a Member would see with `tagIds` picked: the Recipes of the
- * search's scope that have all of them. Computed on the client from the loaded list (#711).
+ * search's scope that have all of them. Computed on the client from the loaded list.
  */
 export function countWithTags(
   scope: readonly RecipeListItem[],

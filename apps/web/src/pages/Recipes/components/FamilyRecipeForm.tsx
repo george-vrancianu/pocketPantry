@@ -101,8 +101,8 @@ type Props = {
 };
 
 /**
- * The Family's Recipe document: metadata, Tags from the curated
- * lists, Ingredient Lines (a Catalog Ingredient or a typed name) and Steps.
+ * The Family's Recipe document: metadata, Tags,
+ * Ingredient Lines (a Catalog Ingredient or a typed name) and Steps.
  * Family Recipes are never translated, so there is one text per field.
  */
 export function FamilyRecipeForm({

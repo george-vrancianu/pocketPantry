@@ -4,6 +4,7 @@ import { catalogScope } from '../catalog/catalog-scope';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { recipeIngredientLines, recipes } from '../database/schema';
+import { loadRecipeTagIds } from '../tags/recipe-tags';
 import { SettingsService } from '../settings/settings.service';
 import { FamilyRecipesService } from './family-recipes.service';
 import { rankPlateMatches, type PlateCandidate } from './plate-matches';
@@ -124,7 +125,10 @@ export class PlateRecipesService {
         prepMinutes: null,
         cookMinutes: null,
         difficulty: null,
-        tagIds: [],
+        // A Variant starts with its Base's Tags (ADR 0033); #714 reworks Tags for a Plate Scan.
+        tagIds: body.parentId
+          ? await loadRecipeTagIds(this.database, body.parentId)
+          : [],
         parentId: body.parentId,
         lines: body.lines,
         steps: [],

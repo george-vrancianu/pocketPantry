@@ -316,10 +316,6 @@ export class RecipeBrowseService {
     };
   }
 
-  /**
-   * Cuisines and Methods for the filter pickers, named in `locale`, sorted by name; and the Tags in
-   * use on live Recipes in `recipeScope` (absent: the Catalog's and the Family's).
-   */
   /** Every Tag the Member can put on a Recipe: all Catalog Tags and the Family's own, in their language. */
   async pickableTags(
     memberId: string,
@@ -333,6 +329,10 @@ export class RecipeBrowseService {
     );
   }
 
+  /**
+   * Cuisines and Methods for the filter pickers, named in `locale`, sorted by name; and the Tags in
+   * use on live Recipes in `recipeScope` (absent: the Catalog's and the Family's).
+   */
   async filters(
     memberId: string,
     locale: CatalogLocale,
