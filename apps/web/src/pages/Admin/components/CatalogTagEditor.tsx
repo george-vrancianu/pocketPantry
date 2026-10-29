@@ -11,6 +11,7 @@ import {
 import { ConfirmPrompt } from '../../../components/ConfirmAction';
 import { EditorForm } from '../../../components/EditorForm';
 import { ApiError } from '../../../lib/api';
+import { MAX_TAG_NAME_LENGTH } from '../../../lib/tags';
 import { TranslationsEditor } from './TranslationsEditor';
 
 type Props = {
@@ -112,6 +113,7 @@ export function CatalogTagEditor({ tag, groups, onDone }: Props) {
           label={t('tag.name')}
           value={name}
           onChange={(event) => setName(event.target.value)}
+          slotProps={{ htmlInput: { maxLength: MAX_TAG_NAME_LENGTH } }}
           required
         />
         <TextField

@@ -36,6 +36,7 @@ import {
 } from '../database/schema';
 import { foldTagsInto } from '../tags/merge-tags';
 import { isAllergenFreeName } from '../tags/allergen-free-names';
+import { cleanTagName } from '../tags/tag-names';
 import type {
   AisleCreate,
   ListEntryCreate,
@@ -558,7 +559,7 @@ export class AdminCatalogService {
   }
 
   createCatalogTag(input: CatalogTagCreate) {
-    this.assertNotAllergenFree(input.name);
+    this.assertTagName(input.name);
     return this.write(async (tx) => {
       await this.requireRow(tx, 'tag_group', input.groupId);
       const id = randomUUID();
@@ -579,7 +580,7 @@ export class AdminCatalogService {
   }
 
   updateCatalogTag(id: string, input: CatalogTagUpdate) {
-    if (input.name !== undefined) this.assertNotAllergenFree(input.name);
+    if (input.name !== undefined) this.assertTagName(input.name);
     return this.write(async (tx) => {
       if (input.groupId) await this.requireRow(tx, 'tag_group', input.groupId);
       await this.requireCatalogTag(tx, id);
@@ -619,6 +620,12 @@ export class AdminCatalogService {
       await this.deleteTranslationsOf(tx, 'tag', id);
       await tx.delete(tags).where(eq(tags.id, id));
     });
+  }
+
+  /** A Catalog Tag name or translation: within the Tag name cap and not an allergen-free claim. */
+  private assertTagName(name: string): void {
+    cleanTagName(name);
+    this.assertNotAllergenFree(name);
   }
 
   private assertNotAllergenFree(name: string): void {
@@ -909,7 +916,7 @@ export class AdminCatalogService {
         if (input.entityType === 'ingredient') {
           await this.claimName(tx, input.value, input.entityId);
         }
-        if (input.entityType === 'tag') this.assertNotAllergenFree(input.value);
+        if (input.entityType === 'tag') this.assertTagName(input.value);
         if (input.kind === 'name') {
           const translations = adminScope.translations(tx);
           const [existing] = await tx
@@ -961,7 +968,7 @@ export class AdminCatalogService {
       }
       if (existing.entityType === 'tag') {
         await this.requireCatalogTag(tx, existing.entityId);
-        this.assertNotAllergenFree(input.value);
+        this.assertTagName(input.value);
       }
       const [row] = await tx
         .update(catalogTranslations)

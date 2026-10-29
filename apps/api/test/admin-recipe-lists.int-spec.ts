@@ -251,6 +251,29 @@ describe('Admin Tag Group and Catalog Tag lists (integration)', () => {
       await admin.del(`/tag-groups/${group.id}`).expect(204);
     });
 
+    it('rejects Catalog Tag names and translations over 30 characters', async () => {
+      const group = await makeGroup(`Long ${stamp}`);
+      const tag = await makeTag(`Short ${stamp}`, group.id);
+      const long = 'x'.repeat(31);
+      const create = await admin
+        .post('/tags', { name: long, groupId: group.id })
+        .expect(400);
+      expect(create.body).toMatchObject({
+        code: 'tags.name_too_long',
+        params: { max: 30 },
+      });
+      await admin.patch(`/tags/${tag.id}`, { name: long }).expect(400);
+      await admin
+        .post('/translations', {
+          entityType: 'tag',
+          entityId: tag.id,
+          locale: 'da',
+          kind: 'name',
+          value: long,
+        })
+        .expect(400);
+    });
+
     it('rejects allergen-free names on create, rename and translate', async () => {
       const group = await makeGroup(`Safe ${stamp}`);
       const tag = await makeTag(`Plain ${stamp}`, group.id);
