@@ -102,8 +102,6 @@ const saved: FamilyRecipeEdit = {
   prepMinutes: 5,
   cookMinutes: null,
   difficulty: 'easy',
-  cuisineId: null,
-  methodId: null,
   tagIds: [],
   archived: false,
   sourceLink: null,
@@ -930,7 +928,6 @@ describe('NewVariantPage', () => {
     });
     // The Variant starts with its Base's Tags; one more is picked from the Tag field.
     const tags = await screen.findByRole('combobox', { name: 'Tags' });
-    expect(screen.queryByLabelText('Cuisine')).not.toBeInTheDocument();
     await user.click(tags);
     await user.click(await screen.findByRole('option', { name: 'French' }));
     await openTab(user, 'Ingredients');
@@ -1112,13 +1109,11 @@ describe('The Tag field in the Family Recipe editor', () => {
       'PUT /api/recipes/g': () => Response.json({ ...saved, tagIds }),
     });
 
-  it('replaces the Cuisine and Method selects, and groups the options with Your Tags first', async () => {
+  it('groups the options with Your Tags first', async () => {
     const user = userEvent.setup({ delay: null });
     editWith([]);
     await openTab(user, 'Details');
     const tags = await screen.findByRole('combobox', { name: 'Tags' });
-    expect(screen.queryByLabelText('Cuisine')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Method')).not.toBeInTheDocument();
     await user.click(tags);
     const options = await screen.findAllByRole('option');
     expect(options.map((o) => o.textContent)).toEqual([
@@ -1391,6 +1386,44 @@ describe('The Tag field in the Family Recipe editor', () => {
       expect(
         screen.queryByRole('button', { name: 'Remove Tag French' }),
       ).not.toBeInTheDocument();
+    });
+
+    it('does not add the new Tag when a pick made while it was pending filled the 10-Tag cap', async () => {
+      const user = userEvent.setup({ delay: null });
+      let release: () => void = () => {};
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      const many = Array.from({ length: 10 }, (_, i) =>
+        tag(`x${i}`, `Extra ${i}`, ['Diet', 2]),
+      );
+      const calls = setup('/recipes/g/edit', {
+        'GET /api/recipes/g/edit': () =>
+          Response.json({
+            ...saved,
+            tagIds: many.slice(0, 9).map((t) => t.id),
+          }),
+        'GET /api/recipes/tags': () => Response.json([...pickable, ...many]),
+        'POST /api/recipes/tags': () => gate.then(() => Response.json(made)),
+        'PUT /api/recipes/g': () => Response.json(saved),
+      });
+      await openTab(user, 'Details');
+      await typeIn(user, 'Sunday roast');
+      await user.click(
+        await screen.findByRole('option', { name: 'Create “Sunday roast”' }),
+      );
+      // The 10th Tag is picked by hand before the Create answers.
+      await user.clear(screen.getByRole('combobox', { name: 'Tags' }));
+      await user.click(await screen.findByRole('option', { name: 'Extra 9' }));
+      await screen.findByText('A Recipe can have at most 10 Tags.');
+      release();
+      await user.keyboard('{Escape}');
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      await vi.waitFor(() =>
+        expect(calls.some((c) => c.key === 'PUT /api/recipes/g')).toBe(true),
+      );
+      const put = calls.find((c) => c.key === 'PUT /api/recipes/g');
+      const sent = (put!.body as { tagIds: string[] }).tagIds;
+      expect(sent).toHaveLength(10);
+      expect(sent).not.toContain('t-new');
     });
 
     it('clears the refusal once the Member edits the name or picks a Tag', async () => {
@@ -1780,8 +1813,6 @@ describe('EditFamilyRecipePage', () => {
               title: 'Pancakes',
               parentId: null,
               base: null,
-              cuisine: null,
-              method: null,
               variantCount: 0,
               servings: 4,
               prepMinutes: null,

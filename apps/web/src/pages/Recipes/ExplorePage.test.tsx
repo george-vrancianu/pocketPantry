@@ -23,7 +23,7 @@ beforeEach(() => exploreAdds.reset());
  *   Recipe is added becomes a `link` to `/recipes/{copyId}` named "{title} is in your Recipes. Open it".
  *   The row then also shows the text "In your Recipes".
  * - The filter block is the search box beside a "Filter by Tags" `button`; picked Tags show below as
- *   "Remove Tag {name}" buttons (no Cuisine or Method chips, no "Clear" chip). The button opens a
+ *   "Remove Tag {name}" buttons (no "Clear" chip). The button opens a
  *   `dialog` named "Filter by Tags" with an always-open `listbox` of Catalog Tags only (no "Your
  *   Tags"), each unpicked option with its count in an element named "{n} Recipes".
  * - The toast is a `status` ("Added {title} to your Recipes", with an Undo button); an error toast
@@ -35,8 +35,6 @@ const soup: RecipeListItem = {
   title: 'Soup',
   parentId: null,
   base: null,
-  cuisine: null,
-  method: null,
   tags: [
     {
       id: 't-din',
@@ -90,8 +88,7 @@ function setup({
         recipes: [{ ...soup, familyCopyId: copyId }],
         hiddenByAllergiesCount: 0,
       }),
-    'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [] }),
+    'GET /api/recipes/filters': () => Response.json({ tags: [] }),
     'POST /api/recipes/soup/copy': () => {
       const response = copy();
       if (response.ok) copyId = 'copy-1';
@@ -284,8 +281,7 @@ function setupGroups({
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes': (url) =>
       Response.json({ recipes: list(url), hiddenByAllergiesCount: hidden }),
-    'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [] }),
+    'GET /api/recipes/filters': () => Response.json({ tags: [] }),
     'GET /api/recipes/cook-tonight': (url) =>
       Response.json({
         cards: typeof cards === 'function' ? cards(url) : cards,
@@ -582,8 +578,6 @@ describe('ExplorePage Tag filter', () => {
       'GET /api/recipes/filters': () =>
         Response.json({
           tags: [DINNER, VEGAN, ITALIAN, GRILL],
-          cuisines: [],
-          methods: [],
           eatingMoments: [],
         }),
       'GET /api/recipes/cook-tonight': () =>
@@ -615,7 +609,7 @@ describe('ExplorePage Tag filter', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('starts with no Tag picked, and has no Cuisine, Method or Clear chips', async () => {
+  it('starts with no Tag picked, and has no Clear chip', async () => {
     const calls = setupTags();
     await screen.findByRole('list', { name: /^All Recipes/ });
     expect(

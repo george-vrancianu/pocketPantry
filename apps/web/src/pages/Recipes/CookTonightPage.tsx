@@ -98,8 +98,6 @@ function baseRow(card: CookTonightCard): RecipeListItem {
     title: card.base.title,
     parentId: null,
     base: null,
-    cuisine: null,
-    method: null,
     tags: recipe.tags,
     variantCount: 0,
     servings: recipe.servings,

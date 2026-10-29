@@ -53,7 +53,7 @@ const created = () =>
 function setup(routes: Parameters<typeof stubApi>[0]) {
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [], eatingMoments: [] }),
+      Response.json({ tags: [], eatingMoments: [] }),
     [`GET /api/recipes/${BASE}/variant-draft`]: () => Response.json(base),
     ...routes,
   });

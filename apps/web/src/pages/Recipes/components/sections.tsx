@@ -293,7 +293,7 @@ function WhatsDifferentSection({ recipe }: SectionProps) {
   );
 }
 
-/** A base Recipe's Variants with their Cuisine and Method. */
+/** A base Recipe's Variants with their Tags. */
 function VariantsSection({ recipe, preview }: SectionProps) {
   const { t } = useTranslation('recipes');
   if (recipe.parentId !== null) return null;

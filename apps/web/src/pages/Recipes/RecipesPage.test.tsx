@@ -31,8 +31,7 @@ import { RecipesPage } from './RecipesPage';
  *   Tag Group order. A Recipe without Tags has no such group, only "Easy · 3 Variants".
  * - The filter block is the search box beside a `button` "Filter by Tags" ("Filter by Tags, 2 selected"
  *   with a count; `aria-haspopup="dialog"`). Picked Tags show as a row of chips below it, each a
- *   `button` named "Remove Tag {name}" that removes the Tag; there is no "Clear" chip and no
- *   Cuisine or Method chip row.
+ *   `button` named "Remove Tag {name}" that removes the Tag; there is no "Clear" chip.
  * - The button opens a `dialog` named "Filter by Tags": a combobox of the same name, an always-open
  *   `listbox` of `option`s grouped by Tag Group (Your Tags first) with each unpicked option's count
  *   in an element named "{n} Recipes", a "Clear" button (disabled with no Tag picked), a "Show {n}
@@ -47,8 +46,6 @@ const item = (over: Partial<RecipeListItem>): RecipeListItem => ({
   title: 'Recipe',
   parentId: null,
   base: null,
-  cuisine: null,
-  method: null,
   tags: [],
   variantCount: 0,
   servings: 2,
@@ -125,7 +122,6 @@ const frittata = item({
   title: 'Frittata',
   parentId: 'o',
   base: { id: 'o', title: 'Omelette' },
-  cuisine: { id: 'c-it', name: 'Italian' },
   tags: [ITALIAN],
 });
 const gratin = item({
@@ -136,14 +132,6 @@ const gratin = item({
 });
 const filters = {
   tags: [MEAL_PREP, VEGAN, ITALIAN, GREEK, ROMANA, BAKING, GRILLING],
-  cuisines: [
-    { id: 'c-it', name: 'Italian' },
-    { id: 'c-gr', name: 'Greek' },
-  ],
-  methods: [
-    { id: 'm-bake', name: 'Baking' },
-    { id: 'm-grill', name: 'Grilling' },
-  ],
 };
 
 /** The last render's query cache, to know when a request has settled with nothing on screen to show it. */
@@ -215,7 +203,7 @@ function setup(
 type Calls = ReturnType<typeof setup>;
 
 const filtered = (url: URL) =>
-  ['cuisineId', 'methodId', 'tagIds', 'search', 'includeVariants'].some((key) =>
+  ['tagIds', 'search', 'includeVariants'].some((key) =>
     url.searchParams.has(key),
   );
 
@@ -360,8 +348,6 @@ describe('RecipesPage', () => {
         item({
           id: 'a',
           title: 'Moussaka',
-          cuisine: { id: 'c-gr', name: 'Greek' },
-          method: { id: 'm-bake', name: 'Baking' },
           tags: [
             {
               id: 'c-gr',
@@ -636,7 +622,7 @@ describe('RecipesPage', () => {
   });
 
   describe('search and Tag filter', () => {
-    it('has a Tags button beside the search and no Cuisine, Method or Clear chips', async () => {
+    it('has a Tags button beside the search and no chip rows or Clear chip', async () => {
       setup(() => [omelette]);
       const button = await tagsButton();
       expect(button).toHaveAccessibleName('Filter by Tags');
@@ -644,7 +630,6 @@ describe('RecipesPage', () => {
       for (const name of ['Italian', 'Greek', 'Baking', 'Grilling', 'Clear']) {
         expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
       }
-      expect(screen.queryByLabelText('Cuisine')).not.toBeInTheDocument();
     });
 
     it('sends a picked Tag at once, shows it as a chip and a count on the button, and removes it when the chip is tapped', async () => {

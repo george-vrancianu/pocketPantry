@@ -66,8 +66,6 @@ describe('AdminPage Recipes tab', () => {
               title: 'Pizza',
               servings: 4,
               difficulty: null,
-              cuisineId: null,
-              methodId: null,
               archived: false,
             },
           ]),
@@ -80,13 +78,6 @@ describe('AdminPage Recipes tab', () => {
     expect(
       await screen.findByRole('button', { name: 'Edit Recipe Pizza' }),
     ).toBeInTheDocument();
-
-    expect(
-      screen.queryByRole('heading', { name: 'Cuisines' }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('heading', { name: 'Methods' }),
-    ).not.toBeInTheDocument();
 
     await user.click(
       screen.getByRole('button', { name: 'Edit Tag Group Cuisine' }),

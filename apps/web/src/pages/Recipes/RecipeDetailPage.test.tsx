@@ -23,8 +23,6 @@ const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   prepMinutes: 5,
   cookMinutes: 10,
   difficulty: 'easy',
-  cuisine: { id: 'c-fr', name: 'French' },
-  method: { id: 'm-pan', name: 'Pan frying' },
   tags: [],
   archived: false,
   lines: [
@@ -316,8 +314,6 @@ describe('RecipeDetailPage', () => {
           {
             id: 'f',
             title: 'Frittata',
-            cuisine: { id: 'c-it', name: 'Italian' },
-            method: { id: 'm-bake', name: 'Baking' },
             tags: [
               {
                 id: 'c-it',
@@ -362,8 +358,6 @@ describe('RecipeDetailPage', () => {
           {
             id: 'f',
             title: 'Frittata',
-            cuisine: null,
-            method: null,
             tags: [],
             owner: 'catalog',
             familyCopyId: null,
@@ -386,8 +380,6 @@ describe('RecipeDetailPage', () => {
           {
             id: 'f',
             title: 'Frittata',
-            cuisine: null,
-            method: null,
             tags: [],
             owner: 'catalog',
             familyCopyId: null,
@@ -395,8 +387,6 @@ describe('RecipeDetailPage', () => {
           {
             id: 'g',
             title: "Grandma's omelette",
-            cuisine: null,
-            method: null,
             tags: [],
             owner: 'family',
             familyCopyId: null,

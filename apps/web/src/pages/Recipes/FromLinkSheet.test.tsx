@@ -15,8 +15,7 @@ import { NewRecipePage } from './FamilyRecipePages';
 import { RecipesPage } from './RecipesPage';
 
 const filters = {
-  cuisines: [{ id: 'c-fr', name: 'French' }],
-  methods: [{ id: 'm-pan', name: 'Pan frying' }],
+  tags: [],
   eatingMoments: [],
 };
 

@@ -79,8 +79,6 @@ const saved: AdminRecipe = {
   prepMinutes: 10,
   cookMinutes: null,
   difficulty: 'easy',
-  cuisineId: null,
-  methodId: null,
   tagIds: ['cu1'],
   archived: false,
   lines: [
@@ -199,7 +197,6 @@ describe('RecipeForm', () => {
     await user.click(await screen.findByRole('option', { name: 'Italian' }));
     await user.click(screen.getByRole('option', { name: 'Baking' }));
     await user.keyboard('{Escape}');
-    expect(screen.queryByLabelText(/Cuisine|Method/)).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('Prep (minutes)'), '5');
 
     await user.type(

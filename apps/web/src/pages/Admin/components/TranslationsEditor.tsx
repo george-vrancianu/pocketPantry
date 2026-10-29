@@ -28,7 +28,7 @@ type Props = {
   /** Canonical English name; it follows the entry's own name field. */
   name: string;
   translations: AdminTranslation[];
-  /** Set false for entries that only have display names (Cuisines, Methods). */
+  /** Set false for entries that only have display names (Tag Groups, Catalog Tags). */
   synonyms?: boolean;
 };
 

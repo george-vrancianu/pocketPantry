@@ -116,8 +116,6 @@ export function RecipesPage() {
   const { t } = useTranslation(['recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
     search: '',
-    cuisineId: '',
-    methodId: '',
     tagIds: [],
   });
   // "Show" in the hidden-by-Allergies note asks the list and the Cook Tonight card for everything.

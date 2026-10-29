@@ -20,8 +20,6 @@ const item = (over: Partial<RecipeListItem>): RecipeListItem => ({
   title: 'Recipe',
   parentId: null,
   base: null,
-  cuisine: null,
-  method: null,
   tags: [],
   variantCount: 0,
   servings: 2,
@@ -84,8 +82,7 @@ function setup({
             : [...family, ...(copy ? [copy] : [])],
         hiddenByAllergiesCount: hidden,
       }),
-    'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [] }),
+    'GET /api/recipes/filters': () => Response.json({ tags: [] }),
     'GET /api/recipes/cook-tonight': (url) =>
       Response.json({
         cards: url.searchParams.get('scope') === 'catalog' ? cards : [],
