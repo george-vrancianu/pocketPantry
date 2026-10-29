@@ -23,8 +23,10 @@ export type CategoryPickerProps = {
   onChoose: (id: string) => void;
   /** Leaves only: no "All {parent}" rows. */
   leavesOnly?: boolean;
-  /** A leading Default Icon per row, tinted by the Aisle (the parent category). */
+  /** A leading Default Icon per row, tinted by the row's Aisle (see `aisleByParentId`). */
   showIcons?: boolean;
+  /** Each Parent Category's Aisle by Parent Category id; a parent without one gets the neutral tint. */
+  aisleByParentId?: ReadonlyMap<string, { id: string }>;
   /** The current leaf: label in the accent colour with a check, `aria-current`. */
   currentId?: string;
   /** Per-row content at the end of the row. */
@@ -42,6 +44,7 @@ export function CategoryPicker({
   onChoose,
   leavesOnly = false,
   showIcons = false,
+  aisleByParentId,
   currentId,
   renderTrailing,
 }: CategoryPickerProps) {
@@ -108,7 +111,9 @@ export function CategoryPicker({
                   }}
                 >
                   {showIcons ? (
-                    <IngredientIconSlot aisleId={group.parent.id} />
+                    <IngredientIconSlot
+                      aisleId={aisleByParentId?.get(group.parent.id)?.id}
+                    />
                   ) : null}
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography

@@ -17,6 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -33,7 +34,11 @@ import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { RemoveLink } from '../../../components/RemoveLink';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { ApiError } from '../../../lib/api';
-import { useCreateFamilySynonym } from '../../../lib/catalog';
+import {
+  aisleByParentCategoryId,
+  useCatalogAisles,
+  useCreateFamilySynonym,
+} from '../../../lib/catalog';
 import {
   familyCatalogQueryKey,
   useDeleteFamilySynonym,
@@ -98,6 +103,11 @@ export function FamilyIngredientSheet({
   const deleteSynonym = useDeleteFamilySynonym();
   const createSynonym = useCreateFamilySynonym();
   const categories = useCategoryOptions();
+  const aisles = useCatalogAisles();
+  const aisleByParentId = useMemo(
+    () => aisleByParentCategoryId(aisles.data),
+    [aisles.data],
+  );
 
   // The names this Ingredient has now; they refresh after a partly failed Save.
   const savedSynonyms: FamilyCatalogSynonym[] = catalog.synonyms.filter(
@@ -353,10 +363,11 @@ export function FamilyIngredientSheet({
   );
   const leaf = parent?.leaves.find((l) => l.id === leafId);
   const categoryName = leaf?.name ?? ingredient.leafCategory.name;
-  const aisleName = leafChanged
-    ? (parent?.name ?? '')
-    : ingredient.parentCategory.aisle.name;
-  const aisleId = leafChanged ? parent?.id : ingredient.parentCategory.aisle.id;
+  const draftAisle = leafChanged
+    ? aisleByParentId.get(parent?.id ?? '')
+    : ingredient.parentCategory.aisle;
+  const aisleName = draftAisle?.name ?? '';
+  const aisleId = draftAisle?.id;
   const headerTitle =
     view === 'pick' ? t('settings:familyCatalog.pickTitle') : ingredient.name;
   const headerContext =
@@ -466,6 +477,7 @@ export function FamilyIngredientSheet({
           optionsError={categories.error}
           leavesOnly
           showIcons
+          aisleByParentId={aisleByParentId}
           currentId={leafId}
           onChoose={(chosen) => {
             setLeafId(chosen);

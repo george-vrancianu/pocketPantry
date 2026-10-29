@@ -9,6 +9,8 @@ import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { FamilyCatalogSection } from './components/FamilyCatalogSection';
 
+const PRODUCE_AISLE_ID = '1dff107d-5280-500f-807e-d694a53e24d9';
+
 const usage = {
   batches: 0,
   shoppingItems: 0,
@@ -72,6 +74,27 @@ function stub(
               { id: 'soft-drinks', name: 'Soft drinks' },
               { id: 'tea', name: 'Tea' },
             ],
+          },
+          {
+            id: 'fresh',
+            name: 'Fresh herbs',
+            leaves: [{ id: 'basil', name: 'Basil' }],
+          },
+        ],
+      }),
+    // Aisle ids differ from Parent Category ids; the produce id is the one the tints know.
+    'GET /api/catalog/aisles': () =>
+      Response.json({
+        aisles: [
+          {
+            id: 'a-drinks',
+            name: 'Drinks aisle',
+            parentCategories: [{ id: 'drinks', name: 'Drinks' }],
+          },
+          {
+            id: PRODUCE_AISLE_ID,
+            name: 'Fruit & veg',
+            parentCategories: [{ id: 'fresh', name: 'Fresh herbs' }],
           },
         ],
       }),
@@ -222,6 +245,28 @@ describe('FamilyCatalogSection', () => {
         }),
       ),
     );
+  });
+
+  it("shows the new leaf's Aisle, not its Parent Category, and tints the picker rows by Aisle", async () => {
+    stub();
+    renderWithProviders(<FamilyCatalogSection />);
+    const user = userEvent.setup();
+
+    const dialog = await openSheet(user);
+    await user.click(within(dialog).getByRole('button', { name: /Category/ }));
+    const tint = (button: HTMLElement) =>
+      button
+        .querySelector('[data-ingredient-tint]')
+        ?.getAttribute('data-ingredient-tint');
+    const basil = await screen.findByRole('button', { name: /Basil/ });
+    expect(tint(basil)).toBe('produce');
+    expect(tint(screen.getByRole('button', { name: /Tea/ }))).toBe('neutral');
+
+    await user.click(basil);
+    const field = screen.getByRole('button', { name: /Category/ });
+    expect(field).toHaveTextContent('Fruit & veg · ml');
+    expect(field).not.toHaveTextContent('Fresh herbs');
+    expect(tint(field)).toBe('produce');
   });
 
   it('goes back from the picker with Escape, keeping the sheet open', async () => {
