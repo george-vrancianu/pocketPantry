@@ -23,6 +23,7 @@ describe('Manage Family Tags (integration)', () => {
   let database: Database;
   let ana: ReturnType<typeof client>;
   let bea: ReturnType<typeof client>;
+  let anaCookie: string;
   let anaFamily: string;
   const stamp = Date.now();
   const dinner = seedId.tag('meal:dinner');
@@ -70,6 +71,32 @@ describe('Manage Family Tags (integration)', () => {
     )
       .map((r) => r.id)
       .sort();
+  const draftWith = async (tagIds: string[]): Promise<string> => {
+    const res = await client(app, anaCookie, '/api/recipe-drafts')
+      .post('', {
+        kind: 'new_recipe',
+        content: {
+          title: `Draft ${stamp} ${(seq += 1)}`,
+          servings: '2',
+          prepMinutes: '',
+          cookMinutes: '',
+          difficulty: '',
+          tagIds,
+          lines: [],
+          steps: [],
+        },
+      })
+      .expect(201);
+    return (res.body as { id: string }).id;
+  };
+  const draftTagIds = async (draftId: string) =>
+    (
+      (
+        await client(app, anaCookie, '/api/recipe-drafts')
+          .get(`/${draftId}`)
+          .expect(200)
+      ).body as { content: { tagIds: string[] } }
+    ).content.tagIds;
   const rename = (
     who: ReturnType<typeof client>,
     id: string,
@@ -82,7 +109,8 @@ describe('Manage Family Tags (integration)', () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
     const email = `mtags-ana-${stamp}@example.com`;
-    ana = client(app, await signUp(app, email, 'Ana'), '/api/recipes');
+    anaCookie = await signUp(app, email, 'Ana');
+    ana = client(app, anaCookie, '/api/recipes');
     anaFamily = (
       await database
         .select({ id: user.familyId })
@@ -221,6 +249,18 @@ describe('Manage Family Tags (integration)', () => {
       const r = await makeRecipe(ana, [mine.id, dinner]);
       await rename(ana, mine.id, 'dinner', true);
       expect(await tagsOf(r)).toEqual([dinner]);
+    });
+
+    it('moves the Tags of unsaved Recipe Drafts to the survivor, once', async () => {
+      const keep = await makeTag(ana, `Draft survivor ${stamp}`);
+      const gone = await makeTag(ana, `Draft folded ${stamp}`);
+      const onlyGone = await draftWith([dinner, gone.id]);
+      const both = await draftWith([gone.id, keep.id]);
+      const untouched = await draftWith([dinner]);
+      await rename(ana, gone.id, `draft survivor ${stamp}`, true);
+      expect(await draftTagIds(onlyGone)).toEqual([dinner, keep.id]);
+      expect(await draftTagIds(both)).toEqual([keep.id]);
+      expect(await draftTagIds(untouched)).toEqual([dinner]);
     });
 
     it('renames without a conflict even when the merge flag is set', async () => {
