@@ -77,7 +77,12 @@
     "cuisine_in_use": "Opskrifter bruger stadig dette køkken, så det kan ikke slettes. Ret først de opskrifter.",
     "method_in_use": "Opskrifter bruger stadig denne metode, så den kan ikke slettes. Ret først de opskrifter.",
     "family_ingredient_exists": "„{{existing.name}}“ har allerede det navn.",
-    "allergen_retired": "Dette allergen er udgået. Genindfør det, før du mærker med det."
+    "allergen_retired": "Dette allergen er udgået. Genindfør det, før du mærker med det.",
+    "tag_in_use_one": "{{count}} opskrift har dette tag. Bekræft sletningen for at fjerne det fra opskriften.",
+    "tag_in_use_other": "{{count}} opskrifter har dette tag. Bekræft sletningen for at fjerne det fra opskrifterne.",
+    "tag_allergen_free_name": "Et katalog-tag kan ikke påstå, at et allergen mangler. Allergener kommer fra ingredienslinjerne, så vælg et navn uden „fri“ eller „uden“ for et allergen.",
+    "tag_group_order_stale": "Tag-grupperne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen og prøv igen.",
+    "tag_group_not_empty": "Denne tag-gruppe har stadig katalog-tags. Flyt eller slet dem først."
   },
   "family": {
     "rate_limited": "For mange forsøg med invitationskoder. Vent et minut, og prøv igen.",

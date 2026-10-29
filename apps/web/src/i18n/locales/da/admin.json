@@ -128,24 +128,6 @@
       "none": "Den trykte tekst blev ikke tilføjet: rækkerne havde ingen trykt tekst."
     }
   },
-  "list": {
-    "cuisine": {
-      "title": "Køkkener",
-      "hint": "Opskrifter kan mærkes med ét køkken.",
-      "new": "Nyt køkken",
-      "edit": "Redigér køkkenet {{name}}",
-      "name": "Navn (engelsk)",
-      "empty": "Ingen køkkener endnu."
-    },
-    "method": {
-      "title": "Metoder",
-      "hint": "Opskrifter kan mærkes med én metode, fx bagning eller grill.",
-      "new": "Ny metode",
-      "edit": "Redigér metoden {{name}}",
-      "name": "Navn (engelsk)",
-      "empty": "Ingen metoder endnu."
-    }
-  },
   "recipe": {
     "title": "Opskrifter",
     "new": "Ny grundopskrift",
@@ -420,5 +402,28 @@
     "retire": "Udgå",
     "unretire": "Genindfør",
     "retiredNote": "Dette allergen er udgået. Det er skjult i vælgerne, men bliver på de ingredienser, der er mærket med det, og på medlemmers allergier."
+  },
+  "tagGroup": {
+    "title": "Tag-grupper",
+    "hint": "Overskrifterne, katalog-tags vises under i tag-feltet. Brug knapperne til at ændre rækkefølgen.",
+    "new": "Ny tag-gruppe",
+    "edit": "Redigér tag-gruppen {{name}}",
+    "name": "Navn (engelsk)",
+    "empty": "Ingen tag-grupper endnu.",
+    "moveUp": "Flyt {{name}} op",
+    "moveDown": "Flyt {{name}} ned",
+    "moved": "{{name}} er nu nummer {{position}} af {{total}}."
+  },
+  "tag": {
+    "title": "Katalog-tags",
+    "hint": "Tags, alle familier kan sætte på opskrifter. Et familie-tag med samme navn slås sammen med et nyt eller omdøbt katalog-tag.",
+    "new": "Nyt katalog-tag",
+    "edit": "Redigér katalog-tagget {{name}}",
+    "name": "Navn (engelsk)",
+    "group": "Tag-gruppe",
+    "empty": "Ingen katalog-tags endnu.",
+    "deleteConfirmUnused": "Ingen opskrift har dette tag. Slet det?",
+    "deleteConfirm_one": "{{count}} opskrift har dette tag og mister det. Slet det alligevel?",
+    "deleteConfirm_other": "{{count}} opskrifter har dette tag og mister det. Slet det alligevel?"
   }
 }

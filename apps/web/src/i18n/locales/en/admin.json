@@ -128,24 +128,6 @@
       "none": "The printed text was not added: the rows had no printed text."
     }
   },
-  "list": {
-    "cuisine": {
-      "title": "Cuisines",
-      "hint": "Recipes can be tagged with one Cuisine.",
-      "new": "New Cuisine",
-      "edit": "Edit Cuisine {{name}}",
-      "name": "Name (English)",
-      "empty": "No Cuisines yet."
-    },
-    "method": {
-      "title": "Methods",
-      "hint": "Recipes can be tagged with one Method, e.g. baking or grilling.",
-      "new": "New Method",
-      "edit": "Edit Method {{name}}",
-      "name": "Name (English)",
-      "empty": "No Methods yet."
-    }
-  },
   "recipe": {
     "title": "Recipes",
     "new": "New Base Recipe",
@@ -420,5 +402,28 @@
     "retire": "Retire",
     "unretire": "Bring back",
     "retiredNote": "This Allergen is retired. It is hidden from the pickers, and stays on the Ingredients tagged with it and on Members' Allergies."
+  },
+  "tagGroup": {
+    "title": "Tag Groups",
+    "hint": "The headings Catalog Tags are listed under in the Tag field. Use the buttons to change their order.",
+    "new": "New Tag Group",
+    "edit": "Edit Tag Group {{name}}",
+    "name": "Name (English)",
+    "empty": "No Tag Groups yet.",
+    "moveUp": "Move {{name}} up",
+    "moveDown": "Move {{name}} down",
+    "moved": "{{name}} is now number {{position}} of {{total}}."
+  },
+  "tag": {
+    "title": "Catalog Tags",
+    "hint": "Tags every Family can put on Recipes. A Family Tag with the same name is folded into a new or renamed Catalog Tag.",
+    "new": "New Catalog Tag",
+    "edit": "Edit Catalog Tag {{name}}",
+    "name": "Name (English)",
+    "group": "Tag Group",
+    "empty": "No Catalog Tags yet.",
+    "deleteConfirmUnused": "No Recipe has this Tag. Delete it?",
+    "deleteConfirm_one": "{{count}} Recipe has this Tag and will lose it. Delete it anyway?",
+    "deleteConfirm_other": "{{count}} Recipes have this Tag and will lose it. Delete it anyway?"
   }
 }

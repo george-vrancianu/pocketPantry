@@ -9,8 +9,8 @@ import { UnmatchedQueue } from './UnmatchedQueue';
 
 const catalog: AdminCatalog = {
   aisles: [],
-  cuisines: [],
-  methods: [],
+  tagGroups: [],
+  tags: [],
   allergens: [],
   eatingMoments: [],
   parentCategories: [

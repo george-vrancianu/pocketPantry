@@ -22,8 +22,8 @@ export type EntityType =
   | 'parent_category'
   | 'leaf_category'
   | 'ingredient'
-  | 'cuisine'
-  | 'method'
+  | 'tag_group'
+  | 'tag'
   | 'eating_moment'
   | 'allergen';
 
@@ -64,9 +64,14 @@ export type AdminIngredient = Translated & {
   allergensReviewPending: boolean;
 };
 
-/** A Cuisine or Method: an Admin-curated name list Recipes pick from. */
-export type AdminListEntry = Translated;
-export type ListKind = 'cuisine' | 'method';
+/** A Tag Group: an ordered heading Catalog Tags are listed under. */
+export type AdminTagGroup = Translated & { position: number };
+
+/** A Catalog Tag; `recipeCount` is how many Recipes (Family copies included) carry it. */
+export type AdminCatalogTag = Translated & {
+  groupId: string;
+  recipeCount: number;
+};
 
 /** An Eating Moment: an ordered, archivable name list like Aisles. */
 export type AdminEatingMoment = Translated & {
@@ -83,8 +88,8 @@ export type AdminAllergen = Translated & {
 export type AdminCatalog = {
   allergens: AdminAllergen[];
   aisles: AdminAisle[];
-  cuisines: AdminListEntry[];
-  methods: AdminListEntry[];
+  tagGroups: AdminTagGroup[];
+  tags: AdminCatalogTag[];
   eatingMoments: AdminEatingMoment[];
   parentCategories: AdminParentCategory[];
   leafCategories: AdminLeafCategory[];
@@ -183,19 +188,61 @@ export function useReorderAisles() {
   );
 }
 
-const listPath = (kind: ListKind) =>
-  kind === 'cuisine' ? 'cuisines' : 'methods';
-export function useSaveListEntry(kind: ListKind, id?: string) {
-  return useAdminWrite((input: { name: string }) =>
-    apiRequest(`${base}/${listPath(kind)}${id ? `/${id}` : ''}`, {
-      method: id ? 'PATCH' : 'POST',
-      body: input,
-    }),
+/**
+ * Extra caches a Tag write refreshes: the Admin Recipes list, whose rows carry Tags. The Tag
+ * pickers and filters are refreshed through `recipeChangeQueryKeys` in `useAdminWrite`.
+ */
+const tagQueryKeys: QueryKey[] = [adminRecipesQueryKey];
+
+export function useSaveTagGroup(id?: string) {
+  return useAdminWrite(
+    (input: { name: string }) =>
+      apiRequest(`${base}/tag-groups${id ? `/${id}` : ''}`, {
+        method: id ? 'PATCH' : 'POST',
+        body: input,
+      }),
+    () => tagQueryKeys,
   );
 }
-export function useDeleteListEntry(kind: ListKind) {
-  return useAdminWrite((id: string) =>
-    apiRequest(`${base}/${listPath(kind)}/${id}`, { method: 'DELETE' }),
+/** Deletes a Tag Group; only an empty one can go. */
+export function useDeleteTagGroup() {
+  return useAdminWrite(
+    (id: string) =>
+      apiRequest(`${base}/tag-groups/${id}`, { method: 'DELETE' }),
+    () => tagQueryKeys,
+  );
+}
+/** Sets the order: every Tag Group id once, first shown first. */
+export function useReorderTagGroups() {
+  return useAdminWrite(
+    (ids: string[]) =>
+      apiRequest(`${base}/tag-groups/order`, { method: 'PUT', body: { ids } }),
+    () => tagQueryKeys,
+  );
+}
+
+export function useSaveCatalogTag(id?: string) {
+  return useAdminWrite(
+    (input: { name: string; groupId: string }) =>
+      apiRequest(`${base}/tags${id ? `/${id}` : ''}`, {
+        method: id ? 'PATCH' : 'POST',
+        body: input,
+      }),
+    // Creating or renaming can fold Family Tags into it.
+    () => tagQueryKeys,
+  );
+}
+/**
+ * Deletes a Catalog Tag. Without `confirm` the server refuses a Tag Recipes carry (409
+ * `catalog.tag_in_use` with the count); resend with `confirm` to remove it from them too.
+ */
+export function useDeleteCatalogTag() {
+  return useAdminWrite(
+    ({ id, confirm }: { id: string; confirm?: boolean }) =>
+      apiRequest(`${base}/tags/${id}${confirm ? '?confirm=true' : ''}`, {
+        method: 'DELETE',
+      }),
+    () => tagQueryKeys,
   );
 }
 

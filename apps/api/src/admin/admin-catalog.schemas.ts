@@ -37,6 +37,31 @@ export const aisleOrder = z.object({
 export const listEntryCreate = z.object({ name: text });
 export const listEntryUpdate = z.object({ name: text });
 
+/** A Tag Group: just a name; its position is set by the order endpoint. */
+export const tagGroupCreate = z.object({ name: text });
+export const tagGroupUpdate = z.object({ name: text });
+/** The full order: every Tag Group id exactly once, first shown first. */
+export const tagGroupOrder = z.object({
+  ids: z
+    .array(id)
+    .min(1)
+    .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
+});
+
+/** A Catalog Tag lives in exactly one Tag Group; its translations are catalog translations. */
+export const catalogTagCreate = z.object({ name: text, groupId: id });
+export const catalogTagUpdate = z
+  .object({ name: text, groupId: id })
+  .partial()
+  .refine(atLeastOne, atLeastOneMessage);
+/** Deleting a Catalog Tag that Recipes carry needs `confirm=true`. */
+export const catalogTagDeleteQuery = z.object({
+  confirm: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
+});
+
 /** The full order: every Eating Moment id (archived included) exactly once. */
 export const eatingMomentOrder = z.object({
   ids: z
@@ -103,16 +128,10 @@ export const ingredientUpdate = z
   .partial()
   .refine(atLeastOne, atLeastOneMessage);
 
-const adminTranslatableTypes = z
-  .enum(catalogEntityType.enumValues)
-  .exclude(['tag', 'tag_group']);
-
 /** A Synonym may be in any Scan Language; a display name only in a catalog locale. */
 export const translationCreate = z
   .object({
-    // Tags and Tag Groups are managed by their own Admin surface (a later ticket of #706). Until
-    // then a translation added here would be wiped when a Cuisine or Method mirrors itself as a Tag.
-    entityType: adminTranslatableTypes,
+    entityType: z.enum(catalogEntityType.enumValues),
     entityId: id,
     locale: z.enum(SCAN_LANGUAGES),
     kind: z.enum(translationKind.enumValues),
@@ -145,3 +164,8 @@ export type ListEntryCreate = z.infer<typeof listEntryCreate>;
 export type ListEntryUpdate = z.infer<typeof listEntryUpdate>;
 export type EatingMomentOrder = z.infer<typeof eatingMomentOrder>;
 export type IngredientAllergensBody = z.infer<typeof ingredientAllergensBody>;
+export type TagGroupCreate = z.infer<typeof tagGroupCreate>;
+export type TagGroupUpdate = z.infer<typeof tagGroupUpdate>;
+export type TagGroupOrder = z.infer<typeof tagGroupOrder>;
+export type CatalogTagCreate = z.infer<typeof catalogTagCreate>;
+export type CatalogTagUpdate = z.infer<typeof catalogTagUpdate>;

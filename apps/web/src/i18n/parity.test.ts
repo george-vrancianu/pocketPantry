@@ -433,27 +433,13 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   // the old Cuisine and Method UI, which #715 removes along with this entry.
   [
     'cuisine',
-    'the old Cuisine field and Admin list, removed by #715',
-    [
-      'admin:list.cuisine.edit',
-      'admin:list.cuisine.empty',
-      'admin:list.cuisine.hint',
-      'admin:list.cuisine.new',
-      'admin:list.cuisine.title',
-      'errors:catalog.cuisine_in_use',
-    ],
+    'the error of the old Admin Cuisine endpoint, removed by #715',
+    ['errors:catalog.cuisine_in_use'],
   ],
   [
     'method',
-    'the old Method field and Admin list, removed by #715',
-    [
-      'admin:list.method.edit',
-      'admin:list.method.empty',
-      'admin:list.method.hint',
-      'admin:list.method.new',
-      'admin:list.method.title',
-      'errors:catalog.method_in_use',
-    ],
+    'the error of the old Admin Method endpoint, removed by #715',
+    ['errors:catalog.method_in_use'],
   ],
   [
     'point',

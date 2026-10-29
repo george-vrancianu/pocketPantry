@@ -130,24 +130,6 @@
       "none": "Textul tipărit nu a fost adăugat: rândurile nu aveau text tipărit."
     }
   },
-  "list": {
-    "cuisine": {
-      "title": "Bucătării",
-      "hint": "Rețetele pot primi o singură Bucătărie.",
-      "new": "Bucătărie nouă",
-      "edit": "Editează Bucătăria {{name}}",
-      "name": "Nume (engleză)",
-      "empty": "Nicio Bucătărie încă."
-    },
-    "method": {
-      "title": "Metode",
-      "hint": "Rețetele pot primi o singură Metodă, de exemplu la cuptor sau la grătar.",
-      "new": "Metodă nouă",
-      "edit": "Editează Metoda {{name}}",
-      "name": "Nume (engleză)",
-      "empty": "Nicio Metodă încă."
-    }
-  },
   "recipe": {
     "title": "Rețete",
     "new": "Rețetă de bază nouă",
@@ -427,5 +409,29 @@
     "retire": "Retrage",
     "unretire": "Readu",
     "retiredNote": "Acest alergen este retras. Nu apare în selectoare, dar rămâne pe ingredientele etichetate cu el și pe alergiile membrilor."
+  },
+  "tagGroup": {
+    "title": "Grupuri de Taguri",
+    "hint": "Titlurile sub care apar Tagurile din Catalog în câmpul de Taguri. Folosește butoanele pentru a schimba ordinea.",
+    "new": "Grup de Taguri nou",
+    "edit": "Editează Grupul de Taguri {{name}}",
+    "name": "Nume (engleză)",
+    "empty": "Niciun Grup de Taguri încă.",
+    "moveUp": "Mută {{name}} mai sus",
+    "moveDown": "Mută {{name}} mai jos",
+    "moved": "{{name}} este acum numărul {{position}} din {{total}}."
+  },
+  "tag": {
+    "title": "Taguri din Catalog",
+    "hint": "Taguri pe care orice Familie le poate pune pe Rețete. Un Tag al unei Familii cu același nume este contopit într-un Tag din Catalog nou sau redenumit.",
+    "new": "Tag din Catalog nou",
+    "edit": "Editează Tagul din Catalog {{name}}",
+    "name": "Nume (engleză)",
+    "group": "Grup de Taguri",
+    "empty": "Niciun Tag din Catalog încă.",
+    "deleteConfirmUnused": "Nicio Rețetă nu are acest Tag. Îl ștergi?",
+    "deleteConfirm_one": "{{count}} Rețetă are acest Tag și îl va pierde. Îl ștergi oricum?",
+    "deleteConfirm_few": "{{count}} Rețete au acest Tag și îl vor pierde. Îl ștergi oricum?",
+    "deleteConfirm_other": "{{count}} de Rețete au acest Tag și îl vor pierde. Îl ștergi oricum?"
   }
 }

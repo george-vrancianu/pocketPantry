@@ -19,6 +19,8 @@ type Props = {
   /** Omit when creating: there is nothing to delete yet. */
   onDelete?: () => void;
   deleting?: boolean;
+  /** Own delete step, rendered where Delete goes, when the plain two-step `onDelete` does not fit. */
+  deleteSlot?: ReactNode;
   /** Replace Save / Saving… on the submit button. */
   saveLabel?: string;
   savingLabel?: string;
@@ -40,6 +42,7 @@ export function EditorForm({
   onCancel,
   onDelete,
   deleting,
+  deleteSlot,
   saveLabel,
   savingLabel,
   children,
@@ -92,7 +95,9 @@ export function EditorForm({
           disabled={deleting}
           onConfirm={onDelete}
         />
-      ) : null}
+      ) : (
+        (deleteSlot ?? null)
+      )}
     </Stack>
   );
 }
