@@ -69,12 +69,13 @@ export type CategoryGroup = {
 /**
  * The pick list: categories grouped by parent, "All {parent}" first in each group. A query matches
  * on a category's name or its parent's name; a parent-name match keeps the whole group. Groups with
- * no match are dropped.
+ * no match are dropped. With `leavesOnly` there are no "All {parent}" rows.
  */
 export function groupCategories(
   options: CategoryOptions | undefined,
   query: string,
   overrides: Readonly<Record<string, number>>,
+  leavesOnly = false,
 ): CategoryGroup[] {
   if (!options) return [];
   const needle = normalizeName(query);
@@ -90,7 +91,7 @@ export function groupCategories(
   for (const parent of options.parents) {
     const parentMatches = matches(parent.name);
     const rows: CategoryRow[] = [];
-    if (parentMatches) rows.push(row(categoryRef(parent)));
+    if (parentMatches && !leavesOnly) rows.push(row(categoryRef(parent)));
     for (const leaf of parent.leaves) {
       if (!parentMatches && !matches(leaf.name)) continue;
       rows.push(row(categoryRef(parent, leaf)));
