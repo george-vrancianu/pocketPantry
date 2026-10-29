@@ -342,7 +342,6 @@ describe('Plate Scan (integration)', () => {
         expect(names).toEqual(expect.arrayContaining(['Dinner', mine]));
         expect(names).not.toContain(theirs);
         expect(names.indexOf(mine)).toBe(names.length - 1);
-        expect(prompts[0].prompt).not.toMatch(/cuisine|method/i);
       });
 
       it('creates no Tag, whatever the model names, and proposes none when it names none', async () => {

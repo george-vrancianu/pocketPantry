@@ -19,25 +19,19 @@ interface RecipeDocumentShape<L extends RecipeLineShape> {
 }
 
 /** The Recipe columns a document sets (the same for an insert and an update). */
-export function recipeColumns(
-  document: {
-    title: string;
-    servings: number;
-    prepMinutes: number | null;
-    cookMinutes: number | null;
-    difficulty: (typeof recipes.$inferInsert)['difficulty'];
-  },
-  legacy: { cuisineId: string | null; methodId: string | null },
-) {
+export function recipeColumns(document: {
+  title: string;
+  servings: number;
+  prepMinutes: number | null;
+  cookMinutes: number | null;
+  difficulty: (typeof recipes.$inferInsert)['difficulty'];
+}) {
   return {
     title: document.title,
     servings: document.servings,
     prepMinutes: document.prepMinutes,
     cookMinutes: document.cookMinutes,
     difficulty: document.difficulty,
-    // Mirrors the Tags until the contract ticket drops the columns (ADR 0033).
-    cuisineId: legacy.cuisineId,
-    methodId: legacy.methodId,
   };
 }
 

@@ -1,13 +1,13 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { and, eq, ilike, isNull } from 'drizzle-orm';
+import { eq, ilike, isNull } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
-  catalogTranslations,
   recipes,
   recipeTags,
+  tagGroups,
   tags,
   user,
 } from '../src/database/schema';
@@ -23,7 +23,7 @@ import { storeLanguages } from './support/stored-language';
 
 jest.setTimeout(30_000);
 
-// Spec: #706 / #708 (expand step of ADR 0033). Recipes carry Tags next to Cuisine and Method.
+// Spec: #706 (ADR 0033). Recipes carry Tags: saving, reading, copying.
 describe('Recipe Tags (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
@@ -33,9 +33,10 @@ describe('Recipe Tags (integration)', () => {
   let anaCookie: string;
   let adminCookie: string;
   let anaFamily: string;
-  let cuisineA: string;
-  let cuisineB: string;
-  let methodA: string;
+  // Catalog Tags made through the Admin endpoints, in the Cuisine and Method Tag Groups.
+  let groupedA: string;
+  let groupedB: string;
+  let methodGrouped: string;
   let familyTag: string;
   let otherFamilyTag: string;
   let bea: ReturnType<typeof client>;
@@ -105,15 +106,24 @@ describe('Recipe Tags (integration)', () => {
         .where(eq(user.email, email))
     )[0].id;
 
-    const make = async (path: string, name: string) =>
+    const groupIdOf = async (normalizedName: string) =>
       (
-        (await adminCatalog.post(path, { name }).expect(201)).body as {
-          id: string;
-        }
+        await database
+          .select({ id: tagGroups.id })
+          .from(tagGroups)
+          .where(eq(tagGroups.normalizedName, normalizedName))
+      )[0].id;
+    const make = async (groupName: string, name: string) =>
+      (
+        (
+          await adminCatalog
+            .post('/tags', { name, groupId: await groupIdOf(groupName) })
+            .expect(201)
+        ).body as { id: string }
       ).id;
-    cuisineA = await make('/cuisines', `Tagcuisine A ${stamp}`);
-    cuisineB = await make('/cuisines', `Tagcuisine B ${stamp}`);
-    methodA = await make('/methods', `Tagmethod A ${stamp}`);
+    groupedA = await make('cuisine', `Taggroup A ${stamp}`);
+    groupedB = await make('cuisine', `Taggroup B ${stamp}`);
+    methodGrouped = await make('method', `Tagmethod A ${stamp}`);
     const beaEmail = `tags-bea-${stamp}@example.com`;
     bea = client(app, await signUp(app, beaEmail, 'Bea'), '/api/recipes');
     const beaFamily = (
@@ -157,33 +167,31 @@ describe('Recipe Tags (integration)', () => {
     await database.delete(recipes).where(ilike(recipes.title, `%${stamp}-%`));
     await database.delete(tags).where(eq(tags.id, familyTag));
     await database.delete(tags).where(eq(tags.id, otherFamilyTag));
-    for (const id of [cuisineA, cuisineB]) {
-      await adminCatalog.del(`/cuisines/${id}`);
+    for (const id of [groupedA, groupedB, methodGrouped]) {
+      await adminCatalog.del(`/tags/${id}?confirm=true`);
     }
-    await adminCatalog.del(`/methods/${methodA}`);
     await app.close();
   });
 
   describe('saving Tags (#709)', () => {
-    it('Admin: create and update set the whole Tag list, and the old columns follow', async () => {
+    it('Admin: create and update set the whole Tag list', async () => {
       const created = (
         await admin
-          .post('', catalogDoc({ tagIds: [cuisineA, methodA, dinner] }))
+          .post('', catalogDoc({ tagIds: [groupedA, methodGrouped, dinner] }))
           .expect(201)
-      ).body as { id: string; tagIds: string[]; cuisineId: string };
+      ).body as { id: string; tagIds: string[] };
       expect(await linkedIds(created.id)).toEqual(
-        [cuisineA, methodA, dinner].sort(),
+        [groupedA, methodGrouped, dinner].sort(),
       );
-      expect(created.tagIds).toEqual([cuisineA, methodA, dinner].sort());
-      expect(created.cuisineId).toBe(cuisineA);
+      expect(created.tagIds).toEqual([groupedA, methodGrouped, dinner].sort());
 
       const updated = (
         await admin
-          .put(`/${created.id}`, catalogDoc({ tagIds: [cuisineB, vegan] }))
+          .put(`/${created.id}`, catalogDoc({ tagIds: [groupedB, vegan] }))
           .expect(200)
-      ).body as { cuisineId: string | null; methodId: string | null };
-      expect(await linkedIds(created.id)).toEqual([cuisineB, vegan].sort());
-      expect(updated).toMatchObject({ cuisineId: cuisineB, methodId: null });
+      ).body as { tagIds: string[] };
+      expect(await linkedIds(created.id)).toEqual([groupedB, vegan].sort());
+      expect(updated.tagIds).toEqual([groupedB, vegan].sort());
 
       await admin.put(`/${created.id}`, catalogDoc()).expect(200);
       expect(await linkedIds(created.id)).toEqual([]);
@@ -192,10 +200,10 @@ describe('Recipe Tags (integration)', () => {
     it('Family: create and update set the whole Tag list, Family Tags included', async () => {
       const created = (
         await ana
-          .post('', familyDoc({ tagIds: [cuisineA, familyTag] }))
+          .post('', familyDoc({ tagIds: [groupedA, familyTag] }))
           .expect(201)
       ).body as { id: string };
-      expect(await linkedIds(created.id)).toEqual([cuisineA, familyTag].sort());
+      expect(await linkedIds(created.id)).toEqual([groupedA, familyTag].sort());
 
       await ana
         .put(`/${created.id}`, familyUpdate({ tagIds: [familyTag, dinner] }))
@@ -262,7 +270,10 @@ describe('Recipe Tags (integration)', () => {
     it('a Family Variant made from a draft gets every Tag of its Base', async () => {
       const base = (
         await admin
-          .post('', catalogDoc({ tagIds: [cuisineA, methodA, dinner, vegan] }))
+          .post(
+            '',
+            catalogDoc({ tagIds: [groupedA, methodGrouped, dinner, vegan] }),
+          )
           .expect(201)
       ).body as { id: string };
       const draft = (await ana.get(`/${base.id}/variant-draft`).expect(200))
@@ -271,7 +282,7 @@ describe('Recipe Tags (integration)', () => {
         unknown
       >;
       expect([...draft.tagIds].sort()).toEqual(
-        [cuisineA, methodA, dinner, vegan].sort(),
+        [groupedA, methodGrouped, dinner, vegan].sort(),
       );
       const made = (
         await ana
@@ -291,7 +302,7 @@ describe('Recipe Tags (integration)', () => {
           .expect(201)
       ).body as { id: string };
       expect(await linkedIds(made.id)).toEqual(
-        [cuisineA, methodA, dinner, vegan].sort(),
+        [groupedA, methodGrouped, dinner, vegan].sort(),
       );
     });
   });
@@ -302,7 +313,7 @@ describe('Recipe Tags (integration)', () => {
     beforeAll(async () => {
       const created = (
         await ana
-          .post('', familyDoc({ tagIds: [cuisineA, methodA] }))
+          .post('', familyDoc({ tagIds: [groupedA, methodGrouped] }))
           .expect(201)
       ).body as { id: string };
       recipeId = created.id;
@@ -341,13 +352,13 @@ describe('Recipe Tags (integration)', () => {
           groupOrder: 2,
         }),
         expect.objectContaining({
-          id: cuisineA,
-          name: `Tagcuisine A ${stamp}`,
+          id: groupedA,
+          name: `Taggroup A ${stamp}`,
           groupName: 'Cuisine',
           groupOrder: 3,
         }),
         expect.objectContaining({
-          id: methodA,
+          id: methodGrouped,
           groupName: 'Method',
           groupOrder: 4,
         }),
@@ -358,8 +369,8 @@ describe('Recipe Tags (integration)', () => {
     it("names Catalog Tags and groups in the viewer's language; Family Tags keep their name", async () => {
       await adminCatalog
         .post('/translations', {
-          entityType: 'cuisine',
-          entityId: cuisineA,
+          entityType: 'tag',
+          entityId: groupedA,
           locale: 'ro',
           kind: 'name',
           value: `Bucătărie A ${stamp}`,
@@ -406,17 +417,17 @@ describe('Recipe Tags (integration)', () => {
       );
 
       const base = (
-        await admin.post('', catalogDoc({ tagIds: [cuisineB] })).expect(201)
+        await admin.post('', catalogDoc({ tagIds: [groupedB] })).expect(201)
       ).body as { id: string };
       const variant = (
         await admin
           .post(`/${base.id}/variants`, { title: title('Var') })
           .expect(201)
       ).body as { id: string };
-      expect(await linkedIds(variant.id)).toEqual([cuisineB]);
+      expect(await linkedIds(variant.id)).toEqual([groupedB]);
       const shown = await detail(ana, base.id);
       expect(shown.variants.map((v) => names(v.tags))).toEqual([
-        [`Tagcuisine B ${stamp}`],
+        [`Taggroup B ${stamp}`],
       ]);
     });
   });
@@ -424,7 +435,7 @@ describe('Recipe Tags (integration)', () => {
   describe('Variants and Add to Family', () => {
     it('a new Admin Variant starts with every Tag of its Base, then they are independent', async () => {
       const base = (
-        await admin.post('', catalogDoc({ tagIds: [cuisineA] })).expect(201)
+        await admin.post('', catalogDoc({ tagIds: [groupedA] })).expect(201)
       ).body as { id: string };
       await link(base.id, dinner);
       const variant = (
@@ -432,16 +443,16 @@ describe('Recipe Tags (integration)', () => {
           .post(`/${base.id}/variants`, { title: title('Var') })
           .expect(201)
       ).body as { id: string };
-      expect(await linkedIds(variant.id)).toEqual([cuisineA, dinner].sort());
+      expect(await linkedIds(variant.id)).toEqual([groupedA, dinner].sort());
 
       await link(base.id, vegan);
-      expect(await linkedIds(variant.id)).toEqual([cuisineA, dinner].sort());
+      expect(await linkedIds(variant.id)).toEqual([groupedA, dinner].sort());
     });
 
     it("Add to Family copies the Catalog Recipe's Tags onto the Family's copy", async () => {
       const base = (
         await admin
-          .post('', catalogDoc({ tagIds: [cuisineA, methodA] }))
+          .post('', catalogDoc({ tagIds: [groupedA, methodGrouped] }))
           .expect(201)
       ).body as { id: string };
       await link(base.id, dinner);
@@ -451,84 +462,12 @@ describe('Recipe Tags (integration)', () => {
         id: string;
       };
       expect(await linkedIds(copy.id)).toEqual(
-        [cuisineA, methodA, dinner, vegan].sort(),
+        [groupedA, methodGrouped, dinner, vegan].sort(),
       );
       const shown = await detail(ana, copy.id);
       expect(shown.tags.every((t) => t.kind === 'catalog')).toBe(true);
       // The copy is independent: a new Tag on the source does not follow.
       expect(await linkedIds(base.id)).toHaveLength(4);
-    });
-  });
-
-  describe('Admin Cuisine and Method lists mirror to Catalog Tags (until the contract step)', () => {
-    it('creates, renames, translates and deletes the Tag with the entry', async () => {
-      const created = (
-        await adminCatalog
-          .post('/cuisines', { name: `Mirror ${stamp}` })
-          .expect(201)
-      ).body as { id: string };
-      const tagOf = async () =>
-        (
-          await database
-            .select({
-              name: tags.name,
-              familyId: tags.familyId,
-              groupId: tags.groupId,
-            })
-            .from(tags)
-            .where(eq(tags.id, created.id))
-        )[0];
-      expect(await tagOf()).toMatchObject({
-        name: `Mirror ${stamp}`,
-        familyId: null,
-        groupId: expect.stringMatching(/-/) as string,
-      });
-
-      await adminCatalog
-        .patch(`/cuisines/${created.id}`, { name: `Mirror2 ${stamp}` })
-        .expect(200);
-      expect((await tagOf()).name).toBe(`Mirror2 ${stamp}`);
-
-      const ro = (
-        await adminCatalog
-          .post('/translations', {
-            entityType: 'cuisine',
-            entityId: created.id,
-            locale: 'ro',
-            kind: 'name',
-            value: `Oglindă ${stamp}`,
-          })
-          .expect(201)
-      ).body as { id: string };
-      const tagNames = () =>
-        database
-          .select({
-            locale: catalogTranslations.locale,
-            value: catalogTranslations.value,
-          })
-          .from(catalogTranslations)
-          .where(
-            and(
-              eq(catalogTranslations.entityType, 'tag'),
-              eq(catalogTranslations.entityId, created.id),
-              eq(catalogTranslations.kind, 'name'),
-            ),
-          )
-          .then((rows) =>
-            rows.sort((a, b) => a.locale.localeCompare(b.locale)),
-          );
-      expect(await tagNames()).toEqual([
-        { locale: 'en', value: `Mirror2 ${stamp}` },
-        { locale: 'ro', value: `Oglindă ${stamp}` },
-      ]);
-
-      await adminCatalog.del(`/translations/${ro.id}`).expect(204);
-      expect(await tagNames()).toEqual([
-        { locale: 'en', value: `Mirror2 ${stamp}` },
-      ]);
-
-      await adminCatalog.del(`/cuisines/${created.id}`).expect(204);
-      expect(await tagOf()).toBeUndefined();
     });
   });
 });

@@ -69,8 +69,6 @@ export class RecipesService {
       title: row.title,
       servings: row.servings,
       difficulty: row.difficulty,
-      cuisineId: row.cuisineId,
-      methodId: row.methodId,
       archived: row.archivedAt !== null,
     }));
   }
@@ -113,12 +111,12 @@ export class RecipesService {
     const id = randomUUID();
     await this.database.transaction(async (tx) => {
       await this.validate(tx, document);
-      const tagged = await resolveRecipeTags(tx, null, document.tagIds);
+      const tagIds = await resolveRecipeTags(tx, null, document.tagIds);
       await tx.insert(recipes).values({
         id,
-        ...recipeColumns(document, tagged),
+        ...recipeColumns(document),
       });
-      await replaceRecipeTags(tx, id, tagged.tagIds);
+      await replaceRecipeTags(tx, id, tagIds);
       await this.writeLines(tx, id, document, new Set());
       await this.writeSteps(tx, id, document, new Set());
     });
@@ -135,7 +133,7 @@ export class RecipesService {
     await this.database.transaction(async (tx) => {
       await lockCatalogRecipe(tx, id);
       await this.validate(tx, document);
-      const tagged = await resolveRecipeTags(tx, null, document.tagIds);
+      const tagIds = await resolveRecipeTags(tx, null, document.tagIds);
       const existingLines = await tx
         .select({ id: recipeIngredientLines.id })
         .from(recipeIngredientLines)
@@ -146,9 +144,9 @@ export class RecipesService {
         .where(eq(recipeSteps.recipeId, id));
       await tx
         .update(recipes)
-        .set(recipeColumns(document, tagged))
+        .set(recipeColumns(document))
         .where(eq(recipes.id, id));
-      await replaceRecipeTags(tx, id, tagged.tagIds);
+      await replaceRecipeTags(tx, id, tagIds);
       await this.writeLines(
         tx,
         id,
@@ -205,8 +203,6 @@ export class RecipesService {
         prepMinutes: parent.prepMinutes,
         cookMinutes: parent.cookMinutes,
         difficulty: parent.difficulty,
-        cuisineId: parent.cuisineId,
-        methodId: parent.methodId,
       });
       // The Variant starts with every Tag of its Base, then they are independent.
       await copyRecipeTags(tx, parentId, id);

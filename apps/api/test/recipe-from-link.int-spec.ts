@@ -497,7 +497,7 @@ describe('Recipe from Link (integration)', () => {
       });
     const { draft } = (await read('https://example.com/indices').expect(200))
       .body as RecipeFromLink;
-    // The Cuisines and Methods still go by id; the Catalog goes by index.
+    // The Catalog goes by index.
     expect(prompts[0].prompt).not.toContain(milk);
     expect(prompts[0].prompt).not.toContain(flour);
     expect(draft.lines.map((l) => [l.ingredientId, l.rawName])).toEqual([
@@ -570,7 +570,7 @@ describe('Recipe from Link (integration)', () => {
       ((await who.post('/tags', { name }).expect(200)).body as { id: string })
         .id;
 
-    it("offers the Catalog Tags and this Family's, never another Family's, and no Cuisine or Method fields", async () => {
+    it("offers the Catalog Tags and this Family's, never another Family's", async () => {
       const mine = `Mine ${stamp}-a`;
       const theirs = `Theirs ${stamp}-a`;
       await familyTag(member, mine);
@@ -581,10 +581,6 @@ describe('Recipe from Link (integration)', () => {
       expect(names).not.toContain(theirs);
       // Catalog Tags come first and the Family's own last, so the Catalog part stays identical across Families.
       expect(names.indexOf(mine)).toBe(names.length - 1);
-      expect(prompts[0].prompt).not.toMatch(/cuisineId|methodId/);
-      expect(JSON.stringify(prompts[0].schema)).not.toMatch(
-        /cuisineId|methodId/,
-      );
     });
 
     it('turns proposed indices into Catalog and own Family Tag ids on the draft and the stored Recipe Draft', async () => {
@@ -602,7 +598,6 @@ describe('Recipe from Link (integration)', () => {
       const body = (await read('https://example.com/tagged').expect(200))
         .body as RecipeFromLink;
       expect(body.draft.tagIds).toEqual([dinner, mineId, vegan]);
-      expect(body.draft).not.toHaveProperty('cuisineId');
       const stored = await drafts().get(`/${body.recipeDraftId}`).expect(200);
       expect(
         (stored.body as { content: { tagIds: string[] } }).content.tagIds,
@@ -1544,8 +1539,6 @@ describe('Recipe from Link (integration)', () => {
         prepMinutes: '',
         cookMinutes: '',
         difficulty: '',
-        cuisineId: '',
-        methodId: '',
         lines: [],
         steps: [],
       },

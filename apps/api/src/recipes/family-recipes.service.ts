@@ -193,18 +193,18 @@ export class FamilyRecipesService {
     if (document.parentId)
       await this.assertParent(tx, familyId, document.parentId);
     // After the parent, so another Family's parent reads as missing before any Tag is judged.
-    const tagged = await resolveRecipeTags(tx, familyId, document.tagIds);
+    const tagIds = await resolveRecipeTags(tx, familyId, document.tagIds);
     const id = randomUUID();
     await tx.insert(recipes).values({
       id,
       familyId,
       parentId: document.parentId,
-      ...recipeColumns(document, tagged),
+      ...recipeColumns(document),
       // Set at creation only; updates never touch it, and a Variant draft does not copy it (ADR 0006).
       sourceLink: document.sourceLink ?? null,
       sourceLanguage: document.sourceLanguage ?? null,
     });
-    await replaceRecipeTags(tx, id, tagged.tagIds);
+    await replaceRecipeTags(tx, id, tagIds);
     await this.writeLines(tx, id, document, new Map(), locale);
     const stepIds = await this.recipes.writeSteps(tx, id, document, new Set());
     if (tips.length > 0) {
@@ -254,7 +254,7 @@ export class FamilyRecipesService {
         throw sourceLinkLocked();
       }
       await this.validate(tx, familyId, document);
-      const tagged = await resolveRecipeTags(tx, familyId, document.tagIds);
+      const tagIds = await resolveRecipeTags(tx, familyId, document.tagIds);
       const existingLines = await tx
         .select()
         .from(recipeIngredientLines)
@@ -266,7 +266,7 @@ export class FamilyRecipesService {
       await tx
         .update(recipes)
         .set({
-          ...recipeColumns(document, tagged),
+          ...recipeColumns(document),
           // `null` clears; the link goes with its language, absent leaves both.
           ...(document.sourceLink === null
             ? { sourceLink: null, sourceLanguage: null }
@@ -275,7 +275,7 @@ export class FamilyRecipesService {
               : {}),
         })
         .where(eq(recipes.id, id));
-      await replaceRecipeTags(tx, id, tagged.tagIds);
+      await replaceRecipeTags(tx, id, tagIds);
       await this.writeLines(
         tx,
         id,

@@ -6,10 +6,10 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   batches,
-  cuisines,
   ingredients,
   recipeIngredientLines,
   recipes,
+  recipeTags,
   user,
 } from '../src/database/schema';
 import type {
@@ -43,7 +43,7 @@ describe('Recipe list scope (integration)', () => {
       archived?: boolean;
       ingredient?: string;
       title?: string;
-      cuisineId?: string;
+      tagId?: string;
     } = {},
   ) => {
     const id = crypto.randomUUID();
@@ -51,11 +51,15 @@ describe('Recipe list scope (integration)', () => {
       id,
       familyId: opts.familyId ?? null,
       parentId: opts.parentId ?? null,
-      cuisineId: opts.cuisineId ?? null,
       title: opts.title ?? `Scope ${stamp}-${++n}`,
       servings: 2,
       archivedAt: opts.archived ? new Date() : null,
     });
+    if (opts.tagId) {
+      await database
+        .insert(recipeTags)
+        .values({ recipeId: id, tagId: opts.tagId });
+    }
     await database.insert(recipeIngredientLines).values({
       id: crypto.randomUUID(),
       recipeId: id,
@@ -161,19 +165,16 @@ describe('Recipe list scope (integration)', () => {
       expect(ids(search).sort()).toEqual([base, catalogVariant].sort());
     });
 
-    it('catalog: lists Catalog Variants while filtering by Cuisine, and not Family Variants', async () => {
-      const [{ id: cuisineId }] = await database
-        .select({ id: cuisines.id })
-        .from(cuisines)
-        .limit(1);
-      const base = await make({ cuisineId });
-      const catalogVariant = await make({ parentId: base, cuisineId });
+    it('catalog: lists Catalog Variants while filtering by a Tag, and not Family Variants', async () => {
+      const tagId = seedId.tag('meal:dinner');
+      const base = await make({ tagId });
+      const catalogVariant = await make({ parentId: base, tagId });
       const familyVariant = await make({
         parentId: base,
         familyId: anaFamily,
-        cuisineId,
+        tagId,
       });
-      const body = await list(`&scope=catalog&cuisineId=${cuisineId}`);
+      const body = await list(`&scope=catalog&tagIds=${tagId}`);
       expect(ids(body)).toEqual(expect.arrayContaining([base, catalogVariant]));
       expect(ids(body)).not.toContain(familyVariant);
     });

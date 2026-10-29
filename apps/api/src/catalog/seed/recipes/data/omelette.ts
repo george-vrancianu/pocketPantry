@@ -159,7 +159,7 @@ export const omelette: BaseRecipeSeed = {
   variants: [
     {
       slug: 'omelette-mediterranean',
-      cuisine: 'mediterranean',
+      tag: 'cuisine:mediterranean',
       title: t('Mediterranean omelette', 'Omletă mediteraneană'),
       servings: 1,
       prepMinutes: 10,
@@ -308,7 +308,7 @@ export const omelette: BaseRecipeSeed = {
     },
     {
       slug: 'omelette-middle-eastern',
-      cuisine: 'middle-eastern',
+      tag: 'cuisine:middle-eastern',
       // Cooked through and thick, not left slightly wet.
       hideBaseTips: [0],
       title: t(
@@ -462,7 +462,7 @@ export const omelette: BaseRecipeSeed = {
     },
     {
       slug: 'omelette-asian',
-      cuisine: 'asian',
+      tag: 'cuisine:asian',
       title: t('Asian-style omelette', 'Omletă în stil asiatic'),
       servings: 1,
       prepMinutes: 8,
@@ -593,7 +593,7 @@ export const omelette: BaseRecipeSeed = {
     },
     {
       slug: 'omelette-romanian',
-      cuisine: 'romanian',
+      tag: 'cuisine:romanian',
       title: t(
         'Omelette with spring onion, telemea and dill',
         'Omletă cu ceapă verde, telemea și mărar',
@@ -738,7 +738,7 @@ export const omelette: BaseRecipeSeed = {
     },
     {
       slug: 'omelette-french-rolled',
-      method: 'rolled',
+      tag: 'method:rolled',
       title: t('French rolled omelette', 'Omletă franțuzească rulată'),
       servings: 1,
       prepMinutes: 5,
@@ -872,7 +872,7 @@ export const omelette: BaseRecipeSeed = {
     },
     {
       slug: 'omelette-american-folded',
-      method: 'folded',
+      tag: 'method:folded',
       title: t('American folded omelette', 'Omletă americană pliată'),
       servings: 1,
       prepMinutes: 10,
@@ -1007,7 +1007,7 @@ export const omelette: BaseRecipeSeed = {
     },
     {
       slug: 'omelette-frittata',
-      method: 'frittata',
+      tag: 'method:frittata',
       // Finished under the grill: the base's "slightly wet" rule does not apply.
       hideBaseTips: [0],
       title: t(

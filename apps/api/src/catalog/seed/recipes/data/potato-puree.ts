@@ -191,7 +191,7 @@ export const potatoPuree: BaseRecipeSeed = {
   variants: [
     {
       slug: 'potato-puree-french',
-      cuisine: 'french',
+      tag: 'cuisine:french',
       title: t(
         'French pommes purée',
         'Pommes purée franțuzesc (piure franțuzesc)',
@@ -359,7 +359,7 @@ export const potatoPuree: BaseRecipeSeed = {
     },
     {
       slug: 'potato-puree-irish-colcannon',
-      cuisine: 'irish',
+      tag: 'cuisine:irish',
       title: t('Irish colcannon', 'Colcannon irlandez'),
       servings: 4,
       prepMinutes: 15,
@@ -526,7 +526,7 @@ export const potatoPuree: BaseRecipeSeed = {
     },
     {
       slug: 'potato-puree-romanian',
-      cuisine: 'romanian',
+      tag: 'cuisine:romanian',
       title: t(
         'Romanian piure with sautéed onion',
         'Piure de cartofi cu ceapă călită',
@@ -694,7 +694,7 @@ export const potatoPuree: BaseRecipeSeed = {
     },
     {
       slug: 'potato-puree-riced',
-      method: 'riced',
+      tag: 'method:riced',
       title: t('Riced potato puree', 'Piure de cartofi pasat prin presă'),
       servings: 4,
       prepMinutes: 15,
@@ -834,7 +834,7 @@ export const potatoPuree: BaseRecipeSeed = {
     },
     {
       slug: 'potato-puree-gratin-topped',
-      method: 'gratin-topped',
+      tag: 'method:gratin-topped',
       title: t(
         'Gratin-topped potato puree',
         'Piure de cartofi gratinat la cuptor',

@@ -29,9 +29,6 @@ export function draftContentOfLink(
     cookMinutes: minutesText(draft.cookMinutes),
     difficulty: draft.difficulty ?? '',
     tagIds: draft.tagIds,
-    // Legacy keys: a reading proposes Tags only; #715 drops them from the content.
-    cuisineId: '',
-    methodId: '',
     lines: draft.lines.map((line) => ({
       ingredientId: line.ingredientId ?? '',
       name: line.ingredientName || line.rawName || '',

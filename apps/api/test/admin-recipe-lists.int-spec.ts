@@ -1,12 +1,10 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike, inArray } from 'drizzle-orm';
+import { ilike, inArray } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   catalogTranslations,
-  cuisines,
-  methods,
   recipes,
   recipeTags,
   tagGroups,
@@ -25,13 +23,15 @@ type Named = {
 
 jest.setTimeout(30_000);
 
-describe('Admin Cuisine, Method, Tag Group and Catalog Tag lists (integration)', () => {
+describe('Admin Tag Group and Catalog Tag lists (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
   let admin: ReturnType<typeof client>;
   let member: ReturnType<typeof client>;
   let ana: ReturnType<typeof client>;
   let bea: ReturnType<typeof client>;
+  let anaCookie: string;
+  let beaCookie: string;
   const stamp = Date.now();
 
   beforeAll(async () => {
@@ -49,23 +49,15 @@ describe('Admin Cuisine, Method, Tag Group and Catalog Tag lists (integration)',
       await signUp(app, `lists-member-${stamp}@example.com`, 'Member'),
       '/api/admin/catalog',
     );
-    ana = client(
-      app,
-      await signUp(app, `lists-ana-${stamp}@example.com`, 'Ana'),
-      '/api/recipes',
-    );
-    bea = client(
-      app,
-      await signUp(app, `lists-bea-${stamp}@example.com`, 'Bea'),
-      '/api/recipes',
-    );
+    anaCookie = await signUp(app, `lists-ana-${stamp}@example.com`, 'Ana');
+    ana = client(app, anaCookie, '/api/recipes');
+    beaCookie = await signUp(app, `lists-bea-${stamp}@example.com`, 'Bea');
+    bea = client(app, beaCookie, '/api/recipes');
   });
 
   afterAll(async () => {
     const like = `%${stamp}%`;
     await database.delete(recipes).where(ilike(recipes.title, like));
-    await database.delete(cuisines).where(ilike(cuisines.name, like));
-    await database.delete(methods).where(ilike(methods.name, like));
     await database
       .delete(catalogTranslations)
       .where(ilike(catalogTranslations.value, like));
@@ -88,79 +80,11 @@ describe('Admin Cuisine, Method, Tag Group and Catalog Tag lists (integration)',
     await app.close();
   });
 
-  it.each([
-    ['cuisines', 'cuisine', 'cuisines'],
-    ['methods', 'method', 'methods'],
-  ] as const)(
-    'creates, renames, translates and deletes a %s entry like an Aisle',
-    async (path, entityType, overviewKey) => {
-      const created = await admin
-        .post(`/${path}`, { name: `Thai ${stamp}` })
-        .expect(201);
-      const id = (created.body as { id: string }).id;
-
-      const listed = (await admin.get('').expect(200)).body as Record<
-        string,
-        Named[]
-      >;
-      const entry = listed[overviewKey].find((row) => row.id === id);
-      expect(entry?.name).toBe(`Thai ${stamp}`);
-      // The English display name is managed through the entry, as for Aisles.
-      expect(entry?.translations.map((t) => [t.locale, t.value])).toEqual([
-        ['en', `Thai ${stamp}`],
-      ]);
-
-      await admin.post(`/${path}`, { name: `thai ${stamp}` }).expect(409);
-      await admin
-        .patch(`/${path}/${id}`, { name: `Siam ${stamp}` })
-        .expect(200);
-
-      await admin
-        .post('/translations', {
-          entityType,
-          entityId: id,
-          locale: 'ro',
-          kind: 'name',
-          value: `Tailandeza ${stamp}`,
-        })
-        .expect(201);
-
-      await admin.del(`/${path}/${id}`).expect(204);
-      const rows = await database
-        .select()
-        .from(catalogTranslations)
-        .where(eq(catalogTranslations.entityId, id));
-      expect(rows).toEqual([]);
-      await admin.del(`/${path}/${id}`).expect(404);
-    },
-  );
-
-  it('refuses to delete a Cuisine or Method a Recipe uses', async () => {
-    const cuisine = (
-      await admin.post('/cuisines', { name: `Used cuisine ${stamp}` })
-    ).body as { id: string };
-    const method = (
-      await admin.post('/methods', { name: `Used method ${stamp}` })
-    ).body as { id: string };
-    await database.insert(recipes).values({
-      id: crypto.randomUUID(),
-      title: `Uses lists ${stamp}`,
-      servings: 2,
-      cuisineId: cuisine.id,
-      methodId: method.id,
-    });
-    const c = await admin.del(`/cuisines/${cuisine.id}`).expect(409);
-    expect((c.body as { code: string }).code).toBe('catalog.cuisine_in_use');
-    const m = await admin.del(`/methods/${method.id}`).expect(409);
-    expect((m.body as { code: string }).code).toBe('catalog.method_in_use');
+  it('keeps the Tag Group and Catalog Tag endpoints Admin-only', async () => {
+    await member.post('/tag-groups', { name: `Nope ${stamp}` }).expect(403);
+    await member.del('/tags/00000000-0000-4000-8000-000000000000').expect(403);
   });
 
-  it('keeps the lists Admin-only', async () => {
-    await member.post('/cuisines', { name: `Nope ${stamp}` }).expect(403);
-    await member
-      .del('/methods/00000000-0000-4000-8000-000000000000')
-      .expect(403);
-  });
   describe('Tag Groups and Catalog Tags', () => {
     type Overview = {
       tagGroups: (Named & { position: number })[];
@@ -402,6 +326,47 @@ describe('Admin Cuisine, Method, Tag Group and Catalog Tag lists (integration)',
       expect((await tagsOf(ana, both.id)).map((t) => t.id)).toContain(
         keeper.id,
       );
+
+      await admin.del(`/tags/${catalogTag.id}?confirm=true`).expect(204);
+      await admin.del(`/tag-groups/${group.id}`).expect(204);
+    });
+
+    it('moves the Tags of unsaved Recipe Drafts to the Catalog Tag a merge leaves, once', async () => {
+      const group = await makeGroup(`Drafts ${stamp}`);
+      const anaTag = await familyTag(ana, `Draft bite ${stamp}`);
+      const beaTag = await familyTag(bea, `draft  BITE ${stamp}`);
+      const draftWith = async (cookie: string, tagIds: string[]) => {
+        const drafts = client(app, cookie, '/api/recipe-drafts');
+        const res = await drafts
+          .post('', {
+            kind: 'new_recipe',
+            content: {
+              title: `Draft ${stamp}`,
+              servings: '2',
+              prepMinutes: '',
+              cookMinutes: '',
+              difficulty: '',
+              tagIds,
+              lines: [],
+              steps: [],
+            },
+          })
+          .expect(201);
+        const id = (res.body as { id: string }).id;
+        return async () =>
+          (
+            (await drafts.get(`/${id}`).expect(200)).body as {
+              content: { tagIds: string[] };
+            }
+          ).content.tagIds;
+      };
+      const dinner = seedId.tag('meal:dinner');
+      const anaDraft = await draftWith(anaCookie, [anaTag.id, dinner]);
+      const beaDraft = await draftWith(beaCookie, [beaTag.id]);
+
+      const catalogTag = await makeTag(`Draft Bite ${stamp}`, group.id);
+      expect(await anaDraft()).toEqual([catalogTag.id, dinner]);
+      expect(await beaDraft()).toEqual([catalogTag.id]);
 
       await admin.del(`/tags/${catalogTag.id}?confirm=true`).expect(204);
       await admin.del(`/tag-groups/${group.id}`).expect(204);

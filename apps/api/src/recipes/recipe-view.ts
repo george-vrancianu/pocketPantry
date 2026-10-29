@@ -8,8 +8,6 @@ import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { Executor } from '../database/database.types';
 import {
-  cuisines,
-  methods,
   recipeHiddenTips,
   recipeIngredientLines,
   recipeIngredientLineTranslations,
@@ -207,8 +205,6 @@ export async function loadAdminDetail(
     prepMinutes: row.prepMinutes,
     cookMinutes: row.cookMinutes,
     difficulty: row.difficulty,
-    cuisineId: row.cuisineId,
-    methodId: row.methodId,
     tagIds: await loadRecipeTagIds(executor, id),
     archived: row.archivedAt !== null,
     archivedAt: row.archivedAt?.toISOString() ?? null,
@@ -365,8 +361,6 @@ export async function resolveRecipe(
       loadRecipeTags(executor, scope, locale, [id]),
       loadDisplayNames(executor, scope, locale, [
         ...parts.lines.flatMap((l) => (l.ingredientId ? [l.ingredientId] : [])),
-        ...(row.cuisineId ? [row.cuisineId] : []),
-        ...(row.methodId ? [row.methodId] : []),
       ]),
     ],
   );
@@ -385,11 +379,6 @@ export async function resolveRecipe(
     );
   const canonical = new Map(ingredientRows.map((i) => [i.id, i.name]));
 
-  const [cuisine, method] = await Promise.all([
-    row.cuisineId ? loadListName(executor, 'cuisines', row.cuisineId) : null,
-    row.methodId ? loadListName(executor, 'methods', row.methodId) : null,
-  ]);
-
   return {
     id: row.id,
     parentId: row.parentId,
@@ -400,17 +389,6 @@ export async function resolveRecipe(
     prepMinutes: row.prepMinutes,
     cookMinutes: row.cookMinutes,
     difficulty: row.difficulty,
-    cuisine:
-      row.cuisineId && cuisine
-        ? {
-            id: row.cuisineId,
-            name: names.pick('cuisine', row.cuisineId, cuisine),
-          }
-        : null,
-    method:
-      row.methodId && method
-        ? { id: row.methodId, name: names.pick('method', row.methodId, method) }
-        : null,
     tags: tagsByRecipe.get(id) ?? [],
     archived: row.archivedAt !== null,
     sourceLink: row.sourceLink,
@@ -465,19 +443,6 @@ async function loadInheritedTips(
   ]);
   const hiddenIds = new Set(hidden.map((h) => h.tipId));
   return baseTips.filter((tip) => !hiddenIds.has(tip.id));
-}
-
-async function loadListName(
-  executor: Executor,
-  table: 'cuisines' | 'methods',
-  id: string,
-): Promise<string | null> {
-  const t = table === 'cuisines' ? cuisines : methods;
-  const [row] = await executor
-    .select({ name: t.name })
-    .from(t)
-    .where(eq(t.id, id));
-  return row?.name ?? null;
 }
 
 /** Title per Recipe in `locale`; Family Recipes and untranslated ones show the source title. */

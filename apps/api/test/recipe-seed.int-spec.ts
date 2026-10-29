@@ -9,17 +9,14 @@ import {
 import { SEED_BASE_RECIPES } from '../src/catalog/seed/recipes/recipe-seed-data';
 import { seedRecipes } from '../src/catalog/seed/recipes/seed-recipes';
 import {
-  SEED_CUISINES,
   SEED_EATING_MOMENTS,
-  SEED_METHODS,
+  SEED_TAGS,
 } from '../src/catalog/seed/recipes/registries';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   catalogTranslations,
-  cuisines,
   eatingMoments,
-  methods,
   recipeEatingMomentTranslations,
   recipeHiddenTips,
   recipeEatingMoments,
@@ -104,46 +101,7 @@ describe('Recipe seed (integration)', () => {
     );
   });
 
-  it('seeds the Cuisines and Methods with names in en, ro and da', async () => {
-    const cuisineRows = await database
-      .select()
-      .from(cuisines)
-      .where(
-        inArray(
-          cuisines.id,
-          SEED_CUISINES.map((c) => seedId.cuisine(c.slug)),
-        ),
-      );
-    const methodRows = await database
-      .select()
-      .from(methods)
-      .where(
-        inArray(
-          methods.id,
-          SEED_METHODS.map((m) => seedId.method(m.slug)),
-        ),
-      );
-    expect(cuisineRows).toHaveLength(SEED_CUISINES.length);
-    expect(methodRows).toHaveLength(SEED_METHODS.length);
-    const translated = await database
-      .select({ n: sql<number>`count(*)::int` })
-      .from(catalogTranslations)
-      .where(
-        and(
-          inArray(catalogTranslations.entityId, [
-            ...cuisineRows.map((r) => r.id),
-            ...methodRows.map((r) => r.id),
-          ]),
-          inArray(catalogTranslations.entityType, ['cuisine', 'method']),
-          eq(catalogTranslations.kind, 'name'),
-        ),
-      );
-    expect(translated[0].n).toBe(
-      (SEED_CUISINES.length + SEED_METHODS.length) * 3,
-    );
-  });
-
-  it('seeds Tag Groups in order, with the Cuisines and Methods and the starter Meal and Diet Tags as Catalog Tags, in en, ro and da', async () => {
+  it('seeds Tag Groups in order, with the Catalog Tags of every group, in en, ro and da', async () => {
     const groups = await database
       .select({ name: tagGroups.name, position: tagGroups.position })
       .from(tagGroups)
@@ -164,25 +122,29 @@ describe('Recipe seed (integration)', () => {
         .filter((t) => t.group === group)
         .map((t) => t.name)
         .sort();
-    expect(inGroup('Meal')).toEqual(
-      ['Breakfast', 'Brunch', 'Lunch', 'Dinner', 'Snack', 'Dessert'].sort(),
-    );
-    expect(inGroup('Diet')).toEqual(
-      ['Vegetarian', 'Vegan', 'Keto', 'Low-carb', 'High-protein'].sort(),
-    );
-    // Each Cuisine and Method is a Catalog Tag under its own id.
-    for (const [list, id, group] of [
-      [SEED_CUISINES, seedId.cuisine, 'Cuisine'],
-      [SEED_METHODS, seedId.method, 'Method'],
+    for (const [slug, group] of [
+      ['meal', 'Meal'],
+      ['diet', 'Diet'],
+      ['cuisine', 'Cuisine'],
+      ['method', 'Method'],
     ] as const) {
-      for (const entry of list) {
-        expect(catalogTags).toContainEqual({
-          id: id(entry.slug),
-          group,
-          name: entry.en,
-        });
-      }
+      expect(inGroup(group)).toEqual(SEED_TAGS[slug].map((t) => t.en).sort());
     }
+    // Each Tag has en, ro and da names.
+    const translated = await database
+      .select({ n: sql<number>`count(*)::int` })
+      .from(catalogTranslations)
+      .where(
+        and(
+          inArray(
+            catalogTranslations.entityId,
+            catalogTags.map((t) => t.id),
+          ),
+          eq(catalogTranslations.entityType, 'tag'),
+          eq(catalogTranslations.kind, 'name'),
+        ),
+      );
+    expect(translated[0].n).toBe(Object.values(SEED_TAGS).flat().length * 3);
     const named = await database
       .select({
         locale: catalogTranslations.locale,
@@ -204,18 +166,16 @@ describe('Recipe seed (integration)', () => {
     ]);
   });
 
-  it('tags a seeded Variant with its Cuisine or Method', async () => {
-    const variant = SEED_BASE_RECIPES.flatMap((b) => b.variants).find(
-      (v) => v.cuisine,
+  it('tags a seeded Variant with the Tag it is made by', async () => {
+    const variant = SEED_BASE_RECIPES.flatMap((b) => b.variants).find((v) =>
+      v.tag.startsWith('cuisine:'),
     );
     expect(variant).toBeDefined();
     const linked = await database
       .select({ tagId: recipeTags.tagId })
       .from(recipeTags)
       .where(eq(recipeTags.recipeId, seedId.recipe(variant!.slug)));
-    expect(linked.map((l) => l.tagId)).toEqual([
-      seedId.cuisine(variant!.cuisine!),
-    ]);
+    expect(linked.map((l) => l.tagId)).toEqual([seedId.tag(variant!.tag)]);
   });
 
   it('reads a seeded Variant through the Member API, in Romanian, with inherited Tips and guidance', async () => {
@@ -270,7 +230,28 @@ describe('Recipe seed (integration)', () => {
     }
   });
 
-  it('seeds the Omelette base with its Cuisine and Method Variants', async () => {
+  /** The Tags a Recipe carries (ids). */
+  const tagsOf = async (recipeId: string) =>
+    (
+      await database
+        .select({ tagId: recipeTags.tagId })
+        .from(recipeTags)
+        .where(eq(recipeTags.recipeId, recipeId))
+    ).map((r) => r.tagId);
+
+  /** How many Variants of `baseId` carry a Tag of the Tag Group named `groupName`. */
+  const variantsTaggedIn = async (groupName: string, baseId: string) =>
+    (
+      await database
+        .selectDistinct({ id: recipes.id })
+        .from(recipes)
+        .innerJoin(recipeTags, eq(recipeTags.recipeId, recipes.id))
+        .innerJoin(tags, eq(tags.id, recipeTags.tagId))
+        .innerJoin(tagGroups, eq(tagGroups.id, tags.groupId))
+        .where(and(eq(recipes.parentId, baseId), eq(tagGroups.name, groupName)))
+    ).length;
+
+  it('seeds the Omelette base with its Variants', async () => {
     const [base] = await database
       .select()
       .from(recipes)
@@ -279,20 +260,17 @@ describe('Recipe seed (integration)', () => {
       title: 'Omelette',
       parentId: null,
       familyId: null,
-      cuisineId: null,
-      methodId: null,
     });
+    expect(await tagsOf(base.id)).toEqual([]);
     const variants = await database
       .select()
       .from(recipes)
       .where(eq(recipes.parentId, base.id));
     expect(variants).toHaveLength(omelette?.variants.length ?? -1);
-    expect(
-      variants.filter((v) => v.cuisineId !== null).length,
-    ).toBeGreaterThanOrEqual(3);
-    expect(
-      variants.filter((v) => v.methodId !== null).length,
-    ).toBeGreaterThanOrEqual(2);
+    expect(await variantsTaggedIn('Cuisine', base.id)).toBeGreaterThanOrEqual(
+      3,
+    );
+    expect(await variantsTaggedIn('Method', base.id)).toBeGreaterThanOrEqual(2);
     expect(variants.every((v) => v.familyId === null)).toBe(true);
   });
 
@@ -311,16 +289,12 @@ describe('Recipe seed (integration)', () => {
         .from(recipes)
         .where(eq(recipes.id, baseId));
       expect(base?.parentId).toBeNull();
-      const variants = await database
-        .select()
-        .from(recipes)
-        .where(eq(recipes.parentId, baseId));
-      expect(
-        variants.filter((v) => v.cuisineId !== null).length,
-      ).toBeGreaterThanOrEqual(cuisineMin);
-      expect(
-        variants.filter((v) => v.methodId !== null).length,
-      ).toBeGreaterThanOrEqual(methodMin);
+      expect(await variantsTaggedIn('Cuisine', baseId)).toBeGreaterThanOrEqual(
+        cuisineMin,
+      );
+      expect(await variantsTaggedIn('Method', baseId)).toBeGreaterThanOrEqual(
+        methodMin,
+      );
     }
   });
 

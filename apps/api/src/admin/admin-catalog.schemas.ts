@@ -33,7 +33,7 @@ export const aisleOrder = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
 });
 
-/** A Cuisine, Method or Eating Moment: just a name; its translations are catalog translations. */
+/** An Eating Moment or Allergen: just a name; its translations are catalog translations. */
 export const listEntryCreate = z.object({ name: text });
 export const listEntryUpdate = z.object({ name: text });
 
