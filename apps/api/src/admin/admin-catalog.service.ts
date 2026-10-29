@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, inArray, isNotNull, max, sql } from 'drizzle-orm';
+import { and, asc, count, eq, isNotNull, max, sql } from 'drizzle-orm';
 import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import {
   amountScaleForParent,
@@ -36,6 +36,7 @@ import {
   parentCategories,
   recipeTags,
 } from '../database/schema';
+import { foldTagsInto } from '../tags/merge-tags';
 import { isAllergenFreeName } from '../tags/allergen-free-names';
 import { mirrorListEntryAsTag } from '../tags/recipe-tags';
 import type {
@@ -748,14 +749,11 @@ export class AdminCatalogService {
       )
       .for('update');
     if (family.length === 0) return;
-    const ids = family.map((row) => row.id);
-    await tx.execute(
-      sql`INSERT INTO ${recipeTags} (recipe_id, tag_id)
-          SELECT DISTINCT ${recipeTags.recipeId}, ${catalogTagId}::uuid FROM ${recipeTags}
-          WHERE ${inArray(recipeTags.tagId, ids)}
-          ON CONFLICT DO NOTHING`,
+    await foldTagsInto(
+      tx,
+      catalogTagId,
+      family.map((row) => row.id),
     );
-    await tx.delete(tags).where(inArray(tags.id, ids));
   }
 
   // Parent Categories
