@@ -122,6 +122,7 @@ describe('PlateScanService', () => {
         'Pizza',
         'en',
         'family-1',
+        { tags: [] },
       );
       expect(items[0]).toMatchObject({
         matchedIngredientId: milkId,
@@ -151,6 +152,7 @@ describe('PlateScanService', () => {
           'Pizza',
           'en',
           'family-1',
+          { tags: [] },
         );
         expect(items[0]).toMatchObject({
           matchedIngredientId: null,
@@ -163,7 +165,7 @@ describe('PlateScanService', () => {
     it('rejects a negative quantity', async () => {
       provider({ items: [item({ quantity: -1 })] });
       await expect(
-        service.findIngredients('Pizza', 'en', 'family-1'),
+        service.findIngredients('Pizza', 'en', 'family-1', { tags: [] }),
       ).rejects.toMatchObject({ code: 'scan.result_invalid' });
     });
 
@@ -175,7 +177,7 @@ describe('PlateScanService', () => {
       ).toBe(true);
       provider({ items: [item({ quantity: top })] });
       await expect(
-        service.findIngredients('Pizza', 'en', 'family-1'),
+        service.findIngredients('Pizza', 'en', 'family-1', { tags: [] }),
       ).resolves.toBeDefined();
       expect(
         addShoppingItemBody.safeParse({
@@ -185,14 +187,14 @@ describe('PlateScanService', () => {
       ).toBe(false);
       provider({ items: [item({ quantity: top + 1 })] });
       await expect(
-        service.findIngredients('Pizza', 'en', 'family-1'),
+        service.findIngredients('Pizza', 'en', 'family-1', { tags: [] }),
       ).rejects.toMatchObject({ code: 'scan.result_invalid' });
     });
 
     it('rejects more than a plate could hold', async () => {
       provider({ items: Array.from({ length: 101 }, () => item()) });
       await expect(
-        service.findIngredients('Pizza', 'en', 'family-1'),
+        service.findIngredients('Pizza', 'en', 'family-1', { tags: [] }),
       ).rejects.toMatchObject({ code: 'scan.result_invalid' });
     });
   });

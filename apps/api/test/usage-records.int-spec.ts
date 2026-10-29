@@ -46,8 +46,7 @@ const linkReading = {
   servings: null,
   prepMinutes: 10,
   cookMinutes: 15,
-  cuisineId: null,
-  methodId: null,
+  tagIndexes: [],
   steps: [{ text: 'Whisk everything.', timerMinutes: null }],
   ingredients: [
     {

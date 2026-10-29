@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { modelJsonSchema } from '../ai/model-json-schema';
 import { ingredientUnit } from '../database/schema';
 import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
+import { tagIndexesSchema } from '../tags/ai-tags';
 
 /** Structured-output schema name of a Recipe from Link reading. */
 export const LINK_READING_SCHEMA_NAME = 'recipe_from_link_reading';
@@ -21,8 +22,8 @@ export const linkReadingSchema = z.object({
   servings: z.number().nullable(),
   prepMinutes: z.number().nullable(),
   cookMinutes: z.number().nullable(),
-  cuisineId: z.string().nullable(),
-  methodId: z.string().nullable(),
+  /** The allowed Tags the model chose, by index; `tagIdsAt` turns them into Tag ids. Never a new Tag. */
+  tagIndexes: tagIndexesSchema,
   steps: z.array(
     z.object({
       text: z.string(),
@@ -47,8 +48,12 @@ export const linkReadingSchema = z.object({
 /** What the model returned: Ingredients named by their index in the Catalog text. */
 export type LinkReadingAnswer = z.infer<typeof linkReadingSchema>;
 type AnswerLine = LinkReadingAnswer['ingredients'][number];
-/** The reading with each proposed Ingredient as an id (`ingredientIdAt`). */
-export type LinkReading = Omit<LinkReadingAnswer, 'ingredients'> & {
+/** The reading with each proposed Ingredient as an id (`ingredientIdAt`) and the proposed Tags as ids (`tagIdsAt`). */
+export type LinkReading = Omit<
+  LinkReadingAnswer,
+  'ingredients' | 'tagIndexes'
+> & {
+  tagIds: string[];
   ingredients: (Omit<AnswerLine, 'ingredientIndex'> & {
     ingredientId: string | null;
   })[];

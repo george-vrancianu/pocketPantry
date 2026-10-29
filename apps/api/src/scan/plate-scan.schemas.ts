@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { modelJsonSchema } from '../ai/model-json-schema';
 import { catalogIndexSchema } from '../ingredients/ingredient-catalog';
+import { tagIndexesSchema } from '../tags/ai-tags';
 import { imageDataUrlSchema } from './product-scan.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 
@@ -54,6 +55,8 @@ const plateItemSchema = z.object({
 });
 export const plateIngredientsModelResultSchema = z.object({
   items: z.array(plateItemSchema).max(100),
+  /** The allowed Tags the model chose for the dish, by index; the service turns them into Tag ids. Never a new Tag. */
+  tagIndexes: tagIndexesSchema,
 });
 export const plateIngredientsJsonSchema = modelJsonSchema(
   plateIngredientsModelResultSchema,

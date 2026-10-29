@@ -6,10 +6,11 @@ import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.ser
 import { ApiException } from '../src/common/api-exception';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { unmatchedEntries } from '../src/database/schema';
+import { tags, unmatchedEntries } from '../src/database/schema';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { PLATE_TOKEN_TTL_MS } from '../src/scan/plate-token';
 import { expectCatalogByIndex } from './support/catalog-indices';
+import { offeredTagNames, tagIndexIn } from './support/tag-indices';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { signUpWithUiLanguage } from './support/stored-language';
 
@@ -54,7 +55,9 @@ type List = {
 
 describe('Plate Scan (integration)', () => {
   let app: NestFastifyApplication;
-  let next: () => Promise<{ data: unknown; requestId: string | null }>;
+  let next: (
+    request: StructuredOutputRequest,
+  ) => Promise<{ data: unknown; requestId: string | null }>;
   const prompts: StructuredOutputRequest[] = [];
   let counter = 0;
 
@@ -62,7 +65,7 @@ describe('Plate Scan (integration)', () => {
     app = await createTestApp([], {
       generate: (input) => {
         prompts.push(input);
-        return next();
+        return next(input);
       },
     });
   });
@@ -70,8 +73,17 @@ describe('Plate Scan (integration)', () => {
     await app.close();
   });
 
-  const respondWith = (data: unknown) => {
-    next = () => Promise.resolve({ data, requestId: 'fake-request' });
+  const respondWith = (
+    data: object | ((request: StructuredOutputRequest) => object),
+  ) => {
+    next = (request) =>
+      Promise.resolve({
+        data:
+          typeof data === 'function'
+            ? (data as (request: StructuredOutputRequest) => object)(request)
+            : data,
+        requestId: 'fake-request',
+      });
   };
 
   async function signUp() {
@@ -285,6 +297,84 @@ describe('Plate Scan (integration)', () => {
       ]);
       expectCatalogByIndex(prompts[0].prompt);
       expect(lines[0].name).toBe('Pixie dust');
+    });
+
+    describe('Tags (#714)', () => {
+      const dinner = seedId.tag('meal:dinner');
+      const vegan = seedId.tag('diet:vegan');
+      const database = () => app.get<Database>(DATABASE);
+      const tagCount = async () =>
+        (await database().select({ id: tags.id }).from(tags)).length;
+      const familyTag = async (cookie: string, name: string) =>
+        (
+          (await post(cookie, 'recipes/tags', { name }).expect(200)).body as {
+            id: string;
+          }
+        ).id;
+      const stamp = Date.now();
+
+      it("offers the Catalog Tags and the Family's own, never another Family's, and proposes ids from them", async () => {
+        const cookie = await signUp();
+        const mine = `Mine plate ${stamp}`;
+        const mineId = await familyTag(cookie, mine);
+        const theirs = `Theirs plate ${stamp}`;
+        await familyTag(await signUp(), theirs);
+        respondWith((request) => ({
+          items: [item()],
+          tagIndexes: [
+            tagIndexIn(request.prompt, 'Dinner'),
+            tagIndexIn(request.prompt, mine),
+            tagIndexIn(request.prompt, 'Vegan'),
+            100_000,
+            -1,
+            2.5,
+            'Vegan',
+            tagIndexIn(request.prompt, 'Dinner'),
+          ],
+        }));
+        prompts.length = 0;
+        const body = (await ingredients(cookie).expect(201)).body as {
+          lines: Line[];
+          tagIds: string[];
+        };
+        expect(body.tagIds).toEqual([dinner, mineId, vegan]);
+        const names = offeredTagNames(prompts[0].prompt);
+        expect(names).toEqual(expect.arrayContaining(['Dinner', mine]));
+        expect(names).not.toContain(theirs);
+        expect(names.indexOf(mine)).toBe(names.length - 1);
+        expect(prompts[0].prompt).not.toMatch(/cuisine|method/i);
+      });
+
+      it('creates no Tag, whatever the model names, and proposes none when it names none', async () => {
+        const cookie = await signUp();
+        const before = await tagCount();
+        respondWith({
+          items: [item()],
+          tagIndexes: [0, 1],
+          tags: ['Brand new'],
+        });
+        const body = (await ingredients(cookie).expect(201)).body as {
+          tagIds: string[];
+        };
+        expect(body.tagIds).toHaveLength(2);
+        expect(await tagCount()).toBe(before);
+        respondWith({ items: [item()] });
+        expect(
+          ((await ingredients(cookie).expect(201)).body as { tagIds: string[] })
+            .tagIds,
+        ).toEqual([]);
+      });
+
+      it('caps the proposals at 10', async () => {
+        respondWith((request) => ({
+          items: [item()],
+          tagIndexes: offeredTagNames(request.prompt).map((_, i) => i),
+        }));
+        const body = (await ingredients(await signUp()).expect(201)).body as {
+          tagIds: string[];
+        };
+        expect(body.tagIds).toHaveLength(10);
+      });
     });
 
     it('names Ingredients in the Member locale', async () => {
