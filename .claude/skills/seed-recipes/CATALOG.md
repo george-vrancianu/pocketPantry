@@ -11,7 +11,7 @@ Follow the pattern of commit `26a7b295` (96 seed Ingredients): `git show 26a7b29
 - **Ingredient rows**: the per-Parent file in `apps/api/src/catalog/seed/data/` that holds the planned Leaf, inside that Leaf's `ingredientsOf(...)` list, with en and ro names and Synonyms.
 - **Danish**: names and Synonyms in `data/danish.ts`, written as a Danish shopper reads them on a shelf.
 - **Allergens**: `data/ingredient-allergens.ts`, under the Leaf's comment. Every Ingredient needs an entry; `[]` is the deliberate claim "contains none". Tag by what the Ingredient is typically made of (pesto carries nuts and milk), never "may contain traces", with slugs in alphabetical order. Read the file's header comment before your first entry.
-- **New Cuisines, Methods, Eating Moments**: append to `apps/api/src/catalog/seed/recipes/registries.ts` with en/ro/da names.
+- **New Tags, Eating Moments**: append a Tag to its Tag Group in `SEED_TAGS` (Variants usually use the Cuisine or Method Tag Group) and an Eating Moment to its list, in `apps/api/src/catalog/seed/recipes/registries.ts`, with en/ro/da names.
 
 A Synonym is a receipt or label word that differs from the name. Add Synonyms that people would actually type or see on a receipt.
 

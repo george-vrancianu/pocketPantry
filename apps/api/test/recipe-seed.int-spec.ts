@@ -175,7 +175,10 @@ describe('Recipe seed (integration)', () => {
       .select({ tagId: recipeTags.tagId })
       .from(recipeTags)
       .where(eq(recipeTags.recipeId, seedId.recipe(variant!.slug)));
-    expect(linked.map((l) => l.tagId)).toEqual([seedId.tag(variant!.tag)]);
+    expect(linked.map((l) => l.tagId)).toEqual([
+      // Cuisine and Method Tags keep the ids their old lists had.
+      stableId(variant!.tag),
+    ]);
   });
 
   it('reads a seeded Variant through the Member API, in Romanian, with inherited Tips and guidance', async () => {
@@ -584,6 +587,36 @@ describe('Recipe seed (integration)', () => {
         }),
       ).rejects.toBeInstanceOf(Rollback);
       expect((await tipsOf(database)).length).toBeGreaterThan(0);
+    });
+
+    it('does not add a second Tag when an Admin has renamed a seeded Cuisine Tag', async () => {
+      const slug = SEED_BASE_RECIPES.flatMap((b) => b.variants)
+        .map((v) => v.tag)
+        .find((t) => t.startsWith('cuisine:'))!;
+      const tagId = stableId(slug);
+      const catalogTags = (tx: Pick<Database, 'select'>) =>
+        tx.select({ id: tags.id }).from(tags).where(isNull(tags.familyId));
+      const before = await catalogTags(database);
+      await expect(
+        database.transaction(async (tx) => {
+          await tx
+            .update(tags)
+            .set({
+              name: 'Renamed by an Admin',
+              normalizedName: 'renamed by an admin',
+            })
+            .where(eq(tags.id, tagId));
+          await seedRecipes(tx);
+          const after = await catalogTags(tx);
+          expect(after).toHaveLength(before.length);
+          const [renamed] = await tx
+            .select({ name: tags.name })
+            .from(tags)
+            .where(eq(tags.id, tagId));
+          expect(renamed.name).toBe('Renamed by an Admin');
+          throw new Rollback();
+        }),
+      ).rejects.toBeInstanceOf(Rollback);
     });
 
     it('skips a Variant whose base is archived, as the API refuses new Variants there', async () => {

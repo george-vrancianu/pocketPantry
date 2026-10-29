@@ -62,6 +62,16 @@ function planRegistry(
   return { ids, fresh };
 }
 
+/**
+ * The id of a seed Catalog Tag. Cuisine and Method Tags keep the ids their old
+ * lists had (migration 0049 kept them), so a re-seed finds a Tag an Admin renamed.
+ */
+function seedTagId(groupSlug: string, slug: string) {
+  return groupSlug === 'cuisine' || groupSlug === 'method'
+    ? stableId(`${groupSlug}:${slug}`)
+    : seedId.tag(`${groupSlug}:${slug}`);
+}
+
 async function insertNames(
   tx: Tx,
   entityType: EntityType,
@@ -149,7 +159,7 @@ async function seedTags(tx: Tx) {
   const tagIds = new Map<string, string>();
   for (const [groupSlug, rows] of Object.entries(SEED_TAGS)) {
     const plan = planRegistry(existingTags, rows, (slug) =>
-      seedId.tag(`${groupSlug}:${slug}`),
+      seedTagId(groupSlug, slug),
     );
     for (const [slug, id] of plan.ids) tagIds.set(`${groupSlug}:${slug}`, id);
     // A Tag planned for this group is "existing" for the next one (names are unique across groups).

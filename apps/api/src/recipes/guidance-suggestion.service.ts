@@ -77,8 +77,8 @@ type PromptRecipe = {
 /** What one request needs looked up, by who is asking. */
 type Lookups = {
   catalog: IngredientCatalog;
-  /** The names, in the prompt's language, of the Tags the writer picked (looked up only when there are some). */
-  tagNames: (tagIds: string[]) => Promise<string[]>;
+  /** The Tags the writer can pick, named in the prompt's language (looked up only when the writer picked some). */
+  pickable: () => Promise<RecipeTag[]>;
   moments: OfferedMoment[];
   context: () => Promise<SuggestionContext>;
 };
@@ -115,8 +115,7 @@ export class GuidanceSuggestionService {
         const lists = await this.browse.filters(memberId, locale);
         return {
           catalog,
-          tagNames: async (tagIds) =>
-            namesOf(await this.browse.pickableTags(memberId, locale), tagIds),
+          pickable: () => this.browse.pickableTags(memberId, locale),
           // The unarchived, Admin-curated Eating Moments (named in `locale`), only when wanted.
           moments: empty.includes('eatingMoments') ? lists.eatingMoments : [],
           // Links and Allergens matter only for Pairings; they are looked up when asked.
@@ -155,15 +154,12 @@ export class GuidanceSuggestionService {
           : [];
         return {
           catalog,
-          tagNames: async (tagIds) =>
-            namesOf(
-              await loadPickableTags(
-                this.database,
-                catalogScope(SHARED_ONLY),
-                locale,
-                null,
-              ),
-              tagIds,
+          pickable: () =>
+            loadPickableTags(
+              this.database,
+              catalogScope(SHARED_ONLY),
+              locale,
+              null,
             ),
           moments: momentRows,
           context: () =>
@@ -196,7 +192,7 @@ export class GuidanceSuggestionService {
       throw new ApiException(400, 'guidance.nothing_to_suggest');
     }
 
-    const { catalog, tagNames, moments, context } = await load(empty);
+    const { catalog, pickable, moments, context } = await load(empty);
     const names = new Map(catalog.ingredients.map((i) => [i.id, i.name]));
 
     // With no Eating Moment to choose from there is nothing to ask for: straight to "no suggestions".
@@ -219,7 +215,7 @@ export class GuidanceSuggestionService {
           tags:
             body.recipe.tagIds.length === 0
               ? []
-              : await tagNames(body.recipe.tagIds),
+              : namesOf(await pickable(), body.recipe.tagIds),
         }),
       });
       const made = suggestionOf(answer, wanted, links, moments);
