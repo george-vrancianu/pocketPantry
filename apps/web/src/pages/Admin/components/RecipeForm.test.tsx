@@ -190,6 +190,12 @@ describe('RecipeForm', () => {
         .getAllByRole('option')
         .map((option) => option.textContent),
     ).toEqual(['Italian', 'Baking']);
+    // A Catalog Recipe takes Catalog Tags only: no Create row.
+    await user.type(tags, 'Sunday roast');
+    expect(
+      screen.queryByRole('option', { name: /^Create/ }),
+    ).not.toBeInTheDocument();
+    await user.clear(tags);
     await user.click(await screen.findByRole('option', { name: 'Italian' }));
     await user.click(screen.getByRole('option', { name: 'Baking' }));
     await user.keyboard('{Escape}');

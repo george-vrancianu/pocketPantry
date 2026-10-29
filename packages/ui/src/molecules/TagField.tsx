@@ -2,7 +2,7 @@ import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import type { PopperProps } from '@mui/material/Popper';
 import { forwardRef, useMemo, type ReactNode, type Ref } from 'react';
 import { Box } from '../atoms/Layout';
-import { PeopleIcon, TagIcon } from '../atoms/icons';
+import { PeopleIcon, PlusIcon, TagIcon } from '../atoms/icons';
 import { TagChip, type TagChipKind } from '../atoms/TagChip';
 import { TextField } from '../atoms/TextField';
 import { tokens } from '../theme/tokens';
@@ -41,6 +41,18 @@ export type TagFieldLabels = {
   optionCount: (count: number) => string;
 };
 
+/** The editor's opt-in "Create" row: the filters never pass this. */
+export type TagFieldCreate = {
+  /** The row's text for what was typed, e.g. `Create “Sunday roast”`. */
+  label: (name: string) => string;
+  /** Longest name; the input stops there. */
+  maxLength: number;
+  /** Called with the trimmed name when the row is chosen. The parent makes the Tag and adds it to `value`. */
+  onCreate: (name: string) => void;
+  /** A Tag is being made: the row is dimmed and can't be chosen twice. */
+  busy?: boolean;
+};
+
 export type TagFieldProps<T extends TagFieldOption = TagFieldOption> = {
   /** Every Tag that can be picked. Family Tags first, then the groups in order: they are grouped as given. */
   options: readonly T[];
@@ -60,6 +72,13 @@ export type TagFieldProps<T extends TagFieldOption = TagFieldOption> = {
   list?: 'popup' | 'inline';
   /** Picked chips shown before "+N" while the field is not focused; -1 (default) shows them all. */
   limitTags?: number;
+  /**
+   * Adds `Create "…"` as the last row when the typed name matches no option (ignoring case,
+   * accents, spaces and hyphens). Editor only.
+   */
+  create?: TagFieldCreate;
+  /** The Member typed in the field (not a reset after a pick); the editor clears a stale refusal with it. */
+  onTyped?: () => void;
   /** Escape in the open list; the Tags sheet closes itself with it. */
   onEscape?: () => void;
   autoFocus?: boolean;
@@ -83,6 +102,22 @@ const InlinePopper = forwardRef(function InlinePopper(
     </Box>
   );
 });
+
+const CREATE_ID = '__tag-field-create__';
+const CREATE_GROUP = '__tag-field-create-group__';
+const isCreateRow = (tag: TagFieldOption) => tag.id === CREATE_ID;
+
+/** Case, accents, spaces and hyphens folded away, like the API's name matching. */
+const fold = (text: string) =>
+  text
+    .normalize('NFD')
+    .toLowerCase()
+    .replace(/a\u030a/g, 'aa')
+    .replace(/æ/g, 'ae')
+    .replace(/ø/g, 'oe')
+    .replace(/\p{M}/gu, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
 
 const optionSx = {
   display: 'flex',
@@ -117,7 +152,7 @@ function grouped<T extends TagFieldOption>(options: readonly T[]): T[] {
  * The Tag field (ADR 0033, docs/handoffs/tags-filter section 4): a multi-select with a grouped
  * option list, Your Tags first. Shared by the Recipes and Explore filters (counts, inline list)
  * and the Recipe editor (popup list, `limitTags`, no counts). Matching ignores case and accents.
- * It never offers to create a Tag: the editor adds that option itself.
+ * It offers `Create "…"` only when the editor passes `create`; the filters never do.
  */
 export function TagField<T extends TagFieldOption = TagFieldOption>({
   options,
@@ -127,6 +162,8 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
   countOf,
   list = 'popup',
   limitTags = -1,
+  create,
+  onTyped,
   onEscape,
   autoFocus,
 }: TagFieldProps<T>) {
@@ -135,27 +172,58 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
     () => createFilterOptions<T>({ ignoreCase: true, ignoreAccents: true }),
     [],
   );
+  const filterWithCreate = (
+    all: T[],
+    state: Parameters<typeof filter>[1],
+  ): T[] => {
+    const shown = filter(all, state);
+    const typed = state.inputValue.trim().replace(/\s+/g, ' ');
+    if (!create || fold(typed) === '') return shown;
+    const key = fold(typed);
+    if (all.some((tag) => fold(tag.name) === key)) return shown;
+    const row: TagFieldOption = {
+      id: CREATE_ID,
+      name: typed,
+      kind: 'family',
+      groupName: null,
+    };
+    return [...shown, row as T];
+  };
   const sorted = useMemo(() => grouped(options), [options]);
   const picked = new Set(value.map((tag) => tag.id));
   const blocked = (tag: T) =>
     countOf !== undefined && !picked.has(tag.id) && countOf(tag) === 0;
   const groupOf = (tag: TagFieldOption) =>
-    tag.kind === 'family' ? labels.yourTags : (tag.groupName ?? '');
+    isCreateRow(tag)
+      ? CREATE_GROUP
+      : tag.kind === 'family'
+        ? labels.yourTags
+        : (tag.groupName ?? '');
   return (
     <Box>
       <Autocomplete<T, true, false, false>
         multiple
         options={sorted}
         value={value as T[]}
-        onChange={(_event, next) =>
+        onChange={(_event, next) => {
+          const row = next.find(isCreateRow);
+          if (row) {
+            if (!create?.busy) create?.onCreate(row.name);
+            return;
+          }
           // Only pointer-events keep a click off a dimmed option, so refuse it here too.
-          onChange(next.filter((tag) => picked.has(tag.id) || !blocked(tag)))
-        }
-        filterOptions={filter}
+          onChange(next.filter((tag) => picked.has(tag.id) || !blocked(tag)));
+        }}
+        onInputChange={(_event, _text, reason) => {
+          if (reason === 'input') onTyped?.();
+        }}
+        filterOptions={filterWithCreate}
         groupBy={groupOf}
         getOptionLabel={optionLabel}
         isOptionEqualToValue={sameTag}
-        getOptionDisabled={blocked}
+        getOptionDisabled={(tag) =>
+          isCreateRow(tag) ? !!create?.busy : blocked(tag)
+        }
         limitTags={limitTags}
         getLimitTagsText={(count) => (
           <>
@@ -255,62 +323,99 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
             );
           })
         }
-        renderGroup={(params) => (
-          <li key={params.key}>
-            <Box
-              sx={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                px: inline ? 2.5 : 2,
-                pt: '12px',
-                pb: '4px',
-                // Inline, the list sits on the sheet itself, so the header matches it.
-                bgcolor: inline ? tokens.color.bg : tokens.color.surface,
-                fontSize: 11.5,
-                fontWeight: 700,
-                letterSpacing: '.07em',
-                textTransform: 'uppercase',
-                color: tokens.color.muted,
-              }}
-            >
-              {params.group === labels.yourTags ? (
-                <>
-                  <Box
-                    component="span"
-                    aria-hidden
-                    sx={{ display: 'flex', color: tokens.color.butterInk }}
-                  >
-                    <PeopleIcon size={13} />
-                  </Box>
+        renderGroup={(params) =>
+          params.group === CREATE_GROUP ? (
+            <li key={params.key}>
+              <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+                {params.children}
+              </Box>
+            </li>
+          ) : (
+            <li key={params.key}>
+              <Box
+                sx={{
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  px: inline ? 2.5 : 2,
+                  pt: '12px',
+                  pb: '4px',
+                  // Inline, the list sits on the sheet itself, so the header matches it.
+                  bgcolor: inline ? tokens.color.bg : tokens.color.surface,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  letterSpacing: '.07em',
+                  textTransform: 'uppercase',
+                  color: tokens.color.muted,
+                }}
+              >
+                {params.group === labels.yourTags ? (
+                  <>
+                    <Box
+                      component="span"
+                      aria-hidden
+                      sx={{ display: 'flex', color: tokens.color.butterInk }}
+                    >
+                      <PeopleIcon size={13} />
+                    </Box>
+                    <span>{params.group}</span>
+                    <Box
+                      component="em"
+                      sx={{
+                        ml: 'auto',
+                        fontStyle: 'normal',
+                        fontWeight: 500,
+                        textTransform: 'none',
+                        letterSpacing: 0,
+                      }}
+                    >
+                      {labels.yourTagsNote}
+                    </Box>
+                  </>
+                ) : (
                   <span>{params.group}</span>
-                  <Box
-                    component="em"
-                    sx={{
-                      ml: 'auto',
-                      fontStyle: 'normal',
-                      fontWeight: 500,
-                      textTransform: 'none',
-                      letterSpacing: 0,
-                    }}
-                  >
-                    {labels.yourTagsNote}
-                  </Box>
-                </>
-              ) : (
-                <span>{params.group}</span>
-              )}
-            </Box>
-            <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
-              {params.children}
-            </Box>
-          </li>
-        )}
+                )}
+              </Box>
+              <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+                {params.children}
+              </Box>
+            </li>
+          )
+        }
         renderOption={(props, tag, { selected }) => {
           const { key, ...li } = props;
+          if (isCreateRow(tag)) {
+            return (
+              <Box
+                component="li"
+                key={key}
+                {...li}
+                sx={{ ...optionSx, px: inline ? 2.5 : 2 }}
+              >
+                <Box
+                  component="span"
+                  aria-hidden
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    width: 20,
+                    height: 20,
+                    color: tokens.color.accent,
+                  }}
+                >
+                  <PlusIcon size={16} />
+                </Box>
+                <Box component="span" sx={{ flex: 1, minWidth: 0 }}>
+                  {create?.label(tag.name)}
+                </Box>
+              </Box>
+            );
+          }
           const count = countOf?.(tag);
           return (
             <Box
@@ -329,7 +434,7 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
                   flexShrink: 0,
                   width: 20,
                   height: 20,
-                  borderRadius: '6px',
+                  borderRadius: radius.box,
                   border: `1.5px solid ${selected ? tokens.color.accent : palette('pp-lineStrong')}`,
                   bgcolor: selected ? tokens.color.accent : 'transparent',
                   color: palette('pp-accentInk'),
@@ -369,6 +474,7 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
               htmlInput: {
                 ...params.slotProps.htmlInput,
                 'aria-label': labels.field,
+                ...(create ? { maxLength: create.maxLength } : {}),
               },
               input: {
                 ...params.slotProps.input,

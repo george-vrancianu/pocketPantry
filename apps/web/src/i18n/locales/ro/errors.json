@@ -129,6 +129,10 @@
     "tags_too_many": "O Rețetă poate avea cel mult {{max}} taguri.",
     "tag_not_found": "Unul dintre aceste taguri nu mai există. Reîncarcă și încearcă din nou."
   },
+  "tags": {
+    "name_required": "Scrie un nume pentru tag.",
+    "name_too_long": "Numele unui tag poate avea cel mult {{max}} caractere."
+  },
   "family_ingredients": {
     "shared_name_exists": "Există deja un ingredient comun cu acest nume. Îmbină-l pe acesta în el.",
     "not_found": "Acest ingredient de familie nu mai este în coadă. Poate că cineva l-a promovat deja.",

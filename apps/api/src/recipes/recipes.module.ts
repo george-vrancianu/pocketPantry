@@ -20,6 +20,7 @@ import { RecipePantryController } from './recipe-pantry.controller';
 import { RecipePantryService } from './recipe-pantry.service';
 import { RecipeTipsService } from './recipe-tips.service';
 import { RecipeTranslationsService } from './recipe-translations.service';
+import { FamilyTagsService } from '../tags/family-tags.service';
 import { RecipesController } from './recipes.controller';
 import { RecipesService } from './recipes.service';
 
@@ -41,6 +42,7 @@ import { RecipesService } from './recipes.service';
     RecipeTranslationsService,
     RecipeGuidanceService,
     RecipeBrowseService,
+    FamilyTagsService,
     FamilyRecipesService,
     RecipeCopyService,
     CookTonightService,

@@ -241,7 +241,9 @@
     "editorField": "Tags",
     "editorPlaceholder": "Tilføj tags",
     "editorNoOptions": "Intet tag med det navn",
-    "editorLimit": "En opskrift kan højst have {{max}} tags."
+    "editorLimit": "En opskrift kan højst have {{max}} tags.",
+    "create": "Opret “{{name}}”",
+    "allergenFree": "“{{name}}” ændrer ikke allergenerne i denne opskrift. Allergener kommer fra ingredienslinjerne."
   },
   "tabs": {
     "ingredients": "Ingredienser",

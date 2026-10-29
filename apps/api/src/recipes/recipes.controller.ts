@@ -18,6 +18,11 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { FamilyTagsService } from '../tags/family-tags.service';
+import {
+  resolveTagBody,
+  type ResolveTagBody,
+} from '../tags/family-tags.schemas';
 import type { RecipeTag } from '../tags/recipe-tags';
 import { MemberLanguageService } from '../member-language/member-language.service';
 import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
@@ -89,6 +94,7 @@ export class RecipesController {
     private readonly link: LinkRecipesService,
     private readonly guidanceSuggestion: GuidanceSuggestionService,
     private readonly languages: MemberLanguageService,
+    private readonly familyTags: FamilyTagsService,
   ) {}
 
   @Get()
@@ -132,6 +138,23 @@ export class RecipesController {
     return this.browse.pickableTags(
       member.id,
       await this.languages.catalogLanguageOf(member.id),
+    );
+  }
+
+  @Post('tags')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Resolves a typed Tag name: the Catalog Tag it matches in any language, else the Family’s Tag, else a new Family Tag',
+  })
+  async resolveTag(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(resolveTagBody)) body: ResolveTagBody,
+  ): Promise<RecipeTag> {
+    return this.familyTags.resolveName(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id),
+      body.name,
     );
   }
 

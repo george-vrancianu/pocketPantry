@@ -95,3 +95,40 @@ export const FilterInline: StoryObj<typeof TagField> = {
 export const EditorPopup: StoryObj<typeof TagField> = {
   render: () => <Demo list="popup" limitTags={2} />,
 };
+
+/** The editor with `create`: typing a name nothing matches adds a `Create "…"` row. */
+export const EditorCreate: StoryObj<typeof TagField> = {
+  render: () => {
+    const Create = () => {
+      const [options, setOptions] = useState(OPTIONS);
+      const [value, setValue] = useState<TagFieldOption[]>([]);
+      return (
+        <Box sx={{ p: 2, maxWidth: 420 }}>
+          <TagField
+            list="popup"
+            limitTags={2}
+            options={options}
+            value={value}
+            onChange={setValue}
+            labels={labels}
+            create={{
+              label: (name) => `Create “${name}”`,
+              maxLength: 30,
+              onCreate: (name) => {
+                const tag: TagFieldOption = {
+                  id: name,
+                  name,
+                  kind: 'family',
+                  groupName: null,
+                };
+                setOptions([...options, tag]);
+                setValue([...value, tag]);
+              },
+            }}
+          />
+        </Box>
+      );
+    };
+    return <Create />;
+  },
+};

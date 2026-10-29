@@ -254,4 +254,101 @@ describe('TagField', () => {
     );
     expect(screen.getByRole('listbox')).toBeTruthy();
   });
+
+  it('tells onTyped when the Member types, not when a pick resets the text', () => {
+    const onTyped = vi.fn();
+    render(<Harness onTyped={onTyped} />);
+    expect(onTyped).not.toHaveBeenCalled();
+    type('Din');
+    expect(onTyped).toHaveBeenCalled();
+    onTyped.mockClear();
+    fireEvent.click(screen.getAllByRole('option')[0]);
+    expect(onTyped).not.toHaveBeenCalled();
+  });
+
+  describe('create (editor only)', () => {
+    const create = (onCreate = vi.fn()) => ({
+      label: (name: string) => `Create “${name}”`,
+      maxLength: 30,
+      onCreate,
+    });
+
+    it('offers Create "…" for a name nothing matches, as the last row', () => {
+      render(<Harness create={create()} />);
+      type('Sunday roast');
+      const options = screen.getAllByRole('option');
+      expect(options).toHaveLength(1);
+      expect(options[0].textContent).toBe('Create “Sunday roast”');
+    });
+
+    it('calls onCreate with the trimmed name when the row is chosen, and adds nothing itself', () => {
+      const onCreate = vi.fn();
+      const onChange = vi.fn();
+      render(<Harness create={create(onCreate)} onChange={onChange} />);
+      type('  Sunday   roast ');
+      fireEvent.click(screen.getByRole('option', { name: /Create/ }));
+      expect(onCreate).toHaveBeenCalledWith('Sunday roast');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('creates with Enter when Create is the only row', () => {
+      const onCreate = vi.fn();
+      render(<Harness create={create(onCreate)} />);
+      type('Sunday roast');
+      fireEvent.keyDown(
+        screen.getByRole('combobox', { name: 'Filter by Tags' }),
+        { key: 'Enter' },
+      );
+      expect(onCreate).toHaveBeenCalledWith('Sunday roast');
+    });
+
+    it('keeps matching Tags above the Create row', () => {
+      render(<Harness create={create()} />);
+      type('veg');
+      expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+        'Vegan',
+        'Create “veg”',
+      ]);
+    });
+
+    it.each(['vegan', 'VEGAN', 'Română', 'romana', 'meal-prep', 'Meal  Prep'])(
+      'offers no Create row when %s already is a Tag',
+      (text) => {
+        render(<Harness create={create()} />);
+        type(text);
+        expect(screen.queryByText(/^Create/)).toBeNull();
+      },
+    );
+
+    it('offers no Create row for an empty or blank field', () => {
+      render(<Harness create={create()} />);
+      type('   ');
+      expect(screen.queryByText(/^Create/)).toBeNull();
+    });
+
+    it('limits the typed name to maxLength', () => {
+      render(<Harness create={create()} />);
+      expect(
+        screen
+          .getByRole('combobox', { name: 'Filter by Tags' })
+          .getAttribute('maxlength'),
+      ).toBe('30');
+    });
+
+    it('has no Create row without the create prop (the filters)', () => {
+      render(<Harness />);
+      type('Sunday roast');
+      expect(screen.queryByText(/^Create/)).toBeNull();
+    });
+
+    it('shows a busy Create row as disabled', () => {
+      render(<Harness create={{ ...create(), busy: true }} />);
+      type('Sunday roast');
+      expect(
+        screen
+          .getByRole('option', { name: /Create/ })
+          .getAttribute('aria-disabled'),
+      ).toBe('true');
+    });
+  });
 });

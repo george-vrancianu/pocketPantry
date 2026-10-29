@@ -262,5 +262,6 @@ export {
   TagField,
   type TagFieldLabels,
   type TagFieldOption,
+  type TagFieldCreate,
   type TagFieldProps,
 } from './molecules/TagField';

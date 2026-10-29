@@ -129,6 +129,10 @@
     "tags_too_many": "En opskrift kan højst have {{max}} tags.",
     "tag_not_found": "Et af de tags findes ikke længere. Genindlæs og prøv igen."
   },
+  "tags": {
+    "name_required": "Skriv et navn til tagget.",
+    "name_too_long": "Et tagnavn kan højst have {{max}} tegn."
+  },
   "family_ingredients": {
     "shared_name_exists": "Der findes allerede en fælles ingrediens med det navn. Flet denne ind i den i stedet.",
     "not_found": "Den familieingrediens er ikke længere i køen. Måske har en anden allerede gjort den fælles.",
