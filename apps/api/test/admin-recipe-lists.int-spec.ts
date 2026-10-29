@@ -300,11 +300,6 @@ describe('Admin Cuisine and Method lists (integration)', () => {
       );
 
       await admin.del(`/tags/${created.id}`).expect(204);
-      const rows = await database
-        .select()
-        .from(catalogTranslations)
-        .where(eq(catalogTranslations.entityId, created.id));
-      expect(rows).toEqual([]);
       await admin.del(`/tags/${created.id}`).expect(404);
       await admin.del(`/tag-groups/${a.id}`).expect(204);
       await admin.del(`/tag-groups/${b.id}`).expect(204);

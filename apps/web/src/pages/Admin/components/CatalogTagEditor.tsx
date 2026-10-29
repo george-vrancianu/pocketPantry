@@ -1,5 +1,5 @@
 import { Button, Stack, TextField } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   localName,
@@ -20,9 +20,14 @@ type Props = {
   onDone: () => void;
 };
 
+/** The expected refusal of an unconfirmed delete of a Tag Recipes carry. */
+function isInUse(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.code === 'catalog.tag_in_use';
+}
+
 /**
- * Create, rename, move, translate or delete a Catalog Tag. Deleting one that Recipes carry asks first, saying (by the
- * server's count) how many will lose it. A same-named Family Tag is folded into it by the server, silently.
+ * Create, rename, move, translate or delete a Catalog Tag. Deleting always asks once: an unused Tag gets a plain confirm, and
+ * one Recipes carry (by the server's count) says how many will lose it. A same-named Family Tag is folded into it by the server, silently.
  */
 export function CatalogTagEditor({ tag, groups, onDone }: Props) {
   const { t, i18n } = useTranslation('admin');
@@ -30,8 +35,18 @@ export function CatalogTagEditor({ tag, groups, onDone }: Props) {
   const remove = useDeleteCatalogTag();
   const [name, setName] = useState(tag?.name ?? '');
   const [groupId, setGroupId] = useState(tag?.groupId ?? groups[0]?.id ?? '');
-  // The server's count of Recipes carrying the Tag, once it has refused an unconfirmed delete.
-  const [usage, setUsage] = useState<number | null>(null);
+  // Which delete prompt is open: 'unused' (the overview says no Recipe carries the Tag), or the server's count of
+  // Recipes carrying it once it has refused an unconfirmed delete.
+  const [asking, setAsking] = useState<'unused' | number | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+
+  useEffect(() => {
+    if (asking === null && restoreFocus.current) {
+      restoreFocus.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [asking]);
 
   const deleteTag = (confirm: boolean) => {
     if (!tag) return;
@@ -40,17 +55,41 @@ export function CatalogTagEditor({ tag, groups, onDone }: Props) {
       {
         onSuccess: onDone,
         onError: (error) => {
-          if (
-            error instanceof ApiError &&
-            error.code === 'catalog.tag_in_use'
-          ) {
-            setUsage(Number(error.params.count));
+          if (isInUse(error)) {
+            setAsking(Number(error.params.count ?? tag.recipeCount));
           }
         },
       },
     );
   };
-  const asking = usage !== null;
+
+  const deleteSlot = !tag ? undefined : asking === null ? (
+    <Button
+      ref={triggerRef}
+      type="button"
+      variant="ghost"
+      disabled={remove.isPending}
+      onClick={() =>
+        tag.recipeCount > 0 ? deleteTag(false) : setAsking('unused')
+      }
+    >
+      {t('common.delete')}
+    </Button>
+  ) : (
+    <ConfirmPrompt
+      message={
+        asking === 'unused'
+          ? t('tag.deleteConfirmUnused')
+          : t('tag.deleteConfirm', { count: asking })
+      }
+      disabled={remove.isPending}
+      onConfirm={() => deleteTag(asking !== 'unused')}
+      onCancel={() => {
+        restoreFocus.current = true;
+        setAsking(null);
+      }}
+    />
+  );
 
   return (
     <Stack spacing={3}>
@@ -60,13 +99,14 @@ export function CatalogTagEditor({ tag, groups, onDone }: Props) {
             ? t('tag.edit', { name: localName(tag, i18n.language) })
             : t('tag.new')
         }
-        error={save.error ?? (asking ? null : remove.error)}
+        error={save.error ?? (isInUse(remove.error) ? null : remove.error)}
         canSave={name.trim() !== '' && groupId !== ''}
         saving={save.isPending}
         onSubmit={() =>
           save.mutate({ name: name.trim(), groupId }, { onSuccess: onDone })
         }
         onCancel={onDone}
+        deleteSlot={deleteSlot}
       >
         <TextField
           label={t('tag.name')}
@@ -87,23 +127,6 @@ export function CatalogTagEditor({ tag, groups, onDone }: Props) {
             </option>
           ))}
         </TextField>
-        {tag && asking ? (
-          <ConfirmPrompt
-            message={t('tag.deleteConfirm', { count: usage })}
-            disabled={remove.isPending}
-            onConfirm={() => deleteTag(true)}
-            onCancel={() => setUsage(null)}
-          />
-        ) : tag ? (
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={remove.isPending}
-            onClick={() => deleteTag(false)}
-          >
-            {t('common.delete')}
-          </Button>
-        ) : null}
       </EditorForm>
       {tag ? (
         <TranslationsEditor

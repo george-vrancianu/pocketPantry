@@ -134,7 +134,7 @@ describe('CatalogTagEditor', () => {
     });
   });
 
-  it('deletes a Tag no Recipe carries without asking', async () => {
+  it('asks once before deleting a Tag no Recipe carries, and returns focus on Cancel', async () => {
     const { fetchMock, calls } = stubApi({
       'DELETE /api/admin/catalog/tags/t1': () =>
         new Response(null, { status: 204 }),
@@ -142,14 +142,85 @@ describe('CatalogTagEditor', () => {
     vi.stubGlobal('fetch', fetchMock);
     const onDone = vi.fn();
     renderWithProviders(
-      <CatalogTagEditor tag={vegan} groups={groups} onDone={onDone} />,
+      <CatalogTagEditor
+        tag={{ ...vegan, recipeCount: 0 }}
+        groups={groups}
+        onDone={onDone}
+      />,
     );
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(
+      screen.getByText('No Recipe has this Tag. Delete it?'),
+    ).toBeInTheDocument();
+    expect(calls).toHaveLength(0);
+    await user.click(screen.getAllByRole('button', { name: 'Cancel' })[1]);
+    expect(screen.getByRole('button', { name: 'Delete' })).toHaveFocus();
+    expect(calls).toHaveLength(0);
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(calls).toHaveLength(1);
     expect(calls[0].search).toBe('');
+  });
+
+  it('opens the server-count prompt when an unused Tag gained Recipes meanwhile', async () => {
+    const { fetchMock, calls } = stubApi({
+      'DELETE /api/admin/catalog/tags/t1': () =>
+        Response.json(
+          { code: 'catalog.tag_in_use', params: { count: 2 } },
+          { status: 409 },
+        ),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <CatalogTagEditor
+        tag={{ ...vegan, recipeCount: 0 }}
+        groups={groups}
+        onDone={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(
+      await screen.findByText(
+        '2 Recipes have this Tag and will lose it. Delete it anyway?',
+      ),
+    ).toBeInTheDocument();
+    expect(calls).toHaveLength(1);
+  });
+
+  it('shows the error when the confirmed delete fails', async () => {
+    let attempts = 0;
+    const { fetchMock } = stubApi({
+      'DELETE /api/admin/catalog/tags/t1': () =>
+        ++attempts === 1
+          ? Response.json(
+              { code: 'catalog.tag_in_use', params: { count: 7 } },
+              { status: 409 },
+            )
+          : Response.json(
+              { code: 'catalog.not_found', params: {} },
+              { status: 404 },
+            ),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <CatalogTagEditor tag={vegan} groups={groups} onDone={vi.fn()} />,
+    );
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await screen.findByText(/7 Recipes have this Tag/);
+    expect(screen.queryByText(/no longer exists/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(
+      await screen.findByText('That Catalog entry no longer exists.'),
+    ).toBeInTheDocument();
   });
 
   it('shows the translated error for an allergen-free name', async () => {

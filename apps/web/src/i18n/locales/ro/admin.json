@@ -429,6 +429,7 @@
     "name": "Nume (engleză)",
     "group": "Grup de Taguri",
     "empty": "Niciun Tag din Catalog încă.",
+    "deleteConfirmUnused": "Nicio Rețetă nu are acest Tag. Îl ștergi?",
     "deleteConfirm_one": "{{count}} Rețetă are acest Tag și îl va pierde. Îl ștergi oricum?",
     "deleteConfirm_few": "{{count}} Rețete au acest Tag și îl vor pierde. Îl ștergi oricum?",
     "deleteConfirm_other": "{{count}} de Rețete au acest Tag și îl vor pierde. Îl ștergi oricum?"

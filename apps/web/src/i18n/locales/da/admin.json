@@ -422,6 +422,7 @@
     "name": "Navn (engelsk)",
     "group": "Tag-gruppe",
     "empty": "Ingen katalog-tags endnu.",
+    "deleteConfirmUnused": "Ingen opskrift har dette tag. Slet det?",
     "deleteConfirm_one": "{{count}} opskrift har dette tag og mister det. Slet det alligevel?",
     "deleteConfirm_other": "{{count}} opskrifter har dette tag og mister det. Slet det alligevel?"
   }
