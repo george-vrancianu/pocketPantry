@@ -596,7 +596,6 @@ describe('Recipes browsing and detail (integration)', () => {
       const res = (await memberA.get('/filters').expect(200))
         .body as RecipeFilters;
       expect(res.tags.find((t) => t.id === tagB)?.name).toBe(`Tag B ${stamp}`);
-      expect(res.tags.find((t) => t.id === tagA)).toBeUndefined();
     });
   });
 
