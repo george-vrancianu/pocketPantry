@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import { MAX_RECIPE_TAGS } from '../recipes/recipes.schemas';
+import { isAllergenFreeName } from './allergen-free-names';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
@@ -23,6 +24,11 @@ export type RecipeTag = {
   groupId: string | null;
   groupName: string | null;
   groupOrder: number | null;
+  /**
+   * Present (true) only on a Family Tag whose name claims an Allergen is absent, e.g.
+   * "Gluten-free": the editor warns that Allergens come from Ingredient Lines.
+   */
+  claimsAllergenFree?: true;
 };
 
 type TagRow = {
@@ -48,6 +54,9 @@ function toRecipeTag(row: TagRow, names: Names): RecipeTag {
         ? names.pick('tag_group', row.groupId, row.groupName)
         : null,
     groupOrder: row.groupOrder,
+    ...(!catalog && isAllergenFreeName(row.name)
+      ? { claimsAllergenFree: true as const }
+      : {}),
   };
 }
 
@@ -95,6 +104,33 @@ export async function loadPickableTags(
     ...rows.flatMap((r) => (r.groupId ? [r.groupId] : [])),
   ]);
   return rows.map((r) => toRecipeTag(r, names)).sort(compareTags(locale));
+}
+
+/** One Tag the writer may use, named for the viewer (the answer to resolving a name). */
+export async function loadUsableTag(
+  executor: Executor,
+  scope: CatalogScope,
+  locale: CatalogLocale,
+  familyId: string,
+  tagId: string,
+): Promise<RecipeTag> {
+  const [row] = await executor
+    .select({
+      id: tags.id,
+      name: tags.name,
+      familyId: tags.familyId,
+      groupId: tagGroups.id,
+      groupName: tagGroups.name,
+      groupOrder: tagGroups.position,
+    })
+    .from(tags)
+    .leftJoin(tagGroups, eq(tagGroups.id, tags.groupId))
+    .where(and(eq(tags.id, tagId), usableBy(familyId)));
+  const names = await loadDisplayNames(executor, scope, locale, [
+    tagId,
+    ...(row?.groupId ? [row.groupId] : []),
+  ]);
+  return toRecipeTag(row, names);
 }
 
 /** The ids of a Recipe's Tags (the editor's value; names come from the pickable Tags). */
