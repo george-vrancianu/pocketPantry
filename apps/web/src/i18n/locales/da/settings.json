@@ -152,7 +152,7 @@
     "search": "Søg i kategorier",
     "loadingCategories": "Indlæser kategorier",
     "all": "Alle {{parent}}",
-    "noMatch": "Ingen kategori matcher „{{query}}”.",
+    "noMatch": "Ingen kategori matcher “{{query}}”.",
     "set": "Sat · {{days}} d",
     "back": "Tilbage",
     "close": "Luk",
@@ -184,7 +184,7 @@
     "title": "Familiens katalog",
     "help": "Det, din familie har tilføjet til kataloget. Alle medlemmer kan rette det.",
     "synonyms": "Andre navne",
-    "empty": "Intet tilføjet endnu. Brug „Tilføj til dit katalog“, når du søger efter en ingrediens.",
+    "empty": "Intet tilføjet endnu. Brug “Tilføj til dit katalog“, når du søger efter en ingrediens.",
     "meta": "{{category}} · {{aisle}} · {{unit}}",
     "synonymRow": "{{name}} → {{ingredient}}",
     "edit": "Redigér {{name}}",
@@ -235,5 +235,25 @@
     "hint": "Hvert medlem angiver sine egne allergier. Du kan se dem her, men ikke ændre dem.",
     "none": "Ingen registreret",
     "loadFailed": "Medlemmernes allergier kunne ikke indlæses."
+  },
+  "manageTags": {
+    "title": "Administrer tags",
+    "hint": "Familiens egne tags. Omdøb et tag for at rydde op, eller slet det for at fjerne det fra alle opskrifter.",
+    "empty": "Din familie har endnu ingen egne tags. Opret et i en opskrifts tag-felt.",
+    "nameLabel": "Navn på tag",
+    "recipes_one": "{{count}} opskrift",
+    "recipes_other": "{{count}} opskrifter",
+    "renameButton": "Omdøb",
+    "rename": "Omdøb {{name}}",
+    "cancelRename": "Annuller omdøbning af {{name}}",
+    "delete": "Slet {{name}}",
+    "deleted_one": "Slettede “{{name}}” fra {{count}} opskrift",
+    "deleted_other": "Slettede “{{name}}” fra {{count}} opskrifter",
+    "deletedUnused": "Slettede “{{name}}”",
+    "merge": {
+      "title": "Slå sammen med “{{name}}”?",
+      "body": "Et tag med navnet “{{name}}” findes allerede. Sammenlægning sætter det på alle opskrifter med “{{from}}” og fjerner “{{from}}”. En opskrift, der har begge, beholder det én gang.",
+      "confirm": "Slå sammen"
+    }
   }
 }
