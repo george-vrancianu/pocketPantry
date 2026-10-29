@@ -23,6 +23,13 @@ describe('isAllergenFreeName', () => {
     'Glutenfri',
     'Uden nødder',
     'Mælkefri',
+    'Sesamfri',
+    'Sojafri',
+    'Uden soja',
+    'Sulfitfri',
+    'Fără lactate',
+    'Fără grâu',
+    'Fără sulfiți',
   ])('flags %s', (name) => {
     expect(isAllergenFreeName(name)).toBe(true);
   });

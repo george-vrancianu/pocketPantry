@@ -255,6 +255,17 @@ describe('TagField', () => {
     expect(screen.getByRole('listbox')).toBeTruthy();
   });
 
+  it('tells onTyped when the Member types, not when a pick resets the text', () => {
+    const onTyped = vi.fn();
+    render(<Harness onTyped={onTyped} />);
+    expect(onTyped).not.toHaveBeenCalled();
+    type('Din');
+    expect(onTyped).toHaveBeenCalled();
+    onTyped.mockClear();
+    fireEvent.click(screen.getAllByRole('option')[0]);
+    expect(onTyped).not.toHaveBeenCalled();
+  });
+
   describe('create (editor only)', () => {
     const create = (onCreate = vi.fn()) => ({
       label: (name: string) => `Create “${name}”`,

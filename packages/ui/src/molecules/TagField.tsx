@@ -77,6 +77,8 @@ export type TagFieldProps<T extends TagFieldOption = TagFieldOption> = {
    * accents, spaces and hyphens). Editor only.
    */
   create?: TagFieldCreate;
+  /** The Member typed in the field (not a reset after a pick); the editor clears a stale refusal with it. */
+  onTyped?: () => void;
   /** Escape in the open list; the Tags sheet closes itself with it. */
   onEscape?: () => void;
   autoFocus?: boolean;
@@ -161,6 +163,7 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
   list = 'popup',
   limitTags = -1,
   create,
+  onTyped,
   onEscape,
   autoFocus,
 }: TagFieldProps<T>) {
@@ -210,6 +213,9 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
           }
           // Only pointer-events keep a click off a dimmed option, so refuse it here too.
           onChange(next.filter((tag) => picked.has(tag.id) || !blocked(tag)));
+        }}
+        onInputChange={(_event, _text, reason) => {
+          if (reason === 'input') onTyped?.();
         }}
         filterOptions={filterWithCreate}
         groupBy={groupOf}

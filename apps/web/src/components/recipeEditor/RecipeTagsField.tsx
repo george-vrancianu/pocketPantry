@@ -1,5 +1,5 @@
 import { Alert, TagField, Typography } from '@pocket-pantry/ui';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../i18n/translateApiError';
 import { useResolveTag, usePickableTags } from '../../lib/recipes';
@@ -43,6 +43,11 @@ export function RecipeTagsField({ scope, value, onChange }: Props) {
     if (loaded.length > 0 && picked.length !== value.length)
       onChange(picked.map((tag) => tag.id));
   });
+  // The latest picks, for a Create answer that arrives after the Member changed them.
+  const latest = useRef(value);
+  useEffect(() => {
+    latest.current = value;
+  });
   const claimsAllergenFree = picked.filter((tag) => tag.claimsAllergenFree);
   return (
     <>
@@ -52,21 +57,25 @@ export function RecipeTagsField({ scope, value, onChange }: Props) {
         options={options}
         value={picked}
         onChange={(next) => {
+          if (resolve.isError) resolve.reset();
           if (next.length <= MAX_RECIPE_TAGS)
             onChange(next.map((tag) => tag.id));
         }}
+        onTyped={() => {
+          if (resolve.isError) resolve.reset();
+        }}
         create={
-          scope === 'family'
+          scope === 'family' && picked.length < MAX_RECIPE_TAGS
             ? {
                 label: (name) => t('tags.create', { name }),
                 maxLength: MAX_TAG_NAME_LENGTH,
                 busy: resolve.isPending,
                 onCreate: (name) => {
-                  if (picked.length >= MAX_RECIPE_TAGS) return;
                   resolve.mutate(name, {
                     onSuccess: (tag) => {
                       setResolved((all) => [...all, tag]);
-                      if (!value.includes(tag.id)) onChange([...value, tag.id]);
+                      if (!latest.current.includes(tag.id))
+                        onChange([...latest.current, tag.id]);
                     },
                   });
                 },

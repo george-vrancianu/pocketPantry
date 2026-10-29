@@ -1239,7 +1239,10 @@ describe('The Tag field in the Family Recipe editor', () => {
       await user.click(field);
       await user.type(field, text);
     };
-    const createWith = (answer: () => Response, tagIds: string[] = []) => {
+    const createWith = (
+      answer: () => Response | Promise<Response>,
+      tagIds: string[] = [],
+    ) => {
       const calls = setup('/recipes/g/edit', {
         'GET /api/recipes/g/edit': () => Response.json({ ...saved, tagIds }),
         'POST /api/recipes/tags': answer,
@@ -1365,6 +1368,78 @@ describe('The Tag field in the Family Recipe editor', () => {
       expect(
         await screen.findByText('A Tag name can be at most 30 characters.'),
       ).toBeInTheDocument();
+    });
+
+    it('does not re-add a Tag removed while the request was pending', async () => {
+      const user = userEvent.setup({ delay: null });
+      let release: () => void = () => {};
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      createWith(() => gate.then(() => Response.json(made)), ['c-fr']);
+      await openTab(user, 'Details');
+      await screen.findByRole('button', { name: 'Remove Tag French' });
+      await typeIn(user, 'Sunday roast');
+      await user.click(
+        await screen.findByRole('option', { name: 'Create “Sunday roast”' }),
+      );
+      await user.click(
+        screen.getByRole('button', { name: 'Remove Tag French' }),
+      );
+      release();
+      expect(
+        await screen.findByRole('button', { name: 'Remove Tag Sunday roast' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Remove Tag French' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('clears the refusal once the Member edits the name or picks a Tag', async () => {
+      const user = userEvent.setup({ delay: null });
+      createWith(() =>
+        Response.json(
+          { code: 'tags.name_too_long', params: { max: 30 } },
+          { status: 400 },
+        ),
+      );
+      const refusal = 'A Tag name can be at most 30 characters.';
+      await openTab(user, 'Details');
+      await typeIn(user, 'Sunday roast');
+      await user.click(
+        await screen.findByRole('option', { name: 'Create “Sunday roast”' }),
+      );
+      expect(await screen.findByText(refusal)).toBeInTheDocument();
+      await user.type(screen.getByRole('combobox', { name: 'Tags' }), 's');
+      expect(screen.queryByText(refusal)).not.toBeInTheDocument();
+      await user.clear(screen.getByRole('combobox', { name: 'Tags' }));
+      await user.type(
+        screen.getByRole('combobox', { name: 'Tags' }),
+        'Sunday roast',
+      );
+      await user.click(
+        await screen.findByRole('option', { name: 'Create “Sunday roast”' }),
+      );
+      expect(await screen.findByText(refusal)).toBeInTheDocument();
+      await user.clear(screen.getByRole('combobox', { name: 'Tags' }));
+      await user.click(await screen.findByRole('option', { name: 'French' }));
+      expect(screen.queryByText(refusal)).not.toBeInTheDocument();
+    });
+
+    it('offers no Create row at the 10-Tag cap', async () => {
+      const user = userEvent.setup({ delay: null });
+      const many = Array.from({ length: 10 }, (_, i) =>
+        tag(`x${i}`, `Extra ${i}`, ['Diet', 2]),
+      );
+      setup('/recipes/g/edit', {
+        'GET /api/recipes/g/edit': () =>
+          Response.json({ ...saved, tagIds: many.map((t) => t.id) }),
+        'GET /api/recipes/tags': () => Response.json([...pickable, ...many]),
+      });
+      await openTab(user, 'Details');
+      await screen.findByText('A Recipe can have at most 10 Tags.');
+      await typeIn(user, 'Sunday roast');
+      expect(
+        screen.queryByRole('option', { name: /^Create/ }),
+      ).not.toBeInTheDocument();
     });
 
     it('stops the typed name at 30 characters', async () => {
