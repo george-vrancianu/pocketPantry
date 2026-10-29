@@ -326,8 +326,29 @@ describe('Recipe Tags (integration)', () => {
       storeLanguages(app, anaCookie, { locale: 'en', catalogLanguage: null }),
     );
 
+    // Tag Groups are catalog-wide and other specs reorder them, so the
+    // expectations follow the Admin's current order instead of hard-coded positions.
+    const adminGroupOrder = async () =>
+      (
+        (await adminCatalog.get('').expect(200)).body as {
+          tagGroups: { id: string; name: string }[];
+        }
+      ).tagGroups.map((g) => g.name);
+    const byGroupOrder = <T extends { group: string }>(
+      order: string[],
+      rows: T[],
+    ) =>
+      [...rows].sort((x, y) => order.indexOf(x.group) - order.indexOf(y.group));
+
     it('returns every Tag with kind and Tag Group: Family Tags first, then Catalog Tags in group order', async () => {
+      const order = await adminGroupOrder();
       const { tags: got } = await detail(ana, recipeId);
+      const catalog = byGroupOrder(order, [
+        { group: 'Meal', tag: dinner, name: 'Dinner' },
+        { group: 'Diet', tag: vegan, name: 'Vegan' },
+        { group: 'Cuisine', tag: groupedA, name: `Taggroup A ${stamp}` },
+        { group: 'Method', tag: methodGrouped, name: undefined },
+      ]);
       expect(got).toEqual([
         {
           id: familyTag,
@@ -337,36 +358,23 @@ describe('Recipe Tags (integration)', () => {
           groupName: null,
           groupOrder: null,
         },
-        expect.objectContaining({
-          id: dinner,
-          name: 'Dinner',
-          kind: 'catalog',
-          groupName: 'Meal',
-          groupOrder: 1,
-        }),
-        expect.objectContaining({
-          id: vegan,
-          name: 'Vegan',
-          kind: 'catalog',
-          groupName: 'Diet',
-          groupOrder: 2,
-        }),
-        expect.objectContaining({
-          id: groupedA,
-          name: `Taggroup A ${stamp}`,
-          groupName: 'Cuisine',
-          groupOrder: 3,
-        }),
-        expect.objectContaining({
-          id: methodGrouped,
-          groupName: 'Method',
-          groupOrder: 4,
-        }),
+        ...catalog.map((c): unknown =>
+          expect.objectContaining({
+            id: c.tag,
+            ...(c.name ? { name: c.name } : {}),
+            kind: 'catalog',
+            groupName: c.group,
+            groupOrder: expect.any(Number) as unknown,
+          }),
+        ),
       ]);
+      const orders = got.slice(1).map((t) => t.groupOrder as number);
+      expect(orders).toEqual([...orders].sort((x, y) => x - y));
       expect(got[1].groupId).toEqual(expect.any(String));
     });
 
     it("names Catalog Tags and groups in the viewer's language; Family Tags keep their name", async () => {
+      const order = await adminGroupOrder();
       await adminCatalog
         .post('/translations', {
           entityType: 'tag',
@@ -383,10 +391,15 @@ describe('Recipe Tags (integration)', () => {
       const { tags: got } = await detail(ana, recipeId);
       expect(got.map((t) => [t.name, t.groupName])).toEqual([
         [`Meal prep ${stamp}`, null],
-        ['Cină', 'Masă'],
-        ['Vegan', 'Dietă'],
-        [`Bucătărie A ${stamp}`, 'Bucătărie'],
-        [expect.any(String), 'Metodă'],
+        ...byGroupOrder<{ group: string; ro: unknown[] }>(order, [
+          { group: 'Meal', ro: ['Cină', 'Masă'] },
+          { group: 'Diet', ro: ['Vegan', 'Dietă'] },
+          {
+            group: 'Cuisine',
+            ro: [`Bucătărie A ${stamp}`, 'Bucătărie'],
+          },
+          { group: 'Method', ro: [expect.any(String) as unknown, 'Metodă'] },
+        ]).map((c) => c.ro),
       ]);
     });
 

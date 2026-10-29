@@ -161,21 +161,26 @@ describe('Admin Tag Group and Catalog Tag lists (integration)', () => {
         .expect(201);
       await admin.post('/tag-groups', { name: `seasons ${stamp}` }).expect(409);
 
-      const order = [...positions.filter((id) => id !== second.id)];
-      order.splice(0, 0, second.id);
-      await admin.put('/tag-groups/order', { ids: order }).expect(200);
-      listed = await overview();
-      expect(listed.tagGroups.map((g) => g.id)).toEqual(order);
-      const renamed = listed.tagGroups.find((g) => g.id === first.id);
-      expect(renamed?.name).toBe(`Seasons ${stamp}`);
-      expect(
-        renamed?.translations.map((t) => [t.locale, t.value]),
-      ).toContainEqual(['da', `Sæsoner ${stamp}`]);
-      // A partial order is stale.
-      const stale = await admin
-        .put('/tag-groups/order', { ids: [first.id] })
-        .expect(409);
-      expect(code(stale)).toBe('catalog.tag_group_order_stale');
+      // Tag Groups are catalog-wide: put the original order back whatever happens.
+      try {
+        const order = [...positions.filter((id) => id !== second.id)];
+        order.splice(0, 0, second.id);
+        await admin.put('/tag-groups/order', { ids: order }).expect(200);
+        listed = await overview();
+        expect(listed.tagGroups.map((g) => g.id)).toEqual(order);
+        const renamed = listed.tagGroups.find((g) => g.id === first.id);
+        expect(renamed?.name).toBe(`Seasons ${stamp}`);
+        expect(
+          renamed?.translations.map((t) => [t.locale, t.value]),
+        ).toContainEqual(['da', `Sæsoner ${stamp}`]);
+        // A partial order is stale.
+        const stale = await admin
+          .put('/tag-groups/order', { ids: [first.id] })
+          .expect(409);
+        expect(code(stale)).toBe('catalog.tag_group_order_stale');
+      } finally {
+        await admin.put('/tag-groups/order', { ids: positions });
+      }
 
       await admin.del(`/tag-groups/${first.id}`).expect(204);
       await admin.del(`/tag-groups/${second.id}`).expect(204);
