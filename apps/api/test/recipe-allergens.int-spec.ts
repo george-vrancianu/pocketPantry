@@ -234,8 +234,7 @@ describe('Recipe detail Allergens (integration)', () => {
           .put(`/${created.id}`, {
             title: created.title,
             servings: created.servings,
-            cuisineId: created.cuisineId,
-            methodId: created.methodId,
+            tagIds: created.tagIds,
             lines: [g(ONION), g(BUTTER)],
             steps: created.steps.map((step) => ({ ...step })),
           })

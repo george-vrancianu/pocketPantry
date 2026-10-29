@@ -6,7 +6,7 @@ import {
   type RecipeSeedInput,
 } from './validate-recipe-seed';
 import { SEED_BASE_RECIPES } from './recipe-seed-data';
-import { SEED_CUISINES, SEED_EATING_MOMENTS, SEED_METHODS } from './registries';
+import { SEED_EATING_MOMENTS, SEED_TAGS } from './registries';
 import type {
   BaseRecipeSeed,
   RecipeSeed,
@@ -30,7 +30,7 @@ const recipe = (slug: string): RecipeSeed => ({
 
 const variant = (slug: string): VariantSeed => ({
   ...recipe(slug),
-  cuisine: 'asian',
+  tag: 'cuisine:asian',
 });
 
 const base = (slug = 'base', variants: VariantSeed[] = []): BaseRecipeSeed => ({
@@ -42,8 +42,7 @@ const base = (slug = 'base', variants: VariantSeed[] = []): BaseRecipeSeed => ({
 
 const inputOf = (bases: BaseRecipeSeed[]): RecipeSeedInput => ({
   bases,
-  cuisines: SEED_CUISINES,
-  methods: SEED_METHODS,
+  tags: SEED_TAGS,
   eatingMoments: SEED_EATING_MOMENTS,
   ingredientSlugs: new Set(SEED_INGREDIENTS.map((i) => i.slug)),
 });
@@ -141,27 +140,22 @@ describe('findRecipeSeedProblems', () => {
     expect(text).toContain('"twice": Eating Moment "morning" used twice');
   });
 
-  it('rejects an unknown Eating Moment, Cuisine or Method', () => {
+  it('rejects an unknown Eating Moment or Tag', () => {
     const b = base('b', [
-      { ...variant('v1'), cuisine: 'atlantis' } as VariantSeed,
-      { ...recipe('v2'), method: 'sous-vide-in-space' },
+      { ...variant('v1'), tag: 'cuisine:atlantis' },
+      { ...variant('v2'), tag: 'method:sous-vide-in-space' },
     ]);
     b.eatingMoments[0].moment = 'teatime';
     const text = problems([b]);
     expect(text).toContain('unknown Eating Moment "teatime"');
-    expect(text).toContain('unknown Cuisine "atlantis"');
-    expect(text).toContain('unknown Method "sous-vide-in-space"');
+    expect(text).toContain('unknown Tag "cuisine:atlantis"');
+    expect(text).toContain('unknown Tag "method:sous-vide-in-space"');
   });
 
-  it('requires every Variant to be a Cuisine or a Method Variant, not both', () => {
-    const neither: VariantSeed = { ...recipe('v1') } as VariantSeed;
-    const both = { ...variant('v2'), method: 'rolled' } as VariantSeed;
-    const text = problems([base('b', [neither, both])]);
-    expect(text).toContain(
-      '"v1": a Variant needs exactly one of cuisine and method',
-    );
-    expect(text).toContain(
-      '"v2": a Variant needs exactly one of cuisine and method',
+  it('rejects a Variant without a Tag', () => {
+    const neither = recipe('v1') as VariantSeed;
+    expect(problems([base('b', [neither])])).toContain(
+      '"v1": unknown Tag "undefined"',
     );
   });
 
@@ -254,20 +248,23 @@ describe('registries', () => {
     const input = inputOf([]);
     const text = findRecipeSeedProblems({
       ...input,
-      cuisines: [...SEED_CUISINES, SEED_CUISINES[0]],
+      tags: {
+        ...SEED_TAGS,
+        cuisine: [...SEED_TAGS.cuisine, SEED_TAGS.cuisine[0]],
+      },
     }).join('\n');
-    expect(text).toContain('duplicate Cuisine slug');
+    expect(text).toContain('duplicate Tag (cuisine) slug');
     expect(findRecipeSeedProblems(input)).toEqual([]);
   });
 });
 
 describe('findAcceptanceGaps', () => {
-  const withVariants = (slug: string, cuisines: number, methods: number) =>
+  const withVariants = (slug: string, inFirst: number, inSecond: number) =>
     base(slug, [
-      ...Array.from({ length: cuisines }, (_, i) => variant(`${slug}-c${i}`)),
-      ...Array.from({ length: methods }, (_, i) => ({
+      ...Array.from({ length: inFirst }, (_, i) => variant(`${slug}-c${i}`)),
+      ...Array.from({ length: inSecond }, (_, i) => ({
         ...recipe(`${slug}-m${i}`),
-        method: 'rolled',
+        tag: 'method:rolled',
       })),
     ]);
 
@@ -276,9 +273,11 @@ describe('findAcceptanceGaps', () => {
       '\n',
     );
     expect(gaps).toContain(
-      'omelette: needs at least 3 Cuisine Variants, has 2',
+      'omelette: needs at least 3 Variants tagged in the cuisine group, has 2',
     );
-    expect(gaps).toContain('omelette: needs at least 2 Method Variants, has 1');
+    expect(gaps).toContain(
+      'omelette: needs at least 2 Variants tagged in the method group, has 1',
+    );
   });
 
   it('is satisfied by a base that meets its minimums', () => {
@@ -302,10 +301,12 @@ describe('findAcceptanceGaps', () => {
     expect(findAcceptanceGaps([withVariants('other', 0, 0)])).toEqual([]);
   });
 
-  it('wants at least five Cuisine Variants on the Appetizer platter', () => {
+  it('wants at least five cuisine-tagged Variants on the Appetizer platter', () => {
     expect(
       findAcceptanceGaps([withVariants('appetizer-platter', 4, 0)]).join('\n'),
-    ).toContain('appetizer-platter: needs at least 5 Cuisine Variants, has 4');
+    ).toContain(
+      'appetizer-platter: needs at least 5 Variants tagged in the cuisine group, has 4',
+    );
   });
 
   it('counts only Pairings that link into another base family', () => {

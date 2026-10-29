@@ -10,8 +10,8 @@ import { UnmatchedQueue } from './UnmatchedQueue';
 // switch next to "Unmatched names".
 const catalog: AdminCatalog = {
   aisles: [],
-  cuisines: [],
-  methods: [],
+  tagGroups: [],
+  tags: [],
   allergens: [],
   eatingMoments: [],
   parentCategories: [],

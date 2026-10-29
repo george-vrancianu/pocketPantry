@@ -1,6 +1,7 @@
-// The Cuisines, Methods and Eating Moments the seeded Recipes use. To add one,
+// The Catalog Tags and Eating Moments the seeded Recipes use. To add one,
 // append a line here (slugs are permanent; names must be unique after
-// normalising) and reference its slug from a Recipe's data file.
+// normalising) and reference it from a Recipe's data file (a Variant's `tag`
+// is `group:slug`).
 import type { SeedNamed } from './recipe-seed-types';
 
 const named = (
@@ -10,7 +11,7 @@ const named = (
   da: string,
 ): SeedNamed => ({ slug, en, ro, da });
 
-export const SEED_CUISINES: SeedNamed[] = [
+const CUISINE_TAGS: SeedNamed[] = [
   named('mediterranean', 'Mediterranean', 'Mediteraneană', 'Middelhavsk'),
   named(
     'middle-eastern',
@@ -33,7 +34,7 @@ export const SEED_CUISINES: SeedNamed[] = [
   named('scandinavian', 'Scandinavian', 'Scandinavă', 'Skandinavisk'),
 ];
 
-export const SEED_METHODS: SeedNamed[] = [
+const METHOD_TAGS: SeedNamed[] = [
   named('rolled', 'French rolled', 'Rulată franțuzește', 'Fransk rullet'),
   named(
     'folded',
@@ -54,6 +55,37 @@ export const SEED_METHODS: SeedNamed[] = [
   named('oven-fried', 'Oven-fried', 'Prăjit la cuptor', 'Ovnstegt'),
   named('air-fried', 'Air-fried', 'La air fryer', 'Airfryer-stegt'),
 ];
+
+/** The Tag Groups in display order (ADR 0033). */
+export const SEED_TAG_GROUPS: (SeedNamed & { position: number })[] = [
+  { ...named('meal', 'Meal', 'Masă', 'Måltid'), position: 1 },
+  { ...named('diet', 'Diet', 'Dietă', 'Diæt'), position: 2 },
+  { ...named('cuisine', 'Cuisine', 'Bucătărie', 'Køkken'), position: 3 },
+  { ...named('method', 'Method', 'Metodă', 'Metode'), position: 4 },
+];
+
+export type TagGroupSlug = 'meal' | 'diet' | 'cuisine' | 'method';
+
+/** The Catalog Tags of each Tag Group. */
+export const SEED_TAGS: Record<TagGroupSlug, SeedNamed[]> = {
+  meal: [
+    named('breakfast', 'Breakfast', 'Mic dejun', 'Morgenmad'),
+    named('brunch', 'Brunch', 'Brunch', 'Brunch'),
+    named('lunch', 'Lunch', 'Prânz', 'Frokost'),
+    named('dinner', 'Dinner', 'Cină', 'Aftensmad'),
+    named('snack', 'Snack', 'Gustare', 'Snack'),
+    named('dessert', 'Dessert', 'Desert', 'Dessert'),
+  ],
+  diet: [
+    named('vegetarian', 'Vegetarian', 'Vegetarian', 'Vegetarisk'),
+    named('vegan', 'Vegan', 'Vegan', 'Vegansk'),
+    named('keto', 'Keto', 'Keto', 'Keto'),
+    named('low-carb', 'Low-carb', 'Cu puțini carbohidrați', 'Lavkulhydrat'),
+    named('high-protein', 'High-protein', 'Bogat în proteine', 'Proteinrig'),
+  ],
+  cuisine: CUISINE_TAGS,
+  method: METHOD_TAGS,
+};
 
 /** In display order. Exactly the list from the ticket. */
 export const SEED_EATING_MOMENTS: SeedNamed[] = [

@@ -196,7 +196,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     // ---------------------------------------------------------------- Romanian
     {
       slug: 'appetizer-platter-romanian',
-      cuisine: 'romanian',
+      tag: 'cuisine:romanian',
       title: t('Romanian appetizer platter', 'Platou românesc de aperitive'),
       servings: 4,
       prepMinutes: 20,
@@ -361,7 +361,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     // ----------------------------------------------------------------- Italian
     {
       slug: 'appetizer-platter-italian',
-      cuisine: 'italian',
+      tag: 'cuisine:italian',
       title: t('Italian antipasto platter', 'Platou italian antipasto'),
       servings: 4,
       prepMinutes: 20,
@@ -507,7 +507,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     // ----------------------------------------------------------------- Spanish
     {
       slug: 'appetizer-platter-spanish',
-      cuisine: 'spanish',
+      tag: 'cuisine:spanish',
       title: t('Spanish tapas platter', 'Platou spaniol de tapas'),
       servings: 4,
       prepMinutes: 20,
@@ -654,7 +654,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     // ------------------------------------------------------------------- Greek
     {
       slug: 'appetizer-platter-greek',
-      cuisine: 'greek',
+      tag: 'cuisine:greek',
       title: t('Greek meze platter', 'Platou grecesc de meze'),
       servings: 4,
       prepMinutes: 20,
@@ -825,7 +825,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     // ---------------------------------------------------------------- Levantine
     {
       slug: 'appetizer-platter-levantine',
-      cuisine: 'middle-eastern',
+      tag: 'cuisine:middle-eastern',
       // No cheese or cured meat to bring to room temperature (cold fish or none at all).
       hideBaseTips: [0],
       title: t('Levantine mezze platter', 'Platou levantin de mezze'),
@@ -995,7 +995,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     // ------------------------------------------------------------------ French
     {
       slug: 'appetizer-platter-french',
-      cuisine: 'french',
+      tag: 'cuisine:french',
       title: t('French apéritif platter', 'Platou franțuzesc de aperitiv'),
       servings: 4,
       prepMinutes: 15,
@@ -1156,7 +1156,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     // ------------------------------------------------------------ Scandinavian
     {
       slug: 'appetizer-platter-scandinavian',
-      cuisine: 'scandinavian',
+      tag: 'cuisine:scandinavian',
       // No cheese or cured meat to bring to room temperature (cold fish or none at all).
       hideBaseTips: [0],
       title: t(
@@ -1341,7 +1341,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     // ---------------------------------------------------------------- Japanese
     {
       slug: 'appetizer-platter-japanese',
-      cuisine: 'japanese',
+      tag: 'cuisine:japanese',
       // No cheese or cured meat to bring to room temperature (cold fish or none at all).
       hideBaseTips: [0],
       title: t('Japanese otsumami platter', 'Platou japonez otsumami'),

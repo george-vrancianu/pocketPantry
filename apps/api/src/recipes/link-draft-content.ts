@@ -28,8 +28,7 @@ export function draftContentOfLink(
     prepMinutes: minutesText(draft.prepMinutes),
     cookMinutes: minutesText(draft.cookMinutes),
     difficulty: draft.difficulty ?? '',
-    cuisineId: draft.cuisineId ?? '',
-    methodId: draft.methodId ?? '',
+    tagIds: draft.tagIds,
     lines: draft.lines.map((line) => ({
       ingredientId: line.ingredientId ?? '',
       name: line.ingredientName || line.rawName || '',

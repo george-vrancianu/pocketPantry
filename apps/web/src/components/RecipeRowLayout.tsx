@@ -2,12 +2,18 @@ import { Box, ChevronRightIcon, tokens, displayType } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import type { RecipeTag } from '../lib/tags';
+import { RowTags } from './RowTags';
 
 type LayoutProps = {
   title: ReactNode;
   /** A line between the title and the meta. */
   above?: ReactNode;
   meta: string[];
+  /** The Recipe's Tags: up to two chips and "+N" before the meta, which then follows after a dot. */
+  tags?: RecipeTag[];
+  /** Tags the active filter matched; shown first. */
+  matchedTagIds?: readonly string[];
   /** Undefined leaves the time column out. */
   minutes?: number | null;
   pills?: ReactNode;
@@ -26,6 +32,8 @@ export function RecipeRowLayout({
   title,
   above,
   meta,
+  tags,
+  matchedTagIds,
   minutes,
   pills,
   to,
@@ -53,7 +61,9 @@ export function RecipeRowLayout({
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ fontSize: 15, fontWeight: 700 }}>{title}</Box>
         {above}
-        {meta.length > 0 ? (
+        {tags && tags.length > 0 ? (
+          <RowTags tags={tags} matchedIds={matchedTagIds ?? []} meta={meta} />
+        ) : meta.length > 0 ? (
           <Box
             sx={{ fontSize: 13, fontWeight: 500, color: tokens.color.muted }}
           >

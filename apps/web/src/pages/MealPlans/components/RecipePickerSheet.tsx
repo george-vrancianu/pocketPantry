@@ -7,7 +7,6 @@ import { copyToFamily, refreshAfterCopy } from '../../../lib/addToFamily';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   isFiltering,
-  useRecipeFilters,
   useRecipes,
   type RecipeBrowse,
 } from '../../../lib/recipes';
@@ -29,7 +28,7 @@ type Props = {
 /**
  * The Family's Recipes first, then an Explore section of Catalog Recipes (ADR 0029): Plans use
  * Family Recipes only, so picking a Catalog Recipe Adds it to the Family and plans the copy.
- * Both lists share the Recipes list's search and filters.
+ * Both lists share the Recipes list's search box (no Tags filter here).
  */
 export function RecipePickerSheet({
   open,
@@ -42,8 +41,7 @@ export function RecipePickerSheet({
   const { t } = useTranslation(['mealPlans', 'recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
     search: '',
-    cuisineId: '',
-    methodId: '',
+    tagIds: [],
   });
   // Plan Slots never hide (ADR 0012): "Hide Recipes with my Allergies" must not narrow what
   // a Member can plan, so the picker always asks for the hidden Recipes too.
@@ -59,7 +57,6 @@ export function RecipePickerSheet({
     scope: 'catalog',
     enabled: open,
   });
-  const filters = useRecipeFilters(open);
   const queryClient = useQueryClient();
   const [addingId, setAddingId] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
@@ -100,11 +97,7 @@ export function RecipePickerSheet({
           <Typography variant="meta" color="text.secondary">
             {context}
           </Typography>
-          <RecipeFilters
-            value={browse}
-            onChange={setBrowse}
-            options={filters.data}
-          />
+          <RecipeFilters value={browse} onChange={setBrowse} />
         </Box>
       }
     >

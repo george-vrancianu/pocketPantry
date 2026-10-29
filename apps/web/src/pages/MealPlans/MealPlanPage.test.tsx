@@ -60,8 +60,7 @@ const recipe = (id: string, title: string): RecipeListItem => ({
   title,
   parentId: null,
   base: null,
-  cuisine: null,
-  method: null,
+  tags: [],
   variantCount: 0,
   servings: 2,
   prepMinutes: 10,
@@ -108,7 +107,7 @@ function setup(view: MealPlanDetail = week(), extra = {}) {
       });
     },
     'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [], eatingMoments: [] }),
+      Response.json({ tags: [], eatingMoments: [] }),
     'PUT /api/meal-plans/p1/slots/1/lunch': () => Response.json(view),
     'PUT /api/meal-plans/p1/slots/1/dinner': () => Response.json(view),
     'DELETE /api/meal-plans/p1/slots/1/dinner': () =>

@@ -21,7 +21,7 @@ import { recipeHref } from '../../../lib/recipeHref';
 import { GuidanceSection } from './GuidanceSection';
 import { IngredientList, lineAmount, type LineAllergy } from './IngredientList';
 import { OwnerBadge } from './OwnerBadge';
-import { RecipeMeta } from './RecipeMeta';
+import { RowTags } from '../../../components/RowTags';
 import { AddMissing, PantryHeading } from './PantryStatus';
 import { Section } from './Section';
 import { ServingsStepper } from './Servings';
@@ -293,7 +293,7 @@ function WhatsDifferentSection({ recipe }: SectionProps) {
   );
 }
 
-/** A base Recipe's Variants with their Cuisine and Method. */
+/** A base Recipe's Variants with their Tags. */
 function VariantsSection({ recipe, preview }: SectionProps) {
   const { t } = useTranslation('recipes');
   if (recipe.parentId !== null) return null;
@@ -331,7 +331,7 @@ function VariantsSection({ recipe, preview }: SectionProps) {
                   {variant.title}
                 </Link>{' '}
                 <OwnerBadge owner={variant.owner} />
-                <RecipeMeta cuisine={variant.cuisine} method={variant.method} />
+                <RowTags tags={variant.tags} />
               </Box>
               {preview ? (
                 <AddToFamilyButton

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import pg from 'pg';
+import { restorePre0051Shape } from './support/pre-0051-shape';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 
 // Migration 0046 copies every Catalog Recipe a Meal Plan slot uses into its Family and
@@ -46,7 +47,11 @@ describe('Migration 0046: Meal Plan slots use Family Recipes (integration)', () 
   afterAll(async () => {
     await client.end();
   });
-  beforeEach(() => client.query('BEGIN'));
+  beforeEach(async () => {
+    await client.query('BEGIN');
+    // The migration copies the Recipe's Cuisine and Method columns, dropped later by 0051.
+    await restorePre0051Shape(client);
+  });
   afterEach(() => client.query('ROLLBACK'));
 
   const run = (sql: string, params: unknown[] = []) =>

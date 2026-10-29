@@ -10,8 +10,8 @@ import { UnmatchedQueue } from './UnmatchedQueue';
 // kind in the same switch.
 const catalog: AdminCatalog = {
   aisles: [],
-  cuisines: [],
-  methods: [],
+  tagGroups: [],
+  tags: [],
   allergens: [],
   eatingMoments: [],
   parentCategories: [],

@@ -122,6 +122,7 @@ export function ReviewPage({
       {screen.mode === 'plate' ? (
         <PlateRecipeSave
           dishTitle={screen.dishTitle}
+          proposedTagIds={screen.proposedTagIds}
           lines={screen.included}
           hasInvalidLine={screen.hasInvalidLine}
           onSaved={screen.openSavedRecipe}

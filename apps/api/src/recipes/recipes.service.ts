@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm';
 import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
@@ -14,6 +15,13 @@ import {
   recipeTipTranslations,
   recipeTips,
 } from '../database/schema';
+import {
+  copyRecipeTags,
+  loadPickableTags,
+  replaceRecipeTags,
+  resolveRecipeTags,
+  type RecipeTag,
+} from '../tags/recipe-tags';
 import { itemNotFound, recipeNotFound } from './recipe-errors';
 import {
   assertLiveCatalogBase,
@@ -61,10 +69,18 @@ export class RecipesService {
       title: row.title,
       servings: row.servings,
       difficulty: row.difficulty,
-      cuisineId: row.cuisineId,
-      methodId: row.methodId,
       archived: row.archivedAt !== null,
     }));
+  }
+
+  /** The Catalog Tags an Admin can put on a Catalog Recipe, named in `locale` (the Admin's Catalog Language). */
+  pickableTags(locale: CatalogLocale): Promise<RecipeTag[]> {
+    return loadPickableTags(
+      this.database,
+      catalogScope(SHARED_ONLY),
+      locale,
+      null,
+    );
   }
 
   async detail(id: string): Promise<AdminRecipeDetail> {
@@ -95,10 +111,12 @@ export class RecipesService {
     const id = randomUUID();
     await this.database.transaction(async (tx) => {
       await this.validate(tx, document);
+      const tagIds = await resolveRecipeTags(tx, null, document.tagIds);
       await tx.insert(recipes).values({
         id,
         ...recipeColumns(document),
       });
+      await replaceRecipeTags(tx, id, tagIds);
       await this.writeLines(tx, id, document, new Set());
       await this.writeSteps(tx, id, document, new Set());
     });
@@ -115,6 +133,7 @@ export class RecipesService {
     await this.database.transaction(async (tx) => {
       await lockCatalogRecipe(tx, id);
       await this.validate(tx, document);
+      const tagIds = await resolveRecipeTags(tx, null, document.tagIds);
       const existingLines = await tx
         .select({ id: recipeIngredientLines.id })
         .from(recipeIngredientLines)
@@ -127,6 +146,7 @@ export class RecipesService {
         .update(recipes)
         .set(recipeColumns(document))
         .where(eq(recipes.id, id));
+      await replaceRecipeTags(tx, id, tagIds);
       await this.writeLines(
         tx,
         id,
@@ -183,9 +203,9 @@ export class RecipesService {
         prepMinutes: parent.prepMinutes,
         cookMinutes: parent.cookMinutes,
         difficulty: parent.difficulty,
-        cuisineId: parent.cuisineId,
-        methodId: parent.methodId,
       });
+      // The Variant starts with every Tag of its Base, then they are independent.
+      await copyRecipeTags(tx, parentId, id);
       await this.copyContent(tx, parentId, id);
     });
     return this.detail(id);

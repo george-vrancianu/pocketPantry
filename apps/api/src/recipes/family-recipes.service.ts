@@ -18,6 +18,7 @@ import {
 import { consumeRecipeDraft } from '../recipe-drafts/recipe-drafts.service';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
+import { replaceRecipeTags, resolveRecipeTags } from '../tags/recipe-tags';
 import {
   itemNotFound,
   recipeNotFound,
@@ -116,8 +117,7 @@ export class FamilyRecipesService {
       prepMinutes: source.prepMinutes,
       cookMinutes: source.cookMinutes,
       difficulty: source.difficulty,
-      cuisineId: source.cuisine?.id ?? null,
-      methodId: source.method?.id ?? null,
+      tagIds: source.tags.map((tag) => tag.id),
       lines: source.lines.map((line) => ({
         ingredientId: line.ingredientId,
         rawName: line.ingredientId ? null : line.ingredientName,
@@ -192,6 +192,8 @@ export class FamilyRecipesService {
     }
     if (document.parentId)
       await this.assertParent(tx, familyId, document.parentId);
+    // After the parent, so another Family's parent reads as missing before any Tag is judged.
+    const tagIds = await resolveRecipeTags(tx, familyId, document.tagIds);
     const id = randomUUID();
     await tx.insert(recipes).values({
       id,
@@ -202,6 +204,7 @@ export class FamilyRecipesService {
       sourceLink: document.sourceLink ?? null,
       sourceLanguage: document.sourceLanguage ?? null,
     });
+    await replaceRecipeTags(tx, id, tagIds);
     await this.writeLines(tx, id, document, new Map(), locale);
     const stepIds = await this.recipes.writeSteps(tx, id, document, new Set());
     if (tips.length > 0) {
@@ -251,6 +254,7 @@ export class FamilyRecipesService {
         throw sourceLinkLocked();
       }
       await this.validate(tx, familyId, document);
+      const tagIds = await resolveRecipeTags(tx, familyId, document.tagIds);
       const existingLines = await tx
         .select()
         .from(recipeIngredientLines)
@@ -271,6 +275,7 @@ export class FamilyRecipesService {
               : {}),
         })
         .where(eq(recipes.id, id));
+      await replaceRecipeTags(tx, id, tagIds);
       await this.writeLines(
         tx,
         id,
@@ -482,10 +487,7 @@ export class FamilyRecipesService {
   private validate(
     tx: Tx,
     familyId: string,
-    document: Pick<
-      FamilyRecipeDocument,
-      'lines' | 'steps' | 'cuisineId' | 'methodId'
-    >,
+    document: Pick<FamilyRecipeDocument, 'lines' | 'steps'>,
   ) {
     return validateRecipeDocument(
       tx,

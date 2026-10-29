@@ -52,6 +52,7 @@ const localesByCode = Object.fromEntries(ALL.map((l) => [l, load(l)]));
 const NOT_PLURAL = new Set([
   'errors:family.not_household_of_one',
   'errors:recipes.tips_too_many',
+  'errors:recipes.tags_too_many',
   'errors:recipes.pairings_too_many',
   'errors:recipes.eating_moments_too_many',
 ]);
@@ -236,6 +237,11 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   ],
   [
     'type',
+    'the verb "Type" (enter text) in the Tag field placeholder, not a Category',
+    ['recipes:tags.fieldPlaceholder'],
+  ],
+  [
+    'type',
     'the verb "Type" (enter by hand) on the Empty Pantry banner, not a Category',
     ['pantry:empty.type'],
   ],
@@ -291,7 +297,7 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
   ],
   [
     'direction',
-    'plain word ("a general direction") in a Nutrition Note hint, not a Method instruction',
+    'plain word ("a general direction") in a Nutrition Note hint, not a cooking instruction',
     ['admin:recipe.guidance.nutrition.helper'],
   ],
   [
@@ -421,36 +427,6 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
     [
       'shopping:summary.moveToPantry_one',
       'shopping:summary.moveToPantry_other',
-    ],
-  ],
-  // Temporary: Tags replace Cuisine and Method (ADR 0033). These strings are
-  // the old Cuisine and Method UI, which #715 removes along with this entry.
-  [
-    'cuisine',
-    'the old Cuisine field and Admin list, removed by #715',
-    [
-      'admin:list.cuisine.edit',
-      'admin:list.cuisine.empty',
-      'admin:list.cuisine.hint',
-      'admin:list.cuisine.new',
-      'admin:list.cuisine.title',
-      'admin:recipe.fields.cuisine',
-      'errors:catalog.cuisine_in_use',
-      'recipes:cuisine',
-    ],
-  ],
-  [
-    'method',
-    'the old Method field and Admin list, removed by #715',
-    [
-      'admin:list.method.edit',
-      'admin:list.method.empty',
-      'admin:list.method.hint',
-      'admin:list.method.new',
-      'admin:list.method.title',
-      'admin:recipe.fields.method',
-      'errors:catalog.method_in_use',
-      'recipes:method',
     ],
   ],
   [

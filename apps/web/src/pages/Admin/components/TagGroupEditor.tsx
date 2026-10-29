@@ -3,35 +3,33 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   localName,
-  useDeleteListEntry,
-  useSaveListEntry,
-  type AdminListEntry,
-  type ListKind,
+  useDeleteTagGroup,
+  useSaveTagGroup,
+  type AdminTagGroup,
 } from '../../../lib/admin';
 import { EditorForm } from '../../../components/EditorForm';
 import { TranslationsEditor } from './TranslationsEditor';
 
 type Props = {
-  kind: ListKind;
-  /** Omit to create a new entry. */
-  entry?: AdminListEntry;
+  /** Omit to create a new Tag Group; it goes last. */
+  group?: AdminTagGroup;
   onDone: () => void;
 };
 
-/** Create, rename, translate or delete a Cuisine or Method, like an Aisle. */
-export function ListEntryEditor({ kind, entry, onDone }: Props) {
+/** Create, rename, translate or delete (when empty) a Tag Group; its place in the order is set in the list. */
+export function TagGroupEditor({ group, onDone }: Props) {
   const { t, i18n } = useTranslation('admin');
-  const save = useSaveListEntry(kind, entry?.id);
-  const remove = useDeleteListEntry(kind);
-  const [name, setName] = useState(entry?.name ?? '');
+  const save = useSaveTagGroup(group?.id);
+  const remove = useDeleteTagGroup();
+  const [name, setName] = useState(group?.name ?? '');
 
   return (
     <Stack spacing={3}>
       <EditorForm
         heading={
-          entry
-            ? t(`list.${kind}.edit`, { name: localName(entry, i18n.language) })
-            : t(`list.${kind}.new`)
+          group
+            ? t('tagGroup.edit', { name: localName(group, i18n.language) })
+            : t('tagGroup.new')
         }
         error={save.error ?? remove.error}
         canSave={name.trim() !== ''}
@@ -41,25 +39,25 @@ export function ListEntryEditor({ kind, entry, onDone }: Props) {
         }
         onCancel={onDone}
         onDelete={
-          entry
-            ? () => remove.mutate(entry.id, { onSuccess: onDone })
+          group
+            ? () => remove.mutate(group.id, { onSuccess: onDone })
             : undefined
         }
         deleting={remove.isPending}
       >
         <TextField
-          label={t(`list.${kind}.name`)}
+          label={t('tagGroup.name')}
           value={name}
           onChange={(event) => setName(event.target.value)}
           required
         />
       </EditorForm>
-      {entry ? (
+      {group ? (
         <TranslationsEditor
-          entityType={kind}
-          entityId={entry.id}
-          name={entry.name}
-          translations={entry.translations}
+          entityType="tag_group"
+          entityId={group.id}
+          name={group.name}
+          translations={group.translations}
           synonyms={false}
         />
       ) : null}

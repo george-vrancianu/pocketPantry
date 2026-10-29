@@ -4,6 +4,7 @@ import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.modul
 import { RecipesModule } from '../recipes/recipes.module';
 import { AdminCatalogController } from './admin-catalog.controller';
 import { AdminCatalogService } from './admin-catalog.service';
+import { MemberLanguageModule } from '../member-language/member-language.module';
 import { AdminRecipesController } from './admin-recipes.controller';
 import { FamilyIngredientsAdminController } from './family-ingredients.controller';
 import { FamilyIngredientsAdminService } from './family-ingredients.service';
@@ -13,7 +14,12 @@ import { UnmatchedQueueController } from './unmatched-queue.controller';
 import { UnmatchedQueueService } from './unmatched-queue.service';
 
 @Module({
-  imports: [RecipesModule, CatalogModule, IngredientCatalogModule],
+  imports: [
+    RecipesModule,
+    CatalogModule,
+    IngredientCatalogModule,
+    MemberLanguageModule,
+  ],
   controllers: [
     AdminCatalogController,
     AdminRecipesController,

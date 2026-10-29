@@ -74,10 +74,13 @@
     "aisle_in_use": "Overkategorier bruger stadig denne afdeling, så den kan ikke slettes. Flyt dem først til en anden afdeling.",
     "aisle_order_stale": "Afdelingerne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen.",
     "eating_moment_order_stale": "Spisetidspunkterne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen.",
-    "cuisine_in_use": "Opskrifter bruger stadig dette køkken, så det kan ikke slettes. Ret først de opskrifter.",
-    "method_in_use": "Opskrifter bruger stadig denne metode, så den kan ikke slettes. Ret først de opskrifter.",
     "family_ingredient_exists": "„{{existing.name}}“ har allerede det navn.",
-    "allergen_retired": "Dette allergen er udgået. Genindfør det, før du mærker med det."
+    "allergen_retired": "Dette allergen er udgået. Genindfør det, før du mærker med det.",
+    "tag_in_use_one": "{{count}} opskrift har dette tag. Bekræft sletningen for at fjerne det fra opskriften.",
+    "tag_in_use_other": "{{count}} opskrifter har dette tag. Bekræft sletningen for at fjerne det fra opskrifterne.",
+    "tag_allergen_free_name": "Et katalog-tag kan ikke påstå, at et allergen mangler. Allergener kommer fra ingredienslinjerne, så vælg et navn uden „fri“ eller „uden“ for et allergen.",
+    "tag_group_order_stale": "Tag-grupperne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen og prøv igen.",
+    "tag_group_not_empty": "Denne tag-gruppe har stadig katalog-tags. Flyt eller slet dem først."
   },
   "family": {
     "rate_limited": "For mange forsøg med invitationskoder. Vent et minut, og prøv igen.",
@@ -125,7 +128,15 @@
     "nutrition_note_too_long": "Ernæringsnoten kan højst være 500 tegn.",
     "nothing_to_translate": "Der er ingen kildetekst at oversætte. Tilføj den til opskriften først.",
     "copy_family_recipe": "Den opskrift er allerede din, så den kan ikke tilføjes igen.",
-    "copy_archived": "Den opskrift er ikke længere i Udforsk."
+    "copy_archived": "Den opskrift er ikke længere i Udforsk.",
+    "tags_too_many": "En opskrift kan højst have {{max}} tags.",
+    "tag_not_found": "Et af de tags findes ikke længere. Genindlæs og prøv igen."
+  },
+  "tags": {
+    "name_required": "Skriv et navn til tagget.",
+    "name_too_long": "Et tagnavn kan højst have {{max}} tegn.",
+    "not_found": "Tagget findes ikke længere. Måske har nogen slettet eller slået det sammen.",
+    "name_taken": "Der findes allerede et tag med det navn."
   },
   "family_ingredients": {
     "shared_name_exists": "Der findes allerede en fælles ingrediens med det navn. Flet denne ind i den i stedet.",

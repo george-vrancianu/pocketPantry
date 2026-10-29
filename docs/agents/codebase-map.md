@@ -21,12 +21,13 @@ Root `package.json` fans out `lint`, `typecheck`, `test`, `build` to every works
 - Integration tests live in `apps/api/test/*.int-spec.ts` (real Postgres via `TEST_DATABASE_URL`; config `apps/api/test/jest-integration.config.mjs`). Helpers: `apps/api/test/support/`.
 - Schema: `apps/api/src/database/schema.ts`. Migrations: `apps/api/drizzle/NNNN_name.sql` plus `apps/api/drizzle/meta/_journal.json` and a snapshot. Generate with `npm run db:generate -w apps/api`; never hand-number a file, because parallel branches collide on the next number.
 - Voice: handlers in `apps/api/src/voice/handlers/`, registry in `voice-handlers.registry.ts`.
+- Tags: `apps/api/src/tags/recipe-tags.ts` (loading Tags onto Recipe reads, checking and writing a Recipe's `tagIds` with the 10-Tag cap, the pickable Tags for the editors, copying Tags), Manage Tags (`manage-family-tags.service.ts`, routes `/api/recipes/tags/family|restore|:id`) and the `tag_groups`, `tags`, `recipe_tags` tables.
 
 ## Web (`apps/web/src`)
 
 - `pages/<Area>/` holds one feature area each (some areas have several pages), with its own `components/` and `hooks/` for code only that area uses. Page tests sit beside the page.
-- `components/` holds anything used by more than one page.
-- `lib/` holds non-visual logic: API client (`api.ts`), data hooks, the Voice Note module (`voiceNote.ts`), dates, amounts.
+- `components/` holds anything used by more than one page. Tags on Recipe rows: `RowTags` (the 2 chips, "+N" and Level line) and `TagChips` (the full list); the `TagChip` itself is in `packages/ui`.
+- `lib/` holds non-visual logic: API client (`api.ts`), data hooks, the Voice Note module (`voiceNote.ts`), dates, amounts. `lib/tags.ts` holds the `RecipeTag` type and row ordering (`orderRowTags`, `splitRowTags`, `rowTagNames`).
 - `test/` holds shared test helpers: `render.tsx` (render with providers), `voice.ts` (fake voice environment), `setup.ts` (vitest setup), plus per-feature helpers (`scan.ts`, `review.ts`, `mealPlans.ts`, `viewport.ts`, `scroll.ts`).
 - i18n: `i18n/locales/{en,ro,da}/<namespace>.json`, one file per namespace, same names in all three. Wiring in `i18n/resources.ts`; API error codes map to copy in `i18n/translateApiError.ts`.
 

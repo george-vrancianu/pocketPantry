@@ -25,7 +25,10 @@ import { SectionLabel } from './SectionLabel';
 type AddApi = ReturnType<typeof useAddToFamily>;
 
 const STARTERS = 3;
-const NO_BROWSE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
+const NO_BROWSE: RecipeBrowse = {
+  search: '',
+  tagIds: [],
+};
 
 /** Up to three Catalog Bases the Family can make now, each one tap from being added. Hidden when there are none. */
 function Starters({ add, stateOf }: AddApi) {

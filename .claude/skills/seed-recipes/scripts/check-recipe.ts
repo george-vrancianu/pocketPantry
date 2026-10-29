@@ -28,8 +28,7 @@ async function main(): Promise<void> {
   const problems: string[] = [
     ...validate.findRecipeSeedProblems({
       bases: [...others, mine],
-      cuisines: registries.SEED_CUISINES,
-      methods: registries.SEED_METHODS,
+      tags: registries.SEED_TAGS,
       eatingMoments: registries.SEED_EATING_MOMENTS,
       ingredientSlugs: new Set(SEED_INGREDIENTS.map((i: { slug: string }) => i.slug)),
     }),

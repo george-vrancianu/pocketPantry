@@ -74,10 +74,13 @@
     "aisle_in_use": "Parent Categories still use this Aisle, so it cannot be deleted. Move them to another Aisle first.",
     "aisle_order_stale": "The Aisles changed while you were reordering. Check the order and try again.",
     "eating_moment_order_stale": "The Eating Moments changed while you were reordering. Check the order and try again.",
-    "cuisine_in_use": "Recipes still use this Cuisine, so it cannot be deleted. Change those Recipes first.",
-    "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first.",
     "family_ingredient_exists": "“{{existing.name}}” already has that name.",
-    "allergen_retired": "That Allergen is retired. Bring it back before tagging with it."
+    "allergen_retired": "That Allergen is retired. Bring it back before tagging with it.",
+    "tag_in_use_one": "{{count}} Recipe has this Tag. Confirm the delete to remove it from that Recipe.",
+    "tag_in_use_other": "{{count}} Recipes have this Tag. Confirm the delete to remove it from those Recipes.",
+    "tag_allergen_free_name": "A Catalog Tag cannot claim an Allergen is absent. Allergens come from the Ingredient Lines, so pick a name without \"free\" or \"no\" for an Allergen.",
+    "tag_group_order_stale": "The Tag Groups changed while you were reordering. Check the order and try again.",
+    "tag_group_not_empty": "This Tag Group still has Catalog Tags. Move or delete them first."
   },
   "family": {
     "rate_limited": "Too many Invite Code attempts. Wait a minute and try again.",
@@ -125,7 +128,15 @@
     "nutrition_note_too_long": "The Nutrition Note can be at most 500 characters.",
     "nothing_to_translate": "There is no source text to translate. Add it to the Recipe first.",
     "copy_family_recipe": "That Recipe is already yours, so it cannot be added again.",
-    "copy_archived": "That Recipe is no longer in Explore."
+    "copy_archived": "That Recipe is no longer in Explore.",
+    "tags_too_many": "A Recipe can have at most {{max}} Tags.",
+    "tag_not_found": "One of those Tags no longer exists. Reload and try again."
+  },
+  "tags": {
+    "name_required": "Give the Tag a name.",
+    "name_too_long": "A Tag name can be at most {{max}} characters.",
+    "not_found": "That Tag no longer exists. Someone may have deleted or merged it.",
+    "name_taken": "A Tag with that name already exists."
   },
   "family_ingredients": {
     "shared_name_exists": "A shared ingredient with that name already exists. Merge this one into it instead.",

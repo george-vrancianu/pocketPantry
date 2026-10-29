@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
+import { getToast } from '../../test/toast';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,8 +20,7 @@ const item = (over: Partial<RecipeListItem>): RecipeListItem => ({
   title: 'Recipe',
   parentId: null,
   base: null,
-  cuisine: null,
-  method: null,
+  tags: [],
   variantCount: 0,
   servings: 2,
   prepMinutes: 10,
@@ -51,6 +51,7 @@ const card = (
     servings: 2,
     prepMinutes: 10,
     cookMinutes: 15,
+    tags: [],
     allergyWarning: null,
   },
 });
@@ -81,8 +82,7 @@ function setup({
             : [...family, ...(copy ? [copy] : [])],
         hiddenByAllergiesCount: hidden,
       }),
-    'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [] }),
+    'GET /api/recipes/filters': () => Response.json({ tags: [] }),
     'GET /api/recipes/cook-tonight': (url) =>
       Response.json({
         cards: url.searchParams.get('scope') === 'catalog' ? cards : [],
@@ -353,9 +353,7 @@ describe('RecipesPage when the Family has no Recipes', () => {
       const list = await screen.findByRole('list', { name: /^All Recipes/ });
       expect(within(list).getByText('omelette')).toBeVisible();
       expect(screen.queryByText(TITLE)).toBeNull();
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Added omelette to your Recipes',
-      );
+      expect(getToast()).toHaveTextContent('Added omelette to your Recipes');
 
       await user.click(screen.getByRole('button', { name: 'Undo' }));
       expect(await findTitle()).toBeVisible();

@@ -14,6 +14,7 @@ import {
   recipePairings,
   recipes,
   scanUsage,
+  tags,
 } from '../src/database/schema';
 import type { GuidanceSuggestion } from '../src/recipes/guidance-suggestion.schemas';
 import { ScanCapService } from '../src/scan/scan-cap.service';
@@ -125,6 +126,18 @@ describe('Suggest Guidance (integration)', () => {
     expect(prompts[0].prompt).toContain('grandma spice');
     expect(prompts[0].prompt).toContain('Fry each side.');
     expect(await rowCounts()).toEqual(before);
+  });
+
+  it('does not offer, propose or create Tags (#714)', async () => {
+    const tagCount = async () =>
+      (await database.select({ id: tags.id }).from(tags)).length;
+    const tagWords = /tagIds|tagIndexes|"tags"/;
+    const before = await tagCount();
+    const res = await suggest(request()).expect(200);
+    expect(JSON.stringify(res.body)).not.toMatch(tagWords);
+    expect(prompts[0].prompt).not.toContain('Tags:');
+    expect(JSON.stringify(prompts[0].schema)).not.toMatch(tagWords);
+    expect(await tagCount()).toBe(before);
   });
 
   it('leaves the stored Recipe untouched when called with its recipeId', async () => {

@@ -1,12 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
-import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { catalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
-import { cuisines, eatingMoments, methods, recipes } from '../database/schema';
+import {
+  loadPickableTags,
+  loadRecipeTags,
+  loadTagsInUse,
+  type RecipeTag,
+} from '../tags/recipe-tags';
+import { eatingMoments, recipes, recipeTags, tags } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import {
   loadAllergyWarnings,
@@ -37,6 +43,19 @@ import type {
 } from './recipes.schemas';
 
 type RecipeRow = typeof recipes.$inferSelect;
+
+/** Recipes carrying every one of the Tags (AND); no Tags is no condition. */
+function hasEveryTag(tagIds: readonly string[] | undefined) {
+  const wanted = [...new Set(tagIds ?? [])];
+  if (wanted.length === 0) return undefined;
+  return inArray(
+    recipes.id,
+    sql`(SELECT ${recipeTags.recipeId} FROM ${recipeTags}
+      WHERE ${inArray(recipeTags.tagId, wanted)}
+      GROUP BY ${recipeTags.recipeId}
+      HAVING count(DISTINCT ${recipeTags.tagId}) = ${wanted.length})`,
+  );
+}
 
 const byTitle =
   (locale: string) => (a: { title: string }, b: { title: string }) =>
@@ -69,8 +88,7 @@ export class RecipeBrowseService {
     const listsVariants =
       query.scope === 'family' ||
       needle !== '' ||
-      query.cuisineId !== undefined ||
-      query.methodId !== undefined ||
+      (query.tagIds?.length ?? 0) > 0 ||
       query.includeVariants === 'true';
 
     const rows = await this.database
@@ -81,8 +99,7 @@ export class RecipeBrowseService {
           inScope(familyId, query.scope),
           isNull(recipes.archivedAt),
           listsVariants ? undefined : isNull(recipes.parentId),
-          query.cuisineId ? eq(recipes.cuisineId, query.cuisineId) : undefined,
-          query.methodId ? eq(recipes.methodId, query.methodId) : undefined,
+          hasEveryTag(query.tagIds),
         ),
       )
       .orderBy(asc(recipes.id));
@@ -105,12 +122,12 @@ export class RecipeBrowseService {
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
     const counts = await this.variantCounts(familyId, baseIds, query.scope);
-    const [ref, { hides, allergy }] = await Promise.all([
-      this.namedRefs(
+    const [tagsOf, { hides, allergy }] = await Promise.all([
+      loadRecipeTags(
         this.database,
         catalogScope(familyId),
         locale,
-        matching.flatMap((r) => [r.cuisineId, r.methodId]),
+        matching.map((r) => r.id),
       ),
       loadViewerAllergyContext(
         this.database,
@@ -147,8 +164,7 @@ export class RecipeBrowseService {
           base: parent
             ? { id: parent.id, title: titles.get(parent.id)! }
             : null,
-          cuisine: ref.cuisine(row.cuisineId),
-          method: ref.method(row.methodId),
+          tags: tagsOf.get(row.id) ?? [],
           variantCount: counts.get(row.id) ?? 0,
           servings: row.servings,
           prepMinutes: row.prepMinutes,
@@ -281,15 +297,41 @@ export class RecipeBrowseService {
     };
   }
 
-  /** Cuisines and Methods for the filter pickers, named in `locale`, sorted by name. */
+  /** Every Tag the Member can put on a Recipe: all Catalog Tags and the Family's own, in their language. */
+  async pickableTags(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<RecipeTag[]> {
+    return loadPickableTags(
+      this.database,
+      await this.settings.catalogScopeForMember(memberId),
+      locale,
+      await this.settings.familyIdOf(memberId),
+    );
+  }
+
+  /**
+   * The Tags in use on live Recipes in `recipeScope` (absent: the Catalog's and the Family's).
+   */
   async filters(
     memberId: string,
     locale: CatalogLocale,
+    recipeScope?: RecipeScope,
   ): Promise<RecipeFilters> {
     const scope = await this.settings.catalogScopeForMember(memberId);
-    const [cuisineRows, methodRows, momentRows] = await Promise.all([
-      this.database.select().from(cuisines),
-      this.database.select().from(methods),
+    const familyId = await this.settings.familyIdOf(memberId);
+    const [tagsInUse, momentRows] = await Promise.all([
+      loadTagsInUse(
+        this.database,
+        scope,
+        locale,
+        and(
+          inScope(familyId, recipeScope),
+          isNull(recipes.archivedAt),
+          // Explore offers Catalog Tags only, whatever a write path may have attached.
+          recipeScope === 'catalog' ? isNull(tags.familyId) : undefined,
+        ),
+      ),
       this.database
         .select()
         .from(eatingMoments)
@@ -297,23 +339,10 @@ export class RecipeBrowseService {
         .orderBy(asc(eatingMoments.sortOrder), asc(eatingMoments.id)),
     ]);
     const names = await loadDisplayNames(this.database, scope, locale, [
-      ...cuisineRows.map((r) => r.id),
-      ...methodRows.map((r) => r.id),
       ...momentRows.map((r) => r.id),
     ]);
-    const named = (
-      type: 'cuisine' | 'method',
-      rows: { id: string; name: string }[],
-    ) =>
-      rows
-        .map((r) => ({ id: r.id, name: names.pick(type, r.id, r.name) }))
-        .sort(
-          (a, b) =>
-            a.name.localeCompare(b.name, locale) || a.id.localeCompare(b.id),
-        );
     return {
-      cuisines: named('cuisine', cuisineRows),
-      methods: named('method', methodRows),
+      tags: tagsInUse,
       eatingMoments: momentRows.map((r) => ({
         id: r.id,
         name: names.pick('eating_moment', r.id, r.name),
@@ -365,18 +394,17 @@ export class RecipeBrowseService {
       familyId,
       rows.filter((r) => r.familyId === null).map((r) => r.id),
     );
-    const ref = await this.namedRefs(
+    const tagsOf = await loadRecipeTags(
       this.database,
       catalogScope(familyId),
       locale,
-      rows.flatMap((r) => [r.cuisineId, r.methodId]),
+      rows.map((r) => r.id),
     );
     return rows
       .map((row) => ({
         id: row.id,
         title: titles.get(row.id)!,
-        cuisine: ref.cuisine(row.cuisineId),
-        method: ref.method(row.methodId),
+        tags: tagsOf.get(row.id) ?? [],
         owner: ownerOf(row),
         familyCopyId: copies.get(row.id) ?? null,
       }))
@@ -430,36 +458,6 @@ export class RecipeBrowseService {
         normalizeName(titles.get(r.id)!).includes(needle) ||
         normalizeName(r.title).includes(needle),
     );
-  }
-
-  private async namedRefs(
-    executor: Executor,
-    scope: CatalogScope,
-    locale: CatalogLocale,
-    ids: (string | null)[],
-  ) {
-    const wanted = [...new Set(ids.flatMap((i) => (i ? [i] : [])))];
-    const [cuisineRows, methodRows, names] = await Promise.all([
-      wanted.length === 0
-        ? []
-        : executor.select().from(cuisines).where(inArray(cuisines.id, wanted)),
-      wanted.length === 0
-        ? []
-        : executor.select().from(methods).where(inArray(methods.id, wanted)),
-      loadDisplayNames(executor, scope, locale, wanted),
-    ]);
-    const cuisineName = new Map(cuisineRows.map((r) => [r.id, r.name]));
-    const methodName = new Map(methodRows.map((r) => [r.id, r.name]));
-    return {
-      cuisine: (id: string | null) =>
-        id && cuisineName.has(id)
-          ? { id, name: names.pick('cuisine', id, cuisineName.get(id)!) }
-          : null,
-      method: (id: string | null) =>
-        id && methodName.has(id)
-          ? { id, name: names.pick('method', id, methodName.get(id)!) }
-          : null,
-    };
   }
 }
 

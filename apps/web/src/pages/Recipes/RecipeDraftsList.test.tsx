@@ -43,8 +43,7 @@ const titled = (title: string): RecipeDraftContent => ({
   prepMinutes: '',
   cookMinutes: '',
   difficulty: '',
-  cuisineId: '',
-  methodId: '',
+  tagIds: [],
   lines: [],
   steps: [],
   guidance: blankGuidance,
@@ -54,7 +53,7 @@ const titled = (title: string): RecipeDraftContent => ({
   plateScan: false,
 });
 
-const filters = { cuisines: [], methods: [], eatingMoments: [] };
+const filters = { tags: [], eatingMoments: [] };
 
 function GoBack() {
   const navigate = useNavigate();

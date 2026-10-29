@@ -5,6 +5,7 @@ import { ingredientUnit, recipeDifficulty } from '../database/schema';
 import type { AllergyOwner, AllergyWarningOwner } from './matching/allergens';
 import type { PlateMatch } from './plate-matches';
 import { sourceLinkInput } from './source-link';
+import type { RecipeTag } from '../tags/recipe-tags';
 import type { RecipeDiff } from './recipe-diff';
 import {
   guidanceBody,
@@ -24,6 +25,8 @@ const minutes = z.number().int().min(0).max(100_000).nullable();
 export const MAX_LINES = 100;
 export const MAX_STEPS = 100;
 export const MAX_TIPS = 200;
+/** Most Tags one Recipe can carry (ADR 0033); the service refuses the 11th with a coded error. */
+export const MAX_RECIPE_TAGS = 10;
 
 /** An Ingredient Line quantity, numeric(10,3): positive, at most 3 decimals. */
 const lineQuantity = z
@@ -74,8 +77,8 @@ export const recipeDocument = z
     prepMinutes: minutes.default(null),
     cookMinutes: minutes.default(null),
     difficulty: z.enum(recipeDifficulty.enumValues).nullable().default(null),
-    cuisineId: id.nullable().default(null),
-    methodId: id.nullable().default(null),
+    // Capped in the service (`recipes.tags_too_many`); the schema only bounds the payload.
+    tagIds: z.array(id).max(100).default([]),
     lines: z.array(lineInput).max(MAX_LINES).default([]),
     steps: z.array(stepInput).max(MAX_STEPS).default([]),
   })
@@ -216,6 +219,8 @@ export const fromPlateBody = z
     title,
     parentId: id.nullable(),
     lines: z.array(familyLineInput.omit({ id: true })).max(MAX_LINES),
+    /** Tags proposed by the Plate Scan read; those usable by the Family are kept (up to 10, after a Variant's Base Tags). */
+    tagIds: z.array(id).max(100).default([]),
   })
   .strict();
 
@@ -282,6 +287,9 @@ const showHiddenQuery = z
 export const recipeScopeQuery = z.enum(['family', 'catalog']).optional();
 export type RecipeScope = NonNullable<z.infer<typeof recipeScopeQuery>>;
 
+/** The most Tags one browse can ask for. */
+const MAX_FILTER_TAGS = 20;
+
 /** Member browsing: no search or filter lists Base Recipes only. */
 export const browseQuery = z.object({
   /**
@@ -290,8 +298,17 @@ export const browseQuery = z.object({
    */
   scope: recipeScopeQuery,
   search: z.string().trim().max(100).optional(),
-  cuisineId: id.optional(),
-  methodId: id.optional(),
+  /**
+   * Tag ids, all of which a Recipe must have (AND). Comma-separated (`tagIds=a,b`) or repeated.
+   * A Variant is matched on its own Tags.
+   */
+  tagIds: z
+    .preprocess(
+      (value) =>
+        typeof value === 'string' ? value.split(',').filter(Boolean) : value,
+      z.array(id).max(MAX_FILTER_TAGS),
+    )
+    .optional(),
   /** Opt in to Variants alongside Base Recipes with no search or filter. */
   includeVariants: z.enum(['true', 'false']).optional(),
   /**
@@ -301,6 +318,9 @@ export const browseQuery = z.object({
    */
   showHidden: showHiddenQuery,
 });
+
+/** The filter pickers' options; `scope` narrows the Tags offered to those in use in it. */
+export const filtersQuery = z.object({ scope: recipeScopeQuery });
 
 export const recipeParam = z.object({ id });
 export const recipeTipParam = z.object({ id, tipId: id });
@@ -322,6 +342,7 @@ export type HiddenTipsBody = z.infer<typeof hiddenTipsBody>;
 export type TranslationsBody = z.infer<typeof translationsBody>;
 export type RecipeListQuery = z.infer<typeof recipeListQuery>;
 export type BrowseQuery = z.infer<typeof browseQuery>;
+export type FiltersQuery = z.infer<typeof filtersQuery>;
 
 export type RecipeLineView = {
   id: string;
@@ -360,8 +381,8 @@ export type AdminRecipeDetail = AdminGuidance & {
   prepMinutes: number | null;
   cookMinutes: number | null;
   difficulty: (typeof recipeDifficulty.enumValues)[number] | null;
-  cuisineId: string | null;
-  methodId: string | null;
+  /** The ids of this Recipe's Tags (the editor resolves them against the pickable Tags). */
+  tagIds: string[];
   archived: boolean;
   archivedAt: string | null;
   /** The normalised page a Recipe from Link was read from; null otherwise. */
@@ -383,8 +404,6 @@ export type AdminRecipeListItem = {
   title: string;
   servings: number;
   difficulty: AdminRecipeDetail['difficulty'];
-  cuisineId: string | null;
-  methodId: string | null;
   archived: boolean;
 };
 
@@ -402,8 +421,8 @@ export type ResolvedRecipe = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   difficulty: AdminRecipeDetail['difficulty'];
-  cuisine: { id: string; name: string } | null;
-  method: { id: string; name: string } | null;
+  /** Every Tag on the Recipe in the viewer's language: Family Tags first, then Catalog Tags by Tag Group. */
+  tags: RecipeTag[];
   archived: boolean;
   /** The normalised page a Recipe from Link was read from; null otherwise (and always on a Catalog Recipe). */
   sourceLink: string | null;
@@ -419,6 +438,8 @@ export type ResolvedRecipe = {
 
 type NamedRef = { id: string; name: string };
 
+export type { RecipeTag };
+
 /** One row of the Member's Recipe list. */
 export type RecipeListItem = {
   id: string;
@@ -426,8 +447,8 @@ export type RecipeListItem = {
   parentId: string | null;
   /** The base of a Variant (its title in the requested locale), null on a Base Recipe. */
   base: { id: string; title: string } | null;
-  cuisine: NamedRef | null;
-  method: NamedRef | null;
+  /** Every Tag on the Recipe in the viewer's language: Family Tags first, then Catalog Tags by Tag Group. */
+  tags: RecipeTag[];
   /** Live Variants of a Base Recipe; 0 on a Variant. */
   variantCount: number;
   servings: number;
@@ -454,8 +475,7 @@ export type RecipeList = {
 export type RecipeVariantItem = {
   id: string;
   title: string;
-  cuisine: NamedRef | null;
-  method: NamedRef | null;
+  tags: RecipeTag[];
   owner: RecipeOwner;
   /** The Family's live copy of a Catalog Variant, else null. */
   familyCopyId: string | null;
@@ -561,8 +581,11 @@ export type RecipeDetail = ResolvedRecipe & {
 };
 
 export type RecipeFilters = {
-  cuisines: NamedRef[];
-  methods: NamedRef[];
+  /**
+   * The Tags used on at least one live Recipe in `scope` (Family Tags only the Family's own),
+   * in the viewer's language: Family Tags first, then Catalog Tags by Tag Group order, then by name.
+   */
+  tags: RecipeTag[];
   /** Live Eating Moments in sort order. They feed the guidance editor's picker, not a browsing filter. */
   eatingMoments: NamedRef[];
 };
@@ -637,8 +660,8 @@ export type FamilyRecipeDraft = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   difficulty: AdminRecipeDetail['difficulty'];
-  cuisineId: string | null;
-  methodId: string | null;
+  /** Every Tag of the source: a new Variant starts with its Base's Tags. */
+  tagIds: string[];
   /** `ingredientName` is for display only; drop it when posting. */
   lines: {
     ingredientId: string | null;
@@ -679,6 +702,7 @@ export type CookTonightCard = {
     servings: number;
     prepMinutes: number | null;
     cookMinutes: number | null;
+    tags: RecipeTag[];
     allergyWarning: CompactAllergyWarning | null;
   };
   canMake: boolean;

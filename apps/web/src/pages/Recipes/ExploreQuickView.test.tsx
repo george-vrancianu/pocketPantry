@@ -5,6 +5,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { findToast, queryToast } from '../../test/toast';
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -17,7 +18,7 @@ import { RecipeDetailPage, RecipePreviewPage } from './RecipeDetailPage';
 
 /*
  * DOM contract: tapping a row's body opens a `dialog` named by the Recipe's title. It holds a
- * "Close" button, the fact terms Time / Serves / Level / Style, a list "Ingredients" (a missing
+ * "Close" button, the fact terms Time / Serves / Level, a list "Tags" (one chip per Tag; none when the Recipe has no Tags), a list "Ingredients" (a missing
  * chip carries the hidden text "missing"), a list "Variants" and the actions: a button
  * "Add to your Recipes" (then the link "In your Recipes · Open"), the link "Make a Variant" and
  * the button "See the whole Recipe".
@@ -28,8 +29,32 @@ const soup: RecipeListItem = {
   title: 'Soup',
   parentId: null,
   base: null,
-  cuisine: { id: 'c1', name: 'Italian' },
-  method: null,
+  tags: [
+    {
+      id: 't-din',
+      name: 'Dinner',
+      kind: 'catalog',
+      groupId: 'g1',
+      groupName: 'Meal',
+      groupOrder: 1,
+    },
+    {
+      id: 'c1',
+      name: 'Italian',
+      kind: 'catalog',
+      groupId: 'g3',
+      groupName: 'Cuisine',
+      groupOrder: 3,
+    },
+    {
+      id: 'm1',
+      name: 'Rolled',
+      kind: 'catalog',
+      groupId: 'g4',
+      groupName: 'Method',
+      groupOrder: 4,
+    },
+  ],
   variantCount: 1,
   servings: 2,
   prepMinutes: 10,
@@ -50,8 +75,7 @@ const detail: RecipeDetail = {
   prepMinutes: 10,
   cookMinutes: 20,
   difficulty: 'easy',
-  cuisine: { id: 'c1', name: 'Italian' },
-  method: null,
+  tags: [],
   archived: false,
   lines: [
     {
@@ -80,16 +104,14 @@ const detail: RecipeDetail = {
     {
       id: 'spicy',
       title: 'Spicy soup',
-      cuisine: null,
-      method: null,
+      tags: [],
       owner: 'catalog',
       familyCopyId: null,
     },
     {
       id: 'mine',
       title: 'My soup',
-      cuisine: null,
-      method: null,
+      tags: [],
       owner: 'family',
       familyCopyId: null,
     },
@@ -120,8 +142,7 @@ function setup(route = '/recipes/explore') {
         recipes: [{ ...soup, familyCopyId: copies.soup ?? null }],
         hiddenByAllergiesCount: 0,
       }),
-    'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [] }),
+    'GET /api/recipes/filters': () => Response.json({ tags: [] }),
     'GET /api/recipes/soup': () =>
       Response.json({
         ...detail,
@@ -212,12 +233,17 @@ describe('Explore quick view', () => {
       ['Time', '30 min'],
       ['Serves', '2'],
       ['Level', 'Easy'],
-      ['Style', 'Italian'],
     ]) {
       expect(
         within(dialog).getByText(term).nextElementSibling,
       ).toHaveTextContent(value);
     }
+    const tagList = within(dialog).getByRole('list', { name: 'Tags' });
+    expect(
+      within(tagList)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Dinner', 'Italian', 'Rolled']);
     expect(await within(dialog).findByText('Water')).toBeVisible();
     const leek = (await within(dialog).findByText('Leek')).closest('li')!;
     await waitFor(() => expect(leek).toHaveAttribute('data-missing'));
@@ -272,10 +298,10 @@ describe('Explore quick view', () => {
     await u.click(
       await screen.findByRole('button', { name: 'Add Soup to your Recipes' }),
     );
-    expect(await screen.findByRole('status')).toHaveTextContent('Added Soup');
+    expect(await findToast()).toHaveTextContent('Added Soup');
     await u.click(await rowButton());
     await screen.findByRole('dialog', { name: 'Soup' });
-    await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
+    await waitFor(() => expect(queryToast()).toBeNull());
   });
 
   it('adds: the primary turns into "In your Recipes · Open" and the explanation changes', async () => {

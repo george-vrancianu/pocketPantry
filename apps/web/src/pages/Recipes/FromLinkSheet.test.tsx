@@ -15,8 +15,7 @@ import { NewRecipePage } from './FamilyRecipePages';
 import { RecipesPage } from './RecipesPage';
 
 const filters = {
-  cuisines: [{ id: 'c-fr', name: 'French' }],
-  methods: [{ id: 'm-pan', name: 'Pan frying' }],
+  tags: [],
   eatingMoments: [],
 };
 
@@ -31,8 +30,7 @@ const read = (
     prepMinutes: 10,
     cookMinutes: 15,
     difficulty: null,
-    cuisineId: 'c-fr',
-    methodId: 'm-pan',
+    tagIds: ['c-fr', 'm-pan'],
     lines: [
       {
         ingredientId: 'egg',
@@ -97,8 +95,7 @@ function draftViewOf(result: RecipeFromLinkDraft): RecipeDraftView {
       prepMinutes: draft.prepMinutes === null ? '' : String(draft.prepMinutes),
       cookMinutes: draft.cookMinutes === null ? '' : String(draft.cookMinutes),
       difficulty: draft.difficulty ?? '',
-      cuisineId: draft.cuisineId ?? '',
-      methodId: draft.methodId ?? '',
+      tagIds: draft.tagIds,
       lines: draft.lines.map((line) => ({
         ingredientId: line.ingredientId ?? '',
         name: line.ingredientName || line.rawName || '',
@@ -910,7 +907,7 @@ describe('after a read, the editor', () => {
     ).toMatchObject({
       recipe: {
         title: 'Blog pancakes',
-        cuisineId: 'c-fr',
+        tagIds: ['c-fr', 'm-pan'],
         lines: [
           { ingredientId: 'egg', quantity: 2, unit: 'pcs' },
           { ingredientId: null, rawName: 'Maple syrup' },

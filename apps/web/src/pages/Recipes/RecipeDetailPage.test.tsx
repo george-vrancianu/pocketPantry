@@ -23,8 +23,7 @@ const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   prepMinutes: 5,
   cookMinutes: 10,
   difficulty: 'easy',
-  cuisine: { id: 'c-fr', name: 'French' },
-  method: { id: 'm-pan', name: 'Pan frying' },
+  tags: [],
   archived: false,
   lines: [
     {
@@ -125,6 +124,44 @@ describe('RecipeDetailPage', () => {
     expect(within(ingredients).getByText(/optional/)).toBeInTheDocument();
   });
 
+  it('shows every Tag as a chip under the facts, Family Tags first, and no Style fact', async () => {
+    setup(
+      recipe({
+        tags: [
+          {
+            id: 'f',
+            name: 'Meal prep',
+            kind: 'family',
+            groupId: null,
+            groupName: null,
+            groupOrder: null,
+          },
+          ...['Dinner', 'Vegan', 'French', 'Pan frying'].map((name, i) => ({
+            id: `c${i}`,
+            name,
+            kind: 'catalog' as const,
+            groupId: `g${i}`,
+            groupName: 'Group',
+            groupOrder: i + 1,
+          })),
+        ],
+      }),
+    );
+    const tags = await screen.findByRole('list', { name: 'Tags' });
+    expect(
+      within(tags)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Meal prep', 'Dinner', 'Vegan', 'French', 'Pan frying']);
+    expect(screen.queryByText('Style')).toBeNull();
+  });
+
+  it('shows no Tags list on a Recipe without Tags', async () => {
+    setup(recipe({}));
+    await screen.findByRole('heading', { level: 1, name: /Omelette/ });
+    expect(screen.queryByRole('list', { name: 'Tags' })).toBeNull();
+  });
+
   it('links a Recipe read from a page to its Source Link', async () => {
     setup(
       recipe({
@@ -205,14 +242,12 @@ describe('RecipeDetailPage', () => {
   });
 
   describe('Hero', () => {
-    it('shows the facts: Time, Serves, Level and Style', async () => {
+    it('shows the facts: Time, Serves and Level', async () => {
       setup(recipe({}));
       await screen.findByRole('heading', { level: 1, name: /Omelette/ });
       expect(fact('Time')).toHaveTextContent('15 min');
       expect(fact('Serves')).toHaveTextContent('2');
       expect(fact('Level')).toHaveTextContent('Easy');
-      expect(fact('Style')).toHaveTextContent('French');
-      expect(fact('Style')).toHaveTextContent('Pan frying');
     });
 
     it('omits the Time fact when neither prep nor cook time is known', async () => {
@@ -223,11 +258,11 @@ describe('RecipeDetailPage', () => {
       expect(labels).toContain('Serves');
     });
 
-    it('sizes the fact columns to the cells shown, keeping Style the wide one', async () => {
+    it('sizes the fact columns to the cells shown', async () => {
       setup(recipe({ prepMinutes: null, cookMinutes: null, difficulty: null }));
       await screen.findByRole('heading', { level: 1, name: /Omelette/ });
-      const grid = fact('Style').parentElement!.parentElement!;
-      expect(grid).toHaveStyle({ gridTemplateColumns: '1fr 1.7fr' });
+      const grid = fact('Serves').parentElement!.parentElement!;
+      expect(grid).toHaveStyle({ gridTemplateColumns: '1fr' });
     });
 
     it('sums prep and cook time when only one is known', async () => {
@@ -271,7 +306,7 @@ describe('RecipeDetailPage', () => {
     ).toBeInTheDocument();
   });
 
-  it("lists a base Recipe's Variants with Cuisine and Method, linking through", async () => {
+  it("lists a base Recipe's Variants with their Tags, linking through", async () => {
     const user = userEvent.setup();
     setup(
       recipe({
@@ -279,8 +314,24 @@ describe('RecipeDetailPage', () => {
           {
             id: 'f',
             title: 'Frittata',
-            cuisine: { id: 'c-it', name: 'Italian' },
-            method: { id: 'm-bake', name: 'Baking' },
+            tags: [
+              {
+                id: 'c-it',
+                name: 'Italian',
+                kind: 'catalog',
+                groupId: 'g3',
+                groupName: 'Cuisine',
+                groupOrder: 3,
+              },
+              {
+                id: 'm-bake',
+                name: 'Baking',
+                kind: 'catalog',
+                groupId: 'g4',
+                groupName: 'Method',
+                groupOrder: 4,
+              },
+            ],
             owner: 'catalog',
             familyCopyId: null,
           },
@@ -294,8 +345,31 @@ describe('RecipeDetailPage', () => {
     expect(
       within(section).getByRole('link', { name: 'Frittata' }),
     ).toHaveAttribute('href', '/recipes/explore/f');
-    expect(within(section).getByText(/Italian/)).toBeInTheDocument();
-    expect(within(section).getByText(/Baking/)).toBeInTheDocument();
+    expect(
+      within(section).getByRole('group', { name: 'Tags: Italian, Baking' }),
+    ).toBeInTheDocument();
+  });
+
+  it('draws no Tags group for a Variant without Tags', async () => {
+    const user = userEvent.setup();
+    setup(
+      recipe({
+        variants: [
+          {
+            id: 'f',
+            title: 'Frittata',
+            tags: [],
+            owner: 'catalog',
+            familyCopyId: null,
+          },
+        ],
+      }),
+    );
+    await openTab(user, 'About');
+    const section = (
+      await screen.findByRole('heading', { name: 'Variants' })
+    ).closest('section')!;
+    expect(within(section).queryByRole('group', { name: /^Tags/ })).toBeNull();
   });
 
   it("marks the Family's own Variants under their base", async () => {
@@ -306,16 +380,14 @@ describe('RecipeDetailPage', () => {
           {
             id: 'f',
             title: 'Frittata',
-            cuisine: null,
-            method: null,
+            tags: [],
             owner: 'catalog',
             familyCopyId: null,
           },
           {
             id: 'g',
             title: "Grandma's omelette",
-            cuisine: null,
-            method: null,
+            tags: [],
             owner: 'family',
             familyCopyId: null,
           },

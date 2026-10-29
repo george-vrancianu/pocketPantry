@@ -156,7 +156,7 @@ ambiguous Synonyms, or dangling references. Slugs are permanent once merged.
 ### Recipe seed
 
 `src/catalog/seed/recipes/` seeds the starter Recipes (Base Recipes with their
-Variants, the Cuisine, Method and Eating Moment lists, Tips and guidance) right
+Variants, the Tag Groups, Catalog Tags and Eating Moments, Tips and guidance) right
 after the Catalog seed, from one data file per Base Recipe. It is validated
 first (`validate-recipe-seed.ts`), including the Admin API's own limits.
 

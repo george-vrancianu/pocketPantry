@@ -222,7 +222,7 @@ export const chickenSalad: BaseRecipeSeed = {
   variants: [
     {
       slug: 'chicken-salad-caesar',
-      cuisine: 'american',
+      tag: 'cuisine:american',
       title: t('Chicken Caesar salad', 'Salată Caesar cu pui'),
       servings: 2,
       prepMinutes: 20,
@@ -395,7 +395,7 @@ export const chickenSalad: BaseRecipeSeed = {
     },
     {
       slug: 'chicken-salad-greek',
-      cuisine: 'greek',
+      tag: 'cuisine:greek',
       // No leaves: a horiatiki can be dressed ahead.
       hideBaseTips: [1],
       title: t('Greek chicken salad', 'Salată grecească cu pui'),
@@ -586,7 +586,7 @@ export const chickenSalad: BaseRecipeSeed = {
     },
     {
       slug: 'chicken-salad-thai',
-      cuisine: 'thai',
+      tag: 'cuisine:thai',
       title: t('Thai chicken salad', 'Salată thailandeză cu pui'),
       servings: 2,
       prepMinutes: 20,
@@ -767,7 +767,7 @@ export const chickenSalad: BaseRecipeSeed = {
     },
     {
       slug: 'chicken-salad-coronation',
-      cuisine: 'british',
+      tag: 'cuisine:british',
       // Poached whole and bound with mayonnaise: no flattening, no vinaigrette.
       hideBaseTips: [0, 1],
       title: t('Coronation chicken', 'Salată de pui Coronation'),
@@ -935,7 +935,7 @@ export const chickenSalad: BaseRecipeSeed = {
     },
     {
       slug: 'chicken-salad-creamy-bound',
-      method: 'creamy-bound',
+      tag: 'method:creamy-bound',
       // Poached whole and bound with mayonnaise: no flattening, no vinaigrette.
       hideBaseTips: [0, 1],
       title: t(
@@ -1101,7 +1101,7 @@ export const chickenSalad: BaseRecipeSeed = {
     },
     {
       slug: 'chicken-salad-warm',
-      method: 'warm-salad',
+      tag: 'method:warm-salad',
       title: t('Warm chicken salad', 'Salată caldă cu pui'),
       servings: 2,
       prepMinutes: 15,

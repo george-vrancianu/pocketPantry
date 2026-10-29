@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import type { RecipeTag } from './tags';
 import type {
   Difficulty,
   PairingKind,
@@ -49,8 +50,7 @@ export type RecipeListItem = {
   title: string;
   parentId: string | null;
   base: { id: string; title: string } | null;
-  cuisine: NamedRef | null;
-  method: NamedRef | null;
+  tags: RecipeTag[];
   variantCount: number;
   servings: number;
   prepMinutes: number | null;
@@ -87,8 +87,7 @@ export function hasNoFamilyRecipes(list: RecipeList | undefined): boolean {
 export type RecipeVariantItem = {
   id: string;
   title: string;
-  cuisine: NamedRef | null;
-  method: NamedRef | null;
+  tags: RecipeTag[];
   owner: RecipeOwner;
   /** The Family's live copy of a Catalog Variant, else null. */
   familyCopyId: string | null;
@@ -207,8 +206,7 @@ export type RecipeDetail = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   difficulty: Difficulty | null;
-  cuisine: NamedRef | null;
-  method: NamedRef | null;
+  tags: RecipeTag[];
   archived: boolean;
   lines: RecipeDetailLine[];
   steps: RecipeDetailStep[];
@@ -236,17 +234,17 @@ export type RecipeDetail = {
   sourceLanguage: string | null;
 };
 
-/** Pickers' options; browsing uses Cuisines and Methods, the Family editor adds Eating Moments. */
+/** Pickers' options; browsing uses Tags, the Family editor adds Eating Moments. */
 export type RecipeFilterOptions = {
-  cuisines: NamedRef[];
-  methods: NamedRef[];
+  /** The Tags in use in the asked scope: Family Tags first, then Catalog Tags by group. */
+  tags: RecipeTag[];
   eatingMoments: NamedRef[];
 };
 
 export type RecipeBrowse = {
   search: string;
-  cuisineId: string;
-  methodId: string;
+  /** Tags a Recipe must all have, in the order they were picked. */
+  tagIds: string[];
 };
 
 /** Minutes for a Recipe (prep plus cook), or null when it has neither. */
@@ -263,9 +261,7 @@ export const recipesQueryKey = ['recipes'] as const;
 
 /** Whether a search or a filter is active (the list then includes Variants). */
 export const isFiltering = (browse: RecipeBrowse) =>
-  browse.search.trim() !== '' ||
-  browse.cuisineId !== '' ||
-  browse.methodId !== '';
+  browse.search.trim() !== '' || browse.tagIds.length > 0;
 
 /** The Recipe list; the search is debounced, the shown rows stay while the next load runs. */
 export function useRecipes(
@@ -290,23 +286,22 @@ export function useRecipes(
   } = {},
 ) {
   const search = useDebounced(browse.search.trim(), 300);
-  const { cuisineId, methodId } = browse;
+  const { tagIds } = browse;
   return useQuery({
     queryKey: [
       ...recipesQueryKey,
       'list',
       scope ?? 'all',
       search,
-      cuisineId,
-      methodId,
+      // Not debounced: a Tag pick is a tap, not typing.
+      tagIds.join(','),
       ...(includeVariants ? ['variants'] : []),
       ...(showHidden ? ['showHidden'] : []),
     ],
     queryFn: () => {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (cuisineId) params.set('cuisineId', cuisineId);
-      if (methodId) params.set('methodId', methodId);
+      if (tagIds.length > 0) params.set('tagIds', tagIds.join(','));
       if (includeVariants) params.set('includeVariants', 'true');
       if (showHidden) params.set('showHidden', 'true');
       if (scope) params.set('scope', scope);
@@ -318,12 +313,53 @@ export function useRecipes(
   });
 }
 
-/** Cuisines and Methods for the filter pickers. */
-export function useRecipeFilters(enabled = true) {
+/** The filter pickers' options; `scope` narrows the Tags to those in use on the Family's or the Catalog's Recipes. */
+export function useRecipeFilters(enabled = true, scope?: 'family' | 'catalog') {
   return useQuery({
     enabled,
-    queryKey: [...recipesQueryKey, 'filters'],
-    queryFn: () => apiRequest<RecipeFilterOptions>('/recipes/filters'),
+    queryKey: [...recipesQueryKey, 'filters', scope ?? 'all'],
+    queryFn: () =>
+      apiRequest<RecipeFilterOptions>(
+        `/recipes/filters${scope ? `?scope=${scope}` : ''}`,
+      ),
+  });
+}
+
+/**
+ * Every Tag the editor can put on a Recipe: a Member gets the Catalog Tags and the Family's own
+ * (named in the Catalog Language), an Admin the Catalog Tags in English. Family Tags come first.
+ */
+export function usePickableTags(scope: 'family' | 'admin') {
+  return useQuery({
+    queryKey: [...recipesQueryKey, 'pickable-tags', scope],
+    queryFn: () =>
+      apiRequest<RecipeTag[]>(
+        scope === 'admin' ? '/admin/recipes/tags' : '/recipes/tags',
+      ),
+  });
+}
+
+/**
+ * Resolves a name typed in the Tag field: the Catalog Tag it matches (in any language), else the
+ * Family's Tag, else a new Family Tag. The answer is added to the pickable Tags' cache.
+ */
+export function useResolveTag() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) =>
+      apiRequest<RecipeTag>('/recipes/tags', {
+        method: 'POST',
+        body: { name },
+      }),
+    onSuccess: (tag) => {
+      queryClient.setQueryData<RecipeTag[]>(
+        [...recipesQueryKey, 'pickable-tags', 'family'],
+        (old) =>
+          old === undefined || old.some((t) => t.id === tag.id)
+            ? old
+            : [...old, tag],
+      );
+    },
   });
 }
 

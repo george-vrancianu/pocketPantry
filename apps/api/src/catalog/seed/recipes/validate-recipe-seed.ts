@@ -17,8 +17,8 @@ import type {
 
 export type RecipeSeedInput = {
   bases: BaseRecipeSeed[];
-  cuisines: SeedNamed[];
-  methods: SeedNamed[];
+  /** The Catalog Tags of each Tag Group, by group slug. */
+  tags: Record<string, SeedNamed[]>;
   eatingMoments: SeedNamed[];
   /** Slugs of the Catalog seed's Ingredients. */
   ingredientSlugs: Set<string>;
@@ -257,8 +257,9 @@ function apiLimitProblems(recipe: RecipeSeed, where: string): string[] {
  */
 export function findRecipeSeedProblems(input: RecipeSeedInput): string[] {
   const problems = [
-    ...registryProblems('Cuisine', input.cuisines),
-    ...registryProblems('Method', input.methods),
+    ...Object.entries(input.tags).flatMap(([group, rows]) =>
+      registryProblems(`Tag (${group})`, rows),
+    ),
     ...registryProblems('Eating Moment', input.eatingMoments),
   ];
   const all: RecipeSeed[] = input.bases.flatMap((b) => [b, ...b.variants]);
@@ -269,28 +270,17 @@ export function findRecipeSeedProblems(input: RecipeSeedInput): string[] {
     }
     recipeSlugs.add(recipe.slug);
   }
-  const cuisines = new Set(input.cuisines.map((c) => c.slug));
-  const methods = new Set(input.methods.map((m) => m.slug));
+  const tagKeys = new Set(
+    Object.entries(input.tags).flatMap(([group, rows]) =>
+      rows.map((row) => `${group}:${row.slug}`),
+    ),
+  );
   for (const base of input.bases) {
     problems.push(...recipeProblems(base, input, recipeSlugs));
     for (const variant of base.variants) {
       problems.push(...recipeProblems(variant, input, recipeSlugs));
-      const hasCuisine = variant.cuisine !== undefined;
-      const hasMethod = variant.method !== undefined;
-      if (hasCuisine === hasMethod) {
-        problems.push(
-          `recipe "${variant.slug}": a Variant needs exactly one of cuisine and method`,
-        );
-      }
-      if (hasCuisine && !cuisines.has(variant.cuisine)) {
-        problems.push(
-          `recipe "${variant.slug}": unknown Cuisine "${variant.cuisine}"`,
-        );
-      }
-      if (hasMethod && !methods.has(variant.method)) {
-        problems.push(
-          `recipe "${variant.slug}": unknown Method "${variant.method}"`,
-        );
+      if (!tagKeys.has(variant.tag)) {
+        problems.push(`recipe "${variant.slug}": unknown Tag "${variant.tag}"`);
       }
       const hidden = new Set<number>();
       for (const index of variant.hideBaseTips ?? []) {
@@ -361,17 +351,15 @@ export function findAcceptanceGaps(
     if ((base.stepTips ?? []).length === 0) {
       gaps.push(`${slug}: needs at least one step Tip`);
     }
-    const count = (kind: 'cuisine' | 'method') =>
-      base.variants.filter((v: VariantSeed) => v[kind] !== undefined).length;
-    if (count('cuisine') < min.cuisine) {
-      gaps.push(
-        `${slug}: needs at least ${min.cuisine} Cuisine Variants, has ${count('cuisine')}`,
-      );
-    }
-    if (count('method') < min.method) {
-      gaps.push(
-        `${slug}: needs at least ${min.method} Method Variants, has ${count('method')}`,
-      );
+    for (const group of ['cuisine', 'method'] as const) {
+      const count = base.variants.filter((v: VariantSeed) =>
+        v.tag.startsWith(`${group}:`),
+      ).length;
+      if (count < min[group]) {
+        gaps.push(
+          `${slug}: needs at least ${min[group]} Variants tagged in the ${group} group, has ${count}`,
+        );
+      }
     }
   }
   if (options.requireCrossLinks) {

@@ -18,8 +18,8 @@ export type RecipeDraftContent = {
   prepMinutes: string;
   cookMinutes: string;
   difficulty: Difficulty | '';
-  cuisineId: string;
-  methodId: string;
+  /** The picked Tags (ADR 0033). */
+  tagIds: string[];
   lines: {
     id?: string;
     /** Empty for an Unmatched name. */

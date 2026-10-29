@@ -8,8 +8,8 @@ import { RecipeGuidance } from './RecipeGuidance';
 
 const catalog: AdminCatalog = {
   aisles: [],
-  cuisines: [],
-  methods: [],
+  tagGroups: [],
+  tags: [],
   allergens: [],
   eatingMoments: [
     {
@@ -58,8 +58,7 @@ const recipe: AdminRecipe = {
   prepMinutes: null,
   cookMinutes: null,
   difficulty: null,
-  cuisineId: null,
-  methodId: null,
+  tagIds: [],
   archived: false,
   lines: [],
   steps: [],
@@ -94,8 +93,7 @@ const recipeList = [
   parentId: null,
   servings: 2,
   difficulty: null,
-  cuisineId: null,
-  methodId: null,
+  tagIds: [],
 }));
 
 function open(

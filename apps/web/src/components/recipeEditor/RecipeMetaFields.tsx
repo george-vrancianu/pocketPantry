@@ -1,32 +1,23 @@
 import { Stack, TextField } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { DIFFICULTIES, type Difficulty } from '../../lib/recipeVocabulary';
+import { RecipeTagsField } from './RecipeTagsField';
 import type { DraftProblems, RecipeDraft } from '../../lib/recipeDraft';
-
-type Option = { id: string; name: string };
 
 type Props = {
   draft: RecipeDraft;
   problems: DraftProblems;
   titleLabel: string;
-  cuisineLabel: string;
-  methodLabel: string;
-  cuisines: Option[];
-  methods: Option[];
   showTitleError: boolean;
   onChange: (patch: Partial<RecipeDraft>) => void;
   onTitleBlur: () => void;
 };
 
-/** Title, servings, times, difficulty, Cuisine and Method of a Recipe draft. */
+/** Title, servings, times, difficulty and Tags of a Recipe draft. */
 export function RecipeMetaFields({
   draft,
   problems,
   titleLabel,
-  cuisineLabel,
-  methodLabel,
-  cuisines,
-  methods,
   showTitleError,
   onChange,
   onTitleBlur,
@@ -94,34 +85,11 @@ export function RecipeMetaFields({
           </option>
         ))}
       </TextField>
-      <TextField
-        select
-        label={cuisineLabel}
-        value={draft.cuisineId}
-        onChange={(event) => onChange({ cuisineId: event.target.value })}
-        slotProps={{ select: { native: true } }}
-      >
-        <option value="">{t('admin:recipe.fields.none')}</option>
-        {cuisines.map((cuisine) => (
-          <option key={cuisine.id} value={cuisine.id}>
-            {cuisine.name}
-          </option>
-        ))}
-      </TextField>
-      <TextField
-        select
-        label={methodLabel}
-        value={draft.methodId}
-        onChange={(event) => onChange({ methodId: event.target.value })}
-        slotProps={{ select: { native: true } }}
-      >
-        <option value="">{t('admin:recipe.fields.none')}</option>
-        {methods.map((method) => (
-          <option key={method.id} value={method.id}>
-            {method.name}
-          </option>
-        ))}
-      </TextField>
+      <RecipeTagsField
+        scope="admin"
+        value={draft.tagIds}
+        onChange={(tagIds) => onChange({ tagIds })}
+      />
     </>
   );
 }

@@ -13,7 +13,7 @@ import { renderWithProviders, stubApi } from '../../test/render';
 import { NewRecipePage } from './FamilyRecipePages';
 
 const DRAFT_ID = '5b0f6c2e-7d3a-4c58-9a51-1f2e3d4c5b6a';
-const filters = { cuisines: [], methods: [], eatingMoments: [] };
+const filters = { tags: [], eatingMoments: [] };
 const blankGuidance = { nutritionNote: '', pairings: [], eatingMoments: [] };
 
 const titled = (title: string): RecipeDraftContent => ({
@@ -22,8 +22,7 @@ const titled = (title: string): RecipeDraftContent => ({
   prepMinutes: '',
   cookMinutes: '',
   difficulty: '',
-  cuisineId: '',
-  methodId: '',
+  tagIds: [],
   lines: [],
   steps: [],
   guidance: blankGuidance,
