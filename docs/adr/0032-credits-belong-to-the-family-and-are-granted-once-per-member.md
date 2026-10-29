@@ -1,5 +1,7 @@
 # Credits belong to the Family, are granted once per Member, and sit beside the Caps
 
+> Amended by [ADR 0035](0035-a-plate-scan-writes-a-recipe-draft.md): writing a Plate Scan's picked dish as a Recipe now has its own Credit Price, charged on its own.
+
 Every AI read costs us money, and nothing records how much: token usage is only logged, transcription reports nothing, and the daily Caps count per Member without history. We add Credits, a budget each Family spends on AI reads, and Usage Records, which keep what each provider call really cost so Credit Prices can be set from evidence.
 
 ## Decision

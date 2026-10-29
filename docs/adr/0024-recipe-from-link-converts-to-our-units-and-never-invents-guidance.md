@@ -1,5 +1,7 @@
 # Recipe from Link converts to our units and never invents guidance
 
+> Amended by [ADR 0035](0035-a-plate-scan-writes-a-recipe-draft.md): a Plate Scan writes a whole Recipe that no source states. Recipe from Link still fills only what the source states.
+
 Members want to save a recipe they found online without typing it in. Recipe from Link reads a web page (or pasted text) into the New Family Recipe page, and nothing is saved until the Member saves it. Agreed in a grilling session on 2026-10-24.
 
 ## Decision
