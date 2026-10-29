@@ -241,7 +241,9 @@
     "editorField": "Tags",
     "editorPlaceholder": "Add Tags",
     "editorNoOptions": "No Tag by that name",
-    "editorLimit": "A Recipe can have at most {{max}} Tags."
+    "editorLimit": "A Recipe can have at most {{max}} Tags.",
+    "create": "Create “{{name}}”",
+    "allergenFree": "“{{name}}” does not change the Allergens of this Recipe. Allergens come from Ingredient Lines."
   },
   "tabs": {
     "ingredients": "Ingredients",

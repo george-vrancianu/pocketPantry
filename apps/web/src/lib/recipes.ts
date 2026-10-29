@@ -356,6 +356,30 @@ export function usePickableTags(scope: 'family' | 'admin') {
   });
 }
 
+/**
+ * Resolves a name typed in the Tag field: the Catalog Tag it matches (in any language), else the
+ * Family's Tag, else a new Family Tag. The answer is added to the pickable Tags' cache.
+ */
+export function useResolveTag() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) =>
+      apiRequest<RecipeTag>('/recipes/tags', {
+        method: 'POST',
+        body: { name },
+      }),
+    onSuccess: (tag) => {
+      queryClient.setQueryData<RecipeTag[]>(
+        [...recipesQueryKey, 'pickable-tags', 'family'],
+        (old) =>
+          old === undefined || old.some((t) => t.id === tag.id)
+            ? old
+            : [...old, tag],
+      );
+    },
+  });
+}
+
 /** One Recipe with its text, plus its base, Variants and ingredient diff. */
 export function useRecipe(
   id: string,

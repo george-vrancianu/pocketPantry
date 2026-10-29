@@ -7,6 +7,8 @@ export type RecipeTag = {
   groupId: string | null;
   groupName: string | null;
   groupOrder: number | null;
+  /** True on a Family Tag whose name claims an Allergen is absent ("Gluten-free"): the editor warns. */
+  claimsAllergenFree?: true;
 };
 
 /** How many Tag chips a row shows before "+N". */

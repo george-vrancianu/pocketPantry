@@ -1229,6 +1229,154 @@ describe('The Tag field in the Family Recipe editor', () => {
     );
   });
 
+  describe('creating a Family Tag from the field', () => {
+    const made = tag('t-new', 'Sunday roast', null);
+    const typeIn = async (
+      user: ReturnType<typeof userEvent.setup>,
+      text: string,
+    ) => {
+      const field = await screen.findByRole('combobox', { name: 'Tags' });
+      await user.click(field);
+      await user.type(field, text);
+    };
+    const createWith = (answer: () => Response, tagIds: string[] = []) => {
+      const calls = setup('/recipes/g/edit', {
+        'GET /api/recipes/g/edit': () => Response.json({ ...saved, tagIds }),
+        'POST /api/recipes/tags': answer,
+        'PUT /api/recipes/g': () => Response.json(saved),
+      });
+      return calls;
+    };
+
+    it('offers Create "…" for a name with no match, and nothing for one that matches', async () => {
+      const user = userEvent.setup({ delay: null });
+      createWith(() => Response.json(made));
+      await openTab(user, 'Details');
+      await typeIn(user, 'Sunday roast');
+      expect(
+        await screen.findByRole('option', { name: 'Create “Sunday roast”' }),
+      ).toBeInTheDocument();
+      await user.clear(screen.getByRole('combobox', { name: 'Tags' }));
+      await user.type(
+        screen.getByRole('combobox', { name: 'Tags' }),
+        'meal-PREP',
+      );
+      expect(
+        screen.queryByRole('option', { name: /^Create/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('creates the Tag, picks it and saves its id', async () => {
+      const user = userEvent.setup({ delay: null });
+      const calls = createWith(() => Response.json(made));
+      await openTab(user, 'Details');
+      await typeIn(user, '  Sunday roast ');
+      await user.click(
+        await screen.findByRole('option', { name: 'Create “Sunday roast”' }),
+      );
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes/tags')?.body,
+      ).toEqual({ name: 'Sunday roast' });
+      expect(
+        await screen.findByRole('button', { name: 'Remove Tag Sunday roast' }),
+      ).toBeInTheDocument();
+      // The new id survives the check for Tags that no longer exist.
+      await user.keyboard('{Escape}');
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      await vi.waitFor(() =>
+        expect(
+          calls.find((c) => c.key === 'PUT /api/recipes/g')?.body,
+        ).toMatchObject({ tagIds: ['t-new'] }),
+      );
+    });
+
+    it('shows the new Tag under Your Tags next time the list opens', async () => {
+      const user = userEvent.setup({ delay: null });
+      createWith(() => Response.json(made));
+      await openTab(user, 'Details');
+      await typeIn(user, 'Sunday roast');
+      await user.click(
+        await screen.findByRole('option', { name: 'Create “Sunday roast”' }),
+      );
+      await screen.findByRole('button', { name: 'Remove Tag Sunday roast' });
+      await user.clear(screen.getByRole('combobox', { name: 'Tags' }));
+      const options = await screen.findAllByRole('option');
+      expect(options.slice(0, 2).map((o) => o.textContent)).toEqual([
+        'Meal prep',
+        'Sunday roast',
+      ]);
+    });
+
+    it('picks the Catalog Tag when the API matched one, without a second chip', async () => {
+      const user = userEvent.setup({ delay: null });
+      const calls = createWith(() => Response.json(pickable[1]), ['t-dinner']);
+      await openTab(user, 'Details');
+      await typeIn(user, 'cina');
+      await user.click(
+        await screen.findByRole('option', { name: 'Create “cina”' }),
+      );
+      await vi.waitFor(() =>
+        expect(calls.some((c) => c.key === 'POST /api/recipes/tags')).toBe(
+          true,
+        ),
+      );
+      expect(
+        screen.getAllByRole('button', { name: /^Remove Tag/ }),
+      ).toHaveLength(1);
+    });
+
+    it('warns that Allergens come from Ingredient Lines for a Tag that claims one is absent', async () => {
+      const user = userEvent.setup({ delay: null });
+      createWith(() =>
+        Response.json({
+          ...tag('t-gf', 'Gluten-free', null),
+          claimsAllergenFree: true,
+        }),
+      );
+      await openTab(user, 'Details');
+      await typeIn(user, 'Gluten-free');
+      await user.click(
+        await screen.findByRole('option', { name: 'Create “Gluten-free”' }),
+      );
+      expect(
+        await screen.findByText(/Allergens come from Ingredient Lines/),
+      ).toBeInTheDocument();
+      await user.click(
+        screen.getByRole('button', { name: 'Remove Tag Gluten-free' }),
+      );
+      expect(
+        screen.queryByText(/Allergens come from Ingredient Lines/),
+      ).not.toBeInTheDocument();
+    });
+
+    it('says why when the API refuses the name', async () => {
+      const user = userEvent.setup({ delay: null });
+      createWith(() =>
+        Response.json(
+          { code: 'tags.name_too_long', params: { max: 30 } },
+          { status: 400 },
+        ),
+      );
+      await openTab(user, 'Details');
+      await typeIn(user, 'Sunday roast');
+      await user.click(
+        await screen.findByRole('option', { name: 'Create “Sunday roast”' }),
+      );
+      expect(
+        await screen.findByText('A Tag name can be at most 30 characters.'),
+      ).toBeInTheDocument();
+    });
+
+    it('stops the typed name at 30 characters', async () => {
+      const user = userEvent.setup({ delay: null });
+      createWith(() => Response.json(made));
+      await openTab(user, 'Details');
+      expect(
+        await screen.findByRole('combobox', { name: 'Tags' }),
+      ).toHaveAttribute('maxlength', '30');
+    });
+  });
+
   it('shows a translated message when the API refuses the Tags', async () => {
     const user = userEvent.setup({ delay: null });
     setup('/recipes/g/edit', {

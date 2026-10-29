@@ -258,7 +258,9 @@
     "editorField": "Taguri",
     "editorPlaceholder": "Adaugă taguri",
     "editorNoOptions": "Niciun tag cu acest nume",
-    "editorLimit": "O Rețetă poate avea cel mult {{max}} taguri."
+    "editorLimit": "O Rețetă poate avea cel mult {{max}} taguri.",
+    "create": "Creează „{{name}}”",
+    "allergenFree": "„{{name}}” nu schimbă alergenii acestei Rețete. Alergenii vin din Liniile de ingrediente."
   },
   "tabs": {
     "ingredients": "Ingrediente",

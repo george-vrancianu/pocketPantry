@@ -816,6 +816,23 @@ describe('RecipesPage', () => {
       ).toBeInTheDocument();
     });
 
+    it('never offers Create "…" in the filter, whatever is typed', async () => {
+      setup(answer);
+      await findRow('Lasagne');
+      const dialog = await openTags();
+      const user = userEvent.setup();
+      await user.type(
+        within(dialog).getByRole('combobox', { name: 'Filter by Tags' }),
+        'Sunday roast',
+      );
+      expect(
+        within(dialog).queryByRole('option', { name: /^Create/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        await within(dialog).findByText('No Tag by that name on your Recipes'),
+      ).toBeInTheDocument();
+    });
+
     it('dims a Tag that would leave no Recipe, but keeps a picked one enabled', async () => {
       setup(answer);
       await findRow('Lasagne');
