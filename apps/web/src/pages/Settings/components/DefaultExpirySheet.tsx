@@ -1,9 +1,7 @@
 import {
   Alert,
   Box,
-  BackIcon,
   Button,
-  CloseIcon,
   IconButton,
   MinusIcon,
   PlusIcon,
@@ -15,7 +13,7 @@ import {
   tokens,
   useToast,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState, type Ref } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
@@ -32,6 +30,7 @@ import {
   type CategoryRef,
 } from '../defaultExpiry';
 import { CategoryPicker } from './CategoryPicker';
+import { SheetHeader } from './SheetHeader';
 
 /** Where the sheet opens: the pick list, or straight into an override (edit mode). */
 export type SheetStart =
@@ -152,6 +151,8 @@ export function DefaultExpirySheet({
             subtitle={t('defaultExpiry.pickHint')}
             titleRef={titleRef}
             onClose={onClose}
+            backLabel={t('defaultExpiry.back')}
+            closeLabel={t('defaultExpiry.close')}
           />
         ) : (
           <SheetHeader
@@ -167,6 +168,8 @@ export function DefaultExpirySheet({
                 : undefined
             }
             onClose={onClose}
+            backLabel={t('defaultExpiry.back')}
+            closeLabel={t('defaultExpiry.close')}
           />
         )
       }
@@ -273,58 +276,6 @@ function catalogDefaultText(
 ): string | null {
   if (catalogDays === null) return null;
   return t('defaultExpiry.catalogDefault', { count: catalogDays });
-}
-
-function SheetHeader({
-  title,
-  subtitle,
-  titleRef,
-  onBack,
-  onClose,
-}: {
-  title: string;
-  subtitle: string;
-  titleRef: Ref<HTMLHeadingElement>;
-  onBack?: () => void;
-  onClose: () => void;
-}) {
-  const { t } = useTranslation('settings');
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1,
-        px: 2,
-        py: 1.5,
-      }}
-    >
-      {onBack ? (
-        <IconButton label={t('defaultExpiry.back')} size={40} onClick={onBack}>
-          <BackIcon size={18} />
-        </IconButton>
-      ) : null}
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          ref={titleRef}
-          component="h2"
-          variant="body1"
-          tabIndex={-1}
-          sx={{ fontWeight: 700, outline: 'none' }}
-        >
-          {title}
-        </Typography>
-        {subtitle ? (
-          <Typography variant="meta" color="text.secondary">
-            {subtitle}
-          </Typography>
-        ) : null}
-      </Box>
-      <IconButton label={t('defaultExpiry.close')} size={40} onClick={onClose}>
-        <CloseIcon size={18} />
-      </IconButton>
-    </Box>
-  );
 }
 
 function DaysEditor({

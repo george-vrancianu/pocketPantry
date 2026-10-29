@@ -1,11 +1,9 @@
 import {
   Alert,
-  BackIcon,
   Box,
   Button,
   CloseIcon,
   IconButton,
-  InfoIcon,
   PlusIcon,
   Sheet,
   Stack,
@@ -52,6 +50,8 @@ import {
 import { normalizeName } from '../../../lib/normalizeName';
 import { useCategoryOptions } from '../../../lib/settings';
 import { CategoryPicker } from './CategoryPicker';
+import { InfoNote } from './InfoNote';
+import { SheetHeader } from './SheetHeader';
 
 export const USAGE_KINDS: Array<keyof FamilyIngredientUsage> = [
   'batches',
@@ -238,11 +238,11 @@ export function FamilyIngredientSheet({
     const index = focusAfterRemoval.current;
     if (index === null) return;
     focusAfterRemoval.current = null;
-    const buttons =
-      chipListRef.current?.querySelectorAll<HTMLButtonElement>(
-        'button[aria-label]',
-      );
-    (buttons?.[index] ?? addButtonRef.current)?.focus();
+    const buttons = chipListRef.current?.querySelectorAll<HTMLButtonElement>(
+      'li[data-chip] button',
+    );
+    // With the add field open there is no "+ Add a name" button: focus the field.
+    (buttons?.[index] ?? addButtonRef.current ?? addRef.current)?.focus();
   });
 
   const removeChip = (chip: string) => {
@@ -395,54 +395,23 @@ export function FamilyIngredientSheet({
       label={t('common:edit.title', { name: ingredient.name })}
       size={view === 'pick' ? 'tall' : 'content'}
       header={
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            px: 3,
-            pt: 2,
-            pb: 1,
-          }}
-        >
-          {view === 'pick' ? (
-            <IconButton
-              label={t('settings:familyCatalog.back')}
-              size={40}
-              onClick={() => {
-                setQuery('');
-                setView('form');
-              }}
-            >
-              <BackIcon size={18} />
-            </IconButton>
-          ) : null}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              ref={titleRef}
-              component="h2"
-              tabIndex={-1}
-              sx={{
-                fontSize: 20,
-                fontWeight: 700,
-                overflowWrap: 'anywhere',
-                outline: 'none',
-              }}
-            >
-              {headerTitle}
-            </Typography>
-            <Typography variant="meta" color="text.secondary">
-              {headerContext}
-            </Typography>
-          </Box>
-          <IconButton
-            label={t('settings:familyCatalog.close')}
-            size={40}
-            onClick={onClose}
-          >
-            <CloseIcon size={18} />
-          </IconButton>
-        </Box>
+        <SheetHeader
+          size="roomy"
+          title={headerTitle}
+          subtitle={headerContext}
+          titleRef={titleRef}
+          backLabel={t('settings:familyCatalog.back')}
+          closeLabel={t('settings:familyCatalog.close')}
+          onBack={
+            view === 'pick'
+              ? () => {
+                  setQuery('');
+                  setView('form');
+                }
+              : undefined
+          }
+          onClose={onClose}
+        />
       }
       footer={
         view === 'form' ? (
@@ -611,7 +580,7 @@ export function FamilyIngredientSheet({
               sx={{ flexWrap: 'wrap', gap: 1, listStyle: 'none', p: 0, m: 0 }}
             >
               {chips.map((chip) => (
-                <Box component="li" key={chip}>
+                <Box component="li" key={chip} data-chip="">
                   <NameChip
                     label={chip}
                     removeLabel={t('settings:familyCatalog.removeName', {
@@ -669,6 +638,7 @@ export function FamilyIngredientSheet({
                     fullWidth
                     size="small"
                     value={newName}
+                    disabled={saving}
                     inputRef={addRef}
                     placeholder={t('settings:familyCatalog.addNamePlaceholder')}
                     onChange={(event) => {
@@ -692,7 +662,7 @@ export function FamilyIngredientSheet({
                       },
                     }}
                   />
-                  <Button type="button" onClick={commitName}>
+                  <Button type="button" disabled={saving} onClick={commitName}>
                     {t('settings:familyCatalog.add')}
                   </Button>
                 </Stack>
@@ -701,34 +671,20 @@ export function FamilyIngredientSheet({
             ) : null}
           </Stack>
 
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 1,
-              p: 1.5,
-              borderRadius: 2,
-              bgcolor: tokens.color.subtle,
-              color: tokens.color.ink,
-            }}
-          >
-            <Box sx={{ flexShrink: 0, pt: '2px' }}>
-              <InfoIcon size={18} />
-            </Box>
-            <Typography variant="meta">
-              {usage.length === 0 ? (
-                <b>{t('settings:familyCatalog.usageNoteUnused')}</b>
-              ) : (
-                <>
-                  <b>
-                    {t('settings:familyCatalog.usageNote', {
-                      usage: usageText,
-                    })}
-                  </b>{' '}
-                  {t('settings:familyCatalog.usageNoteDelete')}
-                </>
-              )}
-            </Typography>
-          </Box>
+          <InfoNote>
+            {usage.length === 0 ? (
+              <b>{t('settings:familyCatalog.usageNoteUnused')}</b>
+            ) : (
+              <>
+                <b>
+                  {t('settings:familyCatalog.usageNote', {
+                    usage: usageText,
+                  })}
+                </b>{' '}
+                {t('settings:familyCatalog.usageNoteDelete')}
+              </>
+            )}
+          </InfoNote>
 
           <RemoveLink
             onClick={() => {

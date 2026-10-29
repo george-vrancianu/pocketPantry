@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { translateApiError } from '../../../i18n/translateApiError';
 import type { CategoryOptions } from '../../../lib/settings';
-import { groupCategories, type CategoryRow } from '../defaultExpiry';
+import { groupCategories, type CategoryRef } from '../defaultExpiry';
 
 export type CategoryPickerProps = {
   query: string;
@@ -30,7 +30,7 @@ export type CategoryPickerProps = {
   /** The current leaf: label in the accent colour with a check, `aria-current`. */
   currentId?: string;
   /** Per-row content at the end of the row. */
-  renderTrailing?: (row: CategoryRow) => ReactNode;
+  renderTrailing?: (row: CategoryRef) => ReactNode;
 };
 
 /** The category pick list: a search field over categories grouped by parent. */
@@ -59,14 +59,14 @@ export function CategoryPicker({
         onChange={(event) => onQuery(event.target.value)}
         slotProps={{
           htmlInput: {
-            'aria-label': t('defaultExpiry.search'),
+            'aria-label': t('categoryPicker.search'),
             ref: searchRef,
           },
         }}
       />
       {optionsPending ? (
         <Typography role="status" color="text.secondary">
-          {t('defaultExpiry.loadingCategories')}
+          {t('categoryPicker.loadingCategories')}
         </Typography>
       ) : null}
       {optionsError ? (
@@ -74,7 +74,7 @@ export function CategoryPicker({
       ) : null}
       {options && query.trim() !== '' && groups.length === 0 ? (
         <Typography color="text.secondary">
-          {t('defaultExpiry.noMatch', { query })}
+          {t('categoryPicker.noMatch', { query })}
         </Typography>
       ) : null}
       {groups.map((group) => (
@@ -125,12 +125,14 @@ export function CategoryPicker({
                       }
                     >
                       {row.wholeParent
-                        ? t('defaultExpiry.all', { parent: row.parentName })
+                        ? t('categoryPicker.all', { parent: row.parentName })
                         : row.name}
                     </Typography>
                     {row.wholeParent ? (
                       <Typography variant="meta" color="text.secondary">
-                        {t('defaultExpiry.allHint', { parent: row.parentName })}
+                        {t('categoryPicker.allHint', {
+                          parent: row.parentName,
+                        })}
                       </Typography>
                     ) : null}
                   </Box>

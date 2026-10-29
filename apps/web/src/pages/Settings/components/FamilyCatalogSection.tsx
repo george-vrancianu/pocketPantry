@@ -11,6 +11,7 @@ import {
   Typography,
   tokens,
   useToast,
+  visuallyHidden,
   type SwipeRowHandle,
   type SwipeRowLabels,
 } from '@pocket-pantry/ui';
@@ -265,7 +266,7 @@ function IngredientRow({
   disabled: boolean;
   onRemove: () => void;
 }) {
-  const { t } = useTranslation(['settings', 'common']);
+  const { t, i18n } = useTranslation(['settings', 'common']);
   const toast = useToast();
   const sheet = useSheet();
   const row = useRef<SwipeRowHandle>(null);
@@ -322,19 +323,23 @@ function IngredientRow({
                 {t('settings:familyCatalog.checkTag')}
               </Tag>
             ) : names.length > 0 ? (
-              <Tag
-                tone="neutral"
-                title={t('settings:familyCatalog.containsA11y', {
-                  names: names.join(', '),
-                })}
-                sx={{ color: tokens.color.ink }}
-              >
-                {names.length > 1
-                  ? t('settings:familyCatalog.containsTag', {
-                      first: names[0],
-                      count: names.length - 1,
-                    })
-                  : names[0]}
+              <Tag tone="neutral" sx={{ color: tokens.color.ink }}>
+                <Box component="span" sx={visuallyHidden}>
+                  {t('settings:familyCatalog.containsA11y', {
+                    names: new Intl.ListFormat(i18n.language, {
+                      style: 'long',
+                      type: 'conjunction',
+                    }).format(names),
+                  })}
+                </Box>
+                <span aria-hidden="true">
+                  {names.length > 1
+                    ? t('settings:familyCatalog.containsTag', {
+                        first: names[0],
+                        count: names.length - 1,
+                      })
+                    : names[0]}
+                </span>
               </Tag>
             ) : null
           }

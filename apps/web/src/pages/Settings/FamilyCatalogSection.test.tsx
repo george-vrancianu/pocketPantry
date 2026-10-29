@@ -430,6 +430,9 @@ describe('FamilyCatalogSection', () => {
           'POST /api/catalog/family-synonyms',
         ]),
       );
+      expect(
+        calls.find((c) => c.key === 'POST /api/catalog/family-synonyms')?.body,
+      ).toEqual({ name: 'Booch', ingredientId: 'k1' });
     });
 
     it('keeps focus in the chips when one is removed', async () => {
@@ -618,6 +621,9 @@ describe('FamilyCatalogSection', () => {
           writes(calls.slice(before)).filter((k) => k.startsWith('POST')),
         ).toEqual(['POST /api/catalog/family-synonyms']),
       );
+      expect(
+        calls.slice(before).find((c) => c.key.startsWith('POST'))?.body,
+      ).toEqual({ name: 'Kefir tea', ingredientId: 'k1' });
       // The allergens already saved are not sent again...
       expect(
         writes(calls.slice(before)).filter((k) => k.startsWith('PUT')),

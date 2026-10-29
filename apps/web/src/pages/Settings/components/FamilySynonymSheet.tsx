@@ -1,9 +1,6 @@
 import {
   Box,
   Button,
-  CloseIcon,
-  IconButton,
-  InfoIcon,
   Sheet,
   Stack,
   Typography,
@@ -14,6 +11,8 @@ import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { RemoveLink } from '../../../components/RemoveLink';
 import type { FamilyCatalogSynonym } from '../../../lib/familyCatalog';
+import { InfoNote } from './InfoNote';
+import { SheetHeader } from './SheetHeader';
 
 export type FamilySynonymSheetProps = {
   open: boolean;
@@ -37,6 +36,7 @@ export function FamilySynonymSheet({
   const meta = t('settings:familyCatalog.synonymMeta', {
     ingredient: synonym.ingredient.name,
   });
+  const quoted = t('settings:familyCatalog.quotedName', { name: synonym.name });
   return (
     <Sheet
       open={open}
@@ -47,38 +47,17 @@ export function FamilySynonymSheet({
         removeRequested.current = false;
         onRemove();
       }}
-      label={`“${synonym.name}”`}
+      label={quoted}
       size="content"
       header={
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            px: 3,
-            pt: 2,
-            pb: 1,
-          }}
-        >
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              component="h2"
-              sx={{ fontSize: 20, fontWeight: 700, overflowWrap: 'anywhere' }}
-            >
-              {`“${synonym.name}”`}
-            </Typography>
-            <Typography variant="meta" color="text.secondary">
-              {meta}
-            </Typography>
-          </Box>
-          <IconButton
-            label={t('settings:familyCatalog.close')}
-            size={40}
-            onClick={onClose}
-          >
-            <CloseIcon size={18} />
-          </IconButton>
-        </Box>
+        <SheetHeader
+          size="roomy"
+          title={quoted}
+          subtitle={meta}
+          backLabel={t('settings:familyCatalog.back')}
+          closeLabel={t('settings:familyCatalog.close')}
+          onClose={onClose}
+        />
       }
     >
       <Stack spacing={2} sx={{ px: 3, pt: 1, pb: 3 }}>
@@ -102,26 +81,12 @@ export function FamilySynonymSheet({
             </Typography>
           </Box>
         </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 1,
-            p: 1.5,
-            borderRadius: 2,
-            bgcolor: tokens.color.subtle,
-            color: tokens.color.ink,
-          }}
-        >
-          <Box sx={{ flexShrink: 0, pt: '2px' }}>
-            <InfoIcon size={18} />
-          </Box>
-          <Typography variant="meta">
-            {t('settings:familyCatalog.synonymInfo', {
-              name: synonym.name,
-              ingredient: synonym.ingredient.name,
-            })}
-          </Typography>
-        </Box>
+        <InfoNote>
+          {t('settings:familyCatalog.synonymInfo', {
+            name: synonym.name,
+            ingredient: synonym.ingredient.name,
+          })}
+        </InfoNote>
         <Button onClick={onClose}>{t('settings:familyCatalog.done')}</Button>
         <RemoveLink
           onClick={() => {

@@ -125,7 +125,7 @@ describe('Family catalog: Allergens', () => {
     );
   });
 
-  it('shows the first allergen and how many more, listing all in its title', async () => {
+  it('shows the first allergen and how many more, reading all out to screen readers', async () => {
     const mayo = ingredient('mayo', 'Mayo', {
       allergensChecked: true,
       allergenIds: ['al-milk', 'al-peanuts'],
@@ -134,7 +134,9 @@ describe('Family catalog: Allergens', () => {
     renderWithProviders(<FamilyCatalogSection />);
 
     const tag = await screen.findByText('Milk +1');
-    expect(tag).toHaveAttribute('title', 'Contains Milk, Peanuts');
+    expect(tag).toHaveAttribute('aria-hidden', 'true');
+    // The full read-out is real text for screen readers, not a title.
+    expect(screen.getByText('Contains Milk and Peanuts')).toBeInTheDocument();
     expect(screen.queryByRole('status')).toBeNull();
   });
 
@@ -221,10 +223,8 @@ describe('Family catalog: Allergens', () => {
     renderWithProviders(<FamilyCatalogSection />);
     const user = userEvent.setup();
 
-    expect(await screen.findByText('Eggs +1')).toHaveAttribute(
-      'title',
-      'Contains Eggs, Milk',
-    );
+    expect(await screen.findByText('Eggs +1')).toBeInTheDocument();
+    expect(screen.getByText('Contains Eggs and Milk')).toBeInTheDocument();
     const dialog = await openSheet(user, 'Mayo');
     const chip = await within(dialog).findByRole('button', { name: 'Eggs' });
     expect(chip).toHaveAttribute('aria-pressed', 'true');
