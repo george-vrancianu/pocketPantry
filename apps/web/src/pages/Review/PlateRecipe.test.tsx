@@ -69,8 +69,14 @@ function renderPlate(
   extra: Record<string, (url: URL) => Response> = {},
   found = matches,
   scanLines = lines,
+  tagIds: string[] = [],
 ) {
-  startReview({ mode: 'plate', lines: scanLines, dishTitle: 'Rice bowl' });
+  startReview({
+    mode: 'plate',
+    lines: scanLines,
+    dishTitle: 'Rice bowl',
+    tagIds,
+  });
   const { fetchMock, calls } = stubApi({
     'POST /api/recipes/plate-matches': () => Response.json({ matches: found }),
     'POST /api/recipes/from-plate': () => Response.json({ id: 'new-id' }),
@@ -159,6 +165,7 @@ describe('Plate Scan: save as a Recipe', () => {
     ).toEqual({
       title: 'Our rice bowl',
       parentId: 'pilaf-id',
+      tagIds: [],
       lines: [
         {
           ingredientId: 'rice-id',
@@ -179,6 +186,16 @@ describe('Plate Scan: save as a Recipe', () => {
       ],
     });
     expect(getScanSession().scans).toHaveLength(0);
+  });
+
+  it('saves the Tags the read proposed with the Recipe', async () => {
+    const calls = renderPlate({}, matches, lines, ['dinner-id', 'vegan-id']);
+    await openPanel();
+    await userEvent.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    expect(await screen.findByText('recipe screen')).toBeVisible();
+    expect(
+      calls.find((c) => c.key === 'POST /api/recipes/from-plate')?.body,
+    ).toMatchObject({ tagIds: ['dinner-id', 'vegan-id'] });
   });
 
   it('links each closest match to the Family copy, else the Explore preview', async () => {

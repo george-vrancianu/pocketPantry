@@ -186,13 +186,14 @@ export class FamilyRecipesService {
   ): Promise<string> {
     await lockFamilyRow(tx, familyId);
     await this.validate(tx, familyId, document);
-    const tagged = await resolveRecipeTags(tx, familyId, document.tagIds);
     const tips = document.tips ?? [];
     if (tips.some((tip) => tip.stepIndex >= document.steps.length)) {
       throw new ApiException(400, 'recipes.bad_step_anchor');
     }
     if (document.parentId)
       await this.assertParent(tx, familyId, document.parentId);
+    // After the parent, so another Family's parent reads as missing before any Tag is judged.
+    const tagged = await resolveRecipeTags(tx, familyId, document.tagIds);
     const id = randomUUID();
     await tx.insert(recipes).values({
       id,

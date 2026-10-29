@@ -6,7 +6,7 @@ import { StructuredOutputAiError } from '../src/ai/structured-output-ai.service'
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { recipes, scanUsage } from '../src/database/schema';
+import { recipes, scanUsage, tags } from '../src/database/schema';
 import { PageFetchError } from '../src/page-fetch/page-fetcher';
 import type { PageFetcher } from '../src/page-fetch/page-fetcher';
 import type {
@@ -19,6 +19,7 @@ import { ScanCapService } from '../src/scan/scan-cap.service';
 import { client, signUp } from './support/admin-session';
 import { promoteToAdmin } from './support/promote-to-admin';
 import { catalogIndexIn } from './support/catalog-indices';
+import { offeredTagNames, tagIndexIn } from './support/tag-indices';
 import { catalogIndexInstruction } from '../src/ingredients/ingredient-catalog';
 import { createTestApp } from './support/create-test-app';
 
@@ -27,7 +28,6 @@ jest.setTimeout(30_000);
 const code = (res: { body: unknown }) => (res.body as { code: string }).code;
 const flour = seedId.ingredient('flour');
 const milk = seedId.ingredient('milk');
-const mediterranean = seedId.cuisine('mediterranean');
 
 const jsonLdPage = (recipe: object, wrap: (r: object) => object = (r) => r) =>
   `<html><head><script type="application/ld+json">${JSON.stringify(wrap(recipe))}</script></head><body>Blog chatter 5521</body></html>`;
@@ -50,8 +50,7 @@ const reading = (overrides: Record<string, unknown> = {}) => ({
   servings: null,
   prepMinutes: 10,
   cookMinutes: 15,
-  cuisineId: mediterranean,
-  methodId: null,
+  tagIndexes: [],
   steps: [
     { text: 'Whisk everything.', timerMinutes: null },
     { text: 'Fry each side.', timerMinutes: 2 },
@@ -89,14 +88,25 @@ describe('Recipe from Link (integration)', () => {
   let cookieB: string;
   const stamp = Date.now();
   const prompts: StructuredOutputRequest[] = [];
-  let answer: () => Promise<{ data: unknown; requestId: string | null }>;
+  let answer: (
+    request: StructuredOutputRequest,
+  ) => Promise<{ data: unknown; requestId: string | null }>;
   let page: () => Promise<{ finalUrl: string; html: string }>;
   const fetched: string[] = [];
   const generateSignals: (AbortSignal | undefined)[] = [];
   const fetchSignals: (AbortSignal | undefined)[] = [];
 
-  const respondWith = (data: unknown) => {
-    answer = () => Promise.resolve({ data, requestId: 'fake-request' });
+  const respondWith = (
+    data: object | ((request: StructuredOutputRequest) => object),
+  ) => {
+    answer = (request) =>
+      Promise.resolve({
+        data:
+          typeof data === 'function'
+            ? (data as (request: StructuredOutputRequest) => object)(request)
+            : data,
+        requestId: 'fake-request',
+      });
   };
   const serve = (html: string) => {
     page = () => Promise.resolve({ finalUrl: 'https://example.com/', html });
@@ -118,7 +128,7 @@ describe('Recipe from Link (integration)', () => {
         generate: (input, options) => {
           prompts.push(input);
           generateSignals.push(options?.signal);
-          return answer();
+          return answer(input);
         },
       },
       undefined,
@@ -170,10 +180,7 @@ describe('Recipe from Link (integration)', () => {
       servings: null,
       prepMinutes: 10,
       cookMinutes: 15,
-      cuisineId: mediterranean,
-      methodId: null,
-      // The read Cuisine is a Catalog Tag with the same id, so the draft carries it as a Tag.
-      tagIds: [mediterranean],
+      tagIds: [],
       tips: [],
       guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
       steps: [
@@ -533,12 +540,10 @@ describe('Recipe from Link (integration)', () => {
     expect(catalogIndexIn(prompts[0].prompt, name)).toEqual(expect.any(Number));
   });
 
-  it('drops unknown Cuisine and Method ids and zero quantities', async () => {
+  it('drops zero and negative quantities', async () => {
     const line = reading().ingredients[0];
     respondWith(
       reading({
-        cuisineId: crypto.randomUUID(),
-        methodId: crypto.randomUUID(),
         servings: 4,
         ingredients: [
           { ...line, quantity: 0 },
@@ -548,15 +553,120 @@ describe('Recipe from Link (integration)', () => {
     );
     const { draft } = (await read('https://example.com/drop').expect(200))
       .body as RecipeFromLink;
-    expect(draft).toMatchObject({
-      cuisineId: null,
-      methodId: null,
-      servings: 4,
-    });
+    expect(draft).toMatchObject({ servings: 4 });
     expect(draft.lines.map((l) => [l.quantity, l.unit])).toEqual([
       [null, null],
       [null, null],
     ]);
+  });
+
+  describe('Tags (#714)', () => {
+    const dinner = seedId.tag('meal:dinner');
+    const vegan = seedId.tag('diet:vegan');
+    const tagCount = async () =>
+      (await database.select({ id: tags.id }).from(tags)).length;
+    const drafts = () => client(app, memberCookie, '/api/recipe-drafts');
+    const familyTag = async (who: ReturnType<typeof client>, name: string) =>
+      ((await who.post('/tags', { name }).expect(200)).body as { id: string })
+        .id;
+
+    it("offers the Catalog Tags and this Family's, never another Family's, and no Cuisine or Method fields", async () => {
+      const mine = `Mine ${stamp}-a`;
+      const theirs = `Theirs ${stamp}-a`;
+      await familyTag(member, mine);
+      await familyTag(familyBMember, theirs);
+      await read('https://example.com/offered').expect(200);
+      const names = offeredTagNames(prompts[0].prompt);
+      expect(names).toEqual(expect.arrayContaining(['Dinner', 'Vegan', mine]));
+      expect(names).not.toContain(theirs);
+      // Catalog Tags come first and the Family's own last, so the Catalog part stays identical across Families.
+      expect(names.indexOf(mine)).toBe(names.length - 1);
+      expect(prompts[0].prompt).not.toMatch(/cuisineId|methodId/);
+      expect(JSON.stringify(prompts[0].schema)).not.toMatch(
+        /cuisineId|methodId/,
+      );
+    });
+
+    it('turns proposed indices into Catalog and own Family Tag ids on the draft and the stored Recipe Draft', async () => {
+      const mine = `Mine ${stamp}-b`;
+      const mineId = await familyTag(member, mine);
+      respondWith((request: StructuredOutputRequest) =>
+        reading({
+          tagIndexes: [
+            tagIndexIn(request.prompt, 'Dinner'),
+            tagIndexIn(request.prompt, mine),
+            tagIndexIn(request.prompt, 'Vegan'),
+          ],
+        }),
+      );
+      const body = (await read('https://example.com/tagged').expect(200))
+        .body as RecipeFromLink;
+      expect(body.draft.tagIds).toEqual([dinner, mineId, vegan]);
+      expect(body.draft).not.toHaveProperty('cuisineId');
+      const stored = await drafts().get(`/${body.recipeDraftId}`).expect(200);
+      expect(
+        (stored.body as { content: { tagIds: string[] } }).content.tagIds,
+      ).toEqual([dinner, mineId, vegan]);
+    });
+
+    it('drops out-of-range, fractional, negative and non-number indices, dedupes, and caps at 10', async () => {
+      respondWith((request: StructuredOutputRequest) =>
+        reading({
+          tagIndexes: [
+            tagIndexIn(request.prompt, 'Dinner'),
+            tagIndexIn(request.prompt, 'Dinner'),
+            100_000,
+            -1,
+            2.5,
+            'Vegan',
+            null,
+            tagIndexIn(request.prompt, 'Vegan'),
+          ],
+        }),
+      );
+      const body = (await read('https://example.com/junk').expect(200))
+        .body as RecipeFromLink;
+      expect(body.draft.tagIds).toEqual([dinner, vegan]);
+
+      respondWith((request: StructuredOutputRequest) =>
+        reading({
+          tagIndexes: offeredTagNames(request.prompt).map((_, i) => i),
+        }),
+      );
+      const many = (await read('https://example.com/many').expect(200))
+        .body as RecipeFromLink;
+      expect(many.draft.tagIds).toHaveLength(10);
+    });
+
+    it("never accepts another Family's Tag, even by a guessed index or a Tag id", async () => {
+      const theirs = `Theirs ${stamp}-c`;
+      const theirId = await familyTag(familyBMember, theirs);
+      respondWith(reading({ tagIndexes: [theirId, 'x'], tagIds: [theirId] }));
+      const body = (await read('https://example.com/other').expect(200))
+        .body as RecipeFromLink;
+      expect(body.draft.tagIds).toEqual([]);
+    });
+
+    it('never creates a Tag by reading, whatever the model proposes', async () => {
+      const before = await tagCount();
+      respondWith({
+        ...reading({ tagIndexes: [0, 1, 100_000] }),
+        newTags: ['Brand new'],
+        tagNames: ['Brand new'],
+      });
+      await read('https://example.com/nocreate').expect(200);
+      expect(await tagCount()).toBe(before);
+    });
+
+    it('proposes Tags for pasted text through the same reader', async () => {
+      respondWith((request: StructuredOutputRequest) =>
+        reading({ tagIndexes: [tagIndexIn(request.prompt, 'Vegan')] }),
+      );
+      const body = (
+        await member.post('/from-link', { text: 'Pancakes 5521' }).expect(200)
+      ).body as RecipeFromLink;
+      expect(body.draft.tagIds).toEqual([vegan]);
+    });
   });
 
   it('keeps quantity and unit together, folds wording into the note, and drops empty Steps', async () => {
@@ -1476,8 +1586,7 @@ describe('Recipe from Link (integration)', () => {
           servings: '',
           prepMinutes: '10',
           cookMinutes: '15',
-          cuisineId: mediterranean,
-          tagIds: [mediterranean],
+          tagIds: [],
           sourceLink: 'https://example.com/pancakes',
           sourceLanguage: null,
           plateScan: false,

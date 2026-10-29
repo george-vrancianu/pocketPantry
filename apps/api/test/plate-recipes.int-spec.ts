@@ -4,7 +4,12 @@ import { eq, ilike, isNull } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { ingredients, recipes, unmatchedEntries } from '../src/database/schema';
+import {
+  ingredients,
+  recipes,
+  tags,
+  unmatchedEntries,
+} from '../src/database/schema';
 import type {
   AdminRecipeDetail,
   FamilyRecipeEdit,
@@ -255,6 +260,121 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
           .expect(201)
       ).body as FamilyRecipeEdit;
       expect([...saved.tagIds].sort()).toEqual([dinner, vegan].sort());
+    });
+
+    it('saves the proposed Tags on a standalone Recipe, and adds them to the Base Tags of a Variant', async () => {
+      const dinner = seedId.tag('meal:dinner');
+      const vegan = seedId.tag('diet:vegan');
+      const mine = (
+        await member.post('/tags', { name: `Plate own ${stamp}` }).expect(200)
+      ).body as { id: string };
+      const solo = (
+        await member
+          .post('/from-plate', {
+            locale: 'en',
+            title: `Plate tagged solo ${stamp}`,
+            parentId: null,
+            lines: [line(2)],
+            tagIds: [dinner, mine.id, dinner],
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      expect([...solo.tagIds].sort()).toEqual([dinner, mine.id].sort());
+      const base = (
+        await admin
+          .post('', {
+            title: `Plate tagged base2 ${stamp}`,
+            servings: 4,
+            lines: [line(0)],
+            steps: [{ text: 'Cook' }],
+            tagIds: [vegan],
+          })
+          .expect(201)
+      ).body as AdminRecipeDetail;
+      const variant = (
+        await member
+          .post('/from-plate', {
+            locale: 'en',
+            title: `Plate tagged variant2 ${stamp}`,
+            parentId: base.id,
+            lines: [line(0)],
+            tagIds: [dinner, vegan],
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      expect([...variant.tagIds].sort()).toEqual([dinner, vegan].sort());
+    });
+
+    it("refuses another Family's Tag as not found, and creates no Tag", async () => {
+      const other = client(
+        app,
+        await signUp(app, `plate-rec-o-${stamp}@example.com`, 'O'),
+        '/api/recipes',
+      );
+      const theirs = (
+        await other.post('/tags', { name: `Plate theirs ${stamp}` }).expect(200)
+      ).body as { id: string };
+      const before = await database.select({ id: tags.id }).from(tags);
+      const res = await member
+        .post('/from-plate', {
+          locale: 'en',
+          title: `Plate foreign tag ${stamp}`,
+          parentId: null,
+          lines: [line(2)],
+          tagIds: [theirs.id],
+        })
+        .expect(404);
+      expect(code(res)).toBe('recipes.tag_not_found');
+      expect(await database.select({ id: tags.id }).from(tags)).toHaveLength(
+        before.length,
+      );
+    });
+
+    it("reads another Family's Recipe as parent_not_found before any Tag is judged", async () => {
+      const other = client(
+        app,
+        await signUp(app, `plate-rec-p-${stamp}@example.com`, 'P'),
+        '/api/recipes',
+      );
+      const theirTag = (
+        await other.post('/tags', { name: `Plate p-tag ${stamp}` }).expect(200)
+      ).body as { id: string };
+      const theirRecipe = (
+        await other
+          .post('', {
+            title: `Plate theirs recipe ${stamp}`,
+            servings: 2,
+            locale: 'en',
+            parentId: null,
+            lines: [line(0)],
+            tagIds: [theirTag.id],
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      for (const tagIds of [[], [theirTag.id]]) {
+        const res = await member
+          .post('/from-plate', {
+            locale: 'en',
+            title: `Plate foreign parent ${stamp}`,
+            parentId: theirRecipe.id,
+            lines: [line(0)],
+            tagIds,
+          })
+          .expect(404);
+        expect(code(res)).toBe('recipes.parent_not_found');
+      }
+      // The same order holds for a Family Recipe written through the editor path.
+      const res = await member
+        .post('', {
+          title: `Plate foreign parent2 ${stamp}`,
+          servings: 1,
+          locale: 'en',
+          parentId: theirRecipe.id,
+          lines: [line(0)],
+          tagIds: [theirTag.id],
+        })
+        .expect(404);
+      expect(code(res)).toBe('recipes.parent_not_found');
     });
 
     it('saves a standalone Recipe with no parent and servings 1', async () => {

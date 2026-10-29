@@ -15,6 +15,8 @@ import type { ReviewLine } from '../../../lib/review';
 
 type Props = {
   dishTitle: string;
+  /** The Tags the Plate Scan read proposed; the saved Recipe starts with them (the Member edits them in the Recipe). */
+  proposedTagIds?: string[];
   /** The Review's current lines, for one serving. */
   lines: ReviewLine[];
   /** The Review's own line checks: opens and focuses the first invalid line, and says whether there was one. */
@@ -25,6 +27,7 @@ type Props = {
 /** Saves a Plate Scan's dish as a Family Recipe: a Variant of a Catalog Base Recipe, or standalone. */
 export function PlateRecipeSave({
   dishTitle,
+  proposedTagIds = [],
   lines,
   hasInvalidLine,
   onSaved,
@@ -78,6 +81,7 @@ export function PlateRecipeSave({
         title,
         parentId,
         lines,
+        tagIds: proposedTagIds,
       },
       { onSuccess: (recipe) => onSaved(recipe.id) },
     );

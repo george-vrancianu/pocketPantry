@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { ApiException } from '../common/api-exception';
 import { catalogScope } from '../catalog/catalog-scope';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
@@ -13,11 +14,12 @@ import {
   loadViewerAllergyContext,
 } from './recipe-allergens';
 import { liveCopiesOf, recipeTitles } from './recipe-view';
-import type {
-  FamilyRecipeEdit,
-  FromPlateBody,
-  PlateMatches,
-  PlateMatchesBody,
+import {
+  MAX_RECIPE_TAGS,
+  type FamilyRecipeEdit,
+  type FromPlateBody,
+  type PlateMatches,
+  type PlateMatchesBody,
 } from './recipes.schemas';
 
 /** Saving a Plate Scan dish as a Family Recipe, and finding its closest Catalog base. */
@@ -117,6 +119,25 @@ export class PlateRecipesService {
 
   /** One serving (GLOSSARY: Plate Scan is for one serving), ingredient lines only; parent rules are the Family editor's. */
   async save(memberId: string, body: FromPlateBody): Promise<FamilyRecipeEdit> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    // The parent first: another Family's Base reads as missing before any of its Tags are looked at.
+    let tagIds = body.tagIds;
+    if (body.parentId) {
+      const [parent] = await this.database
+        .select()
+        .from(recipes)
+        .where(eq(recipes.id, body.parentId));
+      if (parent && parent.familyId !== null && parent.familyId !== familyId) {
+        throw new ApiException(404, 'recipes.parent_not_found');
+      }
+      // A Variant starts with its Base's Tags (ADR 0033), then the proposed ones, up to the cap.
+      tagIds = [
+        ...new Set([
+          ...(await loadRecipeTagIds(this.database, body.parentId)),
+          ...body.tagIds,
+        ]),
+      ].slice(0, MAX_RECIPE_TAGS);
+    }
     return this.family.create(
       memberId,
       {
@@ -125,10 +146,7 @@ export class PlateRecipesService {
         prepMinutes: null,
         cookMinutes: null,
         difficulty: null,
-        // A Variant starts with its Base's Tags (ADR 0033); #714 reworks Tags for a Plate Scan.
-        tagIds: body.parentId
-          ? await loadRecipeTagIds(this.database, body.parentId)
-          : [],
+        tagIds,
         parentId: body.parentId,
         lines: body.lines,
         steps: [],

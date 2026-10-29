@@ -70,8 +70,14 @@ export function PlateChoice({ scan }: { scan: SessionScan }) {
     ingredients.mutate(
       { dishTitle, plateToken: scan.plateToken ?? '' },
       {
-        onSuccess: ({ lines }) => {
-          dispatchScanSession({ type: 'pick', id: scan.id, lines, dishTitle });
+        onSuccess: ({ lines, tagIds }) => {
+          dispatchScanSession({
+            type: 'pick',
+            id: scan.id,
+            lines,
+            dishTitle,
+            tagIds,
+          });
           focusCard(scan.id);
         },
         onError: (error) =>

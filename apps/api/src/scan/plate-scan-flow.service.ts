@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { catalogScope } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
+import { DATABASE } from '../database/database.constants';
+import type { Database } from '../database/database.types';
+import { loadAllowedTags } from '../tags/allowed-tags';
 import { SettingsService } from '../settings/settings.service';
 import { plateLine } from './plate-lines';
 import { signPlateToken, verifyPlateToken } from './plate-token';
@@ -28,6 +31,7 @@ import { found, PaidReadsService } from './paid-reads.service';
 @Injectable()
 export class PlateScanFlowService {
   constructor(
+    @Inject(DATABASE) private readonly database: Database,
     private readonly paidReads: PaidReadsService,
     private readonly plate: PlateScanService,
     private readonly catalogSearch: CatalogSearchService,
@@ -72,10 +76,25 @@ export class PlateScanFlowService {
     let items: Awaited<
       ReturnType<PlateScanService['findIngredients']>
     >['items'];
+    let tagIds: string[];
     try {
+      // The Catalog Tags and this Family's own are the only Tags the read may propose.
+      const allowedTags = await loadAllowedTags(
+        this.database,
+        familyId,
+        locale,
+      );
       // The picked dish is part of the Plate Scan the photo step already paid for: recorded, not charged.
-      ({ items } = await this.paidReads.unchargedContext(memberId, 'scan', () =>
-        this.plate.findIngredients(input.dishTitle, locale, familyId),
+      ({ items, tagIds } = await this.paidReads.unchargedContext(
+        memberId,
+        'scan',
+        () =>
+          this.plate.findIngredients(
+            input.dishTitle,
+            locale,
+            familyId,
+            allowedTags,
+          ),
       ));
     } catch (error) {
       this.uses.release(signature);
@@ -111,6 +130,7 @@ export class PlateScanFlowService {
           threshold,
         ),
       ),
+      tagIds,
     };
   }
 }

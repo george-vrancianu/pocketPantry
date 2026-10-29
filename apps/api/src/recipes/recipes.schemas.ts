@@ -219,6 +219,8 @@ export const fromPlateBody = z
     title,
     parentId: id.nullable(),
     lines: z.array(familyLineInput.omit({ id: true })).max(MAX_LINES),
+    /** Tags proposed by the Plate Scan read; checked like any Recipe Tags. A Variant also keeps its Base's Tags. */
+    tagIds: z.array(id).default([]),
   })
   .strict();
 
@@ -608,9 +610,6 @@ export type LinkRecipeDraft = Omit<
   'parentId' | 'servings'
 > & {
   servings: number | null;
-  /** What the page was read as, until #714 moves the read to Tags; `tagIds` carries the same ids. */
-  cuisineId: string | null;
-  methodId: string | null;
 };
 
 /**
