@@ -2,7 +2,8 @@ import { Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CameraMode } from '../../../lib/cameraMode';
-import { useCreditPriceText } from '../../../components/CreditPrice';
+import { CreditPrice } from '../../../components/CreditPrice';
+import { useCreditPrice } from '../../../lib/credits';
 import { MODE_SLIDER_HEIGHT } from '../../../lib/scanGuides';
 import {
   dragOffset,
@@ -64,7 +65,7 @@ export function ModeSlider<Mode extends CameraMode>({
 }: Props<Mode>) {
   const { t, i18n } = useTranslation('scan');
   // Every mode but Barcode (a free lookup) is a Scan; the chosen one names its price.
-  const price = useCreditPriceText('scan');
+  const price = useCreditPrice('scan');
   const index = modes.indexOf(mode);
   const root = useRef<HTMLDivElement>(null);
   const group = useRef<HTMLDivElement>(null);
@@ -333,7 +334,8 @@ export function ModeSlider<Mode extends CameraMode>({
                   component="span"
                   sx={{ fontWeight: 600, textTransform: 'none', ml: 0.75 }}
                 >
-                  {`· ${price}`}
+                  {'· '}
+                  <CreditPrice kind="scan" />
                 </Box>
               ) : null}
             </Box>

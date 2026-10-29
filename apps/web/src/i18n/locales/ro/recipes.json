@@ -311,7 +311,7 @@
     "full_one": "{{count}} citire de link te așteaptă. Verific-o sau anuleaz-o mai întâi.",
     "full_few": "{{count}} citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi.",
     "full_other": "{{count}} de citiri de linkuri te așteaptă. Verifică sau anulează una mai întâi.",
-    "priceLink": "Citirea unei pagini web costă {{price}}."
+    "priceLink": "Citirea unei pagini web costă <price/>."
   },
   "fromText": {
     "menuItem": "Din text",
@@ -330,7 +330,7 @@
     "characters_one": "{{current}} din {{max}} caracter",
     "characters_few": "{{current}} din {{max}} caractere",
     "characters_other": "{{current}} din {{max}} de caractere",
-    "price": "Citirea textului lipit costă {{price}}.",
+    "price": "Citirea textului lipit costă <price/>.",
     "pasteInstead": "Lipește textul în schimb"
   },
   "readingLanguage": {

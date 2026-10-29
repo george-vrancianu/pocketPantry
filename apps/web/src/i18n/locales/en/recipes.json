@@ -289,7 +289,7 @@
     },
     "full_one": "{{count}} link read is waiting for you. Review or cancel it first.",
     "full_other": "{{count}} link reads are waiting for you. Review or cancel one first.",
-    "priceLink": "Reading a web page costs {{price}}."
+    "priceLink": "Reading a web page costs <price/>."
   },
   "fromText": {
     "menuItem": "From text",
@@ -307,7 +307,7 @@
     },
     "characters_one": "{{current}} of {{max}} characters",
     "characters_other": "{{current}} of {{max}} characters",
-    "price": "Reading pasted text costs {{price}}.",
+    "price": "Reading pasted text costs <price/>.",
     "pasteInstead": "Paste text instead"
   },
   "readingLanguage": {

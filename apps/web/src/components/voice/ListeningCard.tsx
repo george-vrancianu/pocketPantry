@@ -18,6 +18,7 @@ import {
   MAX_VOICE_NOTE_MS,
   type VoiceDefaultTarget,
 } from '../../lib/voice';
+import { CreditPrice } from '../CreditPrice';
 import { enter } from './enter';
 import { useElapsedMs } from './useElapsed';
 
@@ -254,8 +255,22 @@ export function ListeningCard({
             <span>
               {armed ? t('listening.slideBack') : t('listening.hint')}
             </span>
-            <Box sx={{ flexBasis: '100%' }}>
-              {t(LISTENING_DESTINATION[target])}
+            <Box
+              sx={{
+                flexBasis: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <Box component="span" sx={{ flex: 1, minWidth: 0 }}>
+                {t(LISTENING_DESTINATION[target])}
+              </Box>
+              {/* What this Voice Note will cost; the mic's description already tells a screen reader. */}
+              <CreditPrice
+                kind="voice"
+                sx={{ flex: 'none', fontWeight: 600, color: 'text.primary' }}
+              />
             </Box>
           </Box>
         </Box>

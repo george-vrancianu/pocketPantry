@@ -10,8 +10,9 @@ import {
   radius,
 } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useCreditPriceText } from '../../../components/CreditPrice';
+import { Trans, useTranslation } from 'react-i18next';
+import { CreditPrice } from '../../../components/CreditPrice';
+import { useCreditPrice } from '../../../lib/credits';
 import { ReadingLanguageChoice } from '../../../components/ReadingLanguageChoice';
 import { MAX_HELD_LINK_READS, linkReads } from '../../../lib/linkReads';
 import {
@@ -72,7 +73,7 @@ function FromTextForm({
   prefill?: FromTextPrefill;
 }) {
   const { t, i18n } = useTranslation('recipes');
-  const price = useCreditPriceText('link-text');
+  const price = useCreditPrice('link-text');
   const [text, setText] = useState('');
   const [language, setLanguage] = useState<ReadingLanguage>('catalog');
   const [full, setFull] = useState(false);
@@ -221,7 +222,11 @@ function FromTextForm({
       />
       {price ? (
         <Typography variant="meta" color="text.secondary">
-          {t('fromText.price', { price })}
+          <Trans
+            t={t}
+            i18nKey="fromText.price"
+            components={{ price: <CreditPrice kind="link-text" /> }}
+          />
         </Typography>
       ) : null}
       <Button type="submit" fullWidth disabled={input === ''}>
