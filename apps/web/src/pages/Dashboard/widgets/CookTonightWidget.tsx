@@ -24,7 +24,12 @@ import {
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
-const NO_BROWSE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
+const NO_BROWSE: RecipeBrowse = {
+  search: '',
+  cuisineId: '',
+  methodId: '',
+  tagIds: [],
+};
 
 /**
  * How many cards a Widget has room for; the API ranks them, the Widget only cuts.

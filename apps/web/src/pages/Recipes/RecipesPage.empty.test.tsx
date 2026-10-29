@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
+import { getToast } from '../../test/toast';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -355,9 +356,7 @@ describe('RecipesPage when the Family has no Recipes', () => {
       const list = await screen.findByRole('list', { name: /^All Recipes/ });
       expect(within(list).getByText('omelette')).toBeVisible();
       expect(screen.queryByText(TITLE)).toBeNull();
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Added omelette to your Recipes',
-      );
+      expect(getToast()).toHaveTextContent('Added omelette to your Recipes');
 
       await user.click(screen.getByRole('button', { name: 'Undo' }));
       expect(await findTitle()).toBeVisible();

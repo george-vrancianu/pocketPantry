@@ -118,6 +118,7 @@ export {
   CalendarIcon,
   CalendarDaysIcon,
   SubItemIcon,
+  TagIcon,
   PulseIcon,
   CookIcon,
   HourglassIcon,
@@ -257,3 +258,9 @@ export {
 
 export { CenteredLayout } from './templates/CenteredLayout';
 export { PageLayout, type PageLayoutProps } from './templates/PageLayout';
+export {
+  TagField,
+  type TagFieldLabels,
+  type TagFieldOption,
+  type TagFieldProps,
+} from './molecules/TagField';

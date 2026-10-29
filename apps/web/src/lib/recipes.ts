@@ -242,6 +242,8 @@ export type RecipeDetail = {
 
 /** Pickers' options; browsing uses Cuisines and Methods, the Family editor adds Eating Moments. */
 export type RecipeFilterOptions = {
+  /** The Tags in use in the asked scope: Family Tags first, then Catalog Tags by group. */
+  tags: RecipeTag[];
   cuisines: NamedRef[];
   methods: NamedRef[];
   eatingMoments: NamedRef[];
@@ -251,6 +253,8 @@ export type RecipeBrowse = {
   search: string;
   cuisineId: string;
   methodId: string;
+  /** Tags a Recipe must all have, in the order they were picked. */
+  tagIds: string[];
 };
 
 /** Minutes for a Recipe (prep plus cook), or null when it has neither. */
@@ -269,7 +273,8 @@ export const recipesQueryKey = ['recipes'] as const;
 export const isFiltering = (browse: RecipeBrowse) =>
   browse.search.trim() !== '' ||
   browse.cuisineId !== '' ||
-  browse.methodId !== '';
+  browse.methodId !== '' ||
+  browse.tagIds.length > 0;
 
 /** The Recipe list; the search is debounced, the shown rows stay while the next load runs. */
 export function useRecipes(
@@ -294,7 +299,7 @@ export function useRecipes(
   } = {},
 ) {
   const search = useDebounced(browse.search.trim(), 300);
-  const { cuisineId, methodId } = browse;
+  const { cuisineId, methodId, tagIds } = browse;
   return useQuery({
     queryKey: [
       ...recipesQueryKey,
@@ -303,6 +308,8 @@ export function useRecipes(
       search,
       cuisineId,
       methodId,
+      // Not debounced: a Tag pick is a tap, not typing.
+      tagIds.join(','),
       ...(includeVariants ? ['variants'] : []),
       ...(showHidden ? ['showHidden'] : []),
     ],
@@ -311,6 +318,7 @@ export function useRecipes(
       if (search) params.set('search', search);
       if (cuisineId) params.set('cuisineId', cuisineId);
       if (methodId) params.set('methodId', methodId);
+      if (tagIds.length > 0) params.set('tagIds', tagIds.join(','));
       if (includeVariants) params.set('includeVariants', 'true');
       if (showHidden) params.set('showHidden', 'true');
       if (scope) params.set('scope', scope);
@@ -322,12 +330,15 @@ export function useRecipes(
   });
 }
 
-/** Cuisines and Methods for the filter pickers. */
-export function useRecipeFilters(enabled = true) {
+/** The filter pickers' options; `scope` narrows the Tags to those in use on the Family's or the Catalog's Recipes. */
+export function useRecipeFilters(enabled = true, scope?: 'family' | 'catalog') {
   return useQuery({
     enabled,
-    queryKey: [...recipesQueryKey, 'filters'],
-    queryFn: () => apiRequest<RecipeFilterOptions>('/recipes/filters'),
+    queryKey: [...recipesQueryKey, 'filters', scope ?? 'all'],
+    queryFn: () =>
+      apiRequest<RecipeFilterOptions>(
+        `/recipes/filters${scope ? `?scope=${scope}` : ''}`,
+      ),
   });
 }
 

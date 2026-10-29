@@ -283,6 +283,9 @@ const showHiddenQuery = z
 export const recipeScopeQuery = z.enum(['family', 'catalog']).optional();
 export type RecipeScope = NonNullable<z.infer<typeof recipeScopeQuery>>;
 
+/** The most Tags one browse can ask for. */
+const MAX_FILTER_TAGS = 20;
+
 /** Member browsing: no search or filter lists Base Recipes only. */
 export const browseQuery = z.object({
   /**
@@ -293,6 +296,17 @@ export const browseQuery = z.object({
   search: z.string().trim().max(100).optional(),
   cuisineId: id.optional(),
   methodId: id.optional(),
+  /**
+   * Tag ids, all of which a Recipe must have (AND). Comma-separated (`tagIds=a,b`) or repeated.
+   * A Variant is matched on its own Tags.
+   */
+  tagIds: z
+    .preprocess(
+      (value) =>
+        typeof value === 'string' ? value.split(',').filter(Boolean) : value,
+      z.array(id).max(MAX_FILTER_TAGS),
+    )
+    .optional(),
   /** Opt in to Variants alongside Base Recipes with no search or filter. */
   includeVariants: z.enum(['true', 'false']).optional(),
   /**
@@ -302,6 +316,9 @@ export const browseQuery = z.object({
    */
   showHidden: showHiddenQuery,
 });
+
+/** The filter pickers' options; `scope` narrows the Tags offered to those in use in it. */
+export const filtersQuery = z.object({ scope: recipeScopeQuery });
 
 export const recipeParam = z.object({ id });
 export const recipeTipParam = z.object({ id, tipId: id });
@@ -323,6 +340,7 @@ export type HiddenTipsBody = z.infer<typeof hiddenTipsBody>;
 export type TranslationsBody = z.infer<typeof translationsBody>;
 export type RecipeListQuery = z.infer<typeof recipeListQuery>;
 export type BrowseQuery = z.infer<typeof browseQuery>;
+export type FiltersQuery = z.infer<typeof filtersQuery>;
 
 export type RecipeLineView = {
   id: string;
@@ -571,6 +589,11 @@ export type RecipeDetail = ResolvedRecipe & {
 export type RecipeFilters = {
   cuisines: NamedRef[];
   methods: NamedRef[];
+  /**
+   * The Tags used on at least one live Recipe in `scope` (Family Tags only the Family's own),
+   * in the viewer's language: Family Tags first, then Catalog Tags by Tag Group order, then by name.
+   */
+  tags: RecipeTag[];
   /** Live Eating Moments in sort order. They feed the guidance editor's picker, not a browsing filter. */
   eatingMoments: NamedRef[];
 };

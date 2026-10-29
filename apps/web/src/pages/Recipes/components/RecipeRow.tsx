@@ -16,10 +16,19 @@ type Props = {
   onSelect?: () => void;
   /** Where the row opens, when not the Recipe itself (Cook Tonight opens the card's best match). */
   to?: string;
+  /** Tags the active filter matched: shown first, with the accent ring. */
+  matchedTagIds?: readonly string[];
 };
 
 /** A list row: title, meta and status pills on the left, total time and a chevron on the right. */
-export function RecipeRow({ recipe, card, filtering, onSelect, to }: Props) {
+export function RecipeRow({
+  recipe,
+  card,
+  filtering,
+  onSelect,
+  to,
+  matchedTagIds,
+}: Props) {
   const { t } = useTranslation('recipes');
   const meta = [
     recipe.difficulty ? t(`difficulty.${recipe.difficulty}`) : null,
@@ -45,6 +54,7 @@ export function RecipeRow({ recipe, card, filtering, onSelect, to }: Props) {
       }
       meta={meta}
       tags={recipe.tags}
+      matchedTagIds={matchedTagIds}
       minutes={totalMinutes(recipe)}
       pills={
         card || recipe.allergyWarning ? (

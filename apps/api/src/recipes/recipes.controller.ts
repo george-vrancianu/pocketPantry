@@ -66,6 +66,8 @@ import {
   type CookTonightQuery,
   type CookTonightView,
   type RecipeDetail,
+  type FiltersQuery,
+  filtersQuery,
   type RecipeFilters,
   type RecipeList,
 } from './recipes.schemas';
@@ -104,14 +106,16 @@ export class RecipesController {
   @Get('filters')
   @ApiOperation({
     summary:
-      'Cuisines and Methods for the filter pickers, named in the Catalog Language',
+      'Cuisines, Methods and the Tags in use (in `scope`) for the filter pickers, named in the Catalog Language',
   })
   async filters(
     @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(filtersQuery)) query: FiltersQuery,
   ): Promise<RecipeFilters> {
     return this.browse.filters(
       member.id,
       await this.languages.catalogLanguageOf(member.id),
+      query.scope,
     );
   }
 

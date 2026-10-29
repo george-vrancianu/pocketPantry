@@ -21,7 +21,6 @@ import { localIso } from '../../lib/pantry';
 import {
   hasNoFamilyRecipes,
   isFiltering,
-  useRecipeFilters,
   useRecipes,
   type RecipeBrowse,
   type RecipeListItem,
@@ -42,6 +41,7 @@ import {
 } from './components/FromTextSheet';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
+import { TagNoMatch } from './components/TagNoMatch';
 import { SectionLabel } from './components/SectionLabel';
 
 /** The header's one second button besides "+" (ADR 0027 amendment): a way into Explore. */
@@ -118,11 +118,11 @@ export function RecipesPage() {
     search: '',
     cuisineId: '',
     methodId: '',
+    tagIds: [],
   });
   // "Show" in the hidden-by-Allergies note asks the list and the Cook Tonight card for everything.
   const [showHidden, setShowHidden] = useState(false);
   const recipes = useRecipes(browse, { showHidden, scope: 'family' });
-  const filters = useRecipeFilters();
   const cookTonight = useCookTonight(
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     localIso(new Date()),
@@ -235,7 +235,11 @@ export function RecipesPage() {
           <RecipeFilters
             value={browse}
             onChange={setBrowse}
-            options={filters.data}
+            tags={{
+              scope: 'family',
+              showHidden,
+              resultCount: recipes.data ? items.length : undefined,
+            }}
           />
         )}
         <HiddenByAllergiesNote
@@ -259,7 +263,15 @@ export function RecipesPage() {
             {...addToFamily}
           />
         ) : null}
-        {noneListed && !empty ? (
+        {noneListed && !empty && browse.tagIds.length > 0 ? (
+          <TagNoMatch
+            browse={browse}
+            onChange={setBrowse}
+            scope="family"
+            showHidden={showHidden}
+          />
+        ) : null}
+        {noneListed && !empty && browse.tagIds.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: '32px' }}>
             <Box sx={{ ...displayType, fontSize: 18 }}>
               {filtering ? t('recipes:noMatches') : t('recipes:allHidden')}
@@ -287,6 +299,7 @@ export function RecipesPage() {
                   recipe={recipe}
                   card={cardFor(index, recipe)}
                   filtering={filtering || recipe.parentId !== null}
+                  matchedTagIds={browse.tagIds}
                 />
               ))}
             </Box>

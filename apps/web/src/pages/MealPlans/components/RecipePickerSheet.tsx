@@ -7,7 +7,6 @@ import { copyToFamily, refreshAfterCopy } from '../../../lib/addToFamily';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   isFiltering,
-  useRecipeFilters,
   useRecipes,
   type RecipeBrowse,
 } from '../../../lib/recipes';
@@ -44,6 +43,7 @@ export function RecipePickerSheet({
     search: '',
     cuisineId: '',
     methodId: '',
+    tagIds: [],
   });
   // Plan Slots never hide (ADR 0012): "Hide Recipes with my Allergies" must not narrow what
   // a Member can plan, so the picker always asks for the hidden Recipes too.
@@ -59,7 +59,6 @@ export function RecipePickerSheet({
     scope: 'catalog',
     enabled: open,
   });
-  const filters = useRecipeFilters(open);
   const queryClient = useQueryClient();
   const [addingId, setAddingId] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
@@ -100,11 +99,7 @@ export function RecipePickerSheet({
           <Typography variant="meta" color="text.secondary">
             {context}
           </Typography>
-          <RecipeFilters
-            value={browse}
-            onChange={setBrowse}
-            options={filters.data}
-          />
+          <RecipeFilters value={browse} onChange={setBrowse} />
         </Box>
       }
     >
