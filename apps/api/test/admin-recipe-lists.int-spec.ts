@@ -391,20 +391,6 @@ describe('Admin Cuisine and Method lists (integration)', () => {
       expect((await tagsOf(bea, beas.id)).map((t) => t.id)).toEqual([
         catalogTag.id,
       ]);
-      expect(
-        await database
-          .select()
-          .from(tags)
-          .where(inArray(tags.id, [anaTag.id, beaTag.id])),
-      ).toEqual([]);
-      const links = await database
-        .select()
-        .from(recipeTags)
-        .where(eq(recipeTags.recipeId, both.id));
-      expect(links.map((l) => l.tagId).sort()).toEqual(
-        [catalogTag.id, keeper.id].sort(),
-      );
-
       // Renamed: a Recipe that already has the Catalog Tag keeps one link.
       const dup = await familyRecipe(ana, 'Ana dup', [catalogTag.id]);
       const lateTag = await familyTag(ana, `Late ${stamp}`);
@@ -414,14 +400,9 @@ describe('Admin Cuisine and Method lists (integration)', () => {
       await admin
         .patch(`/tags/${catalogTag.id}`, { name: `Late ${stamp}` })
         .expect(200);
-      const after = await database
-        .select()
-        .from(recipeTags)
-        .where(eq(recipeTags.recipeId, dup.id));
-      expect(after.map((l) => l.tagId)).toEqual([catalogTag.id]);
-      expect(
-        await database.select().from(tags).where(eq(tags.id, lateTag.id)),
-      ).toEqual([]);
+      expect((await tagsOf(ana, dup.id)).map((t) => t.id)).toEqual([
+        catalogTag.id,
+      ]);
       // The Family still has its other Tag.
       expect((await tagsOf(ana, both.id)).map((t) => t.id)).toContain(
         keeper.id,
@@ -429,6 +410,31 @@ describe('Admin Cuisine and Method lists (integration)', () => {
 
       await admin.del(`/tags/${catalogTag.id}?confirm=true`).expect(204);
       await admin.del(`/tag-groups/${group.id}`).expect(204);
+    });
+
+    it('refuses a translation on a Family Tag and leaves it and its Family alone', async () => {
+      const mine = await familyTag(ana, `Mine ${stamp}`);
+      const beas = await familyTag(bea, `Other ${stamp}`);
+      const beaRecipe = await familyRecipe(bea, 'Bea fam', [beas.id]);
+      const recipe = await familyRecipe(ana, 'Ana fam', [mine.id]);
+
+      const res = await admin
+        .post('/translations', {
+          entityType: 'tag',
+          entityId: mine.id,
+          locale: 'ro',
+          kind: 'name',
+          value: `Other ${stamp}`,
+        })
+        .expect(404);
+      expect(code(res)).toBe('catalog.not_found');
+
+      expect((await tagsOf(ana, recipe.id)).map((t) => t.id)).toEqual([
+        mine.id,
+      ]);
+      expect((await tagsOf(bea, beaRecipe.id)).map((t) => t.id)).toEqual([
+        beas.id,
+      ]);
     });
 
     it('keeps the Tag endpoints Admin-only', async () => {

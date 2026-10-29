@@ -423,7 +423,6 @@
     "group": "Tag Group",
     "empty": "No Catalog Tags yet.",
     "deleteConfirm_one": "{{count}} Recipe has this Tag and will lose it. Delete it anyway?",
-    "deleteConfirm_other": "{{count}} Recipes have this Tag and will lose it. Delete it anyway?",
-    "deleteConfirmUnused": "No Recipe has this Tag. Delete it?"
+    "deleteConfirm_other": "{{count}} Recipes have this Tag and will lose it. Delete it anyway?"
   }
 }

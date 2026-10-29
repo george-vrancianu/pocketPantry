@@ -423,7 +423,6 @@
     "group": "Tag-gruppe",
     "empty": "Ingen katalog-tags endnu.",
     "deleteConfirm_one": "{{count}} opskrift har dette tag og mister det. Slet det alligevel?",
-    "deleteConfirm_other": "{{count}} opskrifter har dette tag og mister det. Slet det alligevel?",
-    "deleteConfirmUnused": "Ingen opskrift har dette tag. Slet det?"
+    "deleteConfirm_other": "{{count}} opskrifter har dette tag og mister det. Slet det alligevel?"
   }
 }

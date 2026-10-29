@@ -99,7 +99,42 @@ describe('CatalogTagEditor', () => {
     });
   });
 
-  it('asks before deleting a Tag in use, saying how many Recipes lose it', async () => {
+  it('asks before deleting a Tag in use, with the server count, then confirms', async () => {
+    let attempts = 0;
+    const { fetchMock, calls } = stubApi({
+      'DELETE /api/admin/catalog/tags/t1': () =>
+        ++attempts === 1
+          ? Response.json(
+              { code: 'catalog.tag_in_use', params: { count: 7 } },
+              { status: 409 },
+            )
+          : new Response(null, { status: 204 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const onDone = vi.fn();
+    renderWithProviders(
+      <CatalogTagEditor tag={vegan} groups={groups} onDone={onDone} />,
+    );
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(
+      await screen.findByText(
+        '7 Recipes have this Tag and will lose it. Delete it anyway?',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Confirm the delete to remove it/)).toBeNull();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].search).toBe('');
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+    expect(calls[1]).toMatchObject({
+      key: 'DELETE /api/admin/catalog/tags/t1',
+      search: '?confirm=true',
+    });
+  });
+
+  it('deletes a Tag no Recipe carries without asking', async () => {
     const { fetchMock, calls } = stubApi({
       'DELETE /api/admin/catalog/tags/t1': () =>
         new Response(null, { status: 204 }),
@@ -112,18 +147,9 @@ describe('CatalogTagEditor', () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(
-      screen.getByText(
-        '4 Recipes have this Tag and will lose it. Delete it anyway?',
-      ),
-    ).toBeInTheDocument();
-    expect(calls).toHaveLength(0);
-    await user.click(screen.getByRole('button', { name: 'Confirm' }));
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
-    expect(calls[0]).toMatchObject({
-      key: 'DELETE /api/admin/catalog/tags/t1',
-      search: '?confirm=true',
-    });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].search).toBe('');
   });
 
   it('shows the translated error for an allergen-free name', async () => {

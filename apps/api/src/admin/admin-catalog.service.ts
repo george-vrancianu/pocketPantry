@@ -996,7 +996,12 @@ export class AdminCatalogService {
     this.assertEditable(input.kind, input.locale);
     return this.write(
       async (tx) => {
-        await this.requireRow(tx, input.entityType, input.entityId);
+        if (input.entityType === 'tag') {
+          // Family Tags are never translated, nor merged into on others' behalf.
+          await this.requireCatalogTag(tx, input.entityId);
+        } else {
+          await this.requireRow(tx, input.entityType, input.entityId);
+        }
         if (input.entityType === 'ingredient') {
           await this.claimName(tx, input.value, input.entityId);
         }
@@ -1051,8 +1056,10 @@ export class AdminCatalogService {
       if (existing.entityType === 'ingredient') {
         await this.claimName(tx, input.value, existing.entityId);
       }
-      if (existing.entityType === 'tag')
+      if (existing.entityType === 'tag') {
+        await this.requireCatalogTag(tx, existing.entityId);
         this.assertNotAllergenFree(input.value);
+      }
       const [row] = await tx
         .update(catalogTranslations)
         .set({

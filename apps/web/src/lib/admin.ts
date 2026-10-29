@@ -188,7 +188,10 @@ export function useReorderAisles() {
   );
 }
 
-/** Caches that show Tags: the pickers and filters, and the Recipes carrying them. */
+/**
+ * Extra caches a Tag write refreshes: the Admin Recipes list, whose rows carry Tags. The Tag
+ * pickers and filters are refreshed through `recipeChangeQueryKeys` in `useAdminWrite`.
+ */
 const tagQueryKeys: QueryKey[] = [adminRecipesQueryKey];
 
 export function useSaveTagGroup(id?: string) {
@@ -229,11 +232,16 @@ export function useSaveCatalogTag(id?: string) {
     () => tagQueryKeys,
   );
 }
-/** Deletes a Catalog Tag and removes it from every Recipe; callers confirm first. */
+/**
+ * Deletes a Catalog Tag. Without `confirm` the server refuses a Tag Recipes carry (409
+ * `catalog.tag_in_use` with the count); resend with `confirm` to remove it from them too.
+ */
 export function useDeleteCatalogTag() {
   return useAdminWrite(
-    (id: string) =>
-      apiRequest(`${base}/tags/${id}?confirm=true`, { method: 'DELETE' }),
+    ({ id, confirm }: { id: string; confirm?: boolean }) =>
+      apiRequest(`${base}/tags/${id}${confirm ? '?confirm=true' : ''}`, {
+        method: 'DELETE',
+      }),
     () => tagQueryKeys,
   );
 }
