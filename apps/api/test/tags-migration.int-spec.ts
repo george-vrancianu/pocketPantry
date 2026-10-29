@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import pg from 'pg';
+import { normalizeName } from '../src/catalog/normalize';
 import { restorePre0051Shape } from './support/pre-0051-shape';
 
 // Migration 0049 (#708, expand step of ADR 0033) turns every Cuisine and Method into a Catalog Tag
@@ -250,31 +251,74 @@ describe('Migration 0049: Cuisines and Methods become Catalog Tags (integration)
     ).toEqual([
       { id: other, name: 'Charring', normalized_name: 'charring' },
       { id: cuisine, name: 'Grill', normalized_name: 'grill' },
-      { id: method, name: 'Grill (method)', normalized_name: 'grill (method)' },
+      {
+        id: method,
+        name: 'Grill (method)',
+        normalized_name: normalizeName('Grill (method)'),
+      },
     ]);
+    // Name lookups compare against normalizeName(input), so the suffixed name finds the migrated Tag.
     expect(
       await rows(
-        `select entity_id, locale, kind, value from catalog_translations
+        `select id from tags where family_id is null and normalized_name = $1`,
+        [normalizeName('Grill (method)')],
+      ),
+    ).toEqual([{ id: method }]);
+    expect(
+      await rows(
+        `select entity_id, locale, kind, value, normalized_value from catalog_translations
          where entity_type = 'tag' and entity_id = any($1) order by entity_id, locale, kind`,
         [[cuisine, method, other]],
       ),
     ).toEqual([
-      { entity_id: cuisine, locale: 'en', kind: 'name', value: 'Grill' },
-      { entity_id: cuisine, locale: 'ro', kind: 'name', value: 'Grătar' },
-      { entity_id: method, locale: 'da', kind: 'name', value: 'Grill' },
+      {
+        entity_id: cuisine,
+        locale: 'en',
+        kind: 'name',
+        value: 'Grill',
+        normalized_value: normalizeName('Grill'),
+      },
+      {
+        entity_id: cuisine,
+        locale: 'ro',
+        kind: 'name',
+        value: 'Grătar',
+        normalized_value: normalizeName('Grătar'),
+      },
+      {
+        entity_id: method,
+        locale: 'da',
+        kind: 'name',
+        value: 'Grill',
+        normalized_value: normalizeName('Grill'),
+      },
       {
         entity_id: method,
         locale: 'en',
         kind: 'name',
         value: 'Grill (method)',
+        normalized_value: normalizeName('Grill (method)'),
       },
-      { entity_id: method, locale: 'ro', kind: 'name', value: 'La grătar' },
-      { entity_id: method, locale: 'ro', kind: 'synonym', value: 'Grătar' },
+      {
+        entity_id: method,
+        locale: 'ro',
+        kind: 'name',
+        value: 'La grătar',
+        normalized_value: normalizeName('La grătar'),
+      },
+      {
+        entity_id: method,
+        locale: 'ro',
+        kind: 'synonym',
+        value: 'Grătar',
+        normalized_value: normalizeName('Grătar'),
+      },
       {
         entity_id: other,
         locale: 'ro',
         kind: 'name',
         value: 'Grătar (method)',
+        normalized_value: normalizeName('Grătar (method)'),
       },
     ]);
   });

@@ -50,6 +50,8 @@ CREATE INDEX "tags_group_idx" ON "tags" USING btree ("group_id");--> statement-b
 -- A Cuisine and a Method were separate lists, so one could share a normalized name (or a name in a
 -- locale) with the other; as Tags they would break the unique name indexes. The Cuisine keeps its
 -- name and the Method gets " (method)" after it, in its source name and in each colliding translation.
+-- The stored matching keys get " method" (not " (method)"): that is what normalizeName gives the suffixed
+-- name, since it turns punctuation into spaces. A Cuisine or Method already named "X method" could clash.
 INSERT INTO "tag_groups" ("id", "name", "normalized_name", "position")
 VALUES (gen_random_uuid(), 'Cuisine', 'cuisine', 3), (gen_random_uuid(), 'Method', 'method', 4);--> statement-breakpoint
 INSERT INTO "catalog_translations" ("id", "entity_type", "entity_id", "locale", "kind", "value", "normalized_value")
@@ -65,14 +67,14 @@ FROM "cuisines" c;--> statement-breakpoint
 INSERT INTO "tags" ("id", "name", "normalized_name", "group_id")
 SELECT m."id",
   CASE WHEN c."id" IS NULL THEN m."name" ELSE m."name" || ' (method)' END,
-  CASE WHEN c."id" IS NULL THEN m."normalized_name" ELSE m."normalized_name" || ' (method)' END,
+  CASE WHEN c."id" IS NULL THEN m."normalized_name" ELSE m."normalized_name" || ' method' END,
   (SELECT "id" FROM "tag_groups" WHERE "normalized_name" = 'method')
 FROM "methods" m
 LEFT JOIN "cuisines" c ON c."normalized_name" = m."normalized_name";--> statement-breakpoint
 INSERT INTO "catalog_translations" ("id", "entity_type", "entity_id", "locale", "kind", "value", "normalized_value")
 SELECT gen_random_uuid(), 'tag', t."entity_id", t."locale", t."kind",
   CASE WHEN clash."id" IS NULL THEN t."value" ELSE t."value" || ' (method)' END,
-  CASE WHEN clash."id" IS NULL THEN t."normalized_value" ELSE t."normalized_value" || ' (method)' END
+  CASE WHEN clash."id" IS NULL THEN t."normalized_value" ELSE t."normalized_value" || ' method' END
 FROM "catalog_translations" t
 LEFT JOIN "catalog_translations" clash ON t."entity_type" = 'method' AND t."kind" = 'name'
   AND clash."entity_type" = 'cuisine' AND clash."kind" = 'name' AND clash."owner_family_id" IS NULL
