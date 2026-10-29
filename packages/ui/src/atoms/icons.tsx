@@ -40,6 +40,7 @@ import {
   SquareSplitHorizontal,
   LeafyGreen,
   CalendarDays,
+  Coins,
   Link2,
   type LucideProps,
 } from 'lucide-react';
@@ -379,3 +380,5 @@ export const CupboardIcon = lucide(SquareSplitHorizontal);
 export const SpicesIcon = lucide(LeafyGreen);
 /** Add to Pantry: the resolved expiry line and the calendar chip. */
 export const CalendarDaysIcon = lucide(CalendarDays);
+/** A Credit Price: the icon stands in for the word "Credits" beside the number. */
+export const CreditIcon = lucide(Coins);
