@@ -14,7 +14,14 @@ import {
   tokens,
 } from '@pocket-pantry/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AllergenContainsRow,
@@ -56,7 +63,7 @@ export type FamilyIngredientSheetProps = {
   catalog: FamilyCatalog;
   onClose: () => void;
   /** After the Save succeeded: the caller closes the sheet and shows the toast. */
-  onSaved: () => void;
+  onSaved: (savedName: string) => void;
   /** The close transition has finished. */
   onExited: () => void;
   /** "Delete from family catalog": the sheet closes itself, then the caller asks to delete. */
@@ -148,9 +155,14 @@ export function FamilyIngredientSheet({
     (!ingredient.allergensChecked ||
       !sameSet(draftAllergens, ingredient.allergenIds));
   const removals = savedSynonyms.filter((s) => removedIds.includes(s.id));
+  // A name removed and added back is a DELETE then a POST; only a kept saved name is already there.
   const additions = added.filter(
     (n) =>
-      !savedSynonyms.some((s) => normalizeName(s.name) === normalizeName(n)),
+      !savedSynonyms.some(
+        (s) =>
+          !removedIds.includes(s.id) &&
+          normalizeName(s.name) === normalizeName(n),
+      ),
   );
   const changed =
     nameChanged ||
@@ -167,31 +179,32 @@ export function FamilyIngredientSheet({
     ...additions,
   ];
 
-  /** Names the Family already uses (this Ingredient's included), by matching key. */
+  /** Names the Family already uses (this Ingredient's included): matching key to the Ingredient it names. */
   const familyKeys = () => {
-    const keys = new Set<string>([normalizeName(trimmed)]);
-    keys.add(normalizeName(ingredient.name));
+    const keys = new Map<string, string>();
+    keys.set(normalizeName(trimmed), ingredient.name);
+    keys.set(normalizeName(ingredient.name), ingredient.name);
     for (const other of catalog.ingredients) {
-      if (other.id !== ingredient.id) keys.add(normalizeName(other.name));
+      if (other.id !== ingredient.id) {
+        keys.set(normalizeName(other.name), other.name);
+      }
     }
     for (const synonym of catalog.synonyms) {
       if (!removedIds.includes(synonym.id)) {
-        keys.add(normalizeName(synonym.name));
+        keys.set(normalizeName(synonym.name), synonym.ingredient.name);
       }
     }
-    for (const chip of added) keys.add(normalizeName(chip));
+    for (const chip of added) keys.set(normalizeName(chip), ingredient.name);
     return keys;
   };
 
   const commitName = () => {
     const value = newName.trim();
     if (!value) return;
-    if (familyKeys().has(normalizeName(value))) {
+    const owner = familyKeys().get(normalizeName(value));
+    if (owner !== undefined) {
       setNewNameError(
-        t('catalog:catalogAdd.aliasExists', {
-          name: value,
-          ingredient: ingredient.name,
-        }),
+        t('catalog:catalogAdd.aliasExists', { name: value, ingredient: owner }),
       );
       return;
     }
@@ -208,10 +221,31 @@ export function FamilyIngredientSheet({
     requestAnimationFrame(() => addButtonRef.current?.focus());
   };
 
+  // After a removal focus goes to the next chip's ×, else the previous, else "+ Add a name".
+  const focusAfterRemoval = useRef<number | null>(null);
+  const chipListRef = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const index = focusAfterRemoval.current;
+    if (index === null) return;
+    focusAfterRemoval.current = null;
+    const buttons =
+      chipListRef.current?.querySelectorAll<HTMLButtonElement>(
+        'button[aria-label]',
+      );
+    (buttons?.[index] ?? addButtonRef.current)?.focus();
+  });
+
   const removeChip = (chip: string) => {
-    const saved = savedSynonyms.find((s) => s.name === chip);
-    if (saved) setRemovedIds((prev) => [...prev, saved.id]);
-    else setAdded((prev) => prev.filter((n) => n !== chip));
+    const position = chips.indexOf(chip);
+    focusAfterRemoval.current =
+      position < chips.length - 1 ? position : position - 1;
+    // A name added to the draft goes first: it may share its name with a removed saved one.
+    if (added.includes(chip)) {
+      setAdded((prev) => prev.filter((n) => n !== chip));
+    } else {
+      const saved = savedSynonyms.find((s) => s.name === chip);
+      if (saved) setRemovedIds((prev) => [...prev, saved.id]);
+    }
     setChipErrors(({ [chip]: _dropped, ...rest }) => rest);
   };
 
@@ -271,7 +305,7 @@ export function FamilyIngredientSheet({
           throw error;
         }
       }
-      onSaved();
+      onSaved(trimmed);
     } catch (error) {
       sending.current = false;
       setSaving(false);
@@ -291,16 +325,10 @@ export function FamilyIngredientSheet({
         error.code === 'catalog.family_synonym_exists'
       )) {
         setFailure(
-          `${t('settings:familyCatalog.saveFailed', {
-            what: t(`settings:familyCatalog.savedWhat.${what}`),
-          })} ${translateApiError(t, error)}`,
+          `${t(`settings:familyCatalog.saveFailed.${what}`)} ${translateApiError(t, error)}`,
         );
       } else {
-        setFailure(
-          t('settings:familyCatalog.saveFailed', {
-            what: t('settings:familyCatalog.savedWhat.otherNames'),
-          }),
-        );
+        setFailure(t('settings:familyCatalog.saveFailed.otherNames'));
       }
       // The next Save sends only what still differs.
       void queryClient.invalidateQueries({ queryKey: familyCatalogQueryKey });
@@ -368,7 +396,7 @@ export function FamilyIngredientSheet({
         >
           {view === 'pick' ? (
             <IconButton
-              label={t('settings:defaultExpiry.back')}
+              label={t('settings:familyCatalog.back')}
               size={40}
               onClick={() => {
                 setQuery('');
@@ -397,7 +425,7 @@ export function FamilyIngredientSheet({
             </Typography>
           </Box>
           <IconButton
-            label={t('settings:defaultExpiry.close')}
+            label={t('settings:familyCatalog.close')}
             size={40}
             onClick={onClose}
           >
@@ -471,16 +499,9 @@ export function FamilyIngredientSheet({
               slotProps={{ htmlInput: { maxLength: 100 } }}
             />
             {nameError || trimmed === '' ? (
-              <Typography
-                role="alert"
-                sx={{
-                  fontSize: 12.5,
-                  fontWeight: 600,
-                  color: tokens.color.urgentFg,
-                }}
-              >
+              <FieldError>
                 {nameError ?? t('settings:familyCatalog.nameRequired')}
-              </Typography>
+              </FieldError>
             ) : null}
           </Stack>
 
@@ -572,6 +593,7 @@ export function FamilyIngredientSheet({
             </Typography>
             <Stack
               component="ul"
+              ref={chipListRef}
               direction="row"
               aria-labelledby={`${id}-names`}
               sx={{ flexWrap: 'wrap', gap: 1, listStyle: 'none', p: 0, m: 0 }}
@@ -587,16 +609,7 @@ export function FamilyIngredientSheet({
                     onRemove={() => removeChip(chip)}
                   />
                   {chipErrors[chip] ? (
-                    <Typography
-                      role="alert"
-                      sx={{
-                        fontSize: 12.5,
-                        fontWeight: 600,
-                        color: tokens.color.urgentFg,
-                      }}
-                    >
-                      {chipErrors[chip]}
-                    </Typography>
+                    <FieldError>{chipErrors[chip]}</FieldError>
                   ) : null}
                 </Box>
               ))}
@@ -671,18 +684,7 @@ export function FamilyIngredientSheet({
                     {t('settings:familyCatalog.add')}
                   </Button>
                 </Stack>
-                {newNameError ? (
-                  <Typography
-                    role="alert"
-                    sx={{
-                      fontSize: 12.5,
-                      fontWeight: 600,
-                      color: tokens.color.urgentFg,
-                    }}
-                  >
-                    {newNameError}
-                  </Typography>
-                ) : null}
+                {newNameError ? <FieldError>{newNameError}</FieldError> : null}
               </Stack>
             ) : null}
           </Stack>
@@ -767,5 +769,20 @@ function NameChip({
         <CloseIcon size={12} />
       </IconButton>
     </Box>
+  );
+}
+
+function FieldError({ children }: { children: ReactNode }) {
+  return (
+    <Typography
+      role="alert"
+      sx={{
+        fontSize: 12.5,
+        fontWeight: 600,
+        color: tokens.color.urgentFg,
+      }}
+    >
+      {children}
+    </Typography>
   );
 }

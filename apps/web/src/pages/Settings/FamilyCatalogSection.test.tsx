@@ -5,6 +5,7 @@ import type {
   FamilyCatalog,
   FamilyCatalogIngredient,
 } from '../../lib/familyCatalog';
+import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { FamilyCatalogSection } from './components/FamilyCatalogSection';
 
@@ -114,6 +115,12 @@ async function openSheet(user: User, name = 'Kombucha') {
   return screen.findByRole('dialog');
 }
 
+/** Focus a control and press Enter: the keyboard path inside a sheet. */
+async function press(user: User, control: HTMLElement) {
+  act(() => control.focus());
+  await user.keyboard('{Enter}');
+}
+
 describe('FamilyCatalogSection', () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -185,7 +192,7 @@ describe('FamilyCatalogSection', () => {
         }),
       ),
     );
-    expect(await screen.findByText('Updated Kombucha')).toBeVisible();
+    expect(await screen.findByText('Updated Booch tea')).toBeVisible();
     expect(writes(calls)).toEqual(['PATCH /api/catalog/family-ingredients/k1']);
   });
 
@@ -318,10 +325,12 @@ describe('FamilyCatalogSection', () => {
       await user.click(
         await within(dialog).findByRole('button', { name: 'Milk' }),
       );
-      await user.click(
+      await press(
+        user,
         within(dialog).getByRole('button', { name: 'Remove the name Booch' }),
       );
-      await user.click(
+      await press(
+        user,
         within(dialog).getByRole('button', { name: 'Add a name' }),
       );
       await user.type(
@@ -332,7 +341,7 @@ describe('FamilyCatalogSection', () => {
       expect(within(dialog).queryByText('Booch')).toBeNull();
       expect(writes(calls)).toEqual([]);
 
-      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+      await press(user, within(dialog).getByRole('button', { name: 'Save' }));
 
       await vi.waitFor(() =>
         expect(writes(calls)).toEqual([
@@ -348,6 +357,112 @@ describe('FamilyCatalogSection', () => {
         name: 'Kefir tea',
         ingredientId: 'k1',
       });
+    });
+
+    it('keeps a name that is removed and added back, and sends DELETE then POST on Save', async () => {
+      const calls = stub();
+      renderWithProviders(<FamilyCatalogSection />);
+      const user = userEvent.setup();
+
+      const dialog = await openSheet(user);
+      await user.click(
+        within(dialog).getByRole('button', { name: 'Remove the name Booch' }),
+      );
+      expect(within(dialog).queryByText('Booch')).toBeNull();
+      await user.click(
+        within(dialog).getByRole('button', { name: 'Add a name' }),
+      );
+      await user.type(
+        within(dialog).getByRole('textbox', { name: 'Add a name' }),
+        'Booch{Enter}',
+      );
+      expect(within(dialog).getByText('Booch')).toBeVisible();
+
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+      await vi.waitFor(() =>
+        expect(writes(calls)).toEqual([
+          'DELETE /api/catalog/family-synonyms/s1',
+          'POST /api/catalog/family-synonyms',
+        ]),
+      );
+    });
+
+    it('keeps focus in the chips when one is removed', async () => {
+      stub();
+      renderWithProviders(<FamilyCatalogSection />);
+      const user = userEvent.setup();
+
+      const dialog = await openSheet(user);
+      for (const added of ['Kefir tea', 'Scoby']) {
+        await user.click(
+          within(dialog).getByRole('button', { name: 'Add a name' }),
+        );
+        await user.type(
+          within(dialog).getByRole('textbox', { name: 'Add a name' }),
+          `${added}{Enter}{Escape}`,
+        );
+        await vi.waitFor(() =>
+          expect(
+            within(dialog).getByRole('button', { name: 'Add a name' }),
+          ).toHaveFocus(),
+        );
+      }
+      const remove = (name: string) =>
+        within(dialog).getByRole('button', { name: `Remove the name ${name}` });
+      // A middle chip hands focus to the next one.
+      act(() => remove('Kefir tea').focus());
+      await user.keyboard('{Enter}');
+      expect(remove('Scoby')).toHaveFocus();
+      // The last chip hands it to the one before.
+      await user.keyboard('{Enter}');
+      expect(remove('Booch')).toHaveFocus();
+      // The only chip hands it to "Add a name".
+      await user.keyboard('{Enter}');
+      expect(
+        within(dialog).getByRole('button', { name: 'Add a name' }),
+      ).toHaveFocus();
+    });
+
+    it('closes only the add-name field on Escape', async () => {
+      stub();
+      renderWithProviders(<FamilyCatalogSection />);
+      const user = userEvent.setup();
+
+      const dialog = await openSheet(user);
+      await user.click(
+        within(dialog).getByRole('button', { name: 'Add a name' }),
+      );
+      await vi.waitFor(() =>
+        expect(
+          within(dialog).getByRole('textbox', { name: 'Add a name' }),
+        ).toHaveFocus(),
+      );
+      await user.keyboard('{Escape}');
+
+      expect(screen.getByRole('dialog')).toBeVisible();
+      await vi.waitFor(() =>
+        expect(
+          within(dialog).getByRole('button', { name: 'Add a name' }),
+        ).toHaveFocus(),
+      );
+    });
+
+    it('toasts the new name after a rename', async () => {
+      stub();
+      renderWithProviders(<FamilyCatalogSection />);
+      const user = userEvent.setup();
+
+      const dialog = await openSheet(user);
+      const name = within(dialog).getByLabelText('Name');
+      await user.clear(name);
+      await user.type(name, 'Booch tea');
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      expect(
+        within(await screen.findByRole('status')).getByText(
+          'Updated Booch tea',
+        ),
+      ).toBeVisible();
     });
 
     it('sends nothing on Cancel', async () => {
@@ -378,12 +493,14 @@ describe('FamilyCatalogSection', () => {
       // Another Family Ingredient's name, and another Synonym, ignoring case.
       await user.type(field, 'tempeh{Enter}');
       expect(
-        within(dialog).getByText('“tempeh” is already a name for Kombucha.'),
+        within(dialog).getByText('“tempeh” is already a name for Tempeh.'),
       ).toBeVisible();
       await user.clear(field);
       await user.type(field, 'SCALLION{Enter}');
       expect(
-        within(dialog).getByText('“SCALLION” is already a name for Kombucha.'),
+        within(dialog).getByText(
+          '“SCALLION” is already a name for Spring onion.',
+        ),
       ).toBeVisible();
       expect(writes(calls)).toEqual([]);
     });
@@ -514,6 +631,47 @@ describe('FamilyCatalogSection', () => {
     });
   });
 
+  describe('removing a Synonym, undone', () => {
+    it('sends nothing on Undo, even after the window would have ended', async () => {
+      vi.useFakeTimers();
+      const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+      const calls = stub();
+      renderWithProviders(<FamilyCatalogSection />);
+      await flush();
+
+      const row = screen.getByRole('group', { name: 'Scallion' });
+      act(() => row.focus());
+      fireEvent.keyDown(row, { key: 'Delete' });
+      fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(
+        within(screen.getByRole('status')).getByText('Removed “Scallion”'),
+      ).toBeVisible();
+      fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+      await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 1000));
+      await flush();
+
+      expect(screen.getByRole('group', { name: 'Scallion' })).toBeVisible();
+      expect(writes(calls)).toEqual([]);
+    });
+  });
+
+  it('shows the empty card while the last entry waits for its delete', async () => {
+    vi.useFakeTimers();
+    const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+    stub({ ingredients: [tempeh], synonyms: [] });
+    renderWithProviders(<FamilyCatalogSection />);
+    await flush();
+
+    const row = screen.getByRole('group', { name: 'Tempeh' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Delete' });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+
+    expect(screen.getByText('Nothing added yet')).toBeVisible();
+  });
+
   describe('deleting an Ingredient', () => {
     it('asks with the usage total, hides the row with Undo and deletes only after the window', async () => {
       vi.useFakeTimers();
@@ -540,6 +698,10 @@ describe('FamilyCatalogSection', () => {
 
       expect(screen.queryByRole('group', { name: 'Kombucha' })).toBeNull();
       expect(screen.getByText('Deleted Kombucha')).toBeVisible();
+      // A polite live region, not an alert.
+      expect(
+        within(screen.getByRole('status')).getByText('Deleted Kombucha'),
+      ).toBeVisible();
       expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
       await act(() => vi.advanceTimersByTimeAsync(3500));
       expect(writes(calls)).toEqual([]);
@@ -560,18 +722,22 @@ describe('FamilyCatalogSection', () => {
       expect(screen.getByText('Nothing uses it')).toBeVisible();
     });
 
-    it('sends nothing on Undo', async () => {
-      const user = userEvent.setup();
+    it('sends nothing on Undo, even after the window would have ended', async () => {
+      vi.useFakeTimers();
+      const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
       const calls = stub();
       renderWithProviders(<FamilyCatalogSection />);
+      await flush();
 
-      const row = await focusRow('Kombucha');
+      const row = screen.getByRole('group', { name: 'Kombucha' });
+      act(() => row.focus());
       fireEvent.keyDown(row, { key: 'Delete' });
-      await user.click(screen.getByRole('button', { name: 'Delete' }));
-      await vi.waitFor(() =>
-        expect(screen.queryByRole('group', { name: 'Kombucha' })).toBeNull(),
-      );
-      await user.click(await screen.findByRole('button', { name: 'Undo' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(screen.queryByRole('group', { name: 'Kombucha' })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+      await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 1000));
+      await flush();
 
       expect(screen.getByRole('group', { name: 'Kombucha' })).toBeVisible();
       expect(writes(calls)).toEqual([]);

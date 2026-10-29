@@ -229,14 +229,15 @@
     "deleteLink": "Slet fra familiens katalog",
     "nameRequired": "Giv den et navn.",
     "nameTaken": "“{{name}}” findes allerede i kataloget. Vælg et andet navn.",
-    "saveFailed": "Kunne ikke gemme {{what}}.",
-    "savedWhat": {
-      "name": "navnet",
-      "category": "kategorien",
-      "nameAndCategory": "navnet og kategorien",
-      "allergens": "allergenerne",
-      "otherNames": "de andre navne"
+    "saveFailed": {
+      "name": "Kunne ikke gemme navnet.",
+      "category": "Kunne ikke gemme kategorien.",
+      "nameAndCategory": "Kunne ikke gemme navnet og kategorien.",
+      "allergens": "Kunne ikke gemme allergenerne.",
+      "otherNames": "Kunne ikke gemme de andre navne."
     },
+    "close": "Luk",
+    "back": "Tilbage",
     "emptyTitle": "Intet tilføjet endnu",
     "empty": "Når en søgning ikke finder noget, lægger “Tilføj til dit katalog” navnet her til hele familien.",
     "synonymsHint": "Navne, din familie bruger for en ingrediens, i søgning, scanninger og kvitteringer.",

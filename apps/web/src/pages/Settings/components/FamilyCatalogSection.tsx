@@ -93,7 +93,15 @@ export function FamilyCatalogSection() {
   ].find(Boolean);
   const uncheckedCount =
     ingredients?.filter((i) => !i.allergensChecked).length ?? 0;
-  const empty = data && data.ingredients.length + data.synonyms.length === 0;
+  // Entries waiting on their delete (the Undo window) no longer count.
+  const empty =
+    data &&
+    ingredientCount === 0 &&
+    data.synonyms.every(
+      (s) =>
+        synonymRemoval.hiddenIds.has(s.id) ||
+        ingredientRemoval.hiddenIds.has(s.ingredient.id),
+    );
 
   return (
     <Stack component="section" spacing={1} aria-labelledby={`${id}-heading`}>
@@ -169,6 +177,7 @@ export function FamilyCatalogSection() {
                       t('settings:familyCatalog.deleted', {
                         name: ingredient.name,
                       }),
+                      { polite: true },
                     )
                   }
                 />
@@ -211,6 +220,7 @@ export function FamilyCatalogSection() {
                         t('settings:familyCatalog.synonymRemoved', {
                           name: synonym.name,
                         }),
+                        { polite: true },
                       )
                     }
                   />
@@ -336,9 +346,11 @@ function IngredientRow({
           ingredient={ingredient}
           catalog={catalog}
           onClose={sheet.close}
-          onSaved={() => {
+          onSaved={(savedName) => {
             sheet.close();
-            toast.show(t('common:row.updated', { name: ingredient.name }));
+            toast.show(t('common:row.updated', { name: savedName }), {
+              polite: true,
+            });
           }}
           onExited={sheet.exited}
           onDelete={() => row.current?.askToRemove()}

@@ -244,14 +244,15 @@
     "deleteLink": "Șterge din catalogul familiei",
     "nameRequired": "Dă-i un nume.",
     "nameTaken": "„{{name}}” este deja în catalog. Alege alt nume.",
-    "saveFailed": "Nu s-a putut salva {{what}}.",
-    "savedWhat": {
-      "name": "numele",
-      "category": "categoria",
-      "nameAndCategory": "numele și categoria",
-      "allergens": "alergenii",
-      "otherNames": "celelalte denumiri"
+    "saveFailed": {
+      "name": "Nu s-a putut salva numele.",
+      "category": "Nu s-a putut salva categoria.",
+      "nameAndCategory": "Nu s-a putut salva numele și categoria.",
+      "allergens": "Nu s-au putut salva alergenii.",
+      "otherNames": "Nu s-au putut salva celelalte denumiri."
     },
+    "close": "Închide",
+    "back": "Înapoi",
     "emptyTitle": "Nimic adăugat încă",
     "empty": "Când o căutare nu găsește nimic, „Adaugă în catalogul tău” pune numele aici, pentru toată familia.",
     "synonymsHint": "Denumiri pe care familia ta le folosește pentru un ingredient, în căutare, scanări și bonuri.",

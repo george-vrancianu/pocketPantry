@@ -3,6 +3,7 @@ import {
   Button,
   CloseIcon,
   IconButton,
+  InfoIcon,
   Sheet,
   Stack,
   Typography,
@@ -71,7 +72,7 @@ export function FamilySynonymSheet({
             </Typography>
           </Box>
           <IconButton
-            label={t('settings:defaultExpiry.close')}
+            label={t('settings:familyCatalog.close')}
             size={40}
             onClick={onClose}
           >
@@ -101,12 +102,26 @@ export function FamilySynonymSheet({
             </Typography>
           </Box>
         </Box>
-        <Typography variant="meta" color="text.secondary">
-          {t('settings:familyCatalog.synonymInfo', {
-            name: synonym.name,
-            ingredient: synonym.ingredient.name,
-          })}
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 1,
+            p: 1.5,
+            borderRadius: 2,
+            bgcolor: tokens.color.subtle,
+            color: tokens.color.ink,
+          }}
+        >
+          <Box sx={{ flexShrink: 0, pt: '2px' }}>
+            <InfoIcon size={18} />
+          </Box>
+          <Typography variant="meta">
+            {t('settings:familyCatalog.synonymInfo', {
+              name: synonym.name,
+              ingredient: synonym.ingredient.name,
+            })}
+          </Typography>
+        </Box>
         <Button onClick={onClose}>{t('settings:familyCatalog.done')}</Button>
         <RemoveLink
           onClick={() => {

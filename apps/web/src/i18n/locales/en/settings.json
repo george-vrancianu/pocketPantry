@@ -229,14 +229,15 @@
     "deleteLink": "Delete from family catalog",
     "nameRequired": "Give it a name.",
     "nameTaken": "“{{name}}” is already in the catalog. Pick another name.",
-    "saveFailed": "Couldn’t save {{what}}.",
-    "savedWhat": {
-      "name": "the name",
-      "category": "the category",
-      "nameAndCategory": "the name and category",
-      "allergens": "the allergens",
-      "otherNames": "the other names"
+    "saveFailed": {
+      "name": "Couldn’t save the name.",
+      "category": "Couldn’t save the category.",
+      "nameAndCategory": "Couldn’t save the name and category.",
+      "allergens": "Couldn’t save the allergens.",
+      "otherNames": "Couldn’t save the other names."
     },
+    "close": "Close",
+    "back": "Back",
     "emptyTitle": "Nothing added yet",
     "empty": "When a search finds nothing, “Add to your catalog” puts the name here for the whole family.",
     "synonymsHint": "Names your family uses for an ingredient, in search, scans and receipts.",
