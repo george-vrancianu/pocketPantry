@@ -21,13 +21,12 @@ import {
   useFamilyTags,
   useRenameFamilyTag,
   useRestoreFamilyTag,
+  MAX_TAG_NAME_LENGTH,
+  type DeletedTag,
   type ManagedTag,
 } from '../../../lib/familyTags';
 import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
 import { SectionHeading } from './SectionHeading';
-
-/** Longest Tag name; the API checks it too (ADR 0033). */
-const MAX_NAME = 30;
 
 type Editing = { id: string; value: string };
 type Merging = { id: string; from: string; name: string };
@@ -88,7 +87,7 @@ export function ManageTagsSection() {
     send(tag, name, false);
   };
 
-  const undo = (deleted: Parameters<typeof restore.mutate>[0]) =>
+  const undo = (deleted: DeletedTag) =>
     restore.mutate(deleted, {
       onError: (failure) => toast.show(translateApiError(t, failure)),
     });
@@ -173,7 +172,9 @@ export function ManageTagsSection() {
                         onKeyDown={(event) => {
                           if (event.key === 'Escape') setEditing(null);
                         }}
-                        slotProps={{ htmlInput: { maxLength: MAX_NAME } }}
+                        slotProps={{
+                          htmlInput: { maxLength: MAX_TAG_NAME_LENGTH },
+                        }}
                       />
                       <Button
                         type="submit"

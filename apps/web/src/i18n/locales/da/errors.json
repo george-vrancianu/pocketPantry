@@ -136,7 +136,9 @@
   },
   "tags": {
     "name_required": "Skriv et navn til tagget.",
-    "name_too_long": "Et tagnavn kan højst have {{max}} tegn."
+    "name_too_long": "Et tagnavn kan højst have {{max}} tegn.",
+    "not_found": "Tagget findes ikke længere. Måske har nogen slettet eller slået det sammen.",
+    "name_taken": "Der findes allerede et tag med det navn."
   },
   "family_ingredients": {
     "shared_name_exists": "Der findes allerede en fælles ingrediens med det navn. Flet denne ind i den i stedet.",

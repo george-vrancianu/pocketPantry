@@ -11,6 +11,7 @@ import {
 } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
+import { hasPgCode } from '../database/pg-errors';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import { recipes, recipeTags, tags } from '../database/schema';
@@ -78,47 +79,56 @@ export class ManageFamilyTagsService {
     const { name, normalized } = cleanTagName(rawName);
     const familyId = await this.settings.familyIdOf(memberId);
     const scope = await this.settings.catalogScopeForMember(memberId);
-    return this.database.transaction(async (tx) => {
-      await this.lockOwn(tx, familyId, tagId);
-      // A Catalog Tag wins: a Family never keeps a Tag a Catalog Tag already names.
-      const survivorId =
-        (await findCatalogTag(tx, normalized)) ??
-        (await this.otherFamilyTag(tx, familyId, tagId, normalized));
-      if (survivorId === null) {
+    try {
+      return await this.database.transaction(async (tx) => {
+        await this.lockOwn(tx, familyId, tagId);
+        // A Catalog Tag wins: a Family never keeps a Tag a Catalog Tag already names.
+        const survivorId =
+          (await findCatalogTag(tx, normalized)) ??
+          (await this.otherFamilyTag(tx, familyId, tagId, normalized));
+        if (survivorId === null) {
+          await tx
+            .update(tags)
+            .set({ name, normalizedName: normalized })
+            .where(eq(tags.id, tagId));
+          return {
+            id: tagId,
+            name,
+            recipeCount: await this.usage(tx, familyId, tagId),
+            merged: false,
+          };
+        }
+        if (!merge) {
+          throw new ApiException(409, 'tags.name_taken', { id: survivorId });
+        }
         await tx
-          .update(tags)
-          .set({ name, normalizedName: normalized })
-          .where(eq(tags.id, tagId));
+          .select({ id: tags.id })
+          .from(tags)
+          .where(eq(tags.id, survivorId))
+          .for('key share');
+        await foldTagsInto(tx, survivorId, [tagId]);
+        const survivor = await loadUsableTag(
+          tx,
+          scope,
+          locale,
+          familyId,
+          survivorId,
+        );
         return {
-          id: tagId,
-          name,
-          recipeCount: await this.usage(tx, familyId, tagId),
-          merged: false,
+          id: survivorId,
+          name: survivor.name,
+          recipeCount: await this.usage(tx, familyId, survivorId),
+          merged: true,
         };
+      });
+    } catch (error) {
+      // Another request took the name between the check above and the UPDATE: the unique index
+      // (family, normalized name) is the last line of defence. It cannot be raced reliably in a test.
+      if (hasPgCode(error, '23505')) {
+        throw new ApiException(409, 'tags.name_taken');
       }
-      if (!merge) {
-        throw new ApiException(409, 'tags.name_taken', { id: survivorId });
-      }
-      await tx
-        .select({ id: tags.id })
-        .from(tags)
-        .where(eq(tags.id, survivorId))
-        .for('key share');
-      await foldTagsInto(tx, survivorId, [tagId]);
-      const survivor = await loadUsableTag(
-        tx,
-        scope,
-        locale,
-        familyId,
-        survivorId,
-      );
-      return {
-        id: survivorId,
-        name: survivor.name,
-        recipeCount: await this.usage(tx, familyId, survivorId),
-        merged: true,
-      };
-    });
+      throw error;
+    }
   }
 
   async remove(memberId: string, tagId: string): Promise<DeletedTag> {

@@ -136,7 +136,9 @@
   },
   "tags": {
     "name_required": "Give the Tag a name.",
-    "name_too_long": "A Tag name can be at most {{max}} characters."
+    "name_too_long": "A Tag name can be at most {{max}} characters.",
+    "not_found": "That Tag no longer exists. Someone may have deleted or merged it.",
+    "name_taken": "A Tag with that name already exists."
   },
   "family_ingredients": {
     "shared_name_exists": "A shared ingredient with that name already exists. Merge this one into it instead.",
