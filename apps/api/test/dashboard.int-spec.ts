@@ -56,7 +56,7 @@ describe('Dashboard layout (integration)', () => {
       .expect(401);
   });
 
-  it("gives a new Member the handoff's Main layout", async () => {
+  it('gives a new Member the default layout', async () => {
     const { cookie } = await signUp('Ana');
 
     const body = (await call('get', cookie).expect(200)).body as unknown;
@@ -64,8 +64,10 @@ describe('Dashboard layout (integration)', () => {
     const widgets = (body as { widgets: Widget[] }).widgets;
     expect(widgets.map(({ type, size }) => ({ type, size }))).toEqual([
       { type: 'health', size: 'wide' },
-      { type: 'shopping', size: 'small' },
       { type: 'pantry-stock', size: 'small' },
+      { type: 'shopping', size: 'small' },
+      { type: 'meal-plan', size: 'wide' },
+      { type: 'use-soon', size: 'wide' },
     ]);
     expect(new Set(widgets.map((w) => w.id)).size).toBe(widgets.length);
   });
@@ -128,7 +130,7 @@ describe('Dashboard layout (integration)', () => {
 
     const body = (await call('get', other.cookie).expect(200)).body as unknown;
 
-    expect((body as { widgets: Widget[] }).widgets).toHaveLength(3);
+    expect((body as { widgets: Widget[] }).widgets).toHaveLength(5);
   });
 
   it('drops the retired Quick Scan Widget from a saved layout', async () => {
