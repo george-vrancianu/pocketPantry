@@ -209,6 +209,76 @@ describe('Migration 0049: Cuisines and Methods become Catalog Tags (integration)
     ).toEqual([{ cuisine_id: ids.italian }]);
   });
 
+  it('suffixes a Method that shares a name with a Cuisine, keeping every id', async () => {
+    const cuisine = id(10);
+    const method = id(11);
+    await client.query(
+      `insert into cuisines (id, name, normalized_name) values ($1, 'Grill', 'grill')`,
+      [cuisine],
+    );
+    await client.query(
+      `insert into methods (id, name, normalized_name) values ($1, 'Grill', 'grill')`,
+      [method],
+    );
+    await client.query(
+      `insert into catalog_translations (id, entity_type, entity_id, locale, kind, value, normalized_value)
+       values (gen_random_uuid(), 'cuisine', $1, 'en', 'name', 'Grill', 'grill'),
+              (gen_random_uuid(), 'cuisine', $1, 'ro', 'name', 'Grătar', 'gratar'),
+              (gen_random_uuid(), 'method', $2, 'en', 'name', 'Grill', 'grill'),
+              (gen_random_uuid(), 'method', $2, 'ro', 'name', 'La grătar', 'la gratar'),
+              (gen_random_uuid(), 'method', $2, 'da', 'name', 'Grill', 'grill'),
+              (gen_random_uuid(), 'method', $2, 'ro', 'synonym', 'Grătar', 'gratar')`,
+      [cuisine, method],
+    );
+    // A different Method whose display name only clashes in a locale.
+    const other = id(12);
+    await client.query(
+      `insert into methods (id, name, normalized_name) values ($1, 'Charring', 'charring')`,
+      [other],
+    );
+    await client.query(
+      `insert into catalog_translations (id, entity_type, entity_id, locale, kind, value, normalized_value)
+       values (gen_random_uuid(), 'method', $1, 'ro', 'name', 'Grătar', 'gratar')`,
+      [other],
+    );
+    await migrate();
+    expect(
+      await rows(
+        `select id, name, normalized_name from tags where id = any($1) order by name`,
+        [[cuisine, method, other]],
+      ),
+    ).toEqual([
+      { id: other, name: 'Charring', normalized_name: 'charring' },
+      { id: cuisine, name: 'Grill', normalized_name: 'grill' },
+      { id: method, name: 'Grill (method)', normalized_name: 'grill (method)' },
+    ]);
+    expect(
+      await rows(
+        `select entity_id, locale, kind, value from catalog_translations
+         where entity_type = 'tag' and entity_id = any($1) order by entity_id, locale, kind`,
+        [[cuisine, method, other]],
+      ),
+    ).toEqual([
+      { entity_id: cuisine, locale: 'en', kind: 'name', value: 'Grill' },
+      { entity_id: cuisine, locale: 'ro', kind: 'name', value: 'Grătar' },
+      { entity_id: method, locale: 'da', kind: 'name', value: 'Grill' },
+      {
+        entity_id: method,
+        locale: 'en',
+        kind: 'name',
+        value: 'Grill (method)',
+      },
+      { entity_id: method, locale: 'ro', kind: 'name', value: 'La grătar' },
+      { entity_id: method, locale: 'ro', kind: 'synonym', value: 'Grătar' },
+      {
+        entity_id: other,
+        locale: 'ro',
+        kind: 'name',
+        value: 'Grătar (method)',
+      },
+    ]);
+  });
+
   it('swaps the entity type enum with rows in place, keeping them and the expiry check', async () => {
     const entityId = id(50);
     await client.query(
