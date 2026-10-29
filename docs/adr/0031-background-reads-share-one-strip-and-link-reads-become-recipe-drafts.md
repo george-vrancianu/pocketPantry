@@ -1,5 +1,7 @@
 # Background reads share one strip, and a link read becomes a Recipe Draft on the server
 
+> Amended by [ADR 0035](0035-a-plate-scan-writes-a-recipe-draft.md): the link-read holder also holds Plate Scan picks being written as Recipe Drafts.
+
 Voice Notes are read in the background behind a strip above the Dock (ADR 0025), and Scans carry on reading after the Member leaves the camera (ADR 0004), but nothing outside the Scan and Review screens shows them. Recipe from Link makes the Member wait on its own page, and leaving cancels the read. We let a link read run in the background like the others, and show Voice Notes, the Scan Session and link reads in the one strip the Voice Inbox already has. Prototyped on branch `prototype-cookbook-reading` (variant A). This amends ADR 0025 (the strip) and ADR 0028 (who creates a Recipe Draft from a link).
 
 ## Decision
