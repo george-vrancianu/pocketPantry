@@ -217,12 +217,11 @@ export function DefaultExpirySheet({
           options={options}
           optionsPending={optionsPending}
           optionsError={optionsError}
-          overrides={overrides}
           onChoose={chooseCategory}
           renderTrailing={(row) =>
-            row.override !== null ? (
+            overrideDays(row.id) !== null ? (
               <Tag tone="accent">
-                {t('defaultExpiry.set', { days: row.override })}
+                {t('defaultExpiry.set', { days: overrideDays(row.id) })}
               </Tag>
             ) : row.catalogDays !== null ? (
               <Typography variant="meta" color="text.secondary">

@@ -10,7 +10,7 @@ import type { ReactNode, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { translateApiError } from '../../../i18n/translateApiError';
-import type { CategoryOptions, ExpiryOverride } from '../../../lib/settings';
+import type { CategoryOptions } from '../../../lib/settings';
 import { groupCategories, type CategoryRow } from '../defaultExpiry';
 
 export type CategoryPickerProps = {
@@ -21,13 +21,11 @@ export type CategoryPickerProps = {
   optionsPending: boolean;
   optionsError: unknown;
   onChoose: (id: string) => void;
-  /** The Family's overrides: the rows carry the override for `renderTrailing`. */
-  overrides?: ExpiryOverride[];
   /** Leaves only: no "All {parent}" rows. */
   leavesOnly?: boolean;
   /** A leading Default Icon per row, tinted by the Aisle (the parent category). */
   showIcons?: boolean;
-  /** The current leaf: shown in the accent colour with a check, `aria-current`. */
+  /** The current leaf: label in the accent colour with a check, `aria-current`. */
   currentId?: string;
   /** Per-row content at the end of the row. */
   renderTrailing?: (row: CategoryRow) => ReactNode;
@@ -42,17 +40,13 @@ export function CategoryPicker({
   optionsPending,
   optionsError,
   onChoose,
-  overrides = [],
   leavesOnly = false,
   showIcons = false,
   currentId,
   renderTrailing,
 }: CategoryPickerProps) {
   const { t } = useTranslation('settings');
-  const overrideMap = Object.fromEntries(
-    overrides.map((o) => [o.categoryId, o.days]),
-  );
-  const groups = groupCategories(options, query, overrideMap, leavesOnly);
+  const groups = groupCategories(options, query, {}, leavesOnly);
 
   return (
     <Stack spacing={2} sx={{ px: 2, pb: 2 }}>
@@ -107,7 +101,7 @@ export function CategoryPicker({
                     px: 1,
                     border: 0,
                     background: 'none',
-                    color: current ? 'var(--accent)' : 'inherit',
+                    color: 'inherit',
                     font: 'inherit',
                     textAlign: 'left',
                     cursor: 'pointer',
@@ -119,7 +113,11 @@ export function CategoryPicker({
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
                       variant="body1"
-                      sx={current ? { fontWeight: 600 } : undefined}
+                      sx={
+                        current
+                          ? { fontWeight: 600, color: 'pp.accent' }
+                          : undefined
+                      }
                     >
                       {row.wholeParent
                         ? t('defaultExpiry.all', { parent: row.parentName })
@@ -132,7 +130,14 @@ export function CategoryPicker({
                     ) : null}
                   </Box>
                   {renderTrailing?.(row)}
-                  {current ? <CheckIcon size={18} /> : null}
+                  {current ? (
+                    <Box
+                      component="span"
+                      sx={{ display: 'flex', color: 'pp.accent' }}
+                    >
+                      <CheckIcon size={18} />
+                    </Box>
+                  ) : null}
                 </Box>
               );
             })}
