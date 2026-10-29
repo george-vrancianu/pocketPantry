@@ -1,11 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
-import { ApiException } from '../common/api-exception';
+import { and, inArray, isNull } from 'drizzle-orm';
 import { catalogScope } from '../catalog/catalog-scope';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { recipeIngredientLines, recipes } from '../database/schema';
-import { loadRecipeTagIds } from '../tags/recipe-tags';
+import { loadRecipeTagIds, usableTagIds } from '../tags/recipe-tags';
 import { SettingsService } from '../settings/settings.service';
 import { FamilyRecipesService } from './family-recipes.service';
 import { rankPlateMatches, type PlateCandidate } from './plate-matches';
@@ -120,24 +119,18 @@ export class PlateRecipesService {
   /** One serving (GLOSSARY: Plate Scan is for one serving), ingredient lines only; parent rules are the Family editor's. */
   async save(memberId: string, body: FromPlateBody): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
-    // The parent first: another Family's Base reads as missing before any of its Tags are looked at.
-    let tagIds = body.tagIds;
-    if (body.parentId) {
-      const [parent] = await this.database
-        .select()
-        .from(recipes)
-        .where(eq(recipes.id, body.parentId));
-      if (parent && parent.familyId !== null && parent.familyId !== familyId) {
-        throw new ApiException(404, 'recipes.parent_not_found');
-      }
-      // A Variant starts with its Base's Tags (ADR 0033), then the proposed ones, up to the cap.
-      tagIds = [
-        ...new Set([
-          ...(await loadRecipeTagIds(this.database, body.parentId)),
-          ...body.tagIds,
-        ]),
-      ].slice(0, MAX_RECIPE_TAGS);
-    }
+    // Proposals are not choices the Member made and may be stale (a Tag deleted or merged since
+    // the read), so unusable ones are dropped rather than failing the save. The parent is judged
+    // by `create`; another Family's Base reads as missing there, before any Tag is looked at.
+    const proposed = await usableTagIds(this.database, familyId, body.tagIds);
+    // A Variant starts with its Base's Tags (ADR 0033); the proposals fill the rest, up to the cap.
+    const kept = body.parentId
+      ? await loadRecipeTagIds(this.database, body.parentId)
+      : [];
+    const tagIds = [...new Set([...kept, ...proposed])].slice(
+      0,
+      MAX_RECIPE_TAGS,
+    );
     return this.family.create(
       memberId,
       {

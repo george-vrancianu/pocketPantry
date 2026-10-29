@@ -219,8 +219,8 @@ export const fromPlateBody = z
     title,
     parentId: id.nullable(),
     lines: z.array(familyLineInput.omit({ id: true })).max(MAX_LINES),
-    /** Tags proposed by the Plate Scan read; checked like any Recipe Tags. A Variant also keeps its Base's Tags. */
-    tagIds: z.array(id).default([]),
+    /** Tags proposed by the Plate Scan read; those usable by the Family are kept (up to 10, after a Variant's Base Tags). */
+    tagIds: z.array(id).max(100).default([]),
   })
   .strict();
 

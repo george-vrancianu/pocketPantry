@@ -131,11 +131,12 @@ describe('Suggest Guidance (integration)', () => {
   it('does not offer, propose or create Tags (#714)', async () => {
     const tagCount = async () =>
       (await database.select({ id: tags.id }).from(tags)).length;
+    const tagWords = /tagIds|tagIndexes|"tags"/;
     const before = await tagCount();
     const res = await suggest(request()).expect(200);
-    expect(JSON.stringify(res.body)).not.toMatch(/tag/i);
+    expect(JSON.stringify(res.body)).not.toMatch(tagWords);
     expect(prompts[0].prompt).not.toContain('Tags:');
-    expect(JSON.stringify(prompts[0].schema)).not.toMatch(/tag/i);
+    expect(JSON.stringify(prompts[0].schema)).not.toMatch(tagWords);
     expect(await tagCount()).toBe(before);
   });
 

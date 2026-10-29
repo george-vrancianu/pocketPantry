@@ -4,7 +4,7 @@
  */
 export function promptTags(prompt: string): [number, string][] | null {
   const marker = 'Tags: [';
-  const at = prompt.lastIndexOf(marker);
+  const at = prompt.indexOf(marker);
   if (at < 0) return null;
   const start = at + marker.length - 1;
   let depth = 0;

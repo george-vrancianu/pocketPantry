@@ -638,7 +638,7 @@ describe('Recipe from Link (integration)', () => {
       expect(many.draft.tagIds).toHaveLength(10);
     });
 
-    it("never accepts another Family's Tag, even by a guessed index or a Tag id", async () => {
+    it('never accepts a Tag id where an index is expected', async () => {
       const theirs = `Theirs ${stamp}-c`;
       const theirId = await familyTag(familyBMember, theirs);
       respondWith(reading({ tagIndexes: [theirId, 'x'], tagIds: [theirId] }));

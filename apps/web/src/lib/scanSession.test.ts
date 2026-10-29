@@ -592,6 +592,26 @@ describe('Scan Session reducer: Plate Scans', () => {
     expect(scan.plateToken).toBeUndefined();
   });
 
+  it('keeps the Tags proposed for the picked dish, and clears them on reread', () => {
+    const pick: SessionAction = {
+      type: 'pick',
+      id: 'p',
+      lines: [line],
+      tagIds: ['t1', 't2'],
+    };
+    expect(dishesRead(pick).scans[0].proposedTagIds).toEqual(['t1', 't2']);
+    const reread = dishesRead(pick, { type: 'reread', id: 'p' });
+    expect(reread.scans[0].proposedTagIds).toBeUndefined();
+  });
+
+  it('replaces the proposed Tags when a dish is picked again without any', () => {
+    const picked = dishesRead(
+      { type: 'pick', id: 'p', lines: [line], tagIds: ['t1'] },
+      { type: 'pick', id: 'p', lines: [line] },
+    );
+    expect(picked.scans[0].proposedTagIds).toBeUndefined();
+  });
+
   it('is queued again to be read again, without the old guesses', () => {
     const [scan] = dishesRead({ type: 'reread', id: 'p' }).scans;
     expect(scan.status).toBe('queued');

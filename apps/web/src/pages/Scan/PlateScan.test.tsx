@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine } from '../../lib/scan';
 import { resetReads } from '../../lib/scanReads';
-import { resetScanSession } from '../../lib/scanSession';
+import { getScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
 import { takeScan } from '../../test/scan';
@@ -159,6 +159,20 @@ describe('Plate Scan in the Scan Session', () => {
         .getAllByTestId('card-chip')
         .map((chip) => chip.textContent),
     ).toEqual(expect.arrayContaining(['Milk', 'Pixie dust']));
+  });
+
+  it('stores the Tags the ingredients read proposed on the card', async () => {
+    renderPlate({
+      'POST /api/scan/plate/ingredients': () =>
+        Response.json({ lines, tagIds: ['tag-a', 'tag-b'] }),
+    });
+    await scanThenDone();
+    await pick(/Pancakes/);
+    await screen.findByTestId('card-result');
+    expect(getScanSession().scans[0].proposedTagIds).toEqual([
+      'tag-a',
+      'tag-b',
+    ]);
   });
 
   it('Add all saves a picked Plate card to the Shopping List and leaves an unpicked one', async () => {

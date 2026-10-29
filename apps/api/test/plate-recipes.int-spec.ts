@@ -305,7 +305,7 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
       expect([...variant.tagIds].sort()).toEqual([dinner, vegan].sort());
     });
 
-    it("refuses another Family's Tag as not found, and creates no Tag", async () => {
+    it("drops another Family's proposed Tag and still saves, creating no Tag", async () => {
       const other = client(
         app,
         await signUp(app, `plate-rec-o-${stamp}@example.com`, 'O'),
@@ -314,20 +314,137 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
       const theirs = (
         await other.post('/tags', { name: `Plate theirs ${stamp}` }).expect(200)
       ).body as { id: string };
+      const dinner = seedId.tag('meal:dinner');
       const before = await database.select({ id: tags.id }).from(tags);
-      const res = await member
-        .post('/from-plate', {
-          locale: 'en',
-          title: `Plate foreign tag ${stamp}`,
-          parentId: null,
-          lines: [line(2)],
-          tagIds: [theirs.id],
-        })
-        .expect(404);
-      expect(code(res)).toBe('recipes.tag_not_found');
+      const saved = (
+        await member
+          .post('/from-plate', {
+            locale: 'en',
+            title: `Plate foreign tag ${stamp}`,
+            parentId: null,
+            lines: [line(2)],
+            tagIds: [theirs.id, dinner],
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      expect(saved.tagIds).toEqual([dinner]);
       expect(await database.select({ id: tags.id }).from(tags)).toHaveLength(
         before.length,
       );
+    });
+
+    it('drops a proposed Family Tag deleted before the save', async () => {
+      const mine = (
+        await member.post('/tags', { name: `Plate gone ${stamp}` }).expect(200)
+      ).body as { id: string };
+      await database.delete(tags).where(eq(tags.id, mine.id));
+      const saved = (
+        await member
+          .post('/from-plate', {
+            locale: 'en',
+            title: `Plate deleted tag ${stamp}`,
+            parentId: null,
+            lines: [line(2)],
+            tagIds: [mine.id, crypto.randomUUID()],
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      expect(saved.tagIds).toEqual([]);
+    });
+
+    it("keeps all of a Base's Tags and drops the proposals past 10 on a Variant", async () => {
+      const catalogTags = (
+        await database
+          .select({ id: tags.id })
+          .from(tags)
+          .where(isNull(tags.familyId))
+          .orderBy(tags.id)
+      ).map((t) => t.id);
+      expect(catalogTags.length).toBeGreaterThanOrEqual(13);
+      const baseTags = catalogTags.slice(0, 9);
+      const proposed = catalogTags.slice(9, 12);
+      const base = (
+        await admin
+          .post('', {
+            title: `Plate cap base ${stamp}`,
+            servings: 4,
+            lines: [line(0)],
+            steps: [{ text: 'Cook' }],
+            tagIds: baseTags,
+          })
+          .expect(201)
+      ).body as AdminRecipeDetail;
+      const saved = (
+        await member
+          .post('/from-plate', {
+            locale: 'en',
+            title: `Plate cap variant ${stamp}`,
+            parentId: base.id,
+            lines: [line(0)],
+            tagIds: proposed,
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      expect(saved.tagIds).toHaveLength(10);
+      expect(saved.tagIds).toEqual(expect.arrayContaining(baseTags));
+      const full = (
+        await admin
+          .post('', {
+            title: `Plate cap base full ${stamp}`,
+            servings: 4,
+            lines: [line(0)],
+            steps: [{ text: 'Cook' }],
+            tagIds: catalogTags.slice(0, 10),
+          })
+          .expect(201)
+      ).body as AdminRecipeDetail;
+      const fullVariant = (
+        await member
+          .post('/from-plate', {
+            locale: 'en',
+            title: `Plate cap variant full ${stamp}`,
+            parentId: full.id,
+            lines: [line(0)],
+            tagIds: catalogTags.slice(10, 13),
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      expect([...fullVariant.tagIds].sort()).toEqual(
+        catalogTags.slice(0, 10).sort(),
+      );
+    });
+
+    it('drops proposals past 10 on a standalone Recipe too', async () => {
+      const catalogTags = (
+        await database
+          .select({ id: tags.id })
+          .from(tags)
+          .where(isNull(tags.familyId))
+      ).map((t) => t.id);
+      const saved = (
+        await member
+          .post('/from-plate', {
+            locale: 'en',
+            title: `Plate cap solo ${stamp}`,
+            parentId: null,
+            lines: [line(2)],
+            tagIds: catalogTags.slice(0, 12),
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      expect(saved.tagIds).toHaveLength(10);
+    });
+
+    it('rejects a Tag list over 100 as invalid', async () => {
+      await member
+        .post('/from-plate', {
+          locale: 'en',
+          title: `Plate too many ${stamp}`,
+          parentId: null,
+          lines: [line(2)],
+          tagIds: Array.from({ length: 101 }, () => crypto.randomUUID()),
+        })
+        .expect(400);
     });
 
     it("reads another Family's Recipe as parent_not_found before any Tag is judged", async () => {

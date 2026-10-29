@@ -73,7 +73,7 @@ export class PlateScanService {
     dishTitle: string,
     locale: CatalogLocale,
     reader: CatalogReader,
-    allowedTags: AllowedTags = { tags: [] },
+    allowedTags: AllowedTags,
   ) {
     const catalog = await this.ingredientCatalog.getCatalogIn(reader, locale);
     const { items, tagIndexes } = await this.ask(

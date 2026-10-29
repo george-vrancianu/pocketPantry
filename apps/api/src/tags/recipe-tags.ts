@@ -197,6 +197,22 @@ export async function resolveRecipeTags(
   };
 }
 
+/** The ids among `tagIds` that exist and are usable by the writer, in the given order and deduped. */
+export async function usableTagIds(
+  executor: Executor,
+  familyId: string | null,
+  tagIds: readonly string[],
+): Promise<string[]> {
+  const ids = [...new Set(tagIds)];
+  if (ids.length === 0) return [];
+  const found = await executor
+    .select({ id: tags.id })
+    .from(tags)
+    .where(and(inArray(tags.id, ids), usableBy(familyId)));
+  const usable = new Set(found.map((r) => r.id));
+  return ids.filter((id) => usable.has(id));
+}
+
 /** Makes `tagIds` (already resolved) the whole Tag list of a Recipe. */
 export async function replaceRecipeTags(
   tx: Tx,
