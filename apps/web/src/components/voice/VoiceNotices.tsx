@@ -31,7 +31,7 @@ export function VoiceNotices() {
             // The note is about to be read, so the Reading pill and its Cancel come up here.
             return toast.show(
               `${t('listening.stopped')} · ${t('listening.stoppedHint')}`,
-              voiceToast({ abovePill: true }),
+              voiceToast(),
             );
           case 'readCancelled':
             return toast.show(t('send.cancelled'), voiceToast());
@@ -41,7 +41,7 @@ export function VoiceNotices() {
             // No toast or sound: a short buzz where the device has one.
             return haptic(14);
           case 'inboxFull':
-            return toast.show(t('inbox.full'), voiceToast({ abovePill: true }));
+            return toast.show(t('inbox.full'), voiceToast());
           case 'switchedOff':
             // Hides the button and everything that offers a Voice Note.
             return queryClient.setQueryData(['voice', 'config'], {

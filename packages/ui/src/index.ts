@@ -245,6 +245,7 @@ export { DockItem, type DockItemProps } from './molecules/DockItem';
 
 export {
   useToast,
+  useToastFloor,
   type ToastApi,
   type ToastHandle,
   type ToastOptions,
