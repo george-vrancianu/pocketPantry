@@ -1415,11 +1415,8 @@ describe('The Tag field in the Family Recipe editor', () => {
       await user.click(await screen.findByRole('option', { name: 'Extra 9' }));
       await screen.findByText('A Recipe can have at most 10 Tags.');
       release();
-      // Let the Create answer and its onSuccess run before saving, so the guard is what is tested.
-      await act(async () => {
-        await gate;
-        await new Promise<void>((done) => setImmediate(done));
-      });
+      // The Create answered once its Tag is an option; its onSuccess has run, so the guard is what is tested.
+      await screen.findByRole('option', { name: 'Sunday roast' });
       await user.keyboard('{Escape}');
       await user.click(screen.getByRole('button', { name: 'Save' }));
       await vi.waitFor(() =>

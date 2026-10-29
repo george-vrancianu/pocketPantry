@@ -139,7 +139,7 @@ export async function loadRecipeTagIds(
 }
 
 /**
- * Checks the Tags a write names, before anything is written: at most 10, every one exists and is
+ * Checks the Tags a write names, before anything is written: at most `MAX_RECIPE_TAGS`, every one exists and is
  * the writer's to use (a Catalog Tag, or a Family Tag of `familyId`; a Catalog Recipe passes null
  * and may only use Catalog Tags). Other Families' Tags read as missing, so ids never leak. The
  * Tags are key-share locked, so a concurrent delete waits until we commit.

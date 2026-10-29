@@ -66,6 +66,11 @@ export type TagFieldProps<T extends TagFieldOption = TagFieldOption> = {
    */
   countOf?: (tag: T) => number;
   /**
+   * The key a typed name is compared on, to decide whether it already names a Tag (so no `Create`
+   * row). Defaults to a built-in fold that matches the server's rule; the app can pass its own copy.
+   */
+  matchKey?: (text: string) => string;
+  /**
    * `popup`: the list floats under the field while it is focused. `inline`: the list is always
    * open and rendered in place after the field, as in the Tags sheet.
    */
@@ -107,7 +112,11 @@ const CREATE_ID = '__tag-field-create__';
 const CREATE_GROUP = '__tag-field-create-group__';
 const isCreateRow = (tag: TagFieldOption) => tag.id === CREATE_ID;
 
-/** Case, accents, spaces and hyphens folded away, like the API's name matching. */
+/**
+ * Case, accents, spaces and hyphens folded away, like the API's name matching. A copy of
+ * `normalizeName` in apps/api/src/catalog/normalize.ts and apps/web/src/lib/normalizeName.ts;
+ * the app can pass the web one as `matchKey` instead.
+ */
 const fold = (text: string) =>
   text
     .normalize('NFD')
@@ -160,6 +169,7 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
   onChange,
   labels,
   countOf,
+  matchKey = fold,
   list = 'popup',
   limitTags = -1,
   create,
@@ -178,9 +188,9 @@ export function TagField<T extends TagFieldOption = TagFieldOption>({
   ): T[] => {
     const shown = filter(all, state);
     const typed = state.inputValue.trim().replace(/\s+/g, ' ');
-    if (!create || fold(typed) === '') return shown;
-    const key = fold(typed);
-    if (all.some((tag) => fold(tag.name) === key)) return shown;
+    if (!create || matchKey(typed) === '') return shown;
+    const key = matchKey(typed);
+    if (all.some((tag) => matchKey(tag.name) === key)) return shown;
     const row: TagFieldOption = {
       id: CREATE_ID,
       name: typed,

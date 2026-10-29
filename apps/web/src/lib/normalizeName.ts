@@ -1,6 +1,6 @@
 /**
  * The matching key the server merges typed names on. A copy of `normalizeName`
- * in apps/api/src/catalog/normalize.ts; change both together.
+ * in apps/api/src/catalog/normalize.ts (and the `fold` default in packages/ui TagField.tsx); change them together.
  *
  * After NFD a composed å (U+00E5) is "a" + combining ring (U+030A), so that
  * pair is what folds to "aa"; the escape keeps it visible.

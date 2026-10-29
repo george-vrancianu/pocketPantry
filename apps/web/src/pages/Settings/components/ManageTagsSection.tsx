@@ -21,10 +21,10 @@ import {
   useFamilyTags,
   useRenameFamilyTag,
   useRestoreFamilyTag,
-  MAX_TAG_NAME_LENGTH,
   type DeletedTag,
   type ManagedTag,
 } from '../../../lib/familyTags';
+import { MAX_TAG_NAME_LENGTH } from '../../../lib/tags';
 import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
 import { SectionHeading } from './SectionHeading';
 
@@ -89,7 +89,8 @@ export function ManageTagsSection() {
 
   const undo = (deleted: DeletedTag) =>
     restore.mutate(deleted, {
-      onError: (failure) => toast.show(translateApiError(t, failure)),
+      onError: (failure) =>
+        toast.show(translateApiError(t, failure), { polite: true }),
     });
 
   const erase = (tag: ManagedTag) => {

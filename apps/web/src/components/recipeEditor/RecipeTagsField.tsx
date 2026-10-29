@@ -2,12 +2,13 @@ import { Alert, TagField, Typography } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../i18n/translateApiError';
-import { MAX_TAG_NAME_LENGTH } from '../../lib/familyTags';
+import { normalizeName } from '../../lib/normalizeName';
 import { useResolveTag, usePickableTags } from '../../lib/recipes';
-import type { RecipeTag } from '../../lib/tags';
-
-/** Most Tags a Recipe can carry (ADR 0033); the API refuses the 11th too. */
-export const MAX_RECIPE_TAGS = 10;
+import {
+  MAX_RECIPE_TAGS,
+  MAX_TAG_NAME_LENGTH,
+  type RecipeTag,
+} from '../../lib/tags';
 
 type Props = {
   /** `family`: Catalog Tags plus the Family's own, and a typed name can make a Family Tag. `admin`: Catalog Tags only. */
@@ -51,6 +52,7 @@ export function RecipeTagsField({ scope, value, onChange }: Props) {
     <>
       <TagField
         list="popup"
+        matchKey={normalizeName}
         limitTags={2}
         options={options}
         value={picked}

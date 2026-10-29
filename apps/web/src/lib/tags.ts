@@ -11,6 +11,12 @@ export type RecipeTag = {
   claimsAllergenFree?: true;
 };
 
+/** Longest Tag name; the API checks it too (ADR 0033). */
+export const MAX_TAG_NAME_LENGTH = 30;
+
+/** Most Tags a Recipe can carry (ADR 0033); the API refuses the 11th too. */
+export const MAX_RECIPE_TAGS = 10;
+
 /** How many Tag chips a row shows before "+N". */
 export const ROW_TAG_LIMIT = 2;
 

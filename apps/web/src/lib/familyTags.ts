@@ -2,9 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import { recipesQueryKey } from './recipes';
 
-/** Longest Tag name; the API checks it too (ADR 0033). */
-export const MAX_TAG_NAME_LENGTH = 30;
-
 /** A Family Tag with how many of the Family's Recipes carry it. */
 export type ManagedTag = { id: string; name: string; recipeCount: number };
 

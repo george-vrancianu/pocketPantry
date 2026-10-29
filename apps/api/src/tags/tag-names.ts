@@ -9,7 +9,7 @@ export const MAX_TAG_NAME_LENGTH = 30;
 
 /**
  * What a Member typed as a Tag name, cleaned and checked: trimmed, inner whitespace collapsed,
- * not empty and at most 30 characters. Errors `tags.name_required` / `tags.name_too_long {max}`.
+ * not empty and at most `MAX_TAG_NAME_LENGTH` characters. Errors `tags.name_required` / `tags.name_too_long {max}`.
  */
 export function cleanTagName(raw: string): {
   name: string;

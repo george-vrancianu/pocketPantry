@@ -28,7 +28,7 @@ type Props = {
 /**
  * The Family's Recipes first, then an Explore section of Catalog Recipes (ADR 0029): Plans use
  * Family Recipes only, so picking a Catalog Recipe Adds it to the Family and plans the copy.
- * Both lists share the Recipes list's search and filters.
+ * Both lists share the Recipes list's search box (no Tags filter here).
  */
 export function RecipePickerSheet({
   open,
