@@ -28,10 +28,7 @@ export function FamilyRecipePicker({
   const { t } = useTranslation(['recipes', 'admin']);
   const [search, setSearch] = useState('');
   // Pairing links never hide a Recipe, whatever "Hide Recipes with my Allergies" says.
-  const results = useRecipes(
-    { search, cuisineId: '', methodId: '' },
-    { showHidden: true },
-  );
+  const results = useRecipes({ search, tagIds: [] }, { showHidden: true });
   const options = (results.data?.recipes ?? []).filter(
     (r) => r.id !== excludeId,
   );

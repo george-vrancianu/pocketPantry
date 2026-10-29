@@ -35,6 +35,7 @@ const card = (
     servings: 2,
     prepMinutes: 10,
     cookMinutes: 15,
+    tags: [],
     allergyWarning: null,
     ...over.recipe,
   },
@@ -150,6 +151,36 @@ describe('CookTonightPage', () => {
     setup([base('a', 'Pancakes')]);
     await section('You can make this');
     expect(screen.queryByText('One ingredient short')).toBeNull();
+  });
+
+  it('shows the best match’s Tags on a row: two chips, "+N", every Tag named', async () => {
+    const tag = (id: string, name: string, order: number) => ({
+      id,
+      name,
+      kind: 'catalog' as const,
+      groupId: `g${order}`,
+      groupName: 'Group',
+      groupOrder: order,
+    });
+    setup([
+      base('a', 'Pancakes', {
+        recipe: {
+          tags: [
+            tag('1', 'Breakfast', 1),
+            tag('2', 'Vegetarian', 2),
+            tag('3', 'French', 3),
+          ],
+        },
+      }),
+    ]);
+    const [row] = within(await section('You can make this')).getAllByRole(
+      'listitem',
+    );
+    expect(
+      within(row).getByRole('group', {
+        name: 'Tags: Breakfast, Vegetarian, French',
+      }),
+    ).toHaveTextContent('BreakfastVegetarian+1');
   });
 
   it('shows the Can Make and expiring pills on a row', async () => {

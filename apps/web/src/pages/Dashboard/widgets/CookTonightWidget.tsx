@@ -6,6 +6,7 @@ import {
   AllergenIndicator,
   allergenIndicatorLabel,
 } from '../../../components/AllergenIndicator';
+import { RowTags } from '../../../components/RowTags';
 import { CookTonightPanel } from '../../../components/CookTonightPanel';
 import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -14,6 +15,7 @@ import { useCookTonight, type CookTonightCard } from '../../../lib/cookTonight';
 import type { WidgetSize } from '../../../lib/dashboard';
 import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
 import { localIso } from '../../../lib/pantry';
+import { rowTagNames } from '../../../lib/tags';
 import {
   hasNoFamilyRecipes,
   useRecipes,
@@ -22,7 +24,10 @@ import {
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
-const NO_BROWSE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
+const NO_BROWSE: RecipeBrowse = {
+  search: '',
+  tagIds: [],
+};
 
 /**
  * How many cards a Widget has room for; the API ranks them, the Widget only cuts.
@@ -189,7 +194,15 @@ function CookCard({ card }: { card: CookTonightCard }) {
   const allergy = recipe.allergyWarning
     ? allergenIndicatorLabel(t, recipe.allergyWarning)
     : null;
-  const name = [heading, secondary, missing, meta.join(' · '), allergy]
+  const tagNames = rowTagNames(recipe.tags);
+  const name = [
+    heading,
+    secondary,
+    missing,
+    tagNames ? t('recipes:tags.rowLabel', { names: tagNames }) : null,
+    meta.join(' · '),
+    allergy,
+  ]
     .filter(Boolean)
     .join(', ');
 
@@ -231,6 +244,7 @@ function CookCard({ card }: { card: CookTonightCard }) {
           {missing}
         </Box>
       )}
+      {recipe.tags.length > 0 && <RowTags tags={recipe.tags} />}
       {meta.length > 0 && (
         <Box component="span" sx={line}>
           {meta.join(' · ')}

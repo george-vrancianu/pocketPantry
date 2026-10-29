@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Recipe Tags Filter</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500;9..144,600;9..144,700,50&family=Instrument+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&family=Sora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{ --page-bg:#ECEAE4; --page-fg:#1F1D18; --page-muted:#6C675C; --page-line:#D9D5CC; --page-card:#F7F5F0; --page-accent:#4E5E2A; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --page-bg:#15171A; --page-fg:#EDEBE6; --page-muted:#9B978E; --page-line:#2B2E33; --page-card:#1D2024; --page-accent:#A7C66B; color-scheme:dark } }
+:root[data-theme="dark"]{ --page-bg:#15171A; --page-fg:#EDEBE6; --page-muted:#9B978E; --page-line:#2B2E33; --page-card:#1D2024; --page-accent:#A7C66B; color-scheme:dark }
+body{ background:var(--page-bg); color:var(--page-fg); font-family:'Instrument Sans',ui-sans-serif,system-ui,sans-serif; padding-inline:16px; padding-block:20px 40px; margin:0 }
+.wrap{ max-width:1080px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:36px; align-items:start }
+@media (max-width:840px){ .wrap{ grid-template-columns:1fr } .notes{ order:2 } .stage{ order:1; justify-self:center; position:static !important } }
+.notes h1{ font:600 26px/1.15 'Fraunces',Georgia,serif; letter-spacing:-.01em; margin:0 0 6px; text-wrap:balance }
+.notes .sub{ color:var(--page-muted); font-size:14px; margin:0 0 18px; max-width:58ch; line-height:1.5 }
+.notes h2{ font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--page-muted); margin:22px 0 8px }
+.notes p, .notes li{ font-size:14px; line-height:1.5; max-width:60ch }
+.notes p{ margin:0 0 8px }
+.notes ul{ margin:0 0 8px; padding-left:18px }
+.notes li{ margin-bottom:4px }
+.notes code{ font-size:12.5px; background:var(--page-card); border:1px solid var(--page-line); border-radius:5px; padding:0 4px }
+.seg{ display:flex; gap:8px; flex-wrap:wrap }
+.seg button{ font:600 13px/1 inherit; font-family:inherit; padding:9px 13px; border-radius:999px; border:1px solid var(--page-line); background:var(--page-card); color:var(--page-fg); cursor:pointer }
+.seg button[aria-pressed="true"]{ background:var(--page-fg); color:var(--page-bg); border-color:var(--page-fg) }
+.seg.vars button{ display:flex; gap:8px; align-items:center; border-radius:12px; padding:10px 14px }
+.seg.vars .k{ display:inline-grid; place-items:center; width:20px; height:20px; border-radius:6px; background:var(--page-line); font-size:11.5px; font-weight:700 }
+.seg.vars button[aria-pressed="true"] .k{ background:var(--page-bg); color:var(--page-fg) }
+.seg.scen button{ border-radius:10px; font-weight:500; background:transparent }
+.seg button:focus-visible{ outline:2px solid var(--page-accent); outline-offset:2px }
+.vnote{ background:var(--page-card); border:1px solid var(--page-line); border-radius:14px; padding:12px 16px; margin-top:10px }
+.vnote p:last-child{ margin-bottom:0 }
+.loadfail{ padding:40px 24px; text-align:center; color:var(--muted); font-size:14px; line-height:1.5 }
+
+/* ---------- phone ---------- */
+.stage{ position:sticky; top:16px }
+.phone{ width:390px; max-width:100%; height:844px; border-radius:46px; background:var(--bg); color:var(--ink); box-shadow:0 0 0 10px var(--bezel), 0 30px 60px -20px rgba(0,0,0,.45); overflow:hidden; position:relative; font-family:var(--body); font-size:14px; display:flex; flex-direction:column; }
+.phone *{ box-sizing:border-box }
+.statusbar{ height:50px; flex:none; display:flex; align-items:flex-end; justify-content:space-between; padding:0 30px 6px; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums }
+.viewport{ flex:1; min-height:0; position:relative; overflow:hidden }
+.screen{ position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; scrollbar-width:none; padding:0 20px 120px; background:var(--bg) }
+.screen::-webkit-scrollbar{ display:none }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap }
+button:focus-visible, a:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
+
+.hdr{ display:flex; align-items:center; gap:8px; padding:6px 0 12px; min-height:58px }
+.hdr h1{ margin:0; flex:1; min-width:0; font-family:var(--display); font-weight:var(--display-w); letter-spacing:var(--display-ls); font-size:30px; line-height:1.1 }
+.fab{ flex:none; width:44px; height:44px; border-radius:var(--r-fab); background:var(--primary); color:var(--primary-ink); border:0; display:grid; place-items:center; box-shadow:var(--shadow-btn); cursor:pointer }
+.ghost{ flex:none; width:40px; height:40px; border-radius:50%; background:transparent; border:var(--bw) solid var(--line); color:var(--ink); display:grid; place-items:center; cursor:pointer }
+.xpill{ flex:none; height:40px; padding:0 13px 0 10px; border-radius:999px; border:var(--bw) solid var(--line); background:var(--card-bg); color:var(--ink); font:700 13.5px/1 inherit; font-family:inherit; display:inline-flex; align-items:center; gap:6px; cursor:pointer }
+.xpill svg{ color:var(--accent) }
+
+/* ---------- filter block ---------- */
+.sticky{ position:sticky; top:0; z-index:5; background:var(--bg); margin:0 -20px; padding:8px 20px 10px }
+.fblock{ position:relative }
+.search{ display:flex; align-items:center; gap:10px; height:48px; border-radius:var(--r-ctl); background:var(--field-bg); border:var(--bw-field) solid var(--line); padding:0 14px; color:var(--muted); min-width:0; position:relative; transition:flex-basis .22s cubic-bezier(.2,.8,.2,1), padding .22s }
+.search svg{ flex:none }
+.search input{ flex:1; min-width:0; width:100%; border:0; background:transparent; font:500 15px/1 inherit; font-family:inherit; color:var(--ink); outline:none }
+.search input::placeholder{ color:var(--muted) }
+.search:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-tint) }
+
+/* search + Tags button */
+.crow{ display:flex; gap:8px }
+.crow .search{ flex:1 }
+.tagbtn{ flex:none; height:48px; padding:0 14px 0 12px; border-radius:var(--r-ctl); border:var(--bw-field) solid var(--line); background:var(--field-bg); color:var(--ink); font:700 14px/1 inherit; font-family:inherit; display:inline-flex; align-items:center; gap:7px; cursor:pointer; position:relative }
+.tagbtn svg{ color:var(--accent) }
+.tagbtn.on{ border-color:var(--accent); background:var(--accent-tint); color:var(--accent-on-tint) }
+.tagbtn .cnt{ min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:var(--accent); color:var(--accent-ink); font-size:11.5px; font-weight:700; display:inline-grid; place-items:center; font-variant-numeric:tabular-nums }
+.selrow{ display:flex; gap:6px; overflow-x:auto; margin:8px -20px 0; padding:0 20px; scrollbar-width:none }
+.selrow::-webkit-scrollbar{ display:none }
+.selchip{ flex:none; height:30px; padding:0 9px 0 11px; border-radius:var(--r-chip); border:0; background:var(--accent-tint); color:var(--accent-on-tint); font:700 12.5px/1 inherit; font-family:inherit; display:inline-flex; align-items:center; gap:6px; cursor:pointer }
+.selchip.fam{ background:var(--butter); color:var(--butter-ink) }
+.selchip svg{ opacity:.75 }
+
+/* ---------- MUI Autocomplete, painted with theme tokens ---------- */
+.phone .tagfield{ width:100% }
+.phone .tagfield .MuiAutocomplete-inputRoot{ font-family:inherit; color:var(--ink); height:48px; min-height:48px; border-radius:var(--r-ctl); background:var(--field-bg); border:var(--bw-field) solid var(--line); padding:0 6px 0 12px; flex-wrap:nowrap; overflow:hidden; gap:5px; cursor:text; align-items:center }
+.phone .tagfield.Mui-focused .MuiAutocomplete-inputRoot{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-tint); overflow-x:auto; scrollbar-width:none }
+.phone .tagfield .MuiAutocomplete-inputRoot::-webkit-scrollbar{ display:none }
+.phone .tagfield .lead{ flex:none; display:grid; place-items:center; color:var(--accent); margin-right:2px }
+.phone .tagfield .MuiAutocomplete-input{ font:500 15px/1 inherit; font-family:inherit; color:var(--ink); padding:0 !important; min-width:36px; flex:1 0 36px }
+.phone .tagfield .MuiAutocomplete-input::placeholder{ color:var(--muted); opacity:1 }
+.phone .tagfield .MuiAutocomplete-tag{ margin:0 }
+.phone .tagfield .MuiChip-root{ flex:none; height:28px; border-radius:var(--r-chip); background:var(--accent-tint); color:var(--accent-on-tint); font:700 12.5px/1 inherit; font-family:inherit; max-width:132px }
+.phone .tagfield .MuiChip-root.fam{ background:var(--butter); color:var(--butter-ink) }
+.phone .tagfield .MuiChip-label{ padding:0 4px 0 10px }
+.phone .tagfield .MuiChip-deleteIcon{ margin:0 6px 0 0; color:inherit; opacity:.7; display:grid; place-items:center; width:18px; height:18px; border-radius:50% }
+.phone .tagfield .MuiChip-deleteIcon:hover{ opacity:1; background:rgba(0,0,0,.08) }
+.phone .tagfield .more{ flex:none; font-size:12.5px; font-weight:700; color:var(--accent-on-tint); background:var(--subtle); border:var(--bw) solid var(--line); border-radius:var(--r-chip); height:26px; padding:0 8px; display:inline-grid; place-items:center; font-variant-numeric:tabular-nums }
+.phone .tagfield .MuiAutocomplete-endAdornment{ position:static; transform:none; flex:none; display:flex }
+.phone .tagfield .MuiAutocomplete-clearIndicator{ visibility:visible; color:var(--muted); width:32px; height:32px; padding:0 }
+.phone .tagfield .MuiAutocomplete-clearIndicator svg{ font-size:18px }
+
+.phone .MuiAutocomplete-paper{ background:var(--surface); color:var(--ink); border:var(--bw) solid var(--card-line); border-radius:var(--r-card); box-shadow:var(--shadow-float); font-family:inherit; overflow:hidden }
+.phone .MuiAutocomplete-listbox{ max-height:min(420px, 56vh); padding:0 0 6px }
+.phone .MuiAutocomplete-noOptions{ color:var(--muted); font-size:14px; padding:14px 16px; font-family:inherit }
+.phone .tg{ list-style:none }
+.phone .tg-head{ position:sticky; top:0; z-index:1; background:var(--surface); display:flex; align-items:center; gap:6px; padding:12px 16px 4px; font-size:11.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted) }
+.phone .tg-head svg{ color:var(--butter-ink) }
+[data-theme="dark"] .tg-head svg{ color:var(--star) }
+.phone .tg-head em{ margin-left:auto; font-style:normal; letter-spacing:0; text-transform:none; font-weight:500; font-size:11.5px }
+.phone .tg-items{ padding:0; margin:0 }
+.phone .MuiAutocomplete-option{ min-height:44px !important; padding:0 16px !important; gap:12px; font-size:15px; font-weight:600; color:var(--ink) }
+.phone .MuiAutocomplete-option.Mui-focused, .phone .MuiAutocomplete-option:hover{ background:var(--subtle) !important }
+.phone .MuiAutocomplete-option[aria-selected="true"]{ background:transparent !important }
+.phone .MuiAutocomplete-option[aria-selected="true"].Mui-focused{ background:var(--subtle) !important }
+.phone .MuiAutocomplete-option[aria-disabled="true"]{ opacity:.42 !important }
+.phone .MuiAutocomplete-option .box{ flex:none; width:20px; height:20px; border-radius:6px; border:1.5px solid var(--line-strong); display:grid; place-items:center; color:var(--accent-ink) }
+.phone .MuiAutocomplete-option .box.on{ background:var(--accent); border-color:var(--accent) }
+.phone .MuiAutocomplete-option .nm{ flex:1; min-width:0 }
+.phone .MuiAutocomplete-option .ct{ flex:none; font-size:13px; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums }
+/* listbox rendered in place (sheet) */
+.phone .inline-pop{ position:static }
+.phone .inline-pop .MuiAutocomplete-paper{ box-shadow:none; border:0; border-radius:0; background:transparent; margin:6px -20px 0 }
+.phone .inline-pop .MuiAutocomplete-listbox{ max-height:none; overflow:visible }
+.phone .inline-pop .tg-head{ background:var(--surface); padding-left:20px; padding-right:20px }
+.phone .inline-pop .MuiAutocomplete-option{ padding:0 20px !important }
+
+/* ---------- list ---------- */
+.seclabel{ display:flex; align-items:baseline; justify-content:space-between; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:16px 0 6px; gap:8px }
+.seclabel .cnt{ font-weight:600; letter-spacing:0; text-transform:none; font-variant-numeric:tabular-nums }
+.seclabel .k{ display:inline-flex; align-items:center; gap:6px }
+.seclabel .k .star{ color:var(--star) }
+ul.rows{ list-style:none; margin:0; padding:0 }
+ul.rows li{ position:relative; display:flex; align-items:center; gap:4px }
+ul.rows li + li{ border-top:var(--bw) solid var(--line) }
+.row{ flex:1; min-width:0; display:flex; align-items:center; gap:12px; min-height:72px; padding:10px 0 10px 2px; color:var(--ink); text-decoration:none }
+.cluster{ flex:none; width:50px; height:50px; border-radius:var(--r-ctl); background:var(--subtle); border:var(--bw) solid var(--card-line); position:relative; color:var(--ink) }
+[data-theme="dark"] .cluster, [data-theme="dark"] .cluster .halo{ background:var(--chip) }
+.cluster svg{ position:absolute }
+.cluster .a{ width:30px; height:30px; left:4px; top:5px }
+.cluster .b{ width:24px; height:24px; right:2px; bottom:3px }
+.cluster .halo{ position:absolute; right:0; bottom:1px; width:28px; height:28px; border-radius:50%; background:var(--subtle) }
+.body{ flex:1; min-width:0 }
+.title{ font-size:15.5px; font-weight:700; line-height:1.25 }
+.vof{ font-size:12.5px; font-weight:600; color:var(--accent); margin-top:1px }
+.rtags{ display:flex; align-items:center; gap:5px; margin-top:5px; min-width:0; flex-wrap:nowrap; white-space:nowrap }
+.rt{ flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; height:21px; line-height:21px; padding:0 8px; border-radius:var(--r-chip); background:var(--chip); color:var(--ink); font-size:11.5px; font-weight:600 }
+.rt.fam{ background:var(--butter); color:var(--butter-ink) }
+.rt.hit{ background:var(--accent-tint); color:var(--accent-on-tint); font-weight:700; box-shadow:inset 0 0 0 1px var(--accent) }
+.rmore{ flex:none; font-size:12px; font-weight:700; color:var(--muted); font-variant-numeric:tabular-nums }
+.lvl{ flex:none; font-size:12.5px; font-weight:500; color:var(--muted) }
+.pills{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px }
+.pill{ display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:999px; font-size:12px; font-weight:700; line-height:1.2 }
+.pill.ok{ background:var(--accent-tint); color:var(--accent-on-tint) }
+.pill.soon{ background:var(--soon-bg); color:var(--soon-fg) }
+.pill.urg{ background:var(--urgent-bg); color:var(--urgent-fg) }
+.time{ flex:none; text-align:right; font-variant-numeric:tabular-nums; min-width:30px }
+.time .n{ font-family:var(--display); font-weight:var(--display-w); font-size:17px; line-height:1 }
+.time .u{ font-size:11px; font-weight:600; color:var(--muted); margin-top:2px }
+.heart{ flex:none; width:40px; height:40px; margin-right:-8px; border-radius:50%; border:0; background:transparent; color:var(--muted); display:grid; place-items:center; cursor:pointer }
+.heart[aria-pressed="true"]{ color:var(--star) }
+.more-row{ display:flex; align-items:center; justify-content:center; gap:6px; width:100%; height:44px; margin-top:6px; border-radius:var(--r-ctl); border:var(--bw) dashed var(--line-strong); background:transparent; color:var(--accent); font:700 13.5px/1 inherit; font-family:inherit; cursor:pointer }
+.empty{ text-align:center; padding:30px 4px 10px }
+.empty .h{ font-family:var(--display); font-weight:var(--display-w); font-size:18px; line-height:1.25; text-wrap:balance }
+.empty .s{ color:var(--muted); font-size:14px; margin-top:8px }
+.relax{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:12px }
+.rx{ height:36px; padding:0 12px; border-radius:var(--r-chip); border:var(--bw) solid var(--line-strong); background:var(--card-bg); color:var(--ink); font:600 13px/1 inherit; font-family:inherit; display:inline-flex; align-items:center; gap:8px; cursor:pointer }
+.rx b{ min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:var(--accent-tint); color:var(--accent-on-tint); font-size:11.5px; display:inline-grid; place-items:center }
+.rx:disabled{ opacity:.45; cursor:default }
+
+/* ---------- sheet (C) ---------- */
+.scrim{ position:absolute; inset:0; z-index:30; background:rgba(10,12,8,.38); animation:inFade .2s ease }
+.sheet{ position:absolute; z-index:31; left:0; right:0; bottom:0; height:88%; display:flex; flex-direction:column; background:var(--surface); border-radius:26px 26px 0 0; padding:8px 20px 0; box-shadow:var(--shadow-float); animation:sheetIn .3s cubic-bezier(.2,.8,.2,1) }
+@keyframes sheetIn{ from{ transform:translateY(100%) } }
+@keyframes inFade{ from{ opacity:0 } }
+.sheet .grab{ width:40px; height:5px; border-radius:3px; background:var(--line-strong); margin:0 auto 12px; flex:none }
+.shead{ display:flex; align-items:center; gap:12px; flex:none }
+.shead h2{ flex:1; margin:0; font-family:var(--display); font-weight:var(--display-w); letter-spacing:var(--display-ls); font-size:23px }
+.shint{ margin:4px 0 12px; color:var(--muted); font-size:13.5px; flex:none }
+.shint b{ color:var(--ink) }
+.sfield{ flex:1; min-height:0; overflow-y:auto; margin:0 -20px; padding:0 20px; scrollbar-width:none }
+.sfield::-webkit-scrollbar{ display:none }
+.sfield .tagfield .MuiAutocomplete-inputRoot{ position:sticky; top:0; z-index:2; flex-wrap:wrap; height:auto; padding:7px 6px 7px 12px; overflow:visible }
+.sfield .tagfield.Mui-focused .MuiAutocomplete-inputRoot{ overflow:visible }
+.sfoot{ flex:none; display:grid; grid-template-columns:1fr 2fr; gap:10px; padding:12px 0 26px; border-top:var(--bw) solid var(--line); margin:0 -20px; padding-inline:20px; background:var(--surface) }
+.btn{ height:48px; border-radius:var(--r-ctl); border:0; padding:0 14px; font:700 15px/1 inherit; font-family:inherit; display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; white-space:nowrap }
+.btn.primary{ background:var(--primary); color:var(--primary-ink); box-shadow:var(--shadow-btn) }
+.btn.secondary{ background:var(--card-bg); color:var(--ink); border:var(--bw) solid var(--line-strong) }
+.btn:disabled{ opacity:.5; cursor:default }
+
+.dock{ z-index:6; position:absolute; left:14px; right:14px; bottom:14px; height:66px; border-radius:var(--r-dock); background:var(--dock-bg); backdrop-filter:blur(14px); box-shadow:var(--shadow-float); display:grid; grid-template-columns:repeat(4,1fr); align-items:center; padding:0 6px; border:var(--bw) solid var(--card-line) }
+.dock div{ display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; font-weight:600; color:var(--muted) }
+.dock div.on{ color:var(--accent) }
+@media (prefers-reduced-motion: reduce){ .sheet, .scrim{ animation:none } }
+</style>
+</head><body>
+
+<div class="wrap">
+  <section class="notes">
+    <h1>Recipe Tags filter — handoff prototype</h1>
+    <p class="sub">For <b>#706 / #711</b>, variant C picked. A <b>Tags</b> button beside search replaces the Cuisine and Method chip rows and their Clear chip. It opens a sheet with the shared Tag field (<b>MUI Autocomplete</b>: <code>multiple</code>, <code>limitTags</code>, <code>groupBy</code>) and its list always open. Picked Tags show as removable chips under search. The list and the rows are live.</p>
+    <div id="controls"></div>
+
+    <h2>What's live</h2>
+    <ul>
+      <li><b>AND</b>: every picked Tag must be on the Recipe. Tags and text search combine (try “soup” + Freezer-friendly).</li>
+      <li><b>Options</b> are only Tags used on at least one of the family's Recipes, grouped under their Tag Group, <b>Your Tags</b> first (Family Tags in butter, Catalog Tags in green). “Party” and “Indian” exist but are on no Recipe, so they never show.</li>
+      <li>Type in the field to narrow the options; case and accents are ignored.</li>
+      <li><b>Rows</b> show up to <b>2 Tags + “+N”</b> where Cuisine · Method used to be, then the Level. Tags you filtered by come first and are outlined.</li>
+      <li>While filtering, the groups fold into one <b>Matches</b> list that includes Variants, each matched on its own Tags.</li>
+      <li>Tap <b>Tags</b>: picks apply live behind the sheet, the primary button reads “Show n Recipes”, <b>Clear</b> empties the selection, × / scrim / Escape close it. Tap a chip under search to remove that Tag.</li>
+      <li>Screen readers hear the chips, “and N more Tags” for the overflow, and a polite status line: “Dinner, Vegetarian selected. 2 Recipes match.”</li>
+    </ul>
+
+    <h2>Proposed beyond the spec</h2>
+    <ul>
+      <li>Each option shows <b>how many Recipes you'd get</b> if you added it; options that would give 0 are dimmed and can't be picked, so AND never leads to an empty list from the dropdown.</li>
+      <li>No-match state offers <b>“Without X · n”</b> buttons to drop one Tag (or the search word).</li>
+      <li>The removable chips under search (one scrolling line, only while Tags are picked) and the count badge on the Tags button.</li>
+    </ul>
+
+    <h2>MUI notes</h2>
+    <ul>
+      <li>This page loads MUI 5 from a CDN (the last version with a browser bundle). The repo is on MUI 9 inside <code>@pocket-pantry/ui</code>; there <code>renderTags</code> is <code>renderValue</code>, and <code>PopperComponent</code> / <code>componentsProps</code> are <code>slots.popper</code> / <code>slotProps</code>.</li>
+      <li>Props used: <code>multiple</code>, <code>groupBy</code>, <code>limitTags</code> + <code>getLimitTagsText</code>, <code>getOptionDisabled</code>, <code>disableCloseOnSelect</code>, <code>openOnFocus</code>, <code>autoHighlight</code>, <code>forcePopupIcon={false}</code>, custom <code>renderGroup</code> / <code>renderOption</code>, <code>open</code> forced on and a <code>PopperComponent</code> that renders the list in place inside the sheet. The filter has no create option; the editor version (#709/#710) adds <code>Create “…”</code>.</li>
+      <li>Inside the sheet the field wraps its chips and sticks to the top while the list scrolls under it.</li>
+    </ul>
+  </section>
+
+  <div class="stage">
+    <div class="phone" id="phone" data-theme="warm">
+      <div class="statusbar"><span>9:41</span><span>●●● ᯤ ▮</span></div>
+      <div class="viewport" id="vp"><div class="loadfail" id="loadfail">Loading React and MUI…</div></div>
+      <div class="dock" aria-hidden="true">
+        <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 10l2-5h12l2 5M10 14h4"/></svg>Pantry</div>
+        <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14l-1.5 12H6.5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>Shopping</div>
+        <div class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 8h6M9 12h6"/></svg>Recipes</div>
+        <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="12" r="3"/></svg>Scan</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="approot" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@mui/material@5.16.7/umd/material-ui.production.min.js"></script>
+<script>
+if(!window.React||!window.ReactDOM||!window.MaterialUI){ document.getElementById('loadfail').textContent = "Couldn't load React / MUI from the CDN. Check your connection and reload."; }
+</script>
+<script>
+(() => {
+  // src/data.js
+  var GROUP_ORDER = ["Your Tags", "Meal", "Diet", "Cuisine", "Method"];
+  var TAGS = [
+    // Family Tags (created by Members, never translated)
+    { id: "f-grandma", name: "Grandma's", group: "Your Tags", family: true },
+    { id: "f-kids", name: "Kids love it", group: "Your Tags", family: true },
+    { id: "f-weeknight", name: "Weeknight", group: "Your Tags", family: true },
+    { id: "f-sunday", name: "Sunday lunch", group: "Your Tags", family: true },
+    { id: "f-freezer", name: "Freezer-friendly", group: "Your Tags", family: true },
+    { id: "f-lunchbox", name: "Lunchbox", group: "Your Tags", family: true },
+    { id: "f-unused", name: "Party", group: "Your Tags", family: true },
+    // not on any Recipe → never offered
+    // Catalog Tags · Meal
+    { id: "breakfast", name: "Breakfast", group: "Meal" },
+    { id: "brunch", name: "Brunch", group: "Meal" },
+    { id: "lunch", name: "Lunch", group: "Meal" },
+    { id: "dinner", name: "Dinner", group: "Meal" },
+    { id: "snack", name: "Snack", group: "Meal" },
+    { id: "dessert", name: "Dessert", group: "Meal" },
+    // Diet
+    { id: "vegetarian", name: "Vegetarian", group: "Diet" },
+    { id: "vegan", name: "Vegan", group: "Diet" },
+    { id: "keto", name: "Keto", group: "Diet" },
+    { id: "low-carb", name: "Low-carb", group: "Diet" },
+    { id: "high-protein", name: "High-protein", group: "Diet" },
+    // Cuisine (migrated from recipes.cuisine)
+    { id: "romanian", name: "Romanian", group: "Cuisine" },
+    { id: "italian", name: "Italian", group: "Cuisine" },
+    { id: "american", name: "American", group: "Cuisine" },
+    { id: "indian", name: "Indian", group: "Cuisine" },
+    // unused in this family
+    // Method (migrated from recipes.method)
+    { id: "boiled", name: "Boiled", group: "Method" },
+    { id: "baked", name: "Baked", group: "Method" },
+    { id: "pan-fried", name: "Pan-fried", group: "Method" },
+    { id: "simmered", name: "Simmered", group: "Method" },
+    { id: "grilled", name: "Grilled", group: "Method" }
+  ];
+  var TAG = Object.fromEntries(TAGS.map((t) => [t.id, t]));
+  var RECIPES = [
+    { id: "stew", title: "Grandma's chickpea stew", level: "Easy", min: 50, ing: ["chickpeas", "passata"], tags: ["dinner", "vegan", "high-protein", "romanian", "simmered", "f-grandma", "f-freezer"], can: false, missing: "onion", fav: 2 },
+    { id: "pasta", title: "Weeknight tomato pasta", level: "Easy", min: 25, ing: ["pasta", "passata"], tags: ["dinner", "vegetarian", "italian", "boiled", "f-kids", "f-weeknight"], can: true, fav: 1 },
+    { id: "pancakes", title: "Banana oat pancakes", level: "Easy", min: 20, ing: ["banana", "oats"], tags: ["breakfast", "brunch", "vegetarian", "pan-fried", "f-kids"], can: true, expiring: 1 },
+    { id: "rice", title: "Dad's garlic rice", level: "Easy", min: 25, ing: ["rice", "garlic"], tags: ["lunch", "vegan", "boiled", "f-weeknight"] },
+    { id: "cake", title: "Lemon yogurt cake", level: "Medium", min: 60, ing: ["yogurt", "lemon"], tags: ["dessert", "snack", "vegetarian", "baked", "f-sunday"] },
+    { id: "peppers", title: "Stuffed peppers", level: "Medium", min: 90, ing: ["pepper", "mince"], tags: ["dinner", "high-protein", "romanian", "baked", "f-grandma", "f-sunday", "f-freezer"] },
+    { id: "salmon", title: "Honey-glazed salmon", level: "Easy", min: 25, ing: ["salmon", "honey"], base: "Salmon with spinach and lemon", tags: ["dinner", "high-protein", "low-carb", "baked", "f-weeknight"], can: true, expiring: 1 },
+    { id: "caesar", title: "Chicken Caesar salad", level: "Easy", min: 40, ing: ["chicken", "bread"], base: "Chicken salad", tags: ["lunch", "high-protein", "american", "grilled"] },
+    { id: "tsoup", title: "Roasted tomato soup", level: "Easy", min: 45, ing: ["tomato", "onion"], tags: ["lunch", "dinner", "vegetarian", "simmered", "f-freezer"], can: true },
+    { id: "lentil", title: "Romanian lentil soup", level: "Easy", min: 40, ing: ["chickpeas", "onion"], tags: ["lunch", "vegan", "high-protein", "romanian", "simmered", "f-freezer"] },
+    { id: "muffins", title: "Keto egg muffins", level: "Easy", min: 30, ing: ["eggs", "spinach"], tags: ["breakfast", "keto", "low-carb", "high-protein", "baked", "f-lunchbox"], can: true, expiring: 2 },
+    { id: "noodle", title: "Chicken noodle soup", level: "Easy", min: 50, ing: ["chicken", "pasta"], tags: ["dinner", "simmered", "f-kids", "f-freezer"] },
+    { id: "muffins-v", title: "Feta and spinach egg muffins", level: "Easy", min: 30, ing: ["eggs", "feta"], base: "Keto egg muffins", tags: ["breakfast", "vegetarian", "keto", "baked", "f-lunchbox"] }
+  ];
+  var SCENARIOS = [
+    { id: "none", label: "No filter", q: "", tags: [] },
+    { id: "two", label: "Dinner + Vegetarian", q: "", tags: ["dinner", "vegetarian"] },
+    { id: "soup", label: "\u201Csoup\u201D + Freezer-friendly", q: "soup", tags: ["f-freezer"] },
+    { id: "many", label: "4 Tags (+N)", q: "", tags: ["f-freezer", "high-protein", "romanian", "simmered"] },
+    { id: "none-match", label: "No match", q: "", tags: ["keto", "romanian", "dinner"] }
+  ];
+  var TINT = { produce: ["#DDEBE2", "#24392E"], bakery: ["#F6EBC8", "#3B3320"], dairy: ["#E3ECF3", "#243440"], meat: ["#FBE6DA", "#42291E"], pantry: ["#E2E8DD", "#2B332C"] };
+  var AISLE = { tomato: "produce", onion: "produce", garlic: "produce", spinach: "produce", lemon: "produce", banana: "produce", pepper: "produce", bread: "bakery", eggs: "dairy", yogurt: "dairy", feta: "dairy", chicken: "meat", mince: "meat", salmon: "meat", pasta: "pantry", rice: "pantry", passata: "pantry", chickpeas: "pantry", oats: "pantry", honey: "pantry" };
+  var ICONS = { "eggs": [{ "d": "M12 3.8c3.4 0 6.4 5.3 6.4 9.9a6.4 6.4 0 0 1-12.8 0C5.6 9.1 8.6 3.8 12 3.8z", "body": true }, { "d": "M8.6 13.2c0-2.6 1.2-5.3 3-7" }], "chicken": [{ "d": "M9.4 8.8A5.4 5.4 0 1 1 15.2 14.6C12.8 14.8 11 14.6 10.3 13.8 9.5 12.6 9.3 10.7 9.4 8.8z", "body": true }, { "d": "M9.7 13.2l1.2 1.2-4 4-1.2-1.2z" }, { "d": "M2.8 17.9a1.7 1.7 0 1 0 3.4 0 1.7 1.7 0 1 0-3.4 0zM4.4 19.5a1.7 1.7 0 1 0 3.4 0 1.7 1.7 0 1 0-3.4 0z" }], "tomato": [{ "d": "M12 20.5a7.3 7.3 0 1 0 0-14.6 7.3 7.3 0 0 0 0 14.6z", "body": true }, { "d": "M12 6.5c-1.3-1.2-2.8-1.6-4.3-1.3M12 6.5c1.3-1.2 2.8-1.6 4.3-1.3M12 6.5V3.8" }, { "d": "M8.3 12.2c.3-1.6 1.3-2.8 2.7-3.5" }], "feta": [{ "d": "M12.5 9.5l2.5-2.5h5L17.5 9.5z" }, { "d": "M12.5 9.5h5v6h-5z", "body": true }, { "d": "M17.5 15.5v-6l2.5-2.5v6z" }, { "d": "M4.5 12.5l2.5-2.5h6l-2.5 2.5z" }, { "d": "M4.5 12.5h6v6h-6z", "body": true }, { "d": "M10.5 18.5v-6l2.5-2.5v6z" }], "bread": [{ "d": "M4.5 10.5A3.3 3.3 0 0 1 7.8 7.2h8.4a3.3 3.3 0 0 1 3.3 3.3 2.6 2.6 0 0 1-1.5 2.3V18a1.5 1.5 0 0 1-1.5 1.5H7.5A1.5 1.5 0 0 1 6 18v-5.2a2.6 2.6 0 0 1-1.5-2.3z", "body": true }, { "d": "M9 13.6l1.4 2.4M12 13.6l1.4 2.4M15 13.6l1.4 2.4" }], "chickpeas": [{ "d": "M6 6.5v11c0 1.1 2.7 2 6 2s6-.9 6-2v-11c0 1.1-2.7 2-6 2s-6-.9-6-2z", "body": true }, { "d": "M6 6.5a6 2 0 1 0 12 0 6 2 0 1 0-12 0z" }, { "d": "M9 13.4a.9.9 0 1 0 1.8 0 .9.9 0 1 0-1.8 0zM12.4 12.4a.9.9 0 1 0 1.8 0 .9.9 0 1 0-1.8 0zM11 15.6a.9.9 0 1 0 1.8 0 .9.9 0 1 0-1.8 0z" }], "passata": [{ "d": "M9.5 7V4h5v3c1.6.8 2.5 2.3 2.5 4.2v7.3a1.5 1.5 0 0 1-1.5 1.5H8.5A1.5 1.5 0 0 1 7 18.5v-7.3C7 9.3 7.9 7.8 9.5 7z", "body": true }, { "d": "M10.2 14a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 1 0-3.6 0z" }, { "d": "M12 12.2v-1.4M9.5 4h5" }], "onion": [{ "d": "M12 4.5c-1.6 3.2-6.3 4.6-6.3 9.6a6.3 6.3 0 0 0 12.6 0c0-5-4.7-6.4-6.3-9.6z", "body": true }, { "d": "M9.6 9.4c-1.4 2.4-1.5 5-.3 8.1M14.4 9.4c1.4 2.4 1.5 5 .3 8.1" }, { "d": "M12 4.5c0-1 .4-1.8 1.2-2.3" }], "pasta": [{ "d": "M8 4.5c-.2 5-.2 10 .2 15M11 4.5c.2 5 .2 10-.2 15M14 4.5c-.2 5-.2 10 .2 15M17 4.5c.2 5 .2 10-.2 15" }, { "d": "M6 10.5h12v3.6H6z", "body": true }, { "d": "M8.5 12.3h7" }], "salmon": [{ "d": "M3.5 12c2.4-3.6 5.4-5.4 9-5.4 2.9 0 5.3 1.8 7.2 5.4-1.9 3.6-4.3 5.4-7.2 5.4-3.6 0-6.6-1.8-9-5.4z", "body": true }, { "d": "M19 12l2.4-3.2v6.4z" }, { "d": "M11.2 7.4c1.1 3 1.1 6.2 0 9.2" }, { "d": "M6.6 10.8a.8.8 0 1 0 1.6 0 .8.8 0 1 0-1.6 0z", "dot": true }], "spinach": [{ "d": "M5 19C4.5 11.6 9.3 5.3 18.7 4.6c.6 9.4-4.4 14.6-13.7 14.4z", "body": true }, { "d": "M3.4 21.2L5 19C8.2 14.2 12.4 9.6 18.5 4.8" }, { "d": "M8.8 14.3c1.6.4 3.1.3 4.6-.4M11.8 11.2c1.4.3 2.6.2 3.7-.4" }], "lemon": [{ "d": "M5.9 7.7A7.5 5.2 -35 1 0 18.1 16.3A7.5 5.2 -35 1 0 5.9 7.7z", "body": true }, { "d": "M18.1 16.3l1.4 1.1" }, { "d": "M4.6 6.4c.4-2.4 2-3.9 4.2-4-.1 2.3-1.6 3.8-4.2 4z" }, { "d": "M8.6 13.5c-.3-2.2.9-4.3 3-5.4" }], "banana": [{ "d": "M5.2 6.5c.6 6.6 5.2 11.2 12.3 11.8h1.4c.5 0 .8.5.4.9-2.2 1.8-5 2.4-8 1.7C6.2 19.6 3.6 15 3.8 8.6c0-.8.3-1.4.8-1.9z", "body": true }, { "d": "M5.2 6.5l-.7-2.2M7.4 9.8c1.2 3.6 4 6.2 8 7.3" }], "oats": [{ "d": "M11.6 9.8c-2.2.2-3.6-.8-4.2-3 2.2-.2 3.6.8 4.2 3z", "body": true }, { "d": "M12.4 9.8c2.2.2 3.6-.8 4.2-3-2.2-.2-3.6.8-4.2 3z", "body": true }, { "d": "M11.6 14.8c-2.2.2-3.6-.8-4.2-3 2.2-.2 3.6.8 4.2 3z", "body": true }, { "d": "M12.4 14.8c2.2.2 3.6-.8 4.2-3-2.2-.2-3.6.8-4.2 3z", "body": true }, { "d": "M12 6.8c-1.4-1.6-1.6-3.3-.6-5.1 1.5 1.3 1.7 3 .6 5.1z", "body": true }, { "d": "M12 21.5V6.8" }], "garlic": [{ "d": "M12 6.5c-1.2 2.6-6.2 4-6.2 9.3a6.2 6.2 0 0 0 12.4 0c0-5.3-5-6.7-6.2-9.3z", "body": true }, { "d": "M12 6.5c-.6-1.4-.6-2.7.3-4.2" }, { "d": "M12 10.5v9.5M8.9 13.5c-.6 2-.4 4.1.6 6.1M15.1 13.5c.6 2 .4 4.1-.6 6.1" }], "pepper": [{ "d": "M12 7.6c-1.4-.9-2.9-1-4.3-.3C5.3 8.5 4.4 11.2 5 14.3c.6 3.2 2.4 5.7 4.6 5.7.9 0 1.5-.5 2.4-.5s1.5.5 2.4.5c2.2 0 4-2.5 4.6-5.7.6-3.1-.3-5.8-2.7-7-1.4-.7-2.9-.6-4.3.3z", "body": true }, { "d": "M9.7 8.2c.2 3.6.2 7.4-.4 11.2M14.3 8.2c-.2 3.6-.2 7.4.4 11.2" }, { "d": "M12 7.6c-.3-1.4-.1-2.6.6-3.6" }], "rice": [{ "d": "M6.2 13c1-3.4 3.2-5.3 5.8-5.3s4.8 1.9 5.8 5.3z" }, { "d": "M9.6 11.4l.9-.9M12.8 10l.9-.9M14.6 12l.9-.9" }, { "d": "M4 13h16c0 4.2-3.3 7.5-8 7.5S4 17.2 4 13z", "body": true }, { "d": "M5.2 16.4h13.6" }], "yogurt": [{ "d": "M5.5 8.5h13l-1.2 10.5a1.5 1.5 0 0 1-1.5 1.3H8.2a1.5 1.5 0 0 1-1.5-1.3z", "body": true }, { "d": "M5 8.5V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1.5M8.2 13h7.6" }], "mince": [{ "d": "M6.5 14c.5-2.8 2.4-4.5 5.5-4.5s5 1.7 5.5 4.5z", "body": true }, { "d": "M9 12.2l.6.6M12 11l.6.6M14.6 12.4l.6.6" }, { "d": "M4 14h16l-1 4.5a1.5 1.5 0 0 1-1.5 1.2h-11A1.5 1.5 0 0 1 5 18.5z" }], "honey": [{ "d": "M8 5h8v2.8H8z" }, { "d": "M7.6 7.8h8.8c.9 1 1.3 2.4 1.3 4v6.2a1.5 1.5 0 0 1-1.5 1.5H7.8a1.5 1.5 0 0 1-1.5-1.5v-6.2c0-1.6.4-3 1.3-4z", "body": true }, { "d": "M8.6 12.3h6.8v3.2H8.6z" }], "default": [{ "d": "M5.5 8.5h13l-.9 11.2a1.5 1.5 0 0 1-1.5 1.3H7.9a1.5 1.5 0 0 1-1.5-1.3z", "body": true }, { "d": "M9 8.5V7a3 3 0 0 1 6 0v1.5" }] };
+  var THEMES = {
+    warm: { bg: "#F3EDE1", surface: "#FBF8F1", subtle: "#F6F1E6", ink: "#2B2418", muted: "#766A58", line: "#E6DCCB", "line-strong": "#D6C9B2", divider: "#EFE7D8", chip: "#EAE1CF", accent: "#5F6F2E", "accent-ink": "#FFFFFF", "accent-tint": "#E6EAD2", "accent-on-tint": "#4A5722", primary: "#5F6F2E", "primary-ink": "#FFFFFF", butter: "#F0C96B", "butter-ink": "#4A3608", "urgent-bg": "#F8DED1", "urgent-fg": "#A8431C", "soon-bg": "#F6E5BE", "soon-fg": "#704E00", star: "#C6882A", "card-bg": "#FBF8F1", "card-line": "#E9E0CF", "field-bg": "#FFFDF8", "toast-bg": "#2B2418", "toast-ink": "#FBF8F1", "dock-bg": "rgba(251,248,241,.94)", bezel: "#2B2418", bw: "1px", "bw-field": "1.5px", "r-card": "16px", "r-ctl": "12px", "r-chip": "999px", "r-fab": "50%", "r-dock": "22px", "shadow-card": "0 1px 2px rgba(60,40,10,.06), 0 8px 24px -12px rgba(60,40,10,.18)", "shadow-btn": "0 4px 12px rgba(95,111,46,.28)", "shadow-float": "0 14px 34px -10px rgba(60,40,10,.28)", display: "'Fraunces',Georgia,'Times New Roman',serif", body: "'Instrument Sans',ui-sans-serif,system-ui,sans-serif", "display-w": "600", "display-ls": "-0.015em" },
+    minimal: { bg: "#FAFAF8", surface: "#FFFFFF", subtle: "#F3F4F1", ink: "#141614", muted: "#6B716B", line: "#E7E9E4", "line-strong": "#CDD1CA", divider: "#EEF0EB", chip: "#EEF0EB", accent: "#1E7A4E", "accent-ink": "#FFFFFF", "accent-tint": "#E1F2E8", "accent-on-tint": "#176040", primary: "#141614", "primary-ink": "#FFFFFF", butter: "#F5E1A4", "butter-ink": "#5A4200", "urgent-bg": "#FDE8E2", "urgent-fg": "#B33A1E", "soon-bg": "#FBF0CC", "soon-fg": "#7A5600", star: "#D1A21C", "card-bg": "#FFFFFF", "card-line": "#E7E9E4", "field-bg": "#FFFFFF", "toast-bg": "#141614", "toast-ink": "#FFFFFF", "dock-bg": "rgba(255,255,255,.96)", bezel: "#141614", bw: "1px", "bw-field": "1px", "r-card": "12px", "r-ctl": "10px", "r-chip": "8px", "r-fab": "12px", "r-dock": "16px", "shadow-card": "none", "shadow-btn": "none", "shadow-float": "0 8px 24px rgba(20,22,20,.10)", display: "'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif", body: "'Figtree',ui-sans-serif,system-ui,sans-serif", "display-w": "700", "display-ls": "-0.025em" },
+    dark: { bg: "#0F1512", surface: "#19211C", subtle: "#1F2922", ink: "#ECF2EC", muted: "#97A69B", line: "#26312A", "line-strong": "#36433A", divider: "#27322B", chip: "#26312A", accent: "#8FE0A8", "accent-ink": "#0B1A10", "accent-tint": "#1F3A2A", "accent-on-tint": "#A9EDBD", primary: "#8FE0A8", "primary-ink": "#0B1A10", butter: "#3D3418", "butter-ink": "#F2CF72", "urgent-bg": "#3F241B", "urgent-fg": "#FFA27E", "soon-bg": "#3A3118", "soon-fg": "#F2CF72", star: "#F2CF72", "card-bg": "#19211C", "card-line": "transparent", "field-bg": "#111915", "toast-bg": "#ECF2EC", "toast-ink": "#0F1512", "dock-bg": "rgba(25,33,28,.9)", bezel: "#050807", bw: "1px", "bw-field": "1px", "r-card": "18px", "r-ctl": "14px", "r-chip": "999px", "r-fab": "16px", "r-dock": "24px", "shadow-card": "0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px -12px rgba(0,0,0,.6)", "shadow-btn": "0 6px 18px rgba(143,224,168,.25)", "shadow-float": "0 16px 40px rgba(0,0,0,.55)", display: "'Sora',ui-sans-serif,system-ui,sans-serif", body: "'Albert Sans',ui-sans-serif,system-ui,sans-serif", "display-w": "600", "display-ls": "-0.02em" }
+  };
+
+  // src/app.jsx
+  var { useState, useMemo, useRef, useEffect, useCallback } = React;
+  var { Autocomplete, Chip, InputBase, createTheme, ThemeProvider } = MaterialUI;
+  var LIMIT = 4;
+  var norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  var plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  var Svg = ({ size = 18, sw = 2, children, ...p }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: sw, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true", ...p }, children);
+  var I = {
+    tag: (s = 18) => /* @__PURE__ */ React.createElement(Svg, { size: s, sw: 1.9 }, /* @__PURE__ */ React.createElement("path", { d: "M3.5 12.3V5a1.5 1.5 0 0 1 1.5-1.5h7.3a1.5 1.5 0 0 1 1 .4l7.3 7.3a1.5 1.5 0 0 1 0 2.1l-7.3 7.3a1.5 1.5 0 0 1-2.1 0L3.9 13.3a1.5 1.5 0 0 1-.4-1z" }), /* @__PURE__ */ React.createElement("circle", { cx: "8.2", cy: "8.2", r: "1.4", fill: "currentColor", stroke: "none" })),
+    search: (s = 18) => /* @__PURE__ */ React.createElement(Svg, { size: s }, /* @__PURE__ */ React.createElement("circle", { cx: "11", cy: "11", r: "7" }), /* @__PURE__ */ React.createElement("path", { d: "m20 20-3.5-3.5" })),
+    x: (s = 12) => /* @__PURE__ */ React.createElement(Svg, { size: s, sw: 2.4 }, /* @__PURE__ */ React.createElement("path", { d: "M6 6l12 12M18 6 6 18" })),
+    check: (s = 14) => /* @__PURE__ */ React.createElement(Svg, { size: s, sw: 2.6 }, /* @__PURE__ */ React.createElement("path", { d: "m5 12 5 5L20 7" })),
+    people: (s = 13) => /* @__PURE__ */ React.createElement(Svg, { size: s }, /* @__PURE__ */ React.createElement("circle", { cx: "9", cy: "8", r: "3.2" }), /* @__PURE__ */ React.createElement("path", { d: "M3.5 19a5.5 5.5 0 0 1 11 0" }), /* @__PURE__ */ React.createElement("circle", { cx: "17", cy: "9", r: "2.5" }), /* @__PURE__ */ React.createElement("path", { d: "M15.5 14.5a4.5 4.5 0 0 1 5 4.5" })),
+    plus: (s = 20) => /* @__PURE__ */ React.createElement(Svg, { size: s }, /* @__PURE__ */ React.createElement("path", { d: "M12 5v14M5 12h14" })),
+    compass: (s = 18) => /* @__PURE__ */ React.createElement(Svg, { size: s }, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "9" }), /* @__PURE__ */ React.createElement("path", { d: "m15.5 8.5-2 5-5 2 2-5z" })),
+    gear: (s = 19) => /* @__PURE__ */ React.createElement(Svg, { size: s, sw: 1.7 }, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "3" }), /* @__PURE__ */ React.createElement("path", { d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" })),
+    heart: (on) => /* @__PURE__ */ React.createElement("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: on ? "currentColor" : "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: "M12 20.3 4.6 13a4.4 4.4 0 0 1 6.2-6.2L12 8l1.2-1.2a4.4 4.4 0 0 1 6.2 6.2z" })),
+    star: /* @__PURE__ */ React.createElement("svg", { className: "star", width: "13", height: "13", viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: "m12 3 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.9l-5.4 2.9 1.1-6.1L3.2 9.4l6.1-.8z" })),
+    chevD: /* @__PURE__ */ React.createElement(Svg, { size: 14, sw: 2.2 }, /* @__PURE__ */ React.createElement("path", { d: "m6 9 6 6 6-6" })),
+    warn: /* @__PURE__ */ React.createElement(Svg, { size: 13, sw: 2.2 }, /* @__PURE__ */ React.createElement("path", { d: "M12 9v4M12 17h.01M10.3 4.6 2.8 18a1.4 1.4 0 0 0 1.2 2h16a1.4 1.4 0 0 0 1.2-2L13.7 4.6a1.4 1.4 0 0 0-2.4 0z" })),
+    leaf: /* @__PURE__ */ React.createElement(Svg, { size: 13 }, /* @__PURE__ */ React.createElement("path", { d: "M5 19c0-8 5-13 14-14 0 9-5 14-14 14z" }), /* @__PURE__ */ React.createElement("path", { d: "M5 19 13 11" })),
+    checkS: /* @__PURE__ */ React.createElement(Svg, { size: 13, sw: 2.4 }, /* @__PURE__ */ React.createElement("path", { d: "m5 12 5 5L20 7" }))
+  };
+  function Ingredient({ k, cls, dark }) {
+    const parts = ICONS[k] || ICONS.default;
+    const tint = TINT[AISLE[k] || "pantry"][dark ? 1 : 0];
+    return /* @__PURE__ */ React.createElement("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, parts.map((p, i) => /* @__PURE__ */ React.createElement("path", { key: i, d: p.d, fill: p.body ? tint : p.dot ? "currentColor" : "none" })));
+  }
+  function useFilter(q, tagIds) {
+    return useMemo(() => {
+      const nq = norm(q);
+      const matches = (r, ids) => (!nq || norm(r.title).includes(nq)) && ids.every((id) => r.tags.includes(id));
+      const results = RECIPES.filter((r) => matches(r, tagIds));
+      const used = new Set(RECIPES.flatMap((r) => r.tags));
+      const options = TAGS.filter((t) => used.has(t.id)).sort((a, b) => GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group) || (a.family ? a.name.localeCompare(b.name) : 0));
+      const countWith = (id) => RECIPES.filter((r) => matches(r, tagIds.includes(id) ? tagIds : [...tagIds, id])).length;
+      const countWithout = (id) => RECIPES.filter((r) => matches(r, tagIds.filter((x) => x !== id))).length;
+      const countNoQ = RECIPES.filter((r) => tagIds.every((id) => r.tags.includes(id))).length;
+      return { results, options, countWith, countWithout, countNoQ };
+    }, [q, tagIds.join("|")]);
+  }
+  function InlinePopper(props) {
+    const { anchorEl, open, disablePortal, placement, popperRef, popperOptions, modifiers, transition, keepMounted, style, children, className, ...rest } = props;
+    return /* @__PURE__ */ React.createElement("div", { ...rest, className: (className || "") + " inline-pop" }, children);
+  }
+  function TagFilter({ value, onChange, f, limitTags = 2, placeholder = "Tags", PopperComponent, open, onClose, autoFocus, inputRef, compact }) {
+    const selectedIds = value.map((t) => t.id);
+    return /* @__PURE__ */ React.createElement(
+      Autocomplete,
+      {
+        multiple: true,
+        className: "tagfield" + (compact ? " compact" : ""),
+        options: f.options,
+        value,
+        onChange: (e, v) => onChange(v.map((t) => t.id)),
+        groupBy: (o) => o.group,
+        getOptionLabel: (o) => o.name,
+        isOptionEqualToValue: (a, b) => a.id === b.id,
+        getOptionDisabled: (o) => !selectedIds.includes(o.id) && f.countWith(o.id) === 0,
+        limitTags,
+        getLimitTagsText: (more) => /* @__PURE__ */ React.createElement("span", { className: "more", "aria-label": `and ${plural(more, "more Tag", "more Tags")}` }, "+", more),
+        disableCloseOnSelect: true,
+        openOnFocus: true,
+        forcePopupIcon: false,
+        disablePortal: true,
+        autoHighlight: true,
+        open,
+        onClose,
+        PopperComponent,
+        noOptionsText: "No Tag by that name on your Recipes",
+        clearText: "Clear Tags",
+        renderTags: (vals, getTagProps) => vals.map((t, index) => {
+          const { key, ...tp } = getTagProps({ index });
+          return /* @__PURE__ */ React.createElement(Chip, { key: t.id, ...tp, size: "small", label: t.name, className: t.family ? "fam" : "", deleteIcon: /* @__PURE__ */ React.createElement("span", { "aria-hidden": "true" }, I.x(11)) });
+        }),
+        renderGroup: (params) => /* @__PURE__ */ React.createElement("li", { key: params.key, className: "tg" }, /* @__PURE__ */ React.createElement("div", { className: "tg-head" }, params.group === "Your Tags" ? /* @__PURE__ */ React.createElement(React.Fragment, null, I.people(13), /* @__PURE__ */ React.createElement("span", null, "Your Tags"), /* @__PURE__ */ React.createElement("em", null, "only your family sees these")) : /* @__PURE__ */ React.createElement("span", null, params.group)), /* @__PURE__ */ React.createElement("ul", { className: "tg-items" }, params.children)),
+        renderOption: (props, o, { selected }) => {
+          const { key, ...lp } = props;
+          const n = f.countWith(o.id);
+          return /* @__PURE__ */ React.createElement("li", { key: o.id, ...lp }, /* @__PURE__ */ React.createElement("span", { className: "box" + (selected ? " on" : ""), "aria-hidden": "true" }, selected && I.check(13)), /* @__PURE__ */ React.createElement("span", { className: "nm" }, o.name), /* @__PURE__ */ React.createElement("span", { className: "ct", "aria-label": selected ? void 0 : plural(n, "Recipe", "Recipes") }, selected ? "" : n));
+        },
+        renderInput: (params) => /* @__PURE__ */ React.createElement(
+          InputBase,
+          {
+            ref: params.InputProps.ref,
+            className: params.InputProps.className,
+            fullWidth: true,
+            autoFocus,
+            startAdornment: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "lead" }, I.tag(18)), params.InputProps.startAdornment),
+            endAdornment: params.InputProps.endAdornment,
+            inputProps: { ...params.inputProps, ref: (el) => {
+              params.inputProps.ref.current = el;
+              if (inputRef) inputRef.current = el;
+            } },
+            placeholder: value.length ? "" : placeholder,
+            "aria-label": "Filter by Tags"
+          }
+        )
+      }
+    );
+  }
+  function orderedTags(r, selected) {
+    const rank = (t) => selected.includes(t.id) ? -10 + selected.indexOf(t.id) : GROUP_ORDER.indexOf(t.group);
+    return r.tags.map((id) => TAG[id]).sort((a, b) => rank(a) - rank(b));
+  }
+  function RowTags({ r, selected, level }) {
+    const tags = orderedTags(r, selected);
+    const shown = tags.slice(0, 2), more = tags.length - shown.length;
+    const label = `Tags: ${tags.map((t) => t.name).join(", ")}`;
+    return /* @__PURE__ */ React.createElement("div", { className: "rtags", "aria-label": label }, shown.map((t) => /* @__PURE__ */ React.createElement("span", { key: t.id, "aria-hidden": "true", className: "rt" + (selected.includes(t.id) ? " hit" : t.family ? " fam" : "") }, t.name)), more > 0 && /* @__PURE__ */ React.createElement("span", { className: "rmore", "aria-hidden": "true" }, "+", more), /* @__PURE__ */ React.createElement("span", { className: "lvl", "aria-hidden": "true" }, "\xB7 ", level));
+  }
+  function Row({ r, selected, dark, inCan, favs, toggleFav }) {
+    const on = favs.has(r.id);
+    return /* @__PURE__ */ React.createElement("li", null, /* @__PURE__ */ React.createElement("a", { className: "row", href: "#", onClick: (e) => e.preventDefault() }, /* @__PURE__ */ React.createElement("div", { className: "cluster", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement(Ingredient, { k: r.ing[0], cls: "a", dark }), /* @__PURE__ */ React.createElement("span", { className: "halo" }), /* @__PURE__ */ React.createElement(Ingredient, { k: r.ing[1], cls: "b", dark })), /* @__PURE__ */ React.createElement("div", { className: "body" }, /* @__PURE__ */ React.createElement("div", { className: "title" }, r.title), r.base && /* @__PURE__ */ React.createElement("div", { className: "vof" }, "Variant of ", r.base), /* @__PURE__ */ React.createElement(RowTags, { r, selected, level: r.level }), r.can && !inCan || r.missing || r.expiring ? /* @__PURE__ */ React.createElement("div", { className: "pills" }, r.can && !inCan && /* @__PURE__ */ React.createElement("span", { className: "pill ok" }, I.checkS, "Can make"), r.missing && /* @__PURE__ */ React.createElement("span", { className: "pill soon" }, I.warn, "Missing ", r.missing), r.expiring ? /* @__PURE__ */ React.createElement("span", { className: "pill urg" }, I.leaf, r.expiring, " expiring") : null) : null), /* @__PURE__ */ React.createElement("div", { className: "time" }, /* @__PURE__ */ React.createElement("div", { className: "n" }, r.min), /* @__PURE__ */ React.createElement("div", { className: "u" }, "min"))), /* @__PURE__ */ React.createElement("button", { className: "heart", type: "button", "aria-pressed": on, "aria-label": `${on ? "Remove from" : "Add to"} Favorites: ${r.title}`, onClick: () => toggleFav(r.id) }, I.heart(on)));
+  }
+  function Group({ id, items, render, expanded, setExpanded }) {
+    const open = expanded.has(id);
+    const shown = open ? items : items.slice(0, LIMIT);
+    const hidden = items.length - shown.length;
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("ul", { className: "rows" }, shown.map(render)), hidden > 0 && /* @__PURE__ */ React.createElement("button", { className: "more-row", type: "button", onClick: () => setExpanded(/* @__PURE__ */ new Set([...expanded, id])) }, "Show ", hidden, " more", I.chevD), open && items.length > LIMIT && /* @__PURE__ */ React.createElement("button", { className: "more-row", type: "button", onClick: () => {
+      const s = new Set(expanded);
+      s.delete(id);
+      setExpanded(s);
+    } }, "Show less"));
+  }
+  function SearchBox({ q, setQ }) {
+    return /* @__PURE__ */ React.createElement("div", { className: "search" }, I.search(18), /* @__PURE__ */ React.createElement("input", { type: "search", value: q, placeholder: "Search your family's Recipes", "aria-label": "Search your family's Recipes", autoComplete: "off", onChange: (e) => setQ(e.target.value) }));
+  }
+  function FilterC({ q, setQ, tagIds, setTags, openSheet }) {
+    return /* @__PURE__ */ React.createElement("div", { className: "fblock c" }, /* @__PURE__ */ React.createElement("div", { className: "crow" }, /* @__PURE__ */ React.createElement(SearchBox, { q, setQ }), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        className: "tagbtn" + (tagIds.length ? " on" : ""),
+        onClick: openSheet,
+        "aria-haspopup": "dialog",
+        "aria-label": `Filter by Tags${tagIds.length ? `, ${tagIds.length} selected` : ""}`
+      },
+      I.tag(18),
+      /* @__PURE__ */ React.createElement("span", null, "Tags"),
+      tagIds.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "cnt" }, tagIds.length)
+    )), tagIds.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "selrow", "aria-label": "Selected Tags" }, tagIds.map((id) => TAG[id]).map((t) => /* @__PURE__ */ React.createElement("button", { key: t.id, type: "button", className: "selchip" + (t.family ? " fam" : ""), "aria-label": `Remove Tag ${t.name}`, onClick: () => setTags(tagIds.filter((x) => x !== t.id)) }, t.name, I.x(10)))));
+  }
+  function TagSheet({ tagIds, setTags, f, value, close }) {
+    const n = f.results.length;
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "scrim", onClick: close }), /* @__PURE__ */ React.createElement("div", { className: "sheet", role: "dialog", "aria-modal": "true", "aria-labelledby": "tsT" }, /* @__PURE__ */ React.createElement("div", { className: "grab" }), /* @__PURE__ */ React.createElement("div", { className: "shead" }, /* @__PURE__ */ React.createElement("h2", { id: "tsT" }, "Filter by Tags"), /* @__PURE__ */ React.createElement("button", { className: "ghost", type: "button", "aria-label": "Close", onClick: close }, I.x(16))), /* @__PURE__ */ React.createElement("p", { className: "shint" }, "Recipes must have ", /* @__PURE__ */ React.createElement("b", null, "every"), " Tag you pick."), /* @__PURE__ */ React.createElement("div", { className: "sfield" }, /* @__PURE__ */ React.createElement(
+      TagFilter,
+      {
+        value,
+        onChange: setTags,
+        f,
+        limitTags: -1,
+        placeholder: "Type to find a Tag",
+        PopperComponent: InlinePopper,
+        open: true,
+        onClose: (e, reason) => {
+          if (reason === "escape") close();
+        }
+      }
+    )), /* @__PURE__ */ React.createElement("div", { className: "sfoot" }, /* @__PURE__ */ React.createElement("button", { className: "btn secondary", type: "button", disabled: !tagIds.length, onClick: () => setTags([]) }, "Clear"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", type: "button", onClick: close }, n ? `Show ${plural(n, "Recipe", "Recipes")}` : "No Recipes match"))));
+  }
+  function List({ q, tagIds, setTags, setQ, f, dark, favs, toggleFav, expanded, setExpanded }) {
+    const filtering = !!q.trim() || tagIds.length > 0;
+    const row = (inCan) => (r) => /* @__PURE__ */ React.createElement(Row, { key: r.id, r, selected: tagIds, dark, inCan, favs, toggleFav });
+    if (filtering) {
+      const res = [...f.results].sort((a, b) => a.title.localeCompare(b.title));
+      if (!res.length) {
+        return /* @__PURE__ */ React.createElement("div", { className: "empty" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, tagIds.length ? `No Recipes have all ${tagIds.length > 1 ? `${tagIds.length} Tags` : "that Tag"}${q.trim() ? ` and match \u201C${q.trim()}\u201D` : ""}` : `No Recipes match \u201C${q.trim()}\u201D`), /* @__PURE__ */ React.createElement("div", { className: "s" }, "Try without one of them:"), /* @__PURE__ */ React.createElement("div", { className: "relax" }, q.trim() && tagIds.length > 0 && /* @__PURE__ */ React.createElement("button", { type: "button", className: "rx", onClick: () => setQ("") }, "Without \u201C", q.trim(), "\u201D ", /* @__PURE__ */ React.createElement("b", null, f.countNoQ)), tagIds.map((id) => /* @__PURE__ */ React.createElement("button", { key: id, type: "button", className: "rx", onClick: () => setTags(tagIds.filter((x) => x !== id)), disabled: !f.countWithout(id) }, "Without ", TAG[id].name, " ", /* @__PURE__ */ React.createElement("b", null, f.countWithout(id))))));
+      }
+      return /* @__PURE__ */ React.createElement("section", null, /* @__PURE__ */ React.createElement("div", { className: "seclabel" }, /* @__PURE__ */ React.createElement("span", null, "Matches"), /* @__PURE__ */ React.createElement("span", { className: "cnt" }, res.length)), /* @__PURE__ */ React.createElement(Group, { id: "hits", items: res, render: row(false), expanded, setExpanded }));
+    }
+    const can = RECIPES.filter((r) => r.can).sort((a, b) => (b.expiring || 0) - (a.expiring || 0) || a.title.localeCompare(b.title));
+    const seen = new Set(can.map((r) => r.id));
+    const fav = RECIPES.filter((r) => favs.has(r.id) && !seen.has(r.id));
+    fav.forEach((r) => seen.add(r.id));
+    const rest = RECIPES.filter((r) => !seen.has(r.id)).sort((a, b) => a.title.localeCompare(b.title));
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("section", null, /* @__PURE__ */ React.createElement("div", { className: "seclabel" }, /* @__PURE__ */ React.createElement("span", null, "You can make this"), /* @__PURE__ */ React.createElement("span", { className: "cnt" }, can.length)), /* @__PURE__ */ React.createElement(Group, { id: "can", items: can, render: row(true), expanded, setExpanded })), fav.length > 0 && /* @__PURE__ */ React.createElement("section", null, /* @__PURE__ */ React.createElement("div", { className: "seclabel" }, /* @__PURE__ */ React.createElement("span", { className: "k" }, I.star, "Favorites"), /* @__PURE__ */ React.createElement("span", { className: "cnt" }, fav.length)), /* @__PURE__ */ React.createElement(Group, { id: "fav", items: fav, render: row(false), expanded, setExpanded })), /* @__PURE__ */ React.createElement("section", null, /* @__PURE__ */ React.createElement("div", { className: "seclabel" }, /* @__PURE__ */ React.createElement("span", null, "Your family's"), /* @__PURE__ */ React.createElement("span", { className: "cnt" }, RECIPES.length, " in all")), /* @__PURE__ */ React.createElement(Group, { id: "fam", items: rest, render: row(false), expanded, setExpanded })));
+  }
+  var muiTheme = createTheme({ typography: { fontFamily: "inherit" }, components: { MuiAutocomplete: { defaultProps: { componentsProps: { paper: { elevation: 0 } } } } } });
+  function App() {
+    const [theme, setTheme] = useState("warm");
+    const [scen, setScen] = useState("none");
+    const [q, setQ] = useState("");
+    const [tagIds, setTagIds] = useState([]);
+    const [favs, setFavs] = useState(() => new Set(RECIPES.filter((r) => r.fav).map((r) => r.id)));
+    const [expanded, setExpanded] = useState(/* @__PURE__ */ new Set());
+    const [sheet, setSheet] = useState(false);
+    const [nonce, setNonce] = useState(0);
+    const scrRef = useRef(null);
+    const f = useFilter(q, tagIds);
+    const value = tagIds.map((id) => TAG[id]);
+    const dark = theme === "dark";
+    const setTags = useCallback((ids) => {
+      setTagIds(ids);
+      setExpanded(/* @__PURE__ */ new Set());
+    }, []);
+    useEffect(() => {
+      const ph = document.getElementById("phone");
+      const th = THEMES[theme];
+      for (const k in th) ph.style.setProperty("--" + k, th[k]);
+      ph.dataset.theme = theme;
+    }, [theme]);
+    const pickScen = (s) => {
+      const sc = SCENARIOS.find((x) => x.id === s);
+      setScen(s);
+      setQ(sc.q);
+      setTagIds(sc.tags);
+      setExpanded(/* @__PURE__ */ new Set());
+      setSheet(false);
+      setNonce((n) => n + 1);
+      if (scrRef.current) scrRef.current.scrollTop = 0;
+    };
+    const toggleFav = (id) => setFavs((s) => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+    const live = tagIds.length || q.trim() ? `${tagIds.length ? `${value.map((t) => t.name).join(", ")} selected. ` : ""}${plural(f.results.length, "Recipe matches", "Recipes match")}.` : "";
+    const fprops = { q, setQ, tagIds, setTags, f, value };
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Controls, { theme, setTheme, scen, setScen: pickScen }), ReactDOM.createPortal(
+      /* @__PURE__ */ React.createElement(ThemeProvider, { theme: muiTheme }, /* @__PURE__ */ React.createElement("div", { className: "screen", ref: scrRef }, /* @__PURE__ */ React.createElement("div", { className: "hdr" }, /* @__PURE__ */ React.createElement("h1", null, "Recipes"), /* @__PURE__ */ React.createElement("button", { className: "xpill", type: "button" }, I.compass(18), "Explore"), /* @__PURE__ */ React.createElement("button", { className: "fab", type: "button", "aria-label": "Add a Recipe" }, I.plus(20)), /* @__PURE__ */ React.createElement("button", { className: "ghost", type: "button", "aria-label": "Settings" }, I.gear(19))), /* @__PURE__ */ React.createElement("div", { className: "sticky", key: nonce }, /* @__PURE__ */ React.createElement(FilterC, { ...fprops, openSheet: () => setSheet(true) })), /* @__PURE__ */ React.createElement(List, { ...fprops, dark, favs, toggleFav, expanded, setExpanded })), sheet && /* @__PURE__ */ React.createElement(TagSheet, { ...fprops, close: () => setSheet(false) }), /* @__PURE__ */ React.createElement("div", { className: "sr", role: "status", "aria-live": "polite" }, live)),
+      document.getElementById("vp")
+    ));
+  }
+  function Controls({ theme, setTheme, scen, setScen }) {
+    const seg = (items, cur, set, cls = "") => /* @__PURE__ */ React.createElement("div", { className: "seg " + cls, role: "group" }, items.map((it) => /* @__PURE__ */ React.createElement("button", { key: it.id, type: "button", "aria-pressed": cur === it.id, onClick: () => set(it.id) }, it.k && /* @__PURE__ */ React.createElement("span", { className: "k" }, it.k), it.label)));
+    return ReactDOM.createPortal(
+      /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("h2", null, "Scenario"), seg(SCENARIOS, scen, setScen, "scen"), /* @__PURE__ */ React.createElement("h2", null, "Theme"), seg([{ id: "warm", label: "Warm editorial" }, { id: "minimal", label: "Minimal crisp" }, { id: "dark", label: "Dark-first" }], theme, setTheme)),
+      document.getElementById("controls")
+    );
+  }
+  if (window.MaterialUI) {
+    const lf = document.getElementById("loadfail");
+    if (lf) lf.remove();
+    ReactDOM.createRoot(document.getElementById("approot")).render(/* @__PURE__ */ React.createElement(App, null));
+  }
+})();
+</script>
+</body></html>

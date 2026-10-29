@@ -16,6 +16,8 @@ import {
   useToast,
   visuallyHidden,
 } from '@pocket-pantry/ui';
+import { RowTags } from './RowTags';
+import { TagChips } from './TagChips';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -91,7 +93,6 @@ export function QuickViewSheet({
     (variant) => variant.owner === 'catalog',
   );
   const minutes = totalMinutes(recipe);
-  const style = recipe.cuisine?.name ?? recipe.method?.name ?? null;
   const facts = [
     {
       label: t('facts.time'),
@@ -104,7 +105,6 @@ export function QuickViewSheet({
       value: recipe.difficulty ? t(`difficulty.${recipe.difficulty}`) : '—',
       wide: false,
     },
-    { label: t('facts.style'), value: style ?? '—', wide: true },
   ];
   const added = state.status !== 'none';
   const openPreview = (id: string) => {
@@ -175,7 +175,7 @@ export function QuickViewSheet({
           component="dl"
           sx={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr 1.5fr',
+            gridTemplateColumns: '1fr 1fr 1fr',
             gap: '8px',
             m: 0,
           }}
@@ -214,6 +214,11 @@ export function QuickViewSheet({
             </Box>
           ))}
         </Box>
+        {recipe.tags.length > 0 ? (
+          <Box sx={{ mt: '10px' }}>
+            <TagChips tags={recipe.tags} />
+          </Box>
+        ) : null}
         {card || recipe.allergyWarning ? (
           <StatusPills
             recipeId={recipe.id}
@@ -349,9 +354,7 @@ export function QuickViewSheet({
                           color: tokens.color.muted,
                         }}
                       >
-                        {[variant.cuisine?.name, variant.method?.name]
-                          .filter(Boolean)
-                          .join(' · ')}
+                        <RowTags tags={variant.tags} />
                       </Box>
                     </Box>
                   </Box>

@@ -293,8 +293,7 @@ describe('Allergies and the Allergy Warning (integration)', () => {
           .put(`/${variant.id}`, {
             title: variant.title,
             servings: variant.servings,
-            cuisineId: variant.cuisineId,
-            methodId: variant.methodId,
+            tagIds: variant.tagIds,
             lines: [g(ONION)],
             steps: variant.steps.map((step) => ({ ...step })),
           })

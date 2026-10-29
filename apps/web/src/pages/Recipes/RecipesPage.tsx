@@ -21,7 +21,6 @@ import { localIso } from '../../lib/pantry';
 import {
   hasNoFamilyRecipes,
   isFiltering,
-  useRecipeFilters,
   useRecipes,
   type RecipeBrowse,
   type RecipeListItem,
@@ -29,17 +28,20 @@ import {
 import { useRecipeDrafts } from '../../lib/recipeDrafts';
 import {
   FROM_LINK_PARAM,
-  FROM_LINK_PREFILL_STATE,
+  FROM_TEXT_PARAM,
+  FROM_TEXT_PREFILL_STATE,
 } from '../../lib/recipeRoutes';
 import { useRecipeDraftDiscard } from './useRecipeDraftDiscard';
 import { EmptyFamilyRecipes } from './components/EmptyFamilyRecipes';
 import { CookTonightPanel } from '../../components/CookTonightPanel';
+import { FromLinkSheet } from './components/FromLinkSheet';
 import {
-  FromLinkSheet,
-  type FromLinkPrefill,
-} from './components/FromLinkSheet';
+  FromTextSheet,
+  type FromTextPrefill,
+} from './components/FromTextSheet';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
+import { TagNoMatch } from './components/TagNoMatch';
 import { SectionLabel } from './components/SectionLabel';
 
 /** The header's one second button besides "+" (ADR 0027 amendment): a way into Explore. */
@@ -114,13 +116,11 @@ export function RecipesPage() {
   const { t } = useTranslation(['recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
     search: '',
-    cuisineId: '',
-    methodId: '',
+    tagIds: [],
   });
   // "Show" in the hidden-by-Allergies note asks the list and the Cook Tonight card for everything.
   const [showHidden, setShowHidden] = useState(false);
   const recipes = useRecipes(browse, { showHidden, scope: 'family' });
-  const filters = useRecipeFilters();
   const cookTonight = useCookTonight(
     // oxlint-disable-next-line react/purity -- "today" must follow the clock across midnight; freezing it would leave a Member on a stale day
     localIso(new Date()),
@@ -135,17 +135,27 @@ export function RecipesPage() {
       .length ?? 0;
   const [params, setParams] = useSearchParams();
   const fromLinkOpen = params.get(FROM_LINK_PARAM) === '1';
-  // "Paste text instead" on a failed link read arrives here with the link to keep.
+  const fromTextOpen = params.get(FROM_TEXT_PARAM) === '1';
+  // "Paste text instead" on a failed link read arrives here with the site to name and the read to replace.
   const prefill = (
     useLocation().state as {
-      [FROM_LINK_PREFILL_STATE]?: FromLinkPrefill;
+      [FROM_TEXT_PREFILL_STATE]?: FromTextPrefill;
     } | null
-  )?.[FROM_LINK_PREFILL_STATE];
+  )?.[FROM_TEXT_PREFILL_STATE];
   const closeFromLink = () =>
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev);
         next.delete(FROM_LINK_PARAM);
+        return next;
+      },
+      { replace: true },
+    );
+  const closeFromText = () =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete(FROM_TEXT_PARAM);
         return next;
       },
       { replace: true },
@@ -179,6 +189,10 @@ export function RecipesPage() {
             {
               label: t('recipes:fromLink.menuItem'),
               href: `/recipes?${FROM_LINK_PARAM}=1`,
+            },
+            {
+              label: t('recipes:fromText.menuItem'),
+              href: `/recipes?${FROM_TEXT_PARAM}=1`,
             },
             {
               label: t('recipes:explore.menuItem'),
@@ -219,7 +233,11 @@ export function RecipesPage() {
           <RecipeFilters
             value={browse}
             onChange={setBrowse}
-            options={filters.data}
+            tags={{
+              scope: 'family',
+              showHidden,
+              resultCount: recipes.data ? items.length : undefined,
+            }}
           />
         )}
         <HiddenByAllergiesNote
@@ -243,7 +261,15 @@ export function RecipesPage() {
             {...addToFamily}
           />
         ) : null}
-        {noneListed && !empty ? (
+        {noneListed && !empty && browse.tagIds.length > 0 ? (
+          <TagNoMatch
+            browse={browse}
+            onChange={setBrowse}
+            scope="family"
+            showHidden={showHidden}
+          />
+        ) : null}
+        {noneListed && !empty && browse.tagIds.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: '32px' }}>
             <Box sx={{ ...displayType, fontSize: 18 }}>
               {filtering ? t('recipes:noMatches') : t('recipes:allHidden')}
@@ -271,6 +297,7 @@ export function RecipesPage() {
                   recipe={recipe}
                   card={cardFor(index, recipe)}
                   filtering={filtering || recipe.parentId !== null}
+                  matchedTagIds={browse.tagIds}
                 />
               ))}
             </Box>
@@ -284,8 +311,13 @@ export function RecipesPage() {
       </Stack>
       <FromLinkSheet
         open={fromLinkOpen}
-        prefill={fromLinkOpen ? prefill : undefined}
         onClose={closeFromLink}
+        onExited={() => addButton.current?.focus()}
+      />
+      <FromTextSheet
+        open={fromTextOpen}
+        prefill={fromTextOpen ? prefill : undefined}
+        onClose={closeFromText}
         onExited={() => addButton.current?.focus()}
       />
     </>

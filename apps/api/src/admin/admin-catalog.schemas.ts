@@ -33,9 +33,34 @@ export const aisleOrder = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
 });
 
-/** A Cuisine, Method or Eating Moment: just a name; its translations are catalog translations. */
+/** An Eating Moment or Allergen: just a name; its translations are catalog translations. */
 export const listEntryCreate = z.object({ name: text });
 export const listEntryUpdate = z.object({ name: text });
+
+/** A Tag Group: just a name; its position is set by the order endpoint. */
+export const tagGroupCreate = z.object({ name: text });
+export const tagGroupUpdate = z.object({ name: text });
+/** The full order: every Tag Group id exactly once, first shown first. */
+export const tagGroupOrder = z.object({
+  ids: z
+    .array(id)
+    .min(1)
+    .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
+});
+
+/** A Catalog Tag lives in exactly one Tag Group; its translations are catalog translations. */
+export const catalogTagCreate = z.object({ name: text, groupId: id });
+export const catalogTagUpdate = z
+  .object({ name: text, groupId: id })
+  .partial()
+  .refine(atLeastOne, atLeastOneMessage);
+/** Deleting a Catalog Tag that Recipes carry needs `confirm=true`. */
+export const catalogTagDeleteQuery = z.object({
+  confirm: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
+});
 
 /** The full order: every Eating Moment id (archived included) exactly once. */
 export const eatingMomentOrder = z.object({
@@ -139,3 +164,8 @@ export type ListEntryCreate = z.infer<typeof listEntryCreate>;
 export type ListEntryUpdate = z.infer<typeof listEntryUpdate>;
 export type EatingMomentOrder = z.infer<typeof eatingMomentOrder>;
 export type IngredientAllergensBody = z.infer<typeof ingredientAllergensBody>;
+export type TagGroupCreate = z.infer<typeof tagGroupCreate>;
+export type TagGroupUpdate = z.infer<typeof tagGroupUpdate>;
+export type TagGroupOrder = z.infer<typeof tagGroupOrder>;
+export type CatalogTagCreate = z.infer<typeof catalogTagCreate>;
+export type CatalogTagUpdate = z.infer<typeof catalogTagUpdate>;

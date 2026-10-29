@@ -3,12 +3,10 @@ import { confidentMatch } from '../scan/catalog-matching';
 import type { LinkReading } from './link-reading.schemas';
 import { MAX_LINES, MAX_STEPS, type LinkRecipeDraft } from './recipes.schemas';
 
-/** What the mapping checks the model's ids against: the Family's Catalog scope and the Cuisine and Method lists. */
+/** What the mapping checks the model's ids against: the Family's Catalog scope. */
 export type ReadingContext = {
   /** Ingredient id to its name in the Catalog Language, for the Family's scope. */
   ingredientNames: ReadonlyMap<string, string>;
-  cuisineIds: ReadonlySet<string>;
-  methodIds: ReadonlySet<string>;
   /** A Match below this confidence leaves the line Unmatched. */
   matchThreshold: number;
 };
@@ -90,14 +88,8 @@ export function draftOfReading(
     prepMinutes: wholeNumber(reading.prepMinutes, 0, 100_000),
     cookMinutes: wholeNumber(reading.cookMinutes, 0, 100_000),
     difficulty: null,
-    cuisineId:
-      reading.cuisineId !== null && context.cuisineIds.has(reading.cuisineId)
-        ? reading.cuisineId
-        : null,
-    methodId:
-      reading.methodId !== null && context.methodIds.has(reading.methodId)
-        ? reading.methodId
-        : null,
+    // Already ids of allowed Tags, deduped and capped (`tagIdsAt`); a read never makes a Tag.
+    tagIds: reading.tagIds,
     lines,
     steps,
     tips: [],

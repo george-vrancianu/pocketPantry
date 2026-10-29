@@ -250,5 +250,27 @@
     "hint": "Fiecare membru își stabilește propriile alergii. Le poți vedea aici, dar nu le poți schimba.",
     "none": "Nimic înregistrat",
     "loadFailed": "Alergiile membrilor nu au putut fi încărcate."
+  },
+  "manageTags": {
+    "title": "Gestionează Tagurile",
+    "hint": "Tagurile proprii ale familiei. Redenumește un Tag ca să-l pui în ordine sau șterge-l ca să dispară din toate Rețetele.",
+    "empty": "Familia ta nu are încă Taguri proprii. Creează unul din câmpul de Taguri al unei Rețete.",
+    "nameLabel": "Numele Tagului",
+    "recipes_one": "{{count}} Rețetă",
+    "recipes_few": "{{count}} Rețete",
+    "recipes_other": "{{count}} de Rețete",
+    "renameButton": "Redenumește",
+    "rename": "Redenumește {{name}}",
+    "cancelRename": "Anulează redenumirea {{name}}",
+    "delete": "Șterge {{name}}",
+    "deleted_one": "„{{name}}” a fost șters din {{count}} Rețetă",
+    "deleted_few": "„{{name}}” a fost șters din {{count}} Rețete",
+    "deleted_other": "„{{name}}” a fost șters din {{count}} de Rețete",
+    "deletedUnused": "„{{name}}” a fost șters",
+    "merge": {
+      "title": "Îl unești cu „{{name}}”?",
+      "body": "Există deja un Tag numit „{{name}}”. Unirea îl pune pe toate Rețetele care au „{{from}}” și șterge „{{from}}”. O Rețetă care le are pe amândouă îl păstrează o singură dată.",
+      "confirm": "Unește"
+    }
   }
 }

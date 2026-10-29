@@ -1,93 +1,85 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AdminListEntry } from '../../../lib/admin';
 import { renderWithProviders, stubApi } from '../../../test/render';
-import { ListEntryEditor } from './ListEntryEditor';
+import { TagGroupEditor } from './TagGroupEditor';
 
-const italian: AdminListEntry = {
-  id: 'c1',
-  name: 'Italian',
-  translations: [{ id: 't1', locale: 'ro', kind: 'name', value: 'Italiană' }],
-};
-
-describe('ListEntryEditor', () => {
+describe('TagGroupEditor', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it('creates a Cuisine by name', async () => {
+  it('creates a Tag Group by name', async () => {
     const { fetchMock, calls } = stubApi({
-      'POST /api/admin/catalog/cuisines': () =>
+      'POST /api/admin/catalog/tag-groups': () =>
         Response.json({ id: 'new' }, { status: 201 }),
     });
     vi.stubGlobal('fetch', fetchMock);
     const onDone = vi.fn();
-    renderWithProviders(<ListEntryEditor kind="cuisine" onDone={onDone} />);
+    renderWithProviders(<TagGroupEditor onDone={onDone} />);
     const user = userEvent.setup();
 
-    expect(screen.getByRole('heading', { name: 'New Cuisine' })).toHaveFocus();
-    await user.type(screen.getByLabelText(/Name \(English\)/), ' Thai ');
+    expect(
+      screen.getByRole('heading', { name: 'New Tag Group' }),
+    ).toHaveFocus();
+    await user.type(screen.getByLabelText(/Name \(English\)/), ' Season ');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(calls[0]).toMatchObject({
-      key: 'POST /api/admin/catalog/cuisines',
-      body: { name: 'Thai' },
+      key: 'POST /api/admin/catalog/tag-groups',
+      body: { name: 'Season' },
     });
   });
 
-  it('translates a Method like an Aisle, without Synonyms', async () => {
+  it('translates a Tag Group without Synonyms', async () => {
     const { fetchMock, calls } = stubApi({
       'POST /api/admin/catalog/translations': () =>
         Response.json({}, { status: 201 }),
     });
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(
-      <ListEntryEditor
-        kind="method"
-        entry={{ id: 'm1', name: 'Baking', translations: [] }}
+      <TagGroupEditor
+        group={{ id: 'g1', name: 'Season', position: 1, translations: [] }}
         onDone={vi.fn()}
       />,
     );
     const user = userEvent.setup();
 
     expect(screen.queryByText(/Synonym/)).toBeNull();
-    await user.type(screen.getByLabelText('Name (Danish)'), 'Bagning');
+    await user.type(screen.getByLabelText('Name (Danish)'), 'Sæson');
     await user.click(screen.getByRole('button', { name: 'Save Danish name' }));
     await vi.waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0].body).toEqual({
-      entityType: 'method',
-      entityId: 'm1',
+      entityType: 'tag_group',
+      entityId: 'g1',
       locale: 'da',
       kind: 'name',
-      value: 'Bagning',
+      value: 'Sæson',
     });
   });
 
-  it('explains why a Cuisine in use cannot be deleted', async () => {
-    vi.stubGlobal(
-      'fetch',
-      stubApi({
-        'DELETE /api/admin/catalog/cuisines/c1': () =>
-          Response.json(
-            { code: 'catalog.cuisine_in_use', params: {} },
-            { status: 409 },
-          ),
-      }).fetchMock,
-    );
-    const onDone = vi.fn();
+  it('explains why a Tag Group with Catalog Tags cannot be deleted', async () => {
+    const { fetchMock } = stubApi({
+      'DELETE /api/admin/catalog/tag-groups/g1': () =>
+        Response.json(
+          { code: 'catalog.tag_group_not_empty', params: {} },
+          { status: 409 },
+        ),
+    });
+    vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(
-      <ListEntryEditor kind="cuisine" entry={italian} onDone={onDone} />,
+      <TagGroupEditor
+        group={{ id: 'g1', name: 'Season', position: 1, translations: [] }}
+        onDone={vi.fn()}
+      />,
     );
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
-
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      /Recipes still use this Cuisine/,
+      /still has Catalog Tags/,
     );
-    expect(onDone).not.toHaveBeenCalled();
   });
 });

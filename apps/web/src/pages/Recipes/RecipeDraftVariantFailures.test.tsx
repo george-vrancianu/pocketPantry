@@ -22,8 +22,7 @@ const base: FamilyRecipeDraft = {
   prepMinutes: null,
   cookMinutes: null,
   difficulty: null,
-  cuisineId: null,
-  methodId: null,
+  tagIds: [],
   lines: [],
   steps: [],
   tips: [],
@@ -36,8 +35,7 @@ const content = (title: string): RecipeDraftContent => ({
   prepMinutes: '',
   cookMinutes: '',
   difficulty: '',
-  cuisineId: '',
-  methodId: '',
+  tagIds: [],
   lines: [],
   steps: [],
   guidance: { nutritionNote: '', pairings: [], eatingMoments: [] },
@@ -55,7 +53,7 @@ const created = () =>
 function setup(routes: Parameters<typeof stubApi>[0]) {
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [], eatingMoments: [] }),
+      Response.json({ tags: [], eatingMoments: [] }),
     [`GET /api/recipes/${BASE}/variant-draft`]: () => Response.json(base),
     ...routes,
   });

@@ -15,8 +15,6 @@ const recipe = (
   title,
   servings: 4,
   difficulty: null,
-  cuisineId: null,
-  methodId: null,
   archived: false,
   ...extra,
 });

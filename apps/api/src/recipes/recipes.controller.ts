@@ -18,6 +18,22 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { FamilyTagsService } from '../tags/family-tags.service';
+import {
+  renameTagBody,
+  resolveTagBody,
+  restoreTagBody,
+  tagParam,
+  type DeletedTag,
+  type ManagedTag,
+  type RenamedTag,
+  type RenameTagBody,
+  type ResolveTagBody,
+  type RestoredTag,
+  type RestoreTagBody,
+} from '../tags/family-tags.schemas';
+import { ManageFamilyTagsService } from '../tags/manage-family-tags.service';
+import type { RecipeTag } from '../tags/recipe-tags';
 import { MemberLanguageService } from '../member-language/member-language.service';
 import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
@@ -66,6 +82,8 @@ import {
   type CookTonightQuery,
   type CookTonightView,
   type RecipeDetail,
+  type FiltersQuery,
+  filtersQuery,
   type RecipeFilters,
   type RecipeList,
 } from './recipes.schemas';
@@ -86,12 +104,14 @@ export class RecipesController {
     private readonly link: LinkRecipesService,
     private readonly guidanceSuggestion: GuidanceSuggestionService,
     private readonly languages: MemberLanguageService,
+    private readonly familyTags: FamilyTagsService,
+    private readonly manageTags: ManageFamilyTagsService,
   ) {}
 
   @Get()
   @ApiOperation({
     summary:
-      'Browse Recipes: Base Recipes with Variant counts, or matching Recipes and Variants when searching or filtering by Cuisine or Method',
+      'Browse Recipes: Base Recipes with Variant counts, or matching Recipes and Variants when searching or filtering by Tags',
   })
   async list(
     @CurrentUser() member: CurrentUserValue,
@@ -104,15 +124,109 @@ export class RecipesController {
   @Get('filters')
   @ApiOperation({
     summary:
-      'Cuisines and Methods for the filter pickers, named in the Catalog Language',
+      'The Tags in use (in `scope`) for the filter pickers, named in the Catalog Language',
   })
   async filters(
     @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(filtersQuery)) query: FiltersQuery,
   ): Promise<RecipeFilters> {
     return this.browse.filters(
       member.id,
       await this.languages.catalogLanguageOf(member.id),
+      query.scope,
     );
+  }
+
+  // Declared before `:id` so it is not read as a Recipe id.
+  @Get('tags')
+  @ApiOperation({
+    summary:
+      'Every Tag the Member can put on a Recipe: Catalog Tags and the Family’s own, named in the Catalog Language',
+  })
+  async pickableTags(
+    @CurrentUser() member: CurrentUserValue,
+  ): Promise<RecipeTag[]> {
+    return this.browse.pickableTags(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id),
+    );
+  }
+
+  @Post('tags')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Resolves a typed Tag name: the Catalog Tag it matches in any language, else the Family’s Tag, else a new Family Tag',
+  })
+  async resolveTag(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(resolveTagBody)) body: ResolveTagBody,
+  ): Promise<RecipeTag> {
+    return this.familyTags.resolveName(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id),
+      body.name,
+    );
+  }
+
+  // The `tags/...` routes are declared before `:id` so they are not read as a Recipe id.
+  @Get('tags/family')
+  @ApiOperation({
+    summary:
+      'The Family’s own Tags with how many of the Family’s Recipes carry each (Manage Tags)',
+  })
+  familyTagList(
+    @CurrentUser() member: CurrentUserValue,
+  ): Promise<ManagedTag[]> {
+    return this.manageTags.list(member.id);
+  }
+
+  @Post('tags/restore')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Undo a Family Tag delete: recreates the Tag and exactly the given links (Recipes gone meanwhile are skipped; if the name was taken, the links go to that Tag)',
+  })
+  async restoreFamilyTag(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(restoreTagBody)) body: RestoreTagBody,
+  ): Promise<RestoredTag> {
+    return this.manageTags.restore(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id),
+      body,
+    );
+  }
+
+  @Patch('tags/:id')
+  @ApiOperation({
+    summary:
+      'Rename a Family Tag; 409 tags.name_taken when another Tag has the name, unless `merge` is true (links move to that Tag)',
+  })
+  async renameFamilyTag(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(tagParam)) params: { id: string },
+    @Body(new ZodValidationPipe(renameTagBody)) body: RenameTagBody,
+  ): Promise<RenamedTag> {
+    return this.manageTags.rename(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id),
+      params.id,
+      body.name,
+      body.merge,
+    );
+  }
+
+  @Delete('tags/:id')
+  @ApiOperation({
+    summary:
+      'Delete a Family Tag from every Recipe; returns what Undo needs to restore it',
+  })
+  removeFamilyTag(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(tagParam)) params: { id: string },
+  ): Promise<DeletedTag> {
+    return this.manageTags.remove(member.id, params.id);
   }
 
   // Declared before `:id` so it is not read as a Recipe id.

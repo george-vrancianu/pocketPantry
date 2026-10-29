@@ -15,8 +15,7 @@ import { NewRecipePage } from './FamilyRecipePages';
 import { RecipesPage } from './RecipesPage';
 
 const filters = {
-  cuisines: [{ id: 'c-fr', name: 'French' }],
-  methods: [{ id: 'm-pan', name: 'Pan frying' }],
+  tags: [],
   eatingMoments: [],
 };
 
@@ -31,8 +30,7 @@ const read = (
     prepMinutes: 10,
     cookMinutes: 15,
     difficulty: null,
-    cuisineId: 'c-fr',
-    methodId: 'm-pan',
+    tagIds: ['c-fr', 'm-pan'],
     lines: [
       {
         ingredientId: 'egg',
@@ -97,8 +95,7 @@ function draftViewOf(result: RecipeFromLinkDraft): RecipeDraftView {
       prepMinutes: draft.prepMinutes === null ? '' : String(draft.prepMinutes),
       cookMinutes: draft.cookMinutes === null ? '' : String(draft.cookMinutes),
       difficulty: draft.difficulty ?? '',
-      cuisineId: draft.cuisineId ?? '',
-      methodId: draft.methodId ?? '',
+      tagIds: draft.tagIds,
       lines: draft.lines.map((line) => ({
         ingredientId: line.ingredientId ?? '',
         name: line.ingredientName || line.rawName || '',
@@ -270,7 +267,7 @@ describe('"From a link" sheet and the link-read holder', () => {
       .filter((c) => c.key === 'POST /api/recipes/from-link')
       .map((c) => (c.body as { url: string }).url);
 
-  it('shows the Credit Price of a web page, and of pasted text once switched', async () => {
+  it('shows the Credit Price of a web page', async () => {
     const user = userEvent.setup({ delay: null });
     setup(
       {
@@ -288,13 +285,7 @@ describe('"From a link" sheet and the link-read holder', () => {
     expect(
       await screen.findByText('Reading a web page costs 2 Credits.'),
     ).toBeVisible();
-    await user.click(
-      screen.getByRole('button', { name: 'Paste text instead' }),
-    );
-    expect(
-      screen.getByText('Reading pasted text costs 1 Credit.'),
-    ).toBeVisible();
-    expect(screen.queryByText(/web page costs/)).toBeNull();
+    expect(screen.queryByText(/pasted text costs/)).toBeNull();
   });
 
   it('opens from the header plus on Recipes, with its label, hint and language choice', async () => {
@@ -595,11 +586,9 @@ describe('"From a link" sheet and the link-read holder', () => {
   it('reads pasted text the same way, as "Pasted text"', async () => {
     const user = userEvent.setup({ delay: null });
     const pending = hold(read());
-    const { calls } = setup({
-      'POST /api/recipes/from-link': pending.handler,
-    });
-    await user.click(
-      screen.getByRole('button', { name: 'Paste text instead' }),
+    const { calls } = setup(
+      { 'POST /api/recipes/from-link': pending.handler },
+      { route: '/recipes?fromText=1' },
     );
     await user.type(screen.getByLabelText(/^Recipe text/), 'two eggs');
     await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
@@ -730,26 +719,6 @@ describe('"From a link" sheet and the link-read holder', () => {
       await submit(user, link);
       await waitFor(() => expect(sheet()).toBeNull());
       await waitFor(() => expect(sentLinks(calls)).toEqual([link]));
-    });
-
-    it('never checks pasted text', async () => {
-      const user = userEvent.setup({ delay: null });
-      const { calls } = setup({
-        ...duplicateRoute,
-        'POST /api/recipes/from-link': () => Response.json(read()),
-      });
-      await user.click(
-        screen.getByRole('button', { name: 'Paste text instead' }),
-      );
-      await user.type(screen.getByLabelText(/^Recipe text/), 'two eggs');
-      await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
-      await waitFor(() => expect(sheet()).toBeNull());
-      await waitFor(() =>
-        expect(
-          calls.filter((c) => c.key === 'POST /api/recipes/from-link'),
-        ).toHaveLength(1),
-      );
-      expect(checked(calls)).toEqual([]);
     });
   });
 
@@ -938,7 +907,7 @@ describe('after a read, the editor', () => {
     ).toMatchObject({
       recipe: {
         title: 'Blog pancakes',
-        cuisineId: 'c-fr',
+        tagIds: ['c-fr', 'm-pan'],
         lines: [
           { ingredientId: 'egg', quantity: 2, unit: 'pcs' },
           { ingredientId: null, rawName: 'Maple syrup' },
@@ -1217,21 +1186,20 @@ describe('after a read, the editor', () => {
     expect(body).not.toHaveProperty('sourceLanguage');
   });
 
-  describe('pasting text instead', () => {
+  describe('text reads and the link sheet', () => {
     const textField = () => screen.getByLabelText(/^Recipe text/);
     const fromLink = (calls: ReturnType<typeof setup>['calls']) =>
       calls.find((c) => c.key === 'POST /api/recipes/from-link')?.body;
 
-    it('swaps the link field for a text field and sends the text with the language, no url', async () => {
+    it('sends text from the From text sheet with the language, no url', async () => {
       const user = userEvent.setup({ delay: null });
-      const { calls } = setup({
-        'POST /api/recipes/from-link': () =>
-          Response.json({ ...read({ servings: 4 }), sourceLink: null }),
-      });
-      await user.click(
-        screen.getByRole('button', { name: 'Paste text instead' }),
+      const { calls } = setup(
+        {
+          'POST /api/recipes/from-link': () =>
+            Response.json({ ...read({ servings: 4 }), sourceLink: null }),
+        },
+        { route: '/recipes?fromText=1' },
       );
-      expect(textField()).toHaveFocus();
       expect(screen.queryByLabelText(/^Link to the recipe/)).toBeNull();
       expect(screen.getByRole('radiogroup')).toBeVisible();
       const submitButton = screen.getByRole('button', {
@@ -1257,13 +1225,13 @@ describe('after a read, the editor', () => {
 
     it('saves a pasted draft without a sourceLink', async () => {
       const user = userEvent.setup({ delay: null });
-      const { calls } = setup({
-        'POST /api/recipes/from-link': () =>
-          Response.json({ ...read({ servings: 4 }), sourceLink: null }),
-        'POST /api/recipes': () => Response.json(saved, { status: 201 }),
-      });
-      await user.click(
-        screen.getByRole('button', { name: 'Paste text instead' }),
+      const { calls } = setup(
+        {
+          'POST /api/recipes/from-link': () =>
+            Response.json({ ...read({ servings: 4 }), sourceLink: null }),
+          'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+        },
+        { route: '/recipes?fromText=1' },
       );
       await user.type(textField(), 'eggs');
       await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
@@ -1277,17 +1245,17 @@ describe('after a read, the editor', () => {
 
     it('keeps the hidden-by-Allergies note and Show on a pasted read whose matches are all hidden', async () => {
       const user = userEvent.setup({ delay: null });
-      setup({
-        'POST /api/recipes/from-link': () =>
-          Response.json({
-            ...read({ servings: 4 }),
-            sourceLink: null,
-            closestBases: [],
-            hiddenByAllergiesCount: 2,
-          }),
-      });
-      await user.click(
-        screen.getByRole('button', { name: 'Paste text instead' }),
+      setup(
+        {
+          'POST /api/recipes/from-link': () =>
+            Response.json({
+              ...read({ servings: 4 }),
+              sourceLink: null,
+              closestBases: [],
+              hiddenByAllergiesCount: 2,
+            }),
+        },
+        { route: '/recipes?fromText=1' },
       );
       await user.type(textField(), 'eggs');
       await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
@@ -1298,39 +1266,17 @@ describe('after a read, the editor', () => {
       expect(screen.getByRole('button', { name: 'Show' })).toBeVisible();
     });
 
-    it('keeps the link and the text when switching back and forth', async () => {
-      const user = userEvent.setup({ delay: null });
-      setup({});
-      await user.type(linkField(), 'https://example.com/a');
-      await user.click(
-        screen.getByRole('button', { name: 'Paste text instead' }),
-      );
-      await user.type(textField(), 'two eggs');
-      await user.click(
-        screen.getByRole('button', { name: 'Use a link instead' }),
-      );
-      expect(linkField()).toHaveValue('https://example.com/a');
-      expect(linkField()).toHaveFocus();
-      await user.click(
-        screen.getByRole('button', { name: 'Paste text instead' }),
-      );
-      expect(textField()).toHaveValue('two eggs');
-      expect(textField()).toHaveFocus();
-    });
-
-    it('words the hint and the language choice for text, not for a page', async () => {
-      const user = userEvent.setup({ delay: null });
+    it('has no text mode: the link field is the only one', async () => {
       setup({});
       expect(screen.getByText(/Paste the link to a page/)).toBeVisible();
-      await user.click(
-        screen.getByRole('button', { name: 'Paste text instead' }),
-      );
-      expect(screen.queryByText(/Paste the link/)).toBeNull();
-      expect(screen.getByText(/Paste the text of a recipe/)).toBeVisible();
       expect(
-        screen.getByRole('radio', { name: "Keep the text's language" }),
-      ).toBeVisible();
-      expect(screen.queryByRole('radio', { name: /page/ })).toBeNull();
+        screen.queryByRole('button', { name: 'Paste text instead' }),
+      ).toBeNull();
+      expect(
+        screen.queryByRole('button', { name: 'Use a link instead' }),
+      ).toBeNull();
+      expect(screen.queryByLabelText(/^Recipe text/)).toBeNull();
+      expect(screen.queryByRole('radio', { name: /text/ })).toBeNull();
     });
   });
 });

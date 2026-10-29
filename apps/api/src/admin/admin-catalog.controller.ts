@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -30,6 +31,12 @@ import {
   leafCategoryUpdate,
   parentCategoryCreate,
   parentCategoryUpdate,
+  catalogTagCreate,
+  catalogTagDeleteQuery,
+  catalogTagUpdate,
+  tagGroupCreate,
+  tagGroupOrder,
+  tagGroupUpdate,
   translationCreate,
   translationUpdate,
   type AisleCreate,
@@ -45,6 +52,11 @@ import {
   type LeafCategoryUpdate,
   type ParentCategoryCreate,
   type ParentCategoryUpdate,
+  type CatalogTagCreate,
+  type CatalogTagUpdate,
+  type TagGroupCreate,
+  type TagGroupOrder,
+  type TagGroupUpdate,
   type TranslationCreate,
   type TranslationUpdate,
 } from './admin-catalog.schemas';
@@ -95,54 +107,76 @@ export class AdminCatalogController {
     await this.catalog.deleteAisle(id);
   }
 
-  @Post('cuisines')
-  @ApiOperation({ summary: 'Admin only: create a Cuisine for Recipes' })
-  createCuisine(
-    @Body(new ZodValidationPipe(listEntryCreate)) body: ListEntryCreate,
+  @Post('tag-groups')
+  @ApiOperation({ summary: 'Admin only: create a Tag Group, last in order' })
+  createTagGroup(
+    @Body(new ZodValidationPipe(tagGroupCreate)) body: TagGroupCreate,
   ) {
-    return this.catalog.createCuisine(body);
+    return this.catalog.createTagGroup(body);
   }
 
-  @Patch('cuisines/:id')
-  updateCuisine(
-    @Id() { id }: IdParam,
-    @Body(new ZodValidationPipe(listEntryUpdate)) body: ListEntryUpdate,
-  ) {
-    return this.catalog.updateCuisine(id, body);
-  }
-
-  @Delete('cuisines/:id')
+  @Put('tag-groups/order')
   @ApiOperation({
-    summary: 'Admin only: delete a Cuisine unless a Recipe uses it',
+    summary: 'Admin only: set the order of every Tag Group at once',
+  })
+  reorderTagGroups(
+    @Body(new ZodValidationPipe(tagGroupOrder)) body: TagGroupOrder,
+  ) {
+    return this.catalog.reorderTagGroups(body);
+  }
+
+  @Patch('tag-groups/:id')
+  updateTagGroup(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(tagGroupUpdate)) body: TagGroupUpdate,
+  ) {
+    return this.catalog.updateTagGroup(id, body);
+  }
+
+  @Delete('tag-groups/:id')
+  @ApiOperation({
+    summary: 'Admin only: delete a Tag Group that has no Catalog Tags',
   })
   @HttpCode(204)
-  async deleteCuisine(@Id() { id }: IdParam) {
-    await this.catalog.deleteCuisine(id);
+  async deleteTagGroup(@Id() { id }: IdParam) {
+    await this.catalog.deleteTagGroup(id);
   }
 
-  @Post('methods')
-  @ApiOperation({ summary: 'Admin only: create a Method for Recipes' })
-  createMethod(
-    @Body(new ZodValidationPipe(listEntryCreate)) body: ListEntryCreate,
-  ) {
-    return this.catalog.createMethod(body);
-  }
-
-  @Patch('methods/:id')
-  updateMethod(
-    @Id() { id }: IdParam,
-    @Body(new ZodValidationPipe(listEntryUpdate)) body: ListEntryUpdate,
-  ) {
-    return this.catalog.updateMethod(id, body);
-  }
-
-  @Delete('methods/:id')
+  @Post('tags')
   @ApiOperation({
-    summary: 'Admin only: delete a Method unless a Recipe uses it',
+    summary:
+      'Admin only: create a Catalog Tag in a Tag Group; same-named Family Tags merge into it',
+  })
+  createCatalogTag(
+    @Body(new ZodValidationPipe(catalogTagCreate)) body: CatalogTagCreate,
+  ) {
+    return this.catalog.createCatalogTag(body);
+  }
+
+  @Patch('tags/:id')
+  @ApiOperation({
+    summary:
+      'Admin only: rename or move a Catalog Tag; same-named Family Tags merge into it',
+  })
+  updateCatalogTag(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(catalogTagUpdate)) body: CatalogTagUpdate,
+  ) {
+    return this.catalog.updateCatalogTag(id, body);
+  }
+
+  @Delete('tags/:id')
+  @ApiOperation({
+    summary:
+      'Admin only: delete a Catalog Tag. 409 catalog.tag_in_use with the Recipe count unless ?confirm=true',
   })
   @HttpCode(204)
-  async deleteMethod(@Id() { id }: IdParam) {
-    await this.catalog.deleteMethod(id);
+  async deleteCatalogTag(
+    @Id() { id }: IdParam,
+    @Query(new ZodValidationPipe(catalogTagDeleteQuery))
+    query: { confirm: boolean },
+  ) {
+    await this.catalog.deleteCatalogTag(id, query.confirm);
   }
 
   @Post('eating-moments')

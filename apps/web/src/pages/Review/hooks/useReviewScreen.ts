@@ -62,6 +62,7 @@ export function useReviewScreen(
           lines: reviewLinesOf(scan),
           scanLanguage: scan.scanLanguage,
           dishTitle: scan.dishTitle ?? '',
+          proposedTagIds: scan.proposedTagIds ?? [],
         }
       : null;
   });
@@ -245,6 +246,7 @@ export function useReviewScreen(
   return {
     hadDraft: draft !== null,
     dishTitle: draft?.dishTitle ?? '',
+    proposedTagIds: draft?.proposedTagIds ?? [],
     included,
     hasInvalidLine,
     // The dish is now a Recipe: the card is done, and the Member lands on it.

@@ -7,8 +7,8 @@ import { IngredientEditor } from './IngredientEditor';
 
 const catalog: AdminCatalog = {
   aisles: [{ id: 'a1', name: 'Dairy & eggs', sortOrder: 1, translations: [] }],
-  cuisines: [],
-  methods: [],
+  tagGroups: [],
+  tags: [],
   allergens: [],
   eatingMoments: [],
   parentCategories: [

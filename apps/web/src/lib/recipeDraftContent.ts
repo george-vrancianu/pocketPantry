@@ -31,8 +31,7 @@ export function contentOfForm(form: RecipeDraftForm): RecipeDraftContent {
     prepMinutes: draft.prepMinutes,
     cookMinutes: draft.cookMinutes,
     difficulty: draft.difficulty,
-    cuisineId: draft.cuisineId,
-    methodId: draft.methodId,
+    tagIds: draft.tagIds,
     lines: draft.lines.map((line) => ({
       ...(line.id ? { id: line.id } : {}),
       ingredientId: line.ingredientId,
@@ -92,8 +91,7 @@ export function formOfContent(content: RecipeDraftContent): RecipeDraftForm {
       prepMinutes: content.prepMinutes,
       cookMinutes: content.cookMinutes,
       difficulty: content.difficulty,
-      cuisineId: content.cuisineId,
-      methodId: content.methodId,
+      tagIds: content.tagIds,
       lines: content.lines.map((line): LineDraft => ({
         key: newKey(),
         ...(line.id ? { id: line.id } : {}),

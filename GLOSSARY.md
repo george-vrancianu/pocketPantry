@@ -350,7 +350,7 @@ The maximum number of Recipe from Link reads a Member may make per day, pasted t
 _Avoid_: Import quota, Scan Cap (a separate limit)
 
 **Tag**:
-A label on a Recipe that helps Members find it, such as breakfast, keto, or Mediterranean. A Recipe can have any number of Tags. Either a Catalog Tag or a Family Tag. A diet Tag such as keto is a claim, never checked against the Recipe's Ingredient Lines.
+A label on a Recipe that helps Members find it, such as breakfast, keto, or Mediterranean. A Recipe can have up to 10 Tags. Either a Catalog Tag or a Family Tag. A diet Tag such as keto is a claim, never checked against the Recipe's Ingredient Lines.
 _Avoid_: Label, category, Cuisine, Method, region
 
 **Catalog Tag**:

@@ -1,11 +1,10 @@
-import { and, inArray, isNotNull } from 'drizzle-orm';
+import { and, inArray, isNotNull, isNull } from 'drizzle-orm';
 import type { Database, Tx } from '../../../database/database.types';
 import {
   catalogTranslations,
-  cuisines,
   eatingMoments,
-  methods,
   recipeHiddenTips,
+  recipeTags,
   recipeIngredientLines,
   recipeIngredientLineTranslations,
   recipes,
@@ -14,6 +13,8 @@ import {
   recipeTips,
   recipeTipTranslations,
   recipeTranslations,
+  tagGroups,
+  tags,
 } from '../../../database/schema';
 import { writeGuidanceTranslations } from '../../../recipes/recipe-guidance-translations';
 import { writeGuidance } from '../../../recipes/recipe-guidance-write';
@@ -23,7 +24,7 @@ import { SEED_INGREDIENTS } from '../catalog-seed-data';
 import { seedId, stableId, translationRows } from '../seed-catalog';
 import { SEED_BASE_RECIPES } from './recipe-seed-data';
 import type { RecipeSeed, SeedNamed, VariantSeed } from './recipe-seed-types';
-import { SEED_CUISINES, SEED_EATING_MOMENTS, SEED_METHODS } from './registries';
+import { SEED_EATING_MOMENTS, SEED_TAG_GROUPS, SEED_TAGS } from './registries';
 import {
   assertAcceptance,
   assertRecipeSeedValid,
@@ -61,6 +62,16 @@ function planRegistry(
   return { ids, fresh };
 }
 
+/**
+ * The id of a seed Catalog Tag. Cuisine and Method Tags keep the ids their old
+ * lists had (migration 0049 kept them), so a re-seed finds a Tag an Admin renamed.
+ */
+function seedTagId(groupSlug: string, slug: string) {
+  return groupSlug === 'cuisine' || groupSlug === 'method'
+    ? stableId(`${groupSlug}:${slug}`)
+    : seedId.tag(`${groupSlug}:${slug}`);
+}
+
 async function insertNames(
   tx: Tx,
   entityType: EntityType,
@@ -79,48 +90,6 @@ async function insertNames(
 }
 
 async function seedRegistries(tx: Tx) {
-  const cuisinePlan = planRegistry(
-    await tx
-      .select({ id: cuisines.id, normalizedName: cuisines.normalizedName })
-      .from(cuisines),
-    SEED_CUISINES,
-    seedId.cuisine,
-  );
-  if (cuisinePlan.fresh.length > 0) {
-    await tx
-      .insert(cuisines)
-      .values(
-        cuisinePlan.fresh.map((row) => ({
-          id: cuisinePlan.ids.get(row.slug) as string,
-          name: row.en,
-          normalizedName: normalizeName(row.en),
-        })),
-      )
-      .onConflictDoNothing({ target: cuisines.id });
-  }
-  await insertNames(tx, 'cuisine', cuisinePlan.fresh, cuisinePlan.ids);
-
-  const methodPlan = planRegistry(
-    await tx
-      .select({ id: methods.id, normalizedName: methods.normalizedName })
-      .from(methods),
-    SEED_METHODS,
-    seedId.method,
-  );
-  if (methodPlan.fresh.length > 0) {
-    await tx
-      .insert(methods)
-      .values(
-        methodPlan.fresh.map((row) => ({
-          id: methodPlan.ids.get(row.slug) as string,
-          name: row.en,
-          normalizedName: normalizeName(row.en),
-        })),
-      )
-      .onConflictDoNothing({ target: methods.id });
-  }
-  await insertNames(tx, 'method', methodPlan.fresh, methodPlan.ids);
-
   const existingMoments = await tx
     .select({
       id: eatingMoments.id,
@@ -150,11 +119,71 @@ async function seedRegistries(tx: Tx) {
   }
   await insertNames(tx, 'eating_moment', momentPlan.fresh, momentPlan.ids);
 
-  return {
-    cuisine: cuisinePlan.ids,
-    method: methodPlan.ids,
-    moment: momentPlan.ids,
-  };
+  return { tag: await seedTags(tx), moment: momentPlan.ids };
+}
+
+/**
+ * Tag Groups and Catalog Tags (ADR 0033). Groups and Tags that exist (by id or normalised name)
+ * are left alone. Returns the id of every Tag by `group:slug`.
+ */
+async function seedTags(tx: Tx) {
+  const existingGroups = await tx
+    .select({ id: tagGroups.id, normalizedName: tagGroups.normalizedName })
+    .from(tagGroups);
+  const groupPlan = planRegistry(
+    existingGroups,
+    SEED_TAG_GROUPS,
+    seedId.tagGroup,
+  );
+  if (groupPlan.fresh.length > 0) {
+    await tx
+      .insert(tagGroups)
+      .values(
+        SEED_TAG_GROUPS.filter((g) => groupPlan.fresh.includes(g)).map((g) => ({
+          id: groupPlan.ids.get(g.slug) as string,
+          name: g.en,
+          normalizedName: normalizeName(g.en),
+          position: g.position,
+        })),
+      )
+      .onConflictDoNothing({ target: tagGroups.id });
+  }
+  await insertNames(tx, 'tag_group', groupPlan.fresh, groupPlan.ids);
+
+  const existingTags = (
+    await tx
+      .select({ id: tags.id, normalizedName: tags.normalizedName })
+      .from(tags)
+      .where(isNull(tags.familyId))
+  ).map((t) => ({ id: t.id, normalizedName: t.normalizedName }));
+  const tagIds = new Map<string, string>();
+  for (const [groupSlug, rows] of Object.entries(SEED_TAGS)) {
+    const plan = planRegistry(existingTags, rows, (slug) =>
+      seedTagId(groupSlug, slug),
+    );
+    for (const [slug, id] of plan.ids) tagIds.set(`${groupSlug}:${slug}`, id);
+    // A Tag planned for this group is "existing" for the next one (names are unique across groups).
+    for (const row of plan.fresh) {
+      existingTags.push({
+        id: plan.ids.get(row.slug) as string,
+        normalizedName: normalizeName(row.en),
+      });
+    }
+    if (plan.fresh.length === 0) continue;
+    await tx
+      .insert(tags)
+      .values(
+        plan.fresh.map((row) => ({
+          id: plan.ids.get(row.slug) as string,
+          name: row.en,
+          normalizedName: normalizeName(row.en),
+          groupId: groupPlan.ids.get(groupSlug) as string,
+        })),
+      )
+      .onConflictDoNothing({ target: tags.id });
+    await insertNames(tx, 'tag', plan.fresh, plan.ids);
+  }
+  return tagIds;
 }
 
 type Registries = Awaited<ReturnType<typeof seedRegistries>>;
@@ -173,12 +202,7 @@ const id = {
 
 type Parent = { id: string };
 
-function recipeRow(
-  recipe: RecipeSeed | VariantSeed,
-  registries: Registries,
-  parent?: Parent,
-) {
-  const variant = recipe as Partial<VariantSeed>;
+function recipeRow(recipe: RecipeSeed | VariantSeed, parent?: Parent) {
   return {
     id: seedId.recipe(recipe.slug),
     parentId: parent?.id ?? null,
@@ -188,19 +212,26 @@ function recipeRow(
     prepMinutes: recipe.prepMinutes ?? null,
     cookMinutes: recipe.cookMinutes ?? null,
     difficulty: recipe.difficulty ?? null,
-    cuisineId: variant.cuisine
-      ? (registries.cuisine.get(variant.cuisine) ?? null)
-      : null,
-    methodId: variant.method
-      ? (registries.method.get(variant.method) ?? null)
-      : null,
   };
 }
+
+/** The Catalog Tag a Variant is made by (a Base Recipe has none). */
+const variantTagId = (
+  recipe: RecipeSeed | VariantSeed,
+  registries: Registries,
+) => {
+  const key = (recipe as Partial<VariantSeed>).tag;
+  return key ? (registries.tag.get(key) ?? null) : null;
+};
 
 /** Inserts the Recipe rows that do not exist yet; returns the slugs that were new. */
 async function insertRecipes(
   tx: Tx,
-  rows: { slug: string; row: ReturnType<typeof recipeRow> }[],
+  rows: {
+    slug: string;
+    row: ReturnType<typeof recipeRow>;
+    tagId: string | null;
+  }[],
 ): Promise<Set<string>> {
   if (rows.length === 0) return new Set();
   const inserted = await tx
@@ -209,6 +240,13 @@ async function insertRecipes(
     .onConflictDoNothing({ target: recipes.id })
     .returning({ id: recipes.id });
   const ids = new Set(inserted.map((r) => r.id));
+  // A Variant carries the Tag it is made by.
+  const links = rows.flatMap(({ row, tagId }) =>
+    ids.has(row.id) && tagId ? [{ recipeId: row.id, tagId }] : [],
+  );
+  if (links.length > 0) {
+    await tx.insert(recipeTags).values(links).onConflictDoNothing();
+  }
   return new Set(rows.filter((r) => ids.has(r.row.id)).map((r) => r.slug));
 }
 
@@ -408,7 +446,7 @@ async function insertGuidance(
 }
 
 /**
- * Loads the starter Recipes: the Cuisine, Method and Eating Moment lists, then
+ * Loads the starter Recipes: the Tag Groups, Catalog Tags and Eating Moments, then
  * every Base Recipe and its Variants with lines, steps, Tips, guidance and
  * Romanian text. Ids are stable and Recipe rows are inserted with ON CONFLICT
  * DO NOTHING; a Recipe's children are written only when its row was new, so
@@ -422,8 +460,7 @@ export async function seedRecipes(
   const bases = SEED_BASE_RECIPES;
   assertRecipeSeedValid({
     bases,
-    cuisines: SEED_CUISINES,
-    methods: SEED_METHODS,
+    tags: SEED_TAGS,
     eatingMoments: SEED_EATING_MOMENTS,
     ingredientSlugs: new Set(SEED_INGREDIENTS.map((i) => i.slug)),
   });
@@ -434,7 +471,8 @@ export async function seedRecipes(
       tx,
       bases.map((base) => ({
         slug: base.slug,
-        row: recipeRow(base, registries),
+        row: recipeRow(base),
+        tagId: null,
       })),
     );
     // The API refuses new Variants under an archived base, so does the seed.
@@ -490,7 +528,8 @@ export async function seedRecipes(
       tx,
       open.map(({ variant, base }) => ({
         slug: variant.slug,
-        row: recipeRow(variant, registries, { id: seedId.recipe(base.slug) }),
+        row: recipeRow(variant, { id: seedId.recipe(base.slug) }),
+        tagId: variantTagId(variant, registries),
       })),
     );
     const fresh = [

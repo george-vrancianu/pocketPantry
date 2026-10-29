@@ -28,7 +28,7 @@ function setup(
 ) {
   const routes: Routes = {
     'GET /api/recipes/filters': () =>
-      Response.json({ cuisines: [], methods: [], eatingMoments: [] }),
+      Response.json({ tags: [], eatingMoments: [] }),
     'GET /api/recipes': () =>
       Response.json({ recipes: [], hiddenByAllergiesCount: 0 }),
     'POST /api/recipes/from-link': fromLink,
@@ -197,11 +197,10 @@ describe('a link read that failed, in the background strip', () => {
   ])('the reason for %s (%s)', (code, source, status, _name, reason) => {
     it('is worded for links, or for pasted text', async () => {
       const user = userEvent.setup({ delay: null });
-      setup(() => failing(code, status, { max: 20 }));
+      setup(() => failing(code, status, { max: 20 }), {
+        route: source === 'text' ? '/recipes?fromText=1' : undefined,
+      });
       if (source === 'text') {
-        await user.click(
-          screen.getByRole('button', { name: 'Paste text instead' }),
-        );
         await user.type(screen.getByLabelText(/^Recipe text/), 'two eggs');
       } else {
         await user.type(linkField(), link);
@@ -305,7 +304,7 @@ describe('one automatic retry on a network error', () => {
 });
 
 describe('"Paste text instead" on a failed row', () => {
-  it('is offered for a page that could not be read, reopens the sheet in text mode with the link kept, and the text replaces the row', async () => {
+  it('is offered for a page that could not be read, opens the From text sheet naming the site, and the text replaces the row', async () => {
     const user = userEvent.setup({ delay: null });
     const { sent } = setup(() => failing('link.unreadable'));
     await submit(user);
@@ -314,20 +313,15 @@ describe('"Paste text instead" on a failed row', () => {
       screen.getByRole('button', { name: /^Paste the text of example.com/ }),
     );
 
-    const sheet = await screen.findByRole('dialog', { name: 'From a link' });
+    const sheet = await screen.findByRole('dialog', { name: 'From text' });
     expect(
       screen.queryByRole('dialog', { name: 'In the background' }),
     ).toBeNull();
     const text = screen.getByLabelText(/^Recipe text/);
     expect(text).toHaveFocus();
-    // The link is kept behind the switch.
-    await user.click(
-      screen.getByRole('button', { name: 'Use a link instead' }),
-    );
-    expect(linkField()).toHaveValue(link);
-    await user.click(
-      screen.getByRole('button', { name: 'Paste text instead' }),
-    );
+    expect(
+      screen.getByText('Paste the recipe from example.com.'),
+    ).toBeVisible();
 
     await user.type(screen.getByLabelText(/^Recipe text/), 'two eggs');
     // Not answered yet: the failed row is still there until the text is sent.
@@ -348,10 +342,10 @@ describe('"Paste text instead" on a failed row', () => {
     await user.click(
       screen.getByRole('button', { name: /^Paste the text of/ }),
     );
-    await screen.findByRole('dialog', { name: 'From a link' });
+    await screen.findByRole('dialog', { name: 'From text' });
     await user.keyboard('{Escape}');
     await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'From a link' })).toBeNull(),
+      expect(screen.queryByRole('dialog', { name: 'From text' })).toBeNull(),
     );
     expect(strip()).toHaveTextContent("Couldn't read the recipe");
   });
@@ -372,10 +366,7 @@ describe('"Paste text instead" on a failed row', () => {
 
   it('is not offered for pasted text that failed', async () => {
     const user = userEvent.setup({ delay: null });
-    setup(() => failing('link.unreadable'));
-    await user.click(
-      screen.getByRole('button', { name: 'Paste text instead' }),
-    );
+    setup(() => failing('link.unreadable'), { route: '/recipes?fromText=1' });
     await user.type(screen.getByLabelText(/^Recipe text/), 'two eggs');
     await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
     await openStrip(user);
@@ -592,6 +583,17 @@ describe('Out of Credits', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '1 recipe link failed',
     );
+  });
+
+  it('fails a read started from the From text sheet with Out of Credits', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup(outOfCredits, { route: '/recipes?fromText=1' });
+    await user.type(screen.getByLabelText(/^Recipe text/), 'two eggs');
+    await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
+    expect(await screen.findByText('Out of Credits')).toBeVisible();
+    expect(
+      screen.getByText('Out of Credits. This needs 2, and your Family has 1.'),
+    ).toBeVisible();
   });
 
   it.each<[Locale, RegExp]>([

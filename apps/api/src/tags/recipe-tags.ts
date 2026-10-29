@@ -1,0 +1,288 @@
+import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
+import { ApiException } from '../common/api-exception';
+import { MAX_RECIPE_TAGS } from '../recipes/recipes.schemas';
+import { isAllergenFreeName } from './allergen-free-names';
+import { loadDisplayNames } from '../catalog/display-names';
+import type { CatalogScope } from '../catalog/catalog-scope';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
+import type { Executor, Tx } from '../database/database.types';
+import { recipes, recipeTags, tagGroups, tags } from '../database/schema';
+
+/** A Tag on a Recipe, named for the viewer (ADR 0033). Family Tags have no group. */
+export type RecipeTag = {
+  id: string;
+  name: string;
+  kind: 'catalog' | 'family';
+  groupId: string | null;
+  groupName: string | null;
+  groupOrder: number | null;
+  /**
+   * Present (true) only on a Family Tag whose name claims an Allergen is absent, e.g.
+   * "Gluten-free": the editor warns that Allergens come from Ingredient Lines.
+   */
+  claimsAllergenFree?: true;
+};
+
+type TagRow = {
+  id: string;
+  name: string;
+  familyId: string | null;
+  groupId: string | null;
+  groupName: string | null;
+  groupOrder: number | null;
+};
+
+type Names = Awaited<ReturnType<typeof loadDisplayNames>>;
+
+function toRecipeTag(row: TagRow, names: Names): RecipeTag {
+  const catalog = row.familyId === null;
+  return {
+    id: row.id,
+    name: catalog ? names.pick('tag', row.id, row.name) : row.name,
+    kind: catalog ? 'catalog' : 'family',
+    groupId: row.groupId,
+    groupName:
+      row.groupId && row.groupName
+        ? names.pick('tag_group', row.groupId, row.groupName)
+        : null,
+    groupOrder: row.groupOrder,
+    ...(!catalog && isAllergenFreeName(row.name)
+      ? { claimsAllergenFree: true as const }
+      : {}),
+  };
+}
+
+const compareTags = (locale: CatalogLocale) => (a: RecipeTag, b: RecipeTag) =>
+  (a.kind === b.kind ? 0 : a.kind === 'family' ? -1 : 1) ||
+  (a.groupOrder ?? 0) - (b.groupOrder ?? 0) ||
+  // Groups sharing a position stay apart, or a header would repeat in the picker.
+  (a.groupName ?? '').localeCompare(b.groupName ?? '', locale) ||
+  (a.groupId ?? '').localeCompare(b.groupId ?? '') ||
+  a.name.localeCompare(b.name, locale) ||
+  a.id.localeCompare(b.id);
+
+/** The Tags a writer may use: every Catalog Tag, plus the Family's own (none for a Catalog writer). */
+function usableBy(familyId: string | null): SQL | undefined {
+  return familyId === null
+    ? isNull(tags.familyId)
+    : or(isNull(tags.familyId), eq(tags.familyId, familyId));
+}
+
+/**
+ * Every Tag a writer can put on a Recipe, named for the viewer and ordered like a Recipe's Tags:
+ * all Catalog Tags, plus the Family's own when `familyId` is given. Feeds the editor's Tag field.
+ */
+export async function loadPickableTags(
+  executor: Executor,
+  scope: CatalogScope,
+  locale: CatalogLocale,
+  familyId: string | null,
+): Promise<RecipeTag[]> {
+  const rows = await executor
+    .select({
+      id: tags.id,
+      name: tags.name,
+      familyId: tags.familyId,
+      groupId: tagGroups.id,
+      groupName: tagGroups.name,
+      groupOrder: tagGroups.position,
+    })
+    .from(tags)
+    .leftJoin(tagGroups, eq(tagGroups.id, tags.groupId))
+    .where(usableBy(familyId));
+  if (rows.length === 0) return [];
+  const names = await loadDisplayNames(executor, scope, locale, [
+    ...rows.map((r) => r.id),
+    ...rows.flatMap((r) => (r.groupId ? [r.groupId] : [])),
+  ]);
+  return rows.map((r) => toRecipeTag(r, names)).sort(compareTags(locale));
+}
+
+/** One Tag the writer may use, named for the viewer (the answer to resolving a name). */
+export async function loadUsableTag(
+  executor: Executor,
+  scope: CatalogScope,
+  locale: CatalogLocale,
+  familyId: string,
+  tagId: string,
+): Promise<RecipeTag> {
+  const [row] = await executor
+    .select({
+      id: tags.id,
+      name: tags.name,
+      familyId: tags.familyId,
+      groupId: tagGroups.id,
+      groupName: tagGroups.name,
+      groupOrder: tagGroups.position,
+    })
+    .from(tags)
+    .leftJoin(tagGroups, eq(tagGroups.id, tags.groupId))
+    .where(and(eq(tags.id, tagId), usableBy(familyId)));
+  if (!row) throw new ApiException(404, 'recipes.tag_not_found');
+  const names = await loadDisplayNames(executor, scope, locale, [
+    tagId,
+    ...(row.groupId ? [row.groupId] : []),
+  ]);
+  return toRecipeTag(row, names);
+}
+
+/** The ids of a Recipe's Tags (the editor's value; names come from the pickable Tags). */
+export async function loadRecipeTagIds(
+  executor: Executor,
+  recipeId: string,
+): Promise<string[]> {
+  const rows = await executor
+    .select({ id: recipeTags.tagId })
+    .from(recipeTags)
+    .where(eq(recipeTags.recipeId, recipeId));
+  return rows.map((r) => r.id).sort();
+}
+
+/**
+ * Checks the Tags a write names, before anything is written: at most `MAX_RECIPE_TAGS`, every one exists and is
+ * the writer's to use (a Catalog Tag, or a Family Tag of `familyId`; a Catalog Recipe passes null
+ * and may only use Catalog Tags). Other Families' Tags read as missing, so ids never leak. The
+ * Tags are key-share locked, so a concurrent delete waits until we commit.
+ *
+ * Returns the de-duplicated ids.
+ */
+export async function resolveRecipeTags(
+  tx: Tx,
+  familyId: string | null,
+  tagIds: readonly string[],
+): Promise<string[]> {
+  const ids = [...new Set(tagIds)];
+  if (ids.length > MAX_RECIPE_TAGS) {
+    throw new ApiException(400, 'recipes.tags_too_many', {
+      max: MAX_RECIPE_TAGS,
+    });
+  }
+  if (ids.length === 0) return ids;
+  const found = await tx
+    .select({ id: tags.id })
+    .from(tags)
+    .where(and(inArray(tags.id, ids), usableBy(familyId)))
+    .orderBy(tags.id)
+    .for('key share');
+  if (found.length !== ids.length) {
+    throw new ApiException(404, 'recipes.tag_not_found');
+  }
+  return ids;
+}
+
+/** The ids among `tagIds` that exist and are usable by the writer, in the given order and deduped. */
+export async function usableTagIds(
+  executor: Executor,
+  familyId: string | null,
+  tagIds: readonly string[],
+): Promise<string[]> {
+  const ids = [...new Set(tagIds)];
+  if (ids.length === 0) return [];
+  const found = await executor
+    .select({ id: tags.id })
+    .from(tags)
+    .where(and(inArray(tags.id, ids), usableBy(familyId)));
+  const usable = new Set(found.map((r) => r.id));
+  return ids.filter((id) => usable.has(id));
+}
+
+/** Makes `tagIds` (already resolved) the whole Tag list of a Recipe. */
+export async function replaceRecipeTags(
+  tx: Tx,
+  recipeId: string,
+  tagIds: readonly string[],
+): Promise<void> {
+  await tx.delete(recipeTags).where(eq(recipeTags.recipeId, recipeId));
+  if (tagIds.length > 0) {
+    await tx
+      .insert(recipeTags)
+      .values(tagIds.map((tagId) => ({ recipeId, tagId })));
+  }
+}
+
+/**
+ * The Tags on at least one Recipe matching `recipeFilter` (a condition on `recipes`), named in
+ * the viewer's language and ordered like a Recipe's Tags: Family Tags first, then Catalog Tags by
+ * Tag Group position, then by name. Feeds the Tag filter's options.
+ */
+export async function loadTagsInUse(
+  executor: Executor,
+  scope: CatalogScope,
+  locale: CatalogLocale,
+  recipeFilter: SQL | undefined,
+): Promise<RecipeTag[]> {
+  const rows = await executor
+    .selectDistinct({
+      id: tags.id,
+      name: tags.name,
+      familyId: tags.familyId,
+      groupId: tagGroups.id,
+      groupName: tagGroups.name,
+      groupOrder: tagGroups.position,
+    })
+    .from(recipeTags)
+    .innerJoin(recipes, eq(recipes.id, recipeTags.recipeId))
+    .innerJoin(tags, eq(tags.id, recipeTags.tagId))
+    .leftJoin(tagGroups, eq(tagGroups.id, tags.groupId))
+    .where(recipeFilter);
+  if (rows.length === 0) return [];
+  const names = await loadDisplayNames(executor, scope, locale, [
+    ...rows.map((r) => r.id),
+    ...rows.flatMap((r) => (r.groupId ? [r.groupId] : [])),
+  ]);
+  return rows.map((r) => toRecipeTag(r, names)).sort(compareTags(locale));
+}
+
+/**
+ * The Tags of each Recipe, in the viewer's language: Family Tags first (by name), then Catalog
+ * Tags by Tag Group position, then by name. Recipes without Tags are absent from the map.
+ */
+export async function loadRecipeTags(
+  executor: Executor,
+  scope: CatalogScope,
+  locale: CatalogLocale,
+  recipeIds: string[],
+): Promise<Map<string, RecipeTag[]>> {
+  const byRecipe = new Map<string, RecipeTag[]>();
+  const wanted = [...new Set(recipeIds)];
+  if (wanted.length === 0) return byRecipe;
+  const rows = await executor
+    .select({
+      recipeId: recipeTags.recipeId,
+      id: tags.id,
+      name: tags.name,
+      familyId: tags.familyId,
+      groupId: tagGroups.id,
+      groupName: tagGroups.name,
+      groupOrder: tagGroups.position,
+    })
+    .from(recipeTags)
+    .innerJoin(tags, eq(tags.id, recipeTags.tagId))
+    .leftJoin(tagGroups, eq(tagGroups.id, tags.groupId))
+    .where(inArray(recipeTags.recipeId, wanted));
+  if (rows.length === 0) return byRecipe;
+  const names = await loadDisplayNames(executor, scope, locale, [
+    ...rows.map((r) => r.id),
+    ...rows.flatMap((r) => (r.groupId ? [r.groupId] : [])),
+  ]);
+  for (const row of rows) {
+    const tag = toRecipeTag(row, names);
+    byRecipe.set(row.recipeId, [...(byRecipe.get(row.recipeId) ?? []), tag]);
+  }
+  for (const list of byRecipe.values()) list.sort(compareTags(locale));
+  return byRecipe;
+}
+
+/** Gives `toId` the Tags of `fromId` (Add to Family, Variants); the two are independent after. */
+export async function copyRecipeTags(
+  tx: Tx,
+  fromId: string,
+  toId: string,
+): Promise<void> {
+  await tx.execute(
+    sql`INSERT INTO ${recipeTags} (recipe_id, tag_id)
+        SELECT ${toId}, ${recipeTags.tagId} FROM ${recipeTags}
+        WHERE ${recipeTags.recipeId} = ${fromId}
+        ON CONFLICT DO NOTHING`,
+  );
+}

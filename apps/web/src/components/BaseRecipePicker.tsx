@@ -150,7 +150,10 @@ export function BaseRecipePicker({
   const setSearch = (text: string) => onPick({ ...state, search: text });
   const searching = search.trim() !== '';
   const found = useRecipes(
-    { search: searching ? search : '', cuisineId: '', methodId: '' },
+    {
+      search: searching ? search : '',
+      tagIds: [],
+    },
     // A title search is a deliberate look-up with no note to show, so it lists every Recipe
     // (each still carries its Allergy indicator); only the suggested matches hide (ADR 0014 records this exception).
     { searchOnly: true, showHidden: true },

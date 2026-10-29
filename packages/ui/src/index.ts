@@ -97,6 +97,12 @@ export { ProgressBar, type ProgressBarProps } from './atoms/ProgressBar';
 export { Snackbar, type SnackbarProps } from './atoms/Snackbar';
 export { Spinner } from './atoms/Spinner';
 export { Tag, type TagProps, type TagTone } from './atoms/Tag';
+export {
+  TagChip,
+  type TagChipKind,
+  type TagChipProps,
+  type TagChipSize,
+} from './atoms/TagChip';
 export { TextField, type TextFieldProps } from './atoms/TextField';
 export { Toggle, type ToggleProps } from './atoms/Toggle';
 export { Typography, type TypographyProps } from './atoms/Typography';
@@ -112,6 +118,7 @@ export {
   CalendarIcon,
   CalendarDaysIcon,
   SubItemIcon,
+  TagIcon,
   PulseIcon,
   CookIcon,
   HourglassIcon,
@@ -252,3 +259,10 @@ export {
 
 export { CenteredLayout } from './templates/CenteredLayout';
 export { PageLayout, type PageLayoutProps } from './templates/PageLayout';
+export {
+  TagField,
+  type TagFieldLabels,
+  type TagFieldOption,
+  type TagFieldCreate,
+  type TagFieldProps,
+} from './molecules/TagField';

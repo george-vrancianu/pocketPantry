@@ -59,6 +59,8 @@ export type SessionScan = {
   plateToken?: string;
   /** The dish the Member picked, once they did. */
   dishTitle?: string;
+  /** Plate Scan: the Tags the read proposed for the dish; the saved Recipe starts with them. */
+  proposedTagIds?: string[];
   /** For a card made by merging receipts: the Scans it was made of, as they were, for Split. */
   sections?: SessionScan[];
 };
@@ -96,7 +98,13 @@ export type SessionAction =
   | { type: 'merge'; id: string }
   | { type: 'split'; id: string }
   | { type: 'readDishes'; id: string; dishes: DishGuess[]; token: string }
-  | { type: 'pick'; id: string; lines: ProposedLine[]; dishTitle?: string }
+  | {
+      type: 'pick';
+      id: string;
+      lines: ProposedLine[];
+      dishTitle?: string;
+      tagIds?: string[];
+    }
   | { type: 'reread'; id: string }
   | { type: 'edit'; id: string; lines: ReviewLine[] };
 
@@ -274,6 +282,7 @@ export function sessionReducer(
       return update(state, action.id, {
         lines: action.lines,
         dishTitle: action.dishTitle,
+        proposedTagIds: action.tagIds,
         edited: undefined,
         dishes: undefined,
         plateToken: undefined,
@@ -284,6 +293,7 @@ export function sessionReducer(
         dishes: undefined,
         plateToken: undefined,
         dishTitle: undefined,
+        proposedTagIds: undefined,
       });
     case 'edit':
       return update(state, action.id, { edited: action.lines });

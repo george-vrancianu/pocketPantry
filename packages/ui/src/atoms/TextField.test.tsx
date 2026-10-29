@@ -36,17 +36,17 @@ describe('TextField', () => {
     render(
       <TextField
         select
-        label="Cuisine"
+        label="Colour"
         value=""
         slotProps={{ select: { native: true } }}
       >
         <option value="">None</option>
-        <option value="it">Italian</option>
+        <option value="red">Red</option>
       </TextField>,
     );
     expect(
       screen
-        .getByText('Cuisine', { selector: 'label' })
+        .getByText('Colour', { selector: 'label' })
         .getAttribute('data-shrink'),
     ).toBe('true');
   });
@@ -55,7 +55,7 @@ describe('TextField', () => {
     render(
       <TextField
         select
-        label="Cuisine"
+        label="Colour"
         value=""
         slotProps={{
           select: { native: true },
@@ -65,7 +65,7 @@ describe('TextField', () => {
         <option value="">None</option>
       </TextField>,
     );
-    const label = screen.getByText('Cuisine', { selector: 'label' });
+    const label = screen.getByText('Colour', { selector: 'label' });
     expect(label.getAttribute('data-shrink')).toBe('true');
     expect(label.classList).toContain('mine');
   });

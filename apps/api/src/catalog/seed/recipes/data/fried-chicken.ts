@@ -231,7 +231,7 @@ export const friedChicken: BaseRecipeSeed = {
   variants: [
     {
       slug: 'fried-chicken-southern',
-      cuisine: 'american',
+      tag: 'cuisine:american',
       title: t(
         'Southern buttermilk fried chicken',
         'Pui prăjit în stil sudist, cu zară',
@@ -428,7 +428,7 @@ export const friedChicken: BaseRecipeSeed = {
     },
     {
       slug: 'fried-chicken-korean',
-      cuisine: 'korean',
+      tag: 'cuisine:korean',
       title: t(
         'Korean double-fried chicken with gochujang glaze',
         'Pui coreean prăjit de două ori, cu glazură de gochujang',
@@ -621,7 +621,7 @@ export const friedChicken: BaseRecipeSeed = {
     },
     {
       slug: 'fried-chicken-karaage',
-      cuisine: 'japanese',
+      tag: 'cuisine:japanese',
       title: t('Japanese karaage', 'Karaage japonez'),
       servings: 4,
       prepMinutes: 40,
@@ -797,7 +797,7 @@ export const friedChicken: BaseRecipeSeed = {
     },
     {
       slug: 'fried-chicken-snitel',
-      cuisine: 'romanian',
+      tag: 'cuisine:romanian',
       title: t('Romanian chicken schnitzel', 'Șnițel de pui'),
       servings: 4,
       prepMinutes: 25,
@@ -971,7 +971,7 @@ export const friedChicken: BaseRecipeSeed = {
     },
     {
       slug: 'fried-chicken-oven-fried',
-      method: 'oven-fried',
+      tag: 'method:oven-fried',
       title: t('Oven-"fried" chicken', 'Pui „prăjit” la cuptor'),
       servings: 4,
       prepMinutes: 25,
@@ -1123,7 +1123,7 @@ export const friedChicken: BaseRecipeSeed = {
     },
     {
       slug: 'fried-chicken-air-fried',
-      method: 'air-fried',
+      tag: 'method:air-fried',
       title: t('Air-fried chicken', 'Pui la air fryer'),
       servings: 4,
       prepMinutes: 20,

@@ -8,6 +8,8 @@
  * å (U+00E5) is "a" + combining ring (U+030A), so that pair is what folds; the
  * escape keeps it visible, matching the SQL copy's `'a' || chr(778)`.
  *
+ * Copies live in apps/web/src/lib/normalizeName.ts and packages/ui/src/molecules/TagField.tsx (`fold`).
+ *
  * Migration 0012 recomputes stored keys with a SQL copy of these rules; change
  * them only together with a new renormalising migration.
  */

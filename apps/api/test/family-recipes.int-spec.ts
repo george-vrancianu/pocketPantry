@@ -313,7 +313,7 @@ describe('Family Recipes (integration)', () => {
     it('lets any Member of the Family create, edit and archive a Variant', async () => {
       const base = await catalogBase();
       const created = await familyRecipe(a1, base.id, {
-        cuisineId: null,
+        tagIds: [],
         lines: [line(0, 50), { rawName: `Zq grandma spice ${stamp}` }],
       });
       expect(created).toMatchObject({

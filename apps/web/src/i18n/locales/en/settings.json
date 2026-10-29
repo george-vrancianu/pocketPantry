@@ -235,5 +235,25 @@
     "hint": "Each member sets their own Allergies. You can see them here but not change them.",
     "none": "None recorded",
     "loadFailed": "Could not load the members' Allergies."
+  },
+  "manageTags": {
+    "title": "Manage Tags",
+    "hint": "Your family's own Tags. Rename one to tidy it up, or delete one to remove it from every Recipe.",
+    "empty": "Your family has no Tags of its own yet. Create one from a Recipe's Tags field.",
+    "nameLabel": "Tag name",
+    "recipes_one": "{{count}} Recipe",
+    "recipes_other": "{{count}} Recipes",
+    "renameButton": "Rename",
+    "rename": "Rename {{name}}",
+    "cancelRename": "Cancel renaming {{name}}",
+    "delete": "Delete {{name}}",
+    "deleted_one": "Deleted ‘{{name}}’ from {{count}} Recipe",
+    "deleted_other": "Deleted ‘{{name}}’ from {{count}} Recipes",
+    "deletedUnused": "Deleted ‘{{name}}’",
+    "merge": {
+      "title": "Merge into ‘{{name}}’?",
+      "body": "A Tag named ‘{{name}}’ already exists. Merging puts it on every Recipe that has ‘{{from}}’ and removes ‘{{from}}’. A Recipe that has both keeps it once.",
+      "confirm": "Merge"
+    }
   }
 }

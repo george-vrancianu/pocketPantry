@@ -11,8 +11,10 @@ import { EatingMomentEditor } from './components/EatingMomentEditor';
 import { EatingMomentList } from './components/EatingMomentList';
 import { IngredientEditor } from './components/IngredientEditor';
 import { IngredientList } from './components/IngredientList';
-import { ListEntryEditor } from './components/ListEntryEditor';
-import { ListSection } from './components/ListSection';
+import { CatalogTagEditor } from './components/CatalogTagEditor';
+import { CatalogTagList } from './components/CatalogTagList';
+import { TagGroupEditor } from './components/TagGroupEditor';
+import { TagGroupList } from './components/TagGroupList';
 import { RecipeEditor } from './components/RecipeEditor';
 import { RecipeList } from './components/RecipeList';
 import { UnmatchedQueue } from './components/UnmatchedQueue';
@@ -67,12 +69,20 @@ export function AdminPage() {
         onDone={screen.close}
       />
     );
-  } else if (catalog && editing?.type === 'list') {
+  } else if (catalog && editing?.type === 'tagGroup') {
     body = (
-      <ListEntryEditor
-        key={`${editing.kind}-${editing.id ?? 'new'}`}
-        kind={editing.kind}
-        entry={screen.editedListEntry}
+      <TagGroupEditor
+        key={editing.id ?? 'new'}
+        group={screen.editedTagGroup}
+        onDone={screen.close}
+      />
+    );
+  } else if (catalog && editing?.type === 'tag') {
+    body = (
+      <CatalogTagEditor
+        key={editing.id ?? 'new'}
+        tag={screen.editedTag}
+        groups={catalog.tagGroups}
         onDone={screen.close}
       />
     );
@@ -121,23 +131,16 @@ export function AdminPage() {
               onCreate={() => screen.edit({ type: 'recipe', id: null })}
               onEdit={(id) => screen.edit({ type: 'recipe', id })}
             />
-            <ListSection
-              kind="cuisine"
-              entries={catalog.cuisines}
-              onCreate={() =>
-                screen.edit({ type: 'list', kind: 'cuisine', id: null })
-              }
-              onEdit={(id) =>
-                screen.edit({ type: 'list', kind: 'cuisine', id })
-              }
+            <TagGroupList
+              groups={catalog.tagGroups}
+              onCreate={() => screen.edit({ type: 'tagGroup', id: null })}
+              onEdit={(id) => screen.edit({ type: 'tagGroup', id })}
             />
-            <ListSection
-              kind="method"
-              entries={catalog.methods}
-              onCreate={() =>
-                screen.edit({ type: 'list', kind: 'method', id: null })
-              }
-              onEdit={(id) => screen.edit({ type: 'list', kind: 'method', id })}
+            <CatalogTagList
+              groups={catalog.tagGroups}
+              tags={catalog.tags}
+              onCreate={() => screen.edit({ type: 'tag', id: null })}
+              onEdit={(id) => screen.edit({ type: 'tag', id })}
             />
             <EatingMomentList
               moments={catalog.eatingMoments}

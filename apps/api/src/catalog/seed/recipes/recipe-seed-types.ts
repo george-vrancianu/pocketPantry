@@ -17,7 +17,7 @@ export const t = (en: string, ro: string): Text => ({ en, ro });
 
 export type Difficulty = (typeof recipeDifficulty.enumValues)[number];
 
-/** A Cuisine, Method or Eating Moment: Catalog-level, so it carries Danish too. */
+/** A Catalog Tag, Tag Group or Eating Moment: Catalog-level, so it carries Danish too. */
 export type SeedNamed = {
   slug: string;
   en: string;
@@ -92,16 +92,14 @@ export type RecipeSeed = {
   eatingMoments: EatingMomentSeed[];
 };
 
-/** A Variant is either a Cuisine Variant or a Method Variant, never both. */
+/** A Variant is made by one Catalog Tag, named `group:slug` after the registry it comes from (`SEED_TAGS`). */
 export type VariantSeed = RecipeSeed & {
+  tag: string;
   /**
    * Indexes into the base's `tips` (Recipe-level Tips) this Variant does not
    * inherit. Unique and in range.
    */
   hideBaseTips?: number[];
-} & (
-    | { cuisine: string; method?: undefined }
-    | { method: string; cuisine?: undefined }
-  );
+};
 
 export type BaseRecipeSeed = RecipeSeed & { variants: VariantSeed[] };

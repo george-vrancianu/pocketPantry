@@ -197,6 +197,20 @@ const ICON_NODES = {
       },
     ],
   ],
+  /** Tags button and Tag field (docs/handoffs/tags-filter): stroke 1.9, the hole is a filled dot. */
+  tag: [
+    [
+      'path',
+      {
+        strokeWidth: '1.9',
+        d: 'M3.5 12.3V5a1.5 1.5 0 0 1 1.5-1.5h7.3a1.5 1.5 0 0 1 1 .4l7.3 7.3a1.5 1.5 0 0 1 0 2.1l-7.3 7.3a1.5 1.5 0 0 1-2.1 0L3.9 13.3a1.5 1.5 0 0 1-.4-1z',
+      },
+    ],
+    [
+      'circle',
+      { cx: '8.2', cy: '8.2', r: '1.4', fill: 'currentColor', stroke: 'none' },
+    ],
+  ],
   /** Not in the handoff set: a tree elbow that marks a row as belonging to the one above. */
   'sub-item': [['path', { d: 'M6 3v8a5 5 0 0 0 5 5h9' }]],
 } as const satisfies Record<string, IconNode>;
@@ -306,6 +320,7 @@ export const BangIcon = handoff('bang');
 export const CookIcon = handoff('cook');
 export const HourglassIcon = handoff('hourglass');
 export const SubItemIcon = handoff('sub-item');
+export const TagIcon = handoff('tag');
 
 export const HomeIcon = lucide(House);
 export const CustomiseIcon = lucide(LayoutGrid);

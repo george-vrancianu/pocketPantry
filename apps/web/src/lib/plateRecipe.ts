@@ -74,6 +74,7 @@ export function useSaveFromPlate() {
       title: string;
       parentId: string | null;
       lines: ReviewLine[];
+      tagIds?: string[];
     }) =>
       apiRequest<FamilyRecipeEdit>('/recipes/from-plate', {
         method: 'POST',
@@ -81,6 +82,7 @@ export function useSaveFromPlate() {
           title: input.title.trim(),
           parentId: input.parentId,
           lines: input.lines.map(toRecipeLine),
+          tagIds: input.tagIds ?? [],
         },
       }),
     onSuccess: () =>

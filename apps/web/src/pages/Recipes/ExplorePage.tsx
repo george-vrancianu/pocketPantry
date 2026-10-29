@@ -28,13 +28,13 @@ import {
 } from '../../lib/cookTonight';
 import {
   isFiltering,
-  useRecipeFilters,
   useRecipes,
   type RecipeBrowse,
   type RecipeListItem,
 } from '../../lib/recipes';
 import { RecipeFilters } from './components/RecipeFilters';
 import { SectionLabel } from './components/SectionLabel';
+import { TagNoMatch } from './components/TagNoMatch';
 
 /** Rows a group shows before "Show n more". */
 const LIMIT = 4;
@@ -74,8 +74,7 @@ export function ExplorePage() {
   const { t } = useTranslation(['recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
     search: '',
-    cuisineId: '',
-    methodId: '',
+    tagIds: [],
   });
   const [showHidden, setShowHidden] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -128,7 +127,6 @@ export function ExplorePage() {
     false,
     'catalog',
   );
-  const filters = useRecipeFilters();
   const { add, stateOf } = useAddToFamily({
     onNet: exploreAdds.bump,
     // While the quick view is open its buttons sit at the bottom: lift the toast clear of them.
@@ -169,7 +167,7 @@ export function ExplorePage() {
     options: { hideCanMake?: boolean; safe?: boolean } = {},
   ) => (
     <Group
-      key={`${label}|${browse.search}|${browse.cuisineId}|${browse.methodId}`}
+      key={`${label}|${browse.search}|${browse.tagIds.join(',')}`}
       label={label}
       rows={rows}
       render={(recipe) => (
@@ -180,6 +178,7 @@ export function ExplorePage() {
           onAdd={() => void add(recipe)}
           card={cardFor(options.safe ? safeIndex : index, recipe)}
           filtering={filtering}
+          matchedTagIds={browse.tagIds}
           hideCanMake={options.hideCanMake ?? false}
           onOpen={() => {
             setQuick(recipe);
@@ -224,8 +223,12 @@ export function ExplorePage() {
         <RecipeFilters
           value={browse}
           onChange={setBrowse}
-          options={filters.data}
           searchLabel={t('recipes:explore.search')}
+          tags={{
+            scope: 'catalog',
+            showHidden,
+            resultCount: recipes.data ? items.length : undefined,
+          }}
         />
         <HiddenByAllergiesNote
           count={hiddenCount}
@@ -235,7 +238,15 @@ export function ExplorePage() {
           <Alert>{translateApiError(t, recipes.error)}</Alert>
         ) : null}
         {recipes.isPending ? <Spinner label={t('common:loading')} /> : null}
-        {recipes.data && items.length === 0 ? (
+        {recipes.data && items.length === 0 && browse.tagIds.length > 0 ? (
+          <TagNoMatch
+            browse={browse}
+            onChange={setBrowse}
+            scope="catalog"
+            showHidden={showHidden}
+          />
+        ) : null}
+        {recipes.data && items.length === 0 && browse.tagIds.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: '32px' }}>
             <Box sx={{ ...displayType, fontSize: 18 }}>
               {t('recipes:noMatches')}

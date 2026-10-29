@@ -33,7 +33,11 @@ export const MAX_RAW_NAME = 100;
 /** Why a Receipt Scan line was left out of the Pantry. A closed set, never model free text. */
 export type ExclusionReason = 'not_food' | 'fee' | 'deposit' | 'other';
 
-export type ScanResponse = { lines: ProposedLine[] };
+export type ScanResponse = {
+  lines: ProposedLine[];
+  /** Plate Scan only: ids of allowed Tags the dish was read as (proposals; the Member decides on save). */
+  tagIds?: string[];
+};
 
 /** An image read below `threshold` is flagged low-confidence. */
 export function isLowConfidence(

@@ -4,6 +4,7 @@ import { catalogScope } from '../catalog/catalog-scope';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { recipeIngredientLines, recipes } from '../database/schema';
+import { loadRecipeTagIds, usableTagIds } from '../tags/recipe-tags';
 import { SettingsService } from '../settings/settings.service';
 import { FamilyRecipesService } from './family-recipes.service';
 import { rankPlateMatches, type PlateCandidate } from './plate-matches';
@@ -12,11 +13,12 @@ import {
   loadViewerAllergyContext,
 } from './recipe-allergens';
 import { liveCopiesOf, recipeTitles } from './recipe-view';
-import type {
-  FamilyRecipeEdit,
-  FromPlateBody,
-  PlateMatches,
-  PlateMatchesBody,
+import {
+  MAX_RECIPE_TAGS,
+  type FamilyRecipeEdit,
+  type FromPlateBody,
+  type PlateMatches,
+  type PlateMatchesBody,
 } from './recipes.schemas';
 
 /** Saving a Plate Scan dish as a Family Recipe, and finding its closest Catalog base. */
@@ -116,6 +118,19 @@ export class PlateRecipesService {
 
   /** One serving (GLOSSARY: Plate Scan is for one serving), ingredient lines only; parent rules are the Family editor's. */
   async save(memberId: string, body: FromPlateBody): Promise<FamilyRecipeEdit> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    // Proposals are not choices the Member made and may be stale (a Tag deleted or merged since
+    // the read), so unusable ones are dropped rather than failing the save. The parent is judged
+    // by `create`; another Family's Base reads as missing there, before any Tag is looked at.
+    const proposed = await usableTagIds(this.database, familyId, body.tagIds);
+    // A Variant starts with its Base's Tags (ADR 0033); the proposals fill the rest, up to the cap.
+    const kept = body.parentId
+      ? await loadRecipeTagIds(this.database, body.parentId)
+      : [];
+    const tagIds = [...new Set([...kept, ...proposed])].slice(
+      0,
+      MAX_RECIPE_TAGS,
+    );
     return this.family.create(
       memberId,
       {
@@ -124,8 +139,7 @@ export class PlateRecipesService {
         prepMinutes: null,
         cookMinutes: null,
         difficulty: null,
-        cuisineId: null,
-        methodId: null,
+        tagIds,
         parentId: body.parentId,
         lines: body.lines,
         steps: [],

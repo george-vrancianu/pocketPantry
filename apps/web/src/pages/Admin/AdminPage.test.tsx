@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -6,8 +6,33 @@ import { AdminPage } from './AdminPage';
 
 const catalog = {
   aisles: [],
-  cuisines: [{ id: 'cu1', name: 'Italian', translations: [] }],
-  methods: [{ id: 'me1', name: 'Baking', translations: [] }],
+  tagGroups: [
+    { id: 'g1', name: 'Cuisine', position: 1, translations: [] },
+    {
+      id: 'g2',
+      name: 'Method',
+      position: 2,
+      translations: [
+        { id: 'gt1', locale: 'ro', kind: 'name', value: 'Metodă' },
+      ],
+    },
+  ],
+  tags: [
+    {
+      id: 'tg1',
+      name: 'Italian',
+      groupId: 'g1',
+      recipeCount: 3,
+      translations: [],
+    },
+    {
+      id: 'tg2',
+      name: 'Baking',
+      groupId: 'g2',
+      recipeCount: 0,
+      translations: [],
+    },
+  ],
   allergens: [],
   eatingMoments: [
     {
@@ -28,7 +53,7 @@ describe('AdminPage Recipes tab', () => {
     vi.unstubAllGlobals();
   });
 
-  it('lists Recipes, Cuisines and Methods, and opens their editors', async () => {
+  it('lists Recipes, Tag Groups and Catalog Tags, and opens their editors', async () => {
     vi.stubGlobal(
       'fetch',
       stubApi({
@@ -41,8 +66,6 @@ describe('AdminPage Recipes tab', () => {
               title: 'Pizza',
               servings: 4,
               difficulty: null,
-              cuisineId: null,
-              methodId: null,
               archived: false,
             },
           ]),
@@ -57,18 +80,19 @@ describe('AdminPage Recipes tab', () => {
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', { name: 'Edit Cuisine Italian' }),
+      screen.getByRole('button', { name: 'Edit Tag Group Cuisine' }),
     );
     expect(
-      screen.getByRole('heading', { name: 'Edit Cuisine Italian' }),
+      screen.getByRole('heading', { name: 'Edit Tag Group Cuisine' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
-    await user.click(
-      screen.getByRole('button', { name: 'Edit Method Baking' }),
-    );
+    const italian = within(
+      screen.getByRole('list', { name: 'Cuisine' }),
+    ).getByRole('button', { name: 'Edit Catalog Tag Italian' });
+    await user.click(italian);
     expect(
-      screen.getByRole('heading', { name: 'Edit Method Baking' }),
+      screen.getByRole('heading', { name: 'Edit Catalog Tag Italian' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 

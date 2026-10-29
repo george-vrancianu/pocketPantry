@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import type { RecipeTag } from './tags';
 import {
   recipesQueryKey,
   type CompactAllergyWarning,
@@ -20,6 +21,7 @@ export type CookTonightCard = {
     servings: number;
     prepMinutes: number | null;
     cookMinutes: number | null;
+    tags: RecipeTag[];
     allergyWarning: CompactAllergyWarning | null;
   };
   canMake: boolean;
