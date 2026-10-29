@@ -1,120 +1,99 @@
 import {
   Alert,
-  Button,
+  AlertIcon,
+  Box,
+  Card,
+  ListRow,
   Spinner,
   Stack,
-  TextField,
+  SwipeRow,
+  Tag,
   Typography,
+  tokens,
+  useToast,
+  type SwipeRowHandle,
+  type SwipeRowLabels,
 } from '@pocket-pantry/ui';
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  AllergenContainsRow,
-  containsToAllergenIds,
-  selectionFromAllergenIds,
-  type ContainsSelection,
-} from '../../../components/AllergenContainsRow';
-import { ConfirmAction } from '../../../components/ConfirmAction';
+import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
+import { RowHintNote } from '../../../components/RowHintNote';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
+  familyCatalogQueryKey,
   useDeleteFamilyIngredient,
   useDeleteFamilySynonym,
   useFamilyCatalog,
-  useSetFamilyIngredientAllergens,
-  useUpdateFamilyIngredient,
+  type FamilyCatalog,
   type FamilyCatalogIngredient,
-  type FamilyIngredientUsage,
+  type FamilyCatalogSynonym,
 } from '../../../lib/familyCatalog';
-import { useCategoryOptions } from '../../../lib/settings';
-
-const USAGE_KINDS: Array<keyof FamilyIngredientUsage> = [
-  'batches',
-  'shoppingItems',
-  'templateLines',
-  'recipeLines',
-  'staples',
-];
+import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
+import { useRowHint, type RowHint } from '../../../lib/useRowHint';
+import { FamilyIngredientSheet, USAGE_KINDS } from './FamilyIngredientSheet';
+import { FamilySynonymSheet } from './FamilySynonymSheet';
 
 /** The Family catalog: what the Family added, which any Member can rename, move or delete (ADR 0011). */
 export function FamilyCatalogSection() {
-  const { t, i18n } = useTranslation(['settings', 'common']);
+  const { t } = useTranslation(['settings', 'common']);
   const id = useId();
   const catalog = useFamilyCatalog();
-  const updateIngredient = useUpdateFamilyIngredient();
   const deleteIngredient = useDeleteFamilyIngredient();
   const deleteSynonym = useDeleteFamilySynonym();
-  const setAllergens = useSetFamilyIngredientAllergens();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [taggingId, setTaggingId] = useState<string | null>(null);
-  // Focus follows the Member: every control that disappears hands it on.
-  const controls = useRef(new Map<string, HTMLElement | null>());
+  const ingredientRemoval = useDeferredRemoval(
+    familyCatalogQueryKey,
+    deleteIngredient.mutateAsync,
+  );
+  const synonymRemoval = useDeferredRemoval(
+    familyCatalogQueryKey,
+    deleteSynonym.mutateAsync,
+  );
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const [focusKey, setFocusKey] = useState<string | null>(null);
-  useEffect(() => {
-    if (focusKey && editingId === null) {
-      controls.current.get(focusKey)?.focus();
-      // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: consumed (cleared) once the control is focused
-      setFocusKey(null);
-    }
-  }, [focusKey, editingId]);
-  const register = (key: string) => (element: HTMLElement | null) => {
-    if (element) controls.current.set(key, element);
-    else controls.current.delete(key);
-  };
-  /** Focus the row after `index`, else the one before, else the heading. */
-  const focusNeighbour = (keys: string[], index: number) => {
-    const next = keys[index + 1] ?? keys[index - 1];
-    (next ? controls.current.get(next) : headingRef.current)?.focus();
-  };
 
+  const data = catalog.data;
+  // A deleted Ingredient stays out of the list, refetches included, until its delete has settled.
+  const ingredients = useMemo(
+    () =>
+      data?.ingredients.filter((i) => !ingredientRemoval.hiddenIds.has(i.id)),
+    [data, ingredientRemoval.hiddenIds],
+  );
+  const familyIds = useMemo(
+    () => new Set(data?.ingredients.map((i) => i.id)),
+    [data],
+  );
+  // Synonyms of a Family Ingredient show only as chips in its sheet.
+  const otherNames = useMemo(
+    () =>
+      data?.synonyms.filter(
+        (s) =>
+          !familyIds.has(s.ingredient.id) &&
+          !synonymRemoval.hiddenIds.has(s.id),
+      ),
+    [data, familyIds, synonymRemoval.hiddenIds],
+  );
+
+  const ingredientCount = ingredients?.length ?? 0;
+  const otherCount = otherNames?.length ?? 0;
+  // The last row of a list going takes focus with it: hand it to the heading.
+  const hadRows = useRef(false);
+  const rowCount = ingredientCount + otherCount;
+  useEffect(() => {
+    if (rowCount === 0 && hadRows.current) {
+      const active = document.activeElement;
+      if (!active || active === document.body) headingRef.current?.focus();
+    }
+    hadRows.current = rowCount > 0;
+  }, [rowCount]);
+
+  const hint = useRowHint('familyCatalog', ingredientCount + otherCount > 0);
   const error = [
     catalog.error,
     deleteIngredient.error,
     deleteSynonym.error,
-    setAllergens.error,
   ].find(Boolean);
   const uncheckedCount =
-    catalog.data?.ingredients.filter((i) => !i.allergensChecked).length ?? 0;
-  /** "No allergens tagged", "Contains Milk, Soy" or "Not checked for allergens". */
-  const allergenStatus = (ingredient: FamilyCatalogIngredient) => {
-    if (!ingredient.allergensChecked) {
-      return t('settings:familyCatalog.allergensUnchecked');
-    }
-    if (ingredient.allergenIds.length === 0) {
-      return t('settings:familyCatalog.allergensNone');
-    }
-    return t('settings:familyCatalog.allergensContains', {
-      names: ingredient.allergens.map((a) => a.name).join(', '),
-    });
-  };
-  const data = catalog.data;
+    ingredients?.filter((i) => !i.allergensChecked).length ?? 0;
   const empty = data && data.ingredients.length + data.synonyms.length === 0;
-
-  /** "3 Batches and 1 Staple", from the non-zero counts. */
-  const usageText = (usage: FamilyIngredientUsage) =>
-    new Intl.ListFormat(i18n.language, {
-      style: 'long',
-      type: 'conjunction',
-    }).format(
-      USAGE_KINDS.filter((kind) => usage[kind] > 0).map((kind) =>
-        t(`settings:familyCatalog.usage.${kind}`, { count: usage[kind] }),
-      ),
-    );
-  const deleteMessage = (ingredient: FamilyCatalogIngredient) => {
-    const total = USAGE_KINDS.reduce(
-      (sum, kind) => sum + ingredient.usage[kind],
-      0,
-    );
-    return total === 0
-      ? t('settings:familyCatalog.deleteConfirmUnused', {
-          name: ingredient.name,
-        })
-      : t('settings:familyCatalog.deleteConfirm', {
-          name: ingredient.name,
-          usage: usageText(ingredient.usage),
-          count: total,
-        });
-  };
 
   return (
     <Stack component="section" spacing={1} aria-labelledby={`${id}-heading`}>
@@ -131,326 +110,304 @@ export function FamilyCatalogSection() {
       <Typography variant="meta" color="text.secondary">
         {t('settings:familyCatalog.help')}
       </Typography>
+      <RowHintNote hint={hint} text={t('settings:familyCatalog.hint')} />
       {uncheckedCount > 0 ? (
-        <Typography variant="meta" color="text.secondary">
-          {t('settings:familyCatalog.uncheckedSummary', {
-            count: uncheckedCount,
-          })}
-        </Typography>
+        <Box
+          role="status"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.5,
+            py: 1.25,
+            borderRadius: 2,
+            bgcolor: tokens.color.soonBg,
+            color: tokens.color.soonFg,
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          <AlertIcon size={18} />
+          {t('settings:familyCatalog.checkLine', { count: uncheckedCount })}
+        </Box>
       ) : null}
       {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
       {catalog.isLoading ? <Spinner label={t('common:loading')} /> : null}
       {empty ? (
-        <Typography color="text.secondary">
-          {t('settings:familyCatalog.empty')}
-        </Typography>
+        <Card sx={{ textAlign: 'center', px: 2.25, py: 2.75 }}>
+          <Typography sx={{ fontSize: 15, fontWeight: 700 }}>
+            {t('settings:familyCatalog.emptyTitle')}
+          </Typography>
+          <Typography variant="meta" color="text.secondary">
+            {t('settings:familyCatalog.empty')}
+          </Typography>
+        </Card>
       ) : null}
 
-      {data && data.ingredients.length > 0 ? (
-        <Stack
-          component="ul"
-          spacing={1.5}
-          sx={{ listStyle: 'none', p: 0, m: 0 }}
-        >
-          {data.ingredients.map((ingredient, index) => (
-            <Stack component="li" key={ingredient.id} spacing={1}>
-              {editingId === ingredient.id ? (
-                <IngredientEditor
+      {data && ingredients && ingredients.length > 0 ? (
+        <Box data-row-scope>
+          <Card
+            component="ul"
+            variant="list"
+            aria-label={t('settings:familyCatalog.title')}
+            sx={{ listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
+          >
+            {ingredients.map((ingredient, index) => {
+              const peek = index === 0 && hint.peek;
+              return (
+                <IngredientRow
+                  key={ingredient.id}
                   ingredient={ingredient}
-                  saving={updateIngredient.isPending}
-                  error={updateIngredient.error}
-                  onCancel={() => {
-                    updateIngredient.reset();
-                    setFocusKey(`edit:${ingredient.id}`);
-                    setEditingId(null);
-                  }}
-                  onSave={(changes) =>
-                    updateIngredient.mutate(
-                      { id: ingredient.id, ...changes },
-                      {
-                        onSuccess: () => {
-                          setFocusKey(`edit:${ingredient.id}`);
-                          setEditingId(null);
-                        },
-                      },
+                  catalog={data}
+                  peek={peek}
+                  onLearned={hint.onLearned}
+                  disabled={deleteIngredient.isPending}
+                  onRemove={() =>
+                    ingredientRemoval.remove(
+                      ingredient.id,
+                      ingredient.name,
+                      t('settings:familyCatalog.deleted', {
+                        name: ingredient.name,
+                      }),
                     )
                   }
                 />
-              ) : (
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-                >
-                  <Stack>
-                    <Typography variant="body1" sx={{ fontWeight: 700 }}>
-                      {ingredient.name}
-                    </Typography>
-                    <Typography variant="meta" color="text.secondary">
-                      {t('settings:familyCatalog.meta', {
-                        category: ingredient.leafCategory.name,
-                        aisle: ingredient.parentCategory.aisle.name,
-                        unit: ingredient.defaultUnit,
-                      })}
-                    </Typography>
-                    <Typography
-                      variant="meta"
-                      color={
-                        ingredient.allergensChecked
-                          ? 'text.secondary'
-                          : 'text.primary'
-                      }
-                      sx={{
-                        fontWeight: ingredient.allergensChecked ? 400 : 700,
-                      }}
-                    >
-                      {allergenStatus(ingredient)}
-                    </Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={1}>
-                    <Button
-                      ref={register(`edit:${ingredient.id}`)}
-                      variant="ghost"
-                      aria-label={t('settings:familyCatalog.edit', {
-                        name: ingredient.name,
-                      })}
-                      onClick={() => {
-                        updateIngredient.reset();
-                        setEditingId(ingredient.id);
-                      }}
-                    >
-                      {t('settings:familyCatalog.editLabel')}
-                    </Button>
-                    <Button
-                      ref={register(`tag:${ingredient.id}`)}
-                      variant="ghost"
-                      aria-label={t('settings:familyCatalog.tagAllergens', {
-                        name: ingredient.name,
-                      })}
-                      onClick={() => {
-                        setAllergens.reset();
-                        setTaggingId(ingredient.id);
-                      }}
-                    >
-                      {t('settings:familyCatalog.tagLabel')}
-                    </Button>
-                    <ConfirmAction
-                      variant="ghost"
-                      label={t('settings:familyCatalog.deleteLabel')}
-                      triggerName={t('settings:familyCatalog.delete', {
-                        name: ingredient.name,
-                      })}
-                      message={deleteMessage(ingredient)}
-                      disabled={deleteIngredient.isPending}
-                      onConfirm={() => {
-                        focusNeighbour(
-                          data.ingredients.map((i) => `edit:${i.id}`),
-                          index,
-                        );
-                        deleteIngredient.mutate(ingredient.id);
-                      }}
-                    />
-                  </Stack>
-                </Stack>
-              )}
-              {taggingId === ingredient.id && editingId !== ingredient.id ? (
-                <AllergenTagger
-                  ingredient={ingredient}
-                  saving={setAllergens.isPending}
-                  onCancel={() => {
-                    setFocusKey(`tag:${ingredient.id}`);
-                    setTaggingId(null);
-                  }}
-                  onSave={(allergenIds) =>
-                    setAllergens.mutate(
-                      { id: ingredient.id, allergenIds },
-                      {
-                        onSuccess: () => {
-                          setFocusKey(`tag:${ingredient.id}`);
-                          setTaggingId(null);
-                        },
-                      },
-                    )
-                  }
-                />
-              ) : null}
-            </Stack>
-          ))}
+              );
+            })}
+          </Card>
+        </Box>
+      ) : null}
+
+      {otherNames && otherNames.length > 0 ? (
+        <Stack spacing={0.5} sx={{ pt: 1 }}>
+          <Typography variant="body1" component="h3" sx={{ fontWeight: 700 }}>
+            {t('settings:familyCatalog.synonyms', { count: otherNames.length })}
+          </Typography>
+          <Typography variant="meta" color="text.secondary">
+            {t('settings:familyCatalog.synonymsHint')}
+          </Typography>
+          <Box data-row-scope>
+            <Card
+              component="ul"
+              variant="list"
+              aria-label={t('settings:familyCatalog.synonyms', {
+                count: otherNames.length,
+              })}
+              sx={{ listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
+            >
+              {otherNames.map((synonym, index) => {
+                const peek = ingredientCount === 0 && index === 0 && hint.peek;
+                return (
+                  <SynonymRow
+                    key={synonym.id}
+                    synonym={synonym}
+                    peek={peek}
+                    onLearned={hint.onLearned}
+                    disabled={deleteSynonym.isPending}
+                    onRemove={() =>
+                      synonymRemoval.remove(
+                        synonym.id,
+                        synonym.name,
+                        t('settings:familyCatalog.synonymRemoved', {
+                          name: synonym.name,
+                        }),
+                      )
+                    }
+                  />
+                );
+              })}
+            </Card>
+          </Box>
         </Stack>
       ) : null}
-
-      {data && data.synonyms.length > 0 ? (
-        <>
-          <Typography variant="body1" component="h3" sx={{ fontWeight: 700 }}>
-            {t('settings:familyCatalog.synonyms')}
-          </Typography>
-          <Stack
-            component="ul"
-            spacing={1}
-            sx={{ listStyle: 'none', p: 0, m: 0 }}
-          >
-            {data.synonyms.map((synonym, index) => (
-              <Stack
-                component="li"
-                key={synonym.id}
-                direction="row"
-                spacing={1}
-                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-              >
-                <span>
-                  {t('settings:familyCatalog.synonymRow', {
-                    name: synonym.name,
-                    ingredient: synonym.ingredient.name,
-                  })}
-                </span>
-                <Button
-                  ref={register(`synonym:${synonym.id}`)}
-                  variant="ghost"
-                  disabled={
-                    deleteSynonym.isPending &&
-                    deleteSynonym.variables === synonym.id
-                  }
-                  aria-label={t('settings:familyCatalog.delete', {
-                    name: synonym.name,
-                  })}
-                  onClick={() => {
-                    focusNeighbour(
-                      data.synonyms.map((x) => `synonym:${x.id}`),
-                      index,
-                    );
-                    deleteSynonym.mutate(synonym.id);
-                  }}
-                >
-                  {t('settings:familyCatalog.deleteLabel')}
-                </Button>
-              </Stack>
-            ))}
-          </Stack>
-        </>
-      ) : null}
     </Stack>
   );
 }
 
-/** Tags or re-tags what a Family Ingredient contains; blank is not a choice, so Save waits for one. */
-function AllergenTagger({
-  ingredient,
-  saving,
-  onCancel,
-  onSave,
-}: {
-  ingredient: FamilyCatalogIngredient;
-  saving: boolean;
-  onCancel: () => void;
-  onSave: (allergenIds: string[]) => void;
-}) {
-  const { t } = useTranslation(['settings', 'common']);
-  const [contains, setContains] = useState<ContainsSelection>(() =>
-    selectionFromAllergenIds(
-      ingredient.allergensChecked ? ingredient.allergenIds : undefined,
-    ),
-  );
-  const allergenIds = containsToAllergenIds(contains);
-  return (
-    <Stack spacing={1}>
-      <AllergenContainsRow
-        value={contains}
-        onChange={setContains}
-        disabled={saving}
-        known={ingredient.allergens}
-      />
-      <Stack direction="row" spacing={1}>
-        <Button
-          disabled={saving || allergenIds === undefined}
-          onClick={() => allergenIds && onSave(allergenIds)}
-        >
-          {t('settings:familyCatalog.saveAllergens')}
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>
-          {t('common:cancel')}
-        </Button>
-      </Stack>
-    </Stack>
-  );
-}
-
-function IngredientEditor({
-  ingredient,
-  saving,
-  error,
-  onCancel,
-  onSave,
-}: {
-  ingredient: FamilyCatalogIngredient;
-  saving: boolean;
-  error: unknown;
-  onCancel: () => void;
-  onSave: (changes: { name?: string; leafCategoryId?: string }) => void;
-}) {
-  const { t } = useTranslation(['settings', 'common']);
-  const id = useId();
-  const categories = useCategoryOptions();
-  const [name, setName] = useState(ingredient.name);
-  const [leafId, setLeafId] = useState(ingredient.leafCategory.id);
-  const trimmed = name.trim();
-  const nameChanged = trimmed !== ingredient.name;
-  const leafChanged = leafId !== ingredient.leafCategory.id;
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!trimmed || (!nameChanged && !leafChanged)) return;
-    onSave({
-      ...(nameChanged ? { name: trimmed } : {}),
-      ...(leafChanged ? { leafCategoryId: leafId } : {}),
-    });
+/** A sheet that mounts for each opening (so its draft restarts) and stays mounted until it has closed. */
+function useSheet() {
+  const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(false);
+  return {
+    mounted,
+    open,
+    show: () => {
+      setMounted(true);
+      setOpen(true);
+    },
+    close: () => setOpen(false),
+    exited: () => setMounted(false),
   };
+}
+
+function IngredientRow({
+  ingredient,
+  catalog,
+  peek,
+  onLearned,
+  disabled,
+  onRemove,
+}: {
+  ingredient: FamilyCatalogIngredient;
+  catalog: FamilyCatalog;
+  peek: boolean;
+  onLearned: RowHint['onLearned'];
+  disabled: boolean;
+  onRemove: () => void;
+}) {
+  const { t } = useTranslation(['settings', 'common']);
+  const toast = useToast();
+  const sheet = useSheet();
+  const row = useRef<SwipeRowHandle>(null);
+  const total = USAGE_KINDS.reduce(
+    (sum, kind) => sum + ingredient.usage[kind],
+    0,
+  );
+  const labels: SwipeRowLabels = {
+    question: t('settings:familyCatalog.deleteQuestion', {
+      name: ingredient.name,
+    }),
+    context:
+      total === 0
+        ? t('settings:familyCatalog.unused')
+        : t('settings:familyCatalog.usageTotal', { count: total }),
+    keep: t('common:row.keep'),
+    remove: t('settings:familyCatalog.deleteAction'),
+    releaseToDelete: t('common:row.releaseToDelete'),
+    hint: t('common:row.a11yHint'),
+    editAction: t('common:row.actions.edit', { name: ingredient.name }),
+    removeAction: t('common:row.actions.remove', { name: ingredient.name }),
+  };
+  const names = ingredient.allergens.map((a) => a.name);
 
   return (
-    <Stack component="form" spacing={1} onSubmit={submit}>
-      {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
-      <TextField
-        id={`${id}-name`}
-        label={t('settings:familyCatalog.name')}
-        value={name}
-        autoFocus
-        onChange={(event) => setName(event.target.value)}
-        slotProps={{ htmlInput: { maxLength: 100 } }}
-      />
-      <TextField
-        id={`${id}-category`}
-        select
-        label={t('settings:familyCatalog.category')}
-        value={leafId}
-        onChange={(event) => setLeafId(event.target.value)}
-        slotProps={{ select: { native: true } }}
+    <>
+      <SwipeRow
+        ref={row}
+        name={ingredient.name}
+        labels={labels}
+        disabled={disabled}
+        peek={peek}
+        onLearned={onLearned}
+        onTap={sheet.show}
+        onEdit={sheet.show}
+        onRemove={onRemove}
       >
-        {/* The current Leaf shows even before the options load. */}
-        {categories.data ? null : (
-          <option value={ingredient.leafCategory.id}>
-            {ingredient.leafCategory.name}
-          </option>
-        )}
-        {categories.data?.parents.map((parent) => (
-          <optgroup key={parent.id} label={parent.name}>
-            {parent.leaves.map((leaf) => (
-              <option key={leaf.id} value={leaf.id}>
-                {leaf.name}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </TextField>
-      <Stack direction="row" spacing={1}>
-        <Button
-          type="submit"
-          disabled={saving || !trimmed || (!nameChanged && !leafChanged)}
-        >
-          {t('settings:familyCatalog.save')}
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>
-          {t('common:cancel')}
-        </Button>
-      </Stack>
-    </Stack>
+        <ListRow
+          leading={
+            <IngredientIconSlot
+              ingredientId={ingredient.id}
+              aisleId={ingredient.parentCategory.aisle.id}
+            />
+          }
+          title={ingredient.name}
+          meta={t('settings:familyCatalog.rowMeta', {
+            category: ingredient.leafCategory.name,
+            aisle: ingredient.parentCategory.aisle.name,
+            unit: ingredient.defaultUnit,
+          })}
+          tags={
+            !ingredient.allergensChecked ? (
+              <Tag tone="soon" icon={<AlertIcon size={12} />}>
+                {t('settings:familyCatalog.checkTag')}
+              </Tag>
+            ) : names.length > 0 ? (
+              <Tag
+                tone="neutral"
+                title={t('settings:familyCatalog.containsA11y', {
+                  names: names.join(', '),
+                })}
+                sx={{ color: tokens.color.ink }}
+              >
+                {names.length > 1
+                  ? t('settings:familyCatalog.containsTag', {
+                      first: names[0],
+                      count: names.length - 1,
+                    })
+                  : names[0]}
+              </Tag>
+            ) : null
+          }
+        />
+      </SwipeRow>
+      {sheet.mounted ? (
+        <FamilyIngredientSheet
+          open={sheet.open}
+          ingredient={ingredient}
+          catalog={catalog}
+          onClose={sheet.close}
+          onSaved={() => {
+            sheet.close();
+            toast.show(t('common:row.updated', { name: ingredient.name }));
+          }}
+          onExited={sheet.exited}
+          onDelete={() => row.current?.askToRemove()}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function SynonymRow({
+  synonym,
+  peek,
+  onLearned,
+  disabled,
+  onRemove,
+}: {
+  synonym: FamilyCatalogSynonym;
+  peek: boolean;
+  onLearned: RowHint['onLearned'];
+  disabled: boolean;
+  onRemove: () => void;
+}) {
+  const { t } = useTranslation(['settings', 'common']);
+  const sheet = useSheet();
+  const row = useRef<SwipeRowHandle>(null);
+  const labels: SwipeRowLabels = {
+    question: t('settings:familyCatalog.synonymQuestion', {
+      name: synonym.name,
+    }),
+    context: t('settings:familyCatalog.synonymContext', {
+      ingredient: synonym.ingredient.name,
+    }),
+    keep: t('common:row.keep'),
+    remove: t('common:row.remove'),
+    releaseToDelete: t('common:row.releaseToDelete'),
+    hint: t('common:row.a11yHint'),
+    editAction: t('common:row.actions.edit', { name: synonym.name }),
+    removeAction: t('common:row.actions.remove', { name: synonym.name }),
+  };
+  return (
+    <>
+      <SwipeRow
+        ref={row}
+        name={synonym.name}
+        labels={labels}
+        disabled={disabled}
+        peek={peek}
+        onLearned={onLearned}
+        onTap={sheet.show}
+        onEdit={sheet.show}
+        onRemove={onRemove}
+      >
+        <ListRow
+          leading={<IngredientIconSlot ingredientId={synonym.ingredient.id} />}
+          title={synonym.name}
+          meta={t('settings:familyCatalog.synonymMeta', {
+            ingredient: synonym.ingredient.name,
+          })}
+        />
+      </SwipeRow>
+      {sheet.mounted ? (
+        <FamilySynonymSheet
+          open={sheet.open}
+          synonym={synonym}
+          onClose={sheet.close}
+          onExited={sheet.exited}
+          onRemove={() => row.current?.askToRemove()}
+        />
+      ) : null}
+    </>
   );
 }

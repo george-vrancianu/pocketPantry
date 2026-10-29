@@ -43,6 +43,8 @@ export type AllergenContainsRowProps = {
    * it is never offered as a new tag.
    */
   known?: readonly { id: string; name: string }[];
+  /** Replaces the default hint line under the label. */
+  hint?: string;
 };
 
 /**
@@ -56,6 +58,7 @@ export function AllergenContainsRow({
   onChange,
   disabled,
   known = [],
+  hint,
 }: AllergenContainsRowProps) {
   const { t } = useTranslation('catalog');
   const labelId = useId();
@@ -81,7 +84,7 @@ export function AllergenContainsRow({
         {t('allergenContains.label')}
       </Typography>
       <Typography variant="meta" color="text.secondary">
-        {t('allergenContains.hint')}
+        {hint ?? t('allergenContains.hint')}
       </Typography>
       {options.isError ? (
         <Alert>{t('allergenContains.loadFailed')}</Alert>
