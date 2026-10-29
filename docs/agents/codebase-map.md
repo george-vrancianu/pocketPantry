@@ -21,7 +21,7 @@ Root `package.json` fans out `lint`, `typecheck`, `test`, `build` to every works
 - Integration tests live in `apps/api/test/*.int-spec.ts` (real Postgres via `TEST_DATABASE_URL`; config `apps/api/test/jest-integration.config.mjs`). Helpers: `apps/api/test/support/`.
 - Schema: `apps/api/src/database/schema.ts`. Migrations: `apps/api/drizzle/NNNN_name.sql` plus `apps/api/drizzle/meta/_journal.json` and a snapshot. Generate with `npm run db:generate -w apps/api`; never hand-number a file, because parallel branches collide on the next number.
 - Voice: handlers in `apps/api/src/voice/handlers/`, registry in `voice-handlers.registry.ts`.
-- Tags: `apps/api/src/tags/recipe-tags.ts` (loading Tags onto Recipe reads, Cuisine/Method sync on save, copying Tags) and the `tag_groups`, `tags`, `recipe_tags` tables.
+- Tags: `apps/api/src/tags/recipe-tags.ts` (loading Tags onto Recipe reads, checking and writing a Recipe's `tagIds` with the 10-Tag cap, the pickable Tags for the editors, copying Tags) and the `tag_groups`, `tags`, `recipe_tags` tables.
 
 ## Web (`apps/web/src`)
 

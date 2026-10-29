@@ -1,4 +1,6 @@
-import { and, eq, inArray, sql, type SQL } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
+import { ApiException } from '../common/api-exception';
+import { MAX_RECIPE_TAGS } from '../recipes/recipes.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
@@ -57,6 +59,121 @@ const compareTags = (locale: CatalogLocale) => (a: RecipeTag, b: RecipeTag) =>
   (a.groupId ?? '').localeCompare(b.groupId ?? '') ||
   a.name.localeCompare(b.name, locale) ||
   a.id.localeCompare(b.id);
+
+/** The Tags a writer may use: every Catalog Tag, plus the Family's own (none for a Catalog writer). */
+function usableBy(familyId: string | null): SQL | undefined {
+  return familyId === null
+    ? isNull(tags.familyId)
+    : or(isNull(tags.familyId), eq(tags.familyId, familyId));
+}
+
+/**
+ * Every Tag a writer can put on a Recipe, named for the viewer and ordered like a Recipe's Tags:
+ * all Catalog Tags, plus the Family's own when `familyId` is given. Feeds the editor's Tag field.
+ */
+export async function loadPickableTags(
+  executor: Executor,
+  scope: CatalogScope,
+  locale: CatalogLocale,
+  familyId: string | null,
+): Promise<RecipeTag[]> {
+  const rows = await executor
+    .select({
+      id: tags.id,
+      name: tags.name,
+      familyId: tags.familyId,
+      groupId: tagGroups.id,
+      groupName: tagGroups.name,
+      groupOrder: tagGroups.position,
+    })
+    .from(tags)
+    .leftJoin(tagGroups, eq(tagGroups.id, tags.groupId))
+    .where(usableBy(familyId));
+  if (rows.length === 0) return [];
+  const names = await loadDisplayNames(executor, scope, locale, [
+    ...rows.map((r) => r.id),
+    ...rows.flatMap((r) => (r.groupId ? [r.groupId] : [])),
+  ]);
+  return rows.map((r) => toRecipeTag(r, names)).sort(compareTags(locale));
+}
+
+/** The ids of a Recipe's Tags (the editor's value; names come from the pickable Tags). */
+export async function loadRecipeTagIds(
+  executor: Executor,
+  recipeId: string,
+): Promise<string[]> {
+  const rows = await executor
+    .select({ id: recipeTags.tagId })
+    .from(recipeTags)
+    .where(eq(recipeTags.recipeId, recipeId));
+  return rows.map((r) => r.id).sort();
+}
+
+/**
+ * Checks the Tags a write names, before anything is written: at most 10, every one exists and is
+ * the writer's to use (a Catalog Tag, or a Family Tag of `familyId`; a Catalog Recipe passes null
+ * and may only use Catalog Tags). Other Families' Tags read as missing, so ids never leak. The
+ * Tags are key-share locked, so a concurrent delete waits until we commit.
+ *
+ * Returns the de-duplicated ids and the Cuisine and Method that the old columns mirror until the
+ * contract ticket drops them (the first Cuisine and the first Method among the Tags).
+ */
+export async function resolveRecipeTags(
+  tx: Tx,
+  familyId: string | null,
+  tagIds: readonly string[],
+): Promise<{
+  tagIds: string[];
+  cuisineId: string | null;
+  methodId: string | null;
+}> {
+  const ids = [...new Set(tagIds)];
+  if (ids.length > MAX_RECIPE_TAGS) {
+    throw new ApiException(400, 'recipes.tags_too_many', {
+      max: MAX_RECIPE_TAGS,
+    });
+  }
+  if (ids.length === 0) return { tagIds: ids, cuisineId: null, methodId: null };
+  const found = await tx
+    .select({ id: tags.id })
+    .from(tags)
+    .where(and(inArray(tags.id, ids), usableBy(familyId)))
+    .orderBy(tags.id)
+    .for('key share');
+  if (found.length !== ids.length) {
+    throw new ApiException(404, 'recipes.tag_not_found');
+  }
+  // One after the other: a transaction client runs one query at a time.
+  const cuisineRows = await tx
+    .select({ id: cuisines.id })
+    .from(cuisines)
+    .where(inArray(cuisines.id, ids));
+  const methodRows = await tx
+    .select({ id: methods.id })
+    .from(methods)
+    .where(inArray(methods.id, ids));
+  const cuisine = new Set(cuisineRows.map((r) => r.id));
+  const method = new Set(methodRows.map((r) => r.id));
+  return {
+    tagIds: ids,
+    cuisineId: ids.find((id) => cuisine.has(id)) ?? null,
+    methodId: ids.find((id) => method.has(id)) ?? null,
+  };
+}
+
+/** Makes `tagIds` (already resolved) the whole Tag list of a Recipe. */
+export async function replaceRecipeTags(
+  tx: Tx,
+  recipeId: string,
+  tagIds: readonly string[],
+): Promise<void> {
+  await tx.delete(recipeTags).where(eq(recipeTags.recipeId, recipeId));
+  if (tagIds.length > 0) {
+    await tx
+      .insert(recipeTags)
+      .values(tagIds.map((tagId) => ({ recipeId, tagId })));
+  }
+}
 
 /**
  * The Tags on at least one Recipe matching `recipeFilter` (a condition on `recipes`), named in

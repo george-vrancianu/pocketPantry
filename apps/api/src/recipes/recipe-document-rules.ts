@@ -1,8 +1,8 @@
-import { eq, inArray } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 import type { CatalogScope } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { Tx } from '../database/database.types';
-import { cuisines, methods, recipes } from '../database/schema';
+import { recipes } from '../database/schema';
 
 /** The Ingredient Line fields both the Catalog and Family writers check. */
 interface RecipeLineShape {
@@ -16,36 +16,36 @@ interface RecipeLineShape {
 interface RecipeDocumentShape<L extends RecipeLineShape> {
   lines: L[];
   steps: { id?: string | undefined }[];
-  cuisineId: string | null;
-  methodId: string | null;
 }
 
 /** The Recipe columns a document sets (the same for an insert and an update). */
-export function recipeColumns(document: {
-  title: string;
-  servings: number;
-  prepMinutes: number | null;
-  cookMinutes: number | null;
-  difficulty: (typeof recipes.$inferInsert)['difficulty'];
-  cuisineId: string | null;
-  methodId: string | null;
-}) {
+export function recipeColumns(
+  document: {
+    title: string;
+    servings: number;
+    prepMinutes: number | null;
+    cookMinutes: number | null;
+    difficulty: (typeof recipes.$inferInsert)['difficulty'];
+  },
+  legacy: { cuisineId: string | null; methodId: string | null },
+) {
   return {
     title: document.title,
     servings: document.servings,
     prepMinutes: document.prepMinutes,
     cookMinutes: document.cookMinutes,
     difficulty: document.difficulty,
-    cuisineId: document.cuisineId,
-    methodId: document.methodId,
+    // Mirrors the Tags until the contract ticket drops the columns (ADR 0033).
+    cuisineId: legacy.cuisineId,
+    methodId: legacy.methodId,
   };
 }
 
 /**
  * The coded rules every Recipe document meets, checked before any write:
  * quantity and unit come together, `ingredientRule` (Catalog and Family differ
- * on raw names) per line, no repeated line or Step ids, and the Ingredients,
- * Cuisine and Method exist (key-share locked, so a concurrent delete waits
+ * on raw names) per line, no repeated line or Step ids, and the Ingredients
+ * exist (key-share locked, so a concurrent delete waits
  * until we commit).
  */
 export async function validateRecipeDocument<L extends RecipeLineShape>(
@@ -89,23 +89,6 @@ export async function validateRecipeDocument<L extends RecipeLineShape>(
       });
     }
   }
-  await assertListEntry(tx, cuisines, document.cuisineId, 'cuisine');
-  await assertListEntry(tx, methods, document.methodId, 'method');
-}
-
-async function assertListEntry(
-  tx: Tx,
-  table: typeof cuisines | typeof methods,
-  id: string | null,
-  entity: 'cuisine' | 'method',
-) {
-  if (!id) return;
-  const [row] = await tx
-    .select({ id: table.id })
-    .from(table)
-    .where(eq(table.id, id))
-    .for('key share');
-  if (!row) throw new ApiException(404, 'catalog.not_found', { entity });
 }
 
 /**

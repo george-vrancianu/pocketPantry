@@ -18,7 +18,7 @@ import {
 import { consumeRecipeDraft } from '../recipe-drafts/recipe-drafts.service';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
-import { syncCuisineMethodTags } from '../tags/recipe-tags';
+import { replaceRecipeTags, resolveRecipeTags } from '../tags/recipe-tags';
 import {
   itemNotFound,
   recipeNotFound,
@@ -117,8 +117,7 @@ export class FamilyRecipesService {
       prepMinutes: source.prepMinutes,
       cookMinutes: source.cookMinutes,
       difficulty: source.difficulty,
-      cuisineId: source.cuisine?.id ?? null,
-      methodId: source.method?.id ?? null,
+      tagIds: source.tags.map((tag) => tag.id),
       lines: source.lines.map((line) => ({
         ingredientId: line.ingredientId,
         rawName: line.ingredientId ? null : line.ingredientName,
@@ -187,6 +186,7 @@ export class FamilyRecipesService {
   ): Promise<string> {
     await lockFamilyRow(tx, familyId);
     await this.validate(tx, familyId, document);
+    const tagged = await resolveRecipeTags(tx, familyId, document.tagIds);
     const tips = document.tips ?? [];
     if (tips.some((tip) => tip.stepIndex >= document.steps.length)) {
       throw new ApiException(400, 'recipes.bad_step_anchor');
@@ -198,12 +198,12 @@ export class FamilyRecipesService {
       id,
       familyId,
       parentId: document.parentId,
-      ...recipeColumns(document),
+      ...recipeColumns(document, tagged),
       // Set at creation only; updates never touch it, and a Variant draft does not copy it (ADR 0006).
       sourceLink: document.sourceLink ?? null,
       sourceLanguage: document.sourceLanguage ?? null,
     });
-    await syncCuisineMethodTags(tx, id, document.cuisineId, document.methodId);
+    await replaceRecipeTags(tx, id, tagged.tagIds);
     await this.writeLines(tx, id, document, new Map(), locale);
     const stepIds = await this.recipes.writeSteps(tx, id, document, new Set());
     if (tips.length > 0) {
@@ -253,6 +253,7 @@ export class FamilyRecipesService {
         throw sourceLinkLocked();
       }
       await this.validate(tx, familyId, document);
+      const tagged = await resolveRecipeTags(tx, familyId, document.tagIds);
       const existingLines = await tx
         .select()
         .from(recipeIngredientLines)
@@ -264,7 +265,7 @@ export class FamilyRecipesService {
       await tx
         .update(recipes)
         .set({
-          ...recipeColumns(document),
+          ...recipeColumns(document, tagged),
           // `null` clears; the link goes with its language, absent leaves both.
           ...(document.sourceLink === null
             ? { sourceLink: null, sourceLanguage: null }
@@ -273,12 +274,7 @@ export class FamilyRecipesService {
               : {}),
         })
         .where(eq(recipes.id, id));
-      await syncCuisineMethodTags(
-        tx,
-        id,
-        document.cuisineId,
-        document.methodId,
-      );
+      await replaceRecipeTags(tx, id, tagged.tagIds);
       await this.writeLines(
         tx,
         id,
@@ -490,10 +486,7 @@ export class FamilyRecipesService {
   private validate(
     tx: Tx,
     familyId: string,
-    document: Pick<
-      FamilyRecipeDocument,
-      'lines' | 'steps' | 'cuisineId' | 'methodId'
-    >,
+    document: Pick<FamilyRecipeDocument, 'lines' | 'steps'>,
   ) {
     return validateRecipeDocument(
       tx,

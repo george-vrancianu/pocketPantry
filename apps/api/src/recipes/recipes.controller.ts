@@ -18,6 +18,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import type { RecipeTag } from '../tags/recipe-tags';
 import { MemberLanguageService } from '../member-language/member-language.service';
 import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
@@ -116,6 +117,21 @@ export class RecipesController {
       member.id,
       await this.languages.catalogLanguageOf(member.id),
       query.scope,
+    );
+  }
+
+  // Declared before `:id` so it is not read as a Recipe id.
+  @Get('tags')
+  @ApiOperation({
+    summary:
+      'Every Tag the Member can put on a Recipe: Catalog Tags and the Family’s own, named in the Catalog Language',
+  })
+  async pickableTags(
+    @CurrentUser() member: CurrentUserValue,
+  ): Promise<RecipeTag[]> {
+    return this.browse.pickableTags(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 

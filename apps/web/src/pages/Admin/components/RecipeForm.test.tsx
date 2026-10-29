@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
@@ -40,6 +40,24 @@ const catalog: AdminCatalog = {
   ],
 };
 
+const adminTag = (
+  id: string,
+  name: string,
+  groupName: string,
+  order: number,
+) => ({
+  id,
+  name,
+  kind: 'catalog' as const,
+  groupId: `g-${order}`,
+  groupName,
+  groupOrder: order,
+});
+const adminTags = [
+  adminTag('cu1', 'Italian', 'Cuisine', 3),
+  adminTag('me1', 'Baking', 'Method', 4),
+];
+
 const milk = {
   id: 'i-milk',
   name: 'Milk',
@@ -63,6 +81,7 @@ const saved: AdminRecipe = {
   difficulty: 'easy',
   cuisineId: null,
   methodId: null,
+  tagIds: ['cu1'],
   archived: false,
   lines: [
     {
@@ -148,6 +167,7 @@ describe('RecipeForm', () => {
   it('creates a Base Recipe from title, an Ingredient with its default unit, and a Step', async () => {
     const { fetchMock, calls } = stubApi({
       'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+      'GET /api/admin/recipes/tags': () => Response.json(adminTags),
       'POST /api/admin/recipes': () => Response.json(saved, { status: 201 }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -162,8 +182,18 @@ describe('RecipeForm', () => {
     ).toHaveFocus();
     await user.type(screen.getByLabelText(/Title \(English\)/), ' Pancakes ');
     await user.selectOptions(screen.getByLabelText('Difficulty'), 'Medium');
-    await user.selectOptions(screen.getByLabelText('Cuisine'), 'Italian');
-    await user.selectOptions(screen.getByLabelText('Method'), 'Baking');
+    const tags = await screen.findByRole('combobox', { name: 'Tags' });
+    await user.click(tags);
+    // Catalog Tags sit under their Tag Group, in Admin order.
+    expect(
+      within(screen.getByRole('listbox'))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Italian', 'Baking']);
+    await user.click(await screen.findByRole('option', { name: 'Italian' }));
+    await user.click(screen.getByRole('option', { name: 'Baking' }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByLabelText(/Cuisine|Method/)).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('Prep (minutes)'), '5');
 
     await user.type(
@@ -197,8 +227,7 @@ describe('RecipeForm', () => {
       prepMinutes: 5,
       cookMinutes: null,
       difficulty: 'medium',
-      cuisineId: 'cu1',
-      methodId: 'me1',
+      tagIds: ['cu1', 'me1'],
       lines: [
         {
           ingredientId: 'i-milk',
@@ -214,6 +243,7 @@ describe('RecipeForm', () => {
 
   it('edits a saved Recipe keeping ids, order and "to taste" lines', async () => {
     const { fetchMock, calls } = stubApi({
+      'GET /api/admin/recipes/tags': () => Response.json(adminTags),
       'PUT /api/admin/recipes/r1': () => Response.json(saved),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -240,9 +270,13 @@ describe('RecipeForm', () => {
     await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
 
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalled());
-    expect(calls[0]).toMatchObject({
+    expect(
+      calls.find((c) => c.key === 'PUT /api/admin/recipes/r1'),
+    ).toMatchObject({
       key: 'PUT /api/admin/recipes/r1',
       body: {
+        // Saving a Recipe edited for something else keeps its Tags.
+        tagIds: ['cu1'],
         lines: [
           { id: 'l2', ingredientId: 'i-milk', quantity: 500, unit: 'ml' },
           {

@@ -42,8 +42,7 @@ const fill: NewRecipeState = {
     prepMinutes: null,
     cookMinutes: null,
     difficulty: null,
-    cuisineId: null,
-    methodId: null,
+    tagIds: [],
     lines: [
       {
         ingredientId: 'egg',
@@ -75,8 +74,7 @@ const content = (
   prepMinutes: '',
   cookMinutes: '',
   difficulty: '',
-  cuisineId: '',
-  methodId: '',
+  tagIds: [],
   lines: [
     {
       ingredientId: 'egg',

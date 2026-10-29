@@ -5,7 +5,12 @@ import {
   MAX_NUTRITION_NOTE,
   MAX_PAIRINGS,
 } from '../recipes/recipe-guidance.schemas';
-import { MAX_LINES, MAX_STEPS, MAX_TIPS } from '../recipes/recipes.schemas';
+import {
+  MAX_LINES,
+  MAX_RECIPE_TAGS,
+  MAX_STEPS,
+  MAX_TIPS,
+} from '../recipes/recipes.schemas';
 
 /** Most Recipe Drafts one Member can hold (ADR 0028). */
 export const MAX_RECIPE_DRAFTS = 20;
@@ -91,8 +96,11 @@ export const recipeDraftContent = z
     prepMinutes: typed,
     cookMinutes: typed,
     difficulty: z.union([z.enum(recipeDifficulty.enumValues), z.literal('')]),
-    cuisineId: short,
-    methodId: short,
+    /** The Tags picked so far (ADR 0033); the Recipe's own cap applies on save. */
+    tagIds: z.array(short).max(MAX_RECIPE_TAGS).default([]),
+    // Legacy keys kept until the contract ticket (#715) strips them; the Tag field replaced both.
+    cuisineId: short.default(''),
+    methodId: short.default(''),
     lines: z.array(draftLine).max(MAX_LINES),
     steps: z.array(draftStep).max(MAX_STEPS),
     guidance: draftGuidance.nullable().default(null),

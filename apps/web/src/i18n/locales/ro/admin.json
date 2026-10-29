@@ -167,10 +167,7 @@
       "prepMinutes": "Pregătire (minute)",
       "cookMinutes": "Gătire (minute)",
       "difficulty": "Dificultate",
-      "difficultyNone": "Nesetată",
-      "cuisine": "Bucătărie",
-      "method": "Metodă",
-      "none": "Niciuna"
+      "difficultyNone": "Nesetată"
     },
     "invalid": {
       "servings": "Porțiile trebuie să fie un număr întreg de la 1 la 1000.",

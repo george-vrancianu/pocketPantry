@@ -67,6 +67,8 @@ export type AdminRecipe = {
   difficulty: Difficulty | null;
   cuisineId: string | null;
   methodId: string | null;
+  /** The ids of the Recipe's Tags; names come from the pickable Tags. */
+  tagIds: string[];
   archived: boolean;
   lines: RecipeLine[];
   steps: RecipeStep[];
@@ -97,8 +99,7 @@ export type RecipeDocument = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   difficulty: Difficulty | null;
-  cuisineId: string | null;
-  methodId: string | null;
+  tagIds: string[];
   lines: Array<{
     id?: string;
     ingredientId: string | null;

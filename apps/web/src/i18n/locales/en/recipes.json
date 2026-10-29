@@ -49,8 +49,6 @@
   },
   "disclaimer": "General guidance, not medical or dietary advice.",
   "search": "Search Recipes",
-  "cuisine": "Cuisine",
-  "method": "Method",
   "noMatches": "No Recipes match.",
   "allRecipes": "All Recipes",
   "matches": "Matches",
@@ -239,7 +237,11 @@
     "noMatchQuery": "and match “{{q}}”",
     "tryWithout": "Try without one of them:",
     "without": "Without {{name}}",
-    "withoutQuery": "Without “{{q}}”"
+    "withoutQuery": "Without “{{q}}”",
+    "editorField": "Tags",
+    "editorPlaceholder": "Add Tags",
+    "editorNoOptions": "No Tag by that name",
+    "editorLimit": "A Recipe can have at most {{max}} Tags."
   },
   "tabs": {
     "ingredients": "Ingredients",

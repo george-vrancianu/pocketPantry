@@ -342,6 +342,20 @@ export function useRecipeFilters(enabled = true, scope?: 'family' | 'catalog') {
   });
 }
 
+/**
+ * Every Tag the editor can put on a Recipe: a Member gets the Catalog Tags and the Family's own
+ * (named in the Catalog Language), an Admin the Catalog Tags in English. Family Tags come first.
+ */
+export function usePickableTags(scope: 'family' | 'admin') {
+  return useQuery({
+    queryKey: [...recipesQueryKey, 'pickable-tags', scope],
+    queryFn: () =>
+      apiRequest<RecipeTag[]>(
+        scope === 'admin' ? '/admin/recipes/tags' : '/recipes/tags',
+      ),
+  });
+}
+
 /** One Recipe with its text, plus its base, Variants and ingredient diff. */
 export function useRecipe(
   id: string,

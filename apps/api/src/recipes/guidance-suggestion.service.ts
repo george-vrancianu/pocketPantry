@@ -176,10 +176,7 @@ export class GuidanceSuggestionService {
 
   private async run(
     body: {
-      recipe: PromptRecipe & {
-        cuisineId: string | null;
-        methodId: string | null;
-      };
+      recipe: PromptRecipe & { tagIds: string[] };
       guidance: Parameters<typeof emptyGuidanceFields>[0];
     },
     locale: CatalogLocale,
@@ -198,8 +195,10 @@ export class GuidanceSuggestionService {
 
     const { catalog, cuisines, methods, moments, context } = await load(empty);
     const names = new Map(catalog.ingredients.map((i) => [i.id, i.name]));
-    const nameOf = (list: { id: string; name: string }[], id: string | null) =>
-      list.find((item) => item.id === id)?.name ?? null;
+    // A Cuisine or Method is a Catalog Tag with the same id: the prompt names the first of each.
+    const nameOf = (list: { id: string; name: string }[], ids: string[]) =>
+      ids.flatMap((id) => list.find((item) => item.id === id)?.name ?? [])[0] ??
+      null;
 
     // With no Eating Moment to choose from there is nothing to ask for: straight to "no suggestions".
     const unasked = empty.filter(
@@ -218,8 +217,8 @@ export class GuidanceSuggestionService {
         prompt: suggestionPrompt(wanted, locale, links, moments, {
           recipe: body.recipe,
           ingredientName: (id) => names.get(id) ?? null,
-          cuisine: nameOf(cuisines, body.recipe.cuisineId),
-          method: nameOf(methods, body.recipe.methodId),
+          cuisine: nameOf(cuisines, body.recipe.tagIds),
+          method: nameOf(methods, body.recipe.tagIds),
         }),
       });
       const made = suggestionOf(answer, wanted, links, moments);

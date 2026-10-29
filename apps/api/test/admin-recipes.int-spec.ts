@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { dropTags, mirrorAsTags } from './support/legacy-tags';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike, isNull } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
@@ -92,6 +93,10 @@ describe('Admin Recipes (integration)', () => {
       name: `Method ${stamp}`,
       normalizedName: `method ${stamp}`,
     });
+    await mirrorAsTags(database, [
+      { type: 'cuisine', id: cuisineId },
+      { type: 'method', id: methodId },
+    ]);
   });
 
   afterAll(async () => {
@@ -105,6 +110,7 @@ describe('Admin Recipes (integration)', () => {
       await database.delete(recipes).where(eq(recipes.id, row.id));
     }
     await database.delete(recipes).where(ilike(recipes.title, like));
+    await dropTags(database, [cuisineId, methodId]);
     await database.delete(cuisines).where(eq(cuisines.id, cuisineId));
     await database.delete(methods).where(eq(methods.id, methodId));
     await app.close();
@@ -121,8 +127,7 @@ describe('Admin Recipes (integration)', () => {
         prepMinutes: 15,
         cookMinutes: 30,
         difficulty: 'easy',
-        cuisineId,
-        methodId,
+        tagIds: [cuisineId, methodId],
       });
       expect(created).toMatchObject({
         parentId: null,
@@ -186,9 +191,8 @@ describe('Admin Recipes (integration)', () => {
       await admin.post('', doc({ parentId: crypto.randomUUID() })).expect(400);
     });
 
-    it('refuses an unknown Cuisine or Method', async () => {
-      await admin.post('', doc({ cuisineId: crypto.randomUUID() })).expect(404);
-      await admin.post('', doc({ methodId: crypto.randomUUID() })).expect(404);
+    it('refuses an unknown Tag', async () => {
+      await admin.post('', doc({ tagIds: [crypto.randomUUID()] })).expect(404);
     });
 
     it('edits in place: lines and steps with an id keep it, new ones are inserted, missing ones are deleted', async () => {

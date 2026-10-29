@@ -234,6 +234,11 @@ describe('TagField', () => {
     );
     // Named by text (a bare aria-label on a span is not exposed), the "+2" itself is hidden.
     expect(screen.getByText('and 2 more Tags')).toBeTruthy();
+    const pill = screen.getByTestId('tag-field-more');
+    expect(pill.textContent).toBe('+2');
+    const style = getComputedStyle(pill);
+    expect(style.height).toBe('26px');
+    expect(style.fontWeight).toBe('700');
     expect(screen.getByText('+2').getAttribute('aria-hidden')).toBe('true');
   });
 

@@ -39,6 +39,7 @@ const base: AdminRecipe = {
   difficulty: null,
   cuisineId: null,
   methodId: null,
+  tagIds: [],
   archived: false,
   lines: [
     {

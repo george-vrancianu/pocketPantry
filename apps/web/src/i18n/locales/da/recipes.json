@@ -49,8 +49,6 @@
   },
   "disclaimer": "Generel vejledning, ikke medicinsk eller kostrådgivning.",
   "search": "Søg opskrifter",
-  "cuisine": "Køkken",
-  "method": "Metode",
   "noMatches": "Ingen opskrifter passer.",
   "allRecipes": "Alle opskrifter",
   "matches": "Resultater",
@@ -239,7 +237,11 @@
     "noMatchQuery": "og passer til “{{q}}”",
     "tryWithout": "Prøv uden et af dem:",
     "without": "Uden {{name}}",
-    "withoutQuery": "Uden “{{q}}”"
+    "withoutQuery": "Uden “{{q}}”",
+    "editorField": "Tags",
+    "editorPlaceholder": "Tilføj tags",
+    "editorNoOptions": "Intet tag med det navn",
+    "editorLimit": "En opskrift kan højst have {{max}} tags."
   },
   "tabs": {
     "ingredients": "Ingredienser",

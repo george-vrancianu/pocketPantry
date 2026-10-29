@@ -36,7 +36,9 @@ import { ApiException } from '../common/api-exception';
  * - `recipes.nothing_to_translate` (400): a translation of a Nutrition Note or Eating Moment reason the Recipe has no source text for.
  * - `recipes.source_link_locked` (400): an update tried to set or change the Source Link or source language; they are set at creation and can only be cleared (with `null`).
  * - `guidance.nothing_to_suggest` (400): Suggest Guidance with every field it covers already filled; refused before any AI call.
- * - `catalog.not_found` (404, `{ entity }`): unknown Ingredient, Cuisine or Method.
+ * - `recipes.tags_too_many` (400, `{ max }`): more than 10 Tags on one Recipe.
+ * - `recipes.tag_not_found` (404): a Tag id that does not exist, is another Family's, or (on a Catalog Recipe) is a Family Tag.
+ * - `catalog.not_found` (404, `{ entity }`): unknown Ingredient.
  */
 export const recipeNotFound = () => new ApiException(404, 'recipes.not_found');
 

@@ -54,8 +54,6 @@
   },
   "disclaimer": "Recomandări generale, nu sfaturi medicale sau dietetice.",
   "search": "Caută rețete",
-  "cuisine": "Bucătărie",
-  "method": "Metodă",
   "noMatches": "Nicio rețetă nu se potrivește.",
   "allRecipes": "Toate rețetele",
   "matches": "Rezultate",
@@ -256,7 +254,11 @@
     "noMatchQuery": "și se potrivește cu „{{q}}”",
     "tryWithout": "Încearcă fără unul dintre ele:",
     "without": "Fără {{name}}",
-    "withoutQuery": "Fără „{{q}}”"
+    "withoutQuery": "Fără „{{q}}”",
+    "editorField": "Taguri",
+    "editorPlaceholder": "Adaugă taguri",
+    "editorNoOptions": "Niciun tag cu acest nume",
+    "editorLimit": "O Rețetă poate avea cel mult {{max}} taguri."
   },
   "tabs": {
     "ingredients": "Ingrediente",

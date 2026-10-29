@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { dropTags, mirrorAsTags, withTagIds } from './support/legacy-tags';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike, isNull } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
@@ -85,7 +86,7 @@ describe('Recipes browsing and detail (integration)', () => {
       servings: 4,
       lines: [line(0), line(1)],
       steps: [{ text: 'Mix' }, { text: 'Bake' }],
-      ...overrides,
+      ...withTagIds(overrides),
     };
     const res = await admin.post('', doc);
     expect(res.status).toBe(201);
@@ -105,11 +106,10 @@ describe('Recipes browsing and detail (integration)', () => {
     const doc = {
       title: created.title,
       servings: created.servings,
-      cuisineId: created.cuisineId,
-      methodId: created.methodId,
+      tagIds: created.tagIds,
       lines: created.lines.map((l) => ({ ...l })),
       steps: created.steps.map((s) => ({ ...s })),
-      ...overrides,
+      ...withTagIds(overrides),
     };
     return (await admin.put(`/${created.id}`, doc).expect(200))
       .body as AdminRecipeDetail;
@@ -170,6 +170,11 @@ describe('Recipes browsing and detail (integration)', () => {
       name: `Method ${stamp}`,
       normalizedName: `method ${stamp}`,
     });
+    await mirrorAsTags(database, [
+      { type: 'cuisine', id: cuisineId },
+      { type: 'cuisine', id: otherCuisineId },
+      { type: 'method', id: methodId },
+    ]);
   });
 
   afterAll(async () => {
@@ -182,6 +187,7 @@ describe('Recipes browsing and detail (integration)', () => {
       await database.delete(recipes).where(eq(recipes.id, row.id));
     }
     await database.delete(recipes).where(ilike(recipes.title, like));
+    await dropTags(database, [cuisineId, otherCuisineId, methodId]);
     await database.delete(cuisines).where(ilike(cuisines.name, like));
     await database.delete(methods).where(eq(methods.id, methodId));
     await app.close();
@@ -470,7 +476,11 @@ describe('Recipes browsing and detail (integration)', () => {
   describe('detail', () => {
     it('returns a base with its live Variants, and no diff', async () => {
       const b = await base({ cuisineId });
-      const v1 = await variant(b.id, { title: `VA ${stamp}`, methodId });
+      const v1 = await variant(b.id, {
+        title: `VA ${stamp}`,
+        cuisineId,
+        methodId,
+      });
       const v2 = await variant(b.id, { title: `VB ${stamp}` });
       const gone = await variant(b.id);
       await archive(gone.id);

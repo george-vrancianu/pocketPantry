@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm';
 import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
@@ -14,7 +15,13 @@ import {
   recipeTipTranslations,
   recipeTips,
 } from '../database/schema';
-import { syncCuisineMethodTags, copyRecipeTags } from '../tags/recipe-tags';
+import {
+  copyRecipeTags,
+  loadPickableTags,
+  replaceRecipeTags,
+  resolveRecipeTags,
+  type RecipeTag,
+} from '../tags/recipe-tags';
 import { itemNotFound, recipeNotFound } from './recipe-errors';
 import {
   assertLiveCatalogBase,
@@ -68,6 +75,16 @@ export class RecipesService {
     }));
   }
 
+  /** The Catalog Tags an Admin can put on a Catalog Recipe, named in `locale` (the Admin's Catalog Language). */
+  pickableTags(locale: CatalogLocale): Promise<RecipeTag[]> {
+    return loadPickableTags(
+      this.database,
+      catalogScope(SHARED_ONLY),
+      locale,
+      null,
+    );
+  }
+
   async detail(id: string): Promise<AdminRecipeDetail> {
     const detail = await loadAdminDetail(this.database, id);
     if (!detail) throw recipeNotFound();
@@ -96,16 +113,12 @@ export class RecipesService {
     const id = randomUUID();
     await this.database.transaction(async (tx) => {
       await this.validate(tx, document);
+      const tagged = await resolveRecipeTags(tx, null, document.tagIds);
       await tx.insert(recipes).values({
         id,
-        ...recipeColumns(document),
+        ...recipeColumns(document, tagged),
       });
-      await syncCuisineMethodTags(
-        tx,
-        id,
-        document.cuisineId,
-        document.methodId,
-      );
+      await replaceRecipeTags(tx, id, tagged.tagIds);
       await this.writeLines(tx, id, document, new Set());
       await this.writeSteps(tx, id, document, new Set());
     });
@@ -122,6 +135,7 @@ export class RecipesService {
     await this.database.transaction(async (tx) => {
       await lockCatalogRecipe(tx, id);
       await this.validate(tx, document);
+      const tagged = await resolveRecipeTags(tx, null, document.tagIds);
       const existingLines = await tx
         .select({ id: recipeIngredientLines.id })
         .from(recipeIngredientLines)
@@ -132,14 +146,9 @@ export class RecipesService {
         .where(eq(recipeSteps.recipeId, id));
       await tx
         .update(recipes)
-        .set(recipeColumns(document))
+        .set(recipeColumns(document, tagged))
         .where(eq(recipes.id, id));
-      await syncCuisineMethodTags(
-        tx,
-        id,
-        document.cuisineId,
-        document.methodId,
-      );
+      await replaceRecipeTags(tx, id, tagged.tagIds);
       await this.writeLines(
         tx,
         id,

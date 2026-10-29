@@ -14,7 +14,10 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminRoleGuard } from '../auth/admin-role.guard';
 import { AuthGuard } from '../auth/auth.guard';
+import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
+import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { MemberLanguageService } from '../member-language/member-language.service';
 import { GuidanceSuggestionService } from '../recipes/guidance-suggestion.service';
 import {
   adminSuggestGuidanceBody,
@@ -65,6 +68,7 @@ export class AdminRecipesController {
     private readonly translations: RecipeTranslationsService,
     private readonly guidance: RecipeGuidanceService,
     private readonly guidanceSuggestion: GuidanceSuggestionService,
+    private readonly languages: MemberLanguageService,
   ) {}
 
   @Get()
@@ -93,6 +97,18 @@ export class AdminRecipesController {
     body: AdminSuggestGuidanceBody,
   ): Promise<GuidanceSuggestion> {
     return this.guidanceSuggestion.suggestForCatalog(body);
+  }
+
+  // Declared before `:id` so it is not read as a Recipe id.
+  @Get('tags')
+  @ApiOperation({
+    summary:
+      'Admin only: the Catalog Tags a Catalog Recipe can carry, grouped in Tag Group order',
+  })
+  async pickableTags(@CurrentUser() member: CurrentUserValue) {
+    return this.recipes.pickableTags(
+      await this.languages.catalogLanguageOf(member.id),
+    );
   }
 
   @Get(':id')

@@ -4,7 +4,7 @@ import { rowTagNames, splitRowTags, type RecipeTag } from '../lib/tags';
 
 type Props = {
   tags: RecipeTag[];
-  /** Tags the active filter matched; they come first (#711 passes them in). */
+  /** Tags the active filter matched; they come first (the Tag filter passes them in). */
   matchedIds?: readonly string[];
   /** Quiet text after the chips, e.g. the Level: shown as "· Easy". */
   meta?: string[];

@@ -22,12 +22,7 @@ export type FamilyDraft = RecipeDraft;
 
 type Source = Pick<
   FamilyRecipeDraft,
-  | 'title'
-  | 'prepMinutes'
-  | 'cookMinutes'
-  | 'difficulty'
-  | 'cuisineId'
-  | 'methodId'
+  'title' | 'prepMinutes' | 'cookMinutes' | 'difficulty' | 'tagIds'
 >;
 
 const metaOf = (source: Source & { servings: number | null }) => ({
@@ -36,8 +31,7 @@ const metaOf = (source: Source & { servings: number | null }) => ({
   prepMinutes: minutesText(source.prepMinutes),
   cookMinutes: minutesText(source.cookMinutes),
   difficulty: source.difficulty ?? ('' as const),
-  cuisineId: source.cuisineId ?? '',
-  methodId: source.methodId ?? '',
+  tagIds: source.tagIds,
 });
 
 type LineSource = {
@@ -114,8 +108,7 @@ export function documentOf(draft: FamilyDraft): FamilyRecipeDocument {
     prepMinutes: minutes(draft.prepMinutes),
     cookMinutes: minutes(draft.cookMinutes),
     difficulty: draft.difficulty === '' ? null : draft.difficulty,
-    cuisineId: draft.cuisineId === '' ? null : draft.cuisineId,
-    methodId: draft.methodId === '' ? null : draft.methodId,
+    tagIds: draft.tagIds,
     lines: draft.lines.map((line) => {
       const hasQuantity = line.quantity.trim() !== '';
       return {
@@ -158,8 +151,7 @@ export function suggestionRecipeOf(
     ...(servings >= 1 && servings <= 1000 ? { servings } : {}),
     prepMinutes: null,
     cookMinutes: null,
-    cuisineId: draft.cuisineId || null,
-    methodId: draft.methodId || null,
+    tagIds: draft.tagIds,
     lines: draft.lines.flatMap((line) => {
       const rawName = line.name.trim().slice(0, 100);
       if (!line.ingredientId && rawName === '') return [];

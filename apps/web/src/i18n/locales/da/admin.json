@@ -165,10 +165,7 @@
       "prepMinutes": "Forberedelse (minutter)",
       "cookMinutes": "Tilberedning (minutter)",
       "difficulty": "Sværhedsgrad",
-      "difficultyNone": "Ikke angivet",
-      "cuisine": "Køkken",
-      "method": "Metode",
-      "none": "Ingen"
+      "difficultyNone": "Ikke angivet"
     },
     "invalid": {
       "servings": "Portioner skal være et helt tal fra 1 til 1000.",

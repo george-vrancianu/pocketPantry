@@ -172,6 +172,8 @@ describe('Recipe from Link (integration)', () => {
       cookMinutes: 15,
       cuisineId: mediterranean,
       methodId: null,
+      // The read Cuisine is a Catalog Tag with the same id, so the draft carries it as a Tag.
+      tagIds: [mediterranean],
       tips: [],
       guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
       steps: [
@@ -1475,6 +1477,7 @@ describe('Recipe from Link (integration)', () => {
           prepMinutes: '10',
           cookMinutes: '15',
           cuisineId: mediterranean,
+          tagIds: [mediterranean],
           sourceLink: 'https://example.com/pancakes',
           sourceLanguage: null,
           plateScan: false,

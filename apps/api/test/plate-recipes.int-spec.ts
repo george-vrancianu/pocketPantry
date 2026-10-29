@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike, isNull } from 'drizzle-orm';
+import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { ingredients, recipes, unmatchedEntries } from '../src/database/schema';
@@ -227,6 +228,33 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
         rawName: raw,
         locale: 'ro',
       });
+    });
+
+    it("a Variant saved from a Plate Scan starts with its Base's Tags", async () => {
+      const dinner = seedId.tag('meal:dinner');
+      const vegan = seedId.tag('diet:vegan');
+      const base = (
+        await admin
+          .post('', {
+            title: `Plate tagged base ${stamp}`,
+            servings: 4,
+            lines: [line(0)],
+            steps: [{ text: 'Cook' }],
+            tagIds: [dinner, vegan],
+          })
+          .expect(201)
+      ).body as AdminRecipeDetail;
+      const saved = (
+        await member
+          .post('/from-plate', {
+            locale: 'en',
+            title: `Plate tagged variant ${stamp}`,
+            parentId: base.id,
+            lines: [line(0)],
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      expect([...saved.tagIds].sort()).toEqual([dinner, vegan].sort());
     });
 
     it('saves a standalone Recipe with no parent and servings 1', async () => {
