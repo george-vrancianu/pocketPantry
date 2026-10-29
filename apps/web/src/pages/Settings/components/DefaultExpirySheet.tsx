@@ -11,7 +11,6 @@ import {
   Stack,
   Tag,
   radius,
-  TextField,
   Typography,
   tokens,
   useToast,
@@ -25,7 +24,6 @@ import {
   type ExpiryOverride,
 } from '../../../lib/settings';
 import {
-  groupCategories,
   lookupCategory,
   MAX_DAYS,
   MIN_DAYS,
@@ -33,6 +31,7 @@ import {
   startingDays,
   type CategoryRef,
 } from '../defaultExpiry';
+import { CategoryPicker } from './CategoryPicker';
 
 /** Where the sheet opens: the pick list, or straight into an override (edit mode). */
 export type SheetStart =
@@ -211,15 +210,25 @@ export function DefaultExpirySheet({
       }
     >
       {view.mode === 'pick' ? (
-        <PickList
+        <CategoryPicker
           query={query}
           onQuery={setQuery}
           searchRef={searchRef}
           options={options}
           optionsPending={optionsPending}
           optionsError={optionsError}
-          overrides={overrides}
           onChoose={chooseCategory}
+          renderTrailing={(row) =>
+            overrideDays(row.id) !== null ? (
+              <Tag tone="accent">
+                {t('defaultExpiry.set', { days: overrideDays(row.id) })}
+              </Tag>
+            ) : row.catalogDays !== null ? (
+              <Typography variant="meta" color="text.secondary">
+                {t('defaultExpiry.catalog', { days: row.catalogDays })}
+              </Typography>
+            ) : null
+          }
         />
       ) : (
         <DaysEditor
@@ -315,117 +324,6 @@ function SheetHeader({
         <CloseIcon size={18} />
       </IconButton>
     </Box>
-  );
-}
-
-function PickList({
-  query,
-  onQuery,
-  searchRef,
-  options,
-  optionsPending,
-  optionsError,
-  overrides,
-  onChoose,
-}: {
-  query: string;
-  onQuery: (value: string) => void;
-  searchRef: Ref<HTMLInputElement>;
-  options: CategoryOptions | undefined;
-  optionsPending: boolean;
-  optionsError: unknown;
-  overrides: ExpiryOverride[];
-  onChoose: (id: string) => void;
-}) {
-  const { t } = useTranslation('settings');
-  const overrideMap = Object.fromEntries(
-    overrides.map((o) => [o.categoryId, o.days]),
-  );
-  const groups = groupCategories(options, query, overrideMap);
-
-  return (
-    <Stack spacing={2} sx={{ px: 2, pb: 2 }}>
-      <TextField
-        fullWidth
-        value={query}
-        onChange={(event) => onQuery(event.target.value)}
-        slotProps={{
-          htmlInput: {
-            'aria-label': t('defaultExpiry.search'),
-            ref: searchRef,
-          },
-        }}
-      />
-      {optionsPending ? (
-        <Typography role="status" color="text.secondary">
-          {t('defaultExpiry.loadingCategories')}
-        </Typography>
-      ) : null}
-      {optionsError ? (
-        <Alert>{translateApiError(t, optionsError)}</Alert>
-      ) : null}
-      {options && query.trim() !== '' && groups.length === 0 ? (
-        <Typography color="text.secondary">
-          {t('defaultExpiry.noMatch', { query })}
-        </Typography>
-      ) : null}
-      {groups.map((group) => (
-        <Box key={group.parent.id} role="group" aria-label={group.parent.name}>
-          <Typography
-            variant="sectionLabel"
-            component="p"
-            color="text.secondary"
-          >
-            {group.parent.name}
-          </Typography>
-          <Stack>
-            {group.rows.map((row) => (
-              <Box
-                key={row.id}
-                component="button"
-                type="button"
-                onClick={() => onChoose(row.id)}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  minHeight: 46,
-                  px: 1,
-                  border: 0,
-                  background: 'none',
-                  color: 'inherit',
-                  font: 'inherit',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                }}
-              >
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body1">
-                    {row.wholeParent
-                      ? t('defaultExpiry.all', { parent: row.parentName })
-                      : row.name}
-                  </Typography>
-                  {row.wholeParent ? (
-                    <Typography variant="meta" color="text.secondary">
-                      {t('defaultExpiry.allHint', { parent: row.parentName })}
-                    </Typography>
-                  ) : null}
-                </Box>
-                {row.override !== null ? (
-                  <Tag tone="accent">
-                    {t('defaultExpiry.set', { days: row.override })}
-                  </Tag>
-                ) : row.catalogDays !== null ? (
-                  <Typography variant="meta" color="text.secondary">
-                    {t('defaultExpiry.catalog', { days: row.catalogDays })}
-                  </Typography>
-                ) : null}
-              </Box>
-            ))}
-          </Stack>
-        </Box>
-      ))}
-    </Stack>
   );
 }
 
