@@ -979,20 +979,6 @@ describe('Admin role and Catalog curation (integration)', () => {
       expect(await translationsOf('aisle', aisle.id)).toEqual([]);
     });
 
-    it('refuses a translation on a Tag or Tag Group until Tags have their own Admin surface', async () => {
-      for (const entityType of ['tag', 'tag_group']) {
-        await as(adminCookie)
-          .post('/translations', {
-            entityType,
-            entityId: '00000000-0000-4000-8000-000000000708',
-            locale: 'en',
-            kind: 'name',
-            value: `Nope ${stamp}`,
-          })
-          .expect(400);
-      }
-    });
-
     it('shows an Admin-added Aisle translation on the Shopping List in that locale', async () => {
       const aisle = (
         await as(adminCookie)

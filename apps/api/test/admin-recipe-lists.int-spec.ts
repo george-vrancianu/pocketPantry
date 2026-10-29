@@ -25,7 +25,7 @@ type Named = {
 
 jest.setTimeout(30_000);
 
-describe('Admin Cuisine and Method lists (integration)', () => {
+describe('Admin Cuisine, Method, Tag Group and Catalog Tag lists (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
   let admin: ReturnType<typeof client>;
@@ -402,6 +402,51 @@ describe('Admin Cuisine and Method lists (integration)', () => {
       expect((await tagsOf(ana, both.id)).map((t) => t.id)).toContain(
         keeper.id,
       );
+
+      await admin.del(`/tags/${catalogTag.id}?confirm=true`).expect(204);
+      await admin.del(`/tag-groups/${group.id}`).expect(204);
+    });
+
+    it('merges a same-named Family Tag when the Admin adds or edits a Catalog Tag translation', async () => {
+      const group = await makeGroup(`Trans ${stamp}`);
+      const catalogTag = await makeTag(`Savoury ${stamp}`, group.id);
+      const daTag = await familyTag(bea, `Hyggeligt ${stamp}`);
+      const roTag = await familyTag(bea, `Gustos ${stamp}`);
+      const daRecipe = await familyRecipe(bea, 'Bea da', [daTag.id]);
+      const roRecipe = await familyRecipe(bea, 'Bea ro', [roTag.id]);
+
+      // Added: the Family Tag named like the new translation is folded in.
+      const added = await admin
+        .post('/translations', {
+          entityType: 'tag',
+          entityId: catalogTag.id,
+          locale: 'da',
+          kind: 'name',
+          value: `hyggeligt  ${stamp}`,
+        })
+        .expect(201);
+      expect(
+        (await tagsOf(bea, daRecipe.id)).map((t) => [t.id, t.kind]),
+      ).toEqual([[catalogTag.id, 'catalog']]);
+      const beaTags = (await bea.get('/tags').expect(200)).body as {
+        id: string;
+      }[];
+      expect(beaTags.map((t) => t.id)).not.toContain(daTag.id);
+
+      // Edited: the same happens for the new value of an existing translation.
+      await admin
+        .patch(`/translations/${(added.body as { id: string }).id}`, {
+          value: `Gustos ${stamp}`,
+        })
+        .expect(200);
+      expect(
+        (await tagsOf(bea, roRecipe.id)).map((t) => [t.id, t.kind]),
+      ).toEqual([[catalogTag.id, 'catalog']]);
+      expect(
+        ((await bea.get('/tags').expect(200)).body as { id: string }[]).map(
+          (t) => t.id,
+        ),
+      ).not.toContain(roTag.id);
 
       await admin.del(`/tags/${catalogTag.id}?confirm=true`).expect(204);
       await admin.del(`/tag-groups/${group.id}`).expect(204);

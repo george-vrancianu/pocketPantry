@@ -738,7 +738,8 @@ export class AdminCatalogService {
     catalogTagId: string,
     normalizedName: string,
   ): Promise<void> {
-    // Locked first: a Member linking one of these Tags waits, then sees it gone instead of failing.
+    // Locked first: a Member linking one of these Tags concurrently waits for this transaction, then
+    // fails with 404 `recipes.tag_not_found` because the Tag is gone (the save is not retried).
     const family = await tx
       .select({ id: tags.id })
       .from(tags)
