@@ -1,7 +1,6 @@
 import {
   Box,
   Stack,
-  TextField,
   Typography,
   bodyFont,
   border,
@@ -12,10 +11,9 @@ import {
 } from '@pocket-pantry/ui';
 import { useId, type ChangeEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RecipeTagsField } from '../../../components/recipeEditor/RecipeTagsField';
 import type { DraftProblems, RecipeDraft } from '../../../lib/recipeDraft';
 import { DIFFICULTIES, type Difficulty } from '../../../lib/recipeVocabulary';
-
-type Option = { id: string; name: string };
 
 type Props = {
   draft: RecipeDraft;
@@ -24,8 +22,6 @@ type Props = {
   hint?: string;
   /** Right under the title and its hint: Base Recipe card or the Variant row. */
   belowTitle?: ReactNode;
-  cuisines: Option[];
-  methods: Option[];
   showTitleError: boolean;
   onChange: (patch: Partial<RecipeDraft>) => void;
   onTitleBlur: () => void;
@@ -75,14 +71,12 @@ const cellValueSx = {
   color: tokens.color.ink,
 } as const;
 
-/** Details basics of a Family Recipe draft: the title, the facts strip (Serves, Prep, Cook, Level), Cuisine and Method. */
+/** Details basics of a Family Recipe draft: the title, the facts strip (Serves, Prep, Cook, Level) and Tags. */
 export function FamilyDetailsBasics({
   draft,
   problems,
   hint,
   belowTitle,
-  cuisines,
-  methods,
   showTitleError,
   onChange,
   onTitleBlur,
@@ -275,58 +269,11 @@ export function FamilyDetailsBasics({
           </Typography>
         ) : null}
       </Box>
-      <Stack direction="row" spacing={1}>
-        <Picker
-          label={t('recipes:cuisine')}
-          value={draft.cuisineId}
-          options={cuisines}
-          none={t('admin:recipe.fields.none')}
-          onChange={(cuisineId) => onChange({ cuisineId })}
-        />
-        <Picker
-          label={t('recipes:method')}
-          value={draft.methodId}
-          options={methods}
-          none={t('admin:recipe.fields.none')}
-          onChange={(methodId) => onChange({ methodId })}
-        />
-      </Stack>
+      <RecipeTagsField
+        scope="family"
+        value={draft.tagIds}
+        onChange={(tagIds) => onChange({ tagIds })}
+      />
     </Stack>
-  );
-}
-
-function Picker({
-  label,
-  value,
-  options,
-  none,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: Option[];
-  none: string;
-  onChange: (id: string) => void;
-}) {
-  return (
-    <TextField
-      select
-      label={label}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      slotProps={{
-        select: { native: true },
-        htmlInput: {
-          style: value === '' ? { color: tokens.color.muted } : undefined,
-        },
-      }}
-    >
-      <option value="">{none}</option>
-      {options.map((option) => (
-        <option key={option.id} value={option.id}>
-          {option.name}
-        </option>
-      ))}
-    </TextField>
   );
 }

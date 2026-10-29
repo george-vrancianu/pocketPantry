@@ -22,7 +22,6 @@ import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
 import type { FamilyRecipeDocument } from '../../../lib/familyRecipes';
 import { useFamilyCatalog } from '../../../lib/familyCatalog';
-import { useRecipeFilters } from '../../../lib/recipes';
 import type { GuidanceInput } from '../../../lib/adminRecipes';
 import {
   hasGuidanceProblem,
@@ -102,7 +101,7 @@ type Props = {
 };
 
 /**
- * The Family's Recipe document: metadata, Cuisine and Method from the curated
+ * The Family's Recipe document: metadata, Tags from the curated
  * lists, Ingredient Lines (a Catalog Ingredient or a typed name) and Steps.
  * Family Recipes are never translated, so there is one text per field.
  */
@@ -134,7 +133,6 @@ export function FamilyRecipeForm({
     'errors',
     'catalog',
   ]);
-  const filters = useRecipeFilters();
   const [draft, setDraft] = useState<FamilyDraft>(initial);
   const [searchKey, setSearchKey] = useState(0);
   const [guidanceDraft, setGuidanceDraft] = useState<GuidanceDraft | null>(
@@ -287,8 +285,6 @@ export function FamilyRecipeForm({
               problems={problems}
               hint={hint}
               belowTitle={belowTitle}
-              cuisines={filters.data?.cuisines ?? []}
-              methods={filters.data?.methods ?? []}
               showTitleError={showTitleError}
               onChange={change}
               onTitleBlur={() => setTitleTouched(true)}

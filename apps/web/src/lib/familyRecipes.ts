@@ -27,8 +27,8 @@ export type FamilyRecipeDraft = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   difficulty: Difficulty | null;
-  cuisineId: string | null;
-  methodId: string | null;
+  /** Every Tag of the source: a new Variant starts with its Base's Tags. */
+  tagIds: string[];
   lines: {
     ingredientId: string | null;
     rawName: string | null;
@@ -56,6 +56,7 @@ export type FamilyRecipeEdit = {
   difficulty: Difficulty | null;
   cuisineId: string | null;
   methodId: string | null;
+  tagIds: string[];
   archived: boolean;
   /** The page the Recipe was read from; null otherwise. It can be removed, never changed. */
   sourceLink: string | null;
@@ -83,8 +84,7 @@ export type FamilyRecipeDocument = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   difficulty: Difficulty | null;
-  cuisineId: string | null;
-  methodId: string | null;
+  tagIds: string[];
   lines: Array<{
     id?: string;
     ingredientId: string | null;
@@ -249,12 +249,7 @@ export type SuggestFamilyGuidanceRequest = {
   recipe: Partial<Pick<FamilyRecipeDocument, 'title' | 'servings'>> &
     Pick<
       FamilyRecipeDocument,
-      | 'prepMinutes'
-      | 'cookMinutes'
-      | 'cuisineId'
-      | 'methodId'
-      | 'lines'
-      | 'steps'
+      'prepMinutes' | 'cookMinutes' | 'tagIds' | 'lines' | 'steps'
     >;
   guidance: GuidanceInput;
   /** The saved Recipe being edited, if any. */

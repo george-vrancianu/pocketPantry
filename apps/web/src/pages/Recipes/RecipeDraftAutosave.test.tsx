@@ -9,12 +9,32 @@ import {
 } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RecipeDraftContent } from '../../lib/recipeDrafts';
+import type { RecipeTag } from '../../lib/tags';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { NewRecipePage } from './FamilyRecipePages';
 
 const DRAFT_ID = '5b0f6c2e-7d3a-4c58-9a51-1f2e3d4c5b6a';
 
 const filters = { cuisines: [], methods: [], eatingMoments: [] };
+
+const pickable: RecipeTag[] = [
+  {
+    id: 't-dinner',
+    name: 'Dinner',
+    kind: 'catalog',
+    groupId: 'g1',
+    groupName: 'Meal',
+    groupOrder: 1,
+  },
+  {
+    id: 't-vegan',
+    name: 'Vegan',
+    kind: 'catalog',
+    groupId: 'g2',
+    groupName: 'Diet',
+    groupOrder: 2,
+  },
+];
 
 const blankGuidance = { nutritionNote: '', pairings: [], eatingMoments: [] };
 
@@ -25,8 +45,7 @@ const titled = (title: string): RecipeDraftContent => ({
   prepMinutes: '',
   cookMinutes: '',
   difficulty: '',
-  cuisineId: '',
-  methodId: '',
+  tagIds: [],
   lines: [],
   steps: [],
   guidance: blankGuidance,
@@ -47,6 +66,7 @@ const savedRecipe = {
   difficulty: null,
   cuisineId: null,
   methodId: null,
+  tagIds: [],
   archived: false,
   sourceLink: null,
   sourceLanguage: null,
@@ -187,6 +207,43 @@ describe('Recipe Drafts autosave on New Recipe', () => {
     expect(sent(calls, 'POST /api/recipe-drafts')[0].body).toMatchObject({
       content: { title: '', steps: [{ text: 'Whi', timer: '' }] },
     });
+  });
+
+  it('autosaves the Tags picked, and resumes a draft with them (#709)', async () => {
+    const user = typer();
+    const calls = setup('/recipes/new', {
+      'GET /api/recipes/tags': () => Response.json(pickable),
+      'POST /api/recipe-drafts': () =>
+        Response.json({ id: DRAFT_ID, version: 1 }, { status: 201 }),
+    });
+    await user.click(await screen.findByRole('combobox', { name: 'Tags' }));
+    await user.click(await screen.findByRole('option', { name: 'Dinner' }));
+    await user.click(screen.getByRole('option', { name: 'Vegan' }));
+    await elapse(1600);
+    expect(sent(calls, 'POST /api/recipe-drafts')[0].body).toMatchObject({
+      content: { tagIds: ['t-dinner', 't-vegan'] },
+    });
+  });
+
+  it('resumes a Recipe Draft with the Tags it was saved with', async () => {
+    setup(`/recipes/new?draft=${DRAFT_ID}`, {
+      'GET /api/recipes/tags': () => Response.json(pickable),
+      [`GET /api/recipe-drafts/${DRAFT_ID}`]: () =>
+        Response.json({
+          id: DRAFT_ID,
+          kind: 'new_recipe',
+          baseRecipeId: null,
+          baseRecipeName: null,
+          baseAvailable: false,
+          content: { ...titled('Gran stew'), tagIds: ['t-vegan'] },
+          version: 3,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          expiresAt: '2026-01-31T00:00:00.000Z',
+        }),
+    });
+    expect(await screen.findByText('Vegan')).toBeVisible();
+    expect(screen.queryByText('Dinner')).toBeNull();
   });
 
   it('shows Saving… then Draft saved in the header, not as a toast', async () => {

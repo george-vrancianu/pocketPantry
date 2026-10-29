@@ -165,10 +165,7 @@
       "prepMinutes": "Prep (minutes)",
       "cookMinutes": "Cook (minutes)",
       "difficulty": "Difficulty",
-      "difficultyNone": "Not set",
-      "cuisine": "Cuisine",
-      "method": "Method",
-      "none": "None"
+      "difficultyNone": "Not set"
     },
     "invalid": {
       "servings": "Servings must be a whole number from 1 to 1000.",

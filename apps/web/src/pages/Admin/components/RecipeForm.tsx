@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
-import { localName, type AdminCatalog } from '../../../lib/admin';
+import { type AdminCatalog } from '../../../lib/admin';
 import {
   useCreateRecipe,
   useUpdateRecipe,
@@ -102,16 +102,6 @@ export function RecipeForm({
         draft={draft}
         problems={problems}
         titleLabel={t('admin:recipe.fields.title')}
-        cuisineLabel={t('admin:recipe.fields.cuisine')}
-        methodLabel={t('admin:recipe.fields.method')}
-        cuisines={catalog.cuisines.map((item) => ({
-          id: item.id,
-          name: localName(item, i18n.language),
-        }))}
-        methods={catalog.methods.map((item) => ({
-          id: item.id,
-          name: localName(item, i18n.language),
-        }))}
         showTitleError={showTitleError}
         onChange={change}
         onTitleBlur={() => setTitleTouched(true)}

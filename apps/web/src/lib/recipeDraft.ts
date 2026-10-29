@@ -36,8 +36,8 @@ export type RecipeDraft = {
   prepMinutes: string;
   cookMinutes: string;
   difficulty: Difficulty | '';
-  cuisineId: string;
-  methodId: string;
+  /** The ids of the picked Tags (at most 10 on save). */
+  tagIds: string[];
   lines: LineDraft[];
   steps: StepDraft[];
 };
@@ -68,8 +68,7 @@ export function emptyDraft(): RecipeDraft {
     prepMinutes: '',
     cookMinutes: '',
     difficulty: '',
-    cuisineId: '',
-    methodId: '',
+    tagIds: [],
     lines: [],
     steps: [],
   };
@@ -86,8 +85,7 @@ export function draftOf(
     prepMinutes: minutesText(recipe.prepMinutes),
     cookMinutes: minutesText(recipe.cookMinutes),
     difficulty: recipe.difficulty ?? '',
-    cuisineId: recipe.cuisineId ?? '',
-    methodId: recipe.methodId ?? '',
+    tagIds: recipe.tagIds,
     lines: recipe.lines.map((line) => {
       const ingredient = catalog.ingredients.find(
         (item) => item.id === line.ingredientId,
@@ -190,8 +188,7 @@ export function documentOf(draft: RecipeDraft): RecipeDocument {
     prepMinutes: minutes(draft.prepMinutes),
     cookMinutes: minutes(draft.cookMinutes),
     difficulty: draft.difficulty === '' ? null : draft.difficulty,
-    cuisineId: draft.cuisineId === '' ? null : draft.cuisineId,
-    methodId: draft.methodId === '' ? null : draft.methodId,
+    tagIds: draft.tagIds,
     lines: draft.lines.map((line) => {
       const hasQuantity = line.quantity.trim() !== '';
       return {
@@ -246,8 +243,7 @@ export function suggestionRecipeOf(
     prepMinutes: null,
     cookMinutes: null,
     difficulty: null,
-    cuisineId: draft.cuisineId || null,
-    methodId: draft.methodId || null,
+    tagIds: draft.tagIds,
     lines: draft.lines.flatMap((line) => {
       if (!line.ingredientId) return [];
       const quantity = quantityOf(line.quantity);

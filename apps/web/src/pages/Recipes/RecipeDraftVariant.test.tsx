@@ -22,8 +22,7 @@ const base: FamilyRecipeDraft = {
   prepMinutes: 5,
   cookMinutes: null,
   difficulty: 'easy',
-  cuisineId: null,
-  methodId: null,
+  tagIds: [],
   lines: [
     {
       ingredientId: 'egg',
@@ -46,8 +45,7 @@ const content = (title: string): RecipeDraftContent => ({
   prepMinutes: '5',
   cookMinutes: '',
   difficulty: 'easy',
-  cuisineId: '',
-  methodId: '',
+  tagIds: [],
   lines: [
     {
       ingredientId: 'egg',

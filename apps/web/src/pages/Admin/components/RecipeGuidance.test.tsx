@@ -60,6 +60,7 @@ const recipe: AdminRecipe = {
   difficulty: null,
   cuisineId: null,
   methodId: null,
+  tagIds: [],
   archived: false,
   lines: [],
   steps: [],
@@ -96,6 +97,7 @@ const recipeList = [
   difficulty: null,
   cuisineId: null,
   methodId: null,
+  tagIds: [],
 }));
 
 function open(

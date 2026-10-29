@@ -52,6 +52,7 @@ const localesByCode = Object.fromEntries(ALL.map((l) => [l, load(l)]));
 const NOT_PLURAL = new Set([
   'errors:family.not_household_of_one',
   'errors:recipes.tips_too_many',
+  'errors:recipes.tags_too_many',
   'errors:recipes.pairings_too_many',
   'errors:recipes.eating_moments_too_many',
 ]);
@@ -439,9 +440,7 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
       'admin:list.cuisine.hint',
       'admin:list.cuisine.new',
       'admin:list.cuisine.title',
-      'admin:recipe.fields.cuisine',
       'errors:catalog.cuisine_in_use',
-      'recipes:cuisine',
     ],
   ],
   [
@@ -453,9 +452,7 @@ const WORD_EXCEPTIONS: [term: string, reason: string, keys: string[]][] = [
       'admin:list.method.hint',
       'admin:list.method.new',
       'admin:list.method.title',
-      'admin:recipe.fields.method',
       'errors:catalog.method_in_use',
-      'recipes:method',
     ],
   ],
   [
