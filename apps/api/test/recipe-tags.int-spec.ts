@@ -1,12 +1,11 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { and, eq, ilike } from 'drizzle-orm';
+import { and, eq, ilike, isNull } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   catalogTranslations,
-  cuisines,
   recipes,
   recipeTags,
   tags,
@@ -37,6 +36,9 @@ describe('Recipe Tags (integration)', () => {
   let cuisineB: string;
   let methodA: string;
   let familyTag: string;
+  let otherFamilyTag: string;
+  let bea: ReturnType<typeof client>;
+  let catalogTagIds: string[];
   const stamp = Date.now();
   let n = 0;
   const dinner = seedId.tag('meal:dinner');
@@ -111,6 +113,29 @@ describe('Recipe Tags (integration)', () => {
     cuisineA = await make('/cuisines', `Tagcuisine A ${stamp}`);
     cuisineB = await make('/cuisines', `Tagcuisine B ${stamp}`);
     methodA = await make('/methods', `Tagmethod A ${stamp}`);
+    const beaEmail = `tags-bea-${stamp}@example.com`;
+    bea = client(app, await signUp(app, beaEmail, 'Bea'), '/api/recipes');
+    const beaFamily = (
+      await database
+        .select({ id: user.familyId })
+        .from(user)
+        .where(eq(user.email, beaEmail))
+    )[0].id;
+    otherFamilyTag = crypto.randomUUID();
+    await database.insert(tags).values({
+      id: otherFamilyTag,
+      name: `Bea only ${stamp}`,
+      normalizedName: `bea only ${stamp}`,
+      familyId: beaFamily,
+    });
+    catalogTagIds = (
+      await database
+        .select({ id: tags.id })
+        .from(tags)
+        .where(isNull(tags.familyId))
+        .orderBy(tags.id)
+        .limit(11)
+    ).map((t) => t.id);
     familyTag = crypto.randomUUID();
     await database.insert(tags).values({
       id: familyTag,
@@ -130,6 +155,7 @@ describe('Recipe Tags (integration)', () => {
     }
     await database.delete(recipes).where(ilike(recipes.title, `%${stamp}-%`));
     await database.delete(tags).where(eq(tags.id, familyTag));
+    await database.delete(tags).where(eq(tags.id, otherFamilyTag));
     for (const id of [cuisineA, cuisineB]) {
       await adminCatalog.del(`/cuisines/${id}`);
     }
@@ -137,59 +163,135 @@ describe('Recipe Tags (integration)', () => {
     await app.close();
   });
 
-  describe('saving a Cuisine or Method keeps the matching Tag in sync', () => {
-    it('Admin: create and update move the Cuisine and Method Tags, other Tags stay', async () => {
+  describe('saving Tags (#709)', () => {
+    it('Admin: create and update set the whole Tag list, and the old columns follow', async () => {
       const created = (
         await admin
-          .post('', catalogDoc({ cuisineId: cuisineA, methodId: methodA }))
+          .post('', catalogDoc({ tagIds: [cuisineA, methodA, dinner] }))
+          .expect(201)
+      ).body as { id: string; tagIds: string[]; cuisineId: string };
+      expect(await linkedIds(created.id)).toEqual(
+        [cuisineA, methodA, dinner].sort(),
+      );
+      expect(created.tagIds).toEqual([cuisineA, methodA, dinner].sort());
+      expect(created.cuisineId).toBe(cuisineA);
+
+      const updated = (
+        await admin
+          .put(`/${created.id}`, catalogDoc({ tagIds: [cuisineB, vegan] }))
+          .expect(200)
+      ).body as { cuisineId: string | null; methodId: string | null };
+      expect(await linkedIds(created.id)).toEqual([cuisineB, vegan].sort());
+      expect(updated).toMatchObject({ cuisineId: cuisineB, methodId: null });
+
+      await admin.put(`/${created.id}`, catalogDoc()).expect(200);
+      expect(await linkedIds(created.id)).toEqual([]);
+    });
+
+    it('Family: create and update set the whole Tag list, Family Tags included', async () => {
+      const created = (
+        await ana
+          .post('', familyDoc({ tagIds: [cuisineA, familyTag] }))
           .expect(201)
       ).body as { id: string };
-      expect(await linkedIds(created.id)).toEqual([cuisineA, methodA].sort());
+      expect(await linkedIds(created.id)).toEqual([cuisineA, familyTag].sort());
 
-      await link(created.id, dinner);
-      await admin
-        .put(
-          `/${created.id}`,
-          catalogDoc({ cuisineId: cuisineB, methodId: null }),
-        )
+      await ana
+        .put(`/${created.id}`, familyUpdate({ tagIds: [familyTag, dinner] }))
         .expect(200);
-      expect(await linkedIds(created.id)).toEqual([cuisineB, dinner].sort());
+      expect(await linkedIds(created.id)).toEqual([familyTag, dinner].sort());
+      const edit = (await ana.get(`/${created.id}/edit`).expect(200)).body as {
+        tagIds: string[];
+      };
+      expect(edit.tagIds).toEqual([familyTag, dinner].sort());
+    });
 
-      await admin
-        .put(`/${created.id}`, catalogDoc({ cuisineId: null, methodId: null }))
-        .expect(200);
+    it('a Catalog Recipe accepts only Catalog Tags', async () => {
+      const res = await admin
+        .post('', catalogDoc({ tagIds: [dinner, familyTag] }))
+        .expect(404);
+      expect((res.body as { code: string }).code).toBe('recipes.tag_not_found');
+    });
+
+    it("refuses another Family's Tag, on create and on update, and an unknown Tag", async () => {
+      const res = await ana
+        .post('', familyDoc({ tagIds: [otherFamilyTag] }))
+        .expect(404);
+      expect((res.body as { code: string }).code).toBe('recipes.tag_not_found');
+      const mine = (await ana.post('', familyDoc()).expect(201)).body as {
+        id: string;
+      };
+      await ana
+        .put(`/${mine.id}`, familyUpdate({ tagIds: [dinner, otherFamilyTag] }))
+        .expect(404);
+      await ana
+        .put(`/${mine.id}`, familyUpdate({ tagIds: [crypto.randomUUID()] }))
+        .expect(404);
+      expect(await linkedIds(mine.id)).toEqual([]);
+      // The other Family can use it.
+      await bea.post('', familyDoc({ tagIds: [otherFamilyTag] })).expect(201);
+    });
+
+    it('allows 10 Tags and refuses the 11th with a coded error, on create and update', async () => {
+      const ten = [...catalogTagIds.slice(0, 10)];
+      expect(ten).toHaveLength(10);
+      const ok = (await ana.post('', familyDoc({ tagIds: ten })).expect(201))
+        .body as { id: string };
+      expect(await linkedIds(ok.id)).toHaveLength(10);
+      const eleven = [...ten, catalogTagIds[10]];
+      const res = await ana.post('', familyDoc({ tagIds: eleven })).expect(400);
+      expect(res.body).toMatchObject({
+        code: 'recipes.tags_too_many',
+        params: { max: 10 },
+      });
+      await ana.put(`/${ok.id}`, familyUpdate({ tagIds: eleven })).expect(400);
+      await admin.post('', catalogDoc({ tagIds: eleven })).expect(400);
+      expect(await linkedIds(ok.id)).toHaveLength(10);
+    });
+
+    it('counts a repeated Tag once', async () => {
+      const created = (
+        await ana
+          .post('', familyDoc({ tagIds: [dinner, dinner, dinner] }))
+          .expect(201)
+      ).body as { id: string };
       expect(await linkedIds(created.id)).toEqual([dinner]);
     });
 
-    it('Family: create and update move the Cuisine and Method Tags, other Tags stay', async () => {
-      const created = (
-        await ana
-          .post('', familyDoc({ cuisineId: cuisineA, methodId: methodA }))
+    it('a Family Variant made from a draft gets every Tag of its Base', async () => {
+      const base = (
+        await admin
+          .post('', catalogDoc({ tagIds: [cuisineA, methodA, dinner, vegan] }))
           .expect(201)
       ).body as { id: string };
-      expect(await linkedIds(created.id)).toEqual([cuisineA, methodA].sort());
-
-      await link(created.id, familyTag);
-      await ana
-        .put(`/${created.id}`, familyUpdate({ cuisineId: cuisineB }))
-        .expect(200);
-      expect(await linkedIds(created.id)).toEqual([cuisineB, familyTag].sort());
-    });
-
-    it('a Cuisine made directly in the database still gets its Tag when a Recipe uses it', async () => {
-      const bare = crypto.randomUUID();
-      await database.insert(cuisines).values({
-        id: bare,
-        name: `Bare ${stamp}`,
-        normalizedName: `bare ${stamp}`,
-      });
-      const created = (
-        await ana.post('', familyDoc({ cuisineId: bare })).expect(201)
+      const draft = (await ana.get(`/${base.id}/variant-draft`).expect(200))
+        .body as { tagIds: string[]; parentId: string } & Record<
+        string,
+        unknown
+      >;
+      expect([...draft.tagIds].sort()).toEqual(
+        [cuisineA, methodA, dinner, vegan].sort(),
+      );
+      const made = (
+        await ana
+          .post('', {
+            ...draft,
+            title: title('Fam'),
+            locale: 'en',
+            lines: [
+              {
+                ingredientId: seedId.ingredient('flour'),
+                quantity: 1,
+                unit: 'g',
+              },
+            ],
+            steps: [],
+          })
+          .expect(201)
       ).body as { id: string };
-      expect(await linkedIds(created.id)).toEqual([bare]);
-      await database.delete(recipes).where(eq(recipes.id, created.id));
-      await database.delete(tags).where(eq(tags.id, bare));
-      await database.delete(cuisines).where(eq(cuisines.id, bare));
+      expect(await linkedIds(made.id)).toEqual(
+        [cuisineA, methodA, dinner, vegan].sort(),
+      );
     });
   });
 
@@ -199,7 +301,7 @@ describe('Recipe Tags (integration)', () => {
     beforeAll(async () => {
       const created = (
         await ana
-          .post('', familyDoc({ cuisineId: cuisineA, methodId: methodA }))
+          .post('', familyDoc({ tagIds: [cuisineA, methodA] }))
           .expect(201)
       ).body as { id: string };
       recipeId = created.id;
@@ -287,7 +389,7 @@ describe('Recipe Tags (integration)', () => {
       );
 
       const base = (
-        await admin.post('', catalogDoc({ cuisineId: cuisineB })).expect(201)
+        await admin.post('', catalogDoc({ tagIds: [cuisineB] })).expect(201)
       ).body as { id: string };
       const variant = (
         await admin
@@ -305,7 +407,7 @@ describe('Recipe Tags (integration)', () => {
   describe('Variants and Add to Family', () => {
     it('a new Admin Variant starts with every Tag of its Base, then they are independent', async () => {
       const base = (
-        await admin.post('', catalogDoc({ cuisineId: cuisineA })).expect(201)
+        await admin.post('', catalogDoc({ tagIds: [cuisineA] })).expect(201)
       ).body as { id: string };
       await link(base.id, dinner);
       const variant = (
@@ -322,7 +424,7 @@ describe('Recipe Tags (integration)', () => {
     it("Add to Family copies the Catalog Recipe's Tags onto the Family's copy", async () => {
       const base = (
         await admin
-          .post('', catalogDoc({ cuisineId: cuisineA, methodId: methodA }))
+          .post('', catalogDoc({ tagIds: [cuisineA, methodA] }))
           .expect(201)
       ).body as { id: string };
       await link(base.id, dinner);

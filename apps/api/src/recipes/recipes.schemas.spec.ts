@@ -14,8 +14,7 @@ describe('recipeDocument', () => {
       prepMinutes: null,
       cookMinutes: null,
       difficulty: null,
-      cuisineId: null,
-      methodId: null,
+      tagIds: [],
       lines: [],
       steps: [],
     });

@@ -84,20 +84,25 @@ export function draftOfReading(
     steps.push({ text, timerSeconds: wholeNumber(minutes, 1, 1_000_000) });
   }
 
+  const cuisineId =
+    reading.cuisineId !== null && context.cuisineIds.has(reading.cuisineId)
+      ? reading.cuisineId
+      : null;
+  const methodId =
+    reading.methodId !== null && context.methodIds.has(reading.methodId)
+      ? reading.methodId
+      : null;
+
   return {
     title: clean(reading.title).slice(0, TITLE_MAX),
     servings: wholeNumber(reading.servings, 1, 1000),
     prepMinutes: wholeNumber(reading.prepMinutes, 0, 100_000),
     cookMinutes: wholeNumber(reading.cookMinutes, 0, 100_000),
     difficulty: null,
-    cuisineId:
-      reading.cuisineId !== null && context.cuisineIds.has(reading.cuisineId)
-        ? reading.cuisineId
-        : null,
-    methodId:
-      reading.methodId !== null && context.methodIds.has(reading.methodId)
-        ? reading.methodId
-        : null,
+    cuisineId,
+    methodId,
+    // Each Cuisine and Method is a Catalog Tag with the same id (#714 moves the read to Tags).
+    tagIds: [cuisineId, methodId].filter((id): id is string => id !== null),
     lines,
     steps,
     tips: [],

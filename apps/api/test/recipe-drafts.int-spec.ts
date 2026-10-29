@@ -21,7 +21,7 @@ const code = (res: { body: unknown }) => (res.body as { code: string }).code;
 type Got = {
   version: number;
   expiresAt: string;
-  content: { title: string };
+  content: { title: string; tagIds?: string[] };
 };
 type Refused = { params: unknown };
 const bodyOf = <T>(res: { body: unknown }) => res.body as T;
@@ -50,8 +50,7 @@ describe('Recipe Drafts (integration)', () => {
     prepMinutes: '',
     cookMinutes: '',
     difficulty: '',
-    cuisineId: '',
-    methodId: '',
+    tagIds: [],
     lines: [
       {
         ingredientId,
@@ -528,6 +527,42 @@ describe('Recipe Drafts (integration)', () => {
       const { id } = await create(a1, { content: content({ guidance }) });
       const got = await a1.get(`/${id}`).expect(200);
       expect(got.body).toMatchObject({ content: { guidance } });
+    });
+
+    it('keeps the picked Tags through create, autosave and resume (#709)', async () => {
+      const tagIds = [
+        'a1b2c3d4-0000-4000-8000-000000000001',
+        'some-family-tag',
+      ];
+      const { id } = await create(a1, { content: content({ tagIds }) });
+      expect(
+        ((await a1.get(`/${id}`).expect(200)).body as Got).content.tagIds,
+      ).toEqual(tagIds);
+      const next = [...tagIds].reverse().slice(0, 1);
+      await a1
+        .put(`/${id}`, { version: 1, content: content({ tagIds: next }) })
+        .expect(200);
+      expect(
+        ((await a1.get(`/${id}`).expect(200)).body as Got).content.tagIds,
+      ).toEqual(next);
+    });
+
+    it('gives a draft sent without Tags an empty list, and refuses more than 10', async () => {
+      const { tagIds: omitted, ...withoutTags } = content({ tagIds: [] });
+      void omitted;
+      const { id } = await create(a1, { content: withoutTags });
+      expect(
+        ((await a1.get(`/${id}`).expect(200)).body as Got).content.tagIds,
+      ).toEqual([]);
+      const res = await a1.post(
+        '',
+        newDraft({
+          content: content({
+            tagIds: Array.from({ length: 11 }, (_, i) => `t${i}`),
+          }),
+        }),
+      );
+      expect(res.status).toBe(400);
     });
 
     it('refuses content over the Recipe limits and of the wrong shape', async () => {

@@ -95,6 +95,16 @@ export class AdminRecipesController {
     return this.guidanceSuggestion.suggestForCatalog(body);
   }
 
+  // Declared before `:id` so it is not read as a Recipe id.
+  @Get('tags')
+  @ApiOperation({
+    summary:
+      'Admin only: the Catalog Tags a Catalog Recipe can carry, grouped in Tag Group order',
+  })
+  pickableTags() {
+    return this.recipes.pickableTags();
+  }
+
   @Get(':id')
   @ApiOperation({
     summary:

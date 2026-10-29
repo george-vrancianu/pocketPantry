@@ -71,6 +71,7 @@ import {
   type RecipeFilters,
   type RecipeList,
 } from './recipes.schemas';
+import type { RecipeTag } from '../tags/recipe-tags';
 
 const Id = () => Param(new ZodValidationPipe(recipeParam));
 const TipParams = () => Param(new ZodValidationPipe(recipeTipParam));
@@ -116,6 +117,21 @@ export class RecipesController {
       member.id,
       await this.languages.catalogLanguageOf(member.id),
       query.scope,
+    );
+  }
+
+  // Declared before `:id` so it is not read as a Recipe id.
+  @Get('tags')
+  @ApiOperation({
+    summary:
+      'Every Tag the Member can put on a Recipe: Catalog Tags and the Family’s own, named in the Catalog Language',
+  })
+  async pickableTags(
+    @CurrentUser() member: CurrentUserValue,
+  ): Promise<RecipeTag[]> {
+    return this.browse.pickableTags(
+      member.id,
+      await this.languages.catalogLanguageOf(member.id),
     );
   }
 

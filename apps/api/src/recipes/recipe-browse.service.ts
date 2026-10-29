@@ -6,7 +6,12 @@ import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
-import { loadRecipeTags, loadTagsInUse } from '../tags/recipe-tags';
+import {
+  loadPickableTags,
+  loadRecipeTags,
+  loadTagsInUse,
+  type RecipeTag,
+} from '../tags/recipe-tags';
 import {
   cuisines,
   eatingMoments,
@@ -315,6 +320,19 @@ export class RecipeBrowseService {
    * Cuisines and Methods for the filter pickers, named in `locale`, sorted by name; and the Tags in
    * use on live Recipes in `recipeScope` (absent: the Catalog's and the Family's).
    */
+  /** Every Tag the Member can put on a Recipe: all Catalog Tags and the Family's own, in their language. */
+  async pickableTags(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<RecipeTag[]> {
+    return loadPickableTags(
+      this.database,
+      await this.settings.catalogScopeForMember(memberId),
+      locale,
+      await this.settings.familyIdOf(memberId),
+    );
+  }
+
   async filters(
     memberId: string,
     locale: CatalogLocale,

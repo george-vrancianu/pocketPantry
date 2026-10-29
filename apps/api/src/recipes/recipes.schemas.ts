@@ -25,6 +25,8 @@ const minutes = z.number().int().min(0).max(100_000).nullable();
 export const MAX_LINES = 100;
 export const MAX_STEPS = 100;
 export const MAX_TIPS = 200;
+/** Most Tags one Recipe can carry (ADR 0033); the service refuses the 11th with a coded error. */
+export const MAX_RECIPE_TAGS = 10;
 
 /** An Ingredient Line quantity, numeric(10,3): positive, at most 3 decimals. */
 const lineQuantity = z
@@ -75,8 +77,8 @@ export const recipeDocument = z
     prepMinutes: minutes.default(null),
     cookMinutes: minutes.default(null),
     difficulty: z.enum(recipeDifficulty.enumValues).nullable().default(null),
-    cuisineId: id.nullable().default(null),
-    methodId: id.nullable().default(null),
+    // Capped in the service (`recipes.tags_too_many`); the schema only bounds the payload.
+    tagIds: z.array(id).max(100).default([]),
     lines: z.array(lineInput).max(MAX_LINES).default([]),
     steps: z.array(stepInput).max(MAX_STEPS).default([]),
   })
@@ -381,6 +383,8 @@ export type AdminRecipeDetail = AdminGuidance & {
   difficulty: (typeof recipeDifficulty.enumValues)[number] | null;
   cuisineId: string | null;
   methodId: string | null;
+  /** The ids of this Recipe's Tags (the editor resolves them against the pickable Tags). */
+  tagIds: string[];
   archived: boolean;
   archivedAt: string | null;
   /** The normalised page a Recipe from Link was read from; null otherwise. */
@@ -604,6 +608,9 @@ export type LinkRecipeDraft = Omit<
   'parentId' | 'servings'
 > & {
   servings: number | null;
+  /** What the page was read as, until #714 moves the read to Tags; `tagIds` carries the same ids. */
+  cuisineId: string | null;
+  methodId: string | null;
 };
 
 /**
@@ -668,8 +675,8 @@ export type FamilyRecipeDraft = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   difficulty: AdminRecipeDetail['difficulty'];
-  cuisineId: string | null;
-  methodId: string | null;
+  /** Every Tag of the source: a new Variant starts with its Base's Tags. */
+  tagIds: string[];
   /** `ingredientName` is for display only; drop it when posting. */
   lines: {
     ingredientId: string | null;

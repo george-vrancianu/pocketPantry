@@ -20,7 +20,7 @@ import {
   recipeTips,
   recipeTranslations,
 } from '../database/schema';
-import { loadRecipeTags } from '../tags/recipe-tags';
+import { loadRecipeTagIds, loadRecipeTags } from '../tags/recipe-tags';
 import {
   emptyGuidanceTranslations,
   loadAdminGuidance,
@@ -209,6 +209,7 @@ export async function loadAdminDetail(
     difficulty: row.difficulty,
     cuisineId: row.cuisineId,
     methodId: row.methodId,
+    tagIds: await loadRecipeTagIds(executor, id),
     archived: row.archivedAt !== null,
     archivedAt: row.archivedAt?.toISOString() ?? null,
     sourceLink: row.sourceLink,
