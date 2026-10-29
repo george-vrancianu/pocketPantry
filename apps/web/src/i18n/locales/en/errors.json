@@ -77,7 +77,12 @@
     "cuisine_in_use": "Recipes still use this Cuisine, so it cannot be deleted. Change those Recipes first.",
     "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first.",
     "family_ingredient_exists": "“{{existing.name}}” already has that name.",
-    "allergen_retired": "That Allergen is retired. Bring it back before tagging with it."
+    "allergen_retired": "That Allergen is retired. Bring it back before tagging with it.",
+    "tag_in_use_one": "{{count}} Recipe has this Tag. Confirm the delete to remove it from that Recipe.",
+    "tag_in_use_other": "{{count}} Recipes have this Tag. Confirm the delete to remove it from those Recipes.",
+    "tag_allergen_free_name": "A Catalog Tag cannot claim an Allergen is absent. Allergens come from the Ingredient Lines, so pick a name without \"free\" or \"no\" for an Allergen.",
+    "tag_group_order_stale": "The Tag Groups changed while you were reordering. Check the order and try again.",
+    "tag_group_not_empty": "This Tag Group still has Catalog Tags. Move or delete them first."
   },
   "family": {
     "rate_limited": "Too many Invite Code attempts. Wait a minute and try again.",

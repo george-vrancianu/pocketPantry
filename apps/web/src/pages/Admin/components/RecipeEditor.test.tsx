@@ -9,8 +9,8 @@ import { RecipeEditor } from './RecipeEditor';
 
 const catalog: AdminCatalog = {
   aisles: [],
-  cuisines: [],
-  methods: [],
+  tagGroups: [],
+  tags: [],
   allergens: [],
   eatingMoments: [],
   parentCategories: [],

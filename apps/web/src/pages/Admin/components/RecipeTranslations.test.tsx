@@ -8,8 +8,8 @@ import { RecipeTranslations } from './RecipeTranslations';
 
 const catalog: AdminCatalog = {
   aisles: [],
-  cuisines: [],
-  methods: [],
+  tagGroups: [],
+  tags: [],
   allergens: [],
   eatingMoments: [
     {

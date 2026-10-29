@@ -19,6 +19,8 @@ type Props = {
   /** Omit when creating: there is nothing to delete yet. */
   onDelete?: () => void;
   deleting?: boolean;
+  /** Replaces the default delete question, e.g. to say what the delete will also remove. */
+  deleteMessage?: string;
   /** Replace Save / Saving… on the submit button. */
   saveLabel?: string;
   savingLabel?: string;
@@ -40,6 +42,7 @@ export function EditorForm({
   onCancel,
   onDelete,
   deleting,
+  deleteMessage,
   saveLabel,
   savingLabel,
   children,
@@ -88,7 +91,7 @@ export function EditorForm({
         <ConfirmAction
           variant="ghost"
           label={t('admin:common.delete')}
-          message={t('admin:common.deleteConfirm')}
+          message={deleteMessage ?? t('admin:common.deleteConfirm')}
           disabled={deleting}
           onConfirm={onDelete}
         />

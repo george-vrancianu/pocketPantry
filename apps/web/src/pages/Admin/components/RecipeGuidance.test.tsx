@@ -8,8 +8,8 @@ import { RecipeGuidance } from './RecipeGuidance';
 
 const catalog: AdminCatalog = {
   aisles: [],
-  cuisines: [],
-  methods: [],
+  tagGroups: [],
+  tags: [],
   allergens: [],
   eatingMoments: [
     {

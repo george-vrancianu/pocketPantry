@@ -10,8 +10,8 @@ import { RecipeForm } from './RecipeForm';
 
 const catalog: AdminCatalog = {
   aisles: [],
-  cuisines: [{ id: 'cu1', name: 'Italian', translations: [] }],
-  methods: [{ id: 'me1', name: 'Baking', translations: [] }],
+  tagGroups: [],
+  tags: [],
   allergens: [],
   eatingMoments: [],
   parentCategories: [],

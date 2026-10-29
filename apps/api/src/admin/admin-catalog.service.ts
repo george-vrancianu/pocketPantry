@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, max, sql } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNotNull, max, sql } from 'drizzle-orm';
 import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import {
   amountScaleForParent,
@@ -10,6 +10,7 @@ import {
   lockAisleOrder,
   lockAllergenOrder,
   lockEatingMomentOrder,
+  lockTagGroupOrder,
 } from '../catalog/order-lock';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
@@ -33,12 +34,19 @@ import {
   leafCategories,
   methods,
   parentCategories,
+  recipeTags,
 } from '../database/schema';
+import { isAllergenFreeName } from '../tags/allergen-free-names';
 import { mirrorListEntryAsTag } from '../tags/recipe-tags';
 import type {
   AisleCreate,
   ListEntryCreate,
   ListEntryUpdate,
+  CatalogTagCreate,
+  CatalogTagUpdate,
+  TagGroupCreate,
+  TagGroupOrder,
+  TagGroupUpdate,
   AisleOrder,
   AisleUpdate,
   EatingMomentOrder,
@@ -104,6 +112,8 @@ export class AdminCatalogService {
       eatingMomentRows,
       allergenRows,
       tagRows,
+      tagGroupRows,
+      catalogTagRows,
     ] = await Promise.all([
       this.database.select().from(aisles).orderBy(aisles.sortOrder),
       this.database
@@ -140,6 +150,18 @@ export class AdminCatalogService {
           sharedIngredients,
           eq(ingredientAllergens.ingredientId, sharedIngredients.id),
         ),
+      this.database.select().from(tagGroups).orderBy(tagGroups.position),
+      // Catalog Tags only (no Family): a Family's own Tags are not the Admin's to see.
+      this.database
+        .select({
+          id: tags.id,
+          name: tags.name,
+          groupId: tags.groupId,
+          recipeCount: sql<number>`(SELECT count(*)::int FROM ${recipeTags} WHERE ${recipeTags.tagId} = ${tags.id})`,
+        })
+        .from(tags)
+        .where(sql`${tags.familyId} IS NULL`)
+        .orderBy(tags.normalizedName),
     ]);
 
     const tagsOf = new Map<string, string[]>();
@@ -166,6 +188,20 @@ export class AdminCatalogService {
       byEntity.get(`${type}:${entityId}`) ?? [];
 
     return {
+      tagGroups: tagGroupRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        position: row.position,
+        translations: translations('tag_group', row.id),
+      })),
+      // Each carries how many Recipes (Family copies included) have it, for the delete confirmation.
+      tags: catalogTagRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        groupId: row.groupId,
+        recipeCount: row.recipeCount,
+        translations: translations('tag', row.id),
+      })),
       cuisines: cuisineRows.map((row) => ({
         id: row.id,
         name: row.name,
@@ -544,6 +580,183 @@ export class AdminCatalogService {
     );
   }
 
+  // Tag Groups and Catalog Tags (ADR 0033). A Catalog Tag never claims an Allergen is absent, and
+  // one name is one Tag: a Family Tag with the same name is folded into it, silently.
+
+  createTagGroup(input: TagGroupCreate) {
+    return this.write(async (tx) => {
+      await lockTagGroupOrder(tx);
+      const [{ last }] = await tx
+        .select({ last: max(tagGroups.position) })
+        .from(tagGroups);
+      const id = randomUUID();
+      const [row] = await tx
+        .insert(tagGroups)
+        .values({
+          id,
+          name: input.name,
+          normalizedName: normalizeName(input.name),
+          position: (last ?? 0) + 1,
+        })
+        .returning();
+      await this.addCanonicalName(tx, 'tag_group', id, input.name);
+      return row;
+    });
+  }
+
+  updateTagGroup(id: string, input: TagGroupUpdate) {
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(tagGroups)
+        .set({ name: input.name, normalizedName: normalizeName(input.name) })
+        .where(eq(tagGroups.id, id))
+        .returning();
+      if (!row) throw notFound('tag_group');
+      await this.renameCanonicalName(tx, 'tag_group', id, input.name);
+      return row;
+    });
+  }
+
+  reorderTagGroups({ ids }: TagGroupOrder) {
+    return this.write(async (tx) => {
+      await lockTagGroupOrder(tx);
+      const current = await tx.select({ id: tagGroups.id }).from(tagGroups);
+      const wanted = new Set(ids);
+      if (
+        current.length !== ids.length ||
+        !current.every((row) => wanted.has(row.id))
+      ) {
+        throw new ApiException(409, 'catalog.tag_group_order_stale');
+      }
+      for (const [index, id] of ids.entries()) {
+        await tx
+          .update(tagGroups)
+          .set({ position: index + 1 })
+          .where(eq(tagGroups.id, id));
+      }
+      return tx.select().from(tagGroups).orderBy(tagGroups.position);
+    });
+  }
+
+  /** Only an empty Tag Group goes: Catalog Tags always live in one. */
+  deleteTagGroup(id: string) {
+    return this.write(
+      async (tx) => {
+        await lockTagGroupOrder(tx);
+        await this.requireRow(tx, 'tag_group', id);
+        await this.deleteTranslationsOf(tx, 'tag_group', id);
+        await tx.delete(tagGroups).where(eq(tagGroups.id, id));
+      },
+      new ApiException(409, 'catalog.tag_group_not_empty'),
+    );
+  }
+
+  createCatalogTag(input: CatalogTagCreate) {
+    this.assertNotAllergenFree(input.name);
+    return this.write(async (tx) => {
+      await this.requireRow(tx, 'tag_group', input.groupId);
+      const id = randomUUID();
+      const normalizedName = normalizeName(input.name);
+      const [row] = await tx
+        .insert(tags)
+        .values({
+          id,
+          name: input.name,
+          normalizedName,
+          groupId: input.groupId,
+        })
+        .returning();
+      await this.addCanonicalName(tx, 'tag', id, input.name);
+      await this.mergeFamilyTagsInto(tx, id, normalizedName);
+      return row;
+    });
+  }
+
+  updateCatalogTag(id: string, input: CatalogTagUpdate) {
+    if (input.name !== undefined) this.assertNotAllergenFree(input.name);
+    return this.write(async (tx) => {
+      if (input.groupId) await this.requireRow(tx, 'tag_group', input.groupId);
+      await this.requireCatalogTag(tx, id);
+      const [row] = await tx
+        .update(tags)
+        .set({ ...input, ...this.normalized(input.name) })
+        .where(eq(tags.id, id))
+        .returning();
+      if (input.name !== undefined) {
+        await this.renameCanonicalName(tx, 'tag', id, input.name);
+        await this.mergeFamilyTagsInto(tx, id, normalizeName(input.name));
+      }
+      return row;
+    });
+  }
+
+  /**
+   * Without `confirm`, a Tag some Recipe carries is refused with `catalog.tag_in_use` and the
+   * number of Recipes (Family copies included). With it, the Tag is removed from every Recipe.
+   */
+  deleteCatalogTag(id: string, confirm: boolean) {
+    return this.write(async (tx) => {
+      await this.requireCatalogTag(tx, id);
+      // Locked so a Recipe cannot gain the Tag between the count shown and the delete.
+      await tx
+        .select({ id: tags.id })
+        .from(tags)
+        .where(eq(tags.id, id))
+        .for('update');
+      const [{ recipes: used }] = await tx
+        .select({ recipes: count() })
+        .from(recipeTags)
+        .where(eq(recipeTags.tagId, id));
+      if (used > 0 && !confirm) {
+        throw new ApiException(409, 'catalog.tag_in_use', { count: used });
+      }
+      await this.deleteTranslationsOf(tx, 'tag', id);
+      await tx.delete(tags).where(eq(tags.id, id));
+    });
+  }
+
+  private assertNotAllergenFree(name: string): void {
+    if (isAllergenFreeName(name)) {
+      throw new ApiException(400, 'catalog.tag_allergen_free_name');
+    }
+  }
+
+  private async requireCatalogTag(tx: Tx, id: string): Promise<void> {
+    const [row] = await tx
+      .select({ id: tags.id })
+      .from(tags)
+      .where(and(eq(tags.id, id), sql`${tags.familyId} IS NULL`));
+    if (!row) throw notFound('tag');
+  }
+
+  /**
+   * Folds every Family's Tag with this normalized name into the Catalog Tag: their Recipes get the
+   * Catalog Tag (no duplicate link where they already had it) and the Family Tags are deleted.
+   */
+  private async mergeFamilyTagsInto(
+    tx: Tx,
+    catalogTagId: string,
+    normalizedName: string,
+  ): Promise<void> {
+    // Locked first: a Member linking one of these Tags waits, then sees it gone instead of failing.
+    const family = await tx
+      .select({ id: tags.id })
+      .from(tags)
+      .where(
+        and(isNotNull(tags.familyId), eq(tags.normalizedName, normalizedName)),
+      )
+      .for('update');
+    if (family.length === 0) return;
+    const ids = family.map((row) => row.id);
+    await tx.execute(
+      sql`INSERT INTO ${recipeTags} (recipe_id, tag_id)
+          SELECT DISTINCT ${recipeTags.recipeId}, ${catalogTagId}::uuid FROM ${recipeTags}
+          WHERE ${inArray(recipeTags.tagId, ids)}
+          ON CONFLICT DO NOTHING`,
+    );
+    await tx.delete(tags).where(inArray(tags.id, ids));
+  }
+
   // Parent Categories
 
   createParentCategory(input: ParentCategoryCreate) {
@@ -787,6 +1000,7 @@ export class AdminCatalogService {
         if (input.entityType === 'ingredient') {
           await this.claimName(tx, input.value, input.entityId);
         }
+        if (input.entityType === 'tag') this.assertNotAllergenFree(input.value);
         if (input.kind === 'name') {
           const translations = adminScope.translations(tx);
           const [existing] = await tx
@@ -813,6 +1027,13 @@ export class AdminCatalogService {
           })
           .returning();
         await this.mirrorTagOf(tx, input.entityType, input.entityId);
+        if (input.entityType === 'tag') {
+          await this.mergeFamilyTagsInto(
+            tx,
+            input.entityId,
+            normalizeName(input.value),
+          );
+        }
         return row;
       },
       undefined,
@@ -830,6 +1051,8 @@ export class AdminCatalogService {
       if (existing.entityType === 'ingredient') {
         await this.claimName(tx, input.value, existing.entityId);
       }
+      if (existing.entityType === 'tag')
+        this.assertNotAllergenFree(input.value);
       const [row] = await tx
         .update(catalogTranslations)
         .set({
@@ -839,6 +1062,13 @@ export class AdminCatalogService {
         .where(eq(catalogTranslations.id, id))
         .returning();
       await this.mirrorTagOf(tx, existing.entityType, existing.entityId);
+      if (existing.entityType === 'tag') {
+        await this.mergeFamilyTagsInto(
+          tx,
+          existing.entityId,
+          normalizeName(input.value),
+        );
+      }
       return row;
     });
   }

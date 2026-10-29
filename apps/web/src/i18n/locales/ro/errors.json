@@ -77,7 +77,13 @@
     "cuisine_in_use": "Rețete încă folosesc această Bucătărie, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete.",
     "method_in_use": "Rețete încă folosesc această Metodă, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete.",
     "family_ingredient_exists": "„{{existing.name}}” are deja acest nume.",
-    "allergen_retired": "Acest alergen este retras. Readu-l înainte de a-l folosi la etichetare."
+    "allergen_retired": "Acest alergen este retras. Readu-l înainte de a-l folosi la etichetare.",
+    "tag_in_use_one": "{{count}} Rețetă are acest Tag. Confirmă ștergerea pentru a-l scoate de pe acea Rețetă.",
+    "tag_in_use_few": "{{count}} Rețete au acest Tag. Confirmă ștergerea pentru a-l scoate de pe acele Rețete.",
+    "tag_in_use_other": "{{count}} de Rețete au acest Tag. Confirmă ștergerea pentru a-l scoate de pe acele Rețete.",
+    "tag_allergen_free_name": "Un Tag din Catalog nu poate spune că lipsește un Alergen. Alergenii vin din Liniile de ingrediente, așa că alege un nume fără „fără” sau „free” pentru un Alergen.",
+    "tag_group_order_stale": "Grupurile de Taguri s-au schimbat cât ai reordonat. Verifică ordinea și încearcă din nou.",
+    "tag_group_not_empty": "Acest Grup de Taguri are încă Taguri din Catalog. Mută-le sau șterge-le mai întâi."
   },
   "family": {
     "rate_limited": "Prea multe încercări cu codul de invitație. Așteaptă un minut și încearcă din nou.",

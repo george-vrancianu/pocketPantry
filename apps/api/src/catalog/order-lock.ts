@@ -42,3 +42,12 @@ export async function lockAllergenOrder(
     sql`SELECT pg_advisory_xact_lock(hashtextextended('catalog-allergen-order', 0))`,
   );
 }
+
+/** Locks the set of Tag Groups and their order, under its own key. Taken by Admin create, reorder and delete. */
+export async function lockTagGroupOrder(
+  executor: Pick<Executor, 'execute'>,
+): Promise<void> {
+  await executor.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtextextended('catalog-tag-group-order', 0))`,
+  );
+}
