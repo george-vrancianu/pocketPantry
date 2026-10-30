@@ -156,6 +156,7 @@
     "removeCard": "Fjern",
     "pickDish": "Vælg retten",
     "dishOption": "{{title}}, {{percent}} % sandsynlig",
+    "dishOptionPriced": "{{title}}, {{percent}} % sandsynlig, at skrive den som opskrift koster {{price}}",
     "banner_one": "Alle læst! {{count}} vare.",
     "banner_other": "Alle læst! {{count}} varer.",
     "bannerCheck_one": "Tjek den, jeg var usikker på, og læg den så til.",

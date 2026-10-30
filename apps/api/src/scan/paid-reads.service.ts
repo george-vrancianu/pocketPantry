@@ -5,7 +5,7 @@ import { ScanCapService, type UsageKind } from './scan-cap.service';
 
 /**
  * The kind of a paid read. Link names how the recipe arrives, because the two are priced apart
- * later; `guidance-admin` is the Admin Catalog Suggest Guidance, which no Cap limits.
+ * later; `plate-recipe` is writing a Plate Scan's picked dish as a Recipe (charged on its own, no Cap); `guidance-admin` is the Admin Catalog Suggest Guidance, which no Cap limits.
  */
 export type PaidReadKind =
   | 'scan'
@@ -14,6 +14,7 @@ export type PaidReadKind =
   | 'link-page'
   | 'link-text'
   | 'guidance'
+  | 'plate-recipe'
   | 'guidance-admin';
 
 /** Every kind a Member pays for: all but the Admin one, which has no Member. */
@@ -43,6 +44,8 @@ const capKindOf = (kind: PaidReadKind): UsageKind | null => {
     case 'link-page':
     case 'link-text':
       return 'link';
+    // Writing a Plate Scan's dish is the second half of a Scan whose photo the Scan Cap already counted.
+    case 'plate-recipe':
     case 'guidance-admin':
       return null;
     default:
@@ -61,6 +64,7 @@ const CHARGED_KINDS: ReadonlySet<PaidReadKind> = new Set<PaidReadKind>([
   'link-page',
   'link-text',
   'guidance',
+  'plate-recipe',
 ]);
 
 /** The kind a Credit Price is set for, or null when `kind` is not charged Credits. */
@@ -80,19 +84,6 @@ export class PaidReadsService {
     private readonly credits: CreditsService,
     private readonly usage: UsageRecordsService,
   ) {}
-
-  /**
-   * Runs a provider call that is part of a paid read but charges nothing of its own (the Plate Scan
-   * dish step, which its photo step already paid for): no Cap, no Credits, but its Usage Record
-   * carries the kind, the Member and the Family.
-   */
-  unchargedContext<T>(
-    memberId: string,
-    kind: MemberPaidReadKind,
-    run: () => Promise<T>,
-  ): Promise<T> {
-    return this.inContext(memberId, kind, run);
-  }
 
   /**
    * A cheap early refusal before slow work (the link read before it fetches the page): throws

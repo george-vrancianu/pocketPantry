@@ -139,6 +139,7 @@ describe('PaidReadsService', () => {
       'link-page',
       'link-text',
       'guidance',
+      'plate-recipe',
     ] as const)('charges a %s read, and never the Admin read', async (kind) => {
       const { credits, paid } = setup();
       await paid.read('m', kind, () => Promise.resolve(found(1)));

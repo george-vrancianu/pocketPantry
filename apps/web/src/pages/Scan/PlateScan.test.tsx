@@ -108,6 +108,21 @@ function renderPlate(extra: Record<string, () => Response> = {}) {
   return calls;
 }
 
+const creditsBody = (balance: number) => ({
+  balance,
+  prices: {
+    scan: 1,
+    voice: 1,
+    assistant: 1,
+    'link-page': 2,
+    'link-text': 1,
+    guidance: 1,
+    'plate-recipe': 2,
+  },
+  lowBalanceThreshold: 10,
+  history: [],
+});
+
 const scanThenDone = async () => {
   takeScan();
   await userEvent.click(
@@ -153,6 +168,53 @@ describe('Plate Scan in the Scan Session', () => {
     expect(within(screen.getByTestId('review-card')).getByRole('group')).toBe(
       screen.getByRole('group', { name: 'Pick the dish' }),
     );
+  });
+
+  it('shows the price of writing the dish on each guess', async () => {
+    renderPlate({
+      'GET /api/credits': () => Response.json(creditsBody(50)),
+    });
+    await scanThenDone();
+    const options = within(await picker()).getAllByRole('button');
+    await waitFor(() =>
+      expect(options.map((b) => b.getAttribute('aria-label'))).toEqual([
+        'Pancakes, 72% likely, writing it as a Recipe costs 2 Credits',
+        'Crepes, 20% likely, writing it as a Recipe costs 2 Credits',
+      ]),
+    );
+    for (const option of options) {
+      expect(within(option).getByText('2 Credits')).toBeInTheDocument();
+    }
+  });
+
+  it('refuses a pick the Family cannot pay for: the card and guesses stay, nothing joins the strip', async () => {
+    let balance = 1;
+    const calls = renderPlate({
+      'GET /api/credits': () => Response.json(creditsBody(balance)),
+    });
+    await scanThenDone();
+    await pick(/Pancakes/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Out of Credits. This needs 2, and your Family has 1.',
+    );
+    expect(await picker()).toBeInTheDocument();
+    expect(getScanSession().scans).toHaveLength(1);
+    expect(recipeReads.getState().reads).toHaveLength(0);
+    expect(screen.queryByText('Writing Pancakes…')).toBeNull();
+    expect(calls.map((c) => c.key)).not.toContain(
+      'POST /api/scan/plate/recipe',
+    );
+
+    // Credits added: the same card can pick again.
+    balance = 5;
+    await pick(/Pancakes/);
+    expect(
+      await screen.findByText('Pancakes ready to review'),
+    ).toBeInTheDocument();
+    expect(getScanSession().scans).toHaveLength(0);
+    expect(
+      calls.find((c) => c.key === 'POST /api/scan/plate/recipe')?.body,
+    ).toEqual({ dishTitle: 'Pancakes', plateToken: 'token-1' });
   });
 
   it('shows only the guesses on the card: no ingredient lines to review', async () => {

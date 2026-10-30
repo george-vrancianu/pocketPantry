@@ -19,6 +19,7 @@ const PRICES = {
   'link-page': 2,
   'link-text': 1,
   guidance: 1,
+  'plate-recipe': 1,
 };
 
 type Entry = {
@@ -151,6 +152,25 @@ describe('CreditsSection', () => {
       const row = screen.getByText('Recipe from a web page').closest('li');
       expect(row).toHaveTextContent('Ada');
       expect(row).toHaveTextContent('\u22122');
+    });
+
+    it('shows a Plate Scan whose dish was written as two spends', async () => {
+      await show(
+        credits({
+          balance: 98,
+          history: [
+            entry({ readKind: 'plate-recipe', amount: -1 }),
+            entry({ readKind: 'scan', amount: -1 }),
+          ],
+        }),
+      );
+      const written = screen
+        .getByText('Recipe from a Plate Scan')
+        .closest('li');
+      const photo = screen.getByText('Scan').closest('li');
+      expect(written).not.toBe(photo);
+      expect(written).toHaveTextContent('\u22121');
+      expect(photo).toHaveTextContent('\u22121');
     });
 
     it('shows a spend by a departed Member as a former Member', async () => {

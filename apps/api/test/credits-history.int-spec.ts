@@ -75,6 +75,7 @@ describe('Credit history on the read endpoint (integration)', () => {
     expect(body.lowBalanceThreshold).toBe(10);
     expect(body.prices['link-page']).toBe(2);
     expect(body.prices['link-text']).toBe(1);
+    expect(body.prices['plate-recipe']).toBe(1);
   });
 
   it('shows a Welcome Grant by its kind, not as a former Member', async () => {

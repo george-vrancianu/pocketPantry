@@ -20,6 +20,7 @@ const CREDITS = {
     'link-page': 2,
     'link-text': 1,
     guidance: 1,
+    'plate-recipe': 3,
   },
   lowBalanceThreshold: 10,
   history: [],
@@ -189,6 +190,18 @@ describe('Scan page opened with its own modes', () => {
       await user.click(item('Barcode'));
       expect(item('Barcode')).toBeChecked();
       expect(within(slider()).queryByText('1 Credit')).toBeNull();
+    });
+
+    it('keeps the Scan price on Plate, not the price of writing the dish', async () => {
+      const user = userEvent.setup({ delay: null });
+      const { fetchMock } = stubApi({
+        'GET /api/credits': () => Response.json(CREDITS),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderScan();
+      await user.click(item('Plate'));
+      expect(await within(slider()).findByText('1 Credit')).toBeInTheDocument();
+      expect(within(slider()).queryByText('3 Credits')).toBeNull();
     });
   });
 });

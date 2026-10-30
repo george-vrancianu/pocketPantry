@@ -4,7 +4,13 @@ import { ApiError, apiRequest } from './api';
 
 /** The kinds of read a Credit Price is set for. */
 export type CreditPriceKind =
-  'scan' | 'voice' | 'assistant' | 'link-page' | 'link-text' | 'guidance';
+  | 'scan'
+  | 'voice'
+  | 'assistant'
+  | 'link-page'
+  | 'link-text'
+  | 'guidance'
+  | 'plate-recipe';
 
 /** One entry of the Family's Credit history, as `GET /api/credits` words it. */
 export type CreditHistoryEntry = {
