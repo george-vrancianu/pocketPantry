@@ -219,6 +219,25 @@ describe('SignUpPage join toggle', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('tells a Promo Code field holding an Invite Code to use the Join toggle, not the Family tab', async () => {
+    stub(false, () =>
+      Response.json(
+        { code: 'promo_code.is_invite_code', params: {} },
+        { status: 400 },
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<App />, { route: '/sign-up' });
+    await screen.findByLabelText(/^Promo Code|^Have a Promo Code/);
+    await fill(user);
+    await user.type(screen.getByLabelText('Have a Promo Code?'), 'ABCD2345');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(
+      await screen.findByText(/Choose Join an existing Family/),
+    ).toBeVisible();
+    expect(screen.queryByText(/Family tab/)).toBeNull();
+  });
+
   it('keeps a family.* refusal in the form alert while creating a Family', async () => {
     stub(false, () =>
       Response.json(

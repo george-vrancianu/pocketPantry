@@ -1,5 +1,5 @@
 {
-  "id": "ec7aef00-d927-4093-bd62-335e09d687e9",
+  "id": "2d2e1d26-2110-4e5b-992f-53bded3615e6",
   "prevId": "8b44894a-051e-4788-89fd-9ec24ae416b3",
   "version": "7",
   "dialect": "postgresql",
@@ -849,6 +849,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "promo_code_id": {
+          "name": "promo_code_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "amount": {
           "name": "amount",
           "type": "integer",
@@ -928,6 +934,19 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
+        },
+        "credit_entry_promo_code_id_promo_code_id_fk": {
+          "name": "credit_entry_promo_code_id_promo_code_id_fk",
+          "tableFrom": "credit_entry",
+          "tableTo": "promo_code",
+          "columnsFrom": [
+            "promo_code_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -936,7 +955,7 @@
       "checkConstraints": {
         "credit_entry_amount_not_zero": {
           "name": "credit_entry_amount_not_zero",
-          "value": "\"credit_entry\".\"amount\" <> 0 or \"credit_entry\".\"kind\" = 'promo_code'"
+          "value": "\"credit_entry\".\"amount\" <> 0 or \"credit_entry\".\"kind\"::text = 'promo_code'"
         }
       },
       "isRLSEnabled": false

@@ -14,7 +14,8 @@
     "label": "Promokode",
     "requiredHint": "Du skal bruge en promokode for at tilmelde dig.",
     "optionalLabel": "Har du en promokode?",
-    "optionalHint": "Valgfrit. Dens kreditter lægges oven i din velkomstgave."
+    "optionalHint": "Valgfrit. Dens kreditter lægges oven i din velkomstgave.",
+    "isInviteCode": "Det ligner en invitationskode. Vælg Slut dig til en eksisterende familie, og indtast den der."
   },
   "mode": {
     "label": "Hvad vil du gøre?",

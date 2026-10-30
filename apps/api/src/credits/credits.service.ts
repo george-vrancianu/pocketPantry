@@ -16,6 +16,12 @@ import {
 /** The Credits a Member's Household of One starts with, once in their life (ADR 0032). */
 export const WELCOME_GRANT_CREDITS = 100;
 
+/**
+ * The reason on the `grant` entry a Member who joins a Family at signup gets (their own Welcome Grant, which
+ * can't be kind `welcome_grant`: that is one per Family). The history shows it as a Welcome Grant.
+ */
+export const WELCOME_GRANT_REASON = 'Welcome Grant';
+
 /** Credits held for a read that is running; given back with `release`. `null` when the read is free. */
 export type CreditHold = { entryId: string } | null;
 
@@ -167,12 +173,14 @@ export class CreditsService {
         row.kind === 'promo_code';
       // Gone (deleted) or in another Family now (left or removed): not a Member of this one.
       const former = byMember && row.memberFamilyId !== me.familyId;
+      const joinerWelcomeGrant =
+        row.kind === 'grant' && row.reason === WELCOME_GRANT_REASON;
       return {
         id: row.id,
-        kind: row.kind,
+        kind: joinerWelcomeGrant ? 'welcome_grant' : row.kind,
         readKind:
           row.kind === 'spend' ? (row.readKind as CreditPriceKind) : null,
-        reason: row.kind === 'grant' ? row.reason : null,
+        reason: row.kind === 'grant' && !joinerWelcomeGrant ? row.reason : null,
         amount: row.amount,
         memberName: byMember && !former ? row.memberName : null,
         formerMember: former,

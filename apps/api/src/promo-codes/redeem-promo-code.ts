@@ -4,6 +4,13 @@ import type { Tx } from '../database/database.types';
 import { creditEntry, promoCode, user } from '../database/schema';
 import { looksLikeInviteCode, normalizePromoCode } from '../family/invite-code';
 
+export type RedeemedPromoCode = {
+  /** The Credits added. */
+  credits: number;
+  promoCodeId: string;
+  entryId: string;
+};
+
 export type RedeemPromoCodeInput = {
   /** As typed: case, spaces and dashes are ignored. */
   code: string;
@@ -17,13 +24,14 @@ export type RedeemPromoCodeInput = {
 /**
  * Redeems a Promo Code for a Family inside the caller's transaction (ADR 0034): locks the code row,
  * rejects an unknown, redeemed or revoked code, marks it redeemed (with a snapshot of the redeemer)
- * and writes a `promo_code` Credit entry, also for a 0-Credit code. Returns the Credits added.
+ * and writes a `promo_code` Credit entry that references the code, also for a 0-Credit code. Returns the Credits
+ * added and the ids of the code and the entry.
  * Throws `promo_code.is_invite_code` when the input is shaped like an Invite Code.
  */
 export async function redeemPromoCode(
   tx: Tx,
   input: RedeemPromoCodeInput,
-): Promise<number> {
+): Promise<RedeemedPromoCode> {
   const normalised = normalizePromoCode(input.code);
   if (looksLikeInviteCode(normalised)) {
     throw new ApiException(400, 'promo_code.is_invite_code');
@@ -56,11 +64,15 @@ export async function redeemPromoCode(
       redeemedFamilyId: input.familyId,
     })
     .where(eq(promoCode.id, row.id));
-  await tx.insert(creditEntry).values({
-    familyId: input.familyId,
-    memberId: input.memberId ?? null,
-    kind: 'promo_code',
-    amount: row.credits,
-  });
-  return row.credits;
+  const [entry] = await tx
+    .insert(creditEntry)
+    .values({
+      familyId: input.familyId,
+      memberId: input.memberId ?? null,
+      kind: 'promo_code',
+      promoCodeId: row.id,
+      amount: row.credits,
+    })
+    .returning({ id: creditEntry.id });
+  return { credits: row.credits, promoCodeId: row.id, entryId: entry.id };
 }

@@ -1,10 +1,11 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { APIError } from 'better-auth/api';
-import { and, eq, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import type { Database, Tx } from '../database/database.types';
 import {
   WELCOME_GRANT_CREDITS,
+  WELCOME_GRANT_REASON,
   lockFamilyCredits,
 } from '../credits/credits.service';
 import { creditEntry, family, promoCode } from '../database/schema';
@@ -48,8 +49,14 @@ export type SignupPlacement = {
   welcomeGrantAt?: Date;
 };
 
-/** The sign-up transaction, and the Family a Promo Code was redeemed into at signup (to name the Member later). */
-type SignupStore = { tx: Tx; redeemedInto?: string };
+/** The sign-up transaction, and the rows written at signup that name no Member yet (linked once it exists). */
+type SignupStore = {
+  tx: Tx;
+  /** The Promo Code redeemed at signup and its Credit entry. */
+  redeemed?: { promoCodeId: string; entryId: string };
+  /** The joiner's Welcome Grant entry (kind `grant`, in the joined Family). */
+  welcomeGrantEntryId?: string;
+};
 const signupTx = new AsyncLocalStorage<SignupStore>();
 
 /**
@@ -94,23 +101,26 @@ const STATUS_NAMES: Record<
  */
 export async function linkSignupRedemption(userId: string): Promise<void> {
   const store = signupTx.getStore();
-  if (!store?.redeemedInto) return;
-  const { tx, redeemedInto } = store;
-  store.redeemedInto = undefined;
-  await tx
-    .update(creditEntry)
-    .set({ memberId: userId })
-    .where(
-      and(
-        eq(creditEntry.familyId, redeemedInto),
-        eq(creditEntry.kind, 'promo_code'),
-        isNull(creditEntry.memberId),
-      ),
-    );
-  await tx
-    .update(promoCode)
-    .set({ redeemedBy: userId })
-    .where(eq(promoCode.redeemedFamilyId, redeemedInto));
+  if (!store) return;
+  const { tx, redeemed, welcomeGrantEntryId } = store;
+  store.redeemed = undefined;
+  store.welcomeGrantEntryId = undefined;
+  if (redeemed) {
+    await tx
+      .update(creditEntry)
+      .set({ memberId: userId })
+      .where(eq(creditEntry.id, redeemed.entryId));
+    await tx
+      .update(promoCode)
+      .set({ redeemedBy: userId })
+      .where(eq(promoCode.id, redeemed.promoCodeId));
+  }
+  if (welcomeGrantEntryId) {
+    await tx
+      .update(creditEntry)
+      .set({ memberId: userId })
+      .where(eq(creditEntry.id, welcomeGrantEntryId));
+  }
 }
 
 /** Better Auth reports a thrown ApiException as a 500; this keeps its status and stable code. */
@@ -173,12 +183,11 @@ async function createFamily(
       );
     // Only failures spend the budget: a good code refunds its charge.
     const refund = policy.reserveIp(request.ip);
-    await redeemPromoCode(store.tx, {
+    store.redeemed = await redeemPromoCode(store.tx, {
       code,
       familyId,
       redeemer: { name: newUser.name, email: newUser.email },
     });
-    store.redeemedInto = familyId;
     refund();
   }
   return {
@@ -226,30 +235,34 @@ async function joinFamily(
   if (target.inviteCodeExpiresAt.getTime() <= Date.now()) {
     throw new ApiException(410, 'family.invite_code_expired');
   }
+  // The Invite Code is good: it was not a failed guess, so a bad Promo Code below must not also spend this budget.
+  refundInvite();
 
   const welcomeGrant = !policy.requiresPromoCode;
   if (welcomeGrant) {
     // Kind 'grant', not 'welcome_grant': `credit_entry_welcome_grant_idx` allows one per Family and
     // the joined Family has its own. `user.welcome_grant_at` is what keeps it to once per Member.
-    await tx.insert(creditEntry).values({
-      familyId: target.id,
-      kind: 'grant',
-      reason: 'Welcome Grant',
-      amount: WELCOME_GRANT_CREDITS,
-    });
+    const [grant] = await tx
+      .insert(creditEntry)
+      .values({
+        familyId: target.id,
+        kind: 'grant',
+        reason: WELCOME_GRANT_REASON,
+        amount: WELCOME_GRANT_CREDITS,
+      })
+      .returning({ id: creditEntry.id });
+    store.welcomeGrantEntryId = grant.id;
   }
   const promo = request.promoCode?.trim();
   if (promo) {
     const refundPromo = policy.reserveIp(request.ip);
-    await redeemPromoCode(tx, {
+    store.redeemed = await redeemPromoCode(tx, {
       code: promo,
       familyId: target.id,
       redeemer: { name: newUser.name, email: newUser.email },
     });
-    store.redeemedInto = target.id;
     refundPromo();
   }
-  refundInvite();
   return {
     familyId: target.id,
     familyRole: 'member',

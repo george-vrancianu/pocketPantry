@@ -75,7 +75,13 @@ export function useSignUpForm() {
   const failureCode = failure instanceof ApiError ? failure.code : '';
   const onPromoField = failureCode.startsWith('promo_code.');
   const onInviteField = mode === 'join' && failureCode.startsWith('family.');
-  const message = failure ? translateApiError(t, failure) : null;
+  // The generic copy points to the Family tab, which does not exist yet at signup: point to the toggle.
+  const message =
+    failureCode === 'promo_code.is_invite_code'
+      ? t('signUp:promoCode.isInviteCode')
+      : failure
+        ? translateApiError(t, failure)
+        : null;
 
   return {
     submit,

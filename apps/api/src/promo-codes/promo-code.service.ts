@@ -128,7 +128,11 @@ export class PromoCodeService {
         await lockFamilyCredits(tx, peeked);
         const familyId = await familyOf();
         if (familyId !== peeked) return null;
-        const credits = await redeemPromoCode(tx, { code, familyId, memberId });
+        const { credits } = await redeemPromoCode(tx, {
+          code,
+          familyId,
+          memberId,
+        });
         return { credits, balance: await familyBalance(tx, familyId) };
       });
       if (done) return done;

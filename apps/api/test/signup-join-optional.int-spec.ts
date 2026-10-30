@@ -2,7 +2,8 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { family } from '../src/database/schema';
+import { creditEntry, family } from '../src/database/schema';
+import request from 'supertest';
 import { createTestApp } from './support/create-test-app';
 import {
   familyCount,
@@ -12,6 +13,7 @@ import {
   newPromoCode,
   promoRow,
   rawSignUp,
+  sessionCookie,
 } from './support/signup-spec-helpers';
 
 describe('Join a Family at signup, SIGNUP_REQUIRES_PROMO_CODE off (integration)', () => {
@@ -95,5 +97,56 @@ describe('Join a Family at signup, SIGNUP_REQUIRES_PROMO_CODE off (integration)'
     expect((await membersOf(app, target.familyId)).length).toBe(1);
     const left = await footprint(app, target.owner.email);
     expect(left.entries).toHaveLength(1);
+  });
+
+  it("links only the joiner's own code and entry, never other Members' in that Family", async () => {
+    const db = app.get<Database>(DATABASE);
+    const ownerCode = await newPromoCode(app, 40);
+    const { email: ownerEmail } = await rawSignUp(app, {
+      promoCode: ownerCode,
+    });
+    const owner = await footprint(app, ownerEmail);
+    const familyId = owner.member.familyId;
+    // The entry of a Member who was deleted since: no Member to name.
+    await db.insert(creditEntry).values({
+      familyId,
+      kind: 'promo_code',
+      amount: 7,
+    });
+    const code = await newPromoCode(app, 25);
+    const { res, email } = await rawSignUp(app, {
+      joinInviteCode: owner.families[0].inviteCode,
+      promoCode: code,
+    });
+    expect(res.status).toBe(200);
+    const joiner = (await footprint(app, email)).member;
+    expect((await promoRow(app, ownerCode)).redeemedBy).toBe(owner.member.id);
+    expect((await promoRow(app, code)).redeemedBy).toBe(joiner.id);
+    const promoEntries = (await footprint(app, email)).entries.filter(
+      (e) => e.kind === 'promo_code',
+    );
+    const by = (amount: number) =>
+      promoEntries.find((e) => e.amount === amount)?.memberId;
+    expect(by(40)).toBe(owner.member.id);
+    expect(by(7)).toBeNull();
+    expect(by(25)).toBe(joiner.id);
+  });
+
+  it("shows a joiner's Welcome Grant as a Welcome Grant in the history, with no reason text", async () => {
+    const target = await familyToJoin(app);
+    const { res } = await rawSignUp(app, {
+      joinInviteCode: target.inviteCode,
+    });
+    const history = await request(app.getHttpServer())
+      .get('/api/credits')
+      .set('cookie', sessionCookie(res));
+    expect(history.status).toBe(200);
+    const grants = (
+      history.body as { history: { kind: string; reason: string | null }[] }
+    ).history.filter((e) => e.kind === 'welcome_grant' || e.kind === 'grant');
+    expect(grants).toEqual([
+      expect.objectContaining({ kind: 'welcome_grant', reason: null }),
+      expect.objectContaining({ kind: 'welcome_grant', reason: null }),
+    ]);
   });
 });

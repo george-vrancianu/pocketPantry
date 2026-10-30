@@ -14,7 +14,8 @@
     "label": "Promo Code",
     "requiredHint": "You need a Promo Code to sign up.",
     "optionalLabel": "Have a Promo Code?",
-    "optionalHint": "Optional. Its Credits are added on top of your Welcome Grant."
+    "optionalHint": "Optional. Its Credits are added on top of your Welcome Grant.",
+    "isInviteCode": "That looks like an Invite Code. Choose Join an existing Family and enter it there."
   },
   "mode": {
     "label": "What do you want to do?",

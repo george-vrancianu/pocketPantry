@@ -706,6 +706,10 @@ export const creditEntry = pgTable(
     readKind: text('read_kind'),
     // For a grant: why it was given.
     reason: text('reason'),
+    // For a Promo Code redemption: the code redeemed. Never shown in the history.
+    promoCodeId: uuid('promo_code_id').references(() => promoCode.id, {
+      onDelete: 'set null',
+    }),
     amount: integer('amount').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
@@ -713,10 +717,11 @@ export const creditEntry = pgTable(
   },
   (table) => [
     index('credit_entry_family_id_idx').on(table.familyId, table.createdAt),
-    // A 0-Credit Promo Code still writes its entry, so the history shows it.
+    // A 0-Credit Promo Code still writes its entry, so the history shows it. The `::text` keeps Postgres from
+    // parsing the literal as the enum: the migration adds that value in the same transaction (see 0052).
     check(
       'credit_entry_amount_not_zero',
-      sql`${table.amount} <> 0 or ${table.kind} = 'promo_code'`,
+      sql`${table.amount} <> 0 or ${table.kind}::text = 'promo_code'`,
     ),
     // A Family is given one Welcome Grant, ever: the rollout is safe to repeat.
     uniqueIndex('credit_entry_welcome_grant_idx')
