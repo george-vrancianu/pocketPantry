@@ -60,6 +60,14 @@ export type PlateRecipeRead = RecipeReadBase & {
   title: string;
   /** The Plate token of the Scan; the request spends it. */
   token: string;
+  /**
+   * The refusal codes (`ApiError.code`) the server answers with that send the read back to where it
+   * came from instead of into the strip: the holder drops the read and calls `onReturned` with the error.
+   * The refused pick stays on the Plate card (ADR 0035). Waiting reads behind a Credits refusal are still held.
+   */
+  returnOn?: readonly string[];
+  /** Called once the read is dropped for a code in `returnOn`; puts the card back with the refusal. */
+  onReturned?: (error: ApiError) => void;
 };
 
 /** A read in the holder. A new kind joins this union (see `startRead`). */
@@ -229,18 +237,48 @@ export function createRecipeReads() {
           );
           return;
         }
-        if (isBudgetRefusal(error)) {
+        // A plate read goes back to its card, never to the strip, for a code it is returned on.
+        const returnsTo = (r: RecipeRead): r is PlateRecipeRead =>
+          r.kind === 'plate' &&
+          error instanceof ApiError &&
+          !!r.returnOn?.includes(error.code);
+        if (returnsTo(read)) {
+          // Not a row: the Member picks again from where the read came from. Only the Credits hold the
+          // reads waiting behind it (a plate read waiting among them is returned too).
+          const returned = state.reads.filter(
+            (r) =>
+              r.id === read.id ||
+              (isOutOfCredits(error) && r.status === 'waiting' && returnsTo(r)),
+          ) as PlateRecipeRead[];
+          set(
+            state.reads
+              .filter((r) => !returned.includes(r as PlateRecipeRead))
+              .map((r) =>
+                isOutOfCredits(error) && r.status === 'waiting'
+                  ? { ...r, status: 'capped', error }
+                  : r,
+              ),
+          );
+          for (const r of returned) r.onReturned?.(error as ApiError);
+        } else if (isBudgetRefusal(error)) {
           // The Credits refuse every read from here; a kind's own cap (the Link Cap) refuses only that
-          // kind. Those waiting behind the refusal are held with it.
+          // kind. Those waiting behind the refusal are held with it, except a plate read that is
+          // returned to its card on this code.
           const holds = (r: RecipeRead) =>
             isOutOfCredits(error) || r.kind === read.kind;
+          const returned = state.reads.filter(
+            (r) => r.status === 'waiting' && holds(r) && returnsTo(r),
+          ) as PlateRecipeRead[];
           set(
-            state.reads.map((r) =>
-              r.id === read.id || (r.status === 'waiting' && holds(r))
-                ? { ...r, status: 'capped', error }
-                : r,
-            ),
+            state.reads
+              .filter((r) => !returned.includes(r as PlateRecipeRead))
+              .map((r) =>
+                r.id === read.id || (r.status === 'waiting' && holds(r))
+                  ? { ...r, status: 'capped', error }
+                  : r,
+              ),
           );
+          for (const r of returned) r.onReturned?.(error as ApiError);
         } else {
           patch(read.id, { status: 'failed', error });
         }

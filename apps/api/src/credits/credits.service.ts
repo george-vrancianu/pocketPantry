@@ -103,7 +103,8 @@ export class CreditsService {
         | 'CREDIT_PRICE_ASSISTANT'
         | 'CREDIT_PRICE_LINK_PAGE'
         | 'CREDIT_PRICE_LINK_TEXT'
-        | 'CREDIT_PRICE_GUIDANCE',
+        | 'CREDIT_PRICE_GUIDANCE'
+        | 'CREDIT_PRICE_PLATE_RECIPE',
     ): number => this.config.get(setting, { infer: true });
     return {
       scan: price('CREDIT_PRICE_SCAN'),
@@ -112,6 +113,7 @@ export class CreditsService {
       'link-page': price('CREDIT_PRICE_LINK_PAGE'),
       'link-text': price('CREDIT_PRICE_LINK_TEXT'),
       guidance: price('CREDIT_PRICE_GUIDANCE'),
+      'plate-recipe': price('CREDIT_PRICE_PLATE_RECIPE'),
     };
   }
 

@@ -499,7 +499,7 @@ describe('Usage Records (integration)', () => {
     expect((balance.body as { balance: number }).balance).toBe(100);
   });
 
-  it('writes one row per Plate Scan step, the writing step recorded with the Member but not charged', async () => {
+  it('writes one row per Plate Scan step, the writing step attributed to its own charge', async () => {
     const ana = await member();
     answers = [
       { data: { matches: [{ title: 'Pancakes', confidence: 0.7 }] }, usage },
@@ -539,18 +539,19 @@ describe('Usage Records (integration)', () => {
     }).expect(201);
     const rows = await rowsOf(ana.id);
     expect(rows).toHaveLength(2);
+    // The photo is attributed to the Scan charge, the writing step to its own charge.
+    expect(rows.map((row) => row.kind)).toEqual(['scan', 'plate-recipe']);
     for (const row of rows) {
       expect(row).toMatchObject({
-        kind: 'scan',
         memberId: ana.id,
         familyId: ana.familyId,
         success: true,
       });
     }
-    // The dish step is part of the one Plate Scan price.
+    // The written Recipe is charged on its own (ADR 0035).
     expect(
       (await client(app, ana.cookie, '/api/credits').get('')).body,
-    ).toMatchObject({ balance: balanceAfterPhoto });
+    ).toMatchObject({ balance: balanceAfterPhoto - 1 });
   });
 
   it('keeps the rows, with the Member link cleared, when the Member is deleted', async () => {

@@ -23,7 +23,8 @@ import { found, PaidReadsService } from './paid-reads.service';
 /**
  * Plate Scan for a Member. The photo is the Scan the Scan Cap counts (handed
  * back if the provider fails); writing the picked dish as a Recipe Draft is the
- * second half of the same Scan and is not counted again, but needs the token
+ * second half of the same Scan: not counted by the Scan Cap again, but charged its own Credit
+ * Price (ADR 0035), and it needs the token
  * the photo step signed, so it cannot be called for an arbitrary title, and
  * each token writes one picked dish, once (handed back if no Recipe Draft is made).
  */
@@ -76,41 +77,39 @@ export class PlateScanFlowService {
       throw new ApiException(400, 'scan.plate_token_invalid');
     }
     try {
-      const familyId = await this.settings.familyIdOf(memberId);
-      // The Catalog Tags and this Family's own are the only Tags the read may propose.
-      const allowedTags = await loadAllowedTags(
-        this.database,
-        familyId,
-        locale,
-      );
-      // The picked dish is part of the Plate Scan the photo step already paid for: recorded, not charged.
-      const written = await this.paidReads.unchargedContext(
-        memberId,
-        'scan',
-        () =>
-          this.plate.writeRecipe(
-            input.dishTitle,
-            locale,
-            familyId,
-            allowedTags,
-          ),
-      );
-      const content = draftContentOfPlate(
-        written.answer,
-        { tagIds: written.tagIds, ingredientIds: written.ingredientIds },
-        {
-          ingredientNames: written.ingredientNames,
-          matchThreshold: this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
-            infer: true,
-          }),
-        },
-      );
-      const { id } = await this.drafts.create(memberId, {
-        kind: 'new_recipe',
-        baseRecipeId: null,
-        content,
+      // Charged on its own (ADR 0035): the Credit is held before the provider is called, so a short
+      // balance is refused here (and the catch below hands the token back), and given back if no Recipe Draft is made.
+      return await this.paidReads.read(memberId, 'plate-recipe', async () => {
+        const familyId = await this.settings.familyIdOf(memberId);
+        // The Catalog Tags and this Family's own are the only Tags the read may propose.
+        const allowedTags = await loadAllowedTags(
+          this.database,
+          familyId,
+          locale,
+        );
+        const written = await this.plate.writeRecipe(
+          input.dishTitle,
+          locale,
+          familyId,
+          allowedTags,
+        );
+        const content = draftContentOfPlate(
+          written.answer,
+          { tagIds: written.tagIds, ingredientIds: written.ingredientIds },
+          {
+            ingredientNames: written.ingredientNames,
+            matchThreshold: this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
+              infer: true,
+            }),
+          },
+        );
+        const { id } = await this.drafts.create(memberId, {
+          kind: 'new_recipe',
+          baseRecipeId: null,
+          content,
+        });
+        return found({ recipeDraftId: id });
       });
-      return { recipeDraftId: id };
     } catch (error) {
       // No Recipe Draft exists: the Member can pick again within the attempt limit.
       this.uses.release(signature);

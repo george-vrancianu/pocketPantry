@@ -156,6 +156,7 @@
     "removeCard": "Remove",
     "pickDish": "Pick the dish",
     "dishOption": "{{title}}, {{percent}}% likely",
+    "dishOptionPriced": "{{title}}, {{percent}}% likely, writing it as a Recipe costs {{price}}",
     "banner_one": "All read! {{count}} item.",
     "banner_other": "All read! {{count}} items.",
     "bannerCheck_one": "Check the one I wasn't sure about, then add it.",

@@ -68,6 +68,8 @@ const envSchema = z.object({
   CREDIT_PRICE_LINK_PAGE: z.coerce.number().int().min(0).default(2),
   CREDIT_PRICE_LINK_TEXT: z.coerce.number().int().min(0).default(1),
   CREDIT_PRICE_GUIDANCE: z.coerce.number().int().min(0).default(1),
+  /** Writing a Plate Scan's picked dish as a Recipe (ADR 0035): charged on its own, besides the photo's Scan price. */
+  CREDIT_PRICE_PLATE_RECIPE: z.coerce.number().int().min(0).default(1),
   /** Meal Plans per Family, past ones included. */
   MEAL_PLAN_CAP: z.coerce.number().int().positive().default(10),
   /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */

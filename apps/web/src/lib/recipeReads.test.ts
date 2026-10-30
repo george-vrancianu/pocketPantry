@@ -164,6 +164,132 @@ describe('plate reads', () => {
     holder.clear();
   });
 
+  it('hands a plate read back, not capped, when the server refuses it with a code it is returned on', async () => {
+    answers.push(
+      Response.json(
+        { code: 'credits.insufficient', params: { price: 1, balance: 0 } },
+        { status: 402 },
+      ),
+    );
+    const holder = createRecipeReads();
+    const returned: unknown[] = [];
+    const settled = vi.fn();
+    holder.onReadSettled(settled);
+    holder.add({
+      ...plate('Pancakes'),
+      returnOn: ['credits.insufficient'],
+      onReturned: (error) => returned.push(error),
+    });
+    await vi.waitFor(() => expect(returned).toHaveLength(1));
+    expect(returned[0]).toMatchObject({
+      code: 'credits.insufficient',
+      params: { price: 1, balance: 0 },
+    });
+    expect(holder.getState().reads).toEqual([]);
+    expect(settled).toHaveBeenCalled();
+    holder.clear();
+  });
+
+  it('still caps the reads waiting behind a plate read handed back for Credits', async () => {
+    vi.stubGlobal('fetch', (input: RequestInfo | URL) =>
+      String(input).includes('/plate/recipe')
+        ? Promise.resolve(
+            Response.json(
+              { code: 'credits.insufficient', params: {} },
+              { status: 402 },
+            ),
+          )
+        : new Promise<Response>(() => {}),
+    );
+    const holder = createRecipeReads();
+    const onReturned = vi.fn();
+    holder.add({
+      ...plate('A'),
+      returnOn: ['credits.insufficient'],
+      onReturned,
+    });
+    holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source');
+    holder.submit({ kind: 'link', url: 'https://b.example/x' }, 'source');
+    await vi.waitFor(() => expect(onReturned).toHaveBeenCalled());
+    expect(holder.getState().reads.map((r) => r.status)).toEqual([
+      'reading',
+      'capped',
+    ]);
+    holder.clear();
+  });
+
+  it('hands back a waiting plate read when a link read is refused for Credits', async () => {
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+      const body = String(init?.body ?? '');
+      return String(input).includes('from-link') && body.includes('a.example')
+        ? Promise.resolve(
+            Response.json(
+              { code: 'credits.insufficient', params: { price: 1 } },
+              { status: 402 },
+            ),
+          )
+        : new Promise<Response>(() => {});
+    });
+    const holder = createRecipeReads();
+    const onReturned = vi.fn();
+    holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source');
+    holder.submit({ kind: 'link', url: 'https://b.example/x' }, 'source');
+    holder.add({
+      ...plate('Waiting'),
+      returnOn: ['credits.insufficient'],
+      onReturned,
+    });
+    await vi.waitFor(() => expect(onReturned).toHaveBeenCalled());
+    expect(onReturned.mock.calls[0][0]).toMatchObject({
+      code: 'credits.insufficient',
+    });
+    expect(holder.getState().reads.map((r) => r.kind)).not.toContain('plate');
+    expect(holder.getState().reads.map((r) => r.status)).not.toContain(
+      'waiting',
+    );
+    holder.clear();
+  });
+
+  it('hands back a waiting plate read when another plate read is handed back for Credits', async () => {
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input).includes('/plate/recipe') &&
+      String(init?.body).includes('token-A')
+        ? Promise.resolve(
+            Response.json(
+              { code: 'credits.insufficient', params: {} },
+              { status: 402 },
+            ),
+          )
+        : new Promise<Response>(() => {}),
+    );
+    const holder = createRecipeReads();
+    const returnedA = vi.fn();
+    const returnedB = vi.fn();
+    const returnOn = ['credits.insufficient'];
+    holder.add({ ...plate('A'), returnOn, onReturned: returnedA });
+    holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source');
+    holder.add({ ...plate('B'), returnOn, onReturned: returnedB });
+    await vi.waitFor(() => expect(returnedA).toHaveBeenCalled());
+    expect(returnedB).toHaveBeenCalledTimes(1);
+    expect(holder.getState().reads.map((r) => r.kind)).toEqual(['link']);
+    holder.clear();
+  });
+
+  it('caps a plate read refused for a code it is not returned on', async () => {
+    answers.push(
+      Response.json(
+        { code: 'credits.insufficient', params: {} },
+        { status: 402 },
+      ),
+    );
+    const holder = createRecipeReads();
+    holder.add(plate('Pancakes'));
+    await vi.waitFor(() =>
+      expect(holder.getState().reads[0]?.status).toBe('capped'),
+    );
+    holder.clear();
+  });
+
   it('a Link Cap refusal holds the waiting link reads but not the waiting plate reads', async () => {
     vi.stubGlobal('fetch', (input: RequestInfo | URL) =>
       String(input).includes('from-link')
