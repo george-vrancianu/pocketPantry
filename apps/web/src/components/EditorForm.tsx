@@ -1,8 +1,17 @@
 import { Alert, Button, Stack, Typography } from '@pocket-pantry/ui';
-import { useEffect, useRef, type FormEvent, type ReactNode } from 'react';
+import {
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { ConfirmAction } from './ConfirmAction';
 import { translateApiError } from '../i18n/translateApiError';
+import { EditorSheetContext } from './editorSheetContext';
 
 type Props = {
   heading: string;
@@ -49,27 +58,56 @@ export function EditorForm({
 }: Props) {
   const { t } = useTranslation(['admin', 'errors']);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const formId = useId();
+  // In a sheet the title names the editor and Save / Cancel sit in the sheet's pinned footer.
+  const sheet = useContext(EditorSheetContext);
 
   useEffect(() => {
     headingRef.current?.focus();
   }, []);
+
+  const setSheetTitle = sheet?.setTitle;
+  useEffect(() => {
+    setSheetTitle?.(heading);
+  }, [setSheetTitle, heading]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     onSubmit();
   };
 
+  const actions = (
+    <Stack direction="row" spacing={1}>
+      <Button type="submit" form={formId} disabled={saving || !canSave}>
+        {saving
+          ? (savingLabel ?? t('admin:common.saving'))
+          : (saveLabel ?? t('admin:common.save'))}
+      </Button>
+      <Button variant="ghost" onClick={onCancel}>
+        {t('admin:common.cancel')}
+      </Button>
+    </Stack>
+  );
+
   return (
-    <Stack component="form" spacing={2} onSubmit={submit} noValidate>
-      <Typography
-        ref={headingRef}
-        component="h2"
-        variant="h6"
-        tabIndex={-1}
-        sx={{ outline: 'none' }}
-      >
-        {heading}
-      </Typography>
+    <Stack
+      component="form"
+      id={formId}
+      spacing={2}
+      onSubmit={submit}
+      noValidate
+    >
+      {sheet ? null : (
+        <Typography
+          ref={headingRef}
+          component="h2"
+          variant="h6"
+          tabIndex={-1}
+          sx={{ outline: 'none' }}
+        >
+          {heading}
+        </Typography>
+      )}
       {description ? (
         <Typography variant="body2" color="text.secondary">
           {description}
@@ -77,16 +115,11 @@ export function EditorForm({
       ) : null}
       {error ? <Alert>{errorText ?? translateApiError(t, error)}</Alert> : null}
       {children}
-      <Stack direction="row" spacing={1}>
-        <Button type="submit" disabled={saving || !canSave}>
-          {saving
-            ? (savingLabel ?? t('admin:common.saving'))
-            : (saveLabel ?? t('admin:common.save'))}
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>
-          {t('admin:common.cancel')}
-        </Button>
-      </Stack>
+      {sheet
+        ? sheet.footer
+          ? createPortal(actions, sheet.footer)
+          : null
+        : actions}
       {onDelete ? (
         <ConfirmAction
           variant="ghost"

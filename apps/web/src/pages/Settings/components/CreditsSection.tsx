@@ -19,7 +19,7 @@ import {
   useRedeemPromoCode,
   type CreditHistoryEntry,
 } from '../../../lib/credits';
-import { SectionHeading } from './SectionHeading';
+import { SectionHeading } from '../../../components/SectionHeading';
 
 /** What a history entry was, worded by its kind (a hand grant's reason is shown as entered). */
 function entryTitle(

@@ -30,7 +30,10 @@ import { AllergiesSection } from './AllergiesSection';
 import { AppearanceCard } from './AppearanceCard';
 import { LanguagePreferencePicker } from './LanguagePreferencePicker';
 import { SiriSection } from './SiriSection';
-import { ScopeCaption, SectionHeading } from './SectionHeading';
+import {
+  ScopeCaption,
+  SectionHeading,
+} from '../../../components/SectionHeading';
 
 const initials = (name: string) =>
   name

@@ -129,6 +129,25 @@ describe('SegmentedControl', () => {
     ).toBe('clamp(11px, calc((100cqi - 10px) / 12.66), 13px)');
   });
 
+  it('leaves room for each badge when sizing a dense label, and only then', () => {
+    render(
+      <SegmentedControl
+        label="Kind"
+        options={[
+          { value: 'ingredients', label: 'Ingredients', badge: 7 },
+          { value: 'templates', label: 'Templates', badge: 0 },
+        ]}
+        value="ingredients"
+        onChange={() => undefined}
+        dense
+      />,
+    );
+    // One badge shown: 25 px more come off the track than the 10 px of gaps and padding.
+    expect(
+      ownRule(screen.getByRole('button', { name: /Templates/ }), 'font-size'),
+    ).toBe('clamp(11px, calc((100cqi - 35px) / 12.66), 13px)');
+  });
+
   it('can be named by a visible caption elsewhere on the page', () => {
     render(
       <>
@@ -166,5 +185,31 @@ describe('SegmentedControl', () => {
     expect(freezer.textContent).toBe('Congelator');
     expect(freezer.getAttribute('aria-pressed')).toBe('true');
     expect(within(freezer).getByTestId('snowflake')).toBeTruthy();
+  });
+
+  it('adds the badge count to the accessible name, with the label unchanged, and hides it at 0', () => {
+    render(
+      <SegmentedControl
+        label="Sections"
+        value="a"
+        onChange={() => {}}
+        options={[
+          {
+            value: 'a',
+            label: 'To review',
+            badge: 11,
+            badgeLabel: '11 waiting',
+          },
+          { value: 'b', label: 'Catalog', badge: 3 },
+          { value: 'c', label: 'Codes', badge: 0 },
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: 'To review, 11 waiting' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Catalog, 3' })).toBeTruthy();
+    const codes = screen.getByRole('button', { name: 'Codes' });
+    expect(codes.textContent).toBe('Codes');
   });
 });

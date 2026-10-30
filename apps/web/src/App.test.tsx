@@ -49,7 +49,7 @@ describe('App shell', () => {
         }),
     });
     vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(<App />, { route: '/admin' });
+    renderWithProviders(<App />, { route: '/admin/ingredients' });
     expect(
       await screen.findByRole('button', { name: 'New Ingredient' }),
     ).toBeInTheDocument();

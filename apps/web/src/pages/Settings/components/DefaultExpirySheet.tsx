@@ -30,7 +30,7 @@ import {
   type CategoryRef,
 } from '../defaultExpiry';
 import { CategoryPicker } from './CategoryPicker';
-import { SheetHeader } from './SheetHeader';
+import { SheetHeader } from '../../../components/SheetHeader';
 
 /** Where the sheet opens: the pick list, or straight into an override (edit mode). */
 export type SheetStart =

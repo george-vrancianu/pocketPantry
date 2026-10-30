@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
 import { renderWithProviders, stubApi } from '../../../test/render';
+import { expectFocusInDialog, resultNotice } from './reviewTestUtils';
 import { UnmatchedQueue } from './UnmatchedQueue';
 
 // Spec: #276, ADR 0011. Merge sits on
@@ -97,10 +98,14 @@ async function open(user: ReturnType<typeof userEvent.setup>, kind: string) {
   await user.click(await screen.findByRole('button', { name: kind }));
 }
 
+/** Opens the Kombucha group's sheet and goes on to the merge picker. */
+async function openMerge(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: /^Kombucha/ }));
+  await user.click(screen.getByRole('button', { name: 'Merge into…' }));
+}
+
 async function pickShared(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(
-    await screen.findByRole('button', { name: 'Merge Kombucha' }),
-  );
+  await openMerge(user);
   await user.type(
     screen.getByRole('combobox', { name: 'Search ingredients' }),
     'komb',
@@ -115,31 +120,30 @@ describe('UnmatchedQueue: merge a Family ingredient', () => {
     vi.unstubAllGlobals();
   });
 
-  it('puts a Merge button next to Promote on every row', async () => {
+  it('puts Merge into… next to Promote to Catalog in every group sheet', async () => {
     stub();
-    await open(userEvent.setup(), 'Family ingredients');
+    const user = userEvent.setup();
+    await open(user, 'Family');
 
-    const row = (await screen.findAllByRole('listitem'))[0];
+    await user.click(await screen.findByRole('button', { name: /^Kombucha/ }));
+
+    expect(screen.getByRole('button', { name: 'Merge into…' })).toBeVisible();
     expect(
-      within(row).getByRole('button', { name: 'Merge Kombucha' }),
-    ).toBeVisible();
-    expect(
-      within(row).getByRole('button', { name: 'Promote Kombucha' }),
+      screen.getByRole('button', { name: 'Promote to Catalog' }),
     ).toBeVisible();
   });
 
   it('opens a shared-catalog picker with Merge disabled until an ingredient is picked', async () => {
     const calls = stub();
     const user = userEvent.setup();
-    await open(user, 'Family ingredients');
+    await open(user, 'Family');
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Merge Kombucha' }),
-    );
+    await openMerge(user);
 
     expect(
       screen.getByRole('heading', { name: 'Merge Kombucha' }),
-    ).toHaveFocus();
+    ).toBeVisible();
+    await expectFocusInDialog('Merge Kombucha');
     expect(screen.getByRole('button', { name: 'Merge' })).toBeDisabled();
     await user.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
@@ -172,7 +176,7 @@ describe('UnmatchedQueue: merge a Family ingredient', () => {
       },
     });
     const user = userEvent.setup();
-    await open(user, 'Family ingredients');
+    await open(user, 'Family');
     await pickShared(user);
 
     await user.click(screen.getByRole('button', { name: 'Merge' }));
@@ -183,25 +187,23 @@ describe('UnmatchedQueue: merge a Family ingredient', () => {
           ?.body,
       ).toEqual({ ingredientId: 'c1', targetIngredientId: 'i1' }),
     );
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      /Merged Kombucha into Kombucha drink/,
-    );
+    expect(
+      await resultNotice(/Merged Kombucha into Kombucha drink/),
+    ).toBeVisible();
     expect(await screen.findByText('Tempeh')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Merge Kombucha' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Kombucha/ })).toBeNull();
   });
 
   it('goes back to the list on Cancel with focus on the row, without merging', async () => {
     const calls = stub();
     const user = userEvent.setup();
-    await open(user, 'Family ingredients');
+    await open(user, 'Family');
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Merge Kombucha' }),
-    );
+    await openMerge(user);
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(
-      await screen.findByRole('button', { name: 'Merge Kombucha' }),
+      await screen.findByRole('button', { name: /^Kombucha/ }),
     ).toHaveFocus();
     expect(calls.map((c) => c.key)).not.toContain(
       'POST /api/admin/family-ingredients/merge',
@@ -217,7 +219,7 @@ describe('UnmatchedQueue: merge a Family ingredient', () => {
         ),
     });
     const user = userEvent.setup();
-    await open(user, 'Family ingredients');
+    await open(user, 'Family');
     await pickShared(user);
 
     await user.click(screen.getByRole('button', { name: 'Merge' }));
@@ -234,22 +236,28 @@ describe('UnmatchedQueue: Synonym candidates', () => {
     vi.unstubAllGlobals();
   });
 
-  it('is a third kind that asks for the candidates lazily and lists name, Ingredient and Family count', async () => {
-    const calls = stub();
+  it('is a third kind that asks for the candidates up front, for its count, and lists name, Ingredient and Family count', async () => {
+    const calls = stub({
+      'GET /api/admin/family-synonyms': () =>
+        Response.json({
+          candidates: [candidate, candidate2],
+          nextCursor: null,
+          total: 2,
+        }),
+    });
     renderWithProviders(<UnmatchedQueue catalog={catalog} />);
-    await screen.findByText('Nothing to review.');
-    expect(calls.map((c) => c.key)).not.toContain(
-      'GET /api/admin/family-synonyms',
-    );
+    expect(
+      await screen.findByRole('button', { name: 'Names, 2' }),
+    ).toBeVisible();
+    expect(calls.map((c) => c.key)).toContain('GET /api/admin/family-synonyms');
 
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: 'Synonym candidates' }));
+      .click(screen.getByRole('button', { name: /^Names/ }));
 
     const items = await screen.findAllByRole('listitem');
     expect(items).toHaveLength(2);
-    expect(within(items[0]).getByText('Cilantro')).toBeVisible();
-    expect(within(items[0]).getByText(/Coriander/)).toBeVisible();
+    expect(within(items[0]).getByText('“Cilantro” → Coriander')).toBeVisible();
     expect(within(items[0]).getByText(/4 families/)).toBeVisible();
     expect(within(items[1]).getByText(/1 family/)).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Dismissed' })).toBeNull();
@@ -260,7 +268,7 @@ describe('UnmatchedQueue: Synonym candidates', () => {
       'GET /api/admin/family-synonyms': () =>
         Response.json({ candidates: [], nextCursor: null }),
     });
-    await open(userEvent.setup(), 'Synonym candidates');
+    await open(userEvent.setup(), 'Names');
 
     expect(
       await screen.findByText('No Synonym candidates to review.'),
@@ -284,17 +292,16 @@ describe('UnmatchedQueue: Synonym candidates', () => {
       },
     });
     const user = userEvent.setup();
-    await open(user, 'Synonym candidates');
+    await open(user, 'Names');
 
     await user.click(
-      await screen.findByRole('button', {
-        name: 'Add Cilantro as shared synonym',
-      }),
+      await screen.findByRole('button', { name: /^“Cilantro” → Coriander/ }),
     );
 
     expect(
       screen.getByRole('heading', { name: 'Add Cilantro as a shared synonym' }),
-    ).toHaveFocus();
+    ).toBeVisible();
+    await expectFocusInDialog('Add Cilantro as a shared synonym');
     const picker = screen.getByLabelText('Synonym language');
     expect(
       within(picker)
@@ -316,30 +323,26 @@ describe('UnmatchedQueue: Synonym candidates', () => {
         locale: 'ro',
       }),
     );
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      /Added Cilantro as a shared synonym of Coriander/,
-    );
-    expect(await screen.findByText('Rocket')).toBeVisible();
-    expect(screen.queryByText('Cilantro')).toBeNull();
+    expect(
+      await resultNotice(/Added Cilantro as a shared synonym of Coriander/),
+    ).toBeVisible();
+    expect(await screen.findByText('“Rocket” → Arugula')).toBeVisible();
+    expect(screen.queryByText('“Cilantro” → Coriander')).toBeNull();
   });
 
   it('defaults to English and goes back on Cancel without adding anything', async () => {
     const calls = stub();
     const user = userEvent.setup();
-    await open(user, 'Synonym candidates');
+    await open(user, 'Names');
 
     await user.click(
-      await screen.findByRole('button', {
-        name: 'Add Cilantro as shared synonym',
-      }),
+      await screen.findByRole('button', { name: /^“Cilantro” → Coriander/ }),
     );
     expect(screen.getByLabelText('Synonym language')).toHaveValue('en');
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(
-      await screen.findByRole('button', {
-        name: 'Add Cilantro as shared synonym',
-      }),
+      await screen.findByRole('button', { name: /^“Cilantro” → Coriander/ }),
     ).toHaveFocus();
     expect(calls.map((c) => c.key)).not.toContain(
       'POST /api/admin/family-synonyms/promote',
@@ -358,12 +361,10 @@ describe('UnmatchedQueue: Synonym candidates', () => {
         ),
     });
     const user = userEvent.setup();
-    await open(user, 'Synonym candidates');
+    await open(user, 'Names');
 
     await user.click(
-      await screen.findByRole('button', {
-        name: 'Add Cilantro as shared synonym',
-      }),
+      await screen.findByRole('button', { name: /^“Cilantro” → Coriander/ }),
     );
     await user.click(
       screen.getByRole('button', { name: 'Add as shared synonym' }),

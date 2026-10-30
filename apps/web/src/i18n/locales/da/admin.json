@@ -1,12 +1,10 @@
 {
   "title": "Admin",
-  "sections": "Katalogets sektioner",
+  "sections": "Admin-sektioner",
   "tabs": {
-    "ingredients": "Ingredienser",
-    "categories": "Kategorier",
-    "unmatched": "Umatchede",
-    "recipes": "Opskrifter",
-    "promoCodes": "Promokoder"
+    "review": "Til gennemsyn",
+    "catalog": "Katalog",
+    "codes": "Koder"
   },
   "locations": {
     "none": "Arvet"
@@ -17,6 +15,7 @@
     "da": "Dansk"
   },
   "common": {
+    "close": "Luk",
     "save": "Gem",
     "saving": "Gemmer…",
     "delete": "Slet",
@@ -42,7 +41,8 @@
       "saved": "Allergenerne er gemt.",
       "reviewTitle": "Skal gennemgås",
       "reviewHint": "Overtaget fra en families ingrediens. Tjek mærkerne, og gem for at bekræfte dem."
-    }
+    },
+    "unchecked": "Ikke tjekket"
   },
   "aisle": {
     "title": "Afdelinger",
@@ -66,7 +66,9 @@
     "defaultLocation": "Standardplacering",
     "expiryInvalid": "Angiv et helt antal dage fra 0 til {{max}}, eller lad feltet stå tomt for at arve.",
     "otherLeafNote": "Det er overkategoriens underkategori Andet. Den modtager umatchede partier og kan derfor ikke flyttes eller slettes.",
-    "leafCount": "Underkategorier: {{count}}"
+    "leafCount": "Underkategorier: {{count}}",
+    "expiresIn": "Udløber om {{days}} d",
+    "usesDefaults": "Bruger {{parent}}s standardværdier"
   },
   "translations": {
     "title": "Oversættelser og synonymer",
@@ -89,8 +91,6 @@
     "title": "Umatchede navne",
     "loadMore": "Indlæs flere",
     "restore": "Gendan",
-    "restoreName": "Gendan {{name}}",
-    "empty": "Intet at gennemgå.",
     "rows_one": "{{count}} række",
     "rows_other": "{{count}} rækker",
     "sources": {
@@ -114,7 +114,6 @@
     "picked": "Valgt: {{name}}",
     "synonymLocale": "Synonymets sprog",
     "synonymHint": "\"{{name}}\" tilføjes som synonym på dette sprog, så det matcher næste gang.",
-    "confirm": "Afklar",
     "resolving": "Afklarer…",
     "resolved_one": "{{count}} række er knyttet til {{name}}.",
     "resolved_other": "{{count}} rækker er knyttet til {{name}}.",
@@ -361,8 +360,6 @@
   },
   "familyIngredients": {
     "kindLabel": "Vis",
-    "kindUnmatched": "Umatchede navne",
-    "kindFamily": "Familieingredienser",
     "empty": "Ingen familieingredienser at gennemgå.",
     "families_one": "{{count}} familie",
     "families_other": "{{count}} familier",
@@ -374,7 +371,6 @@
     "promoteHint": "De andre familiers kopier flettes ind i den.",
     "promoted_one": "{{name}} er gjort fælles. {{count}} anden kopi er flettet ind.",
     "promoted_other": "{{name}} er gjort fælles. {{count}} andre kopier er flettet ind.",
-    "kindSynonyms": "Synonymkandidater",
     "merge": "Flet sammen",
     "mergeName": "Flet {{name}} sammen",
     "merging": "Fletter sammen…",
@@ -383,10 +379,8 @@
   },
   "familySynonyms": {
     "empty": "Ingen synonymkandidater at gennemgå.",
-    "of": "Synonym for {{ingredient}}",
     "add": "Tilføj som fælles synonym",
     "adding": "Tilføjer…",
-    "addName": "Tilføj {{name}} som fælles synonym",
     "addTitle": "Tilføj {{name}} som fælles synonym",
     "addHint": "Alle familier finder {{ingredient}} med dette navn. Familiernes egne kopier fjernes.",
     "language": "Synonymets sprog",
@@ -463,5 +457,58 @@
     "revokeTitle": "Tilbagekald {{code}}?",
     "revokeBody": "Koden holder op med at virke. Det kan ikke fortrydes.",
     "revokeConfirm": "Tilbagekald"
+  },
+  "index": {
+    "ingredientsGroup": "Ingredienser",
+    "recipesGroup": "Opskrifter",
+    "ingredients": "Ingredienser",
+    "ingredientsMeta_one": "{{count}} · {{unchecked}} ikke tjekket",
+    "ingredientsMeta_other": "{{count}} · {{unchecked}} ikke tjekket",
+    "allergens": "Allergener",
+    "aisles": "Gange",
+    "aislesMeta_one": "{{count}} i butiksrækkefølge",
+    "aislesMeta_other": "{{count}} i butiksrækkefølge",
+    "categories": "Kategorier",
+    "categoriesMeta": "{{parents}} · {{leaves}}",
+    "categoriesParents_one": "{{count}} hoved",
+    "categoriesParents_other": "{{count}} hoved",
+    "categoriesLeaves_one": "{{count}} under",
+    "categoriesLeaves_other": "{{count}} under",
+    "recipes": "Katalogopskrifter",
+    "recipesMeta": "{{count}} · {{archived}} arkiveret",
+    "tags": "Tags",
+    "tagsMeta": "{{count}} i {{groups}} grupper",
+    "eatingMoments": "Spisetidspunkter",
+    "back": "Katalog"
+  },
+  "review": {
+    "title": "Venter på gennemsyn",
+    "kinds": {
+      "unmatched": "Umatchede",
+      "family": "Familie",
+      "synonyms": "Navne"
+    },
+    "hint": {
+      "unmatched": "Navne, som ingen ingrediens matchede. Tryk for at koble eller oprette en; stryg til venstre for at lægge den til side.",
+      "family": "Ingredienser, som en familie har tilføjet. Forfrem en for at dele den med alle.",
+      "synonyms": "Navne, som en familie bruger for en katalogingrediens. Tilføj et som synonym for alle."
+    },
+    "rowMeta": "{{rows}} · {{sources}}",
+    "dismissed": "„{{name}}“ lagt til side",
+    "swipeHint": "Stryg til venstre for at lægge til side, hold nede for at åbne",
+    "dismissQuestion": "Læg „{{name}}“ til side?",
+    "emptyTitle": "Intet at gennemse",
+    "empty": "Alle navne fra scanninger og indtastning fandt deres ingrediens.",
+    "link_one": "Kobl {{count}} række",
+    "link_other": "Kobl {{count}} rækker",
+    "waiting_one": "{{count}} venter",
+    "waiting_other": "{{count}} venter",
+    "otherFamilies_one": "+{{count}} familie",
+    "otherFamilies_other": "+{{count}} familier",
+    "synonymTitle": "„{{name}}“ → {{ingredient}}",
+    "back": "Tilbage",
+    "promoteAction": "Forfrem til katalog",
+    "mergeAction": "Flet med…",
+    "emptyDismissed": "Ingen navne lagt til side."
   }
 }

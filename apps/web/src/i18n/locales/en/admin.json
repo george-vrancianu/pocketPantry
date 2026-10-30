@@ -1,12 +1,10 @@
 {
   "title": "Admin",
-  "sections": "Catalog sections",
+  "sections": "Admin sections",
   "tabs": {
-    "ingredients": "Ingredients",
-    "categories": "Categories",
-    "unmatched": "Unmatched",
-    "recipes": "Recipes",
-    "promoCodes": "Promo Codes"
+    "review": "To review",
+    "catalog": "Catalog",
+    "codes": "Codes"
   },
   "locations": {
     "none": "Inherit"
@@ -17,6 +15,7 @@
     "da": "Danish"
   },
   "common": {
+    "close": "Close",
     "save": "Save",
     "saving": "Saving…",
     "delete": "Delete",
@@ -42,7 +41,8 @@
       "saved": "Allergens saved.",
       "reviewTitle": "Needs review",
       "reviewHint": "Carried over from a Family’s Ingredient. Check the tags and save to confirm them."
-    }
+    },
+    "unchecked": "Unchecked"
   },
   "aisle": {
     "title": "Aisles",
@@ -66,7 +66,9 @@
     "defaultLocation": "Default location",
     "expiryInvalid": "Enter a whole number of days from 0 to {{max}}, or leave blank to inherit.",
     "otherLeafNote": "This is the Other Leaf Category of its Parent. It receives Unmatched Batches, so it cannot be moved or deleted.",
-    "leafCount": "Leaf Categories: {{count}}"
+    "leafCount": "Leaf Categories: {{count}}",
+    "expiresIn": "Expires in {{days}} d",
+    "usesDefaults": "Uses {{parent}}’s defaults"
   },
   "translations": {
     "title": "Translations and Synonyms",
@@ -89,8 +91,6 @@
     "title": "Unmatched names",
     "loadMore": "Load more",
     "restore": "Restore",
-    "restoreName": "Restore {{name}}",
-    "empty": "Nothing to review.",
     "rows_one": "{{count}} row",
     "rows_other": "{{count}} rows",
     "sources": {
@@ -114,7 +114,6 @@
     "picked": "Selected: {{name}}",
     "synonymLocale": "Synonym language",
     "synonymHint": "\"{{name}}\" is added as a Synonym in this language, so it matches next time.",
-    "confirm": "Resolve",
     "resolving": "Resolving…",
     "resolved_one": "Linked {{count}} row to {{name}}.",
     "resolved_other": "Linked {{count}} rows to {{name}}.",
@@ -361,8 +360,6 @@
   },
   "familyIngredients": {
     "kindLabel": "Show",
-    "kindUnmatched": "Unmatched names",
-    "kindFamily": "Family ingredients",
     "empty": "No Family ingredients to review.",
     "families_one": "{{count}} family",
     "families_other": "{{count}} families",
@@ -374,7 +371,6 @@
     "promoteHint": "The other families' copies are merged into it.",
     "promoted_one": "Promoted {{name}}. Merged {{count}} other copy.",
     "promoted_other": "Promoted {{name}}. Merged {{count}} other copies.",
-    "kindSynonyms": "Synonym candidates",
     "merge": "Merge",
     "mergeName": "Merge {{name}}",
     "merging": "Merging…",
@@ -383,10 +379,8 @@
   },
   "familySynonyms": {
     "empty": "No Synonym candidates to review.",
-    "of": "Synonym of {{ingredient}}",
     "add": "Add as shared synonym",
     "adding": "Adding…",
-    "addName": "Add {{name}} as shared synonym",
     "addTitle": "Add {{name}} as a shared synonym",
     "addHint": "Every family will find {{ingredient}} by this name. The families' own copies are removed.",
     "language": "Synonym language",
@@ -463,5 +457,58 @@
     "revokeTitle": "Revoke {{code}}?",
     "revokeBody": "This code will stop working. You cannot undo this.",
     "revokeConfirm": "Revoke"
+  },
+  "index": {
+    "ingredientsGroup": "Ingredients",
+    "recipesGroup": "Recipes",
+    "ingredients": "Ingredients",
+    "ingredientsMeta_one": "{{count}} · {{unchecked}} unchecked",
+    "ingredientsMeta_other": "{{count}} · {{unchecked}} unchecked",
+    "allergens": "Allergens",
+    "aisles": "Aisles",
+    "aislesMeta_one": "{{count}} in shop order",
+    "aislesMeta_other": "{{count}} in shop order",
+    "categories": "Categories",
+    "categoriesMeta": "{{parents}} · {{leaves}}",
+    "categoriesParents_one": "{{count}} parent",
+    "categoriesParents_other": "{{count}} parents",
+    "categoriesLeaves_one": "{{count}} leaf",
+    "categoriesLeaves_other": "{{count}} leaves",
+    "recipes": "Catalog Recipes",
+    "recipesMeta": "{{count}} · {{archived}} archived",
+    "tags": "Tags",
+    "tagsMeta": "{{count}} in {{groups}} Tag Groups",
+    "eatingMoments": "Eating Moments",
+    "back": "Catalog"
+  },
+  "review": {
+    "title": "Waiting for review",
+    "kinds": {
+      "unmatched": "Unmatched",
+      "family": "Family",
+      "synonyms": "Names"
+    },
+    "hint": {
+      "unmatched": "Names no Ingredient matched. Tap to link or create one; swipe left to set aside.",
+      "family": "Ingredients a family added. Promote one to share it with everyone.",
+      "synonyms": "Names a family uses for a Catalog Ingredient. Add one as a Synonym for everyone."
+    },
+    "rowMeta": "{{rows}} · {{sources}}",
+    "dismissed": "Dismissed “{{name}}”",
+    "swipeHint": "Swipe left to set aside, hold to open",
+    "dismissQuestion": "Dismiss “{{name}}”?",
+    "emptyTitle": "Nothing to review",
+    "empty": "Every name from scans and typing found its Ingredient.",
+    "link_one": "Link {{count}} row",
+    "link_other": "Link {{count}} rows",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting",
+    "otherFamilies_one": "+{{count}} family",
+    "otherFamilies_other": "+{{count}} families",
+    "synonymTitle": "“{{name}}” → {{ingredient}}",
+    "back": "Back",
+    "promoteAction": "Promote to Catalog",
+    "mergeAction": "Merge into…",
+    "emptyDismissed": "No names set aside."
   }
 }

@@ -47,6 +47,8 @@ export type FamilyIngredientGroup = {
 };
 
 export type FamilyIngredientsPage = {
+  /** Every group in the queue, not just this page. */
+  total: number;
   groups: FamilyIngredientGroup[];
   nextCursor: string | null;
 };

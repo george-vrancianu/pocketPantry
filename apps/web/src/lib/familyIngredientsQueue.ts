@@ -39,7 +39,12 @@ export type PromoteResult = {
   mergedIngredientIds: string[];
 };
 
-type Page = { groups: FamilyIngredientGroup[]; nextCursor: string | null };
+type Page = {
+  /** Every group in the queue, not just this page. */
+  total: number;
+  groups: FamilyIngredientGroup[];
+  nextCursor: string | null;
+};
 
 /** The queue one page at a time, fetched only while `enabled`. */
 const queueKey = ['admin-family-ingredients'] as const;
@@ -57,13 +62,16 @@ export function useFamilyIngredientsQueue(enabled: boolean) {
       ),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     // Counts move between pages, so a name can repeat: keep its first appearance.
-    select: (data) => [
-      ...new Map(
-        data.pages
-          .flatMap((page) => page.groups)
-          .map((group) => [group.normalizedName, group]),
-      ).values(),
-    ],
+    select: (data) => ({
+      groups: [
+        ...new Map(
+          data.pages
+            .flatMap((page) => page.groups)
+            .map((group) => [group.normalizedName, group]),
+        ).values(),
+      ],
+      total: data.pages.at(-1)?.total ?? 0,
+    }),
   });
 }
 

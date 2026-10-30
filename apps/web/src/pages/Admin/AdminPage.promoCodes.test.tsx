@@ -62,11 +62,9 @@ describe('AdminPage Promo Codes tab', () => {
       ...routes,
     });
     vi.stubGlobal('fetch', api.fetchMock);
-    renderWithProviders(<AdminPage />);
+    renderWithProviders(<AdminPage />, { route: '/admin?tab=codes' });
     const user = userEvent.setup();
-    await user.click(
-      await screen.findByRole('button', { name: 'Promo Codes' }),
-    );
+    await screen.findByRole('button', { name: 'Generate' });
     return { user, api };
   };
 

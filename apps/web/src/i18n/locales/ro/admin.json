@@ -1,12 +1,10 @@
 {
   "title": "Administrare",
-  "sections": "Secțiunile Catalogului",
+  "sections": "Secțiuni de administrare",
   "tabs": {
-    "ingredients": "Ingrediente",
-    "categories": "Categorii",
-    "unmatched": "Nepotrivite",
-    "recipes": "Rețete",
-    "promoCodes": "Coduri promoționale"
+    "review": "De verificat",
+    "catalog": "Catalog",
+    "codes": "Coduri"
   },
   "locations": {
     "none": "Moștenit"
@@ -17,6 +15,7 @@
     "da": "Daneză"
   },
   "common": {
+    "close": "Închide",
     "save": "Salvează",
     "saving": "Se salvează…",
     "delete": "Șterge",
@@ -42,7 +41,8 @@
       "saved": "Alergenii au fost salvați.",
       "reviewTitle": "De verificat",
       "reviewHint": "Preluat de la un ingredient al unei familii. Verifică etichetele și salvează pentru a le confirma."
-    }
+    },
+    "unchecked": "Neverificat"
   },
   "aisle": {
     "title": "Raioane",
@@ -66,7 +66,9 @@
     "defaultLocation": "Locație implicită",
     "expiryInvalid": "Introdu un număr întreg de zile între 0 și {{max}}, sau lasă gol pentru a moșteni.",
     "otherLeafNote": "Aceasta este Categoria frunză Altele a Categoriei părinte. Primește Loturile nepotrivite, deci nu poate fi mutată sau ștearsă.",
-    "leafCount": "Categorii frunză: {{count}}"
+    "leafCount": "Categorii frunză: {{count}}",
+    "expiresIn": "Expiră în {{days}} z",
+    "usesDefaults": "Folosește valorile implicite ale {{parent}}"
   },
   "translations": {
     "title": "Traduceri și Sinonime",
@@ -89,8 +91,6 @@
     "title": "Nume nepotrivite",
     "loadMore": "Încarcă mai multe",
     "restore": "Restaurează",
-    "restoreName": "Restaurează {{name}}",
-    "empty": "Nimic de revizuit.",
     "rows_one": "{{count}} rând",
     "rows_few": "{{count}} rânduri",
     "rows_other": "{{count}} de rânduri",
@@ -115,7 +115,6 @@
     "picked": "Selectat: {{name}}",
     "synonymLocale": "Limba sinonimului",
     "synonymHint": "„{{name}}” este adăugat ca Sinonim în această limbă, ca să se potrivească data viitoare.",
-    "confirm": "Rezolvă",
     "resolving": "Se rezolvă…",
     "resolved_one": "{{count}} rând legat de {{name}}.",
     "resolved_few": "{{count}} rânduri legate de {{name}}.",
@@ -366,8 +365,6 @@
   },
   "familyIngredients": {
     "kindLabel": "Afișează",
-    "kindUnmatched": "Nume nepotrivite",
-    "kindFamily": "Ingrediente de familie",
     "empty": "Nu există ingrediente de familie de revizuit.",
     "families_one": "{{count}} familie",
     "families_few": "{{count}} familii",
@@ -381,7 +378,6 @@
     "promoted_one": "{{name}} a fost promovat. {{count}} altă copie a fost îmbinată.",
     "promoted_few": "{{name}} a fost promovat. {{count}} alte copii au fost îmbinate.",
     "promoted_other": "{{name}} a fost promovat. {{count}} de alte copii au fost îmbinate.",
-    "kindSynonyms": "Sinonime candidate",
     "merge": "Îmbină",
     "mergeName": "Îmbină {{name}}",
     "merging": "Se îmbină…",
@@ -390,10 +386,8 @@
   },
   "familySynonyms": {
     "empty": "Nu există sinonime candidate de revizuit.",
-    "of": "Sinonim pentru {{ingredient}}",
     "add": "Adaugă ca sinonim comun",
     "adding": "Se adaugă…",
-    "addName": "Adaugă {{name}} ca sinonim comun",
     "addTitle": "Adaugă {{name}} ca sinonim comun",
     "addHint": "Toate familiile vor găsi {{ingredient}} după acest nume. Copiile proprii ale familiilor sunt eliminate.",
     "language": "Limba sinonimului",
@@ -473,5 +467,65 @@
     "revokeTitle": "Revoci {{code}}?",
     "revokeBody": "Acest cod nu va mai funcționa. Nu poți anula acțiunea.",
     "revokeConfirm": "Revocă"
+  },
+  "index": {
+    "ingredientsGroup": "Ingrediente",
+    "recipesGroup": "Rețete",
+    "ingredients": "Ingrediente",
+    "ingredientsMeta_one": "{{count}} · {{unchecked}} neverificate",
+    "ingredientsMeta_few": "{{count}} · {{unchecked}} neverificate",
+    "ingredientsMeta_other": "{{count}} · {{unchecked}} neverificate",
+    "allergens": "Alergeni",
+    "aisles": "Raioane",
+    "aislesMeta_one": "{{count}} în ordinea din magazin",
+    "aislesMeta_few": "{{count}} în ordinea din magazin",
+    "aislesMeta_other": "{{count}} în ordinea din magazin",
+    "categories": "Categorii",
+    "categoriesMeta": "{{parents}} · {{leaves}}",
+    "categoriesParents_one": "{{count}} principală",
+    "categoriesParents_few": "{{count}} principale",
+    "categoriesParents_other": "{{count}} de principale",
+    "categoriesLeaves_one": "{{count}} frunză",
+    "categoriesLeaves_few": "{{count}} frunze",
+    "categoriesLeaves_other": "{{count}} de frunze",
+    "recipes": "Rețete din Catalog",
+    "recipesMeta": "{{count}} · {{archived}} arhivate",
+    "tags": "Etichete",
+    "tagsMeta": "{{count}} în {{groups}} grupuri",
+    "eatingMoments": "Momente ale mesei",
+    "back": "Catalog"
+  },
+  "review": {
+    "title": "În așteptarea verificării",
+    "kinds": {
+      "unmatched": "Nepotrivite",
+      "family": "Familie",
+      "synonyms": "Nume"
+    },
+    "hint": {
+      "unmatched": "Nume pentru care nu s-a găsit niciun Ingredient. Atinge ca să legi sau să creezi unul; glisează la stânga ca să-l pui deoparte.",
+      "family": "Ingrediente adăugate de o familie. Promovează unul ca să fie disponibil pentru toți.",
+      "synonyms": "Nume pe care o familie le folosește pentru un Ingredient din Catalog. Adaugă unul ca Sinonim pentru toți."
+    },
+    "rowMeta": "{{rows}} · {{sources}}",
+    "dismissed": "„{{name}}” pus deoparte",
+    "swipeHint": "Glisează la stânga pentru a pune deoparte, ține apăsat pentru a deschide",
+    "dismissQuestion": "Pui deoparte „{{name}}”?",
+    "emptyTitle": "Nimic de verificat",
+    "empty": "Fiecare nume din scanări și din ce s-a tastat și-a găsit Ingredientul.",
+    "link_one": "Leagă {{count}} rând",
+    "link_few": "Leagă {{count}} rânduri",
+    "link_other": "Leagă {{count}} de rânduri",
+    "waiting_one": "{{count}} în așteptare",
+    "waiting_few": "{{count}} în așteptare",
+    "waiting_other": "{{count}} în așteptare",
+    "otherFamilies_one": "+{{count}} familie",
+    "otherFamilies_few": "+{{count}} familii",
+    "otherFamilies_other": "+{{count}} de familii",
+    "synonymTitle": "„{{name}}” → {{ingredient}}",
+    "back": "Înapoi",
+    "promoteAction": "Promovează în Catalog",
+    "mergeAction": "Îmbină cu…",
+    "emptyDismissed": "Niciun nume pus deoparte."
   }
 }

@@ -1,50 +1,61 @@
 import { TextField } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EditorForm } from '../../../components/EditorForm';
 import { LOCALES, type Locale } from '../../../i18n/resources';
 import {
   useAddSharedSynonym,
   type FamilySynonymCandidate,
 } from '../../../lib/familySynonymsQueue';
+import { ReviewSheet } from './ReviewSheet';
 
 type Props = {
   candidate: FamilySynonymCandidate;
+  open: boolean;
+  onClose: () => void;
+  onExited: () => void;
   onDone: () => void;
-  onCancel: () => void;
 };
 
-/** Add a Family Synonym candidate as a shared Synonym, in a chosen language. */
-export function FamilySynonymAdd({ candidate, onDone, onCancel }: Props) {
+/** A Family Synonym candidate in a sheet: Add as Synonym, in a chosen language, for every family. */
+export function FamilySynonymAdd({
+  candidate,
+  open,
+  onClose,
+  onExited,
+  onDone,
+}: Props) {
   const { t } = useTranslation('admin');
   const add = useAddSharedSynonym();
   const [locale, setLocale] = useState<Locale>('en');
 
-  const submit = () => {
-    if (add.isPending) return;
-    add.mutate(
-      {
-        normalizedName: candidate.normalizedName,
-        ingredientId: candidate.ingredient.id,
-        locale,
-      },
-      { onSuccess: onDone },
-    );
-  };
-
   return (
-    <EditorForm
-      heading={t('familySynonyms.addTitle', { name: candidate.name })}
-      description={t('familySynonyms.addHint', {
+    <ReviewSheet
+      open={open}
+      onClose={onClose}
+      onExited={onExited}
+      size="content"
+      title={t('familySynonyms.addTitle', { name: candidate.name })}
+      subtitle={t('familySynonyms.addHint', {
         ingredient: candidate.ingredient.name,
       })}
       error={add.error}
-      canSave
-      saving={add.isPending}
-      onSubmit={submit}
-      onCancel={onCancel}
-      saveLabel={t('familySynonyms.add')}
-      savingLabel={t('familySynonyms.adding')}
+      form={{
+        onSubmit: () => {
+          if (add.isPending) return;
+          add.mutate(
+            {
+              normalizedName: candidate.normalizedName,
+              ingredientId: candidate.ingredient.id,
+              locale,
+            },
+            { onSuccess: onDone },
+          );
+        },
+        canSubmit: true,
+        saving: add.isPending,
+        submitLabel: t('familySynonyms.add'),
+        savingLabel: t('familySynonyms.adding'),
+      }}
     >
       <TextField
         select
@@ -59,6 +70,6 @@ export function FamilySynonymAdd({ candidate, onDone, onCancel }: Props) {
           </option>
         ))}
       </TextField>
-    </EditorForm>
+    </ReviewSheet>
   );
 }

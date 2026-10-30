@@ -6,7 +6,7 @@ import {
 import type { Locale } from '../i18n/resources';
 import { adminCatalogQueryKey } from './admin';
 import { ApiError, apiRequest } from './api';
-import { catalogChangeQueryKeys } from './queryKeys';
+import { catalogChangeQueryKeys, familySynonymsQueueKey } from './queryKeys';
 
 /** One Family Synonym name on one Ingredient, across Families; no Family identity. */
 export type FamilySynonymCandidate = {
@@ -17,11 +17,13 @@ export type FamilySynonymCandidate = {
 };
 
 type Page = {
+  /** Every candidate in the queue, not just this page. */
+  total: number;
   candidates: FamilySynonymCandidate[];
   nextCursor: string | null;
 };
 
-export const familySynonymsQueueKey = ['admin-family-synonyms'] as const;
+export { familySynonymsQueueKey };
 
 /** Candidates one page at a time, fetched only while `enabled`. */
 export function useFamilySynonymsQueue(enabled: boolean) {
@@ -37,16 +39,19 @@ export function useFamilySynonymsQueue(enabled: boolean) {
       ),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     // Counts move between pages, so a candidate can repeat: keep its first appearance.
-    select: (data) => [
-      ...new Map(
-        data.pages
-          .flatMap((page) => page.candidates)
-          .map((candidate) => [
-            `${candidate.normalizedName}|${candidate.ingredient.id}`,
-            candidate,
-          ]),
-      ).values(),
-    ],
+    select: (data) => ({
+      candidates: [
+        ...new Map(
+          data.pages
+            .flatMap((page) => page.candidates)
+            .map((candidate) => [
+              `${candidate.normalizedName}|${candidate.ingredient.id}`,
+              candidate,
+            ]),
+        ).values(),
+      ],
+      total: data.pages.at(-1)?.total ?? 0,
+    }),
   });
 }
 

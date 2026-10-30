@@ -28,7 +28,10 @@ import {
   siriNeedsShortcutUrl,
   siriShortcutUrl,
 } from '../../../lib/siriShortcut';
-import { ScopeCaption, SectionHeading } from './SectionHeading';
+import {
+  ScopeCaption,
+  SectionHeading,
+} from '../../../components/SectionHeading';
 
 /** Keep in step with NAME_MAX_LENGTH in the API's assistant-token.schemas.ts. */
 const NAME_MAX_LENGTH = 60;

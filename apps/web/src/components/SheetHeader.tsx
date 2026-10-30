@@ -5,22 +5,23 @@ import {
   IconButton,
   Typography,
 } from '@pocket-pantry/ui';
-import type { Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 
 export type SheetHeaderProps = {
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   /** Given, the title takes focus programmatically (a step change moves focus here). */
   titleRef?: Ref<HTMLHeadingElement>;
   onBack?: () => void;
   onClose: () => void;
-  backLabel: string;
+  /** Needed only with `onBack`. */
+  backLabel?: string;
   closeLabel: string;
   /** `roomy` is the larger title and wider padding of the Family catalog sheets. */
   size?: 'compact' | 'roomy';
 };
 
-/** A Settings sheet's header: an optional back button, a title with a context line, and a close button. */
+/** A sheet's header (Settings, Admin): an optional back button, a title with a context line, and a close button. */
 export function SheetHeader({
   title,
   subtitle,
@@ -42,7 +43,7 @@ export function SheetHeader({
       }}
     >
       {onBack ? (
-        <IconButton label={backLabel} size={40} onClick={onBack}>
+        <IconButton label={backLabel ?? ''} size={40} onClick={onBack}>
           <BackIcon size={18} />
         </IconButton>
       ) : null}
@@ -66,7 +67,7 @@ export function SheetHeader({
           {title}
         </Typography>
         {subtitle ? (
-          <Typography variant="meta" color="text.secondary">
+          <Typography component="div" variant="meta" color="text.secondary">
             {subtitle}
           </Typography>
         ) : null}

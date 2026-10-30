@@ -52,7 +52,7 @@ import { normalizeName } from '../../../lib/normalizeName';
 import { useCategoryOptions } from '../../../lib/settings';
 import { CategoryPicker } from './CategoryPicker';
 import { InfoNote } from './InfoNote';
-import { SheetHeader } from './SheetHeader';
+import { SheetHeader } from '../../../components/SheetHeader';
 
 export const USAGE_KINDS: Array<keyof FamilyIngredientUsage> = [
   'batches',
