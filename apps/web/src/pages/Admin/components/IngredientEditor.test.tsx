@@ -75,6 +75,41 @@ describe('IngredientEditor', () => {
     vi.unstubAllGlobals();
   });
 
+  it('shows the Leaf Category as a field-button with its Aisle, and the unit as pressed chips', async () => {
+    stub();
+    renderWithProviders(
+      <IngredientEditor
+        ingredient={parmesan}
+        catalog={catalog}
+        onDone={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    const field = screen.getByRole('button', { name: /Leaf Category/ });
+    expect(field).toHaveTextContent('Hard cheese');
+    expect(field).toHaveTextContent('Dairy & eggs');
+    const units = within(screen.getByRole('group', { name: 'Default unit' }));
+    expect(units.getByRole('button', { name: 'g' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(units.getByRole('button', { name: 'kg' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+
+    await user.click(field);
+    expect(screen.getByRole('button', { name: 'Hard cheese' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(screen.getByRole('button', { name: 'Butter' }));
+    expect(
+      await screen.findByRole('button', { name: /Leaf Category/ }),
+    ).toHaveTextContent('Butter');
+  });
+
   it('creates an Ingredient with a Leaf Category and default unit', async () => {
     const calls = stub({
       'POST /api/admin/catalog/ingredients': () =>
@@ -85,8 +120,13 @@ describe('IngredientEditor', () => {
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText(/Name \(English\)/), 'Gouda');
-    await user.selectOptions(screen.getByLabelText('Leaf Category'), 'l2');
-    await user.selectOptions(screen.getByLabelText('Default unit'), 'kg');
+    await user.click(screen.getByRole('button', { name: /Leaf Category/ }));
+    await user.click(screen.getByRole('button', { name: 'Butter' }));
+    await user.click(
+      within(
+        await screen.findByRole('group', { name: 'Default unit' }),
+      ).getByRole('button', { name: 'kg' }),
+    );
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());

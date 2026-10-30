@@ -40,7 +40,8 @@
       "saved": "Allergenerne er gemt.",
       "reviewTitle": "Skal gennemgås",
       "reviewHint": "Overtaget fra en families ingrediens. Tjek mærkerne, og gem for at bekræfte dem."
-    }
+    },
+    "unchecked": "Ikke tjekket"
   },
   "aisle": {
     "title": "Afdelinger",
@@ -64,7 +65,9 @@
     "defaultLocation": "Standardplacering",
     "expiryInvalid": "Angiv et helt antal dage fra 0 til {{max}}, eller lad feltet stå tomt for at arve.",
     "otherLeafNote": "Det er overkategoriens underkategori Andet. Den modtager umatchede partier og kan derfor ikke flyttes eller slettes.",
-    "leafCount": "Underkategorier: {{count}}"
+    "leafCount": "Underkategorier: {{count}}",
+    "expiresIn": "Udløber om {{days}} d",
+    "usesDefaults": "Bruger {{parent}}s standardværdier"
   },
   "translations": {
     "title": "Oversættelser og synonymer",

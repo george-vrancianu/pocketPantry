@@ -40,7 +40,8 @@
       "saved": "Allergens saved.",
       "reviewTitle": "Needs review",
       "reviewHint": "Carried over from a Family’s Ingredient. Check the tags and save to confirm them."
-    }
+    },
+    "unchecked": "Unchecked"
   },
   "aisle": {
     "title": "Aisles",
@@ -64,7 +65,9 @@
     "defaultLocation": "Default location",
     "expiryInvalid": "Enter a whole number of days from 0 to {{max}}, or leave blank to inherit.",
     "otherLeafNote": "This is the Other Leaf Category of its Parent. It receives Unmatched Batches, so it cannot be moved or deleted.",
-    "leafCount": "Leaf Categories: {{count}}"
+    "leafCount": "Leaf Categories: {{count}}",
+    "expiresIn": "Expires in {{days}} d",
+    "usesDefaults": "Uses {{parent}}’s defaults"
   },
   "translations": {
     "title": "Translations and Synonyms",

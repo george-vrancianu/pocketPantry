@@ -13,7 +13,7 @@ import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { RemoveLink } from '../../../components/RemoveLink';
 import type { FamilyCatalogSynonym } from '../../../lib/familyCatalog';
 import { InfoNote } from './InfoNote';
-import { SheetHeader } from './SheetHeader';
+import { SheetHeader } from '../../../components/SheetHeader';
 
 export type FamilySynonymSheetProps = {
   open: boolean;
