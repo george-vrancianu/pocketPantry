@@ -148,7 +148,11 @@ describe('Unmatched queue (integration)', () => {
       .get('/admin/unmatched')
       .query({ ...(status ? { status } : {}), ...params })
       .expect(200);
-    return response.body as { entries: Entry[]; nextCursor: string | null };
+    return response.body as {
+      total: number;
+      entries: Entry[];
+      nextCursor: string | null;
+    };
   }
   /** Every entry, following the cursor to the end. */
   async function queue(status?: 'open' | 'dismissed') {
@@ -457,6 +461,15 @@ describe('Unmatched queue (integration)', () => {
       } while (cursor);
 
       expect(new Set(seen).size).toBe(seen.length);
+      // `total` counts every open group, on the first page and the later ones.
+      const firstPage = await queuePage('open', { limit: 2 });
+      expect(firstPage.nextCursor).not.toBeNull();
+      expect(firstPage.total).toBe(seen.length);
+      const nextPage = await queuePage('open', {
+        limit: 2,
+        cursor: firstPage.nextCursor as string,
+      });
+      expect(nextPage.total).toBe(seen.length);
       const wanted = ['page top', 'page tie a', 'page tie b', 'page low'].map(
         (label) => normalise(name(label)),
       );
@@ -1216,6 +1229,31 @@ describe('Unmatched queue (integration)', () => {
       const reopened = await entryFor(raw);
       expect(reopened?.count).toBe(2);
       expect(reopened?.dismissed).toBe(false);
+    });
+
+    it('counts each status separately in total, moving a name on dismiss and undismiss', async () => {
+      const raw = name('totals');
+      await saveBatches(await newMember(), [{ rawName: raw }]);
+      const body = { normalizedName: normalise(raw) };
+      const totals = async () => ({
+        open: (await queuePage('open', { limit: 1 })).total,
+        dismissed: (await queuePage('dismissed', { limit: 1 })).total,
+      });
+      const before = await totals();
+      expect(before.open).toBe((await queue('open')).length);
+
+      await call(adminCookie)
+        .post('/admin/unmatched/dismiss', body)
+        .expect(204);
+      expect(await totals()).toEqual({
+        open: before.open - 1,
+        dismissed: before.dismissed + 1,
+      });
+
+      await call(adminCookie)
+        .post('/admin/unmatched/undismiss', body)
+        .expect(204);
+      expect(await totals()).toEqual(before);
     });
 
     it('puts a dismissed name back in the open queue on undismiss', async () => {

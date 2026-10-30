@@ -87,6 +87,8 @@ export type UnmatchedQueueEntry = {
 };
 
 export type UnmatchedQueuePage = {
+  /** Every group with the requested status, not just this page. */
+  total: number;
   entries: UnmatchedQueueEntry[];
   /** Pass as `cursor` for the next page; null on the last one. */
   nextCursor: string | null;

@@ -68,13 +68,16 @@ export type ResolveInput = {
   sourceSynonym?: boolean;
 } & ({ ingredientId: string } | { newIngredient: IngredientInput });
 
-const queueKey = ['admin-unmatched'] as const;
+/** Every Unmatched queue query, whatever its status. */
+export const unmatchedQueueKey = ['admin-unmatched'] as const;
 
 /** The query key of the queue with this status. */
 export const unmatchedQueueQueryKey = (status: UnmatchedStatus) =>
-  [...queueKey, status] as const;
+  [...unmatchedQueueKey, status] as const;
 
 export type UnmatchedPage = {
+  /** Every name with this status, not just this page. */
+  total: number;
   entries: UnmatchedEntry[];
   nextCursor: string | null;
 };
@@ -93,13 +96,17 @@ export function useUnmatchedQueue(status: UnmatchedStatus) {
       ),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     // Counts move between pages, so a name can repeat: keep its first appearance.
-    select: (data) => [
-      ...new Map(
-        data.pages
-          .flatMap((page) => page.entries)
-          .map((e) => [e.normalizedName, e]),
-      ).values(),
-    ],
+    select: (data) => ({
+      entries: [
+        ...new Map(
+          data.pages
+            .flatMap((page) => page.entries)
+            .map((e) => [e.normalizedName, e]),
+        ).values(),
+      ],
+      // The newest page's total: a refetch walks the pages in order.
+      total: data.pages.at(-1)?.total ?? 0,
+    }),
   });
 }
 
@@ -116,7 +123,7 @@ export function useResolveUnmatched() {
     onSuccess: () =>
       Promise.all(
         [
-          queueKey,
+          unmatchedQueueKey,
           adminCatalogQueryKey,
           catalogSearchQueryKey,
           ['pantry'],
@@ -138,7 +145,8 @@ export function useDismissUnmatched() {
         method: 'POST',
         body: { normalizedName },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queueKey }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: unmatchedQueueKey }),
   });
 }
 
@@ -150,6 +158,7 @@ export function useUndismissUnmatched() {
         method: 'POST',
         body: { normalizedName },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queueKey }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: unmatchedQueueKey }),
   });
 }

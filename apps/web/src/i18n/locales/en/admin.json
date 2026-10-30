@@ -87,8 +87,6 @@
     "title": "Unmatched names",
     "loadMore": "Load more",
     "restore": "Restore",
-    "restoreName": "Restore {{name}}",
-    "empty": "Nothing to review.",
     "rows_one": "{{count}} row",
     "rows_other": "{{count}} rows",
     "sources": {
@@ -112,7 +110,6 @@
     "picked": "Selected: {{name}}",
     "synonymLocale": "Synonym language",
     "synonymHint": "\"{{name}}\" is added as a Synonym in this language, so it matches next time.",
-    "confirm": "Resolve",
     "resolving": "Resolving…",
     "resolved_one": "Linked {{count}} row to {{name}}.",
     "resolved_other": "Linked {{count}} rows to {{name}}.",
@@ -359,8 +356,6 @@
   },
   "familyIngredients": {
     "kindLabel": "Show",
-    "kindUnmatched": "Unmatched names",
-    "kindFamily": "Family ingredients",
     "empty": "No Family ingredients to review.",
     "families_one": "{{count}} family",
     "families_other": "{{count}} families",
@@ -372,7 +367,6 @@
     "promoteHint": "The other families' copies are merged into it.",
     "promoted_one": "Promoted {{name}}. Merged {{count}} other copy.",
     "promoted_other": "Promoted {{name}}. Merged {{count}} other copies.",
-    "kindSynonyms": "Synonym candidates",
     "merge": "Merge",
     "mergeName": "Merge {{name}}",
     "merging": "Merging…",
@@ -384,7 +378,6 @@
     "of": "Synonym of {{ingredient}}",
     "add": "Add as shared synonym",
     "adding": "Adding…",
-    "addName": "Add {{name}} as shared synonym",
     "addTitle": "Add {{name}} as a shared synonym",
     "addHint": "Every family will find {{ingredient}} by this name. The families' own copies are removed.",
     "language": "Synonym language",
@@ -482,6 +475,33 @@
     "back": "Catalog"
   },
   "review": {
-    "title": "Waiting for review"
+    "title": "Waiting for review",
+    "kinds": {
+      "unmatched": "Unmatched",
+      "family": "Family",
+      "synonyms": "Names"
+    },
+    "hint": {
+      "unmatched": "Names no Ingredient matched. Tap to link or create one; swipe left to set aside.",
+      "family": "Ingredients a family added. Promote one to share it with everyone.",
+      "synonyms": "Names a family uses for a Catalog Ingredient. Add one as a Synonym for everyone."
+    },
+    "rowMeta": "{{rows}} · {{sources}}",
+    "dismissed": "Dismissed “{{name}}”",
+    "dismissQuestion": "Dismiss “{{name}}”?",
+    "emptyTitle": "Nothing to review",
+    "empty": "Every name from scans and typing found its Ingredient.",
+    "link_one": "Link {{count}} row",
+    "link_other": "Link {{count}} rows",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting",
+    "otherFamilies_one": "+{{count}} family",
+    "otherFamilies_other": "+{{count}} families",
+    "synonymTitle": "“{{name}}” → {{ingredient}}",
+    "close": "Close",
+    "back": "Back",
+    "promoteAction": "Promote to Catalog",
+    "mergeAction": "Merge into…",
+    "emptyDismissed": "No names set aside."
   }
 }

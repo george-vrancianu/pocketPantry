@@ -1,193 +1,133 @@
-import { Alert, Button, Spinner, Stack, Typography } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { translateApiError } from '../../../i18n/translateApiError';
 import {
-  useFamilyIngredientsQueue,
-  type FamilyIngredientGroup,
-} from '../../../lib/familyIngredientsQueue';
-import { FamilyIngredientMerge } from './FamilyIngredientMerge';
-import { FamilyIngredientPromote } from './FamilyIngredientPromote';
+  Card,
+  PeopleIcon,
+  Stack,
+  Tag,
+  visuallyHidden,
+  Typography,
+} from '@pocket-pantry/ui';
+import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useFamilyIngredientsQueue } from '../../../lib/familyIngredientsQueue';
+import { FamilyIngredientSheet } from './FamilyIngredientSheet';
+import {
+  EmptyCard,
+  HintLine,
+  QueueNotice,
+  useLoadMore,
+  useReviewSheet,
+  useSheetFocus,
+} from './ReviewParts';
+import { ReviewRow, ReviewTile } from './ReviewRow';
+import type { FamilyIngredientGroup } from '../../../lib/familyIngredientsQueue';
 
 /**
  * The Admin queue of Family Ingredients: one row per normalised name across
- * Families, most owned first. Promote opens a picker of the copies; Merge a search for the shared Ingredient to fold them into.
+ * Families, most owned first. A row opens a sheet with Promote to Catalog and Merge into….
  */
 export function FamilyIngredientsQueue() {
   const { t } = useTranslation(['admin', 'common']);
   const queue = useFamilyIngredientsQueue(true);
-  const [promoting, setPromoting] = useState<FamilyIngredientGroup | null>(
-    null,
-  );
-  const [merging, setMerging] = useState<FamilyIngredientGroup | null>(null);
+  const groups = queue.data?.groups ?? [];
+  const sheet = useReviewSheet<FamilyIngredientGroup>();
+  const {
+    heading,
+    setNotice: noticeRegion,
+    resultNext,
+    afterExit,
+  } = useSheetFocus(groups.length);
   const [notice, setNotice] = useState<string | null>(null);
-  const noticeRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  // Where focus goes once the picker closes: back to the row, or to the result message.
-  const [restoreFocus, setRestoreFocus] = useState<
-    | { to: 'row'; name: string; action: 'promote' | 'merge' }
-    | { to: 'notice' }
-    | null
-  >(null);
+  const { status, loadMore } = useLoadMore(queue, groups.length, listRef);
+  const finish = (message: string) => {
+    setNotice(message);
+    resultNext();
+    sheet.close();
+  };
 
-  // Index of the first row a Load more brings in, until focus has moved there.
-  const [focusFrom, setFocusFrom] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (focusFrom === null || queue.isFetchingNextPage) return;
-    const buttons =
-      listRef.current?.querySelectorAll<HTMLElement>('[data-promote-for]');
-    buttons?.[focusFrom]?.focus();
-    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
-    setFocusFrom(null);
-  }, [focusFrom, queue.isFetchingNextPage]);
-
-  useEffect(() => {
-    if (promoting || merging || !restoreFocus) return;
-    if (restoreFocus.to === 'notice') {
-      noticeRef.current?.focus();
-    } else {
-      const attribute =
-        restoreFocus.action === 'merge' ? 'data-merge-for' : 'data-promote-for';
-      const buttons = listRef.current?.querySelectorAll<HTMLElement>(
-        `[${attribute}]`,
-      );
-      [...(buttons ?? [])]
-        .find((button) => button.getAttribute(attribute) === restoreFocus.name)
-        ?.focus();
-    }
-    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
-    setRestoreFocus(null);
-  }, [promoting, merging, restoreFocus, queue.data]);
-
-  if (promoting) {
-    return (
-      <FamilyIngredientPromote
-        group={promoting}
-        onDone={(result) => {
-          setPromoting(null);
-          setNotice(
-            t('admin:familyIngredients.promoted', {
-              name: result.name,
-              count: result.mergedIngredientIds.length,
-            }),
-          );
-          setRestoreFocus({ to: 'notice' });
-        }}
-        onCancel={() => {
-          setRestoreFocus({
-            to: 'row',
-            name: promoting.normalizedName,
-            action: 'promote',
-          });
-          setPromoting(null);
-        }}
-      />
-    );
-  }
-
-  if (merging) {
-    return (
-      <FamilyIngredientMerge
-        group={merging}
-        onDone={(target) => {
-          setNotice(
-            t('admin:familyIngredients.merged', {
-              name: merging.name,
-              target,
-            }),
-          );
-          setMerging(null);
-          setRestoreFocus({ to: 'notice' });
-        }}
-        onCancel={() => {
-          setRestoreFocus({
-            to: 'row',
-            name: merging.normalizedName,
-            action: 'merge',
-          });
-          setMerging(null);
-        }}
-      />
-    );
-  }
-
-  const groups = queue.data ?? [];
   return (
     <Stack spacing={2}>
-      {/* A polite live region so the result of a promote is announced. */}
-      <div role="status" ref={noticeRef} tabIndex={-1}>
-        {notice ? <Typography variant="body2">{notice}</Typography> : null}
-      </div>
-      {queue.error ? <Alert>{translateApiError(t, queue.error)}</Alert> : null}
-      {queue.isPending ? <Spinner label={t('common:loading')} /> : null}
-      {queue.isSuccess && groups.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {t('admin:familyIngredients.empty')}
-        </Typography>
-      ) : null}
-      <Stack
-        component="ul"
-        ref={listRef}
-        spacing={2}
-        sx={{ m: 0, p: 0, listStyle: 'none' }}
+      {/* Visually hidden: the focus target when a row goes away. */}
+      <Typography
+        component="h2"
+        ref={heading}
+        tabIndex={-1}
+        sx={visuallyHidden}
       >
-        {groups.map((group) => (
-          <li key={group.normalizedName}>
-            <Stack spacing={1}>
-              <Typography component="h3" variant="subtitle1">
-                {group.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t('admin:familyIngredients.families', {
-                  count: group.familyCount,
-                })}{' '}
-                · {group.leafCategory.name} ·{' '}
-                {t(`admin:locales.${group.locale}`)}
-              </Typography>
-              <Stack direction="row" spacing={1}>
-                <Button
-                  aria-label={t('admin:familyIngredients.promoteName', {
-                    name: group.name,
-                  })}
-                  data-promote-for={group.normalizedName}
-                  onClick={() => {
-                    setNotice(null);
-                    setPromoting(group);
-                  }}
-                >
-                  {t('admin:familyIngredients.promote')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  aria-label={t('admin:familyIngredients.mergeName', {
-                    name: group.name,
-                  })}
-                  data-merge-for={group.normalizedName}
-                  onClick={() => {
-                    setNotice(null);
-                    setMerging(group);
-                  }}
-                >
-                  {t('admin:familyIngredients.merge')}
-                </Button>
-              </Stack>
-            </Stack>
-          </li>
-        ))}
-      </Stack>
-      {queue.hasNextPage ? (
-        <Button
-          variant="secondary"
-          aria-disabled={queue.isFetchingNextPage}
-          onClick={() => {
-            if (queue.isFetchingNextPage) return;
-            setFocusFrom(groups.length);
-            void queue.fetchNextPage();
-          }}
+        {t('admin:review.kinds.family')}
+      </Typography>
+      <HintLine>{t('admin:review.hint.family')}</HintLine>
+      <QueueNotice ref={noticeRegion} message={notice} />
+      {status}
+      {queue.isSuccess && groups.length === 0 ? (
+        <EmptyCard
+          title={t('admin:review.emptyTitle')}
+          text={t('admin:familyIngredients.empty')}
+        />
+      ) : null}
+      {groups.length > 0 ? (
+        <Card
+          component="ul"
+          variant="list"
+          ref={listRef}
+          aria-label={t('admin:review.kinds.family')}
+          sx={{ listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
         >
-          {t('admin:unmatched.loadMore')}
-        </Button>
+          {groups.map((group) => (
+            <ReviewRow
+              key={group.normalizedName}
+              rowKey={group.normalizedName}
+              leading={
+                <ReviewTile tone="butter">
+                  <PeopleIcon size={19} />
+                </ReviewTile>
+              }
+              title={group.name}
+              meta={`${group.leafCategory.name} · ${t(`admin:locales.${group.locale}`)}`}
+              tags={
+                group.familyCount > 1 ? (
+                  <Tag tone="neutral">
+                    {t('admin:review.otherFamilies', {
+                      count: group.familyCount - 1,
+                    })}
+                  </Tag>
+                ) : null
+              }
+              onOpen={() => {
+                setNotice(null);
+                sheet.show(group);
+              }}
+            />
+          ))}
+        </Card>
+      ) : null}
+      {loadMore}
+      {sheet.item ? (
+        <FamilyIngredientSheet
+          group={sheet.item}
+          open={sheet.open}
+          onClose={sheet.close}
+          onExited={() => {
+            sheet.exited();
+            afterExit();
+          }}
+          onPromoted={(result) =>
+            finish(
+              t('admin:familyIngredients.promoted', {
+                name: result.name,
+                count: result.mergedIngredientIds.length,
+              }),
+            )
+          }
+          onMerged={(target) =>
+            finish(
+              t('admin:familyIngredients.merged', {
+                name: sheet.item?.name,
+                target,
+              }),
+            )
+          }
+        />
       ) : null}
     </Stack>
   );

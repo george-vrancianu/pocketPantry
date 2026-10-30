@@ -1,6 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+  type SQL,
+} from 'drizzle-orm';
 import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import {
@@ -78,24 +87,31 @@ export class UnmatchedQueueService {
     const after = query.cursor
       ? sql`and (${count} < ${query.cursor.count} or (${count} = ${query.cursor.count} and ${name} > ${query.cursor.name} collate "C"))`
       : sql``;
-    const groups = await this.database
-      .select({
-        normalizedName: unmatchedEntries.normalizedName,
-        count: sql<number>`count(*)::int`,
-        locales: sql<
-          string[]
-        >`array_agg(distinct ${unmatchedEntries.locale} order by ${unmatchedEntries.locale})`,
-        sources: sql<
-          string[]
-        >`array_agg(distinct ${unmatchedEntries.source}::text order by ${unmatchedEntries.source}::text)`,
-      })
-      .from(unmatchedEntries)
-      .groupBy(unmatchedEntries.normalizedName)
-      .having(
-        sql`bool_and(${unmatchedEntries.dismissedAt} is not null) = ${dismissed} ${after}`,
-      )
-      .orderBy(desc(count), name)
-      .limit(query.limit + 1);
+    const grouped = (having: SQL) =>
+      this.database
+        .select({
+          normalizedName: unmatchedEntries.normalizedName,
+          count: sql<number>`count(*)::int`,
+          locales: sql<
+            string[]
+          >`array_agg(distinct ${unmatchedEntries.locale} order by ${unmatchedEntries.locale})`,
+          sources: sql<
+            string[]
+          >`array_agg(distinct ${unmatchedEntries.source}::text order by ${unmatchedEntries.source}::text)`,
+        })
+        .from(unmatchedEntries)
+        .groupBy(unmatchedEntries.normalizedName)
+        .having(having);
+    const inStatus = sql`bool_and(${unmatchedEntries.dismissedAt} is not null) = ${dismissed}`;
+    const [groups, [totalRow]] = await Promise.all([
+      grouped(sql`${inStatus} ${after}`)
+        .orderBy(desc(count), name)
+        .limit(query.limit + 1),
+      // Every group with this status, whatever the cursor: drives the badges.
+      this.database
+        .select({ total: sql<number>`count(*)::int` })
+        .from(grouped(inStatus).as('groups')),
+    ]);
     const page = groups.slice(0, query.limit);
     const last = page.at(-1);
 
@@ -126,6 +142,7 @@ export class UnmatchedQueueService {
       ]);
     }
     return {
+      total: totalRow?.total ?? 0,
       entries: page.flatMap((group) => {
         const references = rowsOf.get(group.normalizedName);
         // Resolved between the two reads: gone from the queue.

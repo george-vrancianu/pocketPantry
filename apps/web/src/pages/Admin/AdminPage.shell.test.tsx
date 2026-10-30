@@ -98,7 +98,7 @@ function Where() {
   return <output aria-label="location">{pathname + search}</output>;
 }
 
-const open = (route: string) => {
+const open = (route: string, extra: Parameters<typeof stubApi>[0] = {}) => {
   vi.stubGlobal(
     'fetch',
     stubApi({
@@ -126,6 +126,7 @@ const open = (route: string) => {
         Response.json({ items: [], nextCursor: null }),
       'GET /api/admin/promo-codes': () =>
         Response.json({ entries: [], nextCursor: null }),
+      ...extra,
     }).fetchMock,
   );
   renderWithProviders(
@@ -155,6 +156,28 @@ describe('AdminPage shell', () => {
       'aria-pressed',
       'true',
     );
+  });
+
+  it('shows the queue total on the To review tab, named with the count, and hides it at 0', async () => {
+    open('/admin', {
+      'GET /api/admin/unmatched': () =>
+        Response.json({ entries: [], nextCursor: null, total: 6 }),
+      'GET /api/admin/family-ingredients': () =>
+        Response.json({ groups: [], nextCursor: null, total: 3 }),
+      'GET /api/admin/family-synonyms': () =>
+        Response.json({ candidates: [], nextCursor: null, total: 2 }),
+    });
+    const tab = await screen.findByRole('button', {
+      name: 'To review, 11 waiting',
+    });
+    expect(tab).toHaveTextContent('To review11');
+    expect(screen.getByRole('button', { name: 'Catalog' })).toBeVisible();
+  });
+
+  it('shows no badge while nothing waits', async () => {
+    open('/admin');
+    const tab = await screen.findByRole('button', { name: 'To review' });
+    expect(tab).toHaveTextContent(/^To review$/);
   });
 
   it('opens the tab named in the URL and writes the tab on switching', async () => {

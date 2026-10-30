@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { and, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, eq, isNotNull, sql, type SQL } from 'drizzle-orm';
 import {
   catalogScope,
   familyOwnedTranslations,
@@ -49,30 +49,39 @@ export class FamilySynonymsAdminService {
         or (${count} = ${cursor.count} and ${name} > ${cursor.name} collate "C")
         or (${count} = ${cursor.count} and ${name} = ${cursor.name} collate "C" and ${rows.entityId} > ${cursor.id}::uuid)`
       : sql`true`;
-    const groups = await this.database
-      .select({
-        normalizedName: rows.normalizedValue,
-        ingredientId: rows.entityId,
-        ingredientName: sql<string>`min(${ingredients.name})`,
-        familyCount: sql<number>`count(distinct ${rows.ownerFamilyId})::int`,
-        name: sql<string>`(array_agg(${rows.value} order by ${rows.createdAt}, ${rows.id}))[1]`,
-      })
-      .from(rows)
-      .innerJoin(ingredients, eq(ingredients.id, rows.entityId))
-      .where(
-        and(
-          eq(rows.entityType, 'ingredient'),
-          eq(rows.kind, 'synonym'),
-          this.isNewName(this.database, rows, ingredients),
-        ),
-      )
-      .groupBy(rows.normalizedValue, rows.entityId)
-      .having(after)
-      .orderBy(sql`${count} desc`, name, rows.entityId)
-      .limit(query.limit + 1);
+    const grouped = (having: SQL) =>
+      this.database
+        .select({
+          normalizedName: rows.normalizedValue,
+          ingredientId: rows.entityId,
+          ingredientName: sql<string>`min(${ingredients.name})`,
+          familyCount: sql<number>`count(distinct ${rows.ownerFamilyId})::int`,
+          name: sql<string>`(array_agg(${rows.value} order by ${rows.createdAt}, ${rows.id}))[1]`,
+        })
+        .from(rows)
+        .innerJoin(ingredients, eq(ingredients.id, rows.entityId))
+        .where(
+          and(
+            eq(rows.entityType, 'ingredient'),
+            eq(rows.kind, 'synonym'),
+            this.isNewName(this.database, rows, ingredients),
+          ),
+        )
+        .groupBy(rows.normalizedValue, rows.entityId)
+        .having(having);
+    const [groups, [totalRow]] = await Promise.all([
+      grouped(after)
+        .orderBy(sql`${count} desc`, name, rows.entityId)
+        .limit(query.limit + 1),
+      // Every candidate, whatever the cursor: drives the badges.
+      this.database
+        .select({ total: sql<number>`count(*)::int` })
+        .from(grouped(sql`true`).as('groups')),
+    ]);
     const page = groups.slice(0, query.limit);
     const last = page.at(-1);
     return {
+      total: totalRow?.total ?? 0,
       candidates: page.map((group) => ({
         normalizedName: group.normalizedName,
         name: group.name,

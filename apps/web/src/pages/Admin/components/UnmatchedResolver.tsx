@@ -1,4 +1,5 @@
 import {
+  Button,
   Checkbox,
   SegmentedControl,
   Stack,
@@ -15,15 +16,24 @@ import {
   useResolveUnmatched,
   type UnmatchedEntry,
 } from '../../../lib/unmatched';
-import { EditorForm } from '../../../components/EditorForm';
 import { IngredientFields } from './IngredientFields';
+import { ReviewSheet } from './ReviewSheet';
+import { UnmatchedMeta } from './UnmatchedMeta';
 
 type Props = {
   entry: UnmatchedEntry;
   catalog: AdminCatalog;
+  open: boolean;
+  onClose: () => void;
+  onExited: () => void;
+  /** On a dismissed name: put it back in the open list instead. */
+  onRestore?: () => void;
+  /** A restore request is in flight. */
+  restoring?: boolean;
+  /** The last restore error, shown in the sheet. */
+  restoreError?: unknown;
   /** Called with the confirmation message once the name is resolved. */
   onDone: (message: string) => void;
-  onCancel: () => void;
 };
 
 type Mode = 'existing' | 'new';
@@ -33,7 +43,17 @@ type Mode = 'existing' | 'new';
  * the Catalog search) or create a new one, and choose the language of the
  * Synonym it adds. The server relinks every row carrying the name in one go.
  */
-export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
+export function UnmatchedResolver({
+  entry,
+  catalog,
+  open,
+  onClose,
+  onExited,
+  onRestore,
+  restoring = false,
+  restoreError,
+  onDone,
+}: Props) {
   const { t } = useTranslation('admin');
   const resolve = useResolveUnmatched();
   const [mode, setMode] = useState<Mode>('existing');
@@ -107,16 +127,25 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
   };
 
   return (
-    <EditorForm
-      heading={t('admin:unmatched.resolveName', { name: entry.rawName })}
-      description={t('admin:unmatched.rows', { count: entry.count })}
-      error={resolve.error}
-      canSave={canSubmit}
-      saving={resolve.isPending}
-      onSubmit={submit}
-      onCancel={onCancel}
-      saveLabel={t('admin:unmatched.confirm')}
-      savingLabel={t('admin:unmatched.resolving')}
+    <ReviewSheet
+      open={open}
+      onClose={onClose}
+      onExited={onExited}
+      title={t('admin:unmatched.resolveName', { name: entry.rawName })}
+      subtitle={<UnmatchedMeta entry={entry} />}
+      error={resolve.error ?? restoreError}
+      form={{
+        onSubmit: submit,
+        canSubmit,
+        saving: resolve.isPending,
+        submitLabel: t('admin:review.link', { count: entry.count }),
+        savingLabel: t('admin:unmatched.resolving'),
+        extra: onRestore ? (
+          <Button variant="ghost" onClick={onRestore} disabled={restoring}>
+            {t('admin:unmatched.restore')}
+          </Button>
+        ) : undefined,
+      }}
     >
       <SegmentedControl
         label={t('admin:unmatched.modeLabel')}
@@ -179,6 +208,6 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
           })}
         />
       ) : null}
-    </EditorForm>
+    </ReviewSheet>
   );
 }

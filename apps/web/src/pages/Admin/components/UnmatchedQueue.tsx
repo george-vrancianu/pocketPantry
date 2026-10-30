@@ -1,275 +1,325 @@
 import {
-  Alert,
-  Button,
+  AlertIcon,
+  Box,
+  Card,
+  Chip,
+  ListRow,
   SegmentedControl,
-  Spinner,
   Stack,
+  SwipeRow,
   Typography,
   visuallyHidden,
+  type SwipeRowLabels,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateApiError } from '../../../i18n/translateApiError';
+import { useReviewCounts } from '../../../lib/reviewCounts';
 import type { AdminCatalog } from '../../../lib/admin';
 import {
+  unmatchedQueueKey,
   useDismissUnmatched,
   useUndismissUnmatched,
   useUnmatchedQueue,
   type UnmatchedEntry,
   type UnmatchedStatus,
 } from '../../../lib/unmatched';
+import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
+import { useRowHint, type RowHint } from '../../../lib/useRowHint';
 import { FamilyIngredientsQueue } from './FamilyIngredientsQueue';
 import { FamilySynonymsQueue } from './FamilySynonymsQueue';
+import {
+  EmptyCard,
+  HintLine,
+  QueueNotice,
+  useLoadMore,
+  useReviewSheet,
+  useSheetFocus,
+} from './ReviewParts';
+import { ReviewRow, ReviewTile, rowChevron } from './ReviewRow';
+import { UnmatchedMeta } from './UnmatchedMeta';
 import { UnmatchedResolver } from './UnmatchedResolver';
+
+type Kind = 'unmatched' | 'family' | 'synonyms';
 
 type Props = { catalog: AdminCatalog };
 
 /**
- * The Admin queue of Unmatched names: one line per distinct normalised name
- * with how many Batches and Shopping Items carry it. Resolve opens the
- * resolver for that name; Dismiss sets it aside (the rows stay Unmatched) and
- * Restore, in the dismissed tab, puts it back. More pages load on demand.
+ * The Admin To review queues, one kind at a time (Unmatched, Family, Names) with a count on each.
+ * Unmatched names are one row per distinct normalised name; tapping one opens the resolver sheet, a
+ * swipe left sets it aside (deferred, with Undo), and the Dismissed view puts it back. More pages
+ * load on demand.
  */
 export function UnmatchedQueue({ catalog }: Props) {
   const { t } = useTranslation(['admin', 'errors', 'common']);
-  const [kind, setKind] = useState<'unmatched' | 'family' | 'synonyms'>(
-    'unmatched',
-  );
-  const [status, setStatus] = useState<UnmatchedStatus>('open');
-  const [resolving, setResolving] = useState<UnmatchedEntry | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const queue = useUnmatchedQueue(status);
+  const [kind, setKind] = useState<Kind>('unmatched');
+  const counts = useReviewCounts();
   const dismiss = useDismissUnmatched();
-  const undismiss = useUndismissUnmatched();
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
-  const noticeRef = useRef<HTMLDivElement>(null);
-  // Index of the first row a Load more brings in, until focus has moved there.
-  const [focusFrom, setFocusFrom] = useState<number | null>(null);
-  // Where focus goes when the resolver closes: back to the row's Resolve
-  // button on Cancel, to the result message on Done (the row is gone).
-  const [restoreFocus, setRestoreFocus] = useState<
-    { to: 'row'; name: string } | { to: 'notice' } | null
-  >(null);
-
-  useEffect(() => {
-    if (resolving || !restoreFocus) return;
-    if (restoreFocus.to === 'notice') {
-      noticeRef.current?.focus();
-    } else {
-      const buttons =
-        listRef.current?.querySelectorAll<HTMLElement>('[data-resolve-for]');
-      const button = [...(buttons ?? [])].find(
-        (candidate) => candidate.dataset.resolveFor === restoreFocus.name,
-      );
-      // The row can be gone (refetched, resolved by someone else): the heading is always there.
-      (button ?? headingRef.current)?.focus();
-    }
-    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
-    setRestoreFocus(null);
-  }, [resolving, restoreFocus, queue.data]);
-
-  useEffect(() => {
-    if (focusFrom === null || queue.isFetchingNextPage) return;
-    const buttons =
-      listRef.current?.querySelectorAll<HTMLElement>('[data-resolve-for]');
-    (buttons?.[focusFrom] ?? headingRef.current)?.focus();
-    // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: focus is moved, then the request is cleared
-    setFocusFrom(null);
-  }, [focusFrom, queue.isFetchingNextPage]);
-
-  if (resolving) {
-    return (
-      <UnmatchedResolver
-        entry={resolving}
-        catalog={catalog}
-        onDone={(message) => {
-          setResolving(null);
-          setNotice(message);
-          setRestoreFocus({ to: 'notice' });
-        }}
-        onCancel={() => {
-          setRestoreFocus({ to: 'row', name: resolving.normalizedName });
-          setResolving(null);
-        }}
-      />
-    );
-  }
-
-  const entries = queue.data ?? [];
-  // The row is gone after Dismiss or Restore; keep focus on the page.
-  const focusHeading = () => headingRef.current?.focus();
-  const error = queue.error ?? dismiss.error ?? undismiss.error;
+  const removal = useDeferredRemoval(unmatchedQueueKey, dismiss.mutateAsync);
+  // The removal lives here, not in UnmatchedNames, so switching kind does not send it early.
+  const waitingCount = useWaitingCount(removal.hiddenIds);
+  const kindOptions: { value: Kind; label: string; badge: number }[] = [
+    {
+      value: 'unmatched',
+      label: t('admin:review.kinds.unmatched'),
+      badge: Math.max(0, counts.unmatched - waitingCount),
+    },
+    {
+      value: 'family',
+      label: t('admin:review.kinds.family'),
+      badge: counts.family,
+    },
+    {
+      value: 'synonyms',
+      label: t('admin:review.kinds.synonyms'),
+      badge: counts.names,
+    },
+  ];
   return (
-    <Stack spacing={2}>
-      {/* Visually hidden: the focus target when a row or the Load more button goes away. */}
-      <Typography
-        component="h2"
-        ref={headingRef}
-        tabIndex={-1}
-        sx={visuallyHidden}
-      >
-        {t('admin:unmatched.title')}
-      </Typography>
+    <Stack spacing={1.5}>
       <SegmentedControl
         label={t('admin:familyIngredients.kindLabel')}
         value={kind}
         onChange={setKind}
-        options={[
-          {
-            value: 'unmatched',
-            label: t('admin:familyIngredients.kindUnmatched'),
-          },
-          { value: 'family', label: t('admin:familyIngredients.kindFamily') },
-          {
-            value: 'synonyms',
-            label: t('admin:familyIngredients.kindSynonyms'),
-          },
-        ]}
+        dense
+        options={kindOptions}
       />
       {kind === 'family' ? <FamilyIngredientsQueue /> : null}
       {kind === 'synonyms' ? <FamilySynonymsQueue /> : null}
       {kind === 'unmatched' ? (
-        <>
-          <SegmentedControl
-            label={t('admin:unmatched.statusLabel')}
-            value={status}
-            onChange={(next) => {
-              setStatus(next);
-              setNotice(null);
-            }}
-            options={[
-              { value: 'open', label: t('admin:unmatched.status.open') },
-              {
-                value: 'dismissed',
-                label: t('admin:unmatched.status.dismissed'),
-              },
-            ]}
-          />
-          {/* A polite live region so the result of a resolve is announced. */}
-          <div role="status" ref={noticeRef} tabIndex={-1}>
-            {notice ? <Typography variant="body2">{notice}</Typography> : null}
-          </div>
-          {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
-          {queue.isPending ? <Spinner label={t('common:loading')} /> : null}
-          {queue.isSuccess && entries.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">
-              {t('admin:unmatched.empty')}
-            </Typography>
-          ) : null}
-          <Stack
-            component="ul"
-            ref={listRef}
-            spacing={2}
-            sx={{ m: 0, p: 0, listStyle: 'none' }}
-          >
-            {entries.map((entry) => (
-              <li key={entry.normalizedName}>
-                <QueueRow
-                  entry={entry}
-                  dismissed={status === 'dismissed'}
-                  busy={dismiss.isPending || undismiss.isPending}
-                  onResolve={() => {
-                    setNotice(null);
-                    setResolving(entry);
-                  }}
-                  onDismiss={() =>
-                    dismiss.mutate(entry.normalizedName, {
-                      onSuccess: focusHeading,
-                    })
-                  }
-                  onRestore={() =>
-                    undismiss.mutate(entry.normalizedName, {
-                      onSuccess: focusHeading,
-                    })
-                  }
-                />
-              </li>
-            ))}
-          </Stack>
-          {queue.hasNextPage ? (
-            <Button
-              variant="secondary"
-              aria-disabled={queue.isFetchingNextPage}
-              onClick={() => {
-                if (queue.isFetchingNextPage) return;
-                setFocusFrom(entries.length);
-                void queue.fetchNextPage();
-              }}
-            >
-              {t('admin:unmatched.loadMore')}
-            </Button>
-          ) : null}
-        </>
+        <UnmatchedNames
+          catalog={catalog}
+          removal={removal}
+          dismissPending={dismiss.isPending}
+          waitingCount={waitingCount}
+        />
       ) : null}
     </Stack>
   );
 }
 
-type RowProps = {
-  entry: UnmatchedEntry;
-  /** On the Dismissed tab, where the row offers Restore instead of Dismiss. */
-  dismissed: boolean;
-  busy: boolean;
-  onResolve: () => void;
-  onDismiss: () => void;
-  onRestore: () => void;
-};
+/** How many open names are hidden while they wait on their Undo; names already gone from the data do not count. */
+function useWaitingCount(hiddenIds: ReadonlySet<string>) {
+  const open = useUnmatchedQueue('open');
+  return (open.data?.entries ?? []).filter((entry) =>
+    hiddenIds.has(entry.normalizedName),
+  ).length;
+}
 
-function QueueRow({
-  entry,
-  dismissed,
-  busy,
-  onResolve,
-  onDismiss,
-  onRestore,
-}: RowProps) {
-  const { t, i18n } = useTranslation('admin');
-  const sources = entry.sources
-    .map((source) => t(`unmatched.sources.${source}`))
-    .sort((a, b) => a.localeCompare(b, i18n.language))
-    .join(', ');
-  const locales = entry.locales
-    .map((locale) => t(`locales.${locale}`))
-    .join(', ');
+function UnmatchedNames({
+  catalog,
+  removal,
+  dismissPending,
+  waitingCount,
+}: Props & {
+  removal: ReturnType<typeof useDeferredRemoval<string>>;
+  dismissPending: boolean;
+  waitingCount: number;
+}) {
+  const { t } = useTranslation(['admin', 'errors', 'common']);
+  const [status, setStatus] = useState<UnmatchedStatus>('open');
+  const [notice, setNotice] = useState<string | null>(null);
+  const open = useUnmatchedQueue('open');
+  const dismissedQueue = useUnmatchedQueue('dismissed');
+  const queue = status === 'open' ? open : dismissedQueue;
+  const undismiss = useUndismissUnmatched();
+  // A name waiting on its Undo stays out of the list, refetches included, until its dismiss has settled.
+  const entries = (queue.data?.entries ?? []).filter(
+    (entry) => !removal.hiddenIds.has(entry.normalizedName),
+  );
+  const sheet = useReviewSheet<UnmatchedEntry>();
+  const {
+    heading,
+    setNotice: noticeRegion,
+    resultNext,
+    afterExit,
+  } = useSheetFocus(entries.length);
+  const listRef = useRef<HTMLUListElement>(null);
+  const { status: loadStatus, loadMore } = useLoadMore(
+    queue,
+    entries.length,
+    listRef,
+  );
+  const hint = useRowHint(
+    'adminQueue',
+    status === 'open' && entries.length > 0,
+  );
+  const dismissed = status === 'dismissed';
+
   return (
-    <Stack spacing={1}>
-      <Typography component="h3" variant="subtitle1">
-        {entry.rawName}
+    <Stack spacing={1.5}>
+      {/* Visually hidden: the focus target when a row or the Load more button goes away. */}
+      <Typography
+        component="h2"
+        ref={heading}
+        tabIndex={-1}
+        sx={visuallyHidden}
+      >
+        {t('admin:unmatched.title')}
       </Typography>
-      {entry.sourceText ? (
-        <Typography variant="body2">
-          {entry.sourceLanguage
-            ? t('unmatched.printedIn', {
-                text: entry.sourceText,
-                language: t(`locales.${entry.sourceLanguage}`),
-              })
-            : t('unmatched.printed', { text: entry.sourceText })}
-        </Typography>
-      ) : null}
-      <Typography variant="body2" color="text.secondary">
-        {t('unmatched.rows', { count: entry.count })} · {sources} · {locales}
-      </Typography>
-      <Stack direction="row" spacing={1}>
-        <Button
-          aria-label={t('unmatched.resolveName', { name: entry.rawName })}
-          data-resolve-for={entry.normalizedName}
-          onClick={onResolve}
-        >
-          {t('unmatched.resolve')}
-        </Button>
-        <Button
-          variant="ghost"
-          disabled={busy}
-          aria-label={t(
-            dismissed ? 'unmatched.restoreName' : 'unmatched.dismissName',
-            { name: entry.rawName },
+      <Box
+        role="group"
+        aria-label={t('admin:unmatched.statusLabel')}
+        sx={{ display: 'flex', gap: 1 }}
+      >
+        {(['open', 'dismissed'] as const).map((value) => (
+          <Chip
+            key={value}
+            label={t(`admin:unmatched.status.${value}`)}
+            meta={
+              value === 'open'
+                ? Math.max(0, (open.data?.total ?? 0) - waitingCount)
+                : (dismissedQueue.data?.total ?? 0)
+            }
+            selected={status === value}
+            onClick={() => {
+              setStatus(value);
+              setNotice(null);
+            }}
+          />
+        ))}
+      </Box>
+      <HintLine>{t('admin:review.hint.unmatched')}</HintLine>
+      <QueueNotice ref={noticeRegion} message={notice} />
+      {loadStatus}
+      {queue.isSuccess && entries.length === 0 ? (
+        <EmptyCard
+          title={t('admin:review.emptyTitle')}
+          text={t(
+            dismissed ? 'admin:review.emptyDismissed' : 'admin:review.empty',
           )}
-          onClick={dismissed ? onRestore : onDismiss}
-        >
-          {t(dismissed ? 'unmatched.restore' : 'unmatched.dismiss')}
-        </Button>
-      </Stack>
+        />
+      ) : null}
+      {entries.length > 0 ? (
+        <Box data-row-scope>
+          <Card
+            component="ul"
+            variant="list"
+            ref={listRef}
+            aria-label={t('admin:unmatched.title')}
+            sx={{ listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
+          >
+            {entries.map((entry, index) =>
+              dismissed ? (
+                <ReviewRow
+                  key={entry.normalizedName}
+                  rowKey={entry.normalizedName}
+                  leading={<Tile />}
+                  title={entry.rawName}
+                  meta={<UnmatchedMeta entry={entry} />}
+                  onOpen={() => {
+                    setNotice(null);
+                    undismiss.reset();
+                    sheet.show(entry);
+                  }}
+                />
+              ) : (
+                <UnmatchedRow
+                  key={entry.normalizedName}
+                  entry={entry}
+                  peek={index === 0 && hint.peek}
+                  onLearned={hint.onLearned}
+                  disabled={dismissPending}
+                  onOpen={() => {
+                    setNotice(null);
+                    sheet.show(entry);
+                  }}
+                  onDismiss={() =>
+                    removal.remove(
+                      entry.normalizedName,
+                      entry.rawName,
+                      t('admin:review.dismissed', { name: entry.rawName }),
+                      { polite: true },
+                    )
+                  }
+                />
+              ),
+            )}
+          </Card>
+        </Box>
+      ) : null}
+      {loadMore}
+      {sheet.item ? (
+        <UnmatchedResolver
+          entry={sheet.item}
+          catalog={catalog}
+          open={sheet.open}
+          onClose={sheet.close}
+          onExited={() => {
+            sheet.exited();
+            afterExit();
+          }}
+          onRestore={
+            dismissed
+              ? () =>
+                  undismiss.mutate(sheet.item?.normalizedName ?? '', {
+                    onSuccess: sheet.close,
+                  })
+              : undefined
+          }
+          restoring={undismiss.isPending}
+          restoreError={dismissed ? undismiss.error : undefined}
+          onDone={(message) => {
+            setNotice(message);
+            resultNext();
+            sheet.close();
+          }}
+        />
+      ) : null}
     </Stack>
+  );
+}
+
+function Tile() {
+  return (
+    <ReviewTile tone="soon">
+      <AlertIcon size={19} />
+    </ReviewTile>
+  );
+}
+
+function UnmatchedRow({
+  entry,
+  peek,
+  onLearned,
+  disabled,
+  onOpen,
+  onDismiss,
+}: {
+  entry: UnmatchedEntry;
+  peek: boolean;
+  onLearned: RowHint['onLearned'];
+  disabled: boolean;
+  onOpen: () => void;
+  onDismiss: () => void;
+}) {
+  const { t } = useTranslation(['admin', 'common']);
+  const labels: SwipeRowLabels = {
+    question: t('admin:review.dismissQuestion', { name: entry.rawName }),
+    context: t('admin:unmatched.rows', { count: entry.count }),
+    keep: t('common:row.keep'),
+    remove: t('admin:unmatched.dismiss'),
+    releaseToDelete: t('admin:unmatched.dismiss'),
+    hint: t('common:row.a11yHint'),
+    editAction: t('admin:unmatched.resolveName', { name: entry.rawName }),
+    removeAction: t('admin:unmatched.dismissName', { name: entry.rawName }),
+  };
+  return (
+    <SwipeRow
+      name={entry.rawName}
+      labels={labels}
+      disabled={disabled}
+      peek={peek}
+      onLearned={onLearned}
+      onTap={onOpen}
+      onEdit={onOpen}
+      onRemove={onDismiss}
+    >
+      <ListRow
+        leading={<Tile />}
+        title={entry.rawName}
+        meta={<UnmatchedMeta entry={entry} />}
+        trailing={rowChevron}
+      />
+    </SwipeRow>
   );
 }

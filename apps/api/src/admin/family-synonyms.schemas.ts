@@ -53,6 +53,8 @@ export type FamilySynonymCandidate = {
 };
 
 export type FamilySynonymsPage = {
+  /** Every candidate in the queue, not just this page. */
+  total: number;
   candidates: FamilySynonymCandidate[];
   nextCursor: string | null;
 };

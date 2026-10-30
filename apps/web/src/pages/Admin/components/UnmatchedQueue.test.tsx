@@ -1,10 +1,12 @@
 import { focusManager } from '@tanstack/react-query';
-import { act, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
 import type { UnmatchedEntry } from '../../../lib/unmatched';
+import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
 import { renderWithProviders, stubApi } from '../../../test/render';
+import { expectFocusInDialog, resultNotice } from './reviewTestUtils';
 import { UnmatchedQueue } from './UnmatchedQueue';
 
 const catalog: AdminCatalog = {
@@ -113,20 +115,25 @@ function stub(routes: Parameters<typeof stubApi>[0] = {}) {
   return api.calls;
 }
 
+const dismissCalls = (calls: Array<{ key: string }>) =>
+  calls
+    .filter((c) => c.key === 'POST /api/admin/unmatched/dismiss')
+    .map((c) => c.key);
+
 describe('UnmatchedQueue', () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
-  it('lists each name with how many rows carry it, where it came from, and its locale', async () => {
+  it('lists each name with how many rows carry it and where it came from', async () => {
     stub();
     renderWithProviders(<UnmatchedQueue catalog={catalog} />);
 
-    const item = await screen.findByRole('listitem');
+    const item = await screen.findByRole('group', { name: 'Brânză ciudată' });
     expect(within(item).getByText('Brânză ciudată')).toBeVisible();
     expect(within(item).getByText(/3 rows/)).toBeVisible();
     expect(within(item).getByText(/Receipt, Typed/)).toBeVisible();
-    expect(within(item).getByText(/Romanian/)).toBeVisible();
   });
 
   it('names a Recipe as a source of a row', async () => {
@@ -154,7 +161,9 @@ describe('UnmatchedQueue', () => {
         }),
     });
     renderWithProviders(<UnmatchedQueue catalog={catalog} />);
-    const item = await screen.findByRole('listitem');
+    const item = await screen.findByRole('group', {
+      name: /Brânză ciudată|Cheese/,
+    });
     expect(within(item).getByText(/Recipe/)).toBeVisible();
   });
 
@@ -164,29 +173,93 @@ describe('UnmatchedQueue', () => {
         Response.json({ entries: [], nextCursor: null }),
     });
     renderWithProviders(<UnmatchedQueue catalog={catalog} />);
-    expect(await screen.findByText('Nothing to review.')).toBeVisible();
+    expect(await screen.findByText('Nothing to review')).toBeVisible();
+    expect(
+      screen.getByText(
+        'Every name from scans and typing found its Ingredient.',
+      ),
+    ).toBeVisible();
   });
 
-  it('dismisses an entry without resolving', async () => {
+  it('dismisses an entry without resolving, sending the dismiss only after the Undo window', async () => {
+    vi.useFakeTimers();
+    const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
     const calls = stub({
       'POST /api/admin/unmatched/dismiss': () =>
         new Response(null, { status: 204 }),
     });
     renderWithProviders(<UnmatchedQueue catalog={catalog} />);
-    const user = userEvent.setup();
+    await flush();
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Dismiss Brânză ciudată' }),
-    );
+    const row = screen.getByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Delete' });
+    expect(screen.getByText('Dismiss “Brânză ciudată”?')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await act(() => vi.advanceTimersByTimeAsync(1000));
 
-    await vi.waitFor(() =>
-      expect(
-        calls.some((c) => c.key === 'POST /api/admin/unmatched/dismiss'),
-      ).toBe(true),
-    );
+    expect(screen.queryByRole('group', { name: 'Brânză ciudată' })).toBeNull();
+    // A polite live region, not an alert.
+    expect(
+      screen.getByText('Dismissed “Brânză ciudată”').closest('[role="status"]'),
+    ).not.toBeNull();
+    expect(dismissCalls(calls)).toEqual([]);
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS));
+    await flush();
+
     expect(
       calls.find((c) => c.key === 'POST /api/admin/unmatched/dismiss')?.body,
     ).toEqual({ normalizedName: 'branza ciudata' });
+  });
+
+  it('brings the row back on Undo and sends no dismiss', async () => {
+    vi.useFakeTimers();
+    const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+    const calls = stub();
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    await flush();
+
+    const row = screen.getByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Delete' });
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 1000));
+    await flush();
+
+    expect(screen.getByRole('group', { name: 'Brânză ciudată' })).toBeVisible();
+    expect(dismissCalls(calls)).toEqual([]);
+  });
+
+  it('shows the totals from the API on the kind switch and the Open and Dismissed chips', async () => {
+    stub({
+      'GET /api/admin/unmatched': (url) =>
+        Response.json({
+          entries: [entry],
+          nextCursor: null,
+          total: url.searchParams.get('status') === 'dismissed' ? 4 : 7,
+        }),
+      'GET /api/admin/family-ingredients': () =>
+        Response.json({ groups: [], nextCursor: null, total: 3 }),
+      'GET /api/admin/family-synonyms': () =>
+        Response.json({ candidates: [], nextCursor: null, total: 2 }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+
+    expect(
+      await screen.findByRole('button', { name: 'Unmatched, 7' }),
+    ).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Family, 3' }),
+    ).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Names, 2' }),
+    ).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Open 7' })).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Dismissed 4' }),
+    ).toBeVisible();
   });
 
   it('searches the shared Catalog only in the resolver, with no Use as typed', async () => {
@@ -233,17 +306,20 @@ describe('UnmatchedQueue', () => {
       await screen.findByRole('button', { name: 'Resolve Brânză ciudată' }),
     );
     expect(
-      screen.getByRole('heading', { name: 'Resolve Brânză ciudată' }),
-    ).toHaveFocus();
+      screen.getByRole('dialog', { name: 'Resolve Brânză ciudată' }),
+    ).toBeVisible();
+    await expectFocusInDialog('Resolve Brânză ciudată');
     // Nothing to confirm until an Ingredient is picked.
-    expect(screen.getByRole('button', { name: 'Resolve' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: /^Link \d+ rows?$/ }),
+    ).toBeDisabled();
 
     await user.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'parm',
     );
     await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
-    await user.click(screen.getByRole('button', { name: 'Resolve' }));
+    await user.click(screen.getByRole('button', { name: /^Link \d+ rows?$/ }));
 
     await vi.waitFor(() =>
       expect(
@@ -257,11 +333,11 @@ describe('UnmatchedQueue', () => {
       ingredientId: 'i1',
       locale: 'ro',
     });
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Linked 3 rows to Parmesan',
-    );
+    expect(await resultNotice(/Linked 3 rows to Parmesan/)).toBeVisible();
     // Focus lands on the result message, not on the page body.
-    expect(screen.getByRole('status')).toHaveFocus();
+    await vi.waitFor(async () =>
+      expect(await resultNotice(/Linked 3 rows to Parmesan/)).toHaveFocus(),
+    );
   });
 
   it('returns focus to the Resolve button when the resolver is cancelled', async () => {
@@ -307,7 +383,7 @@ describe('UnmatchedQueue', () => {
     await user.type(name, 'Odd cheese');
     await user.selectOptions(screen.getByLabelText('Default unit'), 'kg');
     await user.selectOptions(screen.getByLabelText('Synonym language'), 'en');
-    await user.click(screen.getByRole('button', { name: 'Resolve' }));
+    await user.click(screen.getByRole('button', { name: /^Link \d+ rows?$/ }));
 
     await vi.waitFor(() =>
       expect(
@@ -342,7 +418,7 @@ describe('UnmatchedQueue', () => {
       await screen.findByRole('button', { name: 'Resolve Brânză ciudată' }),
     );
     await user.click(screen.getByRole('button', { name: 'New Ingredient' }));
-    await user.click(screen.getByRole('button', { name: 'Resolve' }));
+    await user.click(screen.getByRole('button', { name: /^Link \d+ rows?$/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       /already belongs to another Ingredient/,
     );
@@ -365,7 +441,9 @@ describe('UnmatchedQueue', () => {
         Response.json({ entries: [printedEntry], nextCursor: null }),
     });
     renderWithProviders(<UnmatchedQueue catalog={catalog} />);
-    const item = await screen.findByRole('listitem');
+    const item = await screen.findByRole('group', {
+      name: /Brânză ciudată|Cheese/,
+    });
     expect(within(item).getByText('Cheese')).toBeVisible();
     expect(within(item).getByText('Printed: OST 200G (Danish)')).toBeVisible();
   });
@@ -373,7 +451,9 @@ describe('UnmatchedQueue', () => {
   it('shows no printed text for an entry that has none', async () => {
     stub();
     renderWithProviders(<UnmatchedQueue catalog={catalog} />);
-    const item = await screen.findByRole('listitem');
+    const item = await screen.findByRole('group', {
+      name: /Brânză ciudată|Cheese/,
+    });
     expect(within(item).queryByText(/Printed:/)).not.toBeInTheDocument();
   });
 
@@ -396,11 +476,13 @@ describe('UnmatchedQueue', () => {
     });
     expect(box).not.toBeChecked();
     await user.click(box);
-    await user.click(screen.getByRole('button', { name: 'Resolve' }));
+    await user.click(screen.getByRole('button', { name: /^Link \d+ rows?$/ }));
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Linked 2 rows to Parmesan. Added "OST 200G" as a Danish Synonym.',
-    );
+    expect(
+      await resultNotice(
+        'Linked 2 rows to Parmesan. Added "OST 200G" as a Danish Synonym.',
+      ),
+    ).toBeVisible();
     expect(
       calls.find((c) => c.key === 'POST /api/admin/unmatched/resolve')?.body,
     ).toEqual({
@@ -421,8 +503,8 @@ describe('UnmatchedQueue', () => {
     renderWithProviders(<UnmatchedQueue catalog={catalog} />);
     const user = userEvent.setup();
     await pickParmesan(user);
-    await user.click(screen.getByRole('button', { name: 'Resolve' }));
-    await screen.findByRole('status');
+    await user.click(screen.getByRole('button', { name: /^Link \d+ rows?$/ }));
+    await resultNotice(/Linked 2 rows/);
     expect(
       calls.find((c) => c.key === 'POST /api/admin/unmatched/resolve')?.body,
     ).not.toHaveProperty('sourceSynonym');
@@ -450,8 +532,10 @@ describe('UnmatchedQueue', () => {
       await user.click(
         screen.getByRole('checkbox', { name: /Also add the printed text/ }),
       );
-      await user.click(screen.getByRole('button', { name: 'Resolve' }));
-      expect(await screen.findByRole('status')).toHaveTextContent(message);
+      await user.click(
+        screen.getByRole('button', { name: /^Link \d+ rows?$/ }),
+      );
+      expect(await resultNotice(message)).toBeVisible();
     },
   );
 
@@ -487,7 +571,8 @@ describe('UnmatchedQueue', () => {
     stub({
       'GET /api/admin/unmatched': (url) => {
         const cursor = url.searchParams.get('cursor');
-        cursors.push(cursor);
+        if (url.searchParams.get('status') !== 'dismissed')
+          cursors.push(cursor);
         return cursor
           ? Response.json({ entries: [second], nextCursor: null })
           : Response.json({ entries: [entry], nextCursor: 'c1' });
@@ -503,9 +588,7 @@ describe('UnmatchedQueue', () => {
     expect(screen.getByText('Brânză ciudată')).toBeVisible();
     expect(cursors).toEqual([null, 'c1']);
     // Focus follows the new content, not the vanished Load more button.
-    expect(
-      screen.getByRole('button', { name: 'Resolve Alt nume' }),
-    ).toHaveFocus();
+    expect(screen.getByRole('group', { name: 'Alt nume' })).toHaveFocus();
     expect(
       screen.queryByRole('button', { name: 'Load more' }),
     ).not.toBeInTheDocument();
@@ -530,8 +613,9 @@ describe('UnmatchedQueue', () => {
       screen.queryByRole('button', { name: 'Dismiss Brânză ciudată' }),
     ).not.toBeInTheDocument();
     await user.click(
-      await screen.findByRole('button', { name: 'Restore Brânză ciudată' }),
+      await screen.findByRole('button', { name: /^Brânză ciudată/ }),
     );
+    await user.click(screen.getByRole('button', { name: 'Restore' }));
 
     await vi.waitFor(() =>
       expect(
@@ -539,6 +623,161 @@ describe('UnmatchedQueue', () => {
           ?.body,
       ).toEqual({ normalizedName: 'branza ciudata' }),
     );
+  });
+
+  it('shows a failed Restore inside the sheet and sends one request while it is pending', async () => {
+    let release: () => void = () => undefined;
+    const calls = stub({
+      'GET /api/admin/unmatched': (url) =>
+        Response.json({
+          entries:
+            url.searchParams.get('status') === 'dismissed' ? [entry] : [],
+          nextCursor: null,
+        }),
+      'POST /api/admin/unmatched/undismiss': () =>
+        new Promise<Response>((resolve) => {
+          release = () => resolve(new Response(null, { status: 500 }));
+        }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Dismissed' }));
+    await user.click(
+      await screen.findByRole('button', { name: /^Brânză ciudată/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Resolve Brânză ciudată',
+    });
+    await user.click(within(dialog).getByRole('button', { name: 'Restore' }));
+    expect(
+      within(dialog).getByRole('button', { name: 'Restore' }),
+    ).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Restore' }));
+    release();
+
+    expect(await within(dialog).findByRole('alert')).toBeVisible();
+    expect(
+      calls.filter((c) => c.key === 'POST /api/admin/unmatched/undismiss'),
+    ).toHaveLength(1);
+    expect(
+      within(dialog).getByRole('button', { name: 'Restore' }),
+    ).toBeEnabled();
+  });
+
+  it('does not show an old Restore error in the resolver of an Open row', async () => {
+    stub({
+      'GET /api/admin/unmatched': (url) =>
+        Response.json({
+          entries: [entry],
+          nextCursor: null,
+          total: url.searchParams.get('status') === 'dismissed' ? 1 : 1,
+        }),
+      'POST /api/admin/unmatched/undismiss': () =>
+        new Response(null, { status: 500 }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: /^Dismissed/ }));
+    await user.click(
+      await screen.findByRole('button', { name: /^Brânză ciudată/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Resolve Brânză ciudată',
+    });
+    await user.click(within(dialog).getByRole('button', { name: 'Restore' }));
+    expect(await within(dialog).findByRole('alert')).toBeVisible();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await user.click(await screen.findByRole('button', { name: /^Open/ }));
+    await user.click(
+      await screen.findByRole('button', { name: 'Resolve Brânză ciudată' }),
+    );
+
+    expect(within(screen.getByRole('dialog')).queryByRole('alert')).toBeNull();
+  });
+
+  it('keeps Undo available when the Admin switches kind, and shows the row again after Undo', async () => {
+    vi.useFakeTimers();
+    const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+    const calls = stub();
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    await flush();
+
+    const row = screen.getByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Delete' });
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    fireEvent.click(screen.getByRole('button', { name: /^Family/ }));
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+
+    expect(dismissCalls(calls)).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Unmatched/ }));
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 1000));
+
+    expect(screen.getByRole('group', { name: 'Brânză ciudată' })).toBeVisible();
+    expect(dismissCalls(calls)).toEqual([]);
+  });
+
+  it('counts a name waiting on its Undo as gone, and as back after Undo', async () => {
+    vi.useFakeTimers();
+    const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+    stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({ entries: [entry], nextCursor: null, total: 7 }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    await flush();
+    expect(screen.getByRole('button', { name: 'Open 7' })).toBeVisible();
+
+    const row = screen.getByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Delete' });
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await act(() => vi.advanceTimersByTimeAsync(500));
+
+    expect(screen.getByRole('button', { name: 'Open 6' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Unmatched, 6' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(screen.getByRole('button', { name: 'Open 7' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Unmatched, 7' })).toBeVisible();
+  });
+
+  it('reports a failed dismiss once, in the toast and not as an alert in the list', async () => {
+    vi.useFakeTimers();
+    const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+    stub({
+      'POST /api/admin/unmatched/dismiss': () =>
+        new Response(null, { status: 500 }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    await flush();
+
+    const row = screen.getByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Delete' });
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 1000));
+    await flush();
+
+    await act(() => vi.advanceTimersByTimeAsync(10000));
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('returns focus to a swipe row opened from the keyboard when the resolver is cancelled', async () => {
+    stub();
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    const row = await screen.findByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Enter' });
+    await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+    await vi.waitFor(() => expect(row).toHaveFocus());
   });
 
   it('moves focus to the queue heading when Cancel finds the row gone', async () => {
@@ -573,40 +812,51 @@ describe('UnmatchedQueue', () => {
     ).toHaveFocus();
   });
 
-  it('puts focus on the queue heading after Dismiss and after Restore', async () => {
-    let dismissedNow = false;
+  it('puts focus on the queue heading after Dismiss', async () => {
     stub({
-      'GET /api/admin/unmatched': (url) =>
-        Response.json({
-          entries:
-            (url.searchParams.get('status') === 'dismissed') === dismissedNow
-              ? [entry]
-              : [],
-          nextCursor: null,
-        }),
-      'POST /api/admin/unmatched/dismiss': () => {
-        dismissedNow = true;
-        return new Response(null, { status: 204 });
-      },
-      'POST /api/admin/unmatched/undismiss': () =>
+      'POST /api/admin/unmatched/dismiss': () =>
         new Response(null, { status: 204 }),
     });
     renderWithProviders(<UnmatchedQueue catalog={catalog} />);
     const user = userEvent.setup();
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Dismiss Brânză ciudată' }),
-    );
+    const row = await screen.findByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Delete' });
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+
     await vi.waitFor(() =>
       expect(
         screen.getByRole('heading', { name: 'Unmatched names' }),
       ).toHaveFocus(),
     );
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Dismissed' }));
+  it('puts focus on the queue heading after Restore', async () => {
+    let restored = false;
+    stub({
+      'GET /api/admin/unmatched': (url) =>
+        Response.json({
+          entries:
+            (url.searchParams.get('status') === 'dismissed') === !restored
+              ? [entry]
+              : [],
+          nextCursor: null,
+        }),
+      'POST /api/admin/unmatched/undismiss': () => {
+        restored = true;
+        return new Response(null, { status: 204 });
+      },
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Dismissed' }));
     await user.click(
-      await screen.findByRole('button', { name: 'Restore Brânză ciudată' }),
+      await screen.findByRole('button', { name: /^Brânză ciudată/ }),
     );
+    await user.click(screen.getByRole('button', { name: 'Restore' }));
+
     await vi.waitFor(() =>
       expect(
         screen.getByRole('heading', { name: 'Unmatched names' }),
@@ -632,7 +882,9 @@ describe('UnmatchedQueue', () => {
         screen.queryByRole('button', { name: 'Load more' }),
       ).not.toBeInTheDocument(),
     );
-    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(
+      screen.getAllByRole('group', { name: 'Brânză ciudată' }),
+    ).toHaveLength(1);
   });
 });
 

@@ -87,8 +87,6 @@
     "title": "Umatchede navne",
     "loadMore": "Indlæs flere",
     "restore": "Gendan",
-    "restoreName": "Gendan {{name}}",
-    "empty": "Intet at gennemgå.",
     "rows_one": "{{count}} række",
     "rows_other": "{{count}} rækker",
     "sources": {
@@ -112,7 +110,6 @@
     "picked": "Valgt: {{name}}",
     "synonymLocale": "Synonymets sprog",
     "synonymHint": "\"{{name}}\" tilføjes som synonym på dette sprog, så det matcher næste gang.",
-    "confirm": "Afklar",
     "resolving": "Afklarer…",
     "resolved_one": "{{count}} række er knyttet til {{name}}.",
     "resolved_other": "{{count}} rækker er knyttet til {{name}}.",
@@ -359,8 +356,6 @@
   },
   "familyIngredients": {
     "kindLabel": "Vis",
-    "kindUnmatched": "Umatchede navne",
-    "kindFamily": "Familieingredienser",
     "empty": "Ingen familieingredienser at gennemgå.",
     "families_one": "{{count}} familie",
     "families_other": "{{count}} familier",
@@ -372,7 +367,6 @@
     "promoteHint": "De andre familiers kopier flettes ind i den.",
     "promoted_one": "{{name}} er gjort fælles. {{count}} anden kopi er flettet ind.",
     "promoted_other": "{{name}} er gjort fælles. {{count}} andre kopier er flettet ind.",
-    "kindSynonyms": "Synonymkandidater",
     "merge": "Flet sammen",
     "mergeName": "Flet {{name}} sammen",
     "merging": "Fletter sammen…",
@@ -384,7 +378,6 @@
     "of": "Synonym for {{ingredient}}",
     "add": "Tilføj som fælles synonym",
     "adding": "Tilføjer…",
-    "addName": "Tilføj {{name}} som fælles synonym",
     "addTitle": "Tilføj {{name}} som fælles synonym",
     "addHint": "Alle familier finder {{ingredient}} med dette navn. Familiernes egne kopier fjernes.",
     "language": "Synonymets sprog",
@@ -482,6 +475,33 @@
     "back": "Katalog"
   },
   "review": {
-    "title": "Venter på gennemsyn"
+    "title": "Venter på gennemsyn",
+    "kinds": {
+      "unmatched": "Umatchede",
+      "family": "Familie",
+      "synonyms": "Navne"
+    },
+    "hint": {
+      "unmatched": "Navne, som ingen ingrediens matchede. Tryk for at koble eller oprette en; stryg til venstre for at lægge den til side.",
+      "family": "Ingredienser, som en familie har tilføjet. Forfrem en for at dele den med alle.",
+      "synonyms": "Navne, som en familie bruger for en katalogingrediens. Tilføj et som synonym for alle."
+    },
+    "rowMeta": "{{rows}} · {{sources}}",
+    "dismissed": "„{{name}}“ lagt til side",
+    "dismissQuestion": "Læg „{{name}}“ til side?",
+    "emptyTitle": "Intet at gennemse",
+    "empty": "Alle navne fra scanninger og indtastning fandt deres ingrediens.",
+    "link_one": "Kobl {{count}} række",
+    "link_other": "Kobl {{count}} rækker",
+    "waiting_one": "{{count}} venter",
+    "waiting_other": "{{count}} venter",
+    "otherFamilies_one": "+{{count}} familie",
+    "otherFamilies_other": "+{{count}} familier",
+    "synonymTitle": "„{{name}}“ → {{ingredient}}",
+    "close": "Luk",
+    "back": "Tilbage",
+    "promoteAction": "Forfrem til katalog",
+    "mergeAction": "Flet med…",
+    "emptyDismissed": "Ingen navne lagt til side."
   }
 }

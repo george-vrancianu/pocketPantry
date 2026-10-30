@@ -5,6 +5,7 @@ import { ScopeCaption, SectionHeading } from '../../components/SectionHeading';
 import { CatalogIndex } from './components/CatalogIndex';
 import { PromoCodes } from './components/PromoCodes';
 import { UnmatchedQueue } from './components/UnmatchedQueue';
+import { useReviewCounts } from '../../lib/reviewCounts';
 import { useAdminScreen } from './hooks/useAdminScreen';
 
 /** The Admin shell: To review, Catalog (an index of sections) and Codes, with the tab kept in `?tab=`. */
@@ -12,6 +13,7 @@ export function AdminPage() {
   const { t } = useTranslation(['admin', 'common', 'settings']);
   const screen = useAdminScreen();
   const { catalog } = screen;
+  const waiting = useReviewCounts().total;
 
   return (
     <>
@@ -27,7 +29,12 @@ export function AdminPage() {
               onChange={screen.setTab}
               fullWidth
               options={[
-                { value: 'review', label: t('admin:tabs.review') },
+                {
+                  value: 'review',
+                  label: t('admin:tabs.review'),
+                  badge: waiting,
+                  badgeLabel: t('admin:review.waiting', { count: waiting }),
+                },
                 { value: 'catalog', label: t('admin:tabs.catalog') },
                 { value: 'codes', label: t('admin:tabs.codes') },
               ]}
