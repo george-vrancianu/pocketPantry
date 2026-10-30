@@ -121,7 +121,6 @@ export function TabletReviewTable({
 }: Props) {
   const { t } = useTranslation('review');
   const sureId = useId();
-  const columns = TABLET_COLUMNS;
   const accessibleNameOf = accessibleNamesOf(
     [...groups.review, ...groups.sure],
     (name, position) => t('position', { name, ...position }),
@@ -181,7 +180,7 @@ export function TabletReviewTable({
             color: tokens.color.muted,
           }}
         >
-          {columns.map((column) => (
+          {TABLET_COLUMNS.map((column) => (
             <Box
               key={column.key}
               role="columnheader"
@@ -203,7 +202,7 @@ export function TabletReviewTable({
           <GroupHeaderRow
             kind="review"
             count={groups.review.length}
-            span={columns.length}
+            span={TABLET_COLUMNS.length}
           />
           {groups.review.map(row)}
         </Box>
@@ -216,7 +215,7 @@ export function TabletReviewTable({
             expanded={state.sureOpen}
             onToggle={onToggleSureGroup}
             controls={sureId}
-            span={columns.length}
+            span={TABLET_COLUMNS.length}
           />
           {state.sureOpen ? (
             <Box id={sureId}>{groups.sure.map(row)}</Box>
@@ -234,7 +233,7 @@ export function TabletReviewTable({
                 whiteSpace: 'nowrap',
               }}
             >
-              <Box role="cell" aria-colspan={columns.length}>
+              <Box role="cell" aria-colspan={TABLET_COLUMNS.length}>
                 {groups.sure.map((line) => displayName(line)).join(', ')}
               </Box>
             </Box>
@@ -244,7 +243,7 @@ export function TabletReviewTable({
       {groups.excluded.length > 0 ? (
         <Box role="rowgroup">
           <Box role="row">
-            <Box role="cell" aria-colspan={columns.length}>
+            <Box role="cell" aria-colspan={TABLET_COLUMNS.length}>
               <ExcludedRow lines={groups.excluded} onRestore={onRestore} />
             </Box>
           </Box>

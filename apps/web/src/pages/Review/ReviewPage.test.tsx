@@ -48,10 +48,9 @@ const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
 function renderReview(
   lines: ProposedLine[],
   extra = {},
-  mode: 'product' = 'product',
   scanLanguage?: 'en' | 'ro' | 'da',
 ) {
-  startReview({ mode, lines, scanLanguage });
+  startReview({ mode: 'product', lines, scanLanguage });
   const { fetchMock, calls } = stubApi({
     'GET /api/catalog/search': () => Response.json({ results: [milk] }),
     'GET /api/catalog/parents': () =>
@@ -290,7 +289,6 @@ describe('ReviewPage', () => {
         line({ name: 'Typed', match: null, sourceText: null }),
       ],
       {},
-      'product',
       'da',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Save 3 items' }));

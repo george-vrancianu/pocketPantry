@@ -31,9 +31,9 @@ describe('Plate Scan matches (integration)', () => {
   let ing: string[];
   const stamp = Date.now();
 
-  const line = (i: number, quantity = 100) => ({
+  const line = (i: number) => ({
     ingredientId: ing[i],
-    quantity,
+    quantity: 100,
     unit: 'g',
   });
 

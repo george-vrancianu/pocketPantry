@@ -159,17 +159,15 @@ export function ReviewRow({
           </Box>
         )}
 
-        <>
-          <Box component="span" sx={cell}>
-            {t(`common:locations.${line.location}`)}
-          </Box>
-          <Box
-            component="span"
-            sx={{ ...cell, fontVariantNumeric: 'tabular-nums' }}
-          >
-            {formatShortDate(line.expiryDate)}
-          </Box>
-        </>
+        <Box component="span" sx={cell}>
+          {t(`common:locations.${line.location}`)}
+        </Box>
+        <Box
+          component="span"
+          sx={{ ...cell, fontVariantNumeric: 'tabular-nums' }}
+        >
+          {formatShortDate(line.expiryDate)}
+        </Box>
       </Box>
       <Collapse open={open}>
         <RowEditPanel

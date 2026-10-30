@@ -200,7 +200,6 @@ export function useReviewScreen(
   };
 
   /** Opens and focuses the first line with an invalid value; true when there was one. */
-  const hasInvalidLine = () => focusInvalid([...groups.review, ...groups.sure]);
 
   const save = () => {
     // Display order, so the Member lands on the topmost problem.
@@ -239,7 +238,6 @@ export function useReviewScreen(
   return {
     hadDraft: draft !== null,
     included,
-    hasInvalidLine,
     mode,
     state,
     groups,

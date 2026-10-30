@@ -45,8 +45,8 @@ const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
   ...overrides,
 });
 
-function renderReview(lines: ProposedLine[], mode: 'product' = 'product') {
-  startReview({ mode, lines });
+function renderReview(lines: ProposedLine[]) {
+  startReview({ mode: 'product', lines });
   const { fetchMock, calls } = stubApi({
     'GET /api/catalog/search': () => Response.json({ results: [milk] }),
     'GET /api/catalog/parents': () =>
