@@ -6,6 +6,8 @@ import type { Database } from '../database/database.types';
 import { AUTH } from './auth.constants';
 import { AdminRoleGuard } from './admin-role.guard';
 import { AuthGuard } from './auth.guard';
+import { InviteCodeLimiterModule } from '../family/invite-code-limiter.module';
+import { InviteCodeRateLimiter } from '../family/invite-code-rate-limiter';
 import { PromoCodeRateLimiter } from '../promo-codes/promo-code-rate-limiter';
 import { PromoCodesModule } from '../promo-codes/promo-codes.module';
 import { SignupConfigController } from './signup-config.controller';
@@ -13,16 +15,22 @@ import { createAuth } from './create-auth';
 
 @Global()
 @Module({
-  imports: [PromoCodesModule],
+  imports: [PromoCodesModule, InviteCodeLimiterModule],
   controllers: [SignupConfigController],
   providers: [
     {
       provide: AUTH,
-      inject: [DATABASE, ConfigService, PromoCodeRateLimiter],
+      inject: [
+        DATABASE,
+        ConfigService,
+        PromoCodeRateLimiter,
+        InviteCodeRateLimiter,
+      ],
       useFactory: (
         database: Database,
         config: ConfigService<AppConfig, true>,
         promoLimiter: PromoCodeRateLimiter,
+        inviteLimiter: InviteCodeRateLimiter,
       ) =>
         createAuth(database, {
           baseURL: config.get('BETTER_AUTH_URL', { infer: true }),
@@ -33,6 +41,7 @@ import { createAuth } from './create-auth';
               infer: true,
             }),
             reserveIp: (ip) => promoLimiter.reserveIp(ip),
+            reserveInviteIp: (ip) => inviteLimiter.reserveIp(ip),
           },
         }),
     },

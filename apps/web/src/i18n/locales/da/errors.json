@@ -87,6 +87,7 @@
     "owner_required": "Kun familiens ejer kan gøre dette.",
     "invite_code_invalid": "Den invitationskode findes ikke. Tjek den, og prøv igen.",
     "invite_code_expired": "Den invitationskode er udløbet. Bed ejeren om en ny.",
+    "invite_code_is_promo_code": "Det er en promokode, ikke en invitationskode. Bed ejeren af familien om deres invitationskode.",
     "already_member": "Du er allerede med i denne familie.",
     "not_household_of_one": "Du kan kun blive medlem af en anden familie, mens du er alene i din egen. Forlad den først, eller overdrag ejerskabet som ejer og forlad den, eller slet familien.",
     "owner_cannot_leave": "Ejeren kan ikke forlade familien. Overdrag først ejerskabet til et andet medlem.",

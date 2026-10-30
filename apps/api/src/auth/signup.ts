@@ -3,7 +3,17 @@ import { APIError } from 'better-auth/api';
 import { and, eq, isNull } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import type { Database, Tx } from '../database/database.types';
-import { creditEntry, promoCode } from '../database/schema';
+import {
+  WELCOME_GRANT_CREDITS,
+  lockFamilyCredits,
+} from '../credits/credits.service';
+import { creditEntry, family, promoCode } from '../database/schema';
+import { lockFamilies } from '../family/family-locks';
+import {
+  looksLikePromoCode,
+  normalizeInviteCode,
+  normalizePromoCode,
+} from '../family/invite-code';
 import { createHouseholdOfOne } from '../family/household-of-one';
 import { redeemPromoCode } from '../promo-codes/redeem-promo-code';
 
@@ -13,16 +23,21 @@ export type SignupPolicy = {
   requiresPromoCode: boolean;
   /** Charges one failed-code attempt to the IP; throws 429 when used up; the result refunds it. */
   reserveIp: (ip: string) => () => void;
+  /** Same for an Invite Code tried at signup: the per-IP Invite Code budget the Family page shares. */
+  reserveInviteIp: (ip: string) => () => void;
 };
 
 export const OPEN_SIGNUP: SignupPolicy = {
   requiresPromoCode: false,
   reserveIp: () => () => undefined,
+  reserveInviteIp: () => () => undefined,
 };
 
 /** The extras a signup request may carry (read from the request body, never stored on the user). */
 export type SignupRequest = {
   promoCode?: string;
+  /** The Invite Code of a Family to join instead of creating one. */
+  joinInviteCode?: string;
   ip: string;
 };
 
@@ -61,11 +76,12 @@ export function exposeSignupTransaction(database: Database): Database {
   });
 }
 
-/** Add a status here when a signup refusal starts using it (#733: 410 for an expired Invite Code). */
+/** Add a status here when a signup refusal starts using it. */
 const STATUS_NAMES: Record<
   number,
-  'BAD_REQUEST' | 'NOT_FOUND' | 'CONFLICT' | 'TOO_MANY_REQUESTS'
+  'BAD_REQUEST' | 'NOT_FOUND' | 'CONFLICT' | 'GONE' | 'TOO_MANY_REQUESTS'
 > = {
+  410: 'GONE',
   400: 'BAD_REQUEST',
   404: 'NOT_FOUND',
   409: 'CONFLICT',
@@ -119,8 +135,8 @@ function refuse(error: unknown): never {
  * Decides where a new Member lands, inside the signup transaction (ADR 0034). Any thrown refusal
  * rolls the whole signup back.
  *
- * This is the create-vs-join decision point: #733 adds a join branch (a `joinInviteCode` on the
- * request) ahead of `createFamily`, with no Household of One.
+ * This is the create-vs-join decision point: a `joinInviteCode` on the request joins that Family as
+ * a Member, with no Household of One; otherwise a new Family is created.
  */
 export async function placeNewMember(
   newUser: { name: string; email: string },
@@ -128,7 +144,10 @@ export async function placeNewMember(
   policy: SignupPolicy,
 ): Promise<SignupPlacement> {
   try {
-    return await createFamily(newUser, request, policy);
+    const inviteCode = request.joinInviteCode?.trim();
+    return inviteCode
+      ? await joinFamily(newUser, inviteCode, request, policy)
+      : await createFamily(newUser, request, policy);
   } catch (error) {
     return refuse(error);
   }
@@ -165,6 +184,75 @@ async function createFamily(
   return {
     familyId,
     familyRole: 'owner',
+    welcomeGrantAt: welcomeGrant ? new Date() : undefined,
+  };
+}
+
+/**
+ * Joins the Family behind an Invite Code as a Member (no Household of One). The Invite Code is the
+ * gate, so no Promo Code is needed; one sent anyway is redeemed into the joined Family. Locks follow
+ * ADR 0001: the Family's credits lock first, then its row lock (so it can't race a regeneration, a
+ * deletion or a redeem).
+ */
+async function joinFamily(
+  newUser: { name: string; email: string },
+  rawInviteCode: string,
+  request: SignupRequest,
+  policy: SignupPolicy,
+): Promise<SignupPlacement> {
+  const store = signupTx.getStore();
+  if (!store) {
+    throw new Error(
+      'A sign-up code must be used inside the sign-up transaction',
+    );
+  }
+  const { tx } = store;
+  const refundInvite = policy.reserveInviteIp(request.ip);
+  const code = normalizeInviteCode(rawInviteCode);
+  if (looksLikePromoCode(normalizePromoCode(rawInviteCode))) {
+    throw new ApiException(400, 'family.invite_code_is_promo_code');
+  }
+  const invalid = () => new ApiException(404, 'family.invite_code_invalid');
+  const [peek] = await tx
+    .select({ id: family.id })
+    .from(family)
+    .where(eq(family.inviteCode, code));
+  if (!peek) throw invalid();
+  await lockFamilyCredits(tx, peek.id);
+  await lockFamilies(tx, [peek.id]);
+  // Re-read under the lock: the Owner may have regenerated or deleted it meanwhile.
+  const [target] = await tx.select().from(family).where(eq(family.id, peek.id));
+  if (!target || target.inviteCode !== code) throw invalid();
+  if (target.inviteCodeExpiresAt.getTime() <= Date.now()) {
+    throw new ApiException(410, 'family.invite_code_expired');
+  }
+
+  const welcomeGrant = !policy.requiresPromoCode;
+  if (welcomeGrant) {
+    // Kind 'grant', not 'welcome_grant': `credit_entry_welcome_grant_idx` allows one per Family and
+    // the joined Family has its own. `user.welcome_grant_at` is what keeps it to once per Member.
+    await tx.insert(creditEntry).values({
+      familyId: target.id,
+      kind: 'grant',
+      reason: 'Welcome Grant',
+      amount: WELCOME_GRANT_CREDITS,
+    });
+  }
+  const promo = request.promoCode?.trim();
+  if (promo) {
+    const refundPromo = policy.reserveIp(request.ip);
+    await redeemPromoCode(tx, {
+      code: promo,
+      familyId: target.id,
+      redeemer: { name: newUser.name, email: newUser.email },
+    });
+    store.redeemedInto = target.id;
+    refundPromo();
+  }
+  refundInvite();
+  return {
+    familyId: target.id,
+    familyRole: 'member',
     welcomeGrantAt: welcomeGrant ? new Date() : undefined,
   };
 }

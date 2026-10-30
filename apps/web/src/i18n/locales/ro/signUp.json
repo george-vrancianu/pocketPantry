@@ -15,5 +15,14 @@
     "requiredHint": "Ai nevoie de un cod promoțional pentru a te înscrie.",
     "optionalLabel": "Ai un cod promoțional?",
     "optionalHint": "Opțional. Creditele lui se adaugă peste Creditele de bun venit."
+  },
+  "mode": {
+    "label": "Ce vrei să faci?",
+    "create": "Creează o Familie nouă",
+    "join": "Alătură-te unei Familii existente"
+  },
+  "inviteCode": {
+    "label": "Cod de invitație",
+    "hint": "Cere Proprietarului Familiei codul de invitație."
   }
 }

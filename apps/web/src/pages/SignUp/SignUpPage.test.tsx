@@ -102,3 +102,74 @@ describe('SignUpPage Promo Code field', () => {
     expect(await screen.findByLabelText('Have a Promo Code?')).toBeValid();
   });
 });
+
+describe('SignUpPage join toggle', () => {
+  const join = (user: ReturnType<typeof userEvent.setup>) =>
+    screen
+      .findByRole('button', { name: 'Join an existing Family' })
+      .then((radio) => user.click(radio));
+
+  it('creates a Family by default', async () => {
+    stub(true);
+    renderWithProviders(<App />, { route: '/sign-up' });
+    expect(await screen.findByLabelText(/^Promo Code/)).toBeVisible();
+    expect(screen.queryByLabelText(/^Invite Code/)).toBeNull();
+  });
+
+  it('swaps the Promo Code field for an Invite Code field while a code is required', async () => {
+    const { calls } = stub(true);
+    const user = userEvent.setup();
+    renderWithProviders(<App />, { route: '/sign-up' });
+    await screen.findByLabelText(/^Promo Code/);
+    await join(user);
+    expect(screen.queryByLabelText(/^Promo Code/)).toBeNull();
+    await fill(user);
+    await user.type(screen.getByLabelText(/^Invite Code/), ' abcd2345 ');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/auth/sign-up/email')?.body,
+      ).toEqual({
+        name: 'Ana',
+        email: 'ana@example.com',
+        password: 'long-enough-1',
+        joinInviteCode: 'abcd2345',
+      }),
+    );
+  });
+
+  it('keeps an optional Promo Code field beside the Invite Code while signup is open', async () => {
+    stub(false);
+    const user = userEvent.setup();
+    renderWithProviders(<App />, { route: '/sign-up' });
+    await screen.findByLabelText('Have a Promo Code?');
+    await join(user);
+    expect(screen.getByLabelText(/^Invite Code/)).toBeRequired();
+    expect(screen.getByLabelText('Have a Promo Code?')).toBeVisible();
+  });
+
+  it('shows an Invite Code refusal on the Invite Code field', async () => {
+    stub(true, () =>
+      Response.json(
+        { code: 'family.invite_code_expired', params: {} },
+        { status: 410 },
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<App />, { route: '/sign-up' });
+    await screen.findByLabelText(/^Promo Code/);
+    await join(user);
+    await fill(user);
+    await user.type(screen.getByLabelText(/^Invite Code/), 'ABCD2345');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^Invite Code/)).toBeInvalid(),
+    );
+    expect(
+      screen.getByText(
+        'That Invite Code has expired. Ask the Owner for a new one.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});

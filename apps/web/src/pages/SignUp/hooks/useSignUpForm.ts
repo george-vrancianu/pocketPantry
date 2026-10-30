@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import type { FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../lib/api';
@@ -13,6 +13,8 @@ import {
 } from '../../../lib/intro';
 import { preferencesQueryKey, saveIntroLanguages } from '../../../lib/settings';
 import { useIntro } from '../../../lib/useIntro';
+
+export type SignUpMode = 'create' | 'join';
 
 export function useSignUpForm() {
   const { t } = useTranslation();
@@ -42,17 +44,20 @@ export function useSignUpForm() {
 
   const signUp = useSignUp(saveKeptLanguages);
   const config = useSignupConfig();
+  const [mode, setMode] = useState<SignUpMode>('create');
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const promoCode = String(form.get('promoCode') ?? '').trim();
+    const joinInviteCode = String(form.get('joinInviteCode') ?? '').trim();
     signUp.mutate(
       {
         name: String(form.get('name') ?? '').trim(),
         email: String(form.get('email') ?? ''),
         password: String(form.get('password') ?? ''),
         ...(promoCode ? { promoCode } : {}),
+        ...(mode === 'join' && joinInviteCode ? { joinInviteCode } : {}),
       },
       {
         onSuccess: (unsaved) => {
@@ -65,17 +70,21 @@ export function useSignUpForm() {
     );
   };
 
-  // A refusal about the code belongs on the Promo Code field; anything else is the form's.
+  // A refusal about a code belongs on that code's field (by code prefix); anything else is the form's.
   const failure = signUp.error;
-  const onPromoField =
-    failure instanceof ApiError && failure.code.startsWith('promo_code.');
+  const failureCode = failure instanceof ApiError ? failure.code : '';
+  const onPromoField = failureCode.startsWith('promo_code.');
+  const onInviteField = failureCode.startsWith('family.');
   const message = failure ? translateApiError(t, failure) : null;
 
   return {
     submit,
     pending: signUp.isPending,
-    error: onPromoField ? null : message,
+    mode,
+    setMode,
+    error: onPromoField || onInviteField ? null : message,
     promoCodeError: onPromoField ? message : null,
+    inviteCodeError: onInviteField ? message : null,
     /** Unknown until the config is read; a failed read falls back to optional (the API still enforces it). */
     promoCodeRequired: config.isPending
       ? null

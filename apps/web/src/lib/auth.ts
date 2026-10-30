@@ -11,6 +11,8 @@ export type SignUpInput = SignInInput & {
   name: string;
   /** Sent only when the person typed one. */
   promoCode?: string;
+  /** Sent instead of creating a Family: joins the Family behind this Invite Code. */
+  joinInviteCode?: string;
 };
 
 /** Public: whether signup needs a Promo Code. */

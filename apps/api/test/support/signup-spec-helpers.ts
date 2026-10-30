@@ -18,7 +18,7 @@ let counter = 0;
 /** Raw signup (no assertions). The x-forwarded-for only feeds Better Auth's own limiter; ours keys on the socket IP, so every call here shares one Promo Code IP budget. */
 export function rawSignUp(
   app: NestFastifyApplication,
-  body: { promoCode?: string } = {},
+  body: { promoCode?: string; joinInviteCode?: string } = {},
   email = `signup-${Date.now()}-${++counter}@example.com`,
 ) {
   return request(app.getHttpServer())
@@ -92,4 +92,20 @@ export async function promoRow(app: NestFastifyApplication, code: string) {
 export async function familyCount(app: NestFastifyApplication) {
   const db = app.get<Database>(DATABASE);
   return (await db.select({ id: family.id }).from(family)).length;
+}
+
+/** A Family (its Owner signed up the normal way) and its Invite Code, to join at signup. */
+export async function familyToJoin(app: NestFastifyApplication) {
+  const { email } = await rawSignUp(app);
+  const { member, families } = await footprint(app, email);
+  return {
+    familyId: families[0].id,
+    inviteCode: families[0].inviteCode,
+    owner: member,
+  };
+}
+
+export async function membersOf(app: NestFastifyApplication, familyId: string) {
+  const db = app.get<Database>(DATABASE);
+  return db.select().from(user).where(eq(user.familyId, familyId));
 }

@@ -129,6 +129,7 @@ describe('Signup with SIGNUP_REQUIRES_PROMO_CODE on (integration)', () => {
       clientOrigin: TEST_ORIGIN,
       signup: {
         requiresPromoCode: true,
+        reserveInviteIp: () => () => undefined,
         // Called right after the redemption succeeded.
         reserveIp: () => () => {
           throw new Error('boom');

@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Link,
+  SegmentedControl,
   Stack,
   TextField,
   Typography,
@@ -14,8 +15,19 @@ import { useSignUpForm } from './hooks/useSignUpForm';
 
 export function SignUpPage() {
   const { t } = useTranslation('signUp');
-  const { submit, pending, error, promoCodeError, promoCodeRequired } =
-    useSignUpForm();
+  const {
+    submit,
+    pending,
+    error,
+    promoCodeError,
+    inviteCodeError,
+    promoCodeRequired,
+    mode,
+    setMode,
+  } = useSignUpForm();
+  // Joining needs no Promo Code, so the field is gone while one would be required.
+  const showPromo =
+    promoCodeRequired !== null && (mode === 'create' || !promoCodeRequired);
 
   return (
     <AuthShell
@@ -28,6 +40,16 @@ export function SignUpPage() {
       <Box component="form" onSubmit={submit} sx={{ display: 'contents' }}>
         <Stack spacing={2}>
           {error ? <Alert>{error}</Alert> : null}
+          <SegmentedControl
+            label={t('mode.label')}
+            fullWidth
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: 'create', label: t('mode.create') },
+              { value: 'join', label: t('mode.join') },
+            ]}
+          />
           <TextField
             name="name"
             label={t('name')}
@@ -50,7 +72,18 @@ export function SignUpPage() {
             slotProps={{ htmlInput: { minLength: 8 } }}
             required
           />
-          {promoCodeRequired === null ? null : (
+          {mode === 'join' ? (
+            <TextField
+              name="joinInviteCode"
+              label={t('inviteCode.label')}
+              helperText={inviteCodeError ?? t('inviteCode.hint')}
+              error={inviteCodeError !== null}
+              autoComplete="off"
+              autoCapitalize="characters"
+              required
+            />
+          ) : null}
+          {showPromo ? (
             <TextField
               name="promoCode"
               label={
@@ -67,9 +100,9 @@ export function SignUpPage() {
               error={promoCodeError !== null}
               autoComplete="off"
               autoCapitalize="characters"
-              required={promoCodeRequired}
+              required={promoCodeRequired && mode === 'create'}
             />
-          )}
+          ) : null}
           <Button type="submit" disabled={pending}>
             {pending ? t('submitting') : t('submit')}
           </Button>

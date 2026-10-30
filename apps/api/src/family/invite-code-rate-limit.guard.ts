@@ -4,8 +4,7 @@ import type { FastifyReply } from 'fastify';
 import type { AuthenticatedRequest } from '../auth/auth.guard';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
-
-const WINDOW_MS = 60_000;
+import { InviteCodeRateLimiter } from './invite-code-rate-limiter';
 
 /**
  * Throttles Invite Code redemption (`join-preview` and `join` share one
@@ -19,33 +18,29 @@ const WINDOW_MS = 60_000;
  * Behind a proxy, enable Fastify's `trustProxy` first or every client shares
  * the proxy's IP.
  *
- * Per-process and in memory (fixed one-minute windows): it assumes a single
+ * Per-process and in memory (fixed one-minute windows, held by `InviteCodeRateLimiter`, which signup with an Invite Code shares): it assumes a single
  * API instance. Running several multiplies the limits by the instance count
  * until a shared store replaces it. Expired windows are pruned on access.
  */
 @Injectable()
 export class InviteCodeRateLimitGuard implements CanActivate {
-  private readonly windows = new Map<
-    string,
-    { count: number; resetsAt: number }
-  >();
-
-  constructor(private readonly config: ConfigService<AppConfig, true>) {}
+  constructor(
+    private readonly config: ConfigService<AppConfig, true>,
+    private readonly limiter: InviteCodeRateLimiter,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const http = context.switchToHttp();
     const request = http.getRequest<AuthenticatedRequest>();
     const now = Date.now();
-    for (const [key, window] of this.windows) {
-      if (now >= window.resetsAt) this.windows.delete(key);
-    }
+    this.limiter.prune(now);
     const retryAfterMs =
-      this.hit(
+      this.limiter.hit(
         `user:${request.user.id}`,
         this.config.get('INVITE_CODE_LIMIT_PER_USER', { infer: true }),
         now,
       ) ??
-      this.hit(
+      this.limiter.hit(
         `ip:${request.ip}`,
         this.config.get('INVITE_CODE_LIMIT_PER_IP', { infer: true }),
         now,
@@ -56,17 +51,5 @@ export class InviteCodeRateLimitGuard implements CanActivate {
       .getResponse<FastifyReply>()
       .header('Retry-After', Math.ceil(retryAfterMs / 1000));
     throw new ApiException(429, 'family.rate_limited');
-  }
-
-  /** Counts a request; the ms until the window resets if it is over `limit`. */
-  private hit(key: string, limit: number, now: number): number | undefined {
-    const window = this.windows.get(key) ?? {
-      count: 0,
-      resetsAt: now + WINDOW_MS,
-    };
-    this.windows.set(key, window);
-    if (window.count >= limit) return window.resetsAt - now;
-    window.count++;
-    return undefined;
   }
 }

@@ -93,13 +93,18 @@ export function createAuth(database: Database, options: CreateAuthOptions) {
           // Welcome Grant / Promo Code rules). Written through the sign-up transaction (and refused
           // outside one), so it is atomic with the user insert.
           before: async (newUser, context) => {
-            const body = context?.body as { promoCode?: unknown } | undefined;
+            const body = context?.body as
+              { promoCode?: unknown; joinInviteCode?: unknown } | undefined;
             const placement = await placeNewMember(
               newUser,
               {
                 promoCode:
                   typeof body?.promoCode === 'string'
                     ? body.promoCode
+                    : undefined,
+                joinInviteCode:
+                  typeof body?.joinInviteCode === 'string'
+                    ? body.joinInviteCode
                     : undefined,
                 ip: context?.headers?.get(CLIENT_IP_HEADER) ?? 'unknown',
               },

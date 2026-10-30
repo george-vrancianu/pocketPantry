@@ -67,3 +67,8 @@ export const formatPromoCode = (code: string): string =>
 export const looksLikeInviteCode = (normalised: string): boolean =>
   normalised.length === INVITE_CODE_LENGTH &&
   [...normalised].every((c) => INVITE_CODE_ALPHABET.includes(c));
+
+/** True when a normalised code could be a Promo Code (10 characters of the code alphabet). */
+export const looksLikePromoCode = (normalised: string): boolean =>
+  normalised.length === PROMO_CODE_LENGTH &&
+  [...normalised].every((c) => INVITE_CODE_ALPHABET.includes(c));

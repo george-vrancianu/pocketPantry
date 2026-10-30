@@ -88,6 +88,7 @@
     "owner_required": "Doar Proprietarul Familiei poate face asta.",
     "invite_code_invalid": "Acest cod de invitație nu există. Verifică-l și încearcă din nou.",
     "invite_code_expired": "Acest cod de invitație a expirat. Cere Proprietarului unul nou.",
+    "invite_code_is_promo_code": "Acesta este un cod promoțional, nu un cod de invitație. Cere Proprietarului Familiei codul de invitație.",
     "already_member": "Ești deja în această Familie.",
     "not_household_of_one": "Poți intra în altă Familie doar cât ești singur în a ta. Părăsește-o mai întâi sau, ca Proprietar, transferă proprietatea și pleacă, ori șterge Familia.",
     "owner_cannot_leave": "Proprietarul nu poate pleca. Transferă mai întâi proprietatea unui alt Membru.",
