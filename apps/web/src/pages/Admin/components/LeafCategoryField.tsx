@@ -10,7 +10,7 @@ import {
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { localName, type AdminCatalog } from '../../../lib/admin';
-import { SheetHeader } from '../../Settings/components/SheetHeader';
+import { SheetHeader } from '../../../components/SheetHeader';
 
 type Props = {
   catalog: AdminCatalog;
@@ -100,19 +100,23 @@ export function LeafCategoryField({ catalog, value, onChange }: Props) {
             size="roomy"
             title={t('ingredient.leafCategory')}
             onClose={() => setOpen(false)}
-            backLabel=""
             closeLabel={t('review.close')}
           />
         }
       >
-        <Box
-          role="radiogroup"
-          aria-label={t('ingredient.leafCategory')}
-          sx={{ px: 3, pb: 3, display: 'grid', gap: 2 }}
-        >
+        <Box sx={{ px: 3, pb: 3, display: 'grid', gap: 2 }}>
           {groups.map(({ parent, leaves }) => (
-            <Box key={parent.id} sx={{ display: 'grid', gap: 0.5 }}>
-              <Typography variant="sectionLabel" color="text.secondary">
+            <Box
+              key={parent.id}
+              role="group"
+              aria-labelledby={`${labelId}-${parent.id}`}
+              sx={{ display: 'grid', gap: 0.5 }}
+            >
+              <Typography
+                id={`${labelId}-${parent.id}`}
+                variant="sectionLabel"
+                color="text.secondary"
+              >
                 {localName(parent, locale)}
               </Typography>
               {leaves.map((leaf) => (
@@ -120,8 +124,7 @@ export function LeafCategoryField({ catalog, value, onChange }: Props) {
                   key={leaf.id}
                   component="button"
                   type="button"
-                  role="radio"
-                  aria-checked={leaf.id === value}
+                  aria-pressed={leaf.id === value}
                   onClick={() => {
                     onChange(leaf.id);
                     setOpen(false);

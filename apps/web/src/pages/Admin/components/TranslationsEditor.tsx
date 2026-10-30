@@ -157,7 +157,8 @@ function LocaleBlock({
             onChange={(event) => setNameValue(event.target.value)}
             onKeyDown={(event) => {
               // Enter saves this name, not a form this block may sit in.
-              if (event.key !== 'Enter') return;
+              if (event.key !== 'Enter' || event.nativeEvent.isComposing)
+                return;
               event.preventDefault();
               void saveName();
             }}

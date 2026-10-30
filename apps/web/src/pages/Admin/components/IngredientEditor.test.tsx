@@ -100,8 +100,11 @@ describe('IngredientEditor', () => {
     );
 
     await user.click(field);
-    expect(screen.getByRole('radio', { name: 'Hard cheese' })).toBeChecked();
-    await user.click(screen.getByRole('radio', { name: 'Butter' }));
+    expect(screen.getByRole('button', { name: 'Hard cheese' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(screen.getByRole('button', { name: 'Butter' }));
     expect(
       await screen.findByRole('button', { name: /Leaf Category/ }),
     ).toHaveTextContent('Butter');
@@ -118,7 +121,7 @@ describe('IngredientEditor', () => {
 
     await user.type(screen.getByLabelText(/Name \(English\)/), 'Gouda');
     await user.click(screen.getByRole('button', { name: /Leaf Category/ }));
-    await user.click(screen.getByRole('radio', { name: 'Butter' }));
+    await user.click(screen.getByRole('button', { name: 'Butter' }));
     await user.click(
       within(
         await screen.findByRole('group', { name: 'Default unit' }),

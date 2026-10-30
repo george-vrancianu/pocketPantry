@@ -2,7 +2,7 @@ import { Box, Sheet } from '@pocket-pantry/ui';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EditorSheetContext } from '../../../components/editorSheetContext';
-import { SheetHeader } from '../../Settings/components/SheetHeader';
+import { SheetHeader } from '../../../components/SheetHeader';
 
 /**
  * A Catalog editor as a sheet over its list: a header with the editor's title and a close button,
@@ -34,7 +34,6 @@ export function EditorSheet({
           title={title}
           titleRef={titleRef}
           onClose={onClose}
-          backLabel=""
           closeLabel={t('review.close')}
         />
       }

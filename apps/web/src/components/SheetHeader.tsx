@@ -14,7 +14,8 @@ export type SheetHeaderProps = {
   titleRef?: Ref<HTMLHeadingElement>;
   onBack?: () => void;
   onClose: () => void;
-  backLabel: string;
+  /** Needed only with `onBack`. */
+  backLabel?: string;
   closeLabel: string;
   /** `roomy` is the larger title and wider padding of the Family catalog sheets. */
   size?: 'compact' | 'roomy';
@@ -42,7 +43,7 @@ export function SheetHeader({
       }}
     >
       {onBack ? (
-        <IconButton label={backLabel} size={40} onClick={onBack}>
+        <IconButton label={backLabel ?? ''} size={40} onClick={onBack}>
           <BackIcon size={18} />
         </IconButton>
       ) : null}
