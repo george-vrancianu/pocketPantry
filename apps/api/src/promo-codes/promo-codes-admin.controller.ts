@@ -2,8 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
-  ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
@@ -13,6 +13,7 @@ import { AdminRoleGuard } from '../auth/admin-role.guard';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { idParam } from '../admin/admin-catalog.schemas';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   generateBody,
@@ -54,8 +55,11 @@ export class PromoCodesAdminController {
   }
 
   @Post(':id/revoke')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Admin only: revoke an Unused Promo Code' })
-  revoke(@Param('id', ParseUUIDPipe) id: string): Promise<PromoCodeEntry> {
+  revoke(
+    @Param(new ZodValidationPipe(idParam)) { id }: { id: string },
+  ): Promise<PromoCodeEntry> {
     return this.promoCodes.revoke(id);
   }
 }

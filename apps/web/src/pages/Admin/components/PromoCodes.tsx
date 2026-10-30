@@ -15,6 +15,12 @@ import { translateApiError } from '../../../i18n/translateApiError';
 import { formatDate } from '../../../lib/dateFormat';
 import { localIso } from '../../../lib/pantry';
 import {
+  PROMO_COUNT_MAX,
+  PROMO_COUNT_MIN,
+  PROMO_CREDITS_DEFAULT,
+  PROMO_CREDITS_MAX,
+  PROMO_CREDITS_MIN,
+  PROMO_NOTE_MAX,
   useGeneratePromoCodes,
   usePromoCodes,
   useRevokePromoCode,
@@ -23,8 +29,6 @@ import {
 } from '../../../lib/promoCodes';
 
 type Filter = PromoCodeStatus | 'all';
-
-const DEFAULT_CREDITS = '100';
 
 const shortId = (id: string) => id.slice(0, 8);
 
@@ -37,11 +41,13 @@ export function PromoCodes() {
   const { t } = useTranslation(['admin', 'errors', 'common']);
   const toast = useToast();
   const [count, setCount] = useState('1');
-  const [credits, setCredits] = useState(DEFAULT_CREDITS);
+  const [credits, setCredits] = useState(String(PROMO_CREDITS_DEFAULT));
   const [note, setNote] = useState('');
   const [made, setMade] = useState<string[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
+  // Kept after close so the title does not blank during the exit transition.
   const [revoking, setRevoking] = useState<PromoCodeEntry | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const generate = useGeneratePromoCodes();
   const revoke = useRevokePromoCode();
   const list = usePromoCodes(filter === 'all' ? undefined : filter);
@@ -61,11 +67,11 @@ export function PromoCodes() {
   const creditsNumber = Number(credits);
   const valid =
     Number.isInteger(countNumber) &&
-    countNumber >= 1 &&
-    countNumber <= 50 &&
+    countNumber >= PROMO_COUNT_MIN &&
+    countNumber <= PROMO_COUNT_MAX &&
     Number.isInteger(creditsNumber) &&
-    creditsNumber >= 0 &&
-    creditsNumber <= 10000;
+    creditsNumber >= PROMO_CREDITS_MIN &&
+    creditsNumber <= PROMO_CREDITS_MAX;
 
   return (
     <Stack spacing={3}>
@@ -76,6 +82,7 @@ export function PromoCodes() {
         onSubmit={(event) => {
           event.preventDefault();
           if (!valid || generate.isPending) return;
+          revoke.reset();
           generate.mutate(
             {
               count: countNumber,
@@ -91,7 +98,9 @@ export function PromoCodes() {
           type="number"
           value={count}
           onChange={(event) => setCount(event.target.value)}
-          slotProps={{ htmlInput: { min: 1, max: 50, step: 1 } }}
+          slotProps={{
+            htmlInput: { min: PROMO_COUNT_MIN, max: PROMO_COUNT_MAX, step: 1 },
+          }}
           helperText={t('admin:promoCodes.countHelp')}
         />
         <TextField
@@ -99,14 +108,20 @@ export function PromoCodes() {
           type="number"
           value={credits}
           onChange={(event) => setCredits(event.target.value)}
-          slotProps={{ htmlInput: { min: 0, max: 10000, step: 1 } }}
+          slotProps={{
+            htmlInput: {
+              min: PROMO_CREDITS_MIN,
+              max: PROMO_CREDITS_MAX,
+              step: 1,
+            },
+          }}
           helperText={t('admin:promoCodes.creditsHelp')}
         />
         <TextField
           label={t('admin:promoCodes.note')}
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          slotProps={{ htmlInput: { maxLength: 500 } }}
+          slotProps={{ htmlInput: { maxLength: PROMO_NOTE_MAX } }}
           helperText={t('admin:promoCodes.noteHelp')}
         />
         <Button type="submit" disabled={!valid || generate.isPending}>
@@ -173,7 +188,12 @@ export function PromoCodes() {
             <Row
               entry={entry}
               onCopy={() => void copy(entry.code, t('admin:promoCodes.copied'))}
-              onRevoke={() => setRevoking(entry)}
+              onRevoke={() => {
+                generate.reset();
+                revoke.reset();
+                setRevoking(entry);
+                setConfirmOpen(true);
+              }}
             />
           </li>
         ))}
@@ -189,12 +209,12 @@ export function PromoCodes() {
       ) : null}
 
       <Dialog
-        open={revoking !== null}
-        onClose={() => setRevoking(null)}
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
         title={t('admin:promoCodes.revokeTitle', { code: revoking?.code })}
         actions={
           <>
-            <Button variant="ghost" onClick={() => setRevoking(null)}>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
               {t('common:cancel')}
             </Button>
             <Button
@@ -202,7 +222,7 @@ export function PromoCodes() {
               onClick={() =>
                 revoking &&
                 revoke.mutate(revoking.id, {
-                  onSettled: () => setRevoking(null),
+                  onSettled: () => setConfirmOpen(false),
                 })
               }
             >

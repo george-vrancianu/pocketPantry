@@ -22,6 +22,14 @@ export type PromoCodeEntry = {
   redeemedFamilyId: string | null;
 };
 
+/** Mirrors the API's generate limits (the API stays the source of truth). */
+export const PROMO_COUNT_MIN = 1;
+export const PROMO_COUNT_MAX = 50;
+export const PROMO_CREDITS_MIN = 0;
+export const PROMO_CREDITS_MAX = 10000;
+export const PROMO_NOTE_MAX = 500;
+export const PROMO_CREDITS_DEFAULT = 100;
+
 export type PromoCodeInput = { count: number; credits: number; note?: string };
 
 const listKey = ['admin-promo-codes'] as const;

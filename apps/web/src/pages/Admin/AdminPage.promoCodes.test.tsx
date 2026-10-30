@@ -154,12 +154,33 @@ describe('AdminPage Promo Codes tab', () => {
     );
   });
 
+  it('shows the error copy when a revoke is refused as not revocable', async () => {
+    const { user } = await open({
+      'POST /api/admin/promo-codes/p1/revoke': () =>
+        Response.json(
+          { code: 'promo_code.not_revocable', message: 'no' },
+          { status: 409 },
+        ),
+    });
+    await user.click(
+      await screen.findByRole('button', { name: 'Revoke code ABCDE-FGHJK' }),
+    );
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Revoke',
+      }),
+    );
+    expect(
+      await screen.findByText('Only an unused Promo Code can be revoked.'),
+    ).toBeInTheDocument();
+  });
+
   it('offers Revoke on Unused codes only, behind a confirmation', async () => {
     const revoked: string[] = [];
     const { user } = await open({
       'POST /api/admin/promo-codes/p1/revoke': () => {
         revoked.push('p1');
-        return Response.json({ ...unused, status: 'revoked' }, { status: 201 });
+        return Response.json({ ...unused, status: 'revoked' });
       },
     });
     await screen.findByText('ABCDE-FGHJK');

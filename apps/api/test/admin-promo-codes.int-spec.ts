@@ -121,7 +121,7 @@ describe('Admin Promo Codes (integration)', () => {
     const second = (await generate({ note: tag })).codes[0];
     const third = (await generate({ note: tag })).codes[0];
     const id = (await rowOf(second)).id;
-    await admin.post(`/${id}/revoke`).expect(201);
+    await admin.post(`/${id}/revoke`).expect(200);
 
     const all = mine(await list('limit=100')).filter((e) => e.note === tag);
     expect(all.map((e) => e.code)).toEqual([third, second, first]);
@@ -162,7 +162,7 @@ describe('Admin Promo Codes (integration)', () => {
   it('revokes an unused code once, then refuses with promo_code.not_revocable', async () => {
     const code = (await generate({ note: note('revoke') })).codes[0];
     const { id } = await rowOf(code);
-    await admin.post(`/${id}/revoke`).expect(201);
+    await admin.post(`/${id}/revoke`).expect(200);
     expect(await rowOf(code)).toMatchObject({ status: 'revoked' });
     const again = await admin.post(`/${id}/revoke`).expect(409);
     expect(again.body).toMatchObject({ code: 'promo_code.not_revocable' });
@@ -191,6 +191,11 @@ describe('Admin Promo Codes (integration)', () => {
     expect(row.redeemedAt).not.toBeNull();
     const response = await admin.post(`/${id}/revoke`).expect(409);
     expect(response.body).toMatchObject({ code: 'promo_code.not_revocable' });
+  });
+
+  it('answers validation_failed for a malformed id', async () => {
+    const response = await admin.post('/not-a-uuid/revoke').expect(400);
+    expect(response.body).toMatchObject({ code: 'validation_failed' });
   });
 
   it('answers promo_code.not_found for an unknown id', async () => {
