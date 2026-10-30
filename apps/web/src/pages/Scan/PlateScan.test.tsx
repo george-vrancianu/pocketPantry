@@ -190,6 +190,26 @@ describe('Plate Scan in the Scan Session', () => {
     ).toBeInTheDocument();
   });
 
+  it('after a pick, focus moves to the next card instead of falling to the page', async () => {
+    renderPlate();
+    takeScan();
+    await screen.findByRole('button', { name: /^Review 1 photo/ });
+    takeScan();
+    await userEvent.click(
+      await screen.findByRole('button', { name: /^Review 2 photos/ }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('group', { name: 'Pick the dish' }),
+      ).toHaveLength(2),
+    );
+    const [first, second] = screen.getAllByTestId('review-card');
+    await userEvent.click(
+      within(first).getByRole('button', { name: /Pancakes/ }),
+    );
+    await waitFor(() => expect(second).toHaveFocus());
+  });
+
   it('Review on the ready row opens New Recipe filled in, with plate matches offered and Standalone picked', async () => {
     const calls = renderPlate();
     await scanThenDone();

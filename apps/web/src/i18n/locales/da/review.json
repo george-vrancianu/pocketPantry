@@ -156,7 +156,6 @@
     "removeCard": "Fjern",
     "pickDish": "Vælg retten",
     "dishOption": "{{title}}, {{percent}} % sandsynlig",
-    "readAgain": "Læs igen",
     "banner_one": "Alle læst! {{count}} vare.",
     "banner_other": "Alle læst! {{count}} varer.",
     "bannerCheck_one": "Tjek den, jeg var usikker på, og læg den så til.",

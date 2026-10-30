@@ -166,7 +166,6 @@
     "removeCard": "Elimină",
     "pickDish": "Alege preparatul",
     "dishOption": "{{title}}, {{percent}}% probabil",
-    "readAgain": "Citește din nou",
     "banner_one": "Totul e citit! {{count}} articol.",
     "banner_few": "Totul e citit! {{count}} articole.",
     "banner_other": "Totul e citit! {{count}} de articole.",

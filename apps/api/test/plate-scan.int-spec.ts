@@ -69,6 +69,7 @@ type DraftView = {
       timer: string;
       tips?: Array<{ text: string }>;
     }>;
+    tips?: Array<{ text: string }>;
   };
 };
 type List = {
@@ -359,18 +360,16 @@ describe('Plate Scan (integration)', () => {
         { ingredientId: '', name: 'Grandma spice', optional: true },
       ]);
       expect(draft.content.steps).toMatchObject([
-        // A Tip of the whole Recipe is kept on the first Step: a Recipe Draft holds Step Tips only.
-        {
-          text: 'Whisk everything.',
-          timer: '',
-          tips: [{ text: 'Rest the batter first.' }],
-        },
+        { text: 'Whisk everything.', timer: '' },
         {
           text: 'Fry each side.',
           timer: '2',
           tips: [{ text: 'Keep the heat medium.' }],
         },
       ]);
+      // The Tip of the whole Recipe stays a Recipe Tip; it is not folded onto a Step.
+      expect(draft.content.tips).toEqual([{ text: 'Rest the batter first.' }]);
+      expect(draft.content.steps[0].tips).toBeUndefined();
       // No Guidance is produced.
       expect(draft.content.guidance).toEqual({
         nutritionNote: '',
@@ -378,6 +377,34 @@ describe('Plate Scan (integration)', () => {
         eatingMoments: [],
       });
       expect(await draftCount(cookie)).toBe(1);
+    });
+
+    it('keeps a Step Tip on its own Step when a blank Step is dropped before it, and drops a Tip whose Step is gone', async () => {
+      respondWith(
+        written({
+          steps: [
+            { text: 'Whisk.', timerMinutes: null },
+            { text: '   ', timerMinutes: null },
+            { text: 'Fry.', timerMinutes: null },
+          ],
+          tips: [
+            { stepIndex: 2, text: 'Medium heat.' },
+            { stepIndex: 1, text: 'On the blank one.' },
+            { stepIndex: 9, text: 'Nowhere.' },
+          ],
+        }),
+      );
+      const cookie = await signUp();
+      const { recipeDraftId } = (await recipe(cookie).expect(201)).body as {
+        recipeDraftId: string;
+      };
+      const { content } = await draftOf(cookie, recipeDraftId);
+      expect(content.steps).toMatchObject([
+        { text: 'Whisk.' },
+        { text: 'Fry.', tips: [{ text: 'Medium heat.' }] },
+      ]);
+      expect(content.steps[0].tips).toBeUndefined();
+      expect(content.tips ?? []).toEqual([]);
     });
 
     it('never trusts the model: an index outside the Catalog, a UUID or other value that is not an index, or a weak Match, is Unmatched', async () => {

@@ -36,7 +36,14 @@ export const cardId = (id: string) => `review-card-${id}`;
  * Picking one leaves the Scan Session: the dish is handed to the recipe-reads holder, which has the
  * server write it as a Recipe Draft while the Member keeps scanning. A full holder keeps the card.
  */
-export function PlateChoice({ scan }: { scan: SessionScan }) {
+export function PlateChoice({
+  scan,
+  onPicked,
+}: {
+  scan: SessionScan;
+  /** Called once the dish is handed over and the card is gone: the overview moves focus on, as Remove does. */
+  onPicked: () => void;
+}) {
   const { t } = useTranslation('review');
   const headingId = useId();
   const [full, setFull] = useState(false);
@@ -52,6 +59,7 @@ export function PlateChoice({ scan }: { scan: SessionScan }) {
       return;
     }
     dispatchScanSession({ type: 'remove', id: scan.id });
+    onPicked();
   };
 
   return (

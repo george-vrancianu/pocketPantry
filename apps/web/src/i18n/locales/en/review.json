@@ -156,7 +156,6 @@
     "removeCard": "Remove",
     "pickDish": "Pick the dish",
     "dishOption": "{{title}}, {{percent}}% likely",
-    "readAgain": "Read again",
     "banner_one": "All read! {{count}} item.",
     "banner_other": "All read! {{count}} items.",
     "bannerCheck_one": "Check the one I wasn't sure about, then add it.",

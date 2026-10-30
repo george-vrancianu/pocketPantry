@@ -40,6 +40,8 @@ export type RecipeDraft = {
   tagIds: string[];
   lines: LineDraft[];
   steps: StepDraft[];
+  /** Only on a draft that brings Tips of the whole Recipe (a Plate Scan): sent on create. */
+  tips?: StepTipDraft[];
 };
 
 export type DraftProblems = {

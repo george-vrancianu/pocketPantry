@@ -148,6 +148,16 @@ export function ReviewOverviewPage({
     setFocusId(null);
   }, [focusId]);
 
+  /** A card has just left the session (removed, or a dish picked): focus the next or previous card and let held-back scans go on. */
+  const afterRemoved = (scan: SessionScan) => {
+    const index = session.scans.indexOf(scan);
+    const next = session.scans[index + 1] ?? session.scans[index - 1];
+    settings.afterRemove?.(session.scans.length - 1);
+    setFocusId(next?.id ?? null);
+    // Scans held back by the Scan Cap can go on now.
+    readScans();
+  };
+
   const crop = async ({ area, rotation }: ReceiptCrop) => {
     const scan = cropping;
     setCropping(null);
@@ -324,7 +334,7 @@ export function ReviewOverviewPage({
               <Typography>{t('overview.reading')}</Typography>
             </Box>
           ) : scan.dishes ? (
-            <PlateChoice scan={scan} />
+            <PlateChoice scan={scan} onPicked={() => afterRemoved(scan)} />
           ) : isFailed ? (
             <>
               <Box
@@ -527,13 +537,8 @@ export function ReviewOverviewPage({
             aria-label={t('overview.remove')}
             disabled={saving}
             onClick={() => {
-              const index = session.scans.indexOf(scan);
-              const next = session.scans[index + 1] ?? session.scans[index - 1];
               dispatchScanSession({ type: 'remove', id: scan.id });
-              settings.afterRemove?.(session.scans.length - 1);
-              setFocusId(next?.id ?? null);
-              // Scans held back by the Scan Cap can go on now.
-              readScans();
+              afterRemoved(scan);
             }}
             sx={{
               position: 'relative',

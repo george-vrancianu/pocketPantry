@@ -100,6 +100,8 @@ export const recipeDraftContent = z
     tagIds: z.array(short).max(MAX_RECIPE_TAGS).default([]),
     lines: z.array(draftLine).max(MAX_LINES),
     steps: z.array(draftStep).max(MAX_STEPS),
+    /** Tips of the whole Recipe (absent on a draft saved before they existed); Step Tips live on their Step. */
+    tips: z.array(draftTip).max(MAX_TIPS).optional(),
     guidance: draftGuidance.nullable().default(null),
     /** Plate Scan: the Base Recipe the Member picked from the closest matches. */
     pickedBaseId: short.nullable().default(null),
@@ -114,7 +116,7 @@ export const recipeDraftContent = z
   .superRefine((content, ctx) => {
     const tips = content.steps.reduce(
       (sum, step) => sum + (step.tips?.length ?? 0),
-      0,
+      content.tips?.length ?? 0,
     );
     if (tips > MAX_TIPS) {
       ctx.addIssue({

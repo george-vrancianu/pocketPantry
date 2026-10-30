@@ -49,6 +49,9 @@ export function contentOfForm(form: RecipeDraftForm): RecipeDraftContent {
         ? { tips: step.tips.map((tip) => ({ text: tip.text })) }
         : {}),
     })),
+    ...(draft.tips?.length
+      ? { tips: draft.tips.map((tip) => ({ text: tip.text })) }
+      : {}),
     guidance: guidance
       ? {
           nutritionNote: guidance.nutritionNote,
@@ -113,6 +116,14 @@ export function formOfContent(content: RecipeDraftContent): RecipeDraftForm {
             }
           : {}),
       })),
+      ...(content.tips?.length
+        ? {
+            tips: content.tips.map((tip) => ({
+              key: newKey(),
+              text: tip.text,
+            })),
+          }
+        : {}),
     },
     guidance: content.guidance
       ? {

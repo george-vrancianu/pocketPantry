@@ -13,7 +13,8 @@ const TIP_MAX = 2000;
  * indexes named (null for an index no Catalog holds). The checks are the link reading's: a weak or
  * unknown Match leaves the line Unmatched, numbers out of range are dropped, and Guidance stays empty.
  *
- * A Recipe Draft holds Tips on Steps only, so a Tip of the whole Recipe is kept on the first Step.
+ * A Tip of the whole Recipe (`stepIndex` null) stays a Recipe Tip (`content.tips`); a Step Tip follows its
+ * Step through the filtering of blank Steps, and is dropped when its Step is gone or never existed.
  * Standalone is the stored base choice (`pickedBaseId` null); `plateScan` makes resuming ask for
  * the plate matches again.
  */
@@ -22,9 +23,14 @@ export function draftContentOfPlate(
   checked: { tagIds: string[]; ingredientIds: (string | null)[] },
   context: ReadingContext,
 ): RecipeDraftContent {
-  const steps = answer.steps
-    .filter((step) => step.text.trim() !== '')
-    .slice(0, MAX_STEPS);
+  // The model's Tips index `answer.steps`: remember where each kept Step came from.
+  const kept: { step: PlateRecipeAnswer['steps'][number]; from: number }[] = [];
+  answer.steps.forEach((step, from) => {
+    if (step.text.trim() !== '' && kept.length < MAX_STEPS) {
+      kept.push({ step, from });
+    }
+  });
+  const steps = kept.map(({ step }) => step);
   const draft = draftOfReading(
     {
       recipeFound: true,
@@ -48,20 +54,39 @@ export function draftContentOfPlate(
     },
     context,
   );
-  // `draftOfReading` keeps the Steps that have text, in order, so an index into `steps` still points at the same one.
-  const tips = answer.tips.flatMap((tip) => {
+  // `draftOfReading` keeps the Steps that have text, in order, so `kept` lines up with `draft.steps`.
+  const keptIndex = new Map(kept.map(({ from }, index) => [from, index]));
+  const stepTips: { stepIndex: number; text: string }[] = [];
+  const recipeTips: { text: string }[] = [];
+  for (const tip of answer.tips) {
     const text = tip.text.trim().slice(0, TIP_MAX);
-    if (text === '' || draft.steps.length === 0) return [];
-    const index = tip.stepIndex === null ? 0 : Math.round(tip.stepIndex);
-    return index >= 0 && index < draft.steps.length
-      ? [{ stepIndex: index, text }]
-      : [{ stepIndex: 0, text }];
-  });
+    if (text === '') continue;
+    if (tip.stepIndex === null) {
+      recipeTips.push({ text });
+      continue;
+    }
+    const stepIndex = keptIndex.get(tip.stepIndex);
+    if (stepIndex !== undefined) stepTips.push({ stepIndex, text });
+  }
+  // MAX_TIPS counts both levels; the Recipe's own Tips come first.
+  const wanted = [
+    ...recipeTips.map((tip) => ({ ...tip, stepIndex: null })),
+    ...stepTips,
+  ].slice(0, MAX_TIPS);
+  const ownTips = wanted.flatMap((tip) =>
+    tip.stepIndex === null ? [{ text: tip.text }] : [],
+  );
+  const onSteps = wanted.flatMap((tip) =>
+    tip.stepIndex === null
+      ? []
+      : [{ stepIndex: tip.stepIndex, text: tip.text }],
+  );
   return {
     ...draftContentOfLink(
-      { ...draft, tips: tips.slice(0, MAX_TIPS) },
+      { ...draft, tips: onSteps },
       { sourceLink: null, sourceLanguage: null, pickedBaseId: null },
     ),
+    ...(ownTips.length > 0 ? { tips: ownTips } : {}),
     plateScan: true,
     offersBases: false,
   };
