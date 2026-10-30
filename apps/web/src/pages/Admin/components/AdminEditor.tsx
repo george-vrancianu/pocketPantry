@@ -8,9 +8,33 @@ import { EatingMomentEditor } from './EatingMomentEditor';
 import { IngredientEditor } from './IngredientEditor';
 import { RecipeEditor } from './RecipeEditor';
 import { TagGroupEditor } from './TagGroupEditor';
+import { EditorSheet, useEditorLabel } from './EditorSheet';
 
-/** The editor for whatever `useAdminScreen().editing` names; it replaces the section's list. */
+/**
+ * The editor for whatever `useAdminScreen().editing` names. Recipes replace the section's list
+ * (the full-page editor); every other editor opens as a sheet over the list.
+ */
 export function AdminEditor({
+  screen,
+  catalog,
+}: {
+  screen: ReturnType<typeof useAdminScreen>;
+  catalog: AdminCatalog;
+}) {
+  const { editing } = screen;
+  const label = useEditorLabel(screen);
+  if (!editing) return null;
+  if (editing.type === 'recipe') {
+    return <PageEditor screen={screen} catalog={catalog} />;
+  }
+  return (
+    <EditorSheet label={label} onClose={screen.close}>
+      <PageEditor screen={screen} catalog={catalog} />
+    </EditorSheet>
+  );
+}
+
+function PageEditor({
   screen,
   catalog,
 }: {

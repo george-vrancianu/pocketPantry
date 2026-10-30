@@ -30,6 +30,7 @@ export function AdminSectionPage() {
         list = (
           <IngredientList
             ingredients={screen.ingredients}
+            catalog={catalog}
             filter={screen.filter}
             onFilterChange={screen.setFilter}
             onCreate={() => screen.edit({ type: 'ingredient', id: null })}
@@ -76,7 +77,7 @@ export function AdminSectionPage() {
         break;
       case 'tags':
         list = (
-          <Stack spacing={4}>
+          <Stack spacing={3}>
             <TagGroupList
               groups={catalog.tagGroups}
               onCreate={() => screen.edit({ type: 'tagGroup', id: null })}
@@ -122,10 +123,15 @@ export function AdminSectionPage() {
       <Stack spacing={3}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
         {screen.isLoading ? <Spinner label={t('common:loading')} /> : null}
-        {catalog && editing ? (
+        {catalog && editing?.type === 'recipe' ? (
           <AdminEditor screen={screen} catalog={catalog} />
         ) : (
-          list
+          <>
+            {list}
+            {catalog && editing ? (
+              <AdminEditor screen={screen} catalog={catalog} />
+            ) : null}
+          </>
         )}
       </Stack>
     </>

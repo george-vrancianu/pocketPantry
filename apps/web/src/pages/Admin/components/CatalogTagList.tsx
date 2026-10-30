@@ -1,4 +1,12 @@
-import { Button, Stack, Typography } from '@pocket-pantry/ui';
+import {
+  Box,
+  Card,
+  ChevronRightIcon,
+  ListRow,
+  ListRowItem,
+  TagIcon,
+  Typography,
+} from '@pocket-pantry/ui';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -6,6 +14,12 @@ import {
   type AdminCatalogTag,
   type AdminTagGroup,
 } from '../../../lib/admin';
+import {
+  CatalogSection,
+  NewButton,
+  RowEditButton,
+  RowTile,
+} from './CatalogRowParts';
 
 type Props = {
   /** In display order. */
@@ -15,27 +29,23 @@ type Props = {
   onEdit: (id: string) => void;
 };
 
-/** The Catalog Tags, listed under their Tag Group in group order. */
+/** The Catalog Tags, a Card of rows under each Tag Group heading, in group order. */
 export function CatalogTagList({ groups, tags, onCreate, onEdit }: Props) {
   const { t, i18n } = useTranslation('admin');
   const headingId = useId();
   return (
-    <Stack spacing={1} component="section" aria-labelledby={headingId}>
-      <Typography id={headingId} component="h2" variant="h6">
-        {t('tag.title')}
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        {t('tag.hint')}
-      </Typography>
-      <div>
-        <Button onClick={onCreate} disabled={groups.length === 0}>
-          {t('tag.new')}
-        </Button>
-      </div>
+    <CatalogSection
+      id={headingId}
+      title={t('tag.title')}
+      count={tags.length}
+      hint={t('tag.hint')}
+    >
       {tags.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {t('tag.empty')}
-        </Typography>
+        <Card sx={{ p: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            {t('tag.empty')}
+          </Typography>
+        </Card>
       ) : null}
       {groups.map((group) => {
         const inGroup = tags
@@ -45,31 +55,53 @@ export function CatalogTagList({ groups, tags, onCreate, onEdit }: Props) {
         if (inGroup.length === 0) return null;
         const groupName = localName(group, i18n.language);
         return (
-          <Stack key={group.id} spacing={0.5}>
-            <Typography variant="sectionLabel" color="text.secondary">
+          <Box key={group.id} sx={{ display: 'grid', gap: 0.5 }}>
+            <Typography
+              variant="sectionLabel"
+              color="text.secondary"
+              sx={{ px: 0.5 }}
+            >
               {groupName}
             </Typography>
-            <Stack
+            <Card
               component="ul"
+              variant="list"
               aria-label={groupName}
-              spacing={0.5}
-              sx={{ m: 0, p: 0, listStyle: 'none' }}
+              sx={{ listStyle: 'none', m: 0, overflow: 'hidden' }}
             >
               {inGroup.map(({ tag, name }) => (
-                <li key={tag.id}>
-                  <Button
-                    variant="ghost"
-                    aria-label={t('tag.edit', { name })}
-                    onClick={() => onEdit(tag.id)}
-                  >
-                    {name}
-                  </Button>
-                </li>
+                <ListRowItem key={tag.id}>
+                  <ListRow
+                    leading={
+                      <RowTile>
+                        <TagIcon size={19} />
+                      </RowTile>
+                    }
+                    title={
+                      <RowEditButton
+                        label={t('tag.edit', { name })}
+                        onClick={() => onEdit(tag.id)}
+                      >
+                        {name}
+                      </RowEditButton>
+                    }
+                    trailing={
+                      <Box sx={{ pr: 1.5, display: 'flex' }}>
+                        <ChevronRightIcon size={18} />
+                      </Box>
+                    }
+                  />
+                </ListRowItem>
               ))}
-            </Stack>
-          </Stack>
+            </Card>
+          </Box>
         );
       })}
-    </Stack>
+      <Box sx={{ justifySelf: 'start' }}>
+        <NewButton onClick={onCreate} disabled={groups.length === 0}>
+          {t('tag.new')}
+        </NewButton>
+      </Box>
+    </CatalogSection>
   );
 }

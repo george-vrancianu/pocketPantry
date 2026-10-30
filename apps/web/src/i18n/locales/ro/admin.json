@@ -40,7 +40,8 @@
       "saved": "Alergenii au fost salvați.",
       "reviewTitle": "De verificat",
       "reviewHint": "Preluat de la un ingredient al unei familii. Verifică etichetele și salvează pentru a le confirma."
-    }
+    },
+    "unchecked": "Neverificat"
   },
   "aisle": {
     "title": "Raioane",
@@ -64,7 +65,9 @@
     "defaultLocation": "Locație implicită",
     "expiryInvalid": "Introdu un număr întreg de zile între 0 și {{max}}, sau lasă gol pentru a moșteni.",
     "otherLeafNote": "Aceasta este Categoria frunză Altele a Categoriei părinte. Primește Loturile nepotrivite, deci nu poate fi mutată sau ștearsă.",
-    "leafCount": "Categorii frunză: {{count}}"
+    "leafCount": "Categorii frunză: {{count}}",
+    "expiresIn": "Expiră în {{days}} z",
+    "usesDefaults": "Folosește valorile implicite ale {{parent}}"
   },
   "translations": {
     "title": "Traduceri și Sinonime",

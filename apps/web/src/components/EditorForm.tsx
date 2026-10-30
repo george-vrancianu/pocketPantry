@@ -77,7 +77,7 @@ export function EditorForm({
       ) : null}
       {error ? <Alert>{errorText ?? translateApiError(t, error)}</Alert> : null}
       {children}
-      <Stack direction="row" spacing={1}>
+      <Stack direction="row" spacing={1} data-editor-actions>
         <Button type="submit" disabled={saving || !canSave}>
           {saving
             ? (savingLabel ?? t('admin:common.saving'))
