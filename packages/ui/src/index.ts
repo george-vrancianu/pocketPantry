@@ -129,6 +129,7 @@ export {
   NutritionIcon,
   CheckIcon,
   ClockIcon,
+  LayersIcon,
   IngredientsScanIcon,
   ReceiptIcon,
   CloseIcon,

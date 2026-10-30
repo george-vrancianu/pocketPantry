@@ -2,7 +2,9 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { Route, Routes } from 'react-router-dom';
 import { AdminPage } from './AdminPage';
+import { AdminSectionPage } from './AdminSectionPage';
 
 const catalog = {
   aisles: [],
@@ -48,7 +50,7 @@ const catalog = {
   ingredients: [],
 };
 
-describe('AdminPage Recipes tab', () => {
+describe('AdminSectionPage Recipes section', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
@@ -71,14 +73,16 @@ describe('AdminPage Recipes tab', () => {
           ]),
       }).fetchMock,
     );
-    renderWithProviders(<AdminPage />);
+    renderWithProviders(
+      <Routes>
+        <Route path="admin" element={<AdminPage />} />
+        <Route path="admin/:section" element={<AdminSectionPage />} />
+      </Routes>,
+      { route: '/admin?tab=catalog' },
+    );
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole('button', { name: 'Recipes' }));
-    expect(
-      await screen.findByRole('button', { name: 'Edit Recipe Pizza' }),
-    ).toBeInTheDocument();
-
+    await user.click(await screen.findByRole('button', { name: /^Tags/ }));
     await user.click(
       screen.getByRole('button', { name: 'Edit Tag Group Cuisine' }),
     );
@@ -95,7 +99,11 @@ describe('AdminPage Recipes tab', () => {
       screen.getByRole('heading', { name: 'Edit Catalog Tag Italian' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('link', { name: /Catalog/ }));
 
+    await user.click(
+      await screen.findByRole('button', { name: /^Eating Moments/ }),
+    );
     await user.click(
       screen.getByRole('button', { name: 'Edit Eating Moment Lunch' }),
     );
@@ -103,7 +111,14 @@ describe('AdminPage Recipes tab', () => {
       screen.getByRole('heading', { name: 'Edit Eating Moment Lunch' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('link', { name: /Catalog/ }));
 
+    await user.click(
+      await screen.findByRole('button', { name: /^Catalog Recipes/ }),
+    );
+    expect(
+      await screen.findByRole('button', { name: 'Edit Recipe Pizza' }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'New Base Recipe' }));
     expect(
       screen.getByRole('heading', { name: 'New Base Recipe' }),

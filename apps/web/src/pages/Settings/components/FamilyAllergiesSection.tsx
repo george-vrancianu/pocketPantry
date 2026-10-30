@@ -15,7 +15,7 @@ import {
   useFamilyAllergies,
   useRemoveFamilyAllergy,
 } from '../../../lib/settings';
-import { SectionHeading } from './SectionHeading';
+import { SectionHeading } from '../../../components/SectionHeading';
 
 /**
  * The Family's Allergies for people without an account, such as a child, each with an optional label.

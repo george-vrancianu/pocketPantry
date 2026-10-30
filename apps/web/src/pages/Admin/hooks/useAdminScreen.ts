@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   localName,
@@ -9,8 +10,9 @@ import {
   type CategoryKind,
 } from '../../../lib/admin';
 
-export type AdminTab =
-  'ingredients' | 'categories' | 'recipes' | 'unmatched' | 'promoCodes';
+export type AdminTab = 'review' | 'catalog' | 'codes';
+const TABS: readonly AdminTab[] = ['review', 'catalog', 'codes'];
+const TAB_PARAM = 'tab';
 export type Editing =
   | { type: 'ingredient'; id: string | null }
   | { type: 'aisle'; id: string | null }
@@ -21,11 +23,23 @@ export type Editing =
   | { type: 'tag'; id: string | null }
   | { type: 'category'; kind: CategoryKind; id: string | null };
 
-/** State of the Admin screen: loaded Catalog, tab, Ingredient filter, and which editor is open. */
+/** State of the Admin screen: loaded Catalog, the tab (kept in `?tab=`, To review by default), Ingredient filter, and which editor is open. */
 export function useAdminScreen() {
   const { t, i18n } = useTranslation(['admin', 'errors']);
   const query = useAdminCatalog();
-  const [tab, setTab] = useState<AdminTab>('ingredients');
+  const [params, setParams] = useSearchParams();
+  const requested = params.get(TAB_PARAM);
+  const tab = TABS.find((value) => value === requested) ?? 'review';
+  const setTab = (next: AdminTab) => {
+    setParams(
+      (current) => {
+        const copy = new URLSearchParams(current);
+        copy.set(TAB_PARAM, next);
+        return copy;
+      },
+      { replace: true },
+    );
+  };
   const [filter, setFilter] = useState('');
   const [editing, setEditing] = useState<Editing | null>(null);
   const catalog = query.data;

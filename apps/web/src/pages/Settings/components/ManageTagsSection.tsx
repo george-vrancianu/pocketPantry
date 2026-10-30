@@ -26,7 +26,7 @@ import {
 } from '../../../lib/familyTags';
 import { MAX_TAG_NAME_LENGTH } from '../../../lib/tags';
 import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
-import { SectionHeading } from './SectionHeading';
+import { SectionHeading } from '../../../components/SectionHeading';
 
 type Editing = { id: string; value: string };
 type Merging = { id: string; from: string; name: string };
