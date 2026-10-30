@@ -210,10 +210,13 @@ export function createRecipeReads() {
           return;
         }
         if (isBudgetRefusal(error)) {
-          // The cap (or the Credits) refuses every read from here: those waiting behind it are held with it.
+          // The Credits refuse every read from here; a kind's own cap (the Link Cap) refuses only that
+          // kind. Those waiting behind the refusal are held with it.
+          const holds = (r: RecipeRead) =>
+            isOutOfCredits(error) || r.kind === read.kind;
           set(
             state.reads.map((r) =>
-              r.id === read.id || r.status === 'waiting'
+              r.id === read.id || (r.status === 'waiting' && holds(r))
                 ? { ...r, status: 'capped', error }
                 : r,
             ),

@@ -38,8 +38,6 @@ type Translate = TFunction<['background', 'recipes', 'errors']>;
  * them, so a new kind supplies only this.
  */
 type RecipeReadRow = {
-  /** The read as the Member would name it ("example.com"), used in button labels. */
-  what: string;
   /** The row's title for the read's status. */
   title: string;
   /** The row's detail line for the read's status. */
@@ -55,6 +53,8 @@ type RecipeReadRow = {
   };
   /** Kind-specific buttons offered on a failed row, before Retry. */
   failedActions: BackgroundAction[];
+  /** Whether a failed row offers Retry (a read whose token is spent offers its own button instead). */
+  retryable: boolean;
 };
 
 /** The link kind's row: a link or pasted text. */
@@ -98,7 +98,6 @@ function linkRow(
     });
   }
   return {
-    what,
     title,
     detail:
       read.status === 'failed' || read.status === 'capped'
@@ -113,6 +112,7 @@ function linkRow(
       review: t('background:link.review', { what }),
     },
     failedActions,
+    retryable: true,
   };
 }
 
@@ -186,13 +186,14 @@ export function useRecipeReadBackgroundItems(enabled = true): BackgroundItem[] {
         onClick: () => recipeReads.discard(read.id),
       });
       actions.push(...row.failedActions);
-      actions.push({
-        type: 'button',
-        tone: 'primary',
-        label: t('background:link.retry'),
-        ariaLabel: row.labels.retryRead,
-        onClick: () => recipeReads.retry(read.id),
-      });
+      if (row.retryable)
+        actions.push({
+          type: 'button',
+          tone: 'primary',
+          label: t('background:link.retry'),
+          ariaLabel: row.labels.retryRead,
+          onClick: () => recipeReads.retry(read.id),
+        });
     }
 
     return {

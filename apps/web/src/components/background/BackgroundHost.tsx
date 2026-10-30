@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { haptic } from '../../lib/haptic';
-import { recipeReads as recipeReadsHolder } from '../../lib/recipeReads';
+import {
+  recipeReads as recipeReadsHolder,
+  type RecipeReadKind,
+} from '../../lib/recipeReads';
+import type { TFunction } from 'i18next';
+import type { BackgroundItem } from './backgroundItem';
 import {
   announcedScanFailed,
   announceScanFailed,
@@ -19,6 +24,27 @@ import {
   summarizeScanSession,
   useScanSessionBackgroundItems,
 } from './useScanSessionBackgroundItems';
+
+/** Each recipe read kind's failure alert, by the `background` key: a new kind adds its own. */
+const RECIPE_READ_FAILED_ALERT: Record<RecipeReadKind, string> = {
+  link: 'link.failedAlert',
+};
+
+/** The alert for the failed recipe reads, worded per kind ("2 recipe links failed"). */
+function recipeFailedAlert(
+  items: BackgroundItem[],
+  t: TFunction<'background'>,
+): string {
+  return (Object.keys(RECIPE_READ_FAILED_ALERT) as RecipeReadKind[])
+    .map((kind) => ({
+      kind,
+      count: items.filter((i) => i.kind === kind && i.status === 'failed')
+        .length,
+    }))
+    .filter(({ count }) => count > 0)
+    .map(({ kind, count }) => t(RECIPE_READ_FAILED_ALERT[kind], { count }))
+    .join('. ');
+}
 
 /**
  * Announced assertively once, when something fails, even if it fails while the strip is hidden. The
@@ -130,9 +156,7 @@ export function BackgroundHost({
     scanAlerting
       ? tBackground('scan.failedAlert', { count: summary.failed })
       : null,
-    recipeAlerting
-      ? tBackground('link.failedAlert', { count: recipeFailed })
-      : null,
+    recipeAlerting ? recipeFailedAlert(recipeItems, tBackground) : null,
   ]
     .filter(Boolean)
     .join('. ');
