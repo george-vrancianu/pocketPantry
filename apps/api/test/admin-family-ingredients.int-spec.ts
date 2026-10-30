@@ -237,14 +237,25 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
 
     it('pages with a cursor', async () => {
       await made(a, unique('Afi Page'));
+      await made(a, unique('Afi Page'));
+      const all = await admin.get('/admin/family-ingredients?limit=100');
       const first = await admin.get('/admin/family-ingredients?limit=1');
       expect(first.status).toBe(200);
       const body = first.body as {
+        total: number;
         groups: Group[];
         nextCursor: string | null;
       };
       expect(body.groups).toHaveLength(1);
       expect(typeof body.nextCursor).toBe('string');
+      // `total` counts every group in the queue, not the page.
+      const everything = (all.body as { groups: Group[] }).groups;
+      expect(body.total).toBeGreaterThan(1);
+      expect(body.total).toBe(everything.length);
+      const second = await admin.get(
+        `/admin/family-ingredients?limit=1&cursor=${body.nextCursor}`,
+      );
+      expect((second.body as { total: number }).total).toBe(body.total);
       await admin.get('/admin/family-ingredients?limit=101').expect(400);
       await admin
         .get('/admin/family-ingredients?cursor=not-a-cursor')

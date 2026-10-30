@@ -701,6 +701,7 @@ describe('Admin: merge Family Ingredients, Synonym candidates (integration)', ()
       for (const name of names) await linkSynonym(a, name, target.id);
 
       const seen: string[] = [];
+      const totals = new Set<number>();
       let cursor: string | null = null;
       for (let page = 0; page < 500; page++) {
         const res: request.Response = await admin.get(
@@ -708,10 +709,12 @@ describe('Admin: merge Family Ingredients, Synonym candidates (integration)', ()
         );
         expect(res.status).toBe(200);
         const body = res.body as {
+          total: number;
           candidates: Candidate[];
           nextCursor: string | null;
         };
         expect(body.candidates.length).toBeLessThanOrEqual(1);
+        totals.add(body.total);
         seen.push(
           ...body.candidates.map(
             (x) => `${x.normalizedName}|${x.ingredient.id}`,
@@ -721,6 +724,9 @@ describe('Admin: merge Family Ingredients, Synonym candidates (integration)', ()
         if (!cursor) break;
       }
       expect(new Set(seen).size).toBe(seen.length);
+      // `total` counts the whole queue on every page, not the page.
+      expect(seen.length).toBeGreaterThan(1);
+      expect([...totals]).toEqual([seen.length]);
       for (const name of names) {
         expect(seen).toContain(`${normalizeName(name)}|${target.id}`);
       }

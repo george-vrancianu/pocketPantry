@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import {
   catalogScope,
   familyOwnedIngredients,
@@ -55,16 +55,24 @@ export class FamilyIngredientsAdminService {
     const after = query.cursor
       ? sql`${count} < ${query.cursor.count} or (${count} = ${query.cursor.count} and ${name} > ${query.cursor.name} collate "C")`
       : sql`true`;
-    const groups = await this.database
-      .select({
-        normalizedName: owned.normalizedName,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(owned)
-      .groupBy(owned.normalizedName)
-      .having(after)
-      .orderBy(desc(count), name)
-      .limit(query.limit + 1);
+    const grouped = (having: SQL) =>
+      this.database
+        .select({
+          normalizedName: owned.normalizedName,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(owned)
+        .groupBy(owned.normalizedName)
+        .having(having);
+    const [groups, [totalRow]] = await Promise.all([
+      grouped(after)
+        .orderBy(desc(count), name)
+        .limit(query.limit + 1),
+      // Every group, whatever the cursor: drives the badges.
+      this.database
+        .select({ total: sql<number>`count(*)::int` })
+        .from(grouped(sql`true`).as('groups')),
+    ]);
     const page = groups.slice(0, query.limit);
     const last = page.at(-1);
 
@@ -101,6 +109,7 @@ export class FamilyIngredientsAdminService {
       ]);
     }
     return {
+      total: totalRow?.total ?? 0,
       groups: page.flatMap((group) => {
         const copies = copiesOf.get(group.normalizedName);
         // Promoted between the two reads: gone from the queue.
