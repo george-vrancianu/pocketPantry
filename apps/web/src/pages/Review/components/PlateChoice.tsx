@@ -1,10 +1,7 @@
 import { Alert, Box, Typography, tokens, radius } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateApiError } from '../../../i18n/translateApiError';
-import { ApiError } from '../../../lib/api';
-import { usePlateIngredients } from '../../../lib/plate';
-import { readScans } from '../../../lib/scanReads';
+import { recipeReads } from '../../../lib/recipeReads';
 import {
   dispatchScanSession,
   type SessionScan,
@@ -34,59 +31,28 @@ const buttonSx = {
 
 export const cardId = (id: string) => `review-card-${id}`;
 
-/** The picker leaves the card, so focus goes to the card rather than to the page. */
-const focusCard = (id: string) =>
-  setTimeout(() => document.getElementById(cardId(id))?.focus());
-
 /**
- * A read Plate Scan's dish guesses, most likely first. Picking one loads its ingredients into the
- * card. When the Plate token has expired the guesses are no use: the Member reads the photo again.
+ * A read Plate Scan's dish guesses, most likely first, and nothing else to review (ADR 0035).
+ * Picking one leaves the Scan Session: the dish is handed to the recipe-reads holder, which has the
+ * server write it as a Recipe Draft while the Member keeps scanning. A full holder keeps the card.
  */
 export function PlateChoice({ scan }: { scan: SessionScan }) {
   const { t } = useTranslation('review');
   const headingId = useId();
-  const ingredients = usePlateIngredients();
-  const [expired, setExpired] = useState(false);
+  const [full, setFull] = useState(false);
 
-  if (expired) {
-    return (
-      <Box
-        component="button"
-        type="button"
-        autoFocus
-        onClick={() => {
-          dispatchScanSession({ type: 'reread', id: scan.id });
-          readScans();
-          focusCard(scan.id);
-        }}
-        sx={{ ...buttonSx, mt: 0.5 }}
-      >
-        {t('overview.readAgain')}
-      </Box>
-    );
-  }
-
-  const pick = (dishTitle: string) =>
-    ingredients.mutate(
-      { dishTitle, plateToken: scan.plateToken ?? '' },
-      {
-        onSuccess: ({ lines, tagIds }) => {
-          dispatchScanSession({
-            type: 'pick',
-            id: scan.id,
-            lines,
-            dishTitle,
-            tagIds,
-          });
-          focusCard(scan.id);
-        },
-        onError: (error) =>
-          setExpired(
-            error instanceof ApiError &&
-              error.code === 'scan.plate_token_invalid',
-          ),
-      },
-    );
+  const pick = (title: string) => {
+    const outcome = recipeReads.add({
+      kind: 'plate',
+      title,
+      token: scan.plateToken ?? '',
+    });
+    if (outcome === 'full') {
+      setFull(true);
+      return;
+    }
+    dispatchScanSession({ type: 'remove', id: scan.id });
+  };
 
   return (
     <Box sx={{ mt: 0.5 }}>
@@ -105,7 +71,6 @@ export function PlateChoice({ scan }: { scan: SessionScan }) {
               key={dish.title}
               component="button"
               type="button"
-              disabled={ingredients.isPending}
               aria-label={t('overview.dishOption', {
                 title: dish.title,
                 percent,
@@ -119,9 +84,9 @@ export function PlateChoice({ scan }: { scan: SessionScan }) {
           );
         })}
       </Box>
-      {ingredients.error && !expired ? (
+      {full ? (
         <Box sx={{ mt: 1 }}>
-          <Alert>{translateApiError(t, ingredients.error)}</Alert>
+          <Alert>{t('overview.readsFull')}</Alert>
         </Box>
       ) : null}
     </Box>

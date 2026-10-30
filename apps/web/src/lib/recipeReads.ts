@@ -7,6 +7,7 @@ import {
   type ReadingLanguage,
   type RecipeFromLink,
 } from './linkRecipe';
+import { writePlateRecipe } from './plate';
 
 /** At most this many recipe reads run at once; the rest wait in the order they were started. */
 export const MAX_RECIPE_READS = 2;
@@ -52,9 +53,22 @@ export type LinkRecipeRead = RecipeReadBase & {
   site: string | null;
 };
 
+/** A Plate Scan dish being written as a Recipe (ADR 0035): the picked guess and the token that proves the Scan guessed it. */
+export type PlateRecipeRead = RecipeReadBase & {
+  kind: 'plate';
+  /** The dish the Member picked. */
+  title: string;
+  /** The Plate token of the Scan; the request spends it. */
+  token: string;
+};
+
 /** A read in the holder. A new kind joins this union (see `startRead`). */
-export type RecipeRead = LinkRecipeRead;
+export type RecipeRead = LinkRecipeRead | PlateRecipeRead;
 export type RecipeReadKind = RecipeRead['kind'];
+
+/** The Recipe from Link reads among `reads`. */
+export const linkReadsOf = (reads: RecipeRead[]): LinkRecipeRead[] =>
+  reads.filter((r): r is LinkRecipeRead => r.kind === 'link');
 
 /** A read as a caller hands it over: the holder gives it its id, order and status. */
 export type NewRecipeRead = DistributiveOmit<RecipeRead, keyof RecipeReadBase>;
@@ -90,6 +104,12 @@ function startRead(
           ? { duplicate: true }
           : { recipeDraftId: result.recipeDraftId },
       );
+    case 'plate':
+      return writePlateRecipe({
+        dishTitle: read.title,
+        plateToken: read.token,
+        signal: options.signal,
+      });
   }
 }
 
@@ -120,7 +140,7 @@ const isBudgetRefusal = (error: unknown) =>
   isCapReached(error) || isOutOfCredits(error);
 
 /**
- * The recipe-read holder: the Member's reads that keep a Recipe Draft (a link or pasted text now), kept in memory outside any page, like the Voice Inbox.
+ * The recipe-read holder: the Member's reads that keep a Recipe Draft (a link, pasted text or a Plate Scan dish), kept in memory outside any page, like the Voice Inbox.
  * It reads with plain API requests, not a page's mutation or the query cache, so a read outlives the
  * sheet that started it and every page change. At most `MAX_RECIPE_READS` run; the rest wait in the
  * order started. Sign-out clears it, dropping every read silently.
@@ -146,7 +166,7 @@ export function createRecipeReads() {
     state = { reads };
     listeners.forEach((listener) => listener());
   };
-  const patch = (id: number, changes: Partial<RecipeRead>) =>
+  const patch = (id: number, changes: Partial<RecipeReadBase>) =>
     set(state.reads.map((r) => (r.id === id ? { ...r, ...changes } : r)));
   const find = (id: number) => state.reads.find((r) => r.id === id);
 

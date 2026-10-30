@@ -175,7 +175,8 @@
     "bannerCheck_other": "Verifică cele {{count}} de care nu am fost sigur, apoi adaugă-le.",
     "bannerClear_one": "Nu e nimic de verificat. Adaugă-l când ești gata.",
     "bannerClear_few": "Nu e nimic de verificat. Adaugă-le când ești gata.",
-    "bannerClear_other": "Nu e nimic de verificat. Adaugă-le când ești gata."
+    "bannerClear_other": "Nu e nimic de verificat. Adaugă-le când ești gata.",
+    "readsFull": "Mai multe rețete te așteaptă. Verifică sau anulează una mai întâi."
   },
   "plateRecipe": {
     "open": "Salvează ca rețetă",

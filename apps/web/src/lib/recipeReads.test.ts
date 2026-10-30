@@ -105,3 +105,90 @@ describe('recipe reads', () => {
     holder.clear();
   });
 });
+
+describe('plate reads', () => {
+  const answers: Array<Response> = [];
+  const sent: Array<{ url: string; body: unknown }> = [];
+
+  beforeEach(() => {
+    answers.length = 0;
+    sent.length = 0;
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+      sent.push({
+        url: String(input),
+        body: JSON.parse(String(init?.body)),
+      });
+      return Promise.resolve(answers.shift() ?? new Response(null));
+    });
+  });
+
+  const plate = (title: string) => ({
+    kind: 'plate' as const,
+    title,
+    token: `token-${title}`,
+  });
+
+  it('writes the picked dish with its token and keeps the Recipe Draft it answers with', async () => {
+    answers.push(Response.json({ recipeDraftId: 'draft-1' }));
+    const holder = createRecipeReads();
+    expect(holder.add(plate('Pancakes'))).toBe('started');
+    await vi.waitFor(() =>
+      expect(holder.getState().reads[0]).toMatchObject({
+        status: 'ready',
+        recipeDraftId: 'draft-1',
+      }),
+    );
+    expect(sent).toEqual([
+      {
+        url: '/api/scan/plate/recipe',
+        body: { dishTitle: 'Pancakes', plateToken: 'token-Pancakes' },
+      },
+    ]);
+    holder.clear();
+  });
+
+  it('shares the limits with link reads: two read at once, five are held', () => {
+    vi.stubGlobal('fetch', () => new Promise<Response>(() => {}));
+    const holder = createRecipeReads();
+    holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source');
+    holder.add(plate('A'));
+    holder.add(plate('B'));
+    expect(holder.getState().reads.map((r) => r.status)).toEqual([
+      'reading',
+      'reading',
+      'waiting',
+    ]);
+    holder.add(plate('C'));
+    holder.add(plate('D'));
+    expect(holder.add(plate('E'))).toBe('full');
+    holder.clear();
+  });
+
+  it('a Link Cap refusal holds the waiting link reads but not the waiting plate reads', async () => {
+    vi.stubGlobal('fetch', (input: RequestInfo | URL) =>
+      String(input).includes('from-link')
+        ? Promise.resolve(
+            Response.json(
+              { code: 'link.cap_reached', params: {} },
+              { status: 429 },
+            ),
+          )
+        : new Promise<Response>(() => {}),
+    );
+    const holder = createRecipeReads();
+    holder.add(plate('Slow'));
+    holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source');
+    holder.add(plate('Waiting'));
+    holder.submit({ kind: 'link', url: 'https://b.example/x' }, 'source');
+    await vi.waitFor(() =>
+      expect(holder.getState().reads.map((r) => r.status)).toEqual([
+        'reading',
+        'capped',
+        // Its slot freed, the plate read waiting behind the refusal started.
+        'reading',
+        'capped',
+      ]),
+    );
+    holder.clear();
+  });
+});

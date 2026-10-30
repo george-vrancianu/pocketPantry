@@ -1,7 +1,11 @@
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { recipeReads, MAX_HELD_RECIPE_READS } from '../../lib/recipeReads';
+import {
+  linkReadsOf,
+  recipeReads,
+  MAX_HELD_RECIPE_READS,
+} from '../../lib/recipeReads';
 import { MAX_PASTED_TEXT_LENGTH } from '../../lib/linkRecipe';
 import { renderWithProviders, stubApi } from '../../test/render';
 import {
@@ -257,7 +261,7 @@ describe('"From text" sheet', () => {
       await user.type(field(), 'two eggs');
       await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
       expect(second.onClose).toHaveBeenCalled();
-      const reads = recipeReads.getState().reads;
+      const reads = linkReadsOf(recipeReads.getState().reads);
       expect(reads).toHaveLength(1);
       expect(reads[0].source.kind).toBe('text');
     });
