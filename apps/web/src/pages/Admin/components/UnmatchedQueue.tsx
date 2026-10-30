@@ -1,5 +1,4 @@
 import {
-  Alert,
   AlertIcon,
   Box,
   Card,
@@ -14,7 +13,6 @@ import {
 } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateApiError } from '../../../i18n/translateApiError';
 import { useReviewCounts } from '../../../lib/reviewCounts';
 import type { AdminCatalog } from '../../../lib/admin';
 import {
@@ -55,11 +53,15 @@ export function UnmatchedQueue({ catalog }: Props) {
   const { t } = useTranslation(['admin', 'errors', 'common']);
   const [kind, setKind] = useState<Kind>('unmatched');
   const counts = useReviewCounts();
+  const dismiss = useDismissUnmatched();
+  const removal = useDeferredRemoval(unmatchedQueueKey, dismiss.mutateAsync);
+  // The removal lives here, not in UnmatchedNames, so switching kind does not send it early.
+  const waitingCount = useWaitingCount(removal.hiddenIds);
   const kindOptions: { value: Kind; label: string; badge: number }[] = [
     {
       value: 'unmatched',
       label: t('admin:review.kinds.unmatched'),
-      badge: counts.unmatched,
+      badge: Math.max(0, counts.unmatched - waitingCount),
     },
     {
       value: 'family',
@@ -83,21 +85,43 @@ export function UnmatchedQueue({ catalog }: Props) {
       />
       {kind === 'family' ? <FamilyIngredientsQueue /> : null}
       {kind === 'synonyms' ? <FamilySynonymsQueue /> : null}
-      {kind === 'unmatched' ? <UnmatchedNames catalog={catalog} /> : null}
+      {kind === 'unmatched' ? (
+        <UnmatchedNames
+          catalog={catalog}
+          removal={removal}
+          dismissPending={dismiss.isPending}
+          waitingCount={waitingCount}
+        />
+      ) : null}
     </Stack>
   );
 }
 
-function UnmatchedNames({ catalog }: Props) {
+/** How many open names are hidden while they wait on their Undo; names already gone from the data do not count. */
+function useWaitingCount(hiddenIds: ReadonlySet<string>) {
+  const open = useUnmatchedQueue('open');
+  return (open.data?.entries ?? []).filter((entry) =>
+    hiddenIds.has(entry.normalizedName),
+  ).length;
+}
+
+function UnmatchedNames({
+  catalog,
+  removal,
+  dismissPending,
+  waitingCount,
+}: Props & {
+  removal: ReturnType<typeof useDeferredRemoval<string>>;
+  dismissPending: boolean;
+  waitingCount: number;
+}) {
   const { t } = useTranslation(['admin', 'errors', 'common']);
   const [status, setStatus] = useState<UnmatchedStatus>('open');
   const [notice, setNotice] = useState<string | null>(null);
   const open = useUnmatchedQueue('open');
   const dismissedQueue = useUnmatchedQueue('dismissed');
   const queue = status === 'open' ? open : dismissedQueue;
-  const dismiss = useDismissUnmatched();
   const undismiss = useUndismissUnmatched();
-  const removal = useDeferredRemoval(unmatchedQueueKey, dismiss.mutateAsync);
   // A name waiting on its Undo stays out of the list, refetches included, until its dismiss has settled.
   const entries = (queue.data?.entries ?? []).filter(
     (entry) => !removal.hiddenIds.has(entry.normalizedName),
@@ -120,7 +144,6 @@ function UnmatchedNames({ catalog }: Props) {
     status === 'open' && entries.length > 0,
   );
   const dismissed = status === 'dismissed';
-  const error = undismiss.error ?? dismiss.error;
 
   return (
     <Stack spacing={1.5}>
@@ -142,7 +165,11 @@ function UnmatchedNames({ catalog }: Props) {
           <Chip
             key={value}
             label={t(`admin:unmatched.status.${value}`)}
-            meta={(value === 'open' ? open : dismissedQueue).data?.total ?? 0}
+            meta={
+              value === 'open'
+                ? Math.max(0, (open.data?.total ?? 0) - waitingCount)
+                : (dismissedQueue.data?.total ?? 0)
+            }
             selected={status === value}
             onClick={() => {
               setStatus(value);
@@ -153,7 +180,6 @@ function UnmatchedNames({ catalog }: Props) {
       </Box>
       <HintLine>{t('admin:review.hint.unmatched')}</HintLine>
       <QueueNotice ref={noticeRegion} message={notice} />
-      {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
       {loadStatus}
       {queue.isSuccess && entries.length === 0 ? (
         <EmptyCard
@@ -182,6 +208,7 @@ function UnmatchedNames({ catalog }: Props) {
                   meta={<UnmatchedMeta entry={entry} />}
                   onOpen={() => {
                     setNotice(null);
+                    undismiss.reset();
                     sheet.show(entry);
                   }}
                 />
@@ -191,7 +218,7 @@ function UnmatchedNames({ catalog }: Props) {
                   entry={entry}
                   peek={index === 0 && hint.peek}
                   onLearned={hint.onLearned}
-                  disabled={dismiss.isPending}
+                  disabled={dismissPending}
                   onOpen={() => {
                     setNotice(null);
                     sheet.show(entry);
@@ -229,6 +256,8 @@ function UnmatchedNames({ catalog }: Props) {
                   })
               : undefined
           }
+          restoring={undismiss.isPending}
+          restoreError={undismiss.error}
           onDone={(message) => {
             setNotice(message);
             resultNext();

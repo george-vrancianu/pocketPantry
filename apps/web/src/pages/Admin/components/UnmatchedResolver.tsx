@@ -28,6 +28,10 @@ type Props = {
   onExited: () => void;
   /** On a dismissed name: put it back in the open list instead. */
   onRestore?: () => void;
+  /** A restore request is in flight. */
+  restoring?: boolean;
+  /** The last restore error, shown in the sheet. */
+  restoreError?: unknown;
   /** Called with the confirmation message once the name is resolved. */
   onDone: (message: string) => void;
 };
@@ -46,6 +50,8 @@ export function UnmatchedResolver({
   onClose,
   onExited,
   onRestore,
+  restoring = false,
+  restoreError,
   onDone,
 }: Props) {
   const { t } = useTranslation('admin');
@@ -127,7 +133,7 @@ export function UnmatchedResolver({
       onExited={onExited}
       title={t('admin:unmatched.resolveName', { name: entry.rawName })}
       subtitle={<UnmatchedMeta entry={entry} />}
-      error={resolve.error}
+      error={resolve.error ?? restoreError}
       form={{
         onSubmit: submit,
         canSubmit,
@@ -135,7 +141,7 @@ export function UnmatchedResolver({
         submitLabel: t('admin:review.link', { count: entry.count }),
         savingLabel: t('admin:unmatched.resolving'),
         extra: onRestore ? (
-          <Button variant="ghost" onClick={onRestore}>
+          <Button variant="ghost" onClick={onRestore} disabled={restoring}>
             {t('admin:unmatched.restore')}
           </Button>
         ) : undefined,

@@ -238,7 +238,6 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
     it('pages with a cursor', async () => {
       await made(a, unique('Afi Page'));
       await made(a, unique('Afi Page'));
-      const all = await admin.get('/admin/family-ingredients?limit=100');
       const first = await admin.get('/admin/family-ingredients?limit=1');
       expect(first.status).toBe(200);
       const body = first.body as {
@@ -249,9 +248,18 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
       expect(body.groups).toHaveLength(1);
       expect(typeof body.nextCursor).toBe('string');
       // `total` counts every group in the queue, not the page.
-      const everything = (all.body as { groups: Group[] }).groups;
+      let everything = 0;
+      for (let cursor: string | null = null, pages = 0; pages < 500; pages++) {
+        const res = await admin.get(
+          `/admin/family-ingredients?limit=100${cursor ? `&cursor=${cursor}` : ''}`,
+        );
+        const page = res.body as { groups: Group[]; nextCursor: string | null };
+        everything += page.groups.length;
+        cursor = page.nextCursor;
+        if (!cursor) break;
+      }
       expect(body.total).toBeGreaterThan(1);
-      expect(body.total).toBe(everything.length);
+      expect(body.total).toBe(everything);
       const second = await admin.get(
         `/admin/family-ingredients?limit=1&cursor=${body.nextCursor}`,
       );

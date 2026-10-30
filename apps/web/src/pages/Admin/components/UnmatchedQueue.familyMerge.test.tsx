@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
 import { renderWithProviders, stubApi } from '../../../test/render';
-import { resultNotice } from './reviewTestUtils';
+import { expectFocusInDialog, resultNotice } from './reviewTestUtils';
 import { UnmatchedQueue } from './UnmatchedQueue';
 
 // Spec: #276, ADR 0011. Merge sits on
@@ -143,6 +143,7 @@ describe('UnmatchedQueue: merge a Family ingredient', () => {
     expect(
       screen.getByRole('heading', { name: 'Merge Kombucha' }),
     ).toBeVisible();
+    await expectFocusInDialog('Merge Kombucha');
     expect(screen.getByRole('button', { name: 'Merge' })).toBeDisabled();
     await user.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
@@ -300,6 +301,7 @@ describe('UnmatchedQueue: Synonym candidates', () => {
     expect(
       screen.getByRole('heading', { name: 'Add Cilantro as a shared synonym' }),
     ).toBeVisible();
+    await expectFocusInDialog('Add Cilantro as a shared synonym');
     const picker = screen.getByLabelText('Synonym language');
     expect(
       within(picker)

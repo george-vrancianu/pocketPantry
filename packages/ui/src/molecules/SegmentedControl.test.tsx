@@ -129,6 +129,25 @@ describe('SegmentedControl', () => {
     ).toBe('clamp(11px, calc((100cqi - 10px) / 12.66), 13px)');
   });
 
+  it('leaves room for each badge when sizing a dense label, and only then', () => {
+    render(
+      <SegmentedControl
+        label="Kind"
+        options={[
+          { value: 'ingredients', label: 'Ingredients', badge: 7 },
+          { value: 'templates', label: 'Templates', badge: 0 },
+        ]}
+        value="ingredients"
+        onChange={() => undefined}
+        dense
+      />,
+    );
+    // One badge shown: 25 px more come off the track than the 10 px of gaps and padding.
+    expect(
+      ownRule(screen.getByRole('button', { name: /Templates/ }), 'font-size'),
+    ).toBe('clamp(11px, calc((100cqi - 35px) / 12.66), 13px)');
+  });
+
   it('can be named by a visible caption elsewhere on the page', () => {
     render(
       <>

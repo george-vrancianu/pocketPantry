@@ -70,11 +70,10 @@ export type ResolveInput = {
 
 /** Every Unmatched queue query, whatever its status. */
 export const unmatchedQueueKey = ['admin-unmatched'] as const;
-const queueKey = unmatchedQueueKey;
 
 /** The query key of the queue with this status. */
 export const unmatchedQueueQueryKey = (status: UnmatchedStatus) =>
-  [...queueKey, status] as const;
+  [...unmatchedQueueKey, status] as const;
 
 export type UnmatchedPage = {
   /** Every name with this status, not just this page. */
@@ -124,7 +123,7 @@ export function useResolveUnmatched() {
     onSuccess: () =>
       Promise.all(
         [
-          queueKey,
+          unmatchedQueueKey,
           adminCatalogQueryKey,
           catalogSearchQueryKey,
           ['pantry'],
@@ -146,7 +145,8 @@ export function useDismissUnmatched() {
         method: 'POST',
         body: { normalizedName },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queueKey }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: unmatchedQueueKey }),
   });
 }
 
@@ -158,6 +158,7 @@ export function useUndismissUnmatched() {
         method: 'POST',
         body: { normalizedName },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queueKey }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: unmatchedQueueKey }),
   });
 }

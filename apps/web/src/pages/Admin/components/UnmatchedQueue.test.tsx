@@ -6,7 +6,7 @@ import type { AdminCatalog } from '../../../lib/admin';
 import type { UnmatchedEntry } from '../../../lib/unmatched';
 import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
 import { renderWithProviders, stubApi } from '../../../test/render';
-import { resultNotice } from './reviewTestUtils';
+import { expectFocusInDialog, resultNotice } from './reviewTestUtils';
 import { UnmatchedQueue } from './UnmatchedQueue';
 
 const catalog: AdminCatalog = {
@@ -308,6 +308,7 @@ describe('UnmatchedQueue', () => {
     expect(
       screen.getByRole('dialog', { name: 'Resolve Brânză ciudată' }),
     ).toBeVisible();
+    await expectFocusInDialog('Resolve Brânză ciudată');
     // Nothing to confirm until an Ingredient is picked.
     expect(
       screen.getByRole('button', { name: /^Link \d+ rows?$/ }),
@@ -622,6 +623,129 @@ describe('UnmatchedQueue', () => {
           ?.body,
       ).toEqual({ normalizedName: 'branza ciudata' }),
     );
+  });
+
+  it('shows a failed Restore inside the sheet and sends one request while it is pending', async () => {
+    let release: () => void = () => undefined;
+    const calls = stub({
+      'GET /api/admin/unmatched': (url) =>
+        Response.json({
+          entries:
+            url.searchParams.get('status') === 'dismissed' ? [entry] : [],
+          nextCursor: null,
+        }),
+      'POST /api/admin/unmatched/undismiss': () =>
+        new Promise<Response>((resolve) => {
+          release = () => resolve(new Response(null, { status: 500 }));
+        }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Dismissed' }));
+    await user.click(
+      await screen.findByRole('button', { name: /^Brânză ciudată/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Resolve Brânză ciudată',
+    });
+    await user.click(within(dialog).getByRole('button', { name: 'Restore' }));
+    expect(
+      within(dialog).getByRole('button', { name: 'Restore' }),
+    ).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Restore' }));
+    release();
+
+    expect(await within(dialog).findByRole('alert')).toBeVisible();
+    expect(
+      calls.filter((c) => c.key === 'POST /api/admin/unmatched/undismiss'),
+    ).toHaveLength(1);
+    expect(
+      within(dialog).getByRole('button', { name: 'Restore' }),
+    ).toBeEnabled();
+  });
+
+  it('keeps Undo available when the Admin switches kind, and shows the row again after Undo', async () => {
+    vi.useFakeTimers();
+    const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+    const calls = stub();
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    await flush();
+
+    const row = screen.getByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Delete' });
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    fireEvent.click(screen.getByRole('button', { name: /^Family/ }));
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+
+    expect(dismissCalls(calls)).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Unmatched/ }));
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 1000));
+
+    expect(screen.getByRole('group', { name: 'Brânză ciudată' })).toBeVisible();
+    expect(dismissCalls(calls)).toEqual([]);
+  });
+
+  it('counts a name waiting on its Undo as gone, and as back after Undo', async () => {
+    vi.useFakeTimers();
+    const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+    stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({ entries: [entry], nextCursor: null, total: 7 }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    await flush();
+    expect(screen.getByRole('button', { name: 'Open 7' })).toBeVisible();
+
+    const row = screen.getByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Delete' });
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await act(() => vi.advanceTimersByTimeAsync(500));
+
+    expect(screen.getByRole('button', { name: 'Open 6' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Unmatched, 6' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(screen.getByRole('button', { name: 'Open 7' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Unmatched, 7' })).toBeVisible();
+  });
+
+  it('reports a failed dismiss once, in the toast and not as an alert in the list', async () => {
+    vi.useFakeTimers();
+    const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+    stub({
+      'POST /api/admin/unmatched/dismiss': () =>
+        new Response(null, { status: 500 }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    await flush();
+
+    const row = screen.getByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Delete' });
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 1000));
+    await flush();
+
+    await act(() => vi.advanceTimersByTimeAsync(10000));
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('returns focus to a swipe row opened from the keyboard when the resolver is cancelled', async () => {
+    stub();
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    const row = await screen.findByRole('group', { name: 'Brânză ciudată' });
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Enter' });
+    await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+    await vi.waitFor(() => expect(row).toHaveFocus());
   });
 
   it('moves focus to the queue heading when Cancel finds the row gone', async () => {

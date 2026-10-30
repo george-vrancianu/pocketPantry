@@ -32,6 +32,9 @@ const DENSE_PAD = 2;
 const DENSE_GAP = 2;
 const DENSE_TRACK_PAD = 2;
 
+/** What a count badge takes from its segment: its pill and the gap before it, px. */
+const BADGE_ROOM = 25;
+
 /** The Theme fonts' average character width at the 600 weight of an unpressed label. */
 const EM_PER_CHAR = 0.6;
 /** How much wider the pressed option is, drawn at 700. */
@@ -47,11 +50,14 @@ const BOLD_EXTRA = 0.1;
  * its segment (a single word cannot wrap; labels of several words wrap
  * between words).
  */
-function denseFontSize(labels: string[]) {
+function denseFontSize(labels: string[], badges: number) {
   const chars = labels.reduce((sum, label) => sum + label.length, 0);
   const longest = Math.max(...labels.map((label) => label.length));
   // 100cqi is the track's content box, already inside DENSE_TRACK_PAD; only the gaps and segment padding come off it.
-  const room = DENSE_GAP * (labels.length - 1) + DENSE_PAD * 2 * labels.length;
+  const room =
+    DENSE_GAP * (labels.length - 1) +
+    DENSE_PAD * 2 * labels.length +
+    BADGE_ROOM * badges;
   const ems = Number(
     (EM_PER_CHAR * chars + EM_PER_CHAR * BOLD_EXTRA * longest).toFixed(2),
   );
@@ -99,7 +105,10 @@ export function SegmentedControl<T extends string>({
   // Dense sizes its labels against the track's width, so the track always fills its container.
   const fullWidth = wide || dense;
   const fontSize = dense
-    ? denseFontSize(options.map((option) => option.label))
+    ? denseFontSize(
+        options.map((option) => option.label),
+        options.filter((option) => (option.badge ?? 0) > 0).length,
+      )
     : 14;
   return (
     <Box

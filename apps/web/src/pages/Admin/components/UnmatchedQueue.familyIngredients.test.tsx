@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
 import { renderWithProviders, stubApi } from '../../../test/render';
-import { resultNotice } from './reviewTestUtils';
+import { expectFocusInDialog, resultNotice } from './reviewTestUtils';
 import { UnmatchedQueue } from './UnmatchedQueue';
 
 // Spec: #275, ADR 0011. The Family
@@ -157,6 +157,7 @@ describe('UnmatchedQueue: Family ingredients', () => {
     expect(
       screen.getByRole('heading', { name: 'Promote Kombucha' }),
     ).toBeVisible();
+    await expectFocusInDialog('Promote Kombucha');
     const radios = screen.getAllByRole('radio');
     expect(radios).toHaveLength(3);
     expect(radios[0]).toBeChecked();
@@ -172,6 +173,7 @@ describe('UnmatchedQueue: Family ingredients', () => {
         Response.json({
           groups: promoted ? [single] : [group, single],
           nextCursor: null,
+          total: promoted ? 1 : 2,
         }),
       'POST /api/admin/family-ingredients/promote': () => {
         promoted = true;
@@ -200,6 +202,10 @@ describe('UnmatchedQueue: Family ingredients', () => {
     expect(await resultNotice(/merged 2 other copies/i)).toBeVisible();
     expect(await screen.findByText('Tempeh')).toBeVisible();
     expect(screen.queryByRole('button', { name: /^Kombucha/ })).toBeNull();
+    // The kind badge follows the new total.
+    expect(
+      await screen.findByRole('button', { name: 'Family, 1' }),
+    ).toBeVisible();
   });
 
   it('promotes the first copy when the Admin does not choose', async () => {
