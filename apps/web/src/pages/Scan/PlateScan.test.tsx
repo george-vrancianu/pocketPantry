@@ -450,6 +450,16 @@ describe('Plate Scan in the Scan Session', () => {
     expect(
       calls.filter((c) => c.key === 'POST /api/scan/plate/recipe'),
     ).toHaveLength(2);
+    // A successful Retry opens the Recipe Draft like a first-time success.
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Review the recipe for Pancakes',
+      }),
+    );
+    expect(
+      await screen.findByDisplayValue('Fluffy pancakes'),
+    ).toBeInTheDocument();
+    expect(recipeReads.getState().reads).toHaveLength(0);
   });
 
   it('brings the card back with its guesses and the limit message when the server refuses at 20 Recipe Drafts', async () => {

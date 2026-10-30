@@ -41,7 +41,8 @@ const buttonSx = {
 /**
  * The refusals of the server that keep a picked dish on its card, with its guesses, and out of the strip.
  * A refusal the check above could not see (a balance that moved since, the 20-draft limit, which only the
- * server counts, a read that waited its turn) comes back through the holder as `restore`. Another refusal that belongs on the card is one more code here.
+ * server counts, a read that waited its turn) comes back through the holder as `restore`.
+ * Another refusal that belongs on the card is one more code here.
  */
 const REFUSED_PICK_CODES = [
   'credits.insufficient',
