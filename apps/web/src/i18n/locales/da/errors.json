@@ -87,6 +87,7 @@
     "owner_required": "Kun familiens ejer kan gøre dette.",
     "invite_code_invalid": "Den invitationskode findes ikke. Tjek den, og prøv igen.",
     "invite_code_expired": "Den invitationskode er udløbet. Bed ejeren om en ny.",
+    "invite_code_is_promo_code": "Det er en promokode, ikke en invitationskode. Bed ejeren af familien om deres invitationskode.",
     "already_member": "Du er allerede med i denne familie.",
     "not_household_of_one": "Du kan kun blive medlem af en anden familie, mens du er alene i din egen. Forlad den først, eller overdrag ejerskabet som ejer og forlad den, eller slet familien.",
     "owner_cannot_leave": "Ejeren kan ikke forlade familien. Overdrag først ejerskabet til et andet medlem.",
@@ -211,5 +212,14 @@
     "not_found": "Opskriftkladden findes ikke mere. Den kan være kasseret eller gemt for længe.",
     "limit_reached": "Du har allerede {{max}} opskriftkladder. Gør en færdig eller kassér en for at starte en ny.",
     "version_conflict": "Denne opskriftkladde er ændret på en anden enhed. Hent den seneste kladde for at fortsætte."
+  },
+  "promo_code": {
+    "not_revocable": "Kun en ubrugt promokode kan tilbagekaldes.",
+    "not_found": "Vi kunne ikke finde den promokode.",
+    "already_redeemed": "Den promokode er allerede brugt.",
+    "revoked": "Den promokode er ikke længere gyldig.",
+    "is_invite_code": "Det ligner en invitationskode. Brug den under fanen Familie for at slutte dig til en familie.",
+    "rate_limited": "For mange forsøg. Vent et minut og prøv igen.",
+    "required": "Indtast en promokode."
   }
 }

@@ -1,4 +1,5 @@
-import { act, screen } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { CreditsSection } from './components/CreditsSection';
@@ -250,6 +251,97 @@ describe('CreditsSection', () => {
       expect(screen.queryByText('Nothing yet.')).not.toBeInTheDocument();
       expect(screen.getByText('Recipe from pasted text')).toBeInTheDocument();
       linkReads.clear();
+    });
+  });
+
+  describe('redeeming a Promo Code', () => {
+    function stubRedeem(respond: () => Response) {
+      let balance = 100;
+      const stub = stubApi({
+        'GET /api/credits': () =>
+          Response.json(
+            credits({
+              balance,
+              history: [
+                entry({ kind: 'promo_code', readKind: null, amount: 25 }),
+              ],
+            }),
+          ),
+        'POST /api/credits/promo-code': () => {
+          const response = respond();
+          if (response.ok) balance = 125;
+          return response;
+        },
+      });
+      vi.stubGlobal('fetch', stub.fetchMock);
+      renderWithProviders(<CreditsSection />);
+      return stub;
+    }
+
+    it('refreshes the balance, clears the field and shows a toast', async () => {
+      const user = userEvent.setup();
+      stubRedeem(() => Response.json({ balance: 125, credits: 25 }));
+      await screen.findByText('100');
+      await user.type(
+        screen.getByRole('textbox', { name: 'Promo Code' }),
+        'abcde-fghjk',
+      );
+      await user.click(screen.getByRole('button', { name: 'Redeem' }));
+      expect(await screen.findByText('125')).toBeInTheDocument();
+      expect(
+        screen.getByText('Promo Code redeemed. Credits added: 25'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: 'Promo Code' })).toHaveValue(
+        '',
+      );
+    });
+
+    it('shows the error on the field and keeps the code', async () => {
+      const user = userEvent.setup();
+      stubRedeem(() =>
+        Response.json(
+          { code: 'promo_code.already_redeemed', params: {} },
+          { status: 409 },
+        ),
+      );
+      await screen.findByText('100');
+      const field = screen.getByRole('textbox', { name: 'Promo Code' });
+      await user.type(field, 'abcde-fghjk');
+      await user.click(screen.getByRole('button', { name: 'Redeem' }));
+      expect(
+        await screen.findByText('That Promo Code has already been used.'),
+      ).toBeInTheDocument();
+      expect(field).toHaveValue('abcde-fghjk');
+      expect(field).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('shows a 0-Credit Promo Code row as +0', async () => {
+      await show(
+        credits({
+          balance: 5,
+          history: [entry({ kind: 'promo_code', readKind: null, amount: 0 })],
+        }),
+      );
+      expect(screen.getByText('+0')).toBeInTheDocument();
+      expect(screen.queryByText('\u22120')).not.toBeInTheDocument();
+    });
+
+    it('does not submit an empty field', async () => {
+      stubRedeem(() => Response.json({ balance: 125, credits: 25 }));
+      await screen.findByText('100');
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Redeem' })).toBeDisabled(),
+      );
+    });
+
+    it('words a Promo Code history row with the amount and the Member', async () => {
+      stubRedeem(() => Response.json({ balance: 125, credits: 25 }));
+      await screen.findByText('100');
+      expect(
+        screen.getByText('Promo Code', { selector: 'p' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('+25')).toBeInTheDocument();
+      expect(screen.getByText(/^Ada ·/)).toBeInTheDocument();
     });
   });
 });

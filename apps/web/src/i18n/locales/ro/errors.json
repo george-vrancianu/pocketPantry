@@ -88,6 +88,7 @@
     "owner_required": "Doar Proprietarul Familiei poate face asta.",
     "invite_code_invalid": "Acest cod de invitație nu există. Verifică-l și încearcă din nou.",
     "invite_code_expired": "Acest cod de invitație a expirat. Cere Proprietarului unul nou.",
+    "invite_code_is_promo_code": "Acesta este un cod promoțional, nu un cod de invitație. Cere Proprietarului Familiei codul de invitație.",
     "already_member": "Ești deja în această Familie.",
     "not_household_of_one": "Poți intra în altă Familie doar cât ești singur în a ta. Părăsește-o mai întâi sau, ca Proprietar, transferă proprietatea și pleacă, ori șterge Familia.",
     "owner_cannot_leave": "Proprietarul nu poate pleca. Transferă mai întâi proprietatea unui alt Membru.",
@@ -216,5 +217,14 @@
     "not_found": "Acea ciornă de rețetă nu mai există. Poate a fost eliminată sau păstrată prea mult.",
     "limit_reached": "Ai deja {{max}} de ciorne de rețete. Termină sau elimină una ca să începi alta.",
     "version_conflict": "Această ciornă de rețetă a fost modificată pe alt dispozitiv. Încarcă ultima ciornă salvată ca să continui."
+  },
+  "promo_code": {
+    "not_revocable": "Doar un cod promoțional nefolosit poate fi revocat.",
+    "not_found": "Nu am găsit acel cod promoțional.",
+    "already_redeemed": "Acel cod promoțional a fost deja folosit.",
+    "revoked": "Acel cod promoțional nu mai este valabil.",
+    "is_invite_code": "Pare un cod de invitație. Folosește-l din fila Familie pentru a te alătura unei familii.",
+    "rate_limited": "Prea multe încercări. Așteaptă un minut și încearcă din nou.",
+    "required": "Introdu un cod promoțional."
   }
 }

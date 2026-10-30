@@ -12,7 +12,12 @@ export const LOW_BALANCE_THRESHOLD = 10;
 export const HISTORY_LIMIT = 20;
 
 export type CreditEntryKind =
-  'welcome_grant' | 'grant' | 'spend' | 'transfer_in' | 'transfer_out';
+  | 'welcome_grant'
+  | 'grant'
+  | 'spend'
+  | 'transfer_in'
+  | 'transfer_out'
+  | 'promo_code';
 
 /**
  * One entry of the Family's Credit history. The client words it by `kind` (and `readKind` for a spend),

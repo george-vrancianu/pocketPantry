@@ -17,6 +17,7 @@ import { TagGroupEditor } from './components/TagGroupEditor';
 import { TagGroupList } from './components/TagGroupList';
 import { RecipeEditor } from './components/RecipeEditor';
 import { RecipeList } from './components/RecipeList';
+import { PromoCodes } from './components/PromoCodes';
 import { UnmatchedQueue } from './components/UnmatchedQueue';
 import { useAdminScreen } from './hooks/useAdminScreen';
 
@@ -108,6 +109,7 @@ export function AdminPage() {
             { value: 'categories', label: t('admin:tabs.categories') },
             { value: 'recipes', label: t('admin:tabs.recipes') },
             { value: 'unmatched', label: t('admin:tabs.unmatched') },
+            { value: 'promoCodes', label: t('admin:tabs.promoCodes') },
           ]}
         />
         {screen.tab === 'ingredients' ? (
@@ -150,6 +152,8 @@ export function AdminPage() {
           </Stack>
         ) : screen.tab === 'unmatched' ? (
           <UnmatchedQueue catalog={catalog} />
+        ) : screen.tab === 'promoCodes' ? (
+          <PromoCodes />
         ) : (
           <Stack spacing={4}>
             <AisleList

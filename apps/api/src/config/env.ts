@@ -74,6 +74,17 @@ const envSchema = z.object({
   INVITE_CODE_LIMIT_PER_USER: z.coerce.number().int().positive().default(10),
   INVITE_CODE_LIMIT_PER_IP: z.coerce.number().int().positive().default(30),
   /**
+   * ADR 0034: when `true`, creating a new Family at signup needs a Promo Code and pays no Welcome Grant.
+   * Default `false`: signup works as before, with an optional code on top.
+   */
+  SIGNUP_REQUIRES_PROMO_CODE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  /** Failed Promo Code redemptions per minute, per Member and per IP. */
+  PROMO_CODE_LIMIT_PER_USER: z.coerce.number().int().positive().default(10),
+  PROMO_CODE_LIMIT_PER_IP: z.coerce.number().int().positive().default(30),
+  /**
    * Barcode Lookup calls that go out to Open Food Facts per minute: per Member, and for the whole API process.
    * Open Food Facts allows 15 product reads a minute per IP (https://openfoodfacts.github.io/openfoodfacts-server/api/).
    */

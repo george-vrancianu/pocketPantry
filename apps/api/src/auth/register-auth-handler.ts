@@ -3,6 +3,9 @@ import { fromNodeHeaders } from 'better-auth/node';
 import { codeForStatus } from '../common/api-error';
 import type { AuthInstance } from './auth.types';
 
+/** Internal header carrying the socket address to Better Auth's hooks; overwritten on every request. */
+export const CLIENT_IP_HEADER = 'x-pocket-pantry-client-ip';
+
 /**
  * better-auth errors are `{ code, message }` with a library-authored English
  * message. Keep the stable code and drop the message so this surface follows
@@ -18,7 +21,9 @@ export function toApiErrorBody(text: string, status: number): string {
       'code' in parsed &&
       typeof parsed.code === 'string'
     ) {
-      code = `auth.${parsed.code.toLowerCase()}`;
+      // Our own stable codes (`promo_code.required`) are already namespaced.
+      const lower = parsed.code.toLowerCase();
+      code = lower.includes('.') ? lower : `auth.${lower}`;
     }
   } catch {
     // Empty or non-JSON error body: keep the status-derived code.
@@ -38,6 +43,8 @@ export function registerAuthHandler(
       const url = new URL(request.url, origin);
       const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
       const headers = fromNodeHeaders(request.raw.headers);
+      // The socket address, set by us: signup's Promo Code limiter trusts this, never a client header.
+      headers.set(CLIENT_IP_HEADER, request.ip);
       if (hasBody && request.body !== undefined) {
         headers.set('content-type', 'application/json');
       }

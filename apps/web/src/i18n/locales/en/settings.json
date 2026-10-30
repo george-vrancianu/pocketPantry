@@ -49,7 +49,15 @@
       "transfer_in": "Credits brought by {{who}}",
       "transfer_out": "Credits moved out",
       "by": "{{who}} · {{when}}",
-      "when": "{{when}}"
+      "when": "{{when}}",
+      "promo_code": "Promo Code"
+    },
+    "redeem": {
+      "title": "Redeem a Promo Code",
+      "label": "Promo Code",
+      "hint": "Adds its Credits to your family.",
+      "button": "Redeem",
+      "done": "Promo Code redeemed. Credits added: {{credits}}"
     }
   },
   "expiringSoon": {

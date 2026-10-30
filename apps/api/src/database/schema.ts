@@ -46,6 +46,7 @@ export const creditEntryKind = pgEnum('credit_entry_kind', [
   'spend',
   'transfer_in',
   'transfer_out',
+  'promo_code',
 ]);
 
 // A Family owns the Pantry, Shopping List and Family Settings.
@@ -705,6 +706,10 @@ export const creditEntry = pgTable(
     readKind: text('read_kind'),
     // For a grant: why it was given.
     reason: text('reason'),
+    // For a Promo Code redemption: the code redeemed. Never shown in the history.
+    promoCodeId: uuid('promo_code_id').references(() => promoCode.id, {
+      onDelete: 'set null',
+    }),
     amount: integer('amount').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
@@ -712,11 +717,55 @@ export const creditEntry = pgTable(
   },
   (table) => [
     index('credit_entry_family_id_idx').on(table.familyId, table.createdAt),
-    check('credit_entry_amount_not_zero', sql`${table.amount} <> 0`),
+    // A 0-Credit Promo Code still writes its entry, so the history shows it. The `::text` keeps Postgres from
+    // parsing the literal as the enum: the migration adds that value in the same transaction (see 0052).
+    check(
+      'credit_entry_amount_not_zero',
+      sql`${table.amount} <> 0 or ${table.kind}::text = 'promo_code'`,
+    ),
     // A Family is given one Welcome Grant, ever: the rollout is safe to repeat.
     uniqueIndex('credit_entry_welcome_grant_idx')
       .on(table.familyId)
       .where(sql`${table.kind} = 'welcome_grant'`),
+  ],
+);
+
+// A Promo Code (ADR 0034): single use, worth `credits`. Status is derived: revoked if `revoked_at`, redeemed if
+// `redeemed_at`, else unused. Not Family-owned: `redeemed_family_id` is a plain uuid with NO foreign key (ADR 0001
+// needs every FK to `family` to cascade, and deleting a Family must not erase which code it used). The redeemer's
+// name and email are snapshotted because the Member may be deleted later. `code` is stored normalised (no dash).
+export const promoCode = pgTable(
+  'promo_code',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: text('code').notNull().unique(),
+    credits: integer('credits').notNull(),
+    note: text('note'),
+    createdBy: text('created_by').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    redeemedAt: timestamp('redeemed_at', { withTimezone: true }),
+    redeemedBy: text('redeemed_by').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    redeemedByName: text('redeemed_by_name'),
+    redeemedByEmail: text('redeemed_by_email'),
+    redeemedFamilyId: uuid('redeemed_family_id'),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('promo_code_created_at_idx').on(table.createdAt, table.id),
+    check(
+      'promo_code_credits_range',
+      sql`${table.credits} between 0 and 10000`,
+    ),
+    check(
+      'promo_code_redeemed_xor_revoked',
+      sql`${table.redeemedAt} is null or ${table.revokedAt} is null`,
+    ),
   ],
 );
 

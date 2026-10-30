@@ -9,5 +9,21 @@
   "submitting": "Opretter konto",
   "haveAccount": "Har du allerede en konto?",
   "signIn": "Log ind",
-  "back": "Tilbage"
+  "back": "Tilbage",
+  "promoCode": {
+    "label": "Promokode",
+    "requiredHint": "Du skal bruge en promokode for at tilmelde dig.",
+    "optionalLabel": "Har du en promokode?",
+    "optionalHint": "Valgfrit. Dens kreditter lægges oven i din velkomstgave.",
+    "isInviteCode": "Det ligner en invitationskode. Vælg Slut dig til en eksisterende familie, og indtast den der."
+  },
+  "mode": {
+    "label": "Hvad vil du gøre?",
+    "create": "Opret en ny familie",
+    "join": "Slut dig til en eksisterende familie"
+  },
+  "inviteCode": {
+    "label": "Invitationskode",
+    "hint": "Bed ejeren af familien om deres invitationskode."
+  }
 }

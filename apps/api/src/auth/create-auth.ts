@@ -3,12 +3,21 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { allowedOrigins, isAllowedOrigin } from '../config/origins';
 import type { Database } from '../database/database.types';
 import * as schema from '../database/schema';
-import { createHouseholdOfOne } from '../family/household-of-one';
+import { CLIENT_IP_HEADER } from './register-auth-handler';
+import {
+  exposeSignupTransaction,
+  linkSignupRedemption,
+  OPEN_SIGNUP,
+  placeNewMember,
+  type SignupPolicy,
+} from './signup';
 
 export type CreateAuthOptions = {
   baseURL: string;
   secret: string;
   clientOrigin: string;
+  /** Default: signup open, Welcome Grant, optional Promo Code (the seed and tests). */
+  signup?: SignupPolicy;
 };
 
 /** The Better Auth instance; shared by AuthModule and the dev seed. */
@@ -18,7 +27,7 @@ export function createAuth(database: Database, options: CreateAuthOptions) {
     baseURL: options.baseURL,
     basePath: '/api/auth',
     secret: options.secret,
-    database: drizzleAdapter(database, {
+    database: drizzleAdapter(exposeSignupTransaction(database), {
       provider: 'pg',
       schema,
       // Sign-up runs in one transaction so the Family created by the
@@ -69,21 +78,40 @@ export function createAuth(database: Database, options: CreateAuthOptions) {
       },
     },
     databaseHooks: {
+      // Runs in the signup transaction right after the user insert: names the Member on a Promo Code
+      // redeemed at signup (the Credit history shows who redeemed it).
+      account: {
+        create: {
+          before: async (account) => {
+            await linkSignupRedemption(account.userId);
+          },
+        },
+      },
       user: {
         create: {
-          // Signing up creates a Household of One with the Member as Owner,
-          // and pays the Member's Welcome Grant into it (marked on the Member,
-          // so it is never given twice). Written through the sign-up
-          // transaction (and refused outside one), so it is atomic with the
-          // user insert.
-          before: async (newUser) => ({
-            data: {
-              ...newUser,
-              familyId: await createHouseholdOfOne(),
-              familyRole: 'owner',
-              welcomeGrantAt: new Date(),
-            },
-          }),
+          // Signing up places the Member in a Household of One as Owner (see placeNewMember for the
+          // Welcome Grant / Promo Code rules). Written through the sign-up transaction (and refused
+          // outside one), so it is atomic with the user insert.
+          before: async (newUser, context) => {
+            const body = context?.body as
+              { promoCode?: unknown; joinInviteCode?: unknown } | undefined;
+            const placement = await placeNewMember(
+              newUser,
+              {
+                promoCode:
+                  typeof body?.promoCode === 'string'
+                    ? body.promoCode
+                    : undefined,
+                joinInviteCode:
+                  typeof body?.joinInviteCode === 'string'
+                    ? body.joinInviteCode
+                    : undefined,
+                ip: context?.headers?.get(CLIENT_IP_HEADER) ?? 'unknown',
+              },
+              options.signup ?? OPEN_SIGNUP,
+            );
+            return { data: { ...newUser, ...placement } };
+          },
         },
       },
     },

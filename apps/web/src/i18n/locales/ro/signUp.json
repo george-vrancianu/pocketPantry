@@ -9,5 +9,21 @@
   "submitting": "Se creează contul",
   "haveAccount": "Ai deja un cont?",
   "signIn": "Autentifică-te",
-  "back": "Înapoi"
+  "back": "Înapoi",
+  "promoCode": {
+    "label": "Cod promoțional",
+    "requiredHint": "Ai nevoie de un cod promoțional pentru a te înscrie.",
+    "optionalLabel": "Ai un cod promoțional?",
+    "optionalHint": "Opțional. Creditele lui se adaugă peste Creditele de bun venit.",
+    "isInviteCode": "Pare un cod de invitație. Alege Alătură-te unei Familii existente și introdu-l acolo."
+  },
+  "mode": {
+    "label": "Ce vrei să faci?",
+    "create": "Creează o Familie nouă",
+    "join": "Alătură-te unei Familii existente"
+  },
+  "inviteCode": {
+    "label": "Cod de invitație",
+    "hint": "Cere Proprietarului Familiei codul de invitație."
+  }
 }
