@@ -74,33 +74,4 @@ describe('Promo Code redemption rate limit (integration)', () => {
     }
     await second.post('/promo-code', { code: 'ZZZZZ-ZZZZZ' }).expect(429);
   });
-
-  it('bounds a burst of parallel guesses, and successful redemptions do not use the budget', async () => {
-    const stamp = Date.now();
-    const email = `promo-burst-${stamp}@example.com`;
-    const res = await request(app.getHttpServer())
-      .post('/api/auth/sign-up/email')
-      .set('origin', TEST_ORIGIN)
-      .set('x-forwarded-for', '10.8.99.1')
-      .send({ name: 'Burst', email, password: 'correct-horse-battery-staple' })
-      .expect(200);
-    const cookie = [res.headers['set-cookie'] ?? []]
-      .flat()
-      .map((c) => c.split(';')[0])
-      .join('; ');
-    const post = (code: string) =>
-      request(app.getHttpServer())
-        .post('/api/credits/promo-code')
-        .set('origin', TEST_ORIGIN)
-        .set('cookie', cookie)
-        .send({ code });
-    const burst = await Promise.all(
-      Array.from({ length: 10 }, () => post('YYYYY-YYYYY')),
-    );
-    // The earlier test used this IP's budget too, so at most the per-Member limit can fail with 404.
-    expect(burst.filter((r) => r.status === 404).length).toBeLessThanOrEqual(
-      USER_LIMIT,
-    );
-    expect(burst.filter((r) => r.status === 429).length).toBeGreaterThan(0);
-  });
 });

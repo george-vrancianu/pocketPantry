@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq } from 'drizzle-orm';
+import pg from 'pg';
 import type { CreditsView } from '../src/credits/credits.schemas';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
@@ -8,6 +9,7 @@ import { user } from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
+import { waitForBlockedBackend } from './support/wait-for-blocked-backend';
 
 jest.setTimeout(30_000);
 
@@ -177,5 +179,53 @@ describe('Redeeming a Promo Code (integration)', () => {
       v.history.some((h) => h.kind === 'promo_code' && h.amount === 9),
     );
     expect(gained).toHaveLength(1);
+  });
+
+  it('credits the Family a Member joined while their redemption waited for the lock', async () => {
+    const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+    try {
+      const owner = await newMember('Owner');
+      const joiner = await newMember('Joiner');
+      const familyOf = async (id: string) =>
+        (
+          await pool.query<{ family_id: string }>(
+            'SELECT family_id FROM "user" WHERE id = $1',
+            [id],
+          )
+        ).rows[0].family_id;
+      const [target, old] = [
+        await familyOf(owner.id),
+        await familyOf(joiner.id),
+      ];
+      const code = await makeCode(31);
+      const ownerBefore = (await view(owner)).balance;
+      const holder = await pool.connect();
+      try {
+        // Hold the credits lock of the joiner's Household of One, start the redemption, and move
+        // the Member while it waits: the Credits must land in the Family they are in by then.
+        await holder.query('BEGIN');
+        const { rows } = await holder.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
+        await holder.query(
+          'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`credits:${old}`],
+        );
+        const outcome = redeem(joiner, code).then((r) => r.status);
+        await waitForBlockedBackend(pool, rows[0].pid);
+        await holder.query(
+          'UPDATE "user" SET family_id = $1, family_role = \'member\' WHERE id = $2',
+          [target, joiner.id],
+        );
+        await holder.query('COMMIT');
+        expect(await outcome).toBe(200);
+      } finally {
+        await holder.query('ROLLBACK').catch(() => undefined);
+        holder.release();
+      }
+      expect((await view(owner)).balance).toBe(ownerBefore + 31);
+    } finally {
+      await pool.end();
+    }
   });
 });
