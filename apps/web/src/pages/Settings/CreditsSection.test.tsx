@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { CreditsSection } from './components/CreditsSection';
 import { useRefreshCreditsOnReads } from '../../components/background/useRefreshCreditsOnReads';
-import { linkReads } from '../../lib/linkReads';
+import { recipeReads } from '../../lib/recipeReads';
 
 /** The Credits panel with the app layout's refresh-on-read hook mounted beside it. */
 function CreditsWithRefresh() {
@@ -244,13 +244,13 @@ describe('CreditsSection', () => {
       expect(await screen.findByText('Nothing yet.')).toBeInTheDocument();
 
       act(() => {
-        linkReads.submit({ kind: 'text', text: 'pasted' }, 'source');
+        recipeReads.submit({ kind: 'text', text: 'pasted' }, 'source');
       });
 
       expect(await screen.findByText('99')).toBeInTheDocument();
       expect(screen.queryByText('Nothing yet.')).not.toBeInTheDocument();
       expect(screen.getByText('Recipe from pasted text')).toBeInTheDocument();
-      linkReads.clear();
+      recipeReads.clear();
     });
   });
 

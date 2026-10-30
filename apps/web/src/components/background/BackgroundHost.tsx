@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { haptic } from '../../lib/haptic';
-import { linkReads as linkReadsHolder } from '../../lib/linkReads';
+import { recipeReads as recipeReadsHolder } from '../../lib/recipeReads';
 import {
   announcedScanFailed,
   announceScanFailed,
@@ -14,7 +14,7 @@ import { useVoiceBackgroundItems } from '../voice/useVoiceBackgroundItems';
 import { VoiceReviewAllFooter } from '../voice/VoiceReviewAllFooter';
 import { BackgroundSheet } from './BackgroundSheet';
 import { BackgroundStrip } from './BackgroundStrip';
-import { useLinkReadBackgroundItems } from './useLinkReadBackgroundItems';
+import { useRecipeReadBackgroundItems } from './useRecipeReadBackgroundItems';
 import {
   summarizeScanSession,
   useScanSessionBackgroundItems,
@@ -67,9 +67,9 @@ function useFailureAlert({
 /**
  * The background strip and its sheet, hosted once by the app layout on pages with the Dock (so they
  * show whether or not voice is configured): the Voice Notes and, when the host asks for them
- * (`scanSession`, `linkReads`), the Scan Session and the link reads adapted into background items. A host chooses its kinds: the
+ * (`scanSession`, `recipeReads`), the Scan Session and the recipe reads adapted into background items. A host chooses its kinds: the
  * Intro's Say it hosts Voice Notes only, the Scan Session waits for the app's Review. A failed note,
- * Scan or link read is announced once as an alert (the rest of the strip is a polite status); the Scan Session
+ * Scan or recipe read is announced once as an alert (the rest of the strip is a polite status); the Scan Session
  * buzzes once when it becomes all read. Hidden while recording or while a Voice Note sheet is up, and when nothing is in the
  * background.
  *
@@ -78,12 +78,12 @@ function useFailureAlert({
  */
 export function BackgroundHost({
   scanSession = false,
-  linkReads = false,
+  recipeReads = false,
 }: {
   /** Whether the Scan Session is one of the strip's items. Default: no, Voice Notes only. */
   scanSession?: boolean;
-  /** Whether link reads are among the strip's items. Default: no; the Intro leaves them to the app. */
-  linkReads?: boolean;
+  /** Whether recipe reads are among the strip's items. Default: no; the Intro leaves them to the app. */
+  recipeReads?: boolean;
 }) {
   const { t } = useTranslation('voice');
   const { t: tBackground } = useTranslation('background');
@@ -94,8 +94,8 @@ export function BackgroundHost({
   const scanItems = scanSession ? sessionItems : [];
   const scans = useScanSession().scans;
   const summary = summarizeScanSession(scanSession ? scans : []);
-  const linkItems = useLinkReadBackgroundItems(linkReads);
-  const items = [...voiceItems, ...scanItems, ...linkItems];
+  const recipeItems = useRecipeReadBackgroundItems(recipeReads);
+  const items = [...voiceItems, ...scanItems, ...recipeItems];
   const [wantSheet, setWantSheet] = useState(false);
   const [mounted, setMounted] = useState(false);
   const up = state.phase === 'idle' && items.length > 0;
@@ -115,23 +115,23 @@ export function BackgroundHost({
     announced: announcedScanFailed,
     announce: announceScanFailed,
   });
-  const linkFailed = linkItems.filter(
+  const recipeFailed = recipeItems.filter(
     (item) => item.status === 'failed',
   ).length;
-  const linkAlerting = useFailureAlert({
-    failed: linkFailed,
+  const recipeAlerting = useFailureAlert({
+    failed: recipeFailed,
     up,
     page: pathname,
-    announced: linkReadsHolder.announcedFailed,
-    announce: linkReadsHolder.announceFailed,
+    announced: recipeReadsHolder.announcedFailed,
+    announce: recipeReadsHolder.announceFailed,
   });
   const alert = [
     voiceAlerting ? t('inbox.failedAlert', { count: failed }) : null,
     scanAlerting
       ? tBackground('scan.failedAlert', { count: summary.failed })
       : null,
-    linkAlerting
-      ? tBackground('link.failedAlert', { count: linkFailed })
+    recipeAlerting
+      ? tBackground('link.failedAlert', { count: recipeFailed })
       : null,
   ]
     .filter(Boolean)

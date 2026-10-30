@@ -3,7 +3,7 @@ import { apiRequest } from './api';
 import { clearPendingTheme } from './appearance';
 import { resetScanSession } from './scanSession';
 import { voiceNote } from './voiceNote';
-import { linkReads } from './linkReads';
+import { recipeReads } from './recipeReads';
 import { sessionQueryKey, type Session } from './session';
 
 export type SignInInput = { email: string; password: string };
@@ -74,7 +74,7 @@ export function useSignOut() {
     onSuccess: () => {
       clearPendingTheme();
       voiceNote.clear();
-      linkReads.clear();
+      recipeReads.clear();
       resetScanSession();
       queryClient.clear();
       queryClient.setQueryData(sessionQueryKey, null);

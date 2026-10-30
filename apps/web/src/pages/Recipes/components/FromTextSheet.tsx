@@ -14,7 +14,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { CreditPrice } from '../../../components/CreditPrice';
 import { useCreditPrice } from '../../../lib/credits';
 import { ReadingLanguageChoice } from '../../../components/ReadingLanguageChoice';
-import { MAX_HELD_LINK_READS, linkReads } from '../../../lib/linkReads';
+import { MAX_HELD_RECIPE_READS, recipeReads } from '../../../lib/recipeReads';
 import {
   MAX_PASTED_TEXT_LENGTH,
   type ReadingLanguage,
@@ -110,7 +110,7 @@ function FromTextForm({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (input === '') return;
-    const outcome = linkReads.submit(
+    const outcome = recipeReads.submit(
       { kind: 'text', text: input },
       language,
       prefill ? { replaces: prefill.replaces } : {},
@@ -142,7 +142,7 @@ function FromTextForm({
           : t('fromText.hint')}
       </Typography>
       {full ? (
-        <Alert>{t('fromLink.full', { count: MAX_HELD_LINK_READS })}</Alert>
+        <Alert>{t('fromLink.full', { count: MAX_HELD_RECIPE_READS })}</Alert>
       ) : null}
       <Box>
         <Typography
