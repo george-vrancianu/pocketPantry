@@ -7,7 +7,21 @@ import { linkReads } from './linkReads';
 import { sessionQueryKey, type Session } from './session';
 
 export type SignInInput = { email: string; password: string };
-export type SignUpInput = SignInInput & { name: string };
+export type SignUpInput = SignInInput & {
+  name: string;
+  /** Sent only when the person typed one. */
+  promoCode?: string;
+};
+
+/** Public: whether signup needs a Promo Code. */
+export function useSignupConfig() {
+  return useQuery({
+    queryKey: ['signup-config'],
+    queryFn: () => apiRequest<{ promoCodeRequired: boolean }>('/signup-config'),
+    retry: false,
+    staleTime: 60_000,
+  });
+}
 
 export function useSession() {
   return useQuery({

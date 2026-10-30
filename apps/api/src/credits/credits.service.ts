@@ -166,7 +166,10 @@ export class CreditsService {
         row.kind === 'transfer_in' ||
         row.kind === 'promo_code';
       // Gone (deleted) or in another Family now (left or removed): not a Member of this one.
-      const former = byMember && row.memberFamilyId !== me.familyId;
+      // A signup redemption has no Member row yet (`memberId` null from the start): not a former Member.
+      const signupPromo = row.kind === 'promo_code' && row.memberId === null;
+      const former =
+        byMember && !signupPromo && row.memberFamilyId !== me.familyId;
       return {
         id: row.id,
         kind: row.kind,

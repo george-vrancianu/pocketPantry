@@ -9,5 +9,11 @@
   "submitting": "Se creează contul",
   "haveAccount": "Ai deja un cont?",
   "signIn": "Autentifică-te",
-  "back": "Înapoi"
+  "back": "Înapoi",
+  "promoCode": {
+    "label": "Cod promoțional",
+    "requiredHint": "Ai nevoie de un cod promoțional pentru a te înscrie.",
+    "optionalLabel": "Ai un cod promoțional?",
+    "optionalHint": "Opțional. Creditele lui se adaugă peste Creditele de bun venit."
+  }
 }

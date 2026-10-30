@@ -14,7 +14,8 @@ import { useSignUpForm } from './hooks/useSignUpForm';
 
 export function SignUpPage() {
   const { t } = useTranslation('signUp');
-  const { submit, pending, error } = useSignUpForm();
+  const { submit, pending, error, promoCodeError, promoCodeRequired } =
+    useSignUpForm();
 
   return (
     <AuthShell
@@ -49,6 +50,26 @@ export function SignUpPage() {
             slotProps={{ htmlInput: { minLength: 8 } }}
             required
           />
+          {promoCodeRequired === null ? null : (
+            <TextField
+              name="promoCode"
+              label={
+                promoCodeRequired
+                  ? t('promoCode.label')
+                  : t('promoCode.optionalLabel')
+              }
+              helperText={
+                promoCodeError ??
+                (promoCodeRequired
+                  ? t('promoCode.requiredHint')
+                  : t('promoCode.optionalHint'))
+              }
+              error={promoCodeError !== null}
+              autoComplete="off"
+              autoCapitalize="characters"
+              required={promoCodeRequired}
+            />
+          )}
           <Button type="submit" disabled={pending}>
             {pending ? t('submitting') : t('submit')}
           </Button>

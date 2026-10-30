@@ -73,6 +73,14 @@ const envSchema = z.object({
   /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */
   INVITE_CODE_LIMIT_PER_USER: z.coerce.number().int().positive().default(10),
   INVITE_CODE_LIMIT_PER_IP: z.coerce.number().int().positive().default(30),
+  /**
+   * ADR 0034: when `true`, creating a new Family at signup needs a Promo Code and pays no Welcome Grant.
+   * Default `false`: signup works as before, with an optional code on top.
+   */
+  SIGNUP_REQUIRES_PROMO_CODE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   /** Failed Promo Code redemptions per minute, per Member and per IP. */
   PROMO_CODE_LIMIT_PER_USER: z.coerce.number().int().positive().default(10),
   PROMO_CODE_LIMIT_PER_IP: z.coerce.number().int().positive().default(30),

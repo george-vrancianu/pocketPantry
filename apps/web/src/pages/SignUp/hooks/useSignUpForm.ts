@@ -2,8 +2,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { ApiError } from '../../../lib/api';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { useSignUp } from '../../../lib/auth';
+import { useSignUp, useSignupConfig } from '../../../lib/auth';
 import {
   clearLanguagePicks,
   INTRO_PATHS,
@@ -40,15 +41,18 @@ export function useSignUpForm() {
   };
 
   const signUp = useSignUp(saveKeptLanguages);
+  const config = useSignupConfig();
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const promoCode = String(form.get('promoCode') ?? '').trim();
     signUp.mutate(
       {
         name: String(form.get('name') ?? '').trim(),
         email: String(form.get('email') ?? ''),
         password: String(form.get('password') ?? ''),
+        ...(promoCode ? { promoCode } : {}),
       },
       {
         onSuccess: (unsaved) => {
@@ -61,9 +65,20 @@ export function useSignUpForm() {
     );
   };
 
+  // A refusal about the code belongs on the Promo Code field; anything else is the form's.
+  const failure = signUp.error;
+  const onPromoField =
+    failure instanceof ApiError && failure.code.startsWith('promo_code.');
+  const message = failure ? translateApiError(t, failure) : null;
+
   return {
     submit,
     pending: signUp.isPending,
-    error: signUp.error ? translateApiError(t, signUp.error) : null,
+    error: onPromoField ? null : message,
+    promoCodeError: onPromoField ? message : null,
+    /** Unknown until the config is read; a failed read falls back to optional (the API still enforces it). */
+    promoCodeRequired: config.isPending
+      ? null
+      : (config.data?.promoCodeRequired ?? false),
   };
 }

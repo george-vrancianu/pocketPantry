@@ -9,5 +9,11 @@
   "submitting": "Creating account",
   "haveAccount": "Already have an account?",
   "signIn": "Log in",
-  "back": "Back"
+  "back": "Back",
+  "promoCode": {
+    "label": "Promo Code",
+    "requiredHint": "You need a Promo Code to sign up.",
+    "optionalLabel": "Have a Promo Code?",
+    "optionalHint": "Optional. Its Credits are added on top of your Welcome Grant."
+  }
 }
