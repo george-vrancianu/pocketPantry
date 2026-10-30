@@ -74,12 +74,12 @@ export function useCreditPrice(kind: CreditPriceKind): number | undefined {
   return useCredits().data?.prices[kind];
 }
 
-/** Redeems a Promo Code for the Family; refreshes the balance and history. `credits` is the new balance. */
+/** Redeems a Promo Code for the Family; refreshes the balance and history. `credits` is what the code added. */
 export function useRedeemPromoCode() {
   const refresh = useRefreshCredits();
   return useMutation({
     mutationFn: (code: string) =>
-      apiRequest<{ balance: number }>('/credits/promo-code', {
+      apiRequest<{ balance: number; credits: number }>('/credits/promo-code', {
         method: 'POST',
         body: { code },
       }),

@@ -14,10 +14,12 @@ import { z } from 'zod';
 import { AuthGuard, type AuthenticatedRequest } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { ApiException } from '../common/api-exception';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { PromoCodeRateLimiter } from '../promo-codes/promo-code-rate-limiter';
-import { PromoCodeService } from '../promo-codes/promo-code.service';
+import {
+  PromoCodeService,
+  type RedeemedPromoCode,
+} from '../promo-codes/promo-code.service';
 import { LOW_BALANCE_THRESHOLD, type CreditsView } from './credits.schemas';
 import { CreditsService } from './credits.service';
 
@@ -58,15 +60,11 @@ export class CreditsController {
     @Req() request: AuthenticatedRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
     @Body(new ZodValidationPipe(redeemBody)) body: z.infer<typeof redeemBody>,
-  ): Promise<{ balance: number }> {
-    this.promoLimiter.assertAllowed(member.id, request.ip, reply);
-    try {
-      return { balance: await this.promoCodes.redeem(member.id, body.code) };
-    } catch (error) {
-      if (error instanceof ApiException) {
-        this.promoLimiter.recordFailure(member.id, request.ip);
-      }
-      throw error;
-    }
+  ): Promise<RedeemedPromoCode> {
+    const refund = this.promoLimiter.reserve(member.id, request.ip, reply);
+    const redeemed = await this.promoCodes.redeem(member.id, body.code);
+    // Only failures use the budget.
+    refund();
+    return redeemed;
   }
 }

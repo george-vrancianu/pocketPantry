@@ -73,6 +73,9 @@ const envSchema = z.object({
   /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */
   INVITE_CODE_LIMIT_PER_USER: z.coerce.number().int().positive().default(10),
   INVITE_CODE_LIMIT_PER_IP: z.coerce.number().int().positive().default(30),
+  /** Failed Promo Code redemptions per minute, per Member and per IP. */
+  PROMO_CODE_LIMIT_PER_USER: z.coerce.number().int().positive().default(10),
+  PROMO_CODE_LIMIT_PER_IP: z.coerce.number().int().positive().default(30),
   /**
    * Barcode Lookup calls that go out to Open Food Facts per minute: per Member, and for the whole API process.
    * Open Food Facts allows 15 product reads a minute per IP (https://openfoodfacts.github.io/openfoodfacts-server/api/).

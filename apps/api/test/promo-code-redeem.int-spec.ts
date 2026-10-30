@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import type { CreditsView } from '../src/credits/credits.schemas';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { creditEntry, promoCode, user } from '../src/database/schema';
+import { user } from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
@@ -56,7 +56,7 @@ describe('Redeeming a Promo Code (integration)', () => {
     const before = (await view(who)).balance;
     const code = await makeCode(40);
     const res = await redeem(who, code).expect(200);
-    expect(res.body).toEqual({ balance: before + 40 });
+    expect(res.body).toEqual({ balance: before + 40, credits: 40 });
     expect((await view(who)).balance).toBe(before + 40);
     const second = await newMember();
     const again = await redeem(second, code).expect(409);
@@ -147,11 +147,23 @@ describe('Redeeming a Promo Code (integration)', () => {
       redeemedByName: 'Listed Redeemer',
       redeemedByEmail: who.email,
     });
-    const [entry] = await database
-      .select()
-      .from(promoCode)
-      .where(eq(promoCode.redeemedBy, who.id));
-    expect(entry.redeemedFamilyId).toBeTruthy();
+    const familyId = (
+      (await client(app, who.cookie, '/api/family').get('').expect(200))
+        .body as { id: string }
+    ).id;
+    expect(
+      (
+        (await admin.get('?limit=100').expect(200)).body as {
+          entries: { code: string; redeemedFamilyId: string }[];
+        }
+      ).entries.find((e) => e.code === code)?.redeemedFamilyId,
+    ).toBe(familyId);
+  });
+
+  it('reports the Credits the code added, whatever the balance does meanwhile', async () => {
+    const who = await newMember();
+    const res = await redeem(who, await makeCode(0)).expect(200);
+    expect((res.body as { credits: number }).credits).toBe(0);
   });
 
   it('lets exactly one of two concurrent redemptions win', async () => {
@@ -160,14 +172,10 @@ describe('Redeeming a Promo Code (integration)', () => {
     const code = await makeCode(9);
     const results = await Promise.all([redeem(a, code), redeem(b, code)]);
     expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
-    const rows = await database
-      .select()
-      .from(creditEntry)
-      .where(eq(creditEntry.kind, 'promo_code'));
-    expect(
-      rows.filter(
-        (r) => r.amount === 9 && [a.id, b.id].includes(r.memberId ?? ''),
-      ),
-    ).toHaveLength(1);
+    const balances = await Promise.all([view(a), view(b)]);
+    const gained = balances.filter((v) =>
+      v.history.some((h) => h.kind === 'promo_code' && h.amount === 9),
+    );
+    expect(gained).toHaveLength(1);
   });
 });

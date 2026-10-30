@@ -57,7 +57,7 @@
       "label": "Promo Code",
       "hint": "Adds its Credits to your family.",
       "button": "Redeem",
-      "done": "Promo Code redeemed. Credits added: {{count}}"
+      "done": "Promo Code redeemed. Credits added: {{credits}}"
     }
   },
   "expiringSoon": {

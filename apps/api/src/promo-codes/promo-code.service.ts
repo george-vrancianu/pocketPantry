@@ -6,7 +6,7 @@ import type { Database } from '../database/database.types';
 import { hasPgCode } from '../database/pg-errors';
 import { promoCode, user } from '../database/schema';
 import { redeemPromoCode } from './redeem-promo-code';
-import { familyBalance } from '../credits/credits.service';
+import { familyBalance, lockFamilyCredits } from '../credits/credits.service';
 import { formatPromoCode, generatePromoCode } from '../family/invite-code';
 import {
   encodeCursor,
@@ -18,6 +18,9 @@ import {
 } from './promo-code.schemas';
 
 const MAX_GENERATE_ATTEMPTS = 5;
+
+/** What a redemption did: the Credits it added and the Family's new Credit Balance. */
+export type RedeemedPromoCode = { credits: number; balance: number };
 
 type Row = typeof promoCode.$inferSelect;
 
@@ -108,16 +111,29 @@ export class PromoCodeService {
    * A Member redeems a code for their current Family; returns the new Credit Balance.
    * Signup calls `redeemPromoCode` directly inside its own transaction.
    */
-  async redeem(memberId: string, code: string): Promise<number> {
-    return this.database.transaction(async (tx) => {
-      const [me] = await tx
-        .select({ familyId: user.familyId })
-        .from(user)
-        .where(eq(user.id, memberId));
-      if (!me) throw new ApiException(404, 'promo_code.not_found');
-      await redeemPromoCode(tx, { code, familyId: me.familyId, memberId });
-      return familyBalance(tx, me.familyId);
-    });
+  async redeem(memberId: string, code: string): Promise<RedeemedPromoCode> {
+    // The Member may move to another Family while this waits for the lock; then start over in a new
+    // transaction and credit the Family they are in now (same dance as `CreditsService.hold`).
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const done = await this.database.transaction(async (tx) => {
+        const familyOf = async () => {
+          const [member] = await tx
+            .select({ familyId: user.familyId })
+            .from(user)
+            .where(eq(user.id, memberId));
+          if (!member) throw new ApiException(401, 'auth.unauthenticated');
+          return member.familyId;
+        };
+        const peeked = await familyOf();
+        await lockFamilyCredits(tx, peeked);
+        const familyId = await familyOf();
+        if (familyId !== peeked) return null;
+        const credits = await redeemPromoCode(tx, { code, familyId, memberId });
+        return { credits, balance: await familyBalance(tx, familyId) };
+      });
+      if (done) return done;
+    }
+    throw new ApiException(409, 'family.concurrent_change');
   }
 
   /** Only an Unused code can be revoked: a redeemed one already gave its Credits. */

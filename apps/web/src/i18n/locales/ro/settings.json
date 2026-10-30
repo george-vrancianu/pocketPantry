@@ -60,7 +60,7 @@
       "label": "Cod promoțional",
       "hint": "Adaugă Creditele codului în familia ta.",
       "button": "Folosește",
-      "done": "Cod promoțional folosit. Credite adăugate: {{count}}"
+      "done": "Cod promoțional folosit. Credite adăugate: {{credits}}"
     }
   },
   "expiringSoon": {

@@ -57,7 +57,7 @@
       "label": "Promokode",
       "hint": "Lægger kreditterne til din familie.",
       "button": "Indløs",
-      "done": "Promokode indløst. Kreditter tilføjet: {{count}}"
+      "done": "Promokode indløst. Kreditter tilføjet: {{credits}}"
     }
   },
   "expiringSoon": {

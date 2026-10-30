@@ -82,7 +82,9 @@ function HistoryList({ history }: { history: CreditHistoryEntry[] }) {
               component="span"
               sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}
             >
-              {entry.amount > 0 ? `+${entry.amount}` : `\u2212${-entry.amount}`}
+              {entry.amount >= 0
+                ? `+${entry.amount}`
+                : `\u2212${-entry.amount}`}
             </Typography>
           </Stack>
         );
@@ -92,7 +94,7 @@ function HistoryList({ history }: { history: CreditHistoryEntry[] }) {
 }
 
 /** Any Member can add a Promo Code's Credits to the Family. Errors show on the field. */
-function RedeemPromoCode({ before }: { before: number }) {
+function RedeemPromoCode() {
   const { t } = useTranslation('settings');
   const id = useId();
   const toast = useToast();
@@ -104,9 +106,9 @@ function RedeemPromoCode({ before }: { before: number }) {
     if (!code.trim() || redeem.isPending) return;
     setError(null);
     redeem.mutate(code, {
-      onSuccess: ({ balance }) => {
+      onSuccess: ({ credits }) => {
         setCode('');
-        toast.show(t('credits.redeem.done', { count: balance - before }), {
+        toast.show(t('credits.redeem.done', { credits }), {
           polite: true,
         });
       },
@@ -191,9 +193,7 @@ export function CreditsSection() {
           <Typography variant="meta" color="text.secondary">
             {t('credits.hint')}
           </Typography>
-          {credits.data ? (
-            <RedeemPromoCode before={credits.data.balance} />
-          ) : null}
+          {credits.data ? <RedeemPromoCode /> : null}
           {credits.data ? (
             <Stack spacing={1}>
               <Typography component="h3" variant="meta" color="text.secondary">

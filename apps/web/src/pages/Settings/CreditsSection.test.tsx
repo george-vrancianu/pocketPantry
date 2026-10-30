@@ -280,7 +280,7 @@ describe('CreditsSection', () => {
 
     it('refreshes the balance, clears the field and shows a toast', async () => {
       const user = userEvent.setup();
-      stubRedeem(() => Response.json({ balance: 125 }));
+      stubRedeem(() => Response.json({ balance: 125, credits: 25 }));
       await screen.findByText('100');
       await user.type(
         screen.getByRole('textbox', { name: 'Promo Code' }),
@@ -315,8 +315,19 @@ describe('CreditsSection', () => {
       expect(field).toHaveAttribute('aria-invalid', 'true');
     });
 
+    it('shows a 0-Credit Promo Code row as +0', async () => {
+      await show(
+        credits({
+          balance: 5,
+          history: [entry({ kind: 'promo_code', readKind: null, amount: 0 })],
+        }),
+      );
+      expect(screen.getByText('+0')).toBeInTheDocument();
+      expect(screen.queryByText('\u22120')).not.toBeInTheDocument();
+    });
+
     it('does not submit an empty field', async () => {
-      stubRedeem(() => Response.json({ balance: 125 }));
+      stubRedeem(() => Response.json({ balance: 125, credits: 25 }));
       await screen.findByText('100');
       await waitFor(() =>
         expect(screen.getByRole('button', { name: 'Redeem' })).toBeDisabled(),
@@ -324,7 +335,7 @@ describe('CreditsSection', () => {
     });
 
     it('words a Promo Code history row with the amount and the Member', async () => {
-      stubRedeem(() => Response.json({ balance: 125 }));
+      stubRedeem(() => Response.json({ balance: 125, credits: 25 }));
       await screen.findByText('100');
       expect(
         screen.getByText('Promo Code', { selector: 'p' }),
