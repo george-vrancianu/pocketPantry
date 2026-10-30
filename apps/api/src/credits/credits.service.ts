@@ -161,7 +161,10 @@ export class CreditsService {
       .orderBy(desc(creditEntry.createdAt), desc(creditEntry.id))
       .limit(limit);
     return rows.map((row) => {
-      const byMember = row.kind === 'spend' || row.kind === 'transfer_in';
+      const byMember =
+        row.kind === 'spend' ||
+        row.kind === 'transfer_in' ||
+        row.kind === 'promo_code';
       // Gone (deleted) or in another Family now (left or removed): not a Member of this one.
       const former = byMember && row.memberFamilyId !== me.familyId;
       return {

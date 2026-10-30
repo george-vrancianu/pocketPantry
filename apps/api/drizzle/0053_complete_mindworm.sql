@@ -1,0 +1,2 @@
+ALTER TABLE "credit_entry" DROP CONSTRAINT "credit_entry_amount_not_zero";--> statement-breakpoint
+ALTER TABLE "credit_entry" ADD CONSTRAINT "credit_entry_amount_not_zero" CHECK ("credit_entry"."amount" <> 0 or "credit_entry"."kind" = 'promo_code');

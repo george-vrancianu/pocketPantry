@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { ApiError, apiRequest } from './api';
 
@@ -72,4 +72,17 @@ export function useRefreshCredits() {
  */
 export function useCreditPrice(kind: CreditPriceKind): number | undefined {
   return useCredits().data?.prices[kind];
+}
+
+/** Redeems a Promo Code for the Family; refreshes the balance and history. `credits` is the new balance. */
+export function useRedeemPromoCode() {
+  const refresh = useRefreshCredits();
+  return useMutation({
+    mutationFn: (code: string) =>
+      apiRequest<{ balance: number }>('/credits/promo-code', {
+        method: 'POST',
+        body: { code },
+      }),
+    onSuccess: () => refresh(),
+  });
 }

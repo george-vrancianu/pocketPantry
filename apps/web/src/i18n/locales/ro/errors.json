@@ -219,6 +219,11 @@
   },
   "promo_code": {
     "not_revocable": "Doar un cod promoțional nefolosit poate fi revocat.",
-    "not_found": "Nu am găsit acel cod promoțional."
+    "not_found": "Nu am găsit acel cod promoțional.",
+    "already_redeemed": "Acel cod promoțional a fost deja folosit.",
+    "revoked": "Acel cod promoțional nu mai este valabil.",
+    "is_invite_code": "Pare un cod de invitație. Folosește-l din fila Familie pentru a te alătura unei familii.",
+    "rate_limited": "Prea multe încercări. Așteaptă un minut și încearcă din nou.",
+    "required": "Introdu un cod promoțional."
   }
 }

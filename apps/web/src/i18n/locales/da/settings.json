@@ -49,7 +49,15 @@
       "transfer_in": "Kreditter medbragt af {{who}}",
       "transfer_out": "Kreditter flyttet ud",
       "by": "{{who}} · {{when}}",
-      "when": "{{when}}"
+      "when": "{{when}}",
+      "promo_code": "Promokode"
+    },
+    "redeem": {
+      "title": "Indløs en promokode",
+      "label": "Promokode",
+      "hint": "Lægger kreditterne til din familie.",
+      "button": "Indløs",
+      "done": "Promokode indløst. Kreditter tilføjet: {{count}}"
     }
   },
   "expiringSoon": {

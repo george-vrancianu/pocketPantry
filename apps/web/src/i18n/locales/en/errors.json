@@ -214,6 +214,11 @@
   },
   "promo_code": {
     "not_revocable": "Only an unused Promo Code can be revoked.",
-    "not_found": "We could not find that Promo Code."
+    "not_found": "We could not find that Promo Code.",
+    "already_redeemed": "That Promo Code has already been used.",
+    "revoked": "That Promo Code is no longer valid.",
+    "is_invite_code": "That looks like an Invite Code. Use it on the Family tab to join a family.",
+    "rate_limited": "Too many tries. Wait a minute and try again.",
+    "required": "Enter a Promo Code."
   }
 }

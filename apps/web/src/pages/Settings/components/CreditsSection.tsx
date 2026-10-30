@@ -1,17 +1,24 @@
 import {
   Alert,
   Box,
+  Button,
   Card,
   Stack,
+  TextField,
   Typography,
   radius,
   tokens,
+  useToast,
 } from '@pocket-pantry/ui';
 import type { TFunction } from 'i18next';
-import { useId } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { useCredits, type CreditHistoryEntry } from '../../../lib/credits';
+import {
+  useCredits,
+  useRedeemPromoCode,
+  type CreditHistoryEntry,
+} from '../../../lib/credits';
 import { SectionHeading } from './SectionHeading';
 
 /** What a history entry was, worded by its kind (a hand grant's reason is shown as entered). */
@@ -84,6 +91,54 @@ function HistoryList({ history }: { history: CreditHistoryEntry[] }) {
   );
 }
 
+/** Any Member can add a Promo Code's Credits to the Family. Errors show on the field. */
+function RedeemPromoCode({ before }: { before: number }) {
+  const { t } = useTranslation('settings');
+  const id = useId();
+  const toast = useToast();
+  const redeem = useRedeemPromoCode();
+  const [code, setCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!code.trim() || redeem.isPending) return;
+    setError(null);
+    redeem.mutate(code, {
+      onSuccess: ({ balance }) => {
+        setCode('');
+        toast.show(t('credits.redeem.done', { count: balance - before }), {
+          polite: true,
+        });
+      },
+      onError: (failure) => setError(translateApiError(t, failure)),
+    });
+  };
+  return (
+    <Stack component="form" spacing={1} onSubmit={submit} noValidate>
+      <Typography component="h3" variant="meta" color="text.secondary">
+        {t('credits.redeem.title')}
+      </Typography>
+      <TextField
+        id={`${id}-promo`}
+        label={t('credits.redeem.label')}
+        helperText={error ?? t('credits.redeem.hint')}
+        error={error !== null}
+        value={code}
+        onChange={(event) => {
+          setCode(event.target.value);
+          setError(null);
+        }}
+        slotProps={{
+          htmlInput: { maxLength: 64, autoCapitalize: 'characters' },
+        }}
+      />
+      <Button type="submit" disabled={!code.trim() || redeem.isPending}>
+        {t('credits.redeem.button')}
+      </Button>
+    </Stack>
+  );
+}
+
 /** The Credits panel: how many Credits the Family has left and where they went, shared by every Member. */
 export function CreditsSection() {
   const { t } = useTranslation('settings');
@@ -136,6 +191,9 @@ export function CreditsSection() {
           <Typography variant="meta" color="text.secondary">
             {t('credits.hint')}
           </Typography>
+          {credits.data ? (
+            <RedeemPromoCode before={credits.data.balance} />
+          ) : null}
           {credits.data ? (
             <Stack spacing={1}>
               <Typography component="h3" variant="meta" color="text.secondary">

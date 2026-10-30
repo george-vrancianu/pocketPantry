@@ -214,6 +214,11 @@
   },
   "promo_code": {
     "not_revocable": "Kun en ubrugt promokode kan tilbagekaldes.",
-    "not_found": "Vi kunne ikke finde den promokode."
+    "not_found": "Vi kunne ikke finde den promokode.",
+    "already_redeemed": "Den promokode er allerede brugt.",
+    "revoked": "Den promokode er ikke længere gyldig.",
+    "is_invite_code": "Det ligner en invitationskode. Brug den under fanen Familie for at slutte dig til en familie.",
+    "rate_limited": "For mange forsøg. Vent et minut og prøv igen.",
+    "required": "Indtast en promokode."
   }
 }

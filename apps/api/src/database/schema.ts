@@ -713,7 +713,11 @@ export const creditEntry = pgTable(
   },
   (table) => [
     index('credit_entry_family_id_idx').on(table.familyId, table.createdAt),
-    check('credit_entry_amount_not_zero', sql`${table.amount} <> 0`),
+    // A 0-Credit Promo Code still writes its entry, so the history shows it.
+    check(
+      'credit_entry_amount_not_zero',
+      sql`${table.amount} <> 0 or ${table.kind} = 'promo_code'`,
+    ),
     // A Family is given one Welcome Grant, ever: the rollout is safe to repeat.
     uniqueIndex('credit_entry_welcome_grant_idx')
       .on(table.familyId)

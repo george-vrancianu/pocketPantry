@@ -52,7 +52,15 @@
       "transfer_in": "Credite aduse de {{who}}",
       "transfer_out": "Credite mutate în afară",
       "by": "{{who}} · {{when}}",
-      "when": "{{when}}"
+      "when": "{{when}}",
+      "promo_code": "Cod promoțional"
+    },
+    "redeem": {
+      "title": "Folosește un cod promoțional",
+      "label": "Cod promoțional",
+      "hint": "Adaugă Creditele codului în familia ta.",
+      "button": "Folosește",
+      "done": "Cod promoțional folosit. Credite adăugate: {{count}}"
     }
   },
   "expiringSoon": {

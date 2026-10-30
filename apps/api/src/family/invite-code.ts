@@ -62,3 +62,8 @@ export const normalizePromoCode = (raw: string): string =>
 /** How a stored Promo Code is shown and copied: `XXXXX-XXXXX`. */
 export const formatPromoCode = (code: string): string =>
   `${code.slice(0, 5)}-${code.slice(5)}`;
+
+/** True when a normalised code could be an Invite Code (8 characters of the code alphabet). */
+export const looksLikeInviteCode = (normalised: string): boolean =>
+  normalised.length === INVITE_CODE_LENGTH &&
+  [...normalised].every((c) => INVITE_CODE_ALPHABET.includes(c));

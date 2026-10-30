@@ -4,7 +4,9 @@ import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { hasPgCode } from '../database/pg-errors';
-import { promoCode } from '../database/schema';
+import { promoCode, user } from '../database/schema';
+import { redeemPromoCode } from './redeem-promo-code';
+import { familyBalance } from '../credits/credits.service';
 import { formatPromoCode, generatePromoCode } from '../family/invite-code';
 import {
   encodeCursor,
@@ -100,6 +102,22 @@ export class PromoCodeService {
           ? encodeCursor({ createdAt: last.createdAtText, id: last.row.id })
           : null,
     };
+  }
+
+  /**
+   * A Member redeems a code for their current Family; returns the new Credit Balance.
+   * Signup calls `redeemPromoCode` directly inside its own transaction.
+   */
+  async redeem(memberId: string, code: string): Promise<number> {
+    return this.database.transaction(async (tx) => {
+      const [me] = await tx
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.id, memberId));
+      if (!me) throw new ApiException(404, 'promo_code.not_found');
+      await redeemPromoCode(tx, { code, familyId: me.familyId, memberId });
+      return familyBalance(tx, me.familyId);
+    });
   }
 
   /** Only an Unused code can be revoked: a redeemed one already gave its Credits. */
