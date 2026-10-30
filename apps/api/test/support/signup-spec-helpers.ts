@@ -15,7 +15,7 @@ const TEST_ORIGIN = 'http://localhost:5173';
 
 let counter = 0;
 
-/** Raw signup (no assertions), each from a fresh Better Auth client IP. */
+/** Raw signup (no assertions). The x-forwarded-for only feeds Better Auth's own limiter; ours keys on the socket IP, so every call here shares one Promo Code IP budget. */
 export function rawSignUp(
   app: NestFastifyApplication,
   body: { promoCode?: string } = {},

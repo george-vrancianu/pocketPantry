@@ -32,6 +32,7 @@ describe('Promo Code signup rate limit (integration)', () => {
     }
     const blocked = await rawSignUp(app, { promoCode: 'ZZZZZ-ZZZZZ' });
     expect(blocked.res.status).toBe(429);
+    expect(Number(blocked.res.headers['retry-after'])).toBeGreaterThan(0);
     expect(blocked.res.body).toEqual({
       code: 'promo_code.rate_limited',
       params: {},

@@ -6,6 +6,7 @@ import * as schema from '../database/schema';
 import { CLIENT_IP_HEADER } from './register-auth-handler';
 import {
   exposeSignupTransaction,
+  linkSignupRedemption,
   OPEN_SIGNUP,
   placeNewMember,
   type SignupPolicy,
@@ -77,6 +78,15 @@ export function createAuth(database: Database, options: CreateAuthOptions) {
       },
     },
     databaseHooks: {
+      // Runs in the signup transaction right after the user insert: names the Member on a Promo Code
+      // redeemed at signup (the Credit history shows who redeemed it).
+      account: {
+        create: {
+          before: async (account) => {
+            await linkSignupRedemption(account.userId);
+          },
+        },
+      },
       user: {
         create: {
           // Signing up places the Member in a Household of One as Owner (see placeNewMember for the

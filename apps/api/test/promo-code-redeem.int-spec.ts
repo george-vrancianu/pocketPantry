@@ -132,6 +132,25 @@ describe('Redeeming a Promo Code (integration)', () => {
     expect(text).not.toContain('private note');
   });
 
+  it('shows a redemption by a Member who has left as a former Member', async () => {
+    const owner = await newMember('Owner');
+    const leaver = await newMember('Leaver');
+    const invite = (
+      (await client(app, owner.cookie, '/api/family').get('').expect(200))
+        .body as { inviteCode: string }
+    ).inviteCode;
+    const familyApi = client(app, leaver.cookie, '/api/family');
+    await familyApi.post('/join', { code: invite }).expect(201);
+    await redeem(leaver, await makeCode(6)).expect(200);
+    await familyApi.post('/leave').expect(200);
+    expect((await view(owner)).history[0]).toMatchObject({
+      kind: 'promo_code',
+      amount: 6,
+      memberName: null,
+      formerMember: true,
+    });
+  });
+
   it('shows the redemption on the Admin list', async () => {
     const who = await newMember('Listed Redeemer');
     const code = await makeCode(2);

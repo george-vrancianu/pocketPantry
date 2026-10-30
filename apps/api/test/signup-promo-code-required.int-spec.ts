@@ -1,5 +1,8 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
+import { createAuth } from '../src/auth/create-auth';
+import { DATABASE } from '../src/database/database.constants';
+import type { Database } from '../src/database/database.types';
 import {
   familyCount,
   footprint,
@@ -74,7 +77,14 @@ describe('Signup with SIGNUP_REQUIRES_PROMO_CODE on (integration)', () => {
       .expect(200);
     expect(history.body).toMatchObject({
       balance: 40,
-      history: [{ kind: 'promo_code', amount: 40, formerMember: false }],
+      history: [
+        {
+          kind: 'promo_code',
+          amount: 40,
+          memberName: 'New Member',
+          formerMember: false,
+        },
+      ],
     });
   });
 
@@ -97,6 +107,9 @@ describe('Signup with SIGNUP_REQUIRES_PROMO_CODE on (integration)', () => {
   it('refuses a revoked code and leaves it revoked', async () => {
     const code = await newPromoCode(app, 10, 'revoked');
     await expectRefused(code, 409, 'promo_code.revoked');
+    const row = await promoRow(app, code);
+    expect(row.redeemedAt).toBeNull();
+    expect(row.revokedAt).not.toBeNull();
   });
 
   it('refuses a used code, and leaves the first redemption intact', async () => {
@@ -106,6 +119,38 @@ describe('Signup with SIGNUP_REQUIRES_PROMO_CODE on (integration)', () => {
     await expectRefused(code, 409, 'promo_code.already_redeemed');
     const row = await promoRow(app, code);
     expect(row.redeemedByEmail).toBe(first.email);
+  });
+
+  it('rolls back a redemption that succeeded when the signup fails afterwards', async () => {
+    const db = app.get<Database>(DATABASE);
+    const failing = createAuth(db, {
+      baseURL: 'http://localhost:3000',
+      secret: 'test-secret-that-is-at-least-32-characters-long',
+      clientOrigin: TEST_ORIGIN,
+      signup: {
+        requiresPromoCode: true,
+        // Called right after the redemption succeeded.
+        reserveIp: () => () => {
+          throw new Error('boom');
+        },
+      },
+    });
+    const code = await newPromoCode(app, 10);
+    const email = `rollback-${Date.now()}@example.com`;
+    const families = await familyCount(app);
+    // Held in a variable: `promoCode` is our own extra, unknown to Better Auth's body type.
+    const body = {
+      name: 'Nope',
+      email,
+      password: 'correct-horse-battery-staple',
+      promoCode: code,
+    };
+    await expect(failing.api.signUpEmail({ body })).rejects.toBeDefined();
+    const row = await promoRow(app, code);
+    expect(row.redeemedAt).toBeNull();
+    expect(row.redeemedFamilyId).toBeNull();
+    expect((await footprint(app, email)).member).toBeUndefined();
+    expect(await familyCount(app)).toBe(families);
   });
 
   it('refuses Invite-Code-shaped input', async () => {

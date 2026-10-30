@@ -33,7 +33,10 @@ export class PromoCodeRateLimiter {
           this.config.get('PROMO_CODE_LIMIT_PER_IP', { infer: true }),
         ],
       ],
-      (seconds) => void reply.header('Retry-After', seconds),
+      (seconds) => {
+        void reply.header('Retry-After', seconds);
+        return {};
+      },
     );
   }
 
@@ -46,13 +49,14 @@ export class PromoCodeRateLimiter {
           this.config.get('PROMO_CODE_LIMIT_PER_IP', { infer: true }),
         ],
       ],
-      () => undefined,
+      (retryAfter) => ({ retryAfter }),
     );
   }
 
   private charge(
     checks: readonly (readonly [string, number])[],
-    onBlocked: (retryAfterSeconds: number) => void,
+    /** Returns the error params; may set a header. */
+    onBlocked: (retryAfterSeconds: number) => Record<string, unknown>,
   ): () => void {
     const now = Date.now();
     for (const [key, w] of this.windows) {
@@ -61,8 +65,11 @@ export class PromoCodeRateLimiter {
     for (const [key, limit] of checks) {
       const w = this.windows.get(key);
       if (w && w.count >= limit) {
-        onBlocked(Math.ceil((w.resetsAt - now) / 1000));
-        throw new ApiException(429, 'promo_code.rate_limited');
+        throw new ApiException(
+          429,
+          'promo_code.rate_limited',
+          onBlocked(Math.ceil((w.resetsAt - now) / 1000)),
+        );
       }
     }
     const charged = checks.map(([key]) => {
