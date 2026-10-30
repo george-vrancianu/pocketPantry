@@ -13,7 +13,7 @@ vi.mock('@pocket-pantry/ui', async (importOriginal) => ({
       return () => floor(null);
     }, [bottom]),
 }));
-import { linkReads } from '../../lib/linkReads';
+import { recipeReads } from '../../lib/recipeReads';
 import { renderWithProviders } from '../../test/render';
 import { VoiceHostProvider, VoiceHostSlot } from '../voice/VoiceHost';
 import { BackgroundHost } from './BackgroundHost';
@@ -26,7 +26,10 @@ afterEach(() => {
 
 const holdARead = () => {
   vi.stubGlobal('fetch', () => new Promise<Response>(() => {}));
-  linkReads.submit({ kind: 'link', url: 'https://example.com/soup' }, 'source');
+  recipeReads.submit(
+    { kind: 'link', url: 'https://example.com/soup' },
+    'source',
+  );
 };
 
 describe('BackgroundHost link reads', () => {
@@ -39,7 +42,7 @@ describe('BackgroundHost link reads', () => {
 
   it('shows them when the host asks', () => {
     holdARead();
-    renderWithProviders(<BackgroundHost linkReads />);
+    renderWithProviders(<BackgroundHost recipeReads />);
     expect(screen.getByText(/Reading a recipe link/)).toBeInTheDocument();
   });
 });
@@ -48,7 +51,7 @@ describe('BackgroundHost toast floor', () => {
   it('registers the strip top edge while it is up and clears it when it goes', () => {
     vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(66);
     holdARead();
-    const { unmount } = renderWithProviders(<BackgroundHost linkReads />);
+    const { unmount } = renderWithProviders(<BackgroundHost recipeReads />);
     expect(floor).toHaveBeenLastCalledWith(66);
     unmount();
     expect(floor).toHaveBeenLastCalledWith(null);
@@ -72,7 +75,7 @@ describe('BackgroundHost toast floor', () => {
       });
     });
     holdARead();
-    renderWithProviders(<BackgroundHost linkReads />);
+    renderWithProviders(<BackgroundHost recipeReads />);
     expect(floor).toHaveBeenLastCalledWith(84);
   });
 
@@ -87,7 +90,7 @@ describe('BackgroundHost toast floor', () => {
     renderWithProviders(
       <VoiceHostProvider>
         <VoiceHostSlot />
-        <BackgroundHost linkReads />
+        <BackgroundHost recipeReads />
       </VoiceHostProvider>,
     );
     expect(floor).toHaveBeenLastCalledWith(66);
@@ -108,7 +111,7 @@ describe('BackgroundHost toast floor', () => {
       },
     );
     holdARead();
-    renderWithProviders(<BackgroundHost linkReads />);
+    renderWithProviders(<BackgroundHost recipeReads />);
     expect(observe).toHaveBeenCalledWith(expect.any(HTMLElement), {
       box: 'border-box',
     });

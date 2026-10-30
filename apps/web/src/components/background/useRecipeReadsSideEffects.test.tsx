@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { linkReads } from '../../lib/linkReads';
+import { recipeReads } from '../../lib/recipeReads';
 import { recipeDraftsListKey } from '../../lib/recipeDrafts';
 import { renderInAppLayout } from '../../test/render';
 
@@ -19,13 +19,13 @@ describe('what a finished link read does off the Dock pages', () => {
     const { queryClient } = renderInAppLayout(<p>the camera</p>, '/scan');
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
 
-    linkReads.submit(
+    recipeReads.submit(
       { kind: 'link', url: 'https://example.com/soup' },
       'source',
     );
 
     await vi.waitFor(() =>
-      expect(linkReads.getState().reads[0].status).toBe('ready'),
+      expect(recipeReads.getState().reads[0].status).toBe('ready'),
     );
     expect(invalidate).toHaveBeenCalledWith({ queryKey: recipeDraftsListKey });
     expect(vibrate).toHaveBeenCalledTimes(1);

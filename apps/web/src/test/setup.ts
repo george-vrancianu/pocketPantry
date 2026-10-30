@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
-import { linkReads } from '../lib/linkReads';
+import { recipeReads } from '../lib/recipeReads';
 import { resetReads } from '../lib/scanReads';
 import { resetScanSession } from '../lib/scanSession';
 
@@ -13,7 +13,7 @@ afterEach(() => {
   localStorage.clear();
   // The Scan Session is module state: do not carry Scans over to the next test.
   resetScanSession();
-  linkReads.clear();
+  recipeReads.clear();
   resetReads();
 });
 

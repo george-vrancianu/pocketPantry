@@ -8,42 +8,92 @@ import {
   type RecipeFromLink,
 } from './linkRecipe';
 
-/** At most this many link reads run at once; the rest wait in the order they were started. */
-export const MAX_LINK_READS = 2;
-/** At most this many link reads are held (waiting, reading, ready or failed) until the Member reviews some. */
-export const MAX_HELD_LINK_READS = 5;
+/** At most this many recipe reads run at once; the rest wait in the order they were started. */
+export const MAX_RECIPE_READS = 2;
+/** At most this many recipe reads are held (waiting, reading, ready or failed) until the Member reviews some. */
+export const MAX_HELD_RECIPE_READS = 5;
 
 /** A read that fails for want of a network is tried once more after this long, before it shows failed. */
-export const LINK_AUTO_RETRY_MS = 1500;
+export const RECIPE_READ_AUTO_RETRY_MS = 1500;
 
 /**
  * `waiting` for a free slot, `reading`, `ready` (a Recipe Draft is kept), `failed`, or `capped` (the Link Cap or Credits refused it, or it was waiting behind the read that was
  * refused; Retry tries again, like a capped Scan in ADR 0004).
  */
-export type LinkReadStatus =
+export type RecipeReadStatus =
   'waiting' | 'reading' | 'ready' | 'failed' | 'capped';
 
 /** What a Member asked to read: a link or pasted text, never both. */
 export type LinkReadSource =
   { kind: 'link'; url: string } | { kind: 'text'; text: string };
 
-export type LinkRead = {
+/**
+ * What every kind of recipe read holds. A kind adds its own request fields (`LinkRecipeRead` below) and
+ * its reader in `startRead`; the holder's limits, queue, retry and discard never look past this.
+ */
+type RecipeReadBase = {
   /** Ascends with the order the reads were started. */
   id: number;
   /** `nextBackgroundOrder` when started: orders its row against other kinds of background item. */
   order: number;
-  source: LinkReadSource;
-  language: ReadingLanguage;
-  status: LinkReadStatus;
-  /** The page's site (`example.com`) for a link; null for pasted text. */
-  site: string | null;
+  status: RecipeReadStatus;
   /** When ready: the Recipe Draft the server kept. */
   recipeDraftId?: string;
   /** When failed or capped: why (an `ApiError` for the Link Cap carries its `cap` and `resetsAt`). */
   error?: unknown;
 };
 
-export type LinkReadsState = { reads: LinkRead[] };
+/** A Recipe from Link read: a link or pasted text. */
+export type LinkRecipeRead = RecipeReadBase & {
+  kind: 'link';
+  source: LinkReadSource;
+  language: ReadingLanguage;
+  /** The page's site (`example.com`) for a link; null for pasted text. */
+  site: string | null;
+};
+
+/** A read in the holder. A new kind joins this union (see `startRead`). */
+export type RecipeRead = LinkRecipeRead;
+export type RecipeReadKind = RecipeRead['kind'];
+
+/** A read as a caller hands it over: the holder gives it its id, order and status. */
+export type NewRecipeRead = DistributiveOmit<RecipeRead, keyof RecipeReadBase>;
+type DistributiveOmit<T, K extends keyof never> = T extends unknown
+  ? Omit<T, K>
+  : never;
+
+/** What a kind's request answered: the Recipe Draft it kept, or (link only) that the link is already a Recipe. */
+type RecipeReadResult = { recipeDraftId: string } | { duplicate: true };
+
+/**
+ * The one place a kind brings its request: sends it and says what came back. `force` is the Member's
+ * "Read again" choice (link only). Throws what the request throws (an `ApiError`); an aborted
+ * `signal` abandons it.
+ */
+function startRead(
+  read: RecipeRead,
+  options: { signal: AbortSignal; force: boolean },
+): Promise<RecipeReadResult> {
+  switch (read.kind) {
+    case 'link':
+      return readRecipeLink({
+        ...(read.source.kind === 'link'
+          ? {
+              url: read.source.url,
+              ...(options.force ? { force: true } : {}),
+            }
+          : { text: read.source.text }),
+        language: read.language,
+        signal: options.signal,
+      }).then((result: RecipeFromLink) =>
+        result.kind === 'duplicate'
+          ? { duplicate: true }
+          : { recipeDraftId: result.recipeDraftId },
+      );
+  }
+}
+
+export type RecipeReadsState = { reads: RecipeRead[] };
 
 /** `full`: the holder is at its limit; the Member must review some first. */
 export type SubmitOutcome = 'started' | 'full';
@@ -70,13 +120,13 @@ const isBudgetRefusal = (error: unknown) =>
   isCapReached(error) || isOutOfCredits(error);
 
 /**
- * The link-read holder: the Member's link reads, kept in memory outside any page, like the Voice Inbox.
+ * The recipe-read holder: the Member's reads that keep a Recipe Draft (a link or pasted text now), kept in memory outside any page, like the Voice Inbox.
  * It reads with plain API requests, not a page's mutation or the query cache, so a read outlives the
- * sheet that started it and every page change. At most `MAX_LINK_READS` run; the rest wait in the
+ * sheet that started it and every page change. At most `MAX_RECIPE_READS` run; the rest wait in the
  * order started. Sign-out clears it, dropping every read silently.
  */
-export function createLinkReads() {
-  let state: LinkReadsState = { reads: [] };
+export function createRecipeReads() {
+  let state: RecipeReadsState = { reads: [] };
   let nextId = 1;
   const listeners = new Set<() => void>();
   const finishedListeners = new Set<() => void>();
@@ -92,11 +142,11 @@ export function createLinkReads() {
   /** The pending automatic retry of a read: it keeps its slot meanwhile. */
   const retryTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
-  const set = (reads: LinkRead[]) => {
+  const set = (reads: RecipeRead[]) => {
     state = { reads };
     listeners.forEach((listener) => listener());
   };
-  const patch = (id: number, changes: Partial<LinkRead>) =>
+  const patch = (id: number, changes: Partial<RecipeRead>) =>
     set(state.reads.map((r) => (r.id === id ? { ...r, ...changes } : r)));
   const find = (id: number) => state.reads.find((r) => r.id === id);
 
@@ -104,7 +154,7 @@ export function createLinkReads() {
   function pump() {
     for (;;) {
       const running = state.reads.filter((r) => r.status === 'reading').length;
-      if (running >= MAX_LINK_READS) return;
+      if (running >= MAX_RECIPE_READS) return;
       // Oldest first by order: a read started again goes behind the ones already waiting.
       const next = state.reads
         .filter((r) => r.status === 'waiting')
@@ -114,24 +164,18 @@ export function createLinkReads() {
     }
   }
 
-  function run(read: LinkRead) {
+  function run(read: RecipeRead) {
     const attempt = new AbortController();
     controllers.set(read.id, attempt);
     patch(read.id, { status: 'reading', error: undefined });
     const force = forced.delete(read.id);
-    readRecipeLink({
-      ...(read.source.kind === 'link'
-        ? { url: read.source.url, ...(force ? { force } : {}) }
-        : { text: read.source.text }),
-      language: read.language,
-      signal: attempt.signal,
-    }).then(
-      (result: RecipeFromLink) => {
+    startRead(read, { signal: attempt.signal, force }).then(
+      (result) => {
         // A discarded (aborted) read never reports.
         if (attempt.signal.aborted || controllers.get(read.id) !== attempt)
           return;
         controllers.delete(read.id);
-        if (result.kind === 'duplicate') {
+        if ('duplicate' in result) {
           // The sheet asked first and the link was not a Recipe then; one was saved since. The Member asked
           // for this read, so read it anyway rather than leave a row with nothing to review.
           forced.add(read.id);
@@ -161,15 +205,18 @@ export function createLinkReads() {
               retryTimers.delete(read.id);
               const again = find(read.id);
               if (again) run(again);
-            }, LINK_AUTO_RETRY_MS),
+            }, RECIPE_READ_AUTO_RETRY_MS),
           );
           return;
         }
         if (isBudgetRefusal(error)) {
-          // The cap (or the Credits) refuses every read from here: those waiting behind it are held with it.
+          // The Credits refuse every read from here; a kind's own cap (the Link Cap) refuses only that
+          // kind. Those waiting behind the refusal are held with it.
+          const holds = (r: RecipeRead) =>
+            isOutOfCredits(error) || r.kind === read.kind;
           set(
             state.reads.map((r) =>
-              r.id === read.id || r.status === 'waiting'
+              r.id === read.id || (r.status === 'waiting' && holds(r))
                 ? { ...r, status: 'capped', error }
                 : r,
             ),
@@ -196,6 +243,33 @@ export function createLinkReads() {
     pump();
   }
 
+  /**
+   * Holds a read of any kind and starts it as soon as a slot is free. `full`: five are held already;
+   * nothing was added. `force`: the link is already one of the Recipes and the Member chose "Read
+   * again". `replaces`: a failed read this one stands in for ("Paste text instead" on a page that
+   * could not be read); it is let go first, so it never fills the last place.
+   */
+  function add(
+    read: NewRecipeRead,
+    options: { force?: boolean; replaces?: number } = {},
+  ): SubmitOutcome {
+    if (
+      options.replaces !== undefined &&
+      find(options.replaces)?.status === 'failed'
+    ) {
+      discard(options.replaces);
+    }
+    if (state.reads.length >= MAX_HELD_RECIPE_READS) return 'full';
+    const id = nextId++;
+    if (options.force) forced.add(id);
+    set([
+      ...state.reads,
+      { ...read, id, order: nextBackgroundOrder(), status: 'waiting' },
+    ]);
+    pump();
+    return 'started';
+  }
+
   return {
     getState: () => state,
     subscribe: (listener: () => void) => {
@@ -218,39 +292,22 @@ export function createLinkReads() {
         finishedListeners.delete(listener);
       };
     },
-    /**
-     * Holds a read and starts it as soon as a slot is free. `full`: five are held already; nothing was
-     * added. `force`: the link is already one of the Recipes and the Member chose "Read again".
-     * `replaces`: a failed read this one stands in for ("Paste text instead" on a page that could not
-     * be read); it is let go first, so it never fills the last place.
-     */
+    add,
+    /** Holds a Recipe from Link read (a link or pasted text): `add` for the link kind. */
     submit(
       source: LinkReadSource,
       language: ReadingLanguage,
       options: { force?: boolean; replaces?: number } = {},
     ): SubmitOutcome {
-      if (
-        options.replaces !== undefined &&
-        find(options.replaces)?.status === 'failed'
-      ) {
-        discard(options.replaces);
-      }
-      if (state.reads.length >= MAX_HELD_LINK_READS) return 'full';
-      const id = nextId++;
-      if (options.force) forced.add(id);
-      set([
-        ...state.reads,
+      return add(
         {
-          id,
-          order: nextBackgroundOrder(),
+          kind: 'link',
           source,
           language,
-          status: 'waiting',
           site: source.kind === 'link' ? siteOf(source.url) : null,
         },
-      ]);
-      pump();
-      return 'started';
+        options,
+      );
     },
     /**
      * Tries a failed or capped read again. Retrying a capped read releases every read the cap held
@@ -260,7 +317,7 @@ export function createLinkReads() {
       const read = find(id);
       if (!read || (read.status !== 'failed' && read.status !== 'capped'))
         return;
-      const releasing = (r: LinkRead) =>
+      const releasing = (r: RecipeRead) =>
         r.id === id || (read.status === 'capped' && r.status === 'capped');
       retried.delete(id);
       set(
@@ -289,13 +346,13 @@ export function createLinkReads() {
   };
 }
 
-export type LinkReads = ReturnType<typeof createLinkReads>;
+export type RecipeReads = ReturnType<typeof createRecipeReads>;
 
-/** The app's one link-read holder. */
-export const linkReads = createLinkReads();
+/** The app's one recipe-read holder. */
+export const recipeReads = createRecipeReads();
 
 /**
- * While a link read is waiting or reading, asks before the page unloads (closing the tab, reloading):
+ * While a recipe read is waiting or reading, asks before the page unloads (closing the tab, reloading):
  * the read lasts as long as its page and would be lost. Ready and failed reads need no prompt.
  * Mounted once, by the app layout.
  */
@@ -309,7 +366,7 @@ export function useUnloadPromptWhileReading() {
     };
     let asking = false;
     const sync = () => {
-      const want = linkReads
+      const want = recipeReads
         .getState()
         .reads.some((r) => r.status === 'waiting' || r.status === 'reading');
       if (want === asking) return;
@@ -318,7 +375,7 @@ export function useUnloadPromptWhileReading() {
       else window.removeEventListener('beforeunload', ask);
     };
     sync();
-    const unsubscribe = linkReads.subscribe(sync);
+    const unsubscribe = recipeReads.subscribe(sync);
     return () => {
       unsubscribe();
       window.removeEventListener('beforeunload', ask);
@@ -326,9 +383,9 @@ export function useUnloadPromptWhileReading() {
   }, []);
 }
 
-export const useLinkReads = (): LinkReadsState =>
+export const useRecipeReads = (): RecipeReadsState =>
   useSyncExternalStore(
-    linkReads.subscribe,
-    linkReads.getState,
-    linkReads.getState,
+    recipeReads.subscribe,
+    recipeReads.getState,
+    recipeReads.getState,
   );

@@ -3,7 +3,7 @@ import { PageLayout } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { dockStateFor } from '../lib/dockState';
-import { useUnloadPromptWhileReading } from '../lib/linkReads';
+import { useUnloadPromptWhileReading } from '../lib/recipeReads';
 import { micClearance } from '../lib/voicePlacement';
 import { ApplyMemberLocale } from './ApplyMemberLocale';
 import { ApplyMemberTheme } from './ApplyMemberTheme';
@@ -17,7 +17,7 @@ import {
   type VoiceNoteSettings,
 } from './VoiceNote';
 import { BackgroundHost } from './background/BackgroundHost';
-import { useLinkReadsSideEffects } from './background/useLinkReadsSideEffects';
+import { useRecipeReadsSideEffects } from './background/useRecipeReadsSideEffects';
 import { useRefreshCreditsOnReads } from './background/useRefreshCreditsOnReads';
 import { VoiceHostProvider, VoiceHostSlot } from './voice/VoiceHost';
 
@@ -54,7 +54,7 @@ export function AppLayout() {
   const dock = dockStateFor(pathname);
   const showsMic = useShowsDockMic();
   useUnloadPromptWhileReading();
-  useLinkReadsSideEffects();
+  useRecipeReadsSideEffects();
   useRefreshCreditsOnReads();
   return (
     <>
@@ -74,7 +74,7 @@ export function AppLayout() {
           <RefreshLoaderSlot />
           <VoiceHostSlot />
           <VoiceNote settings={LAYOUT_VOICE_SETTINGS} />
-          {dock.visible ? <BackgroundHost scanSession linkReads /> : null}
+          {dock.visible ? <BackgroundHost scanSession recipeReads /> : null}
           {dock.visible ? <AppDock activeKey={dock.activeKey} /> : null}
         </VoiceHostProvider>
       </RefreshProvider>

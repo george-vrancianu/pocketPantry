@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nextBackgroundOrder } from '../components/background/backgroundItem';
-import { createLinkReads } from './linkReads';
+import { createRecipeReads } from './recipeReads';
 
 const requests: Array<{ url: string; force: unknown; resolve: () => void }> =
   [];
@@ -32,7 +32,7 @@ afterEach(() => {
 
 describe('link reads', () => {
   it('lets go of a replaced read only when it has failed', () => {
-    const holder = createLinkReads();
+    const holder = createRecipeReads();
     holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source');
     const [running] = holder.getState().reads;
     // A stale id (router state survives a reload): the read it names is not a failed one.
@@ -45,7 +45,7 @@ describe('link reads', () => {
   });
 
   it('stamps each read on the clock every background item shares', () => {
-    const holder = createLinkReads();
+    const holder = createRecipeReads();
     const before = nextBackgroundOrder();
     holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source');
     holder.submit({ kind: 'link', url: 'https://b.example/x' }, 'source');
@@ -57,7 +57,7 @@ describe('link reads', () => {
   });
 
   it('reads a link again with force when the server answers a duplicate after all, behind the ones already waiting', async () => {
-    const holder = createLinkReads();
+    const holder = createRecipeReads();
     const link = (n: number) => ({
       kind: 'link' as const,
       url: `https://site${n}.example/x`,
@@ -84,11 +84,24 @@ describe('link reads', () => {
   });
 
   it('sends force from the start when asked to', () => {
-    const holder = createLinkReads();
+    const holder = createRecipeReads();
     holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source', {
       force: true,
     });
     expect(requests[0].force).toBe(true);
+    holder.clear();
+  });
+});
+
+describe('recipe reads', () => {
+  it('carries the link kind on every read that is submitted', () => {
+    const holder = createRecipeReads();
+    holder.submit({ kind: 'link', url: 'https://a.example/x' }, 'source');
+    holder.submit({ kind: 'text', text: 'pasted' }, 'source');
+    expect(holder.getState().reads.map((r) => r.kind)).toEqual([
+      'link',
+      'link',
+    ]);
     holder.clear();
   });
 });
