@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FamilyCatalogIngredient } from '../../lib/familyCatalog';
@@ -91,39 +91,73 @@ const rice = ingredient('rice', 'Rice', {
   allergenIds: [],
 });
 
+const rowOf = (name: string) => screen.getByRole('group', { name });
+
+/** Focus the row and press Enter: the keyboard path to the edit sheet. */
+async function openSheet(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+) {
+  const row = await screen.findByRole('group', { name });
+  act(() => row.focus());
+  await user.keyboard('{Enter}');
+  return screen.findByRole('dialog');
+}
+
 describe('Family catalog: Allergens', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it('shows each Ingredient as Unchecked, tagged or containing none, and counts the Unchecked ones', async () => {
+  it('tags each row, and counts the Unchecked ones in a status line', async () => {
     stub([kombucha, nutella, rice]);
     renderWithProviders(<FamilyCatalogSection />);
 
-    const item = async (name: string) =>
-      (await screen.findByText(name)).closest('li') as HTMLElement;
-    expect(await item('Kombucha')).toHaveTextContent(
-      'Not checked for allergens',
-    );
-    expect(await item('Nutella')).toHaveTextContent('Contains Milk');
-    expect(await item('Rice')).toHaveTextContent('No allergens tagged');
+    await screen.findByRole('group', { name: 'Kombucha' });
     expect(
-      screen.getByText('1 ingredient is not checked for allergens.'),
+      within(rowOf('Kombucha')).getByText('Check allergens'),
     ).toBeVisible();
+    expect(within(rowOf('Nutella')).getByText('Milk')).toBeVisible();
+    // None: no tag at all.
+    expect(rowOf('Rice')).not.toHaveTextContent(/allergens|Milk/);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      '1 ingredient is not checked for allergens. Tap one to tag it.',
+    );
   });
 
-  it('tags an Unchecked Ingredient and saves it', async () => {
+  it('shows the first allergen and how many more, reading all out to screen readers', async () => {
+    const mayo = ingredient('mayo', 'Mayo', {
+      allergensChecked: true,
+      allergenIds: ['al-milk', 'al-peanuts'],
+    });
+    stub([mayo]);
+    renderWithProviders(<FamilyCatalogSection />);
+
+    const tag = await screen.findByText('Milk +1');
+    expect(tag).toHaveAttribute('aria-hidden', 'true');
+    // The full read-out is real text for screen readers, not a title.
+    expect(screen.getByText('Contains Milk and Peanuts')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('tags an Unchecked Ingredient, sending nothing before Save', async () => {
     const calls = stub([kombucha]);
     renderWithProviders(<FamilyCatalogSection />);
     const user = userEvent.setup();
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Tag allergens of Kombucha' }),
-    );
-    const save = screen.getByRole('button', { name: 'Save allergens' });
-    // Blank is not a choice: nothing to save yet.
+    const dialog = await openSheet(user, 'Kombucha');
+    expect(
+      within(dialog).getByText(
+        'Not checked yet. Pick what it contains, or None.',
+      ),
+    ).toBeVisible();
+    const save = within(dialog).getByRole('button', { name: 'Save' });
+    // Nothing picked, nothing to save.
     expect(save).toBeDisabled();
-    await user.click(await screen.findByRole('button', { name: 'Peanuts' }));
+    await user.click(
+      await within(dialog).findByRole('button', { name: 'Peanuts' }),
+    );
+    expect(calls.filter((c) => c.key.startsWith('PUT'))).toEqual([]);
     await user.click(save);
 
     await waitFor(() =>
@@ -134,6 +168,8 @@ describe('Family catalog: Allergens', () => {
         )?.body,
       ).toEqual({ allergenIds: ['al-peanuts'] }),
     );
+    // Allergens alone: no PATCH.
+    expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
   });
 
   it('re-tags a tagged Ingredient as containing none', async () => {
@@ -141,15 +177,15 @@ describe('Family catalog: Allergens', () => {
     renderWithProviders(<FamilyCatalogSection />);
     const user = userEvent.setup();
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Tag allergens of Nutella' }),
-    );
-    expect(await screen.findByRole('button', { name: 'Milk' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await user.click(screen.getByRole('button', { name: 'None' }));
-    await user.click(screen.getByRole('button', { name: 'Save allergens' }));
+    const dialog = await openSheet(user, 'Nutella');
+    expect(
+      within(dialog).getByText('Saved as checked for allergens.'),
+    ).toBeVisible();
+    expect(
+      await within(dialog).findByRole('button', { name: 'Milk' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await user.click(within(dialog).getByRole('button', { name: 'None' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     await waitFor(() =>
       expect(
@@ -159,6 +195,21 @@ describe('Family catalog: Allergens', () => {
         )?.body,
       ).toEqual({ allergenIds: [] }),
     );
+  });
+
+  it('never goes back to Unchecked: unticking the last tag leaves None', async () => {
+    stub([nutella]);
+    renderWithProviders(<FamilyCatalogSection />);
+    const user = userEvent.setup();
+
+    const dialog = await openSheet(user, 'Nutella');
+    await user.click(
+      await within(dialog).findByRole('button', { name: 'Milk' }),
+    );
+
+    expect(
+      within(dialog).getByRole('button', { name: 'None' }),
+    ).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('shows a retired tag by name and lets it be unticked, never offering it as new', async () => {
@@ -172,17 +223,14 @@ describe('Family catalog: Allergens', () => {
     renderWithProviders(<FamilyCatalogSection />);
     const user = userEvent.setup();
 
-    expect(
-      (await screen.findByText('Mayo')).closest('li') as HTMLElement,
-    ).toHaveTextContent('Contains Eggs, Milk');
-    await user.click(
-      await screen.findByRole('button', { name: 'Tag allergens of Mayo' }),
-    );
-    const chip = await screen.findByRole('button', { name: 'Eggs' });
+    expect(await screen.findByText('Eggs +1')).toBeInTheDocument();
+    expect(screen.getByText('Contains Eggs and Milk')).toBeInTheDocument();
+    const dialog = await openSheet(user, 'Mayo');
+    const chip = await within(dialog).findByRole('button', { name: 'Eggs' });
     expect(chip).toHaveAttribute('aria-pressed', 'true');
     await user.click(chip);
     expect(
-      screen.queryByRole('button', { name: 'Eggs' }),
+      within(dialog).queryByRole('button', { name: 'Eggs' }),
     ).not.toBeInTheDocument();
   });
 
@@ -193,11 +241,11 @@ describe('Family catalog: Allergens', () => {
     const detailKey = ['recipes', 'detail', 'r1'];
     queryClient.setQueryData(detailKey, { id: 'r1' });
 
+    const dialog = await openSheet(user, 'Kombucha');
     await user.click(
-      await screen.findByRole('button', { name: 'Tag allergens of Kombucha' }),
+      await within(dialog).findByRole('button', { name: 'Peanuts' }),
     );
-    await user.click(await screen.findByRole('button', { name: 'Peanuts' }));
-    await user.click(screen.getByRole('button', { name: 'Save allergens' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     await waitFor(() =>
       expect(queryClient.getQueryState(detailKey)?.isInvalidated).toBe(true),

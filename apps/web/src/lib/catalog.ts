@@ -83,6 +83,19 @@ export function useCatalogAisles(
   });
 }
 
+/** Each Parent Category's Aisle, by Parent Category id: the two have different ids. */
+export function aisleByParentCategoryId(
+  aisles: readonly CatalogAisle[] | undefined,
+): ReadonlyMap<string, { id: string; name: string }> {
+  const map = new Map<string, { id: string; name: string }>();
+  for (const aisle of aisles ?? []) {
+    for (const parent of aisle.parentCategories) {
+      map.set(parent.id, { id: aisle.id, name: aisle.name });
+    }
+  }
+  return map;
+}
+
 /** Restricts a search to an Aisle, and within it to one Parent Category. */
 export type SearchWithin = { aisleId: string; parentCategoryId: string | null };
 
