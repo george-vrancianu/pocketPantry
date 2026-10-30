@@ -1,12 +1,10 @@
 {
   "title": "Admin",
-  "sections": "Katalogets sektioner",
+  "sections": "Admin-sektioner",
   "tabs": {
-    "ingredients": "Ingredienser",
-    "categories": "Kategorier",
-    "unmatched": "Umatchede",
-    "recipes": "Opskrifter",
-    "promoCodes": "Promokoder"
+    "review": "Til gennemsyn",
+    "catalog": "Katalog",
+    "codes": "Koder"
   },
   "locations": {
     "none": "Arvet"
@@ -463,5 +461,27 @@
     "revokeTitle": "Tilbagekald {{code}}?",
     "revokeBody": "Koden holder op med at virke. Det kan ikke fortrydes.",
     "revokeConfirm": "Tilbagekald"
+  },
+  "index": {
+    "ingredientsGroup": "Ingredienser",
+    "recipesGroup": "Opskrifter",
+    "ingredients": "Ingredienser",
+    "ingredientsMeta_one": "{{count}} · {{unchecked}} ikke tjekket",
+    "ingredientsMeta_other": "{{count}} · {{unchecked}} ikke tjekket",
+    "allergens": "Allergener",
+    "aisles": "Gange",
+    "aislesMeta_one": "{{count}} i butiksrækkefølge",
+    "aislesMeta_other": "{{count}} i butiksrækkefølge",
+    "categories": "Kategorier",
+    "categoriesMeta": "{{parents}} hoved · {{leaves}} under",
+    "recipes": "Katalogopskrifter",
+    "recipesMeta": "{{count}} · {{archived}} arkiveret",
+    "tags": "Tags",
+    "tagsMeta": "{{count}} i {{groups}} grupper",
+    "eatingMoments": "Spisetidspunkter",
+    "back": "Katalog"
+  },
+  "review": {
+    "title": "Gennemsynskø"
   }
 }

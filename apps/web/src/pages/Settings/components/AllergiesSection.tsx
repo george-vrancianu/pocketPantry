@@ -14,7 +14,7 @@ import {
   useSaveAllergies,
   useSaveHideRecipesWithAllergies,
 } from '../../../lib/settings';
-import { SectionHeading } from './SectionHeading';
+import { SectionHeading } from '../../../components/SectionHeading';
 
 /**
  * The Member's own Allergies, picked from the Allergen list. Each pick is saved at once. An

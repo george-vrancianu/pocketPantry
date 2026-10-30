@@ -1,12 +1,10 @@
 {
   "title": "Administrare",
-  "sections": "Secțiunile Catalogului",
+  "sections": "Secțiuni de administrare",
   "tabs": {
-    "ingredients": "Ingrediente",
-    "categories": "Categorii",
-    "unmatched": "Nepotrivite",
-    "recipes": "Rețete",
-    "promoCodes": "Coduri promoționale"
+    "review": "De verificat",
+    "catalog": "Catalog",
+    "codes": "Coduri"
   },
   "locations": {
     "none": "Moștenit"
@@ -473,5 +471,29 @@
     "revokeTitle": "Revoci {{code}}?",
     "revokeBody": "Acest cod nu va mai funcționa. Nu poți anula acțiunea.",
     "revokeConfirm": "Revocă"
+  },
+  "index": {
+    "ingredientsGroup": "Ingrediente",
+    "recipesGroup": "Rețete",
+    "ingredients": "Ingrediente",
+    "ingredientsMeta_one": "{{count}} · {{unchecked}} neverificate",
+    "ingredientsMeta_few": "{{count}} · {{unchecked}} neverificate",
+    "ingredientsMeta_other": "{{count}} · {{unchecked}} neverificate",
+    "allergens": "Alergeni",
+    "aisles": "Raioane",
+    "aislesMeta_one": "{{count}} în ordinea din magazin",
+    "aislesMeta_few": "{{count}} în ordinea din magazin",
+    "aislesMeta_other": "{{count}} în ordinea din magazin",
+    "categories": "Categorii",
+    "categoriesMeta": "{{parents}} principale · {{leaves}} subcategorii",
+    "recipes": "Rețete din Catalog",
+    "recipesMeta": "{{count}} · {{archived}} arhivate",
+    "tags": "Etichete",
+    "tagsMeta": "{{count}} în {{groups}} grupuri",
+    "eatingMoments": "Momente ale mesei",
+    "back": "Catalog"
+  },
+  "review": {
+    "title": "Coadă de verificare"
   }
 }

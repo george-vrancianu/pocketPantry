@@ -25,7 +25,10 @@ import {
   useAppearance,
   useChooseTheme,
 } from '../../../lib/appearance';
-import { ScopeCaption, SectionHeading } from './SectionHeading';
+import {
+  ScopeCaption,
+  SectionHeading,
+} from '../../../components/SectionHeading';
 
 const NEXT_KEYS = ['ArrowRight', 'ArrowDown'];
 const PREVIOUS_KEYS = ['ArrowLeft', 'ArrowUp'];

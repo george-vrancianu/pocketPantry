@@ -19,7 +19,7 @@ import {
 import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
 import { lookupCategory } from '../defaultExpiry';
 import { DefaultExpirySheet, type SheetStart } from './DefaultExpirySheet';
-import { SectionHeading } from './SectionHeading';
+import { SectionHeading } from '../../../components/SectionHeading';
 
 type SheetState = { open: boolean; start: SheetStart; session: number };
 

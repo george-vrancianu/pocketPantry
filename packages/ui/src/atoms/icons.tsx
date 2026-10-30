@@ -9,6 +9,7 @@ import {
   Pencil,
   Zap,
   Clock,
+  Layers,
   Leaf,
   Wallet,
   Apple,
@@ -331,6 +332,8 @@ export const GalleryIcon = lucide(Image);
 export const ManualEntryIcon = lucide(Pencil);
 export const FlashIcon = lucide(Zap);
 export const ClockIcon = lucide(Clock);
+/** Aisles row on the Admin Catalog index. */
+export const LayersIcon = lucide(Layers);
 export const IngredientsScanIcon = lucide(Leaf);
 export const BudgetIcon = lucide(Wallet);
 export const NutritionIcon = lucide(Apple);

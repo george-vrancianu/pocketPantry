@@ -1,12 +1,10 @@
 {
   "title": "Admin",
-  "sections": "Catalog sections",
+  "sections": "Admin sections",
   "tabs": {
-    "ingredients": "Ingredients",
-    "categories": "Categories",
-    "unmatched": "Unmatched",
-    "recipes": "Recipes",
-    "promoCodes": "Promo Codes"
+    "review": "To review",
+    "catalog": "Catalog",
+    "codes": "Codes"
   },
   "locations": {
     "none": "Inherit"
@@ -463,5 +461,27 @@
     "revokeTitle": "Revoke {{code}}?",
     "revokeBody": "This code will stop working. You cannot undo this.",
     "revokeConfirm": "Revoke"
+  },
+  "index": {
+    "ingredientsGroup": "Ingredients",
+    "recipesGroup": "Recipes",
+    "ingredients": "Ingredients",
+    "ingredientsMeta_one": "{{count}} · {{unchecked}} unchecked",
+    "ingredientsMeta_other": "{{count}} · {{unchecked}} unchecked",
+    "allergens": "Allergens",
+    "aisles": "Aisles",
+    "aislesMeta_one": "{{count}} in shop order",
+    "aislesMeta_other": "{{count}} in shop order",
+    "categories": "Categories",
+    "categoriesMeta": "{{parents}} parent · {{leaves}} leaf",
+    "recipes": "Catalog Recipes",
+    "recipesMeta": "{{count}} · {{archived}} archived",
+    "tags": "Tags",
+    "tagsMeta": "{{count}} in {{groups}} groups",
+    "eatingMoments": "Eating Moments",
+    "back": "Catalog"
+  },
+  "review": {
+    "title": "Review queue"
   }
 }

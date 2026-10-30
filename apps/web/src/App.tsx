@@ -13,6 +13,7 @@ import { SetupReviewPage } from './pages/Intro/SetupReviewPage';
 import { SayItPage } from './pages/Intro/SayItPage';
 import { IntroCameraPage } from './pages/Intro/IntroCameraPage';
 import { SnapPage } from './pages/Intro/SnapPage';
+import { AdminSectionPage } from './pages/Admin/AdminSectionPage';
 import { AdminPage } from './pages/Admin/AdminPage';
 import { CustomisePage } from './pages/Customise/CustomisePage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
@@ -130,6 +131,7 @@ export function App() {
               <Route path="family" element={<FamilyPage />} />
               <Route element={<RequireAdmin />}>
                 <Route path="admin" element={<AdminPage />} />
+                <Route path="admin/:section" element={<AdminSectionPage />} />
               </Route>
             </Route>
           </Route>
