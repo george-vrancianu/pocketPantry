@@ -3,6 +3,7 @@ import { CatalogModule } from '../catalog/catalog.module';
 import { CreditsModule } from '../credits/credits.module';
 import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
 import { MemberLanguageModule } from '../member-language/member-language.module';
+import { RecipeDraftsModule } from '../recipe-drafts/recipe-drafts.module';
 import { PantryModule } from '../pantry/pantry.module';
 import { UsageModule } from '../usage/usage.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -33,6 +34,7 @@ import { ScanService } from './scan.service';
     PantryModule,
     ShoppingModule,
     MemberLanguageModule,
+    RecipeDraftsModule,
   ],
   controllers: [ScanController, PlateScanController, ReceiptScanController],
   exports: [CatalogMatchService, PaidReadsService, ScanCapService],

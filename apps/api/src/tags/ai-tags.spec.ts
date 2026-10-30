@@ -1,5 +1,5 @@
 import { linkReadingJsonSchema } from '../recipes/link-reading.schemas';
-import { plateIngredientsJsonSchema } from '../scan/plate-scan.schemas';
+import { plateRecipeJsonSchema } from '../scan/plate-scan.schemas';
 import { tagIdsAt, tagIndexesSchema, tagsPrompt } from './ai-tags';
 
 const allowed = {
@@ -42,7 +42,7 @@ describe('tagIndexesSchema', () => {
   });
 
   it('is advertised to the model as a list of numbers, in both reads', () => {
-    for (const schema of [linkReadingJsonSchema, plateIngredientsJsonSchema]) {
+    for (const schema of [linkReadingJsonSchema, plateRecipeJsonSchema]) {
       const property = (
         schema as { properties: Record<string, Record<string, unknown>> }
       ).properties.tagIndexes;

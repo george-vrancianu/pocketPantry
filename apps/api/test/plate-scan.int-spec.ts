@@ -18,26 +18,58 @@ const IMAGE = 'data:image/jpeg;base64,YQ==';
 const flour = seedId.ingredient('flour');
 const milk = seedId.ingredient('milk');
 
+/** An Ingredient Line as the model writes it; the test app turns `ingredientId` into the Catalog index the model really fills in. */
 const item = (overrides: Record<string, unknown> = {}) => ({
-  productName: 'Milk',
-  productType: 'Dairy',
-  matchedIngredientId: milk,
-  matchedCategory: 'Milk',
+  nameAsWritten: 'Milk',
+  ingredientId: milk,
   matchConfidence: 0.9,
-  fallbackIngredientName: 'Milk',
-  quantityType: 'measured',
   quantity: 200,
   unit: 'ml',
-  confidence: 0.9,
+  preparation: null,
+  optional: false,
+  ...overrides,
+});
+/** The Recipe the model writes for a dish. */
+const written = (overrides: Record<string, unknown> = {}) => ({
+  title: 'Pancakes',
+  servings: 4,
+  tagIndexes: [],
+  ingredients: [item()],
+  steps: [{ text: 'Whisk.', timerMinutes: null }],
+  tips: [],
   ...overrides,
 });
 
-type Line = {
-  name: string;
-  lowConfidence: boolean;
-  quantity: number | null;
-  unit: string | null;
-  match: { id: string; name: string } | null;
+type DraftView = {
+  kind: string;
+  baseRecipeId: string | null;
+  content: {
+    title: string;
+    servings: string;
+    tagIds: string[];
+    plateScan: boolean;
+    offersBases: boolean;
+    pickedBaseId: string | null;
+    sourceLink: string | null;
+    guidance: {
+      nutritionNote: string;
+      pairings: unknown[];
+      eatingMoments: unknown[];
+    } | null;
+    lines: Array<{
+      ingredientId: string;
+      name: string;
+      quantity: string;
+      unit: string;
+      optional: boolean;
+      note: string;
+    }>;
+    steps: Array<{
+      text: string;
+      timer: string;
+      tips?: Array<{ text: string }>;
+    }>;
+  };
 };
 type List = {
   groups: Array<{
@@ -135,8 +167,8 @@ describe('Plate Scan (integration)', () => {
     prompts.length = seen; // The photo step's prompt is not the one under test.
     return token;
   };
-  /** Loads Ingredients for a dish; gets a genuine token first unless one (or null for none) is given. */
-  const ingredients = (
+  /** Writes a dish as a Recipe Draft; gets a genuine token first unless one (or null for none) is given. */
+  const recipe = (
     cookie: string,
     dishTitle = 'Pancakes',
     locale = 'en',
@@ -146,7 +178,7 @@ describe('Plate Scan (integration)', () => {
       const plateToken = token === undefined ? await tokenFor(cookie) : token;
       const response = await post(
         cookie,
-        'scan/plate/ingredients',
+        'scan/plate/recipe',
         { dishTitle, ...(plateToken === null ? {} : { plateToken }) },
         locale,
       );
@@ -154,13 +186,31 @@ describe('Plate Scan (integration)', () => {
       return response;
     },
   });
+  const draftOf = async (cookie: string, id: string) =>
+    (
+      await request(app.getHttpServer())
+        .get(`/api/recipe-drafts/${id}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .expect(200)
+    ).body as DraftView;
+  const draftCount = async (cookie: string) =>
+    (
+      (
+        await request(app.getHttpServer())
+          .get('/api/recipe-drafts')
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', cookie)
+          .expect(200)
+      ).body as unknown[]
+    ).length;
   const bulk = (cookie: string, items: object[]) =>
     post(cookie, 'shopping-list/items/bulk', { items });
 
   it('requires authentication on every endpoint', async () => {
     for (const path of [
       'scan/plate',
-      'scan/plate/ingredients',
+      'scan/plate/recipe',
       'shopping-list/items/bulk',
     ]) {
       await request(app.getHttpServer())
@@ -243,60 +293,119 @@ describe('Plate Scan (integration)', () => {
     });
   });
 
-  describe('POST /scan/plate/ingredients', () => {
-    it('proposes lines for one serving, matched to the Catalog with its defaults', async () => {
-      respondWith({
-        items: [
+  describe('POST /scan/plate/recipe', () => {
+    it('writes the dish as a Recipe Draft: lines with notes, Steps with timers, Tips, Servings and Tags; returns its id', async () => {
+      const dinner = seedId.tag('meal:dinner');
+      respondWith((request) => ({
+        title: 'Fluffy pancakes',
+        servings: 4,
+        tagIndexes: [tagIndexIn(request.prompt, 'Dinner')],
+        ingredients: [
           item(),
           item({
-            matchedIngredientId: flour,
-            matchedCategory: 'Flour',
-            fallbackIngredientName: 'Flour',
-            quantity: 60,
+            ingredientId: flour,
+            nameAsWritten: 'Flour',
+            quantity: 250,
             unit: 'g',
+            preparation: 'sifted',
+          }),
+          item({
+            ingredientId: null,
+            matchConfidence: 0,
+            nameAsWritten: 'Grandma spice',
+            quantity: null,
+            unit: null,
+            optional: true,
           }),
         ],
-      });
+        steps: [
+          { text: 'Whisk everything.', timerMinutes: null },
+          { text: 'Fry each side.', timerMinutes: 2 },
+        ],
+        tips: [
+          { stepIndex: null, text: 'Rest the batter first.' },
+          { stepIndex: 1, text: 'Keep the heat medium.' },
+        ],
+      }));
+      const cookie = await signUp();
       prompts.length = 0;
-      const { lines } = (await ingredients(await signUp()).expect(201))
-        .body as { lines: Line[] };
-      expect(lines).toMatchObject([
-        { match: { id: milk }, quantity: 200, unit: 'ml' },
-        { match: { id: flour }, quantity: 60, unit: 'g' },
-      ]);
+      const { recipeDraftId } = (await recipe(cookie).expect(201)).body as {
+        recipeDraftId: string;
+      };
+      expect(recipeDraftId).toEqual(expect.any(String));
       expect(prompts[0].images ?? []).toEqual([]);
       expect(prompts[0].prompt).toContain('"Pancakes"');
+
+      const draft = await draftOf(cookie, recipeDraftId);
+      expect(draft).toMatchObject({ kind: 'new_recipe', baseRecipeId: null });
+      expect(draft.content).toMatchObject({
+        title: 'Fluffy pancakes',
+        servings: '4',
+        tagIds: [dinner],
+        plateScan: true,
+        // Standalone: no base picked.
+        pickedBaseId: null,
+        sourceLink: null,
+      });
+      expect(draft.content.lines).toMatchObject([
+        {
+          ingredientId: milk,
+          quantity: '200',
+          unit: 'ml',
+          optional: false,
+          note: '',
+        },
+        { ingredientId: flour, quantity: '250', unit: 'g', note: 'sifted' },
+        { ingredientId: '', name: 'Grandma spice', optional: true },
+      ]);
+      expect(draft.content.steps).toMatchObject([
+        // A Tip of the whole Recipe is kept on the first Step: a Recipe Draft holds Step Tips only.
+        {
+          text: 'Whisk everything.',
+          timer: '',
+          tips: [{ text: 'Rest the batter first.' }],
+        },
+        {
+          text: 'Fry each side.',
+          timer: '2',
+          tips: [{ text: 'Keep the heat medium.' }],
+        },
+      ]);
+      // No Guidance is produced.
+      expect(draft.content.guidance).toEqual({
+        nutritionNote: '',
+        pairings: [],
+        eatingMoments: [],
+      });
+      expect(await draftCount(cookie)).toBe(1);
     });
 
     it('never trusts the model: an index outside the Catalog, a UUID or other value that is not an index, or a weak Match, is Unmatched', async () => {
-      respondWith({
-        items: [
-          item({
-            matchedIngredientIndex: '4b3f1f0a-0000-4000-8000-000000000000',
-            fallbackIngredientName: 'Pixie dust',
-          }),
-          item({ matchConfidence: 0.2 }),
-          item({ matchedIngredientId: null, matchConfidence: 0 }),
-          item({ matchedIngredientIndex: 100_000 }),
-          item({ matchedIngredientIndex: -1 }),
-          item({ matchedIngredientIndex: 2.5 }),
-          item({ matchedIngredientIndex: 'milk' }),
-        ],
-      });
+      const lines = [
+        item({
+          ingredientIndex: '4b3f1f0a-0000-4000-8000-000000000000',
+          ingredientId: undefined,
+          nameAsWritten: 'Pixie dust',
+        }),
+        item({ matchConfidence: 0.2 }),
+        item({ ingredientId: null, matchConfidence: 0 }),
+        item({ ingredientIndex: 100_000, ingredientId: undefined }),
+        item({ ingredientIndex: -1, ingredientId: undefined }),
+        item({ ingredientIndex: 2.5, ingredientId: undefined }),
+        item({ ingredientIndex: 'milk', ingredientId: undefined }),
+      ];
+      respondWith({ ...written(), ingredients: lines });
       prompts.length = 0;
-      const { lines } = (await ingredients(await signUp()).expect(201))
-        .body as { lines: Line[] };
-      expect(lines.map((l) => l.match)).toEqual([
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]);
+      const cookie = await signUp();
+      const { recipeDraftId } = (await recipe(cookie).expect(201)).body as {
+        recipeDraftId: string;
+      };
+      const draft = await draftOf(cookie, recipeDraftId);
+      expect(draft.content.lines.map((l) => l.ingredientId)).toEqual(
+        lines.map(() => ''),
+      );
       expectCatalogByIndex(prompts[0].prompt);
-      expect(lines[0].name).toBe('Pixie dust');
+      expect(draft.content.lines[0].name).toBe('Pixie dust');
     });
 
     describe('Tags (#714)', () => {
@@ -312,6 +421,13 @@ describe('Plate Scan (integration)', () => {
           }
         ).id;
       const stamp = Date.now();
+      const tagIdsOf = async (cookie: string, response: { body: unknown }) =>
+        (
+          await draftOf(
+            cookie,
+            (response.body as { recipeDraftId: string }).recipeDraftId,
+          )
+        ).content.tagIds;
 
       it("offers the Catalog Tags and the Family's own, never another Family's, and proposes ids from them", async () => {
         const cookie = await signUp();
@@ -320,7 +436,7 @@ describe('Plate Scan (integration)', () => {
         const theirs = `Theirs plate ${stamp}`;
         await familyTag(await signUp(), theirs);
         respondWith((request) => ({
-          items: [item()],
+          ...written(),
           tagIndexes: [
             tagIndexIn(request.prompt, 'Dinner'),
             tagIndexIn(request.prompt, mine),
@@ -333,11 +449,12 @@ describe('Plate Scan (integration)', () => {
           ],
         }));
         prompts.length = 0;
-        const body = (await ingredients(cookie).expect(201)).body as {
-          lines: Line[];
-          tagIds: string[];
-        };
-        expect(body.tagIds).toEqual([dinner, mineId, vegan]);
+        const response = await recipe(cookie).expect(201);
+        expect(await tagIdsOf(cookie, response)).toEqual([
+          dinner,
+          mineId,
+          vegan,
+        ]);
         const names = offeredTagNames(prompts[0].prompt);
         expect(names).toEqual(expect.arrayContaining(['Dinner', mine]));
         expect(names).not.toContain(theirs);
@@ -347,58 +464,62 @@ describe('Plate Scan (integration)', () => {
       it('creates no Tag, whatever the model names, and proposes none when it names none', async () => {
         const cookie = await signUp();
         const before = await tagCount();
-        respondWith({
-          items: [item()],
-          tagIndexes: [0, 1],
-          tags: ['Brand new'],
-        });
-        const body = (await ingredients(cookie).expect(201)).body as {
-          tagIds: string[];
-        };
-        expect(body.tagIds).toHaveLength(2);
-        expect(await tagCount()).toBe(before);
-        respondWith({ items: [item()] });
+        respondWith({ ...written(), tagIndexes: [0, 1], tags: ['Brand new'] });
         expect(
-          ((await ingredients(cookie).expect(201)).body as { tagIds: string[] })
-            .tagIds,
+          await tagIdsOf(cookie, await recipe(cookie).expect(201)),
+        ).toHaveLength(2);
+        expect(await tagCount()).toBe(before);
+        respondWith(written());
+        expect(
+          await tagIdsOf(cookie, await recipe(cookie).expect(201)),
         ).toEqual([]);
       });
 
       it('caps the proposals at 10', async () => {
         respondWith((request) => ({
-          items: [item()],
+          ...written(),
           tagIndexes: offeredTagNames(request.prompt).map((_, i) => i),
         }));
-        const body = (await ingredients(await signUp()).expect(201)).body as {
-          tagIds: string[];
-        };
-        expect(body.tagIds).toHaveLength(10);
+        const cookie = await signUp();
+        expect(
+          await tagIdsOf(cookie, await recipe(cookie).expect(201)),
+        ).toHaveLength(10);
       });
     });
 
-    it('names Ingredients in the Member locale', async () => {
-      respondWith({ items: [item()] });
-      const { lines } = (
-        await ingredients(await signUpIn('ro'), 'Pancakes', 'ro').expect(201)
-      ).body as { lines: Line[] };
-      expect(lines[0].match?.name).not.toBe('Milk');
+    it('is written in the Catalog Language and names Ingredients in it', async () => {
+      respondWith(written({ title: 'Clătite' }));
+      prompts.length = 0;
+      const cookie = await signUpIn('ro');
+      const { recipeDraftId } = (
+        await recipe(cookie, 'Pancakes', 'ro').expect(201)
+      ).body as { recipeDraftId: string };
+      expect(prompts[0].prompt).toMatch(/in Romanian/);
+      const draft = await draftOf(cookie, recipeDraftId);
+      expect(draft.content.title).toBe('Clătite');
+      expect(draft.content.lines[0].name).not.toBe('Milk');
     });
 
-    it('rejects a result the model got wrong with a stable code', async () => {
-      respondWith({ items: [item({ confidence: 2 })] });
-      const failed = await ingredients(await signUp()).expect(502);
+    it('rejects a result the model got wrong with a stable code, and keeps no Recipe Draft', async () => {
+      respondWith({ ...written(), servings: 'four' });
+      const cookie = await signUp();
+      const failed = await recipe(cookie).expect(502);
       expect(failed.body).toEqual({ code: 'scan.result_invalid', params: {} });
+      expect(await draftCount(cookie)).toBe(0);
     });
 
     it('requires a bounded dish title and does not call the provider otherwise', async () => {
       const cookie = await signUp();
-      prompts.length = 0;
       const token = await tokenFor(cookie);
       prompts.length = 0;
-      await post(cookie, 'scan/plate/ingredients', {}).expect(400);
-      await ingredients(cookie, '   ', 'en', token).expect(400);
-      await ingredients(cookie, 'x'.repeat(121), 'en', token).expect(400);
+      await post(cookie, 'scan/plate/recipe', {}).expect(400);
+      await recipe(cookie, '   ', 'en', token).expect(400);
+      await recipe(cookie, 'x'.repeat(121), 'en', token).expect(400);
       expect(prompts).toHaveLength(0);
+    });
+
+    it('is gone from the old route', async () => {
+      await post(await signUp(), 'scan/plate/ingredients', {}).expect(404);
     });
 
     describe('Plate token', () => {
@@ -409,30 +530,28 @@ describe('Plate Scan (integration)', () => {
         token: string | null,
       ) => {
         prompts.length = 0;
-        const response = await ingredients(
-          cookie,
-          dishTitle,
-          'en',
-          token,
-        ).expect(400);
+        const response = await recipe(cookie, dishTitle, 'en', token).expect(
+          400,
+        );
         expect(response.body).toEqual(rejected);
         expect(prompts).toHaveLength(0);
       };
 
       it('works for any dish the Scan guessed', async () => {
         const cookie = await signUp();
-        respondWith({ items: [item()] });
-        await ingredients(cookie, 'Pancakes').expect(201);
-        await ingredients(cookie, 'Crepes').expect(201);
+        respondWith(written());
+        await recipe(cookie, 'Pancakes').expect(201);
+        await recipe(cookie, 'Crepes').expect(201);
       });
 
       it('refuses a missing token, a made-up one and a title the Scan did not guess', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item()] });
+        respondWith(written());
         await refuse(cookie, 'Pancakes', null);
         await refuse(cookie, 'Pancakes', 'not-a-token');
         await refuse(cookie, 'Lasagne', token);
+        expect(await draftCount(cookie)).toBe(0);
       });
 
       it('refuses a tampered token', async () => {
@@ -446,20 +565,20 @@ describe('Plate Scan (integration)', () => {
         const forged = Buffer.from(JSON.stringify(payload)).toString(
           'base64url',
         );
-        respondWith({ items: [item()] });
+        respondWith(written());
         await refuse(cookie, 'Lasagne', `${forged}.${signature}`);
       });
 
       it("refuses another Member's token", async () => {
         const token = await tokenFor(await signUp());
-        respondWith({ items: [item()] });
+        respondWith(written());
         await refuse(await signUp(), 'Pancakes', token);
       });
 
       it('refuses an expired token', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item()] });
+        respondWith(written());
         const now = Date.now();
         const clock = jest
           .spyOn(Date, 'now')
@@ -469,23 +588,24 @@ describe('Plate Scan (integration)', () => {
         } finally {
           clock.mockRestore();
         }
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        await recipe(cookie, 'Pancakes', 'en', token).expect(201);
       });
 
-      it('loads one dish per token: a replay is refused without a provider call', async () => {
+      it('writes one dish per token: a replay is refused without a provider call, and makes no second draft', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item()] });
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        respondWith(written());
+        await recipe(cookie, 'Pancakes', 'en', token).expect(201);
         await refuse(cookie, 'Pancakes', token);
         await refuse(cookie, ' Pancakes ', token);
+        expect(await draftCount(cookie)).toBe(1);
       });
 
-      it('refuses another signed title on the same token once one was loaded', async () => {
+      it('refuses another signed title on the same token once one was written', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item()] });
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        respondWith(written());
+        await recipe(cookie, 'Pancakes', 'en', token).expect(201);
         await refuse(cookie, 'Crepes', token);
       });
 
@@ -495,63 +615,67 @@ describe('Plate Scan (integration)', () => {
         next = () =>
           new Promise((resolve) =>
             setTimeout(
-              () => resolve({ data: { items: [item()] }, requestId: 'slow' }),
+              () => resolve({ data: written(), requestId: 'slow' }),
               50,
             ),
           );
         prompts.length = 0;
         const responses = await Promise.all([
-          post(cookie, 'scan/plate/ingredients', {
+          post(cookie, 'scan/plate/recipe', {
             dishTitle: 'Pancakes',
             plateToken: token,
           }),
-          post(cookie, 'scan/plate/ingredients', {
+          post(cookie, 'scan/plate/recipe', {
             dishTitle: 'Pancakes',
             plateToken: token,
           }),
         ]);
         expect(responses.map((r) => r.status).sort()).toEqual([201, 400]);
         expect(prompts).toHaveLength(1);
+        expect(await draftCount(cookie)).toBe(1);
       });
 
-      it('gives the use back when the provider fails, so the Member can retry', async () => {
+      it('gives the token back when the provider fails, so the Member can retry', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item({ confidence: 2 })] });
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
-        respondWith({ items: [item()] });
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        respondWith({ ...written(), servings: 'four' });
+        await recipe(cookie, 'Pancakes', 'en', token).expect(502);
+        next = () =>
+          Promise.reject(new ApiException(502, 'scan.provider_unavailable'));
+        await recipe(cookie, 'Pancakes', 'en', token).expect(502);
+        respondWith(written());
+        await recipe(cookie, 'Pancakes', 'en', token).expect(201);
         await refuse(cookie, 'Pancakes', token);
+        expect(await draftCount(cookie)).toBe(1);
       });
 
       it('lets the Member pick another signed title after a provider failure', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item({ confidence: 2 })] });
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
-        respondWith({ items: [item()] });
-        await ingredients(cookie, 'Crepes', 'en', token).expect(201);
+        respondWith({ ...written(), servings: 'four' });
+        await recipe(cookie, 'Pancakes', 'en', token).expect(502);
+        respondWith(written());
+        await recipe(cookie, 'Crepes', 'en', token).expect(201);
         await refuse(cookie, 'Pancakes', token);
       });
 
       it('refuses after 3 attempts in total, even when each failed', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item({ confidence: 2 })] });
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
-        respondWith({ items: [item()] });
-        prompts.length = 0;
+        respondWith({ ...written(), servings: 'four' });
+        await recipe(cookie, 'Pancakes', 'en', token).expect(502);
+        await recipe(cookie, 'Pancakes', 'en', token).expect(502);
+        await recipe(cookie, 'Pancakes', 'en', token).expect(502);
+        respondWith(written());
         await refuse(cookie, 'Pancakes', token);
-        expect(prompts).toHaveLength(0);
+        expect(await draftCount(cookie)).toBe(0);
       });
 
-      it('is the same Scan: loading Ingredients does not touch the Scan Cap', async () => {
+      it('is the same Scan: writing the Recipe does not touch the Scan Cap', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
-        respondWith({ items: [item()] });
-        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        respondWith(written());
+        await recipe(cookie, 'Pancakes', 'en', token).expect(201);
         // Cap is 3 and one Scan was used: two more photos still work, the third is blocked.
         respondWith({ matches: [{ title: 'Pancakes', confidence: 0.7 }] });
         await dishes(cookie).expect(201);
@@ -744,21 +868,21 @@ describe('Plate Scan (integration)', () => {
       expect(prompts[0].prompt).toMatch(/recipe titles in Romanian/);
     });
 
-    it('asks for the fallback name in the Catalog Language and names the match in it', async () => {
+    it('writes the Recipe in the Catalog Language and names the match in it', async () => {
       const cookie = await member();
-      respondWith({ items: [item()] });
+      respondWith(written());
       const token = await tokenFor(cookie);
       prompts.length = 0;
-      const response = await post(cookie, 'scan/plate/ingredients', {
+      const response = await post(cookie, 'scan/plate/recipe', {
         dishTitle: 'Pancakes',
         plateToken: token,
       }).expect(201);
-      expect(prompts[0].prompt).toContain(
-        'fallbackIngredientName as a short generic ingredient name in Romanian',
+      expect(prompts[0].prompt).toContain('in Romanian');
+      const draft = await draftOf(
+        cookie,
+        (response.body as { recipeDraftId: string }).recipeDraftId,
       );
-      expect((response.body as { lines: Line[] }).lines[0].match?.name).toBe(
-        'Lapte',
-      );
+      expect(draft.content.lines[0].name).toBe('Lapte');
     });
   });
 });
