@@ -1,5 +1,5 @@
 {
-  "id": "b0fe3059-56ce-4a46-8ec9-a3d01c84b155",
+  "id": "ec7aef00-d927-4093-bd62-335e09d687e9",
   "prevId": "8b44894a-051e-4788-89fd-9ec24ae416b3",
   "version": "7",
   "dialect": "postgresql",
@@ -936,7 +936,7 @@
       "checkConstraints": {
         "credit_entry_amount_not_zero": {
           "name": "credit_entry_amount_not_zero",
-          "value": "\"credit_entry\".\"amount\" <> 0"
+          "value": "\"credit_entry\".\"amount\" <> 0 or \"credit_entry\".\"kind\" = 'promo_code'"
         }
       },
       "isRLSEnabled": false

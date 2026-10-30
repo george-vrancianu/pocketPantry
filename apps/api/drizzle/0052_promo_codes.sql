@@ -17,6 +17,8 @@ CREATE TABLE "promo_code" (
 	CONSTRAINT "promo_code_redeemed_xor_revoked" CHECK ("promo_code"."redeemed_at" is null or "promo_code"."revoked_at" is null)
 );
 --> statement-breakpoint
+ALTER TABLE "credit_entry" DROP CONSTRAINT "credit_entry_amount_not_zero";--> statement-breakpoint
 ALTER TABLE "promo_code" ADD CONSTRAINT "promo_code_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "promo_code" ADD CONSTRAINT "promo_code_redeemed_by_user_id_fk" FOREIGN KEY ("redeemed_by") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "promo_code_created_at_idx" ON "promo_code" USING btree ("created_at","id");
+CREATE INDEX "promo_code_created_at_idx" ON "promo_code" USING btree ("created_at","id");--> statement-breakpoint
+ALTER TABLE "credit_entry" ADD CONSTRAINT "credit_entry_amount_not_zero" CHECK ("credit_entry"."amount" <> 0 or "credit_entry"."kind" = 'promo_code');

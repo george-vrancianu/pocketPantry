@@ -369,15 +369,8 @@
     {
       "idx": 52,
       "version": "7",
-      "when": 1793353304512,
-      "tag": "0052_same_paladin",
-      "breakpoints": true
-    },
-    {
-      "idx": 53,
-      "version": "7",
-      "when": 1793354996928,
-      "tag": "0053_complete_mindworm",
+      "when": 1793356376828,
+      "tag": "0052_promo_codes",
       "breakpoints": true
     }
   ]
