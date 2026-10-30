@@ -4,10 +4,10 @@ import { Injectable } from '@nestjs/common';
 export const MAX_ATTEMPTS = 3;
 
 /**
- * Remembers which Plate tokens have been spent, so one token loads the
- * Ingredients of one picked dish, once (each load sends the whole Catalog to
- * the model, so loading every signed title, or replaying a token, would
- * defeat the Scan Cap).
+ * Remembers which Plate tokens have been spent, so one token writes
+ * the Recipe Draft of one picked dish, once (each write is a paid model call,
+ * so writing every signed title, or replaying a token, would defeat the Scan
+ * Cap).
  *
  * Per-process and in memory: it assumes a single API instance. Running several
  * instances needs a durable shared store (a follow-up); until then a replay
@@ -39,10 +39,18 @@ export class PlateTokenUses {
     return true;
   }
 
-  /** Gives the use back, e.g. after the provider failed. The attempt still counts. */
-  release(signature: string): void {
+  /**
+   * Gives the use back. After a provider failure the attempt still counts; a refusal before the
+   * provider was called (draft limit, short balance) passes `countAttempt: false` and takes it back.
+   */
+  release(
+    signature: string,
+    { countAttempt = true }: { countAttempt?: boolean } = {},
+  ): void {
     const entry = this.spent.get(signature);
-    if (entry) entry.held = false;
+    if (!entry) return;
+    entry.held = false;
+    if (!countAttempt) entry.attempts = Math.max(0, entry.attempts - 1);
   }
 
   get size(): number {

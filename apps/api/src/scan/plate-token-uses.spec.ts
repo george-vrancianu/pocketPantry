@@ -31,6 +31,15 @@ describe('PlateTokenUses', () => {
     expect(uses.claim('sig', T0 + 500, T0)).toBe(false);
   });
 
+  it('does not count an attempt released as a refusal before the provider', () => {
+    const uses = new PlateTokenUses();
+    for (let i = 0; i < 5; i++) {
+      expect(uses.claim('sig', T0 + 500, T0)).toBe(true);
+      uses.release('sig', { countAttempt: false });
+    }
+    expect(uses.claim('sig', T0 + 500, T0)).toBe(true);
+  });
+
   it('prunes entries once their token has expired', () => {
     const uses = new PlateTokenUses();
     uses.claim('sig', T0 + 500, T0);

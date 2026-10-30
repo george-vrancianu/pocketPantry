@@ -547,8 +547,10 @@ describe('Plate Scan (integration)', () => {
       expect(prompts).toHaveLength(0);
     });
 
-    it('is gone from the old route', async () => {
-      await post(await signUp(), 'scan/plate/ingredients', {}).expect(404);
+    it('is gone from the old routes', async () => {
+      const cookie = await signUp();
+      await post(cookie, 'scan/plate/ingredients', {}).expect(404);
+      await post(cookie, 'recipes/from-plate', {}).expect(404);
     });
 
     describe('Plate token', () => {
@@ -772,6 +774,29 @@ describe('Plate Scan (integration)', () => {
         .expect(204);
       await recipe(cookie, 'Pancakes', 'en', token).expect(201);
       expect(prompts).toHaveLength(1);
+    });
+
+    it('does not use up attempts on refusals before the provider: more draft-limit refusals than the attempt limit, then the pick still succeeds', async () => {
+      const cookie = await signUp();
+      const token = await tokenFor(cookie);
+      await fillDrafts(cookie, 20);
+      respondWith(written());
+      for (let i = 0; i < 4; i++) {
+        await recipe(cookie, 'Pancakes', 'en', token).expect(409);
+      }
+      const [first] = (
+        await request(app.getHttpServer())
+          .get('/api/recipe-drafts')
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', cookie)
+          .expect(200)
+      ).body as Array<{ id: string }>;
+      await request(app.getHttpServer())
+        .delete(`/api/recipe-drafts/${first.id}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .expect(204);
+      await recipe(cookie, 'Pancakes', 'en', token).expect(201);
     });
 
     it('creates no Recipe Draft, charges no Credit and leaves the token usable when the request closes while writing', async () => {

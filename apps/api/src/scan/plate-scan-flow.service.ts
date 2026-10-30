@@ -77,12 +77,14 @@ export class PlateScanFlowService {
     if (!this.uses.claim(signature, expiresAt)) {
       throw new ApiException(400, 'scan.plate_token_invalid');
     }
+    let providerCalled = false;
     try {
       // Before the provider and before Credits: a pick with nowhere to land is refused for free (ADR 0035).
       await this.drafts.assertRoom(memberId);
       // Charged on its own (ADR 0035): the Credit is held before the provider is called, so a short
       // balance is refused here (and the catch below hands the token back), and given back if no Recipe Draft is made.
       return await this.paidReads.read(memberId, 'plate-recipe', async () => {
+        providerCalled = true;
         const familyId = await this.settings.familyIdOf(memberId);
         // The Catalog Tags and this Family's own are the only Tags the read may propose.
         const allowedTags = await loadAllowedTags(
@@ -118,8 +120,9 @@ export class PlateScanFlowService {
         return found({ recipeDraftId: id });
       });
     } catch (error) {
-      // No Recipe Draft exists: the Member can pick again within the attempt limit.
-      this.uses.release(signature);
+      // No Recipe Draft exists: the Member can pick again. A refusal before the provider (draft limit,
+      // short balance) costs no attempt; only a provider-side failure counts toward the limit.
+      this.uses.release(signature, { countAttempt: providerCalled });
       throw error;
     }
   }
