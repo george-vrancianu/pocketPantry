@@ -61,8 +61,6 @@ export function useReviewScreen(
           mode: scan.mode,
           lines: reviewLinesOf(scan),
           scanLanguage: scan.scanLanguage,
-          dishTitle: scan.dishTitle ?? '',
-          proposedTagIds: scan.proposedTagIds ?? [],
         }
       : null;
   });
@@ -92,16 +90,13 @@ export function useReviewScreen(
       dispatch({ type: 'attachBarcode', key: firstKey, barcode: photoBarcode });
   }, [photoBarcode, lineCount, firstKey, firstBarcode]);
   const saver = useSaveLines();
-  // Plate lines are things to buy, not things in the Pantry.
   const mode = draft?.mode ?? 'product';
-  const shopping = mode === 'plate';
   // Excluded lines (Scan-excluded or removed by the Member) wait outside the list and are never saved.
   const groups = reviewGroups(state);
   const counts = reviewCounts(state);
   const included = state.lines.filter((line) => line.excluded === null);
-  // Only Unmatched Pantry lines choose a category; Plate lines go to the Shopping List, which has no category picker.
   const parents = useCatalogParents(
-    !shopping && included.some((line) => line.match === null),
+    included.some((line) => line.match === null),
   );
   // Receipt Scan: ticking Shopping Items happens after the save; if any tick failed, say so here before leaving.
   const [tickFailures, setTickFailures] = useState<TickFailures | null>(null);
@@ -118,9 +113,7 @@ export function useReviewScreen(
     // oxlint-disable-next-line react/set-state-in-effect -- one-shot focus request: consumed (cleared) once the element is focused
     setFocusId(null);
   }, [focusId, state]);
-  const overLimit = shopping
-    ? 0
-    : Math.max(0, included.length - MAX_BULK_BATCHES);
+  const overLimit = Math.max(0, included.length - MAX_BULK_BATCHES);
 
   const change = (key: string, patch: Partial<ReviewLine>) =>
     dispatch({ type: 'update', key, patch });
@@ -212,7 +205,7 @@ export function useReviewScreen(
   const save = () => {
     // Display order, so the Member lands on the topmost problem.
     if (focusInvalid([...groups.review, ...groups.sure])) return;
-    const to = shopping ? '/shopping' : '/pantry';
+    const to = '/pantry';
     const navState = unverifiedState(
       included.filter((l) => statusOf(l, !!state.confirmed[l.key]) === 'low')
         .length,
@@ -245,17 +238,9 @@ export function useReviewScreen(
 
   return {
     hadDraft: draft !== null,
-    dishTitle: draft?.dishTitle ?? '',
-    proposedTagIds: draft?.proposedTagIds ?? [],
     included,
     hasInvalidLine,
-    // The dish is now a Recipe: the card is done, and the Member lands on it.
-    openSavedRecipe: (id: string) => {
-      dispatchScanSession({ type: 'remove', id: scanId });
-      navigate(`/recipes/${id}`);
-    },
     mode,
-    shopping,
     state,
     groups,
     counts,

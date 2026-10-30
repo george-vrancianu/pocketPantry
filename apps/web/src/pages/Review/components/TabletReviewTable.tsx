@@ -12,13 +12,12 @@ import { rowGroup, type ReviewState } from '../../../lib/reviewState';
 import type { CameraMode } from '../../../lib/cameraMode';
 import { ExcludedRow } from './ExcludedRow';
 import { TabletReviewRow } from './TabletReviewRow';
-import { linkButtonSx, tabletColumnsFor, tabletRowSx } from './layout';
+import { linkButtonSx, TABLET_COLUMNS, tabletRowSx } from './layout';
 
 type Props = {
   state: ReviewState;
   groups: { review: ReviewLine[]; sure: ReviewLine[]; excluded: ReviewLine[] };
   parents: CatalogParent[];
-  shopping: boolean;
   mode: CameraMode;
   /** Rows whose Save or Done was blocked. */
   blocked: Record<string, boolean>;
@@ -109,7 +108,6 @@ export function TabletReviewTable({
   state,
   groups,
   parents,
-  shopping,
   mode,
   blocked,
   onOpen,
@@ -123,7 +121,7 @@ export function TabletReviewTable({
 }: Props) {
   const { t } = useTranslation('review');
   const sureId = useId();
-  const columns = tabletColumnsFor(shopping);
+  const columns = TABLET_COLUMNS;
   const accessibleNameOf = accessibleNamesOf(
     [...groups.review, ...groups.sure],
     (name, position) => t('position', { name, ...position }),
@@ -138,7 +136,6 @@ export function TabletReviewTable({
         toCheck={toCheck}
         editing={toCheck || !!state.open[line.key]}
         parents={parents}
-        shopping={shopping}
         mode={mode}
         blocked={!!blocked[line.key]}
         onEdit={() => onToggle(line.key)}
@@ -174,7 +171,7 @@ export function TabletReviewTable({
         <Box
           role="row"
           sx={{
-            ...tabletRowSx(shopping),
+            ...tabletRowSx,
             alignItems: 'center',
             height: 44,
             fontSize: 11,

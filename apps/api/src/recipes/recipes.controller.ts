@@ -54,7 +54,6 @@ import {
   familyRecipeCreate,
   familyRecipeUpdate,
   fromLinkBody,
-  fromPlateBody,
   plateMatchesBody,
   hiddenTipsBody,
   linkCheckQuery,
@@ -70,7 +69,6 @@ import {
   type FromLinkBody,
   type LinkCheck,
   type LinkCheckQuery,
-  type FromPlateBody,
   type RecipeFromLink,
   type PlateMatchesBody,
   type PlateMatches,
@@ -269,19 +267,6 @@ export class RecipesController {
   ): Promise<PlateMatches> {
     const locale = await this.languages.catalogLanguageOf(member.id);
     return this.plate.closestBases(member.id, { ...body, locale });
-  }
-
-  @Post('from-plate')
-  @ApiOperation({
-    summary:
-      'Save a Plate Scan as a Family Recipe for one serving: a Variant (parentId) or a standalone Recipe',
-  })
-  async saveFromPlate(
-    @CurrentUser() member: CurrentUserValue,
-    @Body(new ZodValidationPipe(fromPlateBody)) body: FromPlateBody,
-  ): Promise<FamilyRecipeEdit> {
-    const locale = await this.languages.catalogLanguageOf(member.id);
-    return this.plate.save(member.id, { ...body, locale });
   }
 
   @Post('from-link')

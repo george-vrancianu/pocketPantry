@@ -206,7 +206,7 @@ export function ReviewOverviewPage({
         fail(scan.id, t('overview.fixValues'));
         continue;
       }
-      if (scan.mode !== 'plate' && lines.length > MAX_BULK_BATCHES) {
+      if (lines.length > MAX_BULK_BATCHES) {
         fail(
           scan.id,
           t('tooMany', {

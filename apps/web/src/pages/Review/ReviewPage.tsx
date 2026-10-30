@@ -12,7 +12,6 @@ import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { MatchDialog } from '../../components/MatchDialog';
 import { ReviewActionBar } from '../../components/ReviewActionBar';
-import { PlateRecipeSave } from './components/PlateRecipeSave';
 import { ReviewCounters } from './components/ReviewCounters';
 import { ReviewTable } from './components/ReviewTable';
 import {
@@ -105,8 +104,8 @@ export function ReviewPage({
     mode: t(`subtitle.mode.${screen.mode ?? 'product'}`),
   });
   const saveLabel = screen.saving
-    ? t(screen.shopping ? 'shoppingAdding' : 'pantry:form.saving')
-    : t(screen.shopping ? 'shoppingSave' : 'save', { count: counts.save });
+    ? t('pantry:form.saving')
+    : t('save', { count: counts.save });
 
   const notices = (
     <>
@@ -119,15 +118,6 @@ export function ReviewPage({
         </Alert>
       ) : null}
       {screen.error ? <Alert>{screen.error}</Alert> : null}
-      {screen.mode === 'plate' ? (
-        <PlateRecipeSave
-          dishTitle={screen.dishTitle}
-          proposedTagIds={screen.proposedTagIds}
-          lines={screen.included}
-          hasInvalidLine={screen.hasInvalidLine}
-          onSaved={screen.openSavedRecipe}
-        />
-      ) : null}
     </>
   );
 
@@ -138,7 +128,6 @@ export function ReviewPage({
         state={screen.state}
         groups={groups}
         parents={screen.parents}
-        shopping={screen.shopping}
         onToggle={screen.toggle}
         onChange={screen.change}
         onSwapMatch={screen.openSwap}
@@ -203,7 +192,6 @@ export function ReviewPage({
               state={screen.state}
               groups={groups}
               parents={screen.parents}
-              shopping={screen.shopping}
               mode={screen.mode}
               blocked={screen.blocked}
               onOpen={screen.open}

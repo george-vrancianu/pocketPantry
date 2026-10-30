@@ -386,7 +386,7 @@ describe('Review overview, epic review fixes', () => {
 
   describe('copy (#18)', () => {
     it('names the button for any Scan Mode, not just the pantry', async () => {
-      await seed('a', 'plate', [line('Pasta')]);
+      await seed('a', 'receipt', [line('Pasta')]);
       renderOverview();
       expect(
         screen.getByRole('button', { name: 'Add all' }),

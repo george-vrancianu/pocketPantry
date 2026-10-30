@@ -37,8 +37,7 @@
   "msg": {
     "low": "Lav sikkerhed: tjek matchet",
     "qty": "Mængde mangler",
-    "unmatched": "Intet match: vælg en ingrediens, eller gem den under det navn, vi læste.",
-    "unmatchedShopping": "Ikke i vores katalog: vælg en ingrediens, eller føj den til din liste under det navn, vi læste."
+    "unmatched": "Intet match: vælg en ingrediens, eller gem den under det navn, vi læste."
   },
   "icon": {
     "low": "Lav sikkerhed",
@@ -82,9 +81,6 @@
   "save_one": "Gem {{count}} vare",
   "save_other": "Gem {{count}} varer",
   "discard": "Kassér",
-  "shoppingSave_one": "Føj {{count}} vare til indkøbslisten",
-  "shoppingSave_other": "Føj {{count}} varer til indkøbslisten",
-  "shoppingAdding": "Tilføjer",
   "excluded": {
     "title": "Udeladt · {{count}}",
     "hint": "Ikke-fødevarer eller ulæselige linjer",
@@ -166,18 +162,12 @@
     "readsFull": "Flere opskrifter venter på dig. Gennemse eller annuller en først."
   },
   "plateRecipe": {
-    "open": "Gem som opskrift",
-    "heading": "Gem som opskrift",
-    "title": "Opskriftens titel",
     "base": "Grundopskrift",
     "loading": "Finder grundopskrifter…",
     "closest": "{{title}} (nærmeste)",
     "previewLabel": "Vis {{title}}",
     "preview": "Vis",
     "standalone": "Selvstændig opskrift (uden grundopskrift)",
-    "search": "Find en anden grundopskrift",
-    "cancel": "Annuller",
-    "save": "Gem opskrift",
-    "saving": "Gemmer"
+    "search": "Find en anden grundopskrift"
   }
 }

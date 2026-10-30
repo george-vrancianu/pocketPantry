@@ -5,7 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { mealWindowQueryKey } from './mealPlan';
 import { useApplyTemplate } from './shoppingTemplates';
 
-vi.mock('./plate', () => ({ postShoppingItems: vi.fn(async () => []) }));
+vi.mock('./api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./api')>()),
+  apiRequest: vi.fn(async () => []),
+}));
 
 describe('useApplyTemplate', () => {
   it('makes the Meal plan forecast and Recipe matches stale', async () => {

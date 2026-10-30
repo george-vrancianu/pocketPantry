@@ -28,7 +28,6 @@ type Props = {
   groupStatus: RowStatus;
   open: boolean;
   parents: CatalogParent[];
-  shopping: boolean;
   mode: CameraMode;
   blocked: boolean;
   onToggle: () => void;
@@ -51,7 +50,6 @@ export function ReviewRow({
   groupStatus,
   open,
   parents,
-  shopping,
   mode,
   blocked,
   onToggle,
@@ -91,7 +89,7 @@ export function ReviewRow({
         aria-controls={open ? panelId(line.key) : undefined}
         onClick={onToggle}
         sx={{
-          ...rowGridSx(shopping),
+          ...rowGridSx,
           width: '100%',
           minHeight: 54,
           py: '8px',
@@ -160,19 +158,18 @@ export function ReviewRow({
             {`${line.quantity} ${unit}`}
           </Box>
         )}
-        {shopping ? null : (
-          <>
-            <Box component="span" sx={cell}>
-              {t(`common:locations.${line.location}`)}
-            </Box>
-            <Box
-              component="span"
-              sx={{ ...cell, fontVariantNumeric: 'tabular-nums' }}
-            >
-              {formatShortDate(line.expiryDate)}
-            </Box>
-          </>
-        )}
+
+        <>
+          <Box component="span" sx={cell}>
+            {t(`common:locations.${line.location}`)}
+          </Box>
+          <Box
+            component="span"
+            sx={{ ...cell, fontVariantNumeric: 'tabular-nums' }}
+          >
+            {formatShortDate(line.expiryDate)}
+          </Box>
+        </>
       </Box>
       <Collapse open={open}>
         <RowEditPanel
@@ -180,7 +177,6 @@ export function ReviewRow({
           status={status}
           sure={groupStatus === 'ok'}
           parents={parents}
-          shopping={shopping}
           blocked={blocked}
           background={background}
           onChange={onChange}

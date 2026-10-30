@@ -54,7 +54,7 @@
   "detail": {
     "product": "Lægger varen i dit spisekammer med datoen for \"mindst holdbar til\".",
     "receipt": "Tilføjer alle varer fra din indkøbstur på én gang.",
-    "plate": "Viser rettens ingredienser, så du kan føje det, du mangler, til din indkøbsliste.",
+    "plate": "Skriver den valgte ret som en opskriftkladde, du kan gøre færdig og gemme.",
     "ingredients": "Lægger hver enkelt vare på bordet i dit spisekammer."
   },
   "session": {

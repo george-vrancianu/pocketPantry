@@ -48,7 +48,7 @@ const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
 function renderReview(
   lines: ProposedLine[],
   extra = {},
-  mode: 'product' | 'plate' = 'product',
+  mode: 'product' = 'product',
   scanLanguage?: 'en' | 'ro' | 'da',
 ) {
   startReview({ mode, lines, scanLanguage });
@@ -62,7 +62,6 @@ function renderReview(
         ],
       }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
-    'POST /api/shopping-list/items/bulk': () => Response.json({ items: [] }),
     'GET /api/settings/family': () =>
       Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
     ...extra,
@@ -865,36 +864,6 @@ describe('ReviewPage', () => {
           name: /^Expires, Monday, December 28,/,
         }),
       ).toBeInTheDocument();
-    });
-  });
-
-  describe('Plate', () => {
-    it('hides Location, expiry and description, and saves to the Shopping List', async () => {
-      const calls = renderReview(
-        [line({ quantity: 2, unit: 'g' })],
-        {},
-        'plate',
-      );
-      await userEvent.click(row('Parmesan'));
-      expect(screen.getByLabelText(/^Amount of/)).toBeInTheDocument();
-      expect(
-        screen.queryByRole('group', { name: 'Location' }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', { name: /^Expires/ }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByLabelText('Product description'),
-      ).not.toBeInTheDocument();
-      expect(screen.queryByText('Fridge')).not.toBeInTheDocument();
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Add 1 item to shopping list' }),
-      );
-      await waitFor(() =>
-        expect(calls.map((c) => c.key)).toContain(
-          'POST /api/shopping-list/items/bulk',
-        ),
-      );
     });
   });
 });
