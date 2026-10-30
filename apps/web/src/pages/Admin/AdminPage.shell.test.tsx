@@ -149,7 +149,7 @@ describe('AdminPage shell', () => {
   it('opens on To review and shows the review queue', async () => {
     open('/admin');
     expect(
-      await screen.findByRole('heading', { name: 'Review queue' }),
+      await screen.findByRole('heading', { name: 'Waiting for review' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'To review' })).toHaveAttribute(
       'aria-pressed',
@@ -174,7 +174,7 @@ describe('AdminPage shell', () => {
   it('falls back to To review for an unknown tab', async () => {
     open('/admin?tab=nope');
     expect(
-      await screen.findByRole('heading', { name: 'Review queue' }),
+      await screen.findByRole('heading', { name: 'Waiting for review' }),
     ).toBeInTheDocument();
   });
 });
@@ -191,7 +191,7 @@ describe('Catalog index', () => {
     expect(await row(/^Aisles.*2 in shop order/)).toBeInTheDocument();
     expect(await row(/^Categories.*1 parent · 2 leaf/)).toBeInTheDocument();
     expect(await row(/^Catalog Recipes.*2 · 1 archived/)).toBeInTheDocument();
-    expect(await row(/^Tags.*3 in 1 groups/)).toBeInTheDocument();
+    expect(await row(/^Tags.*3 in 1 Tag Groups/)).toBeInTheDocument();
     expect(await row(/^Eating Moments.*0/)).toBeInTheDocument();
   });
 

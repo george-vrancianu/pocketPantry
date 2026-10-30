@@ -477,11 +477,11 @@
     "recipes": "Catalog Recipes",
     "recipesMeta": "{{count}} · {{archived}} archived",
     "tags": "Tags",
-    "tagsMeta": "{{count}} in {{groups}} groups",
+    "tagsMeta": "{{count}} in {{groups}} Tag Groups",
     "eatingMoments": "Eating Moments",
     "back": "Catalog"
   },
   "review": {
-    "title": "Review queue"
+    "title": "Waiting for review"
   }
 }
