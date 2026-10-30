@@ -1,7 +1,11 @@
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { linkReads, MAX_HELD_LINK_READS } from '../../lib/linkReads';
+import {
+  linkReadsOf,
+  recipeReads,
+  MAX_HELD_RECIPE_READS,
+} from '../../lib/recipeReads';
 import { MAX_PASTED_TEXT_LENGTH } from '../../lib/linkRecipe';
 import { renderWithProviders, stubApi } from '../../test/render';
 import {
@@ -53,10 +57,10 @@ const pasteButton = () =>
   screen.queryByRole('button', { name: 'Paste from clipboard' });
 const clearButton = () => screen.queryByRole('button', { name: 'Clear' });
 
-beforeEach(() => linkReads.clear());
+beforeEach(() => recipeReads.clear());
 afterEach(() => {
   cleanup();
-  linkReads.clear();
+  recipeReads.clear();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -200,7 +204,7 @@ describe('"From text" sheet', () => {
       await user.type(field(), '  2 eggs  ');
       await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
       expect(onClose).toHaveBeenCalled();
-      expect(linkReads.getState().reads).toMatchObject([
+      expect(recipeReads.getState().reads).toMatchObject([
         { source: { kind: 'text', text: '2 eggs' }, language: 'source' },
       ]);
       await waitFor(() =>
@@ -219,8 +223,8 @@ describe('"From text" sheet', () => {
 
     it('refuses a read when the holder is full, keeping the sheet open', async () => {
       const user = userEvent.setup({ delay: null });
-      for (let i = 0; i < MAX_HELD_LINK_READS; i += 1) {
-        linkReads.submit({ kind: 'text', text: `t${i}` }, 'catalog');
+      for (let i = 0; i < MAX_HELD_RECIPE_READS; i += 1) {
+        recipeReads.submit({ kind: 'text', text: `t${i}` }, 'catalog');
       }
       const { onClose } = setup();
       await user.type(field(), 'one more');
@@ -236,14 +240,14 @@ describe('"From text" sheet', () => {
     it('names the site, focuses the field and replaces that read', async () => {
       const user = userEvent.setup({ delay: null });
       setup({ unreadable: true });
-      linkReads.submit(
+      recipeReads.submit(
         { kind: 'link', url: 'https://www.example.com/p' },
         'catalog',
       );
       await waitFor(() =>
-        expect(linkReads.getState().reads[0]?.status).toBe('failed'),
+        expect(recipeReads.getState().reads[0]?.status).toBe('failed'),
       );
-      const [{ id }] = linkReads.getState().reads;
+      const [{ id }] = recipeReads.getState().reads;
       cleanup();
       const second = setup({
         prefill: { site: 'example.com', replaces: id },
@@ -257,7 +261,7 @@ describe('"From text" sheet', () => {
       await user.type(field(), 'two eggs');
       await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
       expect(second.onClose).toHaveBeenCalled();
-      const reads = linkReads.getState().reads;
+      const reads = linkReadsOf(recipeReads.getState().reads);
       expect(reads).toHaveLength(1);
       expect(reads[0].source.kind).toBe('text');
     });

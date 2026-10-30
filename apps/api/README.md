@@ -98,14 +98,15 @@ never reach a client.
   independently; Admin Catalog requests are never counted);
   Credit Prices (Credits one successful read costs a Family; `0` makes a kind free)
   are `CREDIT_PRICE_SCAN`, `CREDIT_PRICE_VOICE`, `CREDIT_PRICE_ASSISTANT`,
-  `CREDIT_PRICE_LINK_PAGE` (default 2), `CREDIT_PRICE_LINK_TEXT` and
-  `CREDIT_PRICE_GUIDANCE` (default 1 each); `GET /api/credits` returns the Family's balance, the prices,
+  `CREDIT_PRICE_LINK_PAGE` (default 2), `CREDIT_PRICE_LINK_TEXT`,
+  `CREDIT_PRICE_PLATE_RECIPE` (writing a Plate Scan dish as a Recipe, charged
+  besides the photo) and `CREDIT_PRICE_GUIDANCE` (default 1 each); `GET /api/credits` returns the Family's balance, the prices,
   the low-balance threshold (10) and the last 20 history entries. A read with too
   few Credits is refused with 402 `credits.insufficient`.
   `SCAN_MATCH_CONFIDENCE_THRESHOLD` is the confidence below which a Match
   becomes Unmatched and an image read is flagged low-confidence.
   `POST /api/scan/plate` also returns a short-lived (one hour) HMAC-SHA256
-  token over the Member and the guessed dish titles; `POST /api/scan/plate/ingredients`
+  token over the Member and the guessed dish titles; `POST /api/scan/plate/recipe`
   requires it, so that expensive call cannot be made for an arbitrary title and is
   not a second Scan against the cap. It is signed with `SCAN_TOKEN_SECRET` (at
   least 32 characters): required when `NODE_ENV=production`; otherwise a missing one

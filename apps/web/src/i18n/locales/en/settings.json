@@ -41,7 +41,8 @@
         "assistant": "Assistant Request",
         "link-page": "Recipe from a web page",
         "link-text": "Recipe from pasted text",
-        "guidance": "Suggest Guidance"
+        "guidance": "Suggest Guidance",
+        "plate-recipe": "Recipe from a Plate Scan"
       },
       "welcome_grant": "Welcome Grant",
       "grant": "Credit Grant",

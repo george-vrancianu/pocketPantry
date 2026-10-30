@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
+import type { RecipeReadKind } from '../../lib/recipeReads';
 
 /**
- * the background. Voice Notes are the first kind; the Scan Session (receipt or photo) is the second; a link read (the link-read holder) is the third. A new kind extends `kind`.
- * the background. Voice Notes are the first kind; the Scan Session (receipt or photo) is the second; a link read (the link-read holder) is the third; links join by extending `kind`.
+ * What kinds of item the background holds. Voice Notes are the first kind; the Scan Session (receipt or
+ * photo) is the second; the recipe reads (the recipe-read holder) bring their own kinds, `link` for now.
  */
-export type BackgroundKind = 'voice' | 'receipt' | 'photo' | 'link';
+export type BackgroundKind = 'voice' | 'receipt' | 'photo' | RecipeReadKind;
 
 export type BackgroundStatus = 'reading' | 'ready' | 'failed';
 

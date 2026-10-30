@@ -38,8 +38,7 @@
   "msg": {
     "low": "Încredere scăzută: verifică potrivirea",
     "qty": "Lipsește cantitatea",
-    "unmatched": "Fără potrivire: alege un ingredient sau salvează-l cu numele citit.",
-    "unmatchedShopping": "Nu e în catalog: alege un ingredient sau adaugă-l în listă cu numele citit."
+    "unmatched": "Fără potrivire: alege un ingredient sau salvează-l cu numele citit."
   },
   "icon": {
     "low": "Încredere scăzută",
@@ -84,10 +83,6 @@
   "save_few": "Salvează {{count}} articole",
   "save_other": "Salvează {{count}} de articole",
   "discard": "Renunță",
-  "shoppingSave_one": "Adaugă {{count}} articol în lista de cumpărături",
-  "shoppingSave_few": "Adaugă {{count}} articole în lista de cumpărături",
-  "shoppingSave_other": "Adaugă {{count}} de articole în lista de cumpărături",
-  "shoppingAdding": "Se adaugă",
   "excluded": {
     "title": "Excluse · {{count}}",
     "hint": "Linii nealimentare sau necitite",
@@ -166,7 +161,7 @@
     "removeCard": "Elimină",
     "pickDish": "Alege preparatul",
     "dishOption": "{{title}}, {{percent}}% probabil",
-    "readAgain": "Citește din nou",
+    "dishOptionPriced": "{{title}}, {{percent}}% probabil, scrierea ca rețetă costă {{price}}",
     "banner_one": "Totul e citit! {{count}} articol.",
     "banner_few": "Totul e citit! {{count}} articole.",
     "banner_other": "Totul e citit! {{count}} de articole.",
@@ -175,21 +170,16 @@
     "bannerCheck_other": "Verifică cele {{count}} de care nu am fost sigur, apoi adaugă-le.",
     "bannerClear_one": "Nu e nimic de verificat. Adaugă-l când ești gata.",
     "bannerClear_few": "Nu e nimic de verificat. Adaugă-le când ești gata.",
-    "bannerClear_other": "Nu e nimic de verificat. Adaugă-le când ești gata."
+    "bannerClear_other": "Nu e nimic de verificat. Adaugă-le când ești gata.",
+    "readsFull": "Mai multe rețete te așteaptă. Verifică sau anulează una mai întâi."
   },
   "plateRecipe": {
-    "open": "Salvează ca rețetă",
-    "heading": "Salvează ca rețetă",
-    "title": "Titlul rețetei",
     "base": "Rețetă de bază",
     "loading": "Se caută rețete de bază…",
     "closest": "{{title}} (cea mai apropiată)",
     "previewLabel": "Vezi {{title}}",
     "preview": "Vezi",
     "standalone": "Rețetă de sine stătătoare (fără bază)",
-    "search": "Caută altă rețetă de bază",
-    "cancel": "Anulează",
-    "save": "Salvează rețeta",
-    "saving": "Se salvează"
+    "search": "Caută altă rețetă de bază"
   }
 }

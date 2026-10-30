@@ -2,7 +2,7 @@ import type { TFunction } from 'i18next';
 import { translateApiError } from '../i18n/translateApiError';
 import { ApiError } from './api';
 import { capMessage } from './capMessage';
-import type { LinkRead } from './linkReads';
+import type { LinkRecipeRead } from './recipeReads';
 
 /** The reading's AI failures arrive as Scan codes; their own copy talks about photos, so links word them. */
 const READING_ERRORS: Record<string, string> = {
@@ -17,7 +17,7 @@ const READING_ERRORS: Record<string, string> = {
 export function linkFailureReason(
   t: TFunction,
   language: string,
-  read: Pick<LinkRead, 'source' | 'error'>,
+  read: Pick<LinkRecipeRead, 'source' | 'error'>,
 ): string {
   const { error } = read;
   if (!(error instanceof ApiError)) return t('errors:unknown');
@@ -34,7 +34,9 @@ export function linkFailureReason(
 }
 
 /** The page could not be opened: pasting the recipe's text may still work. */
-export const offersPasteText = (read: Pick<LinkRead, 'source' | 'error'>) =>
+export const offersPasteText = (
+  read: Pick<LinkRecipeRead, 'source' | 'error'>,
+) =>
   read.source.kind === 'link' &&
   read.error instanceof ApiError &&
   read.error.code === 'link.unreadable';

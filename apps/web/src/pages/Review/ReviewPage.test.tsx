@@ -48,10 +48,9 @@ const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
 function renderReview(
   lines: ProposedLine[],
   extra = {},
-  mode: 'product' | 'plate' = 'product',
   scanLanguage?: 'en' | 'ro' | 'da',
 ) {
-  startReview({ mode, lines, scanLanguage });
+  startReview({ mode: 'product', lines, scanLanguage });
   const { fetchMock, calls } = stubApi({
     'GET /api/catalog/search': () => Response.json({ results: [milk] }),
     'GET /api/catalog/parents': () =>
@@ -62,7 +61,6 @@ function renderReview(
         ],
       }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
-    'POST /api/shopping-list/items/bulk': () => Response.json({ items: [] }),
     'GET /api/settings/family': () =>
       Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
     ...extra,
@@ -291,7 +289,6 @@ describe('ReviewPage', () => {
         line({ name: 'Typed', match: null, sourceText: null }),
       ],
       {},
-      'product',
       'da',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Save 3 items' }));
@@ -865,36 +862,6 @@ describe('ReviewPage', () => {
           name: /^Expires, Monday, December 28,/,
         }),
       ).toBeInTheDocument();
-    });
-  });
-
-  describe('Plate', () => {
-    it('hides Location, expiry and description, and saves to the Shopping List', async () => {
-      const calls = renderReview(
-        [line({ quantity: 2, unit: 'g' })],
-        {},
-        'plate',
-      );
-      await userEvent.click(row('Parmesan'));
-      expect(screen.getByLabelText(/^Amount of/)).toBeInTheDocument();
-      expect(
-        screen.queryByRole('group', { name: 'Location' }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', { name: /^Expires/ }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByLabelText('Product description'),
-      ).not.toBeInTheDocument();
-      expect(screen.queryByText('Fridge')).not.toBeInTheDocument();
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Add 1 item to shopping list' }),
-      );
-      await waitFor(() =>
-        expect(calls.map((c) => c.key)).toContain(
-          'POST /api/shopping-list/items/bulk',
-        ),
-      );
     });
   });
 });

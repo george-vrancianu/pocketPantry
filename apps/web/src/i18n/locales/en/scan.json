@@ -54,7 +54,7 @@
   "detail": {
     "product": "Adds it to your Pantry with its best-before date.",
     "receipt": "Adds every item from your shop in one go.",
-    "plate": "Lists its ingredients so you can add what you are missing to your shopping list.",
+    "plate": "Writes the recipe for the one you pick as a Recipe Draft for you to finish and save.",
     "ingredients": "Adds each loose item on the counter to your Pantry."
   },
   "session": {

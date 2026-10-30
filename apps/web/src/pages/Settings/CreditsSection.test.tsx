@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { CreditsSection } from './components/CreditsSection';
 import { useRefreshCreditsOnReads } from '../../components/background/useRefreshCreditsOnReads';
-import { linkReads } from '../../lib/linkReads';
+import { recipeReads } from '../../lib/recipeReads';
 
 /** The Credits panel with the app layout's refresh-on-read hook mounted beside it. */
 function CreditsWithRefresh() {
@@ -19,6 +19,7 @@ const PRICES = {
   'link-page': 2,
   'link-text': 1,
   guidance: 1,
+  'plate-recipe': 1,
 };
 
 type Entry = {
@@ -153,6 +154,25 @@ describe('CreditsSection', () => {
       expect(row).toHaveTextContent('\u22122');
     });
 
+    it('shows a Plate Scan whose dish was written as two spends', async () => {
+      await show(
+        credits({
+          balance: 98,
+          history: [
+            entry({ readKind: 'plate-recipe', amount: -1 }),
+            entry({ readKind: 'scan', amount: -1 }),
+          ],
+        }),
+      );
+      const written = screen
+        .getByText('Recipe from a Plate Scan')
+        .closest('li');
+      const photo = screen.getByText('Scan').closest('li');
+      expect(written).not.toBe(photo);
+      expect(written).toHaveTextContent('\u22121');
+      expect(photo).toHaveTextContent('\u22121');
+    });
+
     it('shows a spend by a departed Member as a former Member', async () => {
       await show(
         credits({
@@ -244,13 +264,13 @@ describe('CreditsSection', () => {
       expect(await screen.findByText('Nothing yet.')).toBeInTheDocument();
 
       act(() => {
-        linkReads.submit({ kind: 'text', text: 'pasted' }, 'source');
+        recipeReads.submit({ kind: 'text', text: 'pasted' }, 'source');
       });
 
       expect(await screen.findByText('99')).toBeInTheDocument();
       expect(screen.queryByText('Nothing yet.')).not.toBeInTheDocument();
       expect(screen.getByText('Recipe from pasted text')).toBeInTheDocument();
-      linkReads.clear();
+      recipeReads.clear();
     });
   });
 

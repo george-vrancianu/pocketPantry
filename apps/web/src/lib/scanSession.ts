@@ -57,10 +57,8 @@ export type SessionScan = {
   /** A Plate Scan once read: the dish guesses to pick from, and the token that proves they are ours. */
   dishes?: DishGuess[];
   plateToken?: string;
-  /** The dish the Member picked, once they did. */
-  dishTitle?: string;
-  /** Plate Scan: the Tags the read proposed for the dish; the saved Recipe starts with them. */
-  proposedTagIds?: string[];
+  /** A Plate Scan whose picked dish the server refused (Credits): the refusal to show on its card. */
+  refusal?: { code: string; params: Record<string, unknown> };
   /** For a card made by merging receipts: the Scans it was made of, as they were, for Split. */
   sections?: SessionScan[];
 };
@@ -98,14 +96,9 @@ export type SessionAction =
   | { type: 'merge'; id: string }
   | { type: 'split'; id: string }
   | { type: 'readDishes'; id: string; dishes: DishGuess[]; token: string }
-  | {
-      type: 'pick';
-      id: string;
-      lines: ProposedLine[];
-      dishTitle?: string;
-      tagIds?: string[];
-    }
   | { type: 'reread'; id: string }
+  /** Puts a Scan back that was handed away and refused (a Plate Scan's pick), at its place, with `refusal`. */
+  | { type: 'restore'; scan: SessionScan; index: number }
   | { type: 'edit'; id: string; lines: ReviewLine[] };
 
 /** A Product Scan's photo barcode goes only with a card that has exactly one line. */
@@ -275,25 +268,24 @@ export function sessionReducer(
     case 'readDishes':
       return update(state, action.id, {
         status: 'read',
+        refusal: undefined,
         dishes: action.dishes,
         plateToken: action.token,
       });
-    case 'pick':
-      return update(state, action.id, {
-        lines: action.lines,
-        dishTitle: action.dishTitle,
-        proposedTagIds: action.tagIds,
-        edited: undefined,
-        dishes: undefined,
-        plateToken: undefined,
-      });
+    case 'restore':
+      if (state.scans.some((scan) => scan.id === action.scan.id)) return state;
+      return {
+        scans: [
+          ...state.scans.slice(0, action.index),
+          action.scan,
+          ...state.scans.slice(action.index),
+        ],
+      };
     case 'reread':
       return update(state, action.id, {
         status: 'queued',
         dishes: undefined,
         plateToken: undefined,
-        dishTitle: undefined,
-        proposedTagIds: undefined,
       });
     case 'edit':
       return update(state, action.id, { edited: action.lines });

@@ -381,13 +381,21 @@ describe('Unmatched queue (integration)', () => {
       });
     });
 
-    it('records plate Shopping Items and Finish Shopping Batches', async () => {
+    it('keeps reading a stored plate Shopping Item and refuses to write a new one (ADR 0035)', async () => {
       const raw = name('finish');
       const member = await newMember();
       await useLanguage(member, 'ro');
       await call(member)
         .post('/shopping-list/items', { name: raw, source: 'plate' })
+        .expect(400);
+      await call(member)
+        .post('/shopping-list/items', { name: raw, source: 'manual' })
         .expect(200);
+      // Older rows were written with the retired `plate` source: make this one such a row.
+      await database
+        .update(unmatchedEntries)
+        .set({ source: 'plate' })
+        .where(ilike(unmatchedEntries.rawName, raw));
       let entry = await entryFor(raw);
       expect(entry?.references[0]).toMatchObject({
         type: 'shopping_item',

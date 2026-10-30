@@ -1,32 +1,32 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { catalogScope } from '../catalog/catalog-scope';
-import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { loadAllowedTags } from '../tags/allowed-tags';
+import { RecipeDraftsService } from '../recipe-drafts/recipe-drafts.service';
 import { SettingsService } from '../settings/settings.service';
-import { plateLine } from './plate-lines';
+import { draftContentOfPlate } from './plate-recipe-draft';
 import { signPlateToken, verifyPlateToken } from './plate-token';
 import { PlateScanService } from './plate-scan.service';
 import { PlateTokenUses } from './plate-token-uses';
 import type {
   PlateDishesResponse,
-  PlateDishInput,
+  PlateRecipeInput,
+  PlateRecipeResponse,
   PlateScanInput,
 } from './plate-scan.schemas';
-import type { ScanResponse } from './proposed-line';
 import { found, PaidReadsService } from './paid-reads.service';
 
 /**
  * Plate Scan for a Member. The photo is the Scan the Scan Cap counts (handed
- * back if the provider fails); loading the picked dish's Ingredients is the
- * second half of the same Scan and is not counted again, but needs the token
+ * back if the provider fails); writing the picked dish as a Recipe Draft is the
+ * second half of the same Scan: not counted by the Scan Cap again, but charged its own Credit
+ * Price (ADR 0035), and it needs the token
  * the photo step signed, so it cannot be called for an arbitrary title, and
- * each token loads one picked dish, once (handed back if the provider fails).
+ * each token writes one picked dish, once (handed back if no Recipe Draft is made).
  */
 @Injectable()
 export class PlateScanFlowService {
@@ -34,7 +34,7 @@ export class PlateScanFlowService {
     @Inject(DATABASE) private readonly database: Database,
     private readonly paidReads: PaidReadsService,
     private readonly plate: PlateScanService,
-    private readonly catalogSearch: CatalogSearchService,
+    private readonly drafts: RecipeDraftsService,
     private readonly settings: SettingsService,
     private readonly config: ConfigService<AppConfig, true>,
     private readonly uses: PlateTokenUses,
@@ -56,11 +56,16 @@ export class PlateScanFlowService {
     });
   }
 
-  async dishLines(
+  /**
+   * Writes the picked dish as a whole Recipe and stores it as the Member's Recipe Draft (ADR 0035),
+   * the way Recipe from Link does. The token is spent only once the Recipe Draft exists.
+   */
+  async writeRecipe(
     memberId: string,
-    input: PlateDishInput,
+    input: PlateRecipeInput,
     locale: CatalogLocale,
-  ): Promise<ScanResponse> {
+    signal?: AbortSignal,
+  ): Promise<PlateRecipeResponse> {
     // Before the provider is called: the expensive call only runs for a dish this Member's Scan guessed.
     const { signature, expiresAt } = verifyPlateToken({
       secret: this.config.get('SCAN_TOKEN_SECRET', { infer: true }),
@@ -72,65 +77,53 @@ export class PlateScanFlowService {
     if (!this.uses.claim(signature, expiresAt)) {
       throw new ApiException(400, 'scan.plate_token_invalid');
     }
-    const familyId = await this.settings.familyIdOf(memberId);
-    let items: Awaited<
-      ReturnType<PlateScanService['findIngredients']>
-    >['items'];
-    let tagIds: string[];
+    let providerCalled = false;
     try {
-      // The Catalog Tags and this Family's own are the only Tags the read may propose.
-      const allowedTags = await loadAllowedTags(
-        this.database,
-        familyId,
-        locale,
-      );
-      // The picked dish is part of the Plate Scan the photo step already paid for: recorded, not charged.
-      ({ items, tagIds } = await this.paidReads.unchargedContext(
-        memberId,
-        'scan',
-        () =>
-          this.plate.findIngredients(
-            input.dishTitle,
-            locale,
-            familyId,
-            allowedTags,
-          ),
-      ));
+      // Before the provider and before Credits: a pick with nowhere to land is refused for free (ADR 0035).
+      await this.drafts.assertRoom(memberId);
+      // Charged on its own (ADR 0035): the Credit is held before the provider is called, so a short
+      // balance is refused here (and the catch below hands the token back), and given back if no Recipe Draft is made.
+      return await this.paidReads.read(memberId, 'plate-recipe', async () => {
+        providerCalled = true;
+        const familyId = await this.settings.familyIdOf(memberId);
+        // The Catalog Tags and this Family's own are the only Tags the read may propose.
+        const allowedTags = await loadAllowedTags(
+          this.database,
+          familyId,
+          locale,
+        );
+        const written = await this.plate.writeRecipe(
+          input.dishTitle,
+          locale,
+          familyId,
+          allowedTags,
+          signal,
+        );
+        // The request closed (the Member discarded the row or left): keep nothing, even if the AI answered.
+        if (signal?.aborted)
+          throw new ApiException(499, 'scan.plate_cancelled');
+        const content = draftContentOfPlate(
+          written.answer,
+          { tagIds: written.tagIds, ingredientIds: written.ingredientIds },
+          {
+            ingredientNames: written.ingredientNames,
+            matchThreshold: this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
+              infer: true,
+            }),
+          },
+        );
+        const { id } = await this.drafts.create(memberId, {
+          kind: 'new_recipe',
+          baseRecipeId: null,
+          content,
+        });
+        return found({ recipeDraftId: id });
+      });
     } catch (error) {
-      this.uses.release(signature);
+      // No Recipe Draft exists: the Member can pick again. A refusal before the provider (draft limit,
+      // short balance) costs no attempt; only a provider-side failure counts toward the limit.
+      this.uses.release(signature, { countAttempt: providerCalled });
       throw error;
     }
-    const ids = [
-      ...new Set(
-        items.flatMap((item) =>
-          item.matchedIngredientId ? [item.matchedIngredientId] : [],
-        ),
-      ),
-    ];
-    const matches = new Map(
-      (
-        await this.catalogSearch.findByIds(
-          catalogScope(familyId),
-          ids,
-          locale,
-          await this.settings.expiryOverridesForMember(memberId),
-        )
-      ).map((match) => [match.id, match]),
-    );
-    const threshold = this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
-      infer: true,
-    });
-    return {
-      lines: items.map((item) =>
-        plateLine(
-          item,
-          item.matchedIngredientId
-            ? (matches.get(item.matchedIngredientId) ?? null)
-            : null,
-          threshold,
-        ),
-      ),
-      tagIds,
-    };
   }
 }

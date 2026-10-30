@@ -14,7 +14,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { CreditPrice } from '../../../components/CreditPrice';
 import { useCreditPrice } from '../../../lib/credits';
 import { ReadingLanguageChoice } from '../../../components/ReadingLanguageChoice';
-import { MAX_HELD_LINK_READS, linkReads } from '../../../lib/linkReads';
+import { MAX_HELD_RECIPE_READS, recipeReads } from '../../../lib/recipeReads';
 import {
   MAX_LINK_LENGTH,
   checkRecipeLink,
@@ -94,7 +94,7 @@ function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
 
   /** Holds the read; closes the sheet unless the holder is full. */
   const start = (force: boolean) => {
-    const outcome = linkReads.submit(
+    const outcome = recipeReads.submit(
       { kind: 'link', url: input },
       language,
       force ? { force } : {},
@@ -110,7 +110,7 @@ function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
     event.preventDefault();
     if (input === '' || checking) return;
     // A full holder refuses the read anyway: say so before asking the server anything.
-    if (linkReads.getState().reads.length >= MAX_HELD_LINK_READS) {
+    if (recipeReads.getState().reads.length >= MAX_HELD_RECIPE_READS) {
       return setFull(true);
     }
     const attempt = new AbortController();
@@ -158,7 +158,7 @@ function FromLinkForm({ onSubmitted }: { onSubmitted: () => void }) {
       </Stack>
       <Typography color="text.secondary">{t('fromLink.hint')}</Typography>
       {full ? (
-        <Alert>{t('fromLink.full', { count: MAX_HELD_LINK_READS })}</Alert>
+        <Alert>{t('fromLink.full', { count: MAX_HELD_RECIPE_READS })}</Alert>
       ) : null}
       <Box>
         <Typography

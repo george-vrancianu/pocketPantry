@@ -37,8 +37,7 @@
   "msg": {
     "low": "Low confidence: check the match",
     "qty": "Quantity missing",
-    "unmatched": "No match: pick an ingredient, or save it under the name we read.",
-    "unmatchedShopping": "Not in our catalogue: pick an ingredient, or add it to your list under the name we read."
+    "unmatched": "No match: pick an ingredient, or save it under the name we read."
   },
   "icon": {
     "low": "Low confidence",
@@ -82,9 +81,6 @@
   "save_one": "Save {{count}} item",
   "save_other": "Save {{count}} items",
   "discard": "Discard",
-  "shoppingSave_one": "Add {{count}} item to shopping list",
-  "shoppingSave_other": "Add {{count}} items to shopping list",
-  "shoppingAdding": "Adding",
   "excluded": {
     "title": "Excluded · {{count}}",
     "hint": "Non-food or unreadable lines",
@@ -156,27 +152,22 @@
     "removeCard": "Remove",
     "pickDish": "Pick the dish",
     "dishOption": "{{title}}, {{percent}}% likely",
-    "readAgain": "Read again",
+    "dishOptionPriced": "{{title}}, {{percent}}% likely, writing it as a Recipe costs {{price}}",
     "banner_one": "All read! {{count}} item.",
     "banner_other": "All read! {{count}} items.",
     "bannerCheck_one": "Check the one I wasn't sure about, then add it.",
     "bannerCheck_other": "Check the {{count}} I wasn't sure about, then add them.",
     "bannerClear_one": "Nothing to check. Add it whenever you're ready.",
-    "bannerClear_other": "Nothing to check. Add them whenever you're ready."
+    "bannerClear_other": "Nothing to check. Add them whenever you're ready.",
+    "readsFull": "Several recipes are waiting for you. Review or cancel one first."
   },
   "plateRecipe": {
-    "open": "Save as a Recipe",
-    "heading": "Save as a Recipe",
-    "title": "Recipe title",
     "base": "Base Recipe",
     "loading": "Finding Base Recipes…",
     "closest": "{{title}} (closest match)",
     "previewLabel": "View {{title}}",
     "preview": "View",
     "standalone": "Standalone Recipe (no base)",
-    "search": "Find another Base Recipe",
-    "cancel": "Cancel",
-    "save": "Save Recipe",
-    "saving": "Saving"
+    "search": "Find another Base Recipe"
   }
 }

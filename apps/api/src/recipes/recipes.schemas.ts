@@ -120,9 +120,9 @@ export const familyRecipeUpdate = recipeDocument
     sourceLanguage: z.string().nullable().optional(),
   });
 
-/** A step Tip in a create document: it refers to a Step of the document by index. */
+/** A Tip in a create document: it refers to a Step of the document by index, or is a Tip of the whole Recipe (`stepIndex` null). */
 const newStepTip = z
-  .object({ stepIndex: z.number().int().min(0), text: longText })
+  .object({ stepIndex: z.number().int().min(0).nullable(), text: longText })
   .strict();
 
 /**
@@ -209,18 +209,6 @@ export const plateMatchesBody = z
     ingredientIds: z.array(id).max(100),
     /** The "show hidden" override for "Hide Recipes with my Allergies" (#359). */
     showHidden: z.boolean().optional(),
-  })
-  .strict();
-
-/** Saving a Plate Scan as a Family Recipe: one serving, ingredient lines only. */
-export const fromPlateBody = z
-  .object({
-    locale: memberLocale,
-    title,
-    parentId: id.nullable(),
-    lines: z.array(familyLineInput.omit({ id: true })).max(MAX_LINES),
-    /** Tags proposed by the Plate Scan read; those usable by the Family are kept (up to 10, after a Variant's Base Tags). */
-    tagIds: z.array(id).max(100).default([]),
   })
   .strict();
 
@@ -332,7 +320,6 @@ export type FamilyLineInput = z.infer<typeof familyLineInput>;
 export type FamilyRecipeUpdate = z.infer<typeof familyRecipeUpdate>;
 export type FamilyRecipeCreate = z.infer<typeof familyRecipeCreate>;
 export type PlateMatchesBody = z.infer<typeof plateMatchesBody>;
-export type FromPlateBody = z.infer<typeof fromPlateBody>;
 export type FromLinkBody = z.infer<typeof fromLinkBody>;
 export type VariantCreate = z.infer<typeof variantCreate>;
 export type TipCreate = z.infer<typeof tipCreate>;

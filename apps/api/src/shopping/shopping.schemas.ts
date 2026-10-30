@@ -27,7 +27,7 @@ export const addShoppingItemBody = z
   );
 export type AddShoppingItemBody = z.infer<typeof addShoppingItemBody>;
 
-/** Plate Scan confirms its lines in one go; all lines are added or none. */
+/** Several items are added in one go (applying a Shopping Template); all are added or none. */
 export const MAX_BULK_SHOPPING_ITEMS = 100;
 export const addShoppingItemsBody = z.object({
   items: z.array(addShoppingItemBody).min(1).max(MAX_BULK_SHOPPING_ITEMS),

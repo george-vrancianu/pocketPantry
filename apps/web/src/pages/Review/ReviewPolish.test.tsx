@@ -45,14 +45,13 @@ function Probe() {
 
 function renderReview(
   lines: ProposedLine[],
-  mode: 'product' | 'plate' | 'receipt' = 'product',
+  mode: 'product' | 'receipt' = 'product',
   extra: Record<string, () => Response> = {},
 ) {
   startReview({ mode, lines });
   const { fetchMock } = stubApi({
     'GET /api/catalog/parents': () => Response.json({ parents: [] }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
-    'POST /api/shopping-list/items/bulk': () => Response.json({ items: [] }),
     'POST /api/scan/receipt/confirm': () =>
       Response.json({ batches: [], matchedShoppingItemIds: [] }),
     ...extra,
@@ -213,16 +212,6 @@ describe('Review polish: unverified toast', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
     await screen.findByText('state:null');
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  });
-
-  it('tells a Plate save on the Shopping List', async () => {
-    renderReview([line({ lowConfidence: true })], 'plate');
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Add 1 item to shopping list' }),
-    );
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      '1 item still unverified',
-    );
   });
 
   it('follows "Go to Pantry" after a tick failure', async () => {

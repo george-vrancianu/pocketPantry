@@ -23,8 +23,8 @@ vi.mock('../../lib/scanReads', () => ({
 vi.mock('../../lib/voiceNote', () => ({
   voiceNote: { onReadSettled: subscribe(settled.voice) },
 }));
-vi.mock('../../lib/linkReads', () => ({
-  linkReads: { onReadSettled: subscribe(settled.link) },
+vi.mock('../../lib/recipeReads', () => ({
+  recipeReads: { onReadSettled: subscribe(settled.link) },
 }));
 
 describe('useRefreshCreditsOnReads', () => {

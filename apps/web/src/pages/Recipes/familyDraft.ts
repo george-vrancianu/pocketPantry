@@ -99,9 +99,12 @@ export function documentOf(draft: FamilyDraft): FamilyRecipeDocument {
   const minutes = (text: string) =>
     text.trim() === '' ? null : Number(text.trim());
   // A Tip's step index is its step's place in the final order.
-  const tips = draft.steps.flatMap((step, stepIndex) =>
-    (step.tips ?? []).map((tip) => ({ stepIndex, text: tip.text })),
-  );
+  const tips = [
+    ...(draft.tips ?? []).map((tip) => ({ stepIndex: null, text: tip.text })),
+    ...draft.steps.flatMap((step, stepIndex) =>
+      (step.tips ?? []).map((tip) => ({ stepIndex, text: tip.text })),
+    ),
+  ];
   return {
     title: draft.title.trim(),
     servings: Number(draft.servings.trim()),

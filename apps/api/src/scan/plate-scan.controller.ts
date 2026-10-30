@@ -1,4 +1,5 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
+import type { FastifyReply } from 'fastify';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
@@ -7,13 +8,13 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { MemberLanguageService } from '../member-language/member-language.service';
 import { PlateScanFlowService } from './plate-scan-flow.service';
 import {
-  plateDishSchema,
+  plateRecipeSchema,
   plateScanSchema,
   type PlateDishesResponse,
-  type PlateDishInput,
+  type PlateRecipeInput,
+  type PlateRecipeResponse,
   type PlateScanInput,
 } from './plate-scan.schemas';
-import type { ScanResponse } from './proposed-line';
 import { ScanImagePipe } from './scan-image.pipe';
 
 @ApiTags('scan')
@@ -43,19 +44,33 @@ export class PlateScanController {
     );
   }
 
-  @Post('ingredients')
+  @Post('recipe')
   @ApiOperation({
     summary:
-      "The picked dish's Ingredients for one serving as proposed lines for the Review screen. Needs the token from Plate Scan; not counted against the Scan Cap again.",
+      "Writes the picked dish as a whole Recipe and stores it as the Member's Recipe Draft (a New Recipe marked as from a Plate Scan); returns its id. Needs the token from Plate Scan; not counted against the Scan Cap again.",
   })
-  async ingredients(
+  async recipe(
     @CurrentUser() member: CurrentUserValue,
-    @Body(new ZodValidationPipe(plateDishSchema)) body: PlateDishInput,
-  ): Promise<ScanResponse> {
-    return this.plate.dishLines(
-      member.id,
-      body,
-      await this.languages.catalogLanguageOf(member.id),
-    );
+    @Body(new ZodValidationPipe(plateRecipeSchema)) body: PlateRecipeInput,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<PlateRecipeResponse> {
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    // A write lasts as long as its connection (ADR 0031, 0035): if the client goes before the answer is sent,
+    // the AI call is aborted, no Recipe Draft is kept, nothing is charged and the token is handed back.
+    const closed = new AbortController();
+    const abandon = () => {
+      if (!reply.raw.writableFinished) closed.abort();
+    };
+    reply.raw.once('close', abandon);
+    try {
+      return await this.plate.writeRecipe(
+        member.id,
+        body,
+        locale,
+        closed.signal,
+      );
+    } finally {
+      reply.raw.off('close', abandon);
+    }
   }
 }

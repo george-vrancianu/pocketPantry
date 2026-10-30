@@ -187,7 +187,12 @@ export class FamilyRecipesService {
     await lockFamilyRow(tx, familyId);
     await this.validate(tx, familyId, document);
     const tips = document.tips ?? [];
-    if (tips.some((tip) => tip.stepIndex >= document.steps.length)) {
+    if (
+      tips.some(
+        (tip) =>
+          tip.stepIndex !== null && tip.stepIndex >= document.steps.length,
+      )
+    ) {
       throw new ApiException(400, 'recipes.bad_step_anchor');
     }
     if (document.parentId)
@@ -212,7 +217,7 @@ export class FamilyRecipesService {
         tips.map((tip, position) => ({
           id: randomUUID(),
           recipeId: id,
-          stepId: stepIds[tip.stepIndex],
+          stepId: tip.stepIndex === null ? null : stepIds[tip.stepIndex],
           text: tip.text,
           position,
         })),

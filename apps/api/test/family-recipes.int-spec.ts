@@ -255,6 +255,21 @@ describe('Family Recipes (integration)', () => {
       ]);
     });
 
+    it('creates a Recipe-level Tip (stepIndex null) on the Recipe, not on a Step', async () => {
+      const base = await catalogBase();
+      const created = await familyRecipe(a1, base.id, {
+        steps: [{ text: 'One' }],
+        tips: [
+          { stepIndex: null, text: 'About the dish' },
+          { stepIndex: 0, text: 'On one' },
+        ],
+      });
+      expect(created.tips.map((t) => [t.text, t.stepId])).toEqual([
+        ['About the dish', null],
+        ['On one', created.steps[0].id],
+      ]);
+    });
+
     it('refuses a Tip whose step is not in the document', async () => {
       const res = await a1.post(
         '',

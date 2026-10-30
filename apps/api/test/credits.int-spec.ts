@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import request from 'supertest';
 import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
 import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
+import { CreditsService } from '../src/credits/credits.service';
 import { ApiException } from '../src/common/api-exception';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
@@ -59,17 +60,23 @@ const receiptResult = {
   purchaseDate: '2026-09-25',
   lines: [receiptLine],
 };
-const plateItem = {
-  productName: 'Milk',
-  productType: 'Dairy',
-  matchedIngredientId: milk,
-  matchedCategory: 'Milk',
-  matchConfidence: 0.9,
-  fallbackIngredientName: 'Milk',
-  quantityType: 'measured',
-  quantity: 200,
-  unit: 'ml',
-  confidence: 0.9,
+const plateRecipe = {
+  title: 'Pancakes',
+  servings: 4,
+  tagIndexes: [],
+  ingredients: [
+    {
+      nameAsWritten: 'Milk',
+      ingredientId: milk,
+      matchConfidence: 0.9,
+      quantity: 200,
+      unit: 'ml',
+      preparation: null,
+      optional: false,
+    },
+  ],
+  steps: [{ text: 'Whisk.', timerMinutes: null }],
+  tips: [],
 };
 const dishes = { matches: [{ title: 'Pancakes', confidence: 0.7 }] };
 
@@ -157,6 +164,7 @@ describe('Credits (integration)', () => {
         'link-page': 2,
         'link-text': 1,
         guidance: 1,
+        'plate-recipe': 1,
       },
     });
   });
@@ -186,7 +194,7 @@ describe('Credits (integration)', () => {
       expect(await balanceOf(cookie)).toBe(98);
     });
 
-    it('on the Plate photo step, and nothing on the dish step', async () => {
+    it('on the Plate photo step, and its own Credit on writing the dish as a Recipe', async () => {
       const { cookie } = await signUp();
       respondWith(dishes);
       const { token } = (
@@ -194,12 +202,34 @@ describe('Credits (integration)', () => {
       ).body as { token: string };
       expect(await balanceOf(cookie)).toBe(99);
 
-      respondWith({ items: [plateItem] });
-      await post(cookie, 'scan/plate/ingredients', {
+      respondWith(plateRecipe);
+      await post(cookie, 'scan/plate/recipe', {
         dishTitle: 'Pancakes',
         plateToken: token,
       }).expect(201);
-      expect(await balanceOf(cookie)).toBe(99);
+      expect(await balanceOf(cookie)).toBe(98);
+    });
+
+    it('shows the photo and the written Recipe as two spends in the Credit history, and counts only the photo against the Scan Cap', async () => {
+      const { cookie, id } = await signUp();
+      respondWith(dishes);
+      const { token } = (
+        await post(cookie, 'scan/plate', { plateImage: IMAGE })
+      ).body as { token: string };
+      respondWith(plateRecipe);
+      await post(cookie, 'scan/plate/recipe', {
+        dishTitle: 'Pancakes',
+        plateToken: token,
+      }).expect(201);
+      const { history } = (await credits(cookie).expect(200)).body as {
+        history: { kind: string; readKind: string | null; amount: number }[];
+      };
+      expect(history.map((e) => [e.kind, e.readKind, e.amount])).toEqual([
+        ['spend', 'plate-recipe', -1],
+        ['spend', 'scan', -1],
+        ['welcome_grant', null, 100],
+      ]);
+      expect(await scansCounted(id)).toBe(1);
     });
 
     it('shared by the Family: it shows in the balance of the same Family', async () => {
@@ -258,6 +288,52 @@ describe('Credits (integration)', () => {
           'credits.insufficient',
         );
       }
+    });
+
+    it('refuses writing a dish before the provider is called, and the same token can pick again once Credits are added', async () => {
+      const { cookie, id } = await signUp();
+      respondWith(dishes);
+      const { token } = (
+        await post(cookie, 'scan/plate', { plateImage: IMAGE })
+      ).body as { token: string };
+      // Everything but the photo is held away, to be given back below (Credits "added").
+      const away = await app.get(CreditsService).hold(id, 'scan', 99);
+      respondWith(plateRecipe);
+      prompts.length = 0;
+
+      const refused = await post(cookie, 'scan/plate/recipe', {
+        dishTitle: 'Pancakes',
+        plateToken: token,
+      }).expect(402);
+      expect(refused.body).toEqual({
+        code: 'credits.insufficient',
+        params: { price: 1, balance: 0 },
+      });
+      expect(prompts).toHaveLength(0);
+      expect(await balanceOf(cookie)).toBe(0);
+
+      await app.get(CreditsService).release(away!);
+      await post(cookie, 'scan/plate/recipe', {
+        dishTitle: 'Pancakes',
+        plateToken: token,
+      }).expect(201);
+      expect(prompts).toHaveLength(1);
+      expect(await balanceOf(cookie)).toBe(98);
+    });
+
+    it('gives the Credit of a failed writing step back, keeping the photo charged', async () => {
+      const { cookie } = await signUp();
+      respondWith(dishes);
+      const { token } = (
+        await post(cookie, 'scan/plate', { plateImage: IMAGE })
+      ).body as { token: string };
+      next = () =>
+        Promise.reject(new ApiException(502, 'scan.provider_unavailable'));
+      await post(cookie, 'scan/plate/recipe', {
+        dishTitle: 'Pancakes',
+        plateToken: token,
+      }).expect(502);
+      expect(await balanceOf(cookie)).toBe(99);
     });
 
     it('lets exactly one of two concurrent Scans at a balance of 1 through', async () => {

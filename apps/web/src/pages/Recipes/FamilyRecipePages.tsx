@@ -96,8 +96,6 @@ export type NewRecipeState = {
   sourceLink?: string | null;
   /** The language the page was translated from (a code like "fr"); only kept with the Source Link. */
   sourceLanguage?: string | null;
-  /** The fill came from a Plate Scan: the Recipe Draft is marked so (ADR 0028). */
-  plateScan?: boolean;
 };
 
 const blankGuidance = { nutritionNote: null, pairings: [], eatingMoments: [] };
@@ -159,7 +157,6 @@ function suppliedOf(state: unknown): NewRecipeState | null {
     hiddenByAllergiesCount,
     sourceLink,
     sourceLanguage,
-    plateScan,
   } = state as Partial<NewRecipeState>;
   if (typeof draft !== 'object' || draft === null) return null;
   if (!Array.isArray(draft.lines) || !Array.isArray(draft.steps)) return null;
@@ -185,7 +182,6 @@ function suppliedOf(state: unknown): NewRecipeState | null {
     typeof sourceLanguage !== 'string'
   )
     return null;
-  if (plateScan !== undefined && typeof plateScan !== 'boolean') return null;
   return state as NewRecipeState;
 }
 
@@ -210,7 +206,7 @@ function NewRecipeContent({
   const [parentId, setParentId] = useState<string | null>(
     resumedForm?.pickedBaseId ?? supplied?.closestBases?.[0]?.id ?? null,
   );
-  const plateScan = resumedForm ? resumedForm.plateScan : supplied?.plateScan;
+  const plateScan = resumedForm?.plateScan;
   // Plate matches and the base picked before leaving are not stored: asked for again.
   // Once Save is tapped they stop, so the save's refetches do not wait on them.
   const resumedBases = useResumedPlateBases(resumedForm, !finishing);

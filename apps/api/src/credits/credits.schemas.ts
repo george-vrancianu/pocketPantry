@@ -1,6 +1,12 @@
 /** The kinds of read a Credit Price is set for (the Admin Catalog Suggest Guidance has none). */
 export type CreditPriceKind =
-  'scan' | 'voice' | 'assistant' | 'link-page' | 'link-text' | 'guidance';
+  | 'scan'
+  | 'voice'
+  | 'assistant'
+  | 'link-page'
+  | 'link-text'
+  | 'guidance'
+  | 'plate-recipe';
 
 /** What one successful read of each kind costs, in Credits. */
 export type CreditPrices = Record<CreditPriceKind, number>;

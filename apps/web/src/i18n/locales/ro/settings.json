@@ -44,7 +44,8 @@
         "assistant": "Cerere către Asistent",
         "link-page": "Rețetă dintr-o pagină web",
         "link-text": "Rețetă din text lipit",
-        "guidance": "Sugerează îndrumări"
+        "guidance": "Sugerează îndrumări",
+        "plate-recipe": "Rețetă dintr-o scanare de farfurie"
       },
       "welcome_grant": "Credite de bun venit",
       "grant": "Credite oferite",

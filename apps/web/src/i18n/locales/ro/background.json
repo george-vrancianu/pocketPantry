@@ -48,5 +48,23 @@
     "failedAlert_one": "{{count}} link de rețetă a eșuat",
     "failedAlert_few": "{{count}} linkuri de rețete au eșuat",
     "failedAlert_other": "{{count}} de linkuri de rețete au eșuat"
+  },
+  "plate": {
+    "waiting": "Se așteaptă scrierea rețetei pentru {{dish}}",
+    "writing": "Se scrie rețeta pentru {{dish}}…",
+    "ready": "Rețeta pentru {{dish}} e gata de verificat",
+    "failed": "Nu am putut scrie rețeta pentru {{dish}}",
+    "detail": "Din poza farfuriei tale",
+    "outOfCredits": "Ai rămas fără Credite",
+    "gone": "Ciorna de rețetă nu mai este păstrată.",
+    "review": "Verifică rețeta pentru {{dish}}",
+    "cancelRead": "Anulează scrierea rețetei pentru {{dish}}",
+    "discardRead": "Renunță la {{dish}}",
+    "retryRead": "Reîncearcă scrierea rețetei pentru {{dish}}",
+    "readAgain": "Citește poza din nou",
+    "readAgainRead": "Citește din nou poza pentru {{dish}}",
+    "failedAlert_one": "{{count}} rețetă din poza farfuriei a eșuat",
+    "failedAlert_few": "{{count}} rețete din poze cu farfurii au eșuat",
+    "failedAlert_other": "{{count}} de rețete din poze cu farfurii au eșuat"
   }
 }

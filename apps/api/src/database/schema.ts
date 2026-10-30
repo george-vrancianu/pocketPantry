@@ -771,7 +771,7 @@ export const promoCode = pgTable(
 
 // One row per call to an AI provider (ADR 0032). Never shown to Members. The Member and the Family
 // are cleared, not cascaded, when deleted, so the accounting survives them. `kind` is the kind of
-// read (scan, voice, assistant, link-page, link-text, guidance, guidance-admin); a Voice Note leaves
+// read (scan, voice, assistant, link-page, link-text, plate-recipe, guidance, guidance-admin); a Voice Note leaves
 // two rows, told apart by `step`: `transcription` or `reading` (every other call is `reading`).
 // `kind` is null for a provider call made outside any read. A token or seconds column is null when the
 // provider did not report it; `cost_usd` is null when the cost is unknown (an unpriced model or no usage)

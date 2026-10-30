@@ -10,7 +10,7 @@ import { VOICE_READ_SCHEMA_NAME } from '../../voice/voice-actions';
 import { INGREDIENTS_SCAN_SCHEMA_NAME } from '../../scan/ingredients-scan.schemas';
 import {
   PLATE_DISHES_SCHEMA_NAME,
-  PLATE_INGREDIENTS_SCHEMA_NAME,
+  PLATE_RECIPE_SCHEMA_NAME,
 } from '../../scan/plate-scan.schemas';
 import { PRODUCT_SCAN_SCHEMA_NAME } from '../../scan/product-scan.schemas';
 import { RECEIPT_SCAN_SCHEMA_NAME } from '../../scan/receipt-scan.schemas';
@@ -408,11 +408,16 @@ const referenceKey = (reference: unknown) => String(reference).toLowerCase();
 const isReference = (value: unknown): value is string | number =>
   typeof value === 'string' || typeof value === 'number';
 
+/** The Plate Scan lines-only step's schema name, kept so debug captures made before ADR 0035 still replay. */
+const LEGACY_PLATE_INGREDIENTS_SCHEMA_NAME = 'selected_recipe_ingredients';
+
 type RawLine = Record<string, unknown>;
 
 /** The Ingredient a line names: `matchedIngredientIndex` today, `matchedIngredientId` in older debug captures. */
 const referenceOf = (line: RawLine): unknown =>
-  line.matchedIngredientIndex ?? line.matchedIngredientId;
+  line.matchedIngredientIndex ??
+  line.ingredientIndex ??
+  line.matchedIngredientId;
 
 /** A raw answer value as report text: strings as is, anything else as JSON, null as `-`. */
 const displayValue = (value: unknown): string =>
@@ -491,7 +496,7 @@ function readAnswer(
     if (isReference(reference)) {
       return catalog.get(referenceKey(reference)) ?? String(reference);
     }
-    return `unmatched (${displayValue(line.fallbackIngredientName)})`;
+    return `unmatched (${displayValue(line.fallbackIngredientName ?? line.nameAsWritten)})`;
   };
   const isMatched = (line: RawLine) => isReference(referenceOf(line));
   const linesOf = (value: unknown): RawLine[] =>
@@ -528,7 +533,7 @@ function readAnswer(
         matched: isMatched(answer) ? 1 : 0,
       };
     case INGREDIENTS_SCAN_SCHEMA_NAME:
-    case PLATE_INGREDIENTS_SCHEMA_NAME: {
+    case LEGACY_PLATE_INGREDIENTS_SCHEMA_NAME: {
       const lines = linesOf(answer.items);
       return {
         fields: {},
@@ -537,11 +542,30 @@ function readAnswer(
           fuzzy: false,
           label: ingredient(line),
           fields:
-            schemaName === PLATE_INGREDIENTS_SCHEMA_NAME
+            schemaName === LEGACY_PLATE_INGREDIENTS_SCHEMA_NAME
               ? {
                   quantity: `${displayValue(line.quantity)}${line.unit ? ` ${displayValue(line.unit).toLowerCase()}` : ''} (${displayValue(line.quantityType)})`,
                 }
               : {},
+        })),
+        matched: lines.filter(isMatched).length,
+      };
+    }
+    case PLATE_RECIPE_SCHEMA_NAME: {
+      const lines = linesOf(answer.ingredients);
+      return {
+        fields: {
+          title: displayValue(answer.title),
+          servings: displayValue(answer.servings),
+          steps: displayValue(linesOf(answer.steps).length),
+        },
+        lines: lines.map((line): AnswerLine => ({
+          key: normalize(ingredient(line)),
+          fuzzy: false,
+          label: ingredient(line),
+          fields: {
+            quantity: `${displayValue(line.quantity)}${line.unit ? ` ${displayValue(line.unit).toLowerCase()}` : ''}`,
+          },
         })),
         matched: lines.filter(isMatched).length,
       };

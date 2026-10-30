@@ -34,7 +34,6 @@ type Props = {
   /** The Confirm button reads "Done" on a row that was already sure. */
   sure: boolean;
   parents: CatalogParent[];
-  shopping: boolean;
   background: string;
   onChange: (patch: Partial<ReviewLine>) => void;
   onSwapMatch: () => void;
@@ -52,7 +51,6 @@ export function RowEditPanel({
   status,
   sure,
   parents,
-  shopping,
   background,
   onChange,
   onSwapMatch,
@@ -73,7 +71,7 @@ export function RowEditPanel({
     : name;
   const id = (field: string) => fieldId(line.key, field);
   const message = unmatched
-    ? t(shopping ? 'review:msg.unmatchedShopping' : 'review:msg.unmatched')
+    ? t('review:msg.unmatched')
     : status === 'low'
       ? t('review:msg.low')
       : status === 'qty'
@@ -180,7 +178,7 @@ export function RowEditPanel({
           </Field>
         ) : null}
 
-        {unmatched && !shopping ? (
+        {unmatched ? (
           <Field htmlFor={id('category')} label={t('review:field.category')}>
             <CategorySelect
               line={line}
@@ -192,18 +190,16 @@ export function RowEditPanel({
           </Field>
         ) : null}
 
-        {shopping ? null : (
-          <Field
-            htmlFor={id('description')}
-            label={t('review:field.description')}
-          >
-            <DescriptionInput
-              line={line}
-              onChange={onChange}
-              id={id('description')}
-            />
-          </Field>
-        )}
+        <Field
+          htmlFor={id('description')}
+          label={t('review:field.description')}
+        >
+          <DescriptionInput
+            line={line}
+            onChange={onChange}
+            id={id('description')}
+          />
+        </Field>
 
         {/* The same amount, Location and expiry fields as adding a Batch in the Pantry, one per line. */}
         <Box sx={{ minWidth: 0 }}>
@@ -235,26 +231,22 @@ export function RowEditPanel({
           />
         </Box>
 
-        {shopping ? null : (
-          <Box sx={{ minWidth: 0 }}>
-            <LocationToggle
-              label={t('pantry:form.location')}
-              value={line.location}
-              onChange={(location) => onChange({ location })}
-            />
-          </Box>
-        )}
+        <Box sx={{ minWidth: 0 }}>
+          <LocationToggle
+            label={t('pantry:form.location')}
+            value={line.location}
+            onChange={(location) => onChange({ location })}
+          />
+        </Box>
 
-        {shopping ? null : (
-          <Box sx={{ minWidth: 0 }}>
-            <ExpiryField
-              id={id('expiry')}
-              label={t('pantry:picker.label')}
-              {...expiry}
-              error={expiryError ? t('review:error.expiry') : null}
-            />
-          </Box>
-        )}
+        <Box sx={{ minWidth: 0 }}>
+          <ExpiryField
+            id={id('expiry')}
+            label={t('pantry:picker.label')}
+            {...expiry}
+            error={expiryError ? t('review:error.expiry') : null}
+          />
+        </Box>
 
         <Box
           sx={{

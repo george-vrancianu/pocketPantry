@@ -1,13 +1,11 @@
 import type { MeteredAiService } from '../usage/metered-ai.service';
 import { ApiException } from '../common/api-exception';
-import { MAX_QUANTITY } from '../common/quantity';
 import {
   catalogIndexInstruction,
   catalogPrompt,
   validateIndexedMatch,
 } from '../ingredients/ingredient-catalog';
 import type { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
-import { addShoppingItemBody } from '../shopping/shopping.schemas';
 import { PlateScanService } from './plate-scan.service';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
@@ -20,21 +18,6 @@ const catalog = {
     { id: milkId, name: 'Milk', category: 'Dairy', defaultUnit: 'ml' },
   ],
 };
-
-const item = (overrides: Record<string, unknown> = {}) => ({
-  productName: 'Milk',
-  productType: 'Dairy',
-  // Milk, by its index in the Catalog text.
-  matchedIngredientIndex: 0,
-  matchedCategory: 'Dairy',
-  matchConfidence: 0.9,
-  fallbackIngredientName: 'Milk',
-  quantityType: 'measured',
-  quantity: 200,
-  unit: 'ml',
-  confidence: 0.9,
-  ...overrides,
-});
 
 describe('PlateScanService', () => {
   let generate: jest.Mock;
@@ -115,87 +98,76 @@ describe('PlateScanService', () => {
     });
   });
 
-  describe('findIngredients', () => {
-    it('asks about the dish without an image and returns catalog-validated items', async () => {
-      provider({ items: [item()] });
-      const { items } = await service.findIngredients(
-        'Pizza',
-        'en',
-        'family-1',
-        { tags: [] },
-      );
-      expect(items[0]).toMatchObject({
-        matchedIngredientId: milkId,
-        matchedIngredientName: 'Milk',
-        quantity: 200,
-        unit: 'ml',
-      });
-      expect(items[0]).not.toHaveProperty('matchedIngredientIndex');
+  describe('writeRecipe', () => {
+    const written = (overrides: Record<string, unknown> = {}) => ({
+      title: 'Pizza',
+      servings: 4,
+      tagIndexes: [],
+      ingredients: [
+        {
+          nameAsWritten: 'Milk',
+          // Milk, by its index in the Catalog text.
+          ingredientIndex: 0,
+          matchConfidence: 0.9,
+          quantity: 200,
+          unit: 'ml',
+          preparation: null,
+          optional: false,
+        },
+      ],
+      steps: [{ text: 'Bake.', timerMinutes: 10 }],
+      tips: [],
+      ...overrides,
+    });
+    const write = () =>
+      service.writeRecipe('Pizza', 'en', 'family-1', { tags: [] });
+
+    it('asks about the dish without an image, and names Catalog Ingredients by id', async () => {
+      provider(written());
+      const result = await write();
+      expect(result.ingredientIds).toEqual([milkId]);
       const request = sent();
       expect(request.images ?? []).toEqual([]);
       expect(request.prompt).toContain('"Pizza"');
       expect(request.prompt).toContain('[0,"Milk","Dairy"]');
       expect(request.prompt).toContain(
-        catalogIndexInstruction('matchedIngredientIndex'),
+        catalogIndexInstruction('ingredientIndex'),
       );
       expect(request.prompt).not.toContain(milkId);
     });
 
     it('never trusts an index the Catalog does not hold, or a value that is not an index', async () => {
       for (const index of [1, -1, 0.5, strangerId, 'milk']) {
-        provider({
-          items: [
-            item({ matchedIngredientIndex: index, matchConfidence: 0.95 }),
-          ],
-        });
-        const { items } = await service.findIngredients(
-          'Pizza',
-          'en',
-          'family-1',
-          { tags: [] },
+        provider(
+          written({
+            ingredients: [
+              { ...written().ingredients[0], ingredientIndex: index },
+            ],
+          }),
         );
-        expect(items[0]).toMatchObject({
-          matchedIngredientId: null,
-          matchedIngredientName: null,
-          matchConfidence: 0,
-        });
+        expect((await write()).ingredientIds).toEqual([null]);
       }
     });
 
-    it('rejects a negative quantity', async () => {
-      provider({ items: [item({ quantity: -1 })] });
-      await expect(
-        service.findIngredients('Pizza', 'en', 'family-1', { tags: [] }),
-      ).rejects.toMatchObject({ code: 'scan.result_invalid' });
+    it('rejects output that breaks the schema', async () => {
+      provider(written({ servings: 'four' }));
+      await expect(write()).rejects.toMatchObject({
+        code: 'scan.result_invalid',
+      });
     });
 
-    it('caps quantity where Shopping does, so a confirmed line can never be a 400', async () => {
-      const top = MAX_QUANTITY;
-      expect(
-        addShoppingItemBody.safeParse({ ingredientId: milkId, quantity: top })
-          .success,
-      ).toBe(true);
-      provider({ items: [item({ quantity: top })] });
-      await expect(
-        service.findIngredients('Pizza', 'en', 'family-1', { tags: [] }),
-      ).resolves.toBeDefined();
-      expect(
-        addShoppingItemBody.safeParse({
-          ingredientId: milkId,
-          quantity: top + 1,
-        }).success,
-      ).toBe(false);
-      provider({ items: [item({ quantity: top + 1 })] });
-      await expect(
-        service.findIngredients('Pizza', 'en', 'family-1', { tags: [] }),
-      ).rejects.toMatchObject({ code: 'scan.result_invalid' });
-    });
-
-    it('rejects more than a plate could hold', async () => {
-      provider({ items: Array.from({ length: 101 }, () => item()) });
-      await expect(
-        service.findIngredients('Pizza', 'en', 'family-1', { tags: [] }),
-      ).rejects.toMatchObject({ code: 'scan.result_invalid' });
+    it('rejects more than a recipe could hold', async () => {
+      provider(
+        written({
+          ingredients: Array.from(
+            { length: 101 },
+            () => written().ingredients[0],
+          ),
+        }),
+      );
+      await expect(write()).rejects.toMatchObject({
+        code: 'scan.result_invalid',
+      });
     });
   });
 });

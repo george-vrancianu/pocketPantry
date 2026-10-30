@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
 import { AppLayout } from '../../components/AppLayout';
 import { useSignOut } from '../../lib/auth';
-import { linkReads } from '../../lib/linkReads';
+import { linkReadsOf, recipeReads } from '../../lib/recipeReads';
 import type { FamilyRecipeEdit } from '../../lib/familyRecipes';
 import type { RecipeDraftView } from '../../lib/recipeDrafts';
 import type { RecipeFromLink, RecipeFromLinkDraft } from '../../lib/linkRecipe';
@@ -253,11 +253,11 @@ async function openSheet(user: User) {
   await screen.findByRole('dialog', { name: 'From a link' });
 }
 
-beforeEach(() => linkReads.clear());
+beforeEach(() => recipeReads.clear());
 
 describe('"From a link" sheet and the link-read holder', () => {
   afterEach(() => {
-    linkReads.clear();
+    recipeReads.clear();
     vi.unstubAllGlobals();
   });
 
@@ -348,7 +348,7 @@ describe('"From a link" sheet and the link-read holder', () => {
     expect(screen.getByText('at /recipes/new')).toBeVisible();
     expect(calls.map((c) => c.key)).toContain('GET /api/recipe-drafts/rd-1');
     expect(screen.queryByText('Recipe ready to review')).toBeNull();
-    expect(linkReads.getState().reads).toEqual([]);
+    expect(recipeReads.getState().reads).toEqual([]);
   });
 
   it('says the Recipe Draft is no longer kept and the row leaves when it is gone', async () => {
@@ -438,7 +438,9 @@ describe('"From a link" sheet and the link-read holder', () => {
         'https://site2.example.com/r',
       ]);
       expect(
-        linkReads.getState().reads.map((r) => `${r.site}:${r.status}`),
+        linkReadsOf(recipeReads.getState().reads).map(
+          (r) => `${r.site}:${r.status}`,
+        ),
       ).toEqual([
         'site1.example.com:reading',
         'site2.example.com:reading',
@@ -464,7 +466,7 @@ describe('"From a link" sheet and the link-read holder', () => {
         await screen.findByText(/5 link reads are waiting for you/),
       ).toBeVisible();
       expect(sheet()).not.toBeNull();
-      expect(linkReads.getState().reads).toHaveLength(5);
+      expect(recipeReads.getState().reads).toHaveLength(5);
       // Let one go from the background sheet, then the sixth is taken.
       await user.keyboard('{Escape}');
       await waitFor(() => expect(sheet()).toBeNull());
@@ -478,7 +480,7 @@ describe('"From a link" sheet and the link-read holder', () => {
       await openSheet(user);
       await submit(user, 'https://site6.example.com/r');
       await waitFor(() => expect(sheet()).toBeNull());
-      expect(linkReads.getState().reads).toHaveLength(5);
+      expect(recipeReads.getState().reads).toHaveLength(5);
       expect(sentLinks(calls)).toHaveLength(2);
     });
 
@@ -496,7 +498,7 @@ describe('"From a link" sheet and the link-read holder', () => {
       expect(requests[0]?.aborted).toBe(true);
       expect(requests[1]?.aborted).toBe(false);
       await waitFor(() =>
-        expect(linkReads.getState().reads.map((r) => r.status)).toEqual([
+        expect(recipeReads.getState().reads.map((r) => r.status)).toEqual([
           'reading',
           'reading',
           'waiting',
@@ -507,8 +509,9 @@ describe('"From a link" sheet and the link-read holder', () => {
       releases[1]();
       await waitFor(() =>
         expect(
-          linkReads.getState().reads.find((r) => r.site === 'site2.example.com')
-            ?.status,
+          linkReadsOf(recipeReads.getState().reads).find(
+            (r) => r.site === 'site2.example.com',
+          )?.status,
         ).toBe('ready'),
       );
     });
@@ -557,10 +560,10 @@ describe('"From a link" sheet and the link-read holder', () => {
       { 'POST /api/recipes/from-link': pending.handler },
       { route: '/pantry' },
     );
-    linkReads.submit({ kind: 'link', url: link }, 'catalog');
+    recipeReads.submit({ kind: 'link', url: link }, 'catalog');
     await screen.findByText('Reading a recipe link…');
     await user.click(screen.getByRole('button', { name: 'Sign out now' }));
-    await waitFor(() => expect(linkReads.getState().reads).toEqual([]));
+    await waitFor(() => expect(recipeReads.getState().reads).toEqual([]));
     expect(screen.queryByText('Reading a recipe link…')).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
     expect(signals.find((s) => s && s !== undefined)?.aborted).toBe(true);
@@ -580,7 +583,7 @@ describe('"From a link" sheet and the link-read holder', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Discard example.com' }),
     );
-    expect(linkReads.getState().reads).toEqual([]);
+    expect(recipeReads.getState().reads).toEqual([]);
   });
 
   it('reads pasted text the same way, as "Pasted text"', async () => {
@@ -620,7 +623,7 @@ describe('"From a link" sheet and the link-read holder', () => {
       expect(checked(calls)).toHaveLength(1);
       expect(checked(calls)[0].search).toBe(`?url=${encodeURIComponent(link)}`);
       expect(sentLinks(calls)).toEqual([]);
-      expect(linkReads.getState().reads).toEqual([]);
+      expect(recipeReads.getState().reads).toEqual([]);
     });
 
     it('Open goes to that Recipe and closes the sheet', async () => {
@@ -632,7 +635,7 @@ describe('"From a link" sheet and the link-read holder', () => {
       expect(await screen.findByText('Detail of the recipe')).toBeVisible();
       expect(screen.getByText('at /recipes/r-1')).toBeVisible();
       await waitFor(() => expect(sheet()).toBeNull());
-      expect(linkReads.getState().reads).toEqual([]);
+      expect(recipeReads.getState().reads).toEqual([]);
     });
 
     it('Read again closes the sheet and reads with force', async () => {
@@ -650,7 +653,7 @@ describe('"From a link" sheet and the link-read holder', () => {
       await user.click(screen.getByRole('button', { name: 'Read again' }));
       await waitFor(() => expect(sheet()).toBeNull());
       await waitFor(() =>
-        expect(linkReads.getState().reads[0]).toMatchObject({
+        expect(recipeReads.getState().reads[0]).toMatchObject({
           status: 'ready',
           recipeDraftId: 'rd-1',
         }),
@@ -667,7 +670,7 @@ describe('"From a link" sheet and the link-read holder', () => {
         'POST /api/recipes/from-link': () => new Promise<Response>(() => {}),
       });
       for (const n of [1, 2, 3, 4]) {
-        linkReads.submit(
+        recipeReads.submit(
           { kind: 'link', url: `https://site${n}.example.com/r` },
           'catalog',
         );
@@ -676,7 +679,7 @@ describe('"From a link" sheet and the link-read holder', () => {
       await submit(user, link);
       await screen.findByText('Already in your Recipes');
       // A fifth read arrives while the panel is open, so the holder is now full.
-      linkReads.submit(
+      recipeReads.submit(
         { kind: 'link', url: 'https://site5.example.com/r' },
         'catalog',
       );
@@ -734,7 +737,7 @@ describe('"From a link" sheet and the link-read holder', () => {
       const pending = hold(read());
       setup({ 'POST /api/recipes/from-link': pending.handler });
       expect(asksToStay()).toBe(false);
-      linkReads.submit({ kind: 'link', url: link }, 'catalog');
+      recipeReads.submit({ kind: 'link', url: link }, 'catalog');
       await screen.findByText('Reading a recipe link…');
       expect(asksToStay()).toBe(true);
       pending.release();
@@ -758,7 +761,7 @@ describe('"From a link" sheet and the link-read holder', () => {
           }),
       });
       for (const n of [1, 2, 3]) {
-        linkReads.submit(
+        recipeReads.submit(
           { kind: 'link', url: `https://s${n}.example/r` },
           'catalog',
         );
@@ -771,7 +774,7 @@ describe('"From a link" sheet and the link-read holder', () => {
       expect(asksToStay()).toBe(true);
       releases[2]();
       await waitFor(() =>
-        expect(linkReads.getState().reads.map((r) => r.status)).toEqual([
+        expect(recipeReads.getState().reads.map((r) => r.status)).toEqual([
           'failed',
           'failed',
           'failed',
@@ -783,11 +786,11 @@ describe('"From a link" sheet and the link-read holder', () => {
     it('does not ask when a Member discards the only read', async () => {
       const pending = hold(read());
       setup({ 'POST /api/recipes/from-link': pending.handler });
-      const added = linkReads.submit({ kind: 'link', url: link }, 'catalog');
+      const added = recipeReads.submit({ kind: 'link', url: link }, 'catalog');
       expect(added).toBe('started');
       await screen.findByText('Reading a recipe link…');
       expect(asksToStay()).toBe(true);
-      linkReads.discard(linkReads.getState().reads[0].id);
+      recipeReads.discard(recipeReads.getState().reads[0].id);
       await waitFor(() => expect(asksToStay()).toBe(false));
       pending.release();
     });
@@ -796,7 +799,7 @@ describe('"From a link" sheet and the link-read holder', () => {
 
 describe('after a read, the editor', () => {
   afterEach(() => {
-    linkReads.clear();
+    recipeReads.clear();
     vi.unstubAllGlobals();
   });
 

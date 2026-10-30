@@ -4,7 +4,11 @@ import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppLayout } from '../../components/AppLayout';
 import type { Locale } from '../../i18n';
-import { LINK_AUTO_RETRY_MS, linkReads } from '../../lib/linkReads';
+import {
+  RECIPE_READ_AUTO_RETRY_MS,
+  linkReadsOf,
+  recipeReads,
+} from '../../lib/recipeReads';
 import type { RecipeFromLink } from '../../lib/linkRecipe';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { RecipesPage } from './RecipesPage';
@@ -87,10 +91,10 @@ const outline = () => {
     .join('\n');
 };
 
-beforeEach(() => linkReads.clear());
+beforeEach(() => recipeReads.clear());
 afterEach(() => {
   cleanup();
-  linkReads.clear();
+  recipeReads.clear();
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -113,7 +117,7 @@ describe('a link read that failed, in the background strip', () => {
       screen.getByRole('button', { name: 'Retry reading example.com' }),
     );
     await waitFor(() =>
-      expect(linkReads.getState().reads[0].status).toBe('ready'),
+      expect(recipeReads.getState().reads[0].status).toBe('ready'),
     );
     expect(sent()).toHaveLength(2);
   });
@@ -126,7 +130,7 @@ describe('a link read that failed, in the background strip', () => {
     await user.click(
       screen.getByRole('button', { name: 'Discard example.com' }),
     );
-    expect(linkReads.getState().reads).toEqual([]);
+    expect(recipeReads.getState().reads).toEqual([]);
   });
 
   describe.each<[string, string, number, string, RegExp]>([
@@ -258,7 +262,7 @@ describe('one automatic retry on a network error', () => {
     expect(await screen.findByText('Reading a recipe link…')).toBeVisible();
     await waitFor(() => expect(sent()).toHaveLength(1));
     expect(screen.queryByText("Couldn't read the recipe")).toBeNull();
-    await act(() => vi.advanceTimersByTimeAsync(LINK_AUTO_RETRY_MS));
+    await act(() => vi.advanceTimersByTimeAsync(RECIPE_READ_AUTO_RETRY_MS));
     expect(await screen.findByText('Recipe ready to review')).toBeVisible();
     expect(sent()).toHaveLength(2);
   });
@@ -271,10 +275,10 @@ describe('one automatic retry on a network error', () => {
     });
     await submit(user);
     await waitFor(() => expect(sent()).toHaveLength(1));
-    await act(() => vi.advanceTimersByTimeAsync(LINK_AUTO_RETRY_MS));
+    await act(() => vi.advanceTimersByTimeAsync(RECIPE_READ_AUTO_RETRY_MS));
     expect(await screen.findByText("Couldn't read the recipe")).toBeVisible();
     expect(screen.getByText(/could not reach the server/)).toBeVisible();
-    await act(() => vi.advanceTimersByTimeAsync(LINK_AUTO_RETRY_MS * 3));
+    await act(() => vi.advanceTimersByTimeAsync(RECIPE_READ_AUTO_RETRY_MS * 3));
     expect(sent()).toHaveLength(2);
   });
 
@@ -284,7 +288,7 @@ describe('one automatic retry on a network error', () => {
     const { sent } = setup(() => failing('link.unreadable'));
     await submit(user);
     expect(await screen.findByText("Couldn't read the recipe")).toBeVisible();
-    await act(() => vi.advanceTimersByTimeAsync(LINK_AUTO_RETRY_MS * 3));
+    await act(() => vi.advanceTimersByTimeAsync(RECIPE_READ_AUTO_RETRY_MS * 3));
     expect(sent()).toHaveLength(1);
   });
 
@@ -296,9 +300,9 @@ describe('one automatic retry on a network error', () => {
     });
     await submit(user);
     await waitFor(() => expect(sent()).toHaveLength(1));
-    const [read] = linkReads.getState().reads;
-    act(() => linkReads.discard(read.id));
-    await act(() => vi.advanceTimersByTimeAsync(LINK_AUTO_RETRY_MS * 2));
+    const [read] = recipeReads.getState().reads;
+    act(() => recipeReads.discard(read.id));
+    await act(() => vi.advanceTimersByTimeAsync(RECIPE_READ_AUTO_RETRY_MS * 2));
     expect(sent()).toHaveLength(1);
   });
 });
@@ -325,11 +329,11 @@ describe('"Paste text instead" on a failed row', () => {
 
     await user.type(screen.getByLabelText(/^Recipe text/), 'two eggs');
     // Not answered yet: the failed row is still there until the text is sent.
-    expect(linkReads.getState().reads).toHaveLength(1);
+    expect(recipeReads.getState().reads).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
     await waitFor(() => expect(sheet).not.toBeVisible());
     expect(sent().at(-1)).toEqual({ text: 'two eggs', language: 'catalog' });
-    const reads = linkReads.getState().reads;
+    const reads = linkReadsOf(recipeReads.getState().reads);
     expect(reads).toHaveLength(1);
     expect(reads[0].source.kind).toBe('text');
   });
@@ -402,7 +406,7 @@ describe('the Link Cap', () => {
     return { ...view, refuse: () => refuse(), finish: () => finish() };
   }
 
-  const statuses = () => linkReads.getState().reads.map((r) => r.status);
+  const statuses = () => recipeReads.getState().reads.map((r) => r.status);
 
   const submitMany = async (user: User, urls: string[]) => {
     for (const [i, url] of urls.entries()) {
@@ -639,7 +643,7 @@ describe('the failure alert', () => {
       screen.getByRole('button', { name: 'Retry reading example.com' }),
     );
     await waitFor(() =>
-      expect(linkReads.getState().reads[0].status).toBe('failed'),
+      expect(recipeReads.getState().reads[0].status).toBe('failed'),
     );
     expect(screen.queryByRole('alert')).toBeNull();
   });

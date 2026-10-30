@@ -499,26 +499,28 @@ describe('Usage Records (integration)', () => {
     expect((balance.body as { balance: number }).balance).toBe(100);
   });
 
-  it('writes one row per Plate Scan step, the dish step recorded with the Member but not charged', async () => {
+  it('writes one row per Plate Scan step, the writing step attributed to its own charge', async () => {
     const ana = await member();
     answers = [
       { data: { matches: [{ title: 'Pancakes', confidence: 0.7 }] }, usage },
       {
         data: {
-          items: [
+          title: 'Pancakes',
+          servings: 4,
+          tagIndexes: [],
+          ingredients: [
             {
-              productName: 'Milk',
-              productType: 'Dairy',
-              matchedIngredientId: milk,
-              matchedCategory: 'Milk',
+              nameAsWritten: 'Milk',
+              ingredientId: milk,
               matchConfidence: 0.9,
-              fallbackIngredientName: 'Milk',
-              quantityType: 'measured',
               quantity: 200,
               unit: 'ml',
-              confidence: 0.9,
+              preparation: null,
+              optional: false,
             },
           ],
+          steps: [{ text: 'Whisk.', timerMinutes: null }],
+          tips: [],
         },
         usage,
       },
@@ -531,24 +533,25 @@ describe('Usage Records (integration)', () => {
         balance: number;
       }
     ).balance;
-    await post(ana.cookie, 'scan/plate/ingredients', {
+    await post(ana.cookie, 'scan/plate/recipe', {
       dishTitle: 'Pancakes',
       plateToken: token,
     }).expect(201);
     const rows = await rowsOf(ana.id);
     expect(rows).toHaveLength(2);
+    // The photo is attributed to the Scan charge, the writing step to its own charge.
+    expect(rows.map((row) => row.kind)).toEqual(['scan', 'plate-recipe']);
     for (const row of rows) {
       expect(row).toMatchObject({
-        kind: 'scan',
         memberId: ana.id,
         familyId: ana.familyId,
         success: true,
       });
     }
-    // The dish step is part of the one Plate Scan price.
+    // The written Recipe is charged on its own (ADR 0035).
     expect(
       (await client(app, ana.cookie, '/api/credits').get('')).body,
-    ).toMatchObject({ balance: balanceAfterPhoto });
+    ).toMatchObject({ balance: balanceAfterPhoto - 1 });
   });
 
   it('keeps the rows, with the Member link cleared, when the Member is deleted', async () => {

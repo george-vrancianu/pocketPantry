@@ -41,5 +41,22 @@
     "pasteInstead": "Paste the text of {{what}} instead",
     "failedAlert_one": "{{count}} recipe link failed",
     "failedAlert_other": "{{count}} recipe links failed"
+  },
+  "plate": {
+    "waiting": "Waiting to write {{dish}}",
+    "writing": "Writing {{dish}}…",
+    "ready": "{{dish}} ready to review",
+    "failed": "Couldn't write {{dish}}",
+    "detail": "From your plate photo",
+    "outOfCredits": "Out of Credits",
+    "gone": "That Recipe Draft is no longer kept.",
+    "review": "Review the recipe for {{dish}}",
+    "cancelRead": "Cancel writing {{dish}}",
+    "discardRead": "Discard {{dish}}",
+    "retryRead": "Retry writing {{dish}}",
+    "readAgain": "Read the photo again",
+    "readAgainRead": "Read the photo for {{dish}} again",
+    "failedAlert_one": "{{count}} Plate Scan recipe failed",
+    "failedAlert_other": "{{count}} Plate Scan recipes failed"
   }
 }

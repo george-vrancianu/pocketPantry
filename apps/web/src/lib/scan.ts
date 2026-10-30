@@ -51,8 +51,6 @@ export type ExclusionReason = 'not_food' | 'fee' | 'deposit' | 'other';
 
 export type ScanResponse = {
   lines: ProposedLine[];
-  /** Plate Scan only: ids of existing Tags the dish was read as, to start the saved Recipe with. */
-  tagIds?: string[];
 };
 
 /** The query string (with its `?`, or empty) of a Scan or of saving its lines; `scanLanguage` is left out when none is picked. */

@@ -41,7 +41,8 @@
         "assistant": "Assistentanmodning",
         "link-page": "Opskrift fra en webside",
         "link-text": "Opskrift fra indsat tekst",
-        "guidance": "Foreslå vejledning"
+        "guidance": "Foreslå vejledning",
+        "plate-recipe": "Opskrift fra en tallerkenscanning"
       },
       "welcome_grant": "Velkomstgave",
       "grant": "Kreditgave",
