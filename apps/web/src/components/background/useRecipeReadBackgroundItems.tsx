@@ -25,6 +25,9 @@ import type {
   BackgroundStatus,
 } from './backgroundItem';
 
+/** The server's answer when a Plate token cannot write a dish any more (used up or expired). */
+const PLATE_TOKEN_INVALID = 'scan.plate_token_invalid';
+
 const statusOf = (read: RecipeRead): BackgroundStatus =>
   read.status === 'waiting' || read.status === 'reading'
     ? 'reading'
@@ -121,6 +124,12 @@ function linkRow(
 /** The plate kind's row: a dish the server is writing as a Recipe (ADR 0035). */
 function plateRow(read: PlateRecipeRead, t: Translate): RecipeReadRow {
   const dish = read.title;
+  // The Scan's token is used up (its attempts) or expired: Retry would only be refused, so the photo is read again.
+  const tokenSpent =
+    read.status === 'failed' &&
+    read.readAgain !== undefined &&
+    read.error instanceof ApiError &&
+    read.error.code === PLATE_TOKEN_INVALID;
   const title =
     read.status === 'waiting'
       ? t('background:plate.waiting', { dish })
@@ -145,8 +154,23 @@ function plateRow(read: PlateRecipeRead, t: Translate): RecipeReadRow {
       retryRead: t('background:plate.retryRead', { dish }),
       review: t('background:plate.review', { dish }),
     },
-    failedActions: [],
-    retryable: true,
+    failedActions: tokenSpent
+      ? [
+          {
+            type: 'button',
+            tone: 'primary',
+            label: t('background:plate.readAgain'),
+            ariaLabel: t('background:plate.readAgainRead', { dish }),
+            closesSheet: true,
+            // The card comes back to be read again, and this row has nothing left to retry.
+            onClick: () => {
+              read.readAgain?.();
+              recipeReads.discard(read.id);
+            },
+          },
+        ]
+      : [],
+    retryable: !tokenSpent,
   };
 }
 

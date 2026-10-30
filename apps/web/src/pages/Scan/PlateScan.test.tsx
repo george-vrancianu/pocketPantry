@@ -2,7 +2,10 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { recipeReads } from '../../lib/recipeReads';
+import {
+  recipeReads,
+  useUnloadPromptWhileReading,
+} from '../../lib/recipeReads';
 import { resetReads } from '../../lib/scanReads';
 import { getScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -69,6 +72,12 @@ const storedDraft = {
   updatedAt: '2026-01-01T00:00:00.000Z',
   expiresAt: '2026-01-31T00:00:00.000Z',
 };
+
+/** The app layout mounts the unload prompt; the pages under test do not. */
+function UnloadPrompt() {
+  useUnloadPromptWhileReading();
+  return null;
+}
 
 function renderPlate(extra: Record<string, () => Response> = {}) {
   let reads = 0;
@@ -441,5 +450,124 @@ describe('Plate Scan in the Scan Session', () => {
     expect(
       calls.filter((c) => c.key === 'POST /api/scan/plate/recipe'),
     ).toHaveLength(2);
+  });
+
+  it('brings the card back with its guesses and the limit message when the server refuses at 20 Recipe Drafts', async () => {
+    renderPlate({
+      'POST /api/scan/plate/recipe': () =>
+        Response.json(
+          { code: 'recipe_drafts.limit_reached', params: { max: 20 } },
+          { status: 409 },
+        ),
+    });
+    await scanThenDone();
+    await pick(/Pancakes/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'You already keep 20 Recipe Drafts.',
+    );
+    expect(await picker()).toBeInTheDocument();
+    expect(getScanSession().scans[0]).toMatchObject({
+      status: 'read',
+      plateToken: 'token-1',
+    });
+    expect(recipeReads.getState().reads).toHaveLength(0);
+    expect(screen.queryByText("Couldn't write Pancakes")).toBeNull();
+  });
+
+  it('Discard on a failed row removes it', async () => {
+    renderPlate({
+      'POST /api/scan/plate/recipe': () =>
+        Response.json(
+          { code: 'scan.result_invalid', params: {} },
+          { status: 502 },
+        ),
+    });
+    await scanThenDone();
+    await pick(/Pancakes/);
+    expect(
+      await screen.findByText("Couldn't write Pancakes"),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Discard Pancakes' }),
+    );
+    expect(recipeReads.getState().reads).toHaveLength(0);
+  });
+
+  it('offers to read the photo again, not Retry, once the token is used up or expired, and the card returns to be read', async () => {
+    const calls = renderPlate({
+      'POST /api/scan/plate/recipe': () =>
+        Response.json(
+          { code: 'scan.plate_token_invalid', params: {} },
+          { status: 400 },
+        ),
+    });
+    await scanThenDone();
+    await pick(/Pancakes/);
+    expect(
+      await screen.findByText("Couldn't write Pancakes"),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }));
+    expect(
+      screen.queryByRole('button', { name: 'Retry writing Pancakes' }),
+    ).toBeNull();
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Read the photo for Pancakes again',
+      }),
+    );
+    expect(recipeReads.getState().reads).toHaveLength(0);
+    // The photo is read again: a fresh Plate Scan request, with a new token on the card.
+    await waitFor(() =>
+      expect(getScanSession().scans[0]).toMatchObject({
+        status: 'read',
+        plateToken: 'token-2',
+      }),
+    );
+    expect(calls.filter((c) => c.key === 'POST /api/scan/plate')).toHaveLength(
+      2,
+    );
+  });
+
+  it('cancels the request when a writing row is discarded, and asks before unloading while one is writing', async () => {
+    let signal: AbortSignal | null | undefined;
+    const { fetchMock } = stubApi({
+      'POST /api/scan/plate': () => Response.json(dishes('token-1')),
+    });
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).includes('/api/scan/plate/recipe')) {
+        signal = init?.signal;
+        return new Promise<Response>(() => {});
+      }
+      return fetchMock(input, init);
+    });
+    renderWithProviders(
+      <>
+        <Routes>
+          <Route path="/scan" element={<ScanPage />} />
+          <Route path="/scan/review" element={<ReviewOverviewPage />} />
+        </Routes>
+        <BackgroundHost recipeReads />
+        <UnloadPrompt />
+      </>,
+      { route: '/scan?mode=plate' },
+    );
+    await scanThenDone();
+    await pick(/Pancakes/);
+    expect(await screen.findByText('Writing Pancakes…')).toBeInTheDocument();
+    await waitFor(() => expect(signal).toBeTruthy());
+    const leaving = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(leaving);
+    expect(leaving.defaultPrevented).toBe(true);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel writing Pancakes' }),
+    );
+    expect(signal?.aborted).toBe(true);
+    expect(recipeReads.getState().reads).toHaveLength(0);
+    const afterwards = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(afterwards);
+    expect(afterwards.defaultPrevented).toBe(false);
   });
 });

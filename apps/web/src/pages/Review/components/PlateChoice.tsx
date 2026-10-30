@@ -10,6 +10,7 @@ import { apiRequest } from '../../../lib/api';
 import { translateErrorCode } from '../../../i18n/translateApiError';
 import { creditsQueryKey, type Credits } from '../../../lib/credits';
 import { recipeReads } from '../../../lib/recipeReads';
+import { readScans } from '../../../lib/scanReads';
 import {
   dispatchScanSession,
   getScanSession,
@@ -39,10 +40,13 @@ const buttonSx = {
 
 /**
  * The refusals of the server that keep a picked dish on its card, with its guesses, and out of the strip.
- * A refusal the check above could not see (a balance that moved since, a read that waited its turn) comes
- * back through the holder as `restore`. Another refusal that belongs on the card is one more code here.
+ * A refusal the check above could not see (a balance that moved since, the 20-draft limit, which only the
+ * server counts, a read that waited its turn) comes back through the holder as `restore`. Another refusal that belongs on the card is one more code here.
  */
-const REFUSED_PICK_CODES = ['credits.insufficient'] as const;
+const REFUSED_PICK_CODES = [
+  'credits.insufficient',
+  'recipe_drafts.limit_reached',
+] as const;
 
 export const cardId = (id: string) => `review-card-${id}`;
 
@@ -123,6 +127,21 @@ export function PlateChoice({
           },
           index: Math.max(index, 0),
         }),
+      // A used-up or expired token: the photo goes back to be read again, as a card does that failed.
+      readAgain: () => {
+        dispatchScanSession({
+          type: 'restore',
+          scan: {
+            ...scan,
+            status: 'queued',
+            dishes: undefined,
+            plateToken: undefined,
+            refusal: undefined,
+          },
+          index: Math.max(index, 0),
+        });
+        readScans();
+      },
     });
     if (outcome === 'full') {
       setFull(true);

@@ -61,6 +61,8 @@
     "cancelRead": "Anulează scrierea rețetei pentru {{dish}}",
     "discardRead": "Renunță la {{dish}}",
     "retryRead": "Reîncearcă scrierea rețetei pentru {{dish}}",
+    "readAgain": "Citește poza din nou",
+    "readAgainRead": "Citește din nou poza pentru {{dish}}",
     "failedAlert_one": "{{count}} rețetă din poza farfuriei a eșuat",
     "failedAlert_few": "{{count}} rețete din poze cu farfurii au eșuat",
     "failedAlert_other": "{{count}} de rețete din poze cu farfurii au eșuat"
