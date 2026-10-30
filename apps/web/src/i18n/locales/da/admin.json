@@ -482,6 +482,33 @@
     "back": "Katalog"
   },
   "review": {
-    "title": "Venter på gennemsyn"
+    "title": "Venter på gennemsyn",
+    "kinds": {
+      "unmatched": "Umatchede",
+      "family": "Familie",
+      "synonyms": "Navne"
+    },
+    "hint": {
+      "unmatched": "Navne, som ingen ingrediens matchede. Tryk for at koble eller oprette en; stryg til venstre for at lægge den til side.",
+      "family": "Ingredienser, som en familie har tilføjet. Forfrem en for at dele den med alle.",
+      "synonyms": "Navne, som en familie bruger for en katalogingrediens. Tilføj et som synonym for alle."
+    },
+    "rowMeta": "{{rows}} · {{sources}}",
+    "dismissed": "„{{name}}“ lagt til side",
+    "dismissQuestion": "Læg „{{name}}“ til side?",
+    "emptyTitle": "Intet at gennemse",
+    "empty": "Alle navne fra scanninger og indtastning fandt deres ingrediens.",
+    "link_one": "Kobl {{count}} række",
+    "link_other": "Kobl {{count}} rækker",
+    "waiting_one": "{{count}} venter",
+    "waiting_other": "{{count}} venter",
+    "otherFamilies_one": "+{{count}} familie",
+    "otherFamilies_other": "+{{count}} familier",
+    "synonymTitle": "„{{name}}“ → {{ingredient}}",
+    "close": "Luk",
+    "back": "Tilbage",
+    "promoteAction": "Forfrem til katalog",
+    "mergeAction": "Flet med…",
+    "emptyDismissed": "Ingen navne lagt til side."
   }
 }

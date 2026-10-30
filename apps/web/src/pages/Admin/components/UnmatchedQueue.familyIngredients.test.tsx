@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
 import { renderWithProviders, stubApi } from '../../../test/render';
+import { resultNotice } from './reviewTestUtils';
 import { UnmatchedQueue } from './UnmatchedQueue';
 
 // Spec: #275, ADR 0011. The Family
@@ -81,9 +82,18 @@ function stub(routes: Parameters<typeof stubApi>[0] = {}) {
 
 async function openQueue(user: ReturnType<typeof userEvent.setup>) {
   renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+  await user.click(await screen.findByRole('button', { name: 'Family' }));
+}
+
+/** Opens the group's sheet and goes on to the copy picker. */
+async function openPicker(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+) {
   await user.click(
-    await screen.findByRole('button', { name: 'Family ingredients' }),
+    await screen.findByRole('button', { name: new RegExp(`^${name}`) }),
   );
+  await user.click(screen.getByRole('button', { name: 'Promote to Catalog' }));
 }
 
 describe('UnmatchedQueue: Family ingredients', () => {
@@ -98,23 +108,29 @@ describe('UnmatchedQueue: Family ingredients', () => {
     const items = await screen.findAllByRole('listitem');
     expect(items).toHaveLength(2);
     expect(within(items[0]).getByText('Kombucha')).toBeVisible();
-    expect(within(items[0]).getByText(/3 families/)).toBeVisible();
+    // The Family count shows as the other families that added it.
+    expect(within(items[0]).getByText('+2 families')).toBeVisible();
     expect(within(items[0]).getByText(/Hard cheese/)).toBeVisible();
     expect(within(items[0]).getByText(/Romanian/)).toBeVisible();
     expect(within(items[1]).getByText('Tempeh')).toBeVisible();
-    expect(within(items[1]).getByText(/1 family/)).toBeVisible();
+    expect(within(items[1]).queryByText(/famil/)).toBeNull();
     expect(within(items[1]).getByText(/Pulses/)).toBeVisible();
     expect(within(items[1]).getByText(/Danish/)).toBeVisible();
     // The open/dismissed switch belongs to Unmatched names only.
     expect(screen.queryByRole('button', { name: 'Dismissed' })).toBeNull();
   });
 
-  it('does not ask for Family Ingredients until the switch is used', async () => {
-    const calls = stub();
+  it('asks for the Family Ingredients up front, for the count on the kind switch', async () => {
+    const calls = stub({
+      'GET /api/admin/family-ingredients': () =>
+        Response.json({ groups: [group, single], nextCursor: null, total: 5 }),
+    });
     renderWithProviders(<UnmatchedQueue catalog={catalog} />);
-    await screen.findByText('Nothing to review.');
 
-    expect(calls.map((c) => c.key)).not.toContain(
+    expect(
+      await screen.findByRole('button', { name: 'Family, 5' }),
+    ).toBeVisible();
+    expect(calls.map((c) => c.key)).toContain(
       'GET /api/admin/family-ingredients',
     );
   });
@@ -136,13 +152,11 @@ describe('UnmatchedQueue: Family ingredients', () => {
     const user = userEvent.setup();
     await openQueue(user);
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Promote Kombucha' }),
-    );
+    await openPicker(user, 'Kombucha');
 
     expect(
       screen.getByRole('heading', { name: 'Promote Kombucha' }),
-    ).toHaveFocus();
+    ).toBeVisible();
     const radios = screen.getAllByRole('radio');
     expect(radios).toHaveLength(3);
     expect(radios[0]).toBeChecked();
@@ -171,9 +185,7 @@ describe('UnmatchedQueue: Family ingredients', () => {
     const user = userEvent.setup();
     await openQueue(user);
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Promote Kombucha' }),
-    );
+    await openPicker(user, 'Kombucha');
     await user.click(screen.getAllByRole('radio')[1]);
     await user.click(screen.getByRole('button', { name: 'Promote' }));
 
@@ -184,16 +196,10 @@ describe('UnmatchedQueue: Family ingredients', () => {
         )?.body,
       ).toEqual({ ingredientId: 'c2' }),
     );
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      /Promoted KOMBUCHA/,
-    );
-    expect(screen.getByRole('status')).toHaveTextContent(
-      /merged 2 other copies/i,
-    );
+    expect(await resultNotice(/Promoted KOMBUCHA/)).toBeVisible();
+    expect(await resultNotice(/merged 2 other copies/i)).toBeVisible();
     expect(await screen.findByText('Tempeh')).toBeVisible();
-    expect(
-      screen.queryByRole('button', { name: 'Promote Kombucha' }),
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Kombucha/ })).toBeNull();
   });
 
   it('promotes the first copy when the Admin does not choose', async () => {
@@ -208,9 +214,7 @@ describe('UnmatchedQueue: Family ingredients', () => {
     const user = userEvent.setup();
     await openQueue(user);
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Promote Tempeh' }),
-    );
+    await openPicker(user, 'Tempeh');
     await user.click(screen.getByRole('button', { name: 'Promote' }));
 
     await vi.waitFor(() =>
@@ -227,13 +231,11 @@ describe('UnmatchedQueue: Family ingredients', () => {
     const user = userEvent.setup();
     await openQueue(user);
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Promote Kombucha' }),
-    );
+    await openPicker(user, 'Kombucha');
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(
-      await screen.findByRole('button', { name: 'Promote Kombucha' }),
+      await screen.findByRole('button', { name: /^Kombucha/ }),
     ).toHaveFocus();
     expect(calls.map((c) => c.key)).not.toContain(
       'POST /api/admin/family-ingredients/promote',
@@ -254,9 +256,7 @@ describe('UnmatchedQueue: Family ingredients', () => {
     const user = userEvent.setup();
     await openQueue(user);
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Promote Kombucha' }),
-    );
+    await openPicker(user, 'Kombucha');
     await user.click(screen.getByRole('button', { name: 'Promote' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(

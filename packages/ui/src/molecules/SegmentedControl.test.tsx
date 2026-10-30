@@ -167,4 +167,30 @@ describe('SegmentedControl', () => {
     expect(freezer.getAttribute('aria-pressed')).toBe('true');
     expect(within(freezer).getByTestId('snowflake')).toBeTruthy();
   });
+
+  it('adds the badge count to the accessible name, with the label unchanged, and hides it at 0', () => {
+    render(
+      <SegmentedControl
+        label="Sections"
+        value="a"
+        onChange={() => {}}
+        options={[
+          {
+            value: 'a',
+            label: 'To review',
+            badge: 11,
+            badgeLabel: '11 waiting',
+          },
+          { value: 'b', label: 'Catalog', badge: 3 },
+          { value: 'c', label: 'Codes', badge: 0 },
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: 'To review, 11 waiting' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Catalog, 3' })).toBeTruthy();
+    const codes = screen.getByRole('button', { name: 'Codes' });
+    expect(codes.textContent).toBe('Codes');
+  });
 });

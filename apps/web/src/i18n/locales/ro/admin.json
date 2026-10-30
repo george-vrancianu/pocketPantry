@@ -494,6 +494,36 @@
     "back": "Catalog"
   },
   "review": {
-    "title": "În așteptarea verificării"
+    "title": "În așteptarea verificării",
+    "kinds": {
+      "unmatched": "Nepotrivite",
+      "family": "Familie",
+      "synonyms": "Nume"
+    },
+    "hint": {
+      "unmatched": "Nume pentru care nu s-a găsit niciun Ingredient. Atinge ca să legi sau să creezi unul; glisează la stânga ca să-l pui deoparte.",
+      "family": "Ingrediente adăugate de o familie. Promovează unul ca să fie disponibil pentru toți.",
+      "synonyms": "Nume pe care o familie le folosește pentru un Ingredient din Catalog. Adaugă unul ca Sinonim pentru toți."
+    },
+    "rowMeta": "{{rows}} · {{sources}}",
+    "dismissed": "„{{name}}” pus deoparte",
+    "dismissQuestion": "Pui deoparte „{{name}}”?",
+    "emptyTitle": "Nimic de verificat",
+    "empty": "Fiecare nume din scanări și din ce s-a tastat și-a găsit Ingredientul.",
+    "link_one": "Leagă {{count}} rând",
+    "link_few": "Leagă {{count}} rânduri",
+    "link_other": "Leagă {{count}} de rânduri",
+    "waiting_one": "{{count}} în așteptare",
+    "waiting_few": "{{count}} în așteptare",
+    "waiting_other": "{{count}} în așteptare",
+    "otherFamilies_one": "+{{count}} familie",
+    "otherFamilies_few": "+{{count}} familii",
+    "otherFamilies_other": "+{{count}} de familii",
+    "synonymTitle": "„{{name}}” → {{ingredient}}",
+    "close": "Închide",
+    "back": "Înapoi",
+    "promoteAction": "Promovează în Catalog",
+    "mergeAction": "Îmbină cu…",
+    "emptyDismissed": "Niciun nume pus deoparte."
   }
 }

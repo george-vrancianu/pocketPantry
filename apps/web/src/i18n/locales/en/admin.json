@@ -482,6 +482,33 @@
     "back": "Catalog"
   },
   "review": {
-    "title": "Waiting for review"
+    "title": "Waiting for review",
+    "kinds": {
+      "unmatched": "Unmatched",
+      "family": "Family",
+      "synonyms": "Names"
+    },
+    "hint": {
+      "unmatched": "Names no Ingredient matched. Tap to link or create one; swipe left to set aside.",
+      "family": "Ingredients a family added. Promote one to share it with everyone.",
+      "synonyms": "Names a family uses for a Catalog Ingredient. Add one as a Synonym for everyone."
+    },
+    "rowMeta": "{{rows}} · {{sources}}",
+    "dismissed": "Dismissed “{{name}}”",
+    "dismissQuestion": "Dismiss “{{name}}”?",
+    "emptyTitle": "Nothing to review",
+    "empty": "Every name from scans and typing found its Ingredient.",
+    "link_one": "Link {{count}} row",
+    "link_other": "Link {{count}} rows",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting",
+    "otherFamilies_one": "+{{count}} family",
+    "otherFamilies_other": "+{{count}} families",
+    "synonymTitle": "“{{name}}” → {{ingredient}}",
+    "close": "Close",
+    "back": "Back",
+    "promoteAction": "Promote to Catalog",
+    "mergeAction": "Merge into…",
+    "emptyDismissed": "No names set aside."
   }
 }

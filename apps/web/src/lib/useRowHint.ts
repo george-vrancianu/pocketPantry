@@ -2,7 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** The lists whose rows swipe and hold: each has its own first-use hint and removal context. */
 export type RowList =
-  'pantry' | 'shopping' | 'template' | 'staples' | 'familyCatalog';
+  | 'pantry'
+  | 'shopping'
+  | 'template'
+  | 'staples'
+  | 'familyCatalog'
+  | 'adminQueue';
 
 /** The hint shows this long after the list has rows to show it on. */
 const SHOW_AFTER_MS = 700;
