@@ -618,7 +618,7 @@ export function FamilyIngredientSheet({
                       color: tokens.color.accent,
                       bgcolor: 'transparent',
                       border: `1px dashed ${tokens.color.line}`,
-                      borderRadius: radius.pill,
+                      borderRadius: radius.chip,
                       cursor: 'pointer',
                     }}
                   >
@@ -721,7 +721,7 @@ function NameChip({
         minHeight: 34,
         pl: 1.5,
         pr: 0.5,
-        borderRadius: radius.pill,
+        borderRadius: radius.chip,
         bgcolor: tokens.color.chipNeutral,
         color: tokens.color.ink,
         fontSize: 13.5,
