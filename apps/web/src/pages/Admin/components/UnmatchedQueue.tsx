@@ -257,7 +257,7 @@ function UnmatchedNames({
               : undefined
           }
           restoring={undismiss.isPending}
-          restoreError={undismiss.error}
+          restoreError={dismissed ? undismiss.error : undefined}
           onDone={(message) => {
             setNotice(message);
             resultNext();

@@ -665,6 +665,38 @@ describe('UnmatchedQueue', () => {
     ).toBeEnabled();
   });
 
+  it('does not show an old Restore error in the resolver of an Open row', async () => {
+    stub({
+      'GET /api/admin/unmatched': (url) =>
+        Response.json({
+          entries: [entry],
+          nextCursor: null,
+          total: url.searchParams.get('status') === 'dismissed' ? 1 : 1,
+        }),
+      'POST /api/admin/unmatched/undismiss': () =>
+        new Response(null, { status: 500 }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: /^Dismissed/ }));
+    await user.click(
+      await screen.findByRole('button', { name: /^Brânză ciudată/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Resolve Brânză ciudată',
+    });
+    await user.click(within(dialog).getByRole('button', { name: 'Restore' }));
+    expect(await within(dialog).findByRole('alert')).toBeVisible();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await user.click(await screen.findByRole('button', { name: /^Open/ }));
+    await user.click(
+      await screen.findByRole('button', { name: 'Resolve Brânză ciudată' }),
+    );
+
+    expect(within(screen.getByRole('dialog')).queryByRole('alert')).toBeNull();
+  });
+
   it('keeps Undo available when the Admin switches kind, and shows the row again after Undo', async () => {
     vi.useFakeTimers();
     const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
