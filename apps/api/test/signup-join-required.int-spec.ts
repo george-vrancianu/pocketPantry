@@ -1,7 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import {
   familyCount,
-  familyToJoin,
   footprint,
   membersOf,
   newPromoCode,
@@ -67,7 +66,6 @@ describe('Join a Family at signup, SIGNUP_REQUIRES_PROMO_CODE on (integration)',
   });
 
   it('refuses a wrong Invite Code even with a valid Promo Code, leaving the code unspent', async () => {
-    await familyToJoin(app).catch(() => undefined);
     const code = await newPromoCode(app, 40);
     const { res, email } = await rawSignUp(app, {
       joinInviteCode: 'ZZZZZZZZ',

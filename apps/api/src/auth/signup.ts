@@ -81,10 +81,10 @@ const STATUS_NAMES: Record<
   number,
   'BAD_REQUEST' | 'NOT_FOUND' | 'CONFLICT' | 'GONE' | 'TOO_MANY_REQUESTS'
 > = {
-  410: 'GONE',
   400: 'BAD_REQUEST',
   404: 'NOT_FOUND',
   409: 'CONFLICT',
+  410: 'GONE',
   429: 'TOO_MANY_REQUESTS',
 };
 

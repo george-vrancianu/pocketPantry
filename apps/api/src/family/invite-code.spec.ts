@@ -8,6 +8,7 @@ import {
   formatPromoCode,
   generatePromoCode,
   looksLikeInviteCode,
+  looksLikePromoCode,
   normalizePromoCode,
 } from './invite-code';
 
@@ -62,5 +63,19 @@ describe('Promo Code vs Invite Code shape', () => {
     expect(looksLikeInviteCode(normalizePromoCode('abcde-fghjk'))).toBe(false);
     expect(looksLikeInviteCode('ABCDEFG')).toBe(false);
     expect(looksLikeInviteCode('ABCD0FGH')).toBe(false);
+  });
+});
+
+describe('looksLikePromoCode', () => {
+  it('is true for 10 characters of the code alphabet, once normalised', () => {
+    expect(looksLikePromoCode(normalizePromoCode('abcde-fghjk'))).toBe(true);
+    expect(looksLikePromoCode(generatePromoCode())).toBe(true);
+  });
+
+  it('is false for an Invite Code, other lengths and characters outside the alphabet', () => {
+    expect(looksLikePromoCode(generateInviteCode())).toBe(false);
+    expect(looksLikePromoCode('ABCDEFGHJ')).toBe(false);
+    expect(looksLikePromoCode('ABCDEFGHJKM')).toBe(false);
+    expect(looksLikePromoCode('ABCDEFGHJ0')).toBe(false);
   });
 });

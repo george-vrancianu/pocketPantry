@@ -1,8 +1,10 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import request from 'supertest';
 import {
   familyToJoin,
   footprint,
   rawSignUp,
+  sessionCookie,
 } from './support/signup-spec-helpers';
 
 // AppModule validates env at import time, so the limit is set before it is loaded.
@@ -42,7 +44,14 @@ describe('Invite Code signup rate limit (integration)', () => {
       params: {},
     });
     expect((await footprint(app, blocked.email)).member).toBeUndefined();
-    // A plain signup is not limited.
-    expect((await rawSignUp(app)).res.status).toBe(200);
+    // A plain signup is not limited, but its Member meets the same spent IP budget on the Family page.
+    const plain = await rawSignUp(app);
+    expect(plain.res.status).toBe(200);
+    const preview = await request(app.getHttpServer())
+      .get('/api/family/join-preview?code=ZZZZZZZZ')
+      .set('origin', 'http://localhost:5173')
+      .set('cookie', sessionCookie(plain.res));
+    expect(preview.status).toBe(429);
+    expect(preview.body).toEqual({ code: 'family.rate_limited', params: {} });
   });
 });

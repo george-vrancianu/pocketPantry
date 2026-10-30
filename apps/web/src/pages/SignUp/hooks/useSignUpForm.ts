@@ -74,7 +74,7 @@ export function useSignUpForm() {
   const failure = signUp.error;
   const failureCode = failure instanceof ApiError ? failure.code : '';
   const onPromoField = failureCode.startsWith('promo_code.');
-  const onInviteField = failureCode.startsWith('family.');
+  const onInviteField = mode === 'join' && failureCode.startsWith('family.');
   const message = failure ? translateApiError(t, failure) : null;
 
   return {

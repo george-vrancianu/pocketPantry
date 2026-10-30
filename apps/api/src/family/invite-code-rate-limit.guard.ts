@@ -18,7 +18,8 @@ import { InviteCodeRateLimiter } from './invite-code-rate-limiter';
  * Behind a proxy, enable Fastify's `trustProxy` first or every client shares
  * the proxy's IP.
  *
- * Per-process and in memory (fixed one-minute windows, held by `InviteCodeRateLimiter`, which signup with an Invite Code shares): it assumes a single
+ * Per-process and in memory (fixed one-minute windows, held by
+ * `InviteCodeRateLimiter`, which signup with an Invite Code shares): it assumes a single
  * API instance. Running several multiplies the limits by the instance count
  * until a shared store replaces it. Expired windows are pruned on access.
  */

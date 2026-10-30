@@ -172,4 +172,66 @@ describe('SignUpPage join toggle', () => {
     ).toBeVisible();
     expect(screen.queryByRole('alert')).toBeNull();
   });
+
+  it('sends both codes when joining while signup is open', async () => {
+    const { calls } = stub(false);
+    const user = userEvent.setup();
+    renderWithProviders(<App />, { route: '/sign-up' });
+    await screen.findByLabelText('Have a Promo Code?');
+    await join(user);
+    await fill(user);
+    await user.type(screen.getByLabelText(/^Invite Code/), 'ABCD2345');
+    await user.type(screen.getByLabelText('Have a Promo Code?'), 'ABCDEFGHJK');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/auth/sign-up/email')?.body,
+      ).toEqual({
+        name: 'Ana',
+        email: 'ana@example.com',
+        password: 'long-enough-1',
+        promoCode: 'ABCDEFGHJK',
+        joinInviteCode: 'ABCD2345',
+      }),
+    );
+  });
+
+  it('shows a Promo Code typed as the Invite Code on the Invite Code field', async () => {
+    stub(true, () =>
+      Response.json(
+        { code: 'family.invite_code_is_promo_code', params: {} },
+        { status: 400 },
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<App />, { route: '/sign-up' });
+    await screen.findByLabelText(/^Promo Code/);
+    await join(user);
+    await fill(user);
+    await user.type(screen.getByLabelText(/^Invite Code/), 'ABCDEFGHJK');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^Invite Code/)).toBeInvalid(),
+    );
+    expect(
+      screen.getByText(/That is a Promo Code, not an Invite Code/),
+    ).toBeVisible();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('keeps a family.* refusal in the form alert while creating a Family', async () => {
+    stub(false, () =>
+      Response.json(
+        { code: 'family.rate_limited', params: {} },
+        { status: 429 },
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<App />, { route: '/sign-up' });
+    await screen.findByLabelText('Have a Promo Code?');
+    await fill(user);
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await screen.findByRole('alert');
+    expect(screen.queryByLabelText(/^Invite Code/)).toBeNull();
+  });
 });

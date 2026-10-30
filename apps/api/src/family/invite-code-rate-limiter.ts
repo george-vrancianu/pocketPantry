@@ -9,7 +9,8 @@ type Window = { count: number; resetsAt: number };
 
 /**
  * The fixed one-minute windows behind Invite Code throttling, shared by the Family-page join guard
- * and signup with an Invite Code so both draw on one per-IP budget. Per-process and in memory.
+ * and signup with an Invite Code so both draw on one per-IP budget. The guard charges every request;
+ * signup charges only failures (a successful signup refunds its charge). Per-process and in memory.
  */
 @Injectable()
 export class InviteCodeRateLimiter {
