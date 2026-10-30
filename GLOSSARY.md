@@ -15,7 +15,7 @@ The group that owns a Pantry, a Shopping List, and Family Settings. Every Member
 _Avoid_: Household, group, team
 
 **Household of One**:
-The Family with a single Member, created automatically at signup and again whenever a Member leaves a Family, is removed from it, or the Family is deleted.
+The Family with a single Member, created automatically at signup unless the Member joins a Family there with an Invite Code, and again whenever a Member leaves a Family, is removed from it, or the Family is deleted.
 _Avoid_: Solo family, personal account
 
 **Owner**:
@@ -27,7 +27,7 @@ A short, reusable, expiring code that lets a Member join a Family.
 _Avoid_: Invite link, token
 
 **Admin**:
-A Member with the catalog-curation role. Unrelated to Family ownership. Never granted at signup; set directly in the database.
+A Member with the app-operator role: curating the Catalog and issuing Promo Codes. Unrelated to Family ownership. Never granted at signup; set directly in the database.
 _Avoid_: Owner, superuser
 
 ### Catalog
@@ -197,7 +197,7 @@ A manual flag a Family sets on an Ingredient it is nearly out of, while the Ingr
 _Avoid_: Low stock, almost out, low quantity
 
 **Suggestion**:
-A proposed Shopping Item, from a missing Staple, a Used Up Ingredient, a Running low Ingredient, or an Ingredient whose Batches are all Expired, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing a missing Staple, Used Up or Expired Suggestion hides it for the Family until the Ingredient is restocked and runs out again; a Running low Suggestion has no dismissal, and it leaves when its flag is turned off. Not to be confused with plate matches: the closest Base Recipes offered when saving a Plate Scan as a Recipe.
+A proposed Shopping Item, from a missing Staple, a Used Up Ingredient, a Running low Ingredient, or an Ingredient whose Batches are all Expired, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing a missing Staple, Used Up or Expired Suggestion hides it for the Family until the Ingredient is restocked and runs out again; a Running low Suggestion has no dismissal, and it leaves when its flag is turned off. Not to be confused with plate matches: the closest Catalog Base Recipes offered on New Recipe when it is filled from a Plate Scan.
 _Avoid_: Alert, notification, recommendation
 
 ### Scanning
@@ -244,7 +244,8 @@ The language the printed text in a Scan is read in: English, Romanian, or Danish
 _Avoid_: Scan locale, source language
 
 **Plate Scan**:
-Recognises a cooked dish from a photo and lists its likely Ingredients for one serving.
+Recognises a cooked dish from a photo as up to five guessed dish titles, then writes the one the Member picks as a whole Recipe: Ingredient Lines, Steps and Tips, for the Servings the dish usually makes. The written Recipe is made up, not read from any source, and is kept as a Recipe Draft that the Member finishes on New Recipe; nothing becomes a Recipe until they save it. Guidance is left for Suggest Guidance. A Plate Scan has no Review and never adds to the Shopping List; a Member shops for the dish from the saved Recipe. Picking none of the guesses leaves only the photo paid for.
+_Avoid_: Dish scan, plate review
 
 **Ingredients Scan**:
 Recognises loose ingredients laid out in a photo.
@@ -456,16 +457,20 @@ The Credits a Family has left, seen by every Member with the recent reads that s
 _Avoid_: Wallet, allowance
 
 **Credit Price**:
-What one successful read costs in Credits: 1 for a Scan (each Receipt Section counts, and a Plate Scan includes its picked dish), a Voice Note, an Assistant Request, Suggest Guidance or pasted recipe text, and 2 for reading a recipe from a web page. Barcode Lookups are free. Set by the app and changed as Usage Records show what reads really cost.
+What one successful read costs in Credits: 1 for a Scan (each Receipt Section counts), 1 more for writing a Plate Scan's picked dish as a Recipe, a Voice Note, an Assistant Request, Suggest Guidance or pasted recipe text, and 2 for reading a recipe from a web page. Barcode Lookups are free. Set by the app and changed as Usage Records show what reads really cost.
 _Avoid_: Fee, rate
 
 **Credit Grant**:
-Credits added to a Family by the app rather than spent, always with a reason. The Welcome Grant is one; others are given by hand.
+Credits added to a Family by the app rather than spent, always with a reason. The Welcome Grant and a redeemed Promo Code are two; others are given by hand.
 _Avoid_: Top-up, purchase, refund
 
 **Welcome Grant**:
-The 100 Credits a Member brings once in their life, paid into the Family they belong to when they sign up. A Household of One made later, when a Member leaves, is removed, or their Family is deleted, starts with none. A Member who joins a Family brings their Household of One's Credits with them; one who leaves leaves theirs behind. Every Family that existed when Credits began got one too.
+The 100 Credits a Member brings once in their life, paid into the Family they belong to when they sign up, but only while signing up needs no Promo Code; while it does, the Promo Code's Credits take its place. A Household of One made later, when a Member leaves, is removed, or their Family is deleted, starts with none. A Member who joins a Family brings their Household of One's Credits with them; one who leaves leaves theirs behind. Every Family that existed when Credits began got one too.
 _Avoid_: Starting balance, free credits, bonus
+
+**Promo Code**:
+A single-use code an Admin issues, worth a set number of Credits (100 unless the Admin picks another, possibly none), with an optional note. Redeemed once, ever, by one Member: at signup, where it is what lets a new Family be created while signing up needs one, or later in Settings by any Member. Its Credits go to the redeemer's Family. An unused one can be revoked; it never expires.
+_Avoid_: Voucher, coupon, Invite Code (joins a Family, reusable)
 
 **Usage Record**:
 What the app keeps about one call to an AI provider: which read it served, for which Member and Family, and what it cost in money. One read can make several, such as a Voice Note's transcription and reading. Kept for the app's own accounting, even after a Family is deleted; never shown to Members and never a Credit.
@@ -506,7 +511,7 @@ The language a Member sees the app's own text in: menus, buttons, messages, and 
 _Avoid_: Locale, app language
 
 **Catalog Language**:
-The language a Member sees everything Admins curate and translate in: Ingredients, Categories, Aisles, Allergens, Eating Moments and Catalog Recipes. Names the AI makes up for Unmatched lines and Plate Scan dishes are in it too. Follows the UI Language until the Member sets it, so a Member can use an English UI with Romanian Ingredient names. Family Ingredients, Family Recipes and typed Shopping Items keep the one language they were written in.
+The language a Member sees everything Admins curate and translate in: Ingredients, Categories, Aisles, Allergens, Eating Moments and Catalog Recipes. Names the AI makes up for Unmatched lines, and Plate Scan dish titles and the Recipes written from them, are in it too. Follows the UI Language until the Member sets it, so a Member can use an English UI with Romanian Ingredient names. Family Ingredients, Family Recipes and typed Shopping Items keep the one language they were written in.
 _Avoid_: Product language, name language, locale
 
 **Member Preferences**:
