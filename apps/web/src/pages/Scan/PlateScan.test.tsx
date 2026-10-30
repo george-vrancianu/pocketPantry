@@ -262,14 +262,65 @@ describe('Plate Scan in the Scan Session', () => {
     ]);
   });
 
-  it('keeps focus on the guess when the pick is refused for Credits', async () => {
-    renderPlate({
-      'GET /api/credits': () => Response.json(creditsBody(1)),
+  it('keeps focus on the guess, enabled, while the balance is checked', async () => {
+    let hold = false;
+    let release: (response: Response) => void = () => {};
+    const calls = renderPlate({
+      'GET /api/credits': () =>
+        hold
+          ? (new Promise<Response>((resolve) => {
+              release = resolve;
+            }) as unknown as Response)
+          : Response.json(creditsBody(50)),
     });
     await scanThenDone();
-    await pick(/Pancakes/);
+    const option = await within(await picker()).findByRole('button', {
+      name: /Pancakes.*costs 2 Credits/,
+    });
+    const checks = () =>
+      calls.filter((c) => c.key === 'GET /api/credits').length;
+    const before = checks();
+    hold = true;
+    await userEvent.click(option);
+    await waitFor(() => expect(checks()).toBe(before + 1));
+    // A disabled button loses focus; the guess must stay a live, focused button during the check.
+    expect(option).not.toBeDisabled();
+    expect(option).not.toHaveAttribute('disabled');
+    expect(option).toHaveFocus();
+    await userEvent.click(option);
+    release(Response.json(creditsBody(1)));
     await screen.findByRole('alert');
-    expect(screen.getByRole('button', { name: /Pancakes/ })).toHaveFocus();
+    expect(
+      within(await picker()).getByRole('button', { name: /Pancakes/ }),
+    ).toHaveFocus();
+    expect(
+      calls.filter((c) => c.key === 'POST /api/scan/plate/recipe'),
+    ).toHaveLength(0);
+  });
+
+  it('writes the dish once when the guess is clicked twice during the balance check', async () => {
+    let hold = false;
+    let release: (response: Response) => void = () => {};
+    const calls = renderPlate({
+      'GET /api/credits': () =>
+        hold
+          ? (new Promise<Response>((resolve) => {
+              release = resolve;
+            }) as unknown as Response)
+          : Response.json(creditsBody(50)),
+    });
+    await scanThenDone();
+    const option = await within(await picker()).findByRole('button', {
+      name: /Pancakes.*costs 2 Credits/,
+    });
+    hold = true;
+    await userEvent.click(option);
+    await userEvent.click(option);
+    release(Response.json(creditsBody(50)));
+    expect(await screen.findByText('Writing Pancakes…')).toBeInTheDocument();
+    expect(
+      calls.filter((c) => c.key === 'POST /api/scan/plate/recipe'),
+    ).toHaveLength(1);
   });
 
   it('shows only the guesses on the card: no ingredient lines to review', async () => {

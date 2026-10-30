@@ -7,6 +7,7 @@ import {
   useCreditPriceText,
 } from '../../../components/CreditPrice';
 import { apiRequest } from '../../../lib/api';
+import { translateErrorCode } from '../../../i18n/translateApiError';
 import { creditsQueryKey, type Credits } from '../../../lib/credits';
 import { recipeReads } from '../../../lib/recipeReads';
 import {
@@ -52,7 +53,10 @@ export const cardId = (id: string) => `review-card-${id}`;
  * does a Family without the Credits the writing costs (its own Credit Price, besides the photo's): the
  * balance is looked up fresh before anything is handed over, and a pick the server still refuses
  * (`REFUSED_PICK_CODES`) is handed back by the holder, so the card returns with its guesses and the
- * refusal. Neither reaches the strip.
+ * refusal. Neither reaches the strip. A refusal that comes back after the Scan Session was left or
+ * finished still puts the card back (a Session of just that card); sign-out aborts the reads first, so
+ * nothing returns then. The returned card remounts and focus stays where `onPicked` moved it; the
+ * refusal `Alert` is announced (`role="alert"`), and it is hidden while a new pick finds the holder full.
  */
 export function PlateChoice({
   scan,
@@ -164,12 +168,14 @@ export function PlateChoice({
           );
         })}
       </Box>
-      {short || refusal ? (
+      {short || (refusal && !full) ? (
         <Box sx={{ mt: 1 }}>
           <Alert severity="error">
             {short
               ? t('errors:credits.insufficient', short)
-              : t(`errors:${refusal?.code ?? ''}`, refusal?.params)}
+              : refusal
+                ? translateErrorCode(t, refusal.code, refusal.params)
+                : null}
           </Alert>
         </Box>
       ) : null}
