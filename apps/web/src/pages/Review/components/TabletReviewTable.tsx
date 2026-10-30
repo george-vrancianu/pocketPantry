@@ -12,13 +12,12 @@ import { rowGroup, type ReviewState } from '../../../lib/reviewState';
 import type { CameraMode } from '../../../lib/cameraMode';
 import { ExcludedRow } from './ExcludedRow';
 import { TabletReviewRow } from './TabletReviewRow';
-import { linkButtonSx, tabletColumnsFor, tabletRowSx } from './layout';
+import { linkButtonSx, TABLET_COLUMNS, tabletRowSx } from './layout';
 
 type Props = {
   state: ReviewState;
   groups: { review: ReviewLine[]; sure: ReviewLine[]; excluded: ReviewLine[] };
   parents: CatalogParent[];
-  shopping: boolean;
   mode: CameraMode;
   /** Rows whose Save or Done was blocked. */
   blocked: Record<string, boolean>;
@@ -109,7 +108,6 @@ export function TabletReviewTable({
   state,
   groups,
   parents,
-  shopping,
   mode,
   blocked,
   onOpen,
@@ -123,7 +121,6 @@ export function TabletReviewTable({
 }: Props) {
   const { t } = useTranslation('review');
   const sureId = useId();
-  const columns = tabletColumnsFor(shopping);
   const accessibleNameOf = accessibleNamesOf(
     [...groups.review, ...groups.sure],
     (name, position) => t('position', { name, ...position }),
@@ -138,7 +135,6 @@ export function TabletReviewTable({
         toCheck={toCheck}
         editing={toCheck || !!state.open[line.key]}
         parents={parents}
-        shopping={shopping}
         mode={mode}
         blocked={!!blocked[line.key]}
         onEdit={() => onToggle(line.key)}
@@ -174,7 +170,7 @@ export function TabletReviewTable({
         <Box
           role="row"
           sx={{
-            ...tabletRowSx(shopping),
+            ...tabletRowSx,
             alignItems: 'center',
             height: 44,
             fontSize: 11,
@@ -184,7 +180,7 @@ export function TabletReviewTable({
             color: tokens.color.muted,
           }}
         >
-          {columns.map((column) => (
+          {TABLET_COLUMNS.map((column) => (
             <Box
               key={column.key}
               role="columnheader"
@@ -206,7 +202,7 @@ export function TabletReviewTable({
           <GroupHeaderRow
             kind="review"
             count={groups.review.length}
-            span={columns.length}
+            span={TABLET_COLUMNS.length}
           />
           {groups.review.map(row)}
         </Box>
@@ -219,7 +215,7 @@ export function TabletReviewTable({
             expanded={state.sureOpen}
             onToggle={onToggleSureGroup}
             controls={sureId}
-            span={columns.length}
+            span={TABLET_COLUMNS.length}
           />
           {state.sureOpen ? (
             <Box id={sureId}>{groups.sure.map(row)}</Box>
@@ -237,7 +233,7 @@ export function TabletReviewTable({
                 whiteSpace: 'nowrap',
               }}
             >
-              <Box role="cell" aria-colspan={columns.length}>
+              <Box role="cell" aria-colspan={TABLET_COLUMNS.length}>
                 {groups.sure.map((line) => displayName(line)).join(', ')}
               </Box>
             </Box>
@@ -247,7 +243,7 @@ export function TabletReviewTable({
       {groups.excluded.length > 0 ? (
         <Box role="rowgroup">
           <Box role="row">
-            <Box role="cell" aria-colspan={columns.length}>
+            <Box role="cell" aria-colspan={TABLET_COLUMNS.length}>
               <ExcludedRow lines={groups.excluded} onRestore={onRestore} />
             </Box>
           </Box>

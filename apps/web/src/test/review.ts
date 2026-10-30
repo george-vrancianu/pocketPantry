@@ -11,10 +11,6 @@ export function startReview(scan: {
   mode: ScanMode;
   lines: ProposedLine[];
   scanLanguage?: ScanLanguage;
-  /** A Plate Scan: the dish the Member picked. */
-  dishTitle?: string;
-  /** A Plate Scan: the Tags the read proposed. */
-  tagIds?: string[];
 }) {
   resetScanSession();
   dispatchScanSession({
@@ -29,14 +25,6 @@ export function startReview(scan: {
   });
   dispatchScanSession({ type: 'start' });
   dispatchScanSession({ type: 'read', id: 'card', lines: scan.lines });
-  if (scan.dishTitle)
-    dispatchScanSession({
-      type: 'pick',
-      id: 'card',
-      lines: scan.lines,
-      dishTitle: scan.dishTitle,
-      tagIds: scan.tagIds,
-    });
 }
 
 /** Names of the Review rows on screen, in display order (rows to check first). */

@@ -35,8 +35,6 @@ export type ExclusionReason = 'not_food' | 'fee' | 'deposit' | 'other';
 
 export type ScanResponse = {
   lines: ProposedLine[];
-  /** Plate Scan only: ids of allowed Tags the dish was read as (proposals; the Member decides on save). */
-  tagIds?: string[];
 };
 
 /** An image read below `threshold` is flagged low-confidence. */

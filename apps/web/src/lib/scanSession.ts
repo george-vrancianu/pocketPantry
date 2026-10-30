@@ -59,10 +59,6 @@ export type SessionScan = {
   plateToken?: string;
   /** A Plate Scan whose picked dish the server refused (Credits): the refusal to show on its card. */
   refusal?: { code: string; params: Record<string, unknown> };
-  /** The dish the Member picked, once they did. */
-  dishTitle?: string;
-  /** Plate Scan: the Tags the read proposed for the dish; the saved Recipe starts with them. */
-  proposedTagIds?: string[];
   /** For a card made by merging receipts: the Scans it was made of, as they were, for Split. */
   sections?: SessionScan[];
 };
@@ -100,13 +96,6 @@ export type SessionAction =
   | { type: 'merge'; id: string }
   | { type: 'split'; id: string }
   | { type: 'readDishes'; id: string; dishes: DishGuess[]; token: string }
-  | {
-      type: 'pick';
-      id: string;
-      lines: ProposedLine[];
-      dishTitle?: string;
-      tagIds?: string[];
-    }
   | { type: 'reread'; id: string }
   /** Puts a Scan back that was handed away and refused (a Plate Scan's pick), at its place, with `refusal`. */
   | { type: 'restore'; scan: SessionScan; index: number }
@@ -283,15 +272,6 @@ export function sessionReducer(
         dishes: action.dishes,
         plateToken: action.token,
       });
-    case 'pick':
-      return update(state, action.id, {
-        lines: action.lines,
-        dishTitle: action.dishTitle,
-        proposedTagIds: action.tagIds,
-        edited: undefined,
-        dishes: undefined,
-        plateToken: undefined,
-      });
     case 'restore':
       if (state.scans.some((scan) => scan.id === action.scan.id)) return state;
       return {
@@ -306,8 +286,6 @@ export function sessionReducer(
         status: 'queued',
         dishes: undefined,
         plateToken: undefined,
-        dishTitle: undefined,
-        proposedTagIds: undefined,
       });
     case 'edit':
       return update(state, action.id, { edited: action.lines });

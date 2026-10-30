@@ -4,7 +4,6 @@ import {
   templateDetailsQueryKey,
 } from './queryKeys';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toNewShoppingItem, postShoppingItems } from './plate';
 import { postReceiptConfirm, type TickFailures } from './receiptScan';
 import { postBatches } from './scan';
 import type { CameraMode } from './cameraMode';
@@ -15,7 +14,7 @@ import { shoppingListQueryKey } from './shopping';
 
 /**
  * Saves reviewed lines as their mode does: Product, Barcode and Ingredients through the bulk Batch
- * endpoint, Receipt through Receipt confirm, Plate to the Shopping List. Only Receipt can come
+ * endpoint, Receipt through Receipt confirm. Only Receipt can come
  * back with Shopping Items it failed to tick.
  */
 export async function saveLines(
@@ -23,9 +22,9 @@ export async function saveLines(
   scanLanguage: ScanLanguage | undefined,
   lines: ReviewLine[],
 ): Promise<TickFailures | undefined> {
-  if (mode === 'plate') {
-    await postShoppingItems(lines.map(toNewShoppingItem));
-  } else if (mode === 'receipt') {
+  // A Plate Scan never has lines to save: its picked dish is written as a Recipe Draft instead (ADR 0035).
+  if (mode === 'plate') throw new Error('A Plate Scan has no lines to save');
+  if (mode === 'receipt') {
     const { tickFailures } = await postReceiptConfirm(
       scanLanguage,
       toSaveBatches(lines, mode),

@@ -2,8 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
 import { localIso } from './pantry';
-import { postShoppingItems } from './plate';
-import { shoppingListQueryKey, type NewShoppingItem } from './shopping';
+import {
+  shoppingListQueryKey,
+  type AddedShoppingItems,
+  type NewShoppingItem,
+} from './shopping';
 import {
   shoppingListChangeQueryKeys,
   templateDetailsQueryKey,
@@ -140,7 +143,11 @@ export function useTemplateMutations() {
 export function useApplyTemplate() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: NewShoppingItem[]) => postShoppingItems(body),
+    mutationFn: (items: NewShoppingItem[]) =>
+      apiRequest<AddedShoppingItems>('/shopping-list/items/bulk', {
+        method: 'POST',
+        body: { items },
+      }),
     // Suggestions hide while the Ingredient is on the list; Recipe matches and the Meal Plan forecast show it too.
     onSuccess: () =>
       Promise.all(

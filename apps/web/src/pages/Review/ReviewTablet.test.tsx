@@ -45,17 +45,13 @@ const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
   ...overrides,
 });
 
-function renderReview(
-  lines: ProposedLine[],
-  mode: 'product' | 'plate' = 'product',
-) {
-  startReview({ mode, lines });
+function renderReview(lines: ProposedLine[]) {
+  startReview({ mode: 'product', lines });
   const { fetchMock, calls } = stubApi({
     'GET /api/catalog/search': () => Response.json({ results: [milk] }),
     'GET /api/catalog/parents': () =>
       Response.json({ parents: [{ id: 'dairy-id', name: 'Dairy' }] }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
-    'POST /api/shopping-list/items/bulk': () => Response.json({ items: [] }),
     'GET /api/settings/family': () =>
       Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
   });
@@ -346,21 +342,6 @@ describe('Review on a tablet or laptop', () => {
     ).toBeInTheDocument();
   });
 
-  it('hides Location and Expiry for Plate', () => {
-    renderReview([line({ lowConfidence: true })], 'plate');
-    expect(
-      screen.queryByRole('columnheader', { name: 'Location' }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('columnheader', { name: 'Expires' }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/^Expiry date/)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/^Location/)).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Add 1 item to shopping list' }),
-    ).toBeInTheDocument();
-  });
-
   it('saves from the footer', async () => {
     const calls = renderReview([line()]);
     await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
@@ -532,22 +513,14 @@ describe('the expiry sheet in the Review table', () => {
       '28.12.2026',
     );
   });
-
-  it('has no calendar button for Plate', () => {
-    renderReview([line({ lowConfidence: true })], 'plate');
-    expect(
-      screen.queryByRole('button', { name: /^Pick expiry date/ }),
-    ).not.toBeInTheDocument();
-  });
 });
 
 describe('tablet column template', () => {
   it('uses fixed widths so Produs takes the remainder', () => {
-    expect(tabletTemplate(false)).toBe(
+    expect(tabletTemplate()).toBe(
       '24px minmax(0,1fr) 120px 104px 144px 112px 144px',
     );
-    expect(tabletTemplate(true)).toBe('24px minmax(0,1fr) 120px 112px 144px');
-    expect(tabletTemplate(false, true)).toBe(
+    expect(tabletTemplate(true)).toBe(
       '24px minmax(0,1fr) 150px 150px 180px 120px 144px',
     );
   });

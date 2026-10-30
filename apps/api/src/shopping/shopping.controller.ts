@@ -77,7 +77,7 @@ export class ShoppingController {
   @HttpCode(200)
   @ApiOperation({
     summary:
-      'Add several Shopping Items at once (Plate Scan), merging as for a single add; all or none',
+      'Add several Shopping Items at once (applying a Shopping Template), merging as for a single add; all or none',
   })
   async addMany(
     @CurrentUser() member: CurrentUserValue,

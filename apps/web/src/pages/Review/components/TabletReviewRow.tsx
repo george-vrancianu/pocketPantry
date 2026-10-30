@@ -51,7 +51,6 @@ type Props = {
   /** The row sits among the rows to check: it has Confirm, a sure row has Finish editing. */
   toCheck: boolean;
   parents: CatalogParent[];
-  shopping: boolean;
   mode: CameraMode;
   /** A Save or Done was blocked on this row: show every error now. */
   blocked: boolean;
@@ -95,7 +94,6 @@ export function TabletReviewRow({
   editing,
   toCheck,
   parents,
-  shopping,
   mode,
   blocked,
   onEdit,
@@ -174,7 +172,7 @@ export function TabletReviewRow({
       role="row"
       onClick={readOnly ? onEdit : undefined}
       sx={{
-        ...tabletRowSx(shopping),
+        ...tabletRowSx,
         alignItems: readOnly ? 'center' : 'start',
         minHeight: readOnly ? 52 : 68,
         py: readOnly ? '6px' : '14px',
@@ -212,7 +210,7 @@ export function TabletReviewRow({
                 <SourceText text={line.sourceText} mode={mode} inline />
               </>
             )}
-            {shopping || line.description === '' ? null : (
+            {line.description === '' ? null : (
               <Box
                 component="span"
                 title={line.description}
@@ -251,17 +249,17 @@ export function TabletReviewRow({
             )}
             <SourceText text={line.sourceText} mode={mode} />
             {line.lookup ? <BarcodeLookupNotes lookup={line.lookup} /> : null}
-            {shopping ? null : (
-              <DescriptionInput
-                line={line}
-                onChange={onChange}
-                id={id('description')}
-                placeholder={t('review:field.description')}
-                ariaLabel={named(t('review:field.description'))}
-                sx={compactSx}
-              />
-            )}
-            {unmatched && !shopping ? (
+
+            <DescriptionInput
+              line={line}
+              onChange={onChange}
+              id={id('description')}
+              placeholder={t('review:field.description')}
+              ariaLabel={named(t('review:field.description'))}
+              sx={compactSx}
+            />
+
+            {unmatched ? (
               <CategorySelect
                 line={line}
                 onChange={onChange}
@@ -319,78 +317,74 @@ export function TabletReviewRow({
         )}
       </Box>
 
-      {shopping ? null : (
-        <>
-          <Box role="cell" sx={{ minWidth: 0 }}>
-            {readOnly ? (
-              <Box sx={{ ...ellipsis, pl: '12px', fontSize: 13 }}>
-                {t(`common:locations.${line.location}`)}
-              </Box>
-            ) : (
-              // A table cell is too narrow for the Location toggle, so the table keeps the dropdown (issue 521).
-              <LocationSelect
-                line={line}
-                onChange={onChange}
-                id={id('location')}
-                ariaLabel={named(t('review:field.location'))}
-              />
-            )}
+      <Box role="cell" sx={{ minWidth: 0 }}>
+        {readOnly ? (
+          <Box sx={{ ...ellipsis, pl: '12px', fontSize: 13 }}>
+            {t(`common:locations.${line.location}`)}
           </Box>
-          <Box role="cell" sx={{ minWidth: 0 }}>
-            {readOnly ? (
-              <Box
-                sx={{
-                  ...ellipsis,
-                  pl: '12px',
-                  fontSize: 13,
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {formatDate(line.expiryDate)}
-              </Box>
-            ) : (
-              <>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <ExpiryInput
-                      line={line}
-                      onChange={onChange}
-                      id={id('expiry')}
-                      error={expiryError}
-                      errorId={`${id('expiry')}-error`}
-                      onBlur={() => setExpiryTouched(true)}
-                      ariaLabel={named(t('review:field.expiry'))}
-                    />
-                  </Box>
-                  <IconButton
-                    ref={pickExpiry}
-                    label={named(t('review:pickExpiry'))}
-                    tone="plain"
-                    size={34}
-                    aria-haspopup="dialog"
-                    onClick={() => setExpirySheetOpen(true)}
-                  >
-                    <CalendarIcon size={18} />
-                  </IconButton>
-                </Box>
-                <ReviewLineExpirySheet
+        ) : (
+          // A table cell is too narrow for the Location toggle, so the table keeps the dropdown (issue 521).
+          <LocationSelect
+            line={line}
+            onChange={onChange}
+            id={id('location')}
+            ariaLabel={named(t('review:field.location'))}
+          />
+        )}
+      </Box>
+      <Box role="cell" sx={{ minWidth: 0 }}>
+        {readOnly ? (
+          <Box
+            sx={{
+              ...ellipsis,
+              pl: '12px',
+              fontSize: 13,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {formatDate(line.expiryDate)}
+          </Box>
+        ) : (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <ExpiryInput
                   line={line}
                   onChange={onChange}
-                  open={expirySheetOpen}
-                  onClose={() => setExpirySheetOpen(false)}
-                  // A tap doesn't always focus the button (Safari), so put focus back explicitly.
-                  onExited={() => pickExpiry.current?.focus()}
+                  id={id('expiry')}
+                  error={expiryError}
+                  errorId={`${id('expiry')}-error`}
+                  onBlur={() => setExpiryTouched(true)}
+                  ariaLabel={named(t('review:field.expiry'))}
                 />
-                {expiryError ? (
-                  <CellError id={`${id('expiry')}-error`}>
-                    {t('review:error.expiry')}
-                  </CellError>
-                ) : null}
-              </>
-            )}
-          </Box>
-        </>
-      )}
+              </Box>
+              <IconButton
+                ref={pickExpiry}
+                label={named(t('review:pickExpiry'))}
+                tone="plain"
+                size={34}
+                aria-haspopup="dialog"
+                onClick={() => setExpirySheetOpen(true)}
+              >
+                <CalendarIcon size={18} />
+              </IconButton>
+            </Box>
+            <ReviewLineExpirySheet
+              line={line}
+              onChange={onChange}
+              open={expirySheetOpen}
+              onClose={() => setExpirySheetOpen(false)}
+              // A tap doesn't always focus the button (Safari), so put focus back explicitly.
+              onExited={() => pickExpiry.current?.focus()}
+            />
+            {expiryError ? (
+              <CellError id={`${id('expiry')}-error`}>
+                {t('review:error.expiry')}
+              </CellError>
+            ) : null}
+          </>
+        )}
+      </Box>
 
       <Box
         role="cell"

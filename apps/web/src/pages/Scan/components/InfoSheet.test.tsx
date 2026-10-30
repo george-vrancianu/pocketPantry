@@ -40,7 +40,9 @@ describe('InfoSheet mode list', () => {
     expect(items[3]).toHaveTextContent(
       'Point at a barcode; each one is added on its own',
     );
-    expect(items[4]).toHaveTextContent('Lists its ingredients');
+    expect(items[4]).toHaveTextContent(
+      'Writes the recipe for the one you pick',
+    );
     // Receipt also carries the framing and folding tips.
     expect(items[0]).toHaveTextContent(/40 cm above the receipt/);
     expect(items[0]).toHaveTextContent(/fold where the guide ends/);

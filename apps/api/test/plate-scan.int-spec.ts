@@ -931,7 +931,7 @@ describe('Plate Scan (integration)', () => {
           .from(unmatchedEntries)
           .where(ilike(unmatchedEntries.rawName, rawName));
 
-      it('queues a new free-text dish line once, with source plate and the stored Catalog Language; a merge adds none; a matched line adds none', async () => {
+      it('queues a new free-text line once, with source manual and the stored Catalog Language; a merge adds none; a matched line adds none', async () => {
         const cookie = await signUpIn('ro');
         const raw = `Zzp pixie ${Date.now()}`;
         await post(
@@ -939,7 +939,7 @@ describe('Plate Scan (integration)', () => {
           'shopping-list/items/bulk',
           {
             items: [
-              { name: raw, source: 'plate', quantity: 1, unit: 'pcs' },
+              { name: raw, source: 'manual', quantity: 1, unit: 'pcs' },
               { ingredientId: milk, quantity: 100, unit: 'ml' },
             ],
           },
@@ -947,13 +947,15 @@ describe('Plate Scan (integration)', () => {
         ).expect(200);
         const first = await entriesFor(raw);
         expect(first).toHaveLength(1);
-        expect(first[0]).toMatchObject({ source: 'plate', locale: 'ro' });
+        expect(first[0]).toMatchObject({ source: 'manual', locale: 'ro' });
         expect(first[0].shoppingItemId).not.toBeNull();
 
         await post(
           cookie,
           'shopping-list/items/bulk',
-          { items: [{ name: raw, source: 'plate', quantity: 2, unit: 'pcs' }] },
+          {
+            items: [{ name: raw, source: 'manual', quantity: 2, unit: 'pcs' }],
+          },
           'ro',
         ).expect(200);
         expect(await entriesFor(raw)).toHaveLength(1);
@@ -979,6 +981,8 @@ describe('Plate Scan (integration)', () => {
       await bulk(cookie, []).expect(400);
       await bulk(cookie, [{ quantity: 1 }]).expect(400);
       await bulk(cookie, [{ ingredientId: milk, unit: 'cup' }]).expect(400);
+      // A client can no longer claim the retired `plate` source (ADR 0035).
+      await bulk(cookie, [{ name: 'Pixie', source: 'plate' }]).expect(400);
       await bulk(
         cookie,
         Array.from({ length: 101 }, () => ({ ingredientId: milk })),

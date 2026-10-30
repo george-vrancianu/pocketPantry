@@ -13,10 +13,12 @@ export const BATCH_SOURCES = [
   'manual',
 ] as const satisfies UnmatchedSource[];
 
-/** The sources a client may claim when adding a Shopping Item. */
+/**
+ * The sources a client may claim when adding a Shopping Item. `plate` stays a stored, readable
+ * source (older rows use it) but nothing writes it any more (ADR 0035).
+ */
 export const SHOPPING_ITEM_SOURCES = [
   'manual',
-  'plate',
 ] as const satisfies UnmatchedSource[];
 
 export type UnmatchedRecord = {

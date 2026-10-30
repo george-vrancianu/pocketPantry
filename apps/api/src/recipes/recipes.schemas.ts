@@ -212,18 +212,6 @@ export const plateMatchesBody = z
   })
   .strict();
 
-/** Saving a Plate Scan as a Family Recipe: one serving, ingredient lines only. */
-export const fromPlateBody = z
-  .object({
-    locale: memberLocale,
-    title,
-    parentId: id.nullable(),
-    lines: z.array(familyLineInput.omit({ id: true })).max(MAX_LINES),
-    /** Tags proposed by the Plate Scan read; those usable by the Family are kept (up to 10, after a Variant's Base Tags). */
-    tagIds: z.array(id).max(100).default([]),
-  })
-  .strict();
-
 export const tipCreate = z
   .object({ text: longText, stepId: id.nullable().default(null) })
   .strict();
@@ -332,7 +320,6 @@ export type FamilyLineInput = z.infer<typeof familyLineInput>;
 export type FamilyRecipeUpdate = z.infer<typeof familyRecipeUpdate>;
 export type FamilyRecipeCreate = z.infer<typeof familyRecipeCreate>;
 export type PlateMatchesBody = z.infer<typeof plateMatchesBody>;
-export type FromPlateBody = z.infer<typeof fromPlateBody>;
 export type FromLinkBody = z.infer<typeof fromLinkBody>;
 export type VariantCreate = z.infer<typeof variantCreate>;
 export type TipCreate = z.infer<typeof tipCreate>;

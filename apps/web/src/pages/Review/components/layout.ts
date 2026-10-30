@@ -1,20 +1,16 @@
 import { tokens, insetFocusRing } from '@pocket-pantry/ui';
 import type { RowStatus } from '../../../lib/review';
 
-/**
- * The column grid shared by the header row and the item rows (handoff §4.3).
- * Plate lines go to the Shopping List, which has no Location or expiry.
- */
-export const columnsFor = (shopping: boolean) =>
-  shopping ? 'minmax(0,1fr) 72px' : 'minmax(0,1fr) 56px 60px 58px';
+/** The column grid shared by the header row and the item rows (handoff §4.3). */
+const COLUMNS = 'minmax(0,1fr) 56px 60px 58px';
 
-export const rowGridSx = (shopping: boolean) => ({
+export const rowGridSx = {
   display: 'grid',
-  gridTemplateColumns: columnsFor(shopping),
+  gridTemplateColumns: COLUMNS,
   columnGap: '8px',
   alignItems: 'center',
   px: '12px',
-});
+} as const;
 
 /** DOM id of a row's button; also where focus lands after Add back. */
 export const rowId = (key: string) => `review-line-${key}`;
@@ -63,29 +59,22 @@ export const TABLET_COLUMNS: {
   { key: 'actions', width: '144px', wideWidth: '144px', indent: false },
 ];
 
-/** Plate lines go to the Shopping List, which has no Location or expiry. */
-export const tabletColumnsFor = (shopping: boolean) =>
-  TABLET_COLUMNS.filter(
-    (column) =>
-      !shopping || (column.key !== 'location' && column.key !== 'expiry'),
+export const tabletTemplate = (wide = false) =>
+  TABLET_COLUMNS.map((column) => (wide ? column.wideWidth : column.width)).join(
+    ' ',
   );
 
-export const tabletTemplate = (shopping: boolean, wide = false) =>
-  tabletColumnsFor(shopping)
-    .map((column) => (wide ? column.wideWidth : column.width))
-    .join(' ');
-
-export const tabletRowSx = (shopping: boolean) => ({
+export const tabletRowSx = {
   display: 'grid',
-  gridTemplateColumns: tabletTemplate(shopping),
+  gridTemplateColumns: tabletTemplate(),
   // Tighter below 1024 px so Produs keeps room.
   columnGap: '8px',
   px: '12px',
   '@media (min-width:1024px)': { columnGap: '16px', px: '20px' },
   '@media (min-width:1280px)': {
-    gridTemplateColumns: tabletTemplate(shopping, true),
+    gridTemplateColumns: tabletTemplate(true),
   },
-});
+} as const;
 
 /** Row backgrounds by status: tinted for rows to check. */
 export const ROW_TINT: Record<RowStatus, string> = {

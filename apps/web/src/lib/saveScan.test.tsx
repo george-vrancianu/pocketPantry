@@ -85,12 +85,6 @@ describe('useSaveScan', () => {
     expect(calls[0].key).toBe('POST /api/scan/receipt/confirm');
   });
 
-  it('saves a Plate Scan to the Shopping List', async () => {
-    const { save, calls } = setup();
-    await save(scanOf('plate', [line('Pasta')]));
-    expect(calls[0].key).toBe('POST /api/shopping-list/items/bulk');
-  });
-
   it('sends the Scan own Scan Language', async () => {
     const { save, calls } = setup();
     await save(scanOf('product', [line('Milk')], 'da'));

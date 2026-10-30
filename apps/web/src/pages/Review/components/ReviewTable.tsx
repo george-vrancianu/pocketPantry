@@ -18,7 +18,6 @@ type Props = {
   state: ReviewState;
   groups: { review: ReviewLine[]; sure: ReviewLine[]; excluded: ReviewLine[] };
   parents: CatalogParent[];
-  shopping: boolean;
   onToggle: (key: string) => void;
   onChange: (key: string, patch: Partial<ReviewLine>) => void;
   onSwapMatch: (key: string) => void;
@@ -36,7 +35,6 @@ export function ReviewTable({
   state,
   groups,
   parents,
-  shopping,
   onToggle,
   onChange,
   onSwapMatch,
@@ -60,7 +58,6 @@ export function ReviewTable({
       groupStatus={rowGroup(state, line)}
       open={!!state.open[line.key]}
       parents={parents}
-      shopping={shopping}
       mode={mode}
       blocked={!!blocked[line.key]}
       onToggle={() => onToggle(line.key)}
@@ -71,9 +68,7 @@ export function ReviewTable({
       accessibleName={accessibleNameOf(line)}
     />
   );
-  const columns = shopping
-    ? ['product', 'qty']
-    : ['product', 'qty', 'location', 'expiry'];
+  const columns = ['product', 'qty', 'location', 'expiry'];
 
   return (
     <Box
@@ -89,7 +84,7 @@ export function ReviewTable({
       <Box
         aria-hidden="true"
         sx={{
-          ...rowGridSx(shopping),
+          ...rowGridSx,
           height: 36,
           fontSize: 11,
           fontWeight: 700,

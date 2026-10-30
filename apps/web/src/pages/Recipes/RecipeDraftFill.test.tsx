@@ -163,26 +163,6 @@ describe('Recipe Drafts for supplied fills', () => {
     expect(sent(calls, `PUT /api/recipe-drafts/${DRAFT_ID}`)).toHaveLength(0);
   });
 
-  it('creates a Recipe Draft at once for a Plate Scan fill and keeps it marked as one', async () => {
-    const calls = setup(
-      {
-        pathname: '/recipes/new',
-        state: {
-          ...fill,
-          sourceLink: null,
-          sourceLanguage: null,
-          plateScan: true,
-        },
-      },
-      draftRoutes,
-    );
-    await screen.findByLabelText(/^Title/);
-    await elapse(100);
-    expect(sent(calls, 'POST /api/recipe-drafts')[0].body).toMatchObject({
-      content: { plateScan: true, pickedBaseId: 'base-crepes' },
-    });
-  });
-
   it('keeps the Source Link and language through a resume and onto the saved Recipe', async () => {
     const user = typer();
     const calls = setup(`/recipes/new?draft=${DRAFT_ID}`, {

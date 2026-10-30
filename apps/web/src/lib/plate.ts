@@ -1,6 +1,4 @@
 import { apiRequest } from './api';
-import type { ReviewLine } from './review';
-import { type NewShoppingItem, type AddedShoppingItems } from './shopping';
 
 /** One guess at the dish in the photo. */
 export type DishGuess = { title: string; confidence: number };
@@ -25,22 +23,4 @@ export function writePlateRecipe({
     body: { dishTitle, plateToken },
     ...(signal ? { signal } : {}),
   });
-}
-
-/** Adds reviewed Plate lines to the Shopping List, all or none; the server merges. */
-export const postShoppingItems = (items: NewShoppingItem[]) =>
-  apiRequest<AddedShoppingItems>('/shopping-list/items/bulk', {
-    method: 'POST',
-    body: { items },
-  });
-
-/** A reviewed line as a Shopping Item: by Ingredient id when matched, else by name. A blank quantity sends neither quantity nor unit. */
-export function toNewShoppingItem(line: ReviewLine): NewShoppingItem {
-  const quantity = line.quantity.trim() === '' ? null : Number(line.quantity);
-  return {
-    ...(line.match
-      ? { ingredientId: line.match.id }
-      : { name: line.name.trim(), source: 'plate' as const }),
-    ...(quantity === null ? {} : { quantity, unit: line.unit }),
-  };
 }
