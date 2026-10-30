@@ -30,6 +30,11 @@ type Props = {
   translations: AdminTranslation[];
   /** Set false for entries that only have display names (Tag Groups, Catalog Tags). */
   synonyms?: boolean;
+  /**
+   * `names` is just the display-name fields, for the top of a sheet; `synonyms` is everything else.
+   * Mount `names` and `synonyms` as a pair to split the block around other fields.
+   */
+  part?: 'all' | 'names' | 'synonyms';
 };
 
 /**
@@ -43,15 +48,17 @@ export function TranslationsEditor({
   name,
   translations,
   synonyms = true,
+  part = 'all',
 }: Props) {
   const { t } = useTranslation(['admin', 'errors', 'common']);
   const add = useAddTranslation();
   const update = useUpdateTranslation();
   const remove = useDeleteTranslation();
   const error = add.error ?? update.error ?? remove.error;
-  const title = synonyms
-    ? t('admin:translations.title')
-    : t('admin:translations.namesTitle');
+  const title =
+    synonyms && part !== 'names'
+      ? t('admin:translations.title')
+      : t('admin:translations.namesTitle');
 
   return (
     <Stack spacing={2} component="section" aria-label={title}>
@@ -59,17 +66,22 @@ export function TranslationsEditor({
         {title}
       </Typography>
       {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
-      <Typography variant="body2">
-        {t('admin:translations.canonicalName', { name })}
-      </Typography>
-      {SCAN_LANGUAGES.map((locale) => (
+      {part === 'names' ? null : (
+        <Typography variant="body2">
+          {t('admin:translations.canonicalName', { name })}
+        </Typography>
+      )}
+      {SCAN_LANGUAGES.filter(
+        (locale) => part !== 'names' || locale !== 'en',
+      ).map((locale) => (
         <LocaleBlock
           key={locale}
           locale={locale}
           entityType={entityType}
           entityId={entityId}
           translations={translations.filter((tr) => tr.locale === locale)}
-          synonyms={synonyms}
+          synonyms={synonyms && part !== 'names'}
+          names={part !== 'synonyms'}
           add={add.mutateAsync}
           update={update.mutateAsync}
           remove={remove.mutateAsync}
@@ -85,6 +97,7 @@ type BlockProps = {
   entityId: string;
   translations: AdminTranslation[];
   synonyms: boolean;
+  names: boolean;
   add: ReturnType<typeof useAddTranslation>['mutateAsync'];
   update: ReturnType<typeof useUpdateTranslation>['mutateAsync'];
   remove: ReturnType<typeof useDeleteTranslation>['mutateAsync'];
@@ -96,6 +109,7 @@ function LocaleBlock({
   entityId,
   translations,
   synonyms: withSynonyms,
+  names: withNames,
   add,
   update,
   remove,
@@ -135,12 +149,18 @@ function LocaleBlock({
       <Typography component="legend" variant="body2" sx={{ fontWeight: 700 }}>
         {language}
       </Typography>
-      {isLocale(locale) && locale !== 'en' ? (
+      {withNames && isLocale(locale) && locale !== 'en' ? (
         <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
           <TextField
             label={t('translations.displayName', { language })}
             value={nameValue}
             onChange={(event) => setNameValue(event.target.value)}
+            onKeyDown={(event) => {
+              // Enter saves this name, not a form this block may sit in.
+              if (event.key !== 'Enter') return;
+              event.preventDefault();
+              void saveName();
+            }}
           />
           <Button
             variant="secondary"

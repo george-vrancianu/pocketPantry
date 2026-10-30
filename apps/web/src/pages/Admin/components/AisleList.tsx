@@ -26,6 +26,7 @@ export function AisleList({ aisles, onCreate, onEdit }: Props) {
       items={aisles.map((aisle) => ({
         id: aisle.id,
         name: localName(aisle, i18n.language),
+        aisleId: aisle.id,
       }))}
       icon={LayersIcon}
       reorder={reorder}

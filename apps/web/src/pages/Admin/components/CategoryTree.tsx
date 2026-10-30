@@ -67,24 +67,27 @@ export function CategoryTree({ catalog, onCreate, onEdit }: Props) {
           const aisle = catalog.aisles.find((a) => a.id === parent.aisleId);
           return (
             <ListRowItem key={parent.id}>
-              <ListRow
-                leading={<IngredientIconSlot aisleId={parent.aisleId} />}
-                title={
-                  <RowEditButton
-                    label={t('category.editParent', { name: parentName })}
-                    onClick={() => onEdit('parent', parent.id)}
-                  >
-                    {parentName}
-                  </RowEditButton>
-                }
-                meta={[
-                  aisle ? localName(aisle, i18n.language) : null,
-                  t('category.leafCount', { count: leaves.length }),
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-                trailing={chevron}
-              />
+              {/* Contains the row's stretched edit button, so it does not cover the leaves below. */}
+              <Box sx={{ position: 'relative' }}>
+                <ListRow
+                  leading={<IngredientIconSlot aisleId={parent.aisleId} />}
+                  title={
+                    <RowEditButton
+                      label={t('category.editParent', { name: parentName })}
+                      onClick={() => onEdit('parent', parent.id)}
+                    >
+                      {parentName}
+                    </RowEditButton>
+                  }
+                  meta={[
+                    aisle ? localName(aisle, i18n.language) : null,
+                    t('category.leafCount', { count: leaves.length }),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  trailing={chevron}
+                />
+              </Box>
               {leaves.length > 0 ? (
                 <Box
                   component="ul"

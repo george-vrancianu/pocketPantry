@@ -152,4 +152,40 @@ describe('Catalog section pages', () => {
       ).toHaveFocus(),
     );
   });
+
+  it("keeps a Parent Category row's click area off its leaves", async () => {
+    renderSection('categories');
+    const parent = await screen.findByRole('button', {
+      name: 'Edit Parent Category Dairy & eggs',
+    });
+    const leaf = screen.getByRole('button', {
+      name: 'Edit Leaf Category Butter',
+    });
+    // The stretched button covers its nearest positioned ancestor.
+    let anchor = parent.parentElement as HTMLElement;
+    while (getComputedStyle(anchor).position !== 'relative') {
+      anchor = anchor.parentElement as HTMLElement;
+    }
+    expect(anchor.contains(leaf)).toBe(false);
+  });
+
+  it('pins Save and Cancel in the sheet footer, under a header with the title and a close button', async () => {
+    renderSection('ingredients');
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole('button', { name: 'Edit Butter' }),
+    );
+    const sheet = await screen.findByRole('dialog', { name: 'Edit Butter' });
+    expect(
+      within(sheet).getByRole('heading', { name: 'Edit Butter' }),
+    ).toBeVisible();
+    const save = await within(sheet).findByRole('button', { name: 'Save' });
+    expect(sheet.querySelector('form')?.contains(save)).toBe(false);
+    expect(save).toHaveAttribute('form', sheet.querySelector('form')?.id);
+    await user.click(within(sheet).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Edit Butter' })).toHaveFocus(),
+    );
+  });
 });

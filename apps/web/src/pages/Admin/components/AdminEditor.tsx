@@ -8,7 +8,7 @@ import { EatingMomentEditor } from './EatingMomentEditor';
 import { IngredientEditor } from './IngredientEditor';
 import { RecipeEditor } from './RecipeEditor';
 import { TagGroupEditor } from './TagGroupEditor';
-import { EditorSheet, useEditorLabel } from './EditorSheet';
+import { EditorSheet } from './EditorSheet';
 
 /**
  * The editor for whatever `useAdminScreen().editing` names. Recipes replace the section's list
@@ -22,13 +22,12 @@ export function AdminEditor({
   catalog: AdminCatalog;
 }) {
   const { editing } = screen;
-  const label = useEditorLabel(screen);
   if (!editing) return null;
   if (editing.type === 'recipe') {
     return <PageEditor screen={screen} catalog={catalog} />;
   }
   return (
-    <EditorSheet label={label} onClose={screen.close}>
+    <EditorSheet onClose={screen.close}>
       <PageEditor screen={screen} catalog={catalog} />
     </EditorSheet>
   );

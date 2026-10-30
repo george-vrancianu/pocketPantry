@@ -157,9 +157,12 @@ export function RowControls({ children }: { children: ReactNode }) {
 export function RowTile({
   children,
   background = tokens.color.chipNeutral,
+  color = tokens.color.ink,
 }: {
   children: ReactNode;
   background?: string;
+  /** The icon's colour; pair it with `background`. */
+  color?: string;
 }) {
   return (
     <Box
@@ -171,7 +174,7 @@ export function RowTile({
         placeItems: 'center',
         borderRadius: `calc(${radius.control} - 1px)`,
         backgroundColor: background,
-        color: tokens.color.ink,
+        color,
       }}
     >
       {children}
@@ -182,18 +185,19 @@ export function RowTile({
 /** A row's place in its order, 1-based. */
 export function OrderNumber({ value }: { value: number }) {
   return (
-    <Box
+    <Typography
       aria-hidden
+      component="span"
+      variant="meta"
       sx={{
         width: 20,
         textAlign: 'center',
-        fontSize: 13,
         fontWeight: 700,
         color: tokens.color.muted,
         fontVariantNumeric: 'tabular-nums',
       }}
     >
       {value}
-    </Box>
+    </Typography>
   );
 }

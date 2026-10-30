@@ -65,6 +65,18 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
           catalog={catalog}
           value={fields}
           onChange={setFields}
+          controls="chips"
+          afterName={
+            ingredient ? (
+              <TranslationsEditor
+                entityType="ingredient"
+                entityId={ingredient.id}
+                name={ingredient.name}
+                translations={ingredient.translations}
+                part="names"
+              />
+            ) : null
+          }
         />
       </EditorForm>
       {ingredient ? (
@@ -79,6 +91,7 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
           entityId={ingredient.id}
           name={ingredient.name}
           translations={ingredient.translations}
+          part="synonyms"
         />
       ) : null}
     </Stack>

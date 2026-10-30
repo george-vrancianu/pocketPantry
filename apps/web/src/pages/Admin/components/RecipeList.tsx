@@ -90,7 +90,8 @@ export function RecipeList({ onCreate, onEdit }: Props) {
             const variants = variantsOf(base.id);
             return (
               <ListRowItem key={base.id}>
-                {row(base)}
+                {/* Contains the row's stretched edit button, so it does not cover the variants below. */}
+                <Box sx={{ position: 'relative' }}>{row(base)}</Box>
                 {variants.length > 0 ? (
                   <Box
                     component="ul"

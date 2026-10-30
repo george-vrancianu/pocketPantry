@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  aisleTint,
   Card,
   ChevronDownIcon,
   ChevronUpIcon,
@@ -25,7 +26,13 @@ import {
   RowTile,
 } from './CatalogRowParts';
 
-export type ReorderItem = { id: string; name: string; badge?: string };
+export type ReorderItem = {
+  id: string;
+  name: string;
+  badge?: string;
+  /** Tints the row's tile with this Aisle's colours (Aisles only). */
+  aisleId?: string;
+};
 
 export type ReorderLabels = {
   title: string;
@@ -108,7 +115,14 @@ export function ReorderList({
                 leading={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <OrderNumber value={index + 1} />
-                    <RowTile>
+                    <RowTile
+                      {...(item.aisleId
+                        ? {
+                            background: aisleTint(item.aisleId).bg,
+                            color: aisleTint(item.aisleId).fg,
+                          }
+                        : {})}
+                    >
                       <Icon size={19} />
                     </RowTile>
                   </Box>
