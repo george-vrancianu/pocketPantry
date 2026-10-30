@@ -12,6 +12,7 @@ import {
   suggestionsQueryKey,
   templateDetailsQueryKey,
 } from './queryKeys';
+import { familySynonymsQueueKey } from './queryKeys';
 import { recipesQueryKey } from './recipes';
 import { shoppingListQueryKey } from './shopping';
 import type { ScanMode } from './scan';
@@ -124,6 +125,7 @@ export function useResolveUnmatched() {
       Promise.all(
         [
           unmatchedQueueKey,
+          familySynonymsQueueKey,
           adminCatalogQueryKey,
           catalogSearchQueryKey,
           ['pantry'],

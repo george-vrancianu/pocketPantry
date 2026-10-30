@@ -6,7 +6,7 @@ import {
 import type { Locale } from '../i18n/resources';
 import { adminCatalogQueryKey } from './admin';
 import { ApiError, apiRequest } from './api';
-import { catalogChangeQueryKeys } from './queryKeys';
+import { catalogChangeQueryKeys, familySynonymsQueueKey } from './queryKeys';
 
 /** One Family Synonym name on one Ingredient, across Families; no Family identity. */
 export type FamilySynonymCandidate = {
@@ -23,7 +23,7 @@ type Page = {
   nextCursor: string | null;
 };
 
-export const familySynonymsQueueKey = ['admin-family-synonyms'] as const;
+export { familySynonymsQueueKey };
 
 /** Candidates one page at a time, fetched only while `enabled`. */
 export function useFamilySynonymsQueue(enabled: boolean) {

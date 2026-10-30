@@ -37,6 +37,9 @@ export const recentlyStockedQueryKey = ['pantry', 'recently-stocked'] as const;
 export const popularToStartQueryKey = (locale: string) =>
   ['catalog-search', 'popular-to-start', locale] as const;
 
+/** The Admin Names queue (Family Synonym candidates). A Synonym added anywhere can hide a candidate, so the Link and Catalog Synonym writes refresh it. */
+export const familySynonymsQueueKey = ['admin-family-synonyms'] as const;
+
 /** Everything a Catalog change makes stale: search, the Family catalog, Staples, and the Unmatched items it relinks (Batches, Shopping Items, Template lines, Recipe lines) with the Suggestions built on them. Literals, as the owning modules cannot be imported here without a cycle. */
 export const catalogChangeQueryKeys = [
   ['catalog-search'],

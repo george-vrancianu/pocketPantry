@@ -4,11 +4,11 @@ import {
   ListRow,
   ListRowItem,
   insetFocusRingStyle,
-  radius,
   tokens,
   type ListRowProps,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
+import { RowTile } from './CatalogRowParts';
 
 /** The 38 pt icon tile of a To review row: `soon` for names that need a match, `butter` for what a family added. */
 export function ReviewTile({
@@ -19,21 +19,12 @@ export function ReviewTile({
   children: ReactNode;
 }) {
   return (
-    <Box
-      aria-hidden
-      sx={{
-        width: 38,
-        height: 38,
-        display: 'grid',
-        placeItems: 'center',
-        borderRadius: `calc(${radius.control} - 1px)`,
-        backgroundColor:
-          tone === 'soon' ? tokens.color.soonBg : tokens.color.butter,
-        color: tone === 'soon' ? tokens.color.soonFg : tokens.color.butterInk,
-      }}
+    <RowTile
+      background={tone === 'soon' ? tokens.color.soonBg : tokens.color.butter}
+      color={tone === 'soon' ? tokens.color.soonFg : tokens.color.butterInk}
     >
       {children}
-    </Box>
+    </RowTile>
   );
 }
 

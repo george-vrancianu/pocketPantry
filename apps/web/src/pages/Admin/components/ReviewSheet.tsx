@@ -1,15 +1,7 @@
-import {
-  Alert,
-  BackIcon,
-  Box,
-  Button,
-  CloseIcon,
-  IconButton,
-  Sheet,
-  Typography,
-} from '@pocket-pantry/ui';
+import { Alert, Box, Button, Sheet } from '@pocket-pantry/ui';
 import { useId, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SheetHeader } from '../../../components/SheetHeader';
 import { translateApiError } from '../../../i18n/translateApiError';
 
 export type ReviewSheetForm = {
@@ -79,45 +71,15 @@ export function ReviewSheet({
       label={title}
       size={size}
       header={
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 1,
-            px: 3,
-            pt: 2,
-          }}
-        >
-          {onBack ? (
-            <IconButton
-              label={t('admin:review.back')}
-              size={40}
-              onClick={onBack}
-            >
-              <BackIcon size={18} />
-            </IconButton>
-          ) : null}
-          <Box sx={{ flex: 1, minWidth: 0, pb: 1 }}>
-            <Typography
-              component="h2"
-              sx={{ fontSize: 20, fontWeight: 700, overflowWrap: 'anywhere' }}
-            >
-              {title}
-            </Typography>
-            {subtitle ? (
-              <Typography component="div" variant="meta" color="text.secondary">
-                {subtitle}
-              </Typography>
-            ) : null}
-          </Box>
-          <IconButton
-            label={t('admin:review.close')}
-            size={40}
-            onClick={onClose}
-          >
-            <CloseIcon size={18} />
-          </IconButton>
-        </Box>
+        <SheetHeader
+          size="roomy"
+          title={title}
+          subtitle={subtitle}
+          onBack={onBack}
+          backLabel={t('admin:review.back')}
+          onClose={onClose}
+          closeLabel={t('admin:common.close')}
+        />
       }
       footer={
         form || actions ? (

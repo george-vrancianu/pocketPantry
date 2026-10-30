@@ -13,7 +13,7 @@ import {
   type Unit,
 } from './catalog';
 import { adminRecipesQueryKey } from './adminRecipes';
-import { recipeChangeQueryKeys } from './queryKeys';
+import { familySynonymsQueueKey, recipeChangeQueryKeys } from './queryKeys';
 import { allergiesQueryKey, familyAllergiesQueryKey } from './settings';
 import { shoppingListQueryKey } from './shopping';
 
@@ -345,7 +345,10 @@ export function useAddTranslation() {
   return useAdminWrite(
     (input: TranslationInput) =>
       apiRequest(`${base}/translations`, { method: 'POST', body: input }),
-    (input) => (input.entityType === 'allergen' ? allergenQueryKeys : []),
+    (input) => [
+      familySynonymsQueueKey,
+      ...(input.entityType === 'allergen' ? allergenQueryKeys : []),
+    ],
   );
 }
 export function useUpdateTranslation() {
@@ -356,13 +359,13 @@ export function useUpdateTranslation() {
         body: { value },
       }),
     // The entity type is not known here, so an Allergen name may have changed.
-    () => allergenQueryKeys,
+    () => [...allergenQueryKeys, familySynonymsQueueKey],
   );
 }
 export function useDeleteTranslation() {
   return useAdminWrite(
     (id: string) =>
       apiRequest(`${base}/translations/${id}`, { method: 'DELETE' }),
-    () => allergenQueryKeys,
+    () => [...allergenQueryKeys, familySynonymsQueueKey],
   );
 }

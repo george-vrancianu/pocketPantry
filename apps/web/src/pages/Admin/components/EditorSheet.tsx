@@ -34,7 +34,7 @@ export function EditorSheet({
           title={title}
           titleRef={titleRef}
           onClose={onClose}
-          closeLabel={t('review.close')}
+          closeLabel={t('common.close')}
         />
       }
       footer={<Box ref={setFooter} sx={{ px: 3, py: 2 }} />}

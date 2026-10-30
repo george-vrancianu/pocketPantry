@@ -12,15 +12,14 @@ import {
   TagIcon,
   WarningIcon,
   insetFocusRingStyle,
-  radius,
-  tokens,
   type IconProps,
 } from '@pocket-pantry/ui';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType } from 'react';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { SectionHeading } from '../../../components/SectionHeading';
+import { RowTile } from './CatalogRowParts';
 import type { AdminCatalog } from '../../../lib/admin';
 import { useAdminRecipes } from '../../../lib/adminRecipes';
 import type { AdminSection } from '../adminSections';
@@ -68,8 +67,12 @@ export function CatalogIndex({ catalog }: { catalog: AdminCatalog }) {
       icon: CustomiseIcon,
       title: t('index.categories'),
       meta: t('index.categoriesMeta', {
-        parents: catalog.parentCategories.length,
-        leaves: catalog.leafCategories.length,
+        parents: t('index.categoriesParents', {
+          count: catalog.parentCategories.length,
+        }),
+        leaves: t('index.categoriesLeaves', {
+          count: catalog.leafCategories.length,
+        }),
       }),
     },
   ];
@@ -168,9 +171,9 @@ function NavRow({ section, icon: Icon, title, meta }: Row) {
       >
         <ListRow
           leading={
-            <Tile>
+            <RowTile>
               <Icon size={19} />
-            </Tile>
+            </RowTile>
           }
           title={title}
           meta={meta}
@@ -178,24 +181,5 @@ function NavRow({ section, icon: Icon, title, meta }: Row) {
         />
       </Box>
     </ListRowItem>
-  );
-}
-
-function Tile({ children }: { children: ReactNode }) {
-  return (
-    <Box
-      aria-hidden
-      sx={{
-        width: 38,
-        height: 38,
-        display: 'grid',
-        placeItems: 'center',
-        borderRadius: `calc(${radius.control} - 1px)`,
-        backgroundColor: tokens.color.chipNeutral,
-        color: tokens.color.ink,
-      }}
-    >
-      {children}
-    </Box>
   );
 }

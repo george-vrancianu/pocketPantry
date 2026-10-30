@@ -299,7 +299,7 @@ function UnmatchedRow({
     keep: t('common:row.keep'),
     remove: t('admin:unmatched.dismiss'),
     releaseToDelete: t('admin:unmatched.dismiss'),
-    hint: t('common:row.a11yHint'),
+    hint: t('admin:review.swipeHint'),
     editAction: t('admin:unmatched.resolveName', { name: entry.rawName }),
     removeAction: t('admin:unmatched.dismissName', { name: entry.rawName }),
   };

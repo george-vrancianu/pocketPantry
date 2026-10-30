@@ -100,7 +100,7 @@ export function LeafCategoryField({ catalog, value, onChange }: Props) {
             size="roomy"
             title={t('ingredient.leafCategory')}
             onClose={() => setOpen(false)}
-            closeLabel={t('review.close')}
+            closeLabel={t('common.close')}
           />
         }
       >

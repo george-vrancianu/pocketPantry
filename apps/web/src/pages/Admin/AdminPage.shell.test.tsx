@@ -212,7 +212,7 @@ describe('Catalog index', () => {
     expect(await row(/^Ingredients.*2 · 1 unchecked/)).toBeInTheDocument();
     expect(await row(/^Allergens.*1/)).toBeInTheDocument();
     expect(await row(/^Aisles.*2 in shop order/)).toBeInTheDocument();
-    expect(await row(/^Categories.*1 parent · 2 leaf/)).toBeInTheDocument();
+    expect(await row(/^Categories.*1 parent · 2 leaves/)).toBeInTheDocument();
     expect(await row(/^Catalog Recipes.*2 · 1 archived/)).toBeInTheDocument();
     expect(await row(/^Tags.*3 in 1 Tag Groups/)).toBeInTheDocument();
     expect(await row(/^Eating Moments.*0/)).toBeInTheDocument();
