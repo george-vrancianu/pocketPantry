@@ -1,4 +1,5 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
+import type { FastifyReply } from 'fastify';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
@@ -51,11 +52,25 @@ export class PlateScanController {
   async recipe(
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(plateRecipeSchema)) body: PlateRecipeInput,
+    @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<PlateRecipeResponse> {
-    return this.plate.writeRecipe(
-      member.id,
-      body,
-      await this.languages.catalogLanguageOf(member.id),
-    );
+    const locale = await this.languages.catalogLanguageOf(member.id);
+    // A write lasts as long as its connection (ADR 0031, 0035): if the client goes before the answer is sent,
+    // the AI call is aborted, no Recipe Draft is kept, nothing is charged and the token is handed back.
+    const closed = new AbortController();
+    const abandon = () => {
+      if (!reply.raw.writableFinished) closed.abort();
+    };
+    reply.raw.once('close', abandon);
+    try {
+      return await this.plate.writeRecipe(
+        member.id,
+        body,
+        locale,
+        closed.signal,
+      );
+    } finally {
+      reply.raw.off('close', abandon);
+    }
   }
 }

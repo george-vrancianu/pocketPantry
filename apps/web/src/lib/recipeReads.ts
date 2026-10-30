@@ -68,6 +68,11 @@ export type PlateRecipeRead = RecipeReadBase & {
   returnOn?: readonly string[];
   /** Called once the read is dropped for a code in `returnOn`; puts the card back with the refusal. */
   onReturned?: (error: ApiError) => void;
+  /**
+   * Called when the Member chooses "read the photo again" on a failed row whose token is used up or has
+   * expired: puts the Scan back to be read again. The row is let go by the caller.
+   */
+  readAgain?: () => void;
 };
 
 /** A read in the holder. A new kind joins this union (see `startRead`). */

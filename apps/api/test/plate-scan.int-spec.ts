@@ -92,12 +92,14 @@ describe('Plate Scan (integration)', () => {
     request: StructuredOutputRequest,
   ) => Promise<{ data: unknown; requestId: string | null }>;
   const prompts: StructuredOutputRequest[] = [];
+  const signals: (AbortSignal | undefined)[] = [];
   let counter = 0;
 
   beforeAll(async () => {
     app = await createTestApp([], {
-      generate: (input) => {
+      generate: (input, options) => {
         prompts.push(input);
+        signals.push(options?.signal);
         return next(input);
       },
     });
@@ -709,6 +711,116 @@ describe('Plate Scan (integration)', () => {
         await dishes(cookie).expect(201);
         await dishes(cookie).expect(429);
       });
+    });
+  });
+
+  describe('a pick the server refuses or closes (ADR 0035)', () => {
+    const blank = (title: string) => ({
+      kind: 'new_recipe',
+      content: {
+        title,
+        servings: '4',
+        prepMinutes: '',
+        cookMinutes: '',
+        difficulty: '',
+        lines: [],
+        steps: [],
+      },
+    });
+    const fillDrafts = async (cookie: string, count: number) => {
+      for (let i = 0; i < count; i++) {
+        await post(cookie, 'recipe-drafts', blank(`Held ${i}`)).expect(201);
+      }
+    };
+    const balanceOf = async (cookie: string) =>
+      (
+        (
+          await request(app.getHttpServer())
+            .get('/api/credits')
+            .set('origin', TEST_ORIGIN)
+            .set('cookie', cookie)
+            .expect(200)
+        ).body as { balance: number }
+      ).balance;
+
+    it('refuses at 20 Recipe Drafts before the provider is called, charges nothing, and the token is still usable', async () => {
+      const cookie = await signUp();
+      const token = await tokenFor(cookie);
+      await fillDrafts(cookie, 20);
+      const before = await balanceOf(cookie);
+      respondWith(written());
+      prompts.length = 0;
+      const refused = await recipe(cookie, 'Pancakes', 'en', token).expect(409);
+      expect(refused.body).toEqual({
+        code: 'recipe_drafts.limit_reached',
+        params: { max: 20 },
+      });
+      expect(prompts).toHaveLength(0);
+      expect(await balanceOf(cookie)).toBe(before);
+      // Room again (one Recipe Draft discarded): the same token writes the dish.
+      const [first] = (
+        await request(app.getHttpServer())
+          .get('/api/recipe-drafts')
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', cookie)
+          .expect(200)
+      ).body as Array<{ id: string }>;
+      await request(app.getHttpServer())
+        .delete(`/api/recipe-drafts/${first.id}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .expect(204);
+      await recipe(cookie, 'Pancakes', 'en', token).expect(201);
+      expect(prompts).toHaveLength(1);
+    });
+
+    it('creates no Recipe Draft, charges no Credit and leaves the token usable when the request closes while writing', async () => {
+      const cookie = await signUp();
+      const token = await tokenFor(cookie);
+      const before = await balanceOf(cookie);
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      next = async () => {
+        await gate;
+        return { data: written(), requestId: 'late' };
+      };
+      prompts.length = 0;
+      signals.length = 0;
+      const pending = post(cookie, 'scan/plate/recipe', {
+        dishTitle: 'Pancakes',
+        plateToken: token,
+      });
+      void pending.then(
+        () => undefined,
+        () => undefined,
+      );
+      const until = async (done: () => boolean) => {
+        for (let i = 0; i < 300 && !done(); i++) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+        expect(done()).toBe(true);
+      };
+      await until(() => prompts.length === 1);
+      pending.abort();
+      await until(() => signals[0]?.aborted === true);
+      release();
+      // The server lets go: the held Credit is given back and the token claim released.
+      respondWith(written());
+      let retried: request.Response | undefined;
+      for (let i = 0; i < 100; i++) {
+        retried = await post(cookie, 'scan/plate/recipe', {
+          dishTitle: 'Pancakes',
+          plateToken: token,
+        });
+        if (retried.status !== 400) break;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(retried?.status).toBe(201);
+      // One draft (the retry's), one Credit charged (the retry's): the closed request left nothing.
+      expect(await draftCount(cookie)).toBe(1);
+      expect(await balanceOf(cookie)).toBe(before - 1);
     });
   });
 

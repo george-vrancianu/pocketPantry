@@ -54,6 +54,8 @@
     "cancelRead": "Annuller skrivningen af {{dish}}",
     "discardRead": "Kassér {{dish}}",
     "retryRead": "Prøv at skrive {{dish}} igen",
+    "readAgain": "Læs fotoet igen",
+    "readAgainRead": "Læs fotoet af {{dish}} igen",
     "failedAlert_one": "{{count}} retsopskrift mislykkedes",
     "failedAlert_other": "{{count}} retsopskrifter mislykkedes"
   }

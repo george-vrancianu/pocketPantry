@@ -64,6 +64,7 @@ export class PlateScanFlowService {
     memberId: string,
     input: PlateRecipeInput,
     locale: CatalogLocale,
+    signal?: AbortSignal,
   ): Promise<PlateRecipeResponse> {
     // Before the provider is called: the expensive call only runs for a dish this Member's Scan guessed.
     const { signature, expiresAt } = verifyPlateToken({
@@ -77,6 +78,8 @@ export class PlateScanFlowService {
       throw new ApiException(400, 'scan.plate_token_invalid');
     }
     try {
+      // Before the provider and before Credits: a pick with nowhere to land is refused for free (ADR 0035).
+      await this.drafts.assertRoom(memberId);
       // Charged on its own (ADR 0035): the Credit is held before the provider is called, so a short
       // balance is refused here (and the catch below hands the token back), and given back if no Recipe Draft is made.
       return await this.paidReads.read(memberId, 'plate-recipe', async () => {
@@ -92,7 +95,11 @@ export class PlateScanFlowService {
           locale,
           familyId,
           allowedTags,
+          signal,
         );
+        // The request closed (the Member discarded the row or left): keep nothing, even if the AI answered.
+        if (signal?.aborted)
+          throw new ApiException(499, 'scan.plate_cancelled');
         const content = draftContentOfPlate(
           written.answer,
           { tagIds: written.tagIds, ingredientIds: written.ingredientIds },

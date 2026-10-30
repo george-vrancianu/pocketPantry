@@ -54,6 +54,8 @@
     "cancelRead": "Cancel writing {{dish}}",
     "discardRead": "Discard {{dish}}",
     "retryRead": "Retry writing {{dish}}",
+    "readAgain": "Read the photo again",
+    "readAgainRead": "Read the photo for {{dish}} again",
     "failedAlert_one": "{{count}} Plate Scan recipe failed",
     "failedAlert_other": "{{count}} Plate Scan recipes failed"
   }
