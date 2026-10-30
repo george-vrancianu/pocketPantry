@@ -9,6 +9,7 @@ import {
   Stack,
   TextField,
   Typography,
+  radius,
   tokens,
 } from '@pocket-pantry/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -513,7 +514,7 @@ export function FamilyIngredientSheet({
                 color: tokens.color.ink,
                 bgcolor: tokens.color.surface,
                 border: `1px solid ${tokens.color.line}`,
-                borderRadius: 2,
+                borderRadius: radius.control,
                 cursor: 'pointer',
               }}
             >
@@ -617,7 +618,7 @@ export function FamilyIngredientSheet({
                       color: tokens.color.accent,
                       bgcolor: 'transparent',
                       border: `1px dashed ${tokens.color.line}`,
-                      borderRadius: 999,
+                      borderRadius: radius.pill,
                       cursor: 'pointer',
                     }}
                   >
@@ -720,7 +721,7 @@ function NameChip({
         minHeight: 34,
         pl: 1.5,
         pr: 0.5,
-        borderRadius: 999,
+        borderRadius: radius.pill,
         bgcolor: tokens.color.chipNeutral,
         color: tokens.color.ink,
         fontSize: 13.5,

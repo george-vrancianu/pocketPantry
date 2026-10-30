@@ -4,6 +4,7 @@ import {
   Sheet,
   Stack,
   Typography,
+  radius,
   tokens,
 } from '@pocket-pantry/ui';
 import { useRef } from 'react';
@@ -67,7 +68,7 @@ export function FamilySynonymSheet({
             alignItems: 'center',
             gap: 1.5,
             p: 1.5,
-            borderRadius: 2,
+            borderRadius: radius.control,
             bgcolor: tokens.color.subtle,
           }}
         >
