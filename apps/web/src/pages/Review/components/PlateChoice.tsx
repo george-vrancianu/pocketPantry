@@ -1,6 +1,6 @@
 import { Alert, Box, Typography, tokens, radius } from '@pocket-pantry/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   CreditPrice,
@@ -11,6 +11,7 @@ import { creditsQueryKey, type Credits } from '../../../lib/credits';
 import { recipeReads } from '../../../lib/recipeReads';
 import {
   dispatchScanSession,
+  getScanSession,
   type SessionScan,
 } from '../../../lib/scanSession';
 
@@ -29,12 +30,18 @@ const buttonSx = {
   fontWeight: 600,
   textAlign: 'left',
   cursor: 'pointer',
-  '&:disabled': { opacity: 0.5, cursor: 'default' },
   '&:focus-visible': {
     outline: `2px solid ${tokens.color.accentMid}`,
     outlineOffset: 2,
   },
 } as const;
+
+/**
+ * The refusals of the server that keep a picked dish on its card, with its guesses, and out of the strip.
+ * A refusal the check above could not see (a balance that moved since, a read that waited its turn) comes
+ * back through the holder as `restore`. Another refusal that belongs on the card is one more code here.
+ */
+const REFUSED_PICK_CODES = ['credits.insufficient'] as const;
 
 export const cardId = (id: string) => `review-card-${id}`;
 
@@ -43,7 +50,9 @@ export const cardId = (id: string) => `review-card-${id}`;
  * Picking one leaves the Scan Session: the dish is handed to the recipe-reads holder, which has the
  * server write it as a Recipe Draft while the Member keeps scanning. A full holder keeps the card, and so
  * does a Family without the Credits the writing costs (its own Credit Price, besides the photo's): the
- * balance is looked up fresh before anything is handed over, so a refused pick never reaches the strip.
+ * balance is looked up fresh before anything is handed over, and a pick the server still refuses
+ * (`REFUSED_PICK_CODES`) is handed back by the holder, so the card returns with its guesses and the
+ * refusal. Neither reaches the strip.
  */
 export function PlateChoice({
   scan,
@@ -61,7 +70,9 @@ export function PlateChoice({
   const [short, setShort] = useState<{ price: number; balance: number } | null>(
     null,
   );
-  const [checking, setChecking] = useState(false);
+  const checking = useRef(false);
+  /** The refusal of the server, when it refused after the check passed and handed the card back. */
+  const refusal = scan.refusal;
 
   /** The Credits the Family is short of for the writing step, or null when it can pay (or this cannot be told). */
   const shortOfCredits = async () => {
@@ -82,19 +93,32 @@ export function PlateChoice({
   };
 
   const pick = async (title: string) => {
+    if (checking.current) return;
     setFull(false);
     setShort(null);
-    setChecking(true);
-    const refused = await shortOfCredits();
-    setChecking(false);
+    checking.current = true;
+    const refused = await shortOfCredits().finally(() => {
+      checking.current = false;
+    });
     if (refused) {
       setShort(refused);
       return;
     }
+    const index = getScanSession().scans.findIndex((s) => s.id === scan.id);
     const outcome = recipeReads.add({
       kind: 'plate',
       title,
       token: scan.plateToken ?? '',
+      returnOn: REFUSED_PICK_CODES,
+      onReturned: (error) =>
+        dispatchScanSession({
+          type: 'restore',
+          scan: {
+            ...scan,
+            refusal: { code: error.code, params: error.params },
+          },
+          index: Math.max(index, 0),
+        }),
     });
     if (outcome === 'full') {
       setFull(true);
@@ -125,7 +149,6 @@ export function PlateChoice({
                 priceText ? 'overview.dishOptionPriced' : 'overview.dishOption',
                 { title: dish.title, percent, price: priceText },
               )}
-              disabled={checking}
               onClick={() => void pick(dish.title)}
               sx={buttonSx}
             >
@@ -141,10 +164,12 @@ export function PlateChoice({
           );
         })}
       </Box>
-      {short ? (
+      {short || refusal ? (
         <Box sx={{ mt: 1 }}>
           <Alert severity="error">
-            {t('errors:credits.insufficient', short)}
+            {short
+              ? t('errors:credits.insufficient', short)
+              : t(`errors:${refusal?.code ?? ''}`, refusal?.params)}
           </Alert>
         </Box>
       ) : null}

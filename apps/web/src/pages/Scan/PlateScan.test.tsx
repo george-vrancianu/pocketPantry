@@ -217,6 +217,61 @@ describe('Plate Scan in the Scan Session', () => {
     ).toEqual({ dishTitle: 'Pancakes', plateToken: 'token-1' });
   });
 
+  it('brings the card back with its guesses when the server refuses the pick for Credits after the check passed', async () => {
+    let refuse = true;
+    const calls = renderPlate({
+      'GET /api/credits': () => Response.json(creditsBody(50)),
+      'POST /api/scan/plate/recipe': () =>
+        refuse
+          ? Response.json(
+              {
+                code: 'credits.insufficient',
+                params: { price: 2, balance: 1 },
+              },
+              { status: 402 },
+            )
+          : Response.json({ recipeDraftId: DRAFT_ID }),
+    });
+    await scanThenDone();
+    await pick(/Pancakes/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Out of Credits. This needs 2, and your Family has 1.',
+    );
+    expect(await picker()).toBeInTheDocument();
+    expect(getScanSession().scans).toHaveLength(1);
+    expect(getScanSession().scans[0]).toMatchObject({
+      status: 'read',
+      plateToken: 'token-1',
+    });
+    expect(recipeReads.getState().reads).toHaveLength(0);
+    expect(screen.queryByText("Couldn't write Pancakes")).toBeNull();
+
+    // Credits added: the same card, with the same token, can pick again.
+    refuse = false;
+    await pick(/Pancakes/);
+    expect(
+      await screen.findByText('Pancakes ready to review'),
+    ).toBeInTheDocument();
+    expect(
+      calls
+        .filter((c) => c.key === 'POST /api/scan/plate/recipe')
+        .map((c) => c.body),
+    ).toEqual([
+      { dishTitle: 'Pancakes', plateToken: 'token-1' },
+      { dishTitle: 'Pancakes', plateToken: 'token-1' },
+    ]);
+  });
+
+  it('keeps focus on the guess when the pick is refused for Credits', async () => {
+    renderPlate({
+      'GET /api/credits': () => Response.json(creditsBody(1)),
+    });
+    await scanThenDone();
+    await pick(/Pancakes/);
+    await screen.findByRole('alert');
+    expect(screen.getByRole('button', { name: /Pancakes/ })).toHaveFocus();
+  });
+
   it('shows only the guesses on the card: no ingredient lines to review', async () => {
     renderPlate();
     await scanThenDone();

@@ -5,7 +5,8 @@ import { ScanCapService, type UsageKind } from './scan-cap.service';
 
 /**
  * The kind of a paid read. Link names how the recipe arrives, because the two are priced apart
- * later; `plate-recipe` is writing a Plate Scan's picked dish as a Recipe (charged on its own, no Cap); `guidance-admin` is the Admin Catalog Suggest Guidance, which no Cap limits.
+ * later; `plate-recipe` is writing a Plate Scan's picked dish as a Recipe (charged on its own, no
+ * Cap); `guidance-admin` is the Admin Catalog Suggest Guidance, which no Cap limits.
  */
 export type PaidReadKind =
   | 'scan'

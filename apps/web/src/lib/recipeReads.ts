@@ -60,6 +60,14 @@ export type PlateRecipeRead = RecipeReadBase & {
   title: string;
   /** The Plate token of the Scan; the request spends it. */
   token: string;
+  /**
+   * The refusal codes (`ApiError.code`) the server answers with that send the read back to where it
+   * came from instead of into the strip: the holder drops the read and calls `onReturned` with the error.
+   * The refused pick stays on the Plate card (ADR 0035). Waiting reads behind a Credits refusal are still held.
+   */
+  returnOn?: readonly string[];
+  /** Called once the read is dropped for a code in `returnOn`; puts the card back with the refusal. */
+  onReturned?: (error: ApiError) => void;
 };
 
 /** A read in the holder. A new kind joins this union (see `startRead`). */
@@ -229,7 +237,24 @@ export function createRecipeReads() {
           );
           return;
         }
-        if (isBudgetRefusal(error)) {
+        if (
+          read.kind === 'plate' &&
+          error instanceof ApiError &&
+          read.returnOn?.includes(error.code)
+        ) {
+          // Not a row: the Member picks again from where the read came from. Only the Credits hold the
+          // reads waiting behind it.
+          set(
+            state.reads
+              .filter((r) => r.id !== read.id)
+              .map((r) =>
+                isOutOfCredits(error) && r.status === 'waiting'
+                  ? { ...r, status: 'capped', error }
+                  : r,
+              ),
+          );
+          read.onReturned?.(error);
+        } else if (isBudgetRefusal(error)) {
           // The Credits refuse every read from here; a kind's own cap (the Link Cap) refuses only that
           // kind. Those waiting behind the refusal are held with it.
           const holds = (r: RecipeRead) =>
