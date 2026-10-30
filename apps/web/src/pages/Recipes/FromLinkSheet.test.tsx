@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
 import { AppLayout } from '../../components/AppLayout';
 import { useSignOut } from '../../lib/auth';
-import { recipeReads } from '../../lib/recipeReads';
+import { linkReadsOf, recipeReads } from '../../lib/recipeReads';
 import type { FamilyRecipeEdit } from '../../lib/familyRecipes';
 import type { RecipeDraftView } from '../../lib/recipeDrafts';
 import type { RecipeFromLink, RecipeFromLinkDraft } from '../../lib/linkRecipe';
@@ -438,7 +438,9 @@ describe('"From a link" sheet and the link-read holder', () => {
         'https://site2.example.com/r',
       ]);
       expect(
-        recipeReads.getState().reads.map((r) => `${r.site}:${r.status}`),
+        linkReadsOf(recipeReads.getState().reads).map(
+          (r) => `${r.site}:${r.status}`,
+        ),
       ).toEqual([
         'site1.example.com:reading',
         'site2.example.com:reading',
@@ -507,9 +509,9 @@ describe('"From a link" sheet and the link-read holder', () => {
       releases[1]();
       await waitFor(() =>
         expect(
-          recipeReads
-            .getState()
-            .reads.find((r) => r.site === 'site2.example.com')?.status,
+          linkReadsOf(recipeReads.getState().reads).find(
+            (r) => r.site === 'site2.example.com',
+          )?.status,
         ).toBe('ready'),
       );
     });

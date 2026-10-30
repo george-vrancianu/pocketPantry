@@ -3,12 +3,14 @@ import { useRef, type ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, type NavigateFunction } from 'react-router-dom';
+import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError, apiRequest } from '../../lib/api';
 import { isOutOfCredits } from '../../lib/credits';
 import {
   recipeReads,
   useRecipeReads,
   type LinkRecipeRead,
+  type PlateRecipeRead,
   type RecipeRead,
 } from '../../lib/recipeReads';
 import { linkFailureReason, offersPasteText } from '../../lib/linkReadFailure';
@@ -116,6 +118,38 @@ function linkRow(
   };
 }
 
+/** The plate kind's row: a dish the server is writing as a Recipe (ADR 0035). */
+function plateRow(read: PlateRecipeRead, t: Translate): RecipeReadRow {
+  const dish = read.title;
+  const title =
+    read.status === 'waiting'
+      ? t('background:plate.waiting', { dish })
+      : read.status === 'reading'
+        ? t('background:plate.writing', { dish })
+        : read.status === 'ready'
+          ? t('background:plate.ready', { dish })
+          : read.status === 'capped' && isOutOfCredits(read.error)
+            ? t('background:plate.outOfCredits')
+            : t('background:plate.failed', { dish });
+  return {
+    title,
+    detail:
+      read.status === 'failed' || read.status === 'capped'
+        ? translateApiError(t, read.error)
+        : t('background:plate.detail'),
+    art: <LinkReadingArt size={28} />,
+    gone: t('background:plate.gone'),
+    labels: {
+      cancelRead: t('background:plate.cancelRead', { dish }),
+      discardRead: t('background:plate.discardRead', { dish }),
+      retryRead: t('background:plate.retryRead', { dish }),
+      review: t('background:plate.review', { dish }),
+    },
+    failedActions: [],
+    retryable: true,
+  };
+}
+
 /** The row of a read, by its kind: the one place a new kind adds its words. */
 function rowOf(
   read: RecipeRead,
@@ -126,6 +160,8 @@ function rowOf(
   switch (read.kind) {
     case 'link':
       return linkRow(read, t, language, navigate);
+    case 'plate':
+      return plateRow(read, t);
   }
 }
 

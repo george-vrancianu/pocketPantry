@@ -4,7 +4,11 @@ import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppLayout } from '../../components/AppLayout';
 import type { Locale } from '../../i18n';
-import { RECIPE_READ_AUTO_RETRY_MS, recipeReads } from '../../lib/recipeReads';
+import {
+  RECIPE_READ_AUTO_RETRY_MS,
+  linkReadsOf,
+  recipeReads,
+} from '../../lib/recipeReads';
 import type { RecipeFromLink } from '../../lib/linkRecipe';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { RecipesPage } from './RecipesPage';
@@ -329,7 +333,7 @@ describe('"Paste text instead" on a failed row', () => {
     await user.click(screen.getByRole('button', { name: 'Read the recipe' }));
     await waitFor(() => expect(sheet).not.toBeVisible());
     expect(sent().at(-1)).toEqual({ text: 'two eggs', language: 'catalog' });
-    const reads = recipeReads.getState().reads;
+    const reads = linkReadsOf(recipeReads.getState().reads);
     expect(reads).toHaveLength(1);
     expect(reads[0].source.kind).toBe('text');
   });

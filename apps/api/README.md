@@ -105,7 +105,7 @@ never reach a client.
   `SCAN_MATCH_CONFIDENCE_THRESHOLD` is the confidence below which a Match
   becomes Unmatched and an image read is flagged low-confidence.
   `POST /api/scan/plate` also returns a short-lived (one hour) HMAC-SHA256
-  token over the Member and the guessed dish titles; `POST /api/scan/plate/ingredients`
+  token over the Member and the guessed dish titles; `POST /api/scan/plate/recipe`
   requires it, so that expensive call cannot be made for an arbitrary title and is
   not a second Scan against the cap. It is signed with `SCAN_TOKEN_SECRET` (at
   least 32 characters): required when `NODE_ENV=production`; otherwise a missing one

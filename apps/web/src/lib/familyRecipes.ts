@@ -93,8 +93,8 @@ export type FamilyRecipeDocument = {
     note: string | null;
   }>;
   steps: Array<{ id?: string; text: string; timerSeconds: number | null }>;
-  /** Only on create: a Variant draft brings its step Tips (`stepIndex` into `steps`), in order. */
-  tips?: { stepIndex: number; text: string }[];
+  /** Only on create: a draft brings its Tips, in order: `stepIndex` into `steps`, or null for a Tip of the whole Recipe. */
+  tips?: { stepIndex: number | null; text: string }[];
   /** Only on create: a saved draft brings its guidance along. */
   guidance?: GuidanceInput;
   /** On create: the page the Recipe was read from. On update: `null` removes the Source Link (and its language); it can't be set or changed. */

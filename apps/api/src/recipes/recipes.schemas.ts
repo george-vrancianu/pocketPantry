@@ -120,9 +120,9 @@ export const familyRecipeUpdate = recipeDocument
     sourceLanguage: z.string().nullable().optional(),
   });
 
-/** A step Tip in a create document: it refers to a Step of the document by index. */
+/** A Tip in a create document: it refers to a Step of the document by index, or is a Tip of the whole Recipe (`stepIndex` null). */
 const newStepTip = z
-  .object({ stepIndex: z.number().int().min(0), text: longText })
+  .object({ stepIndex: z.number().int().min(0).nullable(), text: longText })
   .strict();
 
 /**

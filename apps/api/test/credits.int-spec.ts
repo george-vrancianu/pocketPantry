@@ -59,17 +59,23 @@ const receiptResult = {
   purchaseDate: '2026-09-25',
   lines: [receiptLine],
 };
-const plateItem = {
-  productName: 'Milk',
-  productType: 'Dairy',
-  matchedIngredientId: milk,
-  matchedCategory: 'Milk',
-  matchConfidence: 0.9,
-  fallbackIngredientName: 'Milk',
-  quantityType: 'measured',
-  quantity: 200,
-  unit: 'ml',
-  confidence: 0.9,
+const plateRecipe = {
+  title: 'Pancakes',
+  servings: 4,
+  tagIndexes: [],
+  ingredients: [
+    {
+      nameAsWritten: 'Milk',
+      ingredientId: milk,
+      matchConfidence: 0.9,
+      quantity: 200,
+      unit: 'ml',
+      preparation: null,
+      optional: false,
+    },
+  ],
+  steps: [{ text: 'Whisk.', timerMinutes: null }],
+  tips: [],
 };
 const dishes = { matches: [{ title: 'Pancakes', confidence: 0.7 }] };
 
@@ -194,8 +200,8 @@ describe('Credits (integration)', () => {
       ).body as { token: string };
       expect(await balanceOf(cookie)).toBe(99);
 
-      respondWith({ items: [plateItem] });
-      await post(cookie, 'scan/plate/ingredients', {
+      respondWith(plateRecipe);
+      await post(cookie, 'scan/plate/recipe', {
         dishTitle: 'Pancakes',
         plateToken: token,
       }).expect(201);

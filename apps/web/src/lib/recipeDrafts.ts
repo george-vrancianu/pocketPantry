@@ -36,6 +36,8 @@ export type RecipeDraftContent = {
     timer: string;
     tips?: { text: string }[];
   }[];
+  /** Tips of the whole Recipe; absent on a draft saved before they existed. */
+  tips?: { text: string }[];
   guidance: null | {
     nutritionNote: string;
     nutritionNoteSuggested?: boolean;

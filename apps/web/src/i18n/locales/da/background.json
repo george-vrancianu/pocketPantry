@@ -41,5 +41,20 @@
     "pasteInstead": "Indsæt teksten fra {{what}} i stedet",
     "failedAlert_one": "{{count}} opskriftslink mislykkedes",
     "failedAlert_other": "{{count}} opskriftslinks mislykkedes"
+  },
+  "plate": {
+    "waiting": "Venter på at skrive {{dish}}",
+    "writing": "Skriver {{dish}}…",
+    "ready": "{{dish}} er klar til gennemsyn",
+    "failed": "Kunne ikke skrive {{dish}}",
+    "detail": "Fra dit tallerkenfoto",
+    "outOfCredits": "Ikke flere kreditter",
+    "gone": "Den opskriftkladde gemmes ikke længere.",
+    "review": "Gennemse opskriften på {{dish}}",
+    "cancelRead": "Annuller skrivningen af {{dish}}",
+    "discardRead": "Kassér {{dish}}",
+    "retryRead": "Prøv at skrive {{dish}} igen",
+    "failedAlert_one": "{{count}} retsopskrift mislykkedes",
+    "failedAlert_other": "{{count}} retsopskrifter mislykkedes"
   }
 }

@@ -28,6 +28,7 @@ import {
 /** Each recipe read kind's failure alert, by the `background` key: a new kind adds its own. */
 const RECIPE_READ_FAILED_ALERT: Record<RecipeReadKind, string> = {
   link: 'link.failedAlert',
+  plate: 'plate.failedAlert',
 };
 
 /** The alert for the failed recipe reads, worded per kind ("2 recipe links failed"). */

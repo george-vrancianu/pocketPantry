@@ -156,13 +156,13 @@
     "removeCard": "Fjern",
     "pickDish": "Vælg retten",
     "dishOption": "{{title}}, {{percent}} % sandsynlig",
-    "readAgain": "Læs igen",
     "banner_one": "Alle læst! {{count}} vare.",
     "banner_other": "Alle læst! {{count}} varer.",
     "bannerCheck_one": "Tjek den, jeg var usikker på, og læg den så til.",
     "bannerCheck_other": "Tjek de {{count}}, jeg var usikker på, og læg dem så til.",
     "bannerClear_one": "Intet at tjekke. Tilføj den, når du er klar.",
-    "bannerClear_other": "Intet at tjekke. Tilføj dem, når du er klar."
+    "bannerClear_other": "Intet at tjekke. Tilføj dem, når du er klar.",
+    "readsFull": "Flere opskrifter venter på dig. Gennemse eller annuller en først."
   },
   "plateRecipe": {
     "open": "Gem som opskrift",
