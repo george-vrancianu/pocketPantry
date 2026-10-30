@@ -5,7 +5,8 @@
     "ingredients": "Ingrediente",
     "categories": "Categorii",
     "unmatched": "Nepotrivite",
-    "recipes": "Rețete"
+    "recipes": "Rețete",
+    "promoCodes": "Coduri promoționale"
   },
   "locations": {
     "none": "Moștenit"
@@ -433,5 +434,44 @@
     "deleteConfirm_one": "{{count}} Rețetă are acest Tag și îl va pierde. Îl ștergi oricum?",
     "deleteConfirm_few": "{{count}} Rețete au acest Tag și îl vor pierde. Îl ștergi oricum?",
     "deleteConfirm_other": "{{count}} de Rețete au acest Tag și îl vor pierde. Îl ștergi oricum?"
+  },
+  "promoCodes": {
+    "formLabel": "Generează coduri promoționale",
+    "count": "Câte coduri",
+    "countHelp": "De la 1 la 50",
+    "credits": "Credite pe cod",
+    "creditsHelp": "De la 0 la 10.000 de Credite întregi",
+    "note": "Notă (opțional)",
+    "noteHelp": "O văd doar administratorii",
+    "generate": "Generează",
+    "resultTitle": "Coduri promoționale noi",
+    "copyAll": "Copiază toate",
+    "copied": "Cod copiat",
+    "copiedAll_one": "{{count}} cod copiat",
+    "copiedAll_few": "{{count}} coduri copiate",
+    "copiedAll_other": "{{count}} de coduri copiate",
+    "copyFailed": "Nu s-a putut copia. Selectează codul și copiază-l manual.",
+    "filterLabel": "Arată",
+    "status": {
+      "all": "Toate",
+      "unused": "Nefolosite",
+      "redeemed": "Folosite",
+      "revoked": "Revocate"
+    },
+    "empty": "Niciun cod promoțional aici.",
+    "loadMore": "Încarcă mai multe",
+    "credits_value_one": "{{count}} Credit",
+    "credits_value_few": "{{count}} Credite",
+    "credits_value_other": "{{count}} de Credite",
+    "created": "Creat pe {{date}}",
+    "redeemedBy": "Folosit pe {{date}} de {{name}} {{email}}, Familia {{family}}",
+    "formerMember": "un fost Membru",
+    "copy": "Copiază",
+    "copyCode": "Copiază codul {{code}}",
+    "revoke": "Revocă",
+    "revokeCode": "Revocă codul {{code}}",
+    "revokeTitle": "Revoci {{code}}?",
+    "revokeBody": "Acest cod nu va mai funcționa. Nu poți anula acțiunea.",
+    "revokeConfirm": "Revocă"
   }
 }

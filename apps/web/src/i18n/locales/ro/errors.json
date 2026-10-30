@@ -216,5 +216,9 @@
     "not_found": "Acea ciornă de rețetă nu mai există. Poate a fost eliminată sau păstrată prea mult.",
     "limit_reached": "Ai deja {{max}} de ciorne de rețete. Termină sau elimină una ca să începi alta.",
     "version_conflict": "Această ciornă de rețetă a fost modificată pe alt dispozitiv. Încarcă ultima ciornă salvată ca să continui."
+  },
+  "promo_code": {
+    "not_revocable": "Doar un cod promoțional nefolosit poate fi revocat.",
+    "not_found": "Nu am găsit acel cod promoțional."
   }
 }

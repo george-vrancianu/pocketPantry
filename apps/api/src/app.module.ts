@@ -19,6 +19,7 @@ import { MealPlansModule } from './meal-plans/meal-plans.module';
 import { PageFetchModule } from './page-fetch/page-fetch.module';
 import { PantryModule } from './pantry/pantry.module';
 import { RecipeDraftsModule } from './recipe-drafts/recipe-drafts.module';
+import { PromoCodesModule } from './promo-codes/promo-codes.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { ScanModule } from './scan/scan.module';
 import { VoiceModule } from './voice/voice.module';
@@ -51,6 +52,7 @@ import { SettingsModule } from './settings/settings.module';
     RecipeDraftsModule,
     MealPlansModule,
     AdminModule,
+    PromoCodesModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ApiExceptionFilter }],
 })

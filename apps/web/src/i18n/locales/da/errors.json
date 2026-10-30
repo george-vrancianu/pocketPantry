@@ -211,5 +211,9 @@
     "not_found": "Opskriftkladden findes ikke mere. Den kan være kasseret eller gemt for længe.",
     "limit_reached": "Du har allerede {{max}} opskriftkladder. Gør en færdig eller kassér en for at starte en ny.",
     "version_conflict": "Denne opskriftkladde er ændret på en anden enhed. Hent den seneste kladde for at fortsætte."
+  },
+  "promo_code": {
+    "not_revocable": "Kun en ubrugt promokode kan tilbagekaldes.",
+    "not_found": "Vi kunne ikke finde den promokode."
   }
 }

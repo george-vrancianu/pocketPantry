@@ -211,5 +211,9 @@
     "not_found": "That Recipe Draft is gone. It may have been discarded or kept too long.",
     "limit_reached": "You already keep {{max}} Recipe Drafts. Finish or discard one to start another.",
     "version_conflict": "This Recipe Draft was changed on another device. Load the latest to carry on."
+  },
+  "promo_code": {
+    "not_revocable": "Only an unused Promo Code can be revoked.",
+    "not_found": "We could not find that Promo Code."
   }
 }

@@ -4,6 +4,10 @@ import {
   INVITE_CODE_TTL_DAYS,
   generateInviteCode,
   inviteCodeExpiry,
+  PROMO_CODE_LENGTH,
+  formatPromoCode,
+  generatePromoCode,
+  normalizePromoCode,
 } from './invite-code';
 
 describe('Invite Code', () => {
@@ -26,5 +30,26 @@ describe('Invite Code', () => {
     expect(inviteCodeExpiry(now).toISOString()).toBe(
       '2026-01-08T12:00:00.000Z',
     );
+  });
+});
+
+describe('Promo Code', () => {
+  it('is 10 characters from the Invite Code alphabet', () => {
+    expect(PROMO_CODE_LENGTH).toBe(10);
+    for (let i = 0; i < 200; i++) {
+      expect(generatePromoCode()).toMatch(
+        new RegExp(`^[${INVITE_CODE_ALPHABET}]{10}$`),
+      );
+    }
+  });
+
+  it('is displayed as XXXXX-XXXXX', () => {
+    expect(formatPromoCode('ABCDEFGHJK')).toBe('ABCDE-FGHJK');
+  });
+
+  it('normalises case, spaces and dashes', () => {
+    expect(normalizePromoCode(' abcde-fghjk ')).toBe('ABCDEFGHJK');
+    expect(normalizePromoCode('abcde fgh jk')).toBe('ABCDEFGHJK');
+    expect(normalizePromoCode('ABCDEFGHJK')).toBe('ABCDEFGHJK');
   });
 });

@@ -20,7 +20,12 @@ export type CreditHistoryEntry = {
 } & (
   | { kind: 'spend'; readKind: CreditPriceKind }
   | {
-      kind: 'welcome_grant' | 'grant' | 'transfer_in' | 'transfer_out';
+      kind:
+        | 'welcome_grant'
+        | 'grant'
+        | 'transfer_in'
+        | 'transfer_out'
+        | 'promo_code';
       readKind: null;
     }
 );

@@ -5,7 +5,8 @@
     "ingredients": "Ingredients",
     "categories": "Categories",
     "unmatched": "Unmatched",
-    "recipes": "Recipes"
+    "recipes": "Recipes",
+    "promoCodes": "Promo Codes"
   },
   "locations": {
     "none": "Inherit"
@@ -425,5 +426,42 @@
     "deleteConfirmUnused": "No Recipe has this Tag. Delete it?",
     "deleteConfirm_one": "{{count}} Recipe has this Tag and will lose it. Delete it anyway?",
     "deleteConfirm_other": "{{count}} Recipes have this Tag and will lose it. Delete it anyway?"
+  },
+  "promoCodes": {
+    "formLabel": "Generate Promo Codes",
+    "count": "How many codes",
+    "countHelp": "1 to 50",
+    "credits": "Credits per code",
+    "creditsHelp": "0 to 10,000 whole Credits",
+    "note": "Note (optional)",
+    "noteHelp": "Only Admins see this",
+    "generate": "Generate",
+    "resultTitle": "New Promo Codes",
+    "copyAll": "Copy all",
+    "copied": "Code copied",
+    "copiedAll_one": "{{count}} code copied",
+    "copiedAll_other": "{{count}} codes copied",
+    "copyFailed": "Could not copy. Select the code and copy it by hand.",
+    "filterLabel": "Show",
+    "status": {
+      "all": "All",
+      "unused": "Unused",
+      "redeemed": "Redeemed",
+      "revoked": "Revoked"
+    },
+    "empty": "No Promo Codes here.",
+    "loadMore": "Load more",
+    "credits_value_one": "{{count}} Credit",
+    "credits_value_other": "{{count}} Credits",
+    "created": "Created {{date}}",
+    "redeemedBy": "Redeemed {{date}} by {{name}} {{email}}, Family {{family}}",
+    "formerMember": "a former Member",
+    "copy": "Copy",
+    "copyCode": "Copy code {{code}}",
+    "revoke": "Revoke",
+    "revokeCode": "Revoke code {{code}}",
+    "revokeTitle": "Revoke {{code}}?",
+    "revokeBody": "This code will stop working. You cannot undo this.",
+    "revokeConfirm": "Revoke"
   }
 }

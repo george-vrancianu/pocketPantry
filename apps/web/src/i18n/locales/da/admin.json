@@ -5,7 +5,8 @@
     "ingredients": "Ingredienser",
     "categories": "Kategorier",
     "unmatched": "Umatchede",
-    "recipes": "Opskrifter"
+    "recipes": "Opskrifter",
+    "promoCodes": "Promokoder"
   },
   "locations": {
     "none": "Arvet"
@@ -425,5 +426,42 @@
     "deleteConfirmUnused": "Ingen opskrift har dette tag. Slet det?",
     "deleteConfirm_one": "{{count}} opskrift har dette tag og mister det. Slet det alligevel?",
     "deleteConfirm_other": "{{count}} opskrifter har dette tag og mister det. Slet det alligevel?"
+  },
+  "promoCodes": {
+    "formLabel": "Opret promokoder",
+    "count": "Antal koder",
+    "countHelp": "1 til 50",
+    "credits": "Credits pr. kode",
+    "creditsHelp": "0 til 10.000 hele Credits",
+    "note": "Note (valgfri)",
+    "noteHelp": "Kun administratorer ser den",
+    "generate": "Opret",
+    "resultTitle": "Nye promokoder",
+    "copyAll": "Kopiér alle",
+    "copied": "Kode kopieret",
+    "copiedAll_one": "{{count}} kode kopieret",
+    "copiedAll_other": "{{count}} koder kopieret",
+    "copyFailed": "Kunne ikke kopiere. Markér koden og kopiér den manuelt.",
+    "filterLabel": "Vis",
+    "status": {
+      "all": "Alle",
+      "unused": "Ubrugte",
+      "redeemed": "Indløste",
+      "revoked": "Tilbagekaldte"
+    },
+    "empty": "Ingen promokoder her.",
+    "loadMore": "Indlæs flere",
+    "credits_value_one": "{{count}} Credit",
+    "credits_value_other": "{{count}} Credits",
+    "created": "Oprettet {{date}}",
+    "redeemedBy": "Indløst {{date}} af {{name}} {{email}}, Familie {{family}}",
+    "formerMember": "et tidligere Medlem",
+    "copy": "Kopiér",
+    "copyCode": "Kopiér koden {{code}}",
+    "revoke": "Tilbagekald",
+    "revokeCode": "Tilbagekald koden {{code}}",
+    "revokeTitle": "Tilbagekald {{code}}?",
+    "revokeBody": "Koden holder op med at virke. Det kan ikke fortrydes.",
+    "revokeConfirm": "Tilbagekald"
   }
 }
