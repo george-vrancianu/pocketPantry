@@ -48,6 +48,10 @@ import {
  * written back to the card as they are made, so leaving the editor keeps them. Saving goes
  * through `saveLines`, which routes by the card's Scan Mode.
  */
+/** The sheet has no Name input: an Unmatched line's name is typed in the chooser. */
+const sheetFieldId = (line: ReviewLine, field: ReviewField | 'match') =>
+  fieldId(line.key, !line.match && field === 'name' ? 'match' : field);
+
 export function useReviewScreen(
   /**
    * The host's settings: when the card is saved the host takes over (the Intro counts the Batches and
@@ -194,7 +198,9 @@ export function useReviewScreen(
     const field = firstFocusField(line);
     // A matched line with nothing to fix has no field to land on: the title, not the chooser.
     enterFocus.current =
-      field === 'match' && line.match ? sheetTitleId(key) : fieldId(key, field);
+      field === 'match' && line.match
+        ? sheetTitleId(key)
+        : sheetFieldId(line, field);
   };
   const sheetEntered = () => {
     const id = enterFocus.current;
@@ -239,7 +245,8 @@ export function useReviewScreen(
   const focusInvalid = (candidates: ReviewLine[]) => {
     const line = candidates.find((l) => invalidFields(l).length > 0);
     if (!line) return false;
-    const target = fieldId(line.key, invalidFields(line)[0]);
+    const field = invalidFields(line)[0];
+    const target = phone ? sheetFieldId(line, field) : fieldId(line.key, field);
     if (phone) {
       // A sheet that is already open takes focus now; one that is opening takes it once it has opened.
       const alreadyOpen = sheetOpen && sheetKey === line.key;

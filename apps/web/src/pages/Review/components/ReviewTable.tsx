@@ -27,7 +27,6 @@ type Props = {
   onSheetEntered: () => void;
   onSheetExited: () => void;
   onChange: (key: string, patch: Partial<ReviewLine>) => void;
-  onSwapMatch: (key: string) => void;
   onPickMatch: (key: string, match: CatalogSearchResult) => void;
   onRemove: (key: string) => void;
   onConfirm: (key: string) => void;
@@ -50,7 +49,6 @@ export function ReviewTable({
   onSheetEntered,
   onSheetExited,
   onChange,
-  onSwapMatch,
   onPickMatch,
   onRemove,
   onConfirm,
@@ -137,7 +135,6 @@ export function ReviewTable({
           onEntered={onSheetEntered}
           onExited={onSheetExited}
           onChange={(patch) => onChange(sheetLine.key, patch)}
-          onSwapMatch={() => onSwapMatch(sheetLine.key)}
           onPickMatch={(match) => onPickMatch(sheetLine.key, match)}
           onRemove={() => onRemove(sheetLine.key)}
           onConfirm={() => onConfirm(sheetLine.key)}

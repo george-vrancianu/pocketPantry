@@ -24,7 +24,6 @@ type Props = {
   onEntered: () => void;
   onExited: () => void;
   onChange: (patch: Partial<ReviewLine>) => void;
-  onSwapMatch: () => void;
   onPickMatch: (match: CatalogSearchResult) => void;
   onRemove: () => void;
   onConfirm: () => void;

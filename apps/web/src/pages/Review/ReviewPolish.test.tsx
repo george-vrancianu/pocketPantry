@@ -134,10 +134,14 @@ describe('Review polish: focus', () => {
     );
   });
 
-  it('opening an Unmatched row with a blank name focuses Name', async () => {
+  it('opening an Unmatched row with a blank name focuses the chooser', async () => {
     renderReview([line({ match: null, name: '  ', quantity: 1 })]);
     await userEvent.click(row('  '));
-    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveFocus());
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: 'Matched ingredient' }),
+      ).toHaveFocus(),
+    );
   });
 
   it('Done on a confident row returns focus to the row', async () => {

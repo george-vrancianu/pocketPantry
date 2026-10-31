@@ -529,12 +529,8 @@ describe('Barcode on the Scan page', () => {
       await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
       await tapOnlyRow(user);
-      expect(await screen.findByLabelText('Name')).toHaveValue('Greek yogurt');
-      await user.click(
-        await screen.findByRole('button', { name: /No match · Choose/ }),
-      );
       expect(
-        await screen.findByRole('combobox', { name: 'Search ingredients' }),
+        await screen.findByRole('combobox', { name: 'Matched ingredient' }),
       ).toHaveValue('Greek yogurt');
     });
 
@@ -786,7 +782,15 @@ describe('Barcode on the Scan page', () => {
       await user.click(await screen.findByTestId('card-result'));
 
       await tapOnlyRow(user);
-      await user.type(await screen.findByLabelText('Name'), 'Mystery jar');
+      const search = await screen.findByRole('combobox', {
+        name: 'Matched ingredient',
+      });
+      await user.type(search, 'Mystery jar');
+      await user.click(
+        await screen.findByRole('option', {
+          name: /Use “Mystery jar” as typed/,
+        }),
+      );
       await closeSheet(user);
       await user.click(screen.getByRole('button', { name: /^Save/ }));
 
@@ -825,7 +829,9 @@ describe('Barcode on the Scan page', () => {
       await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
       await user.click(await screen.findByTestId('card-result'));
       await tapOnlyRow(user);
-      expect(await screen.findByLabelText('Name')).toHaveValue('Grandma jam');
+      expect(
+        await screen.findByRole('combobox', { name: 'Matched ingredient' }),
+      ).toHaveValue('Grandma jam');
       await closeSheet(user);
       await user.click(screen.getByRole('button', { name: /^Save/ }));
 
@@ -887,7 +893,7 @@ describe('Barcode on the Scan page', () => {
 
     it('gives no credit to a not-found line', async () => {
       await openLine({ found: false }, null);
-      await screen.findByLabelText('Name');
+      await screen.findByRole('combobox', { name: 'Matched ingredient' });
       expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
     });
 
@@ -947,9 +953,6 @@ describe('Barcode on the Scan page', () => {
       const user = await openLine(
         found({ match: null, lowConfidence: true, allergens: [MILK] }),
         null,
-      );
-      await user.click(
-        await screen.findByRole('button', { name: /No match · Choose/ }),
       );
       await user.click(
         await screen.findByRole('button', {

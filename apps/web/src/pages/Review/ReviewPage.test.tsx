@@ -662,7 +662,7 @@ describe('ReviewPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('names each repeated row its own sheet and Match button', async () => {
+  it('names each repeated row its own sheet', async () => {
     renderReview([
       line({ lowConfidence: true, quantity: 1 }),
       line({ lowConfidence: true, quantity: 1 }),
@@ -682,29 +682,11 @@ describe('ReviewPage', () => {
       screen.getByRole('button', { name: /Mystery jar \(2 of 2\)/ }),
     );
     expect(
-      await screen.findByRole('button', {
-        name: 'Mystery jar (2 of 2): No match · Choose',
-      }),
+      await screen.findByRole('dialog', { name: 'Mystery jar (2 of 2)' }),
     ).toBeInTheDocument();
-  });
-
-  it('returns focus to the row when the opener was never focused (Safari)', async () => {
-    renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);
-    await openSheet('Mystery jar');
-    // fireEvent.click does not focus the button, as a tap in Safari does not.
-    fireEvent.click(screen.getByRole('button', { name: /No match · Choose/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('dialog', { name: /Change match/ }),
-      ).not.toBeInTheDocument(),
-    );
     expect(
-      screen.getByRole('dialog', { name: 'Mystery jar' }),
-    ).toBeInTheDocument();
-    await userEvent.keyboard('{Escape}');
-    await sheetClosed();
-    await waitFor(() => expect(row('Mystery jar')).toHaveFocus());
+      screen.getByRole('combobox', { name: 'Matched ingredient' }),
+    ).toHaveValue('Mystery jar');
   });
 
   it('opens and works as a bottom sheet at 899 px, the widest phone layout', async () => {
@@ -718,29 +700,21 @@ describe('ReviewPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('turns an Unmatched line into a matched one when an Ingredient is chosen', async () => {
+  it('turns an Unmatched line into a matched one when an Ingredient is picked, keeping the sheet open', async () => {
     renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);
     await openSheet('Mystery jar');
-    const opener = screen.getByRole('button', { name: /No match · Choose/ });
-    await userEvent.click(opener);
+    const search = screen.getByRole('combobox', { name: 'Matched ingredient' });
+    // Pre-typed with the scanned name and no token, so suggestions show straight away.
+    expect(search).toHaveValue('Mystery jar');
+    expect(screen.queryByTestId('selected-token')).toBeNull();
     expect(
-      screen.getByRole('dialog', { name: 'Change match for Mystery jar' }),
-    ).toBeInTheDocument();
-    // Cancelling an Unmatched line returns focus to the same button.
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('dialog', { name: /Change match/ }),
-      ).not.toBeInTheDocument(),
-    );
-    expect(opener).toHaveFocus();
-    await userEvent.click(opener);
-    await userEvent.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'milk',
-    );
+      screen.queryByRole('dialog', { name: /Change match/ }),
+    ).not.toBeInTheDocument();
     await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
     const panel = await screen.findByRole('dialog', { name: 'Milk' });
+    expect(within(panel).getByTestId('selected-token')).toHaveTextContent(
+      'Milk',
+    );
     expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
     expect(
       within(panel).getByRole('button', { name: 'Unit: ml' }),
@@ -748,70 +722,109 @@ describe('ReviewPage', () => {
     expect(within(panel).queryByRole('note')).not.toBeInTheDocument();
   });
 
-  it('offers no Use as typed in the match dialog, only the no-match hint', async () => {
+  it('passes a barcode lookup to the chooser: the product name as the query, the listed Allergens for a new Ingredient', async () => {
+    const milkAllergen = { id: 'al-milk', name: 'Milk' };
+    const glutenAllergen = { id: 'al-gluten', name: 'Gluten' };
+    renderReview(
+      [
+        line({
+          match: null,
+          name: 'Greek yogurt',
+          lowConfidence: true,
+          quantity: 1,
+          barcode: '5901234123457',
+          source: 'open_food_facts',
+          allergens: [milkAllergen],
+          missingAllergens: [],
+        }),
+      ],
+      {
+        'GET /api/catalog/search': () => Response.json({ results: [] }),
+        'GET /api/catalog/allergens': () =>
+          Response.json({ allergens: [milkAllergen, glutenAllergen] }),
+      },
+    );
+    await openSheet('Greek yogurt');
+    expect(
+      screen.getByRole('combobox', { name: 'Matched ingredient' }),
+    ).toHaveValue('Greek yogurt');
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Add “Greek yogurt” to your catalog',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Add to your catalog',
+    });
+    expect(
+      await within(dialog).findByRole('button', { name: 'Milk' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      within(dialog).getByRole('button', { name: 'Gluten' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('focuses the chooser when an Unmatched line opens', async () => {
+    renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);
+    await openSheet('Mystery jar');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: 'Matched ingredient' }),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('offers Use as typed on an Unmatched line, which keeps it Unmatched under a token with a pill', async () => {
     const calls = renderReview(
       [line({ match: null, name: 'Mystery jar', quantity: 1 })],
       { 'GET /api/catalog/search': () => Response.json({ results: [] }) },
     );
     await openSheet('Mystery jar');
+    const search = screen.getByRole('combobox', { name: 'Matched ingredient' });
+    await userEvent.clear(search);
+    await userEvent.type(search, 'Grandma jam');
     await userEvent.click(
-      screen.getByRole('button', { name: /No match · Choose/ }),
+      await screen.findByRole('option', { name: /Use “Grandma jam” as typed/ }),
     );
-    await userEvent.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'zzz',
-    );
-
-    expect(await screen.findByText('No match for “zzz”')).toBeVisible();
-    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    const token = await screen.findByTestId('selected-token');
+    expect(token).toHaveTextContent('Grandma jam');
+    expect(within(token).getByText('Unmatched')).toBeInTheDocument();
+    expect(within(token).queryByText('Family')).toBeNull();
+    // Still Unmatched: the Category select stays, and the sheet stays open.
+    expect(screen.getByLabelText('Category')).toBeInTheDocument();
+    expect(sheet('Grandma jam')).toBeInTheDocument();
     for (const call of calls.filter(
       (c) => c.key === 'GET /api/catalog/search',
     )) {
       expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
     }
+    // Clearing the token searches again.
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Change ingredient' }),
+    );
+    expect(screen.queryByTestId('selected-token')).toBeNull();
+    expect(
+      screen.getByRole('combobox', { name: 'Matched ingredient' }),
+    ).toBeInTheDocument();
   });
 
-  it.each([
-    [
-      'Cancel',
-      () => userEvent.click(screen.getByRole('button', { name: 'Cancel' })),
-    ],
-    ['Escape', () => userEvent.keyboard('{Escape}')],
-  ])(
-    'leaves an Unmatched line unchanged and returns focus when %s closes the dialog',
-    async (_how, close) => {
-      renderReview([line({ match: null, name: 'Mystery jar', quantity: 2 })]);
-      await openSheet('Mystery jar');
-      const values = () => [
-        screen.getByRole('button', { name: /^Unit: / }).textContent,
-        pressedLocation(),
-        screen.getByRole('button', { name: /^Expires,/ }).textContent,
-      ];
-      const before = values();
-      const opener = screen.getByRole('button', { name: /No match · Choose/ });
-      await userEvent.click(opener);
-      expect(
-        screen.getByRole('dialog', { name: /Change match/ }),
-      ).toBeInTheDocument();
-      await close();
-      await waitFor(() =>
-        expect(
-          screen.queryByRole('dialog', { name: /Change match/ }),
-        ).not.toBeInTheDocument(),
-      );
-      expect(opener).toHaveFocus();
-      expect(sheet('Mystery jar')).toBeInTheDocument();
-      expect(values()).toEqual(before);
-    },
-  );
+  it('never offers Use as typed on a matched line', async () => {
+    renderReview([line({ lowConfidence: true, quantity: 1 })], {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await openSheet('Parmesan');
+    await userEvent.type(await startChoosing(), 'zzz');
+    expect(await screen.findByText('No match for “zzz”')).toBeVisible();
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+  });
 
-  it('shows an Unmatched line as "No match", with a Name and a Category', async () => {
+  it('shows an Unmatched line with the chooser and a Category, and no Name input', async () => {
     renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);
     const panel = await openSheet('Mystery jar');
     expect(
-      within(panel).getByRole('button', { name: /No match · Choose/ }),
-    ).toBeInTheDocument();
-    expect(within(panel).getByLabelText('Name')).toHaveValue('Mystery jar');
+      within(panel).getByRole('combobox', { name: 'Matched ingredient' }),
+    ).toHaveValue('Mystery jar');
+    expect(within(panel).queryByLabelText('Name')).toBeNull();
     await within(panel).findByRole('option', { name: 'Dairy' });
     expect(within(panel).getByLabelText('Category')).toBeInTheDocument();
   });
@@ -884,15 +897,21 @@ describe('ReviewPage', () => {
     });
   });
 
-  it('flags a blank Unmatched name inline and will not save it', async () => {
-    renderReview([line({ match: null, name: 'Mystery jar' })]);
-    await openSheet('Mystery jar');
-    await userEvent.clear(screen.getByLabelText('Name'));
+  it('flags a blank Unmatched name on the chooser and will not save it', async () => {
+    renderReview([line({ match: null, name: '  ', quantity: 1 })]);
+    await userEvent.click(row('  '));
+    await screen.findByRole('dialog');
+    const search = screen.getByRole('combobox', { name: 'Matched ingredient' });
     expect(screen.getByText('Enter a name.')).toBeInTheDocument();
+    expect(search).toHaveAccessibleDescription('Enter a name.');
     await userEvent.keyboard('{Escape}');
     await sheetClosed();
     await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
-    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveFocus());
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: 'Matched ingredient' }),
+      ).toHaveFocus(),
+    );
   });
 
   it.each(['0', '1e3', '2000000'])(
@@ -1103,7 +1122,7 @@ describe('ReviewPage: Add to your catalog (#270)', () => {
     expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
   });
 
-  it('matches an Unmatched line to the Family Ingredient added from the Match dialog', async () => {
+  it('matches an Unmatched line to the Family Ingredient added from the inline chooser', async () => {
     const kombucha: CatalogSearchResult = {
       ...parmesan,
       owner: 'family',
@@ -1134,21 +1153,13 @@ describe('ReviewPage: Add to your catalog (#270)', () => {
       },
     );
     await openSheet('Kombucha');
+    const search = screen.getByRole('combobox', { name: 'Matched ingredient' });
     await userEvent.click(
-      screen.getByRole('button', { name: /No match · Choose/ }),
-    );
-    const dialog = screen.getByRole('dialog', {
-      name: 'Change match for Kombucha',
-    });
-    await userEvent.click(
-      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
-    );
-    await userEvent.paste('Kombucha');
-    await userEvent.click(
-      await within(dialog).findByRole('option', {
+      await screen.findByRole('option', {
         name: /Add “Kombucha” to your catalog/,
       }),
     );
+    expect(search).toBeDefined();
     await userEvent.click(
       await screen.findByRole('combobox', { name: 'Category' }),
     );

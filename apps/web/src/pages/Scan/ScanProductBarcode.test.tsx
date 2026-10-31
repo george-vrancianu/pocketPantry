@@ -355,7 +355,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     expect(fakeCamera.pendingReads).toHaveLength(2);
   });
 
-  it('does not pre-type the Match search of an Unmatched Product line carrying a decoded barcode', async () => {
+  it('pre-types the chooser of an Unmatched Product line with its scanned name, barcode or not', async () => {
     const user = userEvent.setup();
     renderScan();
     readLines = [{ ...line('Mystery'), match: null }];
@@ -365,17 +365,10 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     await user.click(await screen.findByTestId('card-result'));
     await user.click(await screen.findByRole('button', { name: /Mystery/ }));
-    const match = (await screen.findAllByRole('button')).find(
-      (button) =>
-        button.getAttribute('aria-haspopup') === 'dialog' &&
-        !button.id.endsWith('-title') &&
-        /No match/.test(button.getAttribute('aria-label') ?? ''),
-    )!;
-    await user.click(match);
 
     expect(
-      await screen.findByRole('combobox', { name: 'Search ingredients' }),
-    ).toHaveValue('');
+      await screen.findByRole('combobox', { name: 'Matched ingredient' }),
+    ).toHaveValue('Mystery');
   });
 
   it('keeps the barcode when the Member renames an Unmatched line', async () => {
@@ -388,7 +381,13 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     await user.click(await screen.findByTestId('card-result'));
     await user.click(await screen.findByRole('button', { name: /Mystery/ }));
-    await user.type(await screen.findByLabelText('Name'), ' jar');
+    await user.type(
+      await screen.findByRole('combobox', { name: 'Matched ingredient' }),
+      ' jar',
+    );
+    await user.click(
+      await screen.findByRole('option', { name: /Use “Mystery jar” as typed/ }),
+    );
     await closeSheet(user);
     await user.click(screen.getByRole('button', { name: /^Save/ }));
 

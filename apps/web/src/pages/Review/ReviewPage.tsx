@@ -135,7 +135,6 @@ export function ReviewPage({
         onSheetEntered={screen.sheetEntered}
         onSheetExited={screen.sheetExited}
         onChange={screen.change}
-        onSwapMatch={screen.openSwap}
         onPickMatch={screen.pickMatch}
         onRemove={screen.remove}
         onConfirm={screen.confirm}
@@ -147,14 +146,6 @@ export function ReviewPage({
       <Stack spacing={2} sx={{ mt: 2 }}>
         {notices}
       </Stack>
-      <MatchDialog
-        open={screen.swapOpen}
-        name={screen.swapName}
-        defaultQuery={screen.swapQuery}
-        newIngredientAllergenIds={screen.swapAllergenIds}
-        onSelect={screen.changeMatch}
-        onClose={screen.closeSwap}
-      />
     </>
   );
 
