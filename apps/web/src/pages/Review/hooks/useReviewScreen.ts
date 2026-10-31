@@ -305,7 +305,6 @@ export function useReviewScreen(
     blocked,
     toggle,
     open,
-    phone,
     sheetKey,
     sheetOpen,
     openSheet,

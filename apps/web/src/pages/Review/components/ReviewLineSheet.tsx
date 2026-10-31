@@ -54,6 +54,7 @@ export function ReviewLineSheet({
             fontSize: 18,
             fontWeight: 700,
             color: tokens.color.ink,
+            overflowWrap: 'anywhere',
           }}
         >
           {displayName(line)}

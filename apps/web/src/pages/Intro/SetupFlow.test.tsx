@@ -196,6 +196,15 @@ describe('Setup 1: Snap, Setup overview, All set', () => {
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
+    // Confirm closes the sheet and keeps the line in the list.
+    await user.click(lineRows()[0]);
+    const sheet = await screen.findByRole('dialog');
+    await user.click(
+      within(sheet).getByRole('button', { name: /^(Confirm|Done)$/ }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(lineRows()).toHaveLength(3);
+
     await user.click(screen.getByRole('button', { name: 'Add 3 to Pantry' }));
 
     // It was the last card and it was saved: on to Say it, which counts what is in the Pantry now.
