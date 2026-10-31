@@ -110,6 +110,13 @@ const decoded = async (code: string | null, nth = 0) => {
   );
   await act(async () => fakeCamera.pendingReads[nth].resolve(code));
 };
+/** Dismisses the line's sheet (its edits stay) so the page behind it can be reached. */
+async function closeSheet(user: ReturnType<typeof userEvent.setup>) {
+  await user.keyboard('{Escape}');
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+  );
+}
 async function addAll(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
   await user.click(await screen.findByRole('button', { name: 'Add all' }));
@@ -140,6 +147,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     expect(
       screen.queryByText('Product data: Open Food Facts'),
     ).not.toBeInTheDocument();
+    await closeSheet(user);
     await user.click(screen.getByRole('button', { name: /^Save/ }));
 
     await waitFor(() => expect(saves().length).toBeGreaterThan(0));
@@ -173,8 +181,11 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     await user.type(search, 'skyr');
     await user.click(await screen.findByRole('option', { name: /Skyr/ }));
     await waitFor(() =>
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      expect(
+        screen.queryByRole('dialog', { name: /Change match/ }),
+      ).not.toBeInTheDocument(),
     );
+    await closeSheet(user);
     await user.click(screen.getByRole('button', { name: /^Save/ }));
 
     await waitFor(() => expect(saves().length).toBeGreaterThan(0));
@@ -287,6 +298,7 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
       const [first] = await screen.findAllByTestId('card-result');
       await user.click(first);
       await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
+      await closeSheet(user);
       await user.click(screen.getByRole('button', { name: /^Save/ }));
       await waitFor(() => expect(saves()).toHaveLength(1));
       await settleLate();
@@ -364,8 +376,12 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     await decoded(CODE);
     await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     await user.click(await screen.findByTestId('card-result'));
+    await user.click(await screen.findByRole('button', { name: /Mystery/ }));
     const match = (await screen.findAllByRole('button')).find(
-      (button) => button.getAttribute('aria-haspopup') === 'dialog',
+      (button) =>
+        button.getAttribute('aria-haspopup') === 'dialog' &&
+        !button.id.endsWith('-title') &&
+        /No match/.test(button.getAttribute('aria-label') ?? ''),
     )!;
     await user.click(match);
 
@@ -383,7 +399,9 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     await decoded(CODE);
     await user.click(screen.getByRole('button', { name: /^Review \d+ / }));
     await user.click(await screen.findByTestId('card-result'));
+    await user.click(await screen.findByRole('button', { name: /Mystery/ }));
     await user.type(await screen.findByLabelText('Name'), ' jar');
+    await closeSheet(user);
     await user.click(screen.getByRole('button', { name: /^Save/ }));
 
     await waitFor(() => expect(saves().length).toBeGreaterThan(0));
@@ -409,8 +427,11 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     await user.type(search, 'skyr');
     await user.click(await screen.findByRole('option', { name: /Skyr/ }));
     await waitFor(() =>
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      expect(
+        screen.queryByRole('dialog', { name: /Change match/ }),
+      ).not.toBeInTheDocument(),
     );
+    await closeSheet(user);
     await user.click(screen.getByRole('button', { name: 'test back' }));
     await decoded(CODE);
     await user.click(await screen.findByRole('button', { name: 'Add all' }));

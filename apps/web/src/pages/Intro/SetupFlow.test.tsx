@@ -183,6 +183,19 @@ describe('Setup 1: Snap, Setup overview, All set', () => {
     expect(screen.getByRole('img', { name: 'Gator, happy' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Review' })).toBeInTheDocument();
 
+    // Nothing opens by itself; tapping a row opens that line's sheet, and dismissing it keeps the line unconfirmed.
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const lineRows = () =>
+      screen
+        .getAllByRole('button')
+        .filter((button) => button.id.startsWith('review-line-'));
+    expect(lineRows()).toHaveLength(3);
+    await user.click(lineRows()[0]);
+    expect(await screen.findByRole('dialog')).toHaveAccessibleName(/\S/);
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
     await user.click(screen.getByRole('button', { name: 'Add 3 to Pantry' }));
 
     // It was the last card and it was saved: on to Say it, which counts what is in the Pantry now.

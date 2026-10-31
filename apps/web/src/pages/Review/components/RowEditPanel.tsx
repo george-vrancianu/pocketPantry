@@ -26,7 +26,7 @@ import {
   NameInput,
   useReviewLineExpiry,
 } from './RowInputs';
-import { fieldId, panelId } from './layout';
+import { fieldId } from './layout';
 
 type Props = {
   line: ReviewLine;
@@ -34,7 +34,6 @@ type Props = {
   /** The Confirm button reads "Done" on a row that was already sure. */
   sure: boolean;
   parents: CatalogParent[];
-  background: string;
   onChange: (patch: Partial<ReviewLine>) => void;
   onSwapMatch: () => void;
   onRemove: () => void;
@@ -51,7 +50,6 @@ export function RowEditPanel({
   status,
   sure,
   parents,
-  background,
   onChange,
   onSwapMatch,
   onRemove,
@@ -79,12 +77,7 @@ export function RowEditPanel({
         : null;
 
   return (
-    <Box
-      id={panelId(line.key)}
-      role="group"
-      aria-label={accessibleName}
-      sx={{ bgcolor: background, px: '12px', pt: '2px', pb: '14px' }}
-    >
+    <Box sx={{ px: '20px', pt: '2px', pb: '24px' }}>
       {message ? (
         <Box
           role="note"
