@@ -9,6 +9,7 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
+import { NamePill } from '../../../components/catalogSearch/FamilyTag';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import {
   displayName,
@@ -21,7 +22,7 @@ import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
 import { AmountField } from '../../../components/AmountField';
 import { ExpiryField } from '../../../components/ExpiryPicker';
 import { LocationToggle } from '../../../components/LocationToggle';
-import { Field, fieldLabelSx } from './Field';
+import { Field, FieldError, fieldLabelSx } from './Field';
 import {
   CategorySelect,
   DescriptionInput,
@@ -50,7 +51,7 @@ type Props = {
 const typedResult: CatalogSearchResult = {
   id: '',
   name: '',
-  owner: 'family',
+  owner: 'catalog',
   defaultUnit: 'pcs',
   amountScale: 'medium',
   defaults: { expiryDays: null, location: null },
@@ -132,7 +133,9 @@ export function RowEditPanel({
             label={t('review:field.match')}
             selected={token}
             selectedTag={
-              typedToken ? t('review:match.unmatchedTag') : undefined
+              typedToken ? (
+                <NamePill>{t('review:match.unmatchedTag')}</NamePill>
+              ) : undefined
             }
             selectedMeta={
               typedToken ? t('catalog:search.useTypedHint') : undefined
@@ -147,6 +150,7 @@ export function RowEditPanel({
             }}
             onSelect={(match) => {
               setSearching(false);
+              setTypedToken(false);
               onPickMatch(match);
             }}
             onUseTyped={
@@ -160,12 +164,9 @@ export function RowEditPanel({
             }
           />
           {nameInvalid ? (
-            <Box
-              id={`${id('name')}-error`}
-              sx={{ mt: '4px', fontSize: 12, color: tokens.color.urgentFg }}
-            >
+            <FieldError id={`${id('name')}-error`}>
               {t('review:error.name')}
-            </Box>
+            </FieldError>
           ) : null}
         </Box>
 

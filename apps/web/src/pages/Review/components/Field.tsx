@@ -38,6 +38,21 @@ type Props = {
   children: ReactNode;
 };
 
+/** The inline error text under a control. */
+export function FieldError({
+  id,
+  children,
+}: {
+  id?: string;
+  children: string;
+}) {
+  return (
+    <Box id={id} sx={{ mt: '4px', fontSize: 12, color: tokens.color.urgentFg }}>
+      {children}
+    </Box>
+  );
+}
+
 /** A labelled control with its inline error under it. */
 export function Field({ htmlFor, label, error, errorId, children }: Props) {
   return (
@@ -51,14 +66,7 @@ export function Field({ htmlFor, label, error, errorId, children }: Props) {
         {label}
       </Box>
       {children}
-      {error ? (
-        <Box
-          id={errorId}
-          sx={{ mt: '4px', fontSize: 12, color: tokens.color.urgentFg }}
-        >
-          {error}
-        </Box>
-      ) : null}
+      {error ? <FieldError id={errorId}>{error}</FieldError> : null}
     </Box>
   );
 }

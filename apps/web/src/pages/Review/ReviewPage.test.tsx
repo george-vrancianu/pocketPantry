@@ -788,7 +788,8 @@ describe('ReviewPage', () => {
     );
     const token = await screen.findByTestId('selected-token');
     expect(token).toHaveTextContent('Grandma jam');
-    expect(token).toHaveTextContent('Unmatched');
+    expect(within(token).getByText('Unmatched')).toBeInTheDocument();
+    expect(within(token).queryByText('Family')).toBeNull();
     // Still Unmatched: the Category select stays, and the sheet stays open.
     expect(screen.getByLabelText('Category')).toBeInTheDocument();
     expect(sheet('Grandma jam')).toBeInTheDocument();

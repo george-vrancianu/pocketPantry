@@ -63,10 +63,8 @@
   },
   "categoryOther": "Nu sunt sigur",
   "match": {
-    "none": "Fără potrivire",
     "choose": "Alege",
     "change": "Schimbă",
-    "unmatchedLabel": "{{name}}: Fără potrivire · Alege",
     "dialogTitle": "Schimbă potrivirea pentru {{name}}",
     "unmatchedTag": "Fără potrivire"
   },
